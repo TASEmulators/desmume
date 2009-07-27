@@ -161,6 +161,7 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 
 	if (gxFIFO.tail == 0)			// FIFO empty
 	{
+
 		if (gxPIPE.tail < 4)			// pipe not full
 		{
 			gxPIPE.cmd[gxPIPE.tail] = cmd;
@@ -174,11 +175,10 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 			return;
 		}
 	}
-
 	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO - 0x%08X (%03i/%02X)\n", cmd, param, gxFIFO.tail, gxFIFO.tail);
 	if (gxstat & 0x01000000)
 	{
-		//INFO("ERROR: gxFIFO is full\n");
+		//INFO("ERROR: gxFIFO is full (cmd 0x%02X = 0x%08X) (prev cmd 0x%02X = 0x%08X)\n", cmd, param, gxFIFO.cmd[255], gxFIFO.param[255]);
 		return;		// full
 	}
 
@@ -206,7 +206,8 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	NDS_RescheduleGXFIFO();
 }
 
-static BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
+extern void execHardware_doAllDma(EDMAMode modeNum);
+BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 
@@ -215,7 +216,7 @@ static BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 		gxstat &= 0xF000FFFF;
 		gxstat |= 0x06000000;
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		if ((gxstat & 0x80000000))	// IRQ: empty
+		if ((gxstat & 0xC0000000))	// IRQ: empty
 		{
 			setIF(0, (1<<21));
 		}
@@ -240,7 +241,10 @@ static BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 	gxstat |= (gxFIFO.tail << 16);
 
 	if (gxFIFO.tail < 128)
+	{
 		gxstat |= 0x02000000;
+		execHardware_doAllDma(EDMAMode_GXFifo);
+	}
 
 	if (gxFIFO.tail == 0)		// empty
 		gxstat |= 0x04000000;
