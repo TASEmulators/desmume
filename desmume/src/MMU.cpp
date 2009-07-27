@@ -926,6 +926,7 @@ void MMU_clearMem()
 	memset(MMU.DMACycle,      0, sizeof(MMU.DMACycle));
 	memset(MMU.DMACrt,        0, sizeof(u32) * 2 * 4);
 	memset(MMU.DMAing,        0, sizeof(BOOL) * 2 * 4);
+	memset(MMU.DMACompleted,  0, sizeof(BOOL) * 2 * 4);
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 
@@ -1249,10 +1250,21 @@ u32 MMU_readFromGC()
 template<int PROCNUM> 
 void FASTCALL MMU_doDMA(u32 num)
 {
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	if (MMU.DMACompleted[PROCNUM][num]) return;
+#endif
 	u32 src = DMASrc[PROCNUM][num];
 	u32 dst = DMADst[PROCNUM][num];
-    u32 taille;
+    u32 taille = 0;
+	bool paused = false;
 
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	if (MMU.DMAStartTime[PROCNUM][num]== EDMAMode_GXFifo)
+	{
+		if (gxFIFO.tail > 127) return;
+	}
+#endif
+	
 	if(src==dst)
 	{
 		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
@@ -1267,7 +1279,6 @@ void FASTCALL MMU_doDMA(u32 num)
 		return;
 	}
 	
-	
 	//word count
 	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
 	if(taille == 0) taille = 0x200000; //according to gbatek..
@@ -1281,21 +1292,23 @@ void FASTCALL MMU_doDMA(u32 num)
 	
 	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_Card)
 		taille *= 0x80;
-	
+
 	MMU.DMACycle[PROCNUM][num] = taille + nds_timer;  //TODO - surely this is a gross simplification
 
 	MMU.DMAing[PROCNUM][num] = TRUE;
 	MMU.CheckDMAs |= (1<<(num+(PROCNUM<<2)));
 	
-	DMALOG("PROCNUM %d, dma %d src %08X dst %08X start %d taille %d repeat %s %08X\r\n",
-		PROCNUM, num, src, dst, MMU.DMAStartTime[PROCNUM][num], taille,
+	DMALOG("ARM%c: DMA%d run src=%08X dst=%08X start=%d taille=%d repeat=%s %08X\r\n",
+		(PROCNUM==0)?'9':'7', num, src, dst, MMU.DMAStartTime[PROCNUM][num], taille,
 		(MMU.DMACrt[PROCNUM][num]&(1<<25))?"on":"off",MMU.DMACrt[PROCNUM][num]);
-	
+
+#ifndef USE_GEOMETRY_FIFO_EMULATION
 	if(!(MMU.DMACrt[PROCNUM][num]&(1<<25)))
 		MMU.DMAStartTime[PROCNUM][num] = 0;
+#endif
 
 	NDS_RescheduleDMA();
-	
+
 	// transfer
 	{
 		u32 i=0;
@@ -1330,6 +1343,21 @@ void FASTCALL MMU_doDMA(u32 num)
 				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
 				dst += dstinc;
 				src += srcinc;
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+				if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
+				{
+					if ( gxFIFO.tail > 255)
+					{
+						if (i == taille) break;
+						paused = true;
+						MMU.DMACrt[PROCNUM][num] &= 0xFFE00000;
+						MMU.DMACrt[PROCNUM][num] |= ((taille-i-1) & 0x1FFFFF);
+						MMU.DMAing[PROCNUM][num] = FALSE;
+						MMU.DMACycle[PROCNUM][num] = nds_timer+1;
+						break;
+					}
+				}
+#endif
 			}
 		else
 			for(; i < taille; ++i)
@@ -1338,7 +1366,7 @@ void FASTCALL MMU_doDMA(u32 num)
 				dst += dstinc;
 				src += srcinc;
 			}
-
+			
 		//write back the addresses
 		DMASrc[PROCNUM][num] = src;
 		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
@@ -1349,6 +1377,9 @@ void FASTCALL MMU_doDMA(u32 num)
 		//(there is no proof for this code, but it is reasonable)
 		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB0+12*num, DMASrc[PROCNUM][num]);
 		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB4+12*num, DMADst[PROCNUM][num]);
+
+		if (!paused)
+			MMU.DMACompleted[PROCNUM][num] = true;
 	}
 }
 
@@ -1533,16 +1564,31 @@ template<int proc> static INLINE void write_dma_hictrl(const int dmanum, const u
 			MMU.DMAStartTime[proc][dmanum] = EDMAMode7_GBASlot;
 	}
 	MMU.DMACrt[proc][dmanum] = v;
-	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate
-		//TODO HACK: I think this is a gxfifo hack:
-		|| MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+	MMU.DMACompleted[proc][dmanum] = false;
+	MMU.DMAing[proc][dmanum] = false;
+
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate)
 	{
 		MMU_doDMA<proc>(dmanum);
 	}
 
-	//printf("dma ctrl %d %d\n",proc,dmanum);
+	if (MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+	{
+#ifdef _3DINFO
+		INFO("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s (gxFIFO tail %03i)\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF", gxFIFO.tail);
+#endif
+		MMU_doDMA<proc>(dmanum);
+	}
+#else
+	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate 
+		|| MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+	{
+		MMU_doDMA<proc>(dmanum);
+	}
+#endif
 
-	//LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM9, 0, DMASrc[ARMCPU_ARM9][0], DMADst[ARMCPU_ARM9][0], (val&(1<<25))?"ON":"OFF");
+	DMALOG("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF");
 
 	NDS_RescheduleDMA();
 }
