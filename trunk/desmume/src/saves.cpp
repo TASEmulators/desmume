@@ -563,7 +563,8 @@ void scan_savestates()
       sprintf(filename+strlen(filename), ".ds%d", i);
       if( stat(filename,&sbuf) == -1 ) continue;
       savestates[i-1].exists = TRUE;
-      strncpy(savestates[i-1].date, format_time(sbuf.st_mtime),MAX_PATH);
+      strncpy(savestates[i-1].date, format_time(sbuf.st_mtime),40);
+	  savestates[i-1].date[40-1] = '\0';
     }
 
   return ;
@@ -593,9 +594,15 @@ void savestate_slot(int num)
 	   return;
    }
 
-   savestates[num].exists = TRUE;
-   if( stat(filename,&sbuf) == -1 ) return;
-   strncpy(savestates[num].date, format_time(sbuf.st_mtime),MAX_PATH);
+   if (num >= 0 && num < NB_STATES)
+   {
+	   if (stat(filename,&sbuf) != -1)
+	   {
+		   savestates[num].exists = TRUE;
+		   strncpy(savestates[num].date, format_time(sbuf.st_mtime),40);
+		   savestates[num].date[40-1] = '\0';
+	   }
+   }
 }
 
 void loadstate_slot(int num)
@@ -990,7 +997,7 @@ static void loadstate()
     _MMU_write16<ARMCPU_ARM9>(0x04000304, _MMU_read16<ARMCPU_ARM9>(0x04000304));
 
 	// This should regenerate the graphics configuration
-	//zero 27-jul-09 : was formerly up to 7F but that wrote to dispfifo which is dumb (one of nitsuja's desynch bugs)
+	//zero 27-jul-09 : was formerly up to 7F but that wrote to dispfifo which is dumb (one of nitsuja's desynch bugs [that he found, not caused])
     for (int i = REG_BASE_DISPA; i<=REG_BASE_DISPA + 0x66; i+=2)
 	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
     for (int i = REG_BASE_DISPB; i<=REG_BASE_DISPB + 0x7F; i+=2)
