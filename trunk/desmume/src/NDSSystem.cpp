@@ -1,3 +1,4 @@
+
 /*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
     yopyop156.ifrance.com 
@@ -968,9 +969,6 @@ void NDS_FreeROM(void)
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)
 		delete [] MMU.CART_ROM;
 	MMU_unsetRom();
-	if (MMU.bupmem.fp)
-		fclose(MMU.bupmem.fp);
-	MMU.bupmem.fp = NULL;
 }
 
 
@@ -1494,7 +1492,9 @@ void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 static void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
 {
+#ifdef USE_GEOMETRY_FIFO_EMULATION
 	if(MMU.DMAStartTime[procnum][chan] == modeNum)
+#endif
 	{
 		if(procnum == ARMCPU_ARM9) MMU_doDMA<ARMCPU_ARM9>(chan);
 		else MMU_doDMA<ARMCPU_ARM7>(chan);

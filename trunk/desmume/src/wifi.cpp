@@ -1,5 +1,5 @@
-/*
-    Copyright (C) 2007 Tim Seidel
+/*  Copyright (C) 2007 Tim Seidel
+    Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -26,7 +26,15 @@
 
 #ifdef EXPERIMENTAL_WIFI
 
-wifimac_t wifiMac ;
+#ifdef WIN32
+#include "windriver.h"
+#else
+#include "pcap/pcap.h"
+#endif
+
+wifimac_t wifiMac;
+bool wifi_netEnabled = false;
+pcap_t *wifi_bridge = NULL;
 
 #endif
 
@@ -306,6 +314,10 @@ static u32 WIFI_getCRC32(u8 *data, int len)
 
 static void WIFI_initCRC32Table()
 {
+	static bool initialized = false;
+	if(initialized) return;
+	initialized = true;
+
 	u32 polynomial = 0x04C11DB7;
 
 	for(int i = 0; i < 0x100; i++)
@@ -539,13 +551,15 @@ static void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
 
 void WIFI_Init(wifimac_t *wifi)
 {
+	memset(wifi,0,sizeof(wifimac_t));
+
 	WIFI_initCRC32Table();
 
 	WIFI_resetRF(&wifi->RF) ;
-	wifi->netEnabled = false;
+	wifi_netEnabled = false;
 	if(driver->WIFI_Host_InitSystem())
 	{
-		wifi->netEnabled = true;
+		wifi_netEnabled = true;
 	}
 	wifi->powerOn = FALSE;
 	wifi->powerOnPending = FALSE;
@@ -1254,12 +1268,11 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 
 	wifi->SoftAP.usecCounter = 0;
 
-	wifi->SoftAP.curPacket = NULL;
 	wifi->SoftAP.curPacketSize = 0;
 	wifi->SoftAP.curPacketPos = 0;
 	wifi->SoftAP.curPacketSending = FALSE;
 	
-	if(wifiMac.netEnabled)
+	if(wifi_netEnabled)
 	{
 		if(desmume_pcap_findalldevs(&alldevs, errbuf) == -1)
 		{
@@ -1267,8 +1280,8 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 			return 0;
 		}
 
-		wifi->SoftAP.bridge = desmume_pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, errbuf);
-		if(wifi->SoftAP.bridge == NULL)
+		wifi_bridge = desmume_pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, errbuf);
+		if(wifi_bridge == NULL)
 		{
 			printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
 			return 0;
@@ -1282,14 +1295,11 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 
 void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 {
-	if(wifiMac.netEnabled)
+	if(wifi_netEnabled)
 	{
-	if(wifi->SoftAP.bridge != NULL)
-		desmume_pcap_close(wifi->SoftAP.bridge);
+		if(wifi_bridge != NULL)
+			desmume_pcap_close(wifi_bridge);
 	}
-
-	if(wifi->SoftAP.curPacket)
-		delete wifi->SoftAP.curPacket;
 }
 
 static void WIFI_SoftAP_MakeRXHeader(wifimac_t *wifi, u16 flags, u16 xferRate, u16 len, u8 maxRSSI, u8 minRSSI)
@@ -1331,8 +1341,6 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 					int packetLen = sizeof(SoftAP_ProbeResponse);
 					int totalLen = (packetLen + 12);
 
-					wifi->SoftAP.curPacket = new u8[totalLen];
-
 					// Make the RX header
 					// About the packet length: 
 					// GBATek says the length entry of the RX header is the length of the IEEE
@@ -1368,8 +1376,6 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 					int packetLen = sizeof(SoftAP_AuthFrame);
 					int totalLen = (packetLen + 12);
 
-					wifi->SoftAP.curPacket = new u8[totalLen];
-
 					// Make the RX header
 					WIFI_SoftAP_MakeRXHeader(wifi, 0x0010, 20, packetLen, 0, 0);
 
@@ -1394,8 +1400,6 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 				{
 					int packetLen = sizeof(SoftAP_AssocResponse);
 					int totalLen = (packetLen + 12);
-
-					wifi->SoftAP.curPacket = new u8[totalLen];
 
 					// Make the RX header
 					WIFI_SoftAP_MakeRXHeader(wifi, 0x0010, 20, packetLen, 0, 0);
@@ -1453,8 +1457,8 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 			// Checksum 
 			// TODO ?
 
-			if(wifi->netEnabled) //dont try to pcap out the packet unless network is enabled
-				desmume_pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
+			if(wifi_netEnabled) //dont try to pcap out the packet unless network is enabled
+				desmume_pcap_sendpacket(wifi_bridge, ethernetframe, eflen);
 
 			delete ethernetframe;
 		}
@@ -1466,9 +1470,6 @@ static void WIFI_SoftAP_SendBeacon(wifimac_t *wifi)
 {
 	int packetLen = sizeof(SoftAP_Beacon);
 	int totalLen = (packetLen + 12);
-
-	if(wifi->SoftAP.curPacket) delete wifi->SoftAP.curPacket;
-	wifi->SoftAP.curPacket = new u8[totalLen];
 
 	// Make the RX header
 	WIFI_SoftAP_MakeRXHeader(wifi, 0x0011, 20, packetLen, 0, 0);
@@ -1540,9 +1541,6 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 			wifi->SoftAP.curPacketSize = 0;
 			wifi->SoftAP.curPacketPos = 0;
 			wifi->SoftAP.curPacketSending = FALSE;
-
-			delete wifi->SoftAP.curPacket;
-			wifi->SoftAP.curPacket = NULL;
 
 			wifi->RXHWWriteCursorReg = ((wifi->RXHWWriteCursor + 1) & (~1));
 

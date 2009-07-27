@@ -27,6 +27,7 @@
 #include <string.h> //mem funcs
 #include <stdarg.h> //va_start, etc
 #include <sstream>
+#include <stdio.h>
 #include <time.h>
 #include "debug.h"
 

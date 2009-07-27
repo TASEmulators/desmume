@@ -1242,7 +1242,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples)
 void spu_savestate(std::ostream* os)
 {
 	//version
-	write32le(0,os);
+	write32le(2,os);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1270,14 +1270,17 @@ void spu_savestate(std::ostream* os)
 		write16le(chan.x,os);
 		write16le(chan.psgnoise_last,os);
 	}
+
+	write64le(double_to_u64(samples),os);
 }
 
 bool spu_loadstate(std::istream* is, int size)
 {
+	u64 temp64; 
+	
 	//read version
 	int version;
 	if(read32le(&version,is) != 1) return false;
-	
 
 	SPU_struct *spu = SPU_core;
 
@@ -1298,11 +1301,10 @@ bool spu_loadstate(std::istream* is, int size)
 		read32le(&chan.length,is);
 		chan.totlength = chan.length + chan.loopstart;
 		chan.double_totlength_shifted = (double)(chan.totlength << format_shift[chan.format]);
-		if(version == 0)
+		if(version != 1)
 		{
-			u64 temp; 
-			read64le(&temp,is); chan.sampcnt = u64_to_double(temp);
-			read64le(&temp,is); chan.sampinc = u64_to_double(temp);
+			read64le(&temp64,is); chan.sampcnt = u64_to_double(temp64);
+			read64le(&temp64,is); chan.sampinc = u64_to_double(temp64);
 		}
 		else
 		{
@@ -1318,6 +1320,10 @@ bool spu_loadstate(std::istream* is, int size)
 
 		//fixup the pointers which we had are supposed to keep cached
 		chan.buf8 = (s8*)&MMU.MMU_MEM[1][(chan.addr>>20)&0xFF][(chan.addr & MMU.MMU_MASK[1][(chan.addr >> 20) & 0xFF])];
+	}
+
+	if(version==2) {
+		read64le(&temp64,is); samples = u64_to_double(temp64);
 	}
 
 	//copy the core spu (the more accurate) to the user spu

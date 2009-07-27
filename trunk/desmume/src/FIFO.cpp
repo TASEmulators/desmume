@@ -243,7 +243,9 @@ BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 	if (gxFIFO.tail < 128)
 	{
 		gxstat |= 0x02000000;
+#ifdef USE_GEOMETRY_FIFO_EMULATION
 		execHardware_doAllDma(EDMAMode_GXFifo);
+#endif
 	}
 
 	if (gxFIFO.tail == 0)		// empty

@@ -228,7 +228,7 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 
 bool BackupDevice::save_state(std::ostream* os)
 {
-	int version = 0;
+	int version = 1;
 	write32le(version,os);
 	write32le(write_enable,os);
 	write32le(com,os);
@@ -237,6 +237,7 @@ bool BackupDevice::save_state(std::ostream* os)
 	write32le((u32)state,os);
 	writebuffer(data,os);
 	writebuffer(data_autodetect,os);
+	write32le(addr,os);
 	return true;
 }
 
@@ -244,7 +245,7 @@ bool BackupDevice::load_state(std::istream* is)
 {
 	int version;
 	if(read32le(&version,is)!=1) return false;
-	if(version==0) {
+	if(version==0 || version==1) {
 		read32le(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
@@ -254,6 +255,8 @@ bool BackupDevice::load_state(std::istream* is)
 		state = (STATE)temp;
 		readbuffer(data,is);
 		readbuffer(data_autodetect,is);
+		if(version==1)
+			read32le(&addr,is);
 	}
 	return true;
 }

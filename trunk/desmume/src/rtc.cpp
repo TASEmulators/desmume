@@ -30,6 +30,7 @@
 #include "armcpu.h"
 #include <time.h>
 #include <string.h>
+#include "saves.h"
 #ifdef WIN32
 #include "windows/main.h"
 #endif
@@ -58,11 +59,38 @@ typedef struct
 	u8	cmdStat;
 	u8	bitsCount;
 	u8	data[8];
+
+	u8 cmdBitsSize[8];
 } _RTC;
 
 _RTC	rtc;
 
-u8 cmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
+SFORMAT SF_RTC[]={
+	{ "R000", 1, 1, &rtc.regStatus1},
+	{ "R010", 1, 1, &rtc.regStatus2},
+	{ "R020", 1, 1, &rtc.regAdjustment},
+	{ "R030", 1, 1, &rtc.regFree},
+
+	{ "R040", 1, 1, &rtc._prevSCK},
+	{ "R050", 1, 1, &rtc._prevCS},
+	{ "R060", 1, 1, &rtc._prevSIO},
+	{ "R070", 1, 1, &rtc._SCK},
+	{ "R080", 1, 1, &rtc._CS},
+	{ "R090", 1, 1, &rtc._SIO},
+	{ "R100", 1, 1, &rtc._DD},
+	{ "R110", 2, 1, &rtc._REG},
+
+	{ "R120", 1, 1, &rtc.cmd},
+	{ "R130", 1, 1, &rtc.cmdStat},
+	{ "R140", 1, 1, &rtc.bitsCount},
+	{ "R150", 1, 8, &rtc.data[0]},
+
+	{ "R160", 1, 8, &rtc.cmdBitsSize[0]},
+
+	{ 0 }
+};
+
+static const u8 kDefaultCmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
 
 #define toBCD(x) ((x / 10) << 4) | (x % 10);
 
@@ -254,6 +282,7 @@ static void rtcSend()
 void rtcInit() 
 {
 	memset(&rtc, 0, sizeof(_RTC));
+	memcpy(rtc.cmdBitsSize,kDefaultCmdBitsSize,8);
 	rtc.regStatus1 |= 0x02;
 }
 
@@ -316,9 +345,9 @@ void rtcWrite(u16 val)
 					if ((rtc.cmd >> 1) == 0x04)
 					{
 						if ((rtc.regStatus2 & 0x0F) == 0x04)
-							cmdBitsSize[rtc.cmd >> 1] = 24;
+							rtc.cmdBitsSize[rtc.cmd >> 1] = 24;
 						else
-							cmdBitsSize[rtc.cmd >> 1] = 8;
+							rtc.cmdBitsSize[rtc.cmd >> 1] = 8;
 					}
 					if (rtc.cmd & 0x01)
 					{
@@ -339,7 +368,7 @@ void rtcWrite(u16 val)
 			{
 				if(rtc._SIO) rtc.data[rtc.bitsCount >> 3] |= (1 << (rtc.bitsCount & 0x07));
 				rtc.bitsCount++;
-				if (rtc.bitsCount == cmdBitsSize[rtc.cmd >> 1])
+				if (rtc.bitsCount == rtc.cmdBitsSize[rtc.cmd >> 1])
 				{
 					rtcSend();
 					rtc.cmdStat = 0;
@@ -357,7 +386,7 @@ void rtcWrite(u16 val)
 					rtc._REG &= ~0x01;
 
 				rtc.bitsCount++;
-				if (rtc.bitsCount == cmdBitsSize[rtc.cmd >> 1])
+				if (rtc.bitsCount == rtc.cmdBitsSize[rtc.cmd >> 1])
 					rtc.cmdStat = 0;
 			}
 		break;

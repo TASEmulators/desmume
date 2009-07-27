@@ -223,15 +223,12 @@ SFORMAT SF_MMU[]={
 	{ "MSQ4", 8, 1,       &MMU.sqrtCycles},
 	
 	//begin memory chips
-	//we are skipping the firmware, because we really don't want to save the firmware to the savestate
-	//but, we will need to think about the philosophy of this.
-	//should we perhaps hash the current firmware and save it, so that we can match it against the loader's firmware?
-	{ "BUCO", 1, 1,       &MMU.bupmem.com},
-	{ "BUAD", 4, 1,       &MMU.bupmem.addr},
-	{ "BUAS", 1, 1,       &MMU.bupmem.addr_shift},
-	{ "BUAZ", 1, 1,       &MMU.bupmem.addr_size},
-	{ "BUWE", 4, 1,       &MMU.bupmem.write_enable},
-	//writeable_buffer ???
+	{ "BUCO", 1, 1,       &MMU.fw.com},
+	{ "BUAD", 4, 1,       &MMU.fw.addr},
+	{ "BUAS", 1, 1,       &MMU.fw.addr_shift},
+	{ "BUAZ", 1, 1,       &MMU.fw.addr_size},
+	{ "BUWE", 4, 1,       &MMU.fw.write_enable},
+	{ "BUWR", 4, 1,       &MMU.fw.writeable_buffer},
 	//end memory chips
 
 	{ "MC0A", 4, 1,       &MMU.dscard[0].address},
@@ -268,6 +265,105 @@ static void mmu_savestate(std::ostream* os)
 	//newer savefile system:
 	MMU_new.backupDevice.save_state(os);
 }
+
+SFORMAT SF_WIFI[]={
+	{ "W000", 4, 1, &wifiMac.powerOn},
+	{ "W010", 4, 1, &wifiMac.powerOnPending},
+
+	{ "W020", 2, 1, &wifiMac.rfStatus},
+	{ "W030", 2, 1, &wifiMac.rfPins},
+
+	{ "W040", 2, 1, &wifiMac.IE.val},
+	{ "W050", 2, 1, &wifiMac.IF.val},
+
+	{ "W060", 2, 1, &wifiMac.macMode},
+	{ "W070", 2, 1, &wifiMac.wepMode},
+	{ "W080", 4, 1, &wifiMac.WEP_enable},
+
+	{ "W090", 2, 3, &wifiMac.TXSlot[0]},
+	{ "W100", 2, 1, &wifiMac.TXCnt},
+	{ "W110", 2, 1, &wifiMac.TXOpt},
+	{ "W120", 2, 1, &wifiMac.TXStat},
+	{ "W130", 2, 1, &wifiMac.BEACONSlot},
+	{ "W140", 4, 1, &wifiMac.BEACON_enable},
+	{ "W150", 1, 1, &wifiMac.txCurSlot},
+	{ "W160", 1, 3, &wifiMac.txSlotBusy[0]},
+	{ "W170", 4, 3, &wifiMac.txSlotAddr[0]},
+	{ "W180", 4, 3, &wifiMac.txSlotLen[0]},
+	{ "W190", 4, 3, &wifiMac.txSlotRemainingBytes[0]},
+
+	{ "W200", 2, 1, &wifiMac.RXCnt},
+	{ "W210", 2, 1, &wifiMac.RXCheckCounter},
+
+	{ "W220", 1, 6, &wifiMac.mac.bytes},
+	{ "W230", 1, 6, &wifiMac.bss.bytes},
+
+	{ "W240", 2, 1, &wifiMac.aid},
+	{ "W250", 2, 1, &wifiMac.pid},
+	{ "W260", 2, 1, &wifiMac.retryLimit},
+
+	{ "W270", 4, 1, &wifiMac.crystalEnabled},
+	{ "W280", 8, 1, &wifiMac.usec},
+	{ "W290", 4, 1, &wifiMac.usecEnable},
+	{ "W300", 8, 1, &wifiMac.ucmp},
+	{ "W310", 4, 1, &wifiMac.ucmpEnable},
+	{ "W320", 2, 1, &wifiMac.eCount},
+	{ "W330", 4, 1, &wifiMac.eCountEnable},
+
+	{ "WR00", 4, 1, &wifiMac.RF.CFG1.val},
+	{ "WR01", 4, 1, &wifiMac.RF.IFPLL1.val},
+	{ "WR02", 4, 1, &wifiMac.RF.IFPLL2.val},
+	{ "WR03", 4, 1, &wifiMac.RF.IFPLL3.val},
+	{ "WR04", 4, 1, &wifiMac.RF.RFPLL1.val},
+	{ "WR05", 4, 1, &wifiMac.RF.RFPLL2.val},
+	{ "WR06", 4, 1, &wifiMac.RF.RFPLL3.val},
+	{ "WR07", 4, 1, &wifiMac.RF.RFPLL4.val},
+	{ "WR08", 4, 1, &wifiMac.RF.CAL1.val},
+	{ "WR09", 4, 1, &wifiMac.RF.TXRX1.val},
+	{ "WR10", 4, 1, &wifiMac.RF.PCNT1.val},
+	{ "WR11", 4, 1, &wifiMac.RF.PCNT2.val},
+	{ "WR12", 4, 1, &wifiMac.RF.VCOT1.val},
+
+	{ "W340", 1, 105, &wifiMac.BB.data[0]},
+
+	{ "W350", 2, 1, &wifiMac.rfIOCnt.val},
+	{ "W360", 2, 1, &wifiMac.rfIOStatus.val},
+	{ "W370", 4, 1, &wifiMac.rfIOData.val},
+	{ "W380", 2, 1, &wifiMac.bbIOCnt.val},
+
+	{ "W390", 1, 1, &wifiMac.bbDataToWrite},
+
+	{ "W400", 2, 0x1000, &wifiMac.circularBuffer[0]},
+	{ "W410", 2, 1, &wifiMac.RXRangeBegin},
+	{ "W420", 2, 1, &wifiMac.RXRangeEnd},
+	{ "W430", 2, 1, &wifiMac.RXHWWriteCursor},
+	{ "W440", 2, 1, &wifiMac.RXHWWriteCursorReg},
+	{ "W450", 2, 1, &wifiMac.RXHWWriteCursorLatched},
+	{ "W460", 2, 1, &wifiMac.RXReadCursor},
+	{ "W470", 2, 1, &wifiMac.RXUnits},
+	{ "W480", 2, 1, &wifiMac.RXBufCount},
+	{ "W490", 2, 1, &wifiMac.CircBufReadAddress},
+	{ "W500", 2, 1, &wifiMac.CircBufWriteAddress},
+	{ "W510", 2, 1, &wifiMac.CircBufRdEnd},
+	{ "W520", 2, 1, &wifiMac.CircBufRdSkip},
+	{ "W530", 2, 1, &wifiMac.CircBufWrEnd},
+	{ "W540", 2, 1, &wifiMac.CircBufWrSkip},
+
+	{ "W540", 4, 1, &wifiMac.curPacketSize[0]},
+	{ "W550", 4, 1, &wifiMac.curPacketPos[0]},
+	{ "W560", 4, 1, &wifiMac.curPacketSending[0]},
+
+	{ "W570", 2, 0x800, &wifiMac.ioMem[0]},
+	{ "W580", 2, 1, &wifiMac.randomSeed},
+
+	{ "WX00", 8, 1, &wifiMac.SoftAP.usecCounter},
+	{ "WX10", 1, 4096, &wifiMac.SoftAP.curPacket[0]},
+	{ "WX20", 4, 1, &wifiMac.SoftAP.curPacketSize},
+	{ "WX30", 4, 1, &wifiMac.SoftAP.curPacketPos},
+	{ "WX40", 4, 1, &wifiMac.SoftAP.curPacketSending},
+
+	{ 0 }
+};
 
 static bool mmu_loadstate(std::istream* is, int size)
 {
@@ -453,7 +549,7 @@ void clear_savestates()
 void scan_savestates()
 {
   struct stat sbuf;
-  char filename[MAX_PATH];
+  char filename[MAX_PATH+1];
   u8 i;
 
   clear_savestates();
@@ -466,7 +562,7 @@ void scan_savestates()
       sprintf(filename+strlen(filename), ".ds%d", i);
       if( stat(filename,&sbuf) == -1 ) continue;
       savestates[i-1].exists = TRUE;
-      strncpy(savestates[i-1].date, format_time(sbuf.st_mtime),40-strlen(savestates[i-1].date));
+      strncpy(savestates[i-1].date, format_time(sbuf.st_mtime),MAX_PATH);
     }
 
   return ;
@@ -475,7 +571,7 @@ void scan_savestates()
 void savestate_slot(int num)
 {
    struct stat sbuf;
-   char filename[MAX_PATH];
+   char filename[MAX_PATH+1];
 
 	lastSaveState = num;		//Set last savestate used
 
@@ -496,9 +592,9 @@ void savestate_slot(int num)
 	   return;
    }
 
-   savestates[num-1].exists = TRUE;
+   savestates[num].exists = TRUE;
    if( stat(filename,&sbuf) == -1 ) return;
-   strncpy(savestates[num-1].date, format_time(sbuf.st_mtime),40-strlen(savestates[num-1].date));
+   strncpy(savestates[num].date, format_time(sbuf.st_mtime),MAX_PATH);
 }
 
 void loadstate_slot(int num)
@@ -582,7 +678,7 @@ int sram_save (const char *file_name) {
 
 }
 
-static SFORMAT *CheckS(SFORMAT *sf, u32 size, u32 count, char *desc)
+static const SFORMAT *CheckS(const SFORMAT *sf, u32 size, u32 count, char *desc)
 {
 	while(sf->v)
 	{
@@ -607,9 +703,9 @@ static SFORMAT *CheckS(SFORMAT *sf, u32 size, u32 count, char *desc)
 }
 
 
-static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
+static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 {
-	SFORMAT *tmp;
+	const SFORMAT *tmp;
 	int temp = is->tellg();
 
 	while(is->tellg()<temp+size)
@@ -648,7 +744,7 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 
 
 
-static int SubWrite(std::ostream* os, SFORMAT *sf)
+static int SubWrite(std::ostream* os, const SFORMAT *sf)
 {
 	uint32 acc=0;
 
@@ -704,7 +800,7 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 	return(acc);
 }
 
-static int savestate_WriteChunk(std::ostream* os, int type, SFORMAT *sf)
+static int savestate_WriteChunk(std::ostream* os, int type, const SFORMAT *sf)
 {
 	write32le(type,os);
 	if(!sf) return 4;
@@ -822,6 +918,8 @@ bool savestate_save (const char *file_name)
 	} else return false;
 }
 
+extern SFORMAT SF_RTC[];
+
 static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
@@ -837,6 +935,8 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,91,gfx3d_savestate);
 	savestate_WriteChunk(os,100,SF_MOVIE);
 	savestate_WriteChunk(os,101,mov_savestate);
+	savestate_WriteChunk(os,110,SF_WIFI);
+	savestate_WriteChunk(os,120,SF_RTC);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
@@ -866,6 +966,8 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 			case 91: if(!gfx3d_loadstate(is,size)) ret=false; break;
 			case 100: if(!ReadStateChunk(is,SF_MOVIE, size)) ret=false; break;
 			case 101: if(!mov_loadstate(is, size)) ret=false; break;
+			case 110: if(!ReadStateChunk(is,SF_WIFI,size)) ret=false; break;
+			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
 			default:
 				ret=false;
 				break;
@@ -887,7 +989,8 @@ static void loadstate()
     _MMU_write16<ARMCPU_ARM9>(0x04000304, _MMU_read16<ARMCPU_ARM9>(0x04000304));
 
 	// This should regenerate the graphics configuration
-    for (int i = REG_BASE_DISPA; i<=REG_BASE_DISPA + 0x7F; i+=2)
+	//zero 27-jul-09 : was formerly up to 7F but that wrote to dispfifo which is dumb (one of nitsuja's desynch bugs)
+    for (int i = REG_BASE_DISPA; i<=REG_BASE_DISPA + 0x66; i+=2)
 	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
     for (int i = REG_BASE_DISPB; i<=REG_BASE_DISPB + 0x7F; i+=2)
 	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));

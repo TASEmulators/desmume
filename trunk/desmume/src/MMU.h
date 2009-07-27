@@ -125,7 +125,6 @@ struct MMU_struct {
 	u8 powerMan_Reg[4];
 
 	memory_chip_t fw;
-	memory_chip_t bupmem;
 
 	nds_dscard dscard[2];
 	u32 CheckTimers;
@@ -288,6 +287,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val);
 u8  FASTCALL _MMU_ARM7_read08(u32 adr);
 u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 u32 FASTCALL _MMU_ARM7_read32(u32 adr);
+
+extern u32 partie;
 
 extern u32 _MMU_MAIN_MEM_MASK;
 inline void SetupMMU(BOOL debugConsole) {
