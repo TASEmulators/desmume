@@ -154,13 +154,13 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	sprintf(text, "%d x %d",  (int)MainScreen.gpu->BGSize[win->map][0], (int)MainScreen.gpu->BGSize[win->map][1]);
 	SetWindowText(GetDlgItem(hwnd, IDC_MSIZE), text);
 
-	if (win->map==2) {
-		parms = &(MainScreen.gpu->dispx_st)->dispx_BG2PARMS;
-	} else {
-		parms = &(MainScreen.gpu->dispx_st)->dispx_BG3PARMS;		
-	}
-	sprintf(text, "%d x %d", parms->BGxPC, parms->BGxPD);
-	SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), text);
+	//if (win->map==2) {
+	//	parms = &(MainScreen.gpu->dispx_st)->dispx_BG2PARMS;
+	//} else {
+	//	parms = &(MainScreen.gpu->dispx_st)->dispx_BG3PARMS;		
+	//}
+	//sprintf(text, "%d x %d", parms->BGxX, parms->BGxY);
+	SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), "useless");
 
 	for(int i = 0; i < ARRAY_SIZE(win->bitmap); i++)
 		win->bitmap[i] = 0x7C1F;
