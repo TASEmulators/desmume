@@ -1251,7 +1251,8 @@ template<int PROCNUM>
 void FASTCALL MMU_doDMA(u32 num)
 {
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-	if (MMU.DMACompleted[PROCNUM][num]) return;
+	if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
+		if (MMU.DMACompleted[PROCNUM][num]) return;
 #endif
 	u32 src = DMASrc[PROCNUM][num];
 	u32 dst = DMADst[PROCNUM][num];
@@ -1340,24 +1341,25 @@ void FASTCALL MMU_doDMA(u32 num)
 		if ((MMU.DMACrt[PROCNUM][num]>>26)&1)
 			for(; i < taille; ++i)
 			{
-				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
-				dst += dstinc;
-				src += srcinc;
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 				if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
 				{
 					if ( gxFIFO.tail > 255)
 					{
-						if (i == taille) break;
+						if (i >= taille) break;
+
 						paused = true;
 						MMU.DMACrt[PROCNUM][num] &= 0xFFE00000;
-						MMU.DMACrt[PROCNUM][num] |= ((taille-i-1) & 0x1FFFFF);
+						MMU.DMACrt[PROCNUM][num] |= ((taille-i) & 0x1FFFFF);
 						MMU.DMAing[PROCNUM][num] = FALSE;
 						MMU.DMACycle[PROCNUM][num] = nds_timer+1;
 						break;
 					}
 				}
 #endif
+				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
+				dst += dstinc;
+				src += srcinc;
 			}
 		else
 			for(; i < taille; ++i)
