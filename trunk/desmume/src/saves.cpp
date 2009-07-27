@@ -208,6 +208,7 @@ SFORMAT SF_MMU[]={
 	{ "MDCY", 8, 8,       MMU.DMACycle},
 	{ "MDCR", 4, 8,       MMU.DMACrt},
 	{ "MDMA", 4, 8,       MMU.DMAing},
+	{ "MDMC", 4, 8,       MMU.DMACompleted},
 	{ "MDSR", 4, 8,       DMASrc},
 	{ "MDDS", 4, 8,       DMADst},
 
