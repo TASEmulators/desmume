@@ -1,5 +1,5 @@
-/*  
-    Copyright (C) 2007 Tim Seidel
+/*  Copyright (C) 2007 Tim Seidel
+    Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -24,12 +24,6 @@
 #include "types.h"
 
 #ifdef EXPERIMENTAL_WIFI
-
-#ifdef WIN32
-#include "windriver.h"
-#else
-#include "pcap/pcap.h"
-#endif
 
 #define HAVE_REMOTE
 #define WPCAP
@@ -261,6 +255,7 @@ typedef struct rffilter_t
 /* 6*/      unsigned MID_POWER:6;
 /*12*/      unsigned MAX_POWER:6;
 		} bits ;
+		u32 val ;
 	} PCNT2 ;
 	union VCOT1
 	{
@@ -365,6 +360,7 @@ typedef union
 
 /* wifimac_t: the buildin mac (arm7 addressrange: 0x04800000-0x04FFFFFF )*/
 /* http://www.akkit.org/info/dswifi.htm#WifiIOMap */
+
 typedef struct 
 {
 	/* power */
@@ -404,6 +400,7 @@ typedef struct
 	/* addressing/handshaking */
 	union
 	{
+		//TODO - is this endian safe? don't think so
 		u16  words[3] ;
 		u8	 bytes[6] ;
 	} mac ;
@@ -455,9 +452,8 @@ typedef struct
 	u16         CircBufWrSkip ;
 
 	/* tx packets */
-	u8 *curPacket[3];
-	int curPacketSize[3];
-	int curPacketPos[3];
+	s32 curPacketSize[3];
+	s32 curPacketPos[3];
 	BOOL curPacketSending[3];
 
 	/* i/o mem */
@@ -469,23 +465,24 @@ typedef struct
 	/* SoftAP */
 	struct _SoftAP
 	{
-		pcap_t *bridge;
-
 		u64 usecCounter;
 
-		u8 *curPacket;
-		int curPacketSize;
-		int curPacketPos;
+		u8 curPacket[4096];
+		s32 curPacketSize;
+		s32 curPacketPos;
 		BOOL curPacketSending;
 
 	} SoftAP;
 
-	/* desmume host communication */
-	bool		netEnabled;
-
 } wifimac_t ;
 
-extern wifimac_t wifiMac ;
+
+// desmume host communication
+typedef struct pcap pcap_t;
+extern bool wifi_netEnabled;
+extern pcap_t *wifi_bridge;
+
+extern wifimac_t wifiMac;
 
 void WIFI_Init(wifimac_t *wifi);
 
