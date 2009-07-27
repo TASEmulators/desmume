@@ -100,7 +100,6 @@ struct MMU_struct {
 	u64 DMACycle[2][4];
 	u32 DMACrt[2][4];
 	BOOL DMAing[2][4];
-	BOOL DMACompleted[2][4];
 
 	BOOL divRunning;
 	s64 divResult;
