@@ -1492,9 +1492,7 @@ void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 static void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
 {
-#ifdef USE_GEOMETRY_FIFO_EMULATION
 	if(MMU.DMAStartTime[procnum][chan] == modeNum)
-#endif
 	{
 		if(procnum == ARMCPU_ARM9) MMU_doDMA<ARMCPU_ARM9>(chan);
 		else MMU_doDMA<ARMCPU_ARM7>(chan);
@@ -1502,7 +1500,7 @@ static void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
 	}
 }
 
-void execHardware_doAllDma(EDMAMode modeNum)
+static void execHardware_doAllDma(EDMAMode modeNum)
 {
 	for(int i=0;i<2;i++)
 		for(int j=0;j<4;j++)
@@ -1571,7 +1569,6 @@ struct TSequenceItem_GXFIFO : public TSequenceItem
 			MMU.gfx3dCycles = max(MMU.gfx3dCycles,nds_timer); //uhh i dont entirely understand why this was necessary
 			//i need to learn more about how the new gxfifo works, but I am leaving that to you for now crazymax ^_^
 		#endif
-			
 	}
 
 	FORCEINLINE u64 next()
@@ -1664,16 +1661,13 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 
 	FORCEINLINE void exec()
 	{
-		if (MMU.DMACompleted[procnum][chan])
-		{
-			u8* regs = procnum==0?ARM9Mem.ARM9_REG:MMU.ARM7_REG;
-			T1WriteLong(regs, 0xB8 + (0xC*chan), T1ReadLong(regs, 0xB8 + (0xC*chan)) & 0x7FFFFFFF);
-			if((MMU.DMACrt[procnum][chan])&(1<<30)) {
-				if(procnum==0) NDS_makeARM9Int(8+chan);
-				else NDS_makeARM7Int(8+chan);
-			}
-			MMU.DMAing[procnum][chan] = FALSE;
+		u8* regs = procnum==0?ARM9Mem.ARM9_REG:MMU.ARM7_REG;
+		T1WriteLong(regs, 0xB8 + (0xC*chan), T1ReadLong(regs, 0xB8 + (0xC*chan)) & 0x7FFFFFFF);
+		if((MMU.DMACrt[procnum][chan])&(1<<30)) {
+			if(procnum==0) NDS_makeARM9Int(8+chan);
+			else NDS_makeARM7Int(8+chan);
 		}
+		MMU.DMAing[procnum][chan] = FALSE;
 	}
 };
 
