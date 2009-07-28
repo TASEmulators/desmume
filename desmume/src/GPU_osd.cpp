@@ -239,7 +239,7 @@ void DrawHUD()
 		std::stringstream ss;
 		if(nds.isTouch)
 			ss << (nds.touchX >> 4) << " " << (nds.touchY >> 4); 
-		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",(InputDisplayString += ss.str()).c_str());
+		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",(InputDisplayString + ss.str()).c_str());
 		TouchDisplay();
 	}
 

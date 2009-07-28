@@ -1858,6 +1858,9 @@ int _main()
 
 	MainWindow->Show(SW_NORMAL);
 	run();
+
+	KillDisplay();
+
 	SaveRecentRoms();
 	NDS_DeInit();
 	DRV_AviEnd();
@@ -1893,8 +1896,6 @@ int _main()
 	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
 
 	delete MainWindow;
-
-	KillDisplay();
 
 	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
 	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
