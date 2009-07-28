@@ -14,6 +14,7 @@ libdesmume_a_SOURCES = \
         armcpu.cpp armcpu.h ARM9.h \
         arm_instructions.cpp arm_instructions.h \
         bios.cpp bios.h bits.h cp15.cpp cp15.h \
+	commandline.h commandline.cpp \
 	common.cpp common.h \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
@@ -49,9 +50,6 @@ libdesmume_a_SOURCES = \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	version.h
 
-if HAVE_GLIB
-libdesmume_a_SOURCES += commandline.h commandline.cpp
-endif
 if HAVE_ALSA
 libdesmume_a_SOURCES += mic_alsa.cpp
 else

@@ -173,8 +173,10 @@ else
    AC_MSG_ERROR([Antigrain library is required to build desmume])
 fi
 
-dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
-AM_CONDITIONAL([HAVE_GLIB], [test "${FOUND_GLIB}" = "yes"])
+dnl - depends on glib, reference pkg-config since it is needed for checking glib
+if test "x$FOUND_GLIB" = "xno"; then
+   AC_MSG_ERROR([Glib and pkg-config are required to build desmume])
+fi
 
 dnl - If the gtkGLext package is available define the corresponding C macro
 if test "x$HAVE_GTKGLEXT" = "xyes"; then
