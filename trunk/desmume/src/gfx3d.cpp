@@ -1559,11 +1559,16 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	const POLY &poly2 = polylist->list[num2];
 
 	//this may be verified by checking the game create menus in harvest moon island of happiness
-	if (poly1.maxy > poly2.maxy) return false;
+	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
 	if (poly1.maxy < poly2.maxy) return true;
-	if (poly1.miny < poly2.miny) return true;
-	if (poly1.miny > poly2.miny) return false;
-	
+	if (poly1.maxy > poly2.maxy) return false;
+	if (poly1.miny > poly2.miny) return true;
+	if (poly1.miny < poly2.miny) return false;
+	//notably, the main shop interface in harvest moon will not have a correct RTN button
+	//i think this is due to a math error rounding its position to one pixel too high and it popping behind
+	//the bar that it sits on.
+	//everything else in all the other menus that I could find looks right..
+
 	//make sure we respect the game's ordering in cases of complete ties
 	//this makes it a stable sort.
 	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
@@ -1606,13 +1611,14 @@ static void gfx3d_doFlush()
 	//TODO - this could be a small waste of time if we are manual sorting the translucent polys
 	//TODO - this _MUST_ be moved later in the pipeline, after clipping.
 	//the w-division here is just an approximation to fix the shop in harvest moon island of happiness
+	//also the buttons in the knights in the nightmare frontend depend on this
 	for(int i=0; i<polycount; i++)
 	{
 		POLY &poly = polylist->list[i];
 		float verty = vertlist->list[poly.vertIndexes[0]].y;
 		float vertw = vertlist->list[poly.vertIndexes[0]].w;
 		verty = (verty+vertw)/(2*vertw);
-		poly.miny = poly.maxy = (verty+vertw)/(2*vertw);
+		poly.miny = poly.maxy = verty;
 
 		for(int j=1; j<poly.type; j++)
 		{
