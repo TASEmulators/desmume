@@ -98,8 +98,8 @@ AGG2D_TEMPLATE inline TAGG2D::Agg2D() :
     m_fontDescent(0.0),
     m_fontCacheType(RasterFontCache),
 
-    m_imageFilter(Bilinear), //less quality more speed
-	//m_imageFilter(NoFilter),
+    //m_imageFilter(Bilinear), //less quality more speed
+	m_imageFilter(NoFilter),
     m_imageResample(NoResample),
     m_imageFilterLut(agg::image_filter_bilinear(), true),
 
@@ -257,8 +257,8 @@ AGG2D_TEMPLATE void Agg2D AGG2D_TEMPLATE_ARG ::attach(unsigned char* buf, unsign
     textAlignment(AlignLeft, AlignBottom);
     flipText(false);
 	#endif
-    imageFilter(Bilinear); //less quality more speed
-	//imageFilter(NoFilter);
+    //imageFilter(Bilinear); //less quality more speed
+	imageFilter(NoFilter);
     imageResample(NoResample);
     m_masterAlpha = 1.0;
     m_antiAliasGamma = 1.0;
@@ -1841,83 +1841,85 @@ public:
         SpanConvImageBlend blend(gr.m_imageBlendMode, gr.m_imageBlendColor);
         if(gr.m_imageFilter == TAGG2D::NoFilter)
         {
-
-			//modifications less quality more speed
-
+			//original way
 			typedef agg::span_image_filter_rgba_nn<img_source_type,Interpolator> SpanGenType;
-			//typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
 			typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
-			//typedef agg::renderer_scanline_bin<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
-
 			SpanGenType sg(source,interpolator);
-            //SpanConvType sc(sg, blend);
 			RendererType ri(renBase,gr.m_allocator,sg);
             agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
+
+			//our way, using our own span generator to support 555
+			//but, it isnt working yet
+			//typedef ImagePixFormatSet::SpanGenerator SpanGenType;
+			//typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
+			//SpanGenType sg(imgc.renBuf);
+			//RendererType ri(renBase,gr.m_allocator,sg);
+			//agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
         }
-        else
-        {
-            bool resample = (gr.m_imageResample == TAGG2D::ResampleAlways);
-            if(gr.m_imageResample == TAGG2D::ResampleOnZoomOut)
-            {
-                double sx, sy;
-                interpolator.transformer().scaling_abs(&sx, &sy);
-                if (sx > 1.125 || sy > 1.125)
-                {
-					resample = true;
-                }
-            }
+        //else
+    //    {
+    //        bool resample = (gr.m_imageResample == TAGG2D::ResampleAlways);
+    //        if(gr.m_imageResample == TAGG2D::ResampleOnZoomOut)
+    //        {
+    //            double sx, sy;
+    //            interpolator.transformer().scaling_abs(&sx, &sy);
+    //            if (sx > 1.125 || sy > 1.125)
+    //            {
+				//	resample = true;
+    //            }
+    //        }
 
-            if(resample)
-            {
-                typedef agg::span_image_resample_rgba_affine<img_source_type> SpanGenType;
-                typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-                typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
+    //        if(resample)
+    //        {
+    //            typedef agg::span_image_resample_rgba_affine<img_source_type> SpanGenType;
+    //            typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
+    //            typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
-                SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
-                SpanConvType sc(sg, blend);
-                RendererType ri(renBase,gr.m_allocator,sg);
-                agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
-            }
-            else
-            {
-				// this is the AGG2D default
-                if(gr.m_imageFilter == TAGG2D::Bilinear)
-                {
-                    typedef agg::span_image_filter_rgba_bilinear<img_source_type,Interpolator> SpanGenType;
-                    typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-					typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
+    //            SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
+    //            SpanConvType sc(sg, blend);
+    //            RendererType ri(renBase,gr.m_allocator,sg);
+    //            agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
+    //        }
+    //        else
+    //        {
+				//// this is the AGG2D default
+    //            if(gr.m_imageFilter == TAGG2D::Bilinear)
+    //            {
+    //                typedef agg::span_image_filter_rgba_bilinear<img_source_type,Interpolator> SpanGenType;
+    //                typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
+				//	typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
-					SpanGenType sg(source,interpolator);
-                    SpanConvType sc(sg, blend);
-					RendererType ri(renBase,gr.m_allocator,sg);
-                    agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
-                }
-                else
-                {
-                    if(gr.m_imageFilterLut.diameter() == 2)
-                    {
-                        typedef agg::span_image_filter_rgba_2x2<img_source_type,Interpolator> SpanGenType;
-                        typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-                        typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
+				//	SpanGenType sg(source,interpolator);
+    //                SpanConvType sc(sg, blend);
+				//	RendererType ri(renBase,gr.m_allocator,sg);
+    //                agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
+    //            }
+    //            else
+    //            {
+    //                if(gr.m_imageFilterLut.diameter() == 2)
+    //                {
+    //                    typedef agg::span_image_filter_rgba_2x2<img_source_type,Interpolator> SpanGenType;
+    //                    typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
+    //                    typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
-                        SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
-                        SpanConvType sc(sg, blend);
-                        RendererType ri(renBase,gr.m_allocator,sg);
-                        agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
-                    }
-                    else
-                    {
-                        typedef agg::span_image_filter_rgba<img_source_type,Interpolator> SpanGenType;
-                        typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-						typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
-                        SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
-                        SpanConvType sc(sg, blend);
-						RendererType ri(renBase,gr.m_allocator,sg);
-                        agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
-                    }
-                }
-            }
-        }
+    //                    SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
+    //                    SpanConvType sc(sg, blend);
+    //                    RendererType ri(renBase,gr.m_allocator,sg);
+    //                    agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
+    //                }
+    //                else
+    //                {
+    //                    typedef agg::span_image_filter_rgba<img_source_type,Interpolator> SpanGenType;
+    //                    typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
+				//		typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
+    //                    SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
+    //                    SpanConvType sc(sg, blend);
+				//		RendererType ri(renBase,gr.m_allocator,sg);
+    //                    agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
+    //                }
+    //            }
+    //        }
+    //    }
     }
 };
 

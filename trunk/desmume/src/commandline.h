@@ -41,7 +41,6 @@ public:
 	std::string play_movie_file;
 	std::string record_movie_file;
 	int arm9_gdb_port, arm7_gdb_port;
-	int single_core;
 	int start_paused;
 	std::string cflash_image;
 	std::string cflash_path;
@@ -68,6 +67,13 @@ public:
 
 	GError *error;
 	GOptionContext *ctx;
+
+private:
+	char* _play_movie_file;
+	char* _record_movie_file;
+	char* _cflash_image;
+	char* _cflash_path;
+	int _single_core;
 };
 
 #endif

@@ -515,7 +515,7 @@ u8 WIFI_getBB_DATA(wifimac_t *wifi)
 
 void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
 {
-	wifi->bbDataToWrite = (val & 0xFF);
+	wifi->bbDataToWrite = (val);
 //	if ((wifi->bbIOCnt.bits.mode != 1) || !(wifi->bbIOCnt.bits.enable)) return ; /* not for write or disabled */
 //    wifi->BB.data[wifi->bbIOCnt.bits.address] = val ;
 }
@@ -880,7 +880,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
             WIFI_setBB_CNT(wifi,val) ;
 			break ;
 		case REG_WIFI_BBSIOWRITE:
-            WIFI_setBB_DATA(wifi,val) ;
+            WIFI_setBB_DATA(wifi,val&0xFF) ;
 			break ;
 		case REG_WIFI_RXBUF_COUNT:
 			wifi->RXBufCount = val & 0x0FFF ;
@@ -1077,13 +1077,13 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 		case REG_WIFI_EXTRACOUNT:
 			return wifi->eCount ;
 		case REG_WIFI_USCOMPARE0:
-			return (wifi->usec & 0xFFFF);
+			return (u16)wifi->usec;
 		case REG_WIFI_USCOMPARE1:
-			return ((wifi->usec >> 16) & 0xFFFF);
+			return (u16)(wifi->usec >> 16);
 		case REG_WIFI_USCOMPARE2:
-			return ((wifi->usec >> 32) & 0xFFFF);
+			return (u16)(wifi->usec >> 32);
 		case REG_WIFI_USCOMPARE3:
-			return ((wifi->usec >> 48) & 0xFFFF);
+			return (u16)(wifi->usec >> 48);
 		case REG_WIFI_POWER_US:
 			return wifi->crystalEnabled?0:1 ;
 		case REG_WIFI_CIRCBUFRD_END:
@@ -1112,8 +1112,6 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 
 void WIFI_usTrigger(wifimac_t *wifi)
 {
-	u8 dataBuffer[0x2000] ; 
-	u16 rcvSize ;
 	if (wifi->crystalEnabled)
 	{
 		/* a usec (=3F03 cycles) has passed */

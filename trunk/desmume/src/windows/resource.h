@@ -170,6 +170,7 @@
 #define IDM_RENDER_SUPEREAGLE			555
 #define IDM_RENDER_SCANLINE				556
 #define IDM_RENDER_BILINEAR				557
+#define IDM_RENDER_NEAREST2X			558
 #define IDD_IO_REG                      601
 #define IDM_RECORD_MOVIE                602
 #define IDM_PLAY_MOVIE                  603

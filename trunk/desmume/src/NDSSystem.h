@@ -386,6 +386,7 @@ extern struct TCommonSettings {
 		, spuAdpcmCache(false)
 		, gfx3d_flushMode(0)
 		, manualBackupType(0)
+		, single_core(true)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -405,6 +406,8 @@ extern struct TCommonSettings {
 	bool BootFromFirmware;
 
 	bool DebugConsole;
+
+	bool single_core;
 	
 	int wifiBridgeAdapterNum;
 

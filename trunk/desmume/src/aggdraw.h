@@ -39,10 +39,185 @@
 #include "agg_renderer_outline_aa.h"
 #include "agg_renderer_markers.h"
 
+#include "agg_pixfmt_rgb.h"
+#include "agg_pixfmt_rgba.h"
+#include "agg_pixfmt_rgb_packed.h"
+
 #include "agg2d.h"
 
 typedef agg::rgba8 AggColor;
 
+namespace agg
+{
+	//NOTE - these blenders are necessary to change the rgb order from the defaults, which are incorrect for us
+
+	//this custom blender does more correct blending math than the default
+	//which is necessary or else drawing transparent pixels on (31,31,31) will yield (30,30,30)
+    struct my_blender_rgb555_pre
+    {
+        typedef rgba8 color_type;
+        typedef color_type::value_type value_type;
+        typedef color_type::calc_type calc_type;
+        typedef int16u pixel_type;
+
+        static AGG_INLINE void blend_pix(pixel_type* p, 
+                                         unsigned cr, unsigned cg, unsigned cb,
+                                         unsigned alpha, 
+                                         unsigned cover)
+        {
+			//not sure whether this is right...
+            alpha = color_type::base_mask - alpha;
+            pixel_type rgb = *p;
+            calc_type b = (rgb >> 10) & 31;
+            calc_type g = (rgb >> 5) & 31;
+            calc_type r = (rgb ) & 31;
+			b = ((b+1)*(alpha+1) + (cb)*(cover)-1)>>8;
+			g = ((g+1)*(alpha+1) + (cg)*(cover)-1)>>8;
+			r = ((r+1)*(alpha+1) + (cr)*(cover)-1)>>8;
+			*p = (b<<10)|(g<<5)|r;
+        }
+
+        static AGG_INLINE pixel_type make_pix(unsigned r, unsigned g, unsigned b)
+        {
+            return (pixel_type)(((b & 0xF8) << 7) | 
+                                ((g & 0xF8) << 2) | 
+                                 (r >> 3) | 0x8000);
+        }
+
+        static AGG_INLINE color_type make_color(pixel_type p)
+        {
+            return color_type((p << 3) & 0xF8,
+                              (p >> 2) & 0xF8, 
+                              (p >> 7) & 0xF8);
+        }
+    };
+
+	 struct my_blender_rgb555
+    {
+        typedef rgba8 color_type;
+        typedef color_type::value_type value_type;
+        typedef color_type::calc_type calc_type;
+        typedef int16u pixel_type;
+
+        static AGG_INLINE void blend_pix(pixel_type* p, 
+                                         unsigned cr, unsigned cg, unsigned cb,
+                                         unsigned alpha, 
+                                         unsigned)
+        {
+            pixel_type rgb = *p;
+            calc_type b = (rgb >> 7) & 0xF8;
+            calc_type g = (rgb >> 2) & 0xF8;
+            calc_type r = (rgb << 3) & 0xF8;
+            *p = (pixel_type)
+               (((((cb - b) * alpha + (b << 8)) >> 1)  & 0x7C00) |
+                ((((cg - g) * alpha + (g << 8)) >> 6)  & 0x03E0) |
+                 (((cr - r) * alpha + (r << 8)) >> 11) | 0x8000);
+        }
+
+        static AGG_INLINE pixel_type make_pix(unsigned r, unsigned g, unsigned b)
+        {
+            return (pixel_type)(((b & 0xF8) << 7) | 
+                                ((g & 0xF8) << 2) | 
+                                 (r >> 3) | 0x8000);
+        }
+
+        static AGG_INLINE color_type make_color(pixel_type p)
+        {
+            return color_type((p << 3) & 0xF8,
+                              (p >> 2) & 0xF8, 
+                              (p >> 7) & 0xF8);
+			
+        }
+    };
+
+	 //this is a prototype span generator which should be able to generate 8888 and 555 spans
+	 //it would be used in agg2d.inl renderImage()
+	 //but it isn't being used yet.
+	 //this will need to be completed before we can use 555 as a source imge
+    template<class Order> class span_simple_blur_rgb24
+    {
+    public:
+        //--------------------------------------------------------------------
+        typedef rgba8 color_type;
+        
+        //--------------------------------------------------------------------
+        span_simple_blur_rgb24() : m_source_image(0) {}
+
+        //--------------------------------------------------------------------
+        span_simple_blur_rgb24(const rendering_buffer& src) : 
+            m_source_image(&src) {}
+
+        //--------------------------------------------------------------------
+        void source_image(const rendering_buffer& src) { m_source_image = &src; }
+        const rendering_buffer& source_image() const { return *m_source_image; }
+
+        //--------------------------------------------------------------------
+        void prepare() {}
+
+        //--------------------------------------------------------------------
+        void generate(color_type* span, int x, int y, int len)
+        {
+            if(y < 1 || y >= int(m_source_image->height() - 1))
+            {
+                do
+                {
+                    *span++ = rgba8(0,0,0,0);
+                }
+                while(--len);
+                return;
+            }
+
+            do
+            {
+                int color[4];
+                color[0] = color[1] = color[2] = color[3] = 0;
+                if(x > 0 && x < int(m_source_image->width()-1))
+                {
+                    int i = 3;
+                    do
+                    {
+                        const int8u* ptr = m_source_image->row_ptr(y - i + 2) + (x - 1) * 3;
+
+                        color[0] += *ptr++;
+                        color[1] += *ptr++;
+                        color[2] += *ptr++;
+                        color[3] += 255;
+
+                        color[0] += *ptr++;
+                        color[1] += *ptr++;
+                        color[2] += *ptr++;
+                        color[3] += 255;
+
+                        color[0] += *ptr++;
+                        color[1] += *ptr++;
+                        color[2] += *ptr++;
+                        color[3] += 255;
+                    }
+                    while(--i);
+                    color[0] /= 9;
+                    color[1] /= 9;
+                    color[2] /= 9;
+                    color[3] /= 9;
+                }
+                *span++ = rgba8(color[Order::R], color[Order::G], color[Order::B], color[3]);
+                ++x;
+            }
+            while(--len);
+        }
+
+    private:
+        const rendering_buffer* m_source_image;
+    };
+
+	typedef pixfmt_alpha_blend_rgb_packed<my_blender_rgb555_pre, rendering_buffer> my_pixfmt_rgb555_pre; //----pixfmt_rgb555_pre
+
+	typedef pixfmt_alpha_blend_rgb_packed<my_blender_rgb555, rendering_buffer> my_pixfmt_rgb555; //----pixfmt_rgb555_pre
+}
+
+
+
+typedef PixFormatSetDeclaration<agg::my_pixfmt_rgb555,agg::my_pixfmt_rgb555_pre,agg::span_simple_blur_rgb24<agg::order_rgba> > T_AGG_PF_RGB555;
+typedef PixFormatSetDeclaration<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre,agg::span_simple_blur_rgb24<agg::order_rgba> > T_AGG_PF_RGBA;
 class AggDrawTarget
 {
 public:
@@ -60,6 +235,12 @@ public:
 	bool empty;
 
 	virtual void clear() = 0;
+
+	virtual agg::rendering_buffer & buf() = 0;
+
+	//returns an image for this target. you must provide the pixel type, but if it is wrong,
+	//then you have just created trouble for yourself
+	AGG2D_IMAGE_TEMPLATE TIMAGE image() { return TIMAGE(buf()); }
 
     // Setup
 	virtual void  attach(unsigned char* buf, unsigned width, unsigned height, int stride) = 0;
@@ -112,6 +293,9 @@ public:
     virtual void lineColor(AggColor c) = 0;
     virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
     virtual void noLine() = 0;
+
+	virtual void transformImage(const Agg2DBase::Image<T_AGG_PF_RGBA> &img, double dstX1, double dstY1, double dstX2, double dstY2) = 0;
+	//virtual void transformImage(const Agg2DBase::Image<T_AGG_PF_RGB555> &img, double dstX1, double dstY1, double dstX2, double dstY2) = 0;
 
     virtual AggColor fillColor() = 0;
     virtual AggColor lineColor() = 0;
@@ -265,6 +449,9 @@ public:
 		}
 	}
 
+	virtual agg::rendering_buffer & buf() { return BASE::buf(); }
+	typename BASE::MyImage image() { return BASE::MyImage(buf()); }
+
     // Setup
 	virtual void  attach(unsigned char* buf, unsigned width, unsigned height, int stride) {BASE::attach(buf, width, height, stride);};
 //	virtual void  attach(Agg2DBase::Image& img) {attach(img);};
@@ -342,6 +529,9 @@ public:
 
 	virtual void fillEvenOdd(bool evenOddFlag) {BASE::fillEvenOdd(evenOddFlag);};
 	virtual bool fillEvenOdd() {return BASE::fillEvenOdd();};
+
+	virtual void transformImage(const Agg2DBase::Image<T_AGG_PF_RGBA>& img, double dstX1, double dstY1, double dstX2, double dstY2) { BASE::transformImage(img,dstX1,dstY1,dstX2,dstY2); }
+	//virtual void transformImage(const Agg2DBase::Image<T_AGG_PF_RGB555> &img, double dstX1, double dstY1, double dstX2, double dstY2)  { BASE::transformImage(img,dstX1,dstY1,dstX2,dstY2); }
 
     // Transformations
 	virtual Agg2DBase::Transformations transformations() {return BASE::transformations();};
@@ -433,6 +623,11 @@ public:
     virtual double deg2Rad(double v) { return v * agg::pi / 180.0; }
     virtual double rad2Deg(double v) { return v * 180.0 / agg::pi; }
 };
+
+//the main aggdraw targets for different pixel formats
+typedef AggDrawTargetImplementation<T_AGG_PF_RGB555> T_AGG_RGB555;
+typedef AggDrawTargetImplementation<T_AGG_PF_RGBA> T_AGG_RGBA;
+
 
 class AggDraw
 {

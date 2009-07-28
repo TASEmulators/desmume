@@ -584,6 +584,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\video.h"
+				>
+			</File>
+			<File
 				RelativePath=".\windriver.h"
 				>
 			</File>
