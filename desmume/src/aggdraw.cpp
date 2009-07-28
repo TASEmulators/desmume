@@ -35,10 +35,6 @@
 #include "agg_path_storage.h"
 #include "agg_color_rgba.h"
 
-#include "agg_pixfmt_rgb.h"
-#include "agg_pixfmt_rgba.h"
-#include "agg_pixfmt_rgb_packed.h"
-
 #include "agg_rasterizer_scanline_aa.h"
 #include "agg_scanline_u.h"
 #include "agg_renderer_scanline.h"
@@ -62,98 +58,6 @@
 #include "agg_span_image_filter_gray.h"
 
 #include "agg_span_allocator.h"
-
-namespace agg
-{
-	//NOTE - these blenders are necessary to change the rgb order from the defaults, which are incorrect for us
-
-	//this custom blender does more correct blending math than the default
-	//which is necessary or else drawing transparent pixels on (31,31,31) will yield (30,30,30)
-    struct my_blender_rgb555_pre
-    {
-        typedef rgba8 color_type;
-        typedef color_type::value_type value_type;
-        typedef color_type::calc_type calc_type;
-        typedef int16u pixel_type;
-
-        static AGG_INLINE void blend_pix(pixel_type* p, 
-                                         unsigned cr, unsigned cg, unsigned cb,
-                                         unsigned alpha, 
-                                         unsigned cover)
-        {
-			//not sure whether this is right...
-            alpha = color_type::base_mask - alpha;
-            pixel_type rgb = *p;
-            calc_type b = (rgb >> 10) & 31;
-            calc_type g = (rgb >> 5) & 31;
-            calc_type r = (rgb ) & 31;
-			b = ((b+1)*(alpha+1) + (cb)*(cover)-1)>>8;
-			g = ((g+1)*(alpha+1) + (cg)*(cover)-1)>>8;
-			r = ((r+1)*(alpha+1) + (cr)*(cover)-1)>>8;
-			*p = (b<<10)|(g<<5)|r;
-        }
-
-        static AGG_INLINE pixel_type make_pix(unsigned r, unsigned g, unsigned b)
-        {
-            return (pixel_type)(((b & 0xF8) << 7) | 
-                                ((g & 0xF8) << 2) | 
-                                 (r >> 3) | 0x8000);
-        }
-
-        static AGG_INLINE color_type make_color(pixel_type p)
-        {
-            return color_type((p << 3) & 0xF8,
-                              (p >> 2) & 0xF8, 
-                              (p >> 7) & 0xF8);
-        }
-    };
-
-	 struct my_blender_rgb555
-    {
-        typedef rgba8 color_type;
-        typedef color_type::value_type value_type;
-        typedef color_type::calc_type calc_type;
-        typedef int16u pixel_type;
-
-        static AGG_INLINE void blend_pix(pixel_type* p, 
-                                         unsigned cr, unsigned cg, unsigned cb,
-                                         unsigned alpha, 
-                                         unsigned)
-        {
-            pixel_type rgb = *p;
-            calc_type b = (rgb >> 7) & 0xF8;
-            calc_type g = (rgb >> 2) & 0xF8;
-            calc_type r = (rgb << 3) & 0xF8;
-            *p = (pixel_type)
-               (((((cb - b) * alpha + (b << 8)) >> 1)  & 0x7C00) |
-                ((((cg - g) * alpha + (g << 8)) >> 6)  & 0x03E0) |
-                 (((cr - r) * alpha + (r << 8)) >> 11) | 0x8000);
-        }
-
-        static AGG_INLINE pixel_type make_pix(unsigned r, unsigned g, unsigned b)
-        {
-            return (pixel_type)(((b & 0xF8) << 7) | 
-                                ((g & 0xF8) << 2) | 
-                                 (r >> 3) | 0x8000);
-        }
-
-        static AGG_INLINE color_type make_color(pixel_type p)
-        {
-            return color_type((p << 3) & 0xF8,
-                              (p >> 2) & 0xF8, 
-                              (p >> 7) & 0xF8);
-			
-        }
-    };
-
-
-	typedef pixfmt_alpha_blend_rgb_packed<my_blender_rgb555_pre, rendering_buffer> my_pixfmt_rgb555_pre; //----pixfmt_rgb555_pre
-
-	typedef pixfmt_alpha_blend_rgb_packed<my_blender_rgb555, rendering_buffer> my_pixfmt_rgb555; //----pixfmt_rgb555_pre
-}
-
-
-
 
 typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
 static TAgg_Font_Table font_table;
@@ -216,10 +120,6 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
-
-typedef AggDrawTargetImplementation<PixFormatSetDeclaration<agg::my_pixfmt_rgb555,agg::my_pixfmt_rgb555_pre> > T_AGG_RGB555;
-typedef AggDrawTargetImplementation<PixFormatSetDeclaration<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre> > T_AGG_RGBA;
-
 T_AGG_RGB555 agg_targetScreen(GPU_screen, 256, 384, 512);
 
 static u32 luaBuffer[256*192*2];
@@ -230,17 +130,27 @@ T_AGG_RGBA agg_targetHud((u8*)hudBuffer, 256, 384, 1024);
 
 static AggDrawTarget* targets[] = {
 	&agg_targetScreen,
-	&agg_targetScreen, //THATS RIGHT! for now, hud maps to screen
+	&agg_targetHud,
 	&agg_targetLua,
 };
 
 void Agg_init()
 {
 	Agg_init_fonts();
-	aggDraw.target = targets[0];
 	aggDraw.screen = targets[0];
 	aggDraw.hud = targets[1];
 	aggDraw.lua = targets[2];
+
+	aggDraw.target = targets[0];
+
+	//if we're single core, we don't want to waste time compositing
+	if(CommonSettings.single_core)
+		aggDraw.hud = &agg_targetScreen;
+
+	//and the more clever compositing isnt supported in non-windows
+	#ifndef WIN32
+	aggDraw.hud = &agg_targetScreen;
+	#endif
 
 	aggDraw.hud->setFont("verdana18_bold");
 }
@@ -250,27 +160,7 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 	target = targets[newTarget];
 }
 
-//this code would do compositing.. and maybe it will.. one day. but not for now.
-//void AggDraw_Desmume::composite(void* dest)
-//{
-//	T_AGG_RGB555 target((u8*)dest, 256, 384, 512);
-//
-//	ctr = 0;
-//
-//	//if lua is nonempty, blend it
-//	if(!agg_targetLua.empty)
-//	{
-//		T_AGG_RGBA::MyImage luaImage(agg_targetLua.buf());
-//		target.transformImage(luaImage, 0,40,256-1,384-1);
-//	}
-//
-//	//if hud is nonempty, blend it
-//	if(!agg_targetHud.empty)
-//	{
-//		T_AGG_RGBA::MyImage hudImage(agg_targetHud.buf());
-//		target.transformImage(hudImage, 0,0,256-1,384-1);
-//	}
-//}
+
 
 ////temporary, just for testing the lib
 //void AGGDraw() {

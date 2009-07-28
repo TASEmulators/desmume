@@ -28,6 +28,7 @@
 #include "types.h"
 #include "movie.h"
 #include "addons.h"
+#include "NDSSystem.h"
 
 int scanline_filter_a = 2, scanline_filter_b = 4;
 
@@ -35,10 +36,14 @@ CommandLine::CommandLine()
 : error(NULL)
 , ctx(g_option_context_new (""))
 , is_cflash_configured(false)
+, _single_core(0)
+, _play_movie_file(0)
+, _record_movie_file(0)
+, _cflash_image(0)
+, _cflash_path(0)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
-	single_core = 0;
 	start_paused = FALSE;
 }
 
@@ -47,11 +52,6 @@ CommandLine::~CommandLine()
 	if(error) g_error_free (error);
 	g_option_context_free (ctx);
 }
-
-static const char* _play_movie_file;
-static const char* _record_movie_file;
-static const char* _cflash_image;
-static const char* _cflash_path;
 
 void CommandLine::loadCommonOptions()
 {
@@ -67,7 +67,7 @@ void CommandLine::loadCommonOptions()
 		{ "cflash-image", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_image, "Requests cflash in gbaslot with fat image at this path", "CFLASH_IMAGE"},
 		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
 #ifdef _MSC_VER
-		{ "single-core", 0, 0, G_OPTION_ARG_NONE, &single_core, "Limit execution to use approximately only one core", "NUM_CORES"},
+		{ "single-core", 0, 0, G_OPTION_ARG_NONE, &_single_core, "Limit execution to use approximately only one core", "NUM_CORES"},
 		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (edge) (default 2)", "SCANLINE_FILTER_A"},
 		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
 #endif
@@ -95,6 +95,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_cflash_image) cflash_image = _cflash_image;
 	if(_cflash_path) cflash_path = _cflash_path;
 
+	CommonSettings.single_core = _single_core!=0;
 
 	if (argc == 2)
 		nds_file = argv[1];

@@ -648,17 +648,18 @@ int CreateDDrawBuffers()
 	ddsd.dwWidth         = video.rotatedwidth();
 	ddsd.dwHeight        = video.rotatedheight();
 
-		if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
+	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
 
-		if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
+	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
 
-		if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
-		if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
+	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
+	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
 
-		return 1;
+	return 1;
 }
 
-template<typename T, int bpp> static T convert(u16 val)
+
+template<typename T, int bpp> static T realConvert(u16 val)
 {
 	switch(bpp)
 	{
@@ -670,11 +671,26 @@ template<typename T, int bpp> static T convert(u16 val)
 	}
 }
 
+
+template<typename T, int bpp> static FORCEINLINE T ddconvert(u32 val)
+{
+	//not supported yet, needs to drop from 32 to 16
+	return val;
+	//switch(bpp)
+	//{
+	//	case 24: case 32:
+	//		return RGB15TO24_REVERSE(val);
+	//	case 16: return RGB15TO16_REVERSE(val);
+	//	default:
+	//		return 0;
+	//}
+}
+
 template<typename T, int bpp> static void doRotate(void* dst)
 {
 	u8* buffer = (u8*)dst;
 	int size = video.size();
-	u16* src = video.finalBuffer();
+	u32* src = video.filteredbuffer32bpp;
 	switch(video.rotation)
 	{
 	case 0:
@@ -684,10 +700,10 @@ template<typename T, int bpp> static void doRotate(void* dst)
 			{
 				if(video.rotation==180)
 					for(int i = 0, j=size-1; j>=0; i++,j--)
-						((T*)buffer)[i] = convert<T,bpp>((src)[j]);
+						((T*)buffer)[i] = ddconvert<T,bpp>((src)[j]);
 				else
 					for(int i = 0; i < size; i++)
-						((T*)buffer)[i] = convert<T,bpp>(src[i]);
+						((T*)buffer)[i] = ddconvert<T,bpp>(src[i]);
 			}
 			else
 			{
@@ -695,7 +711,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 					for(int y = 0; y < video.height; y++)
 					{
 						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = convert<T,bpp>(src[video.height*video.width - (y * video.width) - x - 1]);
+							((T*)buffer)[x] = ddconvert<T,bpp>(src[video.height*video.width - (y * video.width) - x - 1]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -703,7 +719,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 					for(int y = 0; y < video.height; y++)
 					{
 						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = convert<T,bpp>(src[(y * video.width) + x]);
+							((T*)buffer)[x] = ddconvert<T,bpp>(src[(y * video.width) + x]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -717,7 +733,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 				for(int y = 0; y < video.width; y++)
 				{
 					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = convert<T,bpp>(src[(((video.height-1)-x) * video.width) + y]);
+						((T*)buffer)[x] = ddconvert<T,bpp>(src[(((video.height-1)-x) * video.width) + y]);
 
 					buffer += ddsd.lPitch;
 				}
@@ -725,7 +741,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 				for(int y = 0; y < video.width; y++)
 				{
 					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = convert<T,bpp>(src[((x) * video.width) + (video.width-1) - y]);
+						((T*)buffer)[x] = ddconvert<T,bpp>(src[((x) * video.width) + (video.width-1) - y]);
 
 					buffer += ddsd.lPitch;
 				}
@@ -807,19 +823,54 @@ static void DD_DoDisplay()
 
 //tripple buffering logic
 u16 displayBuffers[3][256*192*4];
-int currDisplayBuffer=-1;
-int newestDisplayBuffer=-2;
+volatile int currDisplayBuffer=-1;
+volatile int newestDisplayBuffer=-2;
 GMutex *display_mutex = NULL;
 GThread *display_thread = NULL;
 
-//does a single display work unit. only to be used from the display thread
-static void DoDisplay()
+static void DoDisplay_DrawHud()
 {
 	osd->update();
 	DrawHUD();
-	video.filter();
-	DD_DoDisplay();
 	osd->clear();
+}
+
+//does a single display work unit. only to be used from the display thread
+static void DoDisplay(bool firstTime)
+{
+	if(firstTime)
+	{
+		//on single core systems, draw straight to the screen
+		//we only do this once per emulated frame because we don't want to waste time redrawing
+		//on such lousy computers
+		if(CommonSettings.single_core)
+		{
+			aggDraw.hud->attach(video.srcBuffer, 256, 384, 512);
+			DoDisplay_DrawHud();
+		}
+		
+		//apply user's filter
+		video.filter();
+	}
+
+	//convert pixel format to 32bpp for compositing
+	//why do we do this over and over? well, we are compositing to 
+	//filteredbuffer32bpp, and it needs to get refreshed each frame..
+	const int size = video.size();
+	u16* src = video.finalBuffer();
+	for(int i=0;i<size;i++)
+		video.filteredbuffer32bpp[i] = RGB15TO24_REVERSE(src[i]);
+	
+	if(!CommonSettings.single_core)
+	{
+		//draw and composite the OSD (but not if we are drawing osd straight to screen)
+		DoDisplay_DrawHud();
+		T_AGG_RGBA target((u8*)video.filteredbuffer32bpp, video.width,video.height,video.width*4);
+		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0,0,video.width-1,video.height-1);
+		aggDraw.hud->clear();
+	}
+	
+	DD_DoDisplay();
 }
 
 void displayProc()
@@ -832,17 +883,18 @@ void displayProc()
 
 	g_mutex_unlock(display_mutex);
 	
-	//nothing to display. give up.
-	if(alreadyDisplayed) return;
+	//something new to display:
+	if(!alreadyDisplayed) {
+		//start displaying a new buffer
+		currDisplayBuffer = todo;
+		video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer];
 
-	//start displaying a new buffer
-	currDisplayBuffer = todo;
-
-	video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer];
-
-	aggDraw.hud->attach(video.srcBuffer, 256, 384, 512);
-
-	DoDisplay();
+		DoDisplay(true);
+	}
+	else
+	{
+		DoDisplay(false);
+	}
 }
 
 
@@ -856,40 +908,44 @@ void displayThread(void*)
 
 void Display()
 {
-	if(display_thread == NULL)
+	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+
+	if(CommonSettings.single_core)
 	{
-		display_mutex = g_mutex_new();
-		display_thread = g_thread_create( (GThreadFunc)displayThread,
-                                         NULL,
-                                         TRUE,
-                                         NULL);
+		video.srcBuffer = (u8*)GPU_screen;
+		DoDisplay(true);
 	}
+	else
+	{
+		if(display_thread == NULL)
+		{
+			display_mutex = g_mutex_new();
+			display_thread = g_thread_create( (GThreadFunc)displayThread,
+											 NULL,
+											 TRUE,
+											 NULL);
+		}
 
-	g_mutex_lock(display_mutex);
+		g_mutex_lock(display_mutex);
 
-	//huh... i wonder if there is a less ugly way to do this
-	if(currDisplayBuffer == 0)
-		if(newestDisplayBuffer == 1)
-			newestDisplayBuffer = 2;
-		else newestDisplayBuffer = 1;
-	else if(currDisplayBuffer == 1)
-		if(newestDisplayBuffer == 2)
-			newestDisplayBuffer = 0;
-		else newestDisplayBuffer = 2;
-	else //if(currDisplayBuffer == 1)
-		if(newestDisplayBuffer == 0)
-			newestDisplayBuffer = 1;
-		else newestDisplayBuffer = 0;
+		//huh... i wonder if there is a less ugly way to do this
+		if(currDisplayBuffer == 0)
+			if(newestDisplayBuffer == 1)
+				newestDisplayBuffer = 2;
+			else newestDisplayBuffer = 1;
+		else if(currDisplayBuffer == 1)
+			if(newestDisplayBuffer == 2)
+				newestDisplayBuffer = 0;
+			else newestDisplayBuffer = 2;
+		else //if(currDisplayBuffer == 1)
+			if(newestDisplayBuffer == 0)
+				newestDisplayBuffer = 1;
+			else newestDisplayBuffer = 0;
 
-	memcpy(displayBuffers[newestDisplayBuffer],GPU_screen,256*192*4);
+		memcpy(displayBuffers[newestDisplayBuffer],GPU_screen,256*192*4);
 
-	g_mutex_unlock(display_mutex);
-
-	//the no-multithreading codepath
-	//but based on my research, this runs just fine on a single core system due to the generous
-	//sleep in the display loop
-	//video.srcBuffer = (u8*)GPU_screen;
-	//doDisplay();
+		g_mutex_unlock(display_mutex);
+	}
 }
 
 
@@ -1416,7 +1472,6 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 
 int _main()
 {
-	Desmume_InitOnce();
 	InitDecoder();
 
 #ifdef WX_STUB
@@ -1522,7 +1577,19 @@ int _main()
 		return 1;
 	}
 
-	if(cmdline.single_core)
+	//try and detect this for users who didn't specify it on the commandline
+	//(can't say I really blame them)
+	//this helps give a substantial speedup for singlecore users
+	SYSTEM_INFO systemInfo;
+	GetSystemInfo(&systemInfo);
+	if(systemInfo.dwNumberOfProcessors==1)
+		CommonSettings.single_core = true;
+
+	Desmume_InitOnce();
+
+	//in case this isnt actually a singlecore system, but the user requested it
+	//then restrict ourselves to one core
+	if(CommonSettings.single_core)
 		SetProcessAffinityMask(GetCurrentProcess(),1);
 
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
@@ -2610,6 +2677,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, video.currentfilter == video.SUPEREAGLE );
 			MainWindow->checkMenu(IDM_RENDER_SCANLINE, video.currentfilter == video.SCANLINE );
 			MainWindow->checkMenu(IDM_RENDER_BILINEAR, video.currentfilter == video.BILINEAR );
+			MainWindow->checkMenu(IDM_RENDER_NEAREST2X, video.currentfilter == video.NEAREST2X );
 
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
@@ -2981,6 +3049,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		case IDM_RENDER_BILINEAR:
 			video.setfilter(video.BILINEAR);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_NEAREST2X:
+			video.setfilter(video.NEAREST2X);
 			FilterUpdate(hwnd);
 			break;
 		case IDM_STATE_LOAD:

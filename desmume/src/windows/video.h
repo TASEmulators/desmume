@@ -14,6 +14,7 @@ public:
 
 	u8* srcBuffer;
 	CACHE_ALIGN u8 filteredbuffer[4*256*192*4];
+	CACHE_ALIGN u32 filteredbuffer32bpp[4*256*192*2];
 
 	enum {
 		NONE,
@@ -22,7 +23,8 @@ public:
 		SUPER2XSAI,
 		SUPEREAGLE,
 		SCANLINE,
-		BILINEAR
+		BILINEAR,
+		NEAREST2X
 	};
 
 
@@ -91,6 +93,9 @@ public:
 				break;
 			case BILINEAR:
 				RenderBilinear(src, dst);
+				break;
+			case NEAREST2X:
+				RenderNearest2X(src,dst);
 				break;
 		}
 	}

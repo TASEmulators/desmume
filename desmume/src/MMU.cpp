@@ -2087,7 +2087,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				   MMU.AUX_SPI_CMD = val & 0xFF;
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command(val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val));
 				return;
 
 			case REG_DISPA_BG0CNT :
@@ -3025,7 +3025,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				   MMU.AUX_SPI_CMD = val & 0xFF;
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command(val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val));
 			return;
 
 			case REG_SPICNT :
@@ -3082,7 +3082,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									}
 									else
 									{
-										MMU.powerMan_Reg[MMU.powerMan_CntReg & 0x3] = val;
+										MMU.powerMan_Reg[MMU.powerMan_CntReg & 0x3] = (u8)val;
 									}
 
 									MMU.powerMan_CntRegWritten = FALSE;
@@ -3096,7 +3096,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 								T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
 								break;
 							}
-							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, val));
+							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, (u8)val));
 						return;
 						
 						case 2 :

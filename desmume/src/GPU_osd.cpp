@@ -36,10 +36,14 @@
 #include "NDSSystem.h"
 #include "mic.h"
 #include "saves.h"
+#include "glib.h"
 
 bool HudEditorMode = false;
 OSDCLASS	*osd = NULL;
 HudStruct Hud;
+
+//contains a timer to be used for well-timed hud components
+static s64 hudTimer;
 
 static void SetHudDummy (HudCoordinates *hud)
 {
@@ -177,16 +181,19 @@ static void TouchDisplay() {
 }
 
 static int previousslot = 0;
-static int fadecounter;
 static char number[10];
+static s64 slotTimer=0;
 
 static void DrawStateSlots(){
 
 	const int yloc = Hud.SavestateSlots.y; //160
 	const int xloc = Hud.SavestateSlots.x; //8
 
+	s64 fadecounter = 512 - (hudTimer-slotTimer)/4; //change constant to alter fade speed
+	if(fadecounter < 1) fadecounter = 0;
+	if(fadecounter>255) fadecounter = 255;
 
-	int alpha = fadecounter;
+	int alpha = (int)fadecounter;
 	if(HudEditorMode)
 		alpha = 255;
 
@@ -214,17 +221,19 @@ static void DrawStateSlots(){
 		}
 	}
 
-	if(lastSaveState != previousslot) fadecounter = 256;
-	previousslot = lastSaveState;
-	fadecounter--;
+	if(lastSaveState != previousslot)
+		slotTimer = hudTimer;
 
-	if(fadecounter < 1) fadecounter = 0;
+	previousslot = lastSaveState;
 }
-#ifdef WIN32
-#include "lua-engine.h"
-#endif
+
 void DrawHUD()
 {
+	GTimeVal time;
+	g_get_current_time(&time);
+	hudTimer = ((s64)time.tv_sec * 1000) + ((s64)time.tv_usec/1000);
+
+	
 	if (CommonSettings.hud.ShowInputDisplay) 
 	{
 		std::stringstream ss;
@@ -260,9 +269,7 @@ void DrawHUD()
 		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 	}
 	#endif
-#ifdef WIN32
-	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
-#endif
+
 	DrawStateSlots();
 }
 
