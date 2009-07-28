@@ -827,6 +827,7 @@ volatile int currDisplayBuffer=-1;
 volatile int newestDisplayBuffer=-2;
 GMutex *display_mutex = NULL;
 GThread *display_thread = NULL;
+volatile bool display_die = false;
 
 static void DoDisplay_DrawHud()
 {
@@ -901,9 +902,16 @@ void displayProc()
 void displayThread(void*)
 {
 	for(;;) {
+		if(display_die) return;
 		displayProc();
 		Sleep(10); //don't be greedy and use a whole cpu core, but leave room for 60fps 
 	}
+}
+
+void KillDisplay()
+{
+	display_die = true;
+	g_thread_join(display_thread);
 }
 
 void Display()
@@ -1185,10 +1193,6 @@ fps=0;
 		Sleep(100);
 	}
 
-	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
-	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
-	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
-	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
 	return 1;
 }
 
@@ -1889,6 +1893,13 @@ int _main()
 	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
 
 	delete MainWindow;
+
+	KillDisplay();
+
+	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
+	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
+	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
+	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
 
 	return 0;
 }
