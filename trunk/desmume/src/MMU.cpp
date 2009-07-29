@@ -1262,7 +1262,7 @@ void FASTCALL MMU_doDMA(u32 num)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	if (MMU.DMAStartTime[PROCNUM][num]== EDMAMode_GXFifo)
 	{
-		if (gxFIFO.tail > 127) return;
+		if (gxFIFO.size > 127) return;
 	}
 #endif
 	
@@ -1344,7 +1344,7 @@ void FASTCALL MMU_doDMA(u32 num)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 				if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
 				{
-					if ( gxFIFO.tail > 255)
+					if ( gxFIFO.size > 255 )
 					{
 						if (i >= taille) break;
 

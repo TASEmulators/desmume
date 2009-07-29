@@ -50,7 +50,9 @@ typedef struct
 	u8		cmd[257];
 	u32		param[257];
 
+	u16		pos;		// start position
 	u16		tail;		// tail
+	u16		size;		// size FIFO buffer
 } GFX_FIFO;
 
 typedef struct
@@ -58,7 +60,9 @@ typedef struct
 	u8		cmd[5];
 	u32		param[5];
 
+	u8		pos;
 	u8		tail;
+	u8		size;
 } GFX_PIPE;
 
 extern GFX_PIPE gxPIPE;
@@ -66,6 +70,7 @@ extern GFX_FIFO gxFIFO;
 extern void GFX_PIPEclear();
 extern void GFX_FIFOclear();
 extern void GFX_FIFOsend(u8 cmd, u32 param);
+extern BOOL GFX_FIFOrecv(u8 *cmd, u32 *param);
 extern BOOL GFX_PIPErecv(u8 *cmd, u32 *param);
 extern void GFX_FIFOcnt(u32 val);
 
