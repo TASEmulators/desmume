@@ -1545,6 +1545,8 @@ int _main()
 	ForceRatio = GetPrivateProfileBool("Video","Window Force Ratio", 1, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
+	if(WndX < -10000) WndX = CW_USEDEFAULT; // fix for missing window problem
+	if(WndY < -10000) WndY = CW_USEDEFAULT; // (happens if you close desmume while it's minimized)
 	video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
 	video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
 	
