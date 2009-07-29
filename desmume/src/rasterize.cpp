@@ -973,50 +973,79 @@ static void SoftRastVramReconfigureSignal() {
 
 static void SoftRastFramebufferProcess()
 {
-	//this is not very accurate. taking it out for now
-	//if(gfx3d.enableEdgeMarking)
-	//{ 
-	//	u8 clearPolyid = ((gfx3d.clearColor>>24)&0x3F)>>3;
+	// lack of edge marking was bugging me so I took a stab at
+	// making it more accurate so it could be reenabled.
+	// the best test case I know of for this feature is Sonic Rush:
+	// - the edges are completely sharp/opaque on the very brief title screen intro,
+	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
+	// - the character edges in-level are clearly smoothed/transparent, but show well through shield powerups
+	if(gfx3d.enableEdgeMarking)
+	{ 
+		u8 clearPolyid = ((gfx3d.clearColor>>24)&0x3F);
 
-	//	//TODO - need to test and find out whether these get grabbed at flush time, or at render time
-	//	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
+		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
+		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
+		FragmentColor edgeMarkColors[8];
+		int edgeMarkDisabled[8];
 
-	//	//now, I am not entirely sure about this. I can't find any documentation about the high bit here but
-	//	//it doesnt seem plausible to me that its all or nothing. I think that only polyid groups with a color
-	//	//with the high bit set get edge marked.
-	//	u16 edgeMarkColors[8];
-	//	bool edgeMarkEnables[8];
-	//	for(int i=0;i<8;i++)
-	//	{
-	//		edgeMarkColors[i] = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x330+i*2);
-	//		edgeMarkEnables[i] = (edgeMarkColors[i]&0x8000)!=0;
-	//	}
+		for(int i=0;i<8;i++)
+		{
+			u16 col = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x330+i*2);
+			edgeMarkColors[i].color = RGB15TO5555(col,0x0F);
 
-	//	for(int i=0,y=0;y<192;y++)
-	//	{
-	//		for(int x=0;x<256;x++,i++)
-	//		{
-	//			Fragment &destFragment = screen[i];
-	//			FragmentColor &destFragmentColor = screenColor[i];
-	//			u8 self = destFragment.polyid.opaque>>3;
-	//			if(!edgeMarkEnables[self]) continue;
-	//			if(destFragment.isTranslucentPoly) continue;
+			// this seems to be the only thing that selectively disables edge marking
+			edgeMarkDisabled[i] = (col == 0x7FFF);
+		}
 
-	//			u8 left = x==0?clearPolyid:(screen[i-1].polyid.opaque>>3);
-	//			u8 right = x==255?clearPolyid:(screen[i+1].polyid.opaque>>3);
-	//			u8 top = y==0?clearPolyid:(screen[i-256].polyid.opaque>>3);
-	//			u8 bottom = y==191?clearPolyid:(screen[i+256].polyid.opaque>>3);
+		for(int i=0,y=0;y<192;y++)
+		{
+			for(int x=0;x<256;x++,i++)
+			{
+				Fragment destFragment = screen[i];
+				u8 self = destFragment.polyid.opaque;
+				if(edgeMarkDisabled[self>>3]) continue;
+				if(destFragment.isTranslucentPoly) continue;
 
-	//			if(left != self || right != self || top != self || bottom != self)
-	//			{
-	//				destFragmentColor.color = edgeMarkColors[self];
-	//			}
-	//			
+				// > is used instead of != to prevent double edges
+				// between overlapping polys of different IDs.
+				// also note that the edge generally goes on the outside, not the inside,
+				// and that polys with the same edge color can make edges against each other.
 
-	//		}
-	//	}
+				FragmentColor edgeColor = edgeMarkColors[self>>3];
 
-	//}
+#define PIXOFFSET(dx,dy) ((dx)+(256*(dy)))
+#define ISEDGE(dx,dy) ((x+(dx)!=256) && (x+(dx)!=-1) && (y+(dy)!=256) && (y+(dy)!=-1) && self > screen[i+PIXOFFSET(dx,dy)].polyid.opaque)
+#define DRAWEDGE(dx,dy) alphaBlend(screenColor[i+PIXOFFSET(dx,dy)], edgeColor)
+
+				if(ISEDGE(-1,0))
+					DRAWEDGE(-1,0);
+				if(ISEDGE(1,0))
+					DRAWEDGE(1,0);
+				if(ISEDGE(0,-1))
+					DRAWEDGE(0,-1);
+				if(ISEDGE(0,1))
+					DRAWEDGE(0,1);
+
+				bool diaga = ISEDGE(-1,-1);
+				bool diagb = ISEDGE(1,-1);
+				bool diagc = ISEDGE(-1,1);
+				bool diagd = ISEDGE(1,1);
+				if(diaga && diagb && diagc && !diagd)
+					DRAWEDGE(-1,-1);
+				if(diaga && diagb && !diagc && diagd)
+					DRAWEDGE(1,-1);
+				if(diaga && !diagb && diagc && diagd)
+					DRAWEDGE(-1,1);
+				if(!diaga && diagb && diagc && diagd)
+					DRAWEDGE(1,1);
+
+#undef PIXOFFSET
+#undef ISEDGE
+#undef DRAWEDGE
+
+			}
+		}
+	}
 
 	if(gfx3d.enableFog)
 	{
