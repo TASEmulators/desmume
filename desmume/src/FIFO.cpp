@@ -34,6 +34,13 @@
 IPC_FIFO ipc_fifo[2];		// 0 - ARM9
 							// 1 - ARM7
 
+u8 FORCEINLINE IPC_FIFOgetSize(u8 proc)
+{
+	if (ipc_fifo[proc].head < ipc_fifo[proc].tail) return (ipc_fifo[proc].tail - ipc_fifo[proc].head);
+	if (ipc_fifo[proc].head > ipc_fifo[proc].tail) return (17 - (ipc_fifo[proc].head - ipc_fifo[proc].tail));
+	return 0;
+}
+
 void IPC_FIFOinit(u8 proc)
 {
 	memset(&ipc_fifo[proc], 0, sizeof(IPC_FIFO));
@@ -46,7 +53,7 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	if (!(cnt_l & 0x8000)) return;			// FIFO disabled
 	u8	proc_remote = proc ^ 1;
 
-	if (ipc_fifo[proc].tail > 15)
+	if (ipc_fifo[proc].size > 15)
 	{
 		cnt_l |= 0x4000;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
@@ -61,8 +68,10 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	cnt_l &= 0xBFFC;		// clear send empty bit & full
 	cnt_r &= 0xBCFF;		// set recv empty bit & full
 	ipc_fifo[proc].buf[ipc_fifo[proc].tail++] = val;
+	ipc_fifo[proc].size = IPC_FIFOgetSize(proc);
+	if (ipc_fifo[proc].tail > 15) ipc_fifo[proc].tail = 0;
 	
-	if (ipc_fifo[proc].tail > 15)
+	if (ipc_fifo[proc].size > 15)
 	{
 		cnt_l |= 0x0002;		// set send full bit
 		cnt_r |= 0x0200;		// set recv full bit
@@ -82,7 +91,7 @@ u32 IPC_FIFOrecv(u8 proc)
 
 	u32 val = 0;
 
-	if ( ipc_fifo[proc_remote].tail == 0 )		// remote FIFO error
+	if ( ipc_fifo[proc_remote].size == 0 )		// remote FIFO error
 	{
 		cnt_l |= 0x4000;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
@@ -94,16 +103,15 @@ u32 IPC_FIFOrecv(u8 proc)
 	cnt_l &= 0xBCFF;		// clear send full bit & empty
 	cnt_r &= 0xBFFC;		// set recv full bit & empty
 
-	val = ipc_fifo[proc_remote].buf[0];
+	val = ipc_fifo[proc_remote].buf[ipc_fifo[proc_remote].head++];
+	if (ipc_fifo[proc_remote].head > 15) ipc_fifo[proc_remote].head = 0;
 	
 	//LOG("IPC%s recv FIFO 0x%08X (l 0x%X, tail %02i) (r 0x%X, tail %02i)\n", 
 	//	proc?"7":"9", val, cnt_l, ipc_fifo[proc].tail, cnt_r, ipc_fifo[proc^1].tail);
 
-	ipc_fifo[proc_remote].tail--;
-	for (int i = 0; i < ipc_fifo[proc_remote].tail; i++)
-		ipc_fifo[proc_remote].buf[i] = ipc_fifo[proc_remote].buf[i+1];;
+	ipc_fifo[proc_remote].size = IPC_FIFOgetSize(proc_remote);
 
-	if ( ipc_fifo[proc_remote].tail == 0 )		// FIFO empty
+	if ( ipc_fifo[proc_remote].size == 0 )		// FIFO empty
 	{
 		cnt_l |= 0x0100;
 		cnt_r |= 0x0001;
@@ -142,15 +150,15 @@ GFX_FIFO	gxFIFO;
 
 u8 FORCEINLINE GFX_PIPEgetSize()
 {
-	if (gxPIPE.pos < gxPIPE.tail) return (gxPIPE.tail - gxPIPE.pos);
-	if (gxPIPE.pos > gxPIPE.tail) return (5 - (gxPIPE.pos - gxPIPE.tail));
+	if (gxPIPE.head < gxPIPE.tail) return (gxPIPE.tail - gxPIPE.head);
+	if (gxPIPE.head > gxPIPE.tail) return (5 - (gxPIPE.head - gxPIPE.tail));
 	return 0;
 }
 
 u16 FORCEINLINE GFX_FIFOgetSize()
 {
-	if (gxFIFO.pos < gxFIFO.tail) return (gxFIFO.tail - gxFIFO.pos);
-	if (gxFIFO.pos > gxFIFO.tail) return (257 - (gxFIFO.pos - gxFIFO.tail));
+	if (gxFIFO.head < gxFIFO.tail) return (gxFIFO.tail - gxFIFO.head);
+	if (gxFIFO.head > gxFIFO.tail) return (257 - (gxFIFO.head - gxFIFO.tail));
 	return 0;
 }
 
@@ -164,7 +172,7 @@ void GFX_FIFOclear()
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0x0000FFFF;
 
-	gxFIFO.pos = 0;
+	gxFIFO.head = 0;
 	gxFIFO.tail = 0;
 	gxFIFO.size = 0;
 	gxstat |= 0x06000000;
@@ -252,11 +260,11 @@ BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 	}
 
 	gxstat &= 0xF000FFFF;
-	*cmd = gxFIFO.cmd[gxFIFO.pos];
-	*param = gxFIFO.param[gxFIFO.pos];
-	gxFIFO.pos++;
+	*cmd = gxFIFO.cmd[gxFIFO.head];
+	*param = gxFIFO.param[gxFIFO.head];
+	gxFIFO.head++;
 	gxFIFO.size = GFX_FIFOgetSize();
-	if (gxFIFO.pos > 256) gxFIFO.pos = 0;
+	if (gxFIFO.head > 256) gxFIFO.head = 0;
 
 	gxstat |= ((gxFIFO.size & 0x1FF) << 16);
 
@@ -268,7 +276,7 @@ BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 #endif
 	}
 
-	if (gxFIFO.tail == gxFIFO.pos)		// empty
+	if (gxFIFO.tail == gxFIFO.head)		// empty
 		gxstat |= 0x04000000;
 	else
 		gxstat |= 0x08000000;	// set busy flag
@@ -286,11 +294,11 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 
 	if (gxPIPE.size > 0)
 	{
-		*cmd = gxPIPE.cmd[gxPIPE.pos];
-		*param = gxPIPE.param[gxPIPE.pos];
-		gxPIPE.pos++;
+		*cmd = gxPIPE.cmd[gxPIPE.head];
+		*param = gxPIPE.param[gxPIPE.head];
+		gxPIPE.head++;
 		gxPIPE.size = GFX_PIPEgetSize();
-		if (gxPIPE.pos > 4) gxPIPE.pos = 0;
+		if (gxPIPE.head > 4) gxPIPE.head = 0;
 
 		if (gxPIPE.size < 2) 
 		{
@@ -337,6 +345,7 @@ void GFX_FIFOcnt(u32 val)
 	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X) tail %i\n", val, gxstat, gxFIFO.tail);
 	if (val & (1<<29))		// clear? (homebrew)
 	{
+		GFX_PIPEclear();
 		GFX_FIFOclear();
 		return;
 	}

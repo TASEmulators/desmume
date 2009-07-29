@@ -240,9 +240,13 @@ SFORMAT SF_MMU[]={
 	{ "MCHD", 4, 1,       &MMU.CheckDMAs},
 
 	//fifos
+	{ "F0TH", 1, 1,       &ipc_fifo[0].head},
 	{ "F0TL", 1, 1,       &ipc_fifo[0].tail},
+	{ "F0SZ", 1, 1,       &ipc_fifo[0].size},
 	{ "F0BF", 4, 16,      ipc_fifo[0].buf},
+	{ "F1TH", 1, 1,       &ipc_fifo[1].head},
 	{ "F1TL", 1, 1,       &ipc_fifo[1].tail},
+	{ "F1SZ", 1, 1,       &ipc_fifo[1].size},
 	{ "F1BF", 4, 16,      ipc_fifo[1].buf},
 
 	{ "FDHD", 4, 1,       &disp_fifo.head},
