@@ -140,6 +140,20 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 GFX_PIPE	gxPIPE;
 GFX_FIFO	gxFIFO;
 
+u8 FORCEINLINE GFX_PIPEgetSize()
+{
+	if (gxPIPE.pos < gxPIPE.tail) return (gxPIPE.tail - gxPIPE.pos);
+	if (gxPIPE.pos > gxPIPE.tail) return (5 - (gxPIPE.pos - gxPIPE.tail));
+	return 0;
+}
+
+u16 FORCEINLINE GFX_FIFOgetSize()
+{
+	if (gxFIFO.pos < gxFIFO.tail) return (gxFIFO.tail - gxFIFO.pos);
+	if (gxFIFO.pos > gxFIFO.tail) return (257 - (gxFIFO.pos - gxFIFO.tail));
+	return 0;
+}
+
 void GFX_PIPEclear()
 {
 	gxPIPE.tail = 0;
@@ -150,7 +164,9 @@ void GFX_FIFOclear()
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0x0000FFFF;
 
+	gxFIFO.pos = 0;
 	gxFIFO.tail = 0;
+	gxFIFO.size = 0;
 	gxstat |= 0x06000000;
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
@@ -159,14 +175,15 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 
-	if (gxFIFO.tail == 0)			// FIFO empty
+	if (gxFIFO.size == 0)				// FIFO empty
 	{
-
-		if (gxPIPE.tail < 4)			// pipe not full
+		if (gxPIPE.size < 4)			// pipe not full
 		{
 			gxPIPE.cmd[gxPIPE.tail] = cmd;
 			gxPIPE.param[gxPIPE.tail] = param;
 			gxPIPE.tail++;
+			gxPIPE.size = GFX_PIPEgetSize();
+			if (gxPIPE.tail > 4) gxPIPE.tail = 0;
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 			gxstat |= 0x08000000;		// set busy flag
 			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
@@ -175,6 +192,7 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 			return;
 		}
 	}
+
 	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO - 0x%08X (%03i/%02X)\n", cmd, param, gxFIFO.tail, gxFIFO.tail);
 	if (gxstat & 0x01000000)
 	{
@@ -187,15 +205,20 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	gxFIFO.cmd[gxFIFO.tail] = cmd;
 	gxFIFO.param[gxFIFO.tail] = param;
 	gxFIFO.tail++;
+	gxFIFO.size = GFX_FIFOgetSize();
+	if (gxFIFO.tail > 256) gxFIFO.tail = 0;
+	
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	gxstat |= 0x08000000;		// set busy flag
 #endif
 
-	gxstat |= (gxFIFO.tail << 16);
+	gxstat |= ((gxFIFO.size & 0x1FF) << 16);
 
-	if (gxFIFO.tail < 128)
+	if (gxFIFO.size < 128)				// less half
+	{
 		gxstat |= 0x02000000;
+	}
 
 #ifndef USE_GEOMETRY_FIFO_EMULATION
 	gxstat |= 0x02000000;					// this is hack (must be removed later)
@@ -211,7 +234,7 @@ BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 
-	if (gxFIFO.tail == 0)			// empty
+	if (gxFIFO.size == 0)				// empty
 	{
 		gxstat &= 0xF000FFFF;
 		gxstat |= 0x06000000;
@@ -229,18 +252,15 @@ BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 	}
 
 	gxstat &= 0xF000FFFF;
-	*cmd = gxFIFO.cmd[0];
-	*param = gxFIFO.param[0];
-	gxFIFO.tail--;
-	for (int i=0; i < gxFIFO.tail; i++)
-	{
-		gxFIFO.cmd[i] = gxFIFO.cmd[i+1];
-		gxFIFO.param[i] = gxFIFO.param[i+1];
-	}
+	*cmd = gxFIFO.cmd[gxFIFO.pos];
+	*param = gxFIFO.param[gxFIFO.pos];
+	gxFIFO.pos++;
+	gxFIFO.size = GFX_FIFOgetSize();
+	if (gxFIFO.pos > 256) gxFIFO.pos = 0;
 
-	gxstat |= (gxFIFO.tail << 16);
+	gxstat |= ((gxFIFO.size & 0x1FF) << 16);
 
-	if (gxFIFO.tail < 128)
+	if (gxFIFO.size < 128)
 	{
 		gxstat |= 0x02000000;
 #ifdef USE_GEOMETRY_FIFO_EMULATION
@@ -248,7 +268,7 @@ BOOL FORCEINLINE GFX_FIFOrecv(u8 *cmd, u32 *param)
 #endif
 	}
 
-	if (gxFIFO.tail == 0)		// empty
+	if (gxFIFO.tail == gxFIFO.pos)		// empty
 		gxstat |= 0x04000000;
 	else
 		gxstat |= 0x08000000;	// set busy flag
@@ -264,36 +284,36 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 	u32	tmp_param = 0;
 	u32 gxstat = 0;
 
-	if (gxPIPE.tail > 0)
+	if (gxPIPE.size > 0)
 	{
-		*cmd = gxPIPE.cmd[0];
-		*param = gxPIPE.param[0];
-		gxPIPE.tail--;
-		for (int i=0; i < gxPIPE.tail; i++)
-		{
-			gxPIPE.cmd[i] = gxPIPE.cmd[i+1];
-			gxPIPE.param[i] = gxPIPE.param[i+1];
-		}
+		*cmd = gxPIPE.cmd[gxPIPE.pos];
+		*param = gxPIPE.param[gxPIPE.pos];
+		gxPIPE.pos++;
+		gxPIPE.size = GFX_PIPEgetSize();
+		if (gxPIPE.pos > 4) gxPIPE.pos = 0;
 
-		if (gxPIPE.tail < 2) 
+		if (gxPIPE.size < 2) 
 		{
 			if (GFX_FIFOrecv(&tmp_cmd, &tmp_param))
 			{
 				gxPIPE.cmd[gxPIPE.tail] = tmp_cmd;
 				gxPIPE.param[gxPIPE.tail] = tmp_param;
 				gxPIPE.tail++;
-			
+				gxPIPE.size = GFX_PIPEgetSize();
+				if (gxPIPE.tail > 4) gxPIPE.tail = 0;
 
 				if (GFX_FIFOrecv(&tmp_cmd, &tmp_param))
 				{
 					gxPIPE.cmd[gxPIPE.tail] = tmp_cmd;
 					gxPIPE.param[gxPIPE.tail] = tmp_param;
 					gxPIPE.tail++;
+					gxPIPE.size = GFX_PIPEgetSize();
+					if (gxPIPE.tail > 4) gxPIPE.tail = 0;
 				}
 			}
 		}
 
-		if (gxPIPE.tail == 0)
+		if (gxPIPE.size == 0)
 		{
 			gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 			gxstat &= 0xF7FFFFFF;		// clear busy flag
@@ -317,7 +337,6 @@ void GFX_FIFOcnt(u32 val)
 	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X) tail %i\n", val, gxstat, gxFIFO.tail);
 	if (val & (1<<29))		// clear? (homebrew)
 	{
-		GFX_PIPEclear();
 		GFX_FIFOclear();
 		return;
 	}
