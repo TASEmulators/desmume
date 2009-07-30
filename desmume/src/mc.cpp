@@ -581,7 +581,7 @@ int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 
 	if (compressMethod == 0)				// unpacked
 	{
-		size_unpacked = *((u32*)(src+0x4C));
+		size_unpacked = *((u32*)(src+0x48));
 		src_pos = 0x4C;
 		for (int i = 0; i < size_unpacked; i++)
 		{
@@ -661,7 +661,7 @@ u32 no_gba_fillLeft(u32 size)
 {
 	for (int i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
-		if (size < save_types[i][1])
+		if (size <= save_types[i][1])
 			return (size + (save_types[i][1] - size));
 	}
 	return size;
