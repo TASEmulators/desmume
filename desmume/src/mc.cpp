@@ -552,7 +552,7 @@ void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 //=======================================================================
 //=======================================================================
 
-s32 unpackSAV(void *in_buf, u32 fsize, void *out_buf)
+int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 {
 	const char no_GBA_HEADER_ID[] = "NocashGbaBackupMediaSavDataFile";
 	const char no_GBA_HEADER_SRAM_ID[] = "SRAM";
@@ -564,20 +564,18 @@ s32 unpackSAV(void *in_buf, u32 fsize, void *out_buf)
 	u32	size_unpacked = 0;
 	u32	size_packed = 0;
 	u32	compressMethod = 0;
-	char	buf[128] = { 0 };
 
-	if (fsize < 0x50) return (-1);
+	if (fsize < 0x50) return (1);
 
 	for (int i = 0; i < 0x1F; i++)
 	{
-		if (src[i] != no_GBA_HEADER_ID[i]) return (-2);
+		if (src[i] != no_GBA_HEADER_ID[i]) return (2);
 	}
-	if (src[0x1F] != 0x1A) return (-3);
+	if (src[0x1F] != 0x1A) return (2);
 	for (int i = 0; i < 0x4; i++)
 	{
-		if (src[i+0x40] != no_GBA_HEADER_SRAM_ID[i]) return (-2);
+		if (src[i+0x40] != no_GBA_HEADER_SRAM_ID[i]) return (2);
 	}
-
 
 	compressMethod = *((u32*)(src+0x44));
 
@@ -589,7 +587,8 @@ s32 unpackSAV(void *in_buf, u32 fsize, void *out_buf)
 		{
 			dst[dst_pos++] = src[src_pos++];
 		}
-		return (dst_pos);
+		size = dst_pos;
+		return (0);
 	}
 
 	if (compressMethod == 1)				// packed (method 1)
@@ -602,7 +601,11 @@ s32 unpackSAV(void *in_buf, u32 fsize, void *out_buf)
 		{
 			cc = src[src_pos++];
 			
-			if (cc == 0) return (dst_pos);
+			if (cc == 0) 
+			{
+				size = dst_pos;
+				return (0);
+			}
 
 			if (cc == 0x80)
 			{
@@ -625,12 +628,13 @@ s32 unpackSAV(void *in_buf, u32 fsize, void *out_buf)
 			for (int t = 0; t < cc; t++)
 				dst[dst_pos++] = src[src_pos++];
 		}
-		return (dst_pos);
+		size = dst_pos;
+		return (0);
 	}
-	return (-200);
+	return (200);
 }
 
-u32 savTrim(void *buf, u32 size)
+u32 no_gba_savTrim(void *buf, u32 size)
 {
 	u32 rows = size / 16;
 	u32 pos = (size - 16);
@@ -653,7 +657,7 @@ u32 savTrim(void *buf, u32 size)
 	return (size);
 }
 
-u32 fillLeft(u32 size)
+u32 no_gba_fillLeft(u32 size)
 {
 	for (int i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
@@ -687,21 +691,23 @@ bool BackupDevice::load_no_gba(const char *fname)
 				out_buf[jj] = 0xFF;
 			}
 
-			s32 size = unpackSAV(in_buf, fsize, out_buf);
-			if (size > 0)
+			u32 size = 0;
+	
+			if (no_gba_unpackSAV(in_buf, fsize, out_buf, size) == 0)
 			{
 				//printf("New size %i byte(s)\n", size);
-				size = savTrim(out_buf, size);
+				size = no_gba_savTrim(out_buf, size);
 				//printf("--- new size after trim %i byte(s)\n", size);
-				size = fillLeft(size);
+				size = no_gba_fillLeft(size);
 				//printf("--- new size after fill %i byte(s)\n", size);
+				raw_applyUserSettings(size);
 				data.resize(size);
 				for (int tt = 0; tt < size; tt++)
 					data[tt] = out_buf[tt];
 
 				//dump back out as a dsv, just to keep things sane
 				flush();
-				printf("Loaded no$GBA save\n");
+				printf("---- Loaded no$GBA save\n");
 
 				if (in_buf) delete [] in_buf;
 				if (out_buf) delete [] out_buf;
