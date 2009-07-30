@@ -98,6 +98,7 @@ public:
 	void raw_applyUserSettings(u32& size);
 
 	bool load_duc(const char* filename);
+	bool load_no_gba(const char *fname);
 	bool load_raw(const char* filename);
 	bool save_raw(const char* filename);
 	bool load_movie(std::istream* is);
