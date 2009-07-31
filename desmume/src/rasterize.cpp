@@ -1017,26 +1017,30 @@ static void SoftRastFramebufferProcess()
 #define ISEDGE(dx,dy) ((x+(dx)!=256) && (x+(dx)!=-1) && (y+(dy)!=256) && (y+(dy)!=-1) && self > screen[i+PIXOFFSET(dx,dy)].polyid.opaque)
 #define DRAWEDGE(dx,dy) alphaBlend(screenColor[i+PIXOFFSET(dx,dy)], edgeColor)
 
-				if(ISEDGE(-1,0))
-					DRAWEDGE(-1,0);
-				if(ISEDGE(1,0))
-					DRAWEDGE(1,0);
-				if(ISEDGE(0,-1))
-					DRAWEDGE(0,-1);
-				if(ISEDGE(0,1))
-					DRAWEDGE(0,1);
+				bool upleft    = ISEDGE(-1,-1);
+				bool up        = ISEDGE( 0,-1);
+				bool upright   = ISEDGE( 1,-1);
+				bool left      = ISEDGE(-1, 0);
+				bool right     = ISEDGE( 1, 0);
+				bool downleft  = ISEDGE(-1, 1);
+				bool down      = ISEDGE( 0, 1);
+				bool downright = ISEDGE( 1, 1);
 
-				bool diaga = ISEDGE(-1,-1);
-				bool diagb = ISEDGE(1,-1);
-				bool diagc = ISEDGE(-1,1);
-				bool diagd = ISEDGE(1,1);
-				if(diaga && diagb && diagc && !diagd)
+				if(upleft && upright && downleft && !downright)
 					DRAWEDGE(-1,-1);
-				if(diaga && diagb && !diagc && diagd)
+				if(up && !down)
+					DRAWEDGE(0,-1);
+				if(upleft && upright && !downleft && downright)
 					DRAWEDGE(1,-1);
-				if(diaga && !diagb && diagc && diagd)
+				if(left && !right)
+					DRAWEDGE(-1,0);
+				if(right && !left)
+					DRAWEDGE(1,0);
+				if(upleft && !upright && downleft && downright)
 					DRAWEDGE(-1,1);
-				if(!diaga && diagb && diagc && diagd)
+				if(down && !up)
+					DRAWEDGE(0,1);
+				if(!upleft && upright && downleft && downright)
 					DRAWEDGE(1,1);
 
 #undef PIXOFFSET
