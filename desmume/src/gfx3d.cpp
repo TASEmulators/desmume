@@ -1,4 +1,3 @@
-//2
 /*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
     yopyop156.ifrance.com
@@ -197,7 +196,6 @@ static u32 clInd = 0;
 static u32 clInd2 = 0;
 static bool isSwapBuffers = false;
 bool isVBlank = false;
-bool bWaitForPolys = false;
 #endif
 
 static u32 BTind = 0;
@@ -383,7 +381,6 @@ void gfx3d_reset()
 	clInd2 = 0;
 	isSwapBuffers = false;
 	isVBlank = false;
-	bWaitForPolys = false;
 #endif
 
 	GFX_PIPEclear();
@@ -1527,17 +1524,6 @@ void gfx3d_glFlush(u32 v)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
-#if 0
-	
-	if (polygonListCompleted == 2)
-	{
-		//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-		//gxstat |= 0x08000000;		// set busy flag
-		//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		bWaitForPolys = true;
-		return;
-	}
-#endif
 	isSwapBuffers = true;
 #else
 	if(!flushPending)
@@ -1675,7 +1661,6 @@ void gfx3d_VBlankSignal()
 	isVBlank = true;
 	if (isSwapBuffers)
 	{
-		//if (bWaitForPolys) return;
 		gfx3d_doFlush();
 		isSwapBuffers = false;
 	}
@@ -1780,6 +1765,13 @@ void gfx3d_sendCommandToFIFO(u32 val)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i\n", clCmd & 0xFF, val, gxPIPE.tail, gxFIFO.tail);
 #endif
+	if (gxFIFO.size > 255) 
+	{
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+	}
 	switch (clCmd & 0xFF)
 	{
 		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
@@ -1884,6 +1876,13 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i (direct)\n", cmd, param, gxPIPE.tail, gxFIFO.tail);
 #endif
+	if (gxFIFO.size > 255) 
+	{
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+	}
 
 	switch (cmd)
 	{
