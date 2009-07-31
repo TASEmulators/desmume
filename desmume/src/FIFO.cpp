@@ -164,8 +164,8 @@ u16 FORCEINLINE GFX_FIFOgetSize()
 
 void GFX_PIPEclear()
 {
-	gxFIFO.head = 0;
-	gxFIFO.tail = 0;
+	gxPIPE.head = 0;
+	gxPIPE.tail = 0;
 	gxPIPE.size = 0;
 }
 
