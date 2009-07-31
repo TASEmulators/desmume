@@ -2540,7 +2540,7 @@ static void SetTurbo(bool (&pad) [12]) {
 	for (int i=0; i < 12; i++) {
 		currentbutton=Turbo.button(i);
 
-		if(currentbutton) {
+		if(currentbutton && movieMode != MOVIEMODE_PLAY) {
 			pad[i]=turbo[TurboTime.time(i)-1];
 			
 			if(TurboTime.time(i) >= (int)ARRAY_SIZE(turbo))
