@@ -354,12 +354,12 @@ SFORMAT SF_WIFI[]={
 	{ "W530", 2, 1, &wifiMac.CircBufWrEnd},
 	{ "W540", 2, 1, &wifiMac.CircBufWrSkip},
 
-	{ "W540", 4, 1, &wifiMac.curPacketSize[0]},
-	{ "W550", 4, 1, &wifiMac.curPacketPos[0]},
-	{ "W560", 4, 1, &wifiMac.curPacketSending[0]},
+	{ "W550", 4, 1, &wifiMac.curPacketSize[0]},
+	{ "W560", 4, 1, &wifiMac.curPacketPos[0]},
+	{ "W570", 4, 1, &wifiMac.curPacketSending[0]},
 
-	{ "W570", 2, 0x800, &wifiMac.ioMem[0]},
-	{ "W580", 2, 1, &wifiMac.randomSeed},
+	{ "W580", 2, 0x800, &wifiMac.ioMem[0]},
+	{ "W590", 2, 1, &wifiMac.randomSeed},
 
 	{ "WX00", 8, 1, &wifiMac.SoftAP.usecCounter},
 	{ "WX10", 1, 4096, &wifiMac.SoftAP.curPacket[0]},
@@ -759,6 +759,18 @@ static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 static int SubWrite(std::ostream* os, const SFORMAT *sf)
 {
 	uint32 acc=0;
+
+	const SFORMAT* temp = sf;
+	while(temp->v) {
+		const SFORMAT* seek = sf;
+		while(seek->v && seek != temp) {
+			if(!strcmp(seek->desc,temp->desc)) {
+				printf("ERROR! duplicated chunk name: %s\n", temp->desc);
+			}
+			seek++;
+		}
+		temp++;
+	}
 
 	while(sf->v)
 	{
