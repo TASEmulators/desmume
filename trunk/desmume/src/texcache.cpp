@@ -180,7 +180,7 @@ static void DebugDumpTexture(int which)
 
 static int lastTexture = -1;
 
-#define CONVERT(color,alpha) ((TEXFORMAT == TexFormat_32bpp)?(RGB15TO32(color,alpha)):RGB15TO5555(color,alpha))
+#define CONVERT(color,alpha) ((TEXFORMAT == TexFormat_32bpp)?(RGB15TO32(color,alpha)):RGB15TO6665(color,alpha))
 
 template<TexCache_TexFormat TEXFORMAT>
 void TexCache_SetTexture(u32 format, u32 texpal)
@@ -360,7 +360,7 @@ REJECT:
 					u16 c = pal[*adr&31];
 					u8 alpha = *adr>>5;
 					if(TEXFORMAT == TexFormat_15bpp)
-						*dwdst++ = RGB15TO5555(c,material_3bit_to_5bit[alpha]);
+						*dwdst++ = RGB15TO6665(c,material_3bit_to_5bit[alpha]);
 					else
 						*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
 					adr++;
@@ -537,8 +537,11 @@ REJECT:
 					{
 						for(int i=0;i<4;i++)
 						{
-							tmp_col[i] >>= 3;
-							tmp_col[i] &= 0x1F1F1F1F;
+							tmp_col[i] >>= 2;
+							tmp_col[i] &= 0x3F3F3F3F;
+							u32 a = tmp_col[i]>>24;
+							tmp_col[i] &= 0x00FFFFFF;
+							tmp_col[i] |= (a>>1)<<24;
 						}
 					}
 
@@ -573,7 +576,7 @@ REJECT:
 					u16 c = pal[*adr&0x07];
 					u8 alpha = (*adr>>3);
 					if(TEXFORMAT == TexFormat_15bpp)
-						*dwdst++ = RGB15TO5555(c,alpha);
+						*dwdst++ = RGB15TO6665(c,alpha);
 					else
 						*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
 					adr++;

@@ -68,8 +68,8 @@ static const int kUnsetTranslucentPolyID = 255;
 
 static int polynum;
 
-static u8 modulate_table[32][32];
-static u8 decal_table[32][32][32];
+static u8 modulate_table[64][64];
+static u8 decal_table[32][64][64];
 static u8 index_lookup_table[65];
 static u8 index_start_table[8];
 
@@ -223,11 +223,7 @@ struct PolyAttr
 union FragmentColor {
 	u32 color;
 	struct {
-#ifdef WORDS_BIGENDIAN
-		u8 a,b,g,r;
-#else
 		u8 r,g,b,a;
-#endif
 	};
 };
 
@@ -350,7 +346,8 @@ struct Shader
 	{
 		mode = (polyattr>>4)&0x3;
 		//if there is no texture set, then set to the mode which doesnt even use a texture
-		if(sampler.texFormat == 0 && mode != 3)
+		//(no texture makes sense for toon/highlight mode)
+		if(sampler.texFormat == 0 && (mode == 0 || mode == 1))
 			mode = 4;
 	}
 
@@ -371,7 +368,7 @@ struct Shader
 			dst.r = modulate_table[texColor.r][materialColor.r];
 			dst.g = modulate_table[texColor.g][materialColor.g];
 			dst.b = modulate_table[texColor.b][materialColor.b];
-			dst.a = modulate_table[texColor.a][materialColor.a];
+			dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(materialColor.a)]>>1;
 			//dst.color.components.a = 31;
 			//#ifdef _MSC_VER
 			//if(GetAsyncKeyState(VK_SHIFT)) {
@@ -399,7 +396,7 @@ struct Shader
 				u = invu*w;
 				v = invv*w;
 				texColor = sampler.sample(u,v);
-				FragmentColor toonColor = toonTable[materialColor.r];
+				FragmentColor toonColor = toonTable[materialColor.r>>1];
 				if(sampler.texFormat == 0)
 				{
 					//if no texture is set then we dont need to modulate texture with toon 
@@ -414,20 +411,21 @@ struct Shader
 						dst.r = modulate_table[texColor.r][materialColor.r];
 						dst.g = modulate_table[texColor.g][materialColor.r];
 						dst.b = modulate_table[texColor.b][materialColor.r];
-						dst.a = modulate_table[texColor.a][materialColor.a];
+						dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(materialColor.a)]>>1;
 
-						dst.r = min<u8>(31, (dst.r + toonColor.r));
-						dst.g = min<u8>(31, (dst.g + toonColor.g));
-						dst.b = min<u8>(31, (dst.b + toonColor.b));
+						dst.r = min<u8>(63, (dst.r + toonColor.r));
+						dst.g = min<u8>(63, (dst.g + toonColor.g));
+						dst.b = min<u8>(63, (dst.b + toonColor.b));
 					}
 					else
 					{
 						dst.r = modulate_table[texColor.r][toonColor.r];
 						dst.g = modulate_table[texColor.g][toonColor.g];
 						dst.b = modulate_table[texColor.b][toonColor.b];
-						dst.a = modulate_table[texColor.a][materialColor.a];
+						dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(materialColor.a)]>>1;
 					}
 				}
+
 			}
 			break;
 		case 3: //shadows
@@ -519,9 +517,9 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	//this is a HACK: 
 	//we are being very sloppy with our interpolation precision right now
 	//and rather than fix it, i just want to clamp it
-	shader.materialColor.r = max(0U,min(31U,u32floor(r)));
-	shader.materialColor.g = max(0U,min(31U,u32floor(g)));
-	shader.materialColor.b = max(0U,min(31U,u32floor(b)));
+	shader.materialColor.r = max(0U,min(63U,u32floor(r)));
+	shader.materialColor.g = max(0U,min(63U,u32floor(g)));
+	shader.materialColor.b = max(0U,min(63U,u32floor(b)));
 
 	shader.materialColor.a = polyAttr.alpha;
 
@@ -927,11 +925,11 @@ static char SoftRastInit(void)
 
 		clippedPolys = new TClippedPoly[POLYLIST_SIZE*2];
 
-		for(int i=0;i<32;i++)
+		for(int i=0;i<64;i++)
 		{
-			for(int j=0;j<32;j++)
+			for(int j=0;j<64;j++)
 			{
-				modulate_table[i][j] = ((i+1) * (j+1) - 1) >> 5;	
+				modulate_table[i][j] = ((i+1) * (j+1) - 1) >> 6;	
 				for(int a=0;a<32;a++)
 					decal_table[a][i][j] = ((i*a) + (j*(31-a))) >> 5;
 			}
@@ -1053,9 +1051,9 @@ static void SoftRastFramebufferProcess()
 
 	if(gfx3d.enableFog)
 	{
-		u32 r = gfx3d.fogColor&0x1F;
-		u32 g = (gfx3d.fogColor>>5)&0x1F;
-		u32 b = (gfx3d.fogColor>>10)&0x1F;
+		u32 r = ((gfx3d.fogColor)&0x1F)<<1;
+		u32 g = ((gfx3d.fogColor>>5)&0x1F)<<1;
+		u32 b = ((gfx3d.fogColor>>10)&0x1F)<<1;
 		u32 a = (gfx3d.fogColor>>16)&0x1F;
 		for(int i=0;i<256*192;i++)
 		{
@@ -1079,29 +1077,7 @@ static void SoftRastFramebufferProcess()
 
 static void SoftRastConvertFramebuffer()
 {
-	FragmentColor* src = screenColor;
-	u16* dst = gfx3d_convertedScreen;
-	u8* dstAlpha = gfx3d_convertedAlpha;
-
-	//in an effort to speed this up, the misc pixel buffers and the color buffer were separated.
-
-	for(int i=0,y=0;y<192;y++)
-	{
-		//	u8* wanx = (u8*)&src[i];
-		//	#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
-		//	#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
-		//	PUNK(0); PUNK(1);
-
-		for(int x=0;x<256;x++,i++)
-		{
-			const u8 r = src[i].r;
-			const u8 g = src[i].g;
-			const u8 b = src[i].b;
-			const u8 a = src[i].a;
-			dst[i] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
-			dstAlpha[i] = alpha_5bit_to_4bit[a];
-		}
-	}
+	memcpy(gfx3d_convertedScreen,screenColor,256*192*4);
 }
 
 
@@ -1272,10 +1248,10 @@ static void SoftRastRender()
 	Fragment clearFragment;
 	FragmentColor clearFragmentColor;
 	clearFragment.isTranslucentPoly = 0;
-	clearFragmentColor.r = gfx3d.clearColor&0x1F;
-	clearFragmentColor.g = (gfx3d.clearColor>>5)&0x1F;
-	clearFragmentColor.b = (gfx3d.clearColor>>10)&0x1F;
-	clearFragmentColor.a = (gfx3d.clearColor>>16)&0x1F;
+	clearFragmentColor.r = GFX3D_5TO6(gfx3d.clearColor&0x1F);
+	clearFragmentColor.g = GFX3D_5TO6((gfx3d.clearColor>>5)&0x1F);
+	clearFragmentColor.b = GFX3D_5TO6((gfx3d.clearColor>>10)&0x1F);
+	clearFragmentColor.a = ((gfx3d.clearColor>>16)&0x1F);
 	clearFragment.polyid.opaque = (gfx3d.clearColor>>24)&0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
@@ -1333,9 +1309,9 @@ static void SoftRastRender()
 	//convert the toon colors
 	//TODO for a slight speedup this could be cached in gfx3d (oglrenderer could benefit as well)
 	for(int i=0;i<32;i++) {
-		toonTable[i].r = gfx3d.u16ToonTable[i]&0x1F;
-		toonTable[i].g = (gfx3d.u16ToonTable[i]>>5)&0x1F;
-		toonTable[i].b = (gfx3d.u16ToonTable[i]>>10)&0x1F;
+		toonTable[i].r = GFX3D_5TO6((gfx3d.u16ToonTable[i])&0x1F);
+		toonTable[i].g = GFX3D_5TO6((gfx3d.u16ToonTable[i]>>5)&0x1F);
+		toonTable[i].b = GFX3D_5TO6((gfx3d.u16ToonTable[i]>>10)&0x1F);
 	}
 
 	//setup fog variables (but only if fog is enabled)

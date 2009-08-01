@@ -114,23 +114,9 @@ CACHE_ALIGN const u8 material_3bit_to_5bit[] = {
 	0, 4, 8, 13, 17, 22, 26, 31
 };
 
-CACHE_ALIGN const u8 alpha_5bit_to_4bit[] = {
-	0x00, 0x00,
-	0x01, 0x01,
-	0x02, 0x02,
-	0x03, 0x03,
-	0x04, 0x04,
-	0x05, 0x05,
-	0x06, 0x06,
-	0x07, 0x07,
-	0x08, 0x08,
-	0x09, 0x09,
-	0x0A, 0x0A,
-	0x0B, 0x0B,
-	0x0C, 0x0C,
-	0x0D, 0x0D,
-	0x0E, 0x0E,
-	0x10, 0x10
+//TODO - generate this in the static init method more accurately
+CACHE_ALIGN const u8 material_3bit_to_6bit[] = {
+	0, 8, 16, 26, 34, 44, 52, 63
 };
 
 CACHE_ALIGN const u16 alpha_lookup[] = {
@@ -149,10 +135,7 @@ static float normalTable[1024];
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
-
-//this extra *2 is a HACK to salvage some savestates. remove me when the savestate format changes.
-CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2];
+CACHE_ALIGN u8 gfx3d_convertedScreen[256*192*4];
 
 // Matrix stack handling
 static CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -196,6 +179,7 @@ static u32 clInd = 0;
 static u32 clInd2 = 0;
 static bool isSwapBuffers = false;
 bool isVBlank = false;
+bool bWaitForPolys = false;
 #endif
 
 static u32 BTind = 0;
@@ -207,7 +191,7 @@ static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 static u32 polyAttr=0,textureFormat=0, texturePalette=0, polyAttrPending=0;
 
 //the current vertex color, 5bit values
-static int colorRGB[4] = { 31,31,31,31 };
+static u8 colorRGB[4] = { 31,31,31,31 };
 
 u32 control = 0;
 
@@ -342,8 +326,6 @@ void gfx3d_reset()
 	memset(vertlists, 0, sizeof(vertlists));
 	listTwiddle = 1;
 	twiddleLists();
-	gfx3d.polylist = polylist;
-	gfx3d.vertlist = vertlist;
 
 	MatrixInit (mtxCurrent[0]);
 	MatrixInit (mtxCurrent[1]);
@@ -375,7 +357,6 @@ void gfx3d_reset()
 	viewport = 0xBFFF0000;
 
 	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
-	memset(gfx3d_convertedAlpha,0,sizeof(gfx3d_convertedAlpha));
 
 	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
 	
@@ -383,6 +364,7 @@ void gfx3d_reset()
 	clInd2 = 0;
 	isSwapBuffers = false;
 	isVBlank = false;
+	bWaitForPolys = false;
 #endif
 
 	GFX_PIPEclear();
@@ -445,9 +427,9 @@ static void SetVertex()
 	vert.coord[1] = coordTransformed[1];
 	vert.coord[2] = coordTransformed[2];
 	vert.coord[3] = coordTransformed[3];
-	vert.color[0] = colorRGB[0];
-	vert.color[1] = colorRGB[1];
-	vert.color[2] = colorRGB[2];
+	vert.color[0] = GFX3D_5TO6(colorRGB[0]);
+	vert.color[1] = GFX3D_5TO6(colorRGB[1]);
+	vert.color[2] = GFX3D_5TO6(colorRGB[2]);
 	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
@@ -1526,6 +1508,17 @@ void gfx3d_glFlush(u32 v)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
+#if 0
+	
+	if (polygonListCompleted == 2)
+	{
+		//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+		//gxstat |= 0x08000000;		// set busy flag
+		//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		bWaitForPolys = true;
+		return;
+	}
+#endif
 	isSwapBuffers = true;
 #else
 	if(!flushPending)
@@ -1663,10 +1656,9 @@ void gfx3d_VBlankSignal()
 	isVBlank = true;
 	if (isSwapBuffers)
 	{
+		//if (bWaitForPolys) return;
 		gfx3d_doFlush();
 		isSwapBuffers = false;
-		GFX_DELAY(392);
-		NDS_RescheduleGXFIFO();
 	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
@@ -1691,16 +1683,23 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	
 	if (!drawPending) return;
 	drawPending = FALSE;
-	if(skipFrame) return;
+	if(skipFrame) 
+	{
+		GFX_DELAY(392);
+		NDS_RescheduleGXFIFO();
+		return;
+	}
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
-		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
 		return;
 	}
 
 	gpu3D->NDS_3D_Render();
+
+	GFX_DELAY(392);
+	NDS_RescheduleGXFIFO();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -1716,7 +1715,6 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
-		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
 	}
 #endif
 }
@@ -1761,13 +1759,6 @@ void gfx3d_sendCommandToFIFO(u32 val)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i\n", clCmd & 0xFF, val, gxPIPE.tail, gxFIFO.tail);
 #endif
-	if (gxFIFO.size > 255) 
-	{
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-	}
 	switch (clCmd & 0xFF)
 	{
 		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
@@ -1872,13 +1863,6 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i (direct)\n", cmd, param, gxPIPE.tail, gxFIFO.tail);
 #endif
-	if (gxFIFO.size > 255) 
-	{
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-	}
 
 	switch (cmd)
 	{
@@ -2334,12 +2318,26 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 	*dest = lightColor[index];
 }
 
-void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha)
+void gfx3d_GetLineData(int line, u8** dst)
 {
-	*dst = gfx3d_convertedScreen+((line)<<8);
-	if(dstAlpha != NULL)
+	*dst = gfx3d_convertedScreen+((line)<<(8+2));
+}
+
+void gfx3d_GetLineData15bpp(int line, u16** dst)
+{
+	//TODO - this is not very thread safe!!!
+	u16 buf[256];
+	*dst = buf;
+
+	u8* lineData;
+	gfx3d_GetLineData(line, &lineData);
+	for(int i=0;i<256;i++)
 	{
-		*dstAlpha = gfx3d_convertedAlpha+((line)<<8);
+		const u8 r = lineData[i*4+0];
+		const u8 g = lineData[i*4+1];
+		const u8 b = lineData[i*4+2];
+		const u8 a = lineData[i*4+3];
+		buf[i] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
 	}
 }
 
@@ -2382,17 +2380,17 @@ SFORMAT SF_GFX3D[]={
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLPC", 4, 4, PTcoords},
-	{ "GFHD", 4, 1, &gxFIFO.head},
-	{ "GFTA", 4, 1, &gxFIFO.tail},
-	{ "GFSZ", 4, 1, &gxFIFO.size},
+	{ "GFHE", 2, 1, &gxFIFO.head},
+	{ "GFTA", 2, 1, &gxFIFO.tail},
+	{ "GFSZ", 2, 1, &gxFIFO.size},
 	{ "GFCM", 1, 257, &gxFIFO.cmd[0]},
 	{ "GFPM", 4, 257, &gxFIFO.param[0]},
-	{ "GPHD", 1, 1, &gxPIPE.head},
+	{ "GPHE", 1, 1, &gxPIPE.head},
 	{ "GPTA", 1, 1, &gxPIPE.tail},
 	{ "GPSZ", 1, 1, &gxPIPE.size},
 	{ "GPCM", 1, 5, &gxPIPE.cmd[0]},
 	{ "GPPM", 4, 5, &gxPIPE.param[0]},
-	{ "GCOL", 1, 4, colorRGB},
+	{ "GCOL", 1, 4, &colorRGB[0]},
 	{ "GLCO", 4, 4, lightColor},
 	{ "GLDI", 4, 4, lightDirection},
 	{ "GMDI", 2, 1, &dsDiffuse},
@@ -2427,8 +2425,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CS", 2, 256*192, gfx3d_convertedScreen},
-	{ "G3CA", 2, 256*192, gfx3d_convertedAlpha}, 
+	{ "G3CX", 1, 4*256*192, gfx3d_convertedScreen},
 	{ 0 }
 };
 

@@ -38,6 +38,19 @@
 //produce a 5555 32bit color from a ds RGB15 plus an 5bit alpha
 #define RGB15TO5555(col,alpha5) (((alpha5)<<24) | ((((col) & 0x7C00)>>10)<<16) | ((((col) & 0x3E0)>>5)<<8) | (((col) & 0x1F)))
 
+//produce a 6665 32bit color from a ds RGB15 plus an 5bit alpha
+inline u32 RGB15TO6665(u16 col, u8 alpha5)
+{
+	u32 ret = alpha5<<24;
+	u16 r = (col&0x1F)>>0;
+	u16 g = (col&0x3E0)>>5;
+	u16 b = (col&0x7C00)>>10;
+	if(r) ret |= ((r<<1)+1);
+	if(g) ret |= ((g<<1)+1)<<8;
+	if(b) ret |= ((b<<1)+1)<<16;
+	return ret;
+}
+
 //produce a 24bpp color from a ds RGB15, using a table
 #define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[col&0x7FFF] )
 
@@ -49,6 +62,11 @@
 
 //produce a 15bpp color from individual 5bit components
 #define R5G5B5TORGB15(r,g,b) ((r)|((g)<<5)|((b)<<10))
+
+//produce a 16bpp color from individual 5bit components
+#define R6G6B6TORGB15(r,g,b) ((r>>1)|((g&0x3E)<<4)|((b&0x3E)<<9))
+
+#define GFX3D_5TO6(x) ((x)?(((x)<<1)+1):0)
 
 inline u32 gfx3d_extendDepth_15_to_24(u32 depth)
 {
@@ -247,12 +265,12 @@ extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const int material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
 extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
+extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
-extern CACHE_ALIGN const u8 alpha_5bit_to_4bit[32];
 
 //these contain the 3d framebuffer converted into the most useful format
 //they are stored here instead of in the renderers in order to consolidate the buffers
-extern CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
+extern CACHE_ALIGN u8 gfx3d_convertedScreen[256*192*4];
 extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation of illogical *2
 
 //GE commands:
@@ -324,7 +342,8 @@ void gfx3d_glGetMatrix(u32 mode, int index, float* dest);
 void gfx3d_glGetLightDirection(u32 index, u32* dest);
 void gfx3d_glGetLightColor(u32 index, u32* dest);
 
-void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha);
+void gfx3d_GetLineData(int line, u8** dst);
+void gfx3d_GetLineData15bpp(int line, u16** dst);
 
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
