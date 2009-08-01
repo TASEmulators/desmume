@@ -47,20 +47,6 @@
 
 PathInfo path;
 
-//this doesnt work anyway. why take a speed hit for public releases?
-// Luigi__: I don't agree. We should start include wifi emulation in public releases
-// because it already allows games to not hang during wifi operations
-// and thus games that perform wifi checks upon boot shouldn't hang with wifi
-// emulation turned on.
-//  zeromus: which games are these? I would like to see what happens.
-//  this is a substantial framerate hit. we should consider an emulation option 
-//  to indicate whether this whole system should be enabled
-#if 1
-#ifndef PUBLIC_RELEASE
-#undef EXPERIMENTAL_WIFI
-#endif
-#endif
-
 TCommonSettings CommonSettings;
 static BaseDriver _stub_driver;
 BaseDriver* driver = &_stub_driver;
@@ -86,6 +72,8 @@ int lagframecounter;
 int LagFrameFlag;
 int lastLag;
 int TotalLagFrames;
+
+TSCalInfo TSCal;
 
 /* ------------------------------------------------------------------------- */
 /* FIRMWARE DECRYPTION */
@@ -545,6 +533,16 @@ int NDS_Init( void) {
 	nds.FW_ARM9BootCode = NULL;
 	nds.FW_ARM7BootCode = NULL;
 
+	// Init calibration info
+	TSCal.adc.x1 = 0x0200;
+	TSCal.adc.y1 = 0x0200;
+	TSCal.scr.x1 = 0x20;
+	TSCal.scr.y1 = 0x20;
+	TSCal.adc.x2 = 0x0E00;
+	TSCal.adc.y2 = 0x0800;
+	TSCal.scr.x2 = 0xE0;
+	TSCal.scr.y2 = 0x80;
+
 	return 0;
 }
 
@@ -617,10 +615,23 @@ NDS_header * NDS_getROMHeader(void)
 	return header;
 } 
 
+
+INLINE u16 NDS_getADCTouchPosX(u16 scrX)
+{
+	return (scrX - TSCal.scr.x1 + 1) * (TSCal.adc.x2 - TSCal.adc.x1) / (TSCal.scr.x2 - TSCal.scr.x1) + TSCal.adc.x1;
+}
+
+INLINE u16 NDS_getADCTouchPosY(u16 scrY)
+{
+	return (scrY - TSCal.scr.y1 + 1) * (TSCal.adc.y2 - TSCal.adc.y1) / (TSCal.scr.y2 - TSCal.scr.y1) + TSCal.adc.y1;
+}
+
 void NDS_setTouchPos(u16 x, u16 y)
 {
-	nds.touchX = (x <<4);
-	nds.touchY = (y <<4);
+	//nds.touchX = (x <<4);
+	//nds.touchY = (y <<4);
+	nds.touchX = NDS_getADCTouchPosX(x);
+	nds.touchY = NDS_getADCTouchPosY(y);
 	nds.isTouch = 1;
 
 	MMU.ARM7_REG[0x136] &= 0xBF;
@@ -634,6 +645,7 @@ void NDS_releaseTouch(void)
 
 	MMU.ARM7_REG[0x136] |= 0x40;
 }
+
 
 void debug()
 {
@@ -2036,6 +2048,7 @@ void Sequencer::execHardware()
 		}
 	}
 
+#ifndef PUBLIC_RELEASE
 #ifdef EXPERIMENTAL_WIFI
 	if(wifi.isTriggered())
 	{
@@ -2043,6 +2056,7 @@ void Sequencer::execHardware()
 		WIFI_SoftAP_usTrigger(&wifiMac);
 		wifi.timestamp += kWifiCycles;
 	}
+#endif
 #endif
 	
 	if(divider.isTriggered()) divider.exec();
@@ -2449,6 +2463,17 @@ void NDS_Reset()
 
 	// Write the header checksum to memory (the firmware needs it to see the cart)
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
+
+	// Save touchscreen calibration info in a structure
+	// so we can easily access it at any time
+	TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x58);
+	TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x5A);
+	TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x5C);
+	TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x5D);
+	TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x5E);
+	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x60);
+	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x62);
+	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x63);
 
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
