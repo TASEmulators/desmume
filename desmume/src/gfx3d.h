@@ -257,7 +257,6 @@ extern GFX3D gfx3d;
 
 //---------------------
 
-extern CACHE_ALIGN const u16 alpha_lookup[32];
 extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 extern CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];

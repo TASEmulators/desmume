@@ -119,13 +119,6 @@ CACHE_ALIGN const u8 material_3bit_to_6bit[] = {
 	0, 8, 16, 26, 34, 44, 52, 63
 };
 
-CACHE_ALIGN const u16 alpha_lookup[] = {
-	0x0000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
-	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
-	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
-	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
-
-
 //private acceleration tables
 static float float16table[65536];
 static float float10Table[1024];
@@ -2323,7 +2316,7 @@ void gfx3d_GetLineData(int line, u8** dst)
 void gfx3d_GetLineData15bpp(int line, u16** dst)
 {
 	//TODO - this is not very thread safe!!!
-	u16 buf[256];
+	static u16 buf[256];
 	*dst = buf;
 
 	u8* lineData;
@@ -2334,7 +2327,7 @@ void gfx3d_GetLineData15bpp(int line, u16** dst)
 		const u8 g = lineData[i*4+1];
 		const u8 b = lineData[i*4+2];
 		const u8 a = lineData[i*4+3];
-		buf[i] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
+		buf[i] = R6G6B6TORGB15(r,g,b) | (a==0?0:0x8000);
 	}
 }
 
