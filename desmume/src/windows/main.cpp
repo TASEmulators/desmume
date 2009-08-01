@@ -987,7 +987,7 @@ void CheckMessages()
 		}
 	}
 }
-int fps;
+
 DWORD WINAPI run()
 {
 	u32 cycles = 0;
@@ -1002,13 +1002,13 @@ DWORD WINAPI run()
 	u64 diffticks=0;
 	u32 framecount=0;
 	u64 onesecondticks=0;
-	//int fps=0;
+	int fps=0;
 	int fpsframecount=0;
 	u64 fpsticks=0;
 	HWND	hwnd = MainWindow->getHWnd();
 
 	InitSpeedThrottle();
-fps=0;
+
 	osd->setRotate(video.rotation);
 
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
@@ -2950,6 +2950,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		HudClickRelease(&Hud);
 		return 0;
 
+#if 0
 	case WM_INITMENU: {
 		HMENU menu = (HMENU)wParam;
 		//last minute modification of menu before display
@@ -2958,6 +2959,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		#endif
 		break;
 	}
+#endif
 
 	case WM_COMMAND:
 		if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
