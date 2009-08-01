@@ -179,7 +179,6 @@ static u32 clInd = 0;
 static u32 clInd2 = 0;
 static bool isSwapBuffers = false;
 bool isVBlank = false;
-bool bWaitForPolys = false;
 #endif
 
 static u32 BTind = 0;
@@ -326,6 +325,8 @@ void gfx3d_reset()
 	memset(vertlists, 0, sizeof(vertlists));
 	listTwiddle = 1;
 	twiddleLists();
+	gfx3d.polylist = polylist;
+	gfx3d.vertlist = vertlist;
 
 	MatrixInit (mtxCurrent[0]);
 	MatrixInit (mtxCurrent[1]);
@@ -364,7 +365,6 @@ void gfx3d_reset()
 	clInd2 = 0;
 	isSwapBuffers = false;
 	isVBlank = false;
-	bWaitForPolys = false;
 #endif
 
 	GFX_PIPEclear();
@@ -1508,17 +1508,6 @@ void gfx3d_glFlush(u32 v)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
-#if 0
-	
-	if (polygonListCompleted == 2)
-	{
-		//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-		//gxstat |= 0x08000000;		// set busy flag
-		//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		bWaitForPolys = true;
-		return;
-	}
-#endif
 	isSwapBuffers = true;
 #else
 	if(!flushPending)
@@ -1656,9 +1645,10 @@ void gfx3d_VBlankSignal()
 	isVBlank = true;
 	if (isSwapBuffers)
 	{
-		//if (bWaitForPolys) return;
 		gfx3d_doFlush();
 		isSwapBuffers = false;
+		GFX_DELAY(392);
+		NDS_RescheduleGXFIFO();
 	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
@@ -1683,12 +1673,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	
 	if (!drawPending) return;
 	drawPending = FALSE;
-	if(skipFrame) 
-	{
-		GFX_DELAY(392);
-		NDS_RescheduleGXFIFO();
-		return;
-	}
+	if(skipFrame) return;
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
@@ -1697,9 +1682,6 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 
 	gpu3D->NDS_3D_Render();
-
-	GFX_DELAY(392);
-	NDS_RescheduleGXFIFO();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -1759,6 +1741,14 @@ void gfx3d_sendCommandToFIFO(u32 val)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i\n", clCmd & 0xFF, val, gxPIPE.tail, gxFIFO.tail);
 #endif
+	if (gxFIFO.size > 255) 
+	{
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+	}
+
 	switch (clCmd & 0xFF)
 	{
 		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
@@ -1863,6 +1853,13 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i (direct)\n", cmd, param, gxPIPE.tail, gxFIFO.tail);
 #endif
+	if (gxFIFO.size > 255) 
+	{
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+		gfx3d_execute3D();
+	}
 
 	switch (cmd)
 	{
@@ -2376,6 +2373,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GLIN", 4, 1, &clInd},
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	{ "GLI2", 4, 1, &clInd2},
+	{ "GLSB", 1, 1, &isSwapBuffers},
 #endif
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
