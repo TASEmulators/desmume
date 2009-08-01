@@ -478,9 +478,9 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	Fragment &destFragment = screen[adr];
 	FragmentColor &destFragmentColor = screenColor[adr];
 
-	//depth test
 	u32 depth;
-	if(gfx3d.wbuffer) {
+	if(gfx3d.wbuffer)
+	{
 		//not sure about this
 		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
 		depth = u32floor(4096*w);
@@ -490,6 +490,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		depth = u32floor(z*0x7FFF);
 		depth <<= 9;
 	}
+
 	if(polyAttr.decalMode)
 	{
 		if(depth != destFragment.depth)
@@ -502,6 +503,36 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		if(depth>=destFragment.depth) 
 		{
 			goto depth_fail;
+		}
+	}
+
+	//handle shadow polys
+	if(shader.mode == 3)
+	{
+		if(polyAttr.polyid == 0)
+		{
+			//that's right! stencil buffers, despite reports to the contrary, must be more than 1 bit
+			//this is necessary to make these cases work all at once.
+			//1. sm64 (standing near signs and blocks)
+			//2. mariokart (no glitches in shadow shape in kart selector)
+			//3. mariokart (no junk beneath platform in kart selector / no shadow beneath grate floor in bowser stage)
+			//(specifically, the shadows in mario kart are complicated concave shapes)
+			destFragment.stencil++;
+			goto rejected_fragment;
+		}
+		else
+		{
+			if(destFragment.stencil)
+			{
+				destFragment.stencil--;
+				goto rejected_fragment;
+			}	
+
+			//shadow polys have a special check here to keep from self-shadowing when user
+			//has tried to prevent it from happening
+			//if this isnt here, then the vehicle select in mariokart will look terrible
+			if(destFragment.polyid.opaque == polyAttr.polyid)
+				goto rejected_fragment;
 		}
 	}
 	
@@ -527,7 +558,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	FragmentColor shaderOutput;
 	shader.shade(shaderOutput);
 
-	//alpha test
+	//alpha test (don't have any test cases for this...? is it in the right place...?)
 	if(gfx3d.enableAlphaTest)
 	{
 		if(shaderOutput.a < gfx3d.alphaTestRef)
@@ -537,25 +568,6 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	//we shouldnt do any of this if we generated a totally transparent pixel
 	if(shaderOutput.a != 0)
 	{
-		//handle shadow polys
-		if(shader.mode == 3)
-		{
-			if(polyAttr.polyid == 0)
-			{
-				goto rejected_fragment;
-			}
-			else
-			{
-				//now, if we arent supposed to draw shadow here, then bail out
-				if(destFragment.stencil == 0)
-				{
-					goto rejected_fragment;
-				}
-
-				destFragment.stencil = 0;
-			}
-		}
-
 		//handle polyids
 		bool isOpaquePixel = shaderOutput.a == 31;
 		if(isOpaquePixel)
@@ -567,16 +579,6 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		}
 		else
 		{
-
-			//shadow polys have a special check here to keep from self-shadowing when user
-			//has tried to prevent it from happening
-			//if this isnt here, then the vehicle select in mariokart will look terrible
-			if(shader.mode == 3)
-			{
-				if(destFragment.polyid.opaque == polyAttr.polyid)
-					goto rejected_fragment;
-			}
-		
 			//dont overwrite pixels on translucent polys with the same polyids
 			if(destFragment.polyid.translucent == polyAttr.polyid)
 				goto rejected_fragment;
@@ -598,17 +600,8 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 
 	}
 
-	goto done_with_pixel;
-
 	depth_fail:
-	//handle stencil-writing in shadow mode
-	if((shader.mode == 3) && (polyAttr.polyid == 0))
-	{
-		destFragment.stencil = 1;
-	}
-
 	rejected_fragment:
-	done_with_pixel:
 	;
 }
 
@@ -1051,9 +1044,9 @@ static void SoftRastFramebufferProcess()
 
 	if(gfx3d.enableFog)
 	{
-		u32 r = ((gfx3d.fogColor)&0x1F)<<1;
-		u32 g = ((gfx3d.fogColor>>5)&0x1F)<<1;
-		u32 b = ((gfx3d.fogColor>>10)&0x1F)<<1;
+		u32 r = GFX3D_5TO6((gfx3d.fogColor)&0x1F);
+		u32 g = GFX3D_5TO6((gfx3d.fogColor>>5)&0x1F);
+		u32 b = GFX3D_5TO6((gfx3d.fogColor>>10)&0x1F);
 		u32 a = (gfx3d.fogColor>>16)&0x1F;
 		for(int i=0;i<256*192;i++)
 		{
@@ -1288,7 +1281,7 @@ static void SoftRastRender()
 				//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
 				//(or use a special zero fill in the bulk clearing above)
 				u16 col = clearImage[adr];
-				dstColor->color = RGB15TO5555(col,31*(col>>15));
+				dstColor->color = RGB15TO6665(col,31*(col>>15));
 				
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
