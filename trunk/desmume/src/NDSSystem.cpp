@@ -43,10 +43,6 @@
 #include "Disassembler.h"
 #include "readwrite.h"
 
-#ifdef _WIN32
-#include "./windows/disView.h"
-#endif
-
 #include "path.h"
 
 PathInfo path;
