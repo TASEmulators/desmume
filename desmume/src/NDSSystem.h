@@ -293,6 +293,22 @@ struct GameInfo
 	int romsize;
 };
 
+typedef struct TSCalInfo
+{
+	struct adc
+	{
+		u16 x1, x2;
+		u16 y1, y2;
+	} adc;
+
+	struct scr
+	{
+		u8 x1, x2;
+		u8 y1, y2;
+	} scr;
+
+} TSCalInfo;
+
 extern GameInfo gameInfo;
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
