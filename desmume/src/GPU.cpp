@@ -116,384 +116,6 @@ CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 
 
 /*****************************************************************************/
-//			PIXEL RENDERING - 3D
-/*****************************************************************************/
-
-#define DECL3D \
-	int x = dstX; \
-	int passing = dstX<<1; \
-	u16 color = _3dColorLine[srcX]; \
-	u8 alpha = _3dAlphaLine[srcX]; \
-	u8* dst = currDst;
-
-FORCEINLINE void GPU::setFinal3DColorSpecialNone(int dstX, int srcX)
-{
-	DECL3D;
-
-	// We must blend if the 3D layer has the highest prio
-	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
-	{
-		int bg_under = bgPixels[dstX];
-		u16 final = color;
-
-		// If the layer we are drawing on is selected as 2nd source, we can blend
-		if(BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha) + (c2.bits.red * (16 - alpha)))/16;
-				cfinal.bits.green = ((c1.bits.green * alpha) + (c2.bits.green * (16 - alpha)))/16;
-				cfinal.bits.blue = ((c1.bits.blue * alpha) + (c2.bits.blue * (16 - alpha)))/16;
-
-				final = cfinal.val;
-			}
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (color | 0x8000));
-		bgPixels[x] = 0;
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialBlend(int dstX, int srcX)
-{
-	DECL3D;
-
-	// We can blend if the 3D layer is selected as 1st target,
-	//but also if the 3D layer has the highest prio.
-	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && ((BLDCNT & 0x1) || bg0HasHighestPrio))
-	{
-		int bg_under = bgPixels[x];
-		u16 final = color;
-
-		//If the layer we are drawing on is selected as 2nd source, we can blend
-		if(BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) )) / 16;
-				cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) )) / 16;
-				cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) )) / 16;
-
-				final = cfinal.val;
-			}
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (color | 0x8000));
-		bgPixels[x] = 0;
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialIncrease(int dstX, int srcX)
-{
-	DECL3D;
-	u16 final = color;
-
-	// We must blend if the 3D layer has the highest prio
-	// But it doesn't seem to have priority over fading,
-	// unlike semi-transparent sprites
-	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
-	{
-		int bg_under = bgPixels[x];
-
-		/* If the layer we are drawing on is selected as 2nd source, we can blend */
-		if(BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
-				cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
-				cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
-
-				final = cfinal.val;
-			}
-		}
-	}
-	
-	if(BLDCNT & 0x1)
-	{
-		if (BLDY_EVY != 0x0)
-		{
-			final = fadeInColors[BLDY_EVY][final&0x7FFF];
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (final | 0x8000));
-		bgPixels[x] = 0;
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialDecrease(int dstX, int srcX)
-{
-	DECL3D;
-
-	u16 final = color;
-
-	// We must blend if the 3D layer has the highest prio
-	// But it doesn't seem to have priority over fading
-	// unlike semi-transparent sprites
-	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
-	{
-		int bg_under = bgPixels[x];
-
-		// If the layer we are drawing on is selected as 2nd source, we can blend
-		if(BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
-				cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
-				cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
-
-				final = cfinal.val;
-			}
-		}
-	}
-	
-	if(BLDCNT & 0x1)
-	{
-		if (BLDY_EVY != 0x0)
-		{
-			final = fadeOutColors[BLDY_EVY][final&0x7FFF];
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (final | 0x8000));
-		bgPixels[x] = 0;
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialNoneWnd(int dstX, int srcX)
-{
-	DECL3D;
-
-	bool windowDraw = true, windowEffect = true;
-	
-	renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		// We must blend if the 3D layer has the highest prio 
-		if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
-		{
-			int bg_under = bgPixels[x];
-			u16 final = color;
-
-			// If the layer we are drawing on is selected as 2nd source, we can blend
-			if(BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
-					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
-					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
-
-					final = cfinal.val;
-				}
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (color | 0x8000));
-			bgPixels[x] = 0;
-		}
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialBlendWnd(int dstX, int srcX)
-{
-	DECL3D;
-
-	bool windowDraw = true, windowEffect = true;
-	
-	renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		// We can blend if the 3D layer is selected as 1st target,
-		// but also if the 3D layer has the highest prio.
-		if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && (((BLDCNT & 0x1) && windowEffect) || bg0HasHighestPrio))
-		{
-			int bg_under = bgPixels[x];
-			u16 final = color;
-
-			// If the layer we are drawing on is selected as 2nd source, we can blend
-			if(BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
-					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
-					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
-
-					final = cfinal.val;
-				}
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (color | 0x8000));
-			bgPixels[x] = 0;
-		}
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialIncreaseWnd(int dstX, int srcX)
-{
-	DECL3D;
-
-	bool windowDraw = true, windowEffect = true;
-	u16 final = color;
-	
-	renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		// We must blend if the 3D layer has the highest prio 
-		// But it doesn't seem to have priority over fading, 
-		// unlike semi-transparent sprites 
-		if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
-		{
-			int bg_under = bgPixels[x];
-
-			// If the layer we are drawing on is selected as 2nd source, we can blend 
-			if(BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
-					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
-					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
-
-					final = cfinal.val;
-				}
-			}
-		}
-		
-		if((BLDCNT & 0x1) && windowEffect)
-		{
-			if (BLDY_EVY != 0x0)
-			{
-				final = fadeInColors[BLDY_EVY][final&0x7FFF];
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (final | 0x8000));
-			bgPixels[x] = 0;
-		}
-	}
-}
-
-FORCEINLINE void GPU::setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX)
-{
-	DECL3D;
-
-	bool windowDraw = true, windowEffect = true;
-	u16 final = color;
-	
-	renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		// We must blend if the 3D layer has the highest prio 
-		// But it doesn't seem to have priority over fading, 
-		// unlike semi-transparent sprites 
-		if((alpha < 16)) ////zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
-		{
-			int bg_under = bgPixels[x];
-
-			// If the layer we are drawing on is selected as 2nd source, we can blend 
-			if(BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
-					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
-					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
-
-					final = cfinal.val;
-				}
-			}
-		}
-		
-		if((BLDCNT & 0x1) && windowEffect)
-		{
-			if (BLDY_EVY != 0x0)
-			{
-				final = fadeOutColors[BLDY_EVY][final&0x7FFF];
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (final | 0x8000));
-			bgPixels[x] = 0;
-		}
-	}
-}
-
-/*****************************************************************************/
 //			INITIALIZATION
 /*****************************************************************************/
 
@@ -938,8 +560,68 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 }
 
 /*****************************************************************************/
-//			PIXEL RENDERING - BGS
+//			PIXEL RENDERING
 /*****************************************************************************/
+
+template<BlendFunc FUNC, bool WINDOW>
+FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
+{
+	int x = dstX;
+	int passing = dstX<<1;
+	u8* color = &_3dColorLine[srcX<<2];
+	u8 red = color[0];
+	u8 green = color[1];
+	u8 blue = color[2];
+	u8 alpha = color[3];
+	u8* dst = currDst;
+	u16 final;
+
+	bool windowEffect = true;
+
+	if(WINDOW)
+	{
+		bool windowDraw;
+		renderline_checkWindows(dstX, windowDraw, windowEffect);
+
+		//we never have anything more to do if the window rejected us
+		if(!windowDraw) return;
+	}
+
+	int bg_under = bgPixels[dstX];
+	if(blend2[bg_under])
+	{
+		if(alpha<32)
+		{
+			//if the layer underneath is a blend bottom layer, then 3d always alpha blends with it
+			COLOR c2, cfinal;
+
+			c2.val = T2ReadWord(dst, passing);
+
+			cfinal.bits.red = ((red * alpha) + ((c2.bits.red<<1) * (32 - alpha)))>>6;
+			cfinal.bits.green = ((green * alpha) + ((c2.bits.green<<1) * (32 - alpha)))>>6;
+			cfinal.bits.blue = ((blue * alpha) + ((c2.bits.blue<<1) * (32 - alpha)))>>6;
+
+			final = cfinal.val;
+		}
+		else final = R6G6B6TORGB15(red,green,blue);
+	}
+	else 
+	{
+		final = R6G6B6TORGB15(red,green,blue);
+		//perform the special effect
+		if(windowEffect)
+			switch(FUNC) {
+				case Increase: final = currentFadeInColors[final&0x7FFF]; break;
+				case Decrease: final = currentFadeOutColors[final&0x7FFF]; break;
+				case None: 
+				case Blend:
+					break;
+			}
+	}
+
+	T2WriteWord(dst, passing, (final | 0x8000));
+	bgPixels[x] = 0;
+}
 
 
 template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
@@ -1066,14 +748,14 @@ FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
 {
 	switch(setFinalColor3d_funcNum)
 	{
-	case 0x0: setFinal3DColorSpecialNone(dstX,srcX); break;
-	case 0x1: setFinal3DColorSpecialBlend(dstX,srcX); break;
-	case 0x2: setFinal3DColorSpecialIncrease(dstX,srcX); break;
-	case 0x3: setFinal3DColorSpecialDecrease(dstX,srcX); break;
-	case 0x4: setFinal3DColorSpecialNoneWnd(dstX,srcX); break;
-	case 0x5: setFinal3DColorSpecialBlendWnd(dstX,srcX); break;
-	case 0x6: setFinal3DColorSpecialIncreaseWnd(dstX,srcX); break;
-	case 0x7: setFinal3DColorSpecialDecreaseWnd(dstX,srcX); break;
+	case 0x0: _master_setFinal3dColor<None,false>(dstX,srcX); break;
+	case 0x1: _master_setFinal3dColor<Blend,false>(dstX,srcX); break;
+	case 0x2: _master_setFinal3dColor<Increase,false>(dstX,srcX); break;
+	case 0x3: _master_setFinal3dColor<Decrease,false>(dstX,srcX); break;
+	case 0x4: _master_setFinal3dColor<None,true>(dstX,srcX); break;
+	case 0x5: _master_setFinal3dColor<Blend,true>(dstX,srcX); break;
+	case 0x6: _master_setFinal3dColor<Increase,true>(dstX,srcX); break;
+	case 0x7: _master_setFinal3dColor<Decrease,true>(dstX,srcX); break;
 	};
 }
 
@@ -2403,8 +2085,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							BGxOFS *bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
 							u16 hofs = (T1ReadWord((u8*)&bgofs->BGxHOFS, 0) & 0x1FF);
 
-							gfx3d_GetLineData(l, &gpu->_3dColorLine, &gpu->_3dAlphaLine);
-							u16* colorLine = gpu->_3dColorLine;
+							gfx3d_GetLineData(l, &gpu->_3dColorLine);
+							u8* colorLine = gpu->_3dColorLine;
 
 							for(int k = 0; k < 256; k++)
 							{
@@ -2413,7 +2095,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 								if((q < 0) || (q > 255))
 									continue;
 
-								if(colorLine[q] & 0x8000)
+								if(colorLine[(q<<2)+3])
 									gpu->setFinalColor3d(k, q);
 							}
 
@@ -2525,7 +2207,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 								{
 									//INFO("Capture 3D\n");
 									u16* colorLine;
-									gfx3d_GetLineData(l, &colorLine, NULL);
+									gfx3d_GetLineData15bpp(l, &colorLine);
 									CAPCOPY(((u8*)colorLine),cap_dst);
 								}
 							break;
@@ -2563,7 +2245,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 						}
 						else
 						{
-							gfx3d_GetLineData(l, &srcA, NULL);
+							gfx3d_GetLineData15bpp(l, &srcA);
 						}
 
 						static u16 fifoLine[256];

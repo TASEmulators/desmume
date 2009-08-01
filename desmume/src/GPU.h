@@ -746,8 +746,7 @@ struct GPU
 	bool blend1;
 	u8* currDst;
 
-	u16* _3dColorLine;
-	u8* _3dAlphaLine;
+	u8* _3dColorLine;
 
 
 	static struct MosaicLookup {
@@ -777,6 +776,9 @@ struct GPU
 	template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
 	FORCEINLINE FASTCALL bool _master_setFinalBGColor(u16 &color, const u32 x);
 
+	template<BlendFunc FUNC, bool WINDOW>
+	FORCEINLINE FASTCALL void _master_setFinal3dColor(int dstX, int srcX);
+
 	int setFinalColorBck_funcNum;
 	int bgFunc;
 	int setFinalColor3d_funcNum;
@@ -798,30 +800,12 @@ struct GPU
 	}
 
 
-	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const u32 x);
 	void setFinalColor3d(int dstX, int srcX);
-
-	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialNone(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialBlend(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialIncrease(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialDecrease(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialNoneWnd(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialBlendWnd(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialIncreaseWnd(u16 &color, const u32 x);
-	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialDecreaseWnd(u16 &color, const u32 x);
 	
-	FORCEINLINE void setFinal3DColorSpecialNone(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialBlend(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialIncrease(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialDecrease(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialNoneWnd(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialBlendWnd(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialIncreaseWnd(int dstX, int srcX);
-	FORCEINLINE void setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX);
-
-
+	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const u32 x);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const u32 x, const int opaque);
 	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const u32 x, const int opaque);
+
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
 	u32 getAffineStart(int layer, int xy);

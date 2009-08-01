@@ -693,34 +693,58 @@ static void GL_ReadFramebuffer()
 	//is it safe to modify the screen buffer? if not, we could make a temp copy
 	for(int i=0,y=191;y>=0;y--)
 	{
-		u16* dst = gfx3d_convertedScreen + (y<<8);
-		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
-
-			//I dont know much about this kind of stuff, but this seems to help
-			//for some reason I couldnt make the intrinsics work 
-			//u8* u8screen3D =  (u8*)&((u32*)GPU_screen3D)[i];
-			/*#define PREFETCH32(X,Y) __asm { prefetchnta [u8screen3D+32*0x##X##Y] }
-			#define PREFETCH128(X) 	PREFETCH32(X,0) PREFETCH32(X,1) PREFETCH32(X,2) PREFETCH32(X,3) \
-									PREFETCH32(X,4) PREFETCH32(X,5) PREFETCH32(X,6) PREFETCH32(X,7) \
-									PREFETCH32(X,8) PREFETCH32(X,9) PREFETCH32(X,A) PREFETCH32(X,B) \
-									PREFETCH32(X,C) PREFETCH32(X,D) PREFETCH32(X,E) PREFETCH32(X,F) 
-			PREFETCH128(0); PREFETCH128(1);*/
+		u8* dst = gfx3d_convertedScreen + (y<<(8+2));
 
 		for(int x=0;x<256;x++,i++)
 		{
 			u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
-			u32screen3D>>=3;
-			u32screen3D &= 0x1F1F1F1F;
-
+			u32screen3D>>=2;
+			u32screen3D &= 0x3F3F3F3F;
+			
 			const int t = i<<2;
 			const u8 a = GPU_screen3D[t+3];
 			const u8 r = GPU_screen3D[t+2];
 			const u8 g = GPU_screen3D[t+1];
 			const u8 b = GPU_screen3D[t+0];
-			dst[x] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
-			dstAlpha[x] = alpha_5bit_to_4bit[a];
+			*dst++ = r;
+			*dst++ = g;
+			*dst++ = b;
+			*dst++ = a;
 		}
 	}
+
+	////convert the pixels to a different format which is more convenient
+	////is it safe to modify the screen buffer? if not, we could make a temp copy
+	//for(int i=0,y=191;y>=0;y--)
+	//{
+	//	u16* dst = gfx3d_convertedScreen + (y<<8);
+	//	u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
+
+	//		//I dont know much about this kind of stuff, but this seems to help
+	//		//for some reason I couldnt make the intrinsics work 
+	//		//u8* u8screen3D =  (u8*)&((u32*)GPU_screen3D)[i];
+	//		/*#define PREFETCH32(X,Y) __asm { prefetchnta [u8screen3D+32*0x##X##Y] }
+	//		#define PREFETCH128(X) 	PREFETCH32(X,0) PREFETCH32(X,1) PREFETCH32(X,2) PREFETCH32(X,3) \
+	//								PREFETCH32(X,4) PREFETCH32(X,5) PREFETCH32(X,6) PREFETCH32(X,7) \
+	//								PREFETCH32(X,8) PREFETCH32(X,9) PREFETCH32(X,A) PREFETCH32(X,B) \
+	//								PREFETCH32(X,C) PREFETCH32(X,D) PREFETCH32(X,E) PREFETCH32(X,F) 
+	//		PREFETCH128(0); PREFETCH128(1);*/
+
+	//	for(int x=0;x<256;x++,i++)
+	//	{
+	//		u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
+	//		u32screen3D>>=3;
+	//		u32screen3D &= 0x1F1F1F1F;
+
+	//		const int t = i<<2;
+	//		const u8 a = GPU_screen3D[t+3];
+	//		const u8 r = GPU_screen3D[t+2];
+	//		const u8 g = GPU_screen3D[t+1];
+	//		const u8 b = GPU_screen3D[t+0];
+	//		dst[x] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
+	//		dstAlpha[x] = a;
+	//	}
+	//}
 }
 
 
@@ -831,9 +855,9 @@ static void OGLRender()
 			u8 alpha =	material_5bit_to_8bit[poly->getAlpha()];
 			if(wireframe) alpha = 255;
 			u8 color0[4] = {
-					material_5bit_to_8bit[vert0->color[0]],
-					material_5bit_to_8bit[vert0->color[1]],
-					material_5bit_to_8bit[vert0->color[2]],
+					vert0->color[0]<<2,
+					vert0->color[1]<<2,
+					vert0->color[2]<<2,
 					alpha
 				};
 
@@ -846,15 +870,15 @@ static void OGLRender()
 				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
 				
 				u8 color1[4] = {
-					material_5bit_to_8bit[vert1->color[0]],
-					material_5bit_to_8bit[vert1->color[1]],
-					material_5bit_to_8bit[vert1->color[2]],
+					vert1->color[0]<<2,
+					vert1->color[1]<<2,
+					vert1->color[2]<<2,
 					alpha
 				};
 				u8 color2[4] = {
-					material_5bit_to_8bit[vert2->color[0]],
-					material_5bit_to_8bit[vert2->color[1]],
-					material_5bit_to_8bit[vert2->color[2]],
+					vert2->color[0]<<2,
+					vert2->color[1]<<2,
+					vert2->color[2]<<2,
 					alpha
 				};
 
