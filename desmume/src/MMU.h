@@ -26,7 +26,6 @@
 #define MMU_H
 
 #include "FIFO.h"
-#include "dscard.h"
 #include "mem.h"
 
 #include "ARM9.h"
@@ -37,6 +36,25 @@
 #define ARMPROC (PROCNUM ? NDS_ARM7:NDS_ARM9)
 
 typedef const u8 TWaitState;
+
+enum ECardMode
+{
+	CardMode_Normal = 0,
+	CardMode_KEY1,
+	CardMode_KEY2,
+};
+
+typedef struct
+{
+	
+	u8 command[8];
+
+	u32 address;
+	u32 transfer_count;
+
+	ECardMode mode;
+	
+} nds_dscard;
 
 struct MMU_struct {
 	//ARM7 mem

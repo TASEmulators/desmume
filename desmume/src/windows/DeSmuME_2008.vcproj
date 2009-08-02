@@ -932,10 +932,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\dscard.h"
-					>
-				</File>
-				<File
 					RelativePath="..\fat.h"
 					>
 				</File>
