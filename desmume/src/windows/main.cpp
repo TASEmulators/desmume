@@ -165,11 +165,14 @@ void InitRamSearch();
 void FilterUpdate(HWND hwnd, bool user=true);
 
 
-CRITICAL_SECTION win_sync;
+CRITICAL_SECTION win_execute_sync;
 volatile int win_sound_samplecounter = 0;
 
-Lock::Lock() { EnterCriticalSection(&win_sync); }
-Lock::~Lock() { LeaveCriticalSection(&win_sync); }
+CRITICAL_SECTION win_backbuffer_sync;
+
+Lock::Lock() : m_cs(&win_execute_sync) { EnterCriticalSection(m_cs); }
+Lock::Lock(CRITICAL_SECTION& cs) : m_cs(&cs) { EnterCriticalSection(m_cs); }
+Lock::~Lock() { LeaveCriticalSection(m_cs); }
 
 //===================== DirectDraw vars
 LPDIRECTDRAW7			lpDDraw=NULL;
@@ -839,6 +842,8 @@ static void DoDisplay_DrawHud()
 //does a single display work unit. only to be used from the display thread
 static void DoDisplay(bool firstTime)
 {
+	Lock lock (win_backbuffer_sync);
+
 	if(firstTime)
 	{
 		//on single core systems, draw straight to the screen
@@ -936,19 +941,9 @@ void Display()
 
 		g_mutex_lock(display_mutex);
 
-		//huh... i wonder if there is a less ugly way to do this
-		if(currDisplayBuffer == 0)
-			if(newestDisplayBuffer == 1)
-				newestDisplayBuffer = 2;
-			else newestDisplayBuffer = 1;
-		else if(currDisplayBuffer == 1)
-			if(newestDisplayBuffer == 2)
-				newestDisplayBuffer = 0;
-			else newestDisplayBuffer = 2;
-		else //if(currDisplayBuffer == 1)
-			if(newestDisplayBuffer == 0)
-				newestDisplayBuffer = 1;
-			else newestDisplayBuffer = 0;
+		if(int diff = (currDisplayBuffer+1)%3 - newestDisplayBuffer)
+			newestDisplayBuffer += diff;
+		else newestDisplayBuffer = (currDisplayBuffer+2)%3;
 
 		memcpy(displayBuffers[newestDisplayBuffer],GPU_screen,256*192*4);
 
@@ -1484,7 +1479,8 @@ int _main()
 
 	driver = new WinDriver();
 
-	InitializeCriticalSection(&win_sync);
+	InitializeCriticalSection(&win_execute_sync);
+	InitializeCriticalSection(&win_backbuffer_sync);
 
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
@@ -1778,9 +1774,9 @@ int _main()
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
 	CommonSettings.spuAdpcmCache = GetPrivateProfileInt("Sound","SPUAdpcmCache",0,IniName)!=0;
 
-	EnterCriticalSection(&win_sync);
+	EnterCriticalSection(&win_execute_sync);
 	int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
-	LeaveCriticalSection(&win_sync);
+	LeaveCriticalSection(&win_execute_sync);
 	if(spu_ret != 0)
 	{
 		MessageBox(MainWindow->getHWnd(),"Unable to initialize DirectSound","Error",MB_OK);
@@ -2067,6 +2063,8 @@ void SetScreenGap(int gap)
 //========================================================================================
 void SetRotate(HWND hwnd, int rot)
 {
+	Lock lock (win_backbuffer_sync);
+
 	RECT rc;
 	int oldrot = video.rotation;
 	int oldheight, oldwidth;
@@ -3072,36 +3070,60 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			else staterewindingenabled = true;
 			break;
 		case IDM_RENDER_NORMAL:
-			video.setfilter(video.NONE);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.NONE);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_HQ2X:
-			video.setfilter(video.HQ2X);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.HQ2X);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_2XSAI:
-			video.setfilter(video._2XSAI);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video._2XSAI);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_SUPER2XSAI:
-			video.setfilter(video.SUPER2XSAI);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.SUPER2XSAI);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_SUPEREAGLE:
-			video.setfilter(video.SUPEREAGLE);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.SUPEREAGLE);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_SCANLINE:
-			video.setfilter(video.SCANLINE);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.SCANLINE);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_BILINEAR:
-			video.setfilter(video.BILINEAR);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.BILINEAR);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_RENDER_NEAREST2X:
-			video.setfilter(video.NEAREST2X);
-			FilterUpdate(hwnd);
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.NEAREST2X);
+				FilterUpdate(hwnd);
+			}
 			break;
 		case IDM_STATE_LOAD:
 			{
@@ -4544,7 +4566,7 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 		}
 		else
 		{
-			RequestAbortLuaScript((int)scriptHWnd, "terminated to restart because of a call to gens.openscript");
+			RequestAbortLuaScript((int)scriptHWnd, "terminated to restart because of a call to emu.openscript");
 			SendMessage(scriptHWnd, WM_COMMAND, IDC_BUTTON_LUARUN, 0);
 		}
 	}

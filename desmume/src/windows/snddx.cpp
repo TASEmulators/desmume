@@ -73,7 +73,6 @@ static int issoundmuted;
 static volatile bool doterminate;
 static volatile bool terminated;
 
-extern CRITICAL_SECTION win_sync;
 extern volatile int win_sound_samplecounter;
 
 DWORD WINAPI SNDDXThread( LPVOID )
