@@ -886,7 +886,7 @@ u32 rom_mask = 0;
 u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
-void MMU_clearMem()
+void MMU_Reset()
 {
 	memset(ARM9Mem.ARM9_DTCM, 0, sizeof(ARM9Mem.ARM9_DTCM));
 	memset(ARM9Mem.ARM9_ITCM, 0, sizeof(ARM9Mem.ARM9_ITCM));
@@ -953,6 +953,16 @@ void MMU_clearMem()
 	addonsReset();
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
+
+	memset(MMU.dscard[ARMCPU_ARM9].command, 0, 8);
+	MMU.dscard[ARMCPU_ARM9].address = 0;
+	MMU.dscard[ARMCPU_ARM9].transfer_count = 0;
+	MMU.dscard[ARMCPU_ARM9].mode = CardMode_Normal;
+
+	memset(MMU.dscard[ARMCPU_ARM7].command, 0, 8);
+	MMU.dscard[ARMCPU_ARM7].address = 0;
+	MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
+	MMU.dscard[ARMCPU_ARM7].mode = CardMode_Normal;
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
@@ -1068,83 +1078,107 @@ static void execdiv() {
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
+	nds_dscard& card = MMU.dscard[PROCNUM];
+
 	if(!(val & 0x80000000))
 	{
-		MMU.dscard[PROCNUM].address = 0;
-		MMU.dscard[PROCNUM].transfer_count = 0;
+		card.address = 0;
+		card.transfer_count = 0;
 
 		val &= 0x7F7FFFFF;
 		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 		return;
 	}
 
-    switch(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT))
+	memcpy(&card.command[0], &MMU.MMU_MEM[PROCNUM][0x40][0x1A8], 8);
+
+	switch (card.mode)
 	{
-		/* Dummy */
+	case CardMode_Normal: 
+		break;
+
+	case CardMode_KEY1:
+		{
+			// TODO
+			INFO("Cartridge: KEY1 mode unsupported.\n");
+
+			card.address = 0;
+			card.transfer_count = 0;
+
+			val &= 0x7F7FFFFF;
+			T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+			return;
+		}
+		break;
+	}
+
+    switch(card.command[0])
+	{
+		// Dummy
 		case 0x9F:
 			{
-				MMU.dscard[PROCNUM].address = 0;
-				MMU.dscard[PROCNUM].transfer_count = 0x800;
+				card.address = 0;
+				card.transfer_count = 0x800;
 			}
 			break;
 
-		/* Nand Init */
+		// Nand Init
 		case 0x94:
 			{
-				MMU.dscard[PROCNUM].address = 0;
-				MMU.dscard[PROCNUM].transfer_count = 0x80;
+				card.address = 0;
+				card.transfer_count = 0x80;
 			}
 			break;
 
-		/* Nand Error? */
+		// Nand Error?
 		case 0xD6:
 			{
-				MMU.dscard[PROCNUM].address = 0;
-				MMU.dscard[PROCNUM].transfer_count = 1;
+				card.address = 0;
+				card.transfer_count = 1;
 			}
 			break;
 
-		/* Data read */
+		// Data read
 		case 0x00:
 		case 0xB7:
 			{
-				MMU.dscard[PROCNUM].address =   (MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+1) << 24) | 
-												(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+2) << 16) | 
-												(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+3) << 8) | 
-												(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+4));
-				MMU.dscard[PROCNUM].transfer_count = 0x80;
+				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
+				card.transfer_count = 0x80;
 			}
 			break;
 
-		/* Get ROM chip ID */
+		// Get ROM chip ID
 		case 0x90:
 		case 0xB8:
 			{
-				MMU.dscard[PROCNUM].address = 0;
-				MMU.dscard[PROCNUM].transfer_count = 1;
+				card.address = 0;
+				card.transfer_count = 1;
+			}
+			break;
+
+		// Switch to KEY1 mode
+		case 0x3C:
+			{
+				card.address = 0;
+				card.transfer_count = 0;
+				card.mode = CardMode_KEY1;
 			}
 			break;
 
 		default:
 			{
-				LOG("WRITE CARD command: %08X %08X\t", 
-					((MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT) << 24) | 
-					(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+1) << 16) | 
-					(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+2) << 8) | 
-					(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+3))),
-					((MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+4) << 24) | 
-					(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+5) << 16) | 
-					(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+6) << 8) | 
-					(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+7))));
+				LOG("WRITE CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
+					card.command[0], card.command[1], card.command[2], card.command[3],
+					card.command[4], card.command[5], card.command[6], card.command[7]);
 				LOG("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 
-				MMU.dscard[PROCNUM].address = 0;
-				MMU.dscard[PROCNUM].transfer_count = 0;
+				card.address = 0;
+				card.transfer_count = 0;
 			}
 			break;
 	}
 
-	if(MMU.dscard[PROCNUM].transfer_count == 0)
+	if(card.transfer_count == 0)
 	{
 		val &= 0x7F7FFFFF;
 		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
@@ -1154,7 +1188,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
     val |= 0x00800000;
     T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 						
-	//launch DMA if start flag was set to "DS Cart"
+	// Launch DMA if start flag was set to "DS Cart"
 	if(MMU.DMAStartTime[PROCNUM][0] == EDMAMode_Card) MMU_doDMA<PROCNUM>(0);
 	if(MMU.DMAStartTime[PROCNUM][1] == EDMAMode_Card) MMU_doDMA<PROCNUM>(1);
 	if(MMU.DMAStartTime[PROCNUM][2] == EDMAMode_Card) MMU_doDMA<PROCNUM>(2);
@@ -1164,76 +1198,87 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 template<int PROCNUM>
 u32 MMU_readFromGC()
 {
+	nds_dscard& card = MMU.dscard[PROCNUM];
 	u32 val = 0;
 
-	if(MMU.dscard[PROCNUM].transfer_count == 0)
+	if(card.transfer_count == 0)
 		return 0;
 
-	switch(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT))
+	switch(card.command[0])
 	{
-		/* Dummy */
+		// Dummy
 		case 0x9F:
 			{
 				val = 0xFFFFFFFF;
 			}
 			break;
 
-		/* Nand Init? */
+		// Nand Init?
 		case 0x94:
 			{
 				val = 0; //Unsure what to return here so return 0 for now
 			}
 			break;
 
-		/* Nand Error? */
+		// Nand Error?
 		case 0xD6:
 			{
 				val = 0x80; //0x80 == ok?
 			}
 			break;
 
-		/* Data read */
+		// Data read
 		case 0x00:
 		case 0xB7:
 			{
-				/* TODO: prevent read if the address is out of range */
-				/* Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart */
-				if((MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT) == 0xB7) && (MMU.dscard[PROCNUM].address < 0x8000))
+				// TODO: prevent read if the address is out of range
+				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
+				if((card.command[0] == 0xB7) && (card.address < 0x8000))
 				{
-					MMU.dscard[PROCNUM].address = (0x8000 + (MMU.dscard[PROCNUM].address&0x1FF));
-					INFO("Read below 0x8000 from: %08X\n", NDS_ARM9.instruct_adr);
+					LOG("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
+						card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
+
+					card.address = (0x8000 + (card.address&0x1FF));
 				}
-				val = T1ReadLong(MMU.CART_ROM, MMU.dscard[PROCNUM].address & MMU.CART_ROM_MASK);
+				val = T1ReadLong(MMU.CART_ROM, card.address & MMU.CART_ROM_MASK);
 			}
 			break;
 
-		/* Get ROM chip ID */
+		// Get ROM chip ID
 		case 0x90:
 		case 0xB8:
 			{
-				/* TODO */
+				// Note: the BIOS stores the chip ID in main memory
+				// Most games continuously compare the chip ID with
+				// the value in memory, probably to know if the card
+				// was removed.
+				// As DeSmuME boots directly from the game, the chip
+				// ID in main mem is zero and this value needs to be
+				// zero too.
 				val = 0x00000000;
 			}
 			break;
+
+		// Switch to KEY1 mode
+		case 0x3C:
+			{
+				val = 0xFFFFFFFF;
+			}
+			break;
+
 		default:
-			LOG("READ CARD command: %08X %08X\t", 
-				((MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT) << 24) | 
-				(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+1) << 16) | 
-				(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+2) << 8) | 
-				(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+3))),
-				((MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+4) << 24) | 
-				(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+5) << 16) | 
-				(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+6) << 8) | 
-				(MEM_8(MMU.MMU_MEM[PROCNUM], REG_GCCMDOUT+7))));
+			LOG("READ CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
+					card.command[0], card.command[1], card.command[2], card.command[3],
+					card.command[4], card.command[5], card.command[6], card.command[7]);
 			LOG("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 			break;
 
 	}
 
-	MMU.dscard[PROCNUM].address += 4;	// increment address
+	card.address += 4;	// increment address
 
-	MMU.dscard[PROCNUM].transfer_count--;	// update transfer counter
-	if(MMU.dscard[PROCNUM].transfer_count) // if transfer is not ended
+	card.transfer_count--;	// update transfer counter
+	if(card.transfer_count) // if transfer is not ended
 		return val;	// return data
 
 	// transfer is done

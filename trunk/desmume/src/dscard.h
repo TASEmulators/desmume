@@ -20,11 +20,22 @@
 #ifndef __DSCARD_H__
 #define __DSCARD_H__
 
+enum ECardMode
+{
+	CardMode_Normal = 0,
+	CardMode_KEY1,
+	CardMode_KEY2,
+};
+
 typedef struct
 {
 	
+	u8 command[8];
+
 	u32 address;
 	u32 transfer_count;
+
+	ECardMode mode;
 	
 } nds_dscard;
 
