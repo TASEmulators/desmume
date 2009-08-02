@@ -48,8 +48,11 @@ extern WINCLASS	*MainWindow;
 
 class Lock {
 public:
-	Lock();
+	Lock(); // defaults to the critical section around NDS_exec
+	Lock(CRITICAL_SECTION& cs);
 	~Lock();
+private:
+	CRITICAL_SECTION* m_cs;
 };
 
 #endif
