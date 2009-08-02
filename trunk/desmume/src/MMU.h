@@ -28,7 +28,6 @@
 #include "FIFO.h"
 #include "mem.h"
 
-#include "ARM9.h"
 #include "mc.h"
 
 #define ARMCPU_ARM7 1
@@ -56,7 +55,36 @@ typedef struct
 	
 } nds_dscard;
 
-struct MMU_struct {
+struct MMU_struct 
+{
+	//ARM9 mem
+	u8 ARM9_ITCM[0x8000];
+    u8 ARM9_DTCM[0x4000];
+    u8 MAIN_MEM[0x800000]; //this has been expanded to 8MB to support debug consoles
+    u8 ARM9_REG[0x1000000];
+    u8 ARM9_BIOS[0x8000];
+    u8 ARM9_VMEM[0x800];
+	
+	#include "PACKED.h"
+	struct {
+		u8 ARM9_LCD[0xA4000];
+		//an extra 128KB for blank memory, directly after arm9_lcd, so that
+		//we can easily map things to the end of arm9_lcd to represent 
+		//an unmapped state
+		u8 blank_memory[0x20000];  
+	};
+	#include "PACKED_END.h"
+
+    u8 ARM9_OAM[0x800];
+
+	u8* ExtPal[2][4];
+	u8* ObjExtPal[2][2];
+	
+	struct TextureInfo {
+		u8* texPalSlot[6];
+		u8* textureSlotAddr[4];
+	} texInfo;
+
 	//ARM7 mem
 	u8 ARM7_BIOS[0x4000];
 	u8 ARM7_ERAM[0x10000];
@@ -260,7 +288,7 @@ FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
 	vram_page = vram_arm9_map[vram_page];
 	//blank pages are handled by the extra 16KB of blank memory at the end of ARM9_LCD
 	//and the fact that blank pages are mapped to appear at that location
-	return ARM9Mem.ARM9_LCD + (vram_page<<14) + ofs;
+	return MMU.ARM9_LCD + (vram_page<<14) + ofs;
 }
 
 
@@ -338,11 +366,11 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
 			//Returns data from DTCM (ARM9 only)
-			return T1ReadByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+			return T1ReadByte(MMU.ARM9_DTCM, addr & 0x3FFF);
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadByte( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+		return T1ReadByte( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read08(addr);
 	else return _MMU_ARM7_read08(addr);
@@ -361,10 +389,10 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
 	{
 		if ((addr & 0x0F000000) == 0x02000000)
-			return T1ReadWord_guaranteedAligned( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadWord_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 		if(addr<0x02000000) 
-			return T1ReadWord_guaranteedAligned(ARM9Mem.ARM9_ITCM, addr&0x7FFF);
+			return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, addr&0x7FFF);
 
 		goto dunno;
 	}
@@ -373,11 +401,11 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
 			//Returns data from DTCM (ARM9 only)
-			return T1ReadWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+			return T1ReadWord(MMU.ARM9_DTCM, addr & 0x3FFF);
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadWord( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+		return T1ReadWord( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 dunno:
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
@@ -397,10 +425,10 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
 	{
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong_guaranteedAligned( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 		if(addr<0x02000000) 
-			return T1ReadLong_guaranteedAligned(ARM9Mem.ARM9_ITCM, addr&0x7FFF);
+			return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, addr&0x7FFF);
 
 		goto dunno;
 	}
@@ -409,7 +437,7 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM7)
 	{
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong_guaranteedAligned( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 		else if((addr & 0xFF800000) == 0x03800000)
 			return T1ReadLong_guaranteedAligned(MMU.ARM7_ERAM, addr&0xFFFF);
 		else if((addr & 0xFF800000) == 0x03000000)
@@ -423,11 +451,11 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
 			//Returns data from DTCM (ARM9 only)
-			return T1ReadLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+			return T1ReadLong(MMU.ARM9_DTCM, addr & 0x3FFF);
 		}
 	
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 	}
 
 dunno:
@@ -447,12 +475,12 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
-			T1WriteByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			T1WriteByte(MMU.ARM9_DTCM, addr & 0x3FFF, val);
 			return;
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteByte( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
+		T1WriteByte( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 		return;
 	}
 
@@ -472,12 +500,12 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
-			T1WriteWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			T1WriteWord(MMU.ARM9_DTCM, addr & 0x3FFF, val);
 			return;
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteWord( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
+		T1WriteWord( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 		return;
 	}
 
@@ -497,12 +525,12 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
-			T1WriteLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			T1WriteLong(MMU.ARM9_DTCM, addr & 0x3FFF, val);
 			return;
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
+		T1WriteLong( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 		return;
 	}
 

@@ -339,7 +339,7 @@ extern int lagframecounter;
 
 static INLINE void NDS_ARM9HBlankInt(void)
 {
-    if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x10)
+    if(T1ReadWord(MMU.ARM9_REG, 4) & 0x10)
     {
          //MMU.reg_IF[0] |= 2;// & (MMU.reg_IME[0] << 1);// (MMU.reg_IE[0] & (1<<1));
 		setIF(0, 2);
@@ -359,7 +359,7 @@ static INLINE void NDS_ARM7HBlankInt(void)
 
 static INLINE void NDS_ARM9VBlankInt(void)
 {
-    if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x8)
+    if(T1ReadWord(MMU.ARM9_REG, 4) & 0x8)
     {
         // MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
 		setIF(0, 1);

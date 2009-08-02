@@ -25,7 +25,6 @@
 #ifndef GPU_H
 #define GPU_H
 
-#include "ARM9.h"
 #include <stdio.h>
 #include "mem.h"
 #include "common.h"
@@ -619,11 +618,11 @@ typedef struct
 	////<-- 256 + 24
 	//u8 pad2[256-24];
 } itemsForPriority_t;
-#define ARM9MEM_ABG		0x06000000
-#define ARM9MEM_BBG		0x06200000
-#define ARM9MEM_AOBJ	0x06400000
-#define ARM9MEM_BOBJ	0x06600000
-#define ARM9MEM_LCDC	0x06800000
+#define MMU_ABG		0x06000000
+#define MMU_BBG		0x06200000
+#define MMU_AOBJ	0x06400000
+#define MMU_BOBJ	0x06600000
+#define MMU_LCDC	0x06800000
 
 extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 

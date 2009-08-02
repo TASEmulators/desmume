@@ -41,8 +41,6 @@
 //#define FORCEINLINE
 //#define SSE2_NOINTRIN
 
-ARM9_struct ARM9Mem;
-
 extern BOOL click;
 NDS_Screen MainScreen;
 NDS_Screen SubScreen;
@@ -217,17 +215,17 @@ void GPU_Reset(GPU *g, u8 l)
 
 	if(g->core == GPU_SUB)
 	{
-		g->oam = (OAM *)(ARM9Mem.ARM9_OAM + ADDRESS_STEP_1KB);
-		g->sprMem = ARM9MEM_BOBJ;
+		g->oam = (OAM *)(MMU.ARM9_OAM + ADDRESS_STEP_1KB);
+		g->sprMem = MMU_BOBJ;
 		// GPU core B
-		g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[REG_DISPB]);
+		g->dispx_st = (REG_DISPx*)(&MMU.ARM9_REG[REG_DISPB]);
 	}
 	else
 	{
-		g->oam = (OAM *)(ARM9Mem.ARM9_OAM);
-		g->sprMem = ARM9MEM_AOBJ;
+		g->oam = (OAM *)(MMU.ARM9_OAM);
+		g->sprMem = MMU_AOBJ;
 		// GPU core A
-		g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[0]);
+		g->dispx_st = (REG_DISPx*)(&MMU.ARM9_REG[0]);
 	}
 }
 
@@ -361,7 +359,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		case 1: // Display BG and OBJ layers
 			break;
 		case 2: // Display framebuffer
-			gpu->VRAMaddr = (u8 *)ARM9Mem.ARM9_LCD + (gpu->vramBlock * 0x20000);
+			gpu->VRAMaddr = (u8 *)MMU.ARM9_LCD + (gpu->vramBlock * 0x20000);
 			break;
 		case 3: // Display from Main RAM
 			// nothing to be done here
@@ -394,10 +392,10 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 
 	gpu->sprEnable = cnt->OBJ_Enable;
 	
-	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 14));
-	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 12));
-	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
-	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
+	GPU_setBGProp(gpu, 3, T1ReadWord(MMU.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 14));
+	GPU_setBGProp(gpu, 2, T1ReadWord(MMU.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 12));
+	GPU_setBGProp(gpu, 1, T1ReadWord(MMU.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
+	GPU_setBGProp(gpu, 0, T1ReadWord(MMU.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
 	//GPU_resortBGs(gpu);
 }
@@ -414,17 +412,17 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 
 	if(gpu->core == GPU_SUB)
 	{
-		gpu->BG_tile_ram[num] = ARM9MEM_BBG;
-		gpu->BG_bmp_ram[num]  = ARM9MEM_BBG;
-		gpu->BG_bmp_large_ram[num]  = ARM9MEM_BBG;
-		gpu->BG_map_ram[num]  = ARM9MEM_BBG;
+		gpu->BG_tile_ram[num] = MMU_BBG;
+		gpu->BG_bmp_ram[num]  = MMU_BBG;
+		gpu->BG_bmp_large_ram[num]  = MMU_BBG;
+		gpu->BG_map_ram[num]  = MMU_BBG;
 	} 
 	else 
 	{
-		gpu->BG_tile_ram[num] = ARM9MEM_ABG +  dispCnt->CharacBase_Block * ADDRESS_STEP_64KB ;
-		gpu->BG_bmp_ram[num]  = ARM9MEM_ABG;
-		gpu->BG_bmp_large_ram[num] = ARM9MEM_ABG;
-		gpu->BG_map_ram[num]  = ARM9MEM_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64KB;
+		gpu->BG_tile_ram[num] = MMU_ABG +  dispCnt->CharacBase_Block * ADDRESS_STEP_64KB ;
+		gpu->BG_bmp_ram[num]  = MMU_ABG;
+		gpu->BG_bmp_large_ram[num] = MMU_ABG;
+		gpu->BG_map_ram[num]  = MMU_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64KB;
 	}
 
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
@@ -882,7 +880,7 @@ template<bool MOSAIC> void lineLarge8bpp(GPU * gpu)
 	u32 tmp_map = gpu->BG_bmp_large_ram[num] + lg * YBG;
 	u8* map = MMU_gpu_map(tmp_map);
 
-	u8* pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
+	u8* pal = MMU.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
 
 	for(int x = 0; x < lg; ++x, ++XBG)
 	{
@@ -929,7 +927,7 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 	tile = gpu->BG_tile_ram[num];
 
 	xoff = XBG;
-	pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
+	pal = MMU.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
 
 	if(!bgCnt->Palette_256)    // color: 16 palette entries
 	{
@@ -991,7 +989,7 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 
 	if(dispCnt->ExBGxPalette_Enable)  // color: extended palette
 	{
-		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+		pal = MMU.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 		if(!pal) return;
 	}
 
@@ -1133,7 +1131,7 @@ FORCEINLINE void apply_rot_fun(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, 
 template<bool MOSAIC> FORCEINLINE void rotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
 	u8 num = gpu->currBgNum;
-	u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+	u8 * pal = MMU.ARM9_VMEM + gpu->core * 0x400;
 //	printf("rot mode\n");
 	apply_rot_fun<rot_tiled_8bit_entry<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_map_ram[num], gpu->BG_tile_ram[num], pal, 0);
 }
@@ -1149,16 +1147,16 @@ template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA
 	{
 	case BGType_AffineExt_256x16:
 		if(dispCnt->ExBGxPalette_Enable)
-			pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+			pal = MMU.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 		else
-			pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+			pal = MMU.ARM9_VMEM + gpu->core * 0x400;
 		if (!pal) return;
 		// 16  bit bgmap entries
 		apply_rot_fun<rot_tiled_16bit_entry<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_map_ram[num], gpu->BG_tile_ram[num], pal, dispCnt->ExBGxPalette_Enable);
 		return;
 	case BGType_AffineExt_256x1:
 		// 256 colors 
-		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		pal = MMU.ARM9_VMEM + gpu->core * 0x400;
 		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], NULL, pal, 0);
 		return;
 	case BGType_AffineExt_Direct:
@@ -1167,7 +1165,7 @@ template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA
 		return;
 	case BGType_Large8bpp:
 		// large screen 256 colors
-		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		pal = MMU.ARM9_VMEM + gpu->core * 0x400;
 		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_large_ram[num], NULL, pal, 0);
 		return;
 	default: break;
@@ -1581,9 +1579,9 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 				// If extended palettes are set, use them
 				if (dispCnt->ExOBJPalette_Enable)
-					pal = (ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
+					pal = (MMU.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
 				else
-					pal = (ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
+					pal = (MMU.ARM9_VMEM + 0x200 + gpu->core *0x400);
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1666,12 +1664,12 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				if(MODE == SPRITE_2D)
 				{
 					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<5));
-					pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
+					pal = MMU.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
 				}
 				else
 				{
 					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary));
-					pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
+					pal = MMU.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
 				}
 
 				for(j = 0; j < lg; ++j, ++sprX)
@@ -1760,9 +1758,9 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 				
 				if (dispCnt->ExOBJPalette_Enable)
-					pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
+					pal = (u16*)(MMU.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
 				else
-					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
+					pal = (u16*)(MMU.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
 				render_sprite_256 (gpu, i, l, dst, src, pal, 
 					dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
@@ -1779,7 +1777,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
 			}
 				
-			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
+			pal = (u16*)(MMU.ARM9_VMEM + 0x200 + gpu->core * 0x400);
 			
 			pal += (spriteInfo->PaletteIndex<<4);
 			
@@ -1964,7 +1962,7 @@ void GPU_set_DISPCAPCNT(u32 val)
 	/*INFO("Capture 0x%X:\n EVA=%i, EVB=%i, wBlock=%i, wOffset=%i, capX=%i, capY=%i\n rBlock=%i, rOffset=%i, srcCap=%i, dst=0x%X, src=0x%X\n srcA=%i, srcB=%i\n\n",
 			val, gpu->dispCapCnt.EVA, gpu->dispCapCnt.EVB, gpu->dispCapCnt.writeBlock, gpu->dispCapCnt.writeOffset,
 			gpu->dispCapCnt.capx, gpu->dispCapCnt.capy, gpu->dispCapCnt.readBlock, gpu->dispCapCnt.readOffset, 
-			gpu->dispCapCnt.capSrc, gpu->dispCapCnt.dst - ARM9Mem.ARM9_LCD, gpu->dispCapCnt.src - ARM9Mem.ARM9_LCD,
+			gpu->dispCapCnt.capSrc, gpu->dispCapCnt.dst - MMU.ARM9_LCD, gpu->dispCapCnt.src - MMU.ARM9_LCD,
 			gpu->dispCapCnt.srcA, gpu->dispCapCnt.srcB);*/
 }
 
@@ -1984,7 +1982,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	gpu->currentFadeInColors = &fadeInColors[gpu->BLDY_EVY][0];
 	gpu->currentFadeOutColors = &fadeOutColors[gpu->BLDY_EVY][0];
 
-	u16 backdrop_color = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
+	u16 backdrop_color = T1ReadWord(MMU.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
 
 	//we need to write backdrop colors in the same way as we do BG pixels in order to do correct window processing
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization. 
@@ -2151,7 +2149,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 		if (gpu->dispCapCnt.val & 0x80000000)
 		{
 			gpu->dispCapCnt.enabled = TRUE;
-			T1WriteLong(ARM9Mem.ARM9_REG, 0x64, gpu->dispCapCnt.val);
+			T1WriteLong(MMU.ARM9_REG, 0x64, gpu->dispCapCnt.val);
 		}
 	}
 
@@ -2173,8 +2171,8 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 		cap_src_adr += gpu->dispCapCnt.readBlock * 0x20000;
 		cap_dst_adr += gpu->dispCapCnt.writeBlock * 0x20000;
 
-		u8* cap_src = ARM9Mem.ARM9_LCD + cap_src_adr;
-		u8* cap_dst = ARM9Mem.ARM9_LCD + cap_dst_adr;
+		u8* cap_src = MMU.ARM9_LCD + cap_src_adr;
+		u8* cap_dst = MMU.ARM9_LCD + cap_dst_adr;
 
 		//we must block captures when the capture dest is not mapped to LCDC
 		if(vramConfiguration.banks[gpu->dispCapCnt.writeBlock].purpose != VramConfiguration::LCDC)
@@ -2182,7 +2180,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 
 		//we must return zero from reads from memory not mapped to lcdc
 		if(vramConfiguration.banks[gpu->dispCapCnt.readBlock].purpose != VramConfiguration::LCDC)
-			cap_src = ARM9Mem.blank_memory;
+			cap_src = MMU.blank_memory;
 
 		if(!skip)
 		if (l < gpu->dispCapCnt.capy)
@@ -2308,7 +2306,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 		{
 			gpu->dispCapCnt.enabled = FALSE;
 			gpu->dispCapCnt.val &= 0x7FFFFFFF;
-			T1WriteLong(ARM9Mem.ARM9_REG, 0x64, gpu->dispCapCnt.val);
+			T1WriteLong(MMU.ARM9_REG, 0x64, gpu->dispCapCnt.val);
 			return;
 		}
 	}

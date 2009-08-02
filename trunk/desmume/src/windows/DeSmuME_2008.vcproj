@@ -884,10 +884,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ARM9.h"
-					>
-				</File>
-				<File
 					RelativePath="..\arm_instructions.h"
 					>
 				</File>
