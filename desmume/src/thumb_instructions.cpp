@@ -540,11 +540,22 @@ TEMPLATE static  u32 FASTCALL OP_MOV_SPE()
 
 TEMPLATE static  u32 FASTCALL OP_BX_THUMB()
 {
-     u32 Rm = cpu->R[REG_POS(cpu->instruction, 3)];
-     
-     cpu->CPSR.bits.T = BIT0(Rm);
-     cpu->R[15] = (Rm & 0xFFFFFFFE);
-     cpu->next_instruction = cpu->R[15];
+	 // When using PC as operand with BX opcode, switch to ARM state and jump to (instruct_adr+4)
+	 // Reference: http://nocash.emubase.de/gbatek.htm#thumb5hiregisteroperationsbranchexchange
+	 if (REG_POS(cpu->instruction, 3) == 15)
+	 {
+		 cpu->CPSR.bits.T = 0;
+		 cpu->R[15] &= 0xFFFFFFFC;
+		 cpu->next_instruction = cpu->R[15];
+	 }
+	 else
+	 {
+		u32 Rm = cpu->R[REG_POS(cpu->instruction, 3)];
+
+		cpu->CPSR.bits.T = BIT0(Rm);
+		cpu->R[15] = (Rm & 0xFFFFFFFE);
+		cpu->next_instruction = cpu->R[15];
+	 }
      
      return 3;
 }
