@@ -318,6 +318,8 @@ void gfx3d_reset()
 	memset(vertlists, 0, sizeof(vertlists));
 	listTwiddle = 1;
 	twiddleLists();
+	gfx3d.polylist = polylist;
+	gfx3d.vertlist = vertlist;
 
 	MatrixInit (mtxCurrent[0]);
 	MatrixInit (mtxCurrent[1]);
@@ -1638,6 +1640,8 @@ void gfx3d_VBlankSignal()
 	{
 		gfx3d_doFlush();
 		isSwapBuffers = false;
+		GFX_DELAY(392);
+		NDS_RescheduleGXFIFO();
 	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
@@ -1662,12 +1666,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	
 	if (!drawPending) return;
 	drawPending = FALSE;
-	if(skipFrame) 
-	{
-		GFX_DELAY(392);
-		NDS_RescheduleGXFIFO();
-		return;
-	}
+	if(skipFrame) return;
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
@@ -1676,9 +1675,6 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 
 	gpu3D->NDS_3D_Render();
-
-	GFX_DELAY(392);
-	NDS_RescheduleGXFIFO();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
