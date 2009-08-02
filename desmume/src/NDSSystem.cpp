@@ -1616,7 +1616,7 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 	FORCEINLINE void exec()
 	{
 		u64 timer = nds_timer;
-		u8* regs = procnum==0?ARM9Mem.ARM9_REG:MMU.ARM7_REG;
+		u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
 		bool first = true, over;
 		//we'll need to check chained timers..
 		for(int i=num;i<4;i++)
@@ -1678,7 +1678,7 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 	{
 		if (MMU.DMACompleted[procnum][chan])
 		{
-			u8* regs = procnum==0?ARM9Mem.ARM9_REG:MMU.ARM7_REG;
+			u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
 			T1WriteLong(regs, 0xB8 + (0xC*chan), T1ReadLong(regs, 0xB8 + (0xC*chan)) & 0x7FFFFFFF);
 			if((MMU.DMACrt[procnum][chan])&(1<<30)) {
 				if(procnum==0) NDS_makeARM9Int(8+chan);
@@ -1870,7 +1870,7 @@ void Sequencer::init()
 static void execHardware_hblank()
 {
 	//turn on hblank status bit
-	T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
+	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 2);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
 
 	//fire hblank interrupts if necessary
@@ -1909,14 +1909,14 @@ static void execHardware_hstart_vblankEnd()
 	sequencer.reschedule = true;
 
 	//turn off vblank status bit
-	T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFE);
+	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFE);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
 }
 
 static void execHardware_hstart_vblankStart()
 {
 	//turn on vblank status bit
-	T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
+	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 1);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
 
 	//fire vblank interrupts if necessary
@@ -1939,15 +1939,15 @@ static void execHardware_hstart_vblankStart()
 
 void execHardware_hstart_vcount()
 {
-	u16 vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
+	u16 vmatch = T1ReadWord(MMU.ARM9_REG, 4);
 	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
 	{
-		T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 4);
-		if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 32)
+		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 4);
+		if(T1ReadWord(MMU.ARM9_REG, 4) & 32)
 			NDS_makeARM9Int(2);
 	}
 	else
-		T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFB);
+		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFB);
 
 	vmatch = T1ReadWord(MMU.ARM7_REG, 4);
 	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
@@ -1973,13 +1973,13 @@ static void execHardware_hstart()
 	}
 
 	//write the new vcount
-	T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
-	T1WriteWord(ARM9Mem.ARM9_REG, 0x1006, nds.VCount);
+	T1WriteWord(MMU.ARM9_REG, 6, nds.VCount);
+	T1WriteWord(MMU.ARM9_REG, 0x1006, nds.VCount);
 	T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
 	T1WriteWord(MMU.ARM7_REG, 0x1006, nds.VCount);
 
 	//turn off hblank status bit
-	T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFD);
+	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFD);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFD);
 
 	//handle vcount status
@@ -2338,10 +2338,10 @@ void NDS_Reset()
 		inf = fopen(CommonSettings.ARM9BIOS,"rb");
 	else
 		inf = NULL;
-	//memcpy(ARM9Mem.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
+	//memcpy(MMU.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
 
 	if(inf) {
-		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
+		fread(MMU.ARM9_BIOS,1,4096,inf);
 		fclose(inf);
 		if(CommonSettings.SWIFromBIOS == true) NDS_ARM9.swi_tab = 0;
 		else NDS_ARM9.swi_tab = ARM9_swi_tab;
@@ -2645,7 +2645,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		((e) << 1) |
 		((w) << 2)) ;
 
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
+	((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
 	if (!f && !countLid) 

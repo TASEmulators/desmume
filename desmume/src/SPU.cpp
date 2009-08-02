@@ -33,7 +33,6 @@
 #endif
 
 #include "debug.h"
-#include "ARM9.h"
 #include "MMU.h"
 #include "SPU.h"
 #include "mem.h"
@@ -1039,6 +1038,7 @@ void SPU_Emulate_user()
 
 	if (audiosize > 0)
 	{
+		//printf("mix %i samples\n", audiosize);
 		if (audiosize > SPU_user->bufsize)
 			audiosize = SPU_user->bufsize;
 		SPU_MixAudio<true>(SPU_user,audiosize);

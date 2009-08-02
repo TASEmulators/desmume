@@ -1266,12 +1266,12 @@ static void SoftRastRender()
 
 	if(gfx3d.enableClearImage)
 	{
-		u16* clearImage = (u16*)ARM9Mem.texInfo.textureSlotAddr[2];
-		u16* clearDepth = (u16*)ARM9Mem.texInfo.textureSlotAddr[3];
+		u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
+		u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
 
 		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
 		//uses the scroll registers in the main game engine
-		u16 scroll = T1ReadWord(ARM9Mem.ARM9_REG,0x356); //CLRIMAGE_OFFSET
+		u16 scroll = T1ReadWord(MMU.ARM9_REG,0x356); //CLRIMAGE_OFFSET
 		u16 xscroll = scroll&0xFF;
 		u16 yscroll = (scroll>>8)&0xFF;
 

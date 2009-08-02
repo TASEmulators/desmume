@@ -224,7 +224,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                  {
 						OAMView = new oamview_struct;
 						memset(OAMView, 0, sizeof(oamview_struct));
-						OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM);
+						OAMView->oam = (OAM *)(MMU.ARM9_OAM);
 						OAMView->gpu = MainScreen.gpu;
 
 						OAMView->autoup_secs = 1;
@@ -326,12 +326,12 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                                             switch(sel)
                                             {
                                                  case 0 :
-                                                      OAMView->oam = (OAM *)ARM9Mem.ARM9_OAM;
+                                                      OAMView->oam = (OAM *)MMU.ARM9_OAM;
                                                       OAMView->num = 0;
                                                       OAMView->gpu = MainScreen.gpu;
                                                       break;
                                                  case 1 :
-                                                      OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM+0x400);
+                                                      OAMView->oam = (OAM *)(MMU.ARM9_OAM+0x400);
                                                       OAMView->num = 0;
                                                       OAMView->gpu = SubScreen.gpu;
                                                       break;

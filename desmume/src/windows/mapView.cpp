@@ -76,8 +76,8 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	HDC          hdc;
 	PAINTSTRUCT  ps;
 	char text[80];
-	u32 dispcnt = ((volatile u32 *)ARM9Mem.ARM9_REG)[(win->lcd*0x400)];
-	u32 bgcnt =  ((volatile u16 *)ARM9Mem.ARM9_REG)[(8 + (win->map<<1) + (win->lcd*0x1000))>>1];
+	u32 dispcnt = ((volatile u32 *)MMU.ARM9_REG)[(win->lcd*0x400)];
+	u32 bgcnt =  ((volatile u16 *)MMU.ARM9_REG)[(8 + (win->map<<1) + (win->lcd*0x1000))>>1];
 	BITMAPV4HEADER bmi;
 	u16 lg;
 	u16 ht;

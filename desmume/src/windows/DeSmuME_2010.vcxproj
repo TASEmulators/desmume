@@ -300,7 +300,6 @@
     <ClInclude Include="..\addons.h" />
     <ClInclude Include="..\agg2d.h" />
     <ClInclude Include="..\aggdraw.h" />
-    <ClInclude Include="..\ARM9.h" />
     <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\arm_instructions.h" />
     <ClInclude Include="..\bios.h" />

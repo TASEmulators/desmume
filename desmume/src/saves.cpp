@@ -143,23 +143,23 @@ SFORMAT SF_ARM9[]={
 };
 
 SFORMAT SF_MEM[]={
-	{ "ITCM", 1, sizeof(ARM9Mem.ARM9_ITCM),   ARM9Mem.ARM9_ITCM},
-	{ "DTCM", 1, sizeof(ARM9Mem.ARM9_DTCM),   ARM9Mem.ARM9_DTCM},
+	{ "ITCM", 1, sizeof(MMU.ARM9_ITCM),   MMU.ARM9_ITCM},
+	{ "DTCM", 1, sizeof(MMU.ARM9_DTCM),   MMU.ARM9_DTCM},
 
 	 //for legacy purposes, WRAX is a separate variable. shouldnt be a problem.
-	{ "WRAM", 1, 0x400000, ARM9Mem.MAIN_MEM},
-	{ "WRAX", 1, 0x400000, ARM9Mem.MAIN_MEM+0x400000},
+	{ "WRAM", 1, 0x400000, MMU.MAIN_MEM},
+	{ "WRAX", 1, 0x400000, MMU.MAIN_MEM+0x400000},
 
 	//NOTE - this is not as large as the allocated memory.
 	//the memory is overlarge due to the way our memory map system is setup
 	//but there are actually no more registers than this
-	{ "9REG", 1, 0x2000,   ARM9Mem.ARM9_REG},
+	{ "9REG", 1, 0x2000,   MMU.ARM9_REG},
 
-	{ "VMEM", 1, sizeof(ARM9Mem.ARM9_VMEM),    ARM9Mem.ARM9_VMEM},
-	{ "OAMS", 1, sizeof(ARM9Mem.ARM9_OAM),    ARM9Mem.ARM9_OAM},
+	{ "VMEM", 1, sizeof(MMU.ARM9_VMEM),    MMU.ARM9_VMEM},
+	{ "OAMS", 1, sizeof(MMU.ARM9_OAM),    MMU.ARM9_OAM},
 
 	//this size is specially chosen to avoid saving the blank space at the end
-	{ "LCDM", 1, 0xA4000,		ARM9Mem.ARM9_LCD},
+	{ "LCDM", 1, 0xA4000,		MMU.ARM9_LCD},
 	{ 0 }
 };
 

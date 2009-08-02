@@ -165,15 +165,15 @@ MMU_struct_new MMU_new;
 u8 * MMU_struct::MMU_MEM[2][256] = {
 	//arm9
 	{
-		/* 0X*/	DUP16(ARM9Mem.ARM9_ITCM), 
-		/* 1X*/	//DUP16(ARM9Mem.ARM9_ITCM)
+		/* 0X*/	DUP16(MMU.ARM9_ITCM), 
+		/* 1X*/	//DUP16(MMU.ARM9_ITCM)
 		/* 1X*/	DUP16(MMU.UNUSED_RAM), 
-		/* 2X*/	DUP16(ARM9Mem.MAIN_MEM),
+		/* 2X*/	DUP16(MMU.MAIN_MEM),
 		/* 3X*/	DUP16(MMU.SWIRAM),
-		/* 4X*/	DUP16(ARM9Mem.ARM9_REG),
-		/* 5X*/	DUP16(ARM9Mem.ARM9_VMEM),
-		/* 6X*/	DUP16(ARM9Mem.ARM9_LCD),
-		/* 7X*/	DUP16(ARM9Mem.ARM9_OAM),
+		/* 4X*/	DUP16(MMU.ARM9_REG),
+		/* 5X*/	DUP16(MMU.ARM9_VMEM),
+		/* 6X*/	DUP16(MMU.ARM9_LCD),
+		/* 7X*/	DUP16(MMU.ARM9_OAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
 		/* AX*/	DUP16(MMU.CART_RAM),
@@ -181,19 +181,19 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* CX*/	DUP16(MMU.UNUSED_RAM),
 		/* DX*/	DUP16(MMU.UNUSED_RAM),
 		/* EX*/	DUP16(MMU.UNUSED_RAM),
-		/* FX*/	DUP16(ARM9Mem.ARM9_BIOS)
+		/* FX*/	DUP16(MMU.ARM9_BIOS)
 	},
 	//arm7
 	{
 		/* 0X*/	DUP16(MMU.ARM7_BIOS), 
 		/* 1X*/	DUP16(MMU.UNUSED_RAM), 
-		/* 2X*/	DUP16(ARM9Mem.MAIN_MEM),
+		/* 2X*/	DUP16(MMU.MAIN_MEM),
 		/* 3X*/	DUP8(MMU.SWIRAM),
 				DUP8(MMU.ARM7_ERAM),
 		/* 4X*/	DUP8(MMU.ARM7_REG),
 				DUP8(MMU.ARM7_WIRAM),
 		/* 5X*/	DUP16(MMU.UNUSED_RAM),
-		/* 6X*/	DUP16(ARM9Mem.ARM9_LCD),
+		/* 6X*/	DUP16(MMU.ARM9_LCD),
 		/* 7X*/	DUP16(MMU.UNUSED_RAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
@@ -283,7 +283,7 @@ u8 vram_arm9_map[VRAM_ARM9_PAGES];
 u8 vram_arm7_map[2];
 
 //----->
-//consider these later, for better recordkeeping, instead of using the u8* in ARM9Mem
+//consider these later, for better recordkeeping, instead of using the u8* in MMU
 
 ////for each 128KB texture slot, this maps to a 16KB starting page in the LCDC buffer
 //#define VRAM_TEX_SLOTS 4
@@ -435,7 +435,7 @@ static inline void MMU_vram_arm9(const int bank, const int offset)
 
 static inline u8* MMU_vram_physical(const int page)
 {
-	return ARM9Mem.ARM9_LCD + (page*ADDRESS_STEP_16KB);
+	return MMU.ARM9_LCD + (page*ADDRESS_STEP_16KB);
 }
 
 //todo - templateize
@@ -489,7 +489,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 3: //texture
 				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
-				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			default: goto unsupported_mst;
 			}
@@ -527,7 +527,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 3: //texture
 				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
-				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //BGB or BOBJ
 				//MMU_vram_lcdc(bank);
@@ -564,17 +564,17 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 3: //texture palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
-				ARM9Mem.texInfo.texPalSlot[0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				ARM9Mem.texInfo.texPalSlot[1] = MMU_vram_physical(vram_bank_info[bank].page_addr+1);
-				ARM9Mem.texInfo.texPalSlot[2] = MMU_vram_physical(vram_bank_info[bank].page_addr+2);
-				ARM9Mem.texInfo.texPalSlot[3] = MMU_vram_physical(vram_bank_info[bank].page_addr+3);
+				MMU.texInfo.texPalSlot[0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.texInfo.texPalSlot[1] = MMU_vram_physical(vram_bank_info[bank].page_addr+1);
+				MMU.texInfo.texPalSlot[2] = MMU_vram_physical(vram_bank_info[bank].page_addr+2);
+				MMU.texInfo.texPalSlot[3] = MMU_vram_physical(vram_bank_info[bank].page_addr+3);
 				break;
 			case 4: //A BG extended palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
-				ARM9Mem.ExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				ARM9Mem.ExtPal[0][1] = ARM9Mem.ExtPal[0][0] + ADDRESS_STEP_8KB;
-				ARM9Mem.ExtPal[0][2] = ARM9Mem.ExtPal[0][1] + ADDRESS_STEP_8KB;
-				ARM9Mem.ExtPal[0][3] = ARM9Mem.ExtPal[0][2] + ADDRESS_STEP_8KB;
+				MMU.ExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.ExtPal[0][1] = MMU.ExtPal[0][0] + ADDRESS_STEP_8KB;
+				MMU.ExtPal[0][2] = MMU.ExtPal[0][1] + ADDRESS_STEP_8KB;
+				MMU.ExtPal[0][3] = MMU.ExtPal[0][2] + ADDRESS_STEP_8KB;
 				break;
 			default: goto unsupported_mst;
 			}
@@ -607,15 +607,15 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 3: //texture palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
-				ARM9Mem.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //A BG extended palette
 				switch(ofs) {
 				case 0:
 				case 1:
 					vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
-					ARM9Mem.ExtPal[0][ofs*2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-					ARM9Mem.ExtPal[0][ofs*2+1] = ARM9Mem.ExtPal[0][ofs*2] + ADDRESS_STEP_8KB;
+					MMU.ExtPal[0][ofs*2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					MMU.ExtPal[0][ofs*2+1] = MMU.ExtPal[0][ofs*2] + ADDRESS_STEP_8KB;
 					break;
 				default:
 					vramConfiguration.banks[bank].purpose = VramConfiguration::INVALID;
@@ -625,8 +625,8 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 5: //A OBJ extended palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJEXTPAL;
-				ARM9Mem.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ObjExtPal[0][1] + ADDRESS_STEP_8KB;
+				MMU.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.ObjExtPal[0][1] = MMU.ObjExtPal[0][1] + ADDRESS_STEP_8KB;
 				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 				break;
 			default: goto unsupported_mst;
@@ -651,10 +651,10 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 2: //B BG extended palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBGEXTPAL;
-				ARM9Mem.ExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				ARM9Mem.ExtPal[1][1] = ARM9Mem.ExtPal[1][0] + ADDRESS_STEP_8KB;
-				ARM9Mem.ExtPal[1][2] = ARM9Mem.ExtPal[1][1] + ADDRESS_STEP_8KB;
-				ARM9Mem.ExtPal[1][3] = ARM9Mem.ExtPal[1][2] + ADDRESS_STEP_8KB;
+				MMU.ExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.ExtPal[1][1] = MMU.ExtPal[1][0] + ADDRESS_STEP_8KB;
+				MMU.ExtPal[1][2] = MMU.ExtPal[1][1] + ADDRESS_STEP_8KB;
+				MMU.ExtPal[1][3] = MMU.ExtPal[1][2] + ADDRESS_STEP_8KB;
 				break;
 			default: goto unsupported_mst;
 			}
@@ -682,8 +682,8 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 3: //B OBJ extended palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJEXTPAL;
-				ARM9Mem.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ObjExtPal[1][1] + ADDRESS_STEP_8KB;
+				MMU.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				MMU.ObjExtPal[1][1] = MMU.ObjExtPal[1][1] + ADDRESS_STEP_8KB;
 				break;
 			default: goto unsupported_mst;
 			}
@@ -715,20 +715,20 @@ void MMU_VRAM_unmap_all()
 
 	for (int i = 0; i < 4; i++)
 	{
-		ARM9Mem.ExtPal[0][i] = ARM9Mem.blank_memory;
-		ARM9Mem.ExtPal[1][i] = ARM9Mem.blank_memory;
+		MMU.ExtPal[0][i] = MMU.blank_memory;
+		MMU.ExtPal[1][i] = MMU.blank_memory;
 	}
 
-	ARM9Mem.ObjExtPal[0][0] = ARM9Mem.blank_memory;
-	ARM9Mem.ObjExtPal[0][1] = ARM9Mem.blank_memory;
-	ARM9Mem.ObjExtPal[1][0] = ARM9Mem.blank_memory;
-	ARM9Mem.ObjExtPal[1][1] = ARM9Mem.blank_memory;
+	MMU.ObjExtPal[0][0] = MMU.blank_memory;
+	MMU.ObjExtPal[0][1] = MMU.blank_memory;
+	MMU.ObjExtPal[1][0] = MMU.blank_memory;
+	MMU.ObjExtPal[1][1] = MMU.blank_memory;
 
 	for(int i=0;i<6;i++)
-		ARM9Mem.texInfo.texPalSlot[i] = ARM9Mem.blank_memory;
+		MMU.texInfo.texPalSlot[i] = MMU.blank_memory;
 
 	for(int i=0;i<4;i++)
-		ARM9Mem.texInfo.textureSlotAddr[i] = ARM9Mem.blank_memory;
+		MMU.texInfo.textureSlotAddr[i] = MMU.blank_memory;
 }
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
@@ -740,7 +740,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	}
 
 	//first, save the texture info so we can check it for changes and trigger purges of the texcache
-	ARM9_struct::TextureInfo oldTexInfo = ARM9Mem.texInfo;
+	MMU_struct::TextureInfo oldTexInfo = MMU.texInfo;
 
 	//unmap everything
 	MMU_VRAM_unmap_all();
@@ -759,7 +759,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	//printf(vramConfiguration.describe().c_str());
 
 	//if texInfo changed, trigger notifications
-	if(memcmp(&oldTexInfo,&ARM9Mem.texInfo,sizeof(ARM9_struct::TextureInfo)))
+	if(memcmp(&oldTexInfo,&MMU.texInfo,sizeof(MMU_struct::TextureInfo)))
 	{
 		//if(!nds.isIn3dVblank())
 	//		PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
@@ -888,15 +888,15 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_Reset()
 {
-	memset(ARM9Mem.ARM9_DTCM, 0, sizeof(ARM9Mem.ARM9_DTCM));
-	memset(ARM9Mem.ARM9_ITCM, 0, sizeof(ARM9Mem.ARM9_ITCM));
-	memset(ARM9Mem.ARM9_LCD,  0, sizeof(ARM9Mem.ARM9_LCD));
-	memset(ARM9Mem.ARM9_OAM,  0, sizeof(ARM9Mem.ARM9_OAM));
-	memset(ARM9Mem.ARM9_REG,  0, sizeof(ARM9Mem.ARM9_REG));
-	memset(ARM9Mem.ARM9_VMEM, 0, sizeof(ARM9Mem.ARM9_VMEM));
-	memset(ARM9Mem.MAIN_MEM,  0, sizeof(ARM9Mem.MAIN_MEM));
+	memset(MMU.ARM9_DTCM, 0, sizeof(MMU.ARM9_DTCM));
+	memset(MMU.ARM9_ITCM, 0, sizeof(MMU.ARM9_ITCM));
+	memset(MMU.ARM9_LCD,  0, sizeof(MMU.ARM9_LCD));
+	memset(MMU.ARM9_OAM,  0, sizeof(MMU.ARM9_OAM));
+	memset(MMU.ARM9_REG,  0, sizeof(MMU.ARM9_REG));
+	memset(MMU.ARM9_VMEM, 0, sizeof(MMU.ARM9_VMEM));
+	memset(MMU.MAIN_MEM,  0, sizeof(MMU.MAIN_MEM));
 
-	memset(ARM9Mem.blank_memory,  0, sizeof(ARM9Mem.blank_memory));
+	memset(MMU.blank_memory,  0, sizeof(MMU.blank_memory));
 	
 	memset(MMU.ARM7_ERAM,     0, sizeof(MMU.ARM7_ERAM));
 	memset(MMU.ARM7_REG,      0, sizeof(MMU.ARM7_REG));
@@ -1672,7 +1672,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if(adr < 0x02000000)
 	{
-		T1WriteByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		T1WriteByte(MMU.ARM9_ITCM, adr&0x7FFF, val);
 		return;
 	}
 
@@ -1880,7 +1880,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if (adr < 0x02000000)
 	{
-		T1WriteWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		T1WriteWord(MMU.ARM9_ITCM, adr&0x7FFF, val);
 		return;
 	}
 
@@ -2358,7 +2358,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if(adr<0x02000000)
 	{
-		T1WriteLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		T1WriteLong(MMU.ARM9_ITCM, adr&0x7FFF, val);
 		return ;
 	}
 
@@ -2707,29 +2707,29 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_DISPA_DISPCAPCNT :
 				//INFO("MMU write32: REG_DISPA_DISPCAPCNT 0x%X\n", val);
 				GPU_set_DISPCAPCNT(val);
-				T1WriteLong(ARM9Mem.ARM9_REG, 0x64, val);
+				T1WriteLong(MMU.ARM9_REG, 0x64, val);
 				return;
 				
 			case REG_DISPA_BG0CNT :
 				GPU_setBGProp(MainScreen.gpu, 0, (val&0xFFFF));
 				GPU_setBGProp(MainScreen.gpu, 1, (val>>16));
 				//if((val>>16)==0x400) emu_halt();
-				T1WriteLong(ARM9Mem.ARM9_REG, 8, val);
+				T1WriteLong(MMU.ARM9_REG, 8, val);
 				return;
 			case REG_DISPA_BG2CNT :
 					GPU_setBGProp(MainScreen.gpu, 2, (val&0xFFFF));
 					GPU_setBGProp(MainScreen.gpu, 3, (val>>16));
-					T1WriteLong(ARM9Mem.ARM9_REG, 0xC, val);
+					T1WriteLong(MMU.ARM9_REG, 0xC, val);
 				return;
 			case REG_DISPB_BG0CNT :
 					GPU_setBGProp(SubScreen.gpu, 0, (val&0xFFFF));
 					GPU_setBGProp(SubScreen.gpu, 1, (val>>16));
-					T1WriteLong(ARM9Mem.ARM9_REG, 0x1008, val);
+					T1WriteLong(MMU.ARM9_REG, 0x1008, val);
 				return;
 			case REG_DISPB_BG2CNT :
 					GPU_setBGProp(SubScreen.gpu, 2, (val&0xFFFF));
 					GPU_setBGProp(SubScreen.gpu, 3, (val>>16));
-					T1WriteLong(ARM9Mem.ARM9_REG, 0x100C, val);
+					T1WriteLong(MMU.ARM9_REG, 0x100C, val);
 				return;
 			case REG_DISPA_DISPMMEMFIFO:
 			{
@@ -2756,7 +2756,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	mmu_log_debug_ARM9(adr, "(read08) %0x%X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 
 	if(adr<0x02000000)
-		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
+		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
@@ -2774,7 +2774,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	mmu_log_debug_ARM9(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
 
 	if(adr<0x02000000)
-		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr & 0x7FFF);	
+		return T1ReadWord(MMU.ARM9_ITCM, adr & 0x7FFF);	
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
@@ -2844,7 +2844,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	mmu_log_debug_ARM9(adr, "(read32) %0x%X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
 
 	if(adr<0x02000000) 
-		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
+		return T1ReadLong(MMU.ARM9_ITCM, adr&0x7FFF);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);

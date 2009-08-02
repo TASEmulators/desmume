@@ -77,7 +77,7 @@ static BOOL s_itemIndicesInvalid = true; // if true, the link from listbox items
 static BOOL s_prevValuesNeedUpdate = true; // if true, the "prev" values should be updated using the "cur" values on the next frame update signaled
 static unsigned int s_maxItemIndex = 0; // max currently valid item index, the listbox sometimes tries to update things past the end of the list so we need to know this to ignore those attempts
 
-static const MemoryRegion s_prgRegion    = {  0x02000000, 0x400000, (unsigned char*)ARM9Mem.MAIN_MEM,     false};
+static const MemoryRegion s_prgRegion    = {  0x02000000, 0x400000, (unsigned char*)MMU.MAIN_MEM,     false};
 
 /*
 static const MemoryRegion s_prgRegion    = {  0x020000, SEGACD_RAM_PRG_SIZE, (unsigned char*)Ram_Prg,     true};
