@@ -3078,7 +3078,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0\0";
+				ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0All files (*.*)\0*.*\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  SavName;
 				ofn.nMaxFile = MAX_PATH;
