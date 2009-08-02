@@ -312,7 +312,6 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
-    <ClInclude Include="..\dscard.h" />
     <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\FIFO.h" />
     <ClInclude Include="..\fs.h" />
