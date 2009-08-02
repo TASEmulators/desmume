@@ -198,6 +198,13 @@ struct PolyAttr
 
 	bool isVisible(bool backfacing) 
 	{
+		//this was added after adding multi-bit stencil buffer
+		//it seems that we also need to prevent drawing back faces of shadow polys for rendering
+		u32 mode = (val>>4)&0x3;
+		if(mode==3 && polyid !=0) return !backfacing;
+		//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
+		//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
+
 		switch((val>>6)&3) {
 			case 0: return false;
 			case 1: return backfacing;
