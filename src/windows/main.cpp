@@ -3025,6 +3025,38 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			char filename[MAX_PATH] = "";
 			DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
 			DragFinish((HDROP)wParam);
+
+			//adelikat: dropping these in from FCEUX, I hope this is the best place for that
+			std::string fileDropped = filename;
+			//-------------------------------------------------------
+			//Check if Movie file
+			//-------------------------------------------------------
+			if (!(fileDropped.find(".dsm") == string::npos) && (fileDropped.find(".dsm") == fileDropped.length()-4))	 //ROM is already loaded and .dsm in filename
+			{
+				if (romloaded && !(fileDropped.find(".dsm") == string::npos))	//.dsm is at the end of the filename so that must be the extension		
+					FCEUI_LoadMovie(fileDropped.c_str(), 1, false, false);		 //We are convinced it is a movie file, attempt to load it
+			}
+			
+			//-------------------------------------------------------
+			//Check if Savestate file
+			//-------------------------------------------------------
+			else if (!(fileDropped.find(".ds") == string::npos))
+			{
+				if (fileDropped.find(".ds") == fileDropped.length()-4)	//Check to see it is both at the end (file extension) and there is on more character
+				{
+					if ((fileDropped[fileDropped.length()-1] >= '0' && fileDropped[fileDropped.length()-1] <= '9') || fileDropped[fileDropped.length()-1] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
+					{
+						savestate_load(filename);
+						Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
+						Update_RAM_Search();		//hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
+					}
+				}
+			}
+			
+			//-------------------------------------------------------
+			//Else load it as a ROM
+			//-------------------------------------------------------
+			else
 #ifdef EXPERIMENTAL_GBASLOT
 			if(OpenCore(filename))
 #else
