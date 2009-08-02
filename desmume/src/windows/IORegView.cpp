@@ -43,7 +43,7 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         hdc = BeginPaint(hwnd, &ps);
         
 		// ARM9 registers
-        sprintf(text, "0x%08X", (int)((u32 *)ARM9Mem.ARM9_DTCM)[0x3FFC>>2]);
+        sprintf(text, "0x%08X", (int)((u32 *)MMU.ARM9_DTCM)[0x3FFC>>2]);
         SetWindowText(GetDlgItem(hwnd, IDC_INTHAND9), text);
 
 		sprintf(text, "0x%08X", (int)MMU.reg_IE[ARMCPU_ARM9]);
@@ -55,22 +55,22 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
 		sprintf(text, "%s", ((int)(MMU.reg_IME[ARMCPU_ARM9]) & 0x01)?"enabled":"disabled");
         SetWindowText(GetDlgItem(hwnd, IDC_IME9), text);
 
-        sprintf(text, "0x%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x0000>>1]);
+        sprintf(text, "0x%08X", ((u16 *)MMU.ARM9_REG)[0x0000>>1]);
         SetWindowText(GetDlgItem(hwnd, IDC_DISPCNTA9), text);
 
-        sprintf(text, "0x%08X",  ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]);
+        sprintf(text, "0x%08X",  ((u16 *)MMU.ARM9_REG)[0x0004>>1]);
         SetWindowText(GetDlgItem(hwnd, IDC_DISPSTATA9), text);
 
-		sprintf(text, "0x%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x1000>>1]);
+		sprintf(text, "0x%08X", ((u16 *)MMU.ARM9_REG)[0x1000>>1]);
         SetWindowText(GetDlgItem(hwnd, IDC_DISPCNTB9), text);
 
-        sprintf(text, "0x%08X",  ((u16 *)ARM9Mem.ARM9_REG)[0x1004>>1]);
+        sprintf(text, "0x%08X",  ((u16 *)MMU.ARM9_REG)[0x1004>>1]);
         SetWindowText(GetDlgItem(hwnd, IDC_DISPSTATB9), text);
 
-        sprintf(text, "0x%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x180>>2]);
+        sprintf(text, "0x%08X", (int)((u32 *)MMU.ARM9_REG)[0x180>>2]);
         SetWindowText(GetDlgItem(hwnd, IDC_IPCSYNC9), text);
 
-        sprintf(text, "0x%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x184>>2]);
+        sprintf(text, "0x%08X", (int)((u32 *)MMU.ARM9_REG)[0x184>>2]);
         SetWindowText(GetDlgItem(hwnd, IDC_IPCFIFO9), text);
 
 		sprintf(text, "0x%08X", (int)((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2]);
