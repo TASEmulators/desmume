@@ -32,12 +32,9 @@
 #include "ARM9.h"
 #include "mc.h"
 
-//HACK!!!! REMOVE ME SOON!
-#ifndef ARMCPU_ARM7
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
-#define ARMPROC (PROCNUM?NDS_ARM7:NDS_ARM9)
-#endif
+#define ARMPROC (PROCNUM ? NDS_ARM7:NDS_ARM9)
 
 typedef const u8 TWaitState;
 
