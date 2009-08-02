@@ -47,6 +47,12 @@
 
 PathInfo path;
 
+#if 1
+	#ifndef PUBLIC_RELEASE
+		#undef EXPERIMENTAL_WIFI
+	#endif
+#endif
+
 TCommonSettings CommonSettings;
 static BaseDriver _stub_driver;
 BaseDriver* driver = &_stub_driver;
@@ -2048,7 +2054,6 @@ void Sequencer::execHardware()
 		}
 	}
 
-#ifndef PUBLIC_RELEASE
 #ifdef EXPERIMENTAL_WIFI
 	if(wifi.isTriggered())
 	{
@@ -2056,7 +2061,6 @@ void Sequencer::execHardware()
 		WIFI_SoftAP_usTrigger(&wifiMac);
 		wifi.timestamp += kWifiCycles;
 	}
-#endif
 #endif
 	
 	if(divider.isTriggered()) divider.exec();
