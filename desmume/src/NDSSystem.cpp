@@ -2305,7 +2305,7 @@ void NDS_Reset()
 		TotalLagFrames = 0;
 	}
 
-	MMU_clearMem();
+	MMU_Reset();
 	MMU_new.backupDevice.reset();
 
 	//ARM7 BIOS IRQ HANDLER

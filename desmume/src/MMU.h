@@ -39,12 +39,6 @@
 #define ARMPROC (PROCNUM?NDS_ARM7:NDS_ARM9)
 #endif
 
-/* theses macros are designed for reading/writing in memory (m is a pointer to memory, like MMU.MMU_MEM[proc], and a is an address, like 0x04000000 */
-#define MEM_8(m, a)  (((u8*)(m[((a)>>20)&0xff]))[((a)&0xfff)])
-
-/* theses ones for reading in rom data */
-#define ROM_8(m, a)  (((u8*)(m))[(a)])
-
 typedef const u8 TWaitState;
 
 struct MMU_struct {
@@ -168,7 +162,7 @@ struct armcpu_memory_iface {
 void MMU_Init(void);
 void MMU_DeInit(void);
 
-void MMU_clearMem( void);
+void MMU_Reset( void);
 
 void MMU_setRom(u8 * rom, u32 mask);
 void MMU_unsetRom( void);
