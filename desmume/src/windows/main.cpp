@@ -164,6 +164,8 @@ extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 void InitRamSearch();
 void FilterUpdate(HWND hwnd, bool user=true);
 
+CACHE_ALIGN u8 GPU_screen_unmodified_buffer[4*256*192];
+
 
 CRITICAL_SECTION win_execute_sync;
 volatile int win_sound_samplecounter = 0;
@@ -193,7 +195,6 @@ inline bool IsDlgCheckboxChecked(HWND hDlg, int id)
 }
 
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
-
 
 char SavName[MAX_PATH] = "";
 char ImportSavName[MAX_PATH] = "";
@@ -925,7 +926,8 @@ void Display()
 
 	if(CommonSettings.single_core)
 	{
-		video.srcBuffer = (u8*)GPU_screen;
+		memcpy(GPU_screen_unmodified_buffer,GPU_screen,256*192*4);
+		video.srcBuffer = (u8*)GPU_screen_unmodified_buffer;
 		DoDisplay(true);
 	}
 	else
