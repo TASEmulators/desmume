@@ -583,7 +583,7 @@ int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 	{
 		size_unpacked = *((u32*)(src+0x48));
 		src_pos = 0x4C;
-		for (int i = 0; i < size_unpacked; i++)
+		for (u32 i = 0; i < size_unpacked; i++)
 		{
 			dst[dst_pos++] = src[src_pos++];
 		}
@@ -661,7 +661,7 @@ u32 no_gba_fillLeft(u32 size)
 {
 	for (int i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
-		if (size <= save_types[i][1])
+		if (size <= (int)save_types[i][1])
 			return (size + (save_types[i][1] - size));
 	}
 	return size;
@@ -702,7 +702,7 @@ bool BackupDevice::load_no_gba(const char *fname)
 				//printf("--- new size after fill %i byte(s)\n", size);
 				raw_applyUserSettings(size);
 				data.resize(size);
-				for (int tt = 0; tt < size; tt++)
+				for (u32 tt = 0; tt < size; tt++)
 					data[tt] = out_buf[tt];
 
 				//dump back out as a dsv, just to keep things sane
