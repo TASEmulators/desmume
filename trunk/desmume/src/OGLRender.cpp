@@ -702,7 +702,7 @@ static void GL_ReadFramebuffer()
 			u32screen3D &= 0x3F3F3F3F;
 			
 			const int t = i<<2;
-			const u8 a = GPU_screen3D[t+3];
+			const u8 a = GPU_screen3D[t+3] >> 1;
 			const u8 r = GPU_screen3D[t+2];
 			const u8 g = GPU_screen3D[t+1];
 			const u8 b = GPU_screen3D[t+0];
