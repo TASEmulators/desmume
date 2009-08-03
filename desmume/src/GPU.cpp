@@ -784,11 +784,10 @@ FORCEINLINE void GPU::__setFinalColorBck(u16 color, const u32 x, const int opaqu
 template<bool MOSAIC, bool BACKDROP, int FUNCNUM>
 FORCEINLINE void GPU::___setFinalColorBck(u16 color, const u32 x, const int opaque)
 {
-	//I commented out this line to make a point.
 	//under ordinary circumstances, nobody should pass in something >=256
 	//but in fact, someone is going to try. specifically, that is the map viewer debug tools
 	//which try to render the enter BG. in cases where that is large, it could be up to 1024 wide.
-	//assert(x<256);
+	assert(debug || x<256);
 
 	int x_int;
 
@@ -960,9 +959,12 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 						x++; xoff++;
 					}
 					
-					color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-					gpu->__setFinalColorBck<MOSAIC,false>(color,x,currLine&0xF);
-					x++; xoff++;
+					if(x<xfin)
+					{
+						color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
+						gpu->__setFinalColorBck<MOSAIC,false>(color,x,currLine&0xF);
+						x++; xoff++;
+					}
 				}
 			} else {
 				line += ((xoff&7)>>1);
@@ -977,9 +979,12 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 						x++; xoff++;
 					}
 
-					color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-					gpu->__setFinalColorBck<MOSAIC,false>(color,x,currLine>>4);
-					x++; xoff++;
+					if(x<xfin)
+					{
+						color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
+						gpu->__setFinalColorBck<MOSAIC,false>(color,x,currLine>>4);
+						x++; xoff++;
+					}
 				}
 			}
 		}
