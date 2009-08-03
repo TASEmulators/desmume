@@ -588,6 +588,7 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 	int bg_under = bgPixels[dstX];
 	if(blend2[bg_under])
 	{
+		alpha++;
 		if(alpha<32)
 		{
 			//if the layer underneath is a blend bottom layer, then 3d always alpha blends with it
@@ -2054,7 +2055,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	for(int j=0;j<8;j++)
 		gpu->blend2[j] = (gpu->BLDCNT & (0x100 << j))!=0;
 
-	// paint lower priorities fist
+	// paint lower priorities first
 	// then higher priorities on top
 	for(int prio=NB_PRIORITIES; prio > 0; )
 	{
