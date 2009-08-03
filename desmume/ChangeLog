@@ -23,6 +23,7 @@ Graphics:
  bug: fix color overflow in capture blending
  bug: fix disp fifo capture
  bug: fix simultaneous vram display and capture via same bank
+ bug: change 3d cores to use 18bit color
  bug: swrast: add clear image and scroll emulation
  bug: swrast: add fog emulation
  bug: swrast: fixes to shadow rendering
