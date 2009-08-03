@@ -1012,7 +1012,7 @@ static void SoftRastFramebufferProcess()
 				FragmentColor edgeColor = edgeMarkColors[self>>3];
 
 #define PIXOFFSET(dx,dy) ((dx)+(256*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx)!=256) && (x+(dx)!=-1) && (y+(dy)!=256) && (y+(dy)!=-1) && self > screen[i+PIXOFFSET(dx,dy)].polyid.opaque)
+#define ISEDGE(dx,dy) ((x+(dx)!=256) && (x+(dx)!=-1) && (y+(dy)!=192) && (y+(dy)!=-1) && self > screen[i+PIXOFFSET(dx,dy)].polyid.opaque)
 #define DRAWEDGE(dx,dy) alphaBlend(screenColor[i+PIXOFFSET(dx,dy)], edgeColor)
 
 				bool upleft    = ISEDGE(-1,-1);
