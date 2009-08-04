@@ -75,6 +75,8 @@ public:
 
 	void reset();
 	void close_rom();
+	
+	void forceManualBackupType();
 
 	bool save_state(std::ostream* os);
 	bool load_state(std::istream* is);
@@ -142,6 +144,7 @@ void fw_reset_com(memory_chip_t *mc);       /* reset communication with mc */
 u8 fw_transfer(memory_chip_t *mc, u8 data);
 
 void backup_setManualBackupType(int type);
+void backup_forceManualBackupType();
 
 #endif /*__FW_H__*/
 

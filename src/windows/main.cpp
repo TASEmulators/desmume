@@ -3451,6 +3451,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_SAVETYPE5: backup_setManualBackupType(4); return 0; 
 		case IDC_SAVETYPE6: backup_setManualBackupType(5); return 0; 
 		case IDC_SAVETYPE7: backup_setManualBackupType(6); return 0; 
+		case IDC_SAVETYPE_FORCE: backup_forceManualBackupType(); return 0; 
 
 		case IDM_RESET:
 			ResetGame();
