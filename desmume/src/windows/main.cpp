@@ -142,7 +142,8 @@ void wxTest() {
 
 const int kGapNone = 0;
 const int kGapBorder = 5;
-const int kGapNDS = 64;
+const int kGapNDS = 64; // extremely tilted (but some games seem to use this value)
+const int kGapNDS2 = 90; // more normal viewing angle
 
 static BOOL OpenCore(const char* filename);
 
@@ -248,6 +249,7 @@ void SetScreenGap(int gap);
 void SetRotate(HWND hwnd, int rot);
 
 bool ForceRatio = true;
+bool SeparationBorderDrag = true;
 float DefaultWidth;
 float DefaultHeight;
 float widthTradeOff;
@@ -402,9 +404,25 @@ void ScaleScreen(float factor)
 {
 	if(windowSize == 0)
 	{
-		int w = GetPrivateProfileInt("Video", "Window width", 256, IniName);
-		int h = GetPrivateProfileInt("Video", "Window height", 384, IniName);
-		MainWindow->setClientSize(w, h);
+		int defw = GetPrivateProfileInt("Video", "Window width", 256, IniName);
+		int defh = GetPrivateProfileInt("Video", "Window height", 384, IniName);
+
+		// fix for wrong rotation
+		int w1x = video.rotatedwidthgap();
+		int h1x = video.rotatedheightgap();
+		if((defw > defh) != (w1x > h1x))
+		{
+			int temp = defw;
+			defw = defh;
+			defh = temp;
+		}
+		// fix for wrong gap
+		if(defh*w1x < h1x*defw)
+			defh = defw*h1x/w1x;
+		else if(defw*h1x < w1x*defh)
+			defw = defh*w1x/h1x;
+
+		MainWindow->setClientSize(defw, defh);
 	}
 	else
 	{
@@ -414,6 +432,14 @@ void ScaleScreen(float factor)
 			factor = 2.5f;
 		MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
 	}
+}
+
+void SetMinWindowSize()
+{
+	if(ForceRatio)
+		MainWindow->setMinSize(video.rotatedwidth(), video.rotatedheight());
+	else
+		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 }
 
 void translateXY(s32& x, s32& y)
@@ -1555,6 +1581,7 @@ int _main()
 	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", false, IniName);
 	
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
+	SeparationBorderDrag = GetPrivateProfileBool("Display", "Window Split Border Drag", true, IniName);
 	FrameLimit = GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
@@ -1625,7 +1652,7 @@ int _main()
 		exit(-1);
 	}
 
-	MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
+	SetMinWindowSize();
 
 	ScaleScreen(windowSize);
 
@@ -2054,11 +2081,27 @@ void UpdateScreenRects()
 	}
 }
 
+// re-run the aspect ratio calculations if enabled
+void FixAspectRatio()
+{
+	if(windowSize != 0)
+	{
+		ScaleScreen(windowSize);
+	}
+	else if(ForceRatio)
+	{
+		RECT rc;
+		GetWindowRect(MainWindow->getHWnd(), &rc);
+		SendMessage(MainWindow->getHWnd(), WM_SIZING, WMSZ_BOTTOMRIGHT, (LPARAM)&rc);
+		MoveWindow(MainWindow->getHWnd(), rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE);
+	}
+}
+
 void SetScreenGap(int gap)
 {
 	video.screengap = gap;
-	MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
-	MainWindow->setClientSize(video.rotatedwidthgap(), video.rotatedheightgap());
+	SetMinWindowSize();
+	FixAspectRatio();
 	UpdateWndRects(MainWindow->getHWnd());
 }
 
@@ -2107,7 +2150,7 @@ void SetRotate(HWND hwnd, int rot)
 
 	osd->setRotate(rot);
 
-	MainWindow->setMinSize((video.rotatedwidthgap()), video.rotatedheightgap());
+	SetMinWindowSize();
 
 	MainWindow->setClientSize(newwidth, newheight);
 
@@ -2651,9 +2694,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_WINDOW4X, ((windowSize==4)));
 
 			//Screen Separation
-			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==0)));
-			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, ((video.screengap==5)));
-			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, ((video.screengap==64)));
+			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==kGapNone)));
+			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, ((video.screengap==kGapBorder)));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, ((video.screengap==kGapNDS)));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP2, ((video.screengap==kGapNDS2)));
+			MainWindow->checkMenu(IDM_SCREENSEP_DRAGEDIT, (SeparationBorderDrag));
 	
 			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
@@ -2699,15 +2744,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 
 			//screen gaps
-			MainWindow->checkMenu(IDM_SCREENSEP_NONE, false);
-			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, false);
-			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, false);
-			if(video.screengap == kGapNone) 
-				MainWindow->checkMenu(IDM_SCREENSEP_NONE, true);
-			else if(video.screengap == kGapBorder)
-				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, true);
-			else if(video.screengap == kGapNDS)
-				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, true);
+			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==kGapNone)));
+			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, ((video.screengap==kGapBorder)));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, ((video.screengap==kGapNDS)));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP2, ((video.screengap==kGapNDS2)));
+			MainWindow->checkMenu(IDM_SCREENSEP_DRAGEDIT, (SeparationBorderDrag));
 
 
 			//Save type
@@ -2820,10 +2861,80 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
 			}
 
-			MainWindow->sizingMsg(wParam, lParam, ForceRatio);
+			RECT cRect, ncRect;
+			GetClientRect(MainWindow->getHWnd(), &cRect);
+			GetWindowRect(MainWindow->getHWnd(), &ncRect);
+
+			LONG forceRatioFlags = WINCLASS::NOKEEP;
+			bool setGap = false;
+			bool sideways = (video.rotation == 90) || (video.rotation == 270);
+			{
+				bool horizontalDrag = (wParam == WMSZ_LEFT) || (wParam == WMSZ_RIGHT);
+				bool verticalDrag = (wParam == WMSZ_TOP) || (wParam == WMSZ_BOTTOM);
+				int minX = video.rotatedwidthgap();
+				int minY = video.rotatedheightgap();
+				if(verticalDrag && !sideways && SeparationBorderDrag)
+				{
+					forceRatioFlags |= WINCLASS::KEEPX;
+					minY = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
+					setGap = true;
+				}
+				else if(horizontalDrag && sideways && SeparationBorderDrag)
+				{
+					forceRatioFlags |= WINCLASS::KEEPY;
+					minX = (MainScreenRect.right - MainScreenRect.left) + (SubScreenRect.right - SubScreenRect.left);
+					setGap = true;
+				}
+				else if(ForceRatio)
+				{
+					forceRatioFlags |= WINCLASS::KEEPX;
+					forceRatioFlags |= WINCLASS::KEEPY;
+				}
+				MainWindow->setMinSize(minX, minY);
+			}
+
+
+			MainWindow->sizingMsg(wParam, lParam, forceRatioFlags);
+
+
+			if(setGap)
+			{
+				RECT rc = *(RECT*)lParam;
+				rc.right += (cRect.right - cRect.left) - (ncRect.right - ncRect.left);
+				rc.bottom += (cRect.bottom - cRect.top) - (ncRect.bottom - ncRect.top);
+				int wndWidth, wndHeight, wndHeightGapless;
+				if(sideways)
+				{
+					wndWidth = (rc.bottom - rc.top);
+					wndHeight = (rc.right - rc.left);
+					wndHeightGapless = (MainScreenRect.right - MainScreenRect.left) + (SubScreenRect.right - SubScreenRect.left);
+				}
+				else
+				{
+					wndWidth = (rc.right - rc.left);
+					wndHeight = (rc.bottom - rc.top);
+					wndHeightGapless = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
+				}
+				if(ForceRatio)
+					video.screengap = wndHeight * video.width / wndWidth - video.height;
+				else
+					video.screengap = wndHeight * video.height / wndHeightGapless - video.height;
+				UpdateWndRects(MainWindow->getHWnd());
+			}
 		}
 		return 1;
 		//break;
+
+	case WM_GETMINMAXINFO:
+		if(ForceRatio)
+		{
+			// extend the window size limits, otherwise they can make our window get squashed
+			PMINMAXINFO pmmi = (PMINMAXINFO)lParam;
+			pmmi->ptMaxTrackSize.x *= 4;
+			pmmi->ptMaxTrackSize.y *= 4;
+			return 1;
+		}
+		break;
 
 	case WM_KEYDOWN:
 		if(wParam != VK_PAUSE)
@@ -3658,6 +3769,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_SCREENSEP_NDSGAP:
 			SetScreenGap(kGapNDS);
 			return 0;
+		case IDM_SCREENSEP_NDSGAP2:
+			SetScreenGap(kGapNDS2);
+			return 0;
+		case IDM_SCREENSEP_DRAGEDIT:
+			SeparationBorderDrag = !SeparationBorderDrag;
+			WritePrivateProfileInt("Display","Window Split Border Drag",(int)SeparationBorderDrag,IniName);
+			break;
 		case IDM_WEBSITE:
 			ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
 			return 0;
@@ -3741,10 +3859,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WritePrivateProfileInt("Video","Window Force Ratio",0,IniName);
 			}
 			else {
+				ForceRatio = TRUE;
+				FixAspectRatio();
 				RECT rc;
 				GetClientRect(hwnd, &rc);
-				ScaleScreen((rc.right - rc.left) / 256.0f);
-				ForceRatio = TRUE;
 				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
 				WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
 				WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
@@ -3754,7 +3872,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_DEFSIZE:
 			{
-				if(windowSize)
+				if(windowSize != 1)
 					windowSize = 0;
 
 				ScaleScreen(1);

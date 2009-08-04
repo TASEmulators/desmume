@@ -51,7 +51,14 @@ public:
 
 	void setMinSize(int width, int height);
 
-	void sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio = FALSE);
+	enum // keepRatio flags
+	{
+		NOKEEP = 0x0,
+		KEEPX  = 0x1,
+		KEEPY  = 0x2,
+	};
+
+	void sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio = NOKEEP);
 	void setClientSize(int width, int height);
 };
 
