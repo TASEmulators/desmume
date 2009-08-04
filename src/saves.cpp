@@ -263,6 +263,7 @@ static void mmu_savestate(std::ostream* os)
 	MMU_new.backupDevice.save_state(os);
 }
 
+#ifdef EXPERIMENTAL_WIFI
 SFORMAT SF_WIFI[]={
 	{ "W000", 4, 1, &wifiMac.powerOn},
 	{ "W010", 4, 1, &wifiMac.powerOnPending},
@@ -361,6 +362,7 @@ SFORMAT SF_WIFI[]={
 
 	{ 0 }
 };
+#endif
 
 static bool mmu_loadstate(std::istream* is, int size)
 {
@@ -910,7 +912,9 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,91,gfx3d_savestate);
 	savestate_WriteChunk(os,100,SF_MOVIE);
 	savestate_WriteChunk(os,101,mov_savestate);
+#ifdef EXPERIMENTAL_WIFI
 	savestate_WriteChunk(os,110,SF_WIFI);
+#endif
 	savestate_WriteChunk(os,120,SF_RTC);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
@@ -940,7 +944,9 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 			case 91: if(!gfx3d_loadstate(is,size)) ret=false; break;
 			case 100: if(!ReadStateChunk(is,SF_MOVIE, size)) ret=false; break;
 			case 101: if(!mov_loadstate(is, size)) ret=false; break;
+#ifdef EXPERIMENTAL_WIFI
 			case 110: if(!ReadStateChunk(is,SF_WIFI,size)) ret=false; break;
+#endif
 			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
 			default:
 				ret=false;
