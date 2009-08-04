@@ -1071,9 +1071,7 @@ DWORD WINAPI run()
 			}
 			DRV_AviVideoUpdate((u16*)GPU_screen);
 
-			extern void rewindsave();
 			extern bool rewinding;
-			extern void dorewind();
 
 			if (staterewindingenabled) {
 
