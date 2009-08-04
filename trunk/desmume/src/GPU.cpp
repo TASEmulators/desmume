@@ -636,7 +636,7 @@ FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 
 	if(WINDOW)
 	{
-		bool windowDraw;
+		bool windowDraw = false;
 		renderline_checkWindows(x, windowDraw, windowEffect);
 
 		//backdrop must always be drawn
