@@ -127,7 +127,7 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
                     ofn.lpstrFile =  filename;
                     ofn.nMaxFile = MAX_PATH;
                     ofn.lpstrDefExt = "img";
-					ofn.Flags = OFN_NOCHANGEDIR | OFN_CREATEPROMPT;
+					ofn.Flags = OFN_NOCHANGEDIR | OFN_CREATEPROMPT | OFN_PATHMUSTEXIST;
                     
                     if(!GetOpenFileName(&ofn)) return FALSE;
 
@@ -271,7 +271,7 @@ BOOL CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
                             ofn.lpstrFile =  filename;
                             ofn.nMaxFile = MAX_PATH;
                             ofn.lpstrDefExt = "gba";
-							ofn.Flags = OFN_NOCHANGEDIR | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+							ofn.Flags = OFN_NOCHANGEDIR | OFN_FILEMUSTEXIST;
                             
                             if(!GetOpenFileName(&ofn)) return FALSE;
 

@@ -147,7 +147,7 @@ int ChooseItemFromArchive(ArchiveFile& archive, bool autoChooseIfOnly1, const ch
 
 
 #define DEFAULT_EXTENSION ".tmp"
-#define DEFAULT_CATEGORY "gens"
+#define DEFAULT_CATEGORY "desmume"
 
 static struct TempFiles
 {
@@ -284,7 +284,7 @@ static struct TempFiles
 	{
 		char gbgFile[1024];
 		GetTempPath(1024, gbgFile);
-		strcat(gbgFile, "GensTempFileRecords");
+		strcat(gbgFile, "DesmumeTempFileRecords");
 		char key[64];
 		int i = 0;
 		while(true)
@@ -301,7 +301,7 @@ static struct TempFiles
 	{
 		char gbgFile[1024];
 		GetTempPath(1024, gbgFile);
-		strcat(gbgFile, "GensTempFileRecords");
+		strcat(gbgFile, "DesmumeTempFileRecords");
 		char key[64];
 		int i = 0;
 		int deleteSlot = -1;
@@ -337,9 +337,9 @@ static struct TempFiles
 private:
 	static void CleanOutGarbageRegistry()
 	{
-		char gbgFile[1024];
+		char gbgFile[1024 + 48];
 		GetTempPath(1024, gbgFile);
-		strcat(gbgFile, "GensTempFileRecords");
+		strcat(gbgFile, "DesmumeTempFileRecords");
 
 		char key[64];
 		int i = 0;
@@ -376,8 +376,8 @@ void ReleaseTempFileCategory(const char* cat, const char* exceptionFilename)
 
 
 // example input Name:          "C:\games.zip"
-// example output LogicalName:  "C:\games.zip|Sonic.smd"
-// example output PhysicalName: "C:\Documents and Settings\User\Local Settings\Temp\Gens\dec3.tmp"
+// example output LogicalName:  "C:\games.zip|Sonic.nds"
+// example output PhysicalName: "C:\Documents and Settings\User\Local Settings\Temp\Desmume\dec3.tmp"
 // assumes arguments are character buffers with 1024 bytes each
 bool ObtainFile(const char* Name, char *const & LogicalName, char *const & PhysicalName, const char* category, const char** ignoreExtensions, int numIgnoreExtensions)
 {

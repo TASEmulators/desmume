@@ -4,7 +4,7 @@
 #include "NDSSystem.h"
 
 // 7zip file extraction
-// NOTE: if you want to add support for opening files within archives to some part of Gens,
+// NOTE: if you want to add support for opening files within archives to some part of DeSmuME,
 // consider using the higher-level interface provided by OpenArchive.h instead
 
 void InitDecoder();
