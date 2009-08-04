@@ -91,9 +91,12 @@ void WINCLASS::setMinSize(int width, int height)
 	minHeight = height;
 }
 
-void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio)
+void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 {
 	RECT *rect = (RECT*)lParam;
+
+	int prevRight = rect->right;
+	int prevBottom = rect->bottom;
 
 	int _minWidth, _minHeight;
 
@@ -124,30 +127,48 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio)
 	rect->right = (rect->left + std::max(_minWidth, (int)(rect->right - rect->left)));
 	rect->bottom = (rect->top + std::max(_minHeight, (int)(rect->bottom - rect->top)));
 
-	/* Apply the ratio stuff */
-	if(keepRatio)
+	bool horizontalDrag = (wParam == WMSZ_LEFT) || (wParam == WMSZ_RIGHT);
+	bool verticalDrag = (wParam == WMSZ_TOP) || (wParam == WMSZ_BOTTOM);
+	if(verticalDrag && !(keepRatio & KEEPY))
 	{
-		switch(wParam)
+		int clientHeight = rect->bottom - rect->top  - ycaption - yborder - ymenu - yborder;
+		if(clientHeight < minHeight)
+			rect->bottom += minHeight - clientHeight;
+	}
+	else if(horizontalDrag && !(keepRatio & KEEPX))
+	{
+		int clientWidth = rect->right  - rect->left - xborder  - xborder;
+		if(clientWidth < minWidth)
+			rect->right += minWidth - clientWidth;
+	}
+	else
+	{
+		/* Apply the ratio stuff */
+
+		float ratio1 = ((rect->right  - rect->left - xborder  - xborder                  ) / (float)minWidth);
+		float ratio2 = ((rect->bottom - rect->top  - ycaption - yborder - ymenu - yborder) / (float)minHeight);
+		LONG correctedHeight = (LONG)((rect->top  + ycaption + yborder + ymenu + (minHeight * ratio1) + yborder));
+		LONG correctedWidth  = (LONG)((rect->left +            xborder         + (minWidth  * ratio2) + xborder));
+
+		if(keepRatio & KEEPX)
 		{
-		case WMSZ_LEFT:
-		case WMSZ_RIGHT:
-		case WMSZ_TOPLEFT:
-		case WMSZ_TOPRIGHT:
-		case WMSZ_BOTTOMLEFT:
-		case WMSZ_BOTTOMRIGHT:
+			if((keepRatio & KEEPY) || (rect->bottom < correctedHeight))
 			{
-				float ratio = ((rect->right - rect->left - xborder - xborder) / (float)minWidth);
-				rect->bottom = (LONG)((rect->top + ycaption + yborder + ymenu + (minHeight * ratio) + yborder));
+				if(verticalDrag)
+					rect->right = correctedWidth;
+				else
+					rect->bottom = correctedHeight;
 			}
-			break;
-				
-		case WMSZ_TOP:
-		case WMSZ_BOTTOM:
+		}
+		else
+		{
+			if((keepRatio & KEEPY) && (rect->right < correctedWidth))
 			{
-				float ratio = ((rect->bottom - rect->top - ycaption - yborder - ymenu - yborder) / (float)minHeight);
-				rect->right = (LONG)((rect->left + xborder + (minWidth * ratio) + xborder));
+				if(horizontalDrag)
+					rect->bottom = correctedHeight;
+				else
+					rect->right = correctedWidth;
 			}
-			break;
 		}
 	}
 
@@ -159,6 +180,18 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio)
 
 	if(ymenunew != ymenu)
 		rect->bottom += (ymenunew - ymenu);
+
+	// prevent "pushing" the window across the screen when resizing from the left or top
+	if(wParam == WMSZ_LEFT || wParam == WMSZ_TOPLEFT || wParam == WMSZ_BOTTOMLEFT)
+	{
+		rect->left -= rect->right - prevRight;
+		rect->right = prevRight;
+	}
+	if(wParam == WMSZ_TOP || wParam == WMSZ_TOPLEFT || wParam == WMSZ_TOPRIGHT)
+	{
+		rect->top -= rect->bottom - prevBottom;
+		rect->bottom = prevBottom;
+	}
 }
 
 void WINCLASS::setClientSize(int width, int height)
