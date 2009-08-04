@@ -3382,6 +3382,34 @@ static const struct luaL_reg agggeneralattributes [] =
 	{NULL, NULL}
 };
 
+static int setFont(lua_State *L) {
+
+	const char *choice;
+	choice = luaL_checkstring(L,1);
+
+	aggDraw.target->setFont(choice);
+	return 0;
+}
+
+static int text(lua_State *L) {
+	int x, y;
+	const char *choice;
+
+	x = luaL_checkinteger(L, 1);
+	y = luaL_checkinteger(L, 2);
+	choice = luaL_checkstring(L,3);
+
+	aggDraw.target->renderTextDropshadowed(x,y,choice);
+	return 0;
+}
+
+static const struct luaL_reg aggcustom [] =
+{
+	{"setFont", setFont},
+	{"text", text},
+	{NULL, NULL}
+};
+
 
 // gui.text(int x, int y, string msg)
 //
@@ -3749,8 +3777,8 @@ void registerLibs(lua_State* L)
 
 	luaL_register(L, "agg", aggbasicshapes);
 	luaL_register(L, "agg", agggeneralattributes);
+	luaL_register(L, "agg", aggcustom);
 	
-
 	lua_settop(L, 0); // clean the stack, because each call to luaL_register leaves a table on top
 	
 	// register a few utility functions outside of libraries (in the global namespace)
