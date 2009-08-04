@@ -78,6 +78,12 @@ static const int save_types[7][2] = {
 		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
 };
 
+//forces the current 
+void backup_forceManualBackupType()
+{
+	MMU_new.backupDevice.forceManualBackupType();
+}
+
 void backup_setManualBackupType(int type)
 {
 	CommonSettings.manualBackupType = type;
@@ -817,4 +823,10 @@ bool BackupDevice::load_movie(std::istream* is) {
 	//none of the other fields are used right now
 
 	return true;
+}
+
+void BackupDevice::forceManualBackupType()
+{
+	addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType][1]);
+	state = RUNNING;
 }
