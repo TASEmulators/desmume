@@ -1110,6 +1110,8 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 			return;
 		}
 		break;
+	case CardMode_KEY2:
+		break;
 	}
 
     switch(card.command[0])
