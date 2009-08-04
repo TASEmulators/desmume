@@ -32,7 +32,9 @@
 #endif
 #endif
 
+#ifdef _MSC_VER
 #pragma warning(disable: 4786)
+#endif
 
 // JME
 #include "agg_basics.h"
