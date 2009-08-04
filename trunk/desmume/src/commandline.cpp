@@ -33,14 +33,14 @@
 int scanline_filter_a = 2, scanline_filter_b = 4;
 
 CommandLine::CommandLine()
-: error(NULL)
+: is_cflash_configured(false)
+, error(NULL)
 , ctx(g_option_context_new (""))
-, is_cflash_configured(false)
-, _single_core(0)
 , _play_movie_file(0)
 , _record_movie_file(0)
 , _cflash_image(0)
 , _cflash_path(0)
+, _single_core(0)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
