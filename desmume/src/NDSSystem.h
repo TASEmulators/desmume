@@ -397,12 +397,12 @@ extern struct TCommonSettings {
 		, UseExtFirmware(false)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
+		, single_core(true)
 		, wifiBridgeAdapterNum(0)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, spuAdpcmCache(false)
 		, gfx3d_flushMode(0)
 		, manualBackupType(0)
-		, single_core(true)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
