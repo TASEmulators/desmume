@@ -1022,9 +1022,9 @@ static void loadstate()
 	//_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
 	static const u8 mainRegenAddr[] = {0x00,0x02,0x08,0x0a,0x0c,0x0e,0x40,0x42,0x44,0x46,0x48,0x4a,0x4c,0x50,0x52,0x54,0x60,0x64,0x66,0x6c};
 	static const u8 subRegenAddr[] =  {0x00,0x02,0x08,0x0a,0x0c,0x0e,0x40,0x42,0x44,0x46,0x48,0x4a,0x4c,0x50,0x52,0x54,0x6c};
-	for(uint i=0;i<ARRAY_SIZE(mainRegenAddr);i++)
+	for(u32 i=0;i<ARRAY_SIZE(mainRegenAddr);i++)
 		_MMU_write16<ARMCPU_ARM9>(REG_BASE_DISPA+mainRegenAddr[i], _MMU_read16<ARMCPU_ARM9>(REG_BASE_DISPA+mainRegenAddr[i]));
-	for(uint i=0;i<ARRAY_SIZE(subRegenAddr);i++)
+	for(u32 i=0;i<ARRAY_SIZE(subRegenAddr);i++)
 		_MMU_write16<ARMCPU_ARM9>(REG_BASE_DISPB+subRegenAddr[i], _MMU_read16<ARMCPU_ARM9>(REG_BASE_DISPB+subRegenAddr[i]));
 
 
