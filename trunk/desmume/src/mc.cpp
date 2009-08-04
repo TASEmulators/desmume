@@ -552,7 +552,7 @@ void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 //=======================================================================
 //=======================================================================
 
-int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
+static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 {
 	const char no_GBA_HEADER_ID[] = "NocashGbaBackupMediaSavDataFile";
 	const char no_GBA_HEADER_SRAM_ID[] = "SRAM";
@@ -634,7 +634,7 @@ int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 	return (200);
 }
 
-u32 no_gba_savTrim(void *buf, u32 size)
+static u32 no_gba_savTrim(void *buf, u32 size)
 {
 	u32 rows = size / 16;
 	u32 pos = (size - 16);
@@ -657,11 +657,11 @@ u32 no_gba_savTrim(void *buf, u32 size)
 	return (size);
 }
 
-u32 no_gba_fillLeft(u32 size)
+static u32 no_gba_fillLeft(u32 size)
 {
-	for (int i = 1; i < ARRAY_SIZE(save_types); i++)
+	for (uint i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
-		if (size <= (int)save_types[i][1])
+		if (size <= (u32)save_types[i][1])
 			return (size + (save_types[i][1] - size));
 	}
 	return size;
