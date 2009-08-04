@@ -66,4 +66,7 @@ bool savestate_save (const char *file_name);
 void savestate_slot(int num);
 void loadstate_slot(int num);
 
+void dorewind();
+void rewindsave();
+
 #endif
