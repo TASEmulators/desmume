@@ -333,6 +333,8 @@ void NDS_Sleep();
 void NDS_SkipNextFrame();
 #define NDS_SkipFrame(s) if(s) NDS_SkipNext2DFrame();
 
+void execHardware_doAllDma(EDMAMode modeNum);
+
 template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;

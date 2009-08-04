@@ -1615,7 +1615,6 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 
 	FORCEINLINE void exec()
 	{
-		u64 timer = nds_timer;
 		u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
 		bool first = true, over;
 		//we'll need to check chained timers..
@@ -1937,7 +1936,7 @@ static void execHardware_hstart_vblankStart()
 	execHardware_doAllDma(EDMAMode_VBlank);
 }
 
-void execHardware_hstart_vcount()
+static void execHardware_hstart_vcount()
 {
 	u16 vmatch = T1ReadWord(MMU.ARM9_REG, 4);
 	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
