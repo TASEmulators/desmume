@@ -578,7 +578,7 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 
 	if(WINDOW)
 	{
-		bool windowDraw;
+		bool windowDraw = false;
 		renderline_checkWindows(dstX, windowDraw, windowEffect);
 
 		//we never have anything more to do if the window rejected us
