@@ -212,10 +212,10 @@ struct GFX3D
 		, alphaTestRef(0)
 		, clearDepth(1)
 		, clearColor(0)
+		, fogColor(0)
+		, fogOffset(0)
 		, frameCtr(0)
 		, frameCtrRaw(0)
-		, fogOffset(0)
-		, fogColor(0)
 	{
 	}
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
