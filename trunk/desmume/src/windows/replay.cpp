@@ -86,6 +86,7 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 				ofn.lpstrTitle = "Replay Movie from File";
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dsm";
+				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 				GetOpenFileName(&ofn);
 				strcpy(playfilename, filename);
 				Describe(hwndDlg);
@@ -158,7 +159,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 				ofn.lpstrTitle = "Record a new movie";
 				ofn.lpstrDefExt = "dsm";
 				ofn.nMaxFile = MAX_PATH;
-				ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+				ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 				GetSaveFileName(&ofn);
 			
 				//If user did not specify an extension, add .dsm for them

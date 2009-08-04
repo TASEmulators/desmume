@@ -15,8 +15,8 @@
 // for you to load with fopen or whatever,
 // unless the function fails (or is cancelled) in which case it will return false.
 // example input Name:          "C:\games.zip"
-// example output LogicalName:  "C:\games.zip|Sonic.smd"
-// example output PhysicalName: "C:\Documents and Settings\User\Local Settings\Temp\Gens\rom7A37.smd"
+// example output LogicalName:  "C:\games.zip|Sonic.nds"
+// example output PhysicalName: "C:\Documents and Settings\User\Local Settings\Temp\DeSmuME\rom7A37.smd"
 // assumes the three name arguments are unique character buffers with exactly 1024 bytes each
 bool ObtainFile(const char* Name, char *const & LogicalName, char *const & PhysicalName, const char* category=NULL, const char** ignoreExtensions=NULL, int numIgnoreExtensions=0);
 
@@ -31,7 +31,7 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 void ReleaseTempFileCategory(const char* category, const char* exceptionFilename=NULL);
 
 // sets the parent window of subsequent archive selector dialogs
-// NULL resets this to the default (main Gens emulator window)
+// NULL resets this to the default (main emulator window)
 void SetArchiveParentHWND(void* hwnd=NULL);
 
 // the rest of these are more internal utility functions,

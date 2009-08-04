@@ -275,7 +275,7 @@ BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				ofn.lpstrFile = fileName;
 				ofn.nMaxFile = 256;
 				ofn.lpstrDefExt = "txt";
-				ofn.Flags = OFN_NOCHANGEDIR;
+				ofn.Flags = OFN_NOCHANGEDIR | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 				if(GetSaveFileName(&ofn))
 				{
@@ -356,7 +356,7 @@ BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				ofn.lpstrFile = fileName;
 				ofn.nMaxFile = 256;
 				ofn.lpstrDefExt = "bin";
-				ofn.Flags = OFN_NOCHANGEDIR;
+				ofn.Flags = OFN_NOCHANGEDIR | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 				if(GetSaveFileName(&ofn))
 				{

@@ -1293,7 +1293,7 @@ void LoadSaveStateInfo()
 	{
 		if(savestates[i].exists)
 		{
-			sprintf(ntxt, "%d %s", i+1, savestates[i].date);
+			sprintf(ntxt, "&%d    %s", i+1, savestates[i].date);
 			UpdateSaveStateMenu(i, ntxt);
 		}
 	}
@@ -2237,7 +2237,7 @@ void AviRecordTo()
 
 
 	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 	if(GetSaveFileName(&ofn))
 	{
@@ -2293,7 +2293,7 @@ void WavRecordTo()
 	ofn.lpstrTitle = "Save WAV as";
 
 	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 	if(GetSaveFileName(&ofn))
 	{
@@ -2394,7 +2394,7 @@ LRESULT OpenFile()
 	ofn.lpstrFile =  filename;
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "nds";
-	ofn.Flags = OFN_NOCHANGEDIR;
+	ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 	char buffer[MAX_PATH];
 	ZeroMemory(buffer, sizeof(buffer));
@@ -3014,9 +3014,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//-------------------------------------------------------
 			else if (!(fileDropped.find(".ds") == string::npos))
 			{
-				if (fileDropped.find(".ds") == fileDropped.length()-4)	//Check to see it is both at the end (file extension) and there is on more character
+				size_t extIndex = fileDropped.find(".ds");
+				if (extIndex <= fileDropped.length()-4)	//Check to see it is both at the end (file extension) and there is on more character
 				{
-					if ((fileDropped[fileDropped.length()-1] >= '0' && fileDropped[fileDropped.length()-1] <= '9') || fileDropped[fileDropped.length()-1] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
+					if ((fileDropped[extIndex+3] >= '0' && fileDropped[extIndex+3] <= '9') || fileDropped[extIndex+3] == '-' || fileDropped[extIndex+3] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
 					{
 						savestate_load(filename);
 						Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
@@ -3245,11 +3246,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0All files (*.*)\0*.*\0\0";
+				ofn.lpstrFilter = "DeSmuME Savestate (*.dst or *.ds#)\0*.dst;*.ds0*;*.ds1*;*.ds2*;*.ds3*;*.ds4*;*.ds5*;*.ds6*;*.ds7*;*.ds8*;*.ds9*;*.ds-*\0DeSmuME Savestate (*.dst only)\0*.dst\0All files (*.*)\0*.*\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  SavName;
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
+				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
@@ -3275,11 +3277,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0\0";
+				ofn.lpstrFilter = "DeSmuME Savestate (*.dst or *.ds#)\0*.dst;*.ds0*;*.ds1*;*.ds2*;*.ds3*;*.ds4*;*.ds5*;*.ds6*;*.ds7*;*.ds8*;*.ds9*;*.ds-*\0DeSmuME Savestate (*.dst only)\0*.dst\0All files (*.*)\0*.*\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  SavName;
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
+				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
@@ -3351,6 +3354,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ofn.lpstrFile =  ImportSavName;
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "duc";
+				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
@@ -3380,6 +3384,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ofn.lpstrFile =  ImportSavName;
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "sav";
+				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 				if(!GetSaveFileName(&ofn))
 				{
@@ -4104,7 +4109,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					ofn.lpstrFile = fileName;
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "bin";
-					ofn.Flags = OFN_NOCHANGEDIR;
+					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 					char buffer[MAX_PATH];
 					ZeroMemory(buffer, sizeof(buffer));
@@ -4216,7 +4221,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					ofn.lpstrFile = fileName;
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "bin";
-					ofn.Flags = OFN_NOCHANGEDIR;
+					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 					char buffer[MAX_PATH];
 					ZeroMemory(buffer, sizeof(buffer));

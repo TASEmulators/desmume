@@ -442,7 +442,7 @@ int Change_File_S(char *Dest, char *Dir, char *Titre, char *Filter, char *Ext, H
 	ofn.lpstrInitialDir = Dir;
 	ofn.lpstrTitle = Titre;
 	ofn.lpstrDefExt = Ext;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOREADONLYRETURN;
 
 	if (GetSaveFileName(&ofn)) return 1;
 
@@ -455,7 +455,7 @@ bool Save_Watches()
 	Rom_Name = path.GetRomName();
 	strncpy(Str_Tmp,Rom_Name.c_str(),512);
 	strcat(Str_Tmp,".wch");
-	if(Change_File_S(Str_Tmp, Gens_Path, "Save Watches", "GENs Watchlist\0*.wch\0All Files\0*.*\0\0", "wch", RamWatchHWnd))
+	if(Change_File_S(Str_Tmp, Gens_Path, "Save Watches", "DeSmuME Watchlist\0*.wch\0All Files\0*.*\0\0", "wch", RamWatchHWnd))
 	{
 		FILE *WatchFile = fopen(Str_Tmp,"r+b");
 		if (!WatchFile) WatchFile = fopen(Str_Tmp,"w+b");
@@ -589,7 +589,7 @@ bool Load_Watches(bool clear)
 	Rom_Name = path.GetRomName();
 	strncpy(Str_Tmp,Rom_Name.c_str(),512);
 	strcat(Str_Tmp,".wch");
-	if(Change_File_L(Str_Tmp, Watch_Dir, "Load Watches", "GENs Watchlist\0*.wch\0All Files\0*.*\0\0", "wch", RamWatchHWnd))
+	if(Change_File_L(Str_Tmp, Watch_Dir, "Load Watches", "DeSmuME Watchlist\0*.wch\0All Files\0*.*\0\0", "wch", RamWatchHWnd))
 	{
 		return Load_Watches(clear, Str_Tmp);
 	}

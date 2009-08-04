@@ -93,7 +93,8 @@ void HK_PrintScreen(int param)
 	ofn.lpstrTitle = "Print Screen Save As";
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrFile = outFilename;
-	ofn.Flags = OFN_OVERWRITEPROMPT;
+	ofn.lpstrDefExt = "png";
+	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 	std::string filename = path.getpath(path.SCREENSHOTS);
 
