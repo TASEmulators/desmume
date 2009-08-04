@@ -247,8 +247,6 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 }
 
 // this function used ONLY in new gxFIFO
-extern void execHardware_doAllDma(EDMAMode modeNum);
-// this function used ONLY in new gxFIFO
 BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 {
 	u8	tmp_cmd = 0;
