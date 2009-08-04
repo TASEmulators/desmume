@@ -114,7 +114,7 @@ static void Agg_init_fonts()
 		{ agg::verdana18_bold, "verdana18_bold" },
 	};
 
-	for(uint i=0;i<ARRAY_SIZE(fonts);i++)
+	for(u32 i=0;i<ARRAY_SIZE(fonts);i++)
 		font_table[fonts[i].name] = fonts[i].font;
 }
 

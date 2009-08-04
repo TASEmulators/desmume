@@ -659,7 +659,7 @@ static u32 no_gba_savTrim(void *buf, u32 size)
 
 static u32 no_gba_fillLeft(u32 size)
 {
-	for (uint i = 1; i < ARRAY_SIZE(save_types); i++)
+	for (u32 i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
 		if (size <= (u32)save_types[i][1])
 			return (size + (save_types[i][1] - size));
