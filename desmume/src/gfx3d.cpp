@@ -1501,6 +1501,12 @@ void gfx3d_glFlush(u32 v)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
+#if 0
+	if (isSwapBuffers)
+	{
+		INFO("Error: swapBuffers already use\n");
+	}
+#endif
 	isSwapBuffers = true;
 #else
 	if(!flushPending)
@@ -1640,8 +1646,6 @@ void gfx3d_VBlankSignal()
 	{
 		gfx3d_doFlush();
 		isSwapBuffers = false;
-		GFX_DELAY(392);
-		NDS_RescheduleGXFIFO();
 	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
@@ -1663,10 +1667,15 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 {
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	isVBlank = false;
-	
+
 	if (!drawPending) return;
 	drawPending = FALSE;
-	if(skipFrame) return;
+	if(skipFrame) 
+	{
+		GFX_DELAY(392);
+		NDS_RescheduleGXFIFO();
+		return;
+	}
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
@@ -1675,6 +1684,8 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 
 	gpu3D->NDS_3D_Render();
+	GFX_DELAY(392);
+	NDS_RescheduleGXFIFO();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -1713,6 +1724,13 @@ static void NOPARAMS()
 			case 0x15:
 			case 0x41:
 				{
+					if (gxFIFO.size > 255) 
+					{
+						gfx3d_execute3D();
+						gfx3d_execute3D();
+						gfx3d_execute3D();
+						gfx3d_execute3D();
+					}
 					GFX_FIFOsend(clCmd & 0xFF, 0);
 					clCmd >>= 8;
 					continue;
@@ -2374,13 +2392,13 @@ SFORMAT SF_GFX3D[]={
 	{ "GFHE", 2, 1, &gxFIFO.head},
 	{ "GFTA", 2, 1, &gxFIFO.tail},
 	{ "GFSZ", 2, 1, &gxFIFO.size},
-	{ "GFCM", 1, 257, &gxFIFO.cmd[0]},
-	{ "GFPM", 4, 257, &gxFIFO.param[0]},
+	{ "GFCM", 1, 256, &gxFIFO.cmd[0]},
+	{ "GFPM", 4, 256, &gxFIFO.param[0]},
 	{ "GPHE", 1, 1, &gxPIPE.head},
 	{ "GPTA", 1, 1, &gxPIPE.tail},
 	{ "GPSZ", 1, 1, &gxPIPE.size},
-	{ "GPCM", 1, 5, &gxPIPE.cmd[0]},
-	{ "GPPM", 4, 5, &gxPIPE.param[0]},
+	{ "GPCM", 1, 4, &gxPIPE.cmd[0]},
+	{ "GPPM", 4, 4, &gxPIPE.param[0]},
 	{ "GCOL", 1, 4, &colorRGB[0]},
 	{ "GLCO", 4, 4, lightColor},
 	{ "GLDI", 4, 4, lightDirection},
