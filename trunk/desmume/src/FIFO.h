@@ -49,8 +49,8 @@ extern void IPC_FIFOcnt(u8 proc, u16 val);
 //=================================================== GFX FIFO
 typedef struct
 {
-	u8		cmd[257];
-	u32		param[257];
+	u8		cmd[256];
+	u32		param[256];
 
 	u16		head;		// start position
 	u16		tail;		// tail
@@ -59,8 +59,8 @@ typedef struct
 
 typedef struct
 {
-	u8		cmd[5];
-	u32		param[5];
+	u8		cmd[4];
+	u32		param[4];
 
 	u8		head;
 	u8		tail;
