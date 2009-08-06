@@ -81,7 +81,7 @@ TEMPLATE static  u32 FASTCALL OP_LSR()
 {
      const u32 &i = cpu->instruction;
      u32 v = (i>>6) & 0x1F;
-     cpu->CPSR.bits.C = BIT_N(cpu->R[REG_NUM(i, 0)], v-1);
+     cpu->CPSR.bits.C = BIT_N(cpu->R[REG_NUM(i, 3)], v-1);
      cpu->R[REG_NUM(i, 0)] = (cpu->R[REG_NUM(i, 3)] >> v);
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
      cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
