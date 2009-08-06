@@ -188,7 +188,7 @@ void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 {
 	int i;
 
-	stack->size = size;
+	stack->size = (size + 1);
 
 	if (stack->matrix != NULL) {
 		free (stack->matrix);

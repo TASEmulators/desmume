@@ -176,7 +176,7 @@ bool isVBlank = false;
 
 static u32 BTind = 0;
 static u32 PTind = 0;
-//static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 
 //raw ds format poly attributes
@@ -621,14 +621,14 @@ void gfx3d_glStoreMatrix(u32 v)
 	if(mymode==0 || mymode==3)
 		v = 0;
 
-	if(v==31) v=30; //? what should happen in this case?
+	if (v > 31) return;
 
-	MatrixStackLoadMatrix (&mtxStack[mymode], v&31, mtxCurrent[mymode]);
+	MatrixStackLoadMatrix (&mtxStack[mymode], v, mtxCurrent[mymode]);
 
 	GFX_DELAY(17);
 
 	if(mymode==2)
-		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
+		MatrixStackLoadMatrix (&mtxStack[1], v, mtxCurrent[1]);
 }
 
 void gfx3d_glRestoreMatrix(u32 v)
@@ -641,14 +641,14 @@ void gfx3d_glRestoreMatrix(u32 v)
 	if(mymode==0 || mymode==3)
 		v = 0;
 
-	if(v==31) v=30; //? what should happen in this case?
+	if (v > 31) return;
 
-	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v&31));
+	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v));
 
 	GFX_DELAY(36);
 
 	if (mymode == 2)
-		MatrixCopy (mtxCurrent[1], MatrixStackGetPos(&mtxStack[1], v&31));
+		MatrixCopy (mtxCurrent[1], MatrixStackGetPos(&mtxStack[1], v));
 }
 
 void gfx3d_glLoadIdentity()
@@ -1127,60 +1127,68 @@ BOOL gfx3d_glBoxTest(u32 v)
 	gxstat |= 0x00000001;		// busy
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
-	BTind++;
-	if (BTind < 3) 
-	{
-	/*	if(BTind == 1)
-		{
-			BTcoords[0] = float16table[v & 0xFFFF];
-			BTcoords[1] = float16table[v >> 16];
-		}
-		else if(BTind == 2)
-		{
-			BTcoords[2] = float16table[v & 0xFFFF];
-			BTcoords[3] = float16table[v >> 16];
-		}*/
+	BTcoords[BTind++] = float16table[v & 0xFFFF];
+	BTcoords[BTind++] = float16table[v >> 16];
 
-		return FALSE;
-	}
+	// 0 - X coordinate
+	// 1 - Y coordinate
+	// 2 - Z coordinate
+	// 3 - Width
+	// 4 - Height
+	// 5 - Depth
+
+	if (BTind < 5) return FALSE;
 	BTind = 0;
 
+	gxstat &= 0xFFFFFFFE;		// clear busy bit
 	GFX_DELAY(103);
 
-/*	BTcoords[4] = float16table[v & 0xFFFF];
-	BTcoords[5] = float16table[v >> 16];
+#if 0
+	INFO("BoxTEST: x %f y %f width %f height %f depth %f\n", 
+				BTcoords[0], BTcoords[1], BTcoords[2], BTcoords[3], BTcoords[4], BTcoords[5]);
+	/*for (int i = 0; i < 16; i++)
+	{
+		INFO("mtx1[%i] = %f ", i, mtxCurrent[1][i]);
+		if ((i+1) % 4 == 0) INFO("\n");
+	}
+	INFO("\n");*/
+#endif
 
+#if 0
+
+	// 0 - X coordinate				1 - Y coordinate			2 - Z coordinate			
+	// 3 - Width					4 - Height					5 - Depth
 	ALIGN(16) float boxCoords[6][4][4] = {
 		// near
-		{{BTcoords[0], BTcoords[1], BTcoords[2], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}, 
-			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}},
+		{	{BTcoords[0],				BTcoords[1],				BTcoords[2],				1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2],				1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}, 
+			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}},
 		// far
-		{{BTcoords[0], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}},
+		{	{BTcoords[0],				BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}},
 		// left
-		{{BTcoords[0], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0], BTcoords[1], BTcoords[2], 1.0f}, 
-			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}, 
-			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}},
+		{	{BTcoords[0],				BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0],				BTcoords[1],				BTcoords[2],				1.0f}, 
+			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}, 
+			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}},
 		// right
-		{{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}},
+		{	{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2],				1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}},
 		// top
-		{{BTcoords[0], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2], 1.0f}, 
-			{BTcoords[0], BTcoords[1], BTcoords[2], 1.0f}},
+		{	{BTcoords[0],				BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2],				1.0f}, 
+			{BTcoords[0],				BTcoords[1],				BTcoords[2],				1.0f}},
 		// bottom
-		{{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
-			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}, 
-			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}}
+		{	{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
+			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}, 
+			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}}
 	};
 
 	for(int face = 0; face < 6; face++)
@@ -1190,32 +1198,28 @@ BOOL gfx3d_glBoxTest(u32 v)
 			MatrixMultVec4x4(mtxCurrent[1], boxCoords[face][vtx]);
 			MatrixMultVec4x4(mtxCurrent[0], boxCoords[face][vtx]);
 
-			boxCoords[face][vtx][0] = ((boxCoords[face][vtx][0] + boxCoords[face][vtx][3]) / (2 * boxCoords[face][vtx][3]));
-			boxCoords[face][vtx][1] = ((boxCoords[face][vtx][1] + boxCoords[face][vtx][3]) / (2 * boxCoords[face][vtx][3]));
-			boxCoords[face][vtx][2] = ((boxCoords[face][vtx][2] + boxCoords[face][vtx][3]) / (2 * boxCoords[face][vtx][3]));
+			boxCoords[face][vtx][0] = ((boxCoords[face][vtx][0] + boxCoords[face][vtx][3]) / (2.0f * boxCoords[face][vtx][3]));
+			boxCoords[face][vtx][1] = ((boxCoords[face][vtx][1] + boxCoords[face][vtx][3]) / (2.0f * boxCoords[face][vtx][3]));
+			boxCoords[face][vtx][2] = ((boxCoords[face][vtx][2] + boxCoords[face][vtx][3]) / (2.0f * boxCoords[face][vtx][3]));
 
-		//	if(face==0)INFO("box test: testing face %i, vtx %i: %f %f %f %f\n", face, vtx, 
-		//		boxCoords[face][vtx][0], boxCoords[face][vtx][1], boxCoords[face][vtx][2], boxCoords[face][vtx][3]);
+			//if(face==0)INFO("box test: testing face %i, vtx %i: %f %f %f %f\n", face, vtx, 
+			//	boxCoords[face][vtx][0], boxCoords[face][vtx][1], boxCoords[face][vtx][2], boxCoords[face][vtx][3]);
 
-			if ((boxCoords[face][vtx][0] >= 0.0f) && (boxCoords[face][vtx][0] <= 1.0f) &&
-				(boxCoords[face][vtx][1] >= 0.0f) && (boxCoords[face][vtx][1] <= 1.0f) &&
-				(boxCoords[face][vtx][2] >= 0.0f) && (boxCoords[face][vtx][2] <= 1.0f))
+			if ((boxCoords[face][vtx][0] >= -1.0f) && (boxCoords[face][vtx][0] <= 1.0f) &&
+				(boxCoords[face][vtx][1] >= -1.0f) && (boxCoords[face][vtx][1] <= 1.0f) &&
+				(boxCoords[face][vtx][2] >= -1.0f) && (boxCoords[face][vtx][2] <= 1.0f))
 			{
-			//	goto faceInside;
+				gxstat |= 0x00000002;
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+				return TRUE;
 			}
-			else
-				goto noFaceInside;
 		}
 	}
 
-	goto faceInside;
-
-faceInside:
-	gxstat |= 0x2;
-
-noFaceInside:*/
-	gxstat &= 0xFFFFFFFE;		// clear busy bit
+#else
 	gxstat |= 0x00000002;		// hack
+#endif
+
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 	return TRUE;
 }
@@ -1226,17 +1230,12 @@ BOOL gfx3d_glPosTest(u32 v)
 	gxstat |= 0x00000001;		// busy
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
-	PTind++;
-	if (PTind < 2)
-	{
-		PTcoords[0] = float16table[v & 0xFFFF];
-		PTcoords[1] = float16table[v >> 16];
+	PTcoords[PTind++] = float16table[v & 0xFFFF];
+	PTcoords[PTind++] = float16table[v >> 16];
 
-		return FALSE;
-	}
+	if (PTind < 3) return FALSE;
 	PTind = 0;
 	
-	PTcoords[2] = float16table[v & 0xFFFF];
 	PTcoords[3] = 1.0f;
 
 	MatrixMultVec4x4(mtxCurrent[1], PTcoords);
