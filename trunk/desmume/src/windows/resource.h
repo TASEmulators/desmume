@@ -311,20 +311,25 @@
 #define IDC_ROTATE270                   1006
 #define IDC_SPU_CACHE                   1006
 #define IDC_GRED                        1006
+#define IDC_WIFIMODE0                   1006
 #define IDC_ARM7BIOSBROWSE              1007
 #define IDC_EDIT06                      1007
 #define IDC_GYELLOW                     1007
+#define IDC_WIFIMODE1                   1007
 #define IDC_EDIT09                      1008
 #define IDC_MEMVIEWBOX                  1008
 #define IDC_GBLUE                       1008
+#define IDC_ADHOC_SERVER                1008
 #define IDC_ADDRESS                     1009
 #define IDC_BIOSSWIS                    1009
 #define IDC_EDIT10                      1009
 #define IDC_FORCERATIO                  1009
+#define IDC_ADHOC_CLIENT                1009
 #define IDC_AUTO_UPDATE_SPIN            1010
 #define IDC_EDIT15                      1010
 #define IDC_TEXTDUMP                    1010
 #define IDC_WINDOW1X                    1010
+#define IDC_ADHOC_SERVERNAME            1010
 #define IDC_AUTO_UPDATE_SECS            1011
 #define IDC_USEEXTFIRMWARE              1011
 #define IDC_WINDOW2X                    1011
@@ -801,7 +806,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1006
+#define _APS_NEXT_CONTROL_VALUE         1011
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

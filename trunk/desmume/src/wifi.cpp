@@ -209,10 +209,16 @@ FW_WFCProfile FW_WFCProfile3 = {"",
 // 5: highest logging, for debugging, shows everything, may slow down a lot
 #define WIFI_LOGGING_LEVEL 3
 
+#define WIFI_LOG_USE_LOGC 0
+
 #if (WIFI_LOGGING_LEVEL >= 1)
-#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) LOGC(8, "WIFI: "__VA_ARGS__);
+	#if WIFI_LOG_USE_LOGC
+		#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) LOGC(8, "WIFI: "__VA_ARGS__);
+	#else
+		#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) printf("WIFI: "__VA_ARGS__);
+	#endif
 #else
-#define WIFI_LOG(level, ...)
+#define WIFI_LOG(level, ...) {}
 #endif
 
 /*******************************************************************************
@@ -1271,6 +1277,7 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 	wifi->SoftAP.curPacketPos = 0;
 	wifi->SoftAP.curPacketSending = FALSE;
 	
+#if 0
 	if(wifi_netEnabled)
 	{
 		if(desmume_pcap_findalldevs(&alldevs, errbuf) == -1)
@@ -1279,7 +1286,7 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 			return 0;
 		}
 
-		wifi_bridge = desmume_pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, errbuf);
+		wifi_bridge = desmume_pcap_open(WIFI_index_device(alldevs,CommonSettings.wifi.infraBridgeAdapter)->name, PACKET_SIZE, 0, 1, errbuf);
 		if(wifi_bridge == NULL)
 		{
 			printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
@@ -1288,6 +1295,7 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 
 		desmume_pcap_freealldevs(alldevs);
 	}
+#endif
 
 	return 1;
 }

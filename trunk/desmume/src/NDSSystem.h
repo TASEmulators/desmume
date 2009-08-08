@@ -400,7 +400,6 @@ extern struct TCommonSettings {
 		, BootFromFirmware(false)
 		, DebugConsole(false)
 		, single_core(true)
-		, wifiBridgeAdapterNum(0)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, spuAdpcmCache(false)
 		, gfx3d_flushMode(0)
@@ -409,6 +408,12 @@ extern struct TCommonSettings {
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
+
+		wifi.mode = 0;
+		wifi.adhocMode = 0;
+		strcpy(wifi.adhocServerName, "");
+		wifi.infraBridgeAdapter = 0;
+
 		for(int i=0;i<16;i++)
 			spu_muteChannels[i] = false;
 	}
@@ -427,7 +432,14 @@ extern struct TCommonSettings {
 
 	bool single_core;
 	
-	int wifiBridgeAdapterNum;
+	struct _Wifi {
+		int mode;
+
+		int adhocMode;
+		char adhocServerName[64];
+
+		int infraBridgeAdapter;
+	} wifi;
 
 	SPUInterpolationMode spuInterpolationMode;
 	bool spuAdpcmCache;
