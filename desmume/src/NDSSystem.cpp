@@ -47,7 +47,7 @@
 
 PathInfo path;
 
-#if 1
+#if 0
 	#ifndef PUBLIC_RELEASE
 		#undef EXPERIMENTAL_WIFI
 	#endif
@@ -532,8 +532,7 @@ int NDS_Init( void) {
 		return -1;
 
 #ifdef EXPERIMENTAL_WIFI
-	WIFI_Init(&wifiMac) ;
-	WIFI_SoftAP_Init(&wifiMac);
+	WIFI_Init() ;
 #endif
 
 	nds.FW_ARM9BootCode = NULL;
@@ -562,7 +561,7 @@ void NDS_DeInit(void) {
 	gpu3D->NDS_3D_Close();
 
 #ifdef EXPERIMENTAL_WIFI
-	WIFI_SoftAP_Shutdown(&wifiMac);
+	WIFI_DeInit();
 #endif
 	cheatsSearchClose();
 }
@@ -2053,13 +2052,14 @@ void Sequencer::execHardware()
 		}
 	}
 
+#ifndef PUBLIC_RELEASE
 #ifdef EXPERIMENTAL_WIFI
 	if(wifi.isTriggered())
 	{
-		WIFI_usTrigger(&wifiMac);
-		WIFI_SoftAP_usTrigger(&wifiMac);
+		WIFI_usTrigger();
 		wifi.timestamp += kWifiCycles;
 	}
+#endif
 #endif
 	
 	if(divider.isTriggered()) divider.exec();
@@ -2491,10 +2491,7 @@ void NDS_Reset()
 	SPU_Reset();
 
 #ifdef EXPERIMENTAL_WIFI
-	WIFI_Init(&wifiMac);
-
-	WIFI_SoftAP_Shutdown(&wifiMac);
-	WIFI_SoftAP_Init(&wifiMac);
+	WIFI_Reset();
 #endif
 
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
