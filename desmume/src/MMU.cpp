@@ -1552,8 +1552,10 @@ static INLINE u16 read_timer(int proc, int timerIndex)
 
 static INLINE void write_timer(int proc, int timerIndex, u16 val)
 {
+#if 0
 	int mask		= ((val&0x80)>>7) << timerIndex;
-	//MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
+	MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
+#endif
 
 	if(val&0x80)
 		MMU.timer[proc][timerIndex] = MMU.timerReload[proc][timerIndex];

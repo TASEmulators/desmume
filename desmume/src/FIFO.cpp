@@ -235,8 +235,6 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 // this function used ONLY in new gxFIFO
 BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 {
-	u8	tmp_cmd = 0;
-	u32	tmp_param = 0;
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0xF7FFFFFF;		// clear busy flag
 

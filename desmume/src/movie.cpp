@@ -499,7 +499,6 @@ static bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
 	//TODO - support dumping directly without compressing to save a buffer copy
 
 	memorystream ms;
-	std::ostream* os = (std::ostream*)&ms;
 
 	//size it
 	FILE * fp = fopen( fname.c_str(), "r" );
