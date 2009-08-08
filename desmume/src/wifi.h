@@ -507,24 +507,6 @@ u16  WIFI_read16(u32 address) ;
 /* wifimac timing */
 void WIFI_usTrigger() ;
 
-/* SoftAP */
-
-typedef struct _WIFI_FrameHeader
-{
-	u8 FrameControl[2];
-	u8 DurationID[2];
-	u8 Receiver[6];
-	u8 Sender[6];
-	u8 BSSID[6];
-	u8 SeqCtl[2];
-
-} WIFI_FrameHeader;
-
-bool WIFI_SoftAP_Init();
-void WIFI_SoftAP_DeInit();
-void WIFI_SoftAP_Reset();
-void WIFI_SoftAP_RecvPacketFromDS(u8 *packet, int len);
-void WIFI_SoftAP_usTrigger();
 
 /* DS WFC profile data documented here : */
 /* http://dsdev.bigredpimp.com/2006/07/31/aoss-wfc-profile-data/ */
