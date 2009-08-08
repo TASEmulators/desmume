@@ -486,24 +486,26 @@ extern bool wifi_netEnabled;
 
 extern wifimac_t wifiMac;
 
-void WIFI_Init(wifimac_t *wifi);
+bool WIFI_Init();
+void WIFI_DeInit();
+void WIFI_Reset();
 
 /* subchip communication IO functions */
-void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;
-void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part) ;
-u16  WIFI_getRF_DATA(wifimac_t *wifi, u8 part) ;
-u16  WIFI_getRF_STATUS(wifimac_t *wifi) ;
+void WIFI_setRF_CNT(u16 val) ;
+void WIFI_setRF_DATA(u16 val, u8 part) ;
+u16  WIFI_getRF_DATA(u8 part) ;
+u16  WIFI_getRF_STATUS() ;
 
-void WIFI_setBB_CNT(wifimac_t *wifi,u16 val) ;
-u8   WIFI_getBB_DATA(wifimac_t *wifi) ;
-void WIFI_setBB_DATA(wifimac_t *wifi, u8 val) ;
+void WIFI_setBB_CNT(u16 val) ;
+u8   WIFI_getBB_DATA() ;
+void WIFI_setBB_DATA(u8 val) ;
 
 /* wifimac io */
-void WIFI_write16(wifimac_t *wifi,u32 address, u16 val) ;
-u16  WIFI_read16(wifimac_t *wifi,u32 address) ;
+void WIFI_write16(u32 address, u16 val) ;
+u16  WIFI_read16(u32 address) ;
 
 /* wifimac timing */
-void WIFI_usTrigger(wifimac_t *wifi) ;
+void WIFI_usTrigger() ;
 
 /* SoftAP */
 
@@ -518,10 +520,11 @@ typedef struct _WIFI_FrameHeader
 
 } WIFI_FrameHeader;
 
-int WIFI_SoftAP_Init(wifimac_t *wifi);
-void WIFI_SoftAP_Shutdown(wifimac_t *wifi);
-void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len);
-void WIFI_SoftAP_usTrigger(wifimac_t *wifi);
+bool WIFI_SoftAP_Init();
+void WIFI_SoftAP_DeInit();
+void WIFI_SoftAP_Reset();
+void WIFI_SoftAP_RecvPacketFromDS(u8 *packet, int len);
+void WIFI_SoftAP_usTrigger();
 
 /* DS WFC profile data documented here : */
 /* http://dsdev.bigredpimp.com/2006/07/31/aoss-wfc-profile-data/ */

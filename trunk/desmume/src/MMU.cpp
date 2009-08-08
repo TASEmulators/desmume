@@ -2986,7 +2986,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	if ((adr & 0xFF800000) == 0x04800000)
 	{
 		/* is wifi hardware, dont intermix with regular hardware registers */
-		/* FIXME handle 8 bit writes */
+		// 8-bit writes to wifi I/O and RAM are ignored
+		// Reference: http://nocash.emubase.de/gbatek.htm#dswifiiomap
 		return ;
 	}
 #endif
@@ -3032,7 +3033,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
-		WIFI_write16(&wifiMac,adr,val);
+		WIFI_write16(adr,val);
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
 		return;
 	}
@@ -3347,8 +3348,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	{
 		// access to non regular hw registers
 		// return to not overwrite valid data
-		WIFI_write16(&wifiMac, adr, val & 0xFFFF);
-		WIFI_write16(&wifiMac, adr+2, val >> 16);
+		WIFI_write16(adr, val & 0xFFFF);
+		WIFI_write16(adr+2, val >> 16);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
 		return;
 	}
@@ -3477,9 +3478,9 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
 		if (adr & 1)
-			return (WIFI_read16(&wifiMac,adr-1) >> 8) & 0xFF;
+			return (WIFI_read16(adr-1) >> 8) & 0xFF;
 		else
-			return WIFI_read16(&wifiMac,adr) & 0xFF;
+			return WIFI_read16(adr) & 0xFF;
 	}
 #endif
 
@@ -3502,7 +3503,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
-		return WIFI_read16(&wifiMac,adr) ;
+		return WIFI_read16(adr) ;
 #endif
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
@@ -3568,7 +3569,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
-		return (WIFI_read16(&wifiMac,adr) | (WIFI_read16(&wifiMac,adr+2) << 16));
+		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 #endif
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
