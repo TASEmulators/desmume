@@ -1823,7 +1823,10 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", FALSE, IniName);
 
-	CommonSettings.wifiBridgeAdapterNum = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
+	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
+	CommonSettings.wifi.adhocMode = GetPrivateProfileInt("Wifi", "AdhocMode", 0, IniName);
+	GetPrivateProfileString("Wifi", "AdhocServerName", "", CommonSettings.wifi.adhocServerName, 64, IniName);
+	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
 	FilterUpdate(MainWindow->getHWnd(),false);
@@ -2653,7 +2656,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_LIST,       romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
-			DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
+			//DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
 
 			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded && movieMode == MOVIEMODE_INACTIVE));
 			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded && movieMode == MOVIEMODE_INACTIVE));
@@ -4254,12 +4257,22 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 	{
 	case WM_INITDIALOG:
 		{
+#if 0
 			char errbuf[PCAP_ERRBUF_SIZE];
 			pcap_if_t *alldevs;
 			pcap_if_t *d;
 			int i;
+#endif
 			HWND cur;
 
+			CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
+			CheckRadioButton(hDlg, IDC_ADHOC_SERVER, IDC_ADHOC_CLIENT, CommonSettings.wifi.adhocMode ? IDC_ADHOC_CLIENT:IDC_ADHOC_SERVER);
+
+			cur = GetDlgItem(hDlg, IDC_ADHOC_SERVERNAME);
+			SetWindowText(cur, CommonSettings.wifi.adhocServerName);
+			EnableWindow(cur, (CommonSettings.wifi.adhocMode == 1) ? TRUE:FALSE);
+
+#if 0
 			if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
 			{
 				EndDialog(hDlg, TRUE);
@@ -4271,7 +4284,8 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			{
 				ComboBox_AddString(cur, d->description);
 			}
-			ComboBox_SetCurSel(cur, CommonSettings.wifiBridgeAdapterNum);
+			ComboBox_SetCurSel(cur, CommonSettings.wifi.infraBridgeAdapter);
+#endif
 		}
 		return TRUE;
 
@@ -4279,6 +4293,14 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 		{
 			switch(LOWORD(wParam))
 			{
+			case IDC_ADHOC_SERVER:
+			case IDC_ADHOC_CLIENT:
+				{
+					HWND cur = GetDlgItem(hDlg, IDC_ADHOC_SERVERNAME);
+					EnableWindow(cur, (LOWORD(wParam) == IDC_ADHOC_CLIENT) ? TRUE:FALSE);
+				}
+				return TRUE;
+
 			case IDOK:
 				{
 					int val = 0;
@@ -4286,19 +4308,36 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 					if(romloaded)
 						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
 
-					if((!romloaded) || (val == IDYES))
+					HWND cur;
+
+#if 0
+					if (IsDlgButtonChecked(hDlg, IDC_WIFIMODE0))
+						CommonSettings.wifi.mode = 0;
+					else
+						CommonSettings.wifi.mode = 1;
+					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
+
+					cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
+					CommonSettings.wifi.infraBridgeAdapter = ComboBox_GetCurSel(cur);
+					WritePrivateProfileInt("Wifi", "BridgeAdapter", CommonSettings.wifi.infraBridgeAdapter, IniName);
+#else
+					CommonSettings.wifi.mode = 0;
+					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
+#endif
+
+					if (IsDlgButtonChecked(hDlg, IDC_ADHOC_SERVER))
+						CommonSettings.wifi.adhocMode = 0;
+					else
+						CommonSettings.wifi.adhocMode = 1;
+					WritePrivateProfileInt("Wifi", "AdhocMode", CommonSettings.wifi.adhocMode, IniName);
+
+					cur = GetDlgItem(hDlg, IDC_ADHOC_SERVERNAME);
+					GetWindowText(cur, CommonSettings.wifi.adhocServerName, 64);
+					WritePrivateProfileString("Wifi", "AdhocServerName", CommonSettings.wifi.adhocServerName, IniName);
+
+					if(val == IDYES)
 					{
-						HWND cur;
-
-						cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
-						CommonSettings.wifiBridgeAdapterNum = ComboBox_GetCurSel(cur);
-
-						WritePrivateProfileInt("Wifi", "BridgeAdapter", CommonSettings.wifiBridgeAdapterNum, IniName);
-
-						if(romloaded)
-						{
-							NDS_Reset();
-						}
+						NDS_Reset();
 					}
 				}
 			case IDCANCEL:
