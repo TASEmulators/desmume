@@ -450,7 +450,6 @@ struct Shader
 
 static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & src)
 {
-	u8 dstAlpha = dst.a;
 	if(gfx3d.enableAlphaBlending)
 	{
 		if(src.a == 0 || dst.a == 0)
@@ -979,8 +978,6 @@ static void SoftRastFramebufferProcess()
 	// - the character edges in-level are clearly smoothed/transparent, but show well through shield powerups
 	if(gfx3d.enableEdgeMarking)
 	{ 
-		u8 clearPolyid = ((gfx3d.clearColor>>24)&0x3F);
-
 		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
 		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 		FragmentColor edgeMarkColors[8];
@@ -1333,7 +1330,6 @@ static void SoftRastRender()
 						fogTable[i] = fogDensity[0];
 						goto done;
 					} else {
-						int lastValue = value - increment;
 						fogTable[i] = ((value-i)*fogDensity[j-1] + (increment-(value-i))*fogDensity[j])/increment;
 						goto done;
 					}
