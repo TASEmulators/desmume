@@ -48,7 +48,11 @@
 
 #ifdef __GNUC__
 #include <limits.h>
+#ifndef PATH_MAX
+#define MAX_PATH 1024
+#else
 #define MAX_PATH PATH_MAX
+#endif
 #endif
 
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
