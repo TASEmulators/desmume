@@ -1766,6 +1766,7 @@ struct Sequencer
 		divider.save(os);
 		sqrtunit.save(os);
 		gxfifo.save(os);
+		wifi.save(os);
 #define SAVE(I,X,Y) I##_##X##_##Y .save(os);
 		SAVE(timer,0,0); SAVE(timer,0,1); SAVE(timer,0,2); SAVE(timer,0,3); 
 		SAVE(timer,1,0); SAVE(timer,1,1); SAVE(timer,1,2); SAVE(timer,1,3); 
@@ -1774,7 +1775,7 @@ struct Sequencer
 #undef SAVE
 	}
 
-	bool load(std::istream* is)
+	bool load(std::istream* is, int version)
 	{
 		if(read64le(&nds_timer,is) != 1) return false;
 		if(read64le(&nds_arm9_timer,is) != 1) return false;
@@ -1783,6 +1784,7 @@ struct Sequencer
 		if(!divider.load(is)) return false;
 		if(!sqrtunit.load(is)) return false;
 		if(!gxfifo.load(is)) return false;
+		if(version >= 1) if(!wifi.load(is)) return false;
 #define LOAD(I,X,Y) if(!I##_##X##_##Y .load(is)) return false;
 		LOAD(timer,0,0); LOAD(timer,0,1); LOAD(timer,0,2); LOAD(timer,0,3); 
 		LOAD(timer,1,0); LOAD(timer,1,1); LOAD(timer,1,2); LOAD(timer,1,3); 
@@ -2082,7 +2084,7 @@ void execHardware_interrupts();
 void nds_savestate(std::ostream* os)
 {
 	//version
-	write32le(0,os);
+	write32le(1,os);
 
 	sequencer.save(os);
 }
@@ -2093,9 +2095,9 @@ bool nds_loadstate(std::istream* is, int size)
 	int version;
 	if(read32le(&version,is) != 1) return false;
 
-	if(version != 0) return false;
+	if(version > 1) return false;
 
-	return sequencer.load(is);
+	return sequencer.load(is, version);
 }
 
 //#define LOG_ARM9

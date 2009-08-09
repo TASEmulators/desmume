@@ -1702,6 +1702,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_DISPA_DISP3DCNT+1:
 			{
 				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
+				val = (val & ~0x30) | (~val & ((disp3dcnt>>8) & 0x30)); // bits 12,13 are ack bits
 				disp3dcnt = (disp3dcnt&0x00FF) | (val<<8);
 				gfx3d_Control(disp3dcnt);
 				break;
@@ -1931,7 +1932,9 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 			case REG_DISPA_DISP3DCNT:
 			{
-				MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val = val;
+				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
+				val = (val & ~0x3000) | (~val & (disp3dcnt & 0x3000)); // bits 12,13 are ack bits
+				disp3dcnt = val;
 				gfx3d_Control(val);
 				break;
 			}
@@ -2896,7 +2899,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 			case 0x4000604:
 			{
-				return (gfx3d_GetNumPolys()) & ((gfx3d_GetNumVertex()) << 16);
+				return (gfx3d_GetNumPolys()) | ((gfx3d_GetNumVertex()) << 16);
 				//LOG ("read32 - RAM_COUNT -> 0x%X", ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF])>>2]);
 			}
 

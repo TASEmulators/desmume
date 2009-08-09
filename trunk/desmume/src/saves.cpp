@@ -690,8 +690,11 @@ int sram_save (const char *file_name) {
 
 }
 
-static const SFORMAT *CheckS(const SFORMAT *sf, u32 size, u32 count, char *desc)
+// note: guessSF is so we don't have to do a linear search through the SFORMAT array every time
+// in the (most common) case that we already know where the next entry is.
+static const SFORMAT *CheckS(const SFORMAT *guessSF, const SFORMAT *firstSF, u32 size, u32 count, char *desc)
 {
+	const SFORMAT *sf = guessSF ? guessSF : firstSF;
 	while(sf->v)
 	{
 		//NOT SUPPORTED RIGHT NOW
@@ -709,7 +712,17 @@ static const SFORMAT *CheckS(const SFORMAT *sf, u32 size, u32 count, char *desc)
 				return 0;
 			return sf;
 		}
-		sf++;
+
+		// failed to find it, have to keep iterating
+		if(guessSF)
+		{
+			sf = firstSF;
+			guessSF = NULL;
+		}
+		else
+		{
+			sf++;
+		}
 	}
 	return 0;
 }
@@ -717,7 +730,8 @@ static const SFORMAT *CheckS(const SFORMAT *sf, u32 size, u32 count, char *desc)
 
 static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 {
-	const SFORMAT *tmp;
+	const SFORMAT *tmp = NULL;
+	const SFORMAT *guessSF = NULL;
 	int temp = is->tellg();
 
 	while(is->tellg()<temp+size)
@@ -732,8 +746,12 @@ static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 		if(!read32le(&sz,is)) return false;
 		if(!read32le(&count,is)) return false;
 
-		if((tmp=CheckS(sf,sz,count,toa)))
+		if((tmp=CheckS(guessSF,sf,sz,count,toa)))
 		{
+		#ifdef LOCAL_LE
+			// no need to ever loop one at a time if not flipping byte order
+			is->read((char *)tmp->v,sz*count);
+		#else
 			if(sz == 1) {
 				//special case: read a huge byte array
 				is->read((char *)tmp->v,count);
@@ -741,15 +759,17 @@ static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 				for(unsigned int i=0;i<count;i++)
 				{
 					is->read((char *)tmp->v + i*sz,sz);
-
-					#ifndef LOCAL_LE
-                        FlipByteOrder((u8*)tmp->v + i*sz,sz);
-					#endif
+                    FlipByteOrder((u8*)tmp->v + i*sz,sz);
 				}
 			}
+		#endif
+			guessSF = tmp + 1;
 		}
 		else
+		{
 			is->seekg(sz*count,std::ios::cur);
+			guessSF = NULL;
+		}
 	} // while(...)
 	return true;
 }
@@ -799,24 +819,22 @@ static int SubWrite(std::ostream* os, const SFORMAT *sf)
 			write32le(sf->size,os);
 			write32le(sf->count,os);
 
-			if(size == 1) {
+		#ifdef LOCAL_LE
+			// no need to ever loop one at a time if not flipping byte order
+			os->write((char *)sf->v,size*count);
+		#else
+			if(sz == 1) {
 				//special case: write a huge byte array
 				os->write((char *)sf->v,count);
 			} else {
 				for(int i=0;i<count;i++) {
-
-					#ifndef LOCAL_LE
-						FlipByteOrder((u8*)sf->v + i*size, size);
-					#endif
-
+					FlipByteOrder((u8*)sf->v + i*size, size);
 					os->write((char*)sf->v + i*size,size);
-
 					//Now restore the original byte order.
-					#ifndef LOCAL_LE
-						FlipByteOrder((u8*)sf->v + i*size, size);
-					#endif
+					FlipByteOrder((u8*)sf->v + i*size, size);
 				}
 			}
+		#endif
 		}
 		sf++;
 	}
@@ -838,11 +856,32 @@ static int savestate_WriteChunk(std::ostream* os, int type, const SFORMAT *sf)
 	return (bsize+8);
 }
 
-//TODO TODO TODO TODO TODO TODO TODO 
-// - this is retarded. why not write placeholders for size and then write directly to the stream
-//and then go back and fill them in
 static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(std::ostream* os))
 {
+	u32 pos1 = os->tellp();
+
+	//write the type, size(placeholder), and data
+	write32le(type,os);
+	write32le(0,os); // <-- temporary write, re-written later
+	saveproc(os);
+
+	//get the size
+	u32 pos2 = os->tellp();
+	assert(pos2 != (u32)-1); // if this assert fails, saveproc did something bad
+	u32 size = (pos2 - pos1) - (2 * sizeof(u32));
+
+	//fill in the actual size
+	os->seekp(pos1 + sizeof(u32));
+	write32le(size,os);
+	os->seekp(pos2);
+
+/*
+// old version of this function,
+// for reference in case the new one above starts misbehaving somehow:
+
+	// - this is retarded. why not write placeholders for size and then write directly to the stream
+	//and then go back and fill them in
+
 	//get the size
 	memorystream mstemp;
 	saveproc(&mstemp);
@@ -853,6 +892,7 @@ static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(st
 	write32le(type,os);
 	write32le(size,os);
 	os->write(mstemp.buf(),size);
+*/
 }
 
 static void writechunks(std::ostream* os);
@@ -996,7 +1036,8 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 				ret=false;
 				break;
 		}
-		if(!ret) return false;
+		if(!ret)
+			return false;
 	}
 done:
 
@@ -1020,13 +1061,13 @@ static void loadstate()
 	//_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
  //   for (int i = REG_BASE_DISPB; i<=REG_BASE_DISPB + 0x7F; i+=2)
 	//_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
-	static const u8 mainRegenAddr[] = {0x00,0x02,0x08,0x0a,0x0c,0x0e,0x40,0x42,0x44,0x46,0x48,0x4a,0x4c,0x50,0x52,0x54,0x60,0x64,0x66,0x6c};
+	static const u8 mainRegenAddr[] = {0x00,0x02,0x08,0x0a,0x0c,0x0e,0x40,0x42,0x44,0x46,0x48,0x4a,0x4c,0x50,0x52,0x54,0x64,0x66,0x6c};
 	static const u8 subRegenAddr[] =  {0x00,0x02,0x08,0x0a,0x0c,0x0e,0x40,0x42,0x44,0x46,0x48,0x4a,0x4c,0x50,0x52,0x54,0x6c};
 	for(u32 i=0;i<ARRAY_SIZE(mainRegenAddr);i++)
 		_MMU_write16<ARMCPU_ARM9>(REG_BASE_DISPA+mainRegenAddr[i], _MMU_read16<ARMCPU_ARM9>(REG_BASE_DISPA+mainRegenAddr[i]));
 	for(u32 i=0;i<ARRAY_SIZE(subRegenAddr);i++)
 		_MMU_write16<ARMCPU_ARM9>(REG_BASE_DISPB+subRegenAddr[i], _MMU_read16<ARMCPU_ARM9>(REG_BASE_DISPB+subRegenAddr[i]));
-
+	// no need to restore 0x60 since control and MMU.ARM9_REG are both in the savestates, and restoring it could mess up the ack bits anyway
 
 	SetupMMU(nds.debugConsole);
 }
