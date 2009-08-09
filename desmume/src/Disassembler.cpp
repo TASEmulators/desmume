@@ -265,7 +265,7 @@ const char MSR_FIELD[16][5] = {
                }\
           }\
      }\
-     lreg[strlen(lreg)-1]='\0';
+     if(*lreg) lreg[strlen(lreg)-1]='\0';
 
 static char * OP_UND(u32 adr, u32 i, char * txt)
 {

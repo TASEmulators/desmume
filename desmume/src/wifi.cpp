@@ -1062,7 +1062,16 @@ u16 WIFI_read16(u32 address)
 			return WIFI_getBB_DATA() ;
 		case REG_WIFI_RANDOM:
 			/* FIXME: random generator */
-			return (rand() & 0x7FF);
+//			return (rand() & 0x7FF); // disabled (no wonder there were desyncs...)
+
+			// probably not right, but it's better than using the unsaved and shared rand().
+			// at the very least, rand() shouldn't be used when movieMode is active.
+			{
+				u16 returnValue = wifiMac.randomSeed;
+				wifiMac.randomSeed = (wifiMac.randomSeed & 1) ^ (((wifiMac.randomSeed << 1) & 0x7FE) | ((wifiMac.randomSeed >> 10) & 0x1));
+				return returnValue;
+			}
+
 			return 0 ;
 		case REG_WIFI_MAC0:
 		case REG_WIFI_MAC1:
