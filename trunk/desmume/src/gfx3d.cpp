@@ -2454,7 +2454,7 @@ void gfx3d_savestate(std::ostream* os)
 	for(int i=0;i<4;i++)
 	{
 		OSWRITE(mtxStack[i].position);
-		for(int j=0;j<mtxStack[i].size*16+16;j++)
+		for(int j=0;j<mtxStack[i].size*16;j++)
 			OSWRITE(mtxStack[i].matrix[j]);
 	}
 }
@@ -2493,7 +2493,7 @@ bool gfx3d_loadstate(std::istream* is, int size)
 		for(int i=0;i<4;i++)
 		{
 			OSREAD(mtxStack[i].position);
-			for(int j=0;j<mtxStack[i].size*16+16;j++)
+			for(int j=0;j<mtxStack[i].size*16;j++)
 				OSREAD(mtxStack[i].matrix[j]);
 		}
 	}
