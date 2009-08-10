@@ -1362,8 +1362,6 @@ static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index) {
 
 bool SoftAP_Init()
 {
-	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_if_t *alldevs;
 
 	wifiMac.SoftAP.usecCounter = 0;
 
@@ -1372,6 +1370,9 @@ bool SoftAP_Init()
 	wifiMac.SoftAP.curPacketSending = FALSE;
 	
 #if 0
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_if_t *alldevs;
+
 	if(wifi_netEnabled)
 	{
 		if(desmume_pcap_findalldevs(&alldevs, errbuf) == -1)
