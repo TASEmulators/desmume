@@ -11,6 +11,7 @@ General/Core:
  bug: fix cflash directory support for non-windows
  bug: fix freeze in cart irq
  bug: correctly emulate dma to/from tcm
+ bug: fix in thumb LSR carryflag
  enh: add guitar grip emulation
  enh: add more powerful antigrain-based drawing library and rewrite OSD system
  enh: ideas-style debugging prints
@@ -23,6 +24,7 @@ Graphics:
  bug: fix color overflow in capture blending
  bug: fix disp fifo capture
  bug: fix simultaneous vram display and capture via same bank
+ bug: fix 3d overflow acknowledge registers
  bug: change 3d cores to use 18bit color
  bug: swrast: add clear image and scroll emulation
  bug: swrast: add fog emulation
