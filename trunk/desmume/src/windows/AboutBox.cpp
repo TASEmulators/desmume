@@ -1,6 +1,7 @@
 /*  AboutBox.cpp
 
     Copyright (C) 2008-2009 shash
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -43,6 +44,7 @@ const char	*team[] = {
 	"matusz",
 	"pa__",
 	"gocha",
+	"nitsuja",
 	"",
 	"Contributors",
 	"------------",
@@ -67,7 +69,6 @@ const char	*team[] = {
 	"nash679",
 	"pokefan999",
 	"dottorleo",
-	"lbalbalba",
 	"",
 	"average time from bug checkin to bugreport:",
 	"23 seconds",

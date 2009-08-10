@@ -165,9 +165,6 @@ extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 void InitRamSearch();
 void FilterUpdate(HWND hwnd, bool user=true);
 
-CACHE_ALIGN u8 GPU_screen_unmodified_buffer[4*256*192];
-
-
 CRITICAL_SECTION win_execute_sync;
 volatile int win_sound_samplecounter = 0;
 
@@ -871,18 +868,6 @@ static void DoDisplay(bool firstTime)
 {
 	Lock lock (win_backbuffer_sync);
 
-	if(firstTime)
-	{
-		//on single core systems, draw straight to the screen
-		//we only do this once per emulated frame because we don't want to waste time redrawing
-		//on such lousy computers
-		if(CommonSettings.single_core)
-		{
-			aggDraw.hud->attach(video.srcBuffer, 256, 384, 512);
-			DoDisplay_DrawHud();
-		}
-	}
-
 	//convert pixel format to 32bpp for compositing
 	//why do we do this over and over? well, we are compositing to 
 	//filteredbuffer32bpp, and it needs to get refreshed each frame..
@@ -890,6 +875,18 @@ static void DoDisplay(bool firstTime)
 	u16* src = (u16*)video.srcBuffer;
 	for(int i=0;i<size;i++)
 		video.buffer[i] = RGB15TO24_REVERSE(src[i]);
+
+	if(firstTime)
+	{
+		//on single core systems, draw straight to the screen
+		//we only do this once per emulated frame because we don't want to waste time redrawing
+		//on such lousy computers
+		if(CommonSettings.single_core)
+		{
+			aggDraw.hud->attach((u8*)video.buffer, 256, 384, 1024);
+			DoDisplay_DrawHud();
+		}
+	}
 
 	//apply user's filter
 	video.filter();
@@ -952,8 +949,7 @@ void Display()
 
 	if(CommonSettings.single_core)
 	{
-		memcpy(GPU_screen_unmodified_buffer,GPU_screen,256*192*4);
-		video.srcBuffer = (u8*)GPU_screen_unmodified_buffer;
+		video.srcBuffer = (u8*)GPU_screen;
 		DoDisplay(true);
 	}
 	else
@@ -1890,9 +1886,10 @@ int _main()
 	KillDisplay();
 
 	SaveRecentRoms();
-	NDS_DeInit();
 	DRV_AviEnd();
 	WAV_End();
+
+	NDS_DeInit();
 
 	//------SHUTDOWN
 
