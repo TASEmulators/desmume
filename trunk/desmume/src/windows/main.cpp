@@ -720,7 +720,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 {
 	u8* buffer = (u8*)dst;
 	int size = video.size();
-	u32* src = video.filteredbuffer32bpp;
+	u32* src = (u32*)video.finalBuffer();
 	switch(video.rotation)
 	{
 	case 0:
@@ -881,24 +881,24 @@ static void DoDisplay(bool firstTime)
 			aggDraw.hud->attach(video.srcBuffer, 256, 384, 512);
 			DoDisplay_DrawHud();
 		}
-		
-		//apply user's filter
-		video.filter();
 	}
 
 	//convert pixel format to 32bpp for compositing
 	//why do we do this over and over? well, we are compositing to 
 	//filteredbuffer32bpp, and it needs to get refreshed each frame..
 	const int size = video.size();
-	u16* src = video.finalBuffer();
+	u16* src = (u16*)video.srcBuffer;
 	for(int i=0;i<size;i++)
-		video.filteredbuffer32bpp[i] = RGB15TO24_REVERSE(src[i]);
-	
+		video.buffer[i] = RGB15TO24_REVERSE(src[i]);
+
+	//apply user's filter
+	video.filter();
+
 	if(!CommonSettings.single_core)
 	{
 		//draw and composite the OSD (but not if we are drawing osd straight to screen)
 		DoDisplay_DrawHud();
-		T_AGG_RGBA target((u8*)video.filteredbuffer32bpp, video.width,video.height,video.width*4);
+		T_AGG_RGBA target((u8*)video.finalBuffer(), video.width,video.height,video.width*4);
 		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0,0,video.width-1,video.height-1);
 		aggDraw.hud->clear();
 	}

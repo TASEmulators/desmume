@@ -13,8 +13,8 @@ public:
 	int currentfilter;
 
 	u8* srcBuffer;
-	CACHE_ALIGN u8 filteredbuffer[4*256*192*4];
-	CACHE_ALIGN u32 filteredbuffer32bpp[4*256*192*2];
+	CACHE_ALIGN u32 buffer[4*256*192*2];
+	CACHE_ALIGN u32 filteredbuffer[4*256*192*2];
 
 	enum {
 		NONE,
@@ -56,7 +56,7 @@ public:
 	u16* finalBuffer() const
 	{
 		if(currentfilter == NONE)
-			return (u16*)srcBuffer;
+			return (u16*)buffer;
 		else return (u16*)filteredbuffer;
 	}
 
@@ -65,7 +65,7 @@ public:
 		src.Height = 384;
 		src.Width = 256;
 		src.Pitch = 512;
-		src.Surface = (u8*)srcBuffer;
+		src.Surface = (u8*)buffer;
 
 		dst.Height = 768;
 		dst.Width = 512;
