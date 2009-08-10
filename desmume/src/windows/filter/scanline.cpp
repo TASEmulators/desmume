@@ -42,7 +42,7 @@ FORCEINLINE void ScanLine16_2( uint16 *lpDst, uint16 *lpSrc, unsigned int Width)
 	}
 }
 
-FORCEINLINE void DoubleLine16( uint16 *lpDst, uint16 *lpSrc, unsigned int Width){
+FORCEINLINE void DoubleLine32( uint32 *lpDst, uint32 *lpSrc, unsigned int Width){
 	while(Width--){
 		*lpDst++ = *lpSrc;
 		*lpDst++ = *lpSrc++;
@@ -69,17 +69,17 @@ void RenderScanline( SSurface Src, SSurface Dst)
 
 void RenderNearest2X (SSurface Src, SSurface Dst)
 {
-	uint16 *lpSrc;
+	uint32 *lpSrc;
 	unsigned int H;
 
 	const uint32 srcHeight = Src.Height;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
-	lpSrc = reinterpret_cast<uint16 *>(Src.Surface);
+	lpSrc = reinterpret_cast<uint32 *>(Src.Surface);
 
 	const unsigned int dstPitch = Dst.Pitch >> 1;
-	uint16 *lpDst = (uint16*)Dst.Surface;
+	uint32 *lpDst = (uint32*)Dst.Surface;
 	for (H = 0; H < srcHeight; H++, lpSrc += srcPitch)
-		DoubleLine16 (lpDst, lpSrc, Src.Width), lpDst += dstPitch,
-		DoubleLine16 (lpDst, lpSrc, Src.Width), lpDst += dstPitch;
+		DoubleLine32 (lpDst, lpSrc, Src.Width), lpDst += dstPitch,
+		DoubleLine32 (lpDst, lpSrc, Src.Width), lpDst += dstPitch;
 }
