@@ -6,15 +6,15 @@
 
 #include "types.h"
 
-int systemRedShift    = 24;
-int systemGreenShift  = 16;
-int systemBlueShift   = 8;
+int systemRedShift    = 16;
+int systemGreenShift  = 8;
+int systemBlueShift   = 0;
 /*
 #define RGB1(r,g,b) ((r)>>3) << systemRedShift |\
   ((g) >> 3) << systemGreenShift |\
   ((b) >> 3) << systemBlueShift\
 */
-#define RGB1(r,g,b)(((r))<<systemRedShift) | (((g)) << systemGreenShift) | (((b)) << systemBlueShift) | ((255) << 0)
+#define RGB1(r,g,b) (((r))<<systemRedShift) | (((g)) << systemGreenShift) | (((b)) << systemBlueShift)
 
 static void fill_rgb_row_16(u16 *from, int src_width, u8 *row, int width)
 {
@@ -45,9 +45,9 @@ static void fill_rgb_row_32(u32 *from, int src_width, u8 *row, int width)
   u8 *all_stop = row + width*3;
   while (row < copy_start) {
     u32 color = *from++;
-    *row++ = ((color >> systemRedShift) & 0x1f) << 3;
-    *row++ = ((color >> systemGreenShift) & 0x1f) << 3;
-    *row++ = ((color >> systemBlueShift) & 0x1f) << 3;
+    *row++ = ((color >> (systemRedShift)) ) ;
+    *row++ = ((color >> (systemGreenShift)) ) ;
+    *row++ = ((color >> (systemBlueShift)) ) ;
   }
   // any remaining elements to be written to 'row' are a replica of the
   // preceding pixel
