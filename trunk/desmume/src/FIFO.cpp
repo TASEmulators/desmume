@@ -170,7 +170,11 @@ void GFX_FIFOclear()
 
 void GFX_FIFOsend(u8 cmd, u32 param)
 {
-	u32 gxstat = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600) & 0xF000FFFF);
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+
+	//INFO("gxFIFO: send 0x%02X = 0x%08X (size %03i/0x%02X) gxstat 0x%08X\n", cmd, param, gxFIFO.size, gxFIFO.size, gxstat);
+
+	gxstat &= 0xF000FFFF;
 
 	if (gxFIFO.size == 0)				// FIFO empty
 	{
@@ -192,11 +196,11 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 		}
 	}
 
-	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO - 0x%08X (%03i/%02X)\n", cmd, param, gxFIFO.tail, gxFIFO.tail);
 	if (gxFIFO.size > 255)
 	{
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-		gxstat |= 0x01000000;
+		gxstat |= 0x01000000;			// full
+		gxstat |= 0x08000000;			// busy
 #else
 		gxstat |= 0x02000000;				// this is hack (must be removed later)
 #endif
@@ -232,7 +236,7 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	NDS_RescheduleGXFIFO();
 }
 
-// this function used ONLY in new gxFIFO
+// this function used ONLY in gxFIFO
 BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
@@ -240,7 +244,6 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 
 	if (gxPIPE.size > 0)
 	{
-
 		*cmd = gxPIPE.cmd[gxPIPE.head];
 		*param = gxPIPE.param[gxPIPE.head];
 		gxPIPE.head++;
@@ -282,17 +285,25 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 				{
 					gxstat |= 0x02000000;
 					if (gxstat & 0x40000000)	// IRQ: less half
+					{
 						setIF(0, (1<<21));
-					execHardware_doAllDma(EDMAMode_GXFifo);
+					}
+						execHardware_doAllDma(EDMAMode_GXFifo);
 				}
 
 				if (gxFIFO.size == 0)		// empty
+				{
 					gxstat |= 0x04000000;
+					if (gxstat & 0x80000000)	// IRQ: empty
+						setIF(0, (1<<21));
+				}
 			}
 			else		// FIFO empty
 			{
 				gxstat &= 0xF000FFFF;
 				gxstat |= 0x06000000;
+				if (gxstat & 0x80000000)	// IRQ: empty
+						setIF(0, (1<<21));
 			}
 		}
 
@@ -308,19 +319,32 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 	return FALSE;
 }
 
+extern void gfx3d_ClearStack();
 void GFX_FIFOcnt(u32 val)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X) tail %i\n", val, gxstat, gxFIFO.tail);
-	if (val & (1<<29))		// clear? (homebrew)
+	//INFO("gxFIFO: write cnt 0x%08X (prev 0x%08X) FIFO size %03i PIPE size %03i\n", val, gxstat, gxFIFO.size, gxPIPE.size);
+
+	if (val & (1<<29))		// clear? (only in homebrew?)
 	{
 		GFX_PIPEclear();
 		GFX_FIFOclear();
 		return;
 	}
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
-	NDS_RescheduleGXFIFO();
+	if (val & (1<<15))		// projection stack pointer reset
+	{
+		gfx3d_ClearStack();
+		val &= 0xFFFF5FFF;		// clear reset (bit15) & stack level (bit13)
+	}
+
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, val);
+
+	if (gxFIFO.size == 0)		// empty
+	{
+		if (val & 0x80000000)	// IRQ: empty
+			setIF(0, (1<<21));
+	}
 }
 
 // ========================================================= DISP FIFO

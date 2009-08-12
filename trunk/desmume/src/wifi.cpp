@@ -225,7 +225,7 @@ WifiComInterface* wifiCom;
 // 3: medium logging, for debugging, shows lots of stuff
 // 4: high logging, for debugging, shows almost everything, may slow down
 // 5: highest logging, for debugging, shows everything, may slow down a lot
-#define WIFI_LOGGING_LEVEL 3
+#define WIFI_LOGGING_LEVEL 0
 
 #define WIFI_LOG_USE_LOGC 0
 
