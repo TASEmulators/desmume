@@ -1335,6 +1335,12 @@ s32 gfx3d_GetDirectionalMatrix (unsigned int index)
 	return (s32)(mtxCurrent[2][_index]*(1<<12));
 }
 
+void gfx3d_ClearStack()
+{
+	MatrixStackSetStackPosition(&mtxStack[0], -5);
+	MatrixStackSetStackPosition(&mtxStack[3], -5);
+}
+
 void gfx3d_glAlphaFunc(u32 v)
 {
 	gfx3d.alphaTestRef = v&31;
@@ -1669,12 +1675,11 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	if (!drawPending) return;
 	drawPending = FALSE;
-	if(skipFrame) 
-	{
-		GFX_DELAY(392);
-		NDS_RescheduleGXFIFO();
-		return;
-	}
+
+	GFX_DELAY(392);
+	NDS_RescheduleGXFIFO();
+
+	if(skipFrame) return;
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
@@ -1683,8 +1688,6 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 
 	gpu3D->NDS_3D_Render();
-	GFX_DELAY(392);
-	NDS_RescheduleGXFIFO();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -1707,6 +1710,27 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 //#define _3D_LOG
 
+// http://nocash.emubase.de/gbatek.htm#ds3dvideo
+// DS 3D Geometry Commands
+// Sending Commands by Ports 4000440h..40005FFh
+//
+// If the FIFO is full, then a wait is generated until data is removed from the FIFO, 
+// ie. the STR opcode gets freezed, during the wait, the bus cannot be used even by DMA,
+// interrupts, or by the NDS7 CPU.
+
+// this is a hack
+#if 1
+#define CHECKFULL() if (gxFIFO.size > 255) \
+					{\
+						gfx3d_execute3D();\
+						gfx3d_execute3D();\
+						gfx3d_execute3D();\
+						gfx3d_execute3D();\
+					}
+#else
+#define CHECKFULL() ;
+#endif
+
 static void NOPARAMS()
 {
 	for (;;)
@@ -1723,13 +1747,7 @@ static void NOPARAMS()
 			case 0x15:
 			case 0x41:
 				{
-					if (gxFIFO.size > 255) 
-					{
-						gfx3d_execute3D();
-						gfx3d_execute3D();
-						gfx3d_execute3D();
-						gfx3d_execute3D();
-					}
+					CHECKFULL();
 					GFX_FIFOsend(clCmd & 0xFF, 0);
 					clCmd >>= 8;
 					continue;
@@ -1751,13 +1769,8 @@ void gfx3d_sendCommandToFIFO(u32 val)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i\n", clCmd & 0xFF, val, gxPIPE.tail, gxFIFO.tail);
 #endif
-	if (gxFIFO.size > 255) 
-	{
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-	}
+
+	CHECKFULL();
 
 	switch (clCmd & 0xFF)
 	{
@@ -1863,13 +1876,8 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i (direct)\n", cmd, param, gxPIPE.tail, gxFIFO.tail);
 #endif
-	if (gxFIFO.size > 255) 
-	{
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-		gfx3d_execute3D();
-	}
+
+	CHECKFULL();
 
 	switch (cmd)
 	{

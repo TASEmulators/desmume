@@ -2480,9 +2480,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 
 			case 0x04000600:
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2] = val;
 				GFX_FIFOcnt(val);
 				return;
+
 			// Alpha test reference value - Parameters:1
 			case 0x04000340:
 			{
