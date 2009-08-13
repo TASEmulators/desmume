@@ -123,6 +123,11 @@ void HudStruct::reset()
 	InputDisplay.xsize=120;
 	InputDisplay.ysize=10;
 
+	GraphicalInputDisplay.x=8;
+	GraphicalInputDisplay.y=328;
+	GraphicalInputDisplay.xsize=100;
+	GraphicalInputDisplay.ysize=40;
+
 	LagFrameCounter.x=0;
 	LagFrameCounter.y=65;
 	LagFrameCounter.xsize=30;
@@ -139,6 +144,78 @@ void HudStruct::reset()
 	SavestateSlots.ysize = 24;
 
 	SetHudDummy(&Dummy);
+}
+
+void joyFill(int n) {
+
+	if(nds.pad & (1 << n))
+		aggDraw.hud->fillColor(0,0,0,255);
+	else
+		aggDraw.hud->fillColor(255,255,255,255);
+}
+
+void joyEllipse(double ex, double ey, int xc, int yc, int x, int y, double ratio, double rad, int button) {
+
+	joyFill(button);
+	aggDraw.hud->ellipse(x+((xc*ex)*ratio), y+((yc*ey)*ratio), rad*ratio, rad*ratio);
+}
+
+void gradientFill(double x1,double y1,double x2,double y2,AggColor c1,AggColor c2, int n) {
+
+	if(nds.pad & (1 << n))
+		aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,c1,c2);
+	else
+		aggDraw.hud->fillColor(255,255,255,255);
+}
+
+void drawPad(int x, int y, double ratio) {
+
+	int xc = 41;
+	int yc = 20;
+
+	aggDraw.hud->lineColor(128,128,128,255);
+
+	aggDraw.hud->fillLinearGradient(x, y, x+(xc*ratio), y+(yc*ratio), agg::rgba8(222,222,222,128), agg::rgba8(255,255,255,255));
+
+	if(nds.pad & (1 << 2))
+		aggDraw.hud->fillLinearGradient(x, y, x+(xc*ratio), y+(yc*ratio), agg::rgba8(0,0,0,128), agg::rgba8(255,255,255,255));
+
+	if(nds.pad & (1 << 1))
+		aggDraw.hud->fillLinearGradient(x+(xc*ratio), y+(yc*ratio), x, y, agg::rgba8(0,0,0,128), agg::rgba8(255,255,255,255));
+
+	aggDraw.hud->roundedRect (x, y, x+(xc*ratio), y+(yc*ratio), 1);
+
+	aggDraw.hud->fillLinearGradient(x+(xc*.25*ratio), y+(yc*.1*ratio), x+(xc*.75*ratio), y+(yc*.85*ratio), agg::rgba8(128,128,128,128), agg::rgba8(255,255,255,255));
+
+	aggDraw.hud->roundedRect (x+(xc*.25*ratio), y+(yc*.1*ratio), x+(xc*.75*ratio),y+(yc*.85*ratio), 1);
+	
+	joyEllipse(.89,.45,xc,yc,x,y,ratio,1,6);//B
+	joyEllipse(.89,.22,xc,yc,x,y,ratio,1,3);//X
+	joyEllipse(.83,.34,xc,yc,x,y,ratio,1,4);//Y
+	joyEllipse(.95,.34,xc,yc,x,y,ratio,1,5);//A
+	joyEllipse(.82,.72,xc,yc,x,y,ratio,.5,7);//Start
+	joyEllipse(.82,.85,xc,yc,x,y,ratio,.5,8);//Select
+
+	aggDraw.hud->noLine();
+	aggDraw.hud->fillColor(255,255,255,200);
+
+	//left
+	gradientFill(x+(xc*.04*ratio), y+(yc*.33*ratio), x+(xc*.17*ratio), y+(yc*.43*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255),11);
+
+	//right
+	if(nds.pad & (1 << 12))
+		aggDraw.hud->fillLinearGradient(x+(xc*.17*ratio), y+(yc*.43*ratio), x+(xc*.04*ratio), y+(yc*.33*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255));
+		
+	aggDraw.hud->roundedRect (x+(xc*.04*ratio), y+(yc*.33*ratio), x+(xc*.17*ratio), y+(yc*.43*ratio), 1);
+
+	//down
+	gradientFill(x+(xc*.13*ratio), y+(yc*.52*ratio), x+(xc*.08*ratio), y+(yc*.23*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255),10);
+
+	//up
+	if(nds.pad & (1<< 9))
+		aggDraw.hud->fillLinearGradient(x+(xc*.08*ratio), y+(yc*.23*ratio), x+(xc*.13*ratio), y+(yc*.52*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255));
+
+	aggDraw.hud->roundedRect (x+(xc*.08*ratio), y+(yc*.23*ratio), x+(xc*.13*ratio), y+(yc*.52*ratio), 1);
 }
 
 
@@ -262,6 +339,9 @@ void DrawHUD()
 	{
 		osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
 	}
+
+	if (CommonSettings.hud.ShowGraphicalInputDisplay)
+		drawPad(Hud.GraphicalInputDisplay.x, Hud.GraphicalInputDisplay.y, 2.5);
 
 	#ifdef WIN32
 	if (CommonSettings.hud.ShowMicrophone) 

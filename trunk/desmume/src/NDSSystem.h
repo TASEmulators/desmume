@@ -463,12 +463,13 @@ extern struct TCommonSettings {
 	struct _Hud {
 		_Hud() 
 			: ShowInputDisplay(false)
+			, ShowGraphicalInputDisplay(false)
 			, FpsDisplay(false)
 			, FrameCounterDisplay(false)
 			, ShowLagFrameCounter(false)
 			, ShowMicrophone(false)
 		{}
-		bool ShowInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone;
+		bool ShowInputDisplay, ShowGraphicalInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone;
 	} hud;
 
 } CommonSettings;
