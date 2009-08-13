@@ -56,6 +56,7 @@ public:
 	HudCoordinates FpsDisplay;
 	HudCoordinates FrameCounter;
 	HudCoordinates InputDisplay;
+	HudCoordinates GraphicalInputDisplay;
 	HudCoordinates LagFrameCounter;
 	HudCoordinates Microphone;
 	HudCoordinates Dummy;

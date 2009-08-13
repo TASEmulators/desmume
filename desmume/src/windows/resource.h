@@ -245,6 +245,7 @@
 #define IDR_ACCELERATOR1                968
 #define IDD_PROMPT                      969
 #define IDD_IOREG_VIEW_MEM_IRQ          970
+#define ID_VIEW_DISPLAYGRAPHICALINPUT   971
 #define IDD_IOREG_VIEW_SPI              973
 #define IDD_IOREG_VIEW_CP15             975
 #define IDD_SOUND_VIEW                  977
