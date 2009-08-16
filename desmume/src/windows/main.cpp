@@ -2703,6 +2703,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS,CommonSettings.hud.FpsDisplay);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT,CommonSettings.hud.ShowInputDisplay);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYGRAPHICALINPUT,CommonSettings.hud.ShowGraphicalInputDisplay);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG,CommonSettings.hud.ShowLagFrameCounter);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE,CommonSettings.hud.ShowMicrophone);
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode);
