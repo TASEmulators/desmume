@@ -2742,18 +2742,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Language selection
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 
-			//screen gaps
-			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==kGapNone)));
-			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, ((video.screengap==kGapBorder)));
-			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, ((video.screengap==kGapNDS)));
-			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP2, ((video.screengap==kGapNDS2)));
-			MainWindow->checkMenu(IDM_SCREENSEP_DRAGEDIT, (SeparationBorderDrag));
-
-
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
 			for(int i=0;i<7;i++) 
-				MainWindow->checkMenu(savelist[i], MF_UNCHECKED);
+				MainWindow->checkMenu(savelist[i], false);
 			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], true);
 
 
@@ -2852,12 +2844,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			if(windowSize)
 			{
 				windowSize = 0;
-				MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_WINDOW2_5X, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_WINDOW1X, false);
+				MainWindow->checkMenu(IDC_WINDOW1_5X, false);
+				MainWindow->checkMenu(IDC_WINDOW2X, false);
+				MainWindow->checkMenu(IDC_WINDOW2_5X, false);
+				MainWindow->checkMenu(IDC_WINDOW3X, false);
+				MainWindow->checkMenu(IDC_WINDOW4X, false);
 			}
 
 			RECT cRect, ncRect;
