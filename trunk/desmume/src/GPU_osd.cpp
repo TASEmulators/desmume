@@ -146,7 +146,7 @@ void HudStruct::reset()
 	SetHudDummy(&Dummy);
 }
 
-void joyFill(int n) {
+static void joyFill(int n) {
 
 	if(nds.pad & (1 << n))
 		aggDraw.hud->fillColor(0,0,0,255);
@@ -154,13 +154,13 @@ void joyFill(int n) {
 		aggDraw.hud->fillColor(255,255,255,255);
 }
 
-void joyEllipse(double ex, double ey, int xc, int yc, int x, int y, double ratio, double rad, int button) {
+static void joyEllipse(double ex, double ey, int xc, int yc, int x, int y, double ratio, double rad, int button) {
 
 	joyFill(button);
 	aggDraw.hud->ellipse(x+((xc*ex)*ratio), y+((yc*ey)*ratio), rad*ratio, rad*ratio);
 }
 
-void gradientFill(double x1,double y1,double x2,double y2,AggColor c1,AggColor c2, int n) {
+static void gradientFill(double x1,double y1,double x2,double y2,AggColor c1,AggColor c2, int n) {
 
 	if(nds.pad & (1 << n))
 		aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,c1,c2);
@@ -168,7 +168,7 @@ void gradientFill(double x1,double y1,double x2,double y2,AggColor c1,AggColor c
 		aggDraw.hud->fillColor(255,255,255,255);
 }
 
-void drawPad(int x, int y, double ratio) {
+static void drawPad(int x, int y, double ratio) {
 
 	int xc = 41;
 	int yc = 20;
