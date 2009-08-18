@@ -89,6 +89,8 @@ static u8 precalcindextbl[89][8];
 
 static const double ARM7_CLOCK = 33513982;
 
+static double samples = 0;
+
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -384,6 +386,8 @@ void SPU_Reset(void)
 	// Reset Registers
 	for (i = 0x400; i < 0x51D; i++)
 		T1WriteByte(MMU.ARM7_REG, i, 0);
+
+	samples = 0;
 }
 
 void SPU_struct::reset()
@@ -1009,7 +1013,6 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 //emulates one frame of the cpu core.
 //this will produce a variable number of samples, calculated to keep a 44100hz output
 //in sync with the emulator framerate
-static double samples = 0;
 static const double time_per_frame = (double)1.0/((double)ARM7_CLOCK/6/355); //(double)1.0/(double)59.8261; // ((double)ARM7_CLOCK/6/355/263)
 static const double samples_per_frame = time_per_frame * 44100;
 int spu_core_samples = 0;
