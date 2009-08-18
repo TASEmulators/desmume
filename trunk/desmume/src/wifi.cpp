@@ -210,7 +210,39 @@ struct WifiComInterface
 	void (*usTrigger)();
 };
 
-WifiComInterface* wifiComs[];
+bool SoftAP_Init();
+void SoftAP_DeInit();
+void SoftAP_Reset();
+void SoftAP_SendPacket(u8 *packet, u32 len);
+void SoftAP_usTrigger();
+
+WifiComInterface SoftAP = {
+	SoftAP_Init,
+	SoftAP_DeInit,
+	SoftAP_Reset,
+	SoftAP_SendPacket,
+	SoftAP_usTrigger
+};
+
+bool Adhoc_Init();
+void Adhoc_DeInit();
+void Adhoc_Reset();
+void Adhoc_SendPacket(u8* packet, u32 len);
+void Adhoc_usTrigger();
+
+WifiComInterface Adhoc = {
+        Adhoc_Init,
+        Adhoc_DeInit,
+        Adhoc_Reset,
+        Adhoc_SendPacket,
+        Adhoc_usTrigger
+};
+
+WifiComInterface* wifiComs[] = {
+	&Adhoc,
+	&SoftAP,
+	NULL
+};
 WifiComInterface* wifiCom;
 
 /*******************************************************************************
@@ -1257,14 +1289,6 @@ void Adhoc_usTrigger()
 {
 }
 
-WifiComInterface Adhoc = {
-	Adhoc_Init,
-	Adhoc_DeInit,
-	Adhoc_Reset,
-	Adhoc_SendPacket,
-	Adhoc_usTrigger
-};
-
 /*******************************************************************************
 
 	SoftAP (fake wifi access point)
@@ -1664,20 +1688,5 @@ void SoftAP_usTrigger()
 		}
 	}
 }
-
-WifiComInterface SoftAP = {
-	SoftAP_Init,
-	SoftAP_DeInit,
-	SoftAP_Reset,
-	SoftAP_SendPacket,
-	SoftAP_usTrigger
-};
-
-
-WifiComInterface* wifiComs[] = {
-	&Adhoc,
-	&SoftAP,
-	NULL
-};
 
 #endif
