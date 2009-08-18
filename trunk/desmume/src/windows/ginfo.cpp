@@ -212,7 +212,7 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-BOOL CALLBACK GInfo_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK GInfo_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch(uMsg)
 	{

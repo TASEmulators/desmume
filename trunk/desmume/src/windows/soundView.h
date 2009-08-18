@@ -31,6 +31,6 @@ BOOL SoundView_IsOpened();
 HWND SoundView_GetHWnd();
 void SoundView_Refresh();
 
-BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif

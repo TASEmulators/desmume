@@ -146,9 +146,9 @@ LRESULT MemView_DlgPaint(HWND hDlg, MemView_DataStruct *data, WPARAM wParam, LPA
 	return 0;
 }
 
-BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLong(hDlg, DWL_USER);
+	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLongPtr(hDlg, DWLP_USER);
 	if((data == NULL) && (uMsg != WM_INITDIALOG))
 		return 0;
 
@@ -159,7 +159,7 @@ BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			if(data == NULL)
 			{
 				data = (MemView_DataStruct*)lParam;
-				SetWindowLong(hDlg, DWL_USER, (LONG)data);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)data);
 			}
 
 			CheckRadioButton(hDlg, IDC_8_BIT, IDC_32_BIT, IDC_8_BIT);
@@ -167,7 +167,7 @@ BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			SendMessage(GetDlgItem(hDlg, IDC_ADDRESS), EM_SETLIMITTEXT, 8, 0);
 			SetWindowText(GetDlgItem(hDlg, IDC_ADDRESS), "02000000");
 
-			SetWindowLong(GetDlgItem(hDlg, IDC_MEMVIEWBOX), DWL_USER, (LONG)data);
+			SetWindowLongPtr(GetDlgItem(hDlg, IDC_MEMVIEWBOX), DWLP_USER, (LONG)data);
 
 			InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
 		}
@@ -610,7 +610,7 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 
 LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLong(hCtl, DWL_USER);
+	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLongPtr(hCtl, DWLP_USER);
 
 	switch(uMsg)
 	{

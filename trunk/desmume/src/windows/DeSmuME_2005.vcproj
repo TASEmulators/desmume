@@ -10,6 +10,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 		<DefaultToolFile
@@ -89,6 +92,100 @@
 			<Tool
 				Name="VCManifestTool"
 				AdditionalManifestFiles="DeSmuME_x86.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="defaultconfig\SubWCRev.bat"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				InlineFunctionExpansion="0"
+				EnableIntrinsicFunctions="false"
+				FavorSizeOrSpeed="0"
+				EnableFiberSafeOptimizations="false"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;EXPERIMENTAL_WIFI"
+				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
+				BufferSecurityCheck="true"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				WarningLevel="1"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+				DisableSpecificWarnings="4244"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib winpcap\x64\wpcap.lib 7zip-x64.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z;agg"
+				DelayLoadDLLs="wpcap.dll"
+				GenerateDebugInformation="true"
+				GenerateMapFile="true"
+				OptimizeReferences="2"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x64.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -208,6 +305,106 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="defaultconfig\SubWCRev.bat"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI"
+				StringPooling="true"
+				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
+				StructMemberAlignment="0"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				RuntimeTypeInfo="false"
+				WarningLevel="1"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib winpcap\x64\wpcap.lib 7zip-x64.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z;agg"
+				DelayLoadDLLs="wpcap.dll"
+				GenerateDebugInformation="true"
+				GenerateMapFile="true"
+				EnableCOMDATFolding="0"
+				OptimizeForWindows98="1"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x64.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Release FastBuild|Win32"
 			OutputDirectory="$(SolutionDir)\__bins"
 			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
@@ -288,6 +485,109 @@
 			<Tool
 				Name="VCManifestTool"
 				AdditionalManifestFiles="DeSmuME_x86.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release FastBuild|x64"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="defaultconfig\SubWCRev.bat"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI"
+				StringPooling="true"
+				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
+				StructMemberAlignment="0"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
+				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
+				RuntimeTypeInfo="false"
+				WarningLevel="3"
+				WarnAsError="false"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib winpcap\x64\wpcap.lib 7zip-x64.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_x64_releaseFastBuild.exe"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z;agg"
+				DelayLoadDLLs="wpcap.dll"
+				GenerateDebugInformation="true"
+				GenerateMapFile="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="0"
+				OptimizeForWindows98="1"
+				LinkTimeCodeGeneration="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x64.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -432,6 +732,14 @@
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						GeneratePreprocessedFile="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -683,6 +991,15 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -692,7 +1009,25 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|x64"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Release FastBuild|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release FastBuild|x64"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -794,6 +1129,14 @@
 					GeneratePreprocessedFile="0"
 				/>
 			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|x64"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					GeneratePreprocessedFile="0"
+				/>
+			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\bios.h"
@@ -827,7 +1170,23 @@
 				/>
 			</FileConfiguration>
 			<FileConfiguration
+				Name="Release|x64"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					CallingConvention="0"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
 				Name="Release FastBuild|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					CallingConvention="0"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release FastBuild|x64"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -1084,6 +1443,14 @@
 			>
 			<FileConfiguration
 				Name="Release FastBuild|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					Optimization="0"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release FastBuild|x64"
 				>
 				<Tool
 					Name="VCCLCompilerTool"

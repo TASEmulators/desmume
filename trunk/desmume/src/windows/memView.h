@@ -30,7 +30,7 @@ void MemView_DlgClose(u8 CPU);
 BOOL MemView_IsOpened(u8 CPU);
 void MemView_Refresh(u8 CPU);
 
-BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif

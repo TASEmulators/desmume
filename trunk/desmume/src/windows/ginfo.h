@@ -27,7 +27,7 @@ void GInfo_DeInit();
 
 BOOL GInfo_DlgOpen(HWND hParentWnd);
 
-BOOL CALLBACK GInfo_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK GInfo_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK GInfo_IconBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif
