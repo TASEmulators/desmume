@@ -45,7 +45,7 @@ bool		needReset = true;
 
 std::string CFlashPath, CFlashName;
 
-BOOL CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -58,7 +58,7 @@ BOOL CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
-BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -221,7 +221,7 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
-BOOL CALLBACK GbaSlotRumblePak(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK GbaSlotRumblePak(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -234,7 +234,7 @@ BOOL CALLBACK GbaSlotRumblePak(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 	return FALSE;
 }
 
-BOOL CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -290,7 +290,7 @@ BOOL CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
-BOOL CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	int which = 0;
 

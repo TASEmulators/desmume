@@ -159,7 +159,7 @@ LRESULT CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 	return CallWindowProc(oldEditProcHEX, hwnd, msg, wParam, lParam);
 }
 
-BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	static WNDPROC saveOldEditProc = NULL;
 
@@ -313,7 +313,7 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
-BOOL CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	static WNDPROC	saveOldEditProc = NULL;
 	char			buf[100] = {0}, buf2[100] = {0};
@@ -450,7 +450,7 @@ BOOL CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 //============================================================================== Action Replay
-BOOL CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -599,7 +599,7 @@ BOOL CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 	return FALSE;
 }
 //==============================================================================
-BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -925,7 +925,7 @@ void CheatsListDialog(HWND hwnd)
 
 
 // ================================================================================== Search
-BOOL CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -983,7 +983,7 @@ BOOL CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 	return FALSE;
 }
 
-BOOL CALLBACK CheatsSearchCompWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsSearchCompWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -1019,7 +1019,7 @@ BOOL CALLBACK CheatsSearchCompWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 	return FALSE;
 }
 
-BOOL CALLBACK CheatsSearchResultWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsSearchResultWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -1040,7 +1040,7 @@ BOOL CALLBACK CheatsSearchResultWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 	return FALSE;
 }
 
-BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -1115,7 +1115,7 @@ BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 	return FALSE;
 }
 
-BOOL CALLBACK CheatsSearchMainWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsSearchMainWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{
@@ -1181,7 +1181,7 @@ DLGPROC CheatsSearchSubWnds[2][4] = {
 };
 
 //==============================================================================
-BOOL CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
 	{

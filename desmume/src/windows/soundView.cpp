@@ -246,9 +246,10 @@ static void SoundView_SwitchChanOfs(SoundView_DataStruct *data)
 }
 
 
-static BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	SoundView_DataStruct *data = (SoundView_DataStruct*)GetWindowLong(hDlg, DWL_USER);
+	LONG_PTR x;
+	SoundView_DataStruct *data = (SoundView_DataStruct*)GetWindowLongPtr(hDlg, DWLP_USER);
 	if((data == NULL) && (uMsg != WM_INITDIALOG))
 		return 0;
 
@@ -269,7 +270,7 @@ static BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPAR
 			if(data == NULL)
 			{
 				data = (SoundView_DataStruct*)lParam;
-				SetWindowLong(hDlg, DWL_USER, (LONG)data);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)data);
 			}
 			data->hDlg = hDlg;
 

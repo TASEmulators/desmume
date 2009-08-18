@@ -34,7 +34,7 @@ static u8 Mic_PlayBuf;
 static HWAVEIN waveIn;
 static WAVEHDR waveHdr;
 
-static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD param1, DWORD param2)
+static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD_PTR param1, DWORD_PTR param2)
 {
 	LPWAVEHDR lpWaveHdr;
 	HRESULT hr;
@@ -115,6 +115,8 @@ BOOL Mic_Init() {
 	wfx.nBlockAlign = 1;
 	wfx.nAvgBytesPerSec = 16000;
 	wfx.wBitsPerSample = 8;
+
+	int x = sizeof(DWORD_PTR);
 
 	hr = waveInOpen(&waveIn, WAVE_MAPPER, &wfx, (DWORD_PTR)waveInProc, 0, CALLBACK_FUNCTION);
 	MIC_CHECKERR(hr)

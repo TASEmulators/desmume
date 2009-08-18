@@ -1246,7 +1246,7 @@ static LRESULT CALLBACK InputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 {
 	// retrieve the custom structure POINTER for THIS window
     InputCust *icp = GetInputCustom(hwnd);
-	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWL_HWNDPARENT);
+	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWLP_HWNDPARENT);
 	funky= hwnd;
 
 	static HWND selectedItem = NULL;
@@ -1389,7 +1389,7 @@ static LRESULT CALLBACK GuitarInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wPa
 {
 		// retrieve the custom structure POINTER for THIS window
     InputCust *icp = GetInputCustom(hwnd);
-	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWL_HWNDPARENT);
+	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWLP_HWNDPARENT);
 	funky= hwnd;
 
 	static HWND selectedItem = NULL;
@@ -1570,7 +1570,7 @@ static LRESULT CALLBACK HotInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam
 {
 	// retrieve the custom structure POINTER for THIS window
     InputCust *icp = GetInputCustom(hwnd);
-	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWL_HWNDPARENT);
+	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWLP_HWNDPARENT);
 	funky= hwnd;
 
 	static HWND selectedItem = NULL;
