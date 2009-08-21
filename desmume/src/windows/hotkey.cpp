@@ -182,8 +182,8 @@ void HK_StateQuickLoadSlot(int)
 	HK_StateLoadSlot(lastSaveState);
 }
 
-void HK_MicrophoneKeyDown(int) {MicButtonPressed =1;}
-void HK_MicrophoneKeyUp(int) {MicButtonPressed =0;}
+void HK_MicrophoneKeyDown(int) { NDS_setMic(1); }
+void HK_MicrophoneKeyUp(int) { NDS_setMic(0); }
 
 void HK_AutoHoldClearKeyDown(int) {
 	
@@ -247,23 +247,23 @@ void HK_StopMovie(int)
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
-void HK_TurboRightKeyDown(int) { Turbo.Right = true; }
-void HK_TurboRightKeyUp(int) { Turbo.Right = false; }
+void HK_TurboRightKeyDown(int) { Turbo.R = true; }
+void HK_TurboRightKeyUp(int) { Turbo.R = false; }
 
-void HK_TurboLeftKeyDown(int) { Turbo.Left = true; }
-void HK_TurboLeftKeyUp(int) { Turbo.Left = false; }
+void HK_TurboLeftKeyDown(int) { Turbo.L = true; }
+void HK_TurboLeftKeyUp(int) { Turbo.L = false; }
 
-void HK_TurboRKeyDown(int) { Turbo.R = true; }
-void HK_TurboRKeyUp(int) { Turbo.R = false; }
+void HK_TurboRKeyDown(int) { Turbo.E = true; }
+void HK_TurboRKeyUp(int) { Turbo.E = false; }
 
-void HK_TurboLKeyDown(int) { Turbo.L = true; }
-void HK_TurboLKeyUp(int) { Turbo.L = false; }
+void HK_TurboLKeyDown(int) { Turbo.W = true; }
+void HK_TurboLKeyUp(int) { Turbo.W = false; }
 
-void HK_TurboDownKeyDown(int) { Turbo.Down = true; }
-void HK_TurboDownKeyUp(int) { Turbo.Down = false; }
+void HK_TurboDownKeyDown(int) { Turbo.D = true; }
+void HK_TurboDownKeyUp(int) { Turbo.D = false; }
 
-void HK_TurboUpKeyDown(int) { Turbo.Up = true; }
-void HK_TurboUpKeyUp(int) { Turbo.Up = false; }
+void HK_TurboUpKeyDown(int) { Turbo.U = true; }
+void HK_TurboUpKeyUp(int) { Turbo.U = false; }
 
 void HK_TurboBKeyDown(int) { Turbo.B = true; }
 void HK_TurboBKeyUp(int) { Turbo.B = false; }
@@ -277,11 +277,11 @@ void HK_TurboXKeyUp(int) { Turbo.X = false; }
 void HK_TurboYKeyDown(int) { Turbo.Y = true; }
 void HK_TurboYKeyUp(int) { Turbo.Y = false; }
 
-void HK_TurboStartKeyDown(int) { Turbo.Start = true; }
-void HK_TurboStartKeyUp(int) { Turbo.Start = false; }
+void HK_TurboStartKeyDown(int) { Turbo.S = true; }
+void HK_TurboStartKeyUp(int) { Turbo.S = false; }
 
-void HK_TurboSelectKeyDown(int) { Turbo.Select = true; }
-void HK_TurboSelectKeyUp(int) { Turbo.Select = false; }
+void HK_TurboSelectKeyDown(int) { Turbo.T = true; }
+void HK_TurboSelectKeyUp(int) { Turbo.T = false; }
 
 void HK_NextSaveSlot(int) { 
 	lastSaveState++; 

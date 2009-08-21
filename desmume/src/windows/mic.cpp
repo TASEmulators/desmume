@@ -8,15 +8,16 @@
 	Note : I added these notes because the microphone isn't 
 	documented on GBATek.
 */
-#include <windows.h>
+#include "NDSSystem.h"
 #include "../types.h"
 #include "../debug.h"
 #include "../mic.h"
+#include "../movie.h"
+#include "readwrite.h"
 #include <iostream>
 #include <fstream>
 
 int MicDisplay;
-int MicButtonPressed=0;
 int SampleLoaded=0;
 
 #define MIC_CHECKERR(hr) if(hr != MMSYSERR_NOERROR) return FALSE;
@@ -30,6 +31,8 @@ static u8 Mic_Buffer[2][MIC_BUFSIZE];
 static u16 Mic_BufPos;
 static u8 Mic_WriteBuf;
 static u8 Mic_PlayBuf;
+
+static int micReadSamplePos=0;
 
 static HWAVEIN waveIn;
 static WAVEHDR waveHdr;
@@ -150,6 +153,8 @@ void Mic_Reset()
 
 	Mic_WriteBuf = 0;
 	Mic_PlayBuf = 1;
+
+	micReadSamplePos = 0;
 }
 
 void Mic_DeInit()
@@ -167,7 +172,6 @@ static const int random[32] = {0xB1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9, 0
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x28, 0x00, 0x00, 0x00, 
 0x00, 0x00, 0x20, 0xE1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9};
 
-static int x=0;
 
 u8 Mic_ReadSample()
 {
@@ -177,28 +181,40 @@ u8 Mic_ReadSample()
 
 	u8 ret;
 	u8 tmp;
-	if(MicButtonPressed) {
+	if(NDS_getFinalUserInput().mic.micButtonPressed) {
 		if(SampleLoaded) {
 			//use a sample
-			tmp = samplebuffer[x >> 1];
-			x++;
-			if(x == samplebuffersize*2)
-				x=0;
+			//TODO: what if a movie is active?
+			// for now I'm going to hope that if anybody records a movie with a sample loaded,
+			// either they know what they're doing and plan to distribute the sample,
+			// or they're playing a game where it doesn't even matter or they never press the mic button.
+			tmp = samplebuffer[micReadSamplePos >> 1];
+			micReadSamplePos++;
+			if(micReadSamplePos == samplebuffersize*2)
+				micReadSamplePos=0;
 		} else {
 			//use the "random" values
-			tmp = random[x >> 1];
+			tmp = random[micReadSamplePos >> 1];
 			//tmp = rand()&0xFF;
-			x++;
-			if(x == ARRAY_SIZE(random)*2)
-				x=0;
+			micReadSamplePos++;
+			if(micReadSamplePos == ARRAY_SIZE(random)*2)
+				micReadSamplePos=0;
 		}
 	} 
 	else {
-		//normal mic behavior
-		tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
+		if(movieMode != MOVIEMODE_INACTIVE)
+		{
+			//normal mic behavior
+			tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
+		}
+		else
+		{
+			//since we're not recording Mic_Buffer to the movie, use silence
+			tmp = 0;
+		}
 
 		//reset mic button buffer pos if not pressed
-		x=0;
+		micReadSamplePos=0;
 	}
 
 	if(Mic_BufPos & 0x1)
@@ -221,3 +237,33 @@ u8 Mic_ReadSample()
 
 	return ret;
 }
+
+// maybe a bit paranoid...
+void mic_savestate(std::ostream* os)
+{
+	//version
+	write32le(0,os);
+	assert(MIC_BUFSIZE == 4096); // else needs new version
+
+	os->write((char*)Mic_Buffer[0], MIC_BUFSIZE);
+	os->write((char*)Mic_Buffer[1], MIC_BUFSIZE);
+	write16le(Mic_BufPos,os);
+	write8le(Mic_WriteBuf,os); // seems OK to save...
+	write8le(Mic_PlayBuf,os);
+	write32le(micReadSamplePos,os);
+}
+bool mic_loadstate(std::istream* is, int size)
+{
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(version > 0) { is->seekg(size-4, std::ios::cur); return true; }
+
+	is->read((char*)Mic_Buffer[0], MIC_BUFSIZE);
+	is->read((char*)Mic_Buffer[1], MIC_BUFSIZE);
+	read16le(&Mic_BufPos,is);
+	read8le(&Mic_WriteBuf,is);
+	read8le(&Mic_PlayBuf,is);
+	read32le(&micReadSamplePos,is);
+	return true;
+}
+

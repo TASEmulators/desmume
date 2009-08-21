@@ -1923,251 +1923,154 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 //joypad lib
 
 static const char *button_mappings[] = {
-"debug","r","l","x","y","a","b","start","select","up","down","left","right"
+"debug","R","L","X","Y","A","B","start","select","up","down","left","right","lid"
 };
 
-// table joypad.read(int which = 1)
-//
-//  Reads the joypads as inputted by the user.
-static int joy_get(lua_State *L) {
-
-	uint16 buttons = nds.pad;
-	
-	lua_newtable(L);
-	
-	int i;
-	for (i = 0; i < 16; i++) {
-		if (buttons & (1<<i)) {
-			lua_pushinteger(L,1);
-			lua_setfield(L, -2, button_mappings[i]);
-		}
-	}
-	
+static int joy_getArgControllerNum(lua_State* L, int& index)
+{
+	// well, I think there's only one controller,
+	// but this should probably stay here for cross-emulator consistency
+	int type = lua_type(L,index);
+	if(type == LUA_TSTRING || type == LUA_TNUMBER)
+		index++;
 	return 1;
 }
 
-/*
-static const struct ButtonDesc
+// joypad.set(table buttons)
+//
+//  Sets the joypad state (takes effect at the next frame boundary)
+//    true -> pressed
+//    false -> unpressed
+//    nil -> no change
+DEFINE_LUA_FUNCTION(joy_set, "buttonTable")
 {
-	unsigned short controllerNum;
-	unsigned short bit;
-	const char* name;
-}
-s_buttonDescs [] =
-{
-	{1, 0, "up"},
-	{1, 1, "down"},
-	{1, 2, "left"},
-	{1, 3, "right"},
-	{1, 4, "A"},
-	{1, 5, "B"},
-	{1, 6, "C"},
-	{1, 7, "start"},
-	{1, 32, "X"},
-	{1, 33, "Y"},
-	{1, 34, "Z"},
-	{1, 35, "mode"},
-	{2, 24, "up"},
-	{2, 25, "down"},
-	{2, 26, "left"},
-	{2, 27, "right"},
-	{2, 28, "A"},
-	{2, 29, "B"},
-	{2, 30, "C"},
-	{2, 31, "start"},
-	{2, 36, "X"},
-	{2, 37, "Y"},
-	{2, 38, "Z"},
-	{2, 39, "mode"},
-	{0x1B, 8, "up"},
-	{0x1B, 9, "down"},
-	{0x1B, 10, "left"},
-	{0x1B, 11, "right"},
-	{0x1B, 12, "A"},
-	{0x1B, 13, "B"},
-	{0x1B, 14, "C"},
-	{0x1B, 15, "start"},
-	{0x1C, 16, "up"},
-	{0x1C, 17, "down"},
-	{0x1C, 18, "left"},
-	{0x1C, 19, "right"},
-	{0x1C, 20, "A"},
-	{0x1C, 21, "B"},
-	{0x1C, 22, "C"},
-	{0x1C, 23, "start"},
-};
+	if(movieMode == MOVIEMODE_PLAY) // don't allow tampering with a playing movie's input
+		return 0; // (although it might be useful sometimes...)
 
-int joy_getArgControllerNum(lua_State* L, int& index)
-{
-	int controllerNumber;
-	int type = lua_type(L,index);
-	if(type == LUA_TSTRING || type == LUA_TNUMBER)
-	{
-		controllerNumber = 0;
-		if(type == LUA_TSTRING)
-		{
-			const char* str = lua_tostring(L,index);
-			if(!stricmp(str, "1C"))
-				controllerNumber = 0x1C;
-			else if(!stricmp(str, "1B"))
-				controllerNumber = 0x1B;
-			else if(!stricmp(str, "1A"))
-				controllerNumber = 0x1A;
-		}
-		if(!controllerNumber)
-			controllerNumber = luaL_checkinteger(L,index);
-		index++;
-	}
-	else
-	{
-		// argument omitted; default to controller 1
-		controllerNumber = 1;
-	}
-
-	if(controllerNumber == 0x1A)
-		controllerNumber = 1;
-	if(controllerNumber != 1 && controllerNumber != 2 && controllerNumber != 0x1B && controllerNumber != 0x1C)
-		luaL_error(L, "controller number must be 1, 2, '1B', or '1C'");
-
-	return controllerNumber;
-}
-
-
-// joypad.set(controllerNum = 1, inputTable)
-// controllerNum can be 1, 2, '1B', or '1C'
-DEFINE_LUA_FUNCTION(joy_set, "[controller=1,]inputtable")
-{
 	int index = 1;
-	int controllerNumber = joy_getArgControllerNum(L, index);
-
+	(void)joy_getArgControllerNum(L, index);
 	luaL_checktype(L, index, LUA_TTABLE);
 
-	int input = ~0;
-	int mask = 0;
+	UserButtons buttons = NDS_isProcessingUserInput() ? NDS_getProcessingUserInput().buttons : NDS_getRawUserInput().buttons;
 
-	for(int i = 0; i < sizeof(s_buttonDescs)/sizeof(*s_buttonDescs); i++)
+	for(int i = 0; i < sizeof(button_mappings)/sizeof(*button_mappings); i++)
 	{
-		const ButtonDesc& bd = s_buttonDescs[i];
-		if(bd.controllerNum == controllerNumber)
+		const char* name = button_mappings[i];
+		lua_getfield(L, index, name);
+		if (!lua_isnil(L,-1))
 		{
-			lua_getfield(L, index, bd.name);
-			if (!lua_isnil(L,-1))
-			{
-				bool pressed = lua_toboolean(L,-1) != 0;
-				int bitmask = ((long long)1 << bd.bit);
-				if(pressed)
-					input &= ~bitmask;
-				else
-					input |= bitmask;
-				mask |= bitmask;
-			}
-			lua_pop(L,1);
+			bool pressed = lua_toboolean(L,-1) != 0;
+			buttons.array[i] = pressed;
 		}
+		lua_pop(L,1);
 	}
 
-	SetNextInputCondensed(input, mask);
+	if(NDS_isProcessingUserInput())
+		NDS_getProcessingUserInput().buttons = buttons;
+	else
+		NDS_setPad(buttons.R, buttons.L, buttons.D, buttons.U, buttons.T, buttons.S, buttons.B, buttons.A, buttons.Y, buttons.X, buttons.W, buttons.E, buttons.G, buttons.F);
 
 	return 0;
 }
 
-// joypad.get(controllerNum = 1)
-// controllerNum can be 1, 2, '1B', or '1C'
+// table joypad.read()
+//
+//  Reads the joypad state (what the game sees)
 int joy_get_internal(lua_State* L, bool reportUp, bool reportDown)
 {
 	int index = 1;
-	int controllerNumber = joy_getArgControllerNum(L, index);
+	(void)joy_getArgControllerNum(L, index);
 
 	lua_newtable(L);
 
-	long long input = GetCurrentInputCondensed();
+	const UserButtons& buttons = NDS_getFinalUserInput().buttons;
 
-	for(int i = 0; i < sizeof(s_buttonDescs)/sizeof(*s_buttonDescs); i++)
+	for(int i = 0; i < sizeof(button_mappings)/sizeof(*button_mappings); i++)
 	{
-		const ButtonDesc& bd = s_buttonDescs[i];
-		if(bd.controllerNum == controllerNumber)
+		const char* name = button_mappings[i];
+		bool pressed = buttons.array[i];
+		if((pressed && reportDown) || (!pressed && reportUp))
 		{
-			bool pressed = (input & ((long long)1<<bd.bit)) == 0;
-			if((pressed && reportDown) || (!pressed && reportUp))
-			{
-				lua_pushboolean(L, pressed);
-				lua_setfield(L, -2, bd.name);
-			}
+			lua_pushboolean(L, pressed);
+			lua_setfield(L, -2, name);
 		}
 	}
 
 	return 1;
-}/*
-// joypad.get(int controllerNumber = 1)
+}
+// joypad.get()
 // returns a table of every game button,
 // true meaning currently-held and false meaning not-currently-held
+// (as of last frame boundary)
 // this WILL read input from a currently-playing movie
-DEFINE_LUA_FUNCTION(joy_get, "[controller=1]")
+DEFINE_LUA_FUNCTION(joy_get, "")
 {
 	return joy_get_internal(L, true, true);
 }
-// joypad.getdown(int controllerNumber = 1)
+// joypad.getdown()
 // returns a table of every game button that is currently held
-DEFINE_LUA_FUNCTION(joy_getdown, "[controller=1]")
+DEFINE_LUA_FUNCTION(joy_getdown, "")
 {
 	return joy_get_internal(L, false, true);
 }
-// joypad.getup(int controllerNumber = 1)
+// joypad.getup()
 // returns a table of every game button that is not currently held
-DEFINE_LUA_FUNCTION(joy_getup, "[controller=1]")
+DEFINE_LUA_FUNCTION(joy_getup, "")
 {
 	return joy_get_internal(L, true, false);
 }
 
-// joypad.peek(controllerNum = 1)
-// controllerNum can be 1, 2, '1B', or '1C'
+// table joypad.peek()
+//
+//  Reads the joypad state (what the user is currently pressing/requesting)
 int joy_peek_internal(lua_State* L, bool reportUp, bool reportDown)
 {
 	int index = 1;
-	int controllerNumber = joy_getArgControllerNum(L, index);
+	(void)joy_getArgControllerNum(L, index);
 
 	lua_newtable(L);
 
-	long long input = PeekInputCondensed();
+	const UserButtons& buttons = NDS_getRawUserInput().buttons;
 
-	for(int i = 0; i < sizeof(s_buttonDescs)/sizeof(*s_buttonDescs); i++)
+	for(int i = 0; i < sizeof(button_mappings)/sizeof(*button_mappings); i++)
 	{
-		const ButtonDesc& bd = s_buttonDescs[i];
-		if(bd.controllerNum == controllerNumber)
+		const char* name = button_mappings[i];
+		bool pressed = buttons.array[i];
+		if((pressed && reportDown) || (!pressed && reportUp))
 		{
-			bool pressed = (input & ((long long)1<<bd.bit)) == 0;
-			if((pressed && reportDown) || (!pressed && reportUp))
-			{
-				lua_pushboolean(L, pressed);
-				lua_setfield(L, -2, bd.name);
-			}
+			lua_pushboolean(L, pressed);
+			lua_setfield(L, -2, name);
 		}
 	}
 
 	return 1;
 }
 
-// joypad.peek(int controllerNumber = 1)
+// joypad.peek()
 // returns a table of every game button,
 // true meaning currently-held and false meaning not-currently-held
-// peek checks which joypad buttons are physically pressed, so it will NOT read input from a playing movie, it CAN read mid-frame input, and it will NOT pay attention to stuff like autofire or autohold or disabled L+R/U+D
-DEFINE_LUA_FUNCTION(joy_peek, "[controller=1]")
+// peek checks which joypad buttons are physically pressed,
+// so it will NOT read input from a playing movie,
+// it CAN read mid-frame input,
+// and it will NOT pay attention to stuff like disabled L+R/U+D
+DEFINE_LUA_FUNCTION(joy_peek, "")
 {
 	return joy_peek_internal(L, true, true);
 }
-// joypad.peekdown(int controllerNumber = 1)
+// joypad.peekdown()
 // returns a table of every game button that is currently held (according to what joypad.peek() would return)
-DEFINE_LUA_FUNCTION(joy_peekdown, "[controller=1]")
+DEFINE_LUA_FUNCTION(joy_peekdown, "")
 {
 	return joy_peek_internal(L, false, true);
 }
-// joypad.peekup(int controllerNumber = 1)
+// joypad.peekup()
 // returns a table of every game button that is not currently held (according to what joypad.peek() would return)
-DEFINE_LUA_FUNCTION(joy_peekup, "[controller=1]")
+DEFINE_LUA_FUNCTION(joy_peekup, "")
 {
 	return joy_peek_internal(L, true, false);
 }
 
-*/
+
 static const struct ColorMapping
 {
 	const char* name;
@@ -3441,10 +3344,24 @@ static int stylus_read(lua_State *L){
 
 	return 1;
 }
+static int stylus_peek(lua_State *L){
+	
+	lua_newtable(L);
+
+	lua_pushinteger(L, NDS_getRawUserInput().touch.touchX >> 4);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, NDS_getRawUserInput().touch.touchY >> 4);
+	lua_setfield(L, -2, "y");
+	lua_pushinteger(L, NDS_getRawUserInput().touch.isTouch?1:0);
+	lua_setfield(L, -2, "touch");	
+
+	return 1;
+}
 
 static const struct luaL_reg styluslib [] =
 {
 	{"read", stylus_read},
+	{"peek", stylus_peek},
 	{NULL, NULL}
 };
 
@@ -3560,17 +3477,17 @@ static const struct luaL_reg memorylib [] =
 static const struct luaL_reg joylib [] =
 {
 	{"get", joy_get},
-//	{"getdown", joy_getdown},
-//	{"getup", joy_getup},
-//	{"peek", joy_peek},
-//	{"peekdown", joy_peekdown},
-//	{"peekup", joy_peekup},
-//	{"set", joy_set},
+	{"getdown", joy_getdown},
+	{"getup", joy_getup},
+	{"peek", joy_peek},
+	{"peekdown", joy_peekdown},
+	{"peekup", joy_peekup},
+	{"set", joy_set},
 	// alternative names
 	{"read", joy_get},
-//	{"write", joy_set},
-//	{"readdown", joy_getdown},
-//	{"readup", joy_getup},
+	{"write", joy_set},
+	{"readdown", joy_getdown},
+	{"readup", joy_getup},
 	{NULL, NULL}
 };
 static const struct luaL_reg inputlib [] =

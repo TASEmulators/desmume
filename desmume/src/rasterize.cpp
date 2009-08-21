@@ -564,16 +564,16 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	FragmentColor shaderOutput;
 	shader.shade(shaderOutput);
 
-	//alpha test (don't have any test cases for this...? is it in the right place...?)
-	if(gfx3d.enableAlphaTest)
-	{
-		if(shaderOutput.a < gfx3d.alphaTestRef)
-			goto rejected_fragment;
-	}
-
 	//we shouldnt do any of this if we generated a totally transparent pixel
 	if(shaderOutput.a != 0)
 	{
+		//alpha test (don't have any test cases for this...? is it in the right place...?)
+		if(gfx3d.enableAlphaTest)
+		{
+			if(shaderOutput.a < gfx3d.alphaTestRef)
+				goto rejected_fragment;
+		}
+
 		//handle polyids
 		bool isOpaquePixel = shaderOutput.a == 31;
 		if(isOpaquePixel)
@@ -970,12 +970,13 @@ static void SoftRastVramReconfigureSignal() {
 
 static void SoftRastFramebufferProcess()
 {
-	// lack of edge marking was bugging me so I took a stab at
-	// making it more accurate so it could be reenabled.
-	// the best test case I know of for this feature is Sonic Rush:
+	// this looks ok although it's still pretty much a hack,
+	// it needs to be redone with low-level accuracy at some point,
+	// but that should probably wait until the shape renderer is more accurate.
+	// a good test case for edge marking is Sonic Rush:
 	// - the edges are completely sharp/opaque on the very brief title screen intro,
 	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
-	// - the character edges in-level are clearly smoothed/transparent, but show well through shield powerups
+	// - the character edges in-level are clearly transparent, and also show well through shield powerups.
 	if(gfx3d.enableEdgeMarking)
 	{ 
 		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
@@ -1003,7 +1004,7 @@ static void SoftRastFramebufferProcess()
 
 				// > is used instead of != to prevent double edges
 				// between overlapping polys of different IDs.
-				// also note that the edge generally goes on the outside, not the inside,
+				// also note that the edge generally goes on the outside, not the inside, (maybe needs to change later)
 				// and that polys with the same edge color can make edges against each other.
 
 				FragmentColor edgeColor = edgeMarkColors[self>>3];

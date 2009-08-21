@@ -50,6 +50,7 @@ public:
 	HudStruct()
 		: fps(0)
 		, fps3d(0)
+		, clicked(false)
 	{}
 
 	HudCoordinates SavestateSlots;
@@ -65,6 +66,7 @@ public:
 	void reset();
 
 	int fps, fps3d;
+	bool clicked;
 };
 
 void EditHud(s32 x, s32 y, HudStruct *hudstruct);

@@ -246,6 +246,8 @@ SGuitar DefaultGuitar = { false, 'E', 'R', 'T', 'Y' };
 SGuitar Guitar;
 u8	guitarState = 0;
 
+bool allowUpAndDown = false;
+
 extern volatile bool paused;
 
 #define MAXKEYPAD 15
@@ -412,6 +414,8 @@ static void LoadInputConfig()
 	DO(A); DO(B); DO(X); DO(Y);
 	DO(L); DO(R);
 #undef DO
+
+	allowUpAndDown = GetPrivateProfileInt("Controls","AllowUpAndDown",0,IniName) != 0;
 }
 
 static void WriteControl(char* name, WORD val)
@@ -429,6 +433,8 @@ static void SaveInputConfig()
 	DO(A); DO(B); DO(X); DO(Y);
 	DO(L); DO(R);
 #undef DO
+
+	WritePrivateProfileInt("Controls","AllowUpAndDown",allowUpAndDown?1:0,IniName);
 }
 
 BOOL di_init()
@@ -1879,10 +1885,10 @@ void EnableDisableKeyFields (int index, HWND hDlg)
 		enableUnTurboable = false;
 	}
 
-	EnableWindow(GetDlgItem(hDlg,IDC_UPLEFT), false);
-	EnableWindow(GetDlgItem(hDlg,IDC_UPRIGHT), false);
-	EnableWindow(GetDlgItem(hDlg,IDC_DWNRIGHT), false);
-	EnableWindow(GetDlgItem(hDlg,IDC_DWNLEFT), false);
+	//EnableWindow(GetDlgItem(hDlg,IDC_UPLEFT), false);
+	//EnableWindow(GetDlgItem(hDlg,IDC_UPRIGHT), false);
+	//EnableWindow(GetDlgItem(hDlg,IDC_DWNRIGHT), false);
+	//EnableWindow(GetDlgItem(hDlg,IDC_DWNLEFT), false);
 	EnableWindow(GetDlgItem(hDlg,IDC_DEBUG), false);
 	EnableWindow(GetDlgItem(hDlg,IDC_LID), true);
 }
@@ -1954,7 +1960,8 @@ switch(msg)
 		//SendDlgItemMessage(hDlg,IDC_JPCOMBO,CB_SETCURSEL,(WPARAM)0,0);
 
 		//SendDlgItemMessage(hDlg,IDC_JPTOGGLE,BM_SETCHECK, Joypad[index].Enabled ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
-		//SendDlgItemMessage(hDlg,IDC_ALLOWLEFTRIGHT,BM_SETCHECK, Settings.UpAndDown ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
+		
+		SendDlgItemMessage(hDlg,IDC_ALLOWLEFTRIGHT,BM_SETCHECK, allowUpAndDown ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
 
 		set_buttoninfo(index,hDlg);
 
@@ -2068,7 +2075,7 @@ switch(msg)
 			break;
 
 		case IDOK:
-			//Settings.UpAndDown = IsDlgButtonChecked(hDlg, IDC_ALLOWLEFTRIGHT);
+			allowUpAndDown = IsDlgButtonChecked(hDlg, IDC_ALLOWLEFTRIGHT) != 0;
 			SaveInputConfig();
 			EndDialog(hDlg,0);
 			break;
@@ -2181,157 +2188,188 @@ void S9xWinScanJoypads ()
     for (int J = 0; J < 8; J++)
     {
         if (Joypad [J].Enabled)
-        {
-			// toggle checks
-			{
-       	     	PadState  = 0;
-				PadState |= ToggleJoypadStorage[J].Left||TurboToggleJoypadStorage[J].Left			? LEFT_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Right||TurboToggleJoypadStorage[J].Right			? RIGHT_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Up||TurboToggleJoypadStorage[J].Up				? UP_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Down||TurboToggleJoypadStorage[J].Down			? DOWN_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Start||TurboToggleJoypadStorage[J].Start			? START_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Select||TurboToggleJoypadStorage[J].Select		? SELECT_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Lid||TurboToggleJoypadStorage[J].Lid				? LID_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Debug||TurboToggleJoypadStorage[J].Debug			? DEBUG_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].A||TurboToggleJoypadStorage[J].A					? A_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].B||TurboToggleJoypadStorage[J].B					? B_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].X||TurboToggleJoypadStorage[J].X					? X_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].Y||TurboToggleJoypadStorage[J].Y					? Y_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].L||TurboToggleJoypadStorage[J].L					? L_MASK : 0;
-				PadState |= ToggleJoypadStorage[J].R||TurboToggleJoypadStorage[J].R				    ? R_MASK : 0;
-			}
-			// auto-hold AND regular key/joystick presses
-			if(S9xGetState(Joypad[J+8].Left))
-			{
-				PadState ^= (!S9xGetState(Joypad[J].R)||!S9xGetState(Joypad[J+8].R))      ?  R_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].L)||!S9xGetState(Joypad[J+8].L))      ?  L_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].X)||!S9xGetState(Joypad[J+8].X))      ?  X_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].A)||!S9xGetState(Joypad[J+8].A))      ? A_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Right))  ?   RIGHT_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Right_Up))  ? RIGHT_MASK + UP_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Right_Down)) ? RIGHT_MASK + DOWN_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Left))   ?   LEFT_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Left_Up)) ?   LEFT_MASK + UP_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Left_Down)) ?  LEFT_MASK + DOWN_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Down))   ?   DOWN_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Up))     ?   UP_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Start)||!S9xGetState(Joypad[J+8].Start))  ?  START_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Select)||!S9xGetState(Joypad[J+8].Select)) ?  SELECT_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Y)||!S9xGetState(Joypad[J+8].Y))      ?  Y_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].B)||!S9xGetState(Joypad[J+8].B))      ? B_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Lid)||!S9xGetState(Joypad[J+8].Lid))      ?  LID_MASK : 0;
-				PadState ^= (!S9xGetState(Joypad[J].Debug)||!S9xGetState(Joypad[J+8].Debug))      ? DEBUG_MASK : 0;
-			}
-
-			bool turbofy = !S9xGetState(Joypad[J+8].Up); // All Mod for turbo
-
-			u32 TurboMask = 0;
-
-			//handle turbo case! (autofire / auto-fire)
-			if(turbofy || ((TurboMask&A_MASK))&&(PadState&A_MASK) || !S9xGetState(Joypad[J+8].A      )) PadState^=(joypads[J]&A_MASK);
-			if(turbofy || ((TurboMask&B_MASK))&&(PadState&B_MASK) || !S9xGetState(Joypad[J+8].B      )) PadState^=(joypads[J]&B_MASK);
-			if(turbofy || ((TurboMask&Y_MASK))&&(PadState&Y_MASK) || !S9xGetState(Joypad[J+8].Y       )) PadState^=(joypads[J]&Y_MASK);
-			if(turbofy || ((TurboMask&X_MASK))&&(PadState&X_MASK) || !S9xGetState(Joypad[J+8].X       )) PadState^=(joypads[J]&X_MASK);
-			if(turbofy || ((TurboMask&L_MASK))&&(PadState&L_MASK) || !S9xGetState(Joypad[J+8].L       )) PadState^=(joypads[J]&L_MASK);
-			if(turbofy || ((TurboMask&R_MASK))&&(PadState&R_MASK) || !S9xGetState(Joypad[J+8].R       )) PadState^=(joypads[J]&R_MASK);
-			if(turbofy || ((TurboMask&START_MASK))&&(PadState&START_MASK) || !S9xGetState(Joypad[J+8].Start )) PadState^=(joypads[J]&START_MASK);
-			if(turbofy || ((TurboMask&SELECT_MASK))&&(PadState&SELECT_MASK) || !S9xGetState(Joypad[J+8].Select)) PadState^=(joypads[J]&SELECT_MASK);
-			if(turbofy || ((TurboMask&DEBUG_MASK))&&(PadState&DEBUG_MASK) || !S9xGetState(Joypad[J+8].Debug)) PadState^=(joypads[J]&DEBUG_MASK);
-			if(           ((TurboMask&LEFT_MASK))&&(PadState&LEFT_MASK)                                    ) PadState^=(joypads[J]&LEFT_MASK);
-			if(           ((TurboMask&UP_MASK))&&(PadState&UP_MASK)                                      ) PadState^=(joypads[J]&UP_MASK);
-			if(           ((TurboMask&RIGHT_MASK))&&(PadState&RIGHT_MASK)                                   ) PadState^=(joypads[J]&RIGHT_MASK);
-			if(           ((TurboMask&DOWN_MASK))&&(PadState&DOWN_MASK)                                    ) PadState^=(joypads[J]&DOWN_MASK);
-			if(           ((TurboMask&LID_MASK))&&(PadState&LID_MASK)                                    ) PadState^=(joypads[J]&LID_MASK);
-
-			if(TurboToggleJoypadStorage[J].A     ) PadState^=(joypads[J]&A_MASK);
-			if(TurboToggleJoypadStorage[J].B     ) PadState^=(joypads[J]&B_MASK);
-			if(TurboToggleJoypadStorage[J].Y     ) PadState^=(joypads[J]&Y_MASK);
-			if(TurboToggleJoypadStorage[J].X     ) PadState^=(joypads[J]&X_MASK);
-			if(TurboToggleJoypadStorage[J].L     ) PadState^=(joypads[J]&L_MASK);
-			if(TurboToggleJoypadStorage[J].R     ) PadState^=(joypads[J]&R_MASK);
-			if(TurboToggleJoypadStorage[J].Start ) PadState^=(joypads[J]&START_MASK);
-			if(TurboToggleJoypadStorage[J].Select) PadState^=(joypads[J]&SELECT_MASK);
-			if(TurboToggleJoypadStorage[J].Left  ) PadState^=(joypads[J]&LEFT_MASK);
-			if(TurboToggleJoypadStorage[J].Up    ) PadState^=(joypads[J]&UP_MASK);
-			if(TurboToggleJoypadStorage[J].Right ) PadState^=(joypads[J]&RIGHT_MASK);
-			if(TurboToggleJoypadStorage[J].Down  ) PadState^=(joypads[J]&DOWN_MASK);
-			if(TurboToggleJoypadStorage[J].Lid  ) PadState^=(joypads[J]&LID_MASK);
-			if(TurboToggleJoypadStorage[J].Debug ) PadState^=(joypads[J]&DEBUG_MASK);
-			//end turbo case...
-
-
-			// enforce left+right/up+down disallowance here to
-			// avoid recording unused l+r/u+d that will cause desyncs
-			// when played back with l+r/u+d is allowed
-			//if(!Settings.UpAndDown)
-			//{
-			//	if((PadState[1] & 2) != 0)
-			//		PadState[1] &= ~(1);
-			//	if((PadState[1] & 8) != 0)
-			//		PadState[1] &= ~(4);
-			//}
-
+		{
+			int PadState = 0;
+			PadState |= (!S9xGetState(Joypad[J].R))          ? R_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].L))          ? L_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].X))          ? X_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].A))          ? A_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Right))      ? RIGHT_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Right_Up))   ? RIGHT_MASK|UP_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Right_Down)) ? RIGHT_MASK|DOWN_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Left))       ? LEFT_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Left_Up))    ? LEFT_MASK|UP_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Left_Down))  ? LEFT_MASK|DOWN_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Down))       ? DOWN_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Up))         ? UP_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Start))      ? START_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Select))     ? SELECT_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Y))          ? Y_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].B))          ? B_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Lid))        ? LID_MASK : 0;
+			PadState |= (!S9xGetState(Joypad[J].Debug))      ? DEBUG_MASK : 0;
             joypads [J] = PadState | 0x80000000;
-        }
-        else
-            joypads [J] = 0;
-    }
-
-	// input from macro
-	//for (int J = 0; J < 8; J++)
-	//{
-	//	if(MacroIsEnabled(J))
-	//	{
-	//		uint16 userPadState = joypads[J] & 0xFFFF;
-	//		uint16 macroPadState = MacroInput(J);
-	//		uint16 newPadState;
-
-	//		switch(GUI.MacroInputMode)
-	//		{
-	//		case MACRO_INPUT_MOV:
-	//			newPadState = macroPadState;
-	//			break;
-	//		case MACRO_INPUT_OR:
-	//			newPadState = macroPadState | userPadState;
-	//			break;
-	//		case MACRO_INPUT_XOR:
-	//			newPadState = macroPadState ^ userPadState;
-	//			break;
-	//		default:
-	//			newPadState = userPadState;
-	//			break;
-	//		}
-
-	//		PadState[0] = (uint8) ( newPadState       & 0xFF);
-	//		PadState[1] = (uint8) ((newPadState >> 8) & 0xFF);
-
-	//		// enforce left+right/up+down disallowance here to
-	//		// avoid recording unused l+r/u+d that will cause desyncs
-	//		// when played back with l+r/u+d is allowed
-	//		if(!Settings.UpAndDown)
-	//		{
-	//			if((PadState[1] & 2) != 0)
-	//				PadState[1] &= ~(1);
-	//			if((PadState[1] & 8) != 0)
-	//				PadState[1] &= ~(4);
-	//		}
-
-	//		joypads [J] = PadState [0] | (PadState [1] << 8) | 0x80000000;
-	//	}
-	//}
-
-//#ifdef NETPLAY_SUPPORT
-//    if (Settings.NetPlay)
-//	{
-//		// Send joypad position update to server
-//		S9xNPSendJoypadUpdate (joypads [GUI.NetplayUseJoypad1 ? 0 : NetPlay.Player-1]);
-//
-//		// set input from network
-//		for (int J = 0; J < NP_MAX_CLIENTS; J++)
-//			joypads[J] = S9xNPGetJoypad (J);
-//	}
-//#endif
+		}
+	}
 }
+
+//void S9xOldAutofireAndStuff ()
+//{
+//	// stuff ripped out of Snes9x that's no longer functional, at least for now
+//    for (int J = 0; J < 8; J++)
+//    {
+//        if (Joypad [J].Enabled)
+//        {
+//			// toggle checks
+//			{
+//       	     	PadState  = 0;
+//				PadState |= ToggleJoypadStorage[J].Left||TurboToggleJoypadStorage[J].Left			? LEFT_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Right||TurboToggleJoypadStorage[J].Right			? RIGHT_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Up||TurboToggleJoypadStorage[J].Up				? UP_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Down||TurboToggleJoypadStorage[J].Down			? DOWN_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Start||TurboToggleJoypadStorage[J].Start			? START_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Select||TurboToggleJoypadStorage[J].Select		? SELECT_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Lid||TurboToggleJoypadStorage[J].Lid				? LID_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Debug||TurboToggleJoypadStorage[J].Debug			? DEBUG_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].A||TurboToggleJoypadStorage[J].A					? A_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].B||TurboToggleJoypadStorage[J].B					? B_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].X||TurboToggleJoypadStorage[J].X					? X_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].Y||TurboToggleJoypadStorage[J].Y					? Y_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].L||TurboToggleJoypadStorage[J].L					? L_MASK : 0;
+//				PadState |= ToggleJoypadStorage[J].R||TurboToggleJoypadStorage[J].R				    ? R_MASK : 0;
+//			}
+//			// auto-hold AND regular key/joystick presses
+//			if(S9xGetState(Joypad[J+8].Left))
+//			{
+//				PadState ^= (!S9xGetState(Joypad[J].R)||!S9xGetState(Joypad[J+8].R))      ?  R_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].L)||!S9xGetState(Joypad[J+8].L))      ?  L_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].X)||!S9xGetState(Joypad[J+8].X))      ?  X_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].A)||!S9xGetState(Joypad[J+8].A))      ? A_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Right))  ?   RIGHT_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Right_Up))  ? RIGHT_MASK + UP_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Right_Down)) ? RIGHT_MASK + DOWN_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Left))   ?   LEFT_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Left_Up)) ?   LEFT_MASK + UP_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Left_Down)) ?  LEFT_MASK + DOWN_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Down))   ?   DOWN_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Up))     ?   UP_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Start)||!S9xGetState(Joypad[J+8].Start))  ?  START_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Select)||!S9xGetState(Joypad[J+8].Select)) ?  SELECT_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Y)||!S9xGetState(Joypad[J+8].Y))      ?  Y_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].B)||!S9xGetState(Joypad[J+8].B))      ? B_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Lid)||!S9xGetState(Joypad[J+8].Lid))      ?  LID_MASK : 0;
+//				PadState ^= (!S9xGetState(Joypad[J].Debug)||!S9xGetState(Joypad[J+8].Debug))      ? DEBUG_MASK : 0;
+//			}
+//
+//			bool turbofy = !S9xGetState(Joypad[J+8].Up); // All Mod for turbo
+//
+//			u32 TurboMask = 0;
+//
+//			//handle turbo case! (autofire / auto-fire)
+//			if(turbofy || ((TurboMask&A_MASK))&&(PadState&A_MASK) || !S9xGetState(Joypad[J+8].A      )) PadState^=(joypads[J]&A_MASK);
+//			if(turbofy || ((TurboMask&B_MASK))&&(PadState&B_MASK) || !S9xGetState(Joypad[J+8].B      )) PadState^=(joypads[J]&B_MASK);
+//			if(turbofy || ((TurboMask&Y_MASK))&&(PadState&Y_MASK) || !S9xGetState(Joypad[J+8].Y       )) PadState^=(joypads[J]&Y_MASK);
+//			if(turbofy || ((TurboMask&X_MASK))&&(PadState&X_MASK) || !S9xGetState(Joypad[J+8].X       )) PadState^=(joypads[J]&X_MASK);
+//			if(turbofy || ((TurboMask&L_MASK))&&(PadState&L_MASK) || !S9xGetState(Joypad[J+8].L       )) PadState^=(joypads[J]&L_MASK);
+//			if(turbofy || ((TurboMask&R_MASK))&&(PadState&R_MASK) || !S9xGetState(Joypad[J+8].R       )) PadState^=(joypads[J]&R_MASK);
+//			if(turbofy || ((TurboMask&START_MASK))&&(PadState&START_MASK) || !S9xGetState(Joypad[J+8].Start )) PadState^=(joypads[J]&START_MASK);
+//			if(turbofy || ((TurboMask&SELECT_MASK))&&(PadState&SELECT_MASK) || !S9xGetState(Joypad[J+8].Select)) PadState^=(joypads[J]&SELECT_MASK);
+//			if(turbofy || ((TurboMask&DEBUG_MASK))&&(PadState&DEBUG_MASK) || !S9xGetState(Joypad[J+8].Debug)) PadState^=(joypads[J]&DEBUG_MASK);
+//			if(           ((TurboMask&LEFT_MASK))&&(PadState&LEFT_MASK)                                    ) PadState^=(joypads[J]&LEFT_MASK);
+//			if(           ((TurboMask&UP_MASK))&&(PadState&UP_MASK)                                      ) PadState^=(joypads[J]&UP_MASK);
+//			if(           ((TurboMask&RIGHT_MASK))&&(PadState&RIGHT_MASK)                                   ) PadState^=(joypads[J]&RIGHT_MASK);
+//			if(           ((TurboMask&DOWN_MASK))&&(PadState&DOWN_MASK)                                    ) PadState^=(joypads[J]&DOWN_MASK);
+//			if(           ((TurboMask&LID_MASK))&&(PadState&LID_MASK)                                    ) PadState^=(joypads[J]&LID_MASK);
+//
+//			if(TurboToggleJoypadStorage[J].A     ) PadState^=(joypads[J]&A_MASK);
+//			if(TurboToggleJoypadStorage[J].B     ) PadState^=(joypads[J]&B_MASK);
+//			if(TurboToggleJoypadStorage[J].Y     ) PadState^=(joypads[J]&Y_MASK);
+//			if(TurboToggleJoypadStorage[J].X     ) PadState^=(joypads[J]&X_MASK);
+//			if(TurboToggleJoypadStorage[J].L     ) PadState^=(joypads[J]&L_MASK);
+//			if(TurboToggleJoypadStorage[J].R     ) PadState^=(joypads[J]&R_MASK);
+//			if(TurboToggleJoypadStorage[J].Start ) PadState^=(joypads[J]&START_MASK);
+//			if(TurboToggleJoypadStorage[J].Select) PadState^=(joypads[J]&SELECT_MASK);
+//			if(TurboToggleJoypadStorage[J].Left  ) PadState^=(joypads[J]&LEFT_MASK);
+//			if(TurboToggleJoypadStorage[J].Up    ) PadState^=(joypads[J]&UP_MASK);
+//			if(TurboToggleJoypadStorage[J].Right ) PadState^=(joypads[J]&RIGHT_MASK);
+//			if(TurboToggleJoypadStorage[J].Down  ) PadState^=(joypads[J]&DOWN_MASK);
+//			if(TurboToggleJoypadStorage[J].Lid  ) PadState^=(joypads[J]&LID_MASK);
+//			if(TurboToggleJoypadStorage[J].Debug ) PadState^=(joypads[J]&DEBUG_MASK);
+//			//end turbo case...
+//
+//
+//			// enforce left+right/up+down disallowance here to
+//			// avoid recording unused l+r/u+d that will cause desyncs
+//			// when played back with l+r/u+d is allowed
+//			//if(!allowUpAndDown)
+//			//{
+//			//	if((PadState[1] & 2) != 0)
+//			//		PadState[1] &= ~(1);
+//			//	if((PadState[1] & 8) != 0)
+//			//		PadState[1] &= ~(4);
+//			//}
+//
+//            joypads [J] = PadState | 0x80000000;
+//        }
+//        else
+//            joypads [J] = 0;
+//    }
+//
+//	// input from macro
+//	//for (int J = 0; J < 8; J++)
+//	//{
+//	//	if(MacroIsEnabled(J))
+//	//	{
+//	//		uint16 userPadState = joypads[J] & 0xFFFF;
+//	//		uint16 macroPadState = MacroInput(J);
+//	//		uint16 newPadState;
+//
+//	//		switch(GUI.MacroInputMode)
+//	//		{
+//	//		case MACRO_INPUT_MOV:
+//	//			newPadState = macroPadState;
+//	//			break;
+//	//		case MACRO_INPUT_OR:
+//	//			newPadState = macroPadState | userPadState;
+//	//			break;
+//	//		case MACRO_INPUT_XOR:
+//	//			newPadState = macroPadState ^ userPadState;
+//	//			break;
+//	//		default:
+//	//			newPadState = userPadState;
+//	//			break;
+//	//		}
+//
+//	//		PadState[0] = (uint8) ( newPadState       & 0xFF);
+//	//		PadState[1] = (uint8) ((newPadState >> 8) & 0xFF);
+//
+//	//		// enforce left+right/up+down disallowance here to
+//	//		// avoid recording unused l+r/u+d that will cause desyncs
+//	//		// when played back with l+r/u+d is allowed
+//	//		if(!allowUpAndDown)
+//	//		{
+//	//			if((PadState[1] & 2) != 0)
+//	//				PadState[1] &= ~(1);
+//	//			if((PadState[1] & 8) != 0)
+//	//				PadState[1] &= ~(4);
+//	//		}
+//
+//	//		joypads [J] = PadState [0] | (PadState [1] << 8) | 0x80000000;
+//	//	}
+//	//}
+//
+////#ifdef NETPLAY_SUPPORT
+////    if (Settings.NetPlay)
+////	{
+////		// Send joypad position update to server
+////		S9xNPSendJoypadUpdate (joypads [GUI.NetplayUseJoypad1 ? 0 : NetPlay.Player-1]);
+////
+////		// set input from network
+////		for (int J = 0; J < NP_MAX_CLIENTS; J++)
+////			joypads[J] = S9xNPGetJoypad (J);
+////	}
+////#endif
+//}
 
 void input_feedback(BOOL enable)
 {
@@ -2357,43 +2395,82 @@ void input_init()
 	FeedbackON = input_feedback;
 }
 
-void input_process()
+// TODO: maybe some of this stuff should move back to NDSSystem.cpp?
+// I don't know which is the better place for it.
+
+static void StepManualTurbo();
+static void ApplyAntipodalRestriction(buttonstruct<bool>& pad);
+static void SetManualTurbo(buttonstruct<bool>& pad);
+static void RunAntipodalRestriction(const buttonstruct<bool>& pad);
+
+// may run multiple times per frame.
+// gets the user input and puts in a request with NDSSystem about it,
+// and updates input-related state that needs to update even while paused.
+void input_acquire()
 {
+	u32 oldInput = joypads[0];
+
 	S9xWinScanJoypads();
 
-	//not appropriate right now in desmume
-	//if (paused) return;
+	buttonstruct<bool> buttons = {};
+	buttons.R = (joypads[0] & RIGHT_MASK)!=0;
+	buttons.L = (joypads[0] & LEFT_MASK)!=0;
+	buttons.D = (joypads[0] & DOWN_MASK)!=0;
+	buttons.U = (joypads[0] & UP_MASK)!=0;
+	buttons.S = (joypads[0] & START_MASK)!=0;
+	buttons.T = (joypads[0] & SELECT_MASK)!=0;
+	buttons.B = (joypads[0] & B_MASK)!=0;
+	buttons.A = (joypads[0] & A_MASK)!=0;
+	buttons.Y = (joypads[0] & Y_MASK)!=0;
+	buttons.X = (joypads[0] & X_MASK)!=0;
+	buttons.W = (joypads[0] & L_MASK)!=0;
+	buttons.E = (joypads[0] & R_MASK)!=0;
+	buttons.G = (joypads[0] & DEBUG_MASK)!=0;
+	buttons.F = (joypads[0] & LID_MASK)!=0;
 
-	bool R = (joypads[0] & RIGHT_MASK)!=0;
-	bool L = (joypads[0] & LEFT_MASK)!=0;
-	bool D = (joypads[0] & DOWN_MASK)!=0;
-	bool U = (joypads[0] & UP_MASK)!=0;
-	bool T = (joypads[0] & START_MASK)!=0;
-	bool S = (joypads[0] & SELECT_MASK)!=0;
-	bool B = (joypads[0] & B_MASK)!=0;
-	bool A = (joypads[0] & A_MASK)!=0;
-	bool Y = (joypads[0] & Y_MASK)!=0;
-	bool X = (joypads[0] & X_MASK)!=0;
-	bool W = (joypads[0] & L_MASK)!=0;
-	bool E = (joypads[0] & R_MASK)!=0;
-	bool G = (joypads[0] & DEBUG_MASK)!=0;
-	bool F = (joypads[0] & LID_MASK)!=0;
+	// take care of toggling the auto-hold flags.
+	if(AutoHoldPressed)
+	{
+		if(buttons.R && !(oldInput & RIGHT_MASK))  AutoHold.R ^= true;
+		if(buttons.L && !(oldInput & LEFT_MASK))   AutoHold.L ^= true;
+		if(buttons.D && !(oldInput & DOWN_MASK))   AutoHold.D ^= true;
+		if(buttons.U && !(oldInput & UP_MASK))     AutoHold.U ^= true;
+		if(buttons.S && !(oldInput & START_MASK))  AutoHold.S ^= true;
+		if(buttons.T && !(oldInput & SELECT_MASK)) AutoHold.T ^= true;
+		if(buttons.B && !(oldInput & B_MASK))      AutoHold.B ^= true;
+		if(buttons.A && !(oldInput & A_MASK))      AutoHold.A ^= true;
+		if(buttons.Y && !(oldInput & Y_MASK))      AutoHold.Y ^= true;
+		if(buttons.X && !(oldInput & X_MASK))      AutoHold.X ^= true;
+		if(buttons.W && !(oldInput & L_MASK))      AutoHold.W ^= true;
+		if(buttons.E && !(oldInput & R_MASK))      AutoHold.E ^= true;
+	}
 
-	if(AutoHoldPressed && R) AutoHold.Right  ^= true;
-	if(AutoHoldPressed && L) AutoHold.Left   ^= true;
-	if(AutoHoldPressed && D) AutoHold.Down   ^= true;
-	if(AutoHoldPressed && U) AutoHold.Up     ^= true;
-	if(AutoHoldPressed && T) AutoHold.Select ^= true;
-	if(AutoHoldPressed && S) AutoHold.Start  ^= true;
-	if(AutoHoldPressed && B) AutoHold.B      ^= true;
-	if(AutoHoldPressed && A) AutoHold.A      ^= true;
-	if(AutoHoldPressed && Y) AutoHold.Y      ^= true;
-	if(AutoHoldPressed && X) AutoHold.X      ^= true;
-	if(AutoHoldPressed && W) AutoHold.L      ^= true;
-	if(AutoHoldPressed && E) AutoHold.R      ^= true;
+	// update upAndDown timers
+	RunAntipodalRestriction(buttons);
 
-	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
+	// apply any autofire that requires the user to be
+	// actively holding a button in order to trigger it
+	SetManualTurbo(buttons);
 
+	// let's actually apply auto-hold here too,
+	// even though this is supposed to be the "raw" user input,
+	// since things seem to work out better this way (more useful input display, for one thing),
+	// and it kind of makes sense to think of auto-held keys as
+	// a direct extension of what the user is physically trying to press.
+	for(int i = 0; i < ARRAY_SIZE(buttons.array); i++)
+		buttons.array[i] ^= AutoHold.array[i];
+
+
+	// set initial input request
+	NDS_setPad(
+		buttons.R, buttons.L, buttons.D, buttons.U,
+		buttons.T, buttons.S, buttons.B, buttons.A,
+		buttons.Y, buttons.X, buttons.W, buttons.E,
+		buttons.G, buttons.F);
+
+
+	// TODO: this part hasn't been revised yet,
+	// but guitarGrip_setKey should only request a change (like NDS_setPad does)
 	if (Guitar.Enabled)
 	{
 		bool gG=!S9xGetState(Guitar.GREEN);
@@ -2403,6 +2480,74 @@ void input_process()
 		guitarGrip_setKey(gG, gR, gY, gB);
 	}
 }
+
+// only runs once per frame (always after input_acquire has been called at least once).
+// applies transformations to the user's input,
+// and updates input-related state that needs to update once per frame.
+void input_process()
+{
+	UserButtons& input = NDS_getProcessingUserInput().buttons;
+
+	// prevent left+right/up+down if that option is set to not allow it
+	ApplyAntipodalRestriction(input);
+
+	// step turbo frame timers
+	StepManualTurbo();
+
+	// TODO: things like macros or "hands free" turbo/autofire
+	// should probably be applied here.
+}
+
+static bool turbo[4] = {true, false, true, false};
+
+static void StepManualTurbo()
+{
+	for (int i = 0; i < ARRAY_SIZE(TurboTime.array); i++)
+	{
+		TurboTime.array[i]++;
+		if(!Turbo.array[i] || TurboTime.array[i] >= (int)ARRAY_SIZE(turbo))
+			TurboTime.array[i] = 0; // reset timer if the button isn't pressed or we overran
+	}
+}
+
+static void SetManualTurbo(buttonstruct<bool>& pad)
+{
+	for (int i = 0; i < ARRAY_SIZE(pad.array); i++)
+		if(Turbo.array[i])
+			pad.array[i] = turbo[TurboTime.array[i]];
+}
+
+static buttonstruct<int> cardinalHeldTime = {0};
+
+static void RunAntipodalRestriction(const buttonstruct<bool>& pad)
+{
+	if(allowUpAndDown)
+		return;
+
+	pad.U ? (cardinalHeldTime.U++) : (cardinalHeldTime.U=0);
+	pad.D ? (cardinalHeldTime.D++) : (cardinalHeldTime.D=0);
+	pad.L ? (cardinalHeldTime.L++) : (cardinalHeldTime.L=0);
+	pad.R ? (cardinalHeldTime.R++) : (cardinalHeldTime.R=0);
+}
+static void ApplyAntipodalRestriction(buttonstruct<bool>& pad)
+{
+	if(allowUpAndDown)
+		return;
+
+	// give preference to whichever direction was most recently pressed
+	if(pad.U && pad.D)
+		if(cardinalHeldTime.U < cardinalHeldTime.D)
+			pad.D = false;
+		else
+			pad.U = false;
+	if(pad.L && pad.R)
+		if(cardinalHeldTime.L < cardinalHeldTime.R)
+			pad.R = false;
+		else
+			pad.L = false;
+}
+
+
 
 static void set_hotkeyinfo(HWND hDlg)
 {
