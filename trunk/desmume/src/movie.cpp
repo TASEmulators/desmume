@@ -60,7 +60,6 @@ char curMovieFilename[512] = {0};
 MovieData currMovieData;
 int currRerecordCount;
 bool movie_reset_command = false;
-bool movie_lid = false;
 //--------------
 
 
@@ -434,10 +433,23 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 
 	//LoadFM2(currMovieData, fp->stream, INT_MAX, false);
 
-	
-	fstream fs (fname);
-	LoadFM2(currMovieData, &fs, INT_MAX, false);
-	fs.close();
+	bool opened = false;
+	{
+		fstream fs (fname);
+		if(fs.is_open())
+		{
+			LoadFM2(currMovieData, &fs, INT_MAX, false);
+			opened = true;
+		}
+		fs.close();
+	}
+	if(!opened)
+	{
+		// for some reason fs.open doesn't work, it has to be a whole new fstream object
+		fstream fs (fname, std::ios_base::in);
+		LoadFM2(currMovieData, &fs, INT_MAX, false);
+		fs.close();
+	}
 
 	//TODO
 	//fully reload the game to reinitialize everything before playing any movie
@@ -589,33 +601,17 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	driver->USR_InfoMessage("Movie recording started.");
 }
 
- void NDS_setTouchFromMovie(void) {
-
-	 if(movieMode == MOVIEMODE_PLAY)
-	 {
-
-		 MovieRecord* mr = &currMovieData.records[currFrameCounter];
-		 nds.touchX=mr->touch.x << 4;
-		 nds.touchY=mr->touch.y << 4;
-
-		 if(mr->touch.touch) {
-			 nds.isTouch=mr->touch.touch;
-			 MMU.ARM7_REG[0x136] &= 0xBF;
-		 }
-		 else {
-			 nds.touchX=0;
-			 nds.touchY=0;
-			 nds.isTouch=0;
-
-			 MMU.ARM7_REG[0x136] |= 0x40;
-		 }
-		 //osd->addFixed(mr->touch.x, mr->touch.y, "%s", "X");
-	 }
- }
 
  //the main interaction point between the emulator and the movie system.
- //either dumps the current joystick state or loads one state from the movie
+ //either dumps the current joystick state or loads one state from the movie.
+ //deprecated, should use the two functions it has been split into directly
  void FCEUMOV_AddInputState()
+ {
+	 FCEUMOV_HandlePlayback();
+	 FCEUMOV_HandleRecording();
+ }
+
+ void FCEUMOV_HandlePlayback()
  {
 	 if(movieMode == MOVIEMODE_PLAY)
 	 {
@@ -626,18 +622,36 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 		 }
 		 else
 		 {
+			 UserInput& input = NDS_getProcessingUserInput();
+
 			 MovieRecord* mr = &currMovieData.records[currFrameCounter];
 
-			 if(mr->command_microphone()) MicButtonPressed=1;
-			 else MicButtonPressed=0;
+			 if(mr->command_microphone()) input.mic.micButtonPressed = 1;
+			 else input.mic.micButtonPressed = 0;
 
 			 if(mr->command_reset()) NDS_Reset();
 
-			 if(mr->command_lid()) movie_lid = true;
-			 else movie_lid = false;
+			 if(mr->command_lid()) input.buttons.F = true;
+			 else input.buttons.F = false;
 
-			 NDS_setPadFromMovie(mr->pad);
-			 NDS_setTouchFromMovie();
+			 u16 pad = mr->pad;
+			 input.buttons.R = (((pad>>12)&1)!=0);
+			 input.buttons.L = (((pad>>11)&1)!=0);
+			 input.buttons.D = (((pad>>10)&1)!=0);
+			 input.buttons.U = (((pad>>9)&1)!=0);
+			 input.buttons.T = (((pad>>8)&1)!=0);
+			 input.buttons.S = (((pad>>7)&1)!=0);
+			 input.buttons.B = (((pad>>6)&1)!=0);
+			 input.buttons.A = (((pad>>5)&1)!=0);
+			 input.buttons.Y = (((pad>>4)&1)!=0);
+			 input.buttons.X = (((pad>>3)&1)!=0);
+			 input.buttons.W = (((pad>>2)&1)!=0);
+			 input.buttons.E = (((pad>>1)&1)!=0);
+			 input.buttons.G = (((pad>>0)&1)!=0);
+
+			 input.touch.touchX = mr->touch.x << 4;
+			 input.touch.touchY = mr->touch.y << 4;
+			 input.touch.isTouch = mr->touch.touch;
 		 }
 
 		 //if we are on the last frame, then pause the emulator if the player requested it
@@ -655,43 +669,57 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 		 //	FCEUI_ToggleEmulationPause();
 		 //	FCEU_DispMessage("Paused at specified movie frame");
 		 //}
-		 osd->addFixed(180, 176, "%s", "Playback");
+
+		 // it's apparently un-threadsafe to do this here
+		 // (causes crazy flickering in other OSD elements, at least)
+		 // and it's also pretty annoying,
+		 // and the framecounter display already conveys this info as well.
+		 // so, I'm disabling this, at least for now.
+//		 osd->addFixed(180, 176, "%s", "Playback");
 
 	 }
-	 else if(movieMode == MOVIEMODE_RECORD)
+ }
+
+ void FCEUMOV_HandleRecording()
+ {
+	 if(movieMode == MOVIEMODE_RECORD)
 	 {
+		 const UserInput& input = NDS_getFinalUserInput();
+
 		 MovieRecord mr;
 
 		 mr.commands = 0;
 
-		 if(MicButtonPressed == 1)
-			 mr.commands=1;
+		 if(input.mic.micButtonPressed == 1)
+			 mr.commands = MOVIECMD_MIC;
 
 		 mr.pad = nds.pad;
 
-		 if(movie_lid) {
-			 mr.commands=4;
-			 movie_lid = false;
-		 }
+		 if(input.buttons.F)
+			 mr.commands = MOVIECMD_LID;
 
 		 if(movie_reset_command) {
-			 mr.commands=2;
+			 mr.commands = MOVIECMD_RESET;
 			 movie_reset_command = false;
 		 }
 
-		 if(nds.isTouch) {
-			 mr.touch.x = nds.touchX >> 4;
-			 mr.touch.y = nds.touchY >> 4;
-			 mr.touch.touch = 1;
-		 } else {
-			 mr.touch.x = 0;
-			 mr.touch.y = 0;
-			 mr.touch.touch = 0;
-		 }
+		 mr.touch.touch = input.touch.isTouch ? 1 : 0;
+		 mr.touch.x = input.touch.isTouch ? input.touch.touchX >> 4 : 0;
+		 mr.touch.y = input.touch.isTouch ? input.touch.touchY >> 4 : 0;
+
+		 assert(mr.touch.touch || (!mr.touch.x && !mr.touch.y));
+		 assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
+		 assert((mr.touch.x << 4) == nds.touchX && (mr.touch.y << 4) == nds.touchY);
 
 		 mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
 		 currMovieData.records.push_back(mr);
-		 osd->addFixed(180, 176, "%s", "Recording");
+
+		 // it's apparently un-threadsafe to do this here
+		 // (causes crazy flickering in other OSD elements, at least)
+		 // and it's also pretty annoying,
+		 // and the framecounter display already conveys this info as well.
+		 // so, I'm disabling this, at least for now.
+//		 osd->addFixed(180, 176, "%s", "Recording");
 	 }
 
 	 /*extern uint8 joy[4];
@@ -859,6 +887,12 @@ bool mov_loadstate(std::istream* is, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 
 			openRecordingMovie(curMovieFilename);
+			if(!osRecordingMovie->is_open())
+			{
+			   osd->setLineColor(255, 0, 0);
+			   osd->addLine("Can't save movie file!");
+			}
+
 			//printf("DUMPING MOVIE: %d FRAMES\n",currMovieData.records.size());
 			currMovieData.dump(osRecordingMovie, false);
 			movieMode = MOVIEMODE_RECORD;

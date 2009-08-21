@@ -405,7 +405,10 @@ public:
 	virtual void renderTextDropshadowed(double dstX, double dstY, const std::string& str)
 	{
 		AggColor lineColorOld = lineColor();
-		lineColor(255-lineColorOld.r,255-lineColorOld.g,255-lineColorOld.b);
+		if(lineColorOld.r+lineColorOld.g+lineColorOld.b<192)
+			lineColor(255-lineColorOld.r,255-lineColorOld.g,255-lineColorOld.b);
+		else
+			lineColor(0,0,0);
 		renderText(dstX-1,dstY-1,str);
 		renderText(dstX,dstY-1,str);
 		renderText(dstX+1,dstY-1,str);

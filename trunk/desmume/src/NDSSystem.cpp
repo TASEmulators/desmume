@@ -541,12 +541,12 @@ int NDS_Init( void) {
 	// Init calibration info
 	TSCal.adc.x1 = 0x0200;
 	TSCal.adc.y1 = 0x0200;
-	TSCal.scr.x1 = 0x20;
-	TSCal.scr.y1 = 0x20;
+	TSCal.scr.x1 = 0x20 + 1; // calibration screen coords are 1-based,
+	TSCal.scr.y1 = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
 	TSCal.adc.x2 = 0x0E00;
 	TSCal.adc.y2 = 0x0800;
-	TSCal.scr.x2 = 0xE0;
-	TSCal.scr.y2 = 0x80;
+	TSCal.scr.x2 = 0xE0 + 1;
+	TSCal.scr.y2 = 0x80 + 1;
 
 	return 0;
 }
@@ -621,35 +621,6 @@ NDS_header * NDS_getROMHeader(void)
 } 
 
 
-INLINE u16 NDS_getADCTouchPosX(u16 scrX)
-{
-	return (scrX - TSCal.scr.x1 + 1) * (TSCal.adc.x2 - TSCal.adc.x1) / (TSCal.scr.x2 - TSCal.scr.x1) + TSCal.adc.x1;
-}
-
-INLINE u16 NDS_getADCTouchPosY(u16 scrY)
-{
-	return (scrY - TSCal.scr.y1 + 1) * (TSCal.adc.y2 - TSCal.adc.y1) / (TSCal.scr.y2 - TSCal.scr.y1) + TSCal.adc.y1;
-}
-
-void NDS_setTouchPos(u16 x, u16 y)
-{
-	//nds.touchX = (x <<4);
-	//nds.touchY = (y <<4);
-	nds.touchX = NDS_getADCTouchPosX(x);
-	nds.touchY = NDS_getADCTouchPosY(y);
-	nds.isTouch = 1;
-
-	MMU.ARM7_REG[0x136] &= 0xBF;
-}
-
-void NDS_releaseTouch(void)
-{ 
-	nds.touchX = 0;
-	nds.touchY = 0;
-	nds.isTouch = 0;
-
-	MMU.ARM7_REG[0x136] |= 0x40;
-}
 
 
 void debug()
@@ -1446,13 +1417,13 @@ void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
 	/* default touchscreen calibration */
 	fw_config->touch_cal[0].adc_x = 0x200;
 	fw_config->touch_cal[0].adc_y = 0x200;
-	fw_config->touch_cal[0].screen_x = 0x20;
-	fw_config->touch_cal[0].screen_y = 0x20;
+	fw_config->touch_cal[0].screen_x = 0x20 + 1; // calibration screen coords are 1-based,
+	fw_config->touch_cal[0].screen_y = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
 
 	fw_config->touch_cal[1].adc_x = 0xe00;
 	fw_config->touch_cal[1].adc_y = 0x800;
-	fw_config->touch_cal[1].screen_x = 0xe0;
-	fw_config->touch_cal[1].screen_y = 0x80;
+	fw_config->touch_cal[1].screen_x = 0xe0 + 1;
+	fw_config->touch_cal[1].screen_y = 0x80 + 1;
 }
 
 int NDS_LoadFirmware(const char *filename)
@@ -1639,9 +1610,11 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 					nds.timerCycle[procnum][i] += (remain << MMU.timerMODE[procnum][i]);
 					ctr++;
 				}
+#if defined(DEBUG) || defined(_DEBUG)
 				if(ctr>1) {
 					printf("yikes!!!!! please report!\n");
 				}
+#endif
 			}
 
 			if(over)
@@ -2081,12 +2054,17 @@ void Sequencer::execHardware()
 
 void execHardware_interrupts();
 
+static void saveUserInput(std::ostream* os);
+static bool loadUserInput(std::istream* is, int version);
+
 void nds_savestate(std::ostream* os)
 {
 	//version
-	write32le(1,os);
+	write32le(2,os);
 
 	sequencer.save(os);
+
+	saveUserInput(os);
 }
 
 bool nds_loadstate(std::istream* is, int size)
@@ -2095,9 +2073,13 @@ bool nds_loadstate(std::istream* is, int size)
 	int version;
 	if(read32le(&version,is) != 1) return false;
 
-	if(version > 1) return false;
+	if(version > 2) return false;
 
-	return sequencer.load(is, version);
+	bool temp = true;
+	temp &= sequencer.load(is, version);
+	if(version <= 1 || !temp) return temp;
+	temp &= loadUserInput(is, version);
+	return temp;
 }
 
 //#define LOG_ARM9
@@ -2522,131 +2504,243 @@ static std::string MakeInputDisplayString(u16 pad, u16 padExt) {
     return s;
 }
 
+
+buttonstruct<bool> Turbo;
+buttonstruct<int> TurboTime;
+buttonstruct<bool> AutoHold;
+
 void ClearAutoHold(void) {
 	
-	for (int i=0; i < 12; i++) {
-		AutoHold.hold(i)=false;
+	for (int i=0; i < ARRAY_SIZE(AutoHold.array); i++) {
+		AutoHold.array[i]=false;
 	}
 }
 
-void NDS_setPadFromMovie(u16 pad)
+
+INLINE u16 NDS_getADCTouchPosX(u16 scrX)
 {
-#define FIX(b,n) (((pad>>n)&1)!=0)
-	NDS_setPad(
-		FIX(pad,12), //R
-		FIX(pad,11), //L
-		FIX(pad,10), //D
-		FIX(pad,9), //U 
-		FIX(pad,7), //Select
-		FIX(pad,8), //Start
-		FIX(pad,6), //B
-		FIX(pad,5), //A
-		FIX(pad,4), //Y
-		FIX(pad,3), //X
-		FIX(pad,2),
-		FIX(pad,1),
-		FIX(pad,0),
-		movie_lid
-		);
-#undef FIX
-
+	// this is a little iffy,
+	// we're basically adjusting the ADC results to
+	// compensate for how they will be interpreted.
+	// the actual system doesn't do this transformation.
+	int rv = (scrX - TSCal.scr.x1 + 1) * (TSCal.adc.x2 - TSCal.adc.x1) / (TSCal.scr.x2 - TSCal.scr.x1) + TSCal.adc.x1;
+	rv = min(0xFFF, max(0, rv));
+	return (u16)rv;
+}
+INLINE u16 NDS_getADCTouchPosY(u16 scrY)
+{
+	int rv = (scrY - TSCal.scr.y1 + 1) * (TSCal.adc.y2 - TSCal.adc.y1) / (TSCal.scr.y2 - TSCal.scr.y1) + TSCal.adc.y1;
+	rv = min(0xFFF, max(0, rv));
+	return (u16)rv;
 }
 
-turbo Turbo;
-turbotime TurboTime;
+static UserInput rawUserInput = {}; // requested input, generally what the user is physically pressing
+static UserInput intermediateUserInput = {}; // intermediate buffer for modifications (seperated from finalUserInput for safety reasons)
+static UserInput finalUserInput = {}; // what gets sent to the game and possibly recorded
+bool validToProcessInput = false;
 
-static void SetTurbo(bool (&pad) [12]) {
-
-	bool turbo[4] = {true, false, true, false};
-	bool currentbutton;
-
-	for (int i=0; i < 12; i++) {
-		currentbutton=Turbo.button(i);
-
-		if(currentbutton && movieMode != MOVIEMODE_PLAY) {
-			pad[i]=turbo[TurboTime.time(i)-1];
-			
-			if(TurboTime.time(i) >= (int)ARRAY_SIZE(turbo))
-				TurboTime.time(i)=0;
-		}
-		else
-			TurboTime.time(i)=0; //reset timer if the button isn't pressed
-	}
-	for (int i=0; i<12; i++)
-		TurboTime.time(i)++;
+const UserInput& NDS_getRawUserInput()
+{
+	return rawUserInput;
+}
+UserInput& NDS_getProcessingUserInput()
+{
+	assert(validToProcessInput);
+	return intermediateUserInput;
+}
+bool NDS_isProcessingUserInput()
+{
+	return validToProcessInput;
+}
+const UserInput& NDS_getFinalUserInput()
+{
+	return finalUserInput;
 }
 
-autohold AutoHold;
+
+static void saveUserInput(std::ostream* os, UserInput& input)
+{
+	os->write((const char*)input.buttons.array, 14);
+	writebool(input.touch.isTouch, os);
+	write16le(input.touch.touchX, os);
+	write16le(input.touch.touchY, os);
+	write32le(input.mic.micButtonPressed, os);
+}
+static bool loadUserInput(std::istream* is, UserInput& input, int version)
+{
+	is->read((char*)input.buttons.array, 14);
+	readbool(&input.touch.isTouch, is);
+	read16le(&input.touch.touchX, is);
+	read16le(&input.touch.touchY, is);
+	read32le(&input.mic.micButtonPressed, is);
+	return true;
+}
+// (userinput is kind of a misnomer, e.g. finalUserInput has to mirror nds.pad, nds.touchX, etc.)
+static void saveUserInput(std::ostream* os)
+{
+	saveUserInput(os, finalUserInput);
+	saveUserInput(os, intermediateUserInput); // saved in case a savestate is made during input processing (which Lua could do if nothing else)
+	writebool(validToProcessInput, os);
+	for(int i = 0; i < 14; i++)
+		write32le(TurboTime.array[i], os); // saved to make autofire more tolerable to use with re-recording
+}
+static bool loadUserInput(std::istream* is, int version)
+{
+	bool rv = true;
+	rv &= loadUserInput(is, finalUserInput, version);
+	rv &= loadUserInput(is, intermediateUserInput, version);
+	readbool(&validToProcessInput, is);
+	for(int i = 0; i < 14; i++)
+		read32le(&TurboTime.array[i], is);
+	return rv;
+}
+
+static inline void gotInputRequest()
+{
+	// nobody should set the raw input while we're processing the input.
+	// it might not screw anything up but it would be completely useless.
+	assert(!validToProcessInput);
+}
 
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F)
 {
+	gotInputRequest();
+	UserButtons& rawButtons = rawUserInput.buttons;
+	rawButtons.R = R;
+	rawButtons.L = L;
+	rawButtons.D = D;
+	rawButtons.U = U;
+	rawButtons.T = T;
+	rawButtons.S = S;
+	rawButtons.B = B;
+	rawButtons.A = A;
+	rawButtons.Y = Y;
+	rawButtons.X = X;
+	rawButtons.W = W;
+	rawButtons.E = E;
+	rawButtons.G = G;
+	rawButtons.F = F;
+}
+void NDS_setTouchPos(u16 x, u16 y)
+{
+	gotInputRequest();
+	rawUserInput.touch.touchX = NDS_getADCTouchPosX(x);
+	rawUserInput.touch.touchY = NDS_getADCTouchPosY(y);
+	rawUserInput.touch.isTouch = true;
 
-	bool padarray[12] = {R, L, D, U, T, S, B, A, Y, X, W, E};
-
-	SetTurbo(padarray);
-
-	R=padarray[0];
-	L=padarray[1];
-	D=padarray[2];
-	U=padarray[3];
-	T=padarray[4];
-	S=padarray[5];
-	B=padarray[6];
-	A=padarray[7];
-	Y=padarray[8];
-	X=padarray[9];
-	W=padarray[10];
-	E=padarray[11];
-
-	if (movieMode != MOVIEMODE_PLAY) {
-		if(AutoHold.Right) R=!padarray[0];
-		if(AutoHold.Left)  L=!padarray[1];
-		if(AutoHold.Down)  D=!padarray[2];
-		if(AutoHold.Up)    U=!padarray[3];
-		if(AutoHold.Select)T=!padarray[4];
-		if(AutoHold.Start) S=!padarray[5];
-		if(AutoHold.B)     B=!padarray[6];
-		if(AutoHold.A)     A=!padarray[7];
-		if(AutoHold.Y)     Y=!padarray[8];
-		if(AutoHold.X)     X=!padarray[9];
-		if(AutoHold.L)     W=!padarray[10];
-		if(AutoHold.R)     E=!padarray[11];
+	if(movieMode != MOVIEMODE_INACTIVE)
+	{
+		// just in case, since the movie only stores 8 bits per touch coord
+		rawUserInput.touch.touchX &= 0x0FF0;
+		rawUserInput.touch.touchY &= 0x0FF0;
 	}
 
-	//this macro is the opposite of what you would expect
-#define FIX(b) (b?0:0x80)
+#ifndef WIN32
+	// FIXME: this code should be deleted from here,
+	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
+	// (see the function called "run" in src/windows/main.cpp),
+	// but I'm leaving this here for now since I can't test those other platforms myself.
+	nds.touchX = rawUserInput.touch.touchX;
+	nds.touchY = rawUserInput.touch.touchY;
+	nds.isTouch = 1;
+	MMU.ARM7_REG[0x136] &= 0xBF;
+#endif
+}
+void NDS_releaseTouch(void)
+{ 
+	gotInputRequest();
+	rawUserInput.touch.touchX = 0;
+	rawUserInput.touch.touchY = 0;
+	rawUserInput.touch.isTouch = false;
 
-	int r = FIX(R);
-	int l = FIX(L);
-	int d = FIX(D);
-	int u = FIX(U);
-	int t = FIX(T);
-	int s = FIX(S);
-	int b = FIX(B);
-	int a = FIX(A);
-	int y = FIX(Y);
-	int x = FIX(X);
-	int w = FIX(W);
-	int e = FIX(E);
-	int g = FIX(G);
-	int f = FIX(F);
+#ifndef WIN32
+	// FIXME: this code should be deleted from here,
+	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
+	// (see the function called "run" in src/windows/main.cpp),
+	// but I'm leaving this here for now since I can't test those other platforms myself.
+	nds.touchX = 0;
+	nds.touchY = 0;
+	nds.isTouch = 0;
+	MMU.ARM7_REG[0x136] |= 0x40;
+#endif
+}
+void NDS_setMic(bool pressed)
+{
+	gotInputRequest();
+	rawUserInput.mic.micButtonPressed = (pressed ? TRUE : FALSE);
+}
+
+
+static void NDS_applyFinalInput();
+
+
+void NDS_beginProcessingInput()
+{
+	// start off from the raw input
+	intermediateUserInput = rawUserInput;
+
+	// processing is valid now
+	validToProcessInput = true;
+}
+
+void NDS_endProcessingInput()
+{
+	// transfer the processed input
+	finalUserInput = intermediateUserInput;
+
+	// processing is invalid now
+	validToProcessInput = false;
+
+	// use the final input for a few things right away
+	NDS_applyFinalInput();
+}
+
+
+
+
+
+
+
+
+static void NDS_applyFinalInput()
+{
+	const UserInput& input = NDS_getFinalUserInput();
 
 	u16	pad	= (0 |
-		((a) >> 7) |
-		((b) >> 6) |
-		((s) >> 5) |
-		((t) >> 4) |
-		((r) >> 3) |
-		((l) >> 2) |
-		((u) >> 1) |
-		((d))	   |
-		((e) << 1) |
-		((w) << 2)) ;
+		((input.buttons.A ? 0 : 0x80) >> 7) |
+		((input.buttons.B ? 0 : 0x80) >> 6) |
+		((input.buttons.T ? 0 : 0x80) >> 5) |
+		((input.buttons.S ? 0 : 0x80) >> 4) |
+		((input.buttons.R ? 0 : 0x80) >> 3) |
+		((input.buttons.L ? 0 : 0x80) >> 2) |
+		((input.buttons.U ? 0 : 0x80) >> 1) |
+		((input.buttons.D ? 0 : 0x80)     ) |
+		((input.buttons.E ? 0 : 0x80) << 1) |
+		((input.buttons.W ? 0 : 0x80) << 2)) ;
 
 	((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
-	if (!f && !countLid) 
+
+	if(input.touch.isTouch)
+	{
+		nds.touchX = input.touch.touchX;
+		nds.touchY = input.touch.touchY;
+		nds.isTouch = 1;
+
+		MMU.ARM7_REG[0x136] &= 0xBF;
+	}
+	else
+	{
+		nds.touchX = 0;
+		nds.touchY = 0;
+		nds.isTouch = 0;
+
+		MMU.ARM7_REG[0x136] |= 0x40;
+	}
+
+
+	if (input.buttons.F && !countLid) 
 	{
 		LidClosed = (!LidClosed) & 0x01;
 		if (!LidClosed)
@@ -2667,9 +2761,9 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	}
 
 	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070) |
-		((x) >> 7) |
-		((y) >> 6) |
-		((g) >> 4) |
+		((input.buttons.X ? 0 : 0x80) >> 7) |
+		((input.buttons.Y ? 0 : 0x80) >> 6) |
+		((input.buttons.G ? 0 : 0x80) >> 4) |
 		((LidClosed) << 7) |
 		0x0034;
 
@@ -2678,41 +2772,22 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	InputDisplayString=MakeInputDisplayString(padExt, pad);
 
 	//put into the format we want for the movie system
-	//RLDUTSBAYXWEGF
-#undef FIX
-#define FIX(b) (b?1:0)
+	//fRLDUTSBAYXWEg
+	//we don't really need nds.pad anymore, but removing it would be a pain
 
-	r = FIX(R);
-	l = FIX(L);
-	d = FIX(D);
-	u = FIX(U);
-	t = FIX(T);
-	s = FIX(S);
-	b = FIX(B);
-	a = FIX(A);
-	y = FIX(Y);
-	x = FIX(X);
-	w = FIX(W);
-	e = FIX(E);
-	g = FIX(G);
-	f = FIX(F);
-
-	if(f) movie_lid=true;
-	else movie_lid=false;
-
-	nds.pad =
-		(FIX(r)<<12)|
-		(FIX(l)<<11)|
-		(FIX(d)<<10)|
-		(FIX(u)<<9)|
-		(FIX(s)<<8)|
-		(FIX(t)<<7)|
-		(FIX(b)<<6)|
-		(FIX(a)<<5)|
-		(FIX(y)<<4)|
-		(FIX(x)<<3)|
-		(FIX(w)<<2)|
-		(FIX(e)<<1);
+ 	nds.pad =
+		((input.buttons.R ? 1 : 0) << 12)|
+		((input.buttons.L ? 1 : 0) << 11)|
+		((input.buttons.D ? 1 : 0) << 10)|
+		((input.buttons.U ? 1 : 0) << 9)|
+		((input.buttons.T ? 1 : 0) << 8)|
+		((input.buttons.S ? 1 : 0) << 7)|
+		((input.buttons.B ? 1 : 0) << 6)|
+		((input.buttons.A ? 1 : 0) << 5)|
+		((input.buttons.Y ? 1 : 0) << 4)|
+		((input.buttons.X ? 1 : 0) << 3)|
+		((input.buttons.W ? 1 : 0) << 2)|
+		((input.buttons.E ? 1 : 0) << 1);
 
 	// TODO: low power IRQ
 }

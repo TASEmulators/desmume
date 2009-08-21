@@ -25,11 +25,80 @@ inline std::string GetDlgItemText(HWND hDlg, int nIDDlgItem) {
 }
 
 
+// tests if a file is readable at the given location
+// without changing whatever is there
+static BOOL IsFileReadable(char* filePath)
+{
+	if(!filePath || GetFileAttributes(filePath) == 0xFFFFFFFF)
+		return false;
+	FILE* file = fopen(filePath, "rb");
+	if(file)
+		fclose(file);
+	return file != 0;
+}
+
+// tests if a file is writable at the given location
+// without changing whatever is there
+static BOOL IsFileWritable(char* filePath)
+{
+	if(!filePath)
+		return false;
+	bool didNotExist = GetFileAttributes(filePath) == 0xFFFFFFFF;
+	FILE* file = fopen(filePath, "ab");
+	if(file)
+	{
+		fclose(file);
+		if(didNotExist)
+			unlink(filePath);
+		return true;
+	}
+	return false;
+}
+
+// if there's no directory (only a filename), make it an absolute path,
+// otherwise the user won't have any clue where the file actually is...
+void FixRelativeMovieFilename(HWND hwndDlg, DWORD dlgItem)
+{
+	char tempfname [MAX_PATH];
+	char fullfname [MAX_PATH];
+	GetDlgItemText(hwndDlg,dlgItem,tempfname,MAX_PATH);
+
+	// NOTE: if this puts the wrong path in, then the solution is to call SetCurrentDirectory beforehand,
+	// since if it's wrong then even without this code that's the wrong place it would get saved to.
+	// also, single-letter filenames are passed by here in case the user is deleting the path from the right and goes from "c:" to "c"
+	if(tempfname[0] && tempfname[1] && !strchr(tempfname, '/') && !strchr(tempfname, '\\') && !strchr(tempfname, ':')
+	&& GetFullPathName(tempfname,MAX_PATH-4,fullfname,NULL))
+	{
+		// store cursor position
+		int sel1=-1, sel2=0;
+		SendMessage(GetDlgItem(hwndDlg, dlgItem), EM_GETSEL, (WPARAM)&sel1, (LPARAM)&sel2);
+
+		// add dsm if no extension
+		if(!strchr(fullfname,'.'))
+			strcat(fullfname, ".dsm");
+
+		// replace text with the absolute path + extension
+		SetDlgItemText(hwndDlg, dlgItem, fullfname);
+
+		// keep cursor where user was typing
+		char* match = fullfname;
+		while(strstr(match+1, tempfname)) match = strstr(match+1, tempfname); // strrstr
+		if(match > fullfname)
+		{
+			sel1 += match - fullfname;
+			sel2 += match - fullfname;
+			SendMessage(GetDlgItem(hwndDlg, dlgItem), EM_SETSEL, sel1, sel2);
+		}
+	}
+}
+
+
+
 static char playfilename[MAX_PATH] = "";
 
 void Describe(HWND hwndDlg)
 {
-	std::fstream fs (playfilename);
+	std::fstream fs (playfilename, std::ios_base::in);
 	MovieData md;
 	LoadFM2(md, &fs, INT_MAX, false);
 	fs.close();
@@ -47,7 +116,6 @@ void Describe(HWND hwndDlg)
 
 	SetDlgItemText(hwndDlg,IDC_MLENGTH,tmp);
 	SetDlgItemInt(hwndDlg,IDC_MFRAMES,num_frames,FALSE);
-	SetDlgItemText(hwndDlg, PM_FILENAME, playfilename);
 	SetDlgItemInt(hwndDlg,IDC_MRERECORDCOUNT,md.rerecordCount,FALSE);
 	SetDlgItemText(hwndDlg,IDC_MROM,md.romSerial.c_str());
 }
@@ -62,6 +130,7 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
+	{
 		SendDlgItemMessage(hwndDlg, IDC_CHECK_READONLY, BM_SETCHECK, replayreadonly?BST_CHECKED:BST_UNCHECKED, 0);			
 		
 		//Clear fields
@@ -69,7 +138,16 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 		SetWindowText(GetDlgItem(hwndDlg, IDC_MFRAMES), "");
 		SetWindowText(GetDlgItem(hwndDlg, IDC_MRERECORDCOUNT), "");
 		SetWindowText(GetDlgItem(hwndDlg, IDC_MROM), "");
-		return FALSE;
+
+		extern char curMovieFilename[512];
+		strncpy(playfilename, curMovieFilename, MAX_PATH);
+		playfilename[MAX_PATH-1] = '\0';
+
+		SetWindowText(GetDlgItem(hwndDlg, PM_FILENAME), playfilename);
+		SetFocus(GetDlgItem(hwndDlg, PM_FILENAME));
+		SendMessage(GetDlgItem(hwndDlg, PM_FILENAME), EM_SETSEL, 0, -1); // select all
+
+	}	return FALSE;
 
 	case WM_COMMAND:	
 		int wID = LOWORD(wParam);
@@ -79,7 +157,7 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = MainWindow->getHWnd();
+				ofn.hwndOwner = hwndDlg;
 				ofn.lpstrFilter = "Desmume Movie File (*.dsm)\0*.dsm\0All files(*.*)\0*.*\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  filename;
@@ -87,13 +165,12 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dsm";
 				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-				GetOpenFileName(&ofn);
-				strcpy(playfilename, filename);
-				Describe(hwndDlg);
+				if(GetOpenFileName(&ofn))
+					SetDlgItemText(hwndDlg, PM_FILENAME, filename);
 				return true;
 		
 			case IDC_CHECK_READONLY:
-				replayreadonly ^= 1;
+				replayreadonly = IsDlgButtonChecked(hwndDlg, IDC_CHECK_READONLY) != 0;
 				return true;
 
 			case IDOK:	
@@ -106,11 +183,43 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 				ZeroMemory(&playfilename, sizeof(playfilename));
 				EndDialog(hwndDlg, 0);
 				return true;
+
+			case PM_FILENAME:
+				switch(HIWORD(wParam))
+				{
+					case EN_CHANGE:
+					{
+						FixRelativeMovieFilename(hwndDlg, PM_FILENAME);
+
+						// disable the OK button if we can't read the file
+						char filename [MAX_PATH];
+						GetDlgItemText(hwndDlg,PM_FILENAME,filename,MAX_PATH);
+						EnableWindow(GetDlgItem(hwndDlg, IDOK), IsFileReadable(filename));
+						strcpy(playfilename, filename);
+						Describe(hwndDlg);
+
+						// force read-only to be checked if we can't write the file
+						if(!IsFileWritable(filename))
+						{
+							CheckDlgButton(hwndDlg, IDC_CHECK_READONLY, BST_CHECKED);
+							EnableWindow(GetDlgItem(hwndDlg, IDC_CHECK_READONLY), FALSE);
+						}
+						else
+						{
+							EnableWindow(GetDlgItem(hwndDlg, IDC_CHECK_READONLY), TRUE);
+						}
+					}
+					break;
+				}
+				break;
+
 		}
 	}
 
 	return false;
 }
+
+
 int flag=0;
 std::string sramfname;
 
@@ -123,10 +232,11 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 	int x;	//temp vairable
 	switch(uMsg)
 	{
-	case WM_INITDIALOG:
-		CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, ((flag == 1) ? BST_CHECKED : BST_UNCHECKED));
+		case WM_INITDIALOG:
+			CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, ((flag == 1) ? BST_CHECKED : BST_UNCHECKED));
+			SetFocus(GetDlgItem(hwndDlg, IDC_EDIT_FILENAME));
+			return false;
 
-		return false;
 		case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{
@@ -139,7 +249,7 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 					EndDialog(hwndDlg, 0);
 				}
 				return true;
-				}
+			}
 
 			case IDCANCEL:
 				EndDialog(hwndDlg, 0);
@@ -149,26 +259,29 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			{
 				OPENFILENAME ofn;
 				char szChoice[MAX_PATH]={0};
+				GetDlgItemText(hwndDlg,IDC_EDIT_FILENAME,szChoice,MAX_PATH);
 
 				// browse button
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = MainWindow->getHWnd();
+				ofn.hwndOwner = hwndDlg;
 				ofn.lpstrFilter = "Desmume Movie File (*.dsm)\0*.dsm\0All files(*.*)\0*.*\0\0";
 				ofn.lpstrFile = szChoice;
 				ofn.lpstrTitle = "Record a new movie";
 				ofn.lpstrDefExt = "dsm";
 				ofn.nMaxFile = MAX_PATH;
 				ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
-				GetSaveFileName(&ofn);
-			
-				//If user did not specify an extension, add .dsm for them
-				fname = szChoice;
-				x = fname.find_last_of(".");
-				if (x < 0)
-					fname.append(".dsm");
-
-				SetDlgItemText(hwndDlg, IDC_EDIT_FILENAME, fname.c_str());
+				if(GetSaveFileName(&ofn))
+				{
+					fname = szChoice;
+/* // windows does this automatically, since lpstrDefExt is set
+					//If user did not specify an extension, add .dsm for them
+					x = fname.find_last_of(".");
+					if (x < 0)
+						fname.append(".dsm");
+*/
+					SetDlgItemText(hwndDlg, IDC_EDIT_FILENAME, fname.c_str());
+				}
 				//if(GetSaveFileName(&ofn))
 				//	UpdateRecordDialogPath(hwndDlg,szChoice);
 
@@ -182,28 +295,46 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 				// browse button
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = MainWindow->getHWnd();
+				ofn.hwndOwner = hwndDlg;
 				ofn.lpstrFilter = "Desmume SRAM File (*.dsv)\0*.dsv\0All files(*.*)\0*.*\0\0";
 				ofn.lpstrFile = szChoice;
 				ofn.lpstrTitle = "Choose SRAM";
 				ofn.lpstrDefExt = "dsv";
 				ofn.nMaxFile = MAX_PATH;
 				ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
-				GetOpenFileName(&ofn);
-			
-				//If user did not specify an extension, add .dsm for them
-				fname = szChoice;
+				if(GetOpenFileName(&ofn))
+				{
+					fname = szChoice;
+/* // windows does this automatically, since lpstrDefExt is set
+				//If user did not specify an extension, add .dsv for them
 				x = fname.find_last_of(".");
 				if (x < 0)
 					fname.append(".dsv");
-
-				SetDlgItemText(hwndDlg, IDC_EDIT_SRAMFILENAME, fname.c_str());
-				sramfname=(std::string)fname;
+*/
+					SetDlgItemText(hwndDlg, IDC_EDIT_SRAMFILENAME, fname.c_str());
+					sramfname=(std::string)fname;
+				}
 				//if(GetSaveFileName(&ofn))
 				//	UpdateRecordDialogPath(hwndDlg,szChoice);
 
 				return true;
 			}
+
+			case IDC_EDIT_FILENAME:
+				switch(HIWORD(wParam))
+				{
+					case EN_CHANGE:
+					{
+						FixRelativeMovieFilename(hwndDlg, IDC_EDIT_FILENAME);
+
+						// disable the OK button if we can't write to the file
+						char filename [MAX_PATH];
+						GetDlgItemText(hwndDlg,IDC_EDIT_FILENAME,filename,MAX_PATH);
+						EnableWindow(GetDlgItem(hwndDlg, IDOK), IsFileWritable(filename));
+					}
+					break;
+				}
+				break;
 		}
 	}
 

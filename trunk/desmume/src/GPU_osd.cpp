@@ -70,7 +70,7 @@ void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 		}
 
 		if((x >= hud.x && x <= hud.x + hud.xsize) && 
-			(y >= hud.y && y <= hud.y + hud.ysize) && !hud.clicked ) {
+			(y >= hud.y && y <= hud.y + hud.ysize) && !hudstruct->clicked ) {
 
 				hud.clicked=1;
 				hud.storedx = x - hud.x;
@@ -89,7 +89,10 @@ void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 		if(hud.y > 384-16)hud.y = 384-16;
 
 		if(hud.clicked)
+		{
+			hudstruct->clicked = true;
 			break;//prevent items from grouping together
+		}
 
 		i++;
 	}
@@ -104,6 +107,8 @@ void HudClickRelease(HudStruct *hudstruct) {
 		hud.clicked=0;
 		i++;
 	}
+
+	hudstruct->clicked = false;
 }
 
 void HudStruct::reset()
@@ -120,13 +125,13 @@ void HudStruct::reset()
 
 	InputDisplay.x=0;
 	InputDisplay.y=45;
-	InputDisplay.xsize=120;
+	InputDisplay.xsize=220;
 	InputDisplay.ysize=10;
 
 	GraphicalInputDisplay.x=8;
 	GraphicalInputDisplay.y=328;
-	GraphicalInputDisplay.xsize=100;
-	GraphicalInputDisplay.ysize=40;
+	GraphicalInputDisplay.xsize=102;
+	GraphicalInputDisplay.ysize=50;
 
 	LagFrameCounter.x=0;
 	LagFrameCounter.y=65;
@@ -144,12 +149,19 @@ void HudStruct::reset()
 	SavestateSlots.ysize = 24;
 
 	SetHudDummy(&Dummy);
+	clicked = false;
 }
 
 static void joyFill(int n) {
 
-	if(nds.pad & (1 << n))
+	bool pressedForGame = NDS_getFinalUserInput().buttons.array[n];
+	bool physicallyPressed = NDS_getRawUserInput().buttons.array[n];
+	if(pressedForGame && physicallyPressed)
 		aggDraw.hud->fillColor(0,0,0,255);
+	else if(pressedForGame)
+		aggDraw.hud->fillColor(255,0,0,255);
+	else if(physicallyPressed)
+		aggDraw.hud->fillColor(0,255,0,255);
 	else
 		aggDraw.hud->fillColor(255,255,255,255);
 }
@@ -157,65 +169,140 @@ static void joyFill(int n) {
 static void joyEllipse(double ex, double ey, int xc, int yc, int x, int y, double ratio, double rad, int button) {
 
 	joyFill(button);
+	aggDraw.hud->lineWidth(rad);
 	aggDraw.hud->ellipse(x+((xc*ex)*ratio), y+((yc*ey)*ratio), rad*ratio, rad*ratio);
 }
 
-static void gradientFill(double x1,double y1,double x2,double y2,AggColor c1,AggColor c2, int n) {
-
-	if(nds.pad & (1 << n))
-		aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,c1,c2);
+static void joyRoundedRect(double x1, double y1, int x2, int y2, int alpha1, int alpha2, int button)
+{
+	bool pressedForGame = NDS_getFinalUserInput().buttons.array[button];
+	bool physicallyPressed = NDS_getRawUserInput().buttons.array[button];
+	if(pressedForGame && physicallyPressed)
+		aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,agg::rgba8(0,0,0,alpha1), agg::rgba8(0,0,0,alpha2));
+	else if(pressedForGame)
+		aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,agg::rgba8(255,0,0,alpha1), agg::rgba8(255,0,0,alpha2));
+	else if(physicallyPressed)
+		aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,agg::rgba8(0,255,0,alpha1), agg::rgba8(0,255,0,alpha2));
 	else
-		aggDraw.hud->fillColor(255,255,255,255);
+		return; //aggDraw.hud->fillLinearGradient(x1,y1,x2,y2,agg::rgba8(255,255,255,alpha1), agg::rgba8(255,255,255,alpha2));
+
+	aggDraw.hud->roundedRect(x1,y1,x2,y2,1);
 }
 
-static void drawPad(int x, int y, double ratio) {
 
-	int xc = 41;
-	int yc = 20;
+static void drawPad(double x, double y, double ratio) {
+
+	// you might notice black/red/green colors used to show what buttons are pressed.
+	// the logic is roughly:
+	//    RED == PAST    (the button was held last frame)
+	//  GREEN == FUTURE  (the button is physically held now)
+	//  BLACK == PRESENT (the button was held last frame and is still physically held now)
+
+	// aligning to odd half-pixel boundaries prevents agg2d from blurring thin straight lines
+	x = floor(x) + 0.5;
+	y = floor(y) + 0.5;
+	double xc = 41 - 0.5;
+	double yc = 20 - 0.5;
 
 	aggDraw.hud->lineColor(128,128,128,255);
 
 	aggDraw.hud->fillLinearGradient(x, y, x+(xc*ratio), y+(yc*ratio), agg::rgba8(222,222,222,128), agg::rgba8(255,255,255,255));
 
-	if(nds.pad & (1 << 2))
-		aggDraw.hud->fillLinearGradient(x, y, x+(xc*ratio), y+(yc*ratio), agg::rgba8(0,0,0,128), agg::rgba8(255,255,255,255));
+	aggDraw.hud->roundedRect (x, y, floor(x+(xc*ratio))+0.5, floor(y+(yc*ratio))+0.5, 1);
 
-	if(nds.pad & (1 << 1))
-		aggDraw.hud->fillLinearGradient(x+(xc*ratio), y+(yc*ratio), x, y, agg::rgba8(0,0,0,128), agg::rgba8(255,255,255,255));
+	double screenLeft = x+(xc*.25*ratio);
+	double screenTop = y+(yc*.1*ratio);
+	double screenRight = x+(xc*.745*ratio);
+	double screenBottom = y+(yc*.845*ratio);
+	aggDraw.hud->fillLinearGradient(screenLeft, screenTop, screenRight, screenBottom, agg::rgba8(128,128,128,128), agg::rgba8(255,255,255,255));
+	aggDraw.hud->roundedRect (screenLeft, screenTop, screenRight, screenBottom, 1);
 
-	aggDraw.hud->roundedRect (x, y, x+(xc*ratio), y+(yc*ratio), 1);
 
-	aggDraw.hud->fillLinearGradient(x+(xc*.25*ratio), y+(yc*.1*ratio), x+(xc*.75*ratio), y+(yc*.85*ratio), agg::rgba8(128,128,128,128), agg::rgba8(255,255,255,255));
-
-	aggDraw.hud->roundedRect (x+(xc*.25*ratio), y+(yc*.1*ratio), x+(xc*.75*ratio),y+(yc*.85*ratio), 1);
-	
 	joyEllipse(.89,.45,xc,yc,x,y,ratio,1,6);//B
 	joyEllipse(.89,.22,xc,yc,x,y,ratio,1,3);//X
 	joyEllipse(.83,.34,xc,yc,x,y,ratio,1,4);//Y
 	joyEllipse(.95,.34,xc,yc,x,y,ratio,1,5);//A
-	joyEllipse(.82,.72,xc,yc,x,y,ratio,.5,7);//Start
-	joyEllipse(.82,.85,xc,yc,x,y,ratio,.5,8);//Select
+	joyEllipse(.82,.716,xc,yc,x,y,ratio,.5,7);//Start
+	joyEllipse(.82,.842,xc,yc,x,y,ratio,.5,8);//Select
+
+
+	double dpadPoints [][2] = {
+		{.04,.33}, // top-left corner of left button
+		{.08,.33},
+		{.08,.24}, // top-left corner of up button
+		{.13,.24}, // top-right corner of up button
+		{.13,.33},
+		{.17,.33}, // top-right corner of right button
+		{.17,.43}, // bottom-right corner of right button
+		{.13,.43},
+		{.13,.516}, // bottom-right corner of down button
+		{.08,.516}, // bottom-left corner of down button
+		{.08,.43},
+		{.04,.43}, // bottom-left corner of left button
+	};
+	static const int numdpadPoints = sizeof(dpadPoints)/sizeof(dpadPoints[0]);
+	for(int i = 0; i < numdpadPoints; i++)
+	{
+		dpadPoints[i][0] = x+(xc*(dpadPoints[i][0]+.01)*ratio);
+		dpadPoints[i][1] = y+(yc*(dpadPoints[i][1]+.00)*ratio);
+	}
+
+	// dpad outline
+	aggDraw.hud->fillColor(255,255,255,200);
+	aggDraw.hud->polygon((double*)dpadPoints, numdpadPoints);
 
 	aggDraw.hud->noLine();
-	aggDraw.hud->fillColor(255,255,255,200);
 
-	//left
-	gradientFill(x+(xc*.04*ratio), y+(yc*.33*ratio), x+(xc*.17*ratio), y+(yc*.43*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255),11);
+	// left
+	joyRoundedRect(dpadPoints[0][0], dpadPoints[0][1], dpadPoints[7][0], dpadPoints[7][1], 255, 0, 11);
+	
+	// right
+	joyRoundedRect(dpadPoints[1][0], dpadPoints[1][1], dpadPoints[6][0], dpadPoints[6][1], 0, 255, 12);
 
-	//right
-	if(nds.pad & (1 << 12))
-		aggDraw.hud->fillLinearGradient(x+(xc*.17*ratio), y+(yc*.43*ratio), x+(xc*.04*ratio), y+(yc*.33*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255));
-		
-	aggDraw.hud->roundedRect (x+(xc*.04*ratio), y+(yc*.33*ratio), x+(xc*.17*ratio), y+(yc*.43*ratio), 1);
+	// up
+	joyRoundedRect(dpadPoints[2][0], dpadPoints[2][1], dpadPoints[7][0], dpadPoints[7][1], 255, 0, 9);
+	
+	// right
+	joyRoundedRect(dpadPoints[1][0], dpadPoints[1][1], dpadPoints[8][0], dpadPoints[8][1], 0, 255, 10);
 
-	//down
-	gradientFill(x+(xc*.13*ratio), y+(yc*.52*ratio), x+(xc*.08*ratio), y+(yc*.23*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255),10);
+	// left shoulder
+	joyRoundedRect(x+(xc*.00*ratio), y+(yc*.00*ratio), x+(xc*.15*ratio), y+(yc*.07*ratio), 255, 200, 2);
 
-	//up
-	if(nds.pad & (1<< 9))
-		aggDraw.hud->fillLinearGradient(x+(xc*.08*ratio), y+(yc*.23*ratio), x+(xc*.13*ratio), y+(yc*.52*ratio), agg::rgba8(0,0,0,255), agg::rgba8(255,255,255,255));
+	// right shoulder
+	joyRoundedRect(x+(xc*.85*ratio), y+(yc*.00*ratio), x+(xc*1.0*ratio), y+(yc*.07*ratio), 200, 255, 1);
 
-	aggDraw.hud->roundedRect (x+(xc*.08*ratio), y+(yc*.23*ratio), x+(xc*.13*ratio), y+(yc*.52*ratio), 1);
+	// lid...
+	joyRoundedRect(x+(xc*.4*ratio), y+(yc*.96*ratio), x+(xc*0.6*ratio), y+(yc*1.0*ratio), 200, 200, 13);
+
+	// touch pad
+	{
+		bool gameTouchOn = nds.isTouch;
+		double gameTouchX = screenLeft+1 + (nds.touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
+		double gameTouchY = screenTop+1 + (nds.touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
+		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;
+		double physicalTouchX = screenLeft+1 + (NDS_getRawUserInput().touch.touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
+		double physicalTouchY = screenTop+1 + (NDS_getRawUserInput().touch.touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
+		if(gameTouchOn && physicalTouchOn && gameTouchX == physicalTouchX && gameTouchY == physicalTouchY)
+		{
+			aggDraw.hud->fillColor(0,0,0,255);
+			aggDraw.hud->ellipse(gameTouchX, gameTouchY, ratio*0.37, ratio*0.37);
+		}
+		else
+		{
+			if(physicalTouchOn)
+			{
+				aggDraw.hud->fillColor(0,0,0,128);
+				aggDraw.hud->ellipse(physicalTouchX, physicalTouchY, ratio*0.5, ratio*0.5);
+				aggDraw.hud->fillColor(0,255,0,255);
+				aggDraw.hud->ellipse(physicalTouchX, physicalTouchY, ratio*0.37, ratio*0.37);
+			}
+			if(gameTouchOn)
+			{
+				aggDraw.hud->fillColor(255,0,0,255);
+				aggDraw.hud->ellipse(gameTouchX, gameTouchY, ratio*0.37, ratio*0.37);
+			}
+		}
+	}
 }
 
 
@@ -225,20 +312,87 @@ struct TouchInfo{
 };
 static int touchalpha[8]= {31, 63, 95, 127, 159, 191, 223, 255};
 static TouchInfo temptouch;
-bool touchshadow = true;
+static const bool touchshadow = false;//true; // sorry, it's cool but also distracting and looks cleaner with it off. maybe if it drew line segments between touch points instead of isolated crosses...
 static std::vector<TouchInfo> touch (8);
 
+static void TextualInputDisplay() {
+
+	// drawing the whole string at once looks ugly
+	// (because of variable width font and the "shadow" appearing over blank space)
+	// and can't give us the color-coded effects we want anyway (see drawPad for info)
+
+	const UserButtons& gameButtons = NDS_getFinalUserInput().buttons;
+	const UserButtons& physicalButtons = NDS_getRawUserInput().buttons;
+
+	double x = Hud.InputDisplay.x;
+
+	// from order FRLDUTSBAYXWEG where G is 0
+	static const char* buttonChars = "<^>vABXYLRSsgf";
+	static const int buttonIndex [14] = {11,9,12,10,5,6,3,4,2,1,7,8,0,13};
+	for(int i = 0; i < 14; i++, x+=11.0)
+	{
+		bool pressedForGame = gameButtons.array[buttonIndex[i]];
+		bool physicallyPressed = physicalButtons.array[buttonIndex[i]];
+		if(pressedForGame && physicallyPressed)
+			aggDraw.hud->lineColor(255,255,255,255);
+		else if(pressedForGame)
+			aggDraw.hud->lineColor(255,48,48,255);
+		else if(physicallyPressed)
+			aggDraw.hud->lineColor(0,255,0,255);
+		else
+			continue;
+
+		// cast from char to std::string is a bit awkward
+		std::string str(buttonChars+i, 2);
+		str[1] = '\0';
+
+		aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y, str);
+	}
+
+	// touch pad
+	{
+		char str [32];
+		bool gameTouchOn = nds.isTouch;
+		int gameTouchX = nds.touchX >> 4;
+		int gameTouchY = nds.touchY >> 4;
+		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;
+		int physicalTouchX = NDS_getRawUserInput().touch.touchX >> 4;
+		int physicalTouchY = NDS_getRawUserInput().touch.touchY >> 4;
+		if(gameTouchOn && physicalTouchOn && gameTouchX == physicalTouchX && gameTouchY == physicalTouchY)
+		{
+			sprintf(str, "%d,%d", gameTouchX, gameTouchY);
+			aggDraw.hud->lineColor(255,255,255,255);
+			aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y, str);
+		}
+		else
+		{
+			if(gameTouchOn)
+			{
+				sprintf(str, "%d,%d", gameTouchX, gameTouchY);
+				aggDraw.hud->lineColor(255,48,48,255);
+				aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y-(physicalTouchOn?8:0), str);
+			}
+			if(physicalTouchOn)
+			{
+				sprintf(str, "%d,%d", physicalTouchX, physicalTouchY);
+				aggDraw.hud->lineColor(0,255,0,255);
+				aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y+(gameTouchOn?8:0), str);
+			}
+		}
+	}
+}
 
 static void TouchDisplay() {
 	aggDraw.hud->lineWidth(1.0);
 
-	temptouch.X = nds.touchX >> 4;
-	temptouch.Y = nds.touchY >> 4;
-	touch.push_back(temptouch);
-
-	if(touch.size() > 8) touch.erase(touch.begin());
+	temptouch.X = NDS_getRawUserInput().touch.touchX >> 4;
+	temptouch.Y = NDS_getRawUserInput().touch.touchY >> 4;
 
 	if(touchshadow) {
+
+		touch.push_back(temptouch);
+		if(touch.size() > 8) touch.erase(touch.begin());
+
 		for (int i = 0; i < 8; i++) {
 			temptouch = touch[i];
 			if(temptouch.X != 0 || temptouch.Y != 0) {
@@ -251,10 +405,20 @@ static void TouchDisplay() {
 		}
 	}
 	else
-		if(nds.isTouch) {
+		if(NDS_getRawUserInput().touch.isTouch) {
+			aggDraw.hud->lineColor(0, 255, 0, 128);
 			aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
 			aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
 		}
+
+	if(nds.isTouch) {
+		temptouch.X = nds.touchX >> 4;
+		temptouch.Y = nds.touchY >> 4;
+		aggDraw.hud->lineColor(255, 0, 0, 128);
+		aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
+		aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+	}
+
 }
 
 static int previousslot = 0;
@@ -304,19 +468,37 @@ static void DrawStateSlots(){
 	previousslot = lastSaveState;
 }
 
+static void DrawEditableElementIndicators()
+{
+	u32 i = 0;
+	while (!IsHudDummy(&Hud.hud(i))) {
+		HudCoordinates &hud = Hud.hud(i);
+		aggDraw.hud->fillColor(0,0,0,0);
+		aggDraw.hud->lineColor(0,0,0,64);
+		aggDraw.hud->lineWidth(2.0);
+		aggDraw.hud->rectangle(hud.x,hud.y,hud.x+hud.xsize+1.0,hud.y+hud.ysize+1.0);
+		aggDraw.hud->lineColor(255,hud.clicked?127:255,0,255);
+		aggDraw.hud->lineWidth(1.0);
+		aggDraw.hud->rectangle(hud.x-0.5,hud.y-0.5,hud.x+hud.xsize+0.5,hud.y+hud.ysize+0.5);
+		i++;
+	}
+}
+
+
 void DrawHUD()
 {
 	GTimeVal time;
 	g_get_current_time(&time);
 	hudTimer = ((s64)time.tv_sec * 1000) + ((s64)time.tv_usec/1000);
 
+	if (HudEditorMode)
+	{
+		DrawEditableElementIndicators();
+	}
 	
 	if (CommonSettings.hud.ShowInputDisplay) 
 	{
-		std::stringstream ss;
-		if(nds.isTouch)
-			ss << (nds.touchX >> 4) << " " << (nds.touchY >> 4); 
-		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",(InputDisplayString + ss.str()).c_str());
+		TextualInputDisplay();
 		TouchDisplay();
 	}
 
@@ -341,7 +523,9 @@ void DrawHUD()
 	}
 
 	if (CommonSettings.hud.ShowGraphicalInputDisplay)
+	{
 		drawPad(Hud.GraphicalInputDisplay.x, Hud.GraphicalInputDisplay.y, 2.5);
+	}
 
 	#ifdef WIN32
 	if (CommonSettings.hud.ShowMicrophone) 

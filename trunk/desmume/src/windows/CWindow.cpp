@@ -192,6 +192,18 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 		rect->top -= rect->bottom - prevBottom;
 		rect->bottom = prevBottom;
 	}
+
+	// windows screws up the window size if the top of the window goes too high above the top of the screen
+	if(keepRatio & KEEPY)
+	{
+		int titleBarHeight = GetSystemMetrics(SM_CYSIZE);
+		int topExceeded = -(titleBarHeight + rect->top);
+		if(topExceeded > 0)
+		{
+			rect->top += topExceeded;
+			rect->bottom += topExceeded;
+		}
+	}
 }
 
 void WINCLASS::setClientSize(int width, int height)

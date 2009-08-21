@@ -21,8 +21,6 @@
 #ifndef MIC_H
 #define MIC_H
 
-extern int MicButtonPressed;
-
 #ifdef WIN32
 static char MicSampleName[256];
 bool LoadSample(const char *name);
@@ -38,5 +36,8 @@ BOOL Mic_Init();
 void Mic_Reset();
 void Mic_DeInit();
 u8 Mic_ReadSample();
+
+void mic_savestate(std::ostream* os);
+bool mic_loadstate(std::istream* is, int size);
 
 #endif

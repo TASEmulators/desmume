@@ -2344,9 +2344,18 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
-			for(i16 = 0; i16 < 256; ++i16)
+			if(factor != 16)
 			{
-				((u16*)dst)[i16] = fadeInColors[factor][((u16*)dst)[i16]&0x7FFF];
+				for(i16 = 0; i16 < 256; ++i16)
+				{
+					((u16*)dst)[i16] = fadeInColors[factor][((u16*)dst)[i16]&0x7FFF];
+				}
+			}
+			else
+			{
+				// all white (optimization)
+				for(i16 = 0; i16 < 256; ++i16)
+					((u16*)dst)[i16] = 0x7FFF;
 			}
 			break;
 		}
@@ -2354,9 +2363,17 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright down
 		case 2:
 		{
-			for(i16 = 0; i16 < 256; ++i16)
+			if(factor != 16)
 			{
-				((u16*)dst)[i16] = fadeOutColors[factor][((u16*)dst)[i16]&0x7FFF];
+				for(i16 = 0; i16 < 256; ++i16)
+				{
+					((u16*)dst)[i16] = fadeOutColors[factor][((u16*)dst)[i16]&0x7FFF];
+				}
+			}
+			else
+			{
+				// all black (optimization)
+				memset(dst, 0, 512);
 			}
 			break;
 		}
@@ -2491,6 +2508,18 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 		memset(dst,0,512);
 		return;
+	}
+
+	// skip some work if master brightness makes the screen completely white or completely black
+	if(gpu->MasterBrightFactor >= 16 && (gpu->MasterBrightMode == 1 || gpu->MasterBrightMode == 2))
+	{
+		// except if it could cause any side effects (for example if we're capturing), then don't skip anything
+		if(!(gpu->core == GPU_MAIN && (gpu->dispCapCnt.enabled || l == 0 || l == 191)))
+		{
+			gpu->currLine = l;
+			GPU_ligne_MasterBrightness(screen, l);
+			return;
+		}
 	}
 
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line

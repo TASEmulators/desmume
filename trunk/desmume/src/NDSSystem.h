@@ -39,62 +39,34 @@
 #include "pathsettings.h"
 #endif
 
-struct turbo {
-	bool Right;
-	bool Left;
-	bool Down;
-	bool Up;
-	bool Start;
-	bool Select;
-	bool B;
-	bool A;
-	bool Y;
-	bool X;
-	bool L;
-	bool R;
-
-	bool &button(int i) { return ((bool*)this)[i]; }
+template<typename Type>
+struct buttonstruct {
+	union {
+		struct {
+			// changing the order of these fields would break stuff
+			//fRLDUTSBAYXWEg
+			Type G; // debug
+			Type E; // right shoulder
+			Type W; // left shoulder
+			Type X;
+			Type Y;
+			Type A;
+			Type B;
+			Type S; // start
+			Type T; // select
+			Type U; // up
+			Type D; // down
+			Type L; // left
+			Type R; // right
+			Type F; // lid
+		};
+		Type array[14];
+	};
 };
 
-extern turbo Turbo;
-
-struct turbotime {
-	int Right;
-	int Left;
-	int Down;
-	int Up;
-	int Start;
-	int Select;
-	int B;
-	int A;
-	int Y;
-	int X;
-	int L;
-	int R;
-
-	int &time(int i) { return ((int*)this)[i]; }
-};
-
-extern turbotime TurboTime;
-
-struct autohold {
-	bool Right;
-	bool Left;
-	bool Down;
-	bool Up;
-	bool Start;
-	bool Select;
-	bool B;
-	bool A;
-	bool Y;
-	bool X;
-	bool L;
-	bool R;
-
-	bool &hold(int i) { return ((bool*)this)[i]; }
-};
-
-extern autohold AutoHold;
+extern buttonstruct<bool> Turbo;
+extern buttonstruct<int> TurboTime;
+extern buttonstruct<bool> AutoHold;
 
 int NDS_WritePNG(const char *fname);
 
@@ -310,10 +282,60 @@ typedef struct TSCalInfo
 } TSCalInfo;
 
 extern GameInfo gameInfo;
+
+
+struct UserButtons : buttonstruct<bool>
+{
+};
+struct UserTouch
+{
+	u16 touchX;
+	u16 touchY;
+	bool isTouch;
+};
+struct UserMicrophone
+{
+	BOOL micButtonPressed;
+};
+struct UserInput
+{
+	UserButtons buttons;
+	UserTouch touch;
+	UserMicrophone mic;
+};
+
+// set physical user input
+// these functions merely request the input to be changed.
+// the actual change happens later at a specific time during the frame.
+// this is to minimize the risk of desyncs.
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
-void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F);
-void NDS_setPadFromMovie(u16 pad);
+void NDS_setPad(bool right,bool left,bool down,bool up,bool select,bool start,bool B,bool A,bool Y,bool X,bool leftShoulder,bool rightShoulder,bool debug, bool lid);
+void NDS_setMic(bool pressed);
+
+// get physical user input
+// not including the results of autofire/etc.
+// the effects of calls to "set physical user input" functions will be immediately reflected here though.
+const UserInput& NDS_getRawUserInput();
+const UserInput& NDS_getPrevRawUserInput();
+
+// get final (fully processed) user input
+// this should match whatever was or would be sent to the game
+const UserInput& NDS_getFinalUserInput();
+
+// set/get to-be-processed or in-the-middle-of-being-processed user input
+// to process input, simply call this function and edit the return value.
+// (applying autofire is one example of processing the input.)
+// (movie playback is another example.)
+// this must be done after the raw user input is set
+// and before that input is sent to the game's memory.
+UserInput& NDS_getProcessingUserInput();
+bool NDS_isProcessingUserInput();
+// call once per frame to prepare input for processing 
+void NDS_beginProcessingInput();
+// call once per frame to copy the processed input to the final input
+void NDS_endProcessingInput();
+
 
 int NDS_LoadROM(const char *filename, const char* logicalFilename=0);
 void NDS_FreeROM(void);

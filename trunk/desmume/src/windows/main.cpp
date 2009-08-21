@@ -439,26 +439,44 @@ void SetMinWindowSize()
 		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 }
 
-void translateXY(s32& x, s32& y)
+// input x,y should be windows client-space coords already at 1x scaling.
+// output is in pixels relative to the top-left of the chosen screen.
+// the gap between screens (if any) is subtracted away from the output y.
+void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen)
 {
 	s32 tx=x, ty=y;
+	int gapSize = video.screengap / video.ratio();
+
+	// first deal with rotation
 	switch(video.rotation)
 	{
 	case 90:
 		x = ty;
-		y = 191-tx;
+		y = (383+gapSize)-tx;
 		break;
 	case 180:
 		x = 255-tx;
-		y = 383-ty;
-		y -= 192;
+		y = (383+gapSize)-ty;
 		break;
 	case 270:
 		x = 255-ty;
-		y = (tx-192-(video.screengap/video.ratio()));
+		y = tx;
 		break;
 	}
+
+	// then deal with screen gap
+	if(y > 191 + gapSize)
+		y -= gapSize;
+	else if(y > 191 + gapSize/2)
+		y = 192;
+	else if(y > 191)
+		y = 191;
+
+	// finally, make it relative to the correct screen
+	if(bottomScreen)
+		y -= 192;
 }
+
 // END Rotation definitions
 
 void UpdateRecentRomsMenu()
@@ -784,7 +802,7 @@ static void DD_DoDisplay()
 	memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
 	ddsd.dwFlags=DDSD_ALL;
-	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
+	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
 
 	if (res==DDERR_SURFACELOST)
 	{
@@ -1056,9 +1074,16 @@ DWORD WINAPI run()
 	{
 		while(execute)
 		{
-			input_process();
-			CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
-			FCEUMOV_AddInputState();
+			// the order of these function calls is very important
+			input_acquire();
+			NDS_beginProcessingInput();
+			{
+				input_process();
+				FCEUMOV_HandlePlayback();
+				CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+			}
+			NDS_endProcessingInput();
+			FCEUMOV_HandleRecording();
 				
 			{
 				Lock lock;
@@ -2511,6 +2536,8 @@ bool first;
 
 void FrameAdvance(bool state)
 {
+	if(!romloaded)
+		return;
 	if(state) {
 			if(first) {
 				execute = TRUE;
@@ -2656,8 +2683,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
 			//DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
 
-			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded && movieMode == MOVIEMODE_INACTIVE));
-			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded && movieMode == MOVIEMODE_INACTIVE));
+			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
+			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_STOPMOVIE,         (romloaded && movieMode != MOVIEMODE_INACTIVE));
 
 			DesEnableMenuItem(mainMenu, ID_RAM_WATCH,          romloaded);
@@ -2929,6 +2956,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		break;
 
 	case WM_KEYDOWN:
+		if(paused)
+			input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
 	case WM_SYSKEYDOWN:
@@ -2940,6 +2969,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		}
 	case WM_KEYUP:
+		if(paused)
+			input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
 	case WM_SYSKEYUP:
@@ -3060,16 +3091,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			x = x/video.ratio();
 			y = y/video.ratio();
 
-			if(HudEditorMode) {
+			if(HudEditorMode)
+			{
+				ToDSScreenRelativeCoords(x,y,false);
 				EditHud(x,y, &Hud);
 			}
-			else {
-				//translate for rotation
-				if (video.rotation != 0)
-					translateXY(x,y);
-				else 
-					y-=192+(video.screengap/video.ratio());
-
+			else
+			{
+				ToDSScreenRelativeCoords(x,y,true);
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
 				NDS_setTouchPos(x, y);

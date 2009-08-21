@@ -34,7 +34,9 @@ enum EMOVIEMODE
 
 enum EMOVIECMD
 {
+	MOVIECMD_MIC = 1,
 	MOVIECMD_RESET = 2,
+	MOVIECMD_LID = 4,
 };
 
 //RLDUTSBAYXWEG
@@ -60,8 +62,8 @@ public:
 	//the disk format will support up to 64bit if necessary
 	uint8 commands;
 	bool command_reset() { return (commands&MOVIECMD_RESET)!=0; }
-	bool command_microphone() { return (commands&1)!=0; }
-	bool command_lid() { return (commands&4)!=0; }
+	bool command_microphone() { return (commands&MOVIECMD_MIC)!=0; }
+	bool command_lid() { return (commands&MOVIECMD_LID)!=0; }
 
 	void toggleBit(int bit)
 	{
@@ -189,20 +191,19 @@ extern EMOVIEMODE movieMode;		//adelikat: main needs this for frame counter disp
 extern MovieData currMovieData;		//adelikat: main needs this for frame counter display
 
 extern bool movie_reset_command;
-extern bool movie_lid;
 
 bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
 void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname);
 void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe);
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
-void NDS_setTouchFromMovie(void);
+void FCEUMOV_HandlePlayback();
+void FCEUMOV_HandleRecording();
 void mov_savestate(std::ostream* os);
 bool mov_loadstate(std::istream* is, int size);
 void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size);
 bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHeader);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
-extern int MicButtonPressed;
 void FCEUI_MakeBackupMovie(bool dispMessage);
 #endif

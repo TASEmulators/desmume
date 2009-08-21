@@ -40,6 +40,7 @@
 #include "readwrite.h"
 #include "gfx3d.h"
 #include "movie.h"
+#include "mic.h"
 
 #include "path.h"
 
@@ -594,7 +595,7 @@ void savestate_slot(int num)
    else
    {
 	   osd->setLineColor(255, 0, 0);
-	   osd->addLine("Error save to %i slot", num);
+	   osd->addLine("Error saving %i slot", num);
 	   return;
    }
 
@@ -627,7 +628,7 @@ void loadstate_slot(int num)
    else
    {
 	   osd->setLineColor(255, 0, 0);
-	   osd->addLine("Error from load %i slot", num);
+	   osd->addLine("Error loading %i slot", num);
    }
 }
 
@@ -995,6 +996,7 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,61,mmu_savestate);
 	savestate_WriteChunk(os,7,gpu_savestate);
 	savestate_WriteChunk(os,8,spu_savestate);
+	savestate_WriteChunk(os,81,mic_savestate);
 	savestate_WriteChunk(os,90,SF_GFX3D);
 	savestate_WriteChunk(os,91,gfx3d_savestate);
 	savestate_WriteChunk(os,100,SF_MOVIE);
@@ -1026,6 +1028,7 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 			case 61: if(!mmu_loadstate(is,size)) ret=false; break;
 			case 7: if(!gpu_loadstate(is,size)) ret=false; break;
 			case 8: if(!spu_loadstate(is,size)) ret=false; break;
+			case 81: if(!mic_loadstate(is,size)) ret=false; break;
 			case 90: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
 			case 91: if(!gfx3d_loadstate(is,size)) ret=false; break;
 			case 100: if(!ReadStateChunk(is,SF_MOVIE, size)) ret=false; break;
