@@ -146,3 +146,13 @@ u8 Mic_ReadSample()
 
     return ret;
 }
+
+/* FIXME: stub! */
+void mic_savestate(std::ostream* os)
+{
+}
+
+bool mic_loadstate(std::istream* is, int size) 
+{
+    return TRUE;
+}
