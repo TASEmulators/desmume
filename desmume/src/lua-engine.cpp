@@ -49,7 +49,7 @@ struct LuaContextInfo {
 	bool panic; // if set to true, tells the script to terminate as soon as it can do so safely (used because directly calling lua_close() or luaL_error() is unsafe in some contexts)
 	bool ranExit; // used to prevent a registered exit callback from ever getting called more than once
 	bool guiFuncsNeedDeferring; // true whenever GUI drawing would be cleared by the next emulation update before it would be visible, and thus needs to be deferred until after the next emulation update
-	int numDeferredGUIFuncs; // number of deferred function calls accumulated, used to impose an arbitrary limit to avoid running out of memory
+	int numDeferredFuncs; // number of deferred function calls accumulated, used to impose an arbitrary limit to avoid running out of memory
 	bool ranFrameAdvance; // false if gens.frameadvance() hasn't been called yet
 	int transparencyModifier; // values less than 255 will scale down the opacity of whatever the GUI renders, values greater than 255 will increase the opacity of anything transparent the GUI renders
 	SpeedMode speedMode; // determines how gens.frameadvance() acts
@@ -635,11 +635,19 @@ DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 }
 
 static const char* deferredGUIIDString = "lazygui";
+static const char* deferredJoySetIDString = "lazyjoy";
+#define MAX_DEFERRED_COUNT 16384
 
 // store the most recent C function call from Lua (and all its arguments)
 // for later evaluation
 void DeferFunctionCall(lua_State* L, const char* idstring)
 {
+	LuaContextInfo& info = GetCurrentInfo();
+	if(info.numDeferredFuncs < MAX_DEFERRED_COUNT)
+		info.numDeferredFuncs++;
+	else
+		return; // too many deferred functions on the same frame, silently discard the rest
+
 	// there might be a cleaner way of doing this using lua_pushcclosure and lua_getref
 
 	int num = lua_gettop(L);
@@ -694,16 +702,19 @@ void CallDeferredFunctions(lua_State* L, const char* idstring)
 	}
 
 	// clear the list of deferred functions
-	lua_newtable(L);
-	lua_setfield(L, LUA_REGISTRYINDEX, idstring);
-	LuaContextInfo& info = GetCurrentInfo();
-	info.numDeferredGUIFuncs = 0;
+	if(numCalls > 0)
+	{
+		lua_newtable(L);
+		lua_setfield(L, LUA_REGISTRYINDEX, idstring);
+		LuaContextInfo& info = GetCurrentInfo();
+		info.numDeferredFuncs -= numCalls;
+		if(info.numDeferredFuncs < 0)
+			info.numDeferredFuncs = 0;
+	}
 
 	// clean the stack
 	lua_settop(L, 0);
 }
-
-#define MAX_DEFERRED_COUNT 16384
 
 bool DeferGUIFuncIfNeeded(lua_State* L)
 {
@@ -716,17 +727,8 @@ bool DeferGUIFuncIfNeeded(lua_State* L)
 	}
 	if(info.guiFuncsNeedDeferring)
 	{
-		if(info.numDeferredGUIFuncs < MAX_DEFERRED_COUNT)
-		{
-			// defer whatever function called this one until later
-			DeferFunctionCall(L, deferredGUIIDString);
-			info.numDeferredGUIFuncs++;
-		}
-		else
-		{
-			// too many deferred functions on the same frame
-			// silently discard the rest
-		}
+		// defer whatever function called this one until later
+		DeferFunctionCall(L, deferredGUIIDString);
 		return true;
 	}
 
@@ -1923,6 +1925,7 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 //joypad lib
 
 static const char *button_mappings[] = {
+//   G   E   W   X   Y   A   B   S       T        U    D      L      R       F
 "debug","R","L","X","Y","A","B","start","select","up","down","left","right","lid"
 };
 
@@ -1947,11 +1950,18 @@ DEFINE_LUA_FUNCTION(joy_set, "buttonTable")
 	if(movieMode == MOVIEMODE_PLAY) // don't allow tampering with a playing movie's input
 		return 0; // (although it might be useful sometimes...)
 
+	if(!NDS_isProcessingUserInput())
+	{
+		// defer this function until when we are processing input
+		DeferFunctionCall(L, deferredJoySetIDString);
+		return 0;
+	}
+
 	int index = 1;
 	(void)joy_getArgControllerNum(L, index);
 	luaL_checktype(L, index, LUA_TTABLE);
 
-	UserButtons buttons = NDS_isProcessingUserInput() ? NDS_getProcessingUserInput().buttons : NDS_getRawUserInput().buttons;
+	UserButtons& buttons = NDS_getProcessingUserInput().buttons;
 
 	for(int i = 0; i < sizeof(button_mappings)/sizeof(*button_mappings); i++)
 	{
@@ -1964,11 +1974,6 @@ DEFINE_LUA_FUNCTION(joy_set, "buttonTable")
 		}
 		lua_pop(L,1);
 	}
-
-	if(NDS_isProcessingUserInput())
-		NDS_getProcessingUserInput().buttons = buttons;
-	else
-		NDS_setPad(buttons.R, buttons.L, buttons.D, buttons.U, buttons.T, buttons.S, buttons.B, buttons.A, buttons.Y, buttons.X, buttons.W, buttons.E, buttons.G, buttons.F);
 
 	return 0;
 }
@@ -3782,7 +3787,7 @@ void ResetInfo(LuaContextInfo& info)
 	info.stopWorrying = false;
 	info.panic = false;
 	info.ranExit = false;
-	info.numDeferredGUIFuncs = 0;
+	info.numDeferredFuncs = 0;
 	info.ranFrameAdvance = false;
 	info.transparencyModifier = 255;
 	info.speedMode = SPEEDMODE_NORMAL;
@@ -3858,6 +3863,8 @@ void RunLuaScriptFile(int uid, const char* filenameCStr)
 		// deferred evaluation table
 		lua_newtable(L);
 		lua_setfield(L, LUA_REGISTRYINDEX, deferredGUIIDString);
+		lua_newtable(L);
+		lua_setfield(L, LUA_REGISTRYINDEX, deferredJoySetIDString);
 
 		info.started = true;
 		RefreshScriptStartedStatus();
@@ -4373,6 +4380,11 @@ void CallRegisteredLuaFunctions(LuaCallID calltype)
 				info.guiFuncsNeedDeferring = false;
 			if(calltype == LUACALL_AFTEREMULATIONGUI)
 				CallDeferredFunctions(L, deferredGUIIDString);
+			if(calltype == LUACALL_BEFOREEMULATION)
+			{
+				assert(NDS_isProcessingUserInput());
+				CallDeferredFunctions(L, deferredJoySetIDString);
+			}
 
 			lua_settop(L, 0);
 			lua_getfield(L, LUA_REGISTRYINDEX, idstring);
