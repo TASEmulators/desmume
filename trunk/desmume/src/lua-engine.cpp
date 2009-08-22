@@ -138,7 +138,7 @@ static const char* luaCallIDStrings [] =
 };
 static const int _makeSureWeHaveTheRightNumberOfStrings [sizeof(luaCallIDStrings)/sizeof(*luaCallIDStrings) == LUACALL_COUNT ? 1 : 0];
 
-static const char* luaMemHookTypeStrings [] =
+/*static const char* luaMemHookTypeStrings [] =
 {
 	"MEMHOOK_WRITE",
 	"MEMHOOK_READ",
@@ -149,6 +149,7 @@ static const char* luaMemHookTypeStrings [] =
 	"MEMHOOK_EXEC_SUB",
 };
 static const int _makeSureWeHaveTheRightNumberOfStrings2 [sizeof(luaMemHookTypeStrings)/sizeof(*luaMemHookTypeStrings) == LUAMEMHOOK_COUNT ? 1 : 0];
+*/
 
 void StopScriptIfFinished(int uid, bool justReturned = false);
 void SetSaveKey(LuaContextInfo& info, const char* key);
@@ -158,6 +159,9 @@ void RefreshScriptSpeedStatus();
 
 static char* rawToCString(lua_State* L, int idx=0);
 static const char* toCString(lua_State* L, int idx=0);
+
+/*
+// disabled, see comment above implementation of CalculateMemHookRegions
 
 static void CalculateMemHookRegions(LuaMemHookType hookType);
 
@@ -266,7 +270,7 @@ DEFINE_LUA_FUNCTION(memory_registerexec, "address,[size=2,][cpuname=\"main\",]fu
 {
 	return memory_registerHook(L, MatchHookTypeToCPU(L,LUAMEMHOOK_EXEC), 2);
 }
-
+*/
 
 DEFINE_LUA_FUNCTION(emu_registerbefore, "func")
 {
@@ -2721,6 +2725,8 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 #endif
     return 0;
 }
+
+// TODO
 /*
 DEFINE_LUA_FUNCTION(gens_loadrom, "filename")
 {
@@ -2749,17 +2755,18 @@ DEFINE_LUA_FUNCTION(emu_lagged, "")
 {
 	lua_pushboolean(L, LagFrameFlag);
 	return 1;
-}/*
-DEFINE_LUA_FUNCTION(gens_emulating, "")
+}
+DEFINE_LUA_FUNCTION(emu_emulating, "")
 {
-	lua_pushboolean(L, Genesis_Started||SegaCD_Started||_32X_Started);
+	lua_pushboolean(L, romloaded);
 	return 1;
 }
-DEFINE_LUA_FUNCTION(gens_atframeboundary, "")
+DEFINE_LUA_FUNCTION(emu_atframeboundary, "")
 {
-	lua_pushboolean(L, !Inside_Frame);
+	// TODO (actually this is a full implementation currently since registermemory callbacks are disabled)
+	lua_pushboolean(L, true);
 	return 1;
-}*/
+}
 DEFINE_LUA_FUNCTION(movie_getlength, "")
 {
 	lua_pushinteger(L, currMovieData.records.size());
@@ -2774,12 +2781,12 @@ DEFINE_LUA_FUNCTION(movie_rerecordcount, "")
 {
 	lua_pushinteger(L, currMovieData.rerecordCount);
 	return 1;
-}/*
+}
 DEFINE_LUA_FUNCTION(movie_setrerecordcount, "")
 {
-	MainMovie.NbRerecords = luaL_checkinteger(L, 1);
+	currMovieData.rerecordCount = luaL_checkinteger(L, 1);
 	return 0;
-}*/
+}
 DEFINE_LUA_FUNCTION(emu_rerecordcounting, "[enabled]")
 {
 	LuaContextInfo& info = GetCurrentInfo();
@@ -2854,30 +2861,29 @@ DEFINE_LUA_FUNCTION(movie_getname, "")
 DEFINE_LUA_FUNCTION(movie_play, "[filename]")
 {
 	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
-	FCEUI_LoadMovie(filename, true, false, 0);
-//	const char* errorMsg = 
-//	if(errorMsg)
-//		luaL_error(L, errorMsg);
+	const char* errorMsg = FCEUI_LoadMovie(filename, true, false, 0);
+	if(errorMsg)
+		luaL_error(L, errorMsg);
     return 0;
-} /*
+}
 DEFINE_LUA_FUNCTION(movie_replay, "")
 {
-	if(MainMovie.File)
-		GensReplayMovie();
-	else
-		luaL_error(L, "it is invalid to call movie.replay when no movie open.");
-    return 0;
-} */
+	if(movieMode == MOVIEMODE_INACTIVE)
+		return 0;
+	lua_settop(L, 0);
+	extern char curMovieFilename[512];
+	lua_pushstring(L, curMovieFilename);
+	return movie_play(L);
+}
 DEFINE_LUA_FUNCTION(movie_close, "")
 {
-	
 	FCEUI_StopMovie();
 	return 0;
 }
 
 DEFINE_LUA_FUNCTION(sound_clear, "")
 {
-//	Clear_Sound_Buffer();
+	if(SPU_user) SPU_user->ShutUp();
 	return 0;
 }
 
@@ -3043,20 +3049,18 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 	}
 	// mouse position in game screen pixel coordinates
 	{
-/*		POINT point;
-		RECT rect, srcRectUnused;
-		float xRatioUnused, yRatioUnused;
-		int depUnused;
+		void UnscaleScreenCoords(s32& x, s32& y);
+		void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen);
+
+		POINT point;
 		GetCursorPos(&point);
 		ScreenToClient(MainWindow->getHWnd(), &point);
-		GetClientRect(MainWindow->getHWnd(), &rect);
-		void CalculateDrawArea(int Render_Mode, RECT& RectDest, RECT& RectSrc, float& Ratio_X, float& Ratio_Y, int& Dep);
-		CalculateDrawArea(Full_Screen ? Render_FS : Render_W, rect, srcRectUnused, xRatioUnused, yRatioUnused, depUnused);
-		int xres = ((VDP_Reg.Set4 & 0x1) || Debug || !Game || !FrameCount) ? 320 : 256;
-		int yres = ((VDP_Reg.Set2 & 0x8) && !(Debug || !Game || !FrameCount)) ? 240 : 224;
-		int x = ((point.x - rect.left) * xres) / max(1, rect.right - rect.left);
-		int y = ((point.y - rect.top) * yres) / max(1, rect.bottom - rect.top);*/
-		int x = 0, y = 0;
+		s32 x (point.x);
+		s32 y (point.y);
+
+		UnscaleScreenCoords(x,y);
+		ToDSScreenRelativeCoords(x,y,false);
+
 		lua_pushinteger(L, x);
 		lua_setfield(L, -2, "xmouse");
 		lua_pushinteger(L, y);
@@ -3323,6 +3327,8 @@ static const struct luaL_reg aggcustom [] =
 //
 //  Displays the given text on the screen, using the same font and techniques as the
 //  main HUD.
+//
+// TODO: this incomplete... it should support color and outline color and a much smaller font size
 static int gui_text(lua_State *L) {
 	const char *msg;
 	int x, y;
@@ -3372,6 +3378,7 @@ static const struct luaL_reg styluslib [] =
 
 static const struct luaL_reg emulib [] =
 {
+	// TODO!
 //	{"frameadvance", emu_frameadvance},
 //	{"speedmode", emu_speedmode},
 //	{"wait", emu_wait},
@@ -3385,8 +3392,8 @@ static const struct luaL_reg emulib [] =
 	{"framecount", emu_getframecount},
 	{"lagcount", emu_getlagcount},
 	{"lagged", emu_lagged},
-//	{"emulating", emu_emulating},
-//	{"atframeboundary", emu_atframeboundary},
+	{"emulating", emu_emulating},
+	{"atframeboundary", emu_atframeboundary},
 	{"registerbefore", emu_registerbefore},
 	{"registerafter", emu_registerafter},
 //	{"registerstart", emu_registerstart},
@@ -3514,7 +3521,7 @@ static const struct luaL_reg movielib [] =
 	{"length", movie_getlength},
 	{"name", movie_getname},
 	{"rerecordcount", movie_rerecordcount},
-//	{"setrerecordcount", movie_setrerecordcount},
+	{"setrerecordcount", movie_setrerecordcount},
 
 	{"rerecordcounting", emu_rerecordcounting},
 	{"readonly", movie_getreadonly},
@@ -3522,7 +3529,7 @@ static const struct luaL_reg movielib [] =
 	{"framecount", emu_getframecount}, // for those familiar with other emulators that have movie.framecount() instead of emulatorname.framecount()
 
 	{"play", movie_play},
-//	{"replay", movie_replay},
+	{"replay", movie_replay},
 	{"stop", movie_close},
 
 	// alternative names
@@ -3535,7 +3542,7 @@ static const struct luaL_reg movielib [] =
 };
 static const struct luaL_reg soundlib [] =
 {
-//	{"clear", sound_clear},
+	{"clear", sound_clear},
 	{NULL, NULL}
 };
 
@@ -3765,13 +3772,14 @@ void registerLibs(lua_State* L)
 		}
 		lua_pop(L,1);
 	}
-
+/*
 	// push arrays for storing hook functions in
 	for(int i = 0; i < LUAMEMHOOK_COUNT; i++)
 	{
 		lua_newtable(L);
 		lua_setfield(L, LUA_REGISTRYINDEX, luaMemHookTypeStrings[i]);
 	}
+*/
 }
 
 void ResetInfo(LuaContextInfo& info)
@@ -4152,8 +4160,10 @@ void StopLuaScript(int uid)
 			info.started = false;
 			
 			info.numMemHooks = 0;
+/*
 			for(int i = 0; i < LUAMEMHOOK_COUNT; i++)
 				CalculateMemHookRegions((LuaMemHookType)i);
+*/
 		}
 		RefreshScriptStartedStatus();
 	}
@@ -4166,7 +4176,7 @@ void CloseLuaContext(int uid)
 	luaContextInfo.erase(uid);
 }
 
-
+/*
 // the purpose of this structure is to provide a way of
 // QUICKLY determining whether a memory address range has a hook associated with it,
 // with a bias toward fast rejection because the majority of addresses will not be hooked.
@@ -4253,6 +4263,10 @@ struct TieredRegion
 TieredRegion hookedRegions [LUAMEMHOOK_COUNT];
 
 
+// currently disabled for desmume,
+// and the performance hit might not be accepable
+// unless we can switch the emulation into a whole separate path
+// that has this callback enabled.
 static void CalculateMemHookRegions(LuaMemHookType hookType)
 {
 	std::vector<unsigned int> hookedBytes;
@@ -4339,6 +4353,7 @@ static void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, un
 		++iter;
 	}
 }
+
 void CallRegisteredLuaMemHook(unsigned int address, int size, unsigned int value, LuaMemHookType hookType)
 {
 	// performance critical! (called VERY frequently)
@@ -4354,7 +4369,7 @@ void CallRegisteredLuaMemHook(unsigned int address, int size, unsigned int value
 			CallRegisteredLuaMemHook_LuaMatch(address, size, value, hookType); // something has hooked this specific address
 	}
 }
-
+*/
 
 
 void CallRegisteredLuaFunctions(LuaCallID calltype)

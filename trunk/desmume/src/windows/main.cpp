@@ -439,6 +439,34 @@ void SetMinWindowSize()
 		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 }
 
+void UnscaleScreenCoords(s32& x, s32& y)
+{
+	RECT r;
+	HWND hwnd = MainWindow->getHWnd();
+	GetClientRect(hwnd,&r);
+	SetCapture(hwnd);
+	int defwidth = video.width, defheight = (video.height+video.screengap);
+	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
+
+	// translate from scaling (screen resolution to 256x384 or 512x192) 
+	switch (video.rotation)
+	{
+	case 0:
+	case 180:
+		x = (x*defwidth) / winwidth;
+		y = (y*defheight) / winheight;
+		break ;
+	case 90:
+	case 270:
+		x = (x*defheight) / winwidth;
+		y = (y*defwidth) / winheight;
+		break ;
+	}
+
+	x = x/video.ratio();
+	y = y/video.ratio();
+}
+
 // input x,y should be windows client-space coords already at 1x scaling.
 // output is in pixels relative to the top-left of the chosen screen.
 // the gap between screens (if any) is subtracted away from the output y.
@@ -3065,31 +3093,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_LBUTTONDBLCLK:
 		if (wParam & MK_LBUTTON)
 		{
-			RECT r ;
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
-			GetClientRect(hwnd,&r);
-			SetCapture(hwnd);
-			int defwidth = video.width, defheight = (video.height+video.screengap);
-			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
-			// translate from scaling (screen resolution to 256x384 or 512x192) 
-			switch (video.rotation)
-			{
-			case 0:
-			case 180:
-				x = (x*defwidth) / winwidth;
-				y = (y*defheight) / winheight;
-				break ;
-			case 90:
-			case 270:
-				x = (x*defheight) / winwidth;
-				y = (y*defwidth) / winheight;
-				break ;
-			}
-
-			x = x/video.ratio();
-			y = y/video.ratio();
+			UnscaleScreenCoords(x,y);
 
 			if(HudEditorMode)
 			{
