@@ -1473,23 +1473,6 @@ void ChangeLanguage(int id)
 	MenuInit();
 }
 
-int RegClass(WNDPROC Proc, LPCTSTR szName)
-{
-	WNDCLASS	wc;
-
-	wc.style = CS_DBLCLKS;
-	wc.cbClsExtra = wc.cbWndExtra=0;
-	wc.lpfnWndProc=Proc;
-	wc.hInstance=hAppInst;
-	wc.hIcon=LoadIcon(hAppInst,"ICONDESMUME");
-	wc.hCursor=LoadCursor(NULL,IDC_ARROW);
-	wc.hbrBackground=(HBRUSH)(COLOR_BACKGROUND);
-	wc.lpszMenuName=(LPCTSTR)NULL;
-	wc.lpszClassName=szName;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	return RegisterClass(&wc);
-}
 
 static void ExitRunLoop()
 {
@@ -1605,7 +1588,7 @@ int _main()
 	}*/
 	ColorCtrl_Register();
 
-	if (!RegClass(WindowProcedure, "DeSmuME"))
+	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, "ICONDESMUME")))
 	{
 		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
 		exit(-1);
@@ -1980,6 +1963,8 @@ int _main()
 	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
 	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
 	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
+
+	UnregWndClass("DeSmuME");
 
 	return 0;
 }
