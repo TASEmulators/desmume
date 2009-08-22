@@ -22,6 +22,7 @@
 #include "types.h"
 #include "mic.h"
 #include "debug.h"
+#include "readwrite.h"
 
 #define MIC_BUFSIZE 4096
 
@@ -150,9 +151,11 @@ u8 Mic_ReadSample()
 /* FIXME: stub! */
 void mic_savestate(std::ostream* os)
 {
+	write32le(-1,os);
 }
 
 bool mic_loadstate(std::istream* is, int size) 
 {
+	is->seekg(size, std::ios::cur);
     return TRUE;
 }
