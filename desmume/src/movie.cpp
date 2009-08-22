@@ -407,12 +407,16 @@ void FCEUI_StopMovie()
 
 
 //begin playing an existing movie
-void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
+const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
 {
 	//if(!tasedit && !FCEU_IsValidUI(FCEUI_PLAYMOVIE))
 	//	return;
 
+	// FIXME: name==null indicates to BROWSE to retrieve fname from user (or stdin if that's impossible),
+	// when called from movie_play
 	assert(fname);
+	if(!fname)
+		return "LoadMovie doesn't support browsing yet";
 
 	//mbg 6/10/08 - we used to call StopMovie here, but that cleared curMovieFilename and gave us crashes...
 	if(movieMode == MOVIEMODE_PLAY)
@@ -433,12 +437,13 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 
 	//LoadFM2(currMovieData, fp->stream, INT_MAX, false);
 
+	bool loadedfm2 = false;
 	bool opened = false;
 	{
 		fstream fs (fname);
 		if(fs.is_open())
 		{
-			LoadFM2(currMovieData, &fs, INT_MAX, false);
+			loadedfm2 = LoadFM2(currMovieData, &fs, INT_MAX, false);
 			opened = true;
 		}
 		fs.close();
@@ -447,9 +452,12 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 	{
 		// for some reason fs.open doesn't work, it has to be a whole new fstream object
 		fstream fs (fname, std::ios_base::in);
-		LoadFM2(currMovieData, &fs, INT_MAX, false);
+		loadedfm2 = LoadFM2(currMovieData, &fs, INT_MAX, false);
 		fs.close();
 	}
+
+	if(!loadedfm2)
+		return "failed to load movie";
 
 	//TODO
 	//fully reload the game to reinitialize everything before playing any movie
@@ -478,7 +486,7 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 	if(currMovieData.sram.size() != 0)
 	{
 		bool success = MovieData::loadSramFrom(&currMovieData.sram);
-		if(!success) return;
+		if(!success) return "failed to load sram";
 	}
 	freshMovie = true;
 	ClearAutoHold();
@@ -487,6 +495,8 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 		driver->USR_InfoMessage("Replay started Read-Only.");
 	else
 		driver->USR_InfoMessage("Replay started Read+Write.");
+
+	return NULL; // success
 }
 
 static void openRecordingMovie(const char* fname)
