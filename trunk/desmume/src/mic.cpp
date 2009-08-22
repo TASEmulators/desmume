@@ -52,4 +52,13 @@ void Mic_DoNoise(BOOL noise)
 	silence = !noise;
 }
 
+void mic_savestate(std::ostream* os)
+{
+}
+
+bool mic_loadstate(std::istream* is, int size)
+{
+	return TRUE;
+}
+
 #endif

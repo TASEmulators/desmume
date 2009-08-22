@@ -20,6 +20,7 @@
 
 #ifndef MIC_H
 #define MIC_H
+#include <iostream>
 
 #ifdef WIN32
 static char MicSampleName[256];
