@@ -22,6 +22,67 @@
 #include "CWindow.h"
 #include "debug.h"
 
+//-----------------------------------------------------------------------------
+// Window class handling
+//-----------------------------------------------------------------------------
+
+vector<string> ReggedWndClasses;
+
+bool RegWndClass(string name, WNDPROC wndProc, int extraSize)
+{
+	return RegWndClass(name, wndProc, 0, NULL, extraSize);
+}
+
+bool RegWndClass(string name, WNDPROC wndProc, HICON icon, int extraSize)
+{
+	return RegWndClass(name, wndProc, 0, icon, extraSize);
+}
+
+bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize)
+{
+	// If the class is already regged, don't re-reg it
+	if (find(ReggedWndClasses.begin(), ReggedWndClasses.end(), name) != ReggedWndClasses.end())
+		return true;
+
+	WNDCLASSEX wc;
+
+	wc.cbSize         = sizeof(wc);
+	wc.lpszClassName  = name.c_str();
+	wc.hInstance      = hAppInst;
+	wc.lpfnWndProc    = wndProc;
+	wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon          = icon;
+	wc.lpszMenuName   = 0;
+	wc.hbrBackground  = GetSysColorBrush(COLOR_BTNFACE);
+	wc.style          = style;
+	wc.cbClsExtra     = 0;
+	wc.cbWndExtra     = extraSize;
+	wc.hIconSm        = 0;
+
+	if (RegisterClassEx(&wc) != 0)
+	{
+		// If registration succeeded, add the class name into the list
+		ReggedWndClasses.push_back(name);
+		return true;
+	}
+	else
+		return false;
+}
+
+void UnregWndClass(string name)
+{
+	vector<string>::iterator it = find(ReggedWndClasses.begin(), ReggedWndClasses.end(), name);
+
+	// If the class wasn't regged, we can't unreg it :P
+	if (it == ReggedWndClasses.end())
+		return;
+
+	// Otherwise unreg the class and remove its name from the list
+	UnregisterClass(name.c_str(), hAppInst);
+	ReggedWndClasses.erase(it);
+}
+
+
 WINCLASS::WINCLASS(LPSTR rclass, HINSTANCE hInst)
 {
 	memset(regclass, 0, sizeof(regclass));

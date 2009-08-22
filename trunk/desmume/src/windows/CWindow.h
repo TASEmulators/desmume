@@ -24,6 +24,23 @@
 
 #include "../common.h"
 
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+//-----------------------------------------------------------------------------
+// Window class handling
+//-----------------------------------------------------------------------------
+
+bool RegWndClass(string name, WNDPROC wndProc, int extraSize = 0);
+bool RegWndClass(string name, WNDPROC wndProc, HICON icon, int extraSize = 0);
+bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize = 0);
+
+void UnregWndClass(string name);
+
+
 class WINCLASS
 {
 private:
