@@ -22,9 +22,9 @@
 
 #include "types.h"
 #include "mic.h"
+#include "readwrite.h"
 
 static BOOL silence = TRUE;
-int MicButtonPressed;
 
 BOOL Mic_Init()
 {
@@ -54,10 +54,12 @@ void Mic_DoNoise(BOOL noise)
 
 void mic_savestate(std::ostream* os)
 {
+	write32le(-1,os);
 }
 
 bool mic_loadstate(std::istream* is, int size)
 {
+	is->seekg(size, std::ios::cur);
 	return TRUE;
 }
 

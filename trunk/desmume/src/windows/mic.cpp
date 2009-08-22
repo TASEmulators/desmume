@@ -254,7 +254,7 @@ void mic_savestate(std::ostream* os)
 }
 bool mic_loadstate(std::istream* is, int size)
 {
-	int version;
+	u32 version;
 	if(read32le(&version,is) != 1) return false;
 	if(version > 0) { is->seekg(size-4, std::ios::cur); return true; }
 
