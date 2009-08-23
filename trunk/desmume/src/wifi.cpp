@@ -54,6 +54,8 @@ socket_t wifi_socket = INVALID_SOCKET;
 sockaddr_t sendAddr;
 pcap_t *wifi_bridge = NULL;
 
+const u8 BroadcastMAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
 #endif
 
 wifimac_t wifiMac;
@@ -68,6 +70,7 @@ wifimac_t wifiMac;
  *******************************************************************************/
 
 u8 FW_Mac[6] 			= { 0x00, 0x09, 0xBF, 0x12, 0x34, 0x56 } ;
+
 const u8 FW_WIFIInit[32] 		= { 0x02,0x00,  0x17,0x00,  0x26,0x00,  0x18,0x18,
 							0x48,0x00,  0x40,0x48,  0x58,0x00,  0x42,0x00,
 							0x40,0x01,  0x64,0x80,  0xE0,0xE0,  0x43,0x24,
@@ -677,10 +680,59 @@ void WIFI_Reset()
 	wifiCom->Reset();
 }
 
+
+INLINE u16 WIFI_GetRXFlags(u8* packet)
+{
+	u16 ret = 0x0010;
+	u16 frameCtl = *(u16*)&packet[0];
+
+	switch(frameCtl & 0x000C)
+	{
+	case 0x0000:
+		if ((frameCtl & 0x00F0) == 0x0080)
+			ret |= 0x0001;
+		break;
+
+	case 0x0004:
+		ret |= 0x0005;
+		break;
+
+	case 0x0008:
+		ret |= 0x0008;
+		break;
+	}
+
+	if (frameCtl & 0x0400)
+		ret |= 0x0100;
+
+	if (!memcmp(&packet[16], &wifiMac.bss.bytes[0], 6))
+		ret |= 0x8000;
+
+	return ret;
+}
+
+INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 len, u8 maxRSSI, u8 minRSSI)
+{
+	*(u16*)&buf[0] = flags;
+
+	// Unknown (usually 0x0400)
+	buf[2] = 0x40;
+	buf[3] = 0x00;
+
+	// Time since last packet??? Random??? Left unchanged???
+	buf[4] = 0x01;
+	buf[5] = 0x00;
+
+	*(u16*)&buf[6] = xferRate;
+
+	*(u16*)&buf[8] = WIFI_alignedLen(len);
+
+	buf[10] = maxRSSI;
+	buf[11] = minRSSI;
+}
+
 static void WIFI_RXPutWord(u16 val)
 {
-//	printf("wifi: rx circbuf write attempt: rxcnt=%04X, rxread=%04X, rxwrite=%04X\n", 
-//		wifiMac.RXCnt, wifiMac.RXReadCursor, wifiMac.RXHWWriteCursor);
 	/* abort when RX data queuing is not enabled */
 	if (!(wifiMac.RXCnt & 0x8000)) return ;
 	/* abort when ringbuffer is full */
@@ -731,6 +783,10 @@ static void WIFI_TXStart(u8 slot)
 				slot);
 			return;
 		}
+
+		// Align packet length
+		txLen = WIFI_alignedLen(txLen);
+
 		// unsupported txRate
 		switch (wifiMac.circularBuffer[address+4] & 0xFF)
 		{
@@ -743,7 +799,9 @@ static void WIFI_TXStart(u8 slot)
 				return;
 		}
 
-		// FIXME: calculate FCS
+		// Calculate and set FCS
+		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.circularBuffer[address + 6], txLen - 4);
+		*(u32*)&wifiMac.circularBuffer[address + 6 + ((txLen-4) >> 1)] = crc32;
 
 		WIFI_triggerIRQ(WIFI_IRQ_SENDSTART) ;
 
@@ -788,6 +846,9 @@ static void WIFI_BeaconTXStart()
 			return;
 		}
 
+		// Align packet length
+		txLen = WIFI_alignedLen(txLen);
+
 		// unsupported txRate
 		switch (wifiMac.circularBuffer[address+4] & 0xFF)
 		{
@@ -798,7 +859,9 @@ static void WIFI_BeaconTXStart()
 				return;
 		}
 
-		// FIXME: calculate FCS
+		// Calculate and set FCS
+		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.circularBuffer[address + 6], txLen - 4);
+		*(u32*)&wifiMac.circularBuffer[address + 6 + ((txLen-4) >> 1)] = crc32;
 
 		WIFI_triggerIRQ(WIFI_IRQ_SENDSTART);
 		wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
@@ -1328,7 +1391,7 @@ void WIFI_usTrigger()
 	}
 	if ((wifiMac.ucmpEnable) && (wifiMac.ucmp == wifiMac.usec))
 	{
-			WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON) ;
+		WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON) ;
 	}
 
 	if((wifiMac.usec & 3) == 0)
@@ -1447,7 +1510,7 @@ void Adhoc_Reset()
 
 void Adhoc_SendPacket(u8* packet, u32 len)
 {
-	u32 packetLen = 12 + WIFI_alignedLen(len);
+	u32 packetLen = 12 + len;
 	u32 frameLen = sizeof(Adhoc_FrameHeader) + packetLen;
 
 	u8* frame = new u8[frameLen];
@@ -1473,7 +1536,7 @@ void Adhoc_usTrigger()
 {
 	wifiMac.Adhoc.usecCounter++;
 
-	// Check every millisecond (approx.) if we received a packet
+	// Check every millisecond if we received a packet
 	if (!(wifiMac.Adhoc.usecCounter & 1023))
 	{
 		fd_set fd;
@@ -1489,6 +1552,9 @@ void Adhoc_usTrigger()
 			sockaddr_t fromAddr;
 			int fromLen = sizeof(sockaddr_t);
 			u8 buf[1536];
+			u8* ptr;
+			u16 packetLen;
+
 			int nbytes = recvfrom(wifi_socket, (char*)buf, 1536, 0, &fromAddr, &fromLen);
 
 			// No packet arrived (or there was an error)
@@ -1501,7 +1567,8 @@ void Adhoc_usTrigger()
 				(u8)fromAddr.sa_data[4], (u8)fromAddr.sa_data[5],
 				ntohs(*(u16*)&fromAddr.sa_data[0]));
 
-			Adhoc_FrameHeader header = *(Adhoc_FrameHeader*)&buf[0];
+			ptr = buf;
+			Adhoc_FrameHeader header = *(Adhoc_FrameHeader*)&ptr[0];
 			
 			// Check the magic string in header
 			if (strncmp(header.magic, ADHOC_MAGIC, 8) != 0)
@@ -1511,8 +1578,36 @@ void Adhoc_usTrigger()
 			if (header.version != ADHOC_PROTOCOL_VERSION)
 				return;
 
-			// TODO: handle the packet!
-			//WIFI_LOG(3, "Ad-hoc: packet is interesting!\n");
+			packetLen = header.packetLen;
+			ptr += sizeof(Adhoc_FrameHeader);
+
+			// If the packet is for us, send it to the wifi core
+			if (memcmp(&ptr[10], &wifiMac.mac.bytes[0], 6))
+			{
+				if ((!memcmp(&ptr[16], &BroadcastMAC[0], 6)) ||
+					(!memcmp(&ptr[16], &wifiMac.bss.bytes[0], 6)) ||
+					(!memcmp(&wifiMac.bss.bytes[0], &BroadcastMAC[0], 6)))
+				{
+					WIFI_triggerIRQ(WIFI_IRQ_RECVSTART);
+
+					u8* packet = new u8[12 + packetLen];
+
+					WIFI_MakeRXHeader(packet, WIFI_GetRXFlags(ptr), 20, packetLen, 255, 2);
+					memcpy(&packet[12], &ptr[0], packetLen);
+
+				//	u32 crc32 = WIFI_calcCRC32(ptr, packetLen - 4);
+				//	*(u32*)&ptr[packetLen - 4] = crc32;
+
+					for (int i = 0; i < (12 + packetLen); i += 2)
+					{
+						u16 word = *(u16*)&packet[i];
+						WIFI_RXPutWord(word);
+					}
+
+					wifiMac.RXHWWriteCursorReg = ((wifiMac.RXHWWriteCursor + 1) & (~1));
+					WIFI_triggerIRQ(WIFI_IRQ_RECVCOMPLETE);
+				}
+			}
 		}
 	}
 }
@@ -1665,33 +1760,12 @@ void SoftAP_Reset()
 	wifiMac.SoftAP.curPacketSending = FALSE;
 }
 
-INLINE void SoftAP_MakeRXHeader(u16 flags, u16 xferRate, u16 len, u8 maxRSSI, u8 minRSSI)
-{
-	*(u16*)&wifiMac.SoftAP.curPacket[0] = flags;
-
-	// Unknown (usually 0x0400)
-	wifiMac.SoftAP.curPacket[2] = 0x40;
-	wifiMac.SoftAP.curPacket[3] = 0x00;
-
-	// Time since last packet??? Random??? Left unchanged???
-	wifiMac.SoftAP.curPacket[4] = 0x01;
-	wifiMac.SoftAP.curPacket[5] = 0x00;
-
-	*(u16*)&wifiMac.SoftAP.curPacket[6] = xferRate;
-
-	*(u16*)&wifiMac.SoftAP.curPacket[8] = WIFI_alignedLen(len);
-
-	wifiMac.SoftAP.curPacket[10] = maxRSSI;
-	wifiMac.SoftAP.curPacket[11] = minRSSI;
-}
-
 void SoftAP_SendPacket(u8 *packet, u32 len)
 {
-	u32 alignedLen = WIFI_alignedLen(len);
 	u16 frameCtl = *(u16*)&packet[12];
 
-	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes (%i aligned). Frame control = %04X\n",
-		len, alignedLen, frameCtl);
+	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
+		len, frameCtl);
 
 	switch((frameCtl >> 2) & 0x3)
 	{
@@ -1711,7 +1785,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					// config util expects this length to be the length of the IEEE header and
 					// the frame body AND the FCS. Actually, it expects WRCSR to be equal to
 					// (READCSR + 12 + packet_length).
-					SoftAP_MakeRXHeader(0x0010, 20, packetLen, 0, 0);
+					WIFI_MakeRXHeader(wifiMac.SoftAP.curPacket, 0x0010, 20, packetLen, 0, 0);
 
 					// Copy the probe response template
 					memcpy(&wifiMac.SoftAP.curPacket[12], SoftAP_ProbeResponse, packetLen);
@@ -1740,7 +1814,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					u32 totalLen = (packetLen + 12);
 
 					// Make the RX header
-					SoftAP_MakeRXHeader(0x0010, 20, packetLen, 0, 0);
+					WIFI_MakeRXHeader(wifiMac.SoftAP.curPacket, 0x0010, 20, packetLen, 0, 0);
 
 					// Copy the authentication frame template
 					memcpy(&wifiMac.SoftAP.curPacket[12], SoftAP_AuthFrame, packetLen);
@@ -1765,7 +1839,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					u32 totalLen = (packetLen + 12);
 
 					// Make the RX header
-					SoftAP_MakeRXHeader(0x0010, 20, packetLen, 0, 0);
+					WIFI_MakeRXHeader(wifiMac.SoftAP.curPacket, 0x0010, 20, packetLen, 0, 0);
 
 					// Copy the association response template
 					memcpy(&wifiMac.SoftAP.curPacket[12], SoftAP_AssocResponse, packetLen);
@@ -1791,7 +1865,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 		{
 			// We convert the packet into an Ethernet packet
 
-			u32 eflen = (alignedLen - 4 - 30 + 14);
+			u32 eflen = (len - 4 - 30 + 14);
 			u8 *ethernetframe = new u8[eflen];
 
 			// Destination address
@@ -1815,7 +1889,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 			ethernetframe[13] = packet[43];
 
 			// Frame body
-			memcpy((ethernetframe + 14), (packet + 44), (alignedLen - 30 - 4));
+			memcpy((ethernetframe + 14), (packet + 44), (len - 30 - 4));
 
 			// Checksum 
 			// TODO ?
@@ -1835,7 +1909,7 @@ INLINE void SoftAP_SendBeacon()
 	u32 totalLen = (packetLen + 12);
 
 	// Make the RX header
-	SoftAP_MakeRXHeader(0x0011, 20, packetLen, 0, 0);
+	WIFI_MakeRXHeader(wifiMac.SoftAP.curPacket, 0x0011, 20, packetLen, 0, 0);
 
 	// Copy the beacon template
 	memcpy(&wifiMac.SoftAP.curPacket[12], SoftAP_Beacon, packetLen);
