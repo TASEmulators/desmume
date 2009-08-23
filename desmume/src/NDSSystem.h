@@ -432,8 +432,6 @@ extern struct TCommonSettings {
 		strcpy(Firmware, "firmware.bin");
 
 		wifi.mode = 0;
-		wifi.adhocMode = 0;
-		strcpy(wifi.adhocServerName, "");
 		wifi.infraBridgeAdapter = 0;
 
 		for(int i=0;i<16;i++)
@@ -456,10 +454,6 @@ extern struct TCommonSettings {
 	
 	struct _Wifi {
 		int mode;
-
-		int adhocMode;
-		char adhocServerName[64];
-
 		int infraBridgeAdapter;
 	} wifi;
 
