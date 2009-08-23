@@ -100,6 +100,7 @@
 #define     REG_WIFI_RFIOBSY    		0x180
 #define     REG_WIFI_RFIOCNT    		0x184
 #define		REG_WIFI_IF_SET				0x21C
+#define 	REG_WIFI_TXSEQNO			0x210
 #define		REG_WIFI_POWERACK			0x2D0
 
 /* WIFI misc constants */
@@ -386,8 +387,10 @@ typedef struct
 	u16 TXCnt ;
 	u16 TXOpt ;
 	u16 TXStat;
-	u16 BEACONSlot ;
-	BOOL BEACON_enable ;
+	u16 BeaconAddr;
+	BOOL BeaconEnable;
+	u16 BeaconInterval;
+	u16 TXSeqNo;
 	u8 txCurSlot;
 	u8 txSlotBusy[3];
 	u32 txSlotAddr[3];
@@ -462,6 +465,12 @@ typedef struct
 
 	/* others */
 	u16			randomSeed ;
+
+	struct _Adhoc
+	{
+		u64 usecCounter;
+
+	} Adhoc;
 
 	/* SoftAP */
 	struct _SoftAP

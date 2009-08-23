@@ -927,10 +927,15 @@ void WIFI_write16(u32 address, u16 val)
 			wifiMac.CircBufWrSkip = val ;
 			break ;
 		case REG_WIFI_BEACONTRANS:
-			wifiMac.BEACONSlot = val & 0x7FFF ;
-			wifiMac.BEACON_enable = (val & 0x8000) != 0 ;
-			//printf("wifi beacon: enable=%s, addr=%04X\n", (wifiMac.BEACON_enable?"yes":"no"), (wifiMac.BEACONSlot<<1));
+			wifiMac.BeaconAddr = val & 0x0FFF;
+			wifiMac.BeaconEnable = (val & 0x8000) != 0;
+			if (wifiMac.BeaconEnable) 
+				WIFI_LOG(3, "Beacon transmission enabled to send the packet at %08X every %i milliseconds.\n",
+					0x04804000 + (wifiMac.BeaconAddr << 1), wifiMac.BeaconInterval);
 			break ;
+		case REG_WIFI_BEACONPERIOD:
+			wifiMac.BeaconInterval = val & 0x03FF;
+			break;
 		case REG_WIFI_TXLOC1:
 		case REG_WIFI_TXLOC2:
 		case REG_WIFI_TXLOC3:
@@ -963,6 +968,9 @@ void WIFI_write16(u32 address, u16 val)
 				emu_halt();
 			}*/
 			break ;
+		case REG_WIFI_TXSEQNO:
+			wifiMac.TXSeqNo = val & 0x0FFF;
+			break;
 		case REG_WIFI_RFIOCNT:
 			WIFI_setRF_CNT(val) ;
 			break ;
@@ -1290,18 +1298,20 @@ void WIFI_usTrigger()
 #define ADHOC_MAGIC					"NDSWIFI\0"
 #define ADHOC_PROTOCOL_VERSION 		0x0100  // v1.0
 
-typedef struct _Adhoc_PacketHeader
+typedef struct _Adhoc_FrameHeader
 {
 	char magic[8];			// "NDSWIFI\0" (null terminated string)
 	u16 version;			// Ad-hoc protocol version (for example 0x0502 = v5.2)
 	u16 packetLen;			// Length of the packet
 
-} Adhoc_PacketHeader;
+} Adhoc_FrameHeader;
 
 
 bool Adhoc_Init()
 {
 	int res;
+
+	wifiMac.Adhoc.usecCounter = 0;
 
 	// Create an UDP socket
 	wifi_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -1337,8 +1347,8 @@ bool Adhoc_Init()
 
 	// Prepare an address structure for sending packets
 	sendAddr.sa_family = AF_INET;
-	*(u32*)&saddr.sa_data[2] = htonl(INADDR_BROADCAST); 
-	*(u16*)&saddr.sa_data[0] = htons(BASEPORT);
+	*(u32*)&sendAddr.sa_data[2] = htonl(INADDR_BROADCAST); 
+	*(u16*)&sendAddr.sa_data[0] = htons(BASEPORT);
 
 	WIFI_LOG(1, "Ad-hoc: initialization successful.\n");
 
@@ -1353,14 +1363,79 @@ void Adhoc_DeInit()
 
 void Adhoc_Reset()
 {
+	wifiMac.Adhoc.usecCounter = 0;
 }
 
 void Adhoc_SendPacket(u8* packet, u32 len)
 {
+	u32 packetLen = 12 + WIFI_alignedLen(len);
+	u32 frameLen = sizeof(Adhoc_FrameHeader) + packetLen;
+
+	u8* frame = new u8[frameLen];
+	u8* ptr = frame;
+
+	Adhoc_FrameHeader header;
+	strncpy(header.magic, ADHOC_MAGIC, 8);
+	header.version = ADHOC_PROTOCOL_VERSION;
+	header.packetLen = packetLen;
+	memcpy(ptr, &header, sizeof(Adhoc_FrameHeader));
+	ptr += sizeof(Adhoc_FrameHeader);
+
+	memcpy(ptr, packet, packetLen);
+
+	int nbytes = sendto(wifi_socket, (const char*)frame, frameLen, 0, &sendAddr, sizeof(sockaddr_t));
+	
+	WIFI_LOG(3, "Ad-hoc: sent %i/%i bytes of packet.\n", nbytes, frameLen);
+
+	delete frame;
 }
 
 void Adhoc_usTrigger()
 {
+	wifiMac.Adhoc.usecCounter++;
+
+	// Check every millisecond (approx.) if we received a packet
+	if (!(wifiMac.Adhoc.usecCounter & 1023))
+	{
+		fd_set fd;
+		struct timeval tv;
+
+		FD_ZERO(&fd);
+		FD_SET(wifi_socket, &fd);
+		tv.tv_sec = 0; 
+		tv.tv_usec = 0;
+ 
+		if (select(1, &fd, 0, 0, &tv))
+		{
+			sockaddr_t fromAddr;
+			int fromLen = sizeof(sockaddr_t);
+			u8 buf[1536];
+			int nbytes = recvfrom(wifi_socket, (char*)buf, 1536, 0, &fromAddr, &fromLen);
+
+			// No packet arrived (or there was an error)
+			if (nbytes <= 0)
+				return;
+
+			WIFI_LOG(3, "Ad-hoc: received a packet of %i bytes from %i.%i.%i.%i (port %i).\n",
+				nbytes,
+				(u8)fromAddr.sa_data[2], (u8)fromAddr.sa_data[3], 
+				(u8)fromAddr.sa_data[4], (u8)fromAddr.sa_data[5],
+				ntohs(*(u16*)&fromAddr.sa_data[0]));
+
+			Adhoc_FrameHeader header = *(Adhoc_FrameHeader*)&buf[0];
+			
+			// Check the magic string in header
+			if (strncmp(header.magic, ADHOC_MAGIC, 8) != 0)
+				return;
+
+			// Check the ad-hoc protocol version
+			if (header.version != ADHOC_PROTOCOL_VERSION)
+				return;
+
+			// TODO: handle the packet!
+			//WIFI_LOG(3, "Ad-hoc: packet is interesting!\n");
+		}
+	}
 }
 
 /*******************************************************************************
