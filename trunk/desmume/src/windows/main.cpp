@@ -1482,12 +1482,20 @@ static void ExitRunLoop()
 
 class WinDriver : public BaseDriver
 {
-	virtual bool WIFI_Host_InitSystem() {
+	virtual bool WIFI_Host_InitSystem() 
+	{
 		#ifdef EXPERIMENTAL_WIFI
+			WSADATA wsaData; 	 
+			WORD version = MAKEWORD(1,1); 	 
+			if (WSAStartup(version, &wsaData)) 	 
+			{ 	 
+				printf("Failed initializing WSA.\n"); 	 
+				return false ; 	 
+			}
 			//require wpcap.dll
 			HMODULE temp = LoadLibrary("wpcap.dll");
 			if(temp == NULL) {
-				printf("Failed initializing wpcap.dll - softAP support disabled\n");
+				printf("Failed initializing wpcap.dll - SoftAP support disabled.\n");
 				return false;
 			}
 			FreeLibrary(temp);
@@ -1496,7 +1504,11 @@ class WinDriver : public BaseDriver
 			return false ;
 		#endif
 	}
-	virtual void WIFI_Host_ShutdownSystem() {
+	virtual void WIFI_Host_ShutdownSystem() 
+	{
+		#ifdef EXPERIMENTAL_WIFI 	 
+			WSACleanup(); 	 
+		#endif
 	}
 
 	virtual bool AVI_IsRecording()
