@@ -91,6 +91,8 @@
 #define     REG_WIFI_USCOUNTER2         0x0FC
 #define     REG_WIFI_USCOUNTER3         0x0FE
 #define		REG_WIFI_EXTRACOUNT			0x118
+#define 	REG_WIFI_BEACONCOUNT1		0x11C
+#define 	REG_WIFI_BEACONCOUNT2		0x134
 #define     REG_WIFI_BBSIOCNT           0x158
 #define     REG_WIFI_BBSIOWRITE         0x15A
 #define     REG_WIFI_BBSIOREAD          0x15C
@@ -335,6 +337,7 @@ typedef union
 #define WIFI_IRQ_RECVSTART              6
 #define WIFI_IRQ_SENDSTART              7
 #define WIFI_IRQ_RFWAKEUP               11
+#define WIFI_IRQ_TIMEPOSTBEACON			13
 #define WIFI_IRQ_TIMEBEACON             14
 #define WIFI_IRQ_TIMEPREBEACON          15
 
@@ -389,7 +392,6 @@ typedef struct
 	u16 TXStat;
 	u16 BeaconAddr;
 	BOOL BeaconEnable;
-	u16 BeaconInterval;
 	u16 TXSeqNo;
 	u8 txCurSlot;
 	u8 txSlotBusy[3];
@@ -425,6 +427,9 @@ typedef struct
 	BOOL ucmpEnable ;
 	u16 eCount ;
 	BOOL eCountEnable ;
+	u16 BeaconInterval;
+	u16 BeaconCount1;
+	u16 BeaconCount2;
 
 	/* subchips */
     rffilter_t 	RF ;

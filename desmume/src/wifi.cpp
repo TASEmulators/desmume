@@ -621,6 +621,9 @@ static void WIFI_triggerIRQMask(u16 mask)
 
 static void WIFI_triggerIRQ(u8 irq)
 {
+	if (irq == 14)
+		wifiMac.BeaconCount2 = 0xFFFF;
+
 	WIFI_triggerIRQMask(1<<irq) ;
 }
 
@@ -709,9 +712,9 @@ static void WIFI_TXStart(u8 slot)
 	if (wifiMac.TXSlot[slot] & 0x8000)	/* is slot enabled? */
 	{
 		u16 txLen;
-		/* the address has to be somewhere in the circular buffer, so drop the other bits */
+		// the address has to be somewhere in the circular buffer, so drop the other bits
 		u16 address = (wifiMac.TXSlot[slot] & 0x0FFF);
-		/* is there even enough space for the header (6 hwords) in the tx buffer? */
+		// is there even enough space for the header (6 hwords) in the tx buffer?
 		if (address > 0x1000-6)
 		{
 			WIFI_LOG(1, "TX slot %i trying to send a packet overflowing from the TX buffer (address %04X). Attempt ignored.\n", 
@@ -719,28 +722,28 @@ static void WIFI_TXStart(u8 slot)
 			return;
 		}
 
-		/* 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx */
+		// 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx
 		txLen = wifiMac.circularBuffer[address+5];
-		/* zero length */
+		// zero length
 		if (txLen == 0)
 		{
 			WIFI_LOG(1, "TX slot %i trying to send a packet with length field set to zero. Attempt ignored.\n", 
 				slot);
 			return;
 		}
-		/* unsupported txRate */
+		// unsupported txRate
 		switch (wifiMac.circularBuffer[address+4] & 0xFF)
 		{
-			case 10: /* 1 mbit */
-			case 20: /* 2 mbit */
+			case 10: // 1 mbit
+			case 20: // 2 mbit
 				break;
-			default: /* other rates */
+			default: // other rates
 				WIFI_LOG(1, "TX slot %i trying to send a packet with transfer rate field set to an invalid value of %i. Attempt ignored.\n", 
 					slot, wifiMac.circularBuffer[address+4] & 0xFF);
 				return;
 		}
 
-		/* FIXME: calculate FCS */
+		// FIXME: calculate FCS
 
 		WIFI_triggerIRQ(WIFI_IRQ_SENDSTART) ;
 
@@ -763,7 +766,48 @@ static void WIFI_TXStart(u8 slot)
 		wifiMac.circularBuffer[address+4] &= 0x00FF;
 #endif
 	}
-} 
+}
+
+static void WIFI_BeaconTXStart()
+{
+	if (wifiMac.BeaconEnable)
+	{
+		u16 txLen;
+		u16 address = wifiMac.BeaconAddr;
+		// is there even enough space for the header (6 hwords) in the tx buffer?
+		if (address > 0x1000-6)
+		{
+			return;
+		}
+
+		// 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx
+		txLen = wifiMac.circularBuffer[address+5];
+		// zero length 
+		if (txLen == 0)
+		{
+			return;
+		}
+
+		// unsupported txRate
+		switch (wifiMac.circularBuffer[address+4] & 0xFF)
+		{
+			case 10: // 1 mbit
+			case 20: // 2 mbit
+				break;
+			default: // other rates
+				return;
+		}
+
+		// FIXME: calculate FCS
+
+		WIFI_triggerIRQ(WIFI_IRQ_SENDSTART);
+		wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
+		WIFI_triggerIRQ(WIFI_IRQ_SENDCOMPLETE);
+
+		wifiMac.circularBuffer[address] = 0x0001;
+		wifiMac.circularBuffer[address+4] &= 0x00FF;
+	}
+}
 
 void WIFI_write16(u32 address, u16 val)
 {
@@ -933,9 +977,6 @@ void WIFI_write16(u32 address, u16 val)
 				WIFI_LOG(3, "Beacon transmission enabled to send the packet at %08X every %i milliseconds.\n",
 					0x04804000 + (wifiMac.BeaconAddr << 1), wifiMac.BeaconInterval);
 			break ;
-		case REG_WIFI_BEACONPERIOD:
-			wifiMac.BeaconInterval = val & 0x03FF;
-			break;
 		case REG_WIFI_TXLOC1:
 		case REG_WIFI_TXLOC2:
 		case REG_WIFI_TXLOC3:
@@ -989,6 +1030,15 @@ void WIFI_write16(u32 address, u16 val)
 		case REG_WIFI_USCOMPARECNT:
 			wifiMac.ucmpEnable = (val & 1)==1 ;
 			break ;
+		case REG_WIFI_BEACONPERIOD:
+			wifiMac.BeaconInterval = val & 0x03FF;
+			break;
+		case REG_WIFI_BEACONCOUNT1:
+			wifiMac.BeaconCount1 = val;
+			break;
+		case REG_WIFI_BEACONCOUNT2:
+			wifiMac.BeaconCount2 = val;
+			break;
 		case REG_WIFI_BBSIOCNT:
             WIFI_setBB_CNT(val) ;
 			break ;
@@ -1206,6 +1256,10 @@ u16 WIFI_read16(u32 address)
 			return (u16)(wifiMac.usec >> 32);
 		case REG_WIFI_USCOMPARE3:
 			return (u16)(wifiMac.usec >> 48);
+		case REG_WIFI_BEACONCOUNT1:
+			return wifiMac.BeaconCount1;
+		case REG_WIFI_BEACONCOUNT2:
+			return wifiMac.BeaconCount2;
 		case REG_WIFI_POWER_US:
 			return wifiMac.crystalEnabled?0:1 ;
 		case REG_WIFI_CIRCBUFRD_END:
@@ -1236,7 +1290,7 @@ void WIFI_usTrigger()
 {
 	if (wifiMac.crystalEnabled)
 	{
-		/* a usec (=3F03 cycles) has passed */
+		/* a usec has passed */
 		if (wifiMac.usecEnable)
 			wifiMac.usec++ ;
 		if (wifiMac.eCountEnable)
@@ -1244,6 +1298,31 @@ void WIFI_usTrigger()
 			if (wifiMac.eCount > 0)
 			{
 				wifiMac.eCount-- ;
+			}
+		}
+
+		// The beacon counters are in milliseconds
+		// GBATek says they're decremented every 1024 usecs
+		if (!(wifiMac.usec & 1023))
+		{
+			wifiMac.BeaconCount1--;
+			if (wifiMac.BeaconCount1 == 0)
+			{
+				// FIXME: handle pre-beacon interval for IRQ 15
+				WIFI_triggerIRQ(WIFI_IRQ_TIMEPREBEACON);
+				WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON);
+
+				WIFI_BeaconTXStart();
+
+				wifiMac.BeaconCount1 = wifiMac.BeaconInterval;
+			}
+
+			if (wifiMac.BeaconCount2 > 0)
+			{
+				if (wifiMac.BeaconCount2 == 1)
+					WIFI_triggerIRQ(WIFI_IRQ_TIMEPOSTBEACON);
+
+				wifiMac.BeaconCount2--;
 			}
 		}
 	}
