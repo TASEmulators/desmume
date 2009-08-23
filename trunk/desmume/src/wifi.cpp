@@ -27,12 +27,31 @@
 #ifdef EXPERIMENTAL_WIFI
 
 #ifdef WIN32
-#include "windriver.h"
+	#include <winsock2.h> 	 
+	#define socket_t    SOCKET 	 
+	#define sockaddr_t  SOCKADDR
+	#include "windriver.h"
 #else
-#include "pcap/pcap.h"
+	#include <unistd.h> 	 
+	#include <stdlib.h> 	 
+	#include <string.h> 	 
+	#include <arpa/inet.h> 	 
+	#include <sys/socket.h> 	 
+	#define socket_t    int 	 
+	#define sockaddr_t  struct sockaddr
+	#define closesocket close
+	#include "pcap/pcap.h"
 #endif
 
+#ifndef INVALID_SOCKET 	 
+	#define INVALID_SOCKET  (socket_t)-1 	 
+#endif 
+
+#define BASEPORT 7000
+
 bool wifi_netEnabled = false;
+socket_t wifi_socket = INVALID_SOCKET;
+sockaddr_t sendAddr;
 pcap_t *wifi_bridge = NULL;
 
 #endif
@@ -257,7 +276,7 @@ WifiComInterface* wifiCom;
 // 3: medium logging, for debugging, shows lots of stuff
 // 4: high logging, for debugging, shows almost everything, may slow down
 // 5: highest logging, for debugging, shows everything, may slow down a lot
-#define WIFI_LOGGING_LEVEL 0
+#define WIFI_LOGGING_LEVEL 3
 
 #define WIFI_LOG_USE_LOGC 0
 
@@ -359,7 +378,7 @@ static u32 reflect(u32 ref, char ch)
 	return value;
 }
 
-static u32 WIFI_getCRC32(u8 *data, int len)
+static u32 WIFI_calcCRC32(u8 *data, int len)
 {
 	u32 crc = 0xFFFFFFFF;
 
@@ -1268,13 +1287,68 @@ void WIFI_usTrigger()
 
  *******************************************************************************/
 
+#define ADHOC_MAGIC					"NDSWIFI\0"
+#define ADHOC_PROTOCOL_VERSION 		0x0100  // v1.0
+
+typedef struct _Adhoc_PacketHeader
+{
+	char magic[8];			// "NDSWIFI\0" (null terminated string)
+	u16 version;			// Ad-hoc protocol version (for example 0x0502 = v5.2)
+	u16 packetLen;			// Length of the packet
+
+} Adhoc_PacketHeader;
+
+
 bool Adhoc_Init()
 {
+	int res;
+
+	// Create an UDP socket
+	wifi_socket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (wifi_socket < 0)
+	{
+		WIFI_LOG(1, "Ad-hoc: Failed to create socket.\n");
+		return false;
+	}
+
+	// Bind the socket to any address on port 7000
+	sockaddr_t saddr;
+	saddr.sa_family = AF_INET;
+	*(u32*)&saddr.sa_data[2] = htonl(INADDR_ANY); 
+	*(u16*)&saddr.sa_data[0] = htons(BASEPORT);
+	res = bind(wifi_socket, &saddr, sizeof(sockaddr_t));
+	if (res < 0)
+	{
+		WIFI_LOG(1, "Ad-hoc: failed to bind the socket.\n");
+		closesocket(wifi_socket); wifi_socket = INVALID_SOCKET;
+		return false;
+	}
+
+	// Enable broadcast mode
+	// Not doing so results in failure when sendto'ing to broadcast address
+	BOOL opt = TRUE;
+	res = setsockopt(wifi_socket, SOL_SOCKET, SO_BROADCAST, (const char*)&opt, sizeof(BOOL));
+	if (res < 0)
+	{
+		WIFI_LOG(1, "Ad-hoc: failed to enable broadcast mode.\n");
+		closesocket(wifi_socket); wifi_socket = INVALID_SOCKET;
+		return false;
+	}
+
+	// Prepare an address structure for sending packets
+	sendAddr.sa_family = AF_INET;
+	*(u32*)&saddr.sa_data[2] = htonl(INADDR_BROADCAST); 
+	*(u16*)&saddr.sa_data[0] = htons(BASEPORT);
+
+	WIFI_LOG(1, "Ad-hoc: initialization successful.\n");
+
 	return true;
 }
 
 void Adhoc_DeInit()
 {
+	if (wifi_socket >= 0)
+		closesocket(wifi_socket);
 }
 
 void Adhoc_Reset()
@@ -1295,9 +1369,9 @@ void Adhoc_usTrigger()
 
  *******************************************************************************/
 
-u8 SoftAP_MACAddr[6] = {0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D};
+const u8 SoftAP_MACAddr[6] = {0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D};
 
-u8 SoftAP_Beacon[] = {
+const u8 SoftAP_Beacon[] = {
 	/* 802.11 header */
 	0x80, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1318,7 +1392,7 @@ u8 SoftAP_Beacon[] = {
 	0x00, 0x00, 0x00, 0x00
 };
 
-u8 SoftAP_ProbeResponse[] = {
+const u8 SoftAP_ProbeResponse[] = {
 	/* 802.11 header */
 	0x50, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1338,7 +1412,7 @@ u8 SoftAP_ProbeResponse[] = {
 	0x00, 0x00, 0x00, 0x00
 };
 
-u8 SoftAP_AuthFrame[] = {
+const u8 SoftAP_AuthFrame[] = {
 	/* 802.11 header */
 	0xB0, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1356,7 +1430,7 @@ u8 SoftAP_AuthFrame[] = {
 	0x00, 0x00, 0x00, 0x00
 };
 
-u8 SoftAP_AssocResponse[] = {
+const u8 SoftAP_AssocResponse[] = {
 	/* 802.11 header */
 	0x10, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1496,7 +1570,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					*(u64*)&wifiMac.SoftAP.curPacket[12 + 24] = timestamp;
 
 					// And the CRC32 (FCS)
-					u32 crc32 = WIFI_getCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
+					u32 crc32 = WIFI_calcCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
 					*(u32*)&wifiMac.SoftAP.curPacket[12 + packetLen - 4] = crc32;
 
 					// Let's prepare to send
@@ -1521,7 +1595,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					memcpy(&wifiMac.SoftAP.curPacket[12 + 4], FW_Mac, 6);
 
 					// And the CRC32 (FCS)
-					u32 crc32 = WIFI_getCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
+					u32 crc32 = WIFI_calcCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
 					*(u32*)&wifiMac.SoftAP.curPacket[12 + packetLen - 4] = crc32;
 
 					// Let's prepare to send
@@ -1546,7 +1620,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					memcpy(&wifiMac.SoftAP.curPacket[12 + 4], FW_Mac, 6);
 
 					// And the CRC32 (FCS)
-					u32 crc32 = WIFI_getCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
+					u32 crc32 = WIFI_calcCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
 					*(u32*)&wifiMac.SoftAP.curPacket[12 + packetLen - 4] = crc32;
 
 					// Let's prepare to send
@@ -1617,7 +1691,7 @@ INLINE void SoftAP_SendBeacon()
 	*(u64*)&wifiMac.SoftAP.curPacket[12 + 24] = timestamp;
 
 	// And the CRC32 (FCS)
-	u32 crc32 = WIFI_getCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
+	u32 crc32 = WIFI_calcCRC32(&wifiMac.SoftAP.curPacket[12], (packetLen - 4));
 	*(u32*)&wifiMac.SoftAP.curPacket[12 + packetLen - 4] = crc32;
 
 	// Let's prepare to send

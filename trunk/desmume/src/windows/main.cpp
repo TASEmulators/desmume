@@ -1869,8 +1869,6 @@ int _main()
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", FALSE, IniName);
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
-	CommonSettings.wifi.adhocMode = GetPrivateProfileInt("Wifi", "AdhocMode", 0, IniName);
-	GetPrivateProfileString("Wifi", "AdhocServerName", "", CommonSettings.wifi.adhocServerName, 64, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
@@ -4296,12 +4294,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			HWND cur;
 
 			CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
-			CheckRadioButton(hDlg, IDC_ADHOC_SERVER, IDC_ADHOC_CLIENT, CommonSettings.wifi.adhocMode ? IDC_ADHOC_CLIENT:IDC_ADHOC_SERVER);
-
-			cur = GetDlgItem(hDlg, IDC_ADHOC_SERVERNAME);
-			SetWindowText(cur, CommonSettings.wifi.adhocServerName);
-			EnableWindow(cur, (CommonSettings.wifi.adhocMode == 1) ? TRUE:FALSE);
-
 #if 0
 			if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
 			{
@@ -4323,14 +4315,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 		{
 			switch(LOWORD(wParam))
 			{
-			case IDC_ADHOC_SERVER:
-			case IDC_ADHOC_CLIENT:
-				{
-					HWND cur = GetDlgItem(hDlg, IDC_ADHOC_SERVERNAME);
-					EnableWindow(cur, (LOWORD(wParam) == IDC_ADHOC_CLIENT) ? TRUE:FALSE);
-				}
-				return TRUE;
-
 			case IDOK:
 				{
 					int val = 0;
@@ -4354,16 +4338,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 					CommonSettings.wifi.mode = 0;
 					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
 #endif
-
-					if (IsDlgButtonChecked(hDlg, IDC_ADHOC_SERVER))
-						CommonSettings.wifi.adhocMode = 0;
-					else
-						CommonSettings.wifi.adhocMode = 1;
-					WritePrivateProfileInt("Wifi", "AdhocMode", CommonSettings.wifi.adhocMode, IniName);
-
-					cur = GetDlgItem(hDlg, IDC_ADHOC_SERVERNAME);
-					GetWindowText(cur, CommonSettings.wifi.adhocServerName, 64);
-					WritePrivateProfileString("Wifi", "AdhocServerName", CommonSettings.wifi.adhocServerName, IniName);
 
 					if(val == IDYES)
 					{
