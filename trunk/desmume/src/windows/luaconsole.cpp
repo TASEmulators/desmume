@@ -125,7 +125,7 @@ int WINAPI FileSysWatcher (LPVOID arg)
 void RegisterWatcherThread (HWND hDlg)
 {
 	HANDLE thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) FileSysWatcher, (LPVOID) hDlg, CREATE_SUSPENDED, NULL);
-	SetThreadPriority(thread, THREAD_PRIORITY_LOWEST);
+//	SetThreadPriority(thread, THREAD_PRIORITY_LOWEST); // disabled because it can make us miss updates in single-core mode and the thread spends all its time sleeping anyway
 
 	LuaPerWindowInfo& info = LuaWindowInfo[hDlg];
 	info.fileWatcherThread = thread;

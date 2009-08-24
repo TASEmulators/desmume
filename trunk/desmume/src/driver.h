@@ -32,10 +32,27 @@ class BaseDriver {
 public:
 	virtual bool WIFI_Host_InitSystem() { return FALSE; }
 	virtual void WIFI_Host_ShutdownSystem() {}
+
+	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {}
 	virtual bool AVI_IsRecording() { return FALSE; }
 	virtual bool WAV_IsRecording() { return FALSE; }
+
 	virtual void USR_InfoMessage(const char *message) { LOG("%s\n", message); }
-	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {}
+	virtual void USR_RefreshScreen() {}
+	virtual void USR_SetDisplayPostpone(int milliseconds, bool drawNextFrame) {} // -1 == indefinitely, 0 == don't pospone, 500 == don't draw for 0.5 seconds
+
+	enum eStepMainLoopResult
+	{
+		ESTEP_NOT_IMPLEMENTED = -1,
+		ESTEP_CALL_AGAIN = 0,
+		ESTEP_DONE = 1,
+	};
+	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore) { return ESTEP_NOT_IMPLEMENTED; } // -1 frameSkip == useCurrentDefault
+	virtual void EMU_PauseEmulation(bool pause) {}
+	virtual bool EMU_IsEmulationPaused() { return false; }
+	virtual bool EMU_IsFastForwarding() { return false; }
+	virtual bool EMU_HasEmulationStarted() { return true; }
+	virtual bool EMU_IsAtFrameBoundary() { return true; }
 };
 extern BaseDriver* driver;
 

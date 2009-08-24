@@ -252,6 +252,8 @@ float DefaultHeight;
 float widthTradeOff;
 float heightTradeOff;
 
+/*__declspec(thread)*/ bool inFrameBoundary = false;
+
 //static char IniName[MAX_PATH];
 int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
@@ -272,6 +274,7 @@ GPU3DInterface *core3DList[] = {
 
 bool autoframeskipenab=0;
 int frameskiprate=0;
+int lastskiprate=0;
 int emu_paused = 0;
 bool frameAdvance = false;
 bool staterewindingenabled = false;
@@ -444,7 +447,6 @@ void UnscaleScreenCoords(s32& x, s32& y)
 	RECT r;
 	HWND hwnd = MainWindow->getHWnd();
 	GetClientRect(hwnd,&r);
-	SetCapture(hwnd);
 	int defwidth = video.width, defheight = (video.height+video.screengap);
 	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
@@ -901,6 +903,19 @@ volatile int newestDisplayBuffer=-2;
 GMutex *display_mutex = NULL;
 GThread *display_thread = NULL;
 volatile bool display_die = false;
+HANDLE display_wakeup_event = INVALID_HANDLE_VALUE;
+
+int displayPostponeType = 0;
+DWORD displayPostponeUntil = ~0;
+bool displayNoPostponeNext = false;
+
+DWORD display_invoke_argument = 0;
+void (*display_invoke_function)(DWORD) = NULL;
+HANDLE display_invoke_ready_event = INVALID_HANDLE_VALUE;
+HANDLE display_invoke_done_event = INVALID_HANDLE_VALUE;
+DWORD display_invoke_timeout = 500;
+CRITICAL_SECTION display_invoke_handler_cs;
+
 
 static void DoDisplay_DrawHud()
 {
@@ -913,6 +928,10 @@ static void DoDisplay_DrawHud()
 static void DoDisplay(bool firstTime)
 {
 	Lock lock (win_backbuffer_sync);
+
+	if(displayPostponeType && !displayNoPostponeNext && (displayPostponeType < 0 || timeGetTime() < displayPostponeUntil))
+		return;
+	displayNoPostponeNext = false;
 
 	//convert pixel format to 32bpp for compositing
 	//why do we do this over and over? well, we are compositing to 
@@ -931,6 +950,22 @@ static void DoDisplay(bool firstTime)
 		{
 			aggDraw.hud->attach((u8*)video.buffer, 256, 384, 1024);
 			DoDisplay_DrawHud();
+		}
+	}
+
+	if(AnyLuaActive())
+	{
+		if(g_thread_self() == display_thread)
+		{
+			ResetEvent(display_invoke_ready_event);
+			display_invoke_argument = LUACALL_AFTEREMULATIONGUI;
+			display_invoke_function = (void(*)(DWORD))CallRegisteredLuaFunctions;
+			SignalObjectAndWait(display_invoke_ready_event, display_invoke_done_event, display_invoke_timeout, FALSE);
+			display_invoke_function = NULL;
+		}
+		else
+		{
+			CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
 		}
 	}
 
@@ -979,20 +1014,20 @@ void displayThread(void*)
 	for(;;) {
 		if(display_die) return;
 		displayProc();
-		Sleep(10); //don't be greedy and use a whole cpu core, but leave room for 60fps 
+		//Sleep(10); //don't be greedy and use a whole cpu core, but leave room for 60fps 
+		WaitForSingleObject(display_wakeup_event, 10); // same as sleep but lets something wake us up early
 	}
 }
 
 void KillDisplay()
 {
 	display_die = true;
+	SetEvent(display_wakeup_event);
 	g_thread_join(display_thread);
 }
 
 void Display()
 {
-	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
-
 	if(CommonSettings.single_core)
 	{
 		video.srcBuffer = (u8*)GPU_screen;
@@ -1020,6 +1055,7 @@ void Display()
 		g_mutex_unlock(display_mutex);
 	}
 }
+
 
 
 void CheckMessages()
@@ -1053,24 +1089,239 @@ void CheckMessages()
 	}
 }
 
+static void _ServiceDisplayThreadInvocation()
+{
+	Lock lock (display_invoke_handler_cs);
+	DWORD res = WaitForSingleObject(display_invoke_ready_event, display_invoke_timeout);
+	if(res != WAIT_ABANDONED && display_invoke_function)
+		display_invoke_function(display_invoke_argument);
+	display_invoke_function = NULL;
+	SetEvent(display_invoke_done_event);
+}
+static FORCEINLINE void ServiceDisplayThreadInvocations()
+{
+	if(display_invoke_function)
+		_ServiceDisplayThreadInvocation();
+}
+
+
+static struct MainLoopData
+{
+	u64 freq;
+	int framestoskip;
+	int framesskipped;
+	int skipnextframe;
+	u64 lastticks;
+	u64 curticks;
+	u64 diffticks;
+	u32 framecount;
+	u64 onesecondticks;
+	u64 fpsticks;
+	HWND hwnd;
+	int fps;
+	int fps3d;
+	int fpsframecount;
+} mainLoopData = {0};
+
+
+static void StepRunLoop_Core()
+{
+	input_acquire();
+	NDS_beginProcessingInput();
+	{
+		input_process();
+		FCEUMOV_HandlePlayback();
+		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+	}
+	NDS_endProcessingInput();
+	FCEUMOV_HandleRecording();
+
+	inFrameBoundary = false;
+	{
+		Lock lock;
+		NDS_exec<false>();
+		win_sound_samplecounter = 735;
+	}
+	inFrameBoundary = true;
+	DRV_AviVideoUpdate((u16*)GPU_screen);
+
+	extern bool rewinding;
+
+	if (staterewindingenabled) {
+
+		if(rewinding)
+			dorewind();
+		else
+			rewindsave();
+	}
+
+	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
+	ServiceDisplayThreadInvocations();
+}
+
+static void StepRunLoop_Paused()
+{
+	paused = TRUE;
+	Sleep(100);
+
+	// periodically update single-core OSD when paused and in the foreground
+	if(CommonSettings.single_core && GetActiveWindow() == mainLoopData.hwnd)
+	{
+		video.srcBuffer = (u8*)GPU_screen;
+		DoDisplay(true);
+	}
+
+	ServiceDisplayThreadInvocations();
+}
+
+static void StepRunLoop_User()
+{
+	Hud.fps = mainLoopData.fps;
+	Hud.fps3d = mainLoopData.fps3d;
+
+	Display();
+
+	gfx3d.frameCtrRaw++;
+	if(gfx3d.frameCtrRaw == 60) {
+		mainLoopData.fps3d = gfx3d.frameCtr;
+		gfx3d.frameCtrRaw = 0;
+		gfx3d.frameCtr = 0;
+	}
+
+
+	// TODO: make that thing properly threaded
+	static DWORD tools_time_last = 0;
+	DWORD time_now = timeGetTime();
+	if((time_now - tools_time_last) >= 50)
+	{
+		if(MemView_IsOpened(ARMCPU_ARM9)) MemView_Refresh(ARMCPU_ARM9);
+		if(MemView_IsOpened(ARMCPU_ARM7)) MemView_Refresh(ARMCPU_ARM7);
+	//	if(IORegView_IsOpened()) IORegView_Refresh();
+
+		tools_time_last = time_now;
+	}
+	if(SoundView_IsOpened()) SoundView_Refresh();
+
+	Update_RAM_Watch();
+	Update_RAM_Search();
+
+	mainLoopData.fpsframecount++;
+	QueryPerformanceCounter((LARGE_INTEGER *)&mainLoopData.curticks);
+	bool oneSecond = mainLoopData.curticks >= mainLoopData.fpsticks + mainLoopData.freq;
+	if(oneSecond) // TODO: print fps on screen in DDraw
+	{
+		mainLoopData.fps = mainLoopData.fpsframecount;
+		mainLoopData.fpsframecount = 0;
+		QueryPerformanceCounter((LARGE_INTEGER *)&mainLoopData.fpsticks);
+	}
+
+	if(nds.idleFrameCounter==0 || oneSecond) 
+	{
+		//calculate a 16 frame arm9 load average
+		int load = 0;
+		for(int i=0;i<16;i++)
+			load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
+		load = std::min(100,std::max(0,(int)(load*100/1120380)));
+		//sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
+		SetWindowText(mainLoopData.hwnd, DESMUME_NAME_AND_VERSION);
+	}
+}
+
+static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1)
+{
+	int skipRate = (forceFrameSkip < 0) ? frameskiprate : forceFrameSkip;
+	int ffSkipRate = (forceFrameSkip < 0) ? 9 : forceFrameSkip;
+
+	if(lastskiprate != skipRate)
+	{
+		lastskiprate = skipRate;
+		mainLoopData.framestoskip = 0; // otherwise switches to lower frameskip rates will lag behind
+	}
+
+	if(!mainLoopData.skipnextframe || forceFrameSkip == 0)
+	{
+		mainLoopData.framesskipped = 0;
+
+		if (mainLoopData.framestoskip > 0)
+			mainLoopData.skipnextframe = 1;
+	}
+	else
+	{
+		mainLoopData.framestoskip--;
+
+		if (mainLoopData.framestoskip < 1)
+			mainLoopData.skipnextframe = 0;
+		else
+			mainLoopData.skipnextframe = 1;
+
+		mainLoopData.framesskipped++;
+
+		NDS_SkipNextFrame();
+	}
+
+	if(FastForward)
+	{
+		if(mainLoopData.framesskipped < ffSkipRate)
+		{
+			mainLoopData.skipnextframe = 1;
+			mainLoopData.framestoskip = 1;
+		}
+		if (mainLoopData.framestoskip < 1)
+			mainLoopData.framestoskip += ffSkipRate;
+	}
+	else if((autoframeskipenab || FrameLimit) && allowSleep)
+	{
+		while(SpeedThrottle())
+		{
+		}
+	}
+
+	if (autoframeskipenab)
+	{
+		mainLoopData.framecount++;
+
+		if (mainLoopData.framecount > 60)
+		{
+			mainLoopData.framecount = 1;
+			mainLoopData.onesecondticks = 0;
+		}
+
+		QueryPerformanceCounter((LARGE_INTEGER *)&mainLoopData.curticks);
+		mainLoopData.diffticks = mainLoopData.curticks - mainLoopData.lastticks;
+
+		if(ThrottleIsBehind() && (mainLoopData.framesskipped < ffSkipRate))
+		{
+			mainLoopData.skipnextframe = 1;
+			mainLoopData.framestoskip = 1;
+		}
+
+		mainLoopData.onesecondticks += mainLoopData.diffticks;
+		mainLoopData.lastticks = mainLoopData.curticks;
+	}
+	else
+	{
+		if (mainLoopData.framestoskip < 1)
+			mainLoopData.framestoskip += skipRate;
+	}
+	if (frameAdvance && allowSleep)
+	{
+		frameAdvance = false;
+		emu_halt();
+		SPU_Pause(1);
+	}
+	ServiceDisplayThreadInvocations();
+}
+
 DWORD WINAPI run()
 {
 	u32 cycles = 0;
-	int wait=0;
-	u64 freq;
-	u64 OneFrameTime;
-	int framestoskip=0;
-	int framesskipped=0;
-	int skipnextframe=0;
-	u64 lastticks=0;
-	u64 curticks=0;
-	u64 diffticks=0;
-	u32 framecount=0;
-	u64 onesecondticks=0;
-	int fps=0;
-	int fpsframecount=0;
-	u64 fpsticks=0;
-	HWND	hwnd = MainWindow->getHWnd();
+	int wait = 0;
+	u64 OneFrameTime = ~0;
+
+	HWND hwnd = MainWindow->getHWnd();
+	mainLoopData.hwnd = hwnd;
+
+	inFrameBoundary = true;
 
 	InitSpeedThrottle();
 
@@ -1094,173 +1345,21 @@ DWORD WINAPI run()
 		return -1;
 	}
 
-	QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
-	QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
-	OneFrameTime = freq / 60;
+	QueryPerformanceFrequency((LARGE_INTEGER *)&mainLoopData.freq);
+	QueryPerformanceCounter((LARGE_INTEGER *)&mainLoopData.lastticks);
+	OneFrameTime = mainLoopData.freq / 60;
 
 	while(!finished)
 	{
 		while(execute)
 		{
-			// the order of these function calls is very important
-			input_acquire();
-			NDS_beginProcessingInput();
-			{
-				input_process();
-				FCEUMOV_HandlePlayback();
-				CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
-			}
-			NDS_endProcessingInput();
-			FCEUMOV_HandleRecording();
-				
-			{
-				Lock lock;
-				NDS_exec<false>();
-				win_sound_samplecounter = 735;
-			}
-			DRV_AviVideoUpdate((u16*)GPU_screen);
-
-			extern bool rewinding;
-
-			if (staterewindingenabled) {
-
-				if(rewinding)
-					dorewind();
-				else
-					rewindsave();
-			}
-
-			CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
-
-			static int fps3d = 0;
-
-			Hud.fps = fps;
-			Hud.fps3d = fps3d;
-
-			Display();
-
-			gfx3d.frameCtrRaw++;
-			if(gfx3d.frameCtrRaw == 60) {
-				fps3d = gfx3d.frameCtr;
-				gfx3d.frameCtrRaw = 0;
-				gfx3d.frameCtr = 0;
-			}
-
-
-			// TODO: make that thing properly threaded
-			static DWORD tools_time_last = 0;
-			DWORD time_now = timeGetTime();
-			if((time_now - tools_time_last) >= 50)
-			{
-				if(MemView_IsOpened(ARMCPU_ARM9)) MemView_Refresh(ARMCPU_ARM9);
-				if(MemView_IsOpened(ARMCPU_ARM7)) MemView_Refresh(ARMCPU_ARM7);
-			//	if(IORegView_IsOpened()) IORegView_Refresh();
-
-				tools_time_last = time_now;
-			}
-			if(SoundView_IsOpened()) SoundView_Refresh();
-
-			Update_RAM_Watch();
-			Update_RAM_Search();
-
-			fpsframecount++;
-			QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-			bool oneSecond = curticks >= fpsticks + freq;
-			if(oneSecond) // TODO: print fps on screen in DDraw
-			{
-				fps = fpsframecount;
-				fpsframecount = 0;
-				QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
-			}
-
-			if(nds.idleFrameCounter==0 || oneSecond) 
-			{
-				//calculate a 16 frame arm9 load average
-				int load = 0;
-				for(int i=0;i<16;i++)
-					load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
-				load = std::min(100,std::max(0,(int)(load*100/1120380)));
-				//sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
-				SetWindowText(hwnd, DESMUME_NAME_AND_VERSION);
-			}
-
-			if(!skipnextframe)
-			{
-				framesskipped = 0;
-
-				if (framestoskip > 0)
-					skipnextframe = 1;
-			}
-			else
-			{
-				framestoskip--;
-
-				if (framestoskip < 1)
-					skipnextframe = 0;
-				else
-					skipnextframe = 1;
-
-				framesskipped++;
-
-				NDS_SkipNextFrame();
-			}
-
-			if(FastForward) {
-				if(framesskipped < 9)
-				{
-					skipnextframe = 1;
-					framestoskip = 1;
-				}
-				if (framestoskip < 1)
-				framestoskip += 9;
-			}
-
-			else if(autoframeskipenab || FrameLimit)
-				while(SpeedThrottle())
-				{
-				}
-
-				if (autoframeskipenab)
-				{
-					framecount++;
-
-					if (framecount > 60)
-					{
-						framecount = 1;
-						onesecondticks = 0;
-					}
-
-					QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-					diffticks = curticks-lastticks;
-
-					if(ThrottleIsBehind() && (framesskipped < 9))
-					{
-						skipnextframe = 1;
-						framestoskip = 1;
-					}
-
-					onesecondticks += diffticks;
-					lastticks = curticks;
-				}
-				else
-				{
-					if (framestoskip < 1)
-						framestoskip += frameskiprate;
-				}
-				if (frameAdvance)
-				{
-					frameAdvance = false;
-					emu_halt();
-					SPU_Pause(1);
-				}
-//				DisplayMessage();
-				CheckMessages();
-	
+			StepRunLoop_Core();
+			StepRunLoop_User();
+			StepRunLoop_Throttle();
+			CheckMessages();
 		}
-
-		paused = TRUE;
+		StepRunLoop_Paused();
 		CheckMessages();
-		Sleep(100);
 	}
 
 	return 1;
@@ -1530,6 +1629,106 @@ class WinDriver : public BaseDriver
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) { 
 		::DRV_AviSoundUpdate(soundData, soundLen);
 	}
+
+	virtual void USR_SetDisplayPostpone(int milliseconds, bool drawNextFrame)
+	{
+		displayPostponeType = milliseconds;
+		displayPostponeUntil = timeGetTime() + milliseconds;
+		displayNoPostponeNext |= drawNextFrame;
+	}
+
+	virtual void USR_RefreshScreen()
+	{
+		// postpone updates except this one for at least 0.5 seconds
+		displayNoPostponeNext = true;
+		if(displayPostponeType >= 0)
+		{
+			static const int minPostponeTime = 500;
+			DWORD time_now = timeGetTime();
+			if(displayPostponeType == 0 || (int)displayPostponeUntil - (int)time_now < minPostponeTime)
+				displayPostponeUntil = time_now + minPostponeTime;
+			if(displayPostponeType == 0)
+				displayPostponeType = minPostponeTime;
+		}
+
+		Display();
+
+		// in multi-core mode now the display thread will probably
+		// wait for an invocation in this thread to happen,
+		// so handle that ASAP
+		if(!CommonSettings.single_core)
+		{
+			ResetEvent(display_invoke_ready_event);
+			SetEvent(display_wakeup_event);
+			if(AnyLuaActive())
+				_ServiceDisplayThreadInvocation();
+		}
+	}
+
+	virtual void EMU_PauseEmulation(bool pause)
+	{
+		if(pause)
+		{
+			void Pause(); Pause();
+		}
+		else
+		{
+			void Unpause(); Unpause();
+		}
+	}
+
+	virtual bool EMU_IsEmulationPaused()
+	{
+		return emu_paused;
+	}
+
+	virtual bool EMU_IsFastForwarding()
+	{
+		return FastForward;
+	}
+
+	virtual bool EMU_HasEmulationStarted()
+	{
+		return romloaded;
+	}
+
+	virtual bool EMU_IsAtFrameBoundary()
+	{
+		return inFrameBoundary;
+	}
+
+	virtual eStepEmulationResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
+	{
+		// this bit is here to handle calls through LUACALL_BEFOREEMULATION and in case Lua errors out while we're processing input
+		struct Scope{ bool m_on;
+			Scope() : m_on(NDS_isProcessingUserInput()) { if(m_on) NDS_suspendProcessingInput(true); }
+			~Scope() { if(m_on || NDS_isProcessingUserInput()) NDS_suspendProcessingInput(false); }
+		} scope;
+
+		ServiceDisplayThreadInvocations();
+
+		CheckMessages();
+
+		if(!romloaded)
+			return ESTEP_DONE;
+
+		if(!execute && allowPause)
+		{
+			StepRunLoop_Paused();
+			return ESTEP_CALL_AGAIN;
+		}
+
+		if(!disableCore)
+		{
+			StepRunLoop_Throttle(allowSleep, frameSkip);
+			StepRunLoop_Core();
+		}
+
+		if(!disableUser)
+			StepRunLoop_User();
+
+		return ESTEP_DONE;
+	}
 };
 
 std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault)
@@ -1551,6 +1750,10 @@ int _main()
 
 	InitializeCriticalSection(&win_execute_sync);
 	InitializeCriticalSection(&win_backbuffer_sync);
+	InitializeCriticalSection(&display_invoke_handler_cs);
+	display_invoke_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	display_invoke_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+	display_wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
@@ -1564,6 +1767,17 @@ int _main()
 
 	extern bool windows_opengl_init();
 	oglrender_init = windows_opengl_init;
+
+
+	//try and detect this for users who don't specify it on the commandline
+	//(can't say I really blame them)
+	//this helps give a substantial speedup for singlecore users
+	SYSTEM_INFO systemInfo;
+	GetSystemInfo(&systemInfo);
+	if(systemInfo.dwNumberOfProcessors==1)
+		CommonSettings.single_core = true;
+	else
+		CommonSettings.single_core = false;
 
 
 	char text[80];
@@ -1650,14 +1864,6 @@ int _main()
 		cmdline.errorHelp(__argv[0]);
 		return 1;
 	}
-
-	//try and detect this for users who didn't specify it on the commandline
-	//(can't say I really blame them)
-	//this helps give a substantial speedup for singlecore users
-	SYSTEM_INFO systemInfo;
-	GetSystemInfo(&systemInfo);
-	if(systemInfo.dwNumberOfProcessors==1)
-		CommonSettings.single_core = true;
 
 	Desmume_InitOnce();
 
@@ -2540,7 +2746,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 	return 1;
 }
 
-static void Unpause()
+void Unpause()
 {
 	lastPauseFromLostFocus = FALSE;
 	if (emu_paused) NDS_UnPause();
@@ -2562,25 +2768,32 @@ void FrameAdvance(bool state)
 	if(!romloaded)
 		return;
 	if(state) {
-			if(first) {
+		if(first) {
+			// frame advance button newly pressed
+			first = false;
+			if(!emu_paused) {
+				// if not paused, pause immediately and don't advance yet
+				Pause();
+			} else {
+				// if already paused, execute for 1 frame
 				execute = TRUE;
-				frameAdvance=true;
-				first=false;
+				frameAdvance = true;
 			}
-			else {
-				execute = TRUE;
-			}
-	}
-	else {
-		first = true;
-		if(frameAdvance)
-		{}
-		else
-		{
-			emu_halt();
-			SPU_Pause(1);
-			emu_paused = 1;
+		} else {
+			// frame advance button still held down,
+			// start or continue executing at normal speed
+			execute = TRUE;
+			frameAdvance = false;
 		}
+	} else {
+		// frame advance button released
+		first = true;
+		frameAdvance = false;
+
+		// pause immediately
+		emu_halt();
+		SPU_Pause(1);
+		emu_paused = 1;
 	}
 }
 
@@ -2979,8 +3192,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		break;
 
 	case WM_KEYDOWN:
-		if(paused)
-			input_acquire();
+		input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
 	case WM_SYSKEYDOWN:
@@ -2992,8 +3204,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		}
 	case WM_KEYUP:
-		if(paused)
-			input_acquire();
+		input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
 	case WM_SYSKEYUP:
@@ -3033,7 +3244,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			hdc = BeginPaint(hwnd, &ps);
 
-			Display();
+			if(!romloaded)
+			{
+				Display();
+			}
+			else
+			{
+				if(CommonSettings.single_core)
+				{
+					video.srcBuffer = (u8*)GPU_screen;
+					DoDisplay(true);
+				}
+			}
 
 			EndPaint(hwnd, &ps);
 		}
@@ -3088,6 +3310,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_LBUTTONDBLCLK:
 		if (wParam & MK_LBUTTON)
 		{
+			SetCapture(hwnd);
+
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
 

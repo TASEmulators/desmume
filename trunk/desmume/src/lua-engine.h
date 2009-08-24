@@ -7,6 +7,7 @@ void RunLuaScriptFile(int uid, const char* filename);
 void StopLuaScript(int uid);
 void RequestAbortLuaScript(int uid, const char* message = 0);
 void CloseLuaContext(int uid);
+bool AnyLuaActive();
 
 enum LuaCallID
 {

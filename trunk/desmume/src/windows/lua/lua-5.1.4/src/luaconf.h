@@ -560,13 +560,17 @@
     (defined(__i386) || defined (_M_IX86) || defined(__i386__))
 
 /* On a Microsoft compiler, use assembler */
-#if defined(_MSC_VER)
+/*#if defined(_MSC_VER)*/
+#if 0 /* actually, don't. it doesn't work right. */
 
 #define lua_number2int(i,d)   __asm fld d   __asm fistp i
 #define lua_number2integer(i,n)		lua_number2int(i, n)
 
 /* the next trick should work on any Pentium, but sometimes clashes
    with a DirectX idiosyncrasy */
+/* note: we could specify D3DCREATE_FPU_PRESERVE to guarantee that won't happen.
+   or if we don't even use d3d which is currently true, it's definitely ok.
+   the above assembler version is quite broken, anyway, can't handle >= 0xFF000000. */
 #else
 
 union luai_Cast { double l_d; long l_l; };

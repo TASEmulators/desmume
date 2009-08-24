@@ -336,6 +336,10 @@ void NDS_beginProcessingInput();
 // call once per frame to copy the processed input to the final input
 void NDS_endProcessingInput();
 
+// this is in case something needs reentrancy while processing input
+void NDS_suspendProcessingInput(bool suspend);
+
+
 
 int NDS_LoadROM(const char *filename, const char* logicalFilename=0);
 void NDS_FreeROM(void);
