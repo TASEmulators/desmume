@@ -1697,7 +1697,7 @@ class WinDriver : public BaseDriver
 		return inFrameBoundary;
 	}
 
-	virtual eStepEmulationResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
+	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
 	{
 		// this bit is here to handle calls through LUACALL_BEFOREEMULATION and in case Lua errors out while we're processing input
 		struct Scope{ bool m_on;
