@@ -115,7 +115,7 @@ void HudStruct::reset()
 {
 	FpsDisplay.x=0;
 	FpsDisplay.y=5;
-	FpsDisplay.xsize=120;
+	FpsDisplay.xsize=166;
 	FpsDisplay.ysize=10;
 
 	FrameCounter.x=0;
@@ -504,7 +504,7 @@ void DrawHUD()
 
 	if (CommonSettings.hud.FpsDisplay) 
 	{
-		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d", Hud.fps, Hud.fps3d);
+		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d%s", Hud.fps, Hud.fps3d, driver->EMU_IsEmulationPaused() ? " (paused)" : "");
 	}
 
 	if (CommonSettings.hud.FrameCounterDisplay) 

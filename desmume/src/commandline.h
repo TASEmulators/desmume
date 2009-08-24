@@ -74,6 +74,7 @@ private:
 	char* _cflash_image;
 	char* _cflash_path;
 	int _single_core;
+	int _multi_core;
 };
 
 #endif

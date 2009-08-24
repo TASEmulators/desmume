@@ -2638,7 +2638,7 @@ void NDS_setTouchPos(u16 x, u16 y)
 #ifndef WIN32
 	// FIXME: this code should be deleted from here,
 	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
-	// (see the function called "run" in src/windows/main.cpp),
+	// (see the function called "StepRunLoop_Core" in src/windows/main.cpp),
 	// but I'm leaving this here for now since I can't test those other platforms myself.
 	nds.touchX = rawUserInput.touch.touchX;
 	nds.touchY = rawUserInput.touch.touchY;
@@ -2656,7 +2656,7 @@ void NDS_releaseTouch(void)
 #ifndef WIN32
 	// FIXME: this code should be deleted from here,
 	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
-	// (see the function called "run" in src/windows/main.cpp),
+	// (see the function called "StepRunLoop_Core" in src/windows/main.cpp),
 	// but I'm leaving this here for now since I can't test those other platforms myself.
 	nds.touchX = 0;
 	nds.touchY = 0;
@@ -2790,6 +2790,30 @@ static void NDS_applyFinalInput()
 		((input.buttons.E ? 1 : 0) << 1);
 
 	// TODO: low power IRQ
+}
+
+
+void NDS_suspendProcessingInput(bool suspend)
+{
+	static int suspendCount = 0;
+	if(suspend)
+	{
+		// enter non-processing block
+		assert(validToProcessInput);
+		validToProcessInput = false;
+		suspendCount++;
+	}
+	else if(suspendCount)
+	{
+		// exit non-processing block
+		validToProcessInput = true;
+		suspendCount--;
+	}
+	else
+	{
+		// unwound past first time -> not processing
+		validToProcessInput = false;
+	}
 }
 
 

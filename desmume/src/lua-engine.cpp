@@ -14,12 +14,20 @@
 #include "windows.h"
 #endif
 
-// the emulator must provide these so that we can implement
-// the various functions the user can call from their lua script
-// (this interface with the emulator needs cleanup, I know)
+
+// a few functions that maybe aren't part of the Lua engine
+// but didn't make sense to add to BaseDriver (at least not yet)
+static void Clear_Sound_Buffer() {
+	if(SPU_user) SPU_user->ShutUp();
+}
+static bool IsHardwareAddressValid(u32 address) {
+	// maybe TODO? let's say everything is valid.
+	return true;
+}
+
+
+// actual lua engine follows
 // adapted from gens-rr, nitsuja + upthorn
-extern int (*Update_Frame)();
-extern int (*Update_Frame_Fast)();
 
 extern "C" {
 	#include "lua.h"
@@ -50,9 +58,9 @@ struct LuaContextInfo {
 	bool ranExit; // used to prevent a registered exit callback from ever getting called more than once
 	bool guiFuncsNeedDeferring; // true whenever GUI drawing would be cleared by the next emulation update before it would be visible, and thus needs to be deferred until after the next emulation update
 	int numDeferredFuncs; // number of deferred function calls accumulated, used to impose an arbitrary limit to avoid running out of memory
-	bool ranFrameAdvance; // false if gens.frameadvance() hasn't been called yet
+	bool ranFrameAdvance; // false if emu.frameadvance() hasn't been called yet
 	int transparencyModifier; // values less than 255 will scale down the opacity of whatever the GUI renders, values greater than 255 will increase the opacity of anything transparent the GUI renders
-	SpeedMode speedMode; // determines how gens.frameadvance() acts
+	SpeedMode speedMode; // determines how emu.frameadvance() acts
 	char panicMessage [72]; // a message to print if the script terminates due to panic being set
 	std::string lastFilename; // path to where the script last ran from so that restart can work (note: storing the script in memory instead would not be useful because we always want the most up-to-date script from file)
 	std::string nextFilename; // path to where the script should run from next, mainly used in case the restart flag is true
@@ -220,7 +228,7 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 	// re-cache regions of hooked memory across all scripts
 	CalculateMemHookRegions(hookType);
 
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 0;
 }
 
@@ -280,7 +288,7 @@ DEFINE_LUA_FUNCTION(emu_registerbefore, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEMULATION]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEMULATION]);
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerafter, "func")
@@ -291,7 +299,7 @@ DEFINE_LUA_FUNCTION(emu_registerafter, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATION]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATION]);
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_registerexit, "func")
@@ -302,10 +310,10 @@ DEFINE_LUA_FUNCTION(emu_registerexit, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
-}/*
-DEFINE_LUA_FUNCTION(emu_registerstart, "func")
+}
+DEFINE_LUA_FUNCTION(emu_registerstart, "func") // TODO: use call registered LUACALL_ONSTART functions on reset
 {
 	if (!lua_isnil(L,1))
 		luaL_checktype(L, 1, LUA_TFUNCTION);
@@ -314,11 +322,11 @@ DEFINE_LUA_FUNCTION(emu_registerstart, "func")
 	lua_insert(L,1);
 	lua_pushvalue(L,-1); // copy the function so we can also call it
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONSTART]);
-	if (!lua_isnil(L,-1) && ((Genesis_Started)||(SegaCD_Started)||(_32X_Started)))
+	if (!lua_isnil(L,-1) && driver->EMU_HasEmulationStarted())
 		lua_call(L,0,0); // call the function now since the game has already started and this start function hasn't been called yet
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
-}*/
+}
 DEFINE_LUA_FUNCTION(gui_register, "func")
 {
 	if (!lua_isnil(L,1))
@@ -327,7 +335,7 @@ DEFINE_LUA_FUNCTION(gui_register, "func")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATIONGUI]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTEREMULATIONGUI]);
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(state_registersave, "func[,savekey]")
@@ -340,7 +348,7 @@ DEFINE_LUA_FUNCTION(state_registersave, "func[,savekey]")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFORESAVE]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFORESAVE]);
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
@@ -353,7 +361,7 @@ DEFINE_LUA_FUNCTION(state_registerload, "func[,loadkey]")
 	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTERLOAD]);
 	lua_insert(L,1);
 	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_AFTERLOAD]);
-	StopScriptIfFinished(luaStateToUIDMap[L]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 	return 1;
 }
 
@@ -374,7 +382,7 @@ DEFINE_LUA_FUNCTION(input_registerhotkey, "keynum,func")
 			luaL_checktype(L, 2, LUA_TFUNCTION);
 		lua_settop(L,2);
 		lua_setfield(L, LUA_REGISTRYINDEX, key);
-		StopScriptIfFinished(luaStateToUIDMap[L]);
+		StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
 		return 1;
 	}
 }
@@ -416,7 +424,7 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 	static const int etypes [] = {MB_OK, MB_YESNO, MB_YESNOCANCEL, MB_OKCANCEL, MB_ABORTRETRYIGNORE};
 	static const int eicons [] = {MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONERROR};
 //	DialogsOpen++;
-	int uid = luaStateToUIDMap[L];
+	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	EnableWindow(MainWindow->getHWnd(), false);
 //	if (Full_Screen)
 //	{
@@ -516,7 +524,7 @@ static char* ConstructScriptSaveDataPath(char* output, int bufferSize, LuaContex
 	return rv;
 }
 
-// gens.persistglobalvariables({
+// emu.persistglobalvariables({
 //   variable1 = defaultvalue1,
 //   variable2 = defaultvalue2,
 //   etc
@@ -531,7 +539,7 @@ static char* ConstructScriptSaveDataPath(char* output, int bufferSize, LuaContex
 // also, if you change the default value that will reset the variable to the new default.
 DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 {
-	int uid = luaStateToUIDMap[L];
+	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	// construct a path we can load the persistent variables from
@@ -596,7 +604,7 @@ DEFINE_LUA_FUNCTION(emu_persistglobalvariables, "variabletable")
 			}
 			else
 			{
-				luaL_error(L, "'%s' = '%s' entries are not allowed in the table passed to gens.persistglobalvariables()", lua_typename(L,keyType), lua_typename(L,valueType));
+				luaL_error(L, "'%s' = '%s' entries are not allowed in the table passed to emu.persistglobalvariables()", lua_typename(L,keyType), lua_typename(L,valueType));
 			}
 
 			int varNameIndex = valueIndex;
@@ -677,47 +685,82 @@ void DeferFunctionCall(lua_State* L, const char* idstring)
 	// clean the stack
 	lua_settop(L, 0);
 }
+
+static const char* refStashString = "refstash";
+
 void CallDeferredFunctions(lua_State* L, const char* idstring)
 {
-	lua_settop(L, 0);
 	lua_getfield(L, LUA_REGISTRYINDEX, idstring);
-	int numCalls = lua_objlen(L, 1);
-	for(int i = 1; i <= numCalls; i++)
-	{
-        lua_rawgeti(L, 1, i);  // get the function+arguments list
-		int listSize = lua_objlen(L, 2);
-
-		// push the arguments and the function
-		for(int j = 1; j <= listSize; j++)
-			lua_rawgeti(L, 2, j);
-
-		// get and pop the function
-		lua_CFunction cf = lua_tocfunction(L, -1);
-		lua_pop(L, 1);
-
-		// shift first argument to slot 1 and call the function
-		lua_remove(L, 2);
-		lua_remove(L, 1);
-		cf(L);
-
-		// prepare for next iteration
-		lua_settop(L, 0);
-		lua_getfield(L, LUA_REGISTRYINDEX, idstring);
-	}
-
-	// clear the list of deferred functions
+	int numCalls = lua_objlen(L, -1);
 	if(numCalls > 0)
 	{
+		// save and pop any extra things that were on the stack
+		int top = lua_gettop(L);
+		int stashRef = -1;
+		if(top > 1)
+		{
+			lua_insert(L, 1);
+			lua_getfield(L, LUA_REGISTRYINDEX, refStashString);
+			lua_insert(L, 2);
+			lua_createtable(L, top-1, 0);
+			lua_insert(L, 3);
+			for(int remaining = top; remaining-- > 1;)
+				lua_rawseti(L, 3, remaining);
+			assert(lua_gettop(L) == 3);
+			stashRef = luaL_ref(L, 2);
+			lua_pop(L, 1);
+		}
+		
+		// loop through all the queued function calls
+		for(int i = 1; i <= numCalls; i++)
+		{
+			lua_rawgeti(L, 1, i);  // get the function+arguments list
+			int listSize = lua_objlen(L, 2);
+
+			// push the arguments and the function
+			for(int j = 1; j <= listSize; j++)
+				lua_rawgeti(L, 2, j);
+
+			// get and pop the function
+			lua_CFunction cf = lua_tocfunction(L, -1);
+			lua_pop(L, 1);
+
+			// shift first argument to slot 1 and call the function
+			lua_remove(L, 2);
+			lua_remove(L, 1);
+			cf(L);
+
+			// prepare for next iteration
+			lua_settop(L, 0);
+			lua_getfield(L, LUA_REGISTRYINDEX, idstring);
+		}
+
+		// clear the list of deferred functions
 		lua_newtable(L);
 		lua_setfield(L, LUA_REGISTRYINDEX, idstring);
 		LuaContextInfo& info = GetCurrentInfo();
 		info.numDeferredFuncs -= numCalls;
 		if(info.numDeferredFuncs < 0)
 			info.numDeferredFuncs = 0;
-	}
 
-	// clean the stack
-	lua_settop(L, 0);
+		// restore the stack
+		lua_settop(L, 0);
+		if(top > 1)
+		{
+			lua_getfield(L, LUA_REGISTRYINDEX, refStashString);
+			lua_rawgeti(L, 1, stashRef);
+			for(int i = 1; i <= top-1; i++)
+				lua_rawgeti(L, 2, i);
+			luaL_unref(L, 1, stashRef);
+			lua_remove(L, 2);
+			lua_remove(L, 1);
+		}
+		assert(lua_gettop(L) == top - 1);
+	}
+	else
+	{
+		lua_pop(L, 1);
+	}
 }
 
 bool DeferGUIFuncIfNeeded(lua_State* L)
@@ -993,7 +1036,7 @@ DEFINE_LUA_FUNCTION(print, "...")
 {
 	const char* str = toCString(L);
 
-	int uid = luaStateToUIDMap[L];
+	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(info.print)
@@ -1120,7 +1163,8 @@ DEFINE_LUA_FUNCTION(bitbit, "whichbit")
 	return 1;
 }
 
-//int gens_wait(lua_State* L);
+int emu_wait(lua_State* L);
+int dontworry(LuaContextInfo& info);
 
 void indicateBusy(lua_State* L, bool busy)
 {
@@ -1136,7 +1180,7 @@ void indicateBusy(lua_State* L, bool busy)
 		va_end(argp);
 		lua_concat(L, 2);
 		LuaContextInfo& info = GetCurrentInfo();
-		int uid = luaStateToUIDMap[L];
+		int uid = luaStateToUIDMap[L->l_G->mainthread];
 		if(info.print)
 		{
 			info.print(uid, lua_tostring(L,-1));
@@ -1150,7 +1194,7 @@ void indicateBusy(lua_State* L, bool busy)
 	}
 */
 #ifdef _WIN32
-	int uid = luaStateToUIDMap[L];
+	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	HWND hDlg = (HWND)uid;
 	char str [1024];
 	GetWindowText(hDlg, str, 1000);
@@ -1170,6 +1214,7 @@ void indicateBusy(lua_State* L, bool busy)
 #endif
 }
 
+
 #define HOOKCOUNT 4096
 #define MAX_WORRY_COUNT 6000
 void LuaRescueHook(lua_State* L, lua_Debug *dbg)
@@ -1186,7 +1231,7 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 			// but we don't trust their judgement completely,
 			// so periodically update the main loop so they have a chance to manually stop it
 			info.worryCount = 0;
-//			gens_wait(L);
+			emu_wait(L);
 			info.stopWorrying = true;
 		}
 		return;
@@ -1201,7 +1246,7 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		bool stopworrying = true;
 		if(!info.panic)
 		{
-//			Clear_Sound_Buffer();
+			Clear_Sound_Buffer();
 #if defined(ASK_USER_ON_FREEZE) && defined(_WIN32)
 			DialogsOpen++;
 			int answer = MessageBox(HWnd, "A Lua script has been running for quite a while. Maybe it is in an infinite loop.\n\nWould you like to stop the script?\n\n(Yes to stop it now,\n No to keep running and not ask again,\n Cancel to keep running but ask again later)", "Lua Alert", MB_YESNOCANCEL | MB_DEFBUTTON3 | MB_ICONASTERISK);
@@ -1244,7 +1289,7 @@ void printfToOutput(const char* fmt, ...)
 	if(info.print)
 	{
 		lua_State* L = info.L;
-		int uid = luaStateToUIDMap[L];
+		int uid = luaStateToUIDMap[L->l_G->mainthread];
 		info.print(uid, str);
 		info.print(uid, "\r\n");
 		worry(L,300);
@@ -1257,8 +1302,8 @@ void printfToOutput(const char* fmt, ...)
 }
 
 bool FailVerifyAtFrameBoundary(lua_State* L, const char* funcName, int unstartedSeverity=2, int inframeSeverity=2)
-{//TODO
-/*	if (!((Genesis_Started)||(SegaCD_Started)||(_32X_Started)))
+{
+	if (!driver->EMU_HasEmulationStarted())
 	{
 		static const char* msg = "cannot call %s() when emulation has not started.";
 		switch(unstartedSeverity)
@@ -1269,7 +1314,7 @@ bool FailVerifyAtFrameBoundary(lua_State* L, const char* funcName, int unstarted
 		}
 		return true;
 	}
-	if(Inside_Frame)
+	if(!driver->EMU_IsAtFrameBoundary())
 	{
 		static const char* msg = "cannot call %s() inside an emulation frame.";
 		switch(inframeSeverity)
@@ -1279,104 +1324,119 @@ bool FailVerifyAtFrameBoundary(lua_State* L, const char* funcName, int unstarted
 		default: case 2: luaL_error(L, msg, funcName); break;
 		}
 		return true;
-	}*/
+	}
 	return false;
 }
-/*
-// acts similar to normal emulation update
-// except without the user being able to activate emulator commands
-DEFINE_LUA_FUNCTION(gens_emulateframe, "")
+
+
+// wrapper for EMU_StepMainLoop that provides a default implementation if ESTEP_NOT_IMPLEMENTED is returned.
+// which only works if called from a function whose return value will get returned to Lua directly.
+// TODO: actually implement the default case by making the main thread we use into a coroutine and resuming it periodically
+static bool stepped_emulation = false; // <-- this is the result of running the macro
+#define StepEmulationOnce(allowSleep, allowPause, frameSkip, disableUser, disableCore) \
+	switch(driver->EMU_StepMainLoop(allowSleep, allowPause, frameSkip, disableUser, disableCore)) \
+	{	default: \
+		case BaseDriver::ESTEP_NOT_IMPLEMENTED: /*return lua_yield(L, 0);*/ luaL_error(L, "Lua frame advance functions are not yet implemented for this platform, and neither is the fallback implementation."); break;/*TODO*/ \
+		case BaseDriver::ESTEP_CALL_AGAIN: stepped_emulation = !driver->EMU_HasEmulationStarted(); break; \
+		case BaseDriver::ESTEP_DONE: stepped_emulation = true; break; \
+	}
+
+// same as StepEmulationOnce, except calls EMU_StepMainLoop multiple times if it returns ESTEP_CALL_AGAIN
+#define StepEmulation(allowSleep, allowPause, frameSkip, disableUser, disableCore) \
+	do { \
+		StepEmulationOnce(allowSleep, allowPause, frameSkip, disableUser, disableCore); \
+		if(stepped_emulation || (info).panic) break; \
+	} while(true)
+
+
+// note: caller must return the value this returns to Lua (at least if nonzero)
+int StepEmulationAtSpeed(lua_State* L, SpeedMode speedMode, bool allowPause)
 {
-	if(FailVerifyAtFrameBoundary(L, "gens.emulateframe", 0,1))
+	int postponeTime;
+	bool drawNextFrame;
+	int worryIntensity;
+	bool allowSleep;
+	int frameSkip;
+	bool disableUserFeedback;
+
+	LuaContextInfo& info = GetCurrentInfo();
+	switch(speedMode)
+	{
+		default:
+		case SPEEDMODE_NORMAL:
+			postponeTime = 0, drawNextFrame = true, worryIntensity = 300;
+			allowSleep = true;
+			frameSkip = -1;
+			disableUserFeedback = false;
+			break;
+		case SPEEDMODE_NOTHROTTLE:
+			postponeTime = 250, drawNextFrame = true, worryIntensity = 200;
+			allowSleep = driver->EMU_IsEmulationPaused();
+			frameSkip = driver->EMU_IsFastForwarding() ? -1 : 0;
+			disableUserFeedback = false;
+			break;
+		case SPEEDMODE_TURBO:
+			postponeTime = 500, drawNextFrame = true, worryIntensity = 150;
+			allowSleep = driver->EMU_IsEmulationPaused();
+			frameSkip = 16;
+			disableUserFeedback = false;
+			break;
+		case SPEEDMODE_MAXIMUM:
+			postponeTime = 1000, drawNextFrame = false, worryIntensity = 100;
+			allowSleep = driver->EMU_IsEmulationPaused();
+			frameSkip = 65535;
+			disableUserFeedback = true;
+			break;
+	}
+
+	driver->USR_SetDisplayPostpone(postponeTime, drawNextFrame);
+	allowPause ? dontworry(info) : worry(L, worryIntensity);
+
+	if(!allowPause && driver->EMU_IsEmulationPaused())
+		driver->EMU_PauseEmulation(false);
+
+	StepEmulation(allowSleep, allowPause, frameSkip, disableUserFeedback, false);
+	return 0;
+}
+
+// acts similar to normal emulation update
+DEFINE_LUA_FUNCTION(emu_emulateframe, "")
+{
+	if(FailVerifyAtFrameBoundary(L, "emu.emulateframe", 0,1))
 		return 0;
 
-	Update_Emulation_One(HWnd);
-	Prevent_Next_Frame_Skipping(); // so we don't skip a whole bunch of frames immediately after emulating many frames by this method
-
-	worry(L,300);
-	return 0;
+	return StepEmulationAtSpeed(L, SPEEDMODE_NORMAL, false);
 }
 
 // acts as a fast-forward emulation update that still renders every frame
-// and the user is unable to activate emulator commands during it
-DEFINE_LUA_FUNCTION(gens_emulateframefastnoskipping, "")
+DEFINE_LUA_FUNCTION(emu_emulateframefastnoskipping, "")
 {
-	if(FailVerifyAtFrameBoundary(L, "gens.emulateframefastnoskipping", 0,1))
+	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefastnoskipping", 0,1))
 		return 0;
 
-	Update_Emulation_One_Before(HWnd);
-	Update_Frame_Hook();
-	Update_Emulation_After_Controlled(HWnd, true);
-	Prevent_Next_Frame_Skipping(); // so we don't skip a whole bunch of frames immediately after a bout of fast-forward frames
-
-	worry(L,200);
-	return 0;
+	return StepEmulationAtSpeed(L, SPEEDMODE_NOTHROTTLE, false);
 }
 
-// acts as a (very) fast-forward emulation update
-// where the user is unable to activate emulator commands
-DEFINE_LUA_FUNCTION(gens_emulateframefast, "")
+// acts as a fast-forward emulation update
+DEFINE_LUA_FUNCTION(emu_emulateframefast, "")
 {
-	if(FailVerifyAtFrameBoundary(L, "gens.emulateframefast", 0,1))
+	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefast", 0,1))
 		return 0;
 
-	disableVideoLatencyCompensationCount = VideoLatencyCompensation + 1;
-
-	Update_Emulation_One_Before(HWnd);
-
-	if(FrameCount%16 == 0) // skip rendering 15 out of 16 frames
-	{
-		// update once and render
-		Update_Frame_Hook();
-		Update_Emulation_After_Controlled(HWnd, true);
-	}
-	else
-	{
-		// update once but skip rendering
-		Update_Frame_Fast_Hook();
-		Update_Emulation_After_Controlled(HWnd, false);
-	}
-
-	Prevent_Next_Frame_Skipping(); // so we don't skip a whole bunch of frames immediately AFTER a bout of fast-forward frames
-
-	worry(L,150);
-	return 0;
+	return StepEmulationAtSpeed(L, SPEEDMODE_TURBO, false);
 }
 
 // acts as an extremely-fast-forward emulation update
-// that also doesn't render any graphics or generate any sounds,
-// and the user is unable to activate emulator commands during it.
-// if you load a savestate after calling this function,
-// it should leave no trace of having been called,
-// so you can do things like generate future emulation states every frame
-// while the user continues to see and hear normal emulation
-DEFINE_LUA_FUNCTION(gens_emulateframeinvisible, "")
+// that also doesn't render any graphics or generate any sounds
+DEFINE_LUA_FUNCTION(emu_emulateframeinvisible, "")
 {
-	if(FailVerifyAtFrameBoundary(L, "gens.emulateframeinvisible", 0,1))
+	if(FailVerifyAtFrameBoundary(L, "emu.emulateframeinvisible", 0,1))
 		return 0;
 
-	int oldDisableSound2 = disableSound2;
-	int oldDisableRamSearchUpdate = disableRamSearchUpdate;
-	disableSound2 = true;
-	disableRamSearchUpdate = true;
-
-	Update_Emulation_One_Before_Minimal();
-	Update_Frame_Fast();
-	UpdateLagCount();
-
-	disableSound2 = oldDisableSound2;
-	disableRamSearchUpdate = oldDisableRamSearchUpdate;
-
-	// disable video latency compensation for a few frames
-	// because it can get pretty slow if that's doing prediction updates every frame
-	// when the lua script is also doing prediction updates
-	disableVideoLatencyCompensationCount = VideoLatencyCompensation + 1;
-
-	worry(L,100);
-	return 0;
+	return StepEmulationAtSpeed(L, SPEEDMODE_MAXIMUM, false);
 }
 
-DEFINE_LUA_FUNCTION(gens_speedmode, "mode")
+DEFINE_LUA_FUNCTION(emu_speedmode, "mode")
 {
 	SpeedMode newSpeedMode = SPEEDMODE_NORMAL;
 	if(lua_isnumber(L,1))
@@ -1400,106 +1460,72 @@ DEFINE_LUA_FUNCTION(gens_speedmode, "mode")
 	return 0;
 }
 
-// tells Gens to wait while the script is doing calculations
-// can call this periodically instead of gens.frameadvance
+
+// tells the emulation to wait while the script is doing calculations
+// can call this periodically instead of emu.frameadvance
 // note that the user can use hotkeys at this time
-// (e.g. a savestate could possibly get loaded before gens.wait() returns)
-DEFINE_LUA_FUNCTION(gens_wait, "")
+// (e.g. a savestate could possibly get loaded before emu.wait() returns)
+DEFINE_LUA_FUNCTION(emu_wait, "")
 {
 	LuaContextInfo& info = GetCurrentInfo();
-
-	switch(info.speedMode)
-	{
-		default:
-		case SPEEDMODE_NORMAL:
-			Step_Gens_MainLoop(true, false);
-			break;
-		case SPEEDMODE_NOTHROTTLE:
-		case SPEEDMODE_TURBO:
-		case SPEEDMODE_MAXIMUM:
-			Step_Gens_MainLoop(Paused!=0, false);
-			break;
-	}
-
+	StepEmulationOnce(false, false, -1, true, true);
+	dontworry(info);
 	return 0;
 }
-*/
 
 
 
-/*
-DEFINE_LUA_FUNCTION(gens_frameadvance, "")
+
+
+DEFINE_LUA_FUNCTION(emu_frameadvance, "")
 {
-	if(FailVerifyAtFrameBoundary(L, "gens.frameadvance", 0,1))
-		return gens_wait(L);
+	if(FailVerifyAtFrameBoundary(L, "emu.frameadvance", 0,1))
+		return emu_wait(L);
 
-	int uid = luaStateToUIDMap[L];
+	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	LuaContextInfo& info = GetCurrentInfo();
 
 	if(!info.ranFrameAdvance)
 	{
 		// otherwise we'll never see the first frame of GUI drawing
 		if(info.speedMode != SPEEDMODE_MAXIMUM)
-			Show_Genesis_Screen();
+			driver->USR_RefreshScreen();
 		info.ranFrameAdvance = true;
 	}
 
-	switch(info.speedMode)
-	{
-		default:
-		case SPEEDMODE_NORMAL:
-			while(!Step_Gens_MainLoop(true, true) && !info.panic);
-			break;
-		case SPEEDMODE_NOTHROTTLE:
-			while(!Step_Gens_MainLoop(Paused!=0, false) && !info.panic);
-			if(!(FastForwardKeyDown && (GetActiveWindow()==HWnd || BackgroundInput)))
-				gens_emulateframefastnoskipping(L);
-			else
-				gens_emulateframefast(L);
-			break;
-		case SPEEDMODE_TURBO:
-			while(!Step_Gens_MainLoop(Paused!=0, false) && !info.panic);
-			gens_emulateframefast(L);
-			break;
-		case SPEEDMODE_MAXIMUM:
-			while(!Step_Gens_MainLoop(Paused!=0, false) && !info.panic);
-			gens_emulateframeinvisible(L);
-			break;
-	}
-	return 0;
+	return StepEmulationAtSpeed(L, info.speedMode, true);
 }
 
-DEFINE_LUA_FUNCTION(gens_pause, "")
+DEFINE_LUA_FUNCTION(emu_pause, "")
 {
-	LuaContextInfo& info = GetCurrentInfo();
+	driver->EMU_PauseEmulation(true);
 
-	Paused = 1;
-	while(!Step_Gens_MainLoop(true, false) && !info.panic);
+	LuaContextInfo& info = GetCurrentInfo();
+	StepEmulation(true, true, 0, true, true);
 
 	// allow the user to not have to manually unpause
-	// after restarting a script that used gens.pause()
+	// after restarting a script that used emu.pause()
 	if(info.panic)
-		Paused = 0;
+		driver->EMU_PauseEmulation(false);
 
 	return 0;
 }
 
-DEFINE_LUA_FUNCTION(gens_unpause, "")
+DEFINE_LUA_FUNCTION(emu_unpause, "")
 {
 	LuaContextInfo& info = GetCurrentInfo();
-
-	Paused = 0;
+	driver->EMU_PauseEmulation(false);
 	return 0;
 }
 
-DEFINE_LUA_FUNCTION(gens_redraw, "")
+DEFINE_LUA_FUNCTION(emu_redraw, "")
 {
-	Show_Genesis_Screen();
+	driver->USR_RefreshScreen();
 	worry(L,250);
 	return 0;
 }
 
-*/
+
 
 DEFINE_LUA_FUNCTION(memory_readbyte, "address")
 {
@@ -1589,18 +1615,18 @@ DEFINE_LUA_FUNCTION(memory_readbyterange, "address,length")
 	// put all the values into the (1-based) array
 	for(int a = address, n = 1; n <= length; a++, n++)
 	{
-//		if(IsHardwareAddressValid(a))
-//		{
+		if(IsHardwareAddressValid(a))
+		{
 			unsigned char value = (unsigned char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
 			lua_pushinteger(L, value);
 			lua_rawseti(L, -2, n);
-//		}
+		}
 		// else leave the value nil
 	}
 
 	return 1;
 }
-/*
+
 DEFINE_LUA_FUNCTION(memory_isvalid, "address")
 {
 	int address = luaL_checkinteger(L,1);
@@ -1608,7 +1634,7 @@ DEFINE_LUA_FUNCTION(memory_isvalid, "address")
 	lua_pushboolean(L, IsHardwareAddressValid(address));
 	return 1;
 }
-*/
+
 struct registerPointerMap
 {
 	const char* registerName;
@@ -1754,7 +1780,7 @@ DEFINE_LUA_FUNCTION(state_create, "[location]")
 	int len = GENESIS_STATE_LENGTH;
 	if (SegaCD_Started) len += SEGACD_LENGTH_EX;
 	if (_32X_Started) len += G32X_LENGTH_EX;
-	if (!((Genesis_Started)||(SegaCD_Started)||(_32X_Started)))
+	if (!driver->EMU_HasEmulationStarted())
 		len += std::max(SEGACD_LENGTH_EX, G32X_LENGTH_EX);
 
 	// allocate the in-memory/anonymous savestate
@@ -1900,7 +1926,7 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 //					saveData.ImportRecords(luaSaveFile);
 //					fclose(luaSaveFile);
 //
-//					int uid = luaStateToUIDMap[L];
+//					int uid = luaStateToUIDMap[L->l_G->mainthread];
 //					LuaContextInfo& info = GetCurrentInfo();
 //
 //					lua_settop(L, 0);
@@ -2199,8 +2225,8 @@ DEFINE_LUA_FUNCTION(gui_parsecolor, "color")
 DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 {
 	if(DeferGUIFuncIfNeeded(L))
-		return 0; // we have to wait until later to call this function because gens hasn't emulated the next frame yet
-		          // (the only way to avoid this deferring is to be in a gui.register or gens.registerafter callback)
+		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
+		          // (the only way to avoid this deferring is to be in a gui.register or emu.registerafter callback)
 
 	int x = luaL_checkinteger(L,1) & 0xFFFF;
 	int y = luaL_checkinteger(L,2) & 0xFFFF;
@@ -2728,7 +2754,7 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 
 // TODO
 /*
-DEFINE_LUA_FUNCTION(gens_loadrom, "filename")
+DEFINE_LUA_FUNCTION(emu_loadrom, "filename")
 {
 	struct Temp { Temp() {EnableStopAllLuaScripts(false);} ~Temp() {EnableStopAllLuaScripts(true);}} dontStopScriptsHere;
 	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
@@ -2758,13 +2784,12 @@ DEFINE_LUA_FUNCTION(emu_lagged, "")
 }
 DEFINE_LUA_FUNCTION(emu_emulating, "")
 {
-	lua_pushboolean(L, romloaded);
+	lua_pushboolean(L, driver->EMU_HasEmulationStarted());
 	return 1;
 }
 DEFINE_LUA_FUNCTION(emu_atframeboundary, "")
 {
-	// TODO (actually this is a full implementation currently since registermemory callbacks are disabled)
-	lua_pushboolean(L, true);
+	lua_pushboolean(L, driver->EMU_IsAtFrameBoundary());
 	return 1;
 }
 DEFINE_LUA_FUNCTION(movie_getlength, "")
@@ -2883,7 +2908,7 @@ DEFINE_LUA_FUNCTION(movie_close, "")
 
 DEFINE_LUA_FUNCTION(sound_clear, "")
 {
-	if(SPU_user) SPU_user->ShutUp();
+	Clear_Sound_Buffer();
 	return 0;
 }
 
@@ -3066,6 +3091,8 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 		lua_pushinteger(L, y);
 		lua_setfield(L, -2, "ymouse");
 	}
+
+	worry(L,10);
 #else
 	// NYI (well, return an empty table)
 #endif
@@ -3328,8 +3355,13 @@ static const struct luaL_reg aggcustom [] =
 //  Displays the given text on the screen, using the same font and techniques as the
 //  main HUD.
 //
-// TODO: this incomplete... it should support color and outline color and a much smaller font size
-static int gui_text(lua_State *L) {
+// TODO: this is incomplete... it should support color and outline color and a much smaller font size
+static int gui_text(lua_State *L)
+{
+	if(DeferGUIFuncIfNeeded(L))
+		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
+		          // (the only way to avoid this deferring is to be in a gui.register or emu.registerafter callback)
+
 	const char *msg;
 	int x, y;
 
@@ -3378,17 +3410,16 @@ static const struct luaL_reg styluslib [] =
 
 static const struct luaL_reg emulib [] =
 {
-	// TODO!
-//	{"frameadvance", emu_frameadvance},
-//	{"speedmode", emu_speedmode},
-//	{"wait", emu_wait},
-//	{"pause", emu_pause},
-//	{"unpause", emu_unpause},
-//	{"emulateframe", emu_emulateframe},
-	//{"emulateframefastnoskipping", emu_emulateframefastnoskipping}, // removed from library because probably nobody would notice the difference from emu_emulateframe
-//	{"emulateframefast", emu_emulateframefast},
-//	{"emulateframeinvisible", emu_emulateframeinvisible},
-//	{"redraw", emu_redraw},
+	{"frameadvance", emu_frameadvance},
+	{"speedmode", emu_speedmode},
+	{"wait", emu_wait},
+	{"pause", emu_pause},
+	{"unpause", emu_unpause},
+	{"emulateframe", emu_emulateframe},
+	{"emulateframefastnoskipping", emu_emulateframefastnoskipping},
+	{"emulateframefast", emu_emulateframefast},
+	{"emulateframeinvisible", emu_emulateframeinvisible},
+	{"redraw", emu_redraw},
 	{"framecount", emu_getframecount},
 	{"lagcount", emu_getlagcount},
 	{"lagged", emu_lagged},
@@ -3396,7 +3427,7 @@ static const struct luaL_reg emulib [] =
 	{"atframeboundary", emu_atframeboundary},
 	{"registerbefore", emu_registerbefore},
 	{"registerafter", emu_registerafter},
-//	{"registerstart", emu_registerstart},
+	{"registerstart", emu_registerstart},
 	{"registerexit", emu_registerexit},
 	{"persistglobalvariables", emu_persistglobalvariables},
 	{"message", emu_message},
@@ -3421,7 +3452,7 @@ static const struct luaL_reg guilib [] =
 	{"parsecolor", gui_parsecolor},
 //	{"gdscreenshot", gui_gdscreenshot},
 //	{"gdoverlay", gui_gdoverlay},
-//	{"redraw", emu_redraw}, // some people might think of this as more of a GUI function
+	{"redraw", emu_redraw}, // some people might think of this as more of a GUI function
 	// alternative names
 	{"drawtext", gui_text},
 //	{"drawbox", gui_box},
@@ -3459,7 +3490,7 @@ static const struct luaL_reg memorylib [] =
 	{"writebyte", memory_writebyte},
 	{"writeword", memory_writeword},
 	{"writedword", memory_writedword},
-//	{"isvalid", memory_isvalid},
+	{"isvalid", memory_isvalid},
 	{"getregister", memory_getregister},
 	{"setregister", memory_setregister},
 	// alternate naming scheme for word and double-word and unsigned
@@ -3873,6 +3904,8 @@ void RunLuaScriptFile(int uid, const char* filenameCStr)
 		lua_setfield(L, LUA_REGISTRYINDEX, deferredGUIIDString);
 		lua_newtable(L);
 		lua_setfield(L, LUA_REGISTRYINDEX, deferredJoySetIDString);
+		lua_newtable(L);
+		lua_setfield(L, LUA_REGISTRYINDEX, refStashString);
 
 		info.started = true;
 		RefreshScriptStartedStatus();
@@ -3902,7 +3935,7 @@ void RunLuaScriptFile(int uid, const char* filenameCStr)
 		}
 		else
 		{
-//			Show_Genesis_Screen();
+			driver->USR_RefreshScreen();
 			StopScriptIfFinished(uid, true);
 		}
 	} while(info.restart);
@@ -3941,7 +3974,7 @@ void StopScriptIfFinished(int uid, bool justReturned)
 			if(info.print)
 				info.print(uid, "script returned but is still running registered functions\r\n");
 			else
-				fprintf(stderr, "%s\n", "script returned but is still running registered functions");
+				fprintf(stdout, "%s\n", "script returned but is still running registered functions");
 		}
 	}
 	else
@@ -3949,7 +3982,7 @@ void StopScriptIfFinished(int uid, bool justReturned)
 		if(info.print)
 			info.print(uid, "script finished running\r\n");
 		else
-			fprintf(stderr, "%s\n", "script finished running");
+			fprintf(stdout, "%s\n", "script finished running");
 
 		StopLuaScript(uid);
 	}
@@ -4050,7 +4083,7 @@ void CallExitFunction(int uid)
 		struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
 #endif
 
-		lua_settop(L, 0);
+		//lua_settop(L, 0);
 		lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_BEFOREEXIT]);
 		
 		int errorcode = 0;
@@ -4371,6 +4404,19 @@ void CallRegisteredLuaMemHook(unsigned int address, int size, unsigned int value
 }
 */
 
+bool AnyLuaActive()
+{
+	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	while(iter != end)
+	{
+		LuaContextInfo& info = *iter->second;
+		if(info.started)
+			return true;
+		++iter;
+	}
+	return false;
+}
 
 void CallRegisteredLuaFunctions(LuaCallID calltype)
 {
@@ -4401,7 +4447,7 @@ void CallRegisteredLuaFunctions(LuaCallID calltype)
 				CallDeferredFunctions(L, deferredJoySetIDString);
 			}
 
-			lua_settop(L, 0);
+			int top = lua_gettop(L);
 			lua_getfield(L, LUA_REGISTRYINDEX, idstring);
 			
 			if (lua_isfunction(L, -1))
@@ -4421,6 +4467,7 @@ void CallRegisteredLuaFunctions(LuaCallID calltype)
 			}
 
 			info.guiFuncsNeedDeferring = true;
+			lua_settop(L, top);
 		}
 
 		++iter;
@@ -4445,7 +4492,7 @@ void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData)
 			struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
 #endif
 
-			lua_settop(L, 0);
+			int top = lua_gettop(L);
 			lua_getfield(L, LUA_REGISTRYINDEX, idstring);
 			
 			if (lua_isfunction(L, -1))
@@ -4465,6 +4512,7 @@ void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData)
 			{
 				lua_pop(L, 1);
 			}
+			lua_settop(L, top);
 		}
 
 		++iter;
@@ -4490,7 +4538,7 @@ void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& save
 			struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
 #endif
 
-			lua_settop(L, 0);
+			int top = lua_gettop(L);
 			lua_getfield(L, LUA_REGISTRYINDEX, idstring);
 			
 			if (lua_isfunction(L, -1))
@@ -4532,6 +4580,7 @@ void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& save
 			{
 				lua_pop(L, 1);
 			}
+			lua_settop(L, top);
 		}
 
 		++iter;
@@ -4636,7 +4685,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
 				{
 					char errmsg [1024];
 					sprintf(errmsg, "values of type \"%s\" are not allowed to be returned from registered save functions.\r\n", luaL_typename(L,i));
-					info.print(luaStateToUIDMap[L], errmsg);
+					info.print(luaStateToUIDMap[L->l_G->mainthread], errmsg);
 				}
 				else
 				{
@@ -4810,7 +4859,7 @@ void BinaryToLuaStackConverter(lua_State* L, const unsigned char*& data, unsigne
 						sprintf(errmsg, "values of type \"%s\" are not allowed to be loaded into registered load functions. The save state's Lua save data file might be corrupted.\r\n", lua_typename(L,type));
 					else
 						sprintf(errmsg, "The save state's Lua save data file seems to be corrupted.\r\n");
-					info.print(luaStateToUIDMap[L], errmsg);
+					info.print(luaStateToUIDMap[L->l_G->mainthread], errmsg);
 				}
 				else
 				{

@@ -41,6 +41,7 @@ CommandLine::CommandLine()
 , _cflash_image(0)
 , _cflash_path(0)
 , _single_core(0)
+, _multi_core(0)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
@@ -68,6 +69,7 @@ void CommandLine::loadCommonOptions()
 		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
 #ifdef _MSC_VER
 		{ "single-core", 0, 0, G_OPTION_ARG_NONE, &_single_core, "Limit execution to use approximately only one core", "NUM_CORES"},
+		{ "multi-core", 0, 0, G_OPTION_ARG_NONE, &_multi_core, "Act as if multiple cores are present, even on a single-core machine", "MULTI_CORE"},
 		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (edge) (default 2)", "SCANLINE_FILTER_A"},
 		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
 #endif
@@ -95,7 +97,8 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_cflash_image) cflash_image = _cflash_image;
 	if(_cflash_path) cflash_path = _cflash_path;
 
-	CommonSettings.single_core = _single_core!=0;
+	if(_single_core) CommonSettings.single_core = true;
+	if(_multi_core) CommonSettings.single_core = false;
 
 	if (argc == 2)
 		nds_file = argv[1];
