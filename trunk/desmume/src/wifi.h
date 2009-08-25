@@ -49,6 +49,7 @@
 #define		REG_WIFI_RXCNT				0x030
 #define		REG_WIFI_WEPCNT				0x032
 #define		REG_WIFI_POWER_US			0x036
+#define		REG_WIFI_POWER_TX			0x038
 #define     REG_WIFI_POWERSTATE 		0x03C
 #define     REG_WIFI_FORCEPS    		0x040
 #define     REG_WIFI_RANDOM     		0x044
@@ -101,6 +102,8 @@
 #define     REG_WIFI_RFIODATA1  		0x17E
 #define     REG_WIFI_RFIOBSY    		0x180
 #define     REG_WIFI_RFIOCNT    		0x184
+#define		REG_WIFI_RFPINS				0x19C
+#define		REG_WIFI_RFSTATUS			0x214
 #define		REG_WIFI_IF_SET				0x21C
 #define 	REG_WIFI_TXSEQNO			0x210
 #define		REG_WIFI_POWERACK			0x2D0
@@ -328,15 +331,18 @@ typedef union
 	u16 val ;
 } bbIOCnt_t ;
 
-#define WIFI_IRQ_RECVCOMPLETE       	0
-#define WIFI_IRQ_SENDCOMPLETE           1
-#define WIFI_IRQ_COUNTUP                2
-#define WIFI_IRQ_SENDERROR              3
-#define WIFI_IRQ_STATCOUNTUP            4
-#define WIFI_IRQ_STATACKUP              5
-#define WIFI_IRQ_RECVSTART              6
-#define WIFI_IRQ_SENDSTART              7
+#define WIFI_IRQ_RXEND					0
+#define WIFI_IRQ_TXEND					1
+#define WIFI_IRQ_RXINC					2
+#define WIFI_IRQ_TXERROR	            3
+#define WIFI_IRQ_RXOVF					4
+#define WIFI_IRQ_TXERROVF				5
+#define WIFI_IRQ_RXSTART				6
+#define WIFI_IRQ_TXSTART				7
+#define WIFI_IRQ_TXCOUNTEXP				8
+#define WIFI_IRQ_RXCOUNTEXP				9
 #define WIFI_IRQ_RFWAKEUP               11
+#define WIFI_IRQ_UNK					12
 #define WIFI_IRQ_TIMEPOSTBEACON			13
 #define WIFI_IRQ_TIMEBEACON             14
 #define WIFI_IRQ_TIMEPREBEACON          15
@@ -386,6 +392,7 @@ typedef struct
 	BOOL WEP_enable ;
 
 	/* sending */
+	u16 TXPower;
 	u16 TXSlot[3] ;
 	u16 TXCnt ;
 	u16 TXOpt ;
@@ -402,6 +409,7 @@ typedef struct
 	/* receiving */
 	u16 RXCnt ;
 	u16 RXCheckCounter ;
+	u8 RXNum;
 
 	/* addressing/handshaking */
 	union
@@ -430,6 +438,8 @@ typedef struct
 	u16 BeaconInterval;
 	u16 BeaconCount1;
 	u16 BeaconCount2;
+	u16 ListenInterval;
+	u16 ListenCount;
 
 	/* subchips */
     rffilter_t 	RF ;
