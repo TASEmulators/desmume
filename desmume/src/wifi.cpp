@@ -23,6 +23,7 @@
 #include "armcpu.h"
 #include "NDSSystem.h"
 #include "debug.h"
+#include "bits.h"
 
 #ifdef EXPERIMENTAL_WIFI
 
@@ -587,15 +588,11 @@ u8 WIFI_getBB_DATA()
 		return 0;
 
 	return wifiMac.BB.data[wifiMac.bbIOCnt.bits.address];
-//	if ((wifiMac.bbIOCnt.bits.mode != 2) || !(wifiMac.bbIOCnt.bits.enable)) return 0 ; /* not for read or disabled */
-//	return wifiMac.BB.data[wifiMac.bbIOCnt.bits.address] ;
 }
 
 void WIFI_setBB_DATA(u8 val)
 {
-	wifiMac.bbDataToWrite = (val);
-//	if ((wifiMac.bbIOCnt.bits.mode != 1) || !(wifiMac.bbIOCnt.bits.enable)) return ; /* not for write or disabled */
-//    wifiMac.BB.data[wifiMac.bbIOCnt.bits.address] = val ;
+	wifiMac.bbDataToWrite = val;
 }
 
 /*******************************************************************************
@@ -608,14 +605,15 @@ void WIFI_setBB_DATA(u8 val)
 
  *******************************************************************************/
 
+static void WIFI_BeaconTXStart();
+
 static void WIFI_triggerIRQMask(u16 mask)
 {
 	u16 oResult,nResult ;
 	oResult = wifiMac.IE.val & wifiMac.IF.val ;
 	wifiMac.IF.val = wifiMac.IF.val | (mask & ~0x0400) ;
 	nResult = wifiMac.IE.val & wifiMac.IF.val ;
-	//printf("wifi: trigger irq: ie=%04X, if=%04X, mask=%08X, oldresult=%04X, newresult=%04X\n", 
-	//	wifiMac.IE.val, wifiMac.IF.val, mask, oResult, nResult);
+
 	if (!oResult && nResult)
 	{
 		NDS_makeARM7Int(24) ;   /* cascade it via arm7 wifi irq */
@@ -624,8 +622,44 @@ static void WIFI_triggerIRQMask(u16 mask)
 
 static void WIFI_triggerIRQ(u8 irq)
 {
-	if (irq == 14)
-		wifiMac.BeaconCount2 = 0xFFFF;
+	switch (irq)
+	{
+	case WIFI_IRQ_TXSTART:
+		wifiMac.TXSeqNo++;
+		break;
+	case WIFI_IRQ_TIMEPREBEACON:
+		if (wifiMac.TXPower & 0x0001)
+		{
+			wifiMac.rfStatus = 1;
+			wifiMac.rfPins = 0x0084;
+		}
+		break;
+	case WIFI_IRQ_TIMEBEACON:
+		wifiMac.BeaconCount1 = wifiMac.BeaconInterval;
+
+		if (wifiMac.ucmpEnable)
+		{
+			wifiMac.BeaconCount2 = 0xFFFF;
+			wifiMac.TXCnt &= 0xFFF2;
+
+			WIFI_BeaconTXStart();
+
+			if (wifiMac.ListenCount == 0) wifiMac.ListenCount = wifiMac.ListenInterval;
+			wifiMac.ListenCount--;
+		}
+		break;
+	case WIFI_IRQ_TIMEPOSTBEACON:
+		if (wifiMac.TXPower & 0x0002)
+		{
+			wifiMac.rfStatus = 9;
+			wifiMac.rfPins = 0x0004;
+		}
+		break;
+	case WIFI_IRQ_UNK:
+		WIFI_LOG(2, "IRQ 12 triggered.\n");
+		wifiMac.TXSeqNo++;
+		break;
+	}
 
 	WIFI_triggerIRQMask(1<<irq) ;
 }
@@ -763,6 +797,7 @@ static void WIFI_TXStart(u8 slot)
 
 	if (wifiMac.TXSlot[slot] & 0x8000)	/* is slot enabled? */
 	{
+		//printf("send packet at %08X, lr=%08X\n", NDS_ARM7.instruct_adr, NDS_ARM7.R[14]);
 		u16 txLen;
 		// the address has to be somewhere in the circular buffer, so drop the other bits
 		u16 address = (wifiMac.TXSlot[slot] & 0x0FFF);
@@ -799,11 +834,18 @@ static void WIFI_TXStart(u8 slot)
 				return;
 		}
 
+		// Set sequence number if required
+		if (!(wifiMac.TXSlot[slot] & 0x2000))
+		{
+			u16 seqctl = wifiMac.circularBuffer[address + 6 + 22];
+			wifiMac.circularBuffer[address + 6 + 11] = (seqctl & 0x000F) | (wifiMac.TXSeqNo << 4);
+		}
+
 		// Calculate and set FCS
 		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.circularBuffer[address + 6], txLen - 4);
 		*(u32*)&wifiMac.circularBuffer[address + 6 + ((txLen-4) >> 1)] = crc32;
 
-		WIFI_triggerIRQ(WIFI_IRQ_SENDSTART) ;
+		WIFI_triggerIRQ(WIFI_IRQ_TXSTART) ;
 
 		if(slot > wifiMac.txCurSlot)
 			wifiMac.txCurSlot = slot;
@@ -818,7 +860,7 @@ static void WIFI_TXStart(u8 slot)
 
 #if 0
 		WIFI_SoftAP_RecvPacketFromDS((u8*)&wifiMac.circularBuffer[address+6], txLen);
-		WIFI_triggerIRQ(WIFI_IRQ_SENDCOMPLETE) ;
+		WIFI_triggerIRQ(WIFI_IRQ_TXEND) ;
 
 		wifiMac.circularBuffer[address] = 0x0001;
 		wifiMac.circularBuffer[address+4] &= 0x00FF;
@@ -859,16 +901,25 @@ static void WIFI_BeaconTXStart()
 				return;
 		}
 
+		// Set sequence number
+		u16 seqctl = wifiMac.circularBuffer[address + 6 + 22];
+		wifiMac.circularBuffer[address + 6 + 11] = (seqctl & 0x000F) | (wifiMac.TXSeqNo << 4);
+
+		// Set timestamp
+		*(u64*)&wifiMac.circularBuffer[address + 6 + 12] = wifiMac.usec;
+
 		// Calculate and set FCS
 		u32 crc32 = WIFI_calcCRC32((u8*)&wifiMac.circularBuffer[address + 6], txLen - 4);
 		*(u32*)&wifiMac.circularBuffer[address + 6 + ((txLen-4) >> 1)] = crc32;
 
-		WIFI_triggerIRQ(WIFI_IRQ_SENDSTART);
+		WIFI_triggerIRQ(WIFI_IRQ_TXSTART);
 		wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
-		WIFI_triggerIRQ(WIFI_IRQ_SENDCOMPLETE);
+		WIFI_triggerIRQ(WIFI_IRQ_TXEND);
 
 		wifiMac.circularBuffer[address] = 0x0001;
 		wifiMac.circularBuffer[address+4] &= 0x00FF;
+
+		wifiMac.TXStat = 0x0301;
 	}
 }
 
@@ -896,6 +947,8 @@ void WIFI_write16(u32 address, u16 val)
 			extern void emu_halt();
 			emu_halt();
 		}*/
+		//if ((address >= 0x00000300) && (address < 0x00000400) && (val != 0) && (val != 0x5A5A) && (val != 0xA5A5))
+	//		printf("copy deauth packet at %08X, lr=%08X\n", NDS_ARM7.instruct_adr, NDS_ARM7.R[14]);
         wifiMac.circularBuffer[address >> 1] = val ;
 		return ;
 	}
@@ -912,21 +965,63 @@ void WIFI_write16(u32 address, u16 val)
 		case REG_WIFI_ID:
 			break ;
 		case REG_WIFI_MODE:
-			if (val & 0x4000) 
 			{
-				/* does some resets */
-				wifiMac.RXRangeBegin = 0x4000 ;
-				/* this bit does not save */
-				val &= ~0x4000 ;
-			}
+				u16 oldval = wifiMac.macMode;
 
-			if(val & 0x0001)
-			{
-				wifiMac.rfStatus = 0x0009;
-				wifiMac.rfPins = 0x0004;
-			}
+				if (!BIT0(oldval) && BIT0(val))
+				{
+					wifiMac.ioMem[0x034>>1] 	= 0x0002;
+					wifiMac.rfPins 				= 0x0046;
+					wifiMac.rfStatus 			= 0x0009;
+					wifiMac.ioMem[0x27C>>1] 	= 0x0005;
+				}
 
-			wifiMac.macMode = val ;
+				if (BIT0(oldval) && !BIT0(val))
+				{
+					wifiMac.ioMem[0x27C>>1] 	= 0x000A;
+				}
+
+				if (BIT13(val))
+				{
+					wifiMac.ioMem[0x056>>1] 	= 0x0000;
+					wifiMac.ioMem[0x0C0>>1] 	= 0x0000;
+					wifiMac.ioMem[0x0C4>>1] 	= 0x0000;
+					wifiMac.ioMem[0x1A4>>1] 	= 0x0000;
+					wifiMac.ioMem[0x278>>1] 	= 0x000F;
+				}
+
+				if (BIT14(val))
+				{
+					wifiMac.wepMode 			= 0x0000;
+					wifiMac.ioMem[0x008>>1]		= 0x0000;
+					wifiMac.ioMem[0x00A>>1]		= 0x0000;
+					wifiMac.mac.words[0]		= 0x0000;
+					wifiMac.mac.words[1]		= 0x0000;
+					wifiMac.mac.words[2]		= 0x0000;
+					wifiMac.bss.words[0]		= 0x0000;
+					wifiMac.bss.words[1]		= 0x0000;
+					wifiMac.bss.words[2]		= 0x0000;
+					wifiMac.pid					= 0x0000;
+					wifiMac.aid 				= 0x0000;
+					wifiMac.ioMem[0x02C>>1]		= 0x0707;
+					wifiMac.ioMem[0x02E>>1] 	= 0x0000;
+					wifiMac.RXRangeBegin		= 0x4000;
+					wifiMac.RXRangeEnd			= 0x4800;
+					wifiMac.ioMem[0x084>>1]		= 0x0000;
+					wifiMac.ioMem[0x0BC>>1] 	= 0x0001;
+					wifiMac.ioMem[0x0D0>>1] 	= 0x0401;
+					wifiMac.ioMem[0x0D4>>1] 	= 0x0001;
+					wifiMac.ioMem[0x0E0>>1]		= 0x0008;
+					wifiMac.ioMem[0x0EC>>1] 	= 0x3F03;
+					wifiMac.ioMem[0x194>>1] 	= 0x0000;
+					wifiMac.ioMem[0x198>>1] 	= 0x0000;
+					wifiMac.ioMem[0x1A2>>1] 	= 0x0001;
+					wifiMac.ioMem[0x224>>1] 	= 0x0003;
+					wifiMac.ioMem[0x230>>1] 	= 0x0047;
+				}
+
+				wifiMac.macMode = val & 0xAFFF;
+			}
 			break ;
 		case REG_WIFI_WEP:
 			wifiMac.wepMode = val ;
@@ -956,7 +1051,7 @@ void WIFI_write16(u32 address, u16 val)
 			break ;
 		case REG_WIFI_POWERSTATE:
 			wifiMac.powerOn = ((val & 0x0002)?TRUE:FALSE);
-			if(wifiMac.powerOn) WIFI_triggerIRQ(11);
+			if(wifiMac.powerOn) WIFI_triggerIRQ(WIFI_IRQ_RFWAKEUP);
 			break;
 		case REG_WIFI_FORCEPS:
 			if((val & 0x8000) && (!wifiMac.powerOnPending))
@@ -979,25 +1074,25 @@ void WIFI_write16(u32 address, u16 val)
 				wifiMac.powerOnPending = FALSE;
 			}
 			break;
+		case REG_WIFI_POWER_TX:
+			wifiMac.TXPower = val & 0x0007;
+			break;
 		case REG_WIFI_RXCNT:
 			wifiMac.RXCnt = val;
 			if(wifiMac.RXCnt & 0x0001)
 			{
 				wifiMac.RXHWWriteCursor = wifiMac.RXHWWriteCursorReg = wifiMac.RXHWWriteCursorLatched;
-				//printf("wifi: write wrcsr %04X\n", wifiMac.RXHWWriteCursorReg);
 			}
 			break;
 		case REG_WIFI_RXRANGEBEGIN:
 			wifiMac.RXRangeBegin = val ;
 			if(wifiMac.RXHWWriteCursor < ((val & 0x1FFE) >> 1))
 				wifiMac.RXHWWriteCursor = ((val & 0x1FFE) >> 1);
-			//printf("wifi: rx range begin=%04X\n", val);
 			break ;
 		case REG_WIFI_RXRANGEEND:
 			wifiMac.RXRangeEnd = val ;
 			if(wifiMac.RXHWWriteCursor >= ((val & 0x1FFE) >> 1))
 				wifiMac.RXHWWriteCursor = ((wifiMac.RXRangeBegin & 0x1FFE) >> 1);
-			//printf("wifi: rx range end=%04X\n", val);
 			break ;
 		case REG_WIFI_WRITECSRLATCH:
 			if (action)        /* only when action register and CSR change enabled */
@@ -1009,7 +1104,6 @@ void WIFI_write16(u32 address, u16 val)
 			wifiMac.CircBufReadAddress = (val & 0x1FFE);
 			break ;
 		case REG_WIFI_RXREADCSR:
-			//printf("wifi: write readcsr: %04X\n", val << 1);
 			wifiMac.RXReadCursor = val ;
 			break ;
 		case REG_WIFI_CIRCBUFWADR:
@@ -1046,19 +1140,6 @@ void WIFI_write16(u32 address, u16 val)
 			wifiMac.TXSlot[(address - REG_WIFI_TXLOC1) >> 2] = val ;
 			break ;
 		case REG_WIFI_TXOPT:
-#if 0
-			if (val == 0xFFFF)
-			{
-				/* reset TX logic */
-				/* CHECKME */
-            //    wifiMac.TXSlot[0] = 0 ; wifiMac.TXSlot[1] = 0 ; wifiMac.TXSlot[2] = 0 ;
-                wifiMac.TXOpt = 0 ;
-                wifiMac.TXCnt = 0 ;
-			} else
-			{
-				wifiMac.TXOpt = val ;
-			}
-#endif
 			wifiMac.TXCnt &= ~val;
 			break ;
 		case REG_WIFI_TXCNT:
@@ -1066,13 +1147,9 @@ void WIFI_write16(u32 address, u16 val)
 			if (val & 0x01)	WIFI_TXStart(0) ;
 			if (val & 0x04)	WIFI_TXStart(1) ;
 			if (val & 0x08)	WIFI_TXStart(2) ;
-		/*	if(val&0x04)
-			{
-				extern void emu_halt();
-				emu_halt();
-			}*/
 			break ;
 		case REG_WIFI_TXSEQNO:
+			WIFI_LOG(3, "Set TXSeqNo to %04X.\n", val);
 			wifiMac.TXSeqNo = val & 0x0FFF;
 			break;
 		case REG_WIFI_RFIOCNT:
@@ -1092,6 +1169,8 @@ void WIFI_write16(u32 address, u16 val)
 			break ;
 		case REG_WIFI_USCOMPARECNT:
 			wifiMac.ucmpEnable = (val & 1)==1 ;
+			if (val & 2) printf("----- FORCE IRQ 14 -----\n");
+			//printf("usec compare %s\n", wifiMac.usecEnable?"enabled":"disabled");
 			break ;
 		case REG_WIFI_BEACONPERIOD:
 			wifiMac.BeaconInterval = val & 0x03FF;
@@ -1117,6 +1196,12 @@ void WIFI_write16(u32 address, u16 val)
 		case REG_WIFI_EXTRACOUNT:
 			wifiMac.eCount = val ;
 			break ;
+		case REG_WIFI_LISTENINT:
+			wifiMac.ListenInterval = val & 0x00FF;
+			break;
+		case REG_WIFI_LISTENCOUNT:
+			wifiMac.ListenCount = val & 0x00FF;
+			break;
 		case REG_WIFI_POWER_US:
 			wifiMac.crystalEnabled = !(val & 0x0001) ;
 			break ;
@@ -1135,12 +1220,6 @@ void WIFI_write16(u32 address, u16 val)
 		case REG_WIFI_AID_HIGH:
 			wifiMac.aid = val & 0x07FF ;
 			break ;
-		//case 0x36:
-		//case 0x38:
-		//case 0x3C:
-		//case 0x40:
-		//	printf("wifi power reg %03X write %04X\n", address, val);
-		//	break;
 		case 0xD0:
 		//	printf("wifi: rxfilter=%04X\n", val);
 			break;
@@ -1170,43 +1249,20 @@ u16 WIFI_read16(u32 address)
 	if (((address & 0x00007000) >= 0x00004000) && ((address & 0x00007000) < 0x00006000))
 	{
 		/* access to the circular buffer */
-	//	printf("wifi: circbuf read at %04X, %04X, readcsr=%04X, wrcsr=%04X(%04X)\n", 
-		//	address, wifiMac.circularBuffer[(address & 0x1FFF) >> 1], wifiMac.RXReadCursor << 1, wifiMac.RXHWWriteCursorReg << 1, wifiMac.RXHWWriteCursor << 1);
-		/*if(((address == 0x04804C38) || 
-			(address == 0x04804C04)) && 
-			(wifiMac.circularBuffer[(address & 0x1FFF) >> 1] != 0x0000) && 
-			(wifiMac.circularBuffer[(address & 0x1FFF) >> 1] != 0x5A5A) &&
-			(wifiMac.circularBuffer[(address & 0x1FFF) >> 1] != 0xA5A5))
-		{
-			extern void emu_halt();
-			emu_halt();
-		}*/
 
-		// hax
-	/*	if(packet_arrived)
-		{
-			if(address == 0x04804C38)
-				return 0x0010;
-			if(address == 0x04804C3E)
-				return 0x0014;
-
-			if(address == 0x048047D0)
-				return 0x0010;
-			if(address == 0x048047D6)
-				return 0x0014;
-		}*/
+		//if ((address == 0x04804C04))
+		//	printf("read packet length at %08X\n",NDS_ARM7.instruct_adr);
+		//if ((address >= 0x04804BFC) && (address < 0x04804BFC + 12 + 0x70))
+		//	printf("read inside received beacon at %08X (offset %08X)\n", address, address-0x04804BFC);
 
         return wifiMac.circularBuffer[(address & 0x1FFF) >> 1] ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
-	//if((address != 0x04808214) && (address != 0x0480803C) && (address != 0x048080F8) && (address != 0x048080FA) && (address != 0x0480819C))
 	/* mirrors => register address */
 	address &= 0x00000FFF ;
-//	if((address < 0x158) || ((address > 0x168) && (address < 0x17C)) || (address > 0x184))
-//		printf("wifi read at %08X\n", address);
-/*	FILE *f = fopen("wifidbg.txt", "a");
-	fprintf(f, "wifi read at %08X\n", address);
-	fclose(f);*/
+
+	//if ((address >= 0x1B0) && (address < 0x1C0))
+	//	printf("read rxstat %03X\n", address);
 	switch (address)
 	{
 		case REG_WIFI_ID:
@@ -1216,10 +1272,8 @@ u16 WIFI_read16(u32 address)
 		case REG_WIFI_WEP:
 			return wifiMac.wepMode ;
 		case REG_WIFI_IE:
-			//printf("wifi: read ie (%04X)\n", wifiMac.IE.val);
 			return wifiMac.IE.val ;
 		case REG_WIFI_IF:
-			//printf("wifi: read if (%04X)\n", wifiMac.IF.val);
 			return wifiMac.IF.val ;
 		case REG_WIFI_POWERSTATE:
 			return ((wifiMac.powerOn ? 0x0000 : 0x0200) | (wifiMac.powerOnPending ? 0x0102 : 0x0000));
@@ -1283,7 +1337,7 @@ u16 WIFI_read16(u32 address)
 				{
 					if (wifiMac.RXBufCount == 1)
 					{
-						WIFI_triggerIRQ(9) ;
+						WIFI_triggerIRQ(WIFI_IRQ_RXCOUNTEXP) ;
 					}
 					wifiMac.RXBufCount-- ;
 				}				
@@ -1292,21 +1346,21 @@ u16 WIFI_read16(u32 address)
 		case REG_WIFI_CIRCBUFRADR:
 			return wifiMac.CircBufReadAddress ;
 		case REG_WIFI_RXHWWRITECSR:
-			//printf("wifi: read writecsr (%04X)\n", wifiMac.RXHWWriteCursorReg);
 			return wifiMac.RXHWWriteCursorReg;
-			//return wifiMac.RXReadCursor;
 		case REG_WIFI_RXREADCSR:
-			//printf("wifi: read readcsr (%04X)\n", wifiMac.RXReadCursor);
 			return wifiMac.RXReadCursor;
-			//return wifiMac.RXHWWriteCursorReg;
 		case REG_WIFI_RXBUF_COUNT:
 			return wifiMac.RXBufCount ;
 		case REG_WIFI_TXREQ_READ:
-			return wifiMac.TXCnt;
+			return wifiMac.TXCnt | 0x10;
 		case REG_WIFI_TXBUSY:
 			return ((wifiMac.txSlotBusy[0] ? 0x01 : 0x00) | (wifiMac.txSlotBusy[1] ? 0x04 : 0x00) | (wifiMac.txSlotBusy[2] ? 0x08 : 0x00));
 		case REG_WIFI_TXSTAT:
 			return wifiMac.TXStat;
+		case REG_WIFI_TXLOC1:
+		case REG_WIFI_TXLOC2:
+		case REG_WIFI_TXLOC3:
+			return wifiMac.TXSlot[(address - REG_WIFI_TXLOC1) >> 2];
 		case REG_WIFI_EXTRACOUNTCNT:
 			return wifiMac.eCountEnable?1:0 ;
 		case REG_WIFI_EXTRACOUNT:
@@ -1323,6 +1377,8 @@ u16 WIFI_read16(u32 address)
 			return wifiMac.BeaconCount1;
 		case REG_WIFI_BEACONCOUNT2:
 			return wifiMac.BeaconCount2;
+		case REG_WIFI_LISTENCOUNT:
+			return wifiMac.ListenCount;
 		case REG_WIFI_POWER_US:
 			return wifiMac.crystalEnabled?0:1 ;
 		case REG_WIFI_CIRCBUFRD_END:
@@ -1333,15 +1389,16 @@ u16 WIFI_read16(u32 address)
 			return wifiMac.pid ;
 		case REG_WIFI_AID_HIGH:
 			return wifiMac.aid ;
-		case 0x214:
-			//printf("wifi: read rfstatus (%04X)\n", wifiMac.rfStatus);
+		case REG_WIFI_RFSTATUS:
+			//WIFI_LOG(3, "Read RF_STATUS: %04X\n", wifiMac.rfStatus);
 			return 0x0009;
 			//return wifiMac.rfStatus;
-		case 0x19C:
-			//assert(false); //luigi, please pick something to return from here
-			//printf("wifi: read rfpins (%04X)\n", wifiMac.rfPins);
+		case REG_WIFI_RFPINS:
+			//WIFI_LOG(3, "Read RF_PINS: %04X\n", wifiMac.rfPins);
 			//return wifiMac.rfPins;
 			return 0x0004;
+	//	case 0x1B6:
+	//		return (wifiMac.RXNum << 8) | 0x40;
 		default:
 		//	printf("wifi: read unhandled reg %03X\n", address);
 			return wifiMac.ioMem[address >> 1];
@@ -1369,16 +1426,11 @@ void WIFI_usTrigger()
 		if (!(wifiMac.usec & 1023))
 		{
 			wifiMac.BeaconCount1--;
-			if (wifiMac.BeaconCount1 == 0)
-			{
-				// FIXME: handle pre-beacon interval for IRQ 15
+
+			if (wifiMac.BeaconCount1 == (wifiMac.ioMem[0x110>>1] >> 10))
 				WIFI_triggerIRQ(WIFI_IRQ_TIMEPREBEACON);
+			else if (wifiMac.BeaconCount1 == 0)
 				WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON);
-
-				WIFI_BeaconTXStart();
-
-				wifiMac.BeaconCount1 = wifiMac.BeaconInterval;
-			}
 
 			if (wifiMac.BeaconCount2 > 0)
 			{
@@ -1389,8 +1441,10 @@ void WIFI_usTrigger()
 			}
 		}
 	}
+
 	if ((wifiMac.ucmpEnable) && (wifiMac.ucmp == wifiMac.usec))
 	{
+		//printf("ucmp irq14\n");
 		WIFI_triggerIRQ(WIFI_IRQ_TIMEBEACON) ;
 	}
 
@@ -1404,8 +1458,9 @@ void WIFI_usTrigger()
 			if(wifiMac.txSlotRemainingBytes[slot] == 0)
 			{
 				wifiMac.txSlotBusy[slot] = 0;
+				wifiMac.TXSlot[slot] &= 0x7FFF;
 
-				wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[wifiMac.txSlotAddr[slot]], wifiMac.txSlotLen[slot]);
+				wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[wifiMac.txSlotAddr[slot]+6], wifiMac.txSlotLen[slot]);
 
 				while((wifiMac.txSlotBusy[wifiMac.txCurSlot] == 0) && (wifiMac.txCurSlot > 0))
 					wifiMac.txCurSlot--;
@@ -1415,7 +1470,7 @@ void WIFI_usTrigger()
 
 				wifiMac.TXStat = (0x0001 | (slot << 12));
 
-				WIFI_triggerIRQ(WIFI_IRQ_SENDCOMPLETE);
+				WIFI_triggerIRQ(WIFI_IRQ_TXEND);
 				
 				//wifiMac.rfStatus = 0x0001;
 				//wifiMac.rfPins = 0x0084;
@@ -1510,8 +1565,7 @@ void Adhoc_Reset()
 
 void Adhoc_SendPacket(u8* packet, u32 len)
 {
-	u32 packetLen = 12 + len;
-	u32 frameLen = sizeof(Adhoc_FrameHeader) + packetLen;
+	u32 frameLen = sizeof(Adhoc_FrameHeader) + len;
 
 	u8* frame = new u8[frameLen];
 	u8* ptr = frame;
@@ -1519,15 +1573,15 @@ void Adhoc_SendPacket(u8* packet, u32 len)
 	Adhoc_FrameHeader header;
 	strncpy(header.magic, ADHOC_MAGIC, 8);
 	header.version = ADHOC_PROTOCOL_VERSION;
-	header.packetLen = packetLen;
+	header.packetLen = len;
 	memcpy(ptr, &header, sizeof(Adhoc_FrameHeader));
 	ptr += sizeof(Adhoc_FrameHeader);
 
-	memcpy(ptr, packet, packetLen);
+	memcpy(ptr, packet, len);
 
 	int nbytes = sendto(wifi_socket, (const char*)frame, frameLen, 0, &sendAddr, sizeof(sockaddr_t));
 	
-	WIFI_LOG(3, "Ad-hoc: sent %i/%i bytes of packet.\n", nbytes, frameLen);
+	WIFI_LOG(4, "Ad-hoc: sent %i/%i bytes of packet.\n", nbytes, frameLen);
 
 	delete frame;
 }
@@ -1561,17 +1615,11 @@ void Adhoc_usTrigger()
 			if (nbytes <= 0)
 				return;
 
-			WIFI_LOG(3, "Ad-hoc: received a packet of %i bytes from %i.%i.%i.%i (port %i).\n",
-				nbytes,
-				(u8)fromAddr.sa_data[2], (u8)fromAddr.sa_data[3], 
-				(u8)fromAddr.sa_data[4], (u8)fromAddr.sa_data[5],
-				ntohs(*(u16*)&fromAddr.sa_data[0]));
-
 			ptr = buf;
-			Adhoc_FrameHeader header = *(Adhoc_FrameHeader*)&ptr[0];
+			Adhoc_FrameHeader header = *(Adhoc_FrameHeader*)ptr;
 			
 			// Check the magic string in header
-			if (strncmp(header.magic, ADHOC_MAGIC, 8) != 0)
+			if (strncmp(header.magic, ADHOC_MAGIC, 8))
 				return;
 
 			// Check the ad-hoc protocol version
@@ -1588,15 +1636,26 @@ void Adhoc_usTrigger()
 					(!memcmp(&ptr[16], &wifiMac.bss.bytes[0], 6)) ||
 					(!memcmp(&wifiMac.bss.bytes[0], &BroadcastMAC[0], 6)))
 				{
-					WIFI_triggerIRQ(WIFI_IRQ_RECVSTART);
+				/*	printf("packet was for us: mac=%02X:%02X.%02X.%02X.%02X.%02X, bssid=%02X:%02X.%02X.%02X.%02X.%02X\n",
+						wifiMac.mac.bytes[0], wifiMac.mac.bytes[1], wifiMac.mac.bytes[2], wifiMac.mac.bytes[3], wifiMac.mac.bytes[4], wifiMac.mac.bytes[5],
+						wifiMac.bss.bytes[0], wifiMac.bss.bytes[1], wifiMac.bss.bytes[2], wifiMac.bss.bytes[3], wifiMac.bss.bytes[4], wifiMac.bss.bytes[5]);
+					printf("da=%02X:%02X.%02X.%02X.%02X.%02X, sa=%02X:%02X.%02X.%02X.%02X.%02X, bssid=%02X:%02X.%02X.%02X.%02X.%02X\n",
+						ptr[4], ptr[5], ptr[6], ptr[7], ptr[8], ptr[9],
+						ptr[10], ptr[11], ptr[12], ptr[13], ptr[14], ptr[15],
+						ptr[16], ptr[17], ptr[18], ptr[19], ptr[20], ptr[21]);*/
+					WIFI_LOG(3, "Ad-hoc: received a packet of %i bytes from %i.%i.%i.%i (port %i).\n",
+						nbytes,
+						(u8)fromAddr.sa_data[2], (u8)fromAddr.sa_data[3], 
+						(u8)fromAddr.sa_data[4], (u8)fromAddr.sa_data[5],
+						ntohs(*(u16*)&fromAddr.sa_data[0]));
+					WIFI_LOG(3, "Storing packet at %08X.\n", 0x04804000 + (wifiMac.RXHWWriteCursor<<1));
+
+					WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 
 					u8* packet = new u8[12 + packetLen];
 
-					WIFI_MakeRXHeader(packet, WIFI_GetRXFlags(ptr), 20, packetLen, 255, 2);
-					memcpy(&packet[12], &ptr[0], packetLen);
-
-				//	u32 crc32 = WIFI_calcCRC32(ptr, packetLen - 4);
-				//	*(u32*)&ptr[packetLen - 4] = crc32;
+					WIFI_MakeRXHeader(packet, WIFI_GetRXFlags(ptr), 20, packetLen, 0, 0);
+					memcpy(&packet[12], ptr, packetLen);
 
 					for (int i = 0; i < (12 + packetLen); i += 2)
 					{
@@ -1605,7 +1664,8 @@ void Adhoc_usTrigger()
 					}
 
 					wifiMac.RXHWWriteCursorReg = ((wifiMac.RXHWWriteCursor + 1) & (~1));
-					WIFI_triggerIRQ(WIFI_IRQ_RECVCOMPLETE);
+					wifiMac.RXNum++;
+					WIFI_triggerIRQ(WIFI_IRQ_RXEND);
 				}
 			}
 		}
@@ -1762,7 +1822,7 @@ void SoftAP_Reset()
 
 void SoftAP_SendPacket(u8 *packet, u32 len)
 {
-	u16 frameCtl = *(u16*)&packet[12];
+	u16 frameCtl = *(u16*)&packet[0];
 
 	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
 		len, frameCtl);
@@ -1869,27 +1929,27 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 			u8 *ethernetframe = new u8[eflen];
 
 			// Destination address
-			ethernetframe[0] = packet[28];
-			ethernetframe[1] = packet[29];
-			ethernetframe[2] = packet[30];
-			ethernetframe[3] = packet[31];
-			ethernetframe[4] = packet[32];
-			ethernetframe[5] = packet[33];
+			ethernetframe[0] = packet[16];
+			ethernetframe[1] = packet[17];
+			ethernetframe[2] = packet[18];
+			ethernetframe[3] = packet[19];
+			ethernetframe[4] = packet[20];
+			ethernetframe[5] = packet[21];
 
 			// Source address
-			ethernetframe[6] = packet[22];
-			ethernetframe[7] = packet[23];
-			ethernetframe[8] = packet[24];
-			ethernetframe[9] = packet[25];
-			ethernetframe[10] = packet[26];
-			ethernetframe[11] = packet[27];
+			ethernetframe[6] = packet[10];
+			ethernetframe[7] = packet[11];
+			ethernetframe[8] = packet[12];
+			ethernetframe[9] = packet[13];
+			ethernetframe[10] = packet[14];
+			ethernetframe[11] = packet[15];
 
 			// EtherType
-			ethernetframe[12] = packet[42];
-			ethernetframe[13] = packet[43];
+			ethernetframe[12] = packet[30];
+			ethernetframe[13] = packet[31];
 
 			// Frame body
-			memcpy((ethernetframe + 14), (packet + 44), (len - 30 - 4));
+			memcpy((ethernetframe + 14), (packet + 32), (len - 30 - 4));
 
 			// Checksum 
 			// TODO ?
@@ -1954,7 +2014,7 @@ void SoftAP_usTrigger()
 		{
 			if(wifiMac.SoftAP.curPacketPos == 0)
 			{
-				WIFI_triggerIRQ(WIFI_IRQ_RECVSTART);
+				WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 
 				wifiMac.rfStatus = 0x0009;
 				wifiMac.rfPins = 0x0004;
@@ -1981,7 +2041,7 @@ void SoftAP_usTrigger()
 
 			wifiMac.RXHWWriteCursorReg = ((wifiMac.RXHWWriteCursor + 1) & (~1));
 
-			WIFI_triggerIRQ(WIFI_IRQ_RECVCOMPLETE);
+			WIFI_triggerIRQ(WIFI_IRQ_RXEND);
 
 			// hax
 			//packet_arrived=1;
