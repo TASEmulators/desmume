@@ -21,7 +21,6 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <fstream>
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "movie.h"
@@ -33,8 +32,9 @@
 #include "mic.h"
 #include "version.h"
 #include "GPU_osd.h"
-#include "memorystream.h"
+//#include "memorystream.h"
 #include "path.h"
+#include "emufile.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -49,7 +49,7 @@ bool autoMovieBackup = true;
 EMOVIEMODE movieMode = MOVIEMODE_INACTIVE;
 
 //this should not be set unless we are in MOVIEMODE_RECORD!
-fstream* osRecordingMovie = 0;
+EMUFILE* osRecordingMovie = 0;
 
 int currFrameCounter;
 uint32 cur_input_display = 0;
@@ -95,7 +95,7 @@ void MovieRecord::clear()
 
 
 const char MovieRecord::mnemonics[13] = {'R','L','D','U','T','S','B','A','Y','X','W','E','G'};
-void MovieRecord::dumpPad(std::ostream* os, u16 pad)
+void MovieRecord::dumpPad(EMUFILE* fp, u16 pad)
 {
 	//these are mnemonics for each joystick bit.
 	//since we usually use the regular joypad, these will be more helpful.
@@ -107,17 +107,18 @@ void MovieRecord::dumpPad(std::ostream* os, u16 pad)
 		char mnemonic = mnemonics[bit];
 		//if the bit is set write the mnemonic
 		if(pad & bitmask)
-			os->put(mnemonic);
+			fp->fputc(mnemonic);
 		else //otherwise write an unset bit
-			os->put('.');
+			fp->fputc('.');
 	}
 }
 
 
-void MovieRecord::parsePad(std::istream* is, u16& pad)
+void MovieRecord::parsePad(EMUFILE* fp, u16& pad)
 {
+	
 	char buf[13];
-	is->read(buf,13);
+	fp->fread(buf,13,1);
 	pad = 0;
 	for(int i=0;i<13;i++)
 	{
@@ -127,42 +128,42 @@ void MovieRecord::parsePad(std::istream* is, u16& pad)
 }
 
 
-void MovieRecord::parse(MovieData* md, std::istream* is)
+void MovieRecord::parse(MovieData* md, EMUFILE* fp)
 {
 	//by the time we get in here, the initial pipe has already been extracted
 
 	//extract the commands
-	commands = u32DecFromIstream(is);
+	commands = u32DecFromIstream(fp->get_fp());
 	
-	is->get(); //eat the pipe
+	fp->fgetc(); //eat the pipe
 
-	parsePad(is, pad);
-	touch.x = u32DecFromIstream(is);
-	touch.y = u32DecFromIstream(is);
-	touch.touch = u32DecFromIstream(is);
+	parsePad(fp, pad);
+	touch.x = u32DecFromIstream(fp->get_fp());
+	touch.y = u32DecFromIstream(fp->get_fp());
+	touch.touch = u32DecFromIstream(fp->get_fp());
 		
-	is->get(); //eat the pipe
+	fp->fgetc(); //eat the pipe
 
 	//should be left at a newline
 }
 
 
-void MovieRecord::dump(MovieData* md, std::ostream* os, int index)
+void MovieRecord::dump(MovieData* md, EMUFILE* fp, int index)
 {
 	//dump the misc commands
 	//*os << '|' << setw(1) << (int)commands;
-	os->put('|');
-	putdec<uint8,1,true>(os,commands);
+	fp->fputc('|');
+	putdec<uint8,1,true>(fp->get_fp(),commands);
 
-	os->put('|');
-	dumpPad(os, pad);
-	putdec<u8,3,true>(os,touch.x); os->put(' ');
-	putdec<u8,3,true>(os,touch.y); os->put(' ');
-	putdec<u8,1,true>(os,touch.touch);
-	os->put('|');
+	fp->fputc('|');
+	dumpPad(fp, pad);
+	putdec<u8,3,true>(fp->get_fp(),touch.x); fp->fputc(' ');
+	putdec<u8,3,true>(fp->get_fp(),touch.y); fp->fputc(' ');
+	putdec<u8,1,true>(fp->get_fp(),touch.touch);
+	fp->fputc('|');
 	
 	//each frame is on a new line
-	os->put('\n');
+	fp->fputc('\n');
 }
 
 MovieData::MovieData()
@@ -224,58 +225,60 @@ void MovieData::installValue(std::string& key, std::string& val)
 }
 
 
-int MovieData::dump(std::ostream *os, bool binary)
+int MovieData::dump(EMUFILE* fp, bool binary)
 {
-	int start = os->tellp();
-	*os << "version " << version << endl;
-	*os << "emuVersion " << emuVersion << endl;
-	*os << "rerecordCount " << rerecordCount << endl;
-	*os << "romFilename " << romFilename << endl;
-	*os << "romChecksum " << u32ToHexString(gameInfo.crc) << endl;
-	*os << "romSerial " << romSerial << endl;
-	*os << "guid " << guid.toString() << endl;
-	*os << "useExtBios " << CommonSettings.UseExtBIOS << endl;
+	int start = fp->ftell();
+	fp->fprintf("version %d\n", version);
+	fp->fprintf("emuVersion %d\n", emuVersion);
+	fp->fprintf("rerecordCount %d\n", rerecordCount);
+
+	fp->fprintf("romFilename %s\n", romFilename.c_str());
+	fp->fprintf("romChecksum %s\n", u32ToHexString(gameInfo.crc).c_str());
+	fp->fprintf("romSerial %s\n", romSerial.c_str());
+	fp->fprintf("guid %s\n", guid.toString().c_str());
+	fp->fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS);
 
 	if(CommonSettings.UseExtBIOS)
-		*os << "swiFromBios " << CommonSettings.SWIFromBIOS << endl;
+		fp->fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS);
 
 	for(uint32 i=0;i<comments.size();i++)
-		*os << "comment " << wcstombs(comments[i]) << endl;
+		fp->fprintf("comment %s\n", wcstombs(comments[i]).c_str());
 	
 	if(binary)
-		*os << "binary 1" << endl;
+		fp->fprintf("binary 1\n");
 		
 	if(savestate.size() != 0)
-		*os << "savestate " << BytesToString(&savestate[0],savestate.size()) << endl;
+		fp->fprintf("savestate %s\n", BytesToString(&savestate[0],savestate.size()).c_str());
 	if(sram.size() != 0)
-		*os << "sram " << BytesToString(&sram[0],sram.size()) << endl;
+		fp->fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
+
 	if(binary)
 	{
 		//put one | to start the binary dump
-		os->put('|');
+		fp->fputc('|');
 		for(int i=0;i<(int)records.size();i++)
-			records[i].dumpBinary(this,os,i);
+			records[i].dumpBinary(this,fp,i);
 	}
 	else
 		for(int i=0;i<(int)records.size();i++)
-			records[i].dump(this,os,i);
+			records[i].dump(this,fp,i);
 
-	int end = os->tellp();
+	int end = fp->ftell();
 	return end-start;
 }
 
 //yuck... another custom text parser.
-bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHeader)
+bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader)
 {
 	//TODO - start with something different. like 'desmume movie version 1"
-	std::ios::pos_type curr = fp->tellg();
+	int curr = fp->ftell();
 
 	//movie must start with "version 1"
 	char buf[9];
-	curr = fp->tellg();
-	fp->read(buf,9);
-	fp->seekg(curr);
-	if(fp->fail()) return false;
+	curr = fp->ftell();
+	fp->fread(buf,9,1);
+	fp->fseek(curr, SEEK_SET);
+//	if(fp->fail()) return false;
 	if(memcmp(buf,"version 1",9)) 
 		return false;
 
@@ -289,7 +292,7 @@ bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHea
 		bool iswhitespace, isrecchar, isnewline;
 		int c;
 		if(size--<=0) goto bail;
-		c = fp->get();
+		c = fp->fgetc();
 		if(c == -1)
 			goto bail;
 		iswhitespace = (c==' '||c=='\t');
@@ -318,9 +321,9 @@ bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHea
 				if (stopAfterHeader) return true;
 				int currcount = movieData.records.size();
 				movieData.records.resize(currcount+1);
-				int preparse = fp->tellg();
+				int preparse = fp->ftell();
 				movieData.records[currcount].parse(&movieData, fp);
-				int postparse = fp->tellg();
+				int postparse = fp->ftell();
 				size -= (postparse-preparse);
 				state = NEWLINE;
 				break;
@@ -370,7 +373,7 @@ static void closeRecordingMovie()
 {
 	if(osRecordingMovie)
 	{
-		delete osRecordingMovie;
+//		delete osRecordingMovie;
 		osRecordingMovie = 0;
 	}
 }
@@ -436,24 +439,25 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//}
 
 	//LoadFM2(currMovieData, fp->stream, INT_MAX, false);
-
+	
+	
 	bool loadedfm2 = false;
 	bool opened = false;
-	{
-		fstream fs (fname);
-		if(fs.is_open())
-		{
-			loadedfm2 = LoadFM2(currMovieData, &fs, INT_MAX, false);
+//	{
+		EMUFILE* fp = new EMUFILE(fname, "rb");
+//		if(fs.is_open())
+//		{
+			loadedfm2 = LoadFM2(currMovieData, fp, INT_MAX, false);
 			opened = true;
-		}
-		fs.close();
-	}
+//		}
+//		fs.close();
+//	}
 	if(!opened)
 	{
 		// for some reason fs.open doesn't work, it has to be a whole new fstream object
-		fstream fs (fname, std::ios_base::in);
-		loadedfm2 = LoadFM2(currMovieData, &fs, INT_MAX, false);
-		fs.close();
+//		fstream fs (fname, std::ios_base::in);
+		loadedfm2 = LoadFM2(currMovieData, fp, INT_MAX, false);
+//		fs.close();
 	}
 
 	if(!loadedfm2)
@@ -502,16 +506,16 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 static void openRecordingMovie(const char* fname)
 {
 	//osRecordingMovie = FCEUD_UTF8_fstream(fname, "wb");
-	osRecordingMovie = new fstream(fname,std::ios_base::out);
+	osRecordingMovie = new EMUFILE(fname, "wb");
 	/*if(!osRecordingMovie)
 		FCEU_PrintError("Error opening movie output file: %s",fname);*/
 	strcpy(curMovieFilename, fname);
 }
 
 bool MovieData::loadSramFrom(std::vector<char>* buf)
-{
-	memorystream ms(buf);
-	MMU_new.backupDevice.load_movie(&ms);
+{//TODO
+//	memorystream ms(buf);
+//	MMU_new.backupDevice.load_movie(&ms);
 	return true;
 }
 
@@ -519,8 +523,8 @@ static bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
 {
 	//a temp memory stream. we'll dump some data here and then compress
 	//TODO - support dumping directly without compressing to save a buffer copy
-
-	memorystream ms;
+//TODO
+/*	memorystream ms;
 
 	//size it
 	FILE * fp = fopen( fname.c_str(), "r" );
@@ -542,15 +546,15 @@ static bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
 	outstream->write((char*)buffer,size);
 
 	fb.close();
-
+*/
 	return true;
 }
 
 void MovieData::dumpSramTo(std::vector<char>* buf, std::string sramfname) {
-
-	memorystream ms(buf);
-	FCEUSS_SaveSRAM(&ms, sramfname);
-	ms.trim();
+//TODO
+//	memorystream ms(buf);
+//	FCEUSS_SaveSRAM(&ms, sramfname);
+//	ms.trim();
 }
 
 //begin recording a new movie
@@ -754,7 +758,7 @@ static void FCEUMOV_AddCommand(int cmd)
 static const int kMOVI = 0x49564F4D;
 static const int kNOMO = 0x4F4D4F4E;
 
-void mov_savestate(std::ostream* os)
+void mov_savestate(EMUFILE* fp)
 {
 	//we are supposed to dump the movie data into the savestate
 	//if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
@@ -762,12 +766,12 @@ void mov_savestate(std::ostream* os)
 	//else return 0;
 	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
 	{
-		write32le(kMOVI,os);
-		currMovieData.dump(os, true);
+		write32le(kMOVI,fp->get_fp());
+		currMovieData.dump(fp, true);
 	}
 	else
 	{
-		write32le(kNOMO,os);
+		write32le(kNOMO,fp->get_fp());
 	}
 }
 
@@ -775,12 +779,12 @@ void mov_savestate(std::ostream* os)
 
 static bool load_successful;
 
-bool mov_loadstate(std::istream* is, int size)
+bool mov_loadstate(EMUFILE* fp, int size)
 {
 	load_successful = false;
 
-	int cookie;
-	if(read32le(&cookie,is) != 1) return false;
+	u32 cookie;
+	if(read32le(&cookie,fp->get_fp()) != 1) return false;
 	if(cookie == kNOMO)
 		return true;
 	else if(cookie != kMOVI)
@@ -803,8 +807,8 @@ bool mov_loadstate(std::istream* is, int size)
 //	}
 
 	MovieData tempMovieData = MovieData();
-	std::ios::pos_type curr = is->tellg();
-	if(!LoadFM2(tempMovieData, is, size, false)) {
+	int curr = fp->ftell();
+	if(!LoadFM2(tempMovieData, fp, size, false)) {
 		
 	//	is->seekg((uint32)curr+size);
 	/*	extern bool FCEU_state_loading_old_format;
@@ -897,7 +901,7 @@ bool mov_loadstate(std::istream* is, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 
 			openRecordingMovie(curMovieFilename);
-			if(!osRecordingMovie->is_open())
+			if(!osRecordingMovie->get_fp())
 			{
 			   osd->setLineColor(255, 0, 0);
 			   osd->addLine("Can't save movie file!");
@@ -954,27 +958,27 @@ bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount)
 	return true;
 }
 
-bool MovieRecord::parseBinary(MovieData* md, std::istream* is)
+bool MovieRecord::parseBinary(MovieData* md, EMUFILE* fp)
 {
-	commands=is->get();
-	is->read((char *) &pad, sizeof pad);
-	is->read((char *) &touch.x, sizeof touch.x);
-	is->read((char *) &touch.y, sizeof touch.y);
-	is->read((char *) &touch.touch, sizeof touch.touch);
+	commands=fp->fgetc();
+	fp->fread((char *) &pad, sizeof pad,1);
+	fp->fread((char *) &touch.x, sizeof touch.x,1);
+	fp->fread((char *) &touch.y, sizeof touch.y,1);
+	fp->fread((char *) &touch.touch, sizeof touch.touch,1);
 	return true;
 }
 
 
-void MovieRecord::dumpBinary(MovieData* md, std::ostream* os, int index)
+void MovieRecord::dumpBinary(MovieData* md, EMUFILE* fp, int index)
 {
-	os->put(md->records[index].commands);
-	os->write((char *) &md->records[index].pad, sizeof md->records[index].pad);
-	os->write((char *) &md->records[index].touch.x, sizeof md->records[index].touch.x);
-	os->write((char *) &md->records[index].touch.y, sizeof md->records[index].touch.y);
-	os->write((char *) &md->records[index].touch.touch, sizeof md->records[index].touch.touch);
+	fp->fputc(md->records[index].commands);
+	fp->fwrite((char *) &md->records[index].pad, sizeof md->records[index].pad,1);
+	fp->fwrite((char *) &md->records[index].touch.x, sizeof md->records[index].touch.x,1);
+	fp->fwrite((char *) &md->records[index].touch.y, sizeof md->records[index].touch.y,1);
+	fp->fwrite((char *) &md->records[index].touch.touch, sizeof md->records[index].touch.touch,1);
 }
 
-void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size)
+void LoadFM2_binarychunk(MovieData& movieData, EMUFILE* fp, int size)
 {
 	int recordsize = 1; //1 for the command
 
@@ -983,11 +987,11 @@ void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size)
 	assert(size%6==0);
 
 	//find out how much remains in the file
-	int curr = fp->tellg();
-	fp->seekg(0,std::ios::end);
-	int end = fp->tellg();
+	int curr = fp->ftell();
+	fp->fseek(0,SEEK_END);
+	int end = fp->ftell();
 	int flen = end-curr;
-	fp->seekg(curr,std::ios::beg);
+	fp->fseek(curr,SEEK_SET);
 
 	//the amount todo is the min of the limiting size we received and the remaining contents of the file
 	int todo = std::min(size, flen);
@@ -1012,17 +1016,16 @@ static bool CheckFileExists(const char* filename)
 		checkFilename = filename;
 			
 	//Check if this filename exists
-	fstream test;
-	test.open(checkFilename.c_str(),fstream::in);
+	FILE* fp = fopen(checkFilename.c_str(), "rb");
 		
-	if (test.fail())
+	if (!fp)
 	{
-		test.close();
+		fclose(fp);
 		return false; 
 	}
 	else
 	{
-		test.close();
+		fclose(fp);
 		return true; 
 	}
 }
@@ -1073,9 +1076,9 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 	}
 
 	MovieData md = currMovieData;								//Get current movie data
-	std::fstream* outf = new fstream(backupFn.c_str(),std::ios_base::out); //FCEUD_UTF8_fstream(backupFn, "wb");	//open/create file
+	EMUFILE* outf = new EMUFILE(backupFn.c_str(),"wb"); //FCEUD_UTF8_fstream(backupFn, "wb");	//open/create file
 	md.dump(outf,false);										//dump movie data
-	delete outf;												//clean up, delete file object
+//	delete outf;												//clean up, delete file object
 	
 	//TODO, decide if fstream successfully opened the file and print error message if it doesn't
 

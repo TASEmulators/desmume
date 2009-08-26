@@ -4,9 +4,8 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <ostream>
-#include <istream>
 #include <stdlib.h>
+#include "emufile.h"
 
 #include "utils/guid.h"
 #include "utils/md5.h"
@@ -93,12 +92,12 @@ public:
 
 	void clear();
 	
-	void parse(MovieData* md, std::istream* is);
-	bool parseBinary(MovieData* md, std::istream* is);
-	void dump(MovieData* md, std::ostream* os, int index);
-	void dumpBinary(MovieData* md, std::ostream* os, int index);
-	void parsePad(std::istream* is, u16& pad);
-	void dumpPad(std::ostream* os, u16 pad);
+	void parse(MovieData* md, EMUFILE* fp);
+	bool parseBinary(MovieData* md, EMUFILE* fp);
+	void dump(MovieData* md, EMUFILE* fp, int index);
+	void dumpBinary(MovieData* md, EMUFILE* fp, int index);
+	void parsePad(EMUFILE* fp, u16& pad);
+	void dumpPad(EMUFILE* fp, u16 pad);
 	
 	static const char mnemonics[13];
 
@@ -163,7 +162,7 @@ public:
 
 	void truncateAt(int frame);
 	void installValue(std::string& key, std::string& val);
-	int dump(std::ostream* os, bool binary);
+	int dump(EMUFILE* fp, bool binary);
 	void clearRecordRange(int start, int len);
 	void insertEmpty(int at, int frames);
 	
@@ -192,17 +191,17 @@ extern MovieData currMovieData;		//adelikat: main needs this for frame counter d
 
 extern bool movie_reset_command;
 
-bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
+bool FCEUI_MovieGetInfo(EMUFILE* fp, MOVIE_INFO& info, bool skipFrameCount);
 void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname);
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe); // returns NULL on success, errmsg on failure
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
 void FCEUMOV_HandlePlayback();
 void FCEUMOV_HandleRecording();
-void mov_savestate(std::ostream* os);
-bool mov_loadstate(std::istream* is, int size);
-void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size);
-bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHeader);
+void mov_savestate(EMUFILE* fp);
+bool mov_loadstate(EMUFILE* fp, int size);
+void LoadFM2_binarychunk(MovieData& movieData, EMUFILE* fp, int size);
+bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
