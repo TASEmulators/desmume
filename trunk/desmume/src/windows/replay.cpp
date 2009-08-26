@@ -118,10 +118,10 @@ static char playfilename[MAX_PATH] = "";
 
 void Describe(HWND hwndDlg)
 {
-	EMUFILE* fp = new EMUFILE_FILE(playfilename,"rb");
+	EMUFILE_FILE fp(playfilename,"rb");
+	if(fp.fail()) return;
 	MovieData md;
-	LoadFM2(md, fp, INT_MAX, false);
-	delete fp;
+	LoadFM2(md, &fp, INT_MAX, false);
 
 	u32 num_frames = md.records.size();
 
@@ -241,7 +241,6 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 
 int flag=0;
-std::string sramfname;
 
 //Record movie dialog
 static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -249,7 +248,6 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 	static struct CreateMovieParameters* p = NULL;
 	std::wstring author = L"";
 	std::string fname;
-	int x;	//temp vairable
 	switch(uMsg)
 	{
 		case WM_INITDIALOG:
@@ -263,6 +261,7 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			case IDOK: {
 				author = GetDlgItemTextW<500>(hwndDlg,IDC_EDIT_AUTHOR);
 				fname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_FILENAME);
+				std::string sramfname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_SRAMFILENAME);
 				if (fname.length())
 				{
 					FCEUI_SaveMovie(fname.c_str(), author, flag, sramfname);
@@ -332,7 +331,6 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 					fname.append(".dsv");
 */
 					SetDlgItemText(hwndDlg, IDC_EDIT_SRAMFILENAME, fname.c_str());
-					sramfname=(std::string)fname;
 				}
 				//if(GetSaveFileName(&ofn))
 				//	UpdateRecordDialogPath(hwndDlg,szChoice);

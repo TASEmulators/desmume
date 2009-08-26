@@ -32,7 +32,6 @@
 #include "mic.h"
 #include "version.h"
 #include "GPU_osd.h"
-//#include "memorystream.h"
 #include "path.h"
 #include "emufile.h"
 
@@ -512,50 +511,45 @@ static void openRecordingMovie(const char* fname)
 	strcpy(curMovieFilename, fname);
 }
 
-bool MovieData::loadSramFrom(std::vector<char>* buf)
-{//TODO
-//	memorystream ms(buf);
-//	MMU_new.backupDevice.load_movie(&ms);
-	return true;
-}
-
-static bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
+bool MovieData::loadSramFrom(std::vector<u8>* buf)
 {
-	//a temp memory stream. we'll dump some data here and then compress
-	//TODO - support dumping directly without compressing to save a buffer copy
-//TODO
-/*	memorystream ms;
-
-	//size it
-	FILE * fp = fopen( fname.c_str(), "r" );
-	if(!fp)
-		return 0;
-	
-	fseek( fp, 0, SEEK_END );
-	int size = ftell(fp);
-	fclose(fp);
-
-	filebuf fb;
-	fb.open (fname.c_str(), ios::in | ios::binary);//ios::in
-	istream is(&fb);
-
-	char *buffer = new char[size];
-
-	is.read(buffer, size);
-
-	outstream->write((char*)buffer,size);
-
-	fb.close();
-*/
+	EMUFILE_MEMORY ms(buf);
+	MMU_new.backupDevice.load_movie(&ms);
 	return true;
 }
 
-void MovieData::dumpSramTo(std::vector<char>* buf, std::string sramfname) {
-//TODO
-//	memorystream ms(buf);
-//	FCEUSS_SaveSRAM(&ms, sramfname);
-//	ms.trim();
-}
+//static bool FCEUSS_SaveSRAM(EMUFILE* outstream, const std::string& fname)
+//{
+//	//a temp memory stream. we'll dump some data here and then compress
+//	//TODO - support dumping directly without compressing to save a buffer copy
+////TODO
+///*	memorystream ms;
+//
+//	//size it
+//	FILE * fp = fopen( fname.c_str(), "r" );
+//	if(!fp)
+//		return 0;
+//	
+//	fseek( fp, 0, SEEK_END );
+//	int size = ftell(fp);
+//	fclose(fp);
+//
+//	filebuf fb;
+//	fb.open (fname.c_str(), ios::in | ios::binary);//ios::in
+//	istream is(&fb);
+//
+//	char *buffer = new char[size];
+//
+//	is.read(buffer, size);
+//
+//	outstream->write((char*)buffer,size);
+//
+//	fb.close();
+//*/
+//
+//
+//	return true;
+//}
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
@@ -589,7 +583,7 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	//	MovieData::dumpSavestateTo(&currMovieData.savestate,Z_BEST_COMPRESSION);
 
 	if(flag == 1)
-		MovieData::dumpSramTo(&currMovieData.sram, sramfname);
+		EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
 
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(osRecordingMovie, false);

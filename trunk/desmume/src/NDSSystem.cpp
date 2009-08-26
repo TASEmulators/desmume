@@ -717,8 +717,6 @@ void GameInfo::populate()
 	}
 }
 #ifdef WIN32
-#include "memorystream.h"
-#include <fstream>
 
 static std::vector<char> buffer;
 static std::vector<char> v;
