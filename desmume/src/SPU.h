@@ -23,11 +23,13 @@
 #ifndef SPU_H
 #define SPU_H
 
-#include "types.h"
-#include "matrix.h"
 #include <iosfwd>
 #include <string>
 #include <assert.h>
+#include "types.h"
+#include "matrix.h"
+#include "emufile.h"
+
 
 #define SNDCORE_DEFAULT         -1
 #define SNDCORE_DUMMY           0
@@ -73,7 +75,7 @@ struct channel_struct
 	channel_struct()
 		: cacheItem(NULL)
 	{}
-	int num;
+	u32 num;
    u8 vol;
    u8 datashift;
    u8 hold;
@@ -144,8 +146,8 @@ void SPU_Emulate_user(void);
 extern SPU_struct *SPU_core, *SPU_user;
 extern int spu_core_samples;
 
-void spu_savestate(std::ostream* os);
-bool spu_loadstate(std::istream* is, int size);
+void spu_savestate(EMUFILE* os);
+bool spu_loadstate(EMUFILE* is, int size);
 
 class WavWriter
 {

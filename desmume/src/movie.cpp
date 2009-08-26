@@ -118,7 +118,7 @@ void MovieRecord::parsePad(EMUFILE* fp, u16& pad)
 {
 	
 	char buf[13];
-	fp->fread(buf,13,1);
+	fp->fread(buf,13);
 	pad = 0;
 	for(int i=0;i<13;i++)
 	{
@@ -133,14 +133,14 @@ void MovieRecord::parse(MovieData* md, EMUFILE* fp)
 	//by the time we get in here, the initial pipe has already been extracted
 
 	//extract the commands
-	commands = u32DecFromIstream(fp->get_fp());
+	commands = u32DecFromIstream(fp);
 	
 	fp->fgetc(); //eat the pipe
 
 	parsePad(fp, pad);
-	touch.x = u32DecFromIstream(fp->get_fp());
-	touch.y = u32DecFromIstream(fp->get_fp());
-	touch.touch = u32DecFromIstream(fp->get_fp());
+	touch.x = u32DecFromIstream(fp);
+	touch.y = u32DecFromIstream(fp);
+	touch.touch = u32DecFromIstream(fp);
 		
 	fp->fgetc(); //eat the pipe
 
@@ -153,13 +153,13 @@ void MovieRecord::dump(MovieData* md, EMUFILE* fp, int index)
 	//dump the misc commands
 	//*os << '|' << setw(1) << (int)commands;
 	fp->fputc('|');
-	putdec<uint8,1,true>(fp->get_fp(),commands);
+	putdec<uint8,1,true>(fp,commands);
 
 	fp->fputc('|');
 	dumpPad(fp, pad);
-	putdec<u8,3,true>(fp->get_fp(),touch.x); fp->fputc(' ');
-	putdec<u8,3,true>(fp->get_fp(),touch.y); fp->fputc(' ');
-	putdec<u8,1,true>(fp->get_fp(),touch.touch);
+	putdec<u8,3,true>(fp,touch.x); fp->fputc(' ');
+	putdec<u8,3,true>(fp,touch.y); fp->fputc(' ');
+	putdec<u8,1,true>(fp,touch.touch);
 	fp->fputc('|');
 	
 	//each frame is on a new line
@@ -276,7 +276,7 @@ bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader)
 	//movie must start with "version 1"
 	char buf[9];
 	curr = fp->ftell();
-	fp->fread(buf,9,1);
+	fp->fread(buf,9);
 	fp->fseek(curr, SEEK_SET);
 //	if(fp->fail()) return false;
 	if(memcmp(buf,"version 1",9)) 
@@ -444,7 +444,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	bool loadedfm2 = false;
 	bool opened = false;
 //	{
-		EMUFILE* fp = new EMUFILE(fname, "rb");
+		EMUFILE* fp = new EMUFILE_FILE(fname, "rb");
 //		if(fs.is_open())
 //		{
 			loadedfm2 = LoadFM2(currMovieData, fp, INT_MAX, false);
@@ -506,7 +506,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 static void openRecordingMovie(const char* fname)
 {
 	//osRecordingMovie = FCEUD_UTF8_fstream(fname, "wb");
-	osRecordingMovie = new EMUFILE(fname, "wb");
+	osRecordingMovie = new EMUFILE_FILE(fname, "wb");
 	/*if(!osRecordingMovie)
 		FCEU_PrintError("Error opening movie output file: %s",fname);*/
 	strcpy(curMovieFilename, fname);
@@ -665,7 +665,7 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 
 			 input.touch.touchX = mr->touch.x << 4;
 			 input.touch.touchY = mr->touch.y << 4;
-			 input.touch.isTouch = mr->touch.touch;
+			 input.touch.isTouch = mr->touch.touch != 0;
 		 }
 
 		 //if we are on the last frame, then pause the emulator if the player requested it
@@ -766,12 +766,12 @@ void mov_savestate(EMUFILE* fp)
 	//else return 0;
 	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
 	{
-		write32le(kMOVI,fp->get_fp());
+		write32le(kMOVI,fp);
 		currMovieData.dump(fp, true);
 	}
 	else
 	{
-		write32le(kNOMO,fp->get_fp());
+		write32le(kNOMO,fp);
 	}
 }
 
@@ -784,7 +784,7 @@ bool mov_loadstate(EMUFILE* fp, int size)
 	load_successful = false;
 
 	u32 cookie;
-	if(read32le(&cookie,fp->get_fp()) != 1) return false;
+	if(read32le(&cookie,fp) != 1) return false;
 	if(cookie == kNOMO)
 		return true;
 	else if(cookie != kMOVI)
@@ -901,7 +901,7 @@ bool mov_loadstate(EMUFILE* fp, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 
 			openRecordingMovie(curMovieFilename);
-			if(!osRecordingMovie->get_fp())
+			if(!osRecordingMovie)
 			{
 			   osd->setLineColor(255, 0, 0);
 			   osd->addLine("Can't save movie file!");
@@ -961,10 +961,10 @@ bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount)
 bool MovieRecord::parseBinary(MovieData* md, EMUFILE* fp)
 {
 	commands=fp->fgetc();
-	fp->fread((char *) &pad, sizeof pad,1);
-	fp->fread((char *) &touch.x, sizeof touch.x,1);
-	fp->fread((char *) &touch.y, sizeof touch.y,1);
-	fp->fread((char *) &touch.touch, sizeof touch.touch,1);
+	fp->fread((char *) &pad, sizeof pad);
+	fp->fread((char *) &touch.x, sizeof touch.x);
+	fp->fread((char *) &touch.y, sizeof touch.y);
+	fp->fread((char *) &touch.touch, sizeof touch.touch);
 	return true;
 }
 
@@ -972,10 +972,10 @@ bool MovieRecord::parseBinary(MovieData* md, EMUFILE* fp)
 void MovieRecord::dumpBinary(MovieData* md, EMUFILE* fp, int index)
 {
 	fp->fputc(md->records[index].commands);
-	fp->fwrite((char *) &md->records[index].pad, sizeof md->records[index].pad,1);
-	fp->fwrite((char *) &md->records[index].touch.x, sizeof md->records[index].touch.x,1);
-	fp->fwrite((char *) &md->records[index].touch.y, sizeof md->records[index].touch.y,1);
-	fp->fwrite((char *) &md->records[index].touch.touch, sizeof md->records[index].touch.touch,1);
+	fp->fwrite((char *) &md->records[index].pad, sizeof md->records[index].pad);
+	fp->fwrite((char *) &md->records[index].touch.x, sizeof md->records[index].touch.x);
+	fp->fwrite((char *) &md->records[index].touch.y, sizeof md->records[index].touch.y);
+	fp->fwrite((char *) &md->records[index].touch.touch, sizeof md->records[index].touch.touch);
 }
 
 void LoadFM2_binarychunk(MovieData& movieData, EMUFILE* fp, int size)
@@ -1076,7 +1076,7 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 	}
 
 	MovieData md = currMovieData;								//Get current movie data
-	EMUFILE* outf = new EMUFILE(backupFn.c_str(),"wb"); //FCEUD_UTF8_fstream(backupFn, "wb");	//open/create file
+	EMUFILE* outf = new EMUFILE_FILE(backupFn.c_str(),"wb"); //FCEUD_UTF8_fstream(backupFn, "wb");	//open/create file
 	md.dump(outf,false);										//dump movie data
 //	delete outf;												//clean up, delete file object
 	

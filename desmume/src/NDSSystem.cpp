@@ -1,4 +1,3 @@
-
 /*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
     yopyop156.ifrance.com 
@@ -1507,14 +1506,14 @@ struct TSequenceItem
 	u32 param;
 	bool enabled;
 
-	virtual void save(std::ostream* os)
+	virtual void save(EMUFILE* os)
 	{
 		write64le(timestamp,os);
 		write32le(param,os);
 		writebool(enabled,os);
 	}
 
-	virtual bool load(std::istream* is)
+	virtual bool load(EMUFILE* is)
 	{
 		if(read64le(&timestamp,is) != 1) return false;
 		if(read32le(&param,is) != 1) return false;
@@ -1730,7 +1729,7 @@ struct Sequencer
 	void execHardware();
 	u64 findNext();
 
-	void save(std::ostream* os)
+	void save(EMUFILE* os)
 	{
 		write64le(nds_timer,os);
 		write64le(nds_arm9_timer,os);
@@ -1748,7 +1747,7 @@ struct Sequencer
 #undef SAVE
 	}
 
-	bool load(std::istream* is, int version)
+	bool load(EMUFILE* is, int version)
 	{
 		if(read64le(&nds_timer,is) != 1) return false;
 		if(read64le(&nds_arm9_timer,is) != 1) return false;
@@ -2054,10 +2053,10 @@ void Sequencer::execHardware()
 
 void execHardware_interrupts();
 
-static void saveUserInput(std::ostream* os);
-static bool loadUserInput(std::istream* is, int version);
+static void saveUserInput(EMUFILE* os);
+static bool loadUserInput(EMUFILE* is, int version);
 
-void nds_savestate(std::ostream* os)
+void nds_savestate(EMUFILE* os)
 {
 	//version
 	write32le(2,os);
@@ -2067,10 +2066,10 @@ void nds_savestate(std::ostream* os)
 	saveUserInput(os);
 }
 
-bool nds_loadstate(std::istream* is, int size)
+bool nds_loadstate(EMUFILE* is, int size)
 {
 	//read version
-	int version;
+	u32 version;
 	if(read32le(&version,is) != 1) return false;
 
 	if(version > 2) return false;
@@ -2558,17 +2557,17 @@ const UserInput& NDS_getFinalUserInput()
 }
 
 
-static void saveUserInput(std::ostream* os, UserInput& input)
+static void saveUserInput(EMUFILE* os, UserInput& input)
 {
-	os->write((const char*)input.buttons.array, 14);
+	os->fwrite((const char*)input.buttons.array, 14);
 	writebool(input.touch.isTouch, os);
 	write16le(input.touch.touchX, os);
 	write16le(input.touch.touchY, os);
 	write32le(input.mic.micButtonPressed, os);
 }
-static bool loadUserInput(std::istream* is, UserInput& input, int version)
+static bool loadUserInput(EMUFILE* is, UserInput& input, int version)
 {
-	is->read((char*)input.buttons.array, 14);
+	is->fread((char*)input.buttons.array, 14);
 	readbool(&input.touch.isTouch, is);
 	read16le(&input.touch.touchX, is);
 	read16le(&input.touch.touchY, is);
@@ -2576,7 +2575,7 @@ static bool loadUserInput(std::istream* is, UserInput& input, int version)
 	return true;
 }
 // (userinput is kind of a misnomer, e.g. finalUserInput has to mirror nds.pad, nds.touchX, etc.)
-static void saveUserInput(std::ostream* os)
+static void saveUserInput(EMUFILE* os)
 {
 	saveUserInput(os, finalUserInput);
 	saveUserInput(os, intermediateUserInput); // saved in case a savestate is made during input processing (which Lua could do if nothing else)
@@ -2584,14 +2583,14 @@ static void saveUserInput(std::ostream* os)
 	for(int i = 0; i < 14; i++)
 		write32le(TurboTime.array[i], os); // saved to make autofire more tolerable to use with re-recording
 }
-static bool loadUserInput(std::istream* is, int version)
+static bool loadUserInput(EMUFILE* is, int version)
 {
 	bool rv = true;
 	rv &= loadUserInput(is, finalUserInput, version);
 	rv &= loadUserInput(is, intermediateUserInput, version);
 	readbool(&validToProcessInput, is);
 	for(int i = 0; i < 14; i++)
-		read32le(&TurboTime.array[i], is);
+		read32le((u32*)&TurboTime.array[i], is);
 	return rv;
 }
 

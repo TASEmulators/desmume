@@ -1242,7 +1242,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void spu_savestate(std::ostream* os)
+void spu_savestate(EMUFILE* os)
 {
 	//version
 	write32le(2,os);
@@ -1277,12 +1277,12 @@ void spu_savestate(std::ostream* os)
 	write64le(double_to_u64(samples),os);
 }
 
-bool spu_loadstate(std::istream* is, int size)
+bool spu_loadstate(EMUFILE* is, int size)
 {
 	u64 temp64; 
 	
 	//read version
-	int version;
+	u32 version;
 	if(read32le(&version,is) != 1) return false;
 
 	SPU_struct *spu = SPU_core;

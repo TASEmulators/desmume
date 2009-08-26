@@ -4,6 +4,7 @@
 
     Copyright (C) 2006-2007 Theo Berkau
     Copyright (C) 2007 shash
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -2600,12 +2601,12 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 	GPU_ligne_MasterBrightness(screen, l);
 }
 
-void gpu_savestate(std::ostream* os)
+void gpu_savestate(EMUFILE* os)
 {
 	//version
 	write32le(1,os);
 	
-	os->write((char*)GPU_screen,sizeof(GPU_screen));
+	os->fwrite((char*)GPU_screen,sizeof(GPU_screen));
 	
 	write32le(MainScreen.gpu->affineInfo[0].x,os);
 	write32le(MainScreen.gpu->affineInfo[0].y,os);
@@ -2617,10 +2618,10 @@ void gpu_savestate(std::ostream* os)
 	write32le(SubScreen.gpu->affineInfo[1].y,os);
 }
 
-bool gpu_loadstate(std::istream* is, int size)
+bool gpu_loadstate(EMUFILE* is, int size)
 {
 	//read version
-	int version;
+	u32 version;
 
 	//sigh.. shouldve used a new version number
 	if(size == 256*192*2*2)
@@ -2636,7 +2637,7 @@ bool gpu_loadstate(std::istream* is, int size)
 
 	if(version<0||version>1) return false;
 
-	is->read((char*)GPU_screen,sizeof(GPU_screen));
+	is->fread((char*)GPU_screen,sizeof(GPU_screen));
 
 	if(version==1)
 	{

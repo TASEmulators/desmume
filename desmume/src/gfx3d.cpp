@@ -2446,7 +2446,7 @@ SFORMAT SF_GFX3D[]={
 };
 
 //-------------savestate
-void gfx3d_savestate(std::ostream* os)
+void gfx3d_savestate(EMUFILE* os)
 {
 	//version
 	write32le(2,os);
@@ -2467,7 +2467,7 @@ void gfx3d_savestate(std::ostream* os)
 	}
 }
 
-bool gfx3d_loadstate(std::istream* is, int size)
+bool gfx3d_loadstate(EMUFILE* is, int size)
 {
 	int version;
 	if(read32le(&version,is) != 1) return false;

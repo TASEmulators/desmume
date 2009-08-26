@@ -239,27 +239,27 @@ u8 Mic_ReadSample()
 }
 
 // maybe a bit paranoid...
-void mic_savestate(std::ostream* os)
+void mic_savestate(EMUFILE* os)
 {
 	//version
 	write32le(0,os);
 	assert(MIC_BUFSIZE == 4096); // else needs new version
 
-	os->write((char*)Mic_Buffer[0], MIC_BUFSIZE);
-	os->write((char*)Mic_Buffer[1], MIC_BUFSIZE);
+	os->fwrite((char*)Mic_Buffer[0], MIC_BUFSIZE);
+	os->fwrite((char*)Mic_Buffer[1], MIC_BUFSIZE);
 	write16le(Mic_BufPos,os);
 	write8le(Mic_WriteBuf,os); // seems OK to save...
 	write8le(Mic_PlayBuf,os);
 	write32le(micReadSamplePos,os);
 }
-bool mic_loadstate(std::istream* is, int size)
+bool mic_loadstate(EMUFILE* is, int size)
 {
 	u32 version;
 	if(read32le(&version,is) != 1) return false;
-	if(version > 0) { is->seekg(size-4, std::ios::cur); return true; }
+	if(version > 0) { is->fseek(size-4, SEEK_CUR); return true; }
 
-	is->read((char*)Mic_Buffer[0], MIC_BUFSIZE);
-	is->read((char*)Mic_Buffer[1], MIC_BUFSIZE);
+	is->fread((char*)Mic_Buffer[0], MIC_BUFSIZE);
+	is->fread((char*)Mic_Buffer[1], MIC_BUFSIZE);
 	read16le(&Mic_BufPos,is);
 	read8le(&Mic_WriteBuf,is);
 	read8le(&Mic_PlayBuf,is);

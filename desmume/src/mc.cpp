@@ -226,9 +226,9 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 	return data;
 }	
 
-bool BackupDevice::save_state(std::ostream* os)
+bool BackupDevice::save_state(EMUFILE* os)
 {
-	int version = 1;
+	u32 version = 1;
 	write32le(version,os);
 	write32le(write_enable,os);
 	write32le(com,os);
@@ -241,12 +241,12 @@ bool BackupDevice::save_state(std::ostream* os)
 	return true;
 }
 
-bool BackupDevice::load_state(std::istream* is)
+bool BackupDevice::load_state(EMUFILE* is)
 {
-	int version;
+	u32 version;
 	if(read32le(&version,is)!=1) return false;
 	if(version==0 || version==1) {
-		read32le(&write_enable,is);
+		readbool(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
 		read32le(&addr_counter,is);
@@ -731,10 +731,11 @@ void BackupDevice::loadfile()
 	if(isMovieMode) return;
 	if(filename.length() ==0) return; //No sense crashing if no filename supplied
 
-	FILE* inf = fopen(filename.c_str(),"rb");
-	if(!inf)
+	EMUFILE_FILE* inf = new EMUFILE_FILE(filename.c_str(),"rb");
+	if(inf->fail())
 	{
-		//no dsv found; we need to try auto-importing a file with .sav extension
+		delete inf;
+		//no dsv found; we need to try auto-importing a file with .sav extension 
 		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
 		
 		//change extension to sav
@@ -743,13 +744,14 @@ void BackupDevice::loadfile()
 		tmp[strlen(tmp)-3] = 0;
 		strcat(tmp,"sav");
 
-		inf = fopen(tmp,"rb");
-		if(!inf)
+		inf = new EMUFILE_FILE(tmp,"rb");
+		if(inf->fail())
 		{
+			delete inf;
 			printf("Missing save file %s\n",filename.c_str());
 			return;
 		}
-		fclose(inf);
+		delete inf;
 
 		if (!load_no_gba(tmp))
 			load_raw(tmp);
@@ -759,29 +761,29 @@ void BackupDevice::loadfile()
 		//scan for desmume save footer
 		const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
 		char *sigbuf = new char[cookieLen];
-		fseek(inf, -cookieLen, SEEK_END);
-		fread(sigbuf,1,cookieLen,inf);
+		inf->fseek(-cookieLen, SEEK_END);
+		inf->fread(sigbuf,cookieLen);
 		int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
 		delete[] sigbuf;
 		if(cmp)
 		{
 			//maybe it is a misnamed raw save file. try loading it that way
 			printf("Not a DeSmuME .dsv save file. Trying to load as raw.\n");
-			fclose(inf);
+			delete inf;
 			if (!load_no_gba(filename.c_str()))
 				load_raw(filename.c_str());
 			return;
 		}
 		//desmume format
-		fseek(inf, -cookieLen, SEEK_END);
-		fseek(inf, -4, SEEK_CUR);
+		inf->fseek(-cookieLen, SEEK_END);
+		inf->fseek(-4, SEEK_CUR);
 		u32 version = 0xFFFFFFFF;
 		read32le(&version,inf);
 		if(version!=0) {
 			printf("Unknown save file format\n");
 			return;
 		}
-		fseek(inf, -24, SEEK_CUR);
+		inf->fseek(-24, SEEK_CUR);
 		struct {
 			u32 size,padSize,type,addr_size,mem_size;
 		} info;
@@ -793,14 +795,14 @@ void BackupDevice::loadfile()
 
 		//establish the save data
 		data.resize(info.size);
-		fseek(inf, 0, SEEK_SET);
+		inf->fseek(0, SEEK_SET);
 		if(info.size>0)
-			fread(&data[0],1,info.size,inf); //read all the raw data we have
+			inf->fread(&data[0],info.size); //read all the raw data we have
 		state = RUNNING;
 		addr_size = info.addr_size;
 		//none of the other fields are used right now
 
-		fclose(inf);
+		delete inf;
 	}
 }
 
@@ -846,11 +848,11 @@ void BackupDevice::flush()
 	//never use save files if we are in movie mode
 	if(isMovieMode) return;
 
-	FILE* outf = fopen(filename.c_str(),"wb");
-	if(outf)
+	EMUFILE* outf = new EMUFILE_FILE(filename.c_str(),"wb");
+	if(!outf->fail())
 	{
 		if(data.size()>0)
-			fwrite(&data[0],1,data.size(),outf);
+			outf->fwrite(&data[0],data.size());
 		
 		//write the footer. we use a footer so that we can maximize the chance of the
 		//save file being recognized as a raw save file by other emulators etc.
@@ -860,10 +862,10 @@ void BackupDevice::flush()
 		u32 padSize = pad_up_size(size);
 
 		for(u32 i=size;i<padSize;i++)
-			fputc(kUninitializedSaveDataValue,outf);
+			outf->fputc(kUninitializedSaveDataValue);
 
 		//this is just for humans to read
-		fprintf(outf,"|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:");
+		outf->fprintf("|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:");
 
 		//and now the actual footer
 		write32le(size,outf); //the size of data that has actually been written
@@ -872,13 +874,13 @@ void BackupDevice::flush()
 		write32le(addr_size,outf);
 		write32le(0,outf); //save memory size
 		write32le(0,outf); //version number
-		fprintf(outf, "%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
+		outf->fprintf("%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
 
-
-		fclose(outf);
+		delete outf;
 	}
 	else
 	{
+		delete outf;
 		printf("Unable to open savefile %s\n",filename.c_str());
 	}
 }

@@ -1,5 +1,6 @@
 /*  Copyright (C) 2006 thoduv
     Copyright (C) 2006 Theo Berkau
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -25,6 +26,7 @@
 #include <vector>
 #include <string>
 #include "types.h"
+#include "emufile.h"
 
 #define MC_TYPE_AUTODETECT      0x0
 #define MC_TYPE_EEPROM1         0x1
@@ -76,8 +78,8 @@ public:
 	void reset();
 	void close_rom();
 
-	bool save_state(std::ostream* os);
-	bool load_state(std::istream* is);
+	bool save_state(EMUFILE* os);
+	bool load_state(EMUFILE* is);
 	
 	//commands from mmu
 	void reset_command();
@@ -110,7 +112,7 @@ public:
 	void lazy_flush();
 
 private:
-	BOOL write_enable;	//is write enabled?
+	bool write_enable;	//is write enabled?
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
 	u32 addr;
