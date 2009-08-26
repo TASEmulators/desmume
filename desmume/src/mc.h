@@ -103,7 +103,7 @@ public:
 	bool load_no_gba(const char *fname);
 	bool load_raw(const char* filename);
 	bool save_raw(const char* filename);
-	bool load_movie(std::istream* is);
+	bool load_movie(EMUFILE* is);
 
 	//call me once a second or so to lazy flush the save data
 	//here's the reason for this system: we want to dump save files when theyre READ

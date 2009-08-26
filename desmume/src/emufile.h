@@ -38,6 +38,7 @@ public:
 
 	virtual ~EMUFILE() {}
 	
+	static bool readAllBytes(std::vector<u8>* buf, const std::string& fname);
 
 	bool fail() { return failbit; }
 
@@ -157,7 +158,7 @@ public:
 				pos += offset;
 				break;
 			case SEEK_END:
-				pos = size()-len;
+				pos = size()+offset;
 				break;
 			default:
 				assert(false);
@@ -195,16 +196,9 @@ public:
 	}
 
 	virtual int fprintf(const char *format, ...) {
-		//TODO - BLEHHHHHHHH
-		char temp[1024];
 		va_list argptr;
 		va_start(argptr, format);
-		int ret = ::vsprintf(temp, format, argptr);
-		if(ret<0 || ret>=1024) {
-			assert(false);
-			return -1;
-		}
-		fwrite(temp,ret);
+		int ret = ::vfprintf(fp, format, argptr);
 		va_end(argptr);
 		return ret;
 	};

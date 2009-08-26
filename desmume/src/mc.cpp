@@ -961,36 +961,36 @@ bool BackupDevice::load_duc(const char* filename)
 
 }
 
-bool BackupDevice::load_movie(std::istream* is) {
+bool BackupDevice::load_movie(EMUFILE* is) {
 
 	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
 
-	is->seekg(-cookieLen, std::ios::end);
-	is->seekg(-4, std::ios::cur);
+	is->fseek(-cookieLen, SEEK_END);
+	is->fseek(-4, SEEK_CUR);
 
 	u32 version = 0xFFFFFFFF;
-	is->read((char*)&version,4);
+	is->fread((char*)&version,4);
 	if(version!=0) {
 		printf("Unknown save file format\n");
 		return false;
 	}
-	is->seekg(-24, std::ios::cur);
+	is->fseek(-24, SEEK_CUR);
 
 	struct{
 		u32 size,padSize,type,addr_size,mem_size;
 	}info;
 
-	is->read((char*)&info.size,4);
-	is->read((char*)&info.padSize,4);
-	is->read((char*)&info.type,4);
-	is->read((char*)&info.addr_size,4);
-	is->read((char*)&info.mem_size,4);
+	is->fread((char*)&info.size,4);
+	is->fread((char*)&info.padSize,4);
+	is->fread((char*)&info.type,4);
+	is->fread((char*)&info.addr_size,4);
+	is->fread((char*)&info.mem_size,4);
 
 	//establish the save data
 	data.resize(info.size);
-	is->seekg(0, std::ios::beg);
+	is->fseek(0, SEEK_SET);
 	if(info.size>0)
-		is->read((char*)&data[0],info.size);
+		is->fread((char*)&data[0],info.size);
 
 	state = RUNNING;
 	addr_size = info.addr_size;

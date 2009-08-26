@@ -666,6 +666,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\emufile.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\FIFO.cpp"
 					>
 				</File>
@@ -1228,6 +1232,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\emufile.h"
+					>
+				</File>
+				<File
 					RelativePath="..\fat.h"
 					>
 				</File>
@@ -1273,10 +1281,6 @@
 				</File>
 				<File
 					RelativePath="..\mem.h"
-					>
-				</File>
-				<File
-					RelativePath="..\memorystream.h"
 					>
 				</File>
 				<File

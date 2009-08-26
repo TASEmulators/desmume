@@ -18,11 +18,10 @@ libdesmume_a_SOURCES = \
 	common.cpp common.h \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
-	dscard.h fat.h FIFO.cpp FIFO.h \
+	dscard.h emufile.h emufile.cpp fat.h FIFO.cpp FIFO.h \
 	GPU.cpp GPU.h \
 	GPU_osd.cpp GPU_osd.h \
         mem.h mc.cpp mc.h \
-	memorystream.h \
 	path.h \
 	readwrite.cpp readwrite.h \
 	wifi.cpp wifi.h \

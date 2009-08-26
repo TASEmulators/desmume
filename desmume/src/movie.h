@@ -119,8 +119,8 @@ public:
 	u32 romChecksum;
 	std::string romSerial;
 	std::string romFilename;
-	std::vector<char> savestate;
-	std::vector<char> sram;
+	std::vector<u8> savestate;
+	std::vector<u8> sram;
 	std::vector<MovieRecord> records;
 	std::vector<std::wstring> comments;
 	
@@ -166,11 +166,10 @@ public:
 	void clearRecordRange(int start, int len);
 	void insertEmpty(int at, int frames);
 	
-	static bool loadSavestateFrom(std::vector<char>* buf);
-	static void dumpSavestateTo(std::vector<char>* buf, int compressionLevel);
+	static bool loadSavestateFrom(std::vector<u8>* buf);
+	static void dumpSavestateTo(std::vector<u8>* buf, int compressionLevel);
 
-	static bool loadSramFrom(std::vector<char>* buf);
-	static void dumpSramTo(std::vector<char>* buf, std::string sramfname);
+	static bool loadSramFrom(std::vector<u8>* buf);
 	//void TryDumpIncremental();
 
 private:

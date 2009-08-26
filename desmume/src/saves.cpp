@@ -37,7 +37,6 @@
 #include "GPU_osd.h"
 #include "version.h"
 
-#include "memorystream.h"
 #include "readwrite.h"
 #include "gfx3d.h"
 #include "movie.h"
