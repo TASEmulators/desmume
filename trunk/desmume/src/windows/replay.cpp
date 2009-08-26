@@ -98,9 +98,9 @@ static char playfilename[MAX_PATH] = "";
 
 void Describe(HWND hwndDlg)
 {
-	std::fstream fs (playfilename, std::ios_base::in);
+	EMUFILE* fp = new EMUFILE(playfilename,"rb");
 	MovieData md;
-	LoadFM2(md, &fs, INT_MAX, false);
+	LoadFM2(md, fp, INT_MAX, false);
 	fs.close();
 
 	u32 num_frames = md.records.size();
