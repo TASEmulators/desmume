@@ -24,10 +24,12 @@
 #ifndef _GFX3D_H_
 #define _GFX3D_H_
 
-#include "types.h"
 #include <iosfwd>
 #include <ostream>
 #include <istream>
+#include "types.h"
+#include "emufile.h"
+
 
 //produce a 32bpp color from a DS RGB16
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
@@ -89,8 +91,8 @@ inline u32 gfx3d_extendDepth_15_to_24(u32 depth)
 void gfx3d_init();
 void gfx3d_reset();
 
-#define OSWRITE(x) os->write((char*)&(x),sizeof((x)));
-#define OSREAD(x) is->read((char*)&(x),sizeof((x)));
+#define OSWRITE(x) os->fwrite((char*)&(x),sizeof((x)));
+#define OSREAD(x) is->fread((char*)&(x),sizeof((x)));
 
 struct POLY {
 	int type; //tri or quad
@@ -116,7 +118,7 @@ struct POLY {
 
 	int getAlpha() { return (polyAttr>>16)&0x1F; }
 
-	void save(std::ostream* os)
+	void save(EMUFILE* os)
 	{
 		OSWRITE(type); 
 		OSWRITE(vertIndexes[0]); OSWRITE(vertIndexes[1]); OSWRITE(vertIndexes[2]); OSWRITE(vertIndexes[3]);
@@ -126,7 +128,7 @@ struct POLY {
 		OSWRITE(maxy);
 	}
 
-	void load(std::istream* is)
+	void load(EMUFILE* is)
 	{
 		OSREAD(type); 
 		OSREAD(vertIndexes[0]); OSREAD(vertIndexes[1]); OSREAD(vertIndexes[2]); OSREAD(vertIndexes[3]);
@@ -164,14 +166,14 @@ struct VERT {
 		fcolor[1] = color[1];
 		fcolor[2] = color[2];
 	}
-	void save(std::ostream* os)
+	void save(EMUFILE* os)
 	{
 		OSWRITE(x); OSWRITE(y); OSWRITE(z); OSWRITE(w);
 		OSWRITE(u); OSWRITE(v);
 		OSWRITE(color[0]); OSWRITE(color[1]); OSWRITE(color[2]);
 		OSWRITE(fcolor[0]); OSWRITE(fcolor[1]); OSWRITE(fcolor[2]);
 	}
-	void load(std::istream* is)
+	void load(EMUFILE* is)
 	{
 		OSREAD(x); OSREAD(y); OSREAD(z); OSREAD(w);
 		OSREAD(u); OSREAD(v);
@@ -346,7 +348,7 @@ void gfx3d_GetLineData15bpp(int line, u16** dst);
 
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
-void gfx3d_savestate(std::ostream* os);
-bool gfx3d_loadstate(std::istream* is, int size);
+void gfx3d_savestate(EMUFILE* os);
+bool gfx3d_loadstate(EMUFILE* is, int size);
 
 #endif

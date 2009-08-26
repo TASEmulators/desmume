@@ -1,6 +1,7 @@
 /*  Copyright (C) 2006 Normmatt
     Copyright (C) 2006 Theo Berkau
     Copyright (C) 2007 Pascal Giard
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -263,7 +264,7 @@ SFORMAT SF_MOVIE[]={
 	{ 0 }
 };
 
-static void mmu_savestate(std::ostream* os)
+static void mmu_savestate(EMUFILE* os)
 {
 	//version
 	write32le(2,os);
@@ -371,10 +372,10 @@ SFORMAT SF_WIFI[]={
 	{ 0 }
 };
 
-static bool mmu_loadstate(std::istream* is, int size)
+static bool mmu_loadstate(EMUFILE* is, int size)
 {
 	//read version
-	int version;
+	u32 version;
 	if(read32le(&version,is) != 1) return false;
 	
 	if(version == 0 || version == 1)
@@ -394,7 +395,7 @@ static bool mmu_loadstate(std::istream* is, int size)
 		else if(version == 1)
 		{
 			//version 1 reinitializes the save system with the type that was saved
-			int bupmem_type;
+			u32 bupmem_type;
 			if(read32le(&bupmem_type,is) != 1) return false;
 			if(read32le(&bupmem_size,is) != 1) return false;
 			addr_size = BackupDevice::addr_size_for_old_save_type(bupmem_type);
@@ -406,7 +407,7 @@ static bool mmu_loadstate(std::istream* is, int size)
 			return false;
 
 		u8* temp = new u8[bupmem_size];
-		is->read((char*)temp,bupmem_size);
+		is->fread((char*)temp,bupmem_size);
 		MMU_new.backupDevice.load_old_state(addr_size,temp,bupmem_size);
 		delete[] temp;
 		if(is->fail()) return false;
@@ -420,7 +421,7 @@ static bool mmu_loadstate(std::istream* is, int size)
 	return true;
 }
 
-static void cp15_saveone(armcp15_t *cp15, std::ostream* os)
+static void cp15_saveone(armcp15_t *cp15, EMUFILE* os)
 {
 	write32le(cp15->IDCode,os);
 	write32le(cp15->cacheType,os);
@@ -463,7 +464,7 @@ static void cp15_saveone(armcp15_t *cp15, std::ostream* os)
     for(int i=0;i<8;i++) write32le(cp15->regionExecuteSet_SYS[i],os);
 }
 
-static void cp15_savestate(std::ostream* os)
+static void cp15_savestate(EMUFILE* os)
 {
 	//version
 	write32le(0,os);
@@ -472,7 +473,7 @@ static void cp15_savestate(std::ostream* os)
 	cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
 }
 
-static bool cp15_loadone(armcp15_t *cp15, std::istream* is)
+static bool cp15_loadone(armcp15_t *cp15, EMUFILE* is)
 {
 	if(!read32le(&cp15->IDCode,is)) return false;
 	if(!read32le(&cp15->cacheType,is)) return false;
@@ -517,10 +518,10 @@ static bool cp15_loadone(armcp15_t *cp15, std::istream* is)
     return true;
 }
 
-static bool cp15_loadstate(std::istream* is, int size)
+static bool cp15_loadstate(EMUFILE* is, int size)
 {
 	//read version
-	int version;
+	u32 version;
 	if(read32le(&version,is) != 1) return false;
 	if(version != 0) return false;
 
@@ -729,18 +730,18 @@ static const SFORMAT *CheckS(const SFORMAT *guessSF, const SFORMAT *firstSF, u32
 }
 
 
-static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
+static bool ReadStateChunk(EMUFILE* is, const SFORMAT *sf, int size)
 {
 	const SFORMAT *tmp = NULL;
 	const SFORMAT *guessSF = NULL;
-	int temp = is->tellg();
+	int temp = is->ftell();
 
-	while(is->tellg()<temp+size)
+	while(is->ftell()<temp+size)
 	{
 		u32 sz, count;
 
 		char toa[4];
-		is->read(toa,4);
+		is->fread(toa,4);
 		if(is->fail())
 			return false;
 
@@ -751,15 +752,15 @@ static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 		{
 		#ifdef LOCAL_LE
 			// no need to ever loop one at a time if not flipping byte order
-			is->read((char *)tmp->v,sz*count);
+			is->fread((char *)tmp->v,sz*count);
 		#else
 			if(sz == 1) {
 				//special case: read a huge byte array
-				is->read((char *)tmp->v,count);
+				is->fread((char *)tmp->v,count);
 			} else {
 				for(unsigned int i=0;i<count;i++)
 				{
-					is->read((char *)tmp->v + i*sz,sz);
+					is->fread((char *)tmp->v + i*sz,sz);
                     FlipByteOrder((u8*)tmp->v + i*sz,sz);
 				}
 			}
@@ -768,7 +769,7 @@ static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 		}
 		else
 		{
-			is->seekg(sz*count,std::ios::cur);
+			is->fseek(sz*count,SEEK_CUR);
 			guessSF = NULL;
 		}
 	} // while(...)
@@ -777,7 +778,7 @@ static bool ReadStateChunk(std::istream* is, const SFORMAT *sf, int size)
 
 
 
-static int SubWrite(std::ostream* os, const SFORMAT *sf)
+static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 {
 	uint32 acc=0;
 
@@ -816,21 +817,21 @@ static int SubWrite(std::ostream* os, const SFORMAT *sf)
 
 		if(os)			//Are we writing or calculating the size of this block?
 		{
-			os->write(sf->desc,4);
+			os->fwrite(sf->desc,4);
 			write32le(sf->size,os);
 			write32le(sf->count,os);
 
 		#ifdef LOCAL_LE
 			// no need to ever loop one at a time if not flipping byte order
-			os->write((char *)sf->v,size*count);
+			os->fwrite((char *)sf->v,size*count);
 		#else
 			if(sz == 1) {
 				//special case: write a huge byte array
-				os->write((char *)sf->v,count);
+				os->fwrite((char *)sf->v,1,count);
 			} else {
 				for(int i=0;i<count;i++) {
 					FlipByteOrder((u8*)sf->v + i*size, size);
-					os->write((char*)sf->v + i*size,size);
+					os->fwrite((char*)sf->v + i*size,size);
 					//Now restore the original byte order.
 					FlipByteOrder((u8*)sf->v + i*size, size);
 				}
@@ -843,11 +844,11 @@ static int SubWrite(std::ostream* os, const SFORMAT *sf)
 	return(acc);
 }
 
-static int savestate_WriteChunk(std::ostream* os, int type, const SFORMAT *sf)
+static int savestate_WriteChunk(EMUFILE* os, int type, const SFORMAT *sf)
 {
 	write32le(type,os);
 	if(!sf) return 4;
-	int bsize = SubWrite((std::ostream*)0,sf);
+	int bsize = SubWrite((EMUFILE*)0,sf);
 	write32le(bsize,os);
 
 	if(!SubWrite(os,sf))
@@ -857,9 +858,9 @@ static int savestate_WriteChunk(std::ostream* os, int type, const SFORMAT *sf)
 	return (bsize+8);
 }
 
-static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(std::ostream* os))
+static void savestate_WriteChunk(EMUFILE* os, int type, void (*saveproc)(EMUFILE* os))
 {
-	u32 pos1 = os->tellp();
+	u32 pos1 = os->ftell();
 
 	//write the type, size(placeholder), and data
 	write32le(type,os);
@@ -867,14 +868,14 @@ static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(st
 	saveproc(os);
 
 	//get the size
-	u32 pos2 = os->tellp();
+	u32 pos2 = os->ftell();
 	assert(pos2 != (u32)-1); // if this assert fails, saveproc did something bad
 	u32 size = (pos2 - pos1) - (2 * sizeof(u32));
 
 	//fill in the actual size
-	os->seekp(pos1 + sizeof(u32));
+	os->fseek(pos1 + sizeof(u32),SEEK_SET);
 	write32le(size,os);
-	os->seekp(pos2);
+	os->fseek(pos2,SEEK_SET);
 
 /*
 // old version of this function,
@@ -896,35 +897,32 @@ static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(st
 */
 }
 
-static void writechunks(std::ostream* os);
+static void writechunks(EMUFILE* os);
 
-static bool savestate_save(std::ostream* outstream, int compressionLevel)
+static bool savestate_save(EMUFILE* outstream, int compressionLevel)
 {
 	#ifndef HAVE_LIBZ
 	compressionLevel = Z_NO_COMPRESSION;
 	#endif
 
-	memorystream ms;
-	std::ostream* os;
+	EMUFILE_MEMORY ms;
+	EMUFILE* os;
 	
 	if(compressionLevel != Z_NO_COMPRESSION)
 	{
 		//generate the savestate in memory first
-		os = (std::ostream*)&ms;
+		os = (EMUFILE*)&ms;
 		writechunks(os);
-		ms.flush();
 	}
 	else
 	{
 		os = outstream;
-		os->seekp(32); //skip the header
+		os->fseek(32,SEEK_SET); //skip the header
 		writechunks(os);
 	}
 
-	os->flush();
-
 	//save the length of the file
-	u32 len = os->tellp();
+	u32 len = os->ftell();
 
 	u32 comprlen = 0xFFFFFFFF;
 	u8* cbuf;
@@ -933,30 +931,29 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	int error = Z_OK;
 	if(compressionLevel != Z_NO_COMPRESSION)
 	{
-		cbuf = (u8*)ms.buf();
+		cbuf = ms.buf();
 		uLongf comprlen2;
 		//worst case compression.
 		//zlib says "0.1% larger than sourceLen plus 12 bytes"
 		comprlen = (len>>9)+12 + len;
 		cbuf = new u8[comprlen];
-		/* Workaround to make it compile under linux 64bit */
+		// Workaround to make it compile under linux 64bit
 		comprlen2 = comprlen;
-		error = compress2(cbuf,&comprlen2,(u8*)ms.buf(),len,compressionLevel);
+		error = compress2(cbuf,&comprlen2,ms.buf(),len,compressionLevel);
 		comprlen = (u32)comprlen2;
 	}
 
 	//dump the header
-	outstream->seekp(0);
-	outstream->write(magic,16);
+	outstream->fseek(0,SEEK_SET);
+	outstream->fwrite(magic,16);
 	write32le(SAVESTATE_VERSION,outstream);
 	write32le(DESMUME_VERSION_NUMERIC,outstream); //desmume version
 	write32le(len,outstream); //uncompressed length
 	write32le(comprlen,outstream); //compressed length (-1 if it is not compressed)
-	outstream->flush();
 
 	if(compressionLevel != Z_NO_COMPRESSION)
 	{
-		outstream->write((char*)cbuf,comprlen==(u32)-1?len:comprlen);
+		outstream->fwrite((char*)cbuf,comprlen==(u32)-1?len:comprlen);
 		delete[] cbuf;
 	}
 
@@ -965,7 +962,7 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 
 bool savestate_save (const char *file_name)
 {
-	memorystream ms;
+	EMUFILE_MEMORY ms;
 	size_t elems_written;
 #ifdef HAVE_LIBZ
 	if(!savestate_save(&ms, Z_DEFAULT_COMPRESSION))
@@ -973,7 +970,6 @@ bool savestate_save (const char *file_name)
 	if(!savestate_save(&ms, 0))
 #endif
 		return false;
-	ms.flush();
 	FILE* file = fopen(file_name,"wb");
 	if(file)
 	{
@@ -985,7 +981,7 @@ bool savestate_save (const char *file_name)
 
 extern SFORMAT SF_RTC[];
 
-static void writechunks(std::ostream* os) {
+static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
 	savestate_WriteChunk(os,3,cp15_savestate);
@@ -1006,7 +1002,7 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
-static bool ReadStateChunks(std::istream* is, s32 totalsize)
+static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 {
 	bool ret = true;
 	while(totalsize > 0)
@@ -1075,11 +1071,11 @@ static void loadstate()
 	SetupMMU(nds.debugConsole);
 }
 
-static bool savestate_load(std::istream* is)
+static bool savestate_load(EMUFILE* is)
 {
 	SAV_silent_fail_flag = false;
 	char header[16];
-	is->read(header,16);
+	is->fread(header,16);
 	if(is->fail() || memcmp(header,magic,16))
 		return false;
 
@@ -1091,7 +1087,7 @@ static bool savestate_load(std::istream* is)
 
 	if(ssversion != SAVESTATE_VERSION) return false;
 
-	std::vector<char> buf(len);
+	std::vector<u8> buf(len);
 
 	if(comprlen != 0xFFFFFFFF) {
 #ifndef HAVE_LIBZ
@@ -1099,7 +1095,7 @@ static bool savestate_load(std::istream* is)
 		return false;
 #endif
 		std::vector<char> cbuf(comprlen);
-		is->read(&cbuf[0],comprlen);
+		is->fread(&cbuf[0],comprlen);
 		if(is->fail()) return false;
 
 #ifdef HAVE_LIBZ
@@ -1109,7 +1105,7 @@ static bool savestate_load(std::istream* is)
 			return false;
 #endif
 	} else {
-		is->read((char*)&buf[0],len);
+		is->fread((char*)&buf[0],len);
 	}
 
 	//GO!! READ THE SAVESTATE
@@ -1133,7 +1129,7 @@ static bool savestate_load(std::istream* is)
 	//gpu3D->NDS_3D_Reset();
 	//SPU_Reset();
 
-	memorystream mstemp(&buf);
+	EMUFILE_MEMORY mstemp(&buf);
 	bool x = ReadStateChunks(&mstemp,(s32)len);
 
 	if(!x && !SAV_silent_fail_flag)
@@ -1157,15 +1153,14 @@ static bool savestate_load(std::istream* is)
 
 bool savestate_load(const char *file_name)
 {
-	std::ifstream f;
-	f.open(file_name,std::ios_base::binary|std::ios_base::in);
-	if(!f) return false;
+	EMUFILE_FILE f(file_name,"rb");
+	if(f.fail()) return false;
 
 	return savestate_load(&f);
 }
 
-static std::stack<memorystream*> rewindFreeList;
-static std::vector<memorystream*> rewindbuffer;
+static std::stack<EMUFILE_MEMORY*> rewindFreeList;
+static std::vector<EMUFILE_MEMORY*> rewindbuffer;
 
 int rewindstates = 16;
 int rewindinterval = 4;
@@ -1178,20 +1173,16 @@ void rewindsave () {
 	//printf("rewindsave"); printf("%d%s", currFrameCounter, "\n");
 
 	
-	memorystream *ms;
+	EMUFILE_MEMORY *ms;
 	if(!rewindFreeList.empty()) {
 		ms = rewindFreeList.top();
 		rewindFreeList.pop();
 	} else {
-		ms = new memorystream();
+		ms = new EMUFILE_MEMORY(1024*1024*12);
 	}
-
-	ms->getStreambuf().expand(1024*1024*12);
 
 	if(!savestate_save(ms, Z_NO_COMPRESSION))
 		return;
-
-	ms->sync();
 
 	rewindbuffer.push_back(ms);
 	
@@ -1220,8 +1211,8 @@ void dorewind()
 
 	printf("%d", size);
 
-	memorystream* loadms = rewindbuffer[size-1];
-	loadms->seekg(32, std::ios::beg);
+	EMUFILE_MEMORY* loadms = rewindbuffer[size-1];
+	loadms->fseek(32, SEEK_SET);
 
 	ReadStateChunks(loadms,loadms->size()-32);
 	loadstate();

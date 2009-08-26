@@ -1,4 +1,5 @@
-//taken from fceux on 10/27/08
+//taken from fceux on 27-oct-2008
+//subsequently modified for desmume
 
 #ifndef _STRINGUTIL_H_
 #define _STRINGUTIL_H_
@@ -11,6 +12,7 @@
 #include <cstdio>
 
 #include "../types.h"
+#include "emufile.h"
 
 
 //definitions for str_strip() flags
@@ -56,14 +58,14 @@ std::string stditoa(int n);
 std::string readNullTerminatedAscii(std::istream* is);
 
 //extracts a decimal uint from an istream
-template<typename T> T templateIntegerDecFromIstream(std::istream* is)
+template<typename T> T templateIntegerDecFromIstream(EMUFILE* is)
 {
 	unsigned int ret = 0;
 	bool pre = true;
 
 	for(;;)
 	{
-		int c = is->get();
+		int c = is->fgetc();
 		if(c == -1) return ret;
 		int d = c - '0';
 		if((d<0 || d>9))
@@ -82,11 +84,11 @@ template<typename T> T templateIntegerDecFromIstream(std::istream* is)
 	return ret;
 }
 
-inline u32 u32DecFromIstream(std::istream* is) { return templateIntegerDecFromIstream<u32>(is); }
-inline u64 u64DecFromIstream(std::istream* is) { return templateIntegerDecFromIstream<u64>(is); }
+inline u32 u32DecFromIstream(EMUFILE* is) { return templateIntegerDecFromIstream<u32>(is); }
+inline u64 u64DecFromIstream(EMUFILE* is) { return templateIntegerDecFromIstream<u64>(is); }
 
 //puts an optionally 0-padded decimal integer of type T into the ostream (0-padding is quicker)
-template<typename T, int DIGITS, bool PAD> void putdec(std::ostream* os, T dec)
+template<typename T, int DIGITS, bool PAD> void putdec(EMUFILE* os, T dec)
 {
 	char temp[DIGITS];
 	int ctr = 0;
@@ -102,9 +104,9 @@ template<typename T, int DIGITS, bool PAD> void putdec(std::ostream* os, T dec)
 		dec = quot;
 	}
 	if(!PAD)
-		os->write(temp+DIGITS-ctr-1,ctr+1);
+		os->fwrite(temp+DIGITS-ctr-1,ctr+1);
 	else
-		os->write(temp,DIGITS);
+		os->fwrite(temp,DIGITS);
 }
 
 std::string mass_replace(const std::string &source, const std::string &victim, const std::string &replacement);

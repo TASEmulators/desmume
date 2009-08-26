@@ -38,7 +38,7 @@ void Mic_Reset();
 void Mic_DeInit();
 u8 Mic_ReadSample();
 
-void mic_savestate(std::ostream* os);
-bool mic_loadstate(std::istream* is, int size);
+void mic_savestate(EMUFILE* os);
+bool mic_loadstate(EMUFILE* is, int size);
 
 #endif

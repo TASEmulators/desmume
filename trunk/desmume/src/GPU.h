@@ -4,6 +4,7 @@
 
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
+	Copyright (C) 2009-2009 DeSmuME team
 
 	This file is part of DeSmuME
 
@@ -36,8 +37,8 @@
 //#undef FORCEINLINE
 //#define FORCEINLINE
 
-void gpu_savestate(std::ostream* os);
-bool gpu_loadstate(std::istream* is, int size);
+void gpu_savestate(EMUFILE* os);
+bool gpu_loadstate(EMUFILE* is, int size);
 
 /*******************************************************************************
     this structure is for display control,
