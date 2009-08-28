@@ -22,9 +22,11 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include "types.h"
 #include <vector>
 #include <algorithm>
+#include <string>
 #include <stdarg.h>
 
 class EMUFILE {
