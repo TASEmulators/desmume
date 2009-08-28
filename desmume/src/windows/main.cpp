@@ -186,6 +186,8 @@ LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 #define WM_CUSTKEYDOWN	(WM_USER+50)
 #define WM_CUSTKEYUP	(WM_USER+51)
 
+#define WM_CUSTINVOKE	(WM_USER+52)
+
 
 inline bool IsDlgCheckboxChecked(HWND hDlg, int id)
 {
@@ -916,6 +918,7 @@ HANDLE display_invoke_done_event = INVALID_HANDLE_VALUE;
 DWORD display_invoke_timeout = 500;
 CRITICAL_SECTION display_invoke_handler_cs;
 
+static void InvokeOnMainThread(void (*function)(DWORD), DWORD argument);
 
 static void DoDisplay_DrawHud()
 {
@@ -957,11 +960,8 @@ static void DoDisplay(bool firstTime)
 	{
 		if(g_thread_self() == display_thread)
 		{
-			ResetEvent(display_invoke_ready_event);
-			display_invoke_argument = LUACALL_AFTEREMULATIONGUI;
-			display_invoke_function = (void(*)(DWORD))CallRegisteredLuaFunctions;
-			SignalObjectAndWait(display_invoke_ready_event, display_invoke_done_event, display_invoke_timeout, FALSE);
-			display_invoke_function = NULL;
+			InvokeOnMainThread((void(*)(DWORD))
+				CallRegisteredLuaFunctions, LUACALL_AFTEREMULATIONGUI);
 		}
 		else
 		{
@@ -977,7 +977,7 @@ static void DoDisplay(bool firstTime)
 		//draw and composite the OSD (but not if we are drawing osd straight to screen)
 		DoDisplay_DrawHud();
 		T_AGG_RGBA target((u8*)video.finalBuffer(), video.width,video.height,video.width*4);
-		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0,0,video.width-1,video.height-1);
+		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0,0,video.width,video.height);
 		aggDraw.hud->clear();
 	}
 	
@@ -1089,6 +1089,15 @@ void CheckMessages()
 	}
 }
 
+static void InvokeOnMainThread(void (*function)(DWORD), DWORD argument)
+{
+	ResetEvent(display_invoke_ready_event);
+	display_invoke_argument = argument;
+	display_invoke_function = function;
+	PostMessage(MainWindow->getHWnd(), WM_CUSTINVOKE, 0, 0); // in case a modal dialog or menu is open
+	SignalObjectAndWait(display_invoke_ready_event, display_invoke_done_event, display_invoke_timeout, FALSE);
+	display_invoke_function = NULL;
+}
 static void _ServiceDisplayThreadInvocation()
 {
 	Lock lock (display_invoke_handler_cs);
@@ -3260,6 +3269,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			EndPaint(hwnd, &ps);
 		}
 		return 0;
+
+	case WM_CUSTINVOKE:
+		ServiceDisplayThreadInvocations();
+		return 0;
+
 	case WM_DROPFILES:
 		{
 			char filename[MAX_PATH] = "";

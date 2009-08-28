@@ -169,7 +169,7 @@ MovieData::MovieData()
 	: version(MOVIE_VERSION)
 	, emuVersion(DESMUME_VERSION_NUMERIC)
 	, romChecksum(0)
-	, rerecordCount(1)
+	, rerecordCount(0)
 	, binaryFlag(false)
 {
 }
