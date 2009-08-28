@@ -23,6 +23,7 @@
 #include "mic.h"
 #include "debug.h"
 #include "readwrite.h"
+#include "emufile.h"
 
 #define MIC_BUFSIZE 4096
 
@@ -149,13 +150,13 @@ u8 Mic_ReadSample()
 }
 
 /* FIXME: stub! */
-void mic_savestate(std::ostream* os)
+void mic_savestate(EMUFILE* os)
 {
-	write32le(-1,os);
+    write32le(0,os);
 }
 
-bool mic_loadstate(std::istream* is, int size) 
+bool mic_loadstate(EMUFILE* is, int size) 
 {
-	is->seekg(size, std::ios::cur);
+    is->fseek(size-4, SEEK_CUR);
     return TRUE;
 }

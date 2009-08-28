@@ -23,6 +23,7 @@
 #include "types.h"
 #include "mic.h"
 #include "readwrite.h"
+#include "emufile.h"
 
 static BOOL silence = TRUE;
 
@@ -52,12 +53,12 @@ void Mic_DoNoise(BOOL noise)
 	silence = !noise;
 }
 
-void mic_savestate(std::ostream* os)
+void mic_savestate(EMUFILE* os)
 {
 	write32le(-1,os);
 }
 
-bool mic_loadstate(std::istream* is, int size)
+bool mic_loadstate(EMUFILE* is, int size)
 {
 	is->seekg(size, std::ios::cur);
 	return TRUE;
