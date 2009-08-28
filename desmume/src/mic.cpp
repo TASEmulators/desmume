@@ -60,7 +60,7 @@ void mic_savestate(EMUFILE* os)
 
 bool mic_loadstate(EMUFILE* is, int size)
 {
-	is->seekg(size, std::ios::cur);
+	is->fseek(size, SEEK_CUR);
 	return TRUE;
 }
 

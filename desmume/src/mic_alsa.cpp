@@ -152,11 +152,11 @@ u8 Mic_ReadSample()
 /* FIXME: stub! */
 void mic_savestate(EMUFILE* os)
 {
-    write32le(0,os);
+    write32le((u32)(-1),os);
 }
 
 bool mic_loadstate(EMUFILE* is, int size) 
 {
-    is->fseek(size-4, SEEK_CUR);
+    is->fseek(size, SEEK_CUR);
     return TRUE;
 }
