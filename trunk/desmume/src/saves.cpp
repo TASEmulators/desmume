@@ -898,7 +898,7 @@ static void savestate_WriteChunk(EMUFILE* os, int type, void (*saveproc)(EMUFILE
 
 static void writechunks(EMUFILE* os);
 
-static bool savestate_save(EMUFILE* outstream, int compressionLevel)
+bool savestate_save(EMUFILE* outstream, int compressionLevel)
 {
 	#ifndef HAVE_LIBZ
 	compressionLevel = Z_NO_COMPRESSION;
@@ -1070,7 +1070,7 @@ static void loadstate()
 	SetupMMU(nds.debugConsole);
 }
 
-static bool savestate_load(EMUFILE* is)
+bool savestate_load(EMUFILE* is)
 {
 	SAV_silent_fail_flag = false;
 	char header[16];
@@ -1104,7 +1104,7 @@ static bool savestate_load(EMUFILE* is)
 			return false;
 #endif
 	} else {
-		is->fread((char*)&buf[0],len);
+		is->fread((char*)&buf[0],len-32);
 	}
 
 	//GO!! READ THE SAVESTATE
