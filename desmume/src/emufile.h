@@ -107,12 +107,9 @@ public:
 		int amt = vsnprintf(0,0,format,argptr);
 		char* tempbuf = new char[amt+1];
 		vsprintf(tempbuf,format,argptr);
-		memcpy((char*)buf()+pos,tempbuf,amt);
-		pos += amt;
-		len = std::max(pos,len);
-
+		fwrite(tempbuf,amt);
+		delete[] tempbuf;
 		va_end(argptr);
-		
 		return amt;
 	};
 
