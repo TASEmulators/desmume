@@ -384,14 +384,14 @@ FORCEINLINE static u32 armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		armcpu->instruction = MMU_read32_acl(PROCNUM, armcpu->next_instruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
-
-		armcpu->instruct_adr = armcpu->next_instruction;
-		armcpu->next_instruction += 4;
-		armcpu->R[15] = armcpu->next_instruction + 4;
+		u32 curInstruction = armcpu->next_instruction;
+		armcpu->instruction = MMU_read32_acl(PROCNUM, curInstruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
+		armcpu->instruct_adr = curInstruction;
+		armcpu->next_instruction = curInstruction + 4;
+		armcpu->R[15] = curInstruction + 8;
 #endif
           
-        return MMU.MMU_WAIT32[PROCNUM][(armcpu->instruct_adr>>24)&0xF];
+        return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
 	}
 
 #ifdef GDB_STUB
@@ -406,14 +406,14 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	armcpu->instruction = MMU_read16_acl(PROCNUM, armcpu->next_instruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
-
-	armcpu->instruct_adr = armcpu->next_instruction;
-	armcpu->next_instruction += 2;
-	armcpu->R[15] = armcpu->next_instruction + 2;
+	u32 curInstruction = armcpu->next_instruction;
+	armcpu->instruction = MMU_read16_acl(PROCNUM, curInstruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
+	armcpu->instruct_adr = curInstruction;
+	armcpu->next_instruction = curInstruction + 2;
+	armcpu->R[15] = curInstruction + 4;
 #endif
 
-	return MMU.MMU_WAIT16[PROCNUM][(armcpu->instruct_adr>>24)&0xF];
+	return MMU.MMU_WAIT16[PROCNUM][(curInstruction>>24)&0xF];
 }
 
 #if 0 /* not used */
