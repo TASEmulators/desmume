@@ -75,7 +75,7 @@ public:
 
 //todo - handle read-only specially?
 class EMUFILE_MEMORY : public EMUFILE { 
-private:
+protected:
 	std::vector<u8> *vec;
 	s32 pos, len;
 	bool ownvec;
@@ -96,7 +96,9 @@ public:
 	}
 
 	u8* buf() { return &(*vec)[0]; }
-	
+
+	std::vector<u8>* get_vec() { return vec; };
+
 	virtual FILE *get_fp() { return NULL; }
 
 	virtual int fprintf(const char *format, ...) {
@@ -133,7 +135,8 @@ public:
 		u32 todo = std::min(remain,bytes);
 		memcpy((void*)ptr,buf()+pos,todo);
 		pos += todo;
-		if(todo<bytes) failbit = true;
+		if(todo<bytes)
+			failbit = true;
 		return todo;
 	}
 
@@ -174,7 +177,7 @@ public:
 };
 
 class EMUFILE_FILE : public EMUFILE { 
-private:
+protected:
 	FILE* fp;
 
 public:
@@ -182,7 +185,8 @@ public:
 	EMUFILE_FILE(const char* fname, const char* mode)
 	{
 		fp = fopen(fname,mode);
-		if(!fp) failbit = true;
+		if(!fp)
+			failbit = true;
 	};
 
 	virtual ~EMUFILE_FILE() {
@@ -211,7 +215,8 @@ public:
 
 	virtual size_t _fread(const void *ptr, size_t bytes){
 		size_t ret = ::fread((void*)ptr, 1, bytes, fp);
-		if(ret < bytes) failbit = true;
+		if(ret < bytes)
+			failbit = true;
 		return ret;
 	}
 
@@ -220,7 +225,8 @@ public:
 
 	virtual void fwrite(const void *ptr, size_t bytes){
 		size_t ret = ::fwrite((void*)ptr, 1, bytes, fp);
-		if(ret < bytes) failbit = true;
+		if(ret < bytes)
+			failbit = true;
 	}
 
 	virtual int fseek(int offset, int origin){ 

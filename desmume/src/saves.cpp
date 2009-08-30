@@ -863,7 +863,7 @@ static void savestate_WriteChunk(EMUFILE* os, int type, void (*saveproc)(EMUFILE
 
 	//write the type, size(placeholder), and data
 	write32le(type,os);
-	write32le(0,os); // <-- temporary write, re-written later
+	os->fseek(4, SEEK_CUR); // skip the size, we write that later
 	saveproc(os);
 
 	//get the size
