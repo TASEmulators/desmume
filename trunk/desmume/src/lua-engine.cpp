@@ -1965,6 +1965,90 @@ DEFINE_LUA_FUNCTION(state_savescriptdata, "location")
 	return state_save(L);
 }
 
+#ifndef PUBLIC_RELEASE
+#include "gfx3d.h"
+class EMUFILE_MEMORY_VERIFIER : public EMUFILE_MEMORY { 
+public:
+	EMUFILE_MEMORY_VERIFIER(EMUFILE_MEMORY* underlying) : EMUFILE_MEMORY(underlying->get_vec()) { }
+
+	std::vector<std::string> differences;
+
+	virtual void fwrite(const void *ptr, size_t bytes)
+	{
+		if(!failbit)
+		{
+			u8* dst = buf()+pos;
+			const u8* src = (const u8*)ptr;
+			int differencesAddedThisCall = 0;
+			for(int i = pos; i < (int)bytes+pos; i++)
+			{
+				if(*src != *dst)
+				{
+					if(differences.size() == 100)
+						failbit = true;
+					else
+					{
+						char temp [256];
+						sprintf(temp, " " /*"mismatch at "*/ "byte %d(0x%X at 0x%X): %d(0x%X) != %d(0x%X)\n", i, i, dst, *src,*src, *dst,*dst);
+
+						if(ptr == GPU_screen || ptr == gfx3d_convertedScreen) // ignore screen-only differences since frame skipping can cause them and it's probably ok
+							break;
+
+						differences.push_back(temp); // <-- probably the best place for a breakpoint
+
+						if(++differencesAddedThisCall == 4)
+							break;
+					}
+				}
+				src++;
+				dst++;
+			}
+		}
+
+		pos += bytes;
+	}
+};
+
+// like savestate.save() except instead of actually saving
+// it compares against what's already in the savestate
+// and throws an error if any differences are found.
+// only useful for development (catching desyncs).
+DEFINE_LUA_FUNCTION(state_verify, "location[,option]")
+{
+	int type = lua_type(L,1);
+	switch(type)
+	{
+		case LUA_TNUMBER: // numbered save file
+		default:
+		{
+			luaL_error(L, "savestate.verify only works for in-memory saves.");
+		}	return 0;
+		case LUA_TUSERDATA: // in-memory save slot
+		{
+			EMUFILE_MEMORY** ppEmuFile = (EMUFILE_MEMORY**)luaL_checkudata(L, 1, "EMUFILE_MEMORY*");
+
+			if((*ppEmuFile)->fail())
+				luaL_error(L, "failed to verify, savestate object was dead.");
+
+			EMUFILE_MEMORY_VERIFIER verifier (*ppEmuFile);
+			savestate_save(&verifier, 0);
+			if(verifier.differences.size())
+			{
+				fputs("\n", stdout);
+				for(unsigned int i = 0; i < verifier.differences.size(); i++)
+					fputs(verifier.differences[i].c_str(), stdout);
+				luaL_error(L, "failed to verify savestate! %s", verifier.differences[0].c_str());
+			}
+		}	return 0;
+	}
+}
+
+#endif
+
+
+
+
+
 
 //joypad lib
 
@@ -3857,6 +3941,9 @@ static const struct luaL_reg statelib [] =
 	{"create", state_create},
 	{"save", state_save},
 	{"load", state_load},
+#ifndef PUBLIC_RELEASE
+	{"verify", state_verify}, // for desync catching
+#endif
 	// TODO
 	//{"loadscriptdata", state_loadscriptdata},
 	//{"savescriptdata", state_savescriptdata},
