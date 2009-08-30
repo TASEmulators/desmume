@@ -614,7 +614,7 @@ NDS_header * NDS_getROMHeader(void)
 	memcpy(header->logo, MMU.CART_ROM + 192, 156);
 	header->logoCRC16 = T1ReadWord(MMU.CART_ROM, 348);
 	header->headerCRC16 = T1ReadWord(MMU.CART_ROM, 350);
-	memcpy(header->reserved, MMU.CART_ROM + 352, 160);
+	memcpy(header->reserved, MMU.CART_ROM + 352, min(160, gameInfo.romsize - 352));
 
 	return header;
 } 
@@ -775,7 +775,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	}
 
 	//check that size is at least the size of the header
-	if (gameInfo.romsize < 352+160) {
+	if (gameInfo.romsize < 352) {
 		return -1;
 	}
 
@@ -872,7 +872,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	}
 
 	//check that size is at least the size of the header
-	if (size < 352+160) {
+	if (size < 352) {
 		reader->DeInit(file);
 		free(noext);
 		return -1;
@@ -1607,7 +1607,7 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 					nds.timerCycle[procnum][i] += (remain << MMU.timerMODE[procnum][i]);
 					ctr++;
 				}
-#if defined(DEBUG) || defined(_DEBUG)
+#ifndef NDEBUG
 				if(ctr>1) {
 					printf("yikes!!!!! please report!\n");
 				}
@@ -2123,6 +2123,67 @@ FORCEINLINE void arm7log()
 	#endif
 }
 
+//these have not been tuned very well yet.
+static const int kMaxWork = 4000;
+static const int kIrqWait = 4000;
+
+
+template<bool doarm9, bool doarm7>
+static FORCEINLINE s32 minarmtime(s32 arm9, s32 arm7)
+{
+	if(doarm9)
+		if(doarm7)
+			return min(arm9,arm7);
+		else
+			return arm9;
+	else
+		return arm7;
+}
+
+template<bool doarm9, bool doarm7>
+static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
+	const u64 nds_timer_base, const s32 s32next, s32 arm9, s32 arm7)
+{
+	s32 timer = minarmtime<doarm9,doarm7>(arm9,arm7);
+	while(timer < s32next && !sequencer.reschedule)
+	{
+		if(doarm9 && (!doarm7 || arm9 <= timer))
+		{
+			if(!NDS_ARM9.waitIRQ)
+			{
+				arm9log();
+				arm9 += armcpu_exec<ARMCPU_ARM9>();
+			}
+			else
+			{
+				arm9 = min(s32next, arm9 + kIrqWait);
+			}
+		}
+		if(doarm7 && (!doarm9 || arm7 <= timer))
+		{
+			if(!NDS_ARM7.waitIRQ)
+			{
+				arm7log();
+				arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
+			}
+			else
+			{
+				arm7 = min(s32next, arm7 + kIrqWait);
+				if(arm7 == s32next)
+				{
+					nds_timer = nds_timer_base + minarmtime<doarm9,false>(arm9,arm7);
+					return armInnerLoop<doarm9,false>(nds_timer_base, s32next, arm9, arm7);
+				}
+			}
+		}
+
+		timer = minarmtime<doarm9,doarm7>(arm9,arm7);
+		nds_timer = nds_timer_base + timer;
+	}
+
+	return std::make_pair(arm9, arm7);
+}
+
 template<bool FORCE>
 void NDS_exec(s32 nb)
 {
@@ -2134,10 +2195,6 @@ void NDS_exec(s32 nb)
 		MMU_new.backupDevice.lazy_flush();
 
 	sequencer.nds_vblankEnded = false;
-
-	//these have not been tuned very well yet.
-	const int kMaxWork = 4000;
-	const int kIrqWait = 4000;
 
 	if(nds.sleeping)
 	{
@@ -2171,39 +2228,20 @@ void NDS_exec(s32 nb)
 			u64 nds_timer_base = nds_timer;
 			s32 arm9 = (s32)(nds_arm9_timer-nds_timer);
 			s32 arm7 = (s32)(nds_arm7_timer-nds_timer);
-			s32 timer = 0;
 			s32 s32next = (s32)(next-nds_timer);
-			while(timer<s32next && !sequencer.reschedule)
-			{
-				if(arm9<=timer)
-				{
-					if(NDS_ARM9.waitIRQ) arm9 = min(s32next,arm9+ kIrqWait);
-					else {
-						arm9log();
-						arm9 += armcpu_exec<ARMCPU_ARM9>();
-					}
-						
-				}
-				if(arm7<=timer)
-				{
-					if(NDS_ARM7.waitIRQ) 
-						arm7 = min(s32next,arm7 + kIrqWait);
-					else {
-						arm7log();
-						arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
-					}
-				}
 
-				timer = min(arm7,arm9);
-				nds_timer = nds_timer_base+timer;
-			}
+			std::pair<s32,s32> arm9arm7 = armInnerLoop<true,true>(nds_timer_base,s32next,arm9,arm7);
 
+			arm9 = arm9arm7.first;
+			arm7 = arm9arm7.second;
 			nds_arm7_timer = nds_timer_base+arm7;
 			nds_arm9_timer = nds_timer_base+arm9;
 
+#ifndef NDEBUG
 			//what we find here is dependent on the timing constants above
 			if(nds_timer>next && (nds_timer-next)>22)
 				printf("curious. please report: over by %d\n",(int)(nds_timer-next));
+#endif
 
 			//if we were waiting for an irq, don't wait too long:
 			//let's re-analyze it after this hardware event
