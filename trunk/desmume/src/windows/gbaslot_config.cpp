@@ -355,7 +355,9 @@ u32		GBAslot_IDDs[NDS_ADDON_COUNT] = {
 	IDD_GBASLOT_CFLASH,
 	IDD_GBASLOT_RUMBLEPAK,
 	IDD_GBASLOT_GBAGAME,
-	IDD_GBASLOT_GUITARGRIP
+	IDD_GBASLOT_GUITARGRIP,
+	// todo
+	IDD_GBASLOT_NONE
 };
 
 DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
@@ -363,7 +365,9 @@ DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
 	GbaSlotCFlash,
 	GbaSlotRumblePak,
 	GbaSlotGBAgame,
-	GbaSlotGuitarGrip
+	//todo
+	GbaSlotGuitarGrip,
+	GbaSlotNone
 };
 
 
@@ -503,6 +507,8 @@ void GBAslotDialog(HWND hwnd)
 					needReset = true;
 				else
 					needReset = false;
+				break;
+			case NDS_ADDON_EXPMEMORY:
 				break;
 			default:
 				return;

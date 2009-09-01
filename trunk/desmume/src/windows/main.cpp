@@ -1979,6 +1979,8 @@ int _main()
 		break;
 	case NDS_ADDON_GUITARGRIP:
 		break;
+	case NDS_ADDON_EXPMEMORY:
+		break;
 	default:
 		addon_type = NDS_ADDON_NONE;
 		break;

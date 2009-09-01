@@ -38,12 +38,17 @@ static u8		*GBArom = NULL;
 
 static BOOL GBAgame_init(void)
 {
-	GBArom = new u8 [GBA_SIZE];
 	return (TRUE); 
 }
 
 static void GBAgame_reset(void)
 {
+	if (GBArom)
+	{
+		delete [] GBArom;
+		GBArom = NULL;
+	}
+	GBArom = new u8 [GBA_SIZE];
 	memset(GBArom, 0, GBA_SIZE);
 
 	if (!strlen(GBAgameName)) return;
@@ -80,8 +85,11 @@ static void GBAgame_reset(void)
 
 static void GBAgame_close(void)
 {
-	delete[] GBArom;
-	GBArom = NULL;
+	if (GBArom)
+	{
+		delete [] GBArom;
+		GBArom = NULL;
+	}
 }
 
 static void GBAgame_config(void) {}

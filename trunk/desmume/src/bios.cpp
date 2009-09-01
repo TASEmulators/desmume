@@ -328,7 +328,7 @@ TEMPLATE static u32 divide()
      cpu->R[0] = (u32)(num / dnum);
      cpu->R[1] = (u32)(num % dnum);
      cpu->R[3] = (u32) (((s32)cpu->R[0])<0 ? -(s32)cpu->R[0] : cpu->R[0]);
-     
+
      return 6;
 }
 
@@ -857,17 +857,37 @@ TEMPLATE static u32 BitUnPack()
   dest = cpu->R[1];
   header = cpu->R[2];
 
-  //INFO("swi bitunpack\n");
-  
   len = _MMU_read16<PROCNUM>(header);
-  // check address
   bits = _MMU_read08<PROCNUM>(header+2);
+  switch (bits)
+  {
+	case 1:
+	case 2:
+	case 4:
+	case 8:
+	  break;
+	default: return (0);	// error
+  }
+  dataSize = _MMU_read08<PROCNUM>(header+3);
+  switch (dataSize)
+  {
+	case 1:
+	case 2:
+	case 4:
+	case 8:
+	case 16:
+	case 32:
+	  break;
+	default: return (0);	// error
+  }
+
   revbits = 8 - bits; 
   // u32 value = 0;
   base = _MMU_read08<PROCNUM>(header+4);
   addBase = (base & 0x80000000) ? 1 : 0;
   base &= 0x7fffffff;
-  dataSize = _MMU_read08<PROCNUM>(header+3);
+  
+  //INFO("SWI10: bitunpack src 0x%08X dst 0x%08X hdr 0x%08X (src len %05i src bits %02i dst bits %02i)\n\n", source, dest, header, len, bits, dataSize);
 
   data = 0; 
   bitwritecount = 0; 
