@@ -77,8 +77,8 @@ public:
 class EMUFILE_MEMORY : public EMUFILE { 
 protected:
 	std::vector<u8> *vec;
-	s32 pos, len;
 	bool ownvec;
+	s32 pos, len;
 
 	void reserve(u32 amt) {
 		if(vec->size() < amt)
