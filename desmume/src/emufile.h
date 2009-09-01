@@ -132,7 +132,7 @@ public:
 
 	virtual size_t _fread(const void *ptr, size_t bytes){
 		u32 remain = len-pos;
-		u32 todo = std::min(remain,bytes);
+		u32 todo = std::min<u32>(remain,bytes);
 		memcpy((void*)ptr,buf()+pos,todo);
 		pos += todo;
 		if(todo<bytes)

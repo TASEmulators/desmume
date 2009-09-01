@@ -1058,6 +1058,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\addons\expMemory.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\addons\gbagame.cpp"
 				>
 			</File>

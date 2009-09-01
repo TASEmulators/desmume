@@ -66,6 +66,7 @@ enum {
 	NDS_ADDON_RUMBLEPAK,	// rumble pack
 	NDS_ADDON_GBAGAME,		// gba game in slot
 	NDS_ADDON_GUITARGRIP,	// Guitar Grip
+	NDS_ADDON_EXPMEMORY,	// Memory Expansion 
 	//NDS_ADDON_EXTERNALMIC,
 	NDS_ADDON_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };

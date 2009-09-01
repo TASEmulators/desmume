@@ -183,6 +183,7 @@
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
     <ClCompile Include="..\addons\compactFlash.cpp" />
+    <ClCompile Include="..\addons\expMemory.cpp" />
     <ClCompile Include="..\addons\gbagame.cpp" />
     <ClCompile Include="..\addons\guitarGrip.cpp" />
     <ClCompile Include="..\addons\none.cpp" />
