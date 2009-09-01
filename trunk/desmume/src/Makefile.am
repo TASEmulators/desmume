@@ -44,7 +44,7 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	addons.cpp addons.h \
-	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp fs.h \
+	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp fs.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	version.h
