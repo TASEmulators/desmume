@@ -120,7 +120,11 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
+#ifdef WIN32
 T_AGG_RGBA agg_targetScreen(0, 256, 384, 1024);
+#else
+T_AGG_RGB555 agg_targetScreen(0, 256, 384, 1512);
+#endif
 
 static u32 luaBuffer[256*192*2];
 T_AGG_RGBA agg_targetLua((u8*)luaBuffer, 256, 384, 1024);

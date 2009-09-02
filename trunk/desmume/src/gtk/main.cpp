@@ -1842,6 +1842,7 @@ common_gtk_main( struct configured_features *my_config)
     /* Init the hud / osd stuff */
     Desmume_InitOnce();
     Hud.reset();
+	aggDraw.hud->attach(GPU_screen, 256, 384, 512);
 
     /*
      * Activate the GDB stubs
