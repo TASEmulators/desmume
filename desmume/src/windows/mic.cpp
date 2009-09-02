@@ -202,7 +202,7 @@ u8 Mic_ReadSample()
 		}
 	} 
 	else {
-		if(movieMode != MOVIEMODE_INACTIVE)
+		if(movieMode == MOVIEMODE_INACTIVE)
 		{
 			//normal mic behavior
 			tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
