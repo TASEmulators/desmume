@@ -947,6 +947,7 @@ int main(int argc, char ** argv) {
 
   Desmume_InitOnce();
   Hud.reset();
+  aggDraw.hud->attach(GPU_screen, 256, 384, 512);
 
   while(!sdl_quit) {
     desmume_cycle(&sdl_quit, &boost, &my_config);
