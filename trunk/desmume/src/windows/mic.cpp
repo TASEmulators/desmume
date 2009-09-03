@@ -102,9 +102,9 @@ BOOL Mic_Init() {
 	HRESULT hr;
 	WAVEFORMATEX wfx;
 
-	memset(Mic_TempBuf, 0, MIC_BUFSIZE);
-	memset(Mic_Buffer[0], 0, MIC_BUFSIZE);
-	memset(Mic_Buffer[1], 0, MIC_BUFSIZE);
+	memset(Mic_TempBuf, 0x80, MIC_BUFSIZE);
+	memset(Mic_Buffer[0], 0x80, MIC_BUFSIZE);
+	memset(Mic_Buffer[1], 0x80, MIC_BUFSIZE);
 	Mic_BufPos = 0;
 
 	Mic_WriteBuf = 0;
@@ -146,9 +146,9 @@ void Mic_Reset()
 	if(!Mic_Inited)
 		return;
 
-	memset(Mic_TempBuf, 0, MIC_BUFSIZE);
-	memset(Mic_Buffer[0], 0, MIC_BUFSIZE);
-	memset(Mic_Buffer[1], 0, MIC_BUFSIZE);
+	memset(Mic_TempBuf, 0x80, MIC_BUFSIZE);
+	memset(Mic_Buffer[0], 0x80, MIC_BUFSIZE);
+	memset(Mic_Buffer[1], 0x80, MIC_BUFSIZE);
 	Mic_BufPos = 0;
 
 	Mic_WriteBuf = 0;
@@ -210,7 +210,7 @@ u8 Mic_ReadSample()
 		else
 		{
 			//since we're not recording Mic_Buffer to the movie, use silence
-			tmp = 0;
+			tmp = 0x80;
 		}
 
 		//reset mic button buffer pos if not pressed
@@ -242,7 +242,7 @@ u8 Mic_ReadSample()
 void mic_savestate(EMUFILE* os)
 {
 	//version
-	write32le(0,os);
+	write32le(1,os);
 	assert(MIC_BUFSIZE == 4096); // else needs new version
 
 	os->fwrite((char*)Mic_Buffer[0], MIC_BUFSIZE);
@@ -256,7 +256,7 @@ bool mic_loadstate(EMUFILE* is, int size)
 {
 	u32 version;
 	if(read32le(&version,is) != 1) return false;
-	if(version > 0) { is->fseek(size-4, SEEK_CUR); return true; }
+	if(version > 1 || version == 0) { is->fseek(size-4, SEEK_CUR); return true; }
 
 	is->fread((char*)Mic_Buffer[0], MIC_BUFSIZE);
 	is->fread((char*)Mic_Buffer[1], MIC_BUFSIZE);
