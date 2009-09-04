@@ -1210,6 +1210,7 @@ static void StepRunLoop_User()
 		tools_time_last = time_now;
 	}
 	if(SoundView_IsOpened()) SoundView_Refresh();
+	//RefreshAllToolWindows();
 
 	Update_RAM_Watch();
 	Update_RAM_Search();
@@ -1881,10 +1882,8 @@ int _main()
 	if(CommonSettings.single_core)
 		SetProcessAffinityMask(GetCurrentProcess(),1);
 
-	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
-	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, video.width,video.height+video.screengap,
+	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX, WndY, video.width,video.height+video.screengap,
 		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -3708,7 +3707,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_IOREG:
 			ViewRegisters->open();
-			//IORegView_DlgOpen(HWND_DESKTOP, "I/O registers");
+			//OpenToolWindow(IORegView);
 			return 0;
 		case IDM_MEMORY:
 		/*	ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
@@ -4525,18 +4524,17 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 	{
 	case WM_INITDIALOG:
 		{
-#if 0
 			char errbuf[PCAP_ERRBUF_SIZE];
 			pcap_if_t *alldevs;
 			pcap_if_t *d;
 			int i;
-#endif
 			HWND cur;
 
 			CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
-#if 0
+
 			if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
 			{
+				// TODO: fail more gracefully!
 				EndDialog(hDlg, TRUE);
 				return TRUE;
 			}
@@ -4547,7 +4545,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 				ComboBox_AddString(cur, d->description);
 			}
 			ComboBox_SetCurSel(cur, CommonSettings.wifi.infraBridgeAdapter);
-#endif
 		}
 		return TRUE;
 
@@ -4557,14 +4554,12 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			{
 			case IDOK:
 				{
-					int val = 0;
+					int val = IDNO;
+					HWND cur;
 
 					if(romloaded)
 						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
 
-					HWND cur;
-
-#if 0
 					if (IsDlgButtonChecked(hDlg, IDC_WIFIMODE0))
 						CommonSettings.wifi.mode = 0;
 					else
@@ -4574,10 +4569,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 					cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 					CommonSettings.wifi.infraBridgeAdapter = ComboBox_GetCurSel(cur);
 					WritePrivateProfileInt("Wifi", "BridgeAdapter", CommonSettings.wifi.infraBridgeAdapter, IniName);
-#else
-					CommonSettings.wifi.mode = 0;
-					WritePrivateProfileInt("Wifi", "Mode", CommonSettings.wifi.mode, IniName);
-#endif
 
 					if(val == IDYES)
 					{
