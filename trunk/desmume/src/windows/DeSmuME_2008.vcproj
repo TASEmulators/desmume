@@ -582,36 +582,6 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Instruction tables"
-			>
-			<File
-				RelativePath="..\instruction_tabdef.inc"
-				>
-			</File>
-			<File
-				RelativePath="..\thumb_tabdef.inc"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-			<File
-				RelativePath=".\bitmap1.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\DeSmuME.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\resources.rc"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="Core"
 			>
 			<File
@@ -779,10 +749,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\gl_vertex.h"
-				>
-			</File>
-			<File
 				RelativePath="..\GPU.cpp"
 				>
 			</File>
@@ -796,6 +762,10 @@
 			</File>
 			<File
 				RelativePath="..\GPU_osd.h"
+				>
+			</File>
+			<File
+				RelativePath="..\instruction_tabdef.inc"
 				>
 			</File>
 			<File
@@ -960,6 +930,10 @@
 			</File>
 			<File
 				RelativePath="..\thumb_instructions.h"
+				>
+			</File>
+			<File
+				RelativePath="..\thumb_tabdef.inc"
 				>
 			</File>
 			<File
@@ -1379,6 +1353,22 @@
 				</File>
 				<File
 					RelativePath=".\tileView.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="resources"
+				>
+				<File
+					RelativePath=".\bitmap1.bmp"
+					>
+				</File>
+				<File
+					RelativePath=".\DeSmuME.ico"
+					>
+				</File>
+				<File
+					RelativePath=".\resources.rc"
 					>
 				</File>
 			</Filter>
