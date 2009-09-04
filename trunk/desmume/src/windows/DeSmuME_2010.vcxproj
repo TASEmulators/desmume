@@ -317,7 +317,6 @@
     <ClInclude Include="..\fs.h" />
     <ClInclude Include="..\gdbstub.h" />
     <ClInclude Include="..\gfx3d.h" />
-    <ClInclude Include="..\gl_vertex.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />
     <ClInclude Include="..\lua-engine.h" />
