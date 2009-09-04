@@ -497,7 +497,7 @@ armcpu_flagIrq( armcpu_t *armcpu) {
 template<int PROCNUM>
 u32 armcpu_exec()
 {
-        u32 c = 1;
+		u32 c = 0;
 
 		//this assert is annoying. but sometimes it is handy.
 		//assert(ARMPROC.instruct_adr!=0x00000000);
@@ -511,7 +511,7 @@ u32 armcpu_exec()
           armcpu_irqException( &ARMPROC);
         }
 
-        c = armcpu_prefetch(&ARMPROC);
+        c += armcpu_prefetch(&ARMPROC);
 
         if ( ARMPROC.stalled) {
           return c;
