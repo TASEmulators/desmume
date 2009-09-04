@@ -372,6 +372,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 
 	if(armcpu->CPSR.bits.T == 0)
 	{
+		u32 curInstruction = armcpu->next_instruction;
 #ifdef GDB_STUB
 		temp_instruction =
 			armcpu->mem_if->prefetch32( armcpu->mem_if->data,
@@ -384,20 +385,20 @@ FORCEINLINE static u32 armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		u32 curInstruction = armcpu->next_instruction;
 		armcpu->instruction = MMU_read32_acl(PROCNUM, curInstruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
 		armcpu->R[15] = curInstruction + 8;
 #endif
-          
-        return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
+
+		return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
 	}
 
+	u32 curInstruction = armcpu->next_instruction;
 #ifdef GDB_STUB
 	temp_instruction =
-          armcpu->mem_if->prefetch16( armcpu->mem_if->data,
-                                      armcpu->next_instruction);
+		armcpu->mem_if->prefetch16( armcpu->mem_if->data,
+		armcpu->next_instruction);
 
 	if ( !armcpu->stalled) {
 		armcpu->instruction = temp_instruction;
@@ -406,7 +407,6 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	u32 curInstruction = armcpu->next_instruction;
 	armcpu->instruction = MMU_read16_acl(PROCNUM, curInstruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
