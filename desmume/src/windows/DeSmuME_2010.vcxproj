@@ -270,24 +270,6 @@
     <ClCompile Include="tileView.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\matrix_sse2-x64.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Assembling x64...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ml64 /nologo /c /Zi /Fo"$(IntDir)%(FileName).obj" "%(FullPath)"
-</Command>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Assembling x64...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ml64 /nologo /c /Zi /Fo"$(IntDir)%(FileName).obj" "%(FullPath)"
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(FileName).obj;%(Outputs)</Outputs>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">true</ExcludedFromBuild>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">Assembling x64...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">ml64 /nologo /c /Zi /Fo"$(IntDir)%(FileName).obj" "%(FullPath)"
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">$(IntDir)%(FileName).obj;%(Outputs)</Outputs>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <ItemGroup>
