@@ -1290,7 +1290,7 @@ static void StepRunLoop_User()
 		tools_time_last = time_now;
 	}
 	if(SoundView_IsOpened()) SoundView_Refresh();
-	//RefreshAllToolWindows();
+	RefreshAllToolWindows();
 
 	Update_RAM_Watch();
 	Update_RAM_Search();

@@ -30,15 +30,91 @@
 
 using namespace std;
 
+extern CRITICAL_SECTION win_execute_sync;
+
+// GetFontQuality()
+// Returns a font quality value that can be passed to 
+// CreateFont(). The value depends on whether font 
+// antialiasing is enabled or not.
+DWORD GetFontQuality();
+
 //-----------------------------------------------------------------------------
 // Window class handling
 //-----------------------------------------------------------------------------
 
+// RegWndClass()
+// Registers a window class.
+// Incase the class was already registered, the function
+// just does nothing and returns true.
+// Returns false if registration failed.
 bool RegWndClass(string name, WNDPROC wndProc, int extraSize = 0);
 bool RegWndClass(string name, WNDPROC wndProc, HICON icon, int extraSize = 0);
 bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize = 0);
 
+// UnregWndClass()
+// Unregisters a previously registered window class.
+// This function will silently fail if one or more windows
+// using the class still exist.
 void UnregWndClass(string name);
+
+//-----------------------------------------------------------------------------
+// Base toolwindow class
+//-----------------------------------------------------------------------------
+
+class CToolWindow
+{
+public:
+	// CToolWindow constructor #1
+	// Creates a window from a dialog template resource.
+	// If the window creation failed for whatever reason,
+	// hWnd will be NULL.
+	CToolWindow(int ID, DLGPROC proc, char* title);
+
+	// CToolWindow destructor
+	// Dummy destructor. The derivated toolwindow classes must 
+	// destroy the window in their own destructors. Thus, they
+	// can unregister any window classes they use.
+	virtual ~CToolWindow();
+
+	// Show(), Hide()
+	// These ones are quite self-explanatory, I guess.
+	void Show() { ShowWindow(hWnd, SW_SHOW); }
+	void Hide() { ShowWindow(hWnd, SW_HIDE); }
+
+	// Refresh()
+	// Refreshes the window. Called by RefreshAllToolWindows().
+	void Refresh() { InvalidateRect(hWnd, NULL, FALSE); }
+
+	// Double-linked toolwindow list.
+	CToolWindow* prev;
+	CToolWindow* next;
+
+	// Handle to the window.
+	HWND hWnd;
+};
+
+//-----------------------------------------------------------------------------
+// Toolwindow handling
+//-----------------------------------------------------------------------------
+
+// OpenToolWindow()
+// Adds the CToolWindow instance to the toolwindow list.
+// The instance will be deleted if its hWnd member is NULL.
+bool OpenToolWindow(CToolWindow* wnd);
+
+// CloseToolWindow()
+// Removes the CToolWindow instance from the toolwindow list
+// and deletes it.
+void CloseToolWindow(CToolWindow* wnd);
+
+// CloseAllToolWindows()
+// Deletes all the toolwindows in the list and flushes the list.
+void CloseAllToolWindows();
+
+// RefreshAllToolWindows()
+// Refreshes all the toolwindows in the list.
+// Called once per frame when the emu is running.
+void RefreshAllToolWindows();
 
 
 class WINCLASS
