@@ -249,6 +249,7 @@ void SetRotate(HWND hwnd, int rot);
 
 bool ForceRatio = true;
 bool SeparationBorderDrag = true;
+int ScreenGapColor = 0xFFFFFF;
 float DefaultWidth;
 float DefaultHeight;
 float widthTradeOff;
@@ -883,7 +884,7 @@ static void DD_DoDisplay()
 	{
 		//u32 color = gapColors[win_fw_config.fav_colour];
 		//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
-		u32 color_rev = 0xFFFFFF;
+		u32 color_rev = (u32)ScreenGapColor;
 
 		HDC dc;
 		HBRUSH brush;
@@ -1849,6 +1850,7 @@ int _main()
 	
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	SeparationBorderDrag = GetPrivateProfileBool("Display", "Window Split Border Drag", true, IniName);
+	ScreenGapColor = GetPrivateProfileInt("Display", "ScreenGapColor", 0xFFFFFF, IniName);
 	FrameLimit = GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
@@ -2971,6 +2973,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, ((video.screengap==kGapNDS)));
 			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP2, ((video.screengap==kGapNDS2)));
 			MainWindow->checkMenu(IDM_SCREENSEP_DRAGEDIT, (SeparationBorderDrag));
+			MainWindow->checkMenu(IDM_SCREENSEP_COLORWHITE, ((ScreenGapColor&0xFFFFFF) == 0xFFFFFF));
+			MainWindow->checkMenu(IDM_SCREENSEP_COLORGRAY, ((ScreenGapColor&0xFFFFFF) == 0x7F7F7F));
+			MainWindow->checkMenu(IDM_SCREENSEP_COLORBLACK, ((ScreenGapColor&0xFFFFFF) == 0x000000));
 	
 			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
@@ -3062,6 +3067,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				//Save frame counter status
 				WritePrivateProfileInt("Display", "FrameCounter", CommonSettings.hud.FrameCounterDisplay, IniName);
+
 				WritePrivateProfileInt("Display", "ScreenGap", video.screengap, IniName);
 
 				//Save Ram Watch information
@@ -4048,6 +4054,17 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_SCREENSEP_DRAGEDIT:
 			SeparationBorderDrag = !SeparationBorderDrag;
 			WritePrivateProfileInt("Display","Window Split Border Drag",(int)SeparationBorderDrag,IniName);
+			break;
+		case IDM_SCREENSEP_COLORWHITE:
+		case IDM_SCREENSEP_COLORGRAY:
+		case IDM_SCREENSEP_COLORBLACK:
+			switch(LOWORD(wParam))
+			{
+			case IDM_SCREENSEP_COLORWHITE: ScreenGapColor = 0xFFFFFF; break;
+			case IDM_SCREENSEP_COLORGRAY:  ScreenGapColor = 0x7F7F7F; break;
+			case IDM_SCREENSEP_COLORBLACK: ScreenGapColor = 0x000000; break;
+			}
+			WritePrivateProfileInt("Display", "ScreenGapColor", ScreenGapColor, IniName);
 			break;
 		case IDM_WEBSITE:
 			ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
