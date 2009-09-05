@@ -75,7 +75,7 @@ bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extra
 	wc.hbrBackground  = GetSysColorBrush(COLOR_BTNFACE);
 	wc.style          = style;
 	wc.cbClsExtra     = 0;
-	wc.cbWndExtra     = 8 + extraSize;
+	wc.cbWndExtra     = DWLP_USER + extraSize;
 	wc.hIconSm        = 0;
 
 	if (RegisterClassEx(&wc) != 0)
