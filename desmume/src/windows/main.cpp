@@ -1210,6 +1210,7 @@ static struct MainLoopData
 	int fps;
 	int fps3d;
 	int fpsframecount;
+	int toolframecount;
 } mainLoopData = {0};
 
 
@@ -1265,6 +1266,8 @@ static void StepRunLoop_Paused()
 
 static void StepRunLoop_User()
 {
+	const int kFramesPerToolUpdate = 6;
+
 	Hud.fps = mainLoopData.fps;
 	Hud.fps3d = mainLoopData.fps3d;
 
@@ -1278,19 +1281,15 @@ static void StepRunLoop_User()
 	}
 
 
-	// TODO: make that thing properly threaded
-	static DWORD tools_time_last = 0;
-	DWORD time_now = timeGetTime();
-	if((time_now - tools_time_last) >= 50)
+	mainLoopData.toolframecount++;
+	if (mainLoopData.toolframecount == kFramesPerToolUpdate)
 	{
-		if(MemView_IsOpened(ARMCPU_ARM9)) MemView_Refresh(ARMCPU_ARM9);
-		if(MemView_IsOpened(ARMCPU_ARM7)) MemView_Refresh(ARMCPU_ARM7);
-	//	if(IORegView_IsOpened()) IORegView_Refresh();
+		if(SoundView_IsOpened()) SoundView_Refresh();
+		RefreshAllToolWindows();
 
-		tools_time_last = time_now;
+		mainLoopData.toolframecount = 0;
 	}
-	if(SoundView_IsOpened()) SoundView_Refresh();
-	RefreshAllToolWindows();
+
 
 	Update_RAM_Watch();
 	Update_RAM_Search();
@@ -2022,7 +2021,6 @@ int _main()
 
 	GInfo_Init();
 
-	MemView_Init();
 	SoundView_Init();
 
 	ViewDisasm_ARM7 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
@@ -2252,12 +2250,9 @@ int _main()
 
 	GInfo_DeInit();
 
-	MemView_DlgClose(ARMCPU_ARM9);
-	MemView_DlgClose(ARMCPU_ARM7);
 	SoundView_DlgClose();
 	//IORegView_DlgClose();
 
-	MemView_DeInit();
 	SoundView_DeInit();
 
 	//if (input!=NULL) delete input;
@@ -2272,6 +2267,8 @@ int _main()
 //	if (ViewMem_ARM7!=NULL) delete ViewMem_ARM7;
 	if (ViewDisasm_ARM9!=NULL) delete ViewDisasm_ARM9;
 	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
+
+	CloseAllToolWindows();
 
 	delete MainWindow;
 
@@ -3856,14 +3853,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//OpenToolWindow(IORegView);
 			return 0;
 		case IDM_MEMORY:
-		/*	ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
-			if (!ViewMem_ARM7->open())
-				ViewMem_ARM7->unregClass();
-			ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
-			if (!ViewMem_ARM9->open())
-				ViewMem_ARM9->unregClass();*/
-			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);
-			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(HWND_DESKTOP, "ARM7 memory", ARMCPU_ARM7);
+			//if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);
+			//if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(HWND_DESKTOP, "ARM7 memory", ARMCPU_ARM7);
+			if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, sizeof(CMemView*)))
+				OpenToolWindow(new CMemView());
 			return 0;
 		case IDM_SOUND_VIEW:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);

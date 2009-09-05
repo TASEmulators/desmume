@@ -207,14 +207,12 @@ void RefreshAllToolWindows()
 	if (ToolWindowList == NULL)
 		return;
 
-	EnterCriticalSection(&win_execute_sync);
 	wnd = ToolWindowList;
 	while (wnd)
 	{
 		wnd->Refresh();
 		wnd = wnd->next;
 	}
-	LeaveCriticalSection(&win_execute_sync);
 }
 
 

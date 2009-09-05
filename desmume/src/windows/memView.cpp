@@ -19,7 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
+#include "CWindow.h"
 #include "../MMU.h"
 #include "debug.h"
 #include "resource.h"
@@ -34,171 +34,105 @@ using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct MemView_DataStruct
+CMemView::CMemView()
+	: CToolWindow(IDD_MEM_VIEW, MemView_DlgProc, "ARM9 memory")
+	, cpu(ARMCPU_ARM9)
+	, address(0x02000000)
+	, viewMode(0)
+	, sel(FALSE)
+	, selPart(0)
+	, selAddress(0x00000000)
+	, selNewVal(0x00000000)
 {
-	MemView_DataStruct(u8 CPU) : cpu(CPU), address(0x02000000), viewMode(0), sel(FALSE), selPart(0), selAddress(0x00000000), selNewVal(0x000000000)
-	{
-	}
-
-	HWND hDlg;
-
-	u8 cpu;
-	u32 address;
-	u8 viewMode;
-
-	BOOL sel;
-	u8 selPart;
-	u32 selAddress;
-	u32 selNewVal;
-} MemView_DataStruct;
-
-MemView_DataStruct * MemView_Data[2] = {NULL, NULL};
-
-//////////////////////////////////////////////////////////////////////////////
-
-BOOL MemView_Init()
-{
-	WNDCLASSEX wc;
-
-	wc.cbSize         = sizeof(wc);
-	wc.lpszClassName  = "MemView_ViewBox";
-	wc.hInstance      = hAppInst;
-	wc.lpfnWndProc    = MemView_ViewBoxProc;
-	wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
-	wc.hIcon          = 0;
-	wc.lpszMenuName   = 0;
-	wc.hbrBackground  = GetSysColorBrush(COLOR_BTNFACE);
-	wc.style          = 0;
-	wc.cbClsExtra     = 0;
-	wc.cbWndExtra     = sizeof(MemView_DataStruct);
-	wc.hIconSm        = 0;
-
-	RegisterClassEx(&wc);
-
-	return 1;
 }
 
-void MemView_DeInit()
+CMemView::~CMemView()
 {
-	UnregisterClass("MemView_ViewBox", hAppInst);
+	DestroyWindow(hWnd);
+	hWnd = NULL;
+
+	UnregWndClass("MemView_ViewBox");
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
-BOOL MemView_DlgOpen(HWND hParentWnd, char *Title, u8 CPU)
-{
-	HWND hDlg;
-
-	MemView_Data[CPU] = new MemView_DataStruct(CPU);
-	if(MemView_Data[CPU] == NULL)
-		return 0;
-
-	hDlg = CreateDialogParam(hAppInst, MAKEINTRESOURCE(IDD_MEM_VIEW), hParentWnd, MemView_DlgProc, (LPARAM)MemView_Data[CPU]);
-	if(hDlg == NULL)
-	{
-		delete MemView_Data[CPU];
-		MemView_Data[CPU] = NULL;
-		return 0;
-	}
-
-	MemView_Data[CPU]->hDlg = hDlg;
-
-	SetWindowText(hDlg, Title);
-
-	ShowWindow(hDlg, SW_SHOW);
-	UpdateWindow(hDlg);
-
-	return 1;
-}
-
-void MemView_DlgClose(u8 CPU)
-{
-	if(MemView_Data[CPU] != NULL)
-	{
-		DestroyWindow(MemView_Data[CPU]->hDlg);
-		delete MemView_Data[CPU];
-		MemView_Data[CPU] = NULL;
-	}
-}
-
-BOOL MemView_IsOpened(u8 CPU)
-{
-	return (MemView_Data[CPU] != NULL);
-}
-
-void MemView_Refresh(u8 CPU)
-{
-	InvalidateRect(MemView_Data[CPU]->hDlg, NULL, FALSE);
-	UpdateWindow(MemView_Data[CPU]->hDlg);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-LRESULT MemView_DlgPaint(HWND hDlg, MemView_DataStruct *data, WPARAM wParam, LPARAM lParam)
-{
-	HDC				hdc;
-	PAINTSTRUCT		ps;
-
-	hdc = BeginPaint(hDlg, &ps);
-
-	EndPaint(hDlg, &ps);
-
-	return 0;
-}
 
 INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLongPtr(hDlg, DWLP_USER);
-	if((data == NULL) && (uMsg != WM_INITDIALOG))
+	CMemView* wnd = (CMemView*)GetWindowLongPtr(hDlg, DWLP_USER);
+	if((wnd == NULL) && (uMsg != WM_INITDIALOG))
 		return 0;
 
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
 		{
-			if(data == NULL)
-			{
-				data = (MemView_DataStruct*)lParam;
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)data);
-			}
+			HWND cur;
 
-			CheckRadioButton(hDlg, IDC_8_BIT, IDC_32_BIT, IDC_8_BIT);
+			wnd = (CMemView*)lParam;
+			SetWindowLongPtr(hDlg, DWLP_USER, (LONG)wnd);
+			SetWindowLongPtr(GetDlgItem(hDlg, IDC_MEMVIEWBOX), DWLP_USER, (LONG)wnd);
 
-			SendMessage(GetDlgItem(hDlg, IDC_ADDRESS), EM_SETLIMITTEXT, 8, 0);
-			SetWindowText(GetDlgItem(hDlg, IDC_ADDRESS), "02000000");
+			wnd->font = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
 
-			SetWindowLongPtr(GetDlgItem(hDlg, IDC_MEMVIEWBOX), DWLP_USER, (LONG)data);
+			cur = GetDlgItem(hDlg, IDC_CPU);
+			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"ARM9");
+			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"ARM7");
+			SendMessage(cur, CB_SETCURSEL, 0, 0);
 
-			InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
+			cur = GetDlgItem(hDlg, IDC_VIEWMODE);
+			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"Bytes");
+			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"Halfwords");
+			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"Words");
+			SendMessage(cur, CB_SETCURSEL, 0, 0);
+
+			cur = GetDlgItem(hDlg, IDC_ADDRESS);
+			SendMessage(cur, EM_SETLIMITTEXT, 8, 0);
+			SetWindowText(cur, "02000000");
+
+			wnd->Refresh();
 		}
 		return 1;
 
 	case WM_CLOSE:
-	case WM_DESTROY:
-		MemView_DlgClose(data->cpu);
-		return 1;
-
-	case WM_PAINT:
-		MemView_DlgPaint(hDlg, data, wParam, lParam);
+		CloseToolWindow(wnd);
 		return 1;
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam))
 		{
 		case IDCANCEL:
-			MemView_DlgClose(data->cpu);
+			CloseToolWindow(wnd);
 			return 1;
 
-		case IDC_8_BIT:
-		case IDC_16_BIT:
-		case IDC_32_BIT:
-			data->sel = FALSE;
-			data->selAddress = 0x00000000;
-			data->selPart = 0;
-			data->selNewVal = 0x00000000;
-			CheckRadioButton(hDlg, IDC_8_BIT, IDC_32_BIT, LOWORD(wParam));
-			data->viewMode = (LOWORD(wParam) - IDC_8_BIT);
-			InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
+		case IDC_CPU:
+			if ((HIWORD(wParam) == CBN_SELCHANGE) || (HIWORD(wParam) == CBN_CLOSEUP))
+			{
+				wnd->cpu = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
+
+				wnd->sel = FALSE;
+				wnd->selAddress = 0x00000000;
+				wnd->selPart = 0;
+				wnd->selNewVal = 0x00000000;
+
+				wnd->SetTitle((wnd->cpu == ARMCPU_ARM9) ? "ARM9 memory":"ARM7 memory");
+
+				wnd->Refresh();
+			}
+			return 1;
+
+		case IDC_VIEWMODE:
+			if ((HIWORD(wParam) == CBN_SELCHANGE) || (HIWORD(wParam) == CBN_CLOSEUP))
+			{
+				wnd->viewMode = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
+
+				wnd->sel = FALSE;
+				wnd->selAddress = 0x00000000;
+				wnd->selPart = 0;
+				wnd->selNewVal = 0x00000000;
+
+				wnd->Refresh();
+			}
 			return 1;
 
 		case IDC_GO:
@@ -251,14 +185,15 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 						address |= ((ch - 'a' + 0xA) << shift);
 				}
 
-				data->sel = FALSE;
-				data->selAddress = 0x00000000;
-				data->selPart = 0;
-				data->selNewVal = 0x00000000;
+				wnd->address = min((u32)0xFFFFFF00, (address & 0xFFFFFFF0));
 
-				data->address = min((u32)0xFFFFFF00, (address & 0xFFFFFFF0));
-				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
-				InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
+				wnd->sel = FALSE;
+				wnd->selAddress = 0x00000000;
+				wnd->selPart = 0;
+				wnd->selNewVal = 0x00000000;
+
+				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, ((wnd->address >> 4) & 0x000FFFFF), TRUE);
+				wnd->Refresh();
 			}
 			return 1;
 
@@ -283,7 +218,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 					u8 memory[0x100];
 					int line;
 
-					MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
+					MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
 
 					f = fopen(fileName, "a");
 
@@ -291,9 +226,9 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 					{
 						int i;
 						
-						fprintf(f, "%08X\t\t", (data->address + (line << 4)));
+						fprintf(f, "%08X\t\t", (wnd->address + (line << 4)));
 
-						switch(data->viewMode)
+						switch(wnd->viewMode)
 						{
 						case 0:
 							{
@@ -363,7 +298,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 					FILE *f;
 					u8 memory[0x100];
 
-					MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
+					MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
 
 					f = fopen(fileName, "ab");
 
@@ -382,16 +317,21 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam, LPARAM lParam)
+LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lParam)
 {
 	HDC				hdc;
 	PAINTSTRUCT		ps;
 	RECT			rc;
 	int				w, h;
 	SIZE			fontsize;
-	int				fontwidth, fontheight;
 	HDC				mem_hdc;
 	HBITMAP			mem_bmp;
+	u32 			addr = wnd->address;
+	u8 				memory[0x100];
+	char 			text[80];
+	int 			startx;
+	int 			curx, cury;
+	int 			line;
 
 	GetClientRect(hCtl, &rc);
 	w = (rc.right - rc.left);
@@ -403,199 +343,167 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 	mem_bmp = CreateCompatibleBitmap(hdc, w, h);
 	SelectObject(mem_hdc, mem_bmp);
 
-	SelectObject(mem_hdc, GetStockObject(SYSTEM_FIXED_FONT));
+	SelectObject(mem_hdc, wnd->font);
 
 	SetBkMode(mem_hdc, OPAQUE);
 	SetBkColor(mem_hdc, RGB(255, 255, 255));
 	SetTextColor(mem_hdc, RGB(0, 0, 0));
 
-	GetTextExtentPoint32(mem_hdc, " ", 1, &fontsize);
-	fontwidth = fontsize.cx;
-	fontheight = fontsize.cy;
-
 	FillRect(mem_hdc, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
-	if(data != NULL)
+	GetTextExtentPoint32(mem_hdc, " ", 1, &fontsize);
+	startx = ((fontsize.cx * 8) + 5);
+	curx = 0;
+	cury = (fontsize.cy + 3);
+
+	MoveToEx(mem_hdc, ((fontsize.cx * 8) + 2), 0, NULL);
+	LineTo(mem_hdc, ((fontsize.cx * 8) + 2), h);
+
+	MoveToEx(mem_hdc, 0, (fontsize.cy + 1), NULL);
+	LineTo(mem_hdc, w, (fontsize.cy + 1));
+
+	switch(wnd->viewMode)
 	{
-		u32 addr = data->address;
-		u8 memory[0x100];
-		char text[80];
-		int startx;
-		int curx, cury;
-		int line;
+	case 0: sprintf(text, "   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F   0123456789ABCDEF"); break;
+	case 1: sprintf(text, "       0 1  2 3  4 5  6 7  8 9  A B  C D  E F       0123456789ABCDEF"); break;
+	case 2: sprintf(text, "         0 1 2 3  4 5 6 7  8 9 A B  C D E F         0123456789ABCDEF"); break;
+	}
+	TextOut(mem_hdc, startx, 0, text, strlen(text));
+	
+	MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
 
-		startx = 0;
-		curx = 0;
-		cury = 0;
+	for(line = 0; line < 16; line++, addr += 0x10)
+	{
+		int i;
 
-		startx = ((fontwidth * 8) + 5);
-		cury = (fontheight + 3);
+		sprintf(text, "%08X", addr);
+		TextOut(mem_hdc, 0, cury, text, strlen(text));
 
-		MoveToEx(mem_hdc, ((fontwidth * 8) + 2), 0, NULL);
-		LineTo(mem_hdc, ((fontwidth * 8) + 2), h);
+		curx = startx;
 
-		MoveToEx(mem_hdc, 0, (fontheight + 1), NULL);
-		LineTo(mem_hdc, w, (fontheight + 1));
-
-		switch(data->viewMode)
+		switch(wnd->viewMode)
 		{
 		case 0:
 			{
-				sprintf(text, "   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F   0123456789ABCDEF");
-				TextOut(mem_hdc, startx, 0, text, strlen(text));
+				curx += (fontsize.cx * 2);
+				for(i = 0; i < 16; i++)
+				{
+					u8 val = T1ReadByte(memory, ((line << 4) + i));
+					if(wnd->sel && (wnd->selAddress == (addr + i)))
+					{
+						SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
+						SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+						
+						switch(wnd->selPart)
+						{
+						case 0: sprintf(text, "%02X", val); break;
+						case 1: sprintf(text, "%01X.", wnd->selNewVal); break;
+						}
+					}
+					else
+					{
+						SetBkColor(mem_hdc, RGB(255, 255, 255));
+						SetTextColor(mem_hdc, RGB(0, 0, 0));
+						
+						sprintf(text, "%02X", val);
+					}
+
+					TextOut(mem_hdc, curx, cury, text, strlen(text));
+					curx += (fontsize.cx * (2+1));
+				}
+				curx += (fontsize.cx * 2);
 			}
 			break;
 
 		case 1:
 			{
-				sprintf(text, "       0 1  2 3  4 5  6 7  8 9  A B  C D  E F       0123456789ABCDEF");
-				TextOut(mem_hdc, startx, 0, text, strlen(text));
+				curx += (fontsize.cx * 6);
+				for(i = 0; i < 16; i += 2)
+				{
+					u16 val = T1ReadWord(memory, ((line << 4) + i));
+					if(wnd->sel && (wnd->selAddress == (addr + i)))
+					{
+						SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
+						SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+						
+						switch(wnd->selPart)
+						{
+						case 0: sprintf(text, "%04X", val); break;
+						case 1: sprintf(text, "%01X...", wnd->selNewVal); break;
+						case 2: sprintf(text, "%02X..", wnd->selNewVal); break;
+						case 3: sprintf(text, "%03X.", wnd->selNewVal); break;
+						}
+					}
+					else
+					{
+						SetBkColor(mem_hdc, RGB(255, 255, 255));
+						SetTextColor(mem_hdc, RGB(0, 0, 0));
+						
+						sprintf(text, "%04X", val);
+					}
+
+					TextOut(mem_hdc, curx, cury, text, strlen(text));
+					curx += (fontsize.cx * (4+1));
+				}
+				curx += (fontsize.cx * 6);
 			}
 			break;
 
 		case 2:
 			{
-				sprintf(text, "         0 1 2 3  4 5 6 7  8 9 A B  C D E F         0123456789ABCDEF");
-				TextOut(mem_hdc, startx, 0, text, strlen(text));
+				curx += (fontsize.cx * 8);
+				for(i = 0; i < 16; i += 4)
+				{
+					u32 val = T1ReadLong(memory, ((line << 4) + i));
+					if(wnd->sel && (wnd->selAddress == (addr + i)))
+					{
+						SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
+						SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+						
+						switch(wnd->selPart)
+						{
+						case 0: sprintf(text, "%08X", val); break;
+						case 1: sprintf(text, "%01X.......", wnd->selNewVal); break;
+						case 2: sprintf(text, "%02X......", wnd->selNewVal); break;
+						case 3: sprintf(text, "%03X.....", wnd->selNewVal); break;
+						case 4: sprintf(text, "%04X....", wnd->selNewVal); break;
+						case 5: sprintf(text, "%05X...", wnd->selNewVal); break;
+						case 6: sprintf(text, "%06X..", wnd->selNewVal); break;
+						case 7: sprintf(text, "%07X.", wnd->selNewVal); break;
+						}
+					}
+					else
+					{
+						SetBkColor(mem_hdc, RGB(255, 255, 255));
+						SetTextColor(mem_hdc, RGB(0, 0, 0));
+						
+						sprintf(text, "%08X", val);
+					}	
+
+					TextOut(mem_hdc, curx, cury, text, strlen(text));
+					curx += (fontsize.cx * (8+1));
+				}
+				curx += (fontsize.cx * 8);
 			}
 			break;
 		}
-		
-		MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
 
-		for(line = 0; line < 16; line++, addr += 0x10)
+		SetBkColor(mem_hdc, RGB(255, 255, 255));
+		SetTextColor(mem_hdc, RGB(0, 0, 0));
+
+		for(i = 0; i < 16; i++)
 		{
-			int i;
+			u8 val = T1ReadByte(memory, ((line << 4) + i));
 
-			sprintf(text, "%08X", addr);
-			TextOut(mem_hdc, 0, cury, text, strlen(text));
-
-			curx = startx;
-
-			switch(data->viewMode)
-			{
-			case 0:
-				{
-					curx += (fontwidth * 2);
-					for(i = 0; i < 16; i++)
-					{
-						u8 val = T1ReadByte(memory, ((line << 4) + i));
-						if(data->sel && (data->selAddress == (addr + i)))
-						{
-							SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
-							SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-							
-							switch(data->selPart)
-							{
-							case 0: sprintf(text, "%02X", val); break;
-							case 1: sprintf(text, "%01X.", data->selNewVal); break;
-							}
-						}
-						else
-						{
-							SetBkColor(mem_hdc, RGB(255, 255, 255));
-							SetTextColor(mem_hdc, RGB(0, 0, 0));
-							
-							sprintf(text, "%02X", val);
-						}
-
-						TextOut(mem_hdc, curx, cury, text, strlen(text));
-						curx += (fontwidth * (2+1));
-					}
-					curx += (fontwidth * 2);
-				}
-				break;
-
-			case 1:
-				{
-					curx += (fontwidth * 6);
-					for(i = 0; i < 16; i += 2)
-					{
-						u16 val = T1ReadWord(memory, ((line << 4) + i));
-						if(data->sel && (data->selAddress == (addr + i)))
-						{
-							SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
-							SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-							
-							switch(data->selPart)
-							{
-							case 0: sprintf(text, "%04X", val); break;
-							case 1: sprintf(text, "%01X...", data->selNewVal); break;
-							case 2: sprintf(text, "%02X..", data->selNewVal); break;
-							case 3: sprintf(text, "%03X.", data->selNewVal); break;
-							}
-						}
-						else
-						{
-							SetBkColor(mem_hdc, RGB(255, 255, 255));
-							SetTextColor(mem_hdc, RGB(0, 0, 0));
-							
-							sprintf(text, "%04X", val);
-						}
-
-						TextOut(mem_hdc, curx, cury, text, strlen(text));
-						curx += (fontwidth * (4+1));
-					}
-					curx += (fontwidth * 6);
-				}
-				break;
-
-			case 2:
-				{
-					curx += (fontwidth * 8);
-					for(i = 0; i < 16; i += 4)
-					{
-						u32 val = T1ReadLong(memory, ((line << 4) + i));
-						if(data->sel && (data->selAddress == (addr + i)))
-						{
-							SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
-							SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-							
-							switch(data->selPart)
-							{
-							case 0: sprintf(text, "%08X", val); break;
-							case 1: sprintf(text, "%01X.......", data->selNewVal); break;
-							case 2: sprintf(text, "%02X......", data->selNewVal); break;
-							case 3: sprintf(text, "%03X.....", data->selNewVal); break;
-							case 4: sprintf(text, "%04X....", data->selNewVal); break;
-							case 5: sprintf(text, "%05X...", data->selNewVal); break;
-							case 6: sprintf(text, "%06X..", data->selNewVal); break;
-							case 7: sprintf(text, "%07X.", data->selNewVal); break;
-							}
-						}
-						else
-						{
-							SetBkColor(mem_hdc, RGB(255, 255, 255));
-							SetTextColor(mem_hdc, RGB(0, 0, 0));
-							
-							sprintf(text, "%08X", val);
-						}	
-
-						TextOut(mem_hdc, curx, cury, text, strlen(text));
-						curx += (fontwidth * (8+1));
-					}
-					curx += (fontwidth * 8);
-				}
-				break;
-			}
-
-			SetBkColor(mem_hdc, RGB(255, 255, 255));
-			SetTextColor(mem_hdc, RGB(0, 0, 0));
-
-			for(i = 0; i < 16; i++)
-			{
-				u8 val = T1ReadByte(memory, ((line << 4) + i));
-
-				if((val >= 32) && (val <= 127))
-					text[i] = (char)val;
-				else
-					text[i] = '.';
-			}
-			text[16] = '\0';
-			TextOut(mem_hdc, curx, cury, text, strlen(text));
-
-			cury += fontheight;
+			if((val >= 32) && (val <= 127))
+				text[i] = (char)val;
+			else
+				text[i] = '.';
 		}
+		text[16] = '\0';
+		TextOut(mem_hdc, curx, cury, text, strlen(text));
+
+		cury += fontsize.cy;
 	}
 
 	BitBlt(hdc, 0, 0, w, h, mem_hdc, 0, 0, SRCCOPY);
@@ -610,7 +518,7 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 
 LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLongPtr(hCtl, DWLP_USER);
+	CMemView* wnd = (CMemView*)GetWindowLongPtr(hCtl, DWLP_USER);
 
 	switch(uMsg)
 	{
@@ -626,7 +534,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 		return 1;
 
 	case WM_PAINT:
-		MemView_ViewBoxPaint(hCtl, data, wParam, lParam);
+		MemView_ViewBoxPaint(wnd, hCtl, wParam, lParam);
 		return 1;
 
 	case WM_LBUTTONDOWN:
@@ -636,13 +544,13 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 			SIZE fontsize;
 			int x, y;
 
-			data->sel = FALSE;
-			data->selAddress = 0x00000000;
-			data->selPart = 0;
-			data->selNewVal = 0x00000000;
+			wnd->sel = FALSE;
+			wnd->selAddress = 0x00000000;
+			wnd->selPart = 0;
+			wnd->selNewVal = 0x00000000;
 
 			hdc = GetDC(hCtl);
-			font = (HFONT)SelectObject(hdc, GetStockObject(SYSTEM_FIXED_FONT));
+			font = (HFONT)SelectObject(hdc, wnd->font);
 			GetTextExtentPoint32(hdc, " ", 1, &fontsize);
 			
 			x = LOWORD(lParam);
@@ -657,7 +565,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 				
 				line = (y / fontsize.cy);
 
-				switch(data->viewMode)
+				switch(wnd->viewMode)
 				{
 				case 0:
 					{
@@ -666,7 +574,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 						col = ((x - (fontsize.cx * 2)) / (fontsize.cx * (2+1)));
 
-						data->sel = TRUE;
+						wnd->sel = TRUE;
 						
 					}
 					break;
@@ -678,7 +586,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 						col = ((x - (fontsize.cx * 6)) / (fontsize.cx * (4+1)) * 2);
 
-						data->sel = TRUE;
+						wnd->sel = TRUE;
 						
 					}
 					break;
@@ -690,22 +598,22 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 						col = ((x - (fontsize.cx * 8)) / (fontsize.cx * (8+1)) * 4);
 
-						data->sel = TRUE;
+						wnd->sel = TRUE;
 						
 					}
 					break;
 				}
 				
-				data->selAddress = (data->address + (line << 4) + col);
-				data->selPart = 0;
-				data->selNewVal = 0x00000000;
+				wnd->selAddress = (wnd->address + (line << 4) + col);
+				wnd->selPart = 0;
+				wnd->selNewVal = 0x00000000;
 			}
 
 			SelectObject(hdc, font);
 			ReleaseDC(hCtl, hdc);
 
 			SetFocus(hCtl);				/* Required to receive keyboard messages */
-			InvalidateRect(hCtl, NULL, FALSE); UpdateWindow(hCtl);
+			wnd->Refresh();
 		}
 		return 1;
 
@@ -717,40 +625,40 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 			{
 				u8 maxSelPart[3] = {2, 4, 8};
 
-				data->selNewVal <<= 4;
-				data->selPart++;
+				wnd->selNewVal <<= 4;
+				wnd->selPart++;
 
 				if((ch >= '0') && (ch <= '9'))
-					data->selNewVal |= (ch - '0');
+					wnd->selNewVal |= (ch - '0');
 				else if((ch >= 'A') && (ch <= 'F'))
-					data->selNewVal |= (ch - 'A' + 0xA);
+					wnd->selNewVal |= (ch - 'A' + 0xA);
 				else if((ch >= 'a') && (ch <= 'f'))
-					data->selNewVal |= (ch - 'a' + 0xA);
+					wnd->selNewVal |= (ch - 'a' + 0xA);
 
-				if(data->selPart >= maxSelPart[data->viewMode])
+				if(wnd->selPart >= maxSelPart[wnd->viewMode])
 				{
-					switch(data->viewMode)
+					switch(wnd->viewMode)
 					{
-					case 0: MMU_write8(data->cpu, data->selAddress, (u8)data->selNewVal); data->selAddress++; break;
-					case 1: MMU_write16(data->cpu, data->selAddress, (u16)data->selNewVal); data->selAddress += 2; break;
-					case 2: MMU_write32(data->cpu, data->selAddress, data->selNewVal); data->selAddress += 4; break;
+					case 0: MMU_write8(wnd->cpu, wnd->selAddress, (u8)wnd->selNewVal); wnd->selAddress++; break;
+					case 1: MMU_write16(wnd->cpu, wnd->selAddress, (u16)wnd->selNewVal); wnd->selAddress += 2; break;
+					case 2: MMU_write32(wnd->cpu, wnd->selAddress, wnd->selNewVal); wnd->selAddress += 4; break;
 					}
-					data->selPart = 0;
-					data->selNewVal = 0x00000000;
+					wnd->selPart = 0;
+					wnd->selNewVal = 0x00000000;
 
-					if(data->selAddress == 0x00000000)
+					if(wnd->selAddress == 0x00000000)
 					{
-						data->sel = FALSE;
+						wnd->sel = FALSE;
 					}
-					else if(data->selAddress >= (data->address + 0x100))
+					else if(wnd->selAddress >= (wnd->address + 0x100))
 					{
-						data->address = min((u32)0xFFFFFF00, (data->address + 0x10));
-						SetScrollPos(hCtl, SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
+						wnd->address = min((u32)0xFFFFFF00, (wnd->address + 0x10));
+						SetScrollPos(hCtl, SB_VERT, ((wnd->address >> 4) & 0x000FFFFF), TRUE);
 					}
 				}
 			}
 
-			InvalidateRect(hCtl, NULL, FALSE); UpdateWindow(hCtl);
+			wnd->Refresh();
 		}
 		return 1;
 
@@ -761,19 +669,19 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 			switch(LOWORD(wParam))
 			{
 			case SB_LINEUP:
-				data->address = (u32)max(0x00000000, ((int)data->address - 0x10));
+				wnd->address = (u32)max(0x00000000, ((int)wnd->address - 0x10));
 				break;
 
 			case SB_LINEDOWN:
-				data->address = min((u32)0xFFFFFF00, (data->address + 0x10));
+				wnd->address = min((u32)0xFFFFFF00, (wnd->address + 0x10));
 				break;
 
 			case SB_PAGEUP:
-				data->address = (u32)max(0x00000000, ((int)data->address - 0x100));
+				wnd->address = (u32)max(0x00000000, ((int)wnd->address - 0x100));
 				break;
 
 			case SB_PAGEDOWN:
-				data->address = min((u32)0xFFFFFF00, (data->address + 0x100));
+				wnd->address = min((u32)0xFFFFFF00, (wnd->address + 0x100));
 				break;
 
 			case SB_THUMBTRACK:
@@ -787,21 +695,21 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 					GetScrollInfo(hCtl, SB_VERT, &si);
 
-					data->address = min((u32)0xFFFFFF00, (data->address + ((si.nTrackPos - firstpos) * 16)));
+					wnd->address = min((u32)0xFFFFFF00, (wnd->address + ((si.nTrackPos - firstpos) * 16)));
 				}
 				break;
 			}
 
-			if((data->selAddress < data->address) || (data->selAddress >= (data->address + 0x100)))
+			if((wnd->selAddress < wnd->address) || (wnd->selAddress >= (wnd->address + 0x100)))
 			{
-				data->sel = FALSE;
-				data->selAddress = 0x00000000;
-				data->selPart = 0;
-				data->selNewVal = 0x00000000;
+				wnd->sel = FALSE;
+				wnd->selAddress = 0x00000000;
+				wnd->selPart = 0;
+				wnd->selNewVal = 0x00000000;
 			}
 
-			SetScrollPos(hCtl, SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
-			InvalidateRect(hCtl, NULL, FALSE); UpdateWindow(hCtl);
+			SetScrollPos(hCtl, SB_VERT, ((wnd->address >> 4) & 0x000FFFFF), TRUE);
+			wnd->Refresh();
 		}
 		return 1;
 	}
