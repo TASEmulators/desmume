@@ -20,7 +20,26 @@
 */
 
 #include "CWindow.h"
+#include "IORegView.h"
 #include "debug.h"
+
+DWORD GetFontQuality()
+{
+	BOOL aaEnabled = FALSE;
+	UINT aaType = FE_FONTSMOOTHINGSTANDARD;
+
+	SystemParametersInfo(SPI_GETFONTSMOOTHING, 0, &aaEnabled, 0);
+	if (aaEnabled == FALSE)
+		return NONANTIALIASED_QUALITY;
+
+	if (SystemParametersInfo(SPI_GETFONTSMOOTHINGTYPE, 0, &aaType, 0) == FALSE)
+		return ANTIALIASED_QUALITY;
+
+	if (aaType == FE_FONTSMOOTHINGCLEARTYPE)
+		return CLEARTYPE_QUALITY;
+	else
+		return ANTIALIASED_QUALITY;
+}
 
 //-----------------------------------------------------------------------------
 // Window class handling
@@ -56,7 +75,7 @@ bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extra
 	wc.hbrBackground  = GetSysColorBrush(COLOR_BTNFACE);
 	wc.style          = style;
 	wc.cbClsExtra     = 0;
-	wc.cbWndExtra     = extraSize;
+	wc.cbWndExtra     = 8 + extraSize;
 	wc.hIconSm        = 0;
 
 	if (RegisterClassEx(&wc) != 0)
@@ -78,8 +97,124 @@ void UnregWndClass(string name)
 		return;
 
 	// Otherwise unreg the class and remove its name from the list
-	UnregisterClass(name.c_str(), hAppInst);
-	ReggedWndClasses.erase(it);
+	// ONLY if unregging was successful. Unregging will fail if one
+	// or more windows using the class still exist.
+	if (UnregisterClass(name.c_str(), hAppInst) != 0)
+		ReggedWndClasses.erase(it);
+}
+
+//-----------------------------------------------------------------------------
+// Base toolwindow class
+//-----------------------------------------------------------------------------
+
+CToolWindow::CToolWindow(int ID, DLGPROC proc, char* title)
+	: hWnd(NULL)
+{
+	hWnd = CreateDialogParam(hAppInst, MAKEINTRESOURCE(ID), HWND_DESKTOP, proc, (LPARAM)this);
+	if (hWnd == NULL)
+		return;
+
+	SetWindowText(hWnd, title);
+}
+
+CToolWindow::~CToolWindow()
+{
+}
+
+//-----------------------------------------------------------------------------
+// Toolwindow handling
+//-----------------------------------------------------------------------------
+
+CToolWindow* ToolWindowList = NULL;
+
+bool OpenToolWindow(CToolWindow* wnd)
+{
+	// A hWnd value of NULL indicates failure to create the window.
+	// In this case, just delete the toolwindow and return failure.
+	if (wnd->hWnd == NULL)
+	{
+		delete wnd;
+		return false;
+	}
+
+	// Add the toolwindow to the list
+	if (ToolWindowList == NULL)
+	{
+		ToolWindowList = wnd;
+		wnd->prev = NULL;
+		wnd->next = NULL;
+	}
+	else
+	{
+		wnd->prev = NULL;
+		wnd->next = ToolWindowList;
+		wnd->next->prev = wnd;
+		ToolWindowList = wnd;
+	}
+
+	// Show the toolwindow (otherwise it won't show :P )
+	wnd->Show();
+
+	return true;
+}
+
+void CloseToolWindow(CToolWindow* wnd)
+{
+	// Remove the toolwindow from the list
+	if (wnd == ToolWindowList)
+	{
+		ToolWindowList = wnd->next;
+		if (wnd->next) wnd->next->prev = NULL;
+		wnd->next = NULL;
+	}
+	else
+	{
+		wnd->prev->next = wnd->next;
+		if (wnd->next) wnd->next->prev = wnd->prev;
+		wnd->prev = NULL;
+		wnd->next = NULL;
+	}
+
+	// Delete the toolwindow object
+	// its destructor will destroy the window
+	delete wnd;
+}
+
+void CloseAllToolWindows()
+{
+	CToolWindow* wnd;
+	CToolWindow* wnd_next;
+
+	wnd = ToolWindowList;
+	while (wnd)
+	{
+		wnd_next = wnd->next;
+
+		wnd->prev = NULL;
+		wnd->next = NULL;
+		delete wnd;
+
+		wnd = wnd_next;
+	}
+
+	ToolWindowList = NULL;
+}
+
+void RefreshAllToolWindows()
+{
+	CToolWindow* wnd;
+
+	if (ToolWindowList == NULL)
+		return;
+
+	EnterCriticalSection(&win_execute_sync);
+	wnd = ToolWindowList;
+	while (wnd)
+	{
+		wnd->Refresh();
+		wnd = wnd->next;
+	}
+	LeaveCriticalSection(&win_execute_sync);
 }
 
 
