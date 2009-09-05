@@ -737,10 +737,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\gdbstub.h"
-				>
-			</File>
-			<File
 				RelativePath="..\gfx3d.cpp"
 				>
 			</File>
@@ -985,6 +981,10 @@
 				>
 				<File
 					RelativePath="..\gdbstub\gdbstub.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gdbstub.h"
 					>
 				</File>
 			</Filter>
