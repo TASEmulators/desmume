@@ -244,6 +244,19 @@ void HK_StopMovie(int)
 	FCEUI_StopMovie();
 }
 
+void HK_NewLuaScriptDown(int) 
+{
+	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDC_NEW_LUA_SCRIPT, 0);
+}
+void HK_CloseLuaScriptsDown(int) 
+{
+	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDC_CLOSE_LUA_SCRIPTS, 0);
+}
+void HK_MostRecentLuaScriptDown(int) 
+{
+	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDD_LUARECENT_RESERVE_START, 0);
+}
+
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
@@ -581,6 +594,24 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Rewind.name = L"Rewind";
 	keys->Rewind.page = HOTKEY_PAGE_MOVIE;
 	keys->Rewind.key = NULL;
+
+	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
+	keys->NewLuaScript.code = "NewLuaScript";
+	keys->NewLuaScript.name = L"New Lua Window";
+	keys->NewLuaScript.page = HOTKEY_PAGE_MOVIE;
+	keys->NewLuaScript.key = NULL;
+
+	keys->CloseLuaScripts.handleKeyDown = HK_CloseLuaScriptsDown;
+	keys->CloseLuaScripts.code = "CloseLuaScripts";
+	keys->CloseLuaScripts.name = L"Close Lua Windows";
+	keys->CloseLuaScripts.page = HOTKEY_PAGE_MOVIE;
+	keys->CloseLuaScripts.key = NULL;
+
+	keys->MostRecentLuaScript.handleKeyDown = HK_MostRecentLuaScriptDown;
+	keys->MostRecentLuaScript.code = "MostRecentLuaScript";
+	keys->MostRecentLuaScript.name = L"Most Recent Lua Script";
+	keys->MostRecentLuaScript.page = HOTKEY_PAGE_MOVIE;
+	keys->MostRecentLuaScript.key = NULL;
 
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
 	keys->NextSaveSlot.code = "NextSaveSlot";

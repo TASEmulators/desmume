@@ -222,6 +222,9 @@ static bool FrameLimit = true;
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
 
+#define MAX_RECENT_SCRIPTS 15 // must match value in luaconsole.cpp (belongs in a header, but I didn't want to create one just for this)
+extern char Recent_Scripts[MAX_RECENT_SCRIPTS][1024];
+
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
 TOOLSCLASS	*ViewDisasm_ARM9 = NULL;
@@ -702,6 +705,82 @@ void ClearRecentRoms()
 	RecentRoms.clear();
 	SaveRecentRoms();
 	UpdateRecentRomsMenu();
+}
+
+static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu = mainMenu)
+{
+	MENUITEMINFO moo = {sizeof(MENUITEMINFO)};
+	if(!GetMenuItemInfo(hMenu, itemId, FALSE, &moo))
+		return NULL;
+	int nItems = GetMenuItemCount(hMenu);
+	for(int i = 0; i < nItems; i++)
+	{
+		MENUITEMINFO mii = {sizeof(MENUITEMINFO), MIIM_SUBMENU | MIIM_ID};
+		GetMenuItemInfo(hMenu, i, TRUE, &mii);
+		if(mii.wID == itemId)
+			return hMenu;
+		if(mii.hSubMenu)
+			if(HMENU innerResult = GetMenuItemParent(itemId, mii.hSubMenu))
+				return innerResult;
+	}
+	return NULL;
+}
+
+static void PopulateLuaSubmenu()
+{
+	static HMENU luasubmenu = GetMenuItemParent(IDC_NEW_LUA_SCRIPT);
+	static int luasubmenuOriginalSize = GetMenuItemCount(luasubmenu);
+
+	// delete any previously-dynamically-added menu items
+	int i = luasubmenuOriginalSize;
+	while(GetMenuItemCount(luasubmenu) > i)
+		DeleteMenu(luasubmenu, i, MF_BYPOSITION);
+
+	// add menu items for currently-open scripts
+	char Str_Tmp [1024];
+	int Flags = MF_BYPOSITION | MF_STRING;
+	if(!LuaScriptHWnds.empty())
+	{
+		InsertMenu(luasubmenu, i++, MF_SEPARATOR, NULL, NULL);
+		for(unsigned int j = 0; j < LuaScriptHWnds.size(); j++)
+		{
+			GetWindowText(LuaScriptHWnds[j], Str_Tmp, 1024);
+			InsertMenu(luasubmenu, i++, MF_BYPOSITION | MF_STRING, IDC_LUASCRIPT_RESERVE_START+j, Str_Tmp);
+		}
+	}
+
+	// add menu items for recently-opened-but-not-currently-open scripts
+	int dividerI = i;
+	for(unsigned int j = 0; j < MAX_RECENT_SCRIPTS; j++)
+	{
+		const char* pathPtr = Recent_Scripts[j];
+		if(!*pathPtr)
+			continue;
+
+		HWND IsScriptFileOpen(const char* Path);
+		if(IsScriptFileOpen(pathPtr))
+			continue;
+
+		// only show some of the path
+		const char* pathPtrSearch;
+		int slashesLeft = 2;
+		for(pathPtrSearch = pathPtr + strlen(pathPtr) - 1; 
+			pathPtrSearch != pathPtr && slashesLeft >= 0;
+			pathPtrSearch--)
+		{
+			char c = *pathPtrSearch;
+			if(c == '\\' || c == '/')
+				slashesLeft--;
+		}
+		if(slashesLeft < 0)
+			pathPtr = pathPtrSearch + 2;
+		strcpy(Str_Tmp, pathPtr);
+
+		if(i == dividerI)
+			InsertMenu(luasubmenu, i++, MF_SEPARATOR, NULL, NULL);
+
+		InsertMenu(luasubmenu, i++, MF_BYPOSITION | MF_STRING, IDD_LUARECENT_RESERVE_START+j, Str_Tmp);
+	}
 }
 
 
@@ -1869,6 +1948,15 @@ int _main()
 		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
 	}
 
+
+	for(int i = 0; i < MAX_RECENT_SCRIPTS; i++)
+	{
+		char str[256];
+		sprintf(str, "Recent Lua Script %d", i+1);
+		GetPrivateProfileString("Scripting", str, "", &Recent_Scripts[i][0], 1024, IniName);
+	}
+
+
 	//i think we should override the ini file with anything from the commandline
 	CommandLine cmdline;
 	cmdline.loadCommonOptions();
@@ -3027,6 +3115,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				MainWindow->checkMenu(savelist[i], false);
 			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], true);
 
+			// recent/active scripts menu
+			PopulateLuaSubmenu();
 
 			return 0;
 		}
@@ -3082,7 +3172,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					sprintf(str, "Recent Watch %d", i+1);
 					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
 				}
- 
+
+
+				for(int i = 0; i < MAX_RECENT_SCRIPTS; i++)
+				{
+					char str[256];
+					sprintf(str, "Recent Lua Script %d", i+1);
+					WritePrivateProfileString("Scripting", str, &Recent_Scripts[i][0], IniName);
+				}
+
+
 				ExitRunLoop();
 			}
 			else
@@ -3388,6 +3487,31 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			{
 				/* Clear all the recent ROMs */
 				ClearRecentRoms();
+			}
+
+			if(wParam >= IDD_LUARECENT_RESERVE_START &&
+			   wParam <= IDD_LUARECENT_RESERVE_END &&
+			   wParam - IDD_LUARECENT_RESERVE_START < MAX_RECENT_SCRIPTS)
+			{
+				if(LuaScriptHWnds.size() < 16)
+				{
+					char temp [1024];
+					strcpy(temp, Recent_Scripts[wParam - IDD_LUARECENT_RESERVE_START]);
+					HWND IsScriptFileOpen(const char* Path);
+					if(!IsScriptFileOpen(temp))
+					{
+						HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+						SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)temp);
+					}
+				}
+			}
+
+			if(wParam >= IDC_LUASCRIPT_RESERVE_START &&
+			   wParam <= IDC_LUASCRIPT_RESERVE_END)
+			{
+				unsigned int index = wParam - IDC_LUASCRIPT_RESERVE_START;
+				if(LuaScriptHWnds.size() > index)
+					SetForegroundWindow(LuaScriptHWnds[index]);
 			}
 
 		}
@@ -4005,13 +4129,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				}
 			}
 			return 0;
-				case IDC_NEW_LUA_SCRIPT:
-					if(LuaScriptHWnds.size() < 16)
-					{
-						CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
-					//	DialogsOpen++;
-					}
-					break;
+		case IDC_NEW_LUA_SCRIPT:
+			if(LuaScriptHWnds.size() < 16)
+				CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+			break;
+		case IDC_CLOSE_LUA_SCRIPTS:
+			for(int i=(int)LuaScriptHWnds.size()-1; i>=0; i--)
+				SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0,0);
+			break;
 		case IDC_LANGENGLISH:
 			SaveLanguage(0);
 			ChangeLanguage(0);
@@ -4974,7 +5099,6 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 			HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
 			SendMessage(hDlg,WM_COMMAND,IDC_NOTIFY_SUBSERVIENT,TRUE);
 			SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)filename);
-//			DialogsOpen++;
 
 			SetActiveWindow(prevWindow);
 		}
