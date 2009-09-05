@@ -48,10 +48,16 @@ struct HudStruct
 {
 public:
 	HudStruct()
-		: fps(0)
-		, fps3d(0)
-		, clicked(false)
-	{}
+	{
+		resetTransient();
+	}
+
+	void resetTransient()
+	{
+		fps = 0;
+		fps3d = 0;
+		clicked = false;
+	}
 
 	HudCoordinates SavestateSlots;
 	HudCoordinates FpsDisplay;

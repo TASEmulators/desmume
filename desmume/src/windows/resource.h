@@ -120,6 +120,7 @@
 #define IDC_PNG                         325
 #define IDC_BMP                         326
 #define IDC_FORMATSTATIC                327
+#define IDM_CLOSEROM                    328
 #define IDM_PATHSETTINGS                350
 #define IDC_ROMPATHEDIT                 351
 #define IDC_BROWSEROMS                  352

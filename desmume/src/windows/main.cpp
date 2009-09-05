@@ -2693,6 +2693,8 @@ static BOOL OpenCore(const char* filename)
 	if(!ObtainFile(filename, LogicalName, PhysicalName, "rom", s_nonRomExtensions, ARRAY_SIZE(s_nonRomExtensions)))
 		return FALSE;
 
+	StopAllLuaScripts();
+
 	if(LoadROM(filename, LogicalName))
 	{
 		romloaded = TRUE;
@@ -2789,6 +2791,17 @@ LRESULT OpenFile()
 
 
 	return 0;
+}
+
+void CloseRom()
+{
+	StopAllLuaScripts();
+//	cheatsSearchClose();
+	NDS_FreeROM();
+	romloaded = false;
+	execute = false;
+	Hud.resetTransient();
+	NDS_Reset();
 }
 
 //TODO - async key state? for real?
@@ -3014,6 +3027,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
 			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded);
+			DesEnableMenuItem(mainMenu, IDM_CLOSEROM,          romloaded);
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_LIST,       romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
@@ -3525,6 +3539,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_OPEN:
 			return OpenFile();
+		case IDM_CLOSEROM:
+			return CloseRom(),0;
 		case IDM_PRINTSCREEN:
 			HK_PrintScreen(0);
 			return 0;
