@@ -707,6 +707,9 @@
 #define IDC_LANG_CHINESE_SIMPLIFIED     40020
 #define IDM_SCREENSEP_NDSGAP2           40021
 #define IDM_SCREENSEP_DRAGEDIT          40022
+#define IDM_SCREENSEP_COLORWHITE        40023
+#define IDM_SCREENSEP_COLORGRAY         40024
+#define IDM_SCREENSEP_COLORBLACK        40025
 #define ID_FILE_RECENTROM               40034
 #define IDC_SAVETYPE7                   40037
 #define IDM_DEFSIZE                     40038
