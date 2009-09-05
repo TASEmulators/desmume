@@ -22,15 +22,25 @@
 #ifndef MEM_VIEW_H
 #define MEM_VIEW_H
 
-BOOL MemView_Init();
-void MemView_DeInit();
-
-BOOL MemView_DlgOpen(HWND hParentWnd, char *Title, u8 CPU);
-void MemView_DlgClose(u8 CPU);
-BOOL MemView_IsOpened(u8 CPU);
-void MemView_Refresh(u8 CPU);
-
 INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+class CMemView : public CToolWindow
+{
+public:
+	CMemView();
+	~CMemView();
+
+	HFONT font;
+
+	u32 cpu;
+	u32 address;
+	u32 viewMode;
+
+	BOOL sel;
+	u32 selPart;
+	u32 selAddress;
+	u32 selNewVal;
+};
 
 #endif

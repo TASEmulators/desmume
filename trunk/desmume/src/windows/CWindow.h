@@ -81,6 +81,10 @@ public:
 	void Show() { ShowWindow(hWnd, SW_SHOW); }
 	void Hide() { ShowWindow(hWnd, SW_HIDE); }
 
+	// SetTitle()
+	// Changes the title of the window.
+	void SetTitle(char* title) { SetWindowText(hWnd, title); }
+
 	// Refresh()
 	// Refreshes the window. Called by RefreshAllToolWindows().
 	void Refresh() { InvalidateRect(hWnd, NULL, FALSE); }
