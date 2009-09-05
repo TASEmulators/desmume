@@ -138,6 +138,7 @@
 #define IDC_BROWSELUA                   365
 #define IDD_PATHSETTINGS                366
 #define IDC_STATEREWINDING              367
+#define IDC_CLOSE_LUA_SCRIPTS           368
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
@@ -760,6 +761,10 @@
 #define IDC_LABEL_BLUE                  50036
 #define IDC_LID                         50037
 #define IDD_INPUTCONFIG                 50038
+#define IDC_LUASCRIPT_RESERVE_START     58000
+#define IDC_LUASCRIPT_RESERVE_END       58099
+#define IDD_LUARECENT_RESERVE_START     58100
+#define IDD_LUARECENT_RESERVE_END       58199
 #define IDC_LABEL_HK1                   60001
 #define IDC_LABEL_HK2                   60002
 #define IDC_LABEL_HK3                   60003

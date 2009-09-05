@@ -16,10 +16,9 @@
 #include "..\lua-engine.h"
 
 #define MAX_RECENT_SCRIPTS 15
+char Recent_Scripts[MAX_RECENT_SCRIPTS][1024] = {0};
 
-static char Str_Tmp [1024]; // shadow added because the global one is completely unreliable
-
-char Recent_Scripts[MAX_RECENT_SCRIPTS][1024];
+static char Str_Tmp [1024];
 
 struct ControlLayoutInfo
 {
@@ -141,7 +140,7 @@ void KillWatcherThread (HWND hDlg)
 
 
 // some extensions that might commonly be near lua files that almost certainly aren't lua files.
-static const char* s_nonLuaExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "gmv", "gm2", "luasav", "sav", "srm", "brm", "cfg", "wch", "gs*",  "bin","smd","gen","32x","cue","iso","raw"};
+static const char* s_nonLuaExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "luasav", "sav", "srm", "brm", "cfg", "wch", "ds*",  "nds","bin","raw"};
 
 
 void Update_Recent_Script(const char* Path, bool dontPutAtTop)

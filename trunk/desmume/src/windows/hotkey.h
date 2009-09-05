@@ -38,7 +38,7 @@ enum HotkeyPage {
 
 static LPCTSTR hotkeyPageTitle[] = {
 	_T("Main"),
-	_T("Movie"),
+	_T("Movie / Tools"),
 	_T("Savestates"),
 	_T("Savestate Slots"),
 	_T("Turbo"),
@@ -81,6 +81,8 @@ struct SCustomKeys
 	SCustomKey RecordWAV, RecordAVI;
 
 	SCustomKey Rewind;
+
+	SCustomKey NewLuaScript, CloseLuaScripts, MostRecentLuaScript;
 
 	SCustomKey ToggleFrameCounter;
 	SCustomKey ToggleFPS;
