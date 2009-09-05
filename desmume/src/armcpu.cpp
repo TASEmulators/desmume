@@ -536,6 +536,8 @@ u32 armcpu_exec()
 			else
 				c += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
 		}
+		else
+			c++;
 #ifdef GDB_STUB
         if ( ARMPROC.post_ex_fn != NULL) {
             /* call the external post execute function */
