@@ -115,6 +115,7 @@ CToolWindow::CToolWindow(int ID, DLGPROC proc, char* title)
 		return;
 
 	SetWindowText(hWnd, title);
+	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hAppInst, "ICONDESMUME"));
 }
 
 CToolWindow::~CToolWindow()
