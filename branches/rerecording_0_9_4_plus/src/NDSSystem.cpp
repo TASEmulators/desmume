@@ -2586,7 +2586,7 @@ static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, i
 }
 
 static std::string MakeInputDisplayString(u16 pad, u16 padExt) {
-    const std::string Buttons[] = {"A", "B", "Sl", "St", "R", "L", "U", "D", "Rs", "Ls"};
+    const std::string Buttons[] = {"A", "B", "s", "S", ">", "<", "^", "v", "R", "L"};
     const std::string Ext[] = {"X", "Y"};
 
     std::string s = MakeInputDisplayString(pad, Ext, ARRAY_SIZE(Ext));

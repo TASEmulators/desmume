@@ -151,6 +151,20 @@ static TouchInfo temptouch;
 bool touchshadow = true;
 static std::vector<TouchInfo> touch (8);
 
+static void TextualInputDisplay() {
+	std::string displayStr = InputDisplayString;
+	if(nds.isTouch) {
+		std::stringstream ss;
+		ss << " " << (nds.touchX >> 4) << " " << (nds.touchY >> 4);
+		displayStr += ss.str();
+	}
+
+	aggDraw.hud->lineColor(255,255,255,255);
+	double x = Hud.InputDisplay.x;
+	for (int i = 0; i < displayStr.length(); i++, x+=11.0) {
+		aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y, displayStr.substr(i,1));
+	}
+}
 
 static void TouchDisplay() {
 	aggDraw.hud->lineWidth(1.0);
@@ -233,13 +247,9 @@ void DrawHUD()
 	g_get_current_time(&time);
 	hudTimer = ((s64)time.tv_sec * 1000) + ((s64)time.tv_usec/1000);
 
-	
 	if (CommonSettings.hud.ShowInputDisplay) 
 	{
-		std::stringstream ss;
-		if(nds.isTouch)
-			ss << (nds.touchX >> 4) << " " << (nds.touchY >> 4); 
-		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",(InputDisplayString + ss.str()).c_str());
+		TextualInputDisplay();
 		TouchDisplay();
 	}
 

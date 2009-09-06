@@ -864,8 +864,9 @@ static void DoDisplay(bool firstTime)
 		//we only do this once per emulated frame
 		aggDraw.hud->attach((u8*)video.buffer, 256, 384, 1024);
 		DoDisplay_DrawHud();
-		CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
 	}
+
+	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
 
 	//apply user's filter
 	video.filter();
