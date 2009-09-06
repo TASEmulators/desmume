@@ -336,7 +336,6 @@
 #define IDC_AUTO_UPDATE_SECS            1011
 #define IDC_USEEXTFIRMWARE              1011
 #define IDC_WINDOW2X                    1011
-#define IDC_CPU                         1011
 #define IDC_FIRMWARE                    1012
 #define IDC_RAWDUMP                     1012
 #define IDC_REFRESH                     1012
