@@ -494,46 +494,49 @@ armcpu_flagIrq( armcpu_t *armcpu) {
   return TRUE;
 }
 
+bool fixCycleCount = false;
 
 template<int PROCNUM>
 u32 armcpu_exec()
 {
-        u32 c = 1;
+	u32 c = fixCycleCount ? 0 : 1;
 
-		//this assert is annoying. but sometimes it is handy.
-		//assert(ARMPROC.instruct_adr!=0x00000000);
+	//this assert is annoying. but sometimes it is handy.
+	//assert(ARMPROC.instruct_adr!=0x00000000);
 
 #ifdef GDB_STUB
-        if (ARMPROC.stalled)
-          return STALLED_CYCLE_COUNT;
+	if (ARMPROC.stalled)
+		return STALLED_CYCLE_COUNT;
 
-        /* check for interrupts */
-        if ( ARMPROC.irq_flag) {
-          armcpu_irqException( &ARMPROC);
-        }
+	/* check for interrupts */
+	if ( ARMPROC.irq_flag) {
+		armcpu_irqException( &ARMPROC);
+	}
 
-        c = armcpu_prefetch(&ARMPROC);
+	c += armcpu_prefetch(&ARMPROC);
 
-        if ( ARMPROC.stalled) {
-          return c;
-        }
+	if ( ARMPROC.stalled) {
+		return c;
+	}
 #endif
 
 	if(ARMPROC.CPSR.bits.T == 0)
 	{
-        if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
+		if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
 		{
 			if(PROCNUM==0) {
 #ifdef WANTASMLISTING
-        			char txt[128];
+				char txt[128];
 				des_arm_instructions_set[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruct_adr,ARMPROC.instruction,txt);
 				printf("%X: %X - %s\n", ARMPROC.instruct_adr,ARMPROC.instruction, txt);
 #endif
 				c += arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
-                        }
+			}
 			else
 				c += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
 		}
+		else if (fixCycleCount)
+			c++;
 #ifdef GDB_STUB
         if ( ARMPROC.post_ex_fn != NULL) {
             /* call the external post execute function */
@@ -552,10 +555,10 @@ u32 armcpu_exec()
 		c += thumb_instructions_set_1[ARMPROC.instruction>>6]();
 
 #ifdef GDB_STUB
-    if ( ARMPROC.post_ex_fn != NULL) {
-        /* call the external post execute function */
-        ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 1);
-    }
+	if ( ARMPROC.post_ex_fn != NULL) {
+		/* call the external post execute function */
+		ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 1);
+	}
 #else
 	c += armcpu_prefetch<PROCNUM>();
 #endif

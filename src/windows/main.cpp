@@ -1508,6 +1508,9 @@ int _main()
 		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
 	}
 
+	extern bool fixCycleCount;
+	fixCycleCount = GetPrivateProfileInt("Timings", "LagReduction", 0, IniName) != 0;
+
 	//i think we should override the ini file with anything from the commandline
 	CommandLine cmdline;
 	cmdline.loadCommonOptions();
@@ -2684,6 +2687,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					sprintf(str, "Recent Watch %d", i+1);
 					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
 				}
+
+				extern bool fixCycleCount;
+				WritePrivateProfileInt("Timings", "LagReduction", fixCycleCount, IniName);
  
 				ExitRunLoop();
 			}
