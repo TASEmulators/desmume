@@ -675,6 +675,8 @@
 #define IDC_MICSAMPLEBROWSE             5003
 #define IDC_MICSAMPLE                   5004
 #define IDC_USEMICSAMPLE                5005
+#define IDC_CPU							6000
+#define IDC_IOREG						6001
 #define IDD_IOREG_VIEW                  10000
 #define IDD_IOREG_VIEW_GPU_A            10001
 #define IDD_IOREG_VIEW_GPU_B            10002
