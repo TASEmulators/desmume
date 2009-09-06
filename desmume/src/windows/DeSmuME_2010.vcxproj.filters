@@ -16,9 +16,6 @@
     <Filter Include="Core\utils\decrypt">
       <UniqueIdentifier>{8eb8e94f-68c8-4120-bc36-ca23191db499}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\windows">
-      <UniqueIdentifier>{00f21c6a-62f1-45a0-9229-837ce991baa7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Windows">
       <UniqueIdentifier>{a6b232c3-aba7-4534-94ba-9cd66d5b8b61}</UniqueIdentifier>
     </Filter>
