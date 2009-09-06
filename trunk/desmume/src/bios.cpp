@@ -211,26 +211,32 @@ TEMPLATE static u32 delayLoop()
 
 TEMPLATE u32 intrWaitARM()
 {
-     u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
-     u32 intr;
+     u32 intrFlagAdr = 0;
+     u32 intr = 0;
      u32 intrFlag = 0;
 
-	 BOOL noDiscard = ((cpu->R[0] == 0) && (PROCNUM == 1));
+	 BOOL noDiscard = ((cpu->R[0] == 0) && (PROCNUM == ARMCPU_ARM7));
      
      //emu_halt();
-     if(cpu->proc_ID) 
+     if(PROCNUM == ARMCPU_ARM7) 
      {
       intrFlagAdr = 0x380FFF8;
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = _MMU_read32<PROCNUM>(intrFlagAdr);
+	 intr = _MMU_read32<PROCNUM>(intrFlagAdr);
+	 
      intrFlag = (cpu->R[1] & intr);
-
+	 //INFO("ARM%c: wait for IRQ r0=0x%02X, r1=0x%08X - 0x%08X (flag 0x%08X)\n", PROCNUM?'7':'9', cpu->R[0], cpu->R[1], intr, intrFlag);
 	 if(!noDiscard)
-		 intrFlag &= ARMPROC.newIrqFlags;
-     
-     if(intrFlag)
+		intrFlag &= cpu->newIrqFlags;
+
+	 // http://nocash.emubase.de/gbatek.htm#bioshaltfunctions
+	 // SWI 04h (GBA/NDS7/NDS9) - IntrWait
+	 // ... The function forcefully sets IME=1. ...
+	 _MMU_write32<PROCNUM>(0x04000208, 1);
+
+	 if(intrFlag)
      {
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
@@ -240,7 +246,7 @@ TEMPLATE u32 intrWaitARM()
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
-         
+
      cpu->R[15] = cpu->instruct_adr;
      cpu->next_instruction = cpu->R[15];
      cpu->waitIRQ = 1;
