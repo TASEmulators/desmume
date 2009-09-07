@@ -191,20 +191,25 @@ static const u8 getvoltbl[] = {
 
 TEMPLATE static u32 bios_nop()
 {
-     if (cpu->proc_ID == ARMCPU_ARM9)
-     {
-        LOG("Unimplemented bios function %02X(ARM9) was used. R0:%08X\n", (cpu->instruction)&0x1F, cpu->R[0]);
-     }
-     else
-     {
-        LOG("Unimplemented bios function %02X(ARM7) was used. R0:%08X\n", (cpu->instruction)&0x1F, cpu->R[0]);
-     }
-     return 3;
+	LOG("SWI: ARM%c Unimplemented BIOS function %02X was used. R0:%08X, R1:%08X, R2:%08X\n", PROCNUM?'7':'9',
+							(cpu->instruction)&0x1F, cpu->R[0], cpu->R[1], cpu->R[2]);
+	return 3;
 }
 
-TEMPLATE static u32 delayLoop()
+TEMPLATE static u32 WaitByLoop()
 {
-     return cpu->R[0] * 4;
+	//INFO("ARM%c: SWI 0x03 (WaitByLoop)\n", PROCNUM?'7':'9');
+	if (PROCNUM == ARMCPU_ARM9)
+	{
+		armcp15_t *cp = (armcp15_t*)(cpu->coproc[15]);
+
+		if (cp->ctrl & ((1<<16)|(1<<18)))		// DTCM or ITCM is on (cache)
+			return cpu->R[0] * 2;
+		else
+			return cpu->R[0] * 8;
+	}
+    
+	return cpu->R[0] * 4;
 }
 
 //u32 oldmode[2];
@@ -260,38 +265,6 @@ TEMPLATE static u32 waitVBlankARM()
 	cpu->R[0] = 1;
 	cpu->R[1] = 1;
 	return intrWaitARM<PROCNUM>();
-#if 0
-     u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
-     u32 intr;
-     u32 intrFlag = 0;
-     
-     //emu_halt();
-     if(cpu->proc_ID) 
-     {
-      intrFlagAdr = 0x380FFF8;
-     } else {
-      intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
-     }
-     intr = _MMU_read32<PROCNUM>(intrFlagAdr);
-     intrFlag = 1 & intr;
-     
-    // if(intrFlag)
-     {
-          // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
-          // on efface son(les) occurence(s).
-          intr ^= intrFlag;
-          _MMU_write32<PROCNUM>(intrFlagAdr, intr);
-          //cpu->switchMode(oldmode[cpu->proc_ID]);
-          return 1;
-     }
-         
-     cpu->R[15] = cpu->instruct_adr;
-     cpu->next_instruction = cpu->R[15];
-     cpu->waitIRQ = 1;
-     //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
-
-     return 1;
-#endif
 }
 
 TEMPLATE static u32 wait4IRQ()
@@ -331,9 +304,12 @@ TEMPLATE static u32 divide()
      
      if(dnum==0) return 0;
      
-     cpu->R[0] = (u32)(num / dnum);
+	 s32 res = num / dnum;
+     cpu->R[0] = (u32)res;
      cpu->R[1] = (u32)(num % dnum);
-     cpu->R[3] = (u32) (((s32)cpu->R[0])<0 ? -(s32)cpu->R[0] : cpu->R[0]);
+     cpu->R[3] = (u32)abs(res);
+
+	 //INFO("ARM%c: SWI 0x09 (divide): in num %i, dnum %i, out R0:%i, R1:%i, R3:%i\n", PROCNUM?'7':'9', num, dnum, cpu->R[0], cpu->R[1], cpu->R[3]);
 
      return 6;
 }
@@ -1091,7 +1067,7 @@ u32 (* ARM9_swi_tab[32])()={
          bios_nop<ARMCPU_ARM9>,             // 0x00
          bios_nop<ARMCPU_ARM9>,             // 0x01
          bios_nop<ARMCPU_ARM9>,             // 0x02
-         delayLoop<ARMCPU_ARM9>,            // 0x03
+         WaitByLoop<ARMCPU_ARM9>,           // 0x03
          intrWaitARM<ARMCPU_ARM9>,          // 0x04
          waitVBlankARM<ARMCPU_ARM9>,        // 0x05
          wait4IRQ<ARMCPU_ARM9>,             // 0x06
@@ -1126,7 +1102,7 @@ u32 (* ARM7_swi_tab[32])()={
          bios_nop<ARMCPU_ARM7>,             // 0x00
          bios_nop<ARMCPU_ARM7>,             // 0x01
          bios_nop<ARMCPU_ARM7>,             // 0x02
-         delayLoop<ARMCPU_ARM7>,            // 0x03
+         WaitByLoop<ARMCPU_ARM7>,           // 0x03
          intrWaitARM<ARMCPU_ARM7>,          // 0x04
          waitVBlankARM<ARMCPU_ARM7>,        // 0x05
          wait4IRQ<ARMCPU_ARM7>,             // 0x06
