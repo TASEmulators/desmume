@@ -29,7 +29,7 @@
 #include "bios.h"
 #include "debug.h"
 #include "Disassembler.h"
-
+#include "NDSSystem.h"
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -494,12 +494,10 @@ armcpu_flagIrq( armcpu_t *armcpu) {
   return TRUE;
 }
 
-bool fixCycleCount = false;
-
 template<int PROCNUM>
 u32 armcpu_exec()
 {
-	u32 cFetch = fixCycleCount ? 0 : 1;
+	u32 cFetch = CommonSettings.armFixCycleCount ? 0 : 1;
 	u32 cExecute = 0;
 
 	//this assert is annoying. but sometimes it is handy.
@@ -536,7 +534,7 @@ u32 armcpu_exec()
 			else
 				cExecute += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
 		}
-		else if (fixCycleCount)
+		else if (CommonSettings.armFixCycleCount)
 			cExecute++; // If condition=false: 1S cycle
 #ifdef GDB_STUB
 		if ( ARMPROC.post_ex_fn != NULL) {
@@ -546,7 +544,7 @@ u32 armcpu_exec()
 #else
 		cFetch += armcpu_prefetch<PROCNUM>();
 #endif
-		return fixCycleCount ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+		return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 	}
 
 	if(PROCNUM==0)
@@ -562,7 +560,7 @@ u32 armcpu_exec()
 #else
 	cFetch += armcpu_prefetch<PROCNUM>();
 #endif
-	return fixCycleCount ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+	return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 }
 
 //these templates needed to be instantiated manually

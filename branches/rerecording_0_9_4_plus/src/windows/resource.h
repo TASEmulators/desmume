@@ -794,7 +794,8 @@
 #define IDC_HKCOMBO                     60077
 #define IDD_KEYCUSTOM                   60078
 #define IDM_HOTKEY_CONFIG               60079
-#define IDC_LAGREDUCTION                65432
+#define IDC_ARMFIXCYCLECOUNT            65432
+#define IDC_ARMFASTFETCHEXECUTE         65433
 
 // Next default values for new objects
 // 
