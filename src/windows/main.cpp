@@ -2561,6 +2561,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM,      RecentRoms.size()>0);
 
 			DesEnableMenuItem(mainMenu, IDC_ARMFIXCYCLECOUNT,   (movieMode == MOVIEMODE_INACTIVE));
+			DesEnableMenuItem(mainMenu, IDC_ARMFASTFETCHEXECUTE,(movieMode == MOVIEMODE_INACTIVE));
 
 			//Updated Checked menu items
 			
