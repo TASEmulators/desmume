@@ -383,6 +383,8 @@ extern struct TCommonSettings {
 		, spuAdpcmCache(false)
 		, gfx3d_flushMode(0)
 		, manualBackupType(0)
+		, armFixCycleCount(false)
+		, armFastFetchExecute(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -413,6 +415,9 @@ extern struct TCommonSettings {
 
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
 	int manualBackupType;
+
+	bool armFixCycleCount;
+	bool armFastFetchExecute;
 
 	bool spu_muteChannels[16];
 
