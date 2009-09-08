@@ -43,6 +43,9 @@ extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.
 SCustomKeys CustomKeys;
 
 bool AutoHoldPressed=false;
+bool StylusAutoHoldPressed=false;
+POINT winLastTouch = { 128, 96 };
+bool userTouchesScreen = false;
 
 bool IsLastCustomKey (const SCustomKey *key)
 {
@@ -185,9 +188,20 @@ void HK_StateQuickLoadSlot(int)
 void HK_MicrophoneKeyDown(int) { NDS_setMic(1); }
 void HK_MicrophoneKeyUp(int) { NDS_setMic(0); }
 
+void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
+void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
+
+void HK_StylusAutoHoldKeyDown(int) {
+	StylusAutoHoldPressed = !StylusAutoHoldPressed;
+	if (StylusAutoHoldPressed)
+		NDS_setTouchPos(winLastTouch.x, winLastTouch.y);
+	else if (!userTouchesScreen)
+		NDS_releaseTouch();
+}
+
 void HK_AutoHoldClearKeyDown(int) {
-	
 	ClearAutoHold();
+	StylusAutoHoldPressed = false;
 }
 
 void HK_Reset(int) {ResetGame();}
@@ -256,9 +270,6 @@ void HK_MostRecentLuaScriptDown(int)
 {
 	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDD_LUARECENT_RESERVE_START, 0);
 }
-
-void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
-void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
 void HK_TurboRightKeyDown(int) { Turbo.R = true; }
 void HK_TurboRightKeyUp(int) { Turbo.R = false; }
@@ -418,6 +429,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->AutoHold.name = L"Auto-Hold";
 	keys->AutoHold.page = HOTKEY_PAGE_MAIN;
 	keys->AutoHold.key = NULL;
+
+	keys->StylusAutoHold.handleKeyDown = HK_StylusAutoHoldKeyDown;
+	keys->StylusAutoHold.code = "StylusAutoHold";
+	keys->StylusAutoHold.name = L"Stylus Auto-Hold";
+	keys->StylusAutoHold.page = HOTKEY_PAGE_MOVIE; // TODO: set more appropriate category?
+	keys->StylusAutoHold.key = NULL;
 
 	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
 	keys->AutoHoldClear.code = "AutoHoldClear";
