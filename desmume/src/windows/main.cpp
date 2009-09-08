@@ -1939,7 +1939,7 @@ int _main()
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
-
+	fastFetchExecute = GetPrivateProfileBool("Emulation", "FetchExecute", false, IniName);
 	
 	//Get Ram-Watch values
 	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
@@ -4102,6 +4102,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDC_FASTFETCHEXECUTE:
 			fastFetchExecute = !fastFetchExecute;
+			WritePrivateProfileInt("Emulation", "FetchExecute", (int)fastFetchExecute, IniName);
 			return 0;
 
 		case IDC_SAVETYPE1: backup_setManualBackupType(0); return 0;
