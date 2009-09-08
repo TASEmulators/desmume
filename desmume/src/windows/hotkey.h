@@ -89,6 +89,7 @@ struct SCustomKeys
 	SCustomKey ToggleInput;
 	SCustomKey ToggleLag;
 	SCustomKey ResetLagCounter;
+	SCustomKey StylusAutoHold;
 	SCustomKey LastItem; // dummy, must be last
 
 	//--methods--

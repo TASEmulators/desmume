@@ -258,6 +258,10 @@ float DefaultHeight;
 float widthTradeOff;
 float heightTradeOff;
 
+extern bool StylusAutoHoldPressed;
+extern POINT winLastTouch;
+extern bool userTouchesScreen;
+
 /*__declspec(thread)*/ bool inFrameBoundary = false;
 
 //static char IniName[MAX_PATH];
@@ -3459,17 +3463,24 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
 				NDS_setTouchPos(x, y);
+				winLastTouch.x = x;
+				winLastTouch.y = y;
+				userTouchesScreen = true;
 				return 0;
 			}
 		}
-		NDS_releaseTouch();
+		if (!StylusAutoHoldPressed)
+			NDS_releaseTouch();
+		userTouchesScreen = false;
 		return 0;
 
 	case WM_LBUTTONUP:
 
 		ReleaseCapture();
-		NDS_releaseTouch();
 		HudClickRelease(&Hud);
+		if (!StylusAutoHoldPressed)
+			NDS_releaseTouch();
+		userTouchesScreen = false;
 		return 0;
 
 #if 0
