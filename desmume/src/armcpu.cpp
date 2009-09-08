@@ -30,7 +30,7 @@
 #include "bios.h"
 #include "debug.h"
 #include "Disassembler.h"
-
+#include "NDSSystem.h"
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -495,7 +495,6 @@ armcpu_flagIrq( armcpu_t *armcpu) {
 }
 
 
-bool fastFetchExecute = true;
 template<int PROCNUM>
 u32 armcpu_exec()
 {
@@ -522,7 +521,7 @@ u32 armcpu_exec()
 	cFetch = armcpu_prefetch(&ARMPROC);
 
 	if (ARMPROC.stalled) {
-		return fastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+		return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 	}
 #endif
 
@@ -554,7 +553,7 @@ u32 armcpu_exec()
 #else
 		cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-		return fastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+		return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 	}
 
 	if(PROCNUM==0)
@@ -570,7 +569,7 @@ u32 armcpu_exec()
 #else
 	cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-	return fastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+	return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 }
 
 //these templates needed to be instantiated manually

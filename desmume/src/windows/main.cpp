@@ -219,8 +219,6 @@ static bool lostFocusPause = true;
 static bool lastPauseFromLostFocus = false;
 static bool FrameLimit = true;
 
-extern bool fastFetchExecute; // from armcpu.cpp
-
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -1939,7 +1937,7 @@ int _main()
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
-	fastFetchExecute = GetPrivateProfileBool("Emulation", "FetchExecute", false, IniName);
+	CommonSettings.armFastFetchExecute = GetPrivateProfileBool("Emulation", "FetchExecute", false, IniName);
 	
 	//Get Ram-Watch values
 	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
@@ -3126,7 +3124,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
-			MainWindow->checkMenu(IDC_FASTFETCHEXECUTE, fastFetchExecute);
+			MainWindow->checkMenu(IDC_FASTFETCHEXECUTE, CommonSettings.armFastFetchExecute);
 
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
@@ -4101,8 +4099,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 
 		case IDC_FASTFETCHEXECUTE:
-			fastFetchExecute = !fastFetchExecute;
-			WritePrivateProfileInt("Emulation", "FetchExecute", (int)fastFetchExecute, IniName);
+			CommonSettings.armFastFetchExecute = !CommonSettings.armFastFetchExecute;
+			WritePrivateProfileInt("Emulation", "FetchExecute", (int)CommonSettings.armFastFetchExecute, IniName);
 			return 0;
 
 		case IDC_SAVETYPE1: backup_setManualBackupType(0); return 0;
