@@ -1471,7 +1471,12 @@ void NDS_Sleep() { nds.sleeping = TRUE; }
 bool SkipCur2DFrame = false, SkipNext2DFrame = false;
 bool SkipCur3DFrame = false;
 
-void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
+void NDS_SkipNextFrame() {
+	if (!driver->AVI_IsRecording()) {
+		SkipNext2DFrame = true;
+		SkipCur3DFrame = true;
+	}
+}
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
