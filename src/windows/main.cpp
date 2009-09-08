@@ -140,6 +140,8 @@ void wxTest() {
 
 #endif
 
+extern bool fixCycleCount;
+
 const int kGapNone = 0;
 const int kGapBorder = 5;
 const int kGapNDS = 64; // extremely tilted (but some games seem to use this value)
@@ -1509,8 +1511,7 @@ int _main()
 		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
 	}
 
-	extern bool fixCycleCount;
-	fixCycleCount = GetPrivateProfileInt("Timings", "LagReduction", 0, IniName) != 0;
+	fixCycleCount = (bool)GetPrivateProfileInt("Timings", "LagReduction", 0, IniName) != 0;
 
 	//i think we should override the ini file with anything from the commandline
 	CommandLine cmdline;
@@ -2560,6 +2561,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Gray the recent ROM menu item if there are no recent ROMs
 			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM,      RecentRoms.size()>0);
 
+			DesEnableMenuItem(mainMenu, IDC_LAGREDUCTION,       (movieMode == MOVIEMODE_INACTIVE));
+
 			//Updated Checked menu items
 			
 			//Pause
@@ -2626,8 +2629,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
-			//Language selection
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
+			MainWindow->checkMenu(IDC_LAGREDUCTION, fixCycleCount);
 
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
@@ -2689,8 +2692,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
 				}
 
-				extern bool fixCycleCount;
-				WritePrivateProfileInt("Timings", "LagReduction", fixCycleCount, IniName);
+				WritePrivateProfileInt("Timings", "LagReduction", (int)fixCycleCount, IniName);
  
 				ExitRunLoop();
 			}
@@ -3532,6 +3534,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_BACKGROUNDPAUSE:
 			lostFocusPause = !lostFocusPause;
 			WritePrivateProfileInt("Focus", "BackgroundPause", (int)lostFocusPause, IniName);
+			return 0;
+
+		case IDC_LAGREDUCTION:
+			fixCycleCount = !fixCycleCount;
+			WritePrivateProfileInt("Timings", "LagReduction", (int)fixCycleCount, IniName);
 			return 0;
 
 		case IDC_SAVETYPE1: backup_setManualBackupType(0); return 0;
