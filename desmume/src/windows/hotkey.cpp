@@ -202,6 +202,8 @@ void HK_StylusAutoHoldKeyDown(int) {
 void HK_AutoHoldClearKeyDown(int) {
 	ClearAutoHold();
 	StylusAutoHoldPressed = false;
+	if (!userTouchesScreen)
+		NDS_releaseTouch();
 }
 
 void HK_Reset(int) {ResetGame();}
