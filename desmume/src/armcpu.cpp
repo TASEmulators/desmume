@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <algorithm>
 #include "types.h"
 #include "arm_instructions.h"
 #include "thumb_instructions.h"
@@ -497,73 +498,78 @@ armcpu_flagIrq( armcpu_t *armcpu) {
 template<int PROCNUM>
 u32 armcpu_exec()
 {
-		u32 c = 0;
+	// gocha: In most cases (FIXME: but *not* always),
+	// fetching and executing are processed parallelly.
+	// So this function stores the cycles of each process to
+	// the variables below, and returns the larger one.
+	u32 cFetch = 0;
+	u32 cExecute = 0;
 
-		//this assert is annoying. but sometimes it is handy.
-		//assert(ARMPROC.instruct_adr!=0x00000000);
+	//this assert is annoying. but sometimes it is handy.
+	//assert(ARMPROC.instruct_adr!=0x00000000);
 
 #ifdef GDB_STUB
-        if (ARMPROC.stalled)
-          return STALLED_CYCLE_COUNT;
+	if (ARMPROC.stalled) {
+		return STALLED_CYCLE_COUNT;
+	}
 
-        /* check for interrupts */
-        if ( ARMPROC.irq_flag) {
-          armcpu_irqException( &ARMPROC);
-        }
+	/* check for interrupts */
+	if (ARMPROC.irq_flag) {
+		armcpu_irqException(&ARMPROC);
+	}
 
-        c += armcpu_prefetch(&ARMPROC);
+	cFetch = armcpu_prefetch(&ARMPROC);
 
-        if ( ARMPROC.stalled) {
-          return c;
-        }
+	if (ARMPROC.stalled) {
+		return std::max(cFetch, cExecute);
+	}
 #endif
 
 	if(ARMPROC.CPSR.bits.T == 0)
 	{
-        if(
+		if(
 			CONDITION(ARMPROC.instruction) == 0x0E  //fast path for unconditional instructions
 			|| (TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)) //handles any condition
 			)
 		{
 			if(PROCNUM==0) {
 #ifdef WANTASMLISTING
-        			char txt[128];
+				char txt[128];
 				des_arm_instructions_set[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruct_adr,ARMPROC.instruction,txt);
 				printf("%X: %X - %s\n", ARMPROC.instruct_adr,ARMPROC.instruction, txt);
 #endif
-				c += arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
-                        }
+				cExecute = arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+			}
 			else
-				c += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+				cExecute = arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
 		}
 		else
-			c++;
+			cExecute = 1; // If condition=false: 1S cycle
 #ifdef GDB_STUB
-        if ( ARMPROC.post_ex_fn != NULL) {
-            /* call the external post execute function */
-            ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data,
-                                ARMPROC.instruct_adr, 0);
-        }
+		if ( ARMPROC.post_ex_fn != NULL) {
+			/* call the external post execute function */
+			ARMPROC.post_ex_fn(ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 0);
+		}
 #else
-		c += armcpu_prefetch<PROCNUM>();
+		cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-		return c;
+		return std::max(cFetch, cExecute);
 	}
 
 	if(PROCNUM==0)
-		c += thumb_instructions_set_0[ARMPROC.instruction>>6]();
+		cExecute = thumb_instructions_set_0[ARMPROC.instruction>>6]();
 	else
-		c += thumb_instructions_set_1[ARMPROC.instruction>>6]();
+		cExecute = thumb_instructions_set_1[ARMPROC.instruction>>6]();
 
 #ifdef GDB_STUB
-    if ( ARMPROC.post_ex_fn != NULL) {
-        /* call the external post execute function */
-        ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 1);
-    }
+	if ( ARMPROC.post_ex_fn != NULL) {
+		/* call the external post execute function */
+		ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 1);
+	}
 #else
-	c += armcpu_prefetch<PROCNUM>();
+	cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-	return c;
+	return std::max(cFetch, cExecute);
 }
 
 //these templates needed to be instantiated manually
