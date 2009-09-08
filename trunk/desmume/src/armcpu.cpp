@@ -495,6 +495,7 @@ armcpu_flagIrq( armcpu_t *armcpu) {
 }
 
 
+bool fastFetchExecute = true;
 template<int PROCNUM>
 u32 armcpu_exec()
 {
@@ -521,7 +522,7 @@ u32 armcpu_exec()
 	cFetch = armcpu_prefetch(&ARMPROC);
 
 	if (ARMPROC.stalled) {
-		return std::max(cFetch, cExecute);
+		return fastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 	}
 #endif
 
@@ -553,7 +554,7 @@ u32 armcpu_exec()
 #else
 		cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-		return std::max(cFetch, cExecute);
+		return fastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 	}
 
 	if(PROCNUM==0)
@@ -569,7 +570,7 @@ u32 armcpu_exec()
 #else
 	cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-	return std::max(cFetch, cExecute);
+	return fastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 }
 
 //these templates needed to be instantiated manually
