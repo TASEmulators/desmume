@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="11.0"
+	Version="11.1"
 	Name="DeSmuME_Intel"
 	ProjectGUID="{61FB2DAF-A8E9-4CCC-ADF4-B824B4F00187}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
