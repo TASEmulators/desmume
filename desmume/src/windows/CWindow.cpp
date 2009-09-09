@@ -47,14 +47,9 @@ DWORD GetFontQuality()
 
 vector<string> ReggedWndClasses;
 
-bool RegWndClass(string name, WNDPROC wndProc, int extraSize)
+bool RegWndClass(string name, WNDPROC wndProc, UINT style, int extraSize)
 {
-	return RegWndClass(name, wndProc, 0, NULL, extraSize);
-}
-
-bool RegWndClass(string name, WNDPROC wndProc, HICON icon, int extraSize)
-{
-	return RegWndClass(name, wndProc, 0, icon, extraSize);
+	return RegWndClass(name, wndProc, style, NULL, extraSize);
 }
 
 bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize)
@@ -106,6 +101,22 @@ void UnregWndClass(string name)
 //-----------------------------------------------------------------------------
 // Base toolwindow class
 //-----------------------------------------------------------------------------
+
+CToolWindow::CToolWindow(char* className, WNDPROC proc, char* title, int width, int height)
+	: hWnd(NULL)
+{
+	DWORD style = WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+	RECT rc;
+
+	rc.left = 0;
+	rc.right = width;
+	rc.top = 0;
+	rc.bottom = height;
+	AdjustWindowRect(&rc, style, FALSE);
+
+	hWnd = CreateWindow(className, title, style, CW_USEDEFAULT, CW_USEDEFAULT, 
+		rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, NULL, hAppInst, (LPVOID)this);
+}
 
 CToolWindow::CToolWindow(int ID, DLGPROC proc, char* title)
 	: hWnd(NULL)
