@@ -1168,22 +1168,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\softrender.h"
-					>
-				</File>
-				<File
-					RelativePath="..\softrender_config.h"
-					>
-				</File>
-				<File
-					RelativePath="..\softrender_desmumefont.h"
-					>
-				</File>
-				<File
-					RelativePath="..\softrender_v3sysfont.h"
-					>
-				</File>
-				<File
 					RelativePath="..\SPU.h"
 					>
 				</File>
