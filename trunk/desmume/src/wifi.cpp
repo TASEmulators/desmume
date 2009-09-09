@@ -1802,7 +1802,7 @@ void Adhoc_usTrigger()
 		if (select(1, &fd, 0, 0, &tv))
 		{
 			sockaddr_t fromAddr;
-			int fromLen = sizeof(sockaddr_t);
+			socklen_t fromLen = sizeof(sockaddr_t);
 			u8 buf[1536];
 			u8* ptr;
 			u16 packetLen;
