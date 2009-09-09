@@ -8,6 +8,8 @@
 - [2665] 
     fix nitsuja's desynch bugreports (SF 2827543)
     fix desynch caused by spu_core forgetting to save a variable
+- [2855]
+	add hack for savefile size change from 0.9.4 branch (r2727)
 
 0.9.2 -> 0.9.4 (r1844->r2352->r2437)
 

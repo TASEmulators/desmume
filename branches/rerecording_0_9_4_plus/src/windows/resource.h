@@ -77,6 +77,7 @@
 #define IDC_SAVETYPE4                   185
 #define IDC_SAVETYPE5                   186
 #define IDC_SAVETYPE6                   187
+#define IDC_SAVETYPE_FORCE              188
 #define IDC_FRAMESKIPAUTO               190
 #define IDC_FRAMESKIP0                  191
 #define IDC_FRAMESKIP1                  192
