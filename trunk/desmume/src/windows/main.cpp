@@ -2078,6 +2078,9 @@ int _main()
 	}
 	addonsChangePak(addon_type);
 
+	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
+	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
+
 #ifdef GDB_STUB
 	if ( cmdline.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( cmdline.arm9_gdb_port,
@@ -2175,9 +2178,6 @@ int _main()
 	CommonSettings.UseExtFirmware = GetPrivateProfileBool("Firmware", "UseExtFirmware", FALSE, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", FALSE, IniName);
-
-	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
-	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
 	FilterUpdate(MainWindow->getHWnd(),false);
@@ -2964,9 +2964,7 @@ void RunConfig(CONFIGSCREEN which)
 		}
 		else
 		{
-#endif
 			MessageBox(MainWindow->getHWnd(),"winpcap failed to initialize, and so wifi cannot be configured.","wifi system failure",0);
-#ifdef EXPERIMENTAL_WIFI
 		}
 #endif
 		break;
@@ -3863,13 +3861,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_IOREG:
 			ViewRegisters->open();
-			//OpenToolWindow(IORegView);
+			//if (!RegWndClass("DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, sizeof(CIORegView*)))
+			//	return 0;
+
+			//OpenToolWindow(new CIORegView());
 			return 0;
 		case IDM_MEMORY:
 			//if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);
 			//if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(HWND_DESKTOP, "ARM7 memory", ARMCPU_ARM7);
-			if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, sizeof(CMemView*)))
-				OpenToolWindow(new CMemView());
+			if (!RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
+				return 0;
+
+			OpenToolWindow(new CMemView());
 			return 0;
 		case IDM_SOUND_VIEW:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);

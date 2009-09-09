@@ -47,8 +47,7 @@ DWORD GetFontQuality();
 // Incase the class was already registered, the function
 // just does nothing and returns true.
 // Returns false if registration failed.
-bool RegWndClass(string name, WNDPROC wndProc, int extraSize = 0);
-bool RegWndClass(string name, WNDPROC wndProc, HICON icon, int extraSize = 0);
+bool RegWndClass(string name, WNDPROC wndProc, UINT style, int extraSize = 0);
 bool RegWndClass(string name, WNDPROC wndProc, UINT style, HICON icon, int extraSize = 0);
 
 // UnregWndClass()
@@ -65,6 +64,12 @@ class CToolWindow
 {
 public:
 	// CToolWindow constructor #1
+	// Creates a window using CreateWindow().
+	// If the window creation failed for whatever reason,
+	// hWnd will be NULL.
+	CToolWindow(char* className, WNDPROC proc, char* title, int width, int height);
+
+	// CToolWindow constructor #2
 	// Creates a window from a dialog template resource.
 	// If the window creation failed for whatever reason,
 	// hWnd will be NULL.
