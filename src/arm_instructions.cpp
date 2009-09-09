@@ -349,63 +349,108 @@ TEMPLATE static u32 FASTCALL  OP_AND_S_LSL_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSL_IMM;
-     OP_ANDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(1, 3);
+     }
+     else {
+         OP_ANDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_LSL_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSL_REG;
-     OP_ANDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(2, 4);
+     }
+     else {
+         OP_ANDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_LSR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSR_IMM;            
-     OP_ANDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(1, 3);
+     }
+     else {
+         OP_ANDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_LSR_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSR_REG;             
-     OP_ANDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(2, 4);
+     }
+     else {
+         OP_ANDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_ASR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ASR_IMM;
-     OP_ANDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(1, 3);
+     }
+     else {
+         OP_ANDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_ASR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ASR_REG;                     
-     OP_ANDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(2, 4);
+     }
+     else {
+         OP_ANDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_ROR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ROR_IMM;
-     OP_ANDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(1, 3);
+     }
+     else {
+         OP_ANDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_ROR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ROR_REG;
-     OP_ANDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(2, 4);
+     }
+     else {
+         OP_ANDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_AND_S_IMM_VAL()
 {
      const u32 &i = cpu->instruction;
      S_IMM_VALUE;
-     OP_ANDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ANDS(1, 3);
+     }
+     else {
+         OP_ANDS(2, 4);
+     }
 }
 
 //--------------EOR------------------------------
@@ -504,63 +549,108 @@ TEMPLATE static u32 FASTCALL  OP_EOR_S_LSL_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSL_IMM;
-     OP_EORS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(1, 3);
+     }
+     else {
+         OP_EORS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_LSL_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSL_REG;
-     OP_EORS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(2, 4);
+     }
+     else {
+         OP_EORS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_LSR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSR_IMM;            
-     OP_EORS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(1, 3);
+     }
+     else {
+         OP_EORS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_LSR_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSR_REG;            
-     OP_EORS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(2, 4);
+     }
+     else {
+         OP_EORS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_ASR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ASR_IMM;
-     OP_EORS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(1, 3);
+     }
+     else {
+         OP_EORS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_ASR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ASR_REG;                     
-     OP_EORS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(2, 4);
+     }
+     else {
+         OP_EORS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_ROR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ROR_IMM;
-     OP_EORS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(1, 3);
+     }
+     else {
+         OP_EORS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_ROR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ROR_REG;
-     OP_EORS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(2, 4);
+     }
+     else {
+         OP_EORS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_EOR_S_IMM_VAL()
 {
      const u32 &i = cpu->instruction;
      S_IMM_VALUE;
-     OP_EORS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_EORS(1, 3);
+     }
+     else {
+         OP_EORS(2, 4);
+     }
 }
 
 //-------------SUB-------------------------------------
@@ -662,7 +752,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_LSL_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSL_IMM;
-     OPSUBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(1, 3);
+     }
+     else {
+         OPSUBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_LSL_REG()
@@ -670,7 +765,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_LSL_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSL_REG;
-     OPSUBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(2, 4);
+     }
+     else {
+         OPSUBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_LSR_IMM()
@@ -679,7 +779,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_LSR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSR_IMM;            
-     OPSUBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(1, 3);
+     }
+     else {
+         OPSUBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_LSR_REG()
@@ -687,7 +792,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_LSR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSR_REG;             
-     OPSUBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(2, 4);
+     }
+     else {
+         OPSUBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_ASR_IMM()
@@ -696,7 +806,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_ASR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ASR_IMM;
-     OPSUBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(1, 3);
+     }
+     else {
+         OPSUBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_ASR_REG()
@@ -704,7 +819,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_ASR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ASR_REG;                     
-     OPSUBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(2, 4);
+     }
+     else {
+         OPSUBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_ROR_IMM()
@@ -713,7 +833,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_ROR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ROR_IMM;
-     OPSUBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(1, 3);
+     }
+     else {
+         OPSUBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_ROR_REG()
@@ -721,7 +846,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_ROR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ROR_REG;
-     OPSUBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(2, 4);
+     }
+     else {
+         OPSUBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SUB_S_IMM_VAL()
@@ -729,7 +859,12 @@ TEMPLATE static u32 FASTCALL  OP_SUB_S_IMM_VAL()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      IMM_VALUE;
-     OPSUBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OPSUBS(1, 3);
+     }
+     else {
+         OPSUBS(2, 4);
+     }
 }
 
 //------------------RSB------------------------
@@ -831,7 +966,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_LSL_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSL_IMM;
-     OP_RSBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(1, 3);
+     }
+     else {
+         OP_RSBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_LSL_REG()
@@ -839,7 +979,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_LSL_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSL_REG;
-     OP_RSBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(2, 4);
+     }
+     else {
+         OP_RSBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_LSR_IMM()
@@ -848,7 +993,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_LSR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSR_IMM;            
-     OP_RSBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(1, 3);
+     }
+     else {
+         OP_RSBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_LSR_REG()
@@ -856,7 +1006,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_LSR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSR_REG;             
-     OP_RSBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(2, 4);
+     }
+     else {
+         OP_RSBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_ASR_IMM()
@@ -865,7 +1020,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_ASR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ASR_IMM;
-     OP_RSBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(1, 3);
+     }
+     else {
+         OP_RSBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_ASR_REG()
@@ -873,7 +1033,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_ASR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ASR_REG;                     
-     OP_RSBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(2, 4);
+     }
+     else {
+         OP_RSBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_ROR_IMM()
@@ -882,7 +1047,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_ROR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ROR_IMM;
-     OP_RSBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(1, 3);
+     }
+     else {
+         OP_RSBS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_ROR_REG()
@@ -890,7 +1060,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_ROR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ROR_REG;
-     OP_RSBS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(2, 4);
+     }
+     else {
+         OP_RSBS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSB_S_IMM_VAL()
@@ -898,7 +1073,12 @@ TEMPLATE static u32 FASTCALL  OP_RSB_S_IMM_VAL()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      IMM_VALUE;
-     OP_RSBS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSBS(1, 3);
+     }
+     else {
+         OP_RSBS(2, 4);
+     }
 }
 
 //------------------ADD-----------------------------------
@@ -1000,7 +1180,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_LSL_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSL_IMM;
-     OP_ADDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(1, 3);
+     }
+     else {
+         OP_ADDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_LSL_REG()
@@ -1008,7 +1193,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_LSL_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSL_REG;
-     OP_ADDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(2, 4);
+     }
+     else {
+         OP_ADDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_LSR_IMM()
@@ -1017,7 +1207,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_LSR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSR_IMM;            
-     OP_ADDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(1, 3);
+     }
+     else {
+         OP_ADDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_LSR_REG()
@@ -1025,7 +1220,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_LSR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSR_REG;             
-     OP_ADDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(2, 4);
+     }
+     else {
+         OP_ADDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_ASR_IMM()
@@ -1034,7 +1234,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_ASR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ASR_IMM;
-     OP_ADDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(1, 3);
+     }
+     else {
+         OP_ADDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_ASR_REG()
@@ -1042,7 +1247,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_ASR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ASR_REG;                     
-     OP_ADDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(2, 4);
+     }
+     else {
+         OP_ADDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_ROR_IMM()
@@ -1051,7 +1261,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_ROR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ROR_IMM;
-     OP_ADDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(1, 3);
+     }
+     else {
+         OP_ADDS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_ROR_REG()
@@ -1059,7 +1274,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_ROR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ROR_REG;
-     OP_ADDS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(2, 4);
+     }
+     else {
+         OP_ADDS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADD_S_IMM_VAL()
@@ -1067,7 +1287,12 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_IMM_VAL()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      IMM_VALUE;
-     OP_ADDS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADDS(1, 3);
+     }
+     else {
+         OP_ADDS(2, 4);
+     }
 }
 
 //------------------ADC-----------------------------------
@@ -1173,7 +1398,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_LSL_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSL_IMM;
-     OP_ADCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(1, 3);
+     }
+     else {
+         OP_ADCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_LSL_REG()
@@ -1181,7 +1411,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_LSL_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSL_REG;
-     OP_ADCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(2, 4);
+     }
+     else {
+         OP_ADCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_LSR_IMM()
@@ -1190,7 +1425,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_LSR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSR_IMM;            
-     OP_ADCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(1, 3);
+     }
+     else {
+         OP_ADCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_LSR_REG()
@@ -1198,7 +1438,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_LSR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSR_REG;             
-     OP_ADCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(2, 4);
+     }
+     else {
+         OP_ADCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_ASR_IMM()
@@ -1207,7 +1452,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_ASR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ASR_IMM;
-     OP_ADCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(1, 3);
+     }
+     else {
+         OP_ADCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_ASR_REG()
@@ -1215,7 +1465,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_ASR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ASR_REG;                     
-     OP_ADCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(2, 4);
+     }
+     else {
+         OP_ADCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_ROR_IMM()
@@ -1224,7 +1479,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_ROR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ROR_IMM;
-     OP_ADCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(1, 3);
+     }
+     else {
+         OP_ADCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_ROR_REG()
@@ -1232,7 +1492,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_ROR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ROR_REG;
-     OP_ADCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(2, 4);
+     }
+     else {
+         OP_ADCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL()
@@ -1240,7 +1505,12 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      IMM_VALUE;
-     OP_ADCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ADCS(1, 3);
+     }
+     else {
+         OP_ADCS(2, 4);
+     }
 }
 
 //-------------SBC-------------------------------------
@@ -1348,7 +1618,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_LSL_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSL_IMM;
-     OP_SBCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(1, 3);
+     }
+     else {
+         OP_SBCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_LSL_REG()
@@ -1356,7 +1631,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_LSL_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSL_REG;
-     OP_SBCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(2, 4);
+     }
+     else {
+         OP_SBCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_LSR_IMM()
@@ -1365,7 +1645,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_LSR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSR_IMM;            
-     OP_SBCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(1, 3);
+     }
+     else {
+         OP_SBCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_LSR_REG()
@@ -1373,7 +1658,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_LSR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSR_REG;             
-     OP_SBCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(2, 4);
+     }
+     else {
+         OP_SBCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_ASR_IMM()
@@ -1382,7 +1672,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_ASR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ASR_IMM;
-     OP_SBCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(1, 3);
+     }
+     else {
+         OP_SBCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_ASR_REG()
@@ -1390,7 +1685,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_ASR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ASR_REG;                     
-     OP_SBCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(2, 4);
+     }
+     else {
+         OP_SBCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_ROR_IMM()
@@ -1399,7 +1699,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_ROR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ROR_IMM;
-     OP_SBCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(1, 3);
+     }
+     else {
+         OP_SBCS(2, 4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_ROR_REG()
@@ -1407,7 +1712,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_ROR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ROR_REG;
-     OP_SBCS(3, 5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(2, 4);
+     }
+     else {
+         OP_SBCS(3, 5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL()
@@ -1415,7 +1725,12 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      IMM_VALUE;
-     OP_SBCS(2, 4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_SBCS(1, 3);
+     }
+     else {
+         OP_SBCS(2, 4);
+     }
 }
 
 //---------------RSC----------------------------------
@@ -1522,7 +1837,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_LSL_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSL_IMM;
-     OP_RSCS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(1,3);
+     }
+     else {
+         OP_RSCS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_LSL_REG()
@@ -1530,7 +1850,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_LSL_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSL_REG;
-     OP_RSCS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(2,4);
+     }
+     else {
+         OP_RSCS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_LSR_IMM()
@@ -1539,7 +1864,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_LSR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      LSR_IMM;            
-     OP_RSCS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(1,3);
+     }
+     else {
+         OP_RSCS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_LSR_REG()
@@ -1547,7 +1877,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_LSR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      LSR_REG;             
-     OP_RSCS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(2,4);
+     }
+     else {
+         OP_RSCS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_ASR_IMM()
@@ -1556,7 +1891,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_ASR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ASR_IMM;
-     OP_RSCS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(1,3);
+     }
+     else {
+         OP_RSCS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_ASR_REG()
@@ -1564,7 +1904,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_ASR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ASR_REG;                     
-     OP_RSCS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(2,4);
+     }
+     else {
+         OP_RSCS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_ROR_IMM()
@@ -1573,7 +1918,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_ROR_IMM()
      u32 v = cpu->R[REG_POS(i,16)];
      u32 shift_op;
      ROR_IMM;
-     OP_RSCS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(1,3);
+     }
+     else {
+         OP_RSCS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_ROR_REG()
@@ -1581,7 +1931,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_ROR_REG()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      ROR_REG;
-     OP_RSCS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(2,4);
+     }
+     else {
+         OP_RSCS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_RSC_S_IMM_VAL()
@@ -1589,7 +1944,12 @@ TEMPLATE static u32 FASTCALL  OP_RSC_S_IMM_VAL()
      const u32 &i = cpu->instruction;
      u32 v = cpu->R[REG_POS(i,16)];
      IMM_VALUE;
-     OP_RSCS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_RSCS(1,3);
+     }
+     else {
+         OP_RSCS(2,4);
+     }
 }
 
 //-------------------TST----------------------------
@@ -1997,63 +2357,108 @@ TEMPLATE static u32 FASTCALL  OP_ORR_S_LSL_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSL_IMM;
-     OP_ORRS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(1,3);
+     }
+     else {
+         OP_ORRS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_LSL_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSL_REG;
-     OP_ORRS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(2,4);
+     }
+     else {
+         OP_ORRS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_LSR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSR_IMM;            
-     OP_ORRS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(1,3);
+     }
+     else {
+         OP_ORRS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_LSR_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSR_REG;             
-     OP_ORRS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(2,4);
+     }
+     else {
+         OP_ORRS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_ASR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ASR_IMM;
-     OP_ORRS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(1,3);
+     }
+     else {
+         OP_ORRS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_ASR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ASR_REG;                     
-     OP_ORRS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(2,4);
+     }
+     else {
+         OP_ORRS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_ROR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ROR_IMM;
-     OP_ORRS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(1,3);
+     }
+     else {
+         OP_ORRS(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_ROR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ROR_REG;
-     OP_ORRS(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(2,4);
+     }
+     else {
+         OP_ORRS(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_ORR_S_IMM_VAL()
 {
      const u32 &i = cpu->instruction;
      S_IMM_VALUE;
-     OP_ORRS(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_ORRS(1,3);
+     }
+     else {
+         OP_ORRS(2,4);
+     }
 }
 
 //------------------MOV-------------------
@@ -2154,7 +2559,12 @@ TEMPLATE static u32 FASTCALL  OP_MOV_S_LSL_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSL_IMM;
-     OP_MOV_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(1,3);
+     }
+     else {
+         OP_MOV_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_LSL_REG()
@@ -2162,14 +2572,24 @@ TEMPLATE static u32 FASTCALL  OP_MOV_S_LSL_REG()
      const u32 &i = cpu->instruction;
      S_LSL_REG;
 	 if (REG_POS(i,0) == 15) shift_op += 4;
-     OP_MOV_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(2,4);
+     }
+     else {
+         OP_MOV_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_LSR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSR_IMM;   
-     OP_MOV_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(1,3);
+     }
+     else {
+         OP_MOV_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_LSR_REG()
@@ -2177,42 +2597,72 @@ TEMPLATE static u32 FASTCALL  OP_MOV_S_LSR_REG()
      const u32 &i = cpu->instruction;
      S_LSR_REG;  
 	 if (REG_POS(i,0) == 15) shift_op += 4;
-     OP_MOV_S(3,5);           
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(2,4);
+     }
+     else {
+         OP_MOV_S(3,5);           
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_ASR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ASR_IMM;
-     OP_MOV_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(1,3);
+     }
+     else {
+         OP_MOV_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_ASR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ASR_REG;  
-     OP_MOV_S(3,5);                   
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(2,4);
+     }
+     else {
+         OP_MOV_S(3,5);                   
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_ROR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ROR_IMM;
-     OP_MOV_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(1,3);
+     }
+     else {
+         OP_MOV_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_ROR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ROR_REG;
-     OP_MOV_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(2,4);
+     }
+     else {
+         OP_MOV_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_S_IMM_VAL()
 {
      const u32 &i = cpu->instruction;
      S_IMM_VALUE;
-     OP_MOV_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OP_MOV_S(1,3);
+     }
+     else {
+         OP_MOV_S(2,4);
+     }
 }
 
 //------------------BIC-------------------
@@ -2310,63 +2760,108 @@ TEMPLATE static u32 FASTCALL  OP_BIC_S_LSL_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSL_IMM;
-     OPP_BIC_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(1,3);
+     }
+     else {
+         OPP_BIC_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_LSL_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSL_REG;
-     OPP_BIC_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(2,4);
+     }
+     else {
+         OPP_BIC_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_LSR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSR_IMM;            
-     OPP_BIC_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(1,3);
+     }
+     else {
+         OPP_BIC_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_LSR_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSR_REG;
-     OPP_BIC_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(2,4);
+     }
+     else {
+         OPP_BIC_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_ASR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ASR_IMM;
-     OPP_BIC_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(1,3);
+     }
+     else {
+         OPP_BIC_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_ASR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ASR_REG;
-     OPP_BIC_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(2,4);
+     }
+     else {
+         OPP_BIC_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_ROR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ROR_IMM;
-     OPP_BIC_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(1,3);
+     }
+     else {
+         OPP_BIC_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_ROR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ROR_REG;
-     OPP_BIC_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(2,4);
+     }
+     else {
+         OPP_BIC_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_BIC_S_IMM_VAL()
 {
      const u32 &i = cpu->instruction;
      S_IMM_VALUE;
-     OPP_BIC_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_BIC_S(1,3);
+     }
+     else {
+         OPP_BIC_S(2,4);
+     }
 }
 
 //------------------MVN-------------------
@@ -2464,63 +2959,108 @@ TEMPLATE static u32 FASTCALL  OP_MVN_S_LSL_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSL_IMM;
-     OPP_MVN_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(1,3);
+     }
+     else {
+         OPP_MVN_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_LSL_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSL_REG;
-     OPP_MVN_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(2,4);
+     }
+     else {
+         OPP_MVN_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_LSR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_LSR_IMM;            
-     OPP_MVN_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(1,3);
+     }
+     else {
+         OPP_MVN_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_LSR_REG()
 {
      const u32 &i = cpu->instruction;
      S_LSR_REG;
-     OPP_MVN_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(2,4);
+     }
+     else {
+         OPP_MVN_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_ASR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ASR_IMM;
-     OPP_MVN_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(1,3);
+     }
+     else {
+         OPP_MVN_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_ASR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ASR_REG;
-     OPP_MVN_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(2,4);
+     }
+     else {
+         OPP_MVN_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_ROR_IMM()
 {
      const u32 &i = cpu->instruction;
      S_ROR_IMM;
-     OPP_MVN_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(1,3);
+     }
+     else {
+         OPP_MVN_S(2,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_ROR_REG()
 {
      const u32 &i = cpu->instruction;
      S_ROR_REG;
-     OPP_MVN_S(3,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(2,4);
+     }
+     else {
+         OPP_MVN_S(3,5);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MVN_S_IMM_VAL()
 {
      const u32 &i = cpu->instruction;
      S_IMM_VALUE;
-     OPP_MVN_S(2,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_MVN_S(1,3);
+     }
+     else {
+         OPP_MVN_S(2,4);
+     }
 }
 
 //-------------MUL------------------------
@@ -2563,7 +3103,12 @@ TEMPLATE static u32 FASTCALL  OP_MUL_S()
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0);
      
-     OPP_M(6,3);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_M(5,2);
+     }
+     else {
+         OPP_M(6,3);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_MLA_S()
@@ -2573,7 +3118,12 @@ TEMPLATE static u32 FASTCALL  OP_MLA_S()
      cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,8)] * v + cpu->R[REG_POS(i,12)];
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0);
-     OPP_M(7,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_M(6,3);
+     }
+     else {
+         OPP_M(7,4);
+     }
 }
 
 //----------UMUL--------------------------
@@ -2614,7 +3164,12 @@ TEMPLATE static u32 FASTCALL  OP_UMULL_S()
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0) & (cpu->R[REG_POS(i,12)]==0);
 
-     OPP_M(7,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_M(6,3);
+     }
+     else {
+         OPP_M(7,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_UMLAL_S()
@@ -2629,7 +3184,12 @@ TEMPLATE static u32 FASTCALL  OP_UMLAL_S()
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0) & (cpu->R[REG_POS(i,12)]==0);
      
-     OPP_M(8,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_M(7,4);
+     }
+     else {
+         OPP_M(8,5);
+     }
 }
 
 //----------SMUL--------------------------
@@ -2684,7 +3244,12 @@ TEMPLATE static u32 FASTCALL  OP_SMULL_S()
 
      v &= 0xFFFFFFFF;
           
-     OPP_M(7,4);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_M(6,3);
+     }
+     else {
+         OPP_M(7,4);
+     }
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL_S()
@@ -2702,7 +3267,12 @@ TEMPLATE static u32 FASTCALL  OP_SMLAL_S()
 
      v &= 0xFFFFFFFF;
           
-     OPP_M(8,5);
+     if (CommonSettings.armFixCycleCount) {
+         OPP_M(7,4);
+     }
+     else {
+         OPP_M(8,5);
+     }
 }
 
 //---------------SWP------------------------------
