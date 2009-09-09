@@ -35,6 +35,7 @@
 #define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
 #define     REG_WIFI_WEP        		0x006
+#define		REG_WIFI_TXSTATCNT			0x008
 #define     REG_WIFI_IF     			0x010
 #define     REG_WIFI_IE     			0x012
 #define     REG_WIFI_MAC0       		0x018
@@ -67,16 +68,18 @@
 #define     REG_WIFI_CIRCBUFWRITE       0x070
 #define     REG_WIFI_CIRCBUFWR_END      0x074
 #define     REG_WIFI_CIRCBUFWR_SKIP     0x076
-#define     REG_WIFI_BEACONTRANS        0x080
+#define     REG_WIFI_TXLOCBEACON        0x080
 #define     REG_WIFI_LISTENCOUNT        0x088
 #define     REG_WIFI_BEACONPERIOD       0x08C
 #define     REG_WIFI_LISTENINT          0x08E
+#define 	REG_WIFI_TXLOCEXTRA			0x090
 #define     REG_WIFI_TXLOC1             0x0A0
 #define     REG_WIFI_TXLOC2             0x0A4
 #define     REG_WIFI_TXLOC3             0x0A8
 #define     REG_WIFI_TXOPT              0x0AC
 #define     REG_WIFI_TXCNT              0x0AE
 #define		REG_WIFI_TXREQ_READ			0x0B0
+#define		REG_WIFI_TXRESET			0x0B4
 #define		REG_WIFI_TXBUSY				0x0B6
 #define     REG_WIFI_TXSTAT             0x0B8
 #define     REG_WIFI_RXFILTER           0x0D0
@@ -392,6 +395,7 @@ typedef struct
 	BOOL WEP_enable ;
 
 	/* sending */
+	u16 TXStatCnt;
 	u16 TXPower;
 	u16 TXSlot[3] ;
 	u16 TXCnt ;
@@ -399,6 +403,7 @@ typedef struct
 	u16 TXStat;
 	u16 BeaconAddr;
 	BOOL BeaconEnable;
+	u16 TXSlotExtra;
 	u16 TXSeqNo;
 	u8 txCurSlot;
 	u8 txSlotBusy[3];
@@ -410,6 +415,8 @@ typedef struct
 	u16 RXCnt ;
 	u16 RXCheckCounter ;
 	u8 RXNum;
+
+	u16 RXTXAddr;
 
 	/* addressing/handshaking */
 	union
@@ -433,7 +440,7 @@ typedef struct
 	BOOL usecEnable ;
 	u64 ucmp ;
 	BOOL ucmpEnable ;
-	u16 eCount ;
+	u32 eCount ;
 	BOOL eCountEnable ;
 	u16 BeaconInterval;
 	u16 BeaconCount1;
