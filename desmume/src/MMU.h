@@ -52,6 +52,9 @@ typedef struct
 	u32 transfer_count;
 
 	ECardMode mode;
+
+	// NJSD stuff
+	int blocklen;
 	
 } nds_dscard;
 

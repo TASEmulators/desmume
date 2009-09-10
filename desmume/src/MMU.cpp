@@ -1167,6 +1167,70 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 			}
 			break;
 
+
+		// --- Ninja SD commands -------------------------------------
+
+		// NJSD init/reset
+		case 0x20:
+			{
+				card.address = 0;
+				card.transfer_count = 0;
+			}
+			break;
+
+		// NJSD_sendCLK()
+		case 0xE0:
+			{
+				card.address = 0;
+				card.transfer_count = 0;
+				NDS_makeInt(PROCNUM, 20);
+			}
+			break;
+
+		// NJSD_sendCMDN() / NJSD_sendCMDR()
+		case 0xF0:
+		case 0xF1:
+			switch (card.command[2])
+			{
+			// GO_IDLE_STATE
+			case 0x40:
+				card.address = 0;
+				card.transfer_count = 0;
+				NDS_makeInt(PROCNUM, 20);
+				break;
+
+			case 0x42:  // ALL_SEND_CID
+			case 0x43:  // SEND_RELATIVE_ADDR
+			case 0x47:  // SELECT_CARD
+			case 0x49:  // SEND_CSD
+			case 0x4D:
+			case 0x77:  // APP_CMD
+			case 0x69:  // SD_APP_OP_COND
+				card.address = 0;
+				card.transfer_count = 6;
+				NDS_makeInt(PROCNUM, 20);
+				break;
+
+			// SET_BLOCKLEN
+			case 0x50:
+				card.address = 0;
+				card.transfer_count = 6;
+				card.blocklen = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
+				NDS_makeInt(PROCNUM, 20);
+				break;
+
+			// READ_SINGLE_BLOCK
+			case 0x51:
+				card.address = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
+				card.transfer_count = (card.blocklen + 3) >> 2;
+				NDS_makeInt(PROCNUM, 20);
+				break;
+			}
+			break;
+
+		// --- Ninja SD commands end ---------------------------------
+
+
 		default:
 			{
 				LOG("WRITE CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
@@ -1210,23 +1274,17 @@ u32 MMU_readFromGC()
 	{
 		// Dummy
 		case 0x9F:
-			{
-				val = 0xFFFFFFFF;
-			}
+			val = 0xFFFFFFFF;
 			break;
 
 		// Nand Init?
 		case 0x94:
-			{
-				val = 0; //Unsure what to return here so return 0 for now
-			}
+			val = 0; //Unsure what to return here so return 0 for now
 			break;
 
 		// Nand Error?
 		case 0xD6:
-			{
-				val = 0x80; //0x80 == ok?
-			}
+			val = 0x80; //0x80 == ok?
 			break;
 
 		// Data read
@@ -1263,10 +1321,54 @@ u32 MMU_readFromGC()
 
 		// Switch to KEY1 mode
 		case 0x3C:
+			val = 0xFFFFFFFF;
+			break;
+
+		// --- Ninja SD commands -------------------------------------
+
+		// NJSD_sendCMDN() / NJSD_sendCMDR()
+		case 0xF0:
+		case 0xF1:
+			switch (card.command[2])
 			{
-				val = 0xFFFFFFFF;
+			// ALL_SEND_CID
+			case 0x42:
+				if (card.transfer_count == 2) val = 0x44534A4E;
+				else val = 0x00000000;
+
+			// SEND_RELATIVE_ADDR
+			case 0x43:
+			case 0x47:
+			case 0x49:
+			case 0x50:
+				val = 0x00000000;
+				break;
+
+			case 0x4D:
+				if (card.transfer_count == 2) val = 0x09000000;
+				else val = 0x00000000;
+				break;
+
+			// APP_CMD
+			case 0x77:
+				if (card.transfer_count == 2) val = 0x00000037;
+				else val = 0x00000000;
+				break;
+
+			// SD_APP_OP_COND
+			case 0x69:
+				if (card.transfer_count == 2) val = 0x00008000;
+				else val = 0x00000000;
+				break;
+
+			// READ_SINGLE_BLOCK
+			case 0x51:
+				val = 0x00000000;
+				break;
 			}
 			break;
+
+		// --- Ninja SD commands end ---------------------------------
 
 		default:
 			LOG("READ CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
@@ -1305,6 +1407,10 @@ void FASTCALL MMU_doDMA(u32 num)
 	u32 dst = DMADst[PROCNUM][num];
     u32 taille = 0;
 	bool paused = false;
+
+	//if (dst == 0x022DD4E0)
+	//	printf("proc %i dma %i: src=%08X, dst=%08X, size=%i, repmode=%i\n",
+	//	PROCNUM, num, src, dst, (MMU.DMACrt[PROCNUM][num]&0x1FFFFF), MMU.DMAStartTime[PROCNUM][num]);
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	if (MMU.DMAStartTime[PROCNUM][num]== EDMAMode_GXFifo)
