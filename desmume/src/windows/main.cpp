@@ -1455,7 +1455,7 @@ DWORD WINAPI run()
 	return 1;
 }
 
-void NDS_Pause()
+void NDS_Pause(bool showMsg)
 {
 	if (!paused)
 	{
@@ -1463,11 +1463,11 @@ void NDS_Pause()
 		paused = TRUE;
 		SPU_Pause(1);
 		while (!paused) {}
-		INFO("Emulation paused\n");
+		if (showMsg) INFO("Emulation paused\n");
 	}
 }
 
-void NDS_UnPause()
+void NDS_UnPause(bool showMsg)
 {
 	if (romloaded && paused)
 	{
@@ -1475,7 +1475,7 @@ void NDS_UnPause()
 		pausedByMinimize = FALSE;
 		execute = TRUE;
 		SPU_Pause(0);
-		INFO("Emulation unpaused\n");
+		if (showMsg) INFO("Emulation unpaused\n");
 	}
 }
 

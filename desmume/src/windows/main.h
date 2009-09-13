@@ -5,8 +5,8 @@
 extern WINCLASS	*MainWindow;
 
 extern volatile bool execute, paused;
-void NDS_Pause();
-void NDS_UnPause();
+void NDS_Pause(bool showMsg = true);
+void NDS_UnPause(bool showMsg = true);
 void LoadSaveStateInfo();
 void Display();
 void Pause();
