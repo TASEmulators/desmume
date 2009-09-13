@@ -195,14 +195,26 @@ void CIORegView::ChangeReg(int reg)
 
 	if (maxlines < numlines)
 	{
+		RECT rc;
 		BOOL oldenable = IsWindowEnabled(hScrollbar);
+		int range;
+
+		GetClientRect(hWnd, &rc);
+		range = (numlines * lineheight) - (rc.bottom - rebarHeight);
+
 		if (!oldenable)
 		{
-			RECT rc; GetClientRect(hWnd, &rc);
-
 			EnableWindow(hScrollbar, TRUE);
-			SendMessage(hScrollbar, SBM_SETRANGE, 0, (numlines * lineheight) - (rc.bottom - rebarHeight));
-			SendMessage(hScrollbar, SBM_SETPOS, 0, 0);
+			SendMessage(hScrollbar, SBM_SETRANGE, 0, range);
+			SendMessage(hScrollbar, SBM_SETPOS, 0, TRUE);
+			yoff = 0;
+		}
+		else
+		{
+			int pos = min(range, (int)SendMessage(hScrollbar, SBM_GETPOS, 0, 0));
+			SendMessage(hScrollbar, SBM_SETRANGE, 0, range);
+			SendMessage(hScrollbar, SBM_SETPOS, pos, TRUE);
+			yoff = -pos;
 		}
 	}
 	else
@@ -298,7 +310,7 @@ void IORegView_Paint(CIORegView* wnd, HWND hWnd, WPARAM wParam, LPARAM lParam)
 				DrawText(hMemDC, txt, curx, cury, fontsize.cx*8, fontsize.cy, DT_LEFT);
 				curx += (fontsize.cx*8) + kXMargin + 1 + kXMargin;
 
-				DrawText(hMemDC, curReg.name, curx, cury, nameColWidth, fontsize.cy, DT_LEFT | DT_END_ELLIPSIS);
+				DrawText(hMemDC, curReg.name, curx, cury, nameColWidth, fontsize.cy, DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
 				curx += nameColWidth + kXMargin + 1 + kXMargin;
 
 				switch (curReg.size)
@@ -332,7 +344,7 @@ void IORegView_Paint(CIORegView* wnd, HWND hWnd, WPARAM wParam, LPARAM lParam)
 		nameColWidth = w - (kXMargin + (fontsize.cx*8) + kXMargin + 1 + kXMargin + kXMargin + 1 + kXMargin + (fontsize.cx*8) + kXMargin);
 
 		sprintf(txt, "%08X - %s", reg.address, reg.name);
-		DrawText(hMemDC, txt, curx, cury, w, fontsize.cy, DT_LEFT | DT_END_ELLIPSIS);
+		DrawText(hMemDC, txt, curx, cury, w, fontsize.cy, DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
 		cury += fontsize.cy + kYMargin;
 		MoveToEx(hMemDC, 0, cury, NULL);
 		LineTo(hMemDC, w, cury);
@@ -389,7 +401,7 @@ void IORegView_Paint(CIORegView* wnd, HWND hWnd, WPARAM wParam, LPARAM lParam)
 			DrawText(hMemDC, txt, curx, cury, fontsize.cx*8, fontsize.cy, DT_LEFT);
 			curx += (fontsize.cx*8) + kXMargin + 1 + kXMargin;
 
-			DrawText(hMemDC, bitfield.name, curx, cury, nameColWidth, fontsize.cy, DT_LEFT | DT_END_ELLIPSIS);
+			DrawText(hMemDC, bitfield.name, curx, cury, nameColWidth, fontsize.cy, DT_LEFT | DT_END_ELLIPSIS | DT_NOPREFIX);
 			curx += nameColWidth + kXMargin + 1 + kXMargin;
 
 			char bfpattern[8];
@@ -523,12 +535,22 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			if (wnd->maxlines < wnd->numlines)
 			{
 				BOOL oldenable = IsWindowEnabled(wnd->hScrollbar);
+				int range = (wnd->numlines * wnd->lineheight) - wndHeight;
+
 				if (!oldenable)
 				{
 					EnableWindow(wnd->hScrollbar, TRUE);
-					SendMessage(wnd->hScrollbar, SBM_SETPOS, 0, 0);
+					SendMessage(wnd->hScrollbar, SBM_SETRANGE, 0, range);
+					SendMessage(wnd->hScrollbar, SBM_SETPOS, 0, TRUE);
+					wnd->yoff = 0;
 				}
-				SendMessage(wnd->hScrollbar, SBM_SETRANGE, 0, (wnd->numlines * wnd->lineheight) - wndHeight);
+				else
+				{
+					int pos = min(range, (int)SendMessage(wnd->hScrollbar, SBM_GETPOS, 0, 0));
+					SendMessage(wnd->hScrollbar, SBM_SETRANGE, 0, range);
+					SendMessage(wnd->hScrollbar, SBM_SETPOS, pos, TRUE);
+					wnd->yoff = -pos;
+				}
 			}
 			else
 				EnableWindow(wnd->hScrollbar, FALSE);
