@@ -228,9 +228,6 @@ extern char Recent_Scripts[MAX_RECENT_SCRIPTS][1024];
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
 TOOLSCLASS	*ViewDisasm_ARM9 = NULL;
-//TOOLSCLASS	*ViewMem_ARM7 = NULL;
-//TOOLSCLASS	*ViewMem_ARM9 = NULL;
-TOOLSCLASS	*ViewRegisters = NULL;
 TOOLSCLASS	*ViewPalette = NULL;
 TOOLSCLASS	*ViewTiles = NULL;
 TOOLSCLASS	*ViewMaps = NULL;
@@ -2029,9 +2026,6 @@ int _main()
 
 	ViewDisasm_ARM7 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
-	//ViewMem_ARM7 = new TOOLSCLASS(hAppInst, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
-	//ViewMem_ARM9 = new TOOLSCLASS(hAppInst, IDD_MEM_VIEWER9, (DLGPROC) ViewMem_ARM9Proc);
-	ViewRegisters = new TOOLSCLASS(hAppInst, IDD_IO_REG, (DLGPROC) IoregView_Proc);
 	ViewPalette = new TOOLSCLASS(hAppInst, IDD_PAL, (DLGPROC) ViewPalProc);
 	ViewTiles = new TOOLSCLASS(hAppInst, IDD_TILE, (DLGPROC) ViewTilesProc);
 	ViewMaps = new TOOLSCLASS(hAppInst, IDD_MAP, (DLGPROC) ViewMapsProc);
@@ -2266,9 +2260,6 @@ int _main()
 	if (ViewMaps!=NULL) delete ViewMaps;
 	if (ViewTiles!=NULL) delete ViewTiles;
 	if (ViewPalette!=NULL) delete ViewPalette;
-	if (ViewRegisters!=NULL) delete ViewRegisters;
-//	if (ViewMem_ARM9!=NULL) delete ViewMem_ARM9;
-//	if (ViewMem_ARM7!=NULL) delete ViewMem_ARM7;
 	if (ViewDisasm_ARM9!=NULL) delete ViewDisasm_ARM9;
 	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
 
@@ -3860,11 +3851,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			return 0;
 		case IDM_IOREG:
-			ViewRegisters->open();
-			//if (!RegWndClass("DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, sizeof(CIORegView*)))
-			//	return 0;
+			//ViewRegisters->open();
+			if (!RegWndClass("DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, LoadIcon(hAppInst, "ICONDESMUME"), sizeof(CIORegView*)))
+				return 0;
 
-			//OpenToolWindow(new CIORegView());
+			OpenToolWindow(new CIORegView());
 			return 0;
 		case IDM_MEMORY:
 			//if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);

@@ -41,6 +41,24 @@ DWORD GetFontQuality()
 		return ANTIALIASED_QUALITY;
 }
 
+int DrawText(HDC hDC, char* text, int X, int Y, int Width, int Height, UINT format)
+{
+	RECT rc;
+	SetRect(&rc, X, Y, X+Width, Y+Height);
+	return DrawText(hDC, text, -1, &rc, format);
+}
+
+void GetFontSize(HWND hWnd, HFONT hFont, LPSIZE size)
+{
+	HDC dc = GetDC(hWnd);
+	HFONT oldfont = (HFONT)SelectObject(dc, hFont);
+	
+	GetTextExtentPoint32(dc, " ", 1, size);
+
+	SelectObject(dc, oldfont);
+	ReleaseDC(hWnd, dc);
+}
+
 //-----------------------------------------------------------------------------
 // Window class handling
 //-----------------------------------------------------------------------------
