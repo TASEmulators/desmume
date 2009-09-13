@@ -35,6 +35,8 @@ public:
 	void ChangeCPU(int cpu);
 	void ChangeReg(int reg);
 
+	void UpdateScrollbar();
+
 	int CPU;
 	int Reg;
 
