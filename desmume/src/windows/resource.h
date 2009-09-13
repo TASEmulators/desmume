@@ -394,9 +394,7 @@
 #define IDC_SNUMBER                     1071
 #define IDC_CHECK1                      1074
 #define IDC_CHECK2                      1075
-
 #define IDC_CHECK3                      1076
-
 #define IDC_CHECK4                      1077
 #define IDC_CHECK6                      1080
 #define IDC_CHECK7                      1082
