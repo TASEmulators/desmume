@@ -38,6 +38,9 @@ extern CRITICAL_SECTION win_execute_sync;
 // antialiasing is enabled or not.
 DWORD GetFontQuality();
 
+int DrawText(HDC hDC, char* text, int X, int Y, int Width, int Height, UINT format);
+void GetFontSize(HWND hWnd, HFONT hFont, LPSIZE size);
+
 //-----------------------------------------------------------------------------
 // Window class handling
 //-----------------------------------------------------------------------------

@@ -21,8 +21,38 @@
 
 #ifndef IO_REG_H
 #define IO_REG_H
+
 #include "../common.h"
 
-extern BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK IORegView_Proc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+class CIORegView : public CToolWindow
+{
+public:
+	CIORegView();
+	~CIORegView();
+
+	void ChangeCPU(int cpu);
+	void ChangeReg(int reg);
+
+	int CPU;
+	int Reg;
+
+	HFONT hFont;
+
+	int rebarHeight;
+	int vsbWidth;
+
+	HWND hScrollbar;
+	HWND hRebar;
+	HWND hCPUCombo;
+	HWND hRegCombo;
+
+	int lineheight;
+	int numlines;
+	int maxlines;
+
+	int yoff;
+};
 
 #endif 
