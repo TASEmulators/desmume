@@ -28,7 +28,7 @@
 #include "types.h"
 #include <string>
 
-extern u8	gba_header_data_0x04[156];
+extern u8	logo_data[156];
 #ifdef WIN32
 
 	#include <winsock2.h>
