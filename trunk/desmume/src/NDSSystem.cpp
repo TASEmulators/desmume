@@ -2375,6 +2375,7 @@ void NDS_Reset()
 		INFO("ARM9 BIOS is loaded.\n");
 	} else {
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
+#if 0
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000000);
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0020, 0xE92D500F);
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0024, 0xEE190F11);
@@ -2385,6 +2386,25 @@ void NDS_Reset()
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0038, 0xE510F004);
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF003C, 0xE8BD500F);
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0040, 0xE25EF004);
+#else
+		for (int t = 0; t < 4096; t++)
+			MMU.ARM9_BIOS[t] = 0xFF;
+
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000027);
+
+		for (int t = 0; t < 156; t++)		// load logo
+			MMU.ARM9_BIOS[t + 0x20] = logo_data[t];
+
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0274, 0xE92D500F);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0278, 0xEE190F11);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF027C, 0xE1A00620);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0280, 0xE1A00600);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0284, 0xE2800C40);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0288, 0xE28FE000);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF028C, 0xE510F004);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0290, 0xE8BD500F);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0294, 0xE25EF004);
+#endif
 	}
 
 	if(CommonSettings.UseExtFirmware == true)

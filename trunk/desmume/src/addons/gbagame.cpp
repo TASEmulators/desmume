@@ -58,7 +58,7 @@ static void gbaWriteFlash(u32 adr, u8 val)
 			{
 				if (val == 0xF0)
 				{
-					//INFO("GBAslot: Flash: reset\n");
+					//INFO("GBAgame: Flash: reset\n");
 					gbaFlash.state = 0;
 					gbaFlash.cmd = 0;
 					return;
@@ -76,7 +76,7 @@ static void gbaWriteFlash(u32 adr, u8 val)
 				{
 					gbaFlash.bank = val;
 					gbaFlash.cmd = 0;
-					//INFO("GBAslot: Flash: change bank %i\n", val);
+					//INFO("GBAgame: Flash: change bank %i\n", val);
 					return;
 				}
 			}
@@ -92,11 +92,15 @@ static void gbaWriteFlash(u32 adr, u8 val)
 		case 2:
 			if (adr == 0x0A005555)
 			{
-				//INFO("GBAslot: Flash: send command flash 0x%02X\n", val);
+				//INFO("GBAgame: Flash: send command flash 0x%02X\n", val);
 				switch (val)
 				{
 					case 0x80:		// Erase
 						gbaFlash.state = 0x80;
+					break;
+
+					case 0x90:		// Chip Identification
+						gbaFlash.state = 0x90;
 					break;
 
 					case 0xA0:		// Write
@@ -136,10 +140,34 @@ static void gbaWriteFlash(u32 adr, u8 val)
 			if (val == 0x30)
 			{
 				u32 ofs = (adr & 0x0000F000);
-				//INFO("GBAslot: Flash: erase from 0x%08X to 0x%08X\n", ofs + 0x0A000000, ofs + 0x0A001000);
+				//INFO("GBAgame: Flash: erase from 0x%08X to 0x%08X\n", ofs + 0x0A000000, ofs + 0x0A001000);
 				for (int i = ofs; i < (ofs + 0x1000); i++)
 					saveData[i] = 0xFF;
 			}
+			gbaFlash.state = 0;
+			gbaFlash.cmd = 0;
+		return;
+
+		// Chip Identification
+		case 0x90:
+			if ( (adr == 0x0A005555) && (val == 0xAA) )
+			{
+				gbaFlash.state = 0x91;
+				return;
+			}
+			gbaFlash.state = 0;
+		break;
+
+		case 0x91:
+			if ( (adr == 0x0A002AAA) && (val == 0x55) )
+			{
+				gbaFlash.state = 0x92;
+				return;
+			}
+			gbaFlash.state = 0;
+		break;
+
+		case 0x92:
 			gbaFlash.state = 0;
 			gbaFlash.cmd = 0;
 		return;
@@ -152,18 +180,18 @@ static void gbaWriteFlash(u32 adr, u8 val)
 		gbaFlash.cmd = 0;
 		return;
 	}
-	//INFO("GBAslot: Flash: write unknown atn 0x%08X = 0x%02X\n", adr, val);
+	INFO("GBAgame: Flash: write unknown atn 0x%08X = 0x%02X\n", adr, val);
 }
 
 static u8 gbaReadFlash(u32 adr)
 {
 	if (gbaFlash.cmd == 0)
 	{
-		//INFO("GBAslot: flash read at 0x%08X = 0x%02X\n", adr, saveData[(adr & 0x1FFFF)+(0x10000*gbaFlash.bank)]);
+		//INFO("GBAgame: flash read at 0x%08X = 0x%02X\n", adr, saveData[(adr & 0x1FFFF)+(0x10000*gbaFlash.bank)]);
 		return saveData[(adr & 0x1FFFF)+(0x10000*gbaFlash.bank)];
 	}
 
-	//INFO("GBAslot: flash read at 0x%08X\n", adr);
+	//INFO("GBAgame: flash read at 0x%08X\n", adr);
 
 	switch (gbaFlash.cmd)
 	{
@@ -173,7 +201,7 @@ static u8 gbaReadFlash(u32 adr)
 		break;
 
 		case 0xF0:			//
-			//INFO("GBAslot: Flash: reset2\n");
+			//INFO("GBAgame: Flash: reset2\n");
 			gbaFlash.state = 0;
 			gbaFlash.cmd = 0;
 		break;
@@ -182,7 +210,7 @@ static u8 gbaReadFlash(u32 adr)
 		break;
 
 		default:
-			INFO("GBAslot: Flash: read - unknown command at 0x%08X = 0x%02X\n", adr, gbaFlash.cmd);
+			INFO("GBAgame: Flash: read - unknown command at 0x%08X = 0x%02X\n", adr, gbaFlash.cmd);
 		break;
 	}
 
@@ -339,7 +367,7 @@ static void GBAgame_config(void) {}
 
 static void GBAgame_write08(u32 adr, u8 val)
 {
-	//INFO("GBAslot: write08 at 0x%08X val=0x%02X\n", adr, val);
+	//INFO("GBAgame: write08 at 0x%08X val=0x%02X\n", adr, val);
 	if ( (adr >= 0x0A000000) && (adr < 0x0A010000) )
 	{
 		switch (saveType)
@@ -367,9 +395,6 @@ static void GBAgame_write32(u32 adr, u32 val)
 
 static u8   GBAgame_read08(u32 adr)
 { 
-	if ( (adr >= 0x08000004) && (adr < 0x080000A0) )
-		return MMU.MMU_MEM[0][0xFF][(adr +0x1C) & MMU.MMU_MASK[0][0xFF]];
-
 	//INFO("GBAgame: read08 at 0x%08X value 0x%02X\n", adr, (u8)T1ReadByte(GBArom, (adr - 0x08000000)));
 	
 	if (adr < 0x0A000000)
@@ -398,9 +423,6 @@ static u8   GBAgame_read08(u32 adr)
 
 static u16  GBAgame_read16(u32 adr)
 { 
-	if ( (adr >= 0x08000004) && (adr < 0x080000A0) )
-		return T1ReadWord(MMU.MMU_MEM[0][0xFF], (adr +0x1C) & MMU.MMU_MASK[0][0xFF]);  
-
 	//INFO("GBAgame: read16 at 0x%08X value 0x%04X\n", adr, (u16)T1ReadWord(GBArom, (adr - 0x08000000)));
 	
 	if (adr < 0x0A000000)
@@ -408,7 +430,7 @@ static u16  GBAgame_read16(u32 adr)
 
 	if (adr < 0x0A010000)
 	{
-		//INFO("GBAslot: flash read16 at 0x%08X\n", adr);
+		//INFO("GBAgame: flash read16 at 0x%08X\n", adr);
 		return (u16)T1ReadWord(saveData, (adr - 0x0A000000));
 	}
 	return 0xFFFF;
@@ -416,9 +438,6 @@ static u16  GBAgame_read16(u32 adr)
 
 static u32  GBAgame_read32(u32 adr)
 { 
-	if ( (adr >= 0x08000004) && (adr < 0x080000A0) )
-		return T1ReadLong(MMU.MMU_MEM[0][0xFF], (adr +0x1C) & MMU.MMU_MASK[0][0xFF]);
-
 	//INFO("GBAgame: read32 at 0x%08X value 0x%08X\n", adr, (u32)T1ReadLong(GBArom, (adr - 0x08000000)));
 
 	if (adr < 0x0A000000)
@@ -426,7 +445,7 @@ static u32  GBAgame_read32(u32 adr)
 
 	if (adr < 0x0A010000)
 	{
-		//INFO("GBAslot: flash read32 at 0x%08X\n", adr);
+		//INFO("GBAgame: flash read32 at 0x%08X\n", adr);
 		return (u32)T1ReadLong(saveData, (adr - 0x0A000000));
 	}
 	return 0xFFFFFFFF;
