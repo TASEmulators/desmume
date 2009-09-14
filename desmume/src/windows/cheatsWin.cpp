@@ -51,8 +51,8 @@ static	u8		cheatXXaction = 0;
 static	HWND	searchWnd = NULL;
 static	HWND	searchListView = NULL;
 static	HWND	cheatListView = NULL;
-static	WNDPROC	oldEditProc = NULL;
-static	WNDPROC	oldEditProcHEX = NULL;
+static	LONG_PTR	oldEditProc = NULL;
+static	LONG_PTR	oldEditProcHEX = NULL;
 
 CHEATS_LIST		tempCheat;
 
@@ -77,7 +77,7 @@ u32 searchRange[4][2] = {
 							{ 0, 4294967295 }
 						};
 
-LRESULT CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// TODO: check paste
 	if (msg == WM_CHAR)
@@ -112,10 +112,10 @@ LRESULT CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
         
 	}
 
-	return CallWindowProc(oldEditProc, hwnd, msg, wParam, lParam);
+	return CallWindowProc((WNDPROC)oldEditProc, hwnd, msg, wParam, lParam);
 }
 
-LRESULT CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LONG_PTR CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// TODO: check paste
 	if (msg == WM_CHAR)
@@ -156,12 +156,12 @@ LRESULT CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
         
 	}
 
-	return CallWindowProc(oldEditProcHEX, hwnd, msg, wParam, lParam);
+	return CallWindowProc((WNDPROC)oldEditProcHEX, hwnd, msg, wParam, lParam);
 }
 
 INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
-	static WNDPROC saveOldEditProc = NULL;
+	static LONG_PTR saveOldEditProc = NULL;
 
 	switch(msg)
 	{
@@ -171,8 +171,8 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 10, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, 75, 0);
-				oldEditProcHEX = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG)EditValueHEXProc);
-				oldEditProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG)EditValueProc);
+				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
+				oldEditProc = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG_PTR)EditValueProc);
 
 				if (searchAddMode == 1)
 				{
@@ -315,7 +315,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 
 INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
-	static WNDPROC	saveOldEditProc = NULL;
+	static LONG_PTR	saveOldEditProc = NULL;
 	char			buf[100] = {0}, buf2[100] = {0};
 
 	switch(msg)
@@ -326,8 +326,8 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 10, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, 75, 0);
-				oldEditProcHEX = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG)EditValueHEXProc);
-				oldEditProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG)EditValueProc);
+				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
+				oldEditProc = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG_PTR)EditValueProc);
 
 				cheatsGet(&tempCheat, cheatEditPos);
 				
@@ -940,7 +940,7 @@ INT_PTR CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM
 			
 			SendMessage(GetDlgItem(dialog, IDC_EVALUE), EM_SETLIMITTEXT, 10, 0);
 			SetWindowText(GetDlgItem(dialog, IDC_STATIC_RANGE), searchRangeText[searchSign][searchSize]);
-			oldEditProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EVALUE), GWLP_WNDPROC, (LONG)EditValueProc);
+			oldEditProc = SetWindowLongPtr(GetDlgItem(dialog, IDC_EVALUE), GWLP_WNDPROC, (LONG_PTR)EditValueProc);
 			char buf[256];
 			memset(buf, 0, 256);
 			ltoa(searchNumberResults, buf, 10);
