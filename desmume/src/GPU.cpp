@@ -1364,7 +1364,7 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 	if (col256) {
 		for(i = 0; i < lg; i++, sprX++,x+=xdir)
 			//sprWin[sprX] = (src[x])?1:0;
-			if(src[x])
+			if(src[(x&7) + ((x&0xFFF8)<<3)]) 
 				sprWin[sprX] = 1;
 	} else {
 		for(i = 0; i < lg; i++, ++sprX, x+=xdir)
