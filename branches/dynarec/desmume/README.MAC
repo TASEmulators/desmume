@@ -1,0 +1,107 @@
+                        DeSmuME
+        _________________________________________
+        Copyright (C) 2006 yopyop
+        Copyright (C) 2006-2007 DeSmuME team
+
+
+1) Compiling instructions...................................13
+2) How to use DeSmuME.......................................31
+3) Contact information......................................73
+4) Disclaimer...............................................90
+
+
+1 Compiling instructions______________________________________
+
+DeSmuME is written in C, and the Cocoa interface was written 
+in Objective-C. It uses the Cocoa, OpenGL, and [optionally]
+the zlib library.
+
+So you need a working C and Objective-C compiler, such as
+GCC for Mac OS X.
+
+  * Cocoa and OpenGL come standard with Mac OS X
+
+  * zlib can be found at http://www.zlib.net, and may
+    also come with Mac OS X.
+
+DeSmuME for Mac OS X can be compiled using the XCode IDE
+or the CodeBlocks IDE. Project files are available in the
+Cocoa source folder.
+
+2 How to use DeSmuME__________________________________________
+
+To install DeSmuME, copy DeSmuME.app into the folder of your 
+choice (Applications folder is recommended). You can also drag
+it to your dock for quicker launching.
+
+Double click the application to launch DeSmuME.
+
+Most options can be found in the menu bar a the top of the
+screen. On Leopard, you can use the search box under the help
+menu to find things.
+
+DeSmuME for Mac OS X does not support all the features of the
+Linux and Windows versions.
+
+Click the lower screen for DS touch-screen input.
+
+Key mappings can be changed or viewed from the preferences
+panel. Here are the defaults (may be subject to change):
+up arrow - Up
+left arrow - Left
+down arrow - Down
+right arrow - Right
+v - A button
+b - B button
+g - X button
+h - Y button
+c - Left Trigger
+n - Right Trigger
+enter - Start button
+space - Select button
+
+States can be saved with shift + number keys.
+States can be loaded with the number keys.
+
+To set up a FAT disk image (for homebrew apps) you can use the 
+"Emulation > Set FAT Image File" option in the menu.  You can
+also set this from the command line by launching DeSmuME
+inside its app bundle:
+
+DeSmuME.app/Contents/MacOS/DeSmuME -FlashFile /path/to/file.img
+
+3 Contact information_________________________________________
+
+General inquiries should go to:
+E-mail:	guillaume.duhamel@gmail.com
+
+Mac OS X Port-related inquiries should go to:
+E-mail: osx@desmume.org
+
+Web:    http://desmume.org
+
+Please don't ask for roms, bios files or any other copyrighted
+stuff.
+
+If you want to submit a bug report, please run desmume, go
+into the "Help" menu, and click on "Submit a bug report". If
+you're having trouble with it, please feel free to email.
+
+4 Disclaimer__________________________________________________
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as 
+published by the Free Software Foundation; either version 2 of 
+the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be
+useful,but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free
+Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+MA  02111-1307  USA
+
+See the GNU General Public License details in COPYING.
