@@ -96,7 +96,7 @@
 #define FORCEINLINE __forceinline
 #define MSC_FORCEINLINE __forceinline
 #else
-#define FORCEINLINE INLINE
+#define FORCEINLINE inline __attribute__((always_inline)) 
 #define MSC_FORCEINLINE
 #endif
 #endif

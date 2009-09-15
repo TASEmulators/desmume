@@ -5705,579 +5705,579 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND()
      return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
 }
 
-//-----------------------LDRBT-------------------------------------
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_P_IMM_OFF_POSTIND()
-{
-     u32 oldmode;     
-     u32 i;
-     u32 adr;
-     u32 val;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     oldmode = armcpu_switchMode(cpu, SYS);
-     
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
-     
-     armcpu_switchMode(cpu, oldmode);
-     
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_M_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     oldmode = armcpu_switchMode(cpu, SYS);
-
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_IMM_OFF_POSTIND\n");
-     
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
-     
-     armcpu_switchMode(cpu, oldmode);
-     
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_P_REG_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-	 
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_REG_OFF_POSTIND\n");
-
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr + cpu->R[REG_POS(i,0)];
-     
-     armcpu_switchMode(cpu, oldmode);
-     
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSL_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     oldmode = armcpu_switchMode(cpu, SYS);
-
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_LSL_IMM_OFF_POSTIND\n");  
-
-     i = cpu->instruction;
-     LSL_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-     
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSL_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-	 
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_LSL_IMM_OFF_POSTIND\n");  
-
-     i = cpu->instruction;
-     LSL_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-     
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-	 
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_LSR_IMM_OFF_POSTIND\n");  
-
-     i = cpu->instruction;
-     LSR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-     
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-	 
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_LSR_IMM_OFF_POSTIND\n");
-
-     i = cpu->instruction;
-     LSR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ASR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_ASR_IMM_OFF_POSTIND\n");
-          
-
-     i = cpu->instruction;
-     ASR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ASR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_ASR_IMM_OFF_POSTIND\n");
-          
-
-     i = cpu->instruction;
-     ASR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ROR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_ROR_IMM_OFF_POSTIND\n");
-          
-
-     i = cpu->instruction;
-     ROR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ROR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 val;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-
-	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_ROR_IMM_OFF_POSTIND\n");
-          
-
-     i = cpu->instruction;
-     ROR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     val = READ8(cpu->mem_if->data, adr);
-     cpu->R[REG_POS(i,12)] = val;
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-//----------------------STRBT----------------------------
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_P_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_M_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_P_REG_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr + cpu->R[REG_POS(i,0)];
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_M_REG_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr - cpu->R[REG_POS(i,0)];
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_P_LSL_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     LSL_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_M_LSL_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     LSL_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_P_LSR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     LSR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_M_LSR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     LSR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_P_ASR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     ASR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_M_ASR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     ASR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_P_ROR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-          
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     ROR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr + shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
-
-TEMPLATE static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND()
-{
-     u32 oldmode;
-     u32 i;
-     u32 adr;
-     u32 shift_op;
-
-     if(cpu->CPSR.bits.mode==USR)
-          return 2;
-     
-     oldmode = armcpu_switchMode(cpu, SYS);
-          
-
-     i = cpu->instruction;
-     ROR_IMM; 
-     adr = cpu->R[REG_POS(i,16)];
-     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
-     cpu->R[REG_POS(i,16)] = adr - shift_op;
-     
-     armcpu_switchMode(cpu, oldmode);
-
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
-}
+////-----------------------LDRBT-------------------------------------
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_P_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;     
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//     
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//     
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_M_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_IMM_OFF_POSTIND\n");
+//     
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//     
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_P_REG_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//	 
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_REG_OFF_POSTIND\n");
+//
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr + cpu->R[REG_POS(i,0)];
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//     
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSL_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_LSL_IMM_OFF_POSTIND\n");  
+//
+//     i = cpu->instruction;
+//     LSL_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//     
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSL_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//	 
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_LSL_IMM_OFF_POSTIND\n");  
+//
+//     i = cpu->instruction;
+//     LSL_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//     
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//	 
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_LSR_IMM_OFF_POSTIND\n");  
+//
+//     i = cpu->instruction;
+//     LSR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//     
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//	 
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_LSR_IMM_OFF_POSTIND\n");
+//
+//     i = cpu->instruction;
+//     LSR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ASR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_ASR_IMM_OFF_POSTIND\n");
+//          
+//
+//     i = cpu->instruction;
+//     ASR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ASR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_ASR_IMM_OFF_POSTIND\n");
+//          
+//
+//     i = cpu->instruction;
+//     ASR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ROR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_ROR_IMM_OFF_POSTIND\n");
+//          
+//
+//     i = cpu->instruction;
+//     ROR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ROR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 val;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//
+//	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_ROR_IMM_OFF_POSTIND\n");
+//          
+//
+//     i = cpu->instruction;
+//     ROR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     val = READ8(cpu->mem_if->data, adr);
+//     cpu->R[REG_POS(i,12)] = val;
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+////----------------------STRBT----------------------------
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_P_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_M_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_P_REG_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr + cpu->R[REG_POS(i,0)];
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_M_REG_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr - cpu->R[REG_POS(i,0)];
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_P_LSL_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     LSL_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_M_LSL_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     LSL_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_P_LSR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     LSR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_M_LSR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     LSR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_P_ASR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     ASR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_M_ASR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     ASR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_P_ROR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//          
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     ROR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr + shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
+//
+//TEMPLATE static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND()
+//{
+//     u32 oldmode;
+//     u32 i;
+//     u32 adr;
+//     u32 shift_op;
+//
+//     if(cpu->CPSR.bits.mode==USR)
+//          return 2;
+//     
+//     oldmode = armcpu_switchMode(cpu, SYS);
+//          
+//
+//     i = cpu->instruction;
+//     ROR_IMM; 
+//     adr = cpu->R[REG_POS(i,16)];
+//     WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
+//     cpu->R[REG_POS(i,16)] = adr - shift_op;
+//     
+//     armcpu_switchMode(cpu, oldmode);
+//
+//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//}
 
 //---------------------LDM-----------------------------
 
