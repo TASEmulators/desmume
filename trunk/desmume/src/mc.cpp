@@ -376,7 +376,7 @@ void BackupDevice::reset_command()
 
 	com = 0;
 }
-u8 BackupDevice::data_command(u8 val)
+u8 BackupDevice::data_command(u8 val, int cpu)
 {
 	if(com == BM_CMD_READLOW || com == BM_CMD_WRITELOW)
 	{
@@ -440,6 +440,10 @@ u8 BackupDevice::data_command(u8 val)
 		switch(val)
 		{
 			case 0: break; //??
+
+			case 8:
+				val = 0xAA;
+				break;
 			
 			case BM_CMD_WRITEDISABLE:
 				write_enable = FALSE;
@@ -479,7 +483,7 @@ u8 BackupDevice::data_command(u8 val)
 				break;
 
 			default:
-				printf("COMMAND: Unhandled Backup Memory command: %02X\n", val);
+				printf("COMMAND%c: Unhandled Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, NDS_ARM9.instruct_adr);
 				break;
 		}
 	}
@@ -493,9 +497,9 @@ void BackupDevice::ensure(u32 addr)
 	if(size<addr)
 	{
 		data.resize(addr);
+		for(u32 i=size;i<addr;i++)
+			data[i] = kUninitializedSaveDataValue;
 	}
-	for(u32 i=size;i<addr;i++)
-		data[i] = kUninitializedSaveDataValue;
 }
 
 

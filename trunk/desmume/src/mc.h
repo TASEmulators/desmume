@@ -83,7 +83,7 @@ public:
 	
 	//commands from mmu
 	void reset_command();
-	u8 data_command(u8);
+	u8 data_command(u8,int);
 
 	//this info was saved before the last reset (used for savestate compatibility)
 	struct SavedInfo
