@@ -1244,6 +1244,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\filter\lq2x.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\filter\scanline.cpp"
 					>
 				</File>

@@ -32,9 +32,11 @@ Graphics:
   
 Windows:
  bug: improve map view tool to support more modes
- enh: added 2x resizing filters (hq2x, 2xsai, supereagle, scanlines)
+ enh: added 2x resizing filters (hq2x, hq2xs, lq2x, lq2xs, 2xsai, supereagle)
+                                (scanlines, nearest, bilinear)
  enh: soundview can now mute channels
  enh: multicore optimization for filters, rotation, OSD
+ enh: new ioregview
 
 Linux:
  enh: alsa microphone support

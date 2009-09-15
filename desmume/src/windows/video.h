@@ -24,7 +24,10 @@ public:
 		SUPEREAGLE,
 		SCANLINE,
 		BILINEAR,
-		NEAREST2X
+		NEAREST2X,
+		HQ2XS,
+		LQ2X,
+		LQ2XS,
 	};
 
 
@@ -76,8 +79,17 @@ public:
 		{
 			case NONE:
 				break;
+			case LQ2X:
+				RenderLQ2X(src, dst);
+				break;
+			case LQ2XS:
+				RenderLQ2XS(src, dst);
+				break;
 			case HQ2X:
 				RenderHQ2X(src, dst);
+				break;
+			case HQ2XS:
+				RenderHQ2XS(src, dst);
 				break;
 			case _2XSAI:
 				Render2xSaI (src, dst);

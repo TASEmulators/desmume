@@ -273,21 +273,33 @@ static void hq2xS_16_def(u16* dst0, u16* dst1, const u16* src0, const u16* src1,
   unsigned i;
 
   for(i=0;i<count;++i) {
-    unsigned char mask;
+	unsigned char mask;
 
-    u16 c[9];
+	u16 c[9];
 
-    c[1] = src0[0];
-    c[4] = src1[0];
-    c[7] = src2[0];
+	c[1] = src0[0];
+	c[4] = src1[0];
+	c[7] = src2[0];
 
-    c[0] = src0[-1];
-    c[3] = src1[-1];
-    c[6] = src2[-1];
+	if (i>0) {
+	 c[0] = src0[-1];
+	 c[3] = src1[-1];
+	 c[6] = src2[-1];
+	} else {
+	 c[0] = c[1];
+	 c[3] = c[4];
+	 c[6] = c[7];
+	}
 
-    c[2] = src0[1];
-    c[5] = src1[1];
-    c[8] = src2[1];
+	if (i<count-1) {
+	 c[2] = src0[1];
+	 c[5] = src1[1];
+	 c[8] = src2[1];
+	} else {
+	 c[2] = c[1];
+	 c[5] = c[4];
+	 c[8] = c[7];
+	}
 
 	mask = 0;
 
@@ -400,25 +412,36 @@ static void hq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1,
 {
   unsigned i;
 
-  for(i=0;i<count;++i) {
-    unsigned char mask;
+   for(i=0;i<count;++i) {
+      unsigned char mask;
 
-    u32 c[9];
+      u32 c[9];
 
-    c[1] = src0[0];
-    c[4] = src1[0];
-    c[7] = src2[0];
+      c[1] = src0[0];
+      c[4] = src1[0];
+      c[7] = src2[0];
 
-    c[0] = src0[-1];
-    c[3] = src1[-1];
-    c[6] = src2[-1];
+      if (i>0) {
+         c[0] = src0[-1];
+         c[3] = src1[-1];
+         c[6] = src2[-1];
+      } else {
+         c[0] = src0[0];
+         c[3] = src1[0];
+         c[6] = src2[0];
+      }
 
-    c[2] = src0[1];
-    c[5] = src1[1];
-    c[8] = src2[1];
+      if (i<count-1) {
+         c[2] = src0[1];
+         c[5] = src1[1];
+         c[8] = src2[1];
+      } else {
+         c[2] = src0[0];
+         c[5] = src1[0];
+         c[8] = src2[0];
+      }
 
 	mask = 0;
-
 	// hq2xS dynamic edge detection:
 	// simply comparing the center color against its surroundings will give bad results in many cases,
 	// so, instead, compare the center color relative to the max difference in brightness of this 3x3 block
@@ -458,7 +481,6 @@ static void hq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1,
 		if(ABS(brightArray[8] - centerBright) > diffBright)
 			mask |= 1 << 7;
 	}
-
 #define P0 dst0[0]
 #define P1 dst0[1]
 #define P2 dst1[0]
@@ -645,6 +667,19 @@ void RenderHQ2X (SSurface Src, SSurface Dst)
     lpDst = Dst.Surface;
 
     hq2x32 (lpSrc, Src.Pitch*2,
+                lpSrc,
+                lpDst, Dst.Pitch*2 , Src.Width, Src.Height);
+}
+
+void RenderHQ2XS (SSurface Src, SSurface Dst)
+{
+
+    unsigned char *lpSrc, *lpDst;
+
+    lpSrc = Src.Surface;
+    lpDst = Dst.Surface;
+
+    hq2xS32 (lpSrc, Src.Pitch*2,
                 lpSrc,
                 lpDst, Dst.Pitch*2 , Src.Width, Src.Height);
 }
