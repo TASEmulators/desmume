@@ -25,7 +25,10 @@ struct SSurface {
 };
 
 void RenderNearest2X (SSurface Src, SSurface Dst);
+void RenderLQ2X (SSurface Src, SSurface Dst);
+void RenderLQ2XS (SSurface Src, SSurface Dst);
 void RenderHQ2X (SSurface Src, SSurface Dst);
+void RenderHQ2XS (SSurface Src, SSurface Dst);
 void Render2xSaI (SSurface Src, SSurface Dst);
 void RenderSuper2xSaI (SSurface Src, SSurface Dst);
 void RenderSuperEagle (SSurface Src, SSurface Dst);

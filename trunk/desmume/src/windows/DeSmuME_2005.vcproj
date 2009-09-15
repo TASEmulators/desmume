@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="shift_jis"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
@@ -920,6 +920,22 @@
 				</File>
 				<File
 					RelativePath=".\filter\hq2x.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\hq2x.h"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\interp.h"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\lq2x.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\lq2x.h"
 					>
 				</File>
 				<File

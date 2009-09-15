@@ -3102,7 +3102,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Filters
 			MainWindow->checkMenu(IDM_RENDER_NORMAL, video.currentfilter == video.NONE );
+			MainWindow->checkMenu(IDM_RENDER_LQ2X, video.currentfilter == video.LQ2X );
+			MainWindow->checkMenu(IDM_RENDER_LQ2XS, video.currentfilter == video.LQ2XS );
 			MainWindow->checkMenu(IDM_RENDER_HQ2X, video.currentfilter == video.HQ2X );
+			MainWindow->checkMenu(IDM_RENDER_HQ2XS, video.currentfilter == video.HQ2XS );
 			MainWindow->checkMenu(IDM_RENDER_2XSAI, video.currentfilter == video._2XSAI );
 			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, video.currentfilter == video.SUPER2XSAI );
 			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, video.currentfilter == video.SUPEREAGLE );
@@ -3597,10 +3600,31 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				FilterUpdate(hwnd);
 			}
 			break;
+		case IDM_RENDER_LQ2X:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.LQ2X);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_LQ2XS:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.LQ2XS);
+				FilterUpdate(hwnd);
+			}
+			break;
 		case IDM_RENDER_HQ2X:
 			{
 				Lock lock (win_backbuffer_sync);
 				video.setfilter(video.HQ2X);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_HQ2XS:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.HQ2XS);
 				FilterUpdate(hwnd);
 			}
 			break;

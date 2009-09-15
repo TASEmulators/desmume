@@ -27,6 +27,12 @@
 #include "../MMU.h"
 #include "../armcpu.h"
 
+//this message is only supported in vista so folks sdk might not have it.
+//therefore we shall declare it here
+#ifndef RB_SETBANDWIDTH
+#define RB_SETBANDWIDTH     (WM_USER + 44)   // set width for docked band
+#endif
+
 /*--------------------------------------------------------------------------*/
 
 enum EIORegType
