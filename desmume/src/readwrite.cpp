@@ -117,7 +117,7 @@ int read64le(u64 *Bufo, EMUFILE *is)
 	return 1;
 }
 
-int read32le(u32 *Bufo, std::istream *is)
+static int read32le(u32 *Bufo, std::istream *is)
 {
 	u32 buf;
 	if(is->read((char*)&buf,4).gcount() != 4)
