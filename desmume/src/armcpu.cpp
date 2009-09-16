@@ -1,6 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -533,15 +532,17 @@ u32 armcpu_exec()
 			)
 		{
 			if(PROCNUM==0) {
-#ifdef WANTASMLISTING
-				char txt[128];
-				des_arm_instructions_set[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruct_adr,ARMPROC.instruction,txt);
-				printf("%X: %X - %s\n", ARMPROC.instruct_adr,ARMPROC.instruction, txt);
-#endif
+				#ifdef DEVELOPER
+				DEBUG_statistics.instructionHits[0].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
+				#endif
 				cExecute = arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
 			}
-			else
+			else {
+				#ifdef DEVELOPER
+				DEBUG_statistics.instructionHits[1].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
+				#endif
 				cExecute = arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+			}
 		}
 		else
 			cExecute = 1; // If condition=false: 1S cycle
@@ -557,9 +558,18 @@ u32 armcpu_exec()
 	}
 
 	if(PROCNUM==0)
+	{
+		#ifdef DEVELOPER
+		DEBUG_statistics.instructionHits[0].thumb[ARMPROC.instruction>>6]++;
+		#endif
 		cExecute = thumb_instructions_set_0[ARMPROC.instruction>>6]();
-	else
+	}
+	else {
+		#ifdef DEVELOPER
+		DEBUG_statistics.instructionHits[1].thumb[ARMPROC.instruction>>6]++;
+		#endif
 		cExecute = thumb_instructions_set_1[ARMPROC.instruction>>6]();
+	}
 
 #ifdef GDB_STUB
 	if ( ARMPROC.post_ex_fn != NULL) {

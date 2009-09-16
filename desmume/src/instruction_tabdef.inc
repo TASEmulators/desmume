@@ -1,7 +1,6 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
+	Copyright (C) 2009 DeSmuME team
+    
     This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
@@ -19,7 +18,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
 TABDECL(     OP_AND_LSL_IMM),    // 000 0000 0 0000
 TABDECL(     OP_AND_LSL_REG),    // 000 0000 0 0001
 TABDECL(     OP_AND_LSR_IMM),    // 000 0000 0 0010
@@ -4396,5 +4394,5 @@ TABDECL(     OP_SWI),
 TABDECL(     OP_SWI),
 TABDECL(     OP_SWI),
 TABDECL(     OP_SWI),
-};
+
 

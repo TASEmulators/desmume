@@ -2315,6 +2315,8 @@ void NDS_Reset()
 	FILE* inf = 0;
 	NDS_header * header = NDS_getROMHeader();
 
+	DEBUG_reset();
+
 	if (!header) return ;
 
 	nds_timer = 0;

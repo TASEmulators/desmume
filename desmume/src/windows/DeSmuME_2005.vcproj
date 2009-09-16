@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
@@ -1331,6 +1331,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\instruction_tabdef.inc"
+			>
+		</File>
+		<File
 			RelativePath="..\lua-engine.cpp"
 			>
 		</File>
@@ -1504,6 +1508,10 @@
 		</File>
 		<File
 			RelativePath="..\thumb_instructions.h"
+			>
+		</File>
+		<File
+			RelativePath="..\thumb_tabdef.inc"
 			>
 		</File>
 		<File

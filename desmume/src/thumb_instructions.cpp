@@ -977,7 +977,9 @@ TEMPLATE static  u32 FASTCALL OP_BL_THUMB()
 #define NOM_THUMB_TAB     thumb_instructions_set_0
 #define TABDECL(x)		x<0>
 
+TYPE_RETOUR (* CALLTYPE NOM_THUMB_TAB[1024])(PARAMETRES)={
 #include "thumb_tabdef.inc"
+};
 
 #undef TYPE_RETOUR
 #undef PARAMETRES  
@@ -991,4 +993,19 @@ TEMPLATE static  u32 FASTCALL OP_BL_THUMB()
 #define NOM_THUMB_TAB     thumb_instructions_set_1
 #define TABDECL(x)		x<1>
 
+TYPE_RETOUR (* CALLTYPE NOM_THUMB_TAB[1024])(PARAMETRES)={
 #include "thumb_tabdef.inc"
+};
+
+#undef TYPE_RETOUR
+#undef PARAMETRES  
+#undef CALLTYPE
+#undef NOM_TAB
+#undef TABDECL
+
+#define TABDECL(x) #x
+
+char* thumb_instruction_names[1024] = {
+#include "thumb_tabdef.inc"
+};
+
