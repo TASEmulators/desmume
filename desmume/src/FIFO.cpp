@@ -29,6 +29,7 @@
 #include "mem.h"
 #include "MMU.h"
 #include "NDSSystem.h"
+#include "gfx3d.h"
 
 // ========================================================= IPC FIFO
 IPC_FIFO ipc_fifo[2];		// 0 - ARM9
@@ -313,7 +314,6 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 	return FALSE;
 }
 
-extern void gfx3d_ClearStack();
 void GFX_FIFOcnt(u32 val)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);

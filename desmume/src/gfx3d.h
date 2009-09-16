@@ -351,4 +351,5 @@ extern SFORMAT SF_GFX3D[];
 void gfx3d_savestate(EMUFILE* os);
 bool gfx3d_loadstate(EMUFILE* is, int size);
 
+void gfx3d_ClearStack();
 #endif
