@@ -1,9 +1,6 @@
 /*  Copyright (C) 2006 yopyop
-    Copyright (C) 2006 shash
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
 	Copyright (C) 2006-2007 shash
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -7775,7 +7772,9 @@ TEMPLATE static u32 FASTCALL  OP_CDP()
 #define NOM_TAB     arm_instructions_set_0
 #define TABDECL(x)		x<0>
 
+TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
 #include "instruction_tabdef.inc"
+};
 
 #undef TYPE_RETOUR
 #undef PARAMETRES  
@@ -7789,4 +7788,19 @@ TEMPLATE static u32 FASTCALL  OP_CDP()
 #define NOM_TAB     arm_instructions_set_1
 #define TABDECL(x)		x<1>
 
+TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
 #include "instruction_tabdef.inc"
+};
+
+#undef TYPE_RETOUR
+#undef PARAMETRES  
+#undef CALLTYPE
+#undef NOM_TAB
+#undef TABDECL
+
+#define TABDECL(x) #x
+
+char* arm_instruction_names[4096] = {
+#include "instruction_tabdef.inc"
+};
+

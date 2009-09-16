@@ -1,6 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -27,6 +26,7 @@
 
 extern u32 (FASTCALL* arm_instructions_set_0[4096])();
 extern u32 (FASTCALL* arm_instructions_set_1[4096])();
+extern char* arm_instruction_names[4096];
  
 #endif
 

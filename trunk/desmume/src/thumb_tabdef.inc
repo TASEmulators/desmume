@@ -1,6 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -19,7 +18,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-TYPE_RETOUR (* CALLTYPE NOM_THUMB_TAB[1024])(PARAMETRES)={
 TABDECL(            OP_LSL_0),  //00 0000 0000
 TABDECL(            OP_LSL),  //00 0000 0001
 TABDECL(            OP_LSL),  //00 0000 0010
@@ -1107,5 +1105,3 @@ TABDECL(            OP_BL_THUMB),  //11 1111 1100
 TABDECL(            OP_BL_THUMB),  //11 1111 1101
 TABDECL(            OP_BL_THUMB),  //11 1111 1110
 TABDECL(            OP_BL_THUMB),  //11 1111 1111
-}; //1089
- 

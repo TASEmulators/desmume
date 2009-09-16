@@ -1,4 +1,5 @@
 /*  Copyright (C) 2008 Guillaume Duhamel
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -19,12 +20,115 @@
 
 #include "debug.h"
 
+#include <algorithm>
 #include <stdarg.h>
 #include <stdio.h>
 #include "MMU.h"
 #include "armcpu.h"
+#include "arm_instructions.h"
+#include "thumb_instructions.h"
 
 std::vector<Logger *> Logger::channels;
+
+DebugStatistics DEBUG_statistics;
+
+DebugStatistics::DebugStatistics()
+{
+}
+
+DebugStatistics::InstructionHits::InstructionHits()
+{
+	memset(&arm,0,sizeof(arm));
+	memset(&thumb,0,sizeof(thumb));
+}
+
+
+static DebugStatistics::InstructionHits combinedHits[2];
+
+template<int proc, int which>
+static bool debugStatsSort(int num1, int num2) {
+	if(which==0) {
+		if(combinedHits[proc].arm[num2] == combinedHits[proc].arm[num1]) return false;
+		if(combinedHits[proc].arm[num1] == 0xFFFFFFFF) return false;
+		if(combinedHits[proc].arm[num2] == 0xFFFFFFFF) return true;
+		return combinedHits[proc].arm[num2] < combinedHits[proc].arm[num1];
+	}
+	else {
+		if(combinedHits[proc].thumb[num2] == combinedHits[proc].thumb[num1]) return false;
+		if(combinedHits[proc].thumb[num1] == 0xFFFFFFFF) return false;
+		if(combinedHits[proc].thumb[num2] == 0xFFFFFFFF) return true;
+		return combinedHits[proc].thumb[num2] < combinedHits[proc].thumb[num1];
+	}
+}
+
+void DebugStatistics::print()
+{
+	//consolidate opcodes with the same names
+	for(int i=0;i<2;i++) { 
+		combinedHits[i] = DEBUG_statistics.instructionHits[i];
+
+		for(int j=0;j<4096;j++) {
+			if(combinedHits[i].arm[j] == 0xFFFFFFFF) 
+				continue;
+			std::string name = arm_instruction_names[j];
+			for(int k=j+1;k<4096;k++) {
+				if(combinedHits[i].arm[k] == 0xFFFFFFFF) 
+					continue;
+				if(name == arm_instruction_names[k]) {
+					//printf("combining %s with %d and %d\n",name.c_str(),combinedHits[i].arm[j],combinedHits[i].arm[k]);
+					combinedHits[i].arm[j] += combinedHits[i].arm[k];
+					combinedHits[i].arm[k] = 0xFFFFFFFF;
+				}
+				
+			}
+		}
+
+		for(int j=0;j<1024;j++) {
+			if(combinedHits[i].thumb[j] == 0xFFFFFFFF) 
+				continue;
+			std::string name = thumb_instruction_names[j];
+			for(int k=j+1;k<1024;k++) {
+				if(combinedHits[i].thumb[k] == 0xFFFFFFFF) 
+					continue;
+				if(name == thumb_instruction_names[k]) {
+					//printf("combining %s with %d and %d\n",name.c_str(),combinedHits[i].arm[j],combinedHits[i].arm[k]);
+					combinedHits[i].thumb[j] += combinedHits[i].thumb[k];
+					combinedHits[i].thumb[k] = 0xFFFFFFFF;
+				}
+				
+			}
+		}
+	}
+
+	InstructionHits sorts[2];
+	for(int i=0;i<2;i++) {
+		for(int j=0;j<4096;j++) sorts[i].arm[j] = j;
+		for(int j=0;j<1024;j++) sorts[i].thumb[j] = j;
+	}
+	std::sort(sorts[0].arm, sorts[0].arm+4096, debugStatsSort<0,0>);
+	std::sort(sorts[0].thumb, sorts[0].thumb+1024, debugStatsSort<0,1>);
+	std::sort(sorts[1].arm, sorts[1].arm+4096, debugStatsSort<1,0>);
+	std::sort(sorts[1].thumb, sorts[1].thumb+1024, debugStatsSort<1,1>);
+
+	for(int i=0;i<2;i++) {
+		printf("Top arm instructions for ARM%d:\n",7+i*2);
+		for(int j=0;j<10;j++) {
+			int val = sorts[i].arm[j];
+			printf("%08d: %s\n", combinedHits[i].arm[val], arm_instruction_names[val]);
+		}
+		printf("Top thumb instructions for ARM%d:\n",7+i*2);
+		for(int j=0;j<10;j++) {
+			int val = sorts[i].thumb[j];
+			printf("%08d: %s\n", combinedHits[i].thumb[val], thumb_instruction_names[val]);
+		}
+	}
+}
+
+void DEBUG_reset()
+{
+	DEBUG_statistics = DebugStatistics();
+	printf("DEBUG_reset: %08X",&DebugStatistics::print); //force a reference to this function
+}
 
 static void defaultCallback(const Logger& logger, const char * message) {
 	logger.getOutput() << message;

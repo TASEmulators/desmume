@@ -1,6 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -26,6 +25,7 @@
 
 extern u32 (FASTCALL* thumb_instructions_set_0[1024])();
 extern u32 (FASTCALL* thumb_instructions_set_1[1024])();
+extern char* thumb_instruction_names[1024];
 
 #endif
  

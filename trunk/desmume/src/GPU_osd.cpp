@@ -276,7 +276,7 @@ static void drawPad(double x, double y, double ratio) {
 
 	// touch pad
 	{
-		bool gameTouchOn = nds.isTouch;
+		BOOL gameTouchOn = nds.isTouch;
 		double gameTouchX = screenLeft+1 + (nds.touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
 		double gameTouchY = screenTop+1 + (nds.touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
 		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;
