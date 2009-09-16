@@ -1535,8 +1535,7 @@ struct TSequenceItem
 
 	FORCEINLINE u64 next()
 	{
-		if(enabled) return timestamp;
-		else return kNever;
+		return timestamp;
 	}
 };
 
@@ -1645,9 +1644,10 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 		return (MMU.DMAing[procnum][chan])&&nds_timer>=(MMU.DMACycle[procnum][chan]);
 	}
 
+	FORCEINLINE bool isEnabled() { return MMU.DMAing[procnum][chan]!=0; }
+
 	FORCEINLINE u64 next()
 	{
-		if(!MMU.DMAing[procnum][chan]) return kNever;
 		return MMU.DMACycle[procnum][chan];
 	}
 
@@ -1673,9 +1673,10 @@ struct TSequenceItem_divider : public TSequenceItem
 		return MMU.divRunning && nds_timer >= MMU.divCycles;
 	}
 
+	bool isEnabled() { return MMU.divRunning!=0; }
+
 	FORCEINLINE u64 next()
 	{
-		if(!MMU.divRunning) return kNever;
 		return MMU.divCycles;
 	}
 
@@ -1698,9 +1699,10 @@ struct TSequenceItem_sqrtunit : public TSequenceItem
 		return MMU.sqrtRunning && nds_timer >= MMU.sqrtCycles;
 	}
 
+	bool isEnabled() { return MMU.sqrtRunning!=0; }
+
 	FORCEINLINE u64 next()
 	{
-		if(!MMU.sqrtRunning) return kNever;
 		return MMU.sqrtCycles;
 	}
 
@@ -1990,23 +1992,54 @@ void NDS_Reschedule()
 	sequencer.reschedule = true;
 }
 
+FORCEINLINE u32 _fast_min32(u32 a, u32 b, u32 c, u32 d)
+{
+	return ((( ((s32)(a-b)) >> (32-1)) & (c^d)) ^ d);
+}
+
+FORCEINLINE u64 _fast_min(u64 a, u64 b)
+{
+	//you might find that this is faster on a 64bit system; someone should try it
+	//http://aggregate.org/MAGIC/#Integer%20Selection
+	//u64 ret = (((((s64)(a-b)) >> (64-1)) & (a^b)) ^ b);
+	//assert(ret==min(a,b));
+	//return ret;	
+	
+	//but this ends up being the fastest on 32bits
+	return a<b?a:b;
+
+	//just for the record, I tried to do the 64bit math on a 32bit proc
+	//using sse2 and it was really slow
+	//__m128i __a; __a.m128i_u64[0] = a;
+	//__m128i __b; __b.m128i_u64[0] = b;
+	//__m128i xorval = _mm_xor_si128(__a,__b);
+	//__m128i temp = _mm_sub_epi64(__a,__b);
+	//temp.m128i_i64[0] >>= 63; //no 64bit shra in sse2, what a disappointment
+	//temp = _mm_and_si128(temp,xorval);
+	//temp = _mm_xor_si128(temp,__b);
+	//return temp.m128i_u64[0];
+}
+
+
+
 u64 Sequencer::findNext()
 {
-	u64 next = kNever;
-	next = min(next,dispcnt.next());
-	next = min(next,divider.next());
-	next = min(next,sqrtunit.next());
-	next = min(next,gxfifo.next());
+	//this one is always enabled so dont bother to check it
+	u64 next = dispcnt.next();
+
+	if(divider.isEnabled()) next = _fast_min(next,divider.next());
+	if(sqrtunit.isEnabled()) next = _fast_min(next,sqrtunit.next());
+	if(gxfifo.enabled) next = _fast_min(next,gxfifo.next());
 
 #ifdef EXPERIMENTAL_WIFI
-	next = min(next,wifi.next());
+	next = _fast_min(next,wifi.next());
 #endif
 
-#define test(X,Y) next = min(next,dma_##X##_##Y .next());
+#define test(X,Y) if(dma_##X##_##Y .isEnabled()) next = _fast_min(next,dma_##X##_##Y .next());
 	test(0,0); test(0,1); test(0,2); test(0,3);
 	test(1,0); test(1,1); test(1,2); test(1,3);
 #undef test
-#define test(X,Y) if(timer_##X##_##Y .enabled) next = min(next,timer_##X##_##Y .next());
+#define test(X,Y) if(timer_##X##_##Y .enabled) next = _fast_min(next,timer_##X##_##Y .next());
 	test(0,0); test(0,1); test(0,2); test(0,3);
 	test(1,0); test(1,1); test(1,2); test(1,3);
 #undef test
