@@ -666,6 +666,7 @@ static void Control()
 	else glDisable (GL_TEXTURE_2D);
 
 	if(gfx3d.enableAlphaTest)
+		// FIXME: alpha test should pass gfx3d.alphaTestRef==poly->getAlpha
 		glAlphaFunc	(GL_GREATER, gfx3d.alphaTestRef/31.f);
 	else
 		glAlphaFunc	(GL_GREATER, 0);
@@ -854,12 +855,12 @@ static void OGLRender()
 			glBegin(GL_TRIANGLES);
 
 			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
-			u8 alpha =	material_5bit_to_8bit[poly->getAlpha()];
-			if(wireframe) alpha = 255;
-			u8 color0[4] = {
-					vert0->color[0]<<2,
-					vert0->color[1]<<2,
-					vert0->color[2]<<2,
+			float alpha = poly->getAlpha()/31.0;
+			if(wireframe) alpha = 1.0;
+			float color0[4] = {
+					(vert0->color[0]<<2)/255.0,
+					(vert0->color[1]<<2)/255.0,
+					(vert0->color[2]<<2)/255.0,
 					alpha
 				};
 
@@ -871,29 +872,29 @@ static void OGLRender()
 				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
 				
-				u8 color1[4] = {
-					vert1->color[0]<<2,
-					vert1->color[1]<<2,
-					vert1->color[2]<<2,
+				float color1[4] = {
+					(vert1->color[0]<<2)/255.0,
+					(vert1->color[1]<<2)/255.0,
+					(vert1->color[2]<<2)/255.0,
 					alpha
 				};
-				u8 color2[4] = {
-					vert2->color[0]<<2,
-					vert2->color[1]<<2,
-					vert2->color[2]<<2,
+				float color2[4] = {
+					(vert2->color[0]<<2)/255.0,
+					(vert2->color[1]<<2)/255.0,
+					(vert2->color[2]<<2)/255.0,
 					alpha
 				};
 
 				glTexCoord2fv(vert0->texcoord);
-				glColor4ubv((GLubyte*)color0);
+				glColor4fv((GLfloat*)color0);
 				glVertex4fv(vert0->coord);
 
 				glTexCoord2fv(vert1->texcoord);
-				glColor4ubv((GLubyte*)color1);
+				glColor4fv((GLfloat*)color1);
 				glVertex4fv(vert1->coord);
 
 				glTexCoord2fv(vert2->texcoord);
-				glColor4ubv((GLubyte*)color2);
+				glColor4fv((GLfloat*)color2);
 				glVertex4fv(vert2->coord);
 			}
 
