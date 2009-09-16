@@ -7800,7 +7800,7 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
 
 #define TABDECL(x) #x
 
-char* arm_instruction_names[4096] = {
+const char* arm_instruction_names[4096] = {
 #include "instruction_tabdef.inc"
 };
 
