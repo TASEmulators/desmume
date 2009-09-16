@@ -399,7 +399,7 @@ static char OGLInit(void)
 	glEnable		(GL_TEXTURE_1D);
 	glEnable		(GL_TEXTURE_2D);
 
-	glAlphaFunc		(GL_GREATER, 0);
+	glAlphaFunc		(GL_GEQUAL, 0);
 	xglEnable		(GL_ALPHA_TEST);
 
 	glViewport(0, 0, 256, 192);
@@ -666,9 +666,9 @@ static void Control()
 	else glDisable (GL_TEXTURE_2D);
 
 	if(gfx3d.enableAlphaTest)
-		glAlphaFunc	(GL_GREATER, gfx3d.alphaTestRef/31.f);
+		glAlphaFunc	(GL_GEQUAL, gfx3d.alphaTestRef/31.f);
 	else
-		glAlphaFunc	(GL_GREATER, 0);
+		glAlphaFunc	(GL_GEQUAL, 0);
 
 	if(gfx3d.enableAlphaBlending)
 	{
