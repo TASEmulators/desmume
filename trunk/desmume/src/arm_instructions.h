@@ -26,7 +26,7 @@
 
 extern u32 (FASTCALL* arm_instructions_set_0[4096])();
 extern u32 (FASTCALL* arm_instructions_set_1[4096])();
-extern char* arm_instruction_names[4096];
+extern const char* arm_instruction_names[4096];
  
 #endif
 
