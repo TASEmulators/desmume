@@ -1005,7 +1005,7 @@ TYPE_RETOUR (* CALLTYPE NOM_THUMB_TAB[1024])(PARAMETRES)={
 
 #define TABDECL(x) #x
 
-char* thumb_instruction_names[1024] = {
+const char* thumb_instruction_names[1024] = {
 #include "thumb_tabdef.inc"
 };
 
