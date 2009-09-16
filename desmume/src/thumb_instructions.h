@@ -25,7 +25,7 @@
 
 extern u32 (FASTCALL* thumb_instructions_set_0[1024])();
 extern u32 (FASTCALL* thumb_instructions_set_1[1024])();
-extern char* thumb_instruction_names[1024];
+extern const char* thumb_instruction_names[1024];
 
 #endif
  
