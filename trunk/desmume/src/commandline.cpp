@@ -42,6 +42,9 @@ CommandLine::CommandLine()
 , _cflash_path(0)
 , _single_core(0)
 , _multi_core(0)
+, _bios_arm9(NULL)
+, _bios_arm7(NULL)
+, _bios_swi(0)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
@@ -67,6 +70,9 @@ void CommandLine::loadCommonOptions()
 		{ "start-paused", 0, 0, G_OPTION_ARG_NONE, &start_paused, "Indicates that emulation should start paused", "START_PAUSED"},
 		{ "cflash-image", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_image, "Requests cflash in gbaslot with fat image at this path", "CFLASH_IMAGE"},
 		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
+		{ "bios-arm9", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm9, "Uses the arm9 bios provided at the specified path", "BIOS_ARM9_PATH"},
+		{ "bios-arm7", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm7, "Uses the arm7 bios provided at the specified path", "BIOS_ARM7_PATH"},
+		{ "bios-swi", 0, 0, G_OPTION_ARG_INT, &_bios_swi, "Uses SWI from the provided bios files", "BIOS_SWI"},
 #ifdef _MSC_VER
 		{ "single-core", 0, 0, G_OPTION_ARG_NONE, &_single_core, "Limit execution to use approximately only one core", "NUM_CORES"},
 		{ "multi-core", 0, 0, G_OPTION_ARG_NONE, &_multi_core, "Act as if multiple cores are present, even on a single-core machine", "MULTI_CORE"},
@@ -100,6 +106,11 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_single_core) CommonSettings.single_core = true;
 	if(_multi_core) CommonSettings.single_core = false;
 
+	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
+	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
+	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM7BIOS,_bios_arm7); }
+	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
+
 	if (argc == 2)
 		nds_file = argv[1];
 	if (argc > 2)
@@ -128,6 +139,15 @@ bool CommandLine::validate()
 	if(cflash_path != "" && cflash_image != "") {
 		g_printerr("Cannot specify both cflash-image and cflash-path.\n");
 		return false;
+	}
+
+	if(_bios_arm9 && !_bios_arm7 || _bios_arm7 && !_bios_arm9) {
+		g_printerr("If either bios-arm7 or bios-arm9 are specified, both must be.\n");
+		return false;
+	}
+
+	if(_bios_swi && (!_bios_arm7 || !_bios_arm9)) {
+		g_printerr("If either bios-swi is used, bios-arm9 and bios-arm7 must be specified.\n");
 	}
 
 	return true;
