@@ -966,7 +966,10 @@ int NDS_ImportSave(const char *filename)
 	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
 		return MMU_new.backupDevice.load_duc(filename);
 	else
-		return MMU_new.backupDevice.load_raw(filename);
+		if (MMU_new.backupDevice.load_no_gba(filename))
+			return 1;
+		else
+			return MMU_new.backupDevice.load_raw(filename);
 
 	return 0;
 }
@@ -975,6 +978,15 @@ bool NDS_ExportSave(const char *filename)
 {
 	if (strlen(filename) < 4)
 		return false;
+
+	if (memcmp(filename+strlen(filename)-5, ".sav*", 5) == 0)
+	{
+		char tmp[MAX_PATH];
+		memset(tmp, 0, MAX_PATH);
+		strcpy(tmp, filename);
+		tmp[strlen(tmp)-1] = 0;
+		return MMU_new.backupDevice.save_no_gba(tmp);
+	}
 
 	if (memcmp(filename+strlen(filename)-4, ".sav", 4) == 0)
 		return MMU_new.backupDevice.save_raw(filename);
@@ -2425,7 +2437,7 @@ void NDS_Reset()
 		for (int t = 0; t < 4096; t++)
 			MMU.ARM9_BIOS[t] = 0xFF;
 
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000027);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000095);
 
 		for (int t = 0; t < 156; t++)		// load logo
 			MMU.ARM9_BIOS[t + 0x20] = logo_data[t];

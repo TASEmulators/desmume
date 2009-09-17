@@ -724,6 +724,26 @@ bool BackupDevice::load_no_gba(const char *fname)
 
 	return false;
 }
+
+bool BackupDevice::save_no_gba(const char* fname)
+{
+	FILE* outf = fopen(fname,"wb");
+	if(!outf) return false;
+	u32 size = data.size();
+	u32 padSize = pad_up_size(size);
+	if(data.size()>0)
+		fwrite(&data[0],1,size,outf);
+	for(u32 i=size;i<padSize;i++)
+		fputc(0xFF,outf);
+
+	if (padSize < 512 * 1024)
+	{
+		for(u32 i=padSize; i<512 * 1024; i++)
+			fputc(0xFF,outf);
+	}
+	fclose(outf);
+	return true;
+}
 //======================================================================= end
 //=======================================================================
 //======================================================================= no$GBA

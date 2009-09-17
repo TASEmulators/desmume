@@ -3780,7 +3780,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0Raw Save format (*.sav)\0*.sav\0\0";
+				ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0Raw/No$GBA Save format (*.sav)\0*.sav\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  ImportSavName;
 				ofn.nMaxFile = MAX_PATH;
@@ -3810,18 +3810,20 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0\0";
+				ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0No$GBA Save format (*.sav)\0*.sav\0\0";
 				ofn.nFilterIndex = 0;
 				ofn.lpstrFile =  ImportSavName;
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "sav";
-				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
+				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
 
 				if(!GetSaveFileName(&ofn))
 				{
 					NDS_UnPause();
 					return 0;
 				}
+
+				if (ofn.nFilterIndex == 2) strcat(ImportSavName, "*");
 
 				if (!NDS_ExportSave(ImportSavName))
 					MessageBox(hwnd,"Save was not successfully exported","Error",MB_OK);
