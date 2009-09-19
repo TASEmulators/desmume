@@ -307,12 +307,12 @@ template<int PROCNUM, MMU_ACCESS_TYPE AT> void _MMU_write08(u32 addr, u8 val);
 template<int PROCNUM, MMU_ACCESS_TYPE AT> void _MMU_write16(u32 addr, u16 val);
 template<int PROCNUM, MMU_ACCESS_TYPE AT> void _MMU_write32(u32 addr, u32 val);
 
-template<int PROCNUM> u8 _MMU_read08(u32 addr) { return _MMU_read08<PROCNUM, MMU_AT_DATA>(addr); }
-template<int PROCNUM> u16 _MMU_read16(u32 addr) { return _MMU_read16<PROCNUM, MMU_AT_DATA>(addr); }
-template<int PROCNUM> u32 _MMU_read32(u32 addr) { return _MMU_read32<PROCNUM, MMU_AT_DATA>(addr); }
-template<int PROCNUM> void _MMU_write08(u32 addr, u8 val) { _MMU_write08<PROCNUM, MMU_AT_DATA>(addr,val); }
-template<int PROCNUM> void _MMU_write16(u32 addr, u16 val) { _MMU_write16<PROCNUM, MMU_AT_DATA>(addr,val); }
-template<int PROCNUM> void _MMU_write32(u32 addr, u32 val) { _MMU_write32<PROCNUM, MMU_AT_DATA>(addr,val); }
+template<int PROCNUM> FORCEINLINE u8 _MMU_read08(u32 addr) { return _MMU_read08<PROCNUM, MMU_AT_DATA>(addr); }
+template<int PROCNUM> FORCEINLINE u16 _MMU_read16(u32 addr) { return _MMU_read16<PROCNUM, MMU_AT_DATA>(addr); }
+template<int PROCNUM> FORCEINLINE u32 _MMU_read32(u32 addr) { return _MMU_read32<PROCNUM, MMU_AT_DATA>(addr); }
+template<int PROCNUM> FORCEINLINE void _MMU_write08(u32 addr, u8 val) { _MMU_write08<PROCNUM, MMU_AT_DATA>(addr,val); }
+template<int PROCNUM> FORCEINLINE void _MMU_write16(u32 addr, u16 val) { _MMU_write16<PROCNUM, MMU_AT_DATA>(addr,val); }
+template<int PROCNUM> FORCEINLINE void _MMU_write32(u32 addr, u32 val) { _MMU_write32<PROCNUM, MMU_AT_DATA>(addr,val); }
 
 void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val);
 void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val);
@@ -331,9 +331,13 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 extern u32 partie;
 
 extern u32 _MMU_MAIN_MEM_MASK;
+extern u32 _MMU_MAIN_MEM_MASK16;
+extern u32 _MMU_MAIN_MEM_MASK32;
 inline void SetupMMU(BOOL debugConsole) {
 	if(debugConsole) _MMU_MAIN_MEM_MASK = 0x7FFFFF;
 	else _MMU_MAIN_MEM_MASK = 0x3FFFFF;
+	_MMU_MAIN_MEM_MASK16 = _MMU_MAIN_MEM_MASK & ~1;
+	_MMU_MAIN_MEM_MASK32 = _MMU_MAIN_MEM_MASK & ~3;
 }
 
 //TODO: at one point some of the early access code included this. consider re-adding it
@@ -392,10 +396,10 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
 	{
 		if ((addr & 0x0F000000) == 0x02000000)
-			return T1ReadWord_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadWord_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK16);
 
 		if(addr<0x02000000) 
-			return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, addr&0x7FFF);
+			return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, addr&0x7FFE);
 
 		goto dunno;
 	}
@@ -404,11 +408,11 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
 			//Returns data from DTCM (ARM9 only)
-			return T1ReadWord(MMU.ARM9_DTCM, addr & 0x3FFF);
+			return T1ReadWord_guaranteedAligned(MMU.ARM9_DTCM, addr & 0x3FFE);
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadWord( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+		return T1ReadWord_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK16);
 
 dunno:
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
@@ -428,10 +432,10 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
 	{
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK32);
 
 		if(addr<0x02000000) 
-			return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, addr&0x7FFF);
+			return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, addr&0x7FFC);
 
 		goto dunno;
 	}
@@ -440,11 +444,11 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM7)
 	{
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK32);
 		else if((addr & 0xFF800000) == 0x03800000)
-			return T1ReadLong_guaranteedAligned(MMU.ARM7_ERAM, addr&0xFFFF);
+			return T1ReadLong_guaranteedAligned(MMU.ARM7_ERAM, addr&0xFFFC);
 		else if((addr & 0xFF800000) == 0x03000000)
-			return T1ReadLong_guaranteedAligned(MMU.SWIRAM, addr&0x7FFF);
+			return T1ReadLong_guaranteedAligned(MMU.SWIRAM, addr&0x7FFC);
 	}
 
 
@@ -454,11 +458,11 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
 			//Returns data from DTCM (ARM9 only)
-			return T1ReadLong(MMU.ARM9_DTCM, addr & 0x3FFF);
+			return T1ReadLong_guaranteedAligned(MMU.ARM9_DTCM, addr & 0x3FFC);
 		}
 	
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong_guaranteedAligned( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK32);
 	}
 
 dunno:
@@ -503,12 +507,12 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
-			T1WriteWord(MMU.ARM9_DTCM, addr & 0x3FFF, val);
+			T1WriteWord(MMU.ARM9_DTCM, addr & 0x3FFE, val);
 			return;
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteWord( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
+		T1WriteWord( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK16, val);
 		return;
 	}
 
@@ -528,12 +532,12 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
-			T1WriteLong(MMU.ARM9_DTCM, addr & 0x3FFF, val);
+			T1WriteLong(MMU.ARM9_DTCM, addr & 0x3FFC, val);
 			return;
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteLong( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
+		T1WriteLong( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK32, val);
 		return;
 	}
 

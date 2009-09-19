@@ -24,8 +24,10 @@
 
 #include "types.h"
 
-extern char * (* des_arm_instructions_set[4096])(u32 adr, u32 i, char * txt);
-extern char * (* des_thumb_instructions_set[1024])(u32 adr, u32 i, char * txt);
+typedef char* (* DisasmOpFunc)(u32 adr, u32 i, char * txt);
+
+extern const DisasmOpFunc des_arm_instructions_set[4096];
+extern const DisasmOpFunc des_thumb_instructions_set[1024];
 
 #endif
 

@@ -251,9 +251,10 @@ TEMPLATE u32 intrWaitARM()
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
-
-     cpu->R[15] = cpu->instruct_adr;
-     cpu->next_instruction = cpu->R[15];
+     
+	 u32 instructAddr = cpu->instruct_adr;
+     cpu->R[15] = instructAddr;
+     cpu->next_instruction = instructAddr;
      cpu->waitIRQ = 1;
      //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
 
@@ -270,6 +271,7 @@ TEMPLATE static u32 waitVBlankARM()
 TEMPLATE static u32 wait4IRQ()
 {
      //execute= FALSE;
+     u32 instructAddr = cpu->instruct_adr;
      if(cpu->wirq)
      {
           if(!cpu->waitIRQ)
@@ -279,14 +281,14 @@ TEMPLATE static u32 wait4IRQ()
                //cpu->switchMode(oldmode[cpu->proc_ID]);
                return 1;
           }
-          cpu->R[15] = cpu->instruct_adr;
-          cpu->next_instruction = cpu->R[15];
+          cpu->R[15] = instructAddr;
+          cpu->next_instruction = instructAddr;
           return 1;
      }
      cpu->waitIRQ = 1;
      cpu->wirq = 1;
-     cpu->R[15] = cpu->instruct_adr;
-     cpu->next_instruction = cpu->R[15];
+     cpu->R[15] = instructAddr;
+     cpu->next_instruction = instructAddr;
      //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
      return 1;
 }

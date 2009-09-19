@@ -23,8 +23,11 @@
 
 #include "armcpu.h"
 
-extern u32 (FASTCALL* thumb_instructions_set_0[1024])();
-extern u32 (FASTCALL* thumb_instructions_set_1[1024])();
+typedef u32 (FASTCALL* ThumbOpFunc)(const u32 i);
+
+extern const ThumbOpFunc thumb_instructions_set_0[1024];
+extern const ThumbOpFunc thumb_instructions_set_1[1024];
+
 extern const char* thumb_instruction_names[1024];
 
 #endif

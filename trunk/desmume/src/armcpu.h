@@ -35,20 +35,16 @@
 inline u32 ROR(u32 i, u32 j)   { return ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j)))); }
 
 template<typename T>
-inline T UNSIGNED_OVERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(b)) | 
-												  ((BIT31(a)|BIT31(b))&BIT31(~c))); }
+inline T UNSIGNED_OVERFLOW(T a,T b,T c) { return BIT31(((a)&(b)) | (((a)|(b))&(~c))); }
 
 template<typename T>
-inline T UNSIGNED_UNDERFLOW(T a,T b,T c) { return ((BIT31(~a)&BIT31(b)) | 
-													((BIT31(~a)|BIT31(b))&BIT31(c))); }
+inline T UNSIGNED_UNDERFLOW(T a,T b,T c) { return BIT31(((~a)&(b)) | (((~a)|(b))&(c))); }
 
 template<typename T>
-inline T SIGNED_OVERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(b)&BIT31(~c))|
-										  (BIT31(~a)&BIT31(~(b))&BIT31(c))); }
+inline T SIGNED_OVERFLOW(T a,T b,T c) { return BIT31(((a)&(b)&(~c)) | ((~a)&(~(b))&(c))); }
 
 template<typename T>
-inline T SIGNED_UNDERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(~(b))&BIT31(~c))|
-										  (BIT31(~a)&BIT31(b)&BIT31(c))); }
+inline T SIGNED_UNDERFLOW(T a,T b,T c) { return BIT31(((a)&(~(b))&(~c)) | ((~a)&(b)&(c))); }
 
 //zero 15-feb-2009 - these werent getting used and they were getting in my way
 //#define EQ	0x0
@@ -69,7 +65,7 @@ inline T SIGNED_UNDERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(~(b))&BIT31(~c)
 
 extern const unsigned char arm_cond_table[16*16];
 
-#define TEST_COND(cond, inst, CPSR)   ((arm_cond_table[((CPSR.val >> 24) & 0xf0)+(cond)] >> (inst)) & 1)
+#define TEST_COND(cond, inst, CPSR)   ((arm_cond_table[((CPSR.val >> 24) & 0xf0)|(cond)]) & (1 << (inst)))
 
 
 enum Mode
