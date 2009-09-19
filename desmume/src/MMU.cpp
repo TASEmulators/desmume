@@ -85,6 +85,8 @@ static u64 isqrt (u64 x) {
 
 u32 partie = 1;
 u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
+u32 _MMU_MAIN_MEM_MASK16 = 0x3FFFFF & ~1;
+u32 _MMU_MAIN_MEM_MASK32 = 0x3FFFFF & ~3;
 
 #define ROM_MASK 3
 
@@ -1980,7 +1982,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return;
 	
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
 }
 
@@ -2460,7 +2462,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return;
 
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 } 
 
@@ -2859,7 +2861,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return;
 
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 }
 
@@ -2887,12 +2889,12 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	mmu_log_debug_ARM9(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
 
 	if(adr<0x02000000)
-		return T1ReadWord(MMU.ARM9_ITCM, adr & 0x7FFF);	
+		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
 
-	adr &= 0x0FFFFFFF;
+	adr &= 0x0FFFFFFE;
 
 	if (adr >> 24 == 4)
 	{
@@ -2941,14 +2943,15 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				return 1;
 		}
 
-		return  T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
+		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
 	}
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped);
 	if(unmapped) return 0;
 	
-	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]); 
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF
+	return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]); 
 }
 
 //================================================= MMU ARM9 read 32
@@ -2957,12 +2960,12 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	mmu_log_debug_ARM9(adr, "(read32) %0x%X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
 
 	if(adr<0x02000000) 
-		return T1ReadLong(MMU.ARM9_ITCM, adr&0x7FFF);
+		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
 
-	adr &= 0x0FFFFFFF;
+	adr &= 0x0FFFFFFC;
 
 	// Address is an IO register
 	if((adr >> 24) == 4)
@@ -3048,15 +3051,15 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
             case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM9>();
 		}
-		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
+		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 	}
 	
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped);
 	if(unmapped) return 0;
 
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
-	return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
+	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 }
 //================================================================================================== ARM7 *
 //=========================================================================================================
@@ -3122,7 +3125,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return;
 	
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 }
 
@@ -3438,7 +3441,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return;
 
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 } 
 //================================================= MMU ARM7 write 32
@@ -3573,7 +3576,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return;
 
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 }
 
@@ -3618,7 +3621,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
 
-	adr &= 0x0FFFFFFF;
+	adr &= 0x0FFFFFFE;
 
 	if(adr>>24==4)
 	{
@@ -3660,7 +3663,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_POSTFLG :
 				return 1;
 		}
-		return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
+		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]); 
 	}
 
 	bool unmapped;
@@ -3668,7 +3671,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	if(unmapped) return 0;
 
 	/* Returns data from memory */
-	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF
+	return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]); 
 }
 //================================================= MMU ARM7 read 32
 u32 FASTCALL _MMU_ARM7_read32(u32 adr)
@@ -3684,7 +3688,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
 
-	adr &= 0x0FFFFFFF;
+	adr &= 0x0FFFFFFC;
 
 	if((adr >> 24) == 4)
 	{
@@ -3718,7 +3722,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
             case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
 		}
-		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
+		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 	}
 
 	bool unmapped;
@@ -3726,8 +3730,8 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	if(unmapped) return 0;
 
 	//Returns data from memory
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
-	return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
+	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 }
 
 //=========================================================================================================

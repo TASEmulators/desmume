@@ -3760,18 +3760,14 @@ static char * OP_BL_THUMB(u32 adr, u32 i, char * txt)
      return txt;
 } 
 
-#define TYPE_RETOUR char *
-#define PARAMETRES  u32 adr, u32 i, char * txt
-#define CALLTYPE     
-#define NOM_TAB     des_arm_instructions_set
-#define NOM_THUMB_TAB     des_thumb_instructions_set
+
+
 #define TABDECL(x) x
 
-TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
+const DisasmOpFunc des_arm_instructions_set[4096] = {
 #include "instruction_tabdef.inc"
 };
 
-TYPE_RETOUR (*CALLTYPE NOM_THUMB_TAB[1024])(PARAMETRES)={
+const DisasmOpFunc des_thumb_instructions_set[1024] = {
 #include "thumb_tabdef.inc"
 };
-

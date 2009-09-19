@@ -21,11 +21,13 @@
 #ifndef ARMINSTRUCTION_H
 #define ARMINSTRUCTION_H
 
-#include "types.h"
 #include "armcpu.h"
 
-extern u32 (FASTCALL* arm_instructions_set_0[4096])();
-extern u32 (FASTCALL* arm_instructions_set_1[4096])();
+typedef u32 (FASTCALL* ArmOpFunc)(const u32 i);
+
+extern const ArmOpFunc arm_instructions_set_0[4096];
+extern const ArmOpFunc arm_instructions_set_1[4096];
+
 extern const char* arm_instruction_names[4096];
  
 #endif

@@ -413,6 +413,17 @@ FORCEINLINE static u32 armcpu_prefetch()
 	armcpu->R[15] = curInstruction + 4;
 #endif
 
+#if 0
+	if(PROCNUM==0)
+	{
+		// arm9 fetches 2 instructions at a time in thumb mode
+		if(!(curInstruction == armcpu->instruct_adr + 2 && (curInstruction & 2)))
+			return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
+		else
+			return 0;
+	}
+#endif
+
 	return MMU.MMU_WAIT16[PROCNUM][(curInstruction>>24)&0xF];
 }
 
@@ -535,13 +546,13 @@ u32 armcpu_exec()
 				#ifdef DEVELOPER
 				DEBUG_statistics.instructionHits[0].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
 				#endif
-				cExecute = arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+				cExecute = arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruction);
 			}
 			else {
 				#ifdef DEVELOPER
 				DEBUG_statistics.instructionHits[1].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
 				#endif
-				cExecute = arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+				cExecute = arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruction);
 			}
 		}
 		else
@@ -562,13 +573,13 @@ u32 armcpu_exec()
 		#ifdef DEVELOPER
 		DEBUG_statistics.instructionHits[0].thumb[ARMPROC.instruction>>6]++;
 		#endif
-		cExecute = thumb_instructions_set_0[ARMPROC.instruction>>6]();
+		cExecute = thumb_instructions_set_0[ARMPROC.instruction>>6](ARMPROC.instruction);
 	}
 	else {
 		#ifdef DEVELOPER
 		DEBUG_statistics.instructionHits[1].thumb[ARMPROC.instruction>>6]++;
 		#endif
-		cExecute = thumb_instructions_set_1[ARMPROC.instruction>>6]();
+		cExecute = thumb_instructions_set_1[ARMPROC.instruction>>6](ARMPROC.instruction);
 	}
 
 #ifdef GDB_STUB
