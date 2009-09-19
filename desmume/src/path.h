@@ -84,9 +84,9 @@ public:
 		while (p >= pathToModule && *p != '\\') p--;
 		if (++p >= pathToModule) *p = 0;
 #else
-//		strcpy(pathToModule, g_get_home_dir());
-		const char *homedir = getenv ("HOME");
-		strcpy(pathToModule, homedir);
+		char *cwd = g_get_current_dir();
+		strncpy(pathToModule, cwd, MAX_PATH);
+		g_free(cwd);
 #endif
 	}
 
