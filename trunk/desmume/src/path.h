@@ -68,27 +68,26 @@ public:
 		std::vector<std::string> parts = tokenize_str(filename,"|");
 		SetRomName(parts[parts.size()-1].c_str());
 		LoadModulePath();
-		#ifndef WIN32
-		
+#ifndef WIN32
 		ReadPathSettings();
-		#endif
+#endif
 		
 	}
 
 	void LoadModulePath()
 	{
-		#ifdef WIN32
+#ifdef WIN32
 		char *p;
 		ZeroMemory(pathToModule, sizeof(pathToModule));
 		GetModuleFileName(NULL, pathToModule, sizeof(pathToModule));
 		p = pathToModule + lstrlen(pathToModule);
 		while (p >= pathToModule && *p != '\\') p--;
 		if (++p >= pathToModule) *p = 0;
-		#else
+#else
 //		strcpy(pathToModule, g_get_home_dir());
 		const char *homedir = getenv ("HOME");
 		strcpy(pathToModule, homedir);
-		#endif
+#endif
 	}
 
 	enum Action
@@ -104,12 +103,16 @@ public:
 
 	void ReadKey(char *pathToRead, const char *key)
 	{
-		#ifdef WIN32
+#ifdef WIN32
 		GetPrivateProfileString(SECTION, key, key, pathToRead, MAX_PATH, IniName);
-		if(strcmp(pathToRead, key) == 0)
-		#endif
+		if(strcmp(pathToRead, key) == 0) {
 			//since the variables are all intialized in this file they all use MAX_PATH
 			GetDefaultPath(pathToRead, key, MAX_PATH);
+		}
+#else
+		//since the variables are all intialized in this file they all use MAX_PATH
+		GetDefaultPath(pathToRead, key, MAX_PATH);
+#endif
 	}
 
 	void ReadPathSettings()
@@ -126,11 +129,11 @@ public:
 		ReadKey(pathToSounds, SOUNDKEY);
 		ReadKey(pathToFirmware, FIRMWAREKEY);
 		ReadKey(pathToLua, LUAKEY);
-		#ifdef WIN32
+#ifdef WIN32
 		GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 		currentimageformat	= (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
-		#endif
+#endif
 	/*
 		needsSaving		= GetPrivateProfileInt(SECTION, NEEDSSAVINGKEY, TRUE, IniName);
 		if(needsSaving)
@@ -178,13 +181,13 @@ public:
 		{
 			strncpy(buffer, pathToCopy, MAX_PATH);
 			int len = strlen(buffer)-1;
-			#ifdef WIN32
+#ifdef WIN32
 			if(buffer[len] != '\\') 
 				strcat(buffer, "\\");
-			#else
+#else
 			if(buffer[len] != '/') 
 				strcat(buffer, "/");
-			#endif
+#endif
 
 		}
 		else if(action == SET)
@@ -308,13 +311,13 @@ public:
 
 	enum ImageFormat
 	{
-	#ifdef WIN32
+#ifdef WIN32
 		PNG = IDC_PNG,
 		BMP = IDC_BMP
-	#else
+#else
 		PNG,
 		BMP
-	#endif
+#endif
 	};
 
 	ImageFormat currentimageformat;
