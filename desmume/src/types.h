@@ -31,6 +31,15 @@
 #define ENABLE_SSE2
 #endif
 
+#ifdef __GNUC__
+#ifdef __SSE__
+#define ENABLE_SSE
+#endif
+#ifdef __SSE2__
+#define ENABLE_SSE2
+#endif
+#endif
+
 #ifdef NOSSE
 #undef ENABLE_SSE
 #endif

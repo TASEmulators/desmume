@@ -126,7 +126,7 @@ FORCEINLINE void memset_u16_le(void* dst, u16 val)
 	T1WriteWord((u8*)&u32val,2,val);
 	////const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
 	
-#ifdef __INTEL_COMPILER
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 	const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
 	MACRODO_N(NUM/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
 #else
