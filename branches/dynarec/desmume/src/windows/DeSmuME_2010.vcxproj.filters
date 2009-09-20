@@ -10,6 +10,9 @@
     <Filter Include="Core\gdbstub">
       <UniqueIdentifier>{f33115c7-3743-41eb-be5b-63fafc938175}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\jit_x86">
+      <UniqueIdentifier>{16e6bb57-a761-442a-9854-40695047911f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Core\utils">
       <UniqueIdentifier>{7ce489f5-c2ee-4aff-b45c-20a0be4ff7cd}</UniqueIdentifier>
     </Filter>
@@ -101,6 +104,15 @@
     </ClCompile>
     <ClCompile Include="..\GPU_OSD.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jit_x86\arm_instructions_x86.cpp">
+      <Filter>Core\jit_x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jit_x86\jit_x86.cpp">
+      <Filter>Core\jit_x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\jit_x86\thumb_instructions_x86.cpp">
+      <Filter>Core\jit_x86</Filter>
     </ClCompile>
     <ClCompile Include="..\lua-engine.cpp">
       <Filter>Windows</Filter>
@@ -366,6 +378,15 @@
     </ClInclude>
     <ClInclude Include="..\GPU_osd.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit_x86\arm_instructions_x86.h">
+      <Filter>Core\jit_x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit_x86\jit_x86.h">
+      <Filter>Core\jit_x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jit_x86\thumb_instructions_x86.h">
+      <Filter>Core\jit_x86</Filter>
     </ClInclude>
     <ClInclude Include="..\lua-engine.h">
       <Filter>Windows</Filter>

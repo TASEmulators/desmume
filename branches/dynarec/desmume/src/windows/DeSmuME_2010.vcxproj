@@ -207,6 +207,9 @@
     <ClCompile Include="..\gfx3d.cpp" />
     <ClCompile Include="..\GPU.cpp" />
     <ClCompile Include="..\GPU_OSD.cpp" />
+    <ClCompile Include="..\jit_x86\arm_instructions_x86.cpp" />
+    <ClCompile Include="..\jit_x86\jit_x86.cpp" />
+    <ClCompile Include="..\jit_x86\thumb_instructions_x86.cpp" />
     <ClCompile Include="..\lua-engine.cpp" />
     <ClCompile Include="..\matrix.cpp" />
     <ClCompile Include="..\mc.cpp" />
@@ -301,6 +304,9 @@
     <ClInclude Include="..\gfx3d.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />
+    <ClInclude Include="..\jit_x86\arm_instructions_x86.h" />
+    <ClInclude Include="..\jit_x86\jit_x86.h" />
+    <ClInclude Include="..\jit_x86\thumb_instructions_x86.h" />
     <ClInclude Include="..\lua-engine.h" />
     <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\mc.h" />
