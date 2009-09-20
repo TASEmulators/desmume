@@ -388,6 +388,9 @@
     <ClInclude Include="..\MMU.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\MMU_timing.h">
+      <Filter>Core</Filter>
+    </ClInclude>
     <ClInclude Include="..\movie.h">
       <Filter>Core</Filter>
     </ClInclude>

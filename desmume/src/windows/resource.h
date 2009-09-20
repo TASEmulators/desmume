@@ -781,8 +781,6 @@
 #define IDC_HKCOMBO                     60077
 #define IDD_KEYCUSTOM                   60078
 #define IDM_HOTKEY_CONFIG               60079
-#define IDC_FASTFETCHEXECUTE            60080
-
 #define IDM_RENDER_HQ2XS				60081
 #define IDM_RENDER_LQ2X					60082
 #define IDM_RENDER_LQ2XS				60083

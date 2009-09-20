@@ -25,6 +25,7 @@
 #include "armcpu.h"
 #include "NDSSystem.h"
 #include "arm_instructions.h"
+#include "MMU_timing.h"
 
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM> 
@@ -2449,7 +2450,9 @@ TEMPLATE static u32 FASTCALL  OP_SWP(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,0)]);
      cpu->R[REG_POS(i,12)] = tmp;
      
-     return 4 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF]*2;
+	 u32 c = MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr);
+	 c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr);
+     return MMU_aluMemCycles<PROCNUM>(4, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_SWPB(const u32 i)
@@ -2459,7 +2462,9 @@ TEMPLATE static u32 FASTCALL  OP_SWPB(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)(cpu->R[REG_POS(i,0)]&0xFF));
      cpu->R[REG_POS(i,12)] = tmp;
 
-     return 4 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF]*2;
+	 u32 c = MMU_memAccessCycles<PROCNUM,8,MMU_AD_READ>(adr);
+	 c += MMU_memAccessCycles<PROCNUM,8,MMU_AD_WRITE>(adr);
+     return MMU_aluMemCycles<PROCNUM>(4, c);
 }
 
 //------------LDRH-----------------------------
@@ -2469,7 +2474,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_P_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_M_IMM_OFF(const u32 i)
@@ -2477,7 +2482,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_M_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
-    return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+    return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_P_REG_OFF(const u32 i)
@@ -2485,7 +2490,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_P_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_M_REG_OFF(const u32 i)
@@ -2493,7 +2498,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_M_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_P_IMM_OFF(const u32 i)
@@ -2502,7 +2507,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_P_IMM_OFF(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_M_IMM_OFF(const u32 i)
@@ -2512,7 +2517,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_M_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_P_REG_OFF(const u32 i)
@@ -2521,7 +2526,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_P_REG_OFF(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] =(u32)READ16(cpu->mem_if->data, adr);
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_M_REG_OFF(const u32 i)
@@ -2530,7 +2535,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_PRE_INDE_M_REG_OFF(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_P_IMM_OFF(const u32 i)
@@ -2539,7 +2544,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_P_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_M_IMM_OFF(const u32 i)
@@ -2548,7 +2553,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_M_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_P_REG_OFF(const u32 i)
@@ -2557,7 +2562,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_P_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_M_REG_OFF(const u32 i)
@@ -2566,7 +2571,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRH_POS_INDE_M_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (u32)READ16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 //------------STRH-----------------------------
@@ -2576,7 +2581,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_P_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_M_IMM_OFF(const u32 i)
@@ -2584,7 +2589,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_M_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_P_REG_OFF(const u32 i)
@@ -2592,7 +2597,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_P_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_M_REG_OFF(const u32 i)
@@ -2600,7 +2605,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_M_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_P_IMM_OFF(const u32 i)
@@ -2609,7 +2614,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_P_IMM_OFF(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr;
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_M_IMM_OFF(const u32 i)
@@ -2618,7 +2623,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_M_IMM_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_P_REG_OFF(const u32 i)
@@ -2627,7 +2632,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_P_REG_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_M_REG_OFF(const u32 i)
@@ -2636,7 +2641,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_PRE_INDE_M_REG_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_P_IMM_OFF(const u32 i)
@@ -2645,7 +2650,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_P_IMM_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_M_IMM_OFF(const u32 i)
@@ -2654,7 +2659,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_M_IMM_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_P_REG_OFF(const u32 i)
@@ -2663,7 +2668,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_P_REG_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_M_REG_OFF(const u32 i)
@@ -2672,7 +2677,7 @@ TEMPLATE static u32 FASTCALL  OP_STRH_POS_INDE_M_REG_OFF(const u32 i)
      WRITE16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_WRITE>(2,adr);
 }
 
 //----------------LDRSH--------------------------
@@ -2682,7 +2687,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_P_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_M_IMM_OFF(const u32 i)
@@ -2690,7 +2695,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_M_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_P_REG_OFF(const u32 i)
@@ -2698,7 +2703,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_P_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_M_REG_OFF(const u32 i)
@@ -2706,7 +2711,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_M_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_P_IMM_OFF(const u32 i)
@@ -2715,7 +2720,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_P_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_M_IMM_OFF(const u32 i)
@@ -2724,7 +2729,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_M_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_P_REG_OFF(const u32 i)
@@ -2733,7 +2738,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_P_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_M_REG_OFF(const u32 i)
@@ -2742,7 +2747,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_PRE_INDE_M_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_P_IMM_OFF(const u32 i)
@@ -2751,7 +2756,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_P_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_M_IMM_OFF(const u32 i)
@@ -2760,7 +2765,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_M_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_P_REG_OFF(const u32 i)
@@ -2769,7 +2774,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_P_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_M_REG_OFF(const u32 i)
@@ -2778,7 +2783,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSH_POS_INDE_M_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s16)READ16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,16,MMU_AD_READ>(3,adr);
 }
 
 //----------------------LDRSB----------------------
@@ -2788,7 +2793,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_P_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_M_IMM_OFF(const u32 i)
@@ -2796,7 +2801,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_M_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_P_REG_OFF(const u32 i)
@@ -2804,7 +2809,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_P_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_M_REG_OFF(const u32 i)
@@ -2812,7 +2817,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_M_REG_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_P_IMM_OFF(const u32 i)
@@ -2821,7 +2826,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_P_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_M_IMM_OFF(const u32 i)
@@ -2830,7 +2835,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_M_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_P_REG_OFF(const u32 i)
@@ -2839,7 +2844,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_P_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_M_REG_OFF(const u32 i)
@@ -2848,7 +2853,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_PRE_INDE_M_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_P_IMM_OFF(const u32 i)
@@ -2857,7 +2862,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_P_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_M_IMM_OFF(const u32 i)
@@ -2866,7 +2871,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_M_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_P_REG_OFF(const u32 i)
@@ -2875,7 +2880,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_P_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_M_REG_OFF(const u32 i)
@@ -2884,7 +2889,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRSB_POS_INDE_M_REG_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = (s32)((s8)READ8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 //--------------MRS--------------------------------
@@ -3416,11 +3421,11 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF(const u32 i)
@@ -3435,12 +3440,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF(const u32 i)
@@ -3459,12 +3464,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF(const u32 i)
@@ -3483,12 +3488,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF(const u32 i)
@@ -3507,12 +3512,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF(const u32 i)
@@ -3531,12 +3536,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF(const u32 i)
@@ -3555,12 +3560,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF(const u32 i)
@@ -3579,12 +3584,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF(const u32 i)
@@ -3603,12 +3608,12 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF(const u32 i)
@@ -3627,13 +3632,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF(const u32 i)
           cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_PREIND(const u32 i)
@@ -3649,13 +3654,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;    
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF_PREIND(const u32 i)
@@ -3671,14 +3676,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_PREIND(const u32 i)
@@ -3698,14 +3703,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_PREIND(const u32 i)
@@ -3725,14 +3730,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_PREIND(const u32 i)
@@ -3752,14 +3757,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_PREIND(const u32 i)
@@ -3779,14 +3784,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_PREIND(const u32 i)
@@ -3806,14 +3811,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_PREIND(const u32 i)
@@ -3833,14 +3838,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_PREIND(const u32 i)
@@ -3860,14 +3865,14 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_PREIND(const u32 i)
@@ -3887,13 +3892,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_PREIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND(const u32 i)
@@ -3909,13 +3914,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 //------------------------------------------------------------
@@ -3933,7 +3938,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND2(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      old = armcpu_switchMode(cpu, USR);
@@ -3942,7 +3947,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND2(const u32 i)
      
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 //------------------------------------------------------------
@@ -3960,13 +3965,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -3986,13 +3991,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -4012,13 +4017,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -4038,13 +4043,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -4064,13 +4069,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -4090,13 +4095,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -4116,13 +4121,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
      cpu->R[REG_POS(i,16)] = adr - shift_op;
 	 cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -4142,13 +4147,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -4168,13 +4173,13 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_POSTIND(const u32 i)
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
-          return 5 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+          return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
      }
      
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 //-----------------LDRB-------------------------------------------
@@ -4185,7 +4190,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_IMM_OFF(const u32 i)
      u32 val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_IMM_OFF(const u32 i)
@@ -4194,7 +4199,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_IMM_OFF(const u32 i)
      u32 val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF(const u32 i)
@@ -4207,7 +4212,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF(const u32 i)
@@ -4220,7 +4225,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF(const u32 i)
@@ -4233,7 +4238,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF(const u32 i)
@@ -4246,7 +4251,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF(const u32 i)
@@ -4259,7 +4264,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF(const u32 i)
@@ -4272,7 +4277,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF(const u32 i)
@@ -4285,7 +4290,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF(const u32 i)
      val = READ8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF(const u32 i)
@@ -4299,7 +4304,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF(const u32 i)
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_IMM_OFF_PREIND(const u32 i)
@@ -4311,7 +4316,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_IMM_OFF_PREIND(const u32 i)
@@ -4322,7 +4327,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_IMM_OFF_PREIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF_PREIND(const u32 i)
@@ -4338,7 +4343,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,12)] = val;
      
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF_PREIND(const u32 i)
@@ -4353,7 +4358,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF_PREIND(const u32 i)
@@ -4367,7 +4372,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF_PREIND(const u32 i)
@@ -4381,7 +4386,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF_PREIND(const u32 i)
@@ -4395,7 +4400,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF_PREIND(const u32 i)
@@ -4409,7 +4414,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF_PREIND(const u32 i)
@@ -4423,7 +4428,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF_PREIND(const u32 i)
@@ -4437,7 +4442,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF_PREIND(const u32 i)
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_IMM_OFF_POSTIND(const u32 i)
@@ -4447,7 +4452,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_IMM_OFF_POSTIND(const u32 i)
@@ -4457,7 +4462,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -4471,7 +4476,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -4485,7 +4490,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -4499,7 +4504,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -4513,7 +4518,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -4527,7 +4532,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -4541,7 +4546,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -4555,7 +4560,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -4569,7 +4574,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
-     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 }
 
 //----------------------STR--------------------------------
@@ -4581,7 +4586,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_IMM_OFF(const u32 i)
 
 //	 emu_halt();
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF(const u32 i)
@@ -4589,7 +4594,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF(const u32 i)
@@ -4600,7 +4605,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF(const u32 i)
@@ -4611,7 +4616,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF(const u32 i)
@@ -4622,7 +4627,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF(const u32 i)
@@ -4633,7 +4638,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF(const u32 i)
@@ -4644,7 +4649,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF(const u32 i)
@@ -4655,7 +4660,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF(const u32 i)
@@ -4666,7 +4671,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF(const u32 i)
@@ -4678,7 +4683,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_IMM_OFF_PREIND(const u32 i)
@@ -4687,7 +4692,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF_PREIND(const u32 i)
@@ -4696,7 +4701,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF_PREIND(const u32 i)
@@ -4708,7 +4713,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF_PREIND(const u32 i)
@@ -4720,7 +4725,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF_PREIND(const u32 i)
@@ -4732,7 +4737,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF_PREIND(const u32 i)
@@ -4744,7 +4749,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF_PREIND(const u32 i)
@@ -4756,7 +4761,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF_PREIND(const u32 i)
@@ -4768,7 +4773,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF_PREIND(const u32 i)
@@ -4780,7 +4785,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_PREIND(const u32 i)
@@ -4792,7 +4797,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_PREIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_IMM_OFF_POSTIND(const u32 i)
@@ -4801,7 +4806,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF_POSTIND(const u32 i)
@@ -4810,7 +4815,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -4822,7 +4827,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -4834,7 +4839,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -4846,7 +4851,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -4858,7 +4863,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -4870,7 +4875,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -4882,7 +4887,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -4894,7 +4899,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -4906,7 +4911,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_POSTIND(const u32 i)
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
 //-----------------------STRB-------------------------------------
@@ -4916,7 +4921,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_IMM_OFF(const u32 i)
@@ -4924,7 +4929,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_IMM_OFF(const u32 i)
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF(const u32 i)
@@ -4935,7 +4940,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF(const u32 i)
@@ -4946,7 +4951,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF(const u32 i)
@@ -4957,7 +4962,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF(const u32 i)
@@ -4968,7 +4973,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF(const u32 i)
@@ -4979,7 +4984,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF(const u32 i)
@@ -4990,7 +4995,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF(const u32 i)
@@ -5001,7 +5006,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF(const u32 i)
@@ -5012,7 +5017,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF(const u32 i)
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_IMM_OFF_PREIND(const u32 i)
@@ -5021,7 +5026,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_IMM_OFF_PREIND(const u32 i)
@@ -5030,7 +5035,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF_PREIND(const u32 i)
@@ -5042,7 +5047,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF_PREIND(const u32 i)
@@ -5054,7 +5059,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF_PREIND(const u32 i)
@@ -5066,7 +5071,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF_PREIND(const u32 i)
@@ -5078,7 +5083,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF_PREIND(const u32 i)
@@ -5090,7 +5095,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF_PREIND(const u32 i)
@@ -5102,7 +5107,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF_PREIND(const u32 i)
@@ -5114,7 +5119,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_PREIND(const u32 i)
@@ -5126,7 +5131,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_PREIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_IMM_OFF_POSTIND(const u32 i)
@@ -5135,7 +5140,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_IMM_OFF_POSTIND(const u32 i)
@@ -5144,7 +5149,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -5156,7 +5161,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -5168,7 +5173,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -5180,7 +5185,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -5192,7 +5197,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -5204,7 +5209,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -5216,7 +5221,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -5228,7 +5233,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -5240,7 +5245,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
      WRITE8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
-     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 }
 
 ////-----------------------LDRBT-------------------------------------
@@ -5264,7 +5269,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //     
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_M_IMM_OFF_POSTIND(const u32 i)
@@ -5288,7 +5293,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //     
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_P_REG_OFF_POSTIND(const u32 i)
@@ -5313,7 +5318,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //     
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -5339,7 +5344,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //     
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -5366,7 +5371,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //     
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -5393,7 +5398,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //     
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -5420,7 +5425,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -5448,7 +5453,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -5476,7 +5481,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -5504,7 +5509,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -5532,7 +5537,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 3 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_READ>(3,adr);
 //}
 //
 ////----------------------STRBT----------------------------
@@ -5556,7 +5561,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_M_IMM_OFF_POSTIND(const u32 i)
@@ -5578,7 +5583,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_P_REG_OFF_POSTIND(const u32 i)
@@ -5600,7 +5605,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_M_REG_OFF_POSTIND(const u32 i)
@@ -5622,7 +5627,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_P_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -5646,7 +5651,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_M_LSL_IMM_OFF_POSTIND(const u32 i)
@@ -5670,7 +5675,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_P_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -5694,7 +5699,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_M_LSR_IMM_OFF_POSTIND(const u32 i)
@@ -5718,7 +5723,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_P_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -5742,7 +5747,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_M_ASR_IMM_OFF_POSTIND(const u32 i)
@@ -5766,7 +5771,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_P_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -5790,7 +5795,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 //
 //TEMPLATE static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND(const u32 i)
@@ -5814,7 +5819,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 //     
 //     armcpu_switchMode(cpu, oldmode);
 //
-//     return 2 + MMU.MMU_WAIT16[PROCNUM][(adr>>24)&0xF];
+//     return MMU_aluMemAccessCycles<PROCNUM,8,MMU_AD_WRITE>(2,adr);
 //}
 
 //---------------------LDM-----------------------------
@@ -5822,7 +5827,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
 #define OP_L_IA(reg, adr)  if(BIT##reg(i))\
      {\
           registres[reg] = READ32(cpu->mem_if->data, start);\
-          c += waitState[(start>>24)&0xF];\
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);\
           adr += 4;\
      }
 
@@ -5830,13 +5835,13 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
      {\
           adr += 4;\
           registres[reg] = READ32(cpu->mem_if->data, start);\
-          c += waitState[(start>>24)&0xF];\
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);\
      }
 
 #define OP_L_DA(reg, adr)  if(BIT##reg(i))\
      {\
           registres[reg] = READ32(cpu->mem_if->data, start);\
-          c += waitState[(start>>24)&0xF];\
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);\
           adr -= 4;\
      }
 
@@ -5844,7 +5849,7 @@ TEMPLATE static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(const u32 i)
      {\
           adr -= 4;\
           registres[reg] = READ32(cpu->mem_if->data, start);\
-          c += waitState[(start>>24)&0xF];\
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);\
      }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIA(const u32 i)
@@ -5853,7 +5858,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA(const u32 i)
      u32 start = cpu->R[REG_POS(i,16)];
      
      u32 * registres = cpu->R;
-     TWaitState* waitState = MMU.MMU_WAIT32[PROCNUM];
      
      OP_L_IA(0, start);
      OP_L_IA(1, start);
@@ -5878,10 +5882,10 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA(const u32 i)
           cpu->CPSR.bits.T = BIT0(tmp);
           //start += 4;
 	      cpu->next_instruction = registres[15];
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
      }
      
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIB(const u32 i)
@@ -5890,7 +5894,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB(const u32 i)
      u32 start = cpu->R[REG_POS(i,16)];
      
      u32 * registres = cpu->R;
-     TWaitState* waitState = MMU.MMU_WAIT32[PROCNUM];
      
      OP_L_IB(0, start);
      OP_L_IB(1, start);
@@ -5912,15 +5915,15 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB(const u32 i)
      {
           u32 tmp;
           start += 4;
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           tmp = READ32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
-          c += 2 + (c==0);
+          return MMU_aluMemCycles<PROCNUM>(4, c);
      }
      
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDA(const u32 i)
@@ -5929,14 +5932,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA(const u32 i)
      u32 start = cpu->R[REG_POS(i,16)];
      
      u32 * registres = cpu->R;
-     TWaitState * waitState = MMU.MMU_WAIT32[PROCNUM];
      
      if(BIT15(i))
      {
           u32 tmp = READ32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           start -= 4;
 	      cpu->next_instruction = registres[15];
      }
@@ -5957,7 +5959,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA(const u32 i)
      OP_L_DA(1, start);
      OP_L_DA(0, start);
      
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
@@ -5966,7 +5968,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
      u32 start = cpu->R[REG_POS(i,16)];
      
      u32 * registres = cpu->R;
-     TWaitState* waitState = MMU.MMU_WAIT32[PROCNUM];
      
      if(BIT15(i))
      {
@@ -5976,7 +5977,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
      }
 
      OP_L_DB(14, start);
@@ -5995,7 +5996,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
      OP_L_DB(1, start);
      OP_L_DB(0, start);
      
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
@@ -6005,7 +6006,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 	 u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
      
      u32 * registres = cpu->R;
-     TWaitState* waitState = MMU.MMU_WAIT32[PROCNUM];
      
      OP_L_IA(0, start);
      OP_L_IA(1, start);
@@ -6028,7 +6028,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
           u32 tmp = READ32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           start += 4;
 	      cpu->next_instruction = registres[15];
      }
@@ -6040,7 +6040,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 	else
 		cpu->R[REG_POS(i,16)] = start;
 
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
@@ -6050,7 +6050,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
 	 u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
      
      u32 * registres = cpu->R;
-     TWaitState* waitState = MMU.MMU_WAIT32[PROCNUM];
 
 	 OP_L_IB(0, start);
      OP_L_IB(1, start);
@@ -6072,12 +6071,11 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
      {
           u32 tmp;
           start += 4;
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           tmp = READ32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
-          c += 2 + (c==0);
      }
 
 	if(i & (1 << REG_POS(i,16))) {
@@ -6087,7 +6085,10 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
 	else
 		cpu->R[REG_POS(i,16)] = start;
      
-     return c + 2;
+	if(BIT15(i))
+		return MMU_aluMemCycles<PROCNUM>(4, c);
+	else
+		return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
@@ -6097,14 +6098,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
 	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
 
 	u32 * registres = cpu->R;
-	TWaitState * waitState = MMU.MMU_WAIT32[PROCNUM];
 
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
 		registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
 		cpu->CPSR.bits.T = BIT0(tmp);
-		c += waitState[(start>>24)&0xF];
+		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		start -= 4;
 		cpu->next_instruction = registres[15];
 	}
@@ -6132,7 +6132,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
 	else
 		cpu->R[REG_POS(i,16)] = start;
 	
-	return c + 2;
+	return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
@@ -6141,7 +6141,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
 	u32 start = cpu->R[REG_POS(i,16)];
 	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
 	u32 * registres = cpu->R;
-	TWaitState* waitState = MMU.MMU_WAIT32[PROCNUM];
 
 	if(BIT15(i))
 	{
@@ -6151,7 +6150,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
 		registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
 		cpu->CPSR.bits.T = BIT0(tmp);
 		cpu->next_instruction = registres[15];
-		c += waitState[(start>>24)&0xF];
+		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 	}
 
 	OP_L_DB(14, start);
@@ -6177,7 +6176,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
 	else
 		cpu->R[REG_POS(i,16)] = start;
 
-	return c + 2;
+	return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIA2(const u32 i)
@@ -6188,7 +6187,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2(const u32 i)
      
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
-     TWaitState* waitState;
 
      if(BIT15(i)==0)
      {  
@@ -6198,7 +6196,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
                
      OP_L_IA(0, start);
      OP_L_IA(1, start);
@@ -6231,9 +6228,9 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2(const u32 i)
           cpu->CPSR=SPSR;
           //start += 4;
           cpu->next_instruction = cpu->R[15];
-          c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
      }
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIB2(const u32 i)
@@ -6243,7 +6240,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2(const u32 i)
      
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
-     TWaitState* waitState;
 
 	 UNTESTEDOPCODELOG("Untested opcode: OP_LDMIB2\n");
 
@@ -6255,7 +6251,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
                
      OP_L_IB(0, start);
      OP_L_IB(1, start);
@@ -6288,9 +6283,9 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2(const u32 i)
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
 	      cpu->next_instruction = registres[15];
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
      }
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDA2(const u32 i)
@@ -6299,7 +6294,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2(const u32 i)
      u32 oldmode = 0;
      u32 c = 0;
      u32 * registres;
-     TWaitState* waitState;
      
      u32 start = cpu->R[REG_POS(i,16)];
 
@@ -6313,14 +6307,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2(const u32 i)
      }
      
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
      
      if(BIT15(i))
      {
           u32 tmp = READ32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           start -= 4;
 	      cpu->next_instruction = registres[15];
      }
@@ -6352,16 +6345,14 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2(const u32 i)
           cpu->CPSR=SPSR;
      }
      
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDB2(const u32 i)
 {
-          
      u32 oldmode = 0;
      u32 c = 0;
      u32 * registres;
-     TWaitState* waitState;
      
      u32 start = cpu->R[REG_POS(i,16)];
      if(BIT15(i)==0)
@@ -6372,7 +6363,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
      
      if(BIT15(i))
      {
@@ -6382,7 +6372,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2(const u32 i)
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
 	      cpu->next_instruction = registres[15];
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
      }
 
      OP_L_DB(14, start);
@@ -6412,7 +6402,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2(const u32 i)
           cpu->CPSR=SPSR;
      }
      
-     return 2 + c;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIA2_W(const u32 i)
@@ -6422,7 +6412,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2_W(const u32 i)
      u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
-     TWaitState* waitState;
      u32 tmp;
      Status_Reg SPSR;
 //     emu_halt();     
@@ -6434,7 +6423,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2_W(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
      
      OP_L_IA(0, start);
      OP_L_IA(1, start);
@@ -6456,7 +6444,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2_W(const u32 i)
      {
           registres[REG_POS(i,16)] = start;
           armcpu_switchMode(cpu, oldmode);
-          return c + 2;
+          return MMU_aluMemCycles<PROCNUM>(2, c);
      }
 
      registres[REG_POS(i,16)] = start + 4;
@@ -6466,9 +6454,9 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2_W(const u32 i)
      armcpu_switchMode(cpu, SPSR.bits.mode);
      cpu->CPSR=SPSR;
      cpu->next_instruction = registres[15];
-     c += waitState[(start>>24)&0xF];
+     c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIB2_W(const u32 i)
@@ -6478,7 +6466,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2_W(const u32 i)
      u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
-     TWaitState* waitState;
      u32 tmp;
      Status_Reg SPSR;
 
@@ -6490,7 +6477,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2_W(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
 
      OP_L_IB(0, start);
      OP_L_IB(1, start);
@@ -6513,7 +6499,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2_W(const u32 i)
           armcpu_switchMode(cpu, oldmode);
           registres[REG_POS(i,16)] = start;
           
-          return c + 2;
+          return MMU_aluMemCycles<PROCNUM>(2, c);
      }
 
      registres[REG_POS(i,16)] = start + 4;
@@ -6524,9 +6510,9 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2_W(const u32 i)
      SPSR = cpu->SPSR;
      armcpu_switchMode(cpu, SPSR.bits.mode);
      cpu->CPSR=SPSR;
-     c += waitState[(start>>24)&0xF];
+     c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
      
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDA2_W(const u32 i)
@@ -6536,7 +6522,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2_W(const u32 i)
      u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
-     TWaitState * waitState;
      Status_Reg SPSR;
 //     emu_halt();     
      if(BIT15(i)==0)
@@ -6547,13 +6532,12 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2_W(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
      
      if(BIT15(i))
      {
           u32 tmp = READ32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           start -= 4;
           cpu->next_instruction = registres[15];
      }
@@ -6579,13 +6563,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2_W(const u32 i)
      if(BIT15(i)==0)
      {
           armcpu_switchMode(cpu, oldmode);
-          return c + 2;
+          return MMU_aluMemCycles<PROCNUM>(2, c);
      }
 
      SPSR = cpu->SPSR;
      armcpu_switchMode(cpu, SPSR.bits.mode);
      cpu->CPSR=SPSR;
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDB2_W(const u32 i)
@@ -6595,7 +6579,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2_W(const u32 i)
      u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
-     TWaitState* waitState;
      Status_Reg SPSR;
 //     emu_halt();     
      if(BIT15(i)==0)
@@ -6606,14 +6589,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2_W(const u32 i)
      }
 
      registres = cpu->R;
-     waitState = MMU.MMU_WAIT32[PROCNUM];
      
      if(BIT15(i))
      {
           u32 tmp;
           start -= 4;
           tmp = READ32(cpu->mem_if->data, start);
-          c += waitState[(start>>24)&0xF];
+          c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
           cpu->next_instruction = registres[15];
@@ -6640,13 +6622,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2_W(const u32 i)
      if(BIT15(i)==0)
      {
           armcpu_switchMode(cpu, oldmode);
-          return c + 2;
+          return MMU_aluMemCycles<PROCNUM>(2, c);
      }
 
      SPSR = cpu->SPSR;
      armcpu_switchMode(cpu, SPSR.bits.mode);
      cpu->CPSR=SPSR;
-     return c + 2;
+     return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 //------------------------------STM----------------------------------
@@ -6661,11 +6643,11 @@ TEMPLATE static u32 FASTCALL  OP_STMIA(const u32 i)
           if(BIT_N(i, b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start += 4;
           }
      }
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIB(const u32 i)
@@ -6679,10 +6661,10 @@ TEMPLATE static u32 FASTCALL  OP_STMIB(const u32 i)
           {
                start += 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDA(const u32 i)
@@ -6695,11 +6677,11 @@ TEMPLATE static u32 FASTCALL  OP_STMDA(const u32 i)
           if(BIT_N(i, 15-b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start -= 4;
           }
      }     
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDB(const u32 i)
@@ -6713,10 +6695,10 @@ TEMPLATE static u32 FASTCALL  OP_STMDB(const u32 i)
           {
                start -= 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }     
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIA_W(const u32 i)
@@ -6729,13 +6711,13 @@ TEMPLATE static u32 FASTCALL  OP_STMIA_W(const u32 i)
           if(BIT_N(i, b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start += 4;
           }
      }
      
      cpu->R[REG_POS(i,16)] = start;
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIB_W(const u32 i)
@@ -6749,11 +6731,11 @@ TEMPLATE static u32 FASTCALL  OP_STMIB_W(const u32 i)
           {
                start += 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }
      cpu->R[REG_POS(i,16)] = start;
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDA_W(const u32 i)
@@ -6766,13 +6748,13 @@ TEMPLATE static u32 FASTCALL  OP_STMDA_W(const u32 i)
           if(BIT_N(i, 15-b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start -= 4;
           }
      }     
      
      cpu->R[REG_POS(i,16)] = start;
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDB_W(const u32 i)
@@ -6786,12 +6768,12 @@ TEMPLATE static u32 FASTCALL  OP_STMDB_W(const u32 i)
           {
                start -= 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }     
      
      cpu->R[REG_POS(i,16)] = start;
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIA2(const u32 i)
@@ -6814,13 +6796,13 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2(const u32 i)
           if(BIT_N(i, b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start += 4;
           }
      }
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIB2(const u32 i)
@@ -6844,12 +6826,12 @@ TEMPLATE static u32 FASTCALL  OP_STMIB2(const u32 i)
           {
                start += 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDA2(const u32 i)
@@ -6872,13 +6854,13 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2(const u32 i)
           if(BIT_N(i, 15-b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start -= 4;
           }
      }     
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDB2(const u32 i)
@@ -6900,12 +6882,12 @@ TEMPLATE static u32 FASTCALL  OP_STMDB2(const u32 i)
           {
                start -= 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }     
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIA2_W(const u32 i)
@@ -6928,7 +6910,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2_W(const u32 i)
           if(BIT_N(i, b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start += 4;
           }
      }
@@ -6936,7 +6918,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2_W(const u32 i)
      cpu->R[REG_POS(i,16)] = start;
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMIB2_W(const u32 i)
@@ -6957,13 +6939,13 @@ TEMPLATE static u32 FASTCALL  OP_STMIB2_W(const u32 i)
           {
                start += 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }
      armcpu_switchMode(cpu, oldmode);
      cpu->R[REG_POS(i,16)] = start;
      
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDA2_W(const u32 i)
@@ -6986,7 +6968,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2_W(const u32 i)
           if(BIT_N(i, 15-b))
           {
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
                start -= 4;
           }
      }     
@@ -6994,7 +6976,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2_W(const u32 i)
      cpu->R[REG_POS(i,16)] = start;
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STMDB2_W(const u32 i)
@@ -7019,14 +7001,14 @@ TEMPLATE static u32 FASTCALL  OP_STMDB2_W(const u32 i)
           {
                start -= 4;
                WRITE32(cpu->mem_if->data, start, cpu->R[15-b]);
-               c += MMU.MMU_WAIT32[PROCNUM][(start>>24)&0xF];
+               c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(start);
           }
      }     
      
      cpu->R[REG_POS(i,16)] = start;
      
      armcpu_switchMode(cpu, oldmode);
-     return c + 1;
+     return MMU_aluMemCycles<PROCNUM>(1, c);
 }
 
 /*
@@ -7052,19 +7034,24 @@ TEMPLATE static u32 FASTCALL  OP_LDRD_STRD_POST_INDEX(const u32 i)
   else
     cpu->R[REG_POS(i,16)] -= index;
 
+  u32 c = 0;
   if ( !(Rd_num & 0x1)) {
     /* Store/Load */
     if ( BIT5(i)) {
       WRITE32(cpu->mem_if->data, addr, cpu->R[Rd_num]);
       WRITE32(cpu->mem_if->data, addr + 4, cpu->R[Rd_num + 1]);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(addr);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(addr + 4);
     }
     else {
       cpu->R[Rd_num] = READ32(cpu->mem_if->data, addr);
       cpu->R[Rd_num + 1] = READ32(cpu->mem_if->data, addr + 4);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(addr);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(addr + 4);
     }
   }
 
-  return 3 + (MMU.MMU_WAIT32[PROCNUM][(addr>>24)&0xF] * 2);
+  return MMU_aluMemCycles<PROCNUM>(3, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
@@ -7095,19 +7082,24 @@ TEMPLATE static u32 FASTCALL  OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
       cpu->R[REG_POS(i,16)] = addr;
   }
 
+  u32 c = 0;
   if ( !(Rd_num & 0x1)) {
     /* Store/Load */
     if ( BIT5(i)) {
       WRITE32(cpu->mem_if->data, addr, cpu->R[Rd_num]);
       WRITE32(cpu->mem_if->data, addr + 4, cpu->R[Rd_num + 1]);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(addr);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(addr + 4);
     }
     else {
       cpu->R[Rd_num] = READ32(cpu->mem_if->data, addr);
       cpu->R[Rd_num + 1] = READ32(cpu->mem_if->data, addr + 4);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(addr);
+	  c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(addr + 4);
     }
   }
 
-  return 3 + (MMU.MMU_WAIT32[PROCNUM][(addr>>24)&0xF] * 2);
+  return MMU_aluMemCycles<PROCNUM>(3, c);
 }
 
 

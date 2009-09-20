@@ -41,6 +41,7 @@
 #include "gfx3d.h"
 #include "movie.h"
 #include "mic.h"
+#include "MMU_timing.h"
 
 #include "path.h"
 
@@ -265,11 +266,18 @@ SFORMAT SF_MOVIE[]={
 
 static void mmu_savestate(EMUFILE* os)
 {
-	//version
-	write32le(2,os);
+	u32 version = 3;
+	write32le(version,os);
 	
 	//newer savefile system:
 	MMU_new.backupDevice.save_state(os);
+
+	MMU_timing.arm9codeFetch.savestate(os, version);
+	MMU_timing.arm9dataFetch.savestate(os, version);
+	MMU_timing.arm7codeFetch.savestate(os, version);
+	MMU_timing.arm7dataFetch.savestate(os, version);
+	MMU_timing.arm9codeCache.savestate(os, version);
+	MMU_timing.arm9dataCache.savestate(os, version);
 }
 
 SFORMAT SF_WIFI[]={
@@ -411,13 +419,24 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 		delete[] temp;
 		if(is->fail()) return false;
 	}
-	else if(version == 2)
-	{
-		//newer savefile system:
-		MMU_new.backupDevice.load_state(is);
-	}
 
-	return true;
+	if(version < 2)
+		return true;
+
+	//newer savefile system:
+	bool ok = MMU_new.backupDevice.load_state(is);
+
+	if(version < 3)
+		return ok;
+
+	ok &= MMU_timing.arm9codeFetch.loadstate(is, version);
+	ok &= MMU_timing.arm9dataFetch.loadstate(is, version);
+	ok &= MMU_timing.arm7codeFetch.loadstate(is, version);
+	ok &= MMU_timing.arm7dataFetch.loadstate(is, version);
+	ok &= MMU_timing.arm9codeCache.loadstate(is, version);
+	ok &= MMU_timing.arm9dataCache.loadstate(is, version);
+
+	return ok;
 }
 
 static void cp15_saveone(armcp15_t *cp15, EMUFILE* os)

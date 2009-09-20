@@ -806,6 +806,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\MMU_timing.h"
+				>
+			</File>
+			<File
 				RelativePath="..\movie.cpp"
 				>
 			</File>

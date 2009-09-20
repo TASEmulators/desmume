@@ -44,6 +44,7 @@
 #include "addons.h"
 #include "mic.h"
 #include "movie.h"
+#include "MMU_timing.h"
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -163,6 +164,7 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 
 MMU_struct MMU;
 MMU_struct_new MMU_new;
+MMU_struct_timing MMU_timing;
 
 u8 * MMU_struct::MMU_MEM[2][256] = {
 	//arm9
@@ -252,17 +254,18 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		}
 };
 
-CACHE_ALIGN
-TWaitState MMU_struct::MMU_WAIT16[2][16] = {
-	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm9
-	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm7
-};
-
-CACHE_ALIGN
-TWaitState MMU_struct::MMU_WAIT32[2][16] = {
-	{ 1, 1, 1, 1, 1, 2, 2, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm9
-	{ 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm7
-};
+// this logic was moved to MMU_timing.h
+//CACHE_ALIGN
+//TWaitState MMU_struct::MMU_WAIT16[2][16] = {
+//	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm9
+//	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm7
+//};
+//
+//CACHE_ALIGN
+//TWaitState MMU_struct::MMU_WAIT32[2][16] = {
+//	{ 1, 1, 1, 1, 1, 2, 2, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm9
+//	{ 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm7
+//};
 
 //////////////////////////////////////////////////////////////
 
@@ -965,6 +968,13 @@ void MMU_Reset()
 	MMU.dscard[ARMCPU_ARM7].address = 0;
 	MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
 	MMU.dscard[ARMCPU_ARM7].mode = CardMode_Normal;
+
+	MMU_timing.arm7codeFetch.Reset();
+	MMU_timing.arm7dataFetch.Reset();
+	MMU_timing.arm9codeFetch.Reset();
+	MMU_timing.arm9dataFetch.Reset();
+	MMU_timing.arm9codeCache.Reset();
+	MMU_timing.arm9dataCache.Reset();
 }
 
 void MMU_setRom(u8 * rom, u32 mask)

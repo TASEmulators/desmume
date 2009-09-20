@@ -560,6 +560,8 @@
 		<File 
 			RelativePath="..\MMU.h"/>
 		<File 
+			RelativePath="..\MMU_timing.h"/>
+		<File 
 			RelativePath="..\movie.cpp"/>
 		<File 
 			RelativePath="..\movie.h"/>
