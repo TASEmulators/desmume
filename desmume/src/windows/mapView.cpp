@@ -54,6 +54,10 @@ struct mapview_struct
 
 		gpu.currBgNum = map;
 		gpu.debug = true;
+		int temp = gpu.setFinalColorBck_funcNum;
+		gpu.setFinalColorBck_funcNum = 0; //hax... why arent we copying gpu now?? i cant remember
+
+		memset(bitmap,0,sizeof(bitmap));
 
 		for(u32 i = 0; i < gpu.BGSize[map][1]; ++i)
 		{
@@ -62,6 +66,7 @@ struct mapview_struct
 			gpu.modeRender<false>(map);
 		}
 		gpu.debug = false;
+		gpu.setFinalColorBck_funcNum = temp;
 
 	}
 };
