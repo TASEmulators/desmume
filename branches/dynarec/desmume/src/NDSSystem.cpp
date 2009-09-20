@@ -2161,7 +2161,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			if(!NDS_ARM9.waitIRQ)
 			{
 				arm9log();
-				arm9 += armcpu_exec<ARMCPU_ARM9>();
+				arm9 += armcpu_exec_jit_x86<ARMCPU_ARM9>();
 			}
 			else
 			{
@@ -2173,7 +2173,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			if(!NDS_ARM7.waitIRQ)
 			{
 				arm7log();
-				arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
+				arm7 += (armcpu_exec_jit_x86<ARMCPU_ARM7>()<<1);
 			}
 			else
 			{
@@ -2215,7 +2215,8 @@ void NDS_exec(s32 nb)
 	}
 	else
 	{
-		for(;;)
+		//for(;;)
+		while (execute)
 		{
 			sequencer.execHardware();
 
@@ -2248,8 +2249,10 @@ void NDS_exec(s32 nb)
 
 #ifndef NDEBUG
 			//what we find here is dependent on the timing constants above
+#if !USE_DYNAREC
 			if(nds_timer>next && (nds_timer-next)>22)
 				printf("curious. please report: over by %d\n",(int)(nds_timer-next));
+#endif
 #endif
 
 			//if we were waiting for an irq, don't wait too long:

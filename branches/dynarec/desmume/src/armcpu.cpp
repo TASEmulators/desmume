@@ -374,6 +374,11 @@ FORCEINLINE static u32 armcpu_prefetch()
 	if(armcpu->CPSR.bits.T == 0)
 	{
 		u32 curInstruction = armcpu->next_instruction;
+		if ((curInstruction >= 0x10000000) && (curInstruction < 0xFFFF0000))
+		{
+			printf("WHAT??? WTF??? weird address %08X -> %08X (%08X) (A)\n", armcpu->instruct_adr, curInstruction, armcpu->R[15]);
+			emu_halt();
+		}
 #ifdef GDB_STUB
 		temp_instruction =
 			armcpu->mem_if->prefetch32( armcpu->mem_if->data,
@@ -386,16 +391,23 @@ FORCEINLINE static u32 armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		armcpu->instruction = MMU_read32_acl(PROCNUM, curInstruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
+		//armcpu->instruction = MMU_read32_acl(PROCNUM, curInstruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
 		armcpu->R[15] = curInstruction + 8;
 #endif
 
 		return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
+		//return 2;
 	}
 
 	u32 curInstruction = armcpu->next_instruction;
+	if ((curInstruction >= 0x10000000) && (curInstruction < 0xFFFF0000))
+	{
+		printf("WHAT??? WTF??? weird address %08X -> %08X (%08X) (%08X %04X) (T)\n", 
+			armcpu->instruct_adr, curInstruction, armcpu->R[15], armcpu->R[14], MMU_read16(PROCNUM, armcpu->R[14]-2));
+		emu_halt();
+	}
 #ifdef GDB_STUB
 	temp_instruction =
 		armcpu->mem_if->prefetch16( armcpu->mem_if->data,
@@ -408,13 +420,14 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	armcpu->instruction = MMU_read16_acl(PROCNUM, curInstruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
+//	armcpu->instruction = MMU_read16_acl(PROCNUM, curInstruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
 	armcpu->R[15] = curInstruction + 4;
 #endif
 
 	return MMU.MMU_WAIT16[PROCNUM][(curInstruction>>24)&0xF];
+	//return 2;
 }
 
 #if 0 /* not used */
@@ -448,12 +461,14 @@ static BOOL (FASTCALL* test_conditions[])(Status_Reg CPSR)= {
 	(cond<15&&test_conditions[cond](CPSR))
 #endif
 
-
+//#include "jit_x86/jit_x86.h"
 BOOL armcpu_irqException(armcpu_t *armcpu)
 {
     Status_Reg tmp;
 
 	if(armcpu->CPSR.bits.I) return FALSE;
+
+	//JIT_x86::StopCodeBlock();
 
 #ifdef GDB_STUB
 	armcpu->irq_flag = 0;
@@ -494,6 +509,14 @@ armcpu_flagIrq( armcpu_t *armcpu) {
   return TRUE;
 }
 
+template<int PROCNUM>
+void armcpu_block()
+{
+	ARMPROC.R[15] = ARMPROC.instruct_adr;
+	ARMPROC.next_instruction = ARMPROC.R[15];
+}
+
+extern void emu_halt();
 
 template<int PROCNUM>
 u32 armcpu_exec()
@@ -507,6 +530,21 @@ u32 armcpu_exec()
 
 	//this assert is annoying. but sometimes it is handy.
 	//assert(ARMPROC.instruct_adr!=0x00000000);
+
+	/*	if((ARMPROC.instruct_adr >= 0x0600CD0C) && (ARMPROC.instruct_adr <= 0x0600CF1C))
+		//if(ARMPROC.instruct_adr == 0x0600CB80)
+		{
+			if(ARMPROC.R[7] != 0x61E)
+			{
+				extern void emu_halt();
+				emu_halt();
+			}
+		}*/
+		/*if(ARMPROC.instruct_adr == 0x06010424)
+		{
+			extern void emu_halt();
+			emu_halt();
+		}*/
 
 #ifdef GDB_STUB
 	if (ARMPROC.stalled) {
@@ -575,3 +613,117 @@ u32 armcpu_exec()
 //these templates needed to be instantiated manually
 template u32 armcpu_exec<0>();
 template u32 armcpu_exec<1>();
+
+#include "jit_x86/jit_x86.h"
+#include "jit_x86/arm_instructions_x86.h"
+#include "jit_x86/thumb_instructions_x86.h"
+
+using namespace JIT_x86;
+using namespace JIT_x86::Emitter;
+
+template<int PROCNUM>
+u32 armcpu_exec_jit_x86()
+{
+	CCodeBlock* block;
+	u32 address;//, instruction;
+
+	address = ARMPROC.instruct_adr;
+	
+	if ((address >= 0x10000000) && (address < 0xFFFF0000))
+	{
+		printf("weird address %08X\n", address);
+		emu_halt();
+	}
+	//instruction = ARMPROC.instruction;
+
+	block = CodeCache.FindCodeBlock(PROCNUM, address, ARMPROC.CPSR.bits.T);
+	if (block == NULL) // Let's recompile that block if it hasn't been done yet
+	{
+		block = new CCodeBlock(PROCNUM, address, ARMPROC.CPSR.bits.T);
+		BeginCodeBlock(block);
+
+		if (ARMPROC.CPSR.bits.T == 0)
+		{
+			for (int i = 0; i < MAX_ARM_INSTRUCTIONS_PER_BLOCK; i++)
+			{
+				u32 c = 1;
+
+				u32 instruction = MMU_read32(PROCNUM, address);
+				if ((instruction & 0xFFFC00FF) == 0xF6000010)
+				{
+					if (CodeCache.cache[PROCNUM].blocks[(instruction >> 8) & 0x3FF])
+					instruction = CodeCache.cache[PROCNUM].blocks[(instruction >> 8) & 0x3FF]->origFirstInstruction;
+					else
+						printf("WWWARRRGGHHGHHH!!! at %08X = %08X\n", address, instruction);
+				}
+				address += 4;
+
+				JumpSource condJump = EmitConditionCheck(&ARMPROC, CONDITION(instruction), CODE(instruction));
+
+				if (PROCNUM == 0)
+					c += arm_instructions_set_x86_arm9[INSTRUCTION_INDEX(instruction)](address+4, instruction);
+				else
+					c += arm_instructions_set_x86_arm7[INSTRUCTION_INDEX(instruction)](address+4, instruction);
+
+				SetJumpTarget(condJump);
+
+			//	address += 4;
+			//	instruction = MMU_read32(PROCNUM, address);
+
+				//MOV(ECX, (u32)PROCNUM);
+				//CALL((void*)prefetch);
+				CALL((void*)(TPrefetchFunc)armcpu_prefetch<PROCNUM>);
+
+			//	block->num_ARM_instructions++;
+				block->num_cycles += c;
+
+				if (CodeBlockStopped)
+				{
+					ARMPROC.instruct_adr = ARMPROC.next_instruction;
+					break;
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < MAX_ARM_INSTRUCTIONS_PER_BLOCK; i++)
+			{
+				u32 c = 1;
+
+				u16 instruction = MMU_read16(PROCNUM, address);
+				if ((instruction & 0xFC00) == 0xB800)
+					instruction = (u16)CodeCache.cache[PROCNUM].blocks[instruction & 0x3FF]->origFirstInstruction;
+				address += 2;
+
+				if(PROCNUM == 0)
+					c += thumb_instructions_set_x86_arm9[instruction >> 6](address+2, instruction);
+				else
+					c += thumb_instructions_set_x86_arm7[instruction >> 6](address+2, instruction);
+
+				//MOV(ECX, (u32)PROCNUM);
+				CALL((void*)(TPrefetchFunc)armcpu_prefetch<PROCNUM>);
+
+			//	block->num_ARM_instructions++;
+				block->num_cycles += c;
+
+				if (CodeBlockStopped)
+				{
+					ARMPROC.instruct_adr = ARMPROC.next_instruction;
+					break;
+				}
+			}
+		}
+
+		EndCodeBlock();
+		CodeCache.AddCodeBlock(block);
+	}
+
+	// Execute the block
+	TCompiledCode code = (TCompiledCode)&block->code;
+	code();
+	return block->num_cycles;
+}
+
+//these templates needed to be instantiated manually
+template u32 armcpu_exec_jit_x86<0>();
+template u32 armcpu_exec_jit_x86<1>();

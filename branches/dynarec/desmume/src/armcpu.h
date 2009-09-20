@@ -150,6 +150,27 @@ struct armcpu_ctrl_iface {
 };
 
 
+#define BKPT_ACCESS_EXEC				0x00000001
+#define BKPT_ACCESS_READ8				0x00000002
+#define BKPT_ACCESS_READ16				0x00000004
+#define BKPT_ACCESS_READ32				0x00000008
+#define BKPT_ACCESS_WRITE8				0x00000010
+#define BKPT_ACCESS_WRITE16				0x00000020
+#define BKPT_ACCESS_WRITE32				0x00000040
+
+#define BKPT_BREAK_BEFORE				0x00000100
+#define BKPT_BREAK_AFTER				0x00000200
+
+#define BKPT_CHECK_MIRROR_ACCESS		0x00001000
+#define BKPT_REMOVE_AFTER_BREAK			0x00002000
+
+typedef struct armcpu_BreakPoint
+{
+	u32 address;
+	u32 flags;
+} armcpu_BreakPoint;
+
+
 typedef void* armcp_t;
 
 typedef struct armcpu_t
@@ -214,8 +235,11 @@ int armcpu_new( armcpu_t *armcpu, u32 id);
 void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
 
-
+// Interpreter
 template<int PROCNUM> u32 armcpu_exec();
+
+// JIT (x86)
+template<int PROCNUM> u32 armcpu_exec_jit_x86();
 
 BOOL armcpu_irqException(armcpu_t *armcpu);
 BOOL armcpu_flagIrq( armcpu_t *armcpu);
