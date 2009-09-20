@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "Disassembler.h"
 #include "NDSSystem.h"
+#include "MMU_timing.h"
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -391,7 +392,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = curInstruction + 8;
 #endif
 
-		return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
+		return MMU_codeFetchCycles<PROCNUM,32>(curInstruction);
 	}
 
 	u32 curInstruction = armcpu->next_instruction;
@@ -413,18 +414,16 @@ FORCEINLINE static u32 armcpu_prefetch()
 	armcpu->R[15] = curInstruction + 4;
 #endif
 
-#if 0
 	if(PROCNUM==0)
 	{
 		// arm9 fetches 2 instructions at a time in thumb mode
 		if(!(curInstruction == armcpu->instruct_adr + 2 && (curInstruction & 2)))
-			return MMU.MMU_WAIT32[PROCNUM][(curInstruction>>24)&0xF];
+			return MMU_codeFetchCycles<PROCNUM,32>(curInstruction);
 		else
 			return 0;
 	}
-#endif
 
-	return MMU.MMU_WAIT16[PROCNUM][(curInstruction>>24)&0xF];
+	return MMU_codeFetchCycles<PROCNUM,16>(curInstruction);
 }
 
 #if 0 /* not used */
@@ -531,7 +530,7 @@ u32 armcpu_exec()
 	cFetch = armcpu_prefetch(&ARMPROC);
 
 	if (ARMPROC.stalled) {
-		return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
 	}
 #endif
 
@@ -565,7 +564,7 @@ u32 armcpu_exec()
 #else
 		cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-		return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
 	}
 
 	if(PROCNUM==0)
@@ -590,7 +589,7 @@ u32 armcpu_exec()
 #else
 	cFetch = armcpu_prefetch<PROCNUM>();
 #endif
-	return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
+	return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
 }
 
 //these templates needed to be instantiated manually

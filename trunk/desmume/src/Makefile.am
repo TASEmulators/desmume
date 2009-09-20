@@ -25,7 +25,7 @@ libdesmume_a_SOURCES = \
 	path.h \
 	readwrite.cpp readwrite.h \
 	wifi.cpp wifi.h \
-        MMU.cpp MMU.h NDSSystem.cpp NDSSystem.h registers.h \
+        MMU.cpp MMU.h MMU_timing.h NDSSystem.cpp NDSSystem.h registers.h \
 	OGLRender.cpp OGLRender.h \
 	ROMReader.cpp ROMReader.h \
 	render3D.cpp render3D.h \

@@ -259,6 +259,7 @@
 		729BECB80D9D57AF00ED561B /* mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mc.h; path = ../mc.h; sourceTree = SOURCE_ROOT; };
 		729BECB90D9D57AF00ED561B /* mem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mem.h; path = ../mem.h; sourceTree = SOURCE_ROOT; };
 		729BECBB0D9D57AF00ED561B /* MMU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MMU.h; path = ../MMU.h; sourceTree = SOURCE_ROOT; };
+		729BECBC0D9D57AF00ED561B /* MMU_timing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MMU_timing.h; path = ../MMU_timing.h; sourceTree = SOURCE_ROOT; };
 		729BECBD0D9D57AF00ED561B /* NDSSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NDSSystem.h; path = ../NDSSystem.h; sourceTree = SOURCE_ROOT; };
 		729BECBE0D9D57AF00ED561B /* registers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = registers.h; path = ../registers.h; sourceTree = SOURCE_ROOT; };
 		729BECC00D9D57AF00ED561B /* render3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render3D.h; path = ../render3D.h; sourceTree = SOURCE_ROOT; };
@@ -491,6 +492,7 @@
 				729BECB80D9D57AF00ED561B /* mc.h */,
 				729BECB90D9D57AF00ED561B /* mem.h */,
 				729BECBB0D9D57AF00ED561B /* MMU.h */,
+				729BECBC0D9D57AF00ED561B /* MMU_timing.h */,
 				729BECBD0D9D57AF00ED561B /* NDSSystem.h */,
 				95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */,
 				729BECBE0D9D57AF00ED561B /* registers.h */,

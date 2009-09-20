@@ -308,6 +308,7 @@
     <ClInclude Include="..\memorystream.h" />
     <ClInclude Include="..\mic.h" />
     <ClInclude Include="..\MMU.h" />
+    <ClInclude Include="..\MMU_timing.h" />
     <ClInclude Include="..\movie.h" />
     <ClInclude Include="..\NDSSystem.h" />
     <ClInclude Include="..\OGLRender.h" />

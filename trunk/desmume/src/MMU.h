@@ -120,9 +120,6 @@ struct MMU_struct
 
 	u8 ARM9_RW_MODE;
 
-	static CACHE_ALIGN TWaitState MMU_WAIT16[2][16];
-	static CACHE_ALIGN TWaitState MMU_WAIT32[2][16];
-
 	u32 DTCMRegion;
 	u32 ITCMRegion;
 

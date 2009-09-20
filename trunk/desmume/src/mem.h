@@ -63,13 +63,14 @@ static INLINE u32 T1ReadLong_guaranteedAligned(u8* const  mem, const u32 addr)
 }
 
 
-static INLINE u32 T1ReadLong(u8* const  mem, const u32 addr)
+static INLINE u32 T1ReadLong(u8* const  mem, u32 addr)
 {
+   addr &= ~3;
 #ifdef WORDS_BIGENDIAN
    return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
            mem[addr + 1] << 8 | mem[addr]);
 #else
-   return *((u32 *)mem + (addr>>2));
+   return *(u32*)(mem + addr);
 #endif
 }
 
