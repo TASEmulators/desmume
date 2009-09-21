@@ -23,8 +23,11 @@
 #define IO_REG_H
 
 #include "../common.h"
+#include "CWindow.h"
 
 LRESULT CALLBACK IORegView_Proc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+void RefreshAllIORegViews();
 
 class CIORegView : public CToolWindow
 {

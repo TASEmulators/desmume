@@ -27,14 +27,204 @@
 
 #include "FIFO.h"
 #include "mem.h"
-
+#include "registers.h"
 #include "mc.h"
+#include "bits.h"
 
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
 #define ARMPROC (PROCNUM ? NDS_ARM7:NDS_ARM9)
 
 typedef const u8 TWaitState;
+
+
+enum EDMAMode : u8
+{
+	EDMAMode_Immediate = 0,
+	EDMAMode_VBlank = 1,
+	EDMAMode_HBlank = 2,
+	EDMAMode_HStart = 3,
+	EDMAMode_MemDisplay = 4,
+	EDMAMode_Card = 5,
+	EDMAMode_GBASlot = 6,
+	EDMAMode_GXFifo = 7,
+	EDMAMode7_Wifi = 8,
+	EDMAMode7_GBASlot = 9,
+};
+
+enum EDMABitWidth : u8
+{
+	EDMABitWidth_16 = 0,
+	EDMABitWidth_32 = 1
+};
+
+enum EDMASourceUpdate : u8
+{
+	EDMASourceUpdate_Increment = 0,
+	EDMASourceUpdate_Decrement = 1,
+	EDMASourceUpdate_Fixed = 2,
+	EDMASourceUpdate_Invalid = 3,
+};
+
+enum EDMADestinationUpdate : u8
+{
+	EDMADestinationUpdate_Increment = 0,
+	EDMADestinationUpdate_Decrement = 1,
+	EDMADestinationUpdate_Fixed = 2,
+	EDMADestinationUpdate_IncrementReload = 3,
+};
+
+
+class TRegister_32
+{
+public:
+	virtual u32 read32() = 0;
+	virtual void write32(const u32 val) = 0;
+	void write(const int size, const u32 adr, const u32 val) { 
+		if(size==32) write32(val);
+		else {
+			const u32 offset = adr&3;
+			const u32 baseaddr = adr&~offset;
+			if(size==8) {
+				printf("WARNING! 8BIT DMA ACCESS\n"); 
+				u32 mask = 0xFF<<(offset<<3);
+				write32((read32()&~mask)|(val<<(offset<<3)));
+			}
+			else if(size==16) {
+				u32 mask = 0xFFFF<<(offset<<3);
+				write32((read32()&~mask)|(val<<(offset<<3)));
+			}
+		}
+	}
+
+	u32 read(const int size, const u32 adr)
+	{
+		if(size==32) return read32();
+		else {
+			const u32 offset = adr&3;
+			const u32 baseaddr = adr&~offset;
+			if(size==8) { printf("WARNING! 8BIT DMA ACCESS\n"); return (read32()>>(offset<<3))&0xFF; }
+			else return (read32()>>(offset<<3))&0xFFFF;
+		}
+	}
+};
+
+struct TGXSTAT : public TRegister_32
+{
+	TGXSTAT() {
+		gxfifo_irq = se = tr = tb = 0;
+	}
+	u8 tb; //test busy
+	u8 tr; //test result
+	u8 se; //stack error
+	u8 gxfifo_irq; //irq configuration
+
+	
+	virtual u32 read32();
+	virtual void write32(const u32 val);
+
+	void savestate(EMUFILE *f);
+	bool loadstate(EMUFILE *f);
+};
+
+void triggerDma(EDMAMode mode);
+
+class DmaController
+{
+public:
+	u8 enable, irq, repeatMode, _startmode;
+	u8 userEnable;
+	u32 wordcount;
+	EDMAMode startmode;
+	EDMABitWidth bitWidth;
+	EDMASourceUpdate sar;
+	EDMADestinationUpdate dar;
+	u32 saddr, daddr;
+	
+	//indicates whether the dma needs to be checked for triggering
+	BOOL check;
+
+	//indicates whether the dma right now is logically running
+	//(though for now we copy all the data when it triggers)
+	BOOL running;
+
+	BOOL paused;
+
+	//this flag will sometimes be set when a start condition is triggered
+	//other conditions may be automatically triggered based on scanning conditions
+	BOOL triggered;
+
+	u64 nextEvent;
+
+	int procnum, chan;
+
+	void savestate(EMUFILE *f);
+	bool loadstate(EMUFILE *f);
+
+	void exec();
+	void doCopy();
+	void doPause();
+	void doStop();
+	void doSchedule();
+	void tryTrigger(EDMAMode mode);
+
+	DmaController() :
+		enable(0), irq(0), bitWidth(EDMABitWidth_16), repeatMode(0), _startmode(0), 
+		sar(EDMASourceUpdate_Increment), dar(EDMADestinationUpdate_Increment),
+		wordcount(0), startmode(EDMAMode_Immediate),
+		sad(&saddr),
+		dad(&daddr),
+		check(FALSE),
+		running(FALSE),
+		paused(FALSE),
+		triggered(FALSE),
+		nextEvent(0)
+	{
+		sad.controller = this;
+		dad.controller = this;
+		ctrl.controller = this;
+		regs[0] = &sad;
+		regs[1] = &dad;
+		regs[2] = &ctrl;
+	}
+
+	class AddressRegister : public TRegister_32 {
+	public:
+		//we pass in a pointer to the controller here so we can alert it if anything changes
+		DmaController* controller;
+		u32 * const ptr;
+		AddressRegister(u32* _ptr)
+			: ptr(_ptr)
+		{}
+		virtual u32 read32() { 
+			return *ptr;
+		}
+		virtual void write32(const u32 val) {
+			*ptr = val;
+		}
+	};
+
+	class ControlRegister : public TRegister_32 {
+	public:
+		//we pass in a pointer to the controller here so we can alert it if anything changes
+		DmaController* controller;
+		ControlRegister() {}
+		virtual u32 read32() { 
+			return controller->read32();
+		}
+		virtual void write32(const u32 val) {
+			return controller->write32(val);
+		}
+	};
+
+	AddressRegister sad, dad;
+	ControlRegister ctrl;
+	TRegister_32* regs[3];
+
+	void write32(const u32 val);
+	u32 read32();
+
+};
 
 enum ECardMode
 {
@@ -168,9 +358,17 @@ struct MMU_struct
 	u32 CheckDMAs;
 };
 
+//this contains things which can't be memzeroed because they are smarter classes
 struct MMU_struct_new
 {
+	MMU_struct_new() ;
 	BackupDevice backupDevice;
+	DmaController dma[2][4];
+	TGXSTAT gxstat;
+
+	void write_dma(const int proc, const int size, const u32 adr, const u32 val);
+	u32 read_dma(const int proc, const int size, const u32 adr);
+	bool is_dma(const u32 adr) { return adr >= _REG_DMA_CONTROL_MIN && adr <= _REG_DMA_CONTROL_MAX; }
 };
 
 extern MMU_struct MMU;
@@ -220,7 +418,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val);
 void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val);
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val);
  
-template<int PROCNUM> void FASTCALL MMU_doDMA(u32 num);
+//template<int PROCNUM> void FASTCALL MMU_doDMA(u32 num);
 
 //The base ARM memory interfaces
 extern struct armcpu_memory_iface arm9_base_memory_iface;
@@ -342,20 +540,6 @@ inline void SetupMMU(BOOL debugConsole) {
   //if ( (adr & 0x0f800000) == 0x03800000) {
     //T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
       //         adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
-
-enum EDMAMode
-{
-	EDMAMode_Immediate = 0,
-	EDMAMode_VBlank = 1,
-	EDMAMode_HBlank = 2,
-	EDMAMode_HStart = 3,
-	EDMAMode_MemDisplay = 4,
-	EDMAMode_Card = 5,
-	EDMAMode_GBASlot = 6,
-	EDMAMode_GXFifo = 7,
-	EDMAMode7_Wifi = 8,
-	EDMAMode7_GBASlot = 9,
-};
 
 FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
 {

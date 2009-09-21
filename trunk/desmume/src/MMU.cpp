@@ -44,7 +44,12 @@
 #include "addons.h"
 #include "mic.h"
 #include "movie.h"
+#include "readwrite.h"
 #include "MMU_timing.h"
+
+#ifdef WIN32
+#include "windows/IORegView.h"
+#endif
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -969,6 +974,8 @@ void MMU_Reset()
 	MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
 	MMU.dscard[ARMCPU_ARM7].mode = CardMode_Normal;
 
+	new(&MMU_new) MMU_struct_new;
+
 	MMU_timing.arm7codeFetch.Reset();
 	MMU_timing.arm7dataFetch.Reset();
 	MMU_timing.arm9codeFetch.Reset();
@@ -1267,11 +1274,11 @@ void FASTCALL MMU_writeToGCControl(u32 val)
     T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 						
 	// Launch DMA if start flag was set to "DS Cart"
-	if(MMU.DMAStartTime[PROCNUM][0] == EDMAMode_Card) MMU_doDMA<PROCNUM>(0);
-	if(MMU.DMAStartTime[PROCNUM][1] == EDMAMode_Card) MMU_doDMA<PROCNUM>(1);
-	if(MMU.DMAStartTime[PROCNUM][2] == EDMAMode_Card) MMU_doDMA<PROCNUM>(2);
-	if(MMU.DMAStartTime[PROCNUM][3] == EDMAMode_Card) MMU_doDMA<PROCNUM>(3);
+	//printf("triggering card dma\n");
+	triggerDma(EDMAMode_Card);
 }
+
+
 
 template<int PROCNUM>
 u32 MMU_readFromGC()
@@ -1408,147 +1415,152 @@ u32 MMU_readFromGC()
 	return val;
 }
 
-template<int PROCNUM> 
-void FASTCALL MMU_doDMA(u32 num)
-{
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
-		if (MMU.DMACompleted[PROCNUM][num]) return;
-#endif
-	u32 src = DMASrc[PROCNUM][num];
-	u32 dst = DMADst[PROCNUM][num];
-    u32 taille = 0;
-	bool paused = false;
-
-	//if (dst == 0x022DD4E0)
-	//	printf("proc %i dma %i: src=%08X, dst=%08X, size=%i, repmode=%i\n",
-	//	PROCNUM, num, src, dst, (MMU.DMACrt[PROCNUM][num]&0x1FFFFF), MMU.DMAStartTime[PROCNUM][num]);
-
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	if (MMU.DMAStartTime[PROCNUM][num]== EDMAMode_GXFifo)
-	{
-		if (gxFIFO.size > 127) return;
-	}
-#endif
-	
-	if(src==dst)
-	{
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
-		return;
-	}
-	
-	if((!(MMU.DMACrt[PROCNUM][num]&(1<<31)))&&(!(MMU.DMACrt[PROCNUM][num]&(1<<25))))
-	{       /* not enabled and not to be repeated */
-		MMU.DMAStartTime[PROCNUM][num] = 0;
-		MMU.DMACycle[PROCNUM][num] = 0;
-		//MMU.DMAing[PROCNUM][num] = FALSE;
-		return;
-	}
-	
-	//word count
-	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
-	if(taille == 0) taille = 0x200000; //according to gbatek..
-	
-	//for main memory display fifo dmas, check for normal conditions and then dma all 128 bytes at once
-	//(theyll get sent to the fifo, which can handle more than it ought to be able to)
-	if ((MMU.DMAStartTime[PROCNUM][num]==EDMAMode_MemDisplay) &&
-		(taille==4) &&
-		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))
-		taille = 128; 
-	
-	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_Card)
-		taille *= 0x80;
-
-	MMU.DMACycle[PROCNUM][num] = taille + nds_timer;  //TODO - surely this is a gross simplification
-
-	MMU.DMAing[PROCNUM][num] = TRUE;
-	MMU.CheckDMAs |= (1<<(num+(PROCNUM<<2)));
-	
-	DMALOG("ARM%c: DMA%d run src=%08X dst=%08X start=%d taille=%d repeat=%s %08X\r\n",
-		(PROCNUM==0)?'9':'7', num, src, dst, MMU.DMAStartTime[PROCNUM][num], taille,
-		(MMU.DMACrt[PROCNUM][num]&(1<<25))?"on":"off",MMU.DMACrt[PROCNUM][num]);
-
-#ifndef USE_GEOMETRY_FIFO_EMULATION
-	if(!(MMU.DMACrt[PROCNUM][num]&(1<<25)))
-		MMU.DMAStartTime[PROCNUM][num] = 0;
-#endif
-
-	NDS_RescheduleDMA();
-
-	// transfer
-	{
-		u32 i=0;
-		// 32 bit or 16 bit transfer ?
-		int sz = ((MMU.DMACrt[PROCNUM][num]>>26)&1)? 4 : 2; 
-		int dstinc,srcinc;
-		int u=(MMU.DMACrt[PROCNUM][num]>>21);
-		switch(u & 0x3) {
-			case 0 :  dstinc =  sz; break;
-			case 1 :  dstinc = -sz; break;
-			case 2 :  dstinc =   0; break;
-			case 3 :  dstinc =  sz; break; //reload
-			default:
-				return;
-		}
-		switch((u >> 2)&0x3) {
-			case 0 :  srcinc =  sz; break;
-			case 1 :  srcinc = -sz; break;
-			case 2 :  srcinc =   0; break;
-			case 3 :  // reserved
-				return;
-			default:
-				return;
-		}
-
-		//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
-		//then danny phantom title screen will be filled with a garbage char which is made by
-		//dmaing from 0x00000000 to 0x06000000
-		if ((MMU.DMACrt[PROCNUM][num]>>26)&1)
-			for(; i < taille; ++i)
-			{
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-				if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
-				{
-					if ( gxFIFO.size > 255 )
-					{
-						if (i >= taille) break;
-
-						paused = true;
-						MMU.DMACrt[PROCNUM][num] &= 0xFFE00000;
-						MMU.DMACrt[PROCNUM][num] |= ((taille-i) & 0x1FFFFF);
-						MMU.DMAing[PROCNUM][num] = FALSE;
-						MMU.DMACycle[PROCNUM][num] = nds_timer+1;
-						break;
-					}
-				}
-#endif
-				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
-				dst += dstinc;
-				src += srcinc;
-			}
-		else
-			for(; i < taille; ++i)
-			{
-				_MMU_write16<PROCNUM,MMU_AT_DMA>(dst, _MMU_read16<PROCNUM,MMU_AT_DMA>(src));
-				dst += dstinc;
-				src += srcinc;
-			}
-			
-		//write back the addresses
-		DMASrc[PROCNUM][num] = src;
-		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
-			DMADst[PROCNUM][num] = dst;
-
-		//this is probably not the best place to do it, but the dma code in ndssystem is so bad i didnt want to touch it
-		//until it all gets rewritten. so this is here as a reminder, at least.
-		//(there is no proof for this code, but it is reasonable)
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB0+12*num, DMASrc[PROCNUM][num]);
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB4+12*num, DMADst[PROCNUM][num]);
-
-		if (!paused)
-			MMU.DMACompleted[PROCNUM][num] = true;
-	}
-}
+//template<int PROCNUM> 
+//void FASTCALL MMU_doDMA(u32 num)
+//{
+//	u32 src = DMASrc[PROCNUM][num];
+//	u32 dst = DMADst[PROCNUM][num];
+//    u32 taille = 0;
+//	bool paused = false;
+//
+//	//if (dst == 0x022DD4E0)
+//	//	printf("proc %i dma %i: src=%08X, dst=%08X, size=%i, repmode=%i\n",
+//	//	PROCNUM, num, src, dst, (MMU.DMACrt[PROCNUM][num]&0x1FFFFF), MMU.DMAStartTime[PROCNUM][num]);
+//
+//
+//	if(src==dst)
+//	{
+//		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
+//		return;
+//	}
+//
+//
+//	if((!(MMU.DMACrt[PROCNUM][num]&(1<<31)))&&(!(MMU.DMACrt[PROCNUM][num]&(1<<25))))
+//	{       /* not enabled and not to be repeated */
+//		MMU.DMAStartTime[PROCNUM][num] = 0;
+//		MMU.DMACycle[PROCNUM][num] = 0;
+//		//MMU.DMAing[PROCNUM][num] = FALSE;
+//		return;
+//	}
+//	
+//	//word count
+//	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
+//	if(taille == 0) taille = 0x200000; //according to gbatek..
+//	
+//	//for main memory display fifo dmas, check for normal conditions and then dma all 128 bytes at once
+//	//(theyll get sent to the fifo, which can handle more than it ought to be able to)
+//	if ((MMU.DMAStartTime[PROCNUM][num]==EDMAMode_MemDisplay) &&
+//		(taille==4) &&
+//		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))
+//		taille = 128; 
+//	
+//	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_Card)
+//		taille *= 0x80;
+//
+//	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo) {
+//		u32 todo = std::min(taille,(u32)112);
+//		//not necessarily the best time to do this...
+//		//we send 112 words at a time to gxfifo.
+//		//we need to deduct whatever we send from the counter in the dma controller
+//		u32 remain = taille - todo;
+//		taille = todo;
+//		MMU.DMACrt[PROCNUM][num] &= ~0x1FFFFF;
+//		MMU.DMACrt[PROCNUM][num] |= remain;
+//		if(remain != 0) paused = true;
+//		
+//		//not a good time to do this either but i have no choice right now..
+//		if(remain == 0) {
+//			//disable the channel
+//			u8* regs = PROCNUM==0?MMU.ARM9_REG:MMU.ARM7_REG;
+//			T1WriteLong(regs, 0xB8 + (0xC*num), T1ReadLong(regs, 0xB8 + (0xC*num)) & 0x7FFFFFFF);
+//			MMU.DMACrt[PROCNUM][num] &= 0x7FFFFFFF; //blehhh i hate this shit being mirrored in memory
+//		}
+//	}
+//
+//	MMU.DMACycle[PROCNUM][num] = taille + nds_timer;  //TODO - surely this is a gross simplification
+//
+//	MMU.DMAing[PROCNUM][num] = TRUE;
+//	MMU.CheckDMAs |= (1<<(num+(PROCNUM<<2)));
+//	
+//	DMALOG("ARM%c: DMA%d run src=%08X dst=%08X start=%d taille=%d repeat=%s %08X\r\n",
+//		(PROCNUM==0)?'9':'7', num, src, dst, MMU.DMAStartTime[PROCNUM][num], taille,
+//		(MMU.DMACrt[PROCNUM][num]&(1<<25))?"on":"off",MMU.DMACrt[PROCNUM][num]);
+//
+//	NDS_RescheduleDMA();
+//
+//	// transfer
+//	{
+//		u32 i=0;
+//		// 32 bit or 16 bit transfer ?
+//		int sz = ((MMU.DMACrt[PROCNUM][num]>>26)&1)? 4 : 2; 
+//		int dstinc,srcinc;
+//		int u=(MMU.DMACrt[PROCNUM][num]>>21);
+//		switch(u & 0x3) {
+//			case 0 :  dstinc =  sz; break;
+//			case 1 :  dstinc = -sz; break;
+//			case 2 :  dstinc =   0; break;
+//			case 3 :  dstinc =  sz; break; //reload
+//			default:
+//				return;
+//		}
+//		switch((u >> 2)&0x3) {
+//			case 0 :  srcinc =  sz; break;
+//			case 1 :  srcinc = -sz; break;
+//			case 2 :  srcinc =   0; break;
+//			case 3 :  // reserved
+//				return;
+//			default:
+//				return;
+//		}
+//
+//		//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
+//		//then danny phantom title screen will be filled with a garbage char which is made by
+//		//dmaing from 0x00000000 to 0x06000000
+//		if ((MMU.DMACrt[PROCNUM][num]>>26)&1)
+//			for(; i < taille; ++i)
+//			{
+//				if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
+//				{
+//					/*if ( gxFIFO.size > 255 )
+//					{
+//						paused = true;
+//						MMU.DMACrt[PROCNUM][num] &= 0xFFE00000;
+//						MMU.DMACrt[PROCNUM][num] |= ((taille-i) & 0x1FFFFF);
+//						MMU.DMAing[PROCNUM][num] = FALSE;
+//						MMU.DMACycle[PROCNUM][num] = nds_timer+1;
+//						break;
+//					}*/
+//
+//					printf("DMAING TO GXFIFO FROM: %08X, val:%08X (fifosize:%d)\n",src,_MMU_read32<PROCNUM,MMU_AT_DMA>(src),gxFIFO.size);
+//				}
+//
+//				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
+//				dst += dstinc;
+//				src += srcinc;
+//			}
+//		else
+//			for(; i < taille; ++i)
+//			{
+//				_MMU_write16<PROCNUM,MMU_AT_DMA>(dst, _MMU_read16<PROCNUM,MMU_AT_DMA>(src));
+//				dst += dstinc;
+//				src += srcinc;
+//			}
+//			
+//		//write back the addresses
+//		DMASrc[PROCNUM][num] = src;
+//		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
+//			DMADst[PROCNUM][num] = dst;
+//
+//		//this is probably not the best place to do it, but the dma code in ndssystem is so bad i didnt want to touch it
+//		//until it all gets rewritten. so this is here as a reminder, at least.
+//		//(there is no proof for this code, but it is reasonable)
+//		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB0+12*num, DMASrc[PROCNUM][num]);
+//		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB4+12*num, DMADst[PROCNUM][num]);
+//
+//		if (!paused)
+//			MMU.DMACompleted[PROCNUM][num] = true;
+//	}
+//}
 
 #ifdef MMU_ENABLE_ACL
 
@@ -1617,6 +1629,21 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
 #define PROFILE_PREFETCH 1
 #define profile_memory_access(X,Y,Z)
 
+//does some validation on the game's choice of IF value, correcting it if necessary
+void validateIF_arm9()
+{
+	//according to gbatek, these flags are forced on until the condition is removed.
+	//no proof of this though...
+	if(MMU_new.gxstat.gxfifo_irq == 1)
+		if(gxFIFO.size <= 127) 
+			MMU.reg_IF[ARMCPU_ARM9] |= (1<<21);
+		else MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
+	else if(MMU_new.gxstat.gxfifo_irq == 2)
+		if(gxFIFO.size == 0) 
+			MMU.reg_IF[ARMCPU_ARM9] |= (1<<21);
+		else  MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
+	else if(MMU_new.gxstat.gxfifo_irq == 0) MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
+}
 
 static INLINE void MMU_IPCSync(u8 proc, u32 val)
 {
@@ -1712,54 +1739,479 @@ static INLINE void write_timer(int proc, int timerIndex, u16 val)
 	NDS_RescheduleTimers();
 }
 
-template<int proc> static INLINE void write_dma_hictrl(const int dmanum, const u16 val)
+//template<int proc> static INLINE void write_dma_hictrl(const int dmanum, const u16 val)
+//{
+//	u32 baseAddr = 0xB0 + dmanum*12;
+//
+//	//write this control value
+//	T1WriteWord(MMU.MMU_MEM[proc][0x40], baseAddr+10, val);
+//
+//	//read back the src and dst addr
+//	DMASrc[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr);
+//	DMADst[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+4);
+//
+//	//analyze the control value
+//	u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+8);
+//	if(proc==ARMCPU_ARM9) MMU.DMAStartTime[proc][dmanum] = (v>>27) & 0x7;
+//	else {
+//		static const EDMAMode lookup[] = {EDMAMode_Immediate,EDMAMode_VBlank,EDMAMode_Card,EDMAMode7_Wifi};
+//		MMU.DMAStartTime[proc][dmanum] = lookup[(v>>28) & 0x3];
+//		if(MMU.DMAStartTime[proc][dmanum] == EDMAMode7_Wifi && (dmanum==1 || dmanum==3))
+//			MMU.DMAStartTime[proc][dmanum] = EDMAMode7_GBASlot;
+//	}
+//	MMU.DMACrt[proc][dmanum] = v;
+//	MMU.DMACompleted[proc][dmanum] = false;
+//	MMU.DMAing[proc][dmanum] = false;
+//
+//	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate)
+//	{
+//		MMU_doDMA<proc>(dmanum);
+//	}
+//
+//	if (MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+//	{
+////#ifdef _3DINFO
+////		INFO("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s (gxFIFO tail %03i)\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF", gxFIFO.tail);
+////#endif
+//		//if the gxfifo is ready to receive a dma, we need to trigger it now
+//		if(gxFIFO.size <= 127)
+//			MMU_doDMA<proc>(dmanum);
+//	}
+//
+//
+//	DMALOG("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF");
+//
+//	NDS_RescheduleDMA();
+//}
+
+u32 TGXSTAT::read32()
 {
-	u32 baseAddr = 0xB0 + dmanum*12;
+	u32 ret = 0;
 
-	//write this control value
-	T1WriteWord(MMU.MMU_MEM[proc][0x40], baseAddr+10, val);
+	tr = 1; //HACK!!!! tests no work now! (need this to make ff4 entities show up)
+	tb = 0; //HACK!!!! tests no work now! (need this to make ff4 entities show up)
 
-	//read back the src and dst addr
-	DMASrc[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr);
-	DMADst[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+4);
+	ret |= tb|(tr<<1);
 
-	//analyze the control value
-	u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+8);
-	if(proc==ARMCPU_ARM9) MMU.DMAStartTime[proc][dmanum] = (v>>27) & 0x7;
-	else {
-		static const EDMAMode lookup[] = {EDMAMode_Immediate,EDMAMode_VBlank,EDMAMode_Card,EDMAMode7_Wifi};
-		MMU.DMAStartTime[proc][dmanum] = lookup[(v>>28) & 0x3];
-		if(MMU.DMAStartTime[proc][dmanum] == EDMAMode7_Wifi && (dmanum==1 || dmanum==3))
-			MMU.DMAStartTime[proc][dmanum] = EDMAMode7_GBASlot;
+	int _hack_getMatrixStackLevel(int which);
+	
+	ret |= ((_hack_getMatrixStackLevel(0) << 13) | (_hack_getMatrixStackLevel(1) << 8)); //matrix stack levels //no proof that these are needed yet
+
+	//todo: stack busy flag (bit14)
+
+	ret |= se<<15;
+	ret |= (std::min(gxFIFO.size,(u32)255))<<16;
+	if(gxFIFO.size>=255) ret |= BIT(24); //fifo full
+	if(gxFIFO.size<128) ret |= BIT(25); //fifo half
+	if(gxFIFO.size==0) ret |= BIT(26); //fifo empty
+	//determine busy flag.
+	//if we're waiting for a flush, we're busy
+	if(isSwapBuffers) ret |= BIT(27);
+	//if fifo is nonempty, we're busy
+	if(gxFIFO.size!=0) ret |= BIT(27);
+
+
+
+	
+	ret |= gxfifo_irq; //user's irq flags
+
+	//printf("Returning gxstat read: %08X\n",ret);
+	return ret;
+}
+
+void TGXSTAT::write32(const u32 val)
+{
+	gxfifo_irq = (val>>30)&3;
+	if(BIT15(val)) se = 0; //clear stack error flag
+	//if(BIT15(val)) gfx3d_ClearStack(); //??
+	//printf("gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);
+
+		//if (val & (1<<29))		// clear? (only in homebrew?)
+	//{
+	//	GFX_PIPEclear();
+	//	GFX_FIFOclear();
+	//	return;
+	//}
+}
+
+void TGXSTAT::savestate(EMUFILE *f)
+{
+	write32le(0,f); //version
+	write8le(tb,f); write8le(tr,f); write8le(se,f); write8le(gxfifo_irq,f); 
+}
+bool TGXSTAT::loadstate(EMUFILE *f)
+{
+	u32 version;
+	if(read32le(&version,f) != 1) return false;
+	if(version != 0) return false;
+
+	read8le(&tb,f); read8le(&tr,f); read8le(&se,f); read8le(&gxfifo_irq,f); 
+
+	return true;
+}
+
+//this could be inlined...
+void MMU_struct_new::write_dma(const int proc, const int size, const u32 _adr, const u32 val)
+{
+	//printf("%08lld -- write_dma: %d %d %08X %08X\n",nds_timer,proc,size,_adr,val);
+	const u32 adr = _adr - _REG_DMA_CONTROL_MIN;
+	const u32 chan = adr/12;
+	const u32 regnum = (adr - chan*12)>>2;
+
+	if(proc==1) {
+		int zzz=9;
 	}
-	MMU.DMACrt[proc][dmanum] = v;
-	MMU.DMACompleted[proc][dmanum] = false;
-	MMU.DMAing[proc][dmanum] = false;
 
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate)
+	MMU_new.dma[proc][chan].regs[regnum]->write(size,adr,val);
+}
+	
+
+//this could be inlined...
+u32 MMU_struct_new::read_dma(const int proc, const int size, const u32 _adr)
+{
+	const u32 adr = _adr - _REG_DMA_CONTROL_MIN;
+	const u32 chan = adr/12;
+	const u32 regnum = (adr - chan*12)>>2;
+
+	const u32 temp = MMU_new.dma[proc][chan].regs[regnum]->read(size,adr);
+	//printf("%08lld --  read_dma: %d %d %08X = %08X\n",nds_timer,proc,size,_adr,temp);
+
+
+
+	if(temp == 0xAF00 && size == 16)
 	{
-		MMU_doDMA<proc>(dmanum);
+		int zzz=9;
+	}
+ 
+	return temp;
+}
+
+MMU_struct_new::MMU_struct_new()
+{
+	for(int i=0;i<2;i++)
+		for(int j=0;j<4;j++) {
+			dma[i][j].procnum = i;
+			dma[i][j].chan = j;
+		}
+}
+
+bool DmaController::loadstate(EMUFILE* f)
+{
+	u32 version;
+	if(read32le(&version,f) != 1) return false;
+	if(version != 0) return false;
+
+	read8le(&enable,f); read8le(&irq,f); read8le(&repeatMode,f); read8le(&_startmode,f);
+	read8le(&userEnable,f);
+	read32le(&wordcount,f);
+	readle(&startmode,f); 
+	readle(&bitWidth,f); 
+	readle(&sar,f); 
+	readle(&dar,f); 
+	read32le(&saddr,f); read32le(&daddr,f);
+	read32le(&check,f); read32le(&running,f); read32le(&paused,f); read32le(&triggered,f); 
+	read64le(&nextEvent,f);
+
+	return true;
+}
+
+void DmaController::savestate(EMUFILE *f)
+{
+	write32le(0,f); //version
+	write8le(enable,f); write8le(irq,f); write8le(repeatMode,f); write8le(_startmode,f);
+	write8le(userEnable,f);
+	write32le(wordcount,f);
+	write8le(startmode,f); 
+	write8le(bitWidth,f); 
+	write8le(sar,f); 
+	write8le(dar,f); 
+	write32le(saddr,f); write32le(daddr,f);
+	write32le(check,f); write32le(running,f); write32le(paused,f); write32le(triggered,f); 
+	write64le(nextEvent,f);
+}
+
+void DmaController::write32(const u32 val)
+{
+	if(running)
+	{
+		//desp triggers this a lot. figure out whats going on
+		//printf("thats weird..user edited dma control while it was running\n");
+	}
+	//printf("dma %d,%d WRITE %08X\n",procnum,chan,val);
+	wordcount = val&0x1FFFFF;
+	if(wordcount==0x9FbFC || wordcount == 0x1FFFFC || wordcount == 0x1EFFFC || wordcount == 0x1FFFFF) {
+		int zzz=9;
+	}
+	u8 wasRepeatMode = repeatMode;
+	u8 wasEnable = enable;
+	u32 valhi = val>>16;
+	dar = (EDMADestinationUpdate)((valhi>>5)&3);
+	sar = (EDMASourceUpdate)((valhi>>7)&3);
+	repeatMode = BIT9(valhi);
+	bitWidth = (EDMABitWidth)BIT10(valhi);
+	_startmode = (valhi>>11)&7;
+	if(procnum==ARMCPU_ARM7) _startmode &= 6;
+	irq = BIT14(valhi);
+	enable = BIT15(valhi);
+
+	if(val==0x84400076 && saddr ==0x023BCEC4)
+	{
+		int zzz=9;
 	}
 
-	if (MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+	//if(irq) printf("!!!!!!!!!!!!IRQ!!!!!!!!!!!!!\n");
+
+	//make sure we don't get any old triggers
+	if(!wasEnable && enable)
+		triggered = FALSE;
+
+	//printf("dma %d,%d set to startmode %d with wordcount set to: %08X\n",procnum,chan,_startmode,wordcount);
+if(_startmode==0 && wordcount==1) {
+	int zzz=9;
+}
+	if(enable)
 	{
-#ifdef _3DINFO
-		INFO("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s (gxFIFO tail %03i)\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF", gxFIFO.tail);
+		int zzz=9;
+	}
+
+	//analyze enabling and startmode.
+	//note that we only do this if the dma was freshly enabled.
+	//we should probably also only be latching these other regs in that case too..
+	//but for now just this one will do (otherwise the dma repeat stop procedure (in this case the ff4 title menu load with gamecard dma) will fail)
+	//if(!running) enable = userEnable;
+
+	//if we were previously in a triggered mode, and were already enabled,
+	//then don't re-trigger now. this is rather confusing..
+	//we really only want to auto-trigger gxfifo and immediate modes.
+	//but we don't know what mode we're in yet.
+	//so this is our workaround
+	//(otherwise the dma repeat stop procedure (in this case the ff4 title menu load with gamecard dma) will fail)
+	bool doNotStart = false;
+	if(startmode != EDMAMode_Immediate && startmode != EDMAMode_GXFifo && wasEnable) doNotStart = true;
+
+	//this dma may need to trigger now, so give it a chance
+	//if(!(wasRepeatMode && !repeatMode)) //this was an older test
+	if(!doNotStart)
+		doSchedule();
+
+	//todo - make a driver stub for this so that we dont have to conditionalize it everywhere
+#ifdef WIN32
+	RefreshAllIORegViews();
 #endif
-		MMU_doDMA<proc>(dmanum);
-	}
-#else
-	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate 
-		|| MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+}
+
+void DmaController::exec()
+{
+	check = FALSE;
+	
+	if(running)
 	{
-		MMU_doDMA<proc>(dmanum);
+		switch(startmode) {
+			case EDMAMode_GXFifo:
+				//this dma mode won't finish always its job when it gets signalled
+				//sometimes it will have words left to transfer.
+				//if(!paused) printf("gxfifo dma ended with %d remaining\n",wordcount); //only print this once
+				if(wordcount>0) {
+					doPause();
+					goto start;
+				}
+				else doStop();
+				break;
+			default:
+				doStop();
+		}
 	}
+	else if(enable)
+	{
+start:
+		//analyze startmode (this only gets latched when a dma begins)
+		if(procnum==ARMCPU_ARM9) startmode = (EDMAMode)_startmode;
+		else {
+			//arm7 startmode analysis:
+			static const EDMAMode lookup[] = {EDMAMode_Immediate,EDMAMode_VBlank,EDMAMode_Card,EDMAMode7_Wifi};
+			//arm7 has a slightly different startmode encoding
+			startmode = lookup[_startmode>>1];
+			if(startmode == EDMAMode7_Wifi && (chan==1 || chan==3))
+				startmode = EDMAMode7_GBASlot;
+		}
+
+		//make it run, if it is triggered
+		//but first, scan for triggering conditions
+		switch(startmode) {
+			case EDMAMode_Immediate:
+				triggered = TRUE;
+				break;
+			case EDMAMode_GXFifo:
+				if(gxFIFO.size<=127)
+					triggered = TRUE;
+				break;
+		}
+
+		if(triggered)
+		{
+			//if(procnum==0) printf("%08lld trig type %d dma#%d with words %d at src:%08X dst:%08X gxf:%d",nds_timer,startmode,chan,wordcount,saddr,daddr,gxFIFO.size);
+			if(saddr ==0x023BCCEC && wordcount==118) {
+				int zzz=9;
+			}
+			if(startmode==0 && daddr == 0x4000400) {
+				int zzz=9;
+			}
+			running = TRUE;
+			paused = FALSE;
+			doCopy();
+			//printf(";%d\n",gxFIFO.size);
+		}
+	}
+
+#ifdef WIN32
+	RefreshAllIORegViews();
 #endif
+}
 
-	DMALOG("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF");
+void DmaController::doCopy()
+{
+	//generate a copy count depending on various copy mode's behavior
+	u32 todo = wordcount;
+	if(todo == 0) todo = 0x200000; //according to gbatek.. //TODO - this should not work this way for arm7 according to gbatek
+	if(startmode == EDMAMode_MemDisplay) todo = 128; //this is a hack. maybe an alright one though. it should be 4 words at a time. this is a whole scanline
+	if(startmode == EDMAMode_Card) todo *= 0x80;
+	if(startmode == EDMAMode_GXFifo) todo = std::min(wordcount,(u32)112);
 
+	//determine how we're going to copy
+	bool bogarted = false;
+	u32 sz = (bitWidth==EDMABitWidth_16)?2:4;
+	u32 dstinc,srcinc;
+	switch(dar) {
+		case EDMADestinationUpdate_Increment       :  dstinc =  sz; break;
+		case EDMADestinationUpdate_Decrement       :  dstinc = (u32)-(s32)sz; break;
+		case EDMADestinationUpdate_Fixed           :  dstinc =   0; break;
+		case EDMADestinationUpdate_IncrementReload :  dstinc =  sz; break;
+		default: bogarted = true; break;
+	}
+	switch(sar) {
+		case EDMASourceUpdate_Increment : srcinc = sz; break;
+		case EDMASourceUpdate_Decrement : srcinc = (u32)-(s32)sz; break;
+		case EDMASourceUpdate_Fixed		: srcinc = 0; break;
+		case EDMASourceUpdate_Invalid   : bogarted = true; break;
+		default: bogarted = true; break;
+	}
+
+	//need to figure out what to do about this
+	if(bogarted) 
+	{
+		printf("YOUR GAME IS BOGARTED!!! PLEASE REPORT!!!\n");
+		assert(false);
+		return;
+	}
+
+	u32 src = saddr;
+	u32 dst = daddr;
+
+	//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
+	//then danny phantom title screen will be filled with a garbage char which is made by
+	//dmaing from 0x00000000 to 0x06000000
+	//TODO - these might be losing out a lot by not going through the templated version anymore.
+	//we might make another function to do just the raw copy op which can use them with checks
+	//outside the loop
+	if(sz==4) {
+		for(s32 i=(s32)todo; i>0; i--)
+		{
+			u32 temp = _MMU_read32(procnum,MMU_AT_DMA,src);
+			if(startmode == EDMAMode_GXFifo) {
+				//printf("GXFIFO DMA OF %08X FROM %08X WHILE GXFIFO.SIZE=%d\n",temp,src,gxFIFO.size);
+			}
+			_MMU_write32(procnum,MMU_AT_DMA,dst, temp);
+			dst += dstinc;
+			src += srcinc;
+		}
+	} else {
+		for(s32 i=(s32)todo; i>0; i--)
+		{
+			_MMU_write16(procnum,MMU_AT_DMA,dst, _MMU_read16(procnum,MMU_AT_DMA,src));
+			dst += dstinc;
+			src += srcinc;
+		}
+	}
+
+	//reschedule an event for the end of this dma, and figure out how much it cost us
+	doSchedule();
+	nextEvent += todo/4; //TODO - surely this is a gross simplification
+	//apparently moon has very, very tight timing (i didnt spy it using waitbyloop swi...)
+	//so lets bump this down a bit for now,
+	//(i think this code is in nintendo libraries)
+		
+	//write back the addresses
+	saddr = src;
+	if(dar != EDMADestinationUpdate_IncrementReload) //but dont write back dst if we were supposed to reload
+		daddr = dst;
+
+	//do wordcount accounting
+	if(startmode == EDMAMode_Card) 
+		todo /= 0x80; //divide this funky one back down before subtracting it 
+
+	if(!repeatMode)
+		wordcount -= todo;
+}
+
+void triggerDma(EDMAMode mode)
+{
+	for(int i=0;i<2;i++) for(int j=0;j<4;j++) MMU_new.dma[i][j].tryTrigger(mode);
+}
+
+void DmaController::tryTrigger(EDMAMode mode)
+{
+	if(startmode != mode) return;
+
+	//hmm dont trigger it if its already running! 
+	//but paused things need triggers to continue
+	if(running && !paused) return; 
+	triggered = TRUE;
+	doSchedule();
+}
+
+void DmaController::doSchedule()
+{
+	check = TRUE;
+	nextEvent = nds_timer;
 	NDS_RescheduleDMA();
+}
+
+
+void DmaController::doPause()
+{
+	triggered = FALSE;
+	paused = TRUE;
+}
+
+void DmaController::doStop()
+{
+	//if(procnum==0) printf("%08lld stop type %d dma#%d\n",nds_timer,startmode,chan);
+	running = FALSE;
+	if(!repeatMode) enable = FALSE;
+	if(irq) {
+		if(procnum==0) NDS_makeARM9Int(8+chan);
+		else NDS_makeARM7Int(8+chan);
+	}
+}
+
+
+
+u32 DmaController::read32()
+{
+	u32 ret = 0;
+	ret |= enable<<31;
+	ret |= irq<<30;
+	ret |= _startmode<<27;
+	ret |= bitWidth<<26;
+	ret |= repeatMode<<25;
+	ret |= sar<<23;
+	ret |= dar<<21;
+	ret |= wordcount;
+	//printf("dma %d,%d READ  %08X\n",procnum,chan,ret);
+	if(ret == 0xAF000001) {
+		int zzz=9;
+	}
+	return ret;
 }
 
 static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
@@ -1808,6 +2260,8 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if (adr >> 24 == 4)
 	{
+		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM9,8,adr,val); return; }
+		
 		switch(adr)
 		{
 			case REG_DISPA_DISP3DCNT:
@@ -1825,6 +2279,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				gfx3d_Control(disp3dcnt);
 				break;
 			}
+
+			case eng_3D_GXSTAT:
+				MMU_new.gxstat.write(8,adr,val);
+				break;
 
 			case REG_DISPA_WIN0H: 	 
 				GPU_setWIN0_H1(MainScreen.gpu, val);
@@ -1982,6 +2440,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case 0x040001AF :
 						LOG("%08X : %02X\r\n", adr, val);
 		#endif
+
 		}
 
 		MMU.MMU_MEM[ARMCPU_ARM9][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
@@ -2017,6 +2476,14 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if((adr >> 24) == 4)
 	{
+		if(MMU_new.is_dma(adr)) { 
+			if(val==0x02e9) {
+				int zzz=9;
+			}
+			MMU_new.write_dma(ARMCPU_ARM9,16,adr,val); 
+			return;
+		}
+
 		switch (adr >> 4)
 		{
 						//toon table
@@ -2031,6 +2498,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		// Address is an IO register
 		switch(adr)
 		{
+		case eng_3D_GXSTAT:
+			MMU_new.gxstat.write(16,adr,val);
+			break;
+
 		case REG_DISPA_BG2XL: MainScreen.gpu->setAffineStartWord(2,0,val,0); break;
 		case REG_DISPA_BG2XH: MainScreen.gpu->setAffineStartWord(2,0,val,1); break;
 		case REG_DISPA_BG2YL: MainScreen.gpu->setAffineStartWord(2,1,val,0); break;
@@ -2371,10 +2842,12 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_IF :
 				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~((u32)val)); 
+				validateIF_arm9();
 				return;
 			case REG_IF + 2 :
 				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~(((u32)val)<<16));
+				validateIF_arm9();
 				return;
 
             case REG_IPCSYNC :
@@ -2445,18 +2918,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 				}
 
-			case REG_DMA0CNTH :
-				write_dma_hictrl<ARMCPU_ARM9>(0,val);
-				return;
-			case REG_DMA1CNTH :
-				write_dma_hictrl<ARMCPU_ARM9>(1,val);
-				return;
-			case REG_DMA2CNTH :
-				write_dma_hictrl<ARMCPU_ARM9>(2,val);
-				return;
-			case REG_DMA3CNTH :
-				write_dma_hictrl<ARMCPU_ARM9>(3,val);
-				return;
 			case REG_DISPA_DISPMMEMFIFO:
 			{
 				DISP_FIFOsend(val);
@@ -2467,6 +2928,12 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val); 
 		return;
 	}
+
+	if(adr>=0x05000000 && adr<0x06000000)
+	{
+		int zzz=9;
+	}
+
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
@@ -2491,6 +2958,11 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	{
 		addon.write32(adr, val);
 		return;
+	}
+
+	if((adr&0x0F000000)==0x05000000)
+	{
+		int zzz=9;
 	}
 
 	adr &= 0x0FFFFFFF;
@@ -2570,8 +3042,13 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				break;
 		}
 
+		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM9,32,adr,val); return; }
+
 		switch(adr)
 		{
+			case eng_3D_GXSTAT:
+				MMU_new.gxstat.write32(val);
+				break;
 			case REG_DISPA_BG2XL:
 				MainScreen.gpu->setAffineStart(2,0,val);
 				return;
@@ -2595,10 +3072,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			case REG_DISPB_BG3YL:
 				SubScreen.gpu->setAffineStart(3,1,val);
-				return;
-
-			case 0x04000600:
-				GFX_FIFOcnt(val);
 				return;
 
 			// Alpha test reference value - Parameters:1
@@ -2763,6 +3236,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_IF :
 				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~val); 
+				validateIF_arm9();
 				return;
 
             case REG_TM0CNTL:
@@ -2810,23 +3284,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					IPC_FIFOsend(ARMCPU_ARM9, val);
 				return;
 
-			case REG_DMA0CNTL :
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM9>(0,val>>16);
-				return;
-			case REG_DMA1CNTL:
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM9>(1,val>>16);
-				return;
-			case REG_DMA2CNTL :
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM9>(2,val>>16);
-				return;
-			case REG_DMA3CNTL :
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM9>(3,val>>16);
-				return;
-            case REG_GCROMCTRL :
+           
+			case REG_GCROMCTRL :
 				MMU_writeToGCControl<ARMCPU_ARM9>(val);
 				return;
 			case REG_DISPA_DISPCAPCNT :
@@ -2866,6 +3325,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 		return;
 	}
+	if(adr>=0x05000000 && adr<0x06200000)
+	{
+		int zzz=9;
+	}
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
@@ -2885,6 +3348,20 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
+
+	adr &= 0x0FFFFFFF;
+
+	if (adr >> 24 == 4)
+	{	//Address is an IO register
+
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,8,adr); 
+
+		switch(adr)
+		{
+			case eng_3D_GXSTAT:
+				return MMU_new.gxstat.read(8,adr);
+		}
+	}
 
 	bool unmapped;	
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
@@ -2908,14 +3385,23 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 
 	if (adr >> 24 == 4)
 	{
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,16,adr); 
+
 		// Address is an IO register
 		switch(adr)
 		{
+			case eng_3D_GXSTAT:
+				return MMU_new.gxstat.read(16,adr);
+
 			// ============================================= 3D
-			case 0x04000604:
-				return (gfx3d_GetNumPolys());
-			case 0x04000606:
-				return (gfx3d_GetNumVertex());
+			case eng_3D_RAM_COUNT:
+				return 0;
+				//almost worthless for now
+				//return (gfx3d_GetNumPolys());
+			case eng_3D_RAM_COUNT+2:
+				return 0;
+				//almost worthless for now
+				//return (gfx3d_GetNumVertex());
 			case 0x04000630:
 			case 0x04000632:
 			case 0x04000634:
@@ -2951,6 +3437,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			
 			case REG_POSTFLG :
 				return 1;
+
 		}
 
 		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
@@ -2980,6 +3467,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	// Address is an IO register
 	if((adr >> 24) == 4)
 	{
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,32,adr); 
+
 		switch(adr)
 		{
 			case 0x04000640:
@@ -3029,7 +3518,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			{
 				return gfx3d_glGetPosRes((adr & 0xF) >> 2);
 			}
+			case eng_3D_GXSTAT:
+				return MMU_new.gxstat.read(32,adr);
 			//	======================================== 3D end
+
 			
 			case REG_IME :
 				return MMU.reg_IME[ARMCPU_ARM9];
@@ -3116,6 +3608,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	if (adr >> 24 == 4)
 	{
+		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,8,adr,val); return; }
+
 		switch(adr)
 		{
 		case REG_RTC:
@@ -3152,7 +3646,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 #ifdef EXPERIMENTAL_WIFI
 
-	/* wifi mac access */
+	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
 		WIFI_write16(adr,val);
@@ -3174,7 +3668,9 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 	if((adr >> 24) == 4)
 	{
-		/* Address is an IO register */
+		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,16,adr,val); return; }
+
+		//Address is an IO register
 		switch(adr)
 		{
 			case REG_RTC:
@@ -3429,18 +3925,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
 			}
 
-			case REG_DMA0CNTH :
-				write_dma_hictrl<ARMCPU_ARM7>(0,val);
-				return;
-			case REG_DMA1CNTH :
-				write_dma_hictrl<ARMCPU_ARM7>(1,val);
-				return;
-			case REG_DMA2CNTH :
-				write_dma_hictrl<ARMCPU_ARM7>(2,val);
-				return;
-			case REG_DMA3CNTH :
-				write_dma_hictrl<ARMCPU_ARM7>(3,val);
-				return;
 		}
 
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
@@ -3488,6 +3972,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 	if((adr>>24)==4)
 	{
+		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,32,adr,val); return; }
+
 		switch(adr)
 		{
 			case REG_RTC:
@@ -3557,23 +4043,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 					IPC_FIFOsend(ARMCPU_ARM7, val);
 				return;
 			
-			case REG_DMA0CNTL :
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB8, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM7>(0,val>>16);
-				return;
-			case REG_DMA1CNTL:
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC4, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM7>(1,val>>16);
-				return;
-			case REG_DMA2CNTL :
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD0, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM7>(2,val>>16);
-				return;
-			case REG_DMA3CNTL :
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDC, val); //write the low word
-				write_dma_hictrl<ARMCPU_ARM7>(3,val>>16);
-				return;
-
 			case REG_GCROMCTRL :
 				MMU_writeToGCControl<ARMCPU_ARM7>(val);
 				return;
@@ -3611,6 +4080,14 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 	if (adr == REG_RTC) return (u8)rtcRead();
 
+	if (adr >> 24 == 4)
+	{
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,8,adr); 
+
+		// Address is an IO register
+		//switch(adr) {}
+	}
+
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return 0;
@@ -3623,7 +4100,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	mmu_log_debug_ARM7(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
 
 #ifdef EXPERIMENTAL_WIFI
-	/* wifi mac access */
+	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return WIFI_read16(adr) ;
 #endif
@@ -3634,8 +4111,10 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	adr &= 0x0FFFFFFE;
 
 	if(adr>>24==4)
-	{
-		/* Address is an IO register */
+	{	//Address is an IO register
+
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,16,adr); 
+
 		switch(adr)
 		{
 			case REG_RTC:
@@ -3663,14 +4142,14 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
 
-			case 0x04000130:
-			case 0x04000136:
+			case REG_KEYINPUT:
+			case REG_EXTKEYIN:
 				//here is an example of what not to do:
 				//since the arm7 polls this every frame, we shouldnt count this as an input check
 				//LagFrameFlag=0;
 				break;
-			
-			case REG_POSTFLG :
+
+			case REG_POSTFLG:
 				return 1;
 		}
 		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]); 
@@ -3690,7 +4169,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	mmu_log_debug_ARM7(adr, "(read32) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
 
 #ifdef EXPERIMENTAL_WIFI
-	/* wifi mac access */
+	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 #endif
@@ -3701,8 +4180,10 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	adr &= 0x0FFFFFFC;
 
 	if((adr >> 24) == 4)
-	{
-		/* Address is an IO register */
+	{	//Address is an IO register
+		
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,32,adr); 
+		
 		switch(adr)
 		{
 			case REG_RTC:
@@ -3731,6 +4212,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			}
             case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
+
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 	}

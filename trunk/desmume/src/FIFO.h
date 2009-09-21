@@ -26,8 +26,6 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-//#define USE_GEOMETRY_FIFO_EMULATION //enable gxFIFO emulation
-
 #include "types.h"
 
 //=================================================== IPC FIFO
@@ -47,14 +45,20 @@ extern u32 IPC_FIFOrecv(u8 proc);
 extern void IPC_FIFOcnt(u8 proc, u16 val);
 
 //=================================================== GFX FIFO
+
+//yeah, its oversize for now. thats a simpler solution
+//moon seems to overdrive the fifo with immediate dmas
+//i think this might be nintendo code too
+#define HACK_GXIFO_SIZE 200000
+
 typedef struct
 {
-	u8		cmd[256];
-	u32		param[256];
+	u8		cmd[HACK_GXIFO_SIZE];
+	u32		param[HACK_GXIFO_SIZE];
 
-	u16		head;		// start position
-	u16		tail;		// tail
-	u16		size;		// size FIFO buffer
+	u32		head;		// start position
+	u32		tail;		// tail
+	u32		size;		// size FIFO buffer
 } GFX_FIFO;
 
 typedef struct

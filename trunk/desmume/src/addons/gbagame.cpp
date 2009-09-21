@@ -141,7 +141,7 @@ static void gbaWriteFlash(u32 adr, u8 val)
 			{
 				u32 ofs = (adr & 0x0000F000);
 				//INFO("GBAgame: Flash: erase from 0x%08X to 0x%08X\n", ofs + 0x0A000000, ofs + 0x0A001000);
-				for (int i = ofs; i < (ofs + 0x1000); i++)
+				for (u32 i = ofs; i < (ofs + 0x1000); i++)
 					saveData[i] = 0xFF;
 			}
 			gbaFlash.state = 0;
@@ -223,7 +223,7 @@ static u8 getSaveTypeGBA(const u8 *data, const u32 size)
 	u8	type = 0;
 	u8	*dat = (u8 *)data;
 	
-	for (int i = 0; i < (size / 4); i++)
+	for (u32 i = 0; i < (size / 4); i++)
 	{
 		u32	tmp = T1ReadLong(dat, i);
 

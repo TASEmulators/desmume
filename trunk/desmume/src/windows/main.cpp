@@ -1267,7 +1267,7 @@ static void StepRunLoop_Paused()
 
 static void StepRunLoop_User()
 {
-	const int kFramesPerToolUpdate = 6;
+	const int kFramesPerToolUpdate = 1;
 
 	Hud.fps = mainLoopData.fps;
 	Hud.fps3d = mainLoopData.fps3d;

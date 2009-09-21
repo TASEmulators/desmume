@@ -855,12 +855,12 @@ static void OGLRender()
 			glBegin(GL_TRIANGLES);
 
 			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
-			float alpha = poly->getAlpha()/31.0;
+			float alpha = poly->getAlpha()/31.0f;
 			if(wireframe) alpha = 1.0;
 			float color0[4] = {
-					(vert0->color[0]<<2)/255.0,
-					(vert0->color[1]<<2)/255.0,
-					(vert0->color[2]<<2)/255.0,
+					(vert0->color[0]<<2)/255.0f,
+					(vert0->color[1]<<2)/255.0f,
+					(vert0->color[2]<<2)/255.0f,
 					alpha
 				};
 
@@ -873,15 +873,15 @@ static void OGLRender()
 				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
 				
 				float color1[4] = {
-					(vert1->color[0]<<2)/255.0,
-					(vert1->color[1]<<2)/255.0,
-					(vert1->color[2]<<2)/255.0,
+					(vert1->color[0]<<2)/255.0f,
+					(vert1->color[1]<<2)/255.0f,
+					(vert1->color[2]<<2)/255.0f,
 					alpha
 				};
 				float color2[4] = {
-					(vert2->color[0]<<2)/255.0,
-					(vert2->color[1]<<2)/255.0,
-					(vert2->color[2]<<2)/255.0,
+					(vert2->color[0]<<2)/255.0f,
+					(vert2->color[1]<<2)/255.0f,
+					(vert2->color[2]<<2)/255.0f,
 					alpha
 				};
 

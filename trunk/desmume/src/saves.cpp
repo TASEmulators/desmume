@@ -24,6 +24,7 @@
 #include <zlib.h>
 #endif
 #include <stack>
+#include <set>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -269,8 +270,14 @@ static void mmu_savestate(EMUFILE* os)
 	u32 version = 3;
 	write32le(version,os);
 	
-	//newer savefile system:
+	//version 2:
 	MMU_new.backupDevice.save_state(os);
+	
+	//version 3:
+	MMU_new.gxstat.savestate(os);
+	for(int i=0;i<2;i++)
+		for(int j=0;j<4;j++)
+			MMU_new.dma[i][j].savestate(os);
 
 	MMU_timing.arm9codeFetch.savestate(os, version);
 	MMU_timing.arm9dataFetch.savestate(os, version);
@@ -423,11 +430,16 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	if(version < 2)
 		return true;
 
-	//newer savefile system:
 	bool ok = MMU_new.backupDevice.load_state(is);
 
 	if(version < 3)
-		return ok;
+		return true;
+
+	ok &= MMU_new.gxstat.loadstate(is);
+	
+	for(int i=0;i<2;i++)
+		for(int j=0;j<4;j++)
+			ok &= MMU_new.dma[i][j].loadstate(is);
 
 	ok &= MMU_timing.arm9codeFetch.loadstate(is, version);
 	ok &= MMU_timing.arm9dataFetch.loadstate(is, version);
@@ -800,6 +812,10 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 {
 	uint32 acc=0;
 
+#ifdef DEBUG
+	std::set<std::string> keyset;
+#endif
+
 	const SFORMAT* temp = sf;
 	while(temp->v) {
 		const SFORMAT* seek = sf;
@@ -838,6 +854,16 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 			os->fwrite(sf->desc,4);
 			write32le(sf->size,os);
 			write32le(sf->count,os);
+
+			#ifdef DEBUG
+			//make sure we dont dup any keys
+			if(keyset.find(sf->desc) != keyset.end())
+			{
+				printf("duplicate save key!\n");
+				assert(false);
+			}
+			keyset.insert(sf->desc);
+			#endif
 
 		#ifdef LOCAL_LE
 			// no need to ever loop one at a time if not flipping byte order

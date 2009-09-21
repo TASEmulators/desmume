@@ -146,7 +146,7 @@ void emu_halt();
 
 extern u64 nds_timer;
 void NDS_Reschedule();
-void NDS_RescheduleGXFIFO();
+void NDS_RescheduleGXFIFO(u32 cost);
 void NDS_RescheduleDMA();
 void NDS_RescheduleTimers();
 
