@@ -32,6 +32,15 @@ int write16le(u16 b, EMUFILE* os);
 int write32le(u32 b, EMUFILE* os);
 int write64le(u64 b, EMUFILE* os);
 
+int read8le(u8 *Bufo, EMUFILE*is);
+int read16le(u16 *Bufo, EMUFILE*is);
+inline int read16le(s16 *Bufo, EMUFILE*is) { return read16le((u16*)Bufo,is); }
+int read32le(u32 *Bufo, EMUFILE*is);
+inline int read32le(s32 *Bufo, EMUFILE*is) { return read32le((u32*)Bufo,is); }
+int read64le(u64 *Bufo, EMUFILE*is);
+int read16le(u16 *Bufo, std::istream *is);
+
+
 template<typename T>
 int readle(T *Bufo, EMUFILE*is)
 {
@@ -47,13 +56,6 @@ int readle(T *Bufo, EMUFILE*is)
 }
 
 
-int read8le(u8 *Bufo, EMUFILE*is);
-int read16le(u16 *Bufo, EMUFILE*is);
-inline int read16le(s16 *Bufo, EMUFILE*is) { return read16le((u16*)Bufo,is); }
-int read32le(u32 *Bufo, EMUFILE*is);
-inline int read32le(s32 *Bufo, EMUFILE*is) { return read32le((u32*)Bufo,is); }
-int read64le(u64 *Bufo, EMUFILE*is);
-int read16le(u16 *Bufo, std::istream *is);
 
 int readbool(bool *b, EMUFILE* is);
 void writebool(bool b, EMUFILE* os);

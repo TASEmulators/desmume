@@ -1904,10 +1904,11 @@ bool DmaController::loadstate(EMUFILE* f)
 	read8le(&enable,f); read8le(&irq,f); read8le(&repeatMode,f); read8le(&_startmode,f);
 	read8le(&userEnable,f);
 	read32le(&wordcount,f);
-	readle(&startmode,f); 
-	readle(&bitWidth,f); 
-	readle(&sar,f); 
-	readle(&dar,f); 
+	u8 temp;
+	read8le(&temp,f); startmode = (EDMAMode)temp;
+	read8le(&temp,f); bitWidth = (EDMABitWidth)temp;
+	read8le(&temp,f); sar = (EDMASourceUpdate)temp;
+	read8le(&temp,f); dar = (EDMADestinationUpdate)temp;
 	read32le(&saddr,f); read32le(&daddr,f);
 	read32le(&check,f); read32le(&running,f); read32le(&paused,f); read32le(&triggered,f); 
 	read64le(&nextEvent,f);

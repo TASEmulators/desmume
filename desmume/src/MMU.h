@@ -38,7 +38,7 @@
 typedef const u8 TWaitState;
 
 
-enum EDMAMode : u8
+enum EDMAMode
 {
 	EDMAMode_Immediate = 0,
 	EDMAMode_VBlank = 1,
@@ -52,13 +52,13 @@ enum EDMAMode : u8
 	EDMAMode7_GBASlot = 9,
 };
 
-enum EDMABitWidth : u8
+enum EDMABitWidth
 {
 	EDMABitWidth_16 = 0,
 	EDMABitWidth_32 = 1
 };
 
-enum EDMASourceUpdate : u8
+enum EDMASourceUpdate
 {
 	EDMASourceUpdate_Increment = 0,
 	EDMASourceUpdate_Decrement = 1,
@@ -66,7 +66,7 @@ enum EDMASourceUpdate : u8
 	EDMASourceUpdate_Invalid = 3,
 };
 
-enum EDMADestinationUpdate : u8
+enum EDMADestinationUpdate
 {
 	EDMADestinationUpdate_Increment = 0,
 	EDMADestinationUpdate_Decrement = 1,
