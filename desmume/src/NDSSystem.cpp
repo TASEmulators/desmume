@@ -1492,22 +1492,6 @@ void NDS_SkipNextFrame() {
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
-static void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
-{
-	if(MMU.DMAStartTime[procnum][chan] == modeNum)
-	{
-		if(procnum == ARMCPU_ARM9) MMU_doDMA<ARMCPU_ARM9>(chan);
-		else MMU_doDMA<ARMCPU_ARM7>(chan);
-		//MMU.DMAStartTime[procnum][chan] = 0; //this was here for main mem dma
-	}
-}
-
-void execHardware_doAllDma(EDMAMode modeNum)
-{
-	for(int i=0;i<2;i++)
-		for(int j=0;j<4;j++)
-			execHardware_doDma(i,j,modeNum);
-}
 
 enum ESI_DISPCNT
 {
@@ -1555,22 +1539,15 @@ struct TSequenceItem_GXFIFO : public TSequenceItem
 {
 	FORCEINLINE bool isTriggered()
 	{
-		#ifndef USE_GEOMETRY_FIFO_EMULATION
-			return false;
-		#else
-			return enabled && nds_timer >= MMU.gfx3dCycles;
-		#endif
+		return enabled && nds_timer >= MMU.gfx3dCycles;
 	}
 
 	FORCEINLINE void exec()
 	{
-		#ifdef USE_GEOMETRY_FIFO_EMULATION
-			enabled = false; //do this first, because gfx3d_execute3D() will cause more scheduled events if necessary
+		while(isTriggered()) {
+			enabled = false;
 			gfx3d_execute3D();
-			MMU.gfx3dCycles = max(MMU.gfx3dCycles,nds_timer); //uhh i dont entirely understand why this was necessary
-			//i need to learn more about how the new gxfifo works, but I am leaving that to you for now crazymax ^_^
-		#endif
-			
+		}
 	}
 
 	FORCEINLINE u64 next()
@@ -1651,30 +1628,57 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 
 template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 {
+	DmaController* controller;
+
 	FORCEINLINE bool isTriggered()
 	{
-		return (MMU.DMAing[procnum][chan])&&nds_timer>=(MMU.DMACycle[procnum][chan]);
+		return (controller->check && nds_timer>= controller->nextEvent);
 	}
 
-	FORCEINLINE bool isEnabled() { return MMU.DMAing[procnum][chan]!=0; }
+	FORCEINLINE bool isEnabled() { 
+		return controller->check?TRUE:FALSE;
+	}
 
 	FORCEINLINE u64 next()
 	{
-		return MMU.DMACycle[procnum][chan];
+		return controller->nextEvent;
 	}
 
 	FORCEINLINE void exec()
 	{
-		if (MMU.DMACompleted[procnum][chan])
-		{
-			u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
-			T1WriteLong(regs, 0xB8 + (0xC*chan), T1ReadLong(regs, 0xB8 + (0xC*chan)) & 0x7FFFFFFF);
-			if((MMU.DMACrt[procnum][chan])&(1<<30)) {
-				if(procnum==0) NDS_makeARM9Int(8+chan);
-				else NDS_makeARM7Int(8+chan);
-			}
-			MMU.DMAing[procnum][chan] = FALSE;
-		}
+		//printf("exec from TSequenceItem_DMA: %d %d\n",procnum,chan);
+		controller->exec();
+//		//give gxfifo dmas a chance to re-trigger
+//		if(MMU.DMAStartTime[procnum][chan] == EDMAMode_GXFifo) {
+//			MMU.DMAing[procnum][chan] = FALSE;
+//			if (gxFIFO.size <= 127) 
+//			{
+//				execHardware_doDma(procnum,chan,EDMAMode_GXFifo);
+//				if (MMU.DMACompleted[procnum][chan])
+//					goto docomplete;
+//				else return;
+//			}
+//		}
+//
+//docomplete:
+//		if (MMU.DMACompleted[procnum][chan])	
+//		{
+//			u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
+//
+//			//disable the channel
+//			if(MMU.DMAStartTime[procnum][chan] != EDMAMode_GXFifo) {
+//				T1WriteLong(regs, 0xB8 + (0xC*chan), T1ReadLong(regs, 0xB8 + (0xC*chan)) & 0x7FFFFFFF);
+//				MMU.DMACrt[procnum][chan] &= 0x7FFFFFFF; //blehhh i hate this shit being mirrored in memory
+//			}
+//
+//			if((MMU.DMACrt[procnum][chan])&(1<<30)) {
+//				if(procnum==0) NDS_makeARM9Int(8+chan);
+//				else NDS_makeARM7Int(8+chan);
+//			}
+//
+//			MMU.DMAing[procnum][chan] = FALSE;
+//		}
+
 	}
 };
 
@@ -1790,12 +1794,14 @@ struct Sequencer
 
 } sequencer;
 
-void NDS_RescheduleGXFIFO()
+void NDS_RescheduleGXFIFO(u32 cost)
 {
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	sequencer.gxfifo.enabled = true;
+	if(!sequencer.gxfifo.enabled) {
+		MMU.gfx3dCycles = nds_timer;
+		sequencer.gxfifo.enabled = true;
+	}
+	MMU.gfx3dCycles += cost;
 	NDS_Reschedule();
-#endif
 }
 
 void NDS_RescheduleTimers()
@@ -1812,6 +1818,7 @@ void NDS_RescheduleDMA()
 {
 	//TBD
 	NDS_Reschedule();
+
 }
 
 static void initSchedule()
@@ -1849,6 +1856,15 @@ void Sequencer::init()
 	dispcnt.timestamp = 0;
 
 	gxfifo.enabled = false;
+
+	dma_0_0.controller = &MMU_new.dma[0][0];
+	dma_0_1.controller = &MMU_new.dma[0][1];
+	dma_0_2.controller = &MMU_new.dma[0][2];
+	dma_0_3.controller = &MMU_new.dma[0][3];
+	dma_1_0.controller = &MMU_new.dma[1][0];
+	dma_1_1.controller = &MMU_new.dma[1][1];
+	dma_1_2.controller = &MMU_new.dma[1][2];
+	dma_1_3.controller = &MMU_new.dma[1][3];
 
 
 	#ifdef EXPERIMENTAL_WIFI
@@ -1891,7 +1907,7 @@ static void execHardware_hblank()
 		//trigger hblank dmas
 		//but notice, we do that just after we finished drawing the line
 		//(values copied by this hdma should not be used until the next scanline)
-		execHardware_doAllDma(EDMAMode_HBlank);
+		triggerDma(EDMAMode_HBlank);
 	}
 }
 
@@ -1908,6 +1924,8 @@ static void execHardware_hstart_vblankEnd()
 
 static void execHardware_hstart_vblankStart()
 {
+	//printf("--------VBLANK!!!--------\n");
+
 	//turn on vblank status bit
 	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 1);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
@@ -1927,7 +1945,7 @@ static void execHardware_hstart_vblankStart()
 		SkipCur2DFrame = false;
 
 	//trigger vblank dmas
-	execHardware_doAllDma(EDMAMode_VBlank);
+	triggerDma(EDMAMode_VBlank);
 }
 
 static void execHardware_hstart_vcount()
@@ -1979,7 +1997,7 @@ static void execHardware_hstart()
 	execHardware_hstart_vcount();
 
 	//trigger hstart dmas
-	execHardware_doAllDma(EDMAMode_HStart);
+	triggerDma(EDMAMode_HStart);
 
 	if(nds.VCount<192)
 	{
@@ -1988,7 +2006,7 @@ static void execHardware_hstart()
 		//it should be driven by a fifo (and generate just in time as the scanline is displayed)
 		//but that isnt even possible until we have some sort of sub-scanline timing.
 		//it may not be necessary.
-		execHardware_doAllDma(EDMAMode_MemDisplay);
+		triggerDma(EDMAMode_MemDisplay);
 	}
 
 	//end of 3d vblank
@@ -2321,12 +2339,6 @@ void NDS_exec(s32 nb)
 
 void execHardware_interrupts()
 {
-	//THIS IS A HACK but it is necessary until we have gxfifo emulation
-	#ifndef USE_GEOMETRY_FIFO_EMULATION
-	if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21)) 
-		NDS_makeARM9Int(21);		// GX geometry
-	#endif
-
 	if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 	{
 #ifdef GDB_STUB

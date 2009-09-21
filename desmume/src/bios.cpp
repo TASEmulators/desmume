@@ -24,11 +24,10 @@
 #include "MMU.h"
 #include "SPU.h"
 #include "debug.h"
+#include "NDSSystem.h"
 
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM> 
-
-extern BOOL execute;
 
 static const u16 getsinetbl[] = {
 0x0000, 0x0324, 0x0648, 0x096A, 0x0C8C, 0x0FAB, 0x12C8, 0x15E2, 
@@ -198,6 +197,7 @@ TEMPLATE static u32 bios_nop()
 
 TEMPLATE static u32 WaitByLoop()
 {
+	//printf("%lld waitbyloop\n",nds_timer);
 	//INFO("ARM%c: SWI 0x03 (WaitByLoop)\n", PROCNUM?'7':'9');
 	if (PROCNUM == ARMCPU_ARM9)
 	{

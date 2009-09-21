@@ -1353,6 +1353,7 @@ static void SoftRastRender()
 	}
 
 	//printf("%d %d %d %d\n",gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
+//			printf("%f\n",vert.coord[0]);
 
 	//viewport transforms
 	for(int i=0;i<clippedPolyCounter;i++)

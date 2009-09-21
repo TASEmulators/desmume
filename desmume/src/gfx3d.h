@@ -31,6 +31,47 @@
 #include "emufile.h"
 
 
+//geometry engine command numbers
+#define GFX3D_NOP 0x00
+#define GFX3D_MTX_MODE 0x10
+#define GFX3D_MTX_PUSH 0x11
+#define GFX3D_MTX_POP 0x12
+#define GFX3D_MTX_STORE 0x13
+#define GFX3D_MTX_RESTORE 0x14
+#define GFX3D_MTX_IDENTITY 0x15
+#define GFX3D_MTX_LOAD_4x4 0x16
+#define GFX3D_MTX_LOAD_4x3 0x17
+#define GFX3D_MTX_MULT_4x4 0x18
+#define GFX3D_MTX_MULT_4x3 0x19
+#define GFX3D_MTX_MULT_3x3 0x1A
+#define GFX3D_MTX_SCALE 0x1B
+#define GFX3D_MTX_TRANS 0x1C
+#define GFX3D_COLOR 0x20
+#define GFX3D_NORMAL 0x21
+#define GFX3D_TEXCOORD 0x22
+#define GFX3D_VTX_16 0x23
+#define GFX3D_VTX_10 0x24
+#define GFX3D_XY 0x25
+#define GFX3D_XZ 0x26
+#define GFX3D_YZ 0x27
+#define GFX3D_DIFF 0x28
+#define GFX3D_POLYGON_ATTR 0x29
+#define GFX3D_TEXIMAGE_PARAM 0x2A
+#define GFX3D_PLTT_BASE 0x2B
+#define GFX3D_DIF_AMB 0x30
+#define GFX3D_SPE_EMI 0x31
+#define GFX3D_LIGHT_VECTOR 0x32
+#define GFX3D_LIGHT_COLOR 0x33
+#define GFX3D_SHININESS 0x34
+#define GFX3D_BEGIN_VTXS 0x40
+#define GFX3D_END_VTXS 0x41
+#define GFX3D_SWAP_BUFFERS 0x50
+#define GFX3D_VIEWPORT 0x60
+#define GFX3D_BOX_TEST 0x70
+#define GFX3D_POS_TEST 0x71
+#define GFX3D_VEC_TEST 0x72
+#define GFX3D_NOP_NOARG_HACK 0xDD
+		
 //produce a 32bpp color from a DS RGB16
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
 
@@ -274,44 +315,8 @@ extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 extern CACHE_ALIGN u8 gfx3d_convertedScreen[256*192*4];
 extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation of illogical *2
 
-//GE commands:
-#ifndef USE_GEOMETRY_FIFO_EMULATION
-void gfx3d_glMatrixMode(u32 v);
-void gfx3d_glPushMatrix(void);
-void gfx3d_glPopMatrix(s32 i);
-void gfx3d_glStoreMatrix(u32 v);
-void gfx3d_glRestoreMatrix(u32 v);
-void gfx3d_glLoadIdentity();
-BOOL gfx3d_glLoadMatrix4x4(s32 v);
-BOOL gfx3d_glLoadMatrix4x3(s32 v);
-BOOL gfx3d_glMultMatrix4x4(s32 v);
-BOOL gfx3d_glMultMatrix3x3(s32 v);
-BOOL gfx3d_glMultMatrix4x3(s32 v);
-BOOL gfx3d_glScale(s32 v);
-BOOL gfx3d_glTranslate(s32 v);
-void gfx3d_glColor3b(u32 v);
-void gfx3d_glNormal(u32 v);
-void gfx3d_glTexCoord(u32 val);
-BOOL gfx3d_glVertex16b(u32 v);
-void gfx3d_glVertex10b(u32 v);
-void gfx3d_glVertex3_cord(u32 one, u32 two, u32 v);
-void gfx3d_glVertex_rel(u32 v);
-void gfx3d_glPolygonAttrib (u32 val);
-void gfx3d_glTexImage(u32 val);
-void gfx3d_glTexPalette(u32 val);
-void gfx3d_glMaterial0(u32 val);
-void gfx3d_glMaterial1(u32 val);
-void gfx3d_glLightDirection (u32 v);
-void gfx3d_glLightColor (u32 v);
-BOOL gfx3d_glShininess (u32 val);
-void gfx3d_glBegin(u32 v);
-void gfx3d_glEnd(void);
-// SwapBuffers see follow
-void gfx3d_glViewPort(u32 v);
-BOOL gfx3d_glBoxTest(u32 v);
-BOOL gfx3d_glPosTest(u32 v);
-void gfx3d_glVecTest(u32 v);
-#endif
+extern BOOL isSwapBuffers;
+
 void gfx3d_glFlush(u32 v);
 // end GE commands
 
@@ -332,9 +337,7 @@ u16 gfx3d_glGetVecRes(u32 index);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
 void gfx3d_Control(u32 v);
-#ifdef USE_GEOMETRY_FIFO_EMULATION
 void gfx3d_execute3D();
-#endif
 void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 
@@ -352,4 +355,5 @@ void gfx3d_savestate(EMUFILE* os);
 bool gfx3d_loadstate(EMUFILE* is, int size);
 
 void gfx3d_ClearStack();
-#endif
+
+#endif //_GFX3D_H_

@@ -32,6 +32,21 @@ int write16le(u16 b, EMUFILE* os);
 int write32le(u32 b, EMUFILE* os);
 int write64le(u64 b, EMUFILE* os);
 
+template<typename T>
+int readle(T *Bufo, EMUFILE*is)
+{
+	CTASSERT(sizeof(T)==1||sizeof(T)==2||sizeof(T)==4||sizeof(T)==8);
+	switch(sizeof(T)) {
+		case 1: return read8le((u8*)Bufo,is);
+		case 2: return read16le((u16*)Bufo,is);
+		case 4: return read32le((u32*)Bufo,is);
+		case 8: return read64le((u64*)Bufo,is);
+		default:
+			return 0;
+	}
+}
+
+
 int read8le(u8 *Bufo, EMUFILE*is);
 int read16le(u16 *Bufo, EMUFILE*is);
 inline int read16le(s16 *Bufo, EMUFILE*is) { return read16le((u16*)Bufo,is); }

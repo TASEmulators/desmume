@@ -144,6 +144,10 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 GFX_PIPE	gxPIPE;
 GFX_FIFO	gxFIFO;
 
+
+
+
+
 void GFX_PIPEclear()
 {
 	gxPIPE.head = 0;
@@ -153,192 +157,122 @@ void GFX_PIPEclear()
 
 void GFX_FIFOclear()
 {
-	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	gxstat &= 0x0000FFFF;
-
 	gxFIFO.head = 0;
 	gxFIFO.tail = 0;
 	gxFIFO.size = 0;
-	gxstat |= 0x06000000;
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+}
+
+static void GXF_FIFO_handleEvents()
+{
+	if(gxFIFO.size <= 127)
+	{
+		//TODO - should this always happen, over and over, until the dma is disabled?
+		//or only when we change to this state?
+		if(MMU_new.gxstat.gxfifo_irq == 1) 
+			setIF(0, (1<<21)); //the half gxfifo irq
+
+		//might need to trigger a gxfifo dma
+		triggerDma(EDMAMode_GXFifo);
+	}
+
+
+
+	if(gxFIFO.size == 0) {
+		//we just went to empty
+		if(MMU_new.gxstat.gxfifo_irq == 2) 
+			setIF(0, (1<<21)); //the empty gxfifo irq
+	}
+
 }
 
 void GFX_FIFOsend(u8 cmd, u32 param)
 {
-	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	if(cmd==0x41) {
+		int zzz=9;
+	}
 
 	//INFO("gxFIFO: send 0x%02X = 0x%08X (size %03i/0x%02X) gxstat 0x%08X\n", cmd, param, gxFIFO.size, gxFIFO.size, gxstat);
+	//printf("fifo recv: %02X: %08X upto:%d\n",cmd,param,gxFIFO.size+1);
 
-	gxstat &= 0xF000FFFF;
+	//TODO - WOAH ! NOT HANDLING A TOO-BIG FIFO RIGHT NOW!
+	//if (gxFIFO.size > 255)
+	//{
+	//	GXF_FIFO_handleEvents();
+	//	//NEED TO HANDLE THIS!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-	if (gxFIFO.size == 0)				// FIFO empty
-	{
-		gxstat |= 0x06000000;
-		if (gxPIPE.size < 4)			// pipe not full
-		{
-			gxPIPE.cmd[gxPIPE.tail] = cmd;
-			gxPIPE.param[gxPIPE.tail] = param;
-			gxPIPE.tail++;
-			gxPIPE.size++;
-			if (gxPIPE.tail > 3) gxPIPE.tail = 0;
-			
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-			gxstat |= 0x08000000;		// set busy flag
-#endif
-			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-			NDS_RescheduleGXFIFO();
-			return;
-		}
-	}
+	//	//gxstat |= 0x08000000;			// busy
+	//	NDS_RescheduleGXFIFO(1);
+	//	//INFO("ERROR: gxFIFO is full (cmd 0x%02X = 0x%08X) (prev cmd 0x%02X = 0x%08X)\n", cmd, param, gxFIFO.cmd[255], gxFIFO.param[255]);
+	//	return;		
+	//}
 
-	if (gxFIFO.size > 255)
-	{
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-		gxstat |= 0x01000000;			// full
-		gxstat |= 0x08000000;			// busy
-#else
-		gxstat |= 0x02000000;				// this is hack (must be removed later)
-#endif
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		NDS_RescheduleGXFIFO();
-		//INFO("ERROR: gxFIFO is full (cmd 0x%02X = 0x%08X) (prev cmd 0x%02X = 0x%08X)\n", cmd, param, gxFIFO.cmd[255], gxFIFO.param[255]);
-		return;		
-	}
 
 	gxFIFO.cmd[gxFIFO.tail] = cmd;
 	gxFIFO.param[gxFIFO.tail] = param;
 	gxFIFO.tail++;
 	gxFIFO.size++;
-	if (gxFIFO.tail > 255) gxFIFO.tail = 0;
-	
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	gxstat |= 0x08000000;		// set busy flag
-#endif
+	if (gxFIFO.tail > HACK_GXIFO_SIZE-1) gxFIFO.tail = 0;
 
-	gxstat |= ((gxFIFO.size & 0x1FF) << 16);
-
-	if (gxFIFO.size < 128)				// less half
-	{
-		gxstat |= 0x02000000;
+	if(gxFIFO.size>=HACK_GXIFO_SIZE) {
+		printf("--FIFO FULL-- : %d\n",gxFIFO.size);
 	}
-
-#ifndef USE_GEOMETRY_FIFO_EMULATION
-	gxstat |= 0x02000000;					// this is hack (must be removed later)
-#endif
-
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 	
-	NDS_RescheduleGXFIFO();
+	//gxstat |= 0x08000000;		// set busy flag
+
+	GXF_FIFO_handleEvents();
+
+	NDS_RescheduleGXFIFO(1);
 }
 
 // this function used ONLY in gxFIFO
 BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 {
-	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	gxstat &= 0xF7FFFFFF;		// clear busy flag
+	//gxstat &= 0xF7FFFFFF;		// clear busy flag
 
-	if (gxPIPE.size > 0)
+	if (gxFIFO.size == 0)
 	{
-		*cmd = gxPIPE.cmd[gxPIPE.head];
-		*param = gxPIPE.param[gxPIPE.head];
-		gxPIPE.head++;
-		gxPIPE.size--;
-		if (gxPIPE.head > 3) gxPIPE.head = 0;
-
-		if (gxPIPE.size < 3) 
-		{
-			if (gxFIFO.size > 0)
-			{
-				gxstat &= 0xF000FFFF;
-
-				gxPIPE.cmd[gxPIPE.tail] = gxFIFO.cmd[gxFIFO.head];
-				gxPIPE.param[gxPIPE.tail] = gxFIFO.param[gxFIFO.head];
-				gxPIPE.tail++;
-				gxPIPE.size++;
-				if (gxPIPE.tail > 3) gxPIPE.tail = 0;
-
-				gxFIFO.head++;
-				gxFIFO.size--;
-				if (gxFIFO.head > 255) gxFIFO.head = 0;
-
-				if (gxFIFO.size > 0)
-				{
-					gxPIPE.cmd[gxPIPE.tail] = gxFIFO.cmd[gxFIFO.head];
-					gxPIPE.param[gxPIPE.tail] = gxFIFO.param[gxFIFO.head];
-					gxPIPE.tail++;
-					gxPIPE.size++;
-					if (gxPIPE.tail > 3) gxPIPE.tail = 0;
-
-					gxFIFO.head++;
-					gxFIFO.size--;
-					if (gxFIFO.head > 255) gxFIFO.head = 0;
-				}
-
-				gxstat |= ((gxFIFO.size & 0x1FF) << 16);
-
-				if (gxFIFO.size < 128)
-				{
-					gxstat |= 0x02000000;
-					if (gxstat & 0x40000000)	// IRQ: less half
-					{
-						setIF(0, (1<<21));
-					}
-						execHardware_doAllDma(EDMAMode_GXFifo);
-				}
-
-				if (gxFIFO.size == 0)		// empty
-				{
-					gxstat |= 0x04000000;
-					if (gxstat & 0x80000000)	// IRQ: empty
-						setIF(0, (1<<21));
-				}
-			}
-			else		// FIFO empty
-			{
-				gxstat &= 0xF000FFFF;
-				gxstat |= 0x06000000;
-				if (gxstat & 0x80000000)	// IRQ: empty
-						setIF(0, (1<<21));
-			}
-		}
-
-		if (gxPIPE.size > 0)
-			gxstat |= 0x08000000;	// set busy flag
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		return (TRUE);
+		GXF_FIFO_handleEvents();
+		return FALSE;
 	}
 
-	if (gxstat & 0x80000000)	// IRQ: empty
-			setIF(0, (1<<21));
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-	return FALSE;
+	*cmd = gxFIFO.cmd[gxFIFO.head];
+	*param = gxFIFO.param[gxFIFO.head];
+
+	gxFIFO.head++;
+	gxFIFO.size--;
+	if (gxFIFO.head > HACK_GXIFO_SIZE-1) gxFIFO.head = 0;
+
+	GXF_FIFO_handleEvents();
+
+	return (TRUE);
 }
 
 void GFX_FIFOcnt(u32 val)
 {
-	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	//INFO("gxFIFO: write cnt 0x%08X (prev 0x%08X) FIFO size %03i PIPE size %03i\n", val, gxstat, gxFIFO.size, gxPIPE.size);
+	//zeromus: i dont like any of this.
 
-	if (val & (1<<29))		// clear? (only in homebrew?)
-	{
-		GFX_PIPEclear();
-		GFX_FIFOclear();
-		return;
-	}
+	////INFO("gxFIFO: write cnt 0x%08X (prev 0x%08X) FIFO size %03i PIPE size %03i\n", val, gxstat, gxFIFO.size, gxPIPE.size);
 
-	if (val & (1<<15))		// projection stack pointer reset
-	{
-		gfx3d_ClearStack();
-		val &= 0xFFFF5FFF;		// clear reset (bit15) & stack level (bit13)
-	}
+	//if (val & (1<<29))		// clear? (only in homebrew?)
+	//{
+	//	GFX_PIPEclear();
+	//	GFX_FIFOclear();
+	//	return;
+	//}
 
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, val);
+	//if (val & (1<<15))		// projection stack pointer reset
+	//{
+	//	gfx3d_ClearStack();
+	//	val &= 0xFFFF5FFF;		// clear reset (bit15) & stack level (bit13)
+	//}
 
-	if (gxFIFO.size == 0)		// empty
-	{
-		if (val & 0x80000000)	// IRQ: empty
-			setIF(0, (1<<21));
-	}
+	//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, val);
+
+	//if (gxFIFO.size == 0)		// empty
+	//{
+	//	if (val & 0x80000000)	// IRQ: empty
+	//		setIF(0, (1<<21));
+	//}
 }
 
 // ========================================================= DISP FIFO

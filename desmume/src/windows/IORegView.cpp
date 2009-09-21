@@ -186,6 +186,29 @@ IOReg IORegs9[] = {
 												{"Mtx stack busy",14,1},{"Mtx stack over/under-flow",15,1},{"GX FIFO level",16,9},{"GX FIFO full",24,1},
 												{"GX FIFO less than half full",25,1},{"GX FIFO empty",26,1},{"GX busy",27,1},{"GX FIFO IRQ condition",30,2}}},
 
+	{CatBegin, "DMA registers", 0, 4, 0, {{0}}},
+		{MMIOReg, "DMA0SAD", REG_DMA0SAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA0DAD", REG_DMA0DAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA0CNT", REG_DMA0CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",27,3}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		{MMIOReg, "DMA1SAD", REG_DMA1SAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA1DAD", REG_DMA1DAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA1CNT", REG_DMA1CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",27,3}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		{MMIOReg, "DMA2SAD", REG_DMA2SAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA2DAD", REG_DMA2DAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA2CNT", REG_DMA2CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",27,3}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		{MMIOReg, "DMA3SAD", REG_DMA3SAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA3DAD", REG_DMA3DAD, 4, 1, {{"Value",0,28}}},
+		{MMIOReg, "DMA3CNT", REG_DMA3CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",27,3}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		
+		
+		/*{CatBegin, "Video engine B registers", 0, 36, 0, {{0}}},
+		{MMIOReg, "[B]DISPCNT", 0x04001000, 4, 18,  {{"BG mode",0,3},{"Tile OBJ mapping",4,1},{"Bitmap OBJ 2D size",5,1},{"Bitmap OBJ mapping",6,1},
+													{"Forced blank",7,1},{"Display BG0",8,1},{"Display BG1",9,1},{"Display BG2",10,1},
+													{"Display BG3",11,1},{"Display OBJ",12,1},{"Display window 0",13,1},{"Display window 1",14,1},
+													{"Display OBJ window",15,1},{"Display mode",16,2},{"Tile OBJ 1D boundary",20,2},{"Process OBJs during HBlank",23,1},
+													{"Enable BG ext. palettes",30,1},{"Enable OBJ ext. palettes",31,1}}},
+		{MMIOReg, "[B]BG0CNT", 0x04001008, 2, 7,   {{"Priority",0,2},{"Character base",2,4},{"Mosaic",6,1},{"Palette mode",7,1},
+		*/
 		
 	{CatBegin, "IPC registers", 0, 2, 0, {{0}}},
 		{MMIOReg, "IPCSYNC", 0x04000180, 2, 3, {{"Data input from remote",0,4},{"Data output to remote",8,4},{"Enable IRQ from remote",14,1}}},
@@ -234,6 +257,21 @@ IOReg IORegs7[] = {
 											{"IPC recv FIFO not empty",18,1},{"Gamecard transfer",19,1},{"Gamecard IREQ_MC",20,1},{"Lid opened",22,1},
 											{"SPI bus",23,1},{"Wifi",24,1}}},
 
+	{CatBegin, "DMA registers", 0, 4, 0, {{0}}},
+		{MMIOReg, "DMA0SAD", REG_DMA0SAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA0DAD", REG_DMA0DAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA0CNT", REG_DMA0CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",28,2}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		{MMIOReg, "DMA1SAD", REG_DMA1SAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA1DAD", REG_DMA1DAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA1CNT", REG_DMA1CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",28,2}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		{MMIOReg, "DMA2SAD", REG_DMA2SAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA2DAD", REG_DMA2DAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA2CNT", REG_DMA2CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",28,2}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		{MMIOReg, "DMA3SAD", REG_DMA3SAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA3DAD", REG_DMA3DAD, 4, 1, {{"Value",0,27}}},
+		{MMIOReg, "DMA3CNT", REG_DMA3CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",28,2}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
+		
+		
 	{ListEnd, 0, 0, 0, 0, {{0}}}
 };
 
@@ -241,6 +279,20 @@ IOReg* IORegs[2] = {IORegs9, IORegs7};
 
 static const int kXMargin = 5;
 static const int kYMargin = 1;
+
+typedef std::vector<CIORegView*> TIORegViewList;
+static TIORegViewList liveIORegViews;
+
+void RefreshAllIORegViews()
+{
+	//TODO - this is a placeholder for a more robust system for signalling changes to the IORegView for immediate display.
+	//individual windows should subscribe to this service (so it doesnt always waste time)
+	for(TIORegViewList::iterator it(liveIORegViews.begin()); it != liveIORegViews.end(); ++it)
+	{
+		(*it)->Refresh();
+		UpdateWindow((*it)->hWnd); //TODO - base class should have this functionality
+	}
+}
 
 /*--------------------------------------------------------------------------*/
 
@@ -250,12 +302,15 @@ CIORegView::CIORegView()
 	, Reg(0)
 	, yoff(0)
 {
+	liveIORegViews.push_back(this);
 }
 
 CIORegView::~CIORegView()
 {
 	DestroyWindow(hWnd);
 	UnregWndClass("DeSmuME_IORegView");
+	//TODO - is this thread safe? which thread do these calls come from
+	liveIORegViews.erase(std::find(liveIORegViews.begin(),liveIORegViews.end(),this));
 }
 
 /*--------------------------------------------------------------------------*/
@@ -609,6 +664,7 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			rbBand.hwndChild = wnd->hCPUCombo;
 			rbBand.cxMinChild = 0;
 			rbBand.cyMinChild = rc.bottom - rc.top;
+			rbBand.cx = 100;
 			SendMessage(wnd->hRebar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
 
 			GetWindowRect(wnd->hRegCombo, &rc);
@@ -642,7 +698,7 @@ LRESULT CALLBACK IORegView_Proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			SetWindowPos(wnd->hScrollbar, NULL, rc.right-wnd->vsbWidth, wnd->rebarHeight, wnd->vsbWidth, rc.bottom-wnd->rebarHeight, SWP_NOZORDER);
 
 			// Keep the first rebar band width to a reasonable value
-			SendMessage(wnd->hRebar, RB_SETBANDWIDTH, 0, 60);
+			SendMessage(wnd->hRebar, RB_SETBANDWIDTH, 0, 100);
 
 			GetClientRect(hWnd, &rc);
 			wnd->maxlines = (rc.bottom - wnd->rebarHeight) / wnd->lineheight;
