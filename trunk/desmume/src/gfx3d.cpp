@@ -114,7 +114,7 @@ public:
 			//{}
 			//else
 			{
-				//printf("gxf: sending hack %02X: (dummy=0)\n", commandsPending.front());
+				//printf("gxf: sending hack %02X: (dummy=0)\n", front().command);
 				GFX_FIFOsend(front().command,0);
 			}
 			hack = true;
@@ -122,7 +122,7 @@ public:
 		}
 		if(countdown>0) {
 			//received a parameter
-			//printf("gxf: sending %02X: %08X\n", commandsPending.front(),val);
+			//printf("gxf: sending %02X: %08X\n", front().command,val);
 			//if(commandsPending.front() == GFX3D_NOP_NOARG_HACK)
 			//{}
 			//else 
@@ -138,19 +138,17 @@ public:
 				countdown = front().countdown;
 				if(!countdown) {
 					if(front().command != INVALID_COMMAND /*&& commandsPending.front() != GFX3D_NOP_NOARG_HACK*/) {
-						//printf("[%06d]gxf: sending %02X: (dummy=0)\n", currFrameCounter,commandsPending.front());
+						//printf("[%06d]gxf: sending %02X: (dummy=0)\n", currFrameCounter,front().command);
 						GFX_FIFOsend(front().command,0);
 					}
 				}
 			}
 			if(hack) goto decode;
 		} else {
+			//decode a packed command
 decode:
 			//printf("[%05d] gxf: decoding %08X\n",currFrameCounter,val);
-			if(val==0x2D8B62D8) {
-				int zzz=9;
-			}
-			//received a packed command. unpack into commandsPending
+			
 			bool valid = true;
 			bool gimpyCommand = false;
 			const u8 commands[] = { val&0xFF, (val>>8)&0xFF, (val>>16)&0xFF, (val>>24)&0xFF };
@@ -163,10 +161,14 @@ decode:
 					commandsPending[i].command = INVALID_COMMAND;
 				} else {
 					if(type == UNDEFINED_COMMAND) 
+					{
 						commandsPending[i].command = GFX3D_NOP_NOARG_HACK;  //enqueue a single undefined command we know how to handle
+					}
 					else commandsPending[i].command = cmd;
 				}
-				if(type == UNDEFINED_COMMAND || type == 0x00) {
+				if(type == UNDEFINED_COMMAND
+					//|| type == 0x00 //DON'T DO THIS: galactik football will break if you do (ingame character portraits etc.) as well as nintendogs dalmatian
+					) {
 					//these are valid commands with no parameters. they might need special handling
 					//as long as there is a subsequent defined command with parameters, we're safe
 					bool safe = false;
