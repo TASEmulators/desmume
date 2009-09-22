@@ -53,8 +53,7 @@
 #define ACCOUNT_FOR_DATA_TCM_SPEED
 
 	// enables simulation of cache hits and cache misses.
-	// currently disabled for a few FPS of emulator speedup.
-//#define ENABLE_CACHE_CONTROLLER_EMULATION
+#define ENABLE_CACHE_CONTROLLER_EMULATION
 
 //
 ////////////////////////////////////////////////////////////////
@@ -283,9 +282,20 @@ FORCEINLINE u32 _MMU_accesstime(u32 addr, bool sequential)
 			cached = MMU_timing.arm9dataCache.Cached<DIRECTION>(addr);
 		if(cached)
 			return MC;
+		u32 c;
 		if(sequential && AT==MMU_AT_DATA)
-			return M16;
-		return M16 * ((DIRECTION == MMU_AD_READ) ? 5 : 4);
+			c = M16; // bonus for sequential data access
+		else if(DIRECTION == MMU_AD_READ)
+			c = M16 * 5;
+		else
+			c = M16 * 2; // should be 4, but write buffer isn't emulated yet.
+		if(DIRECTION == MMU_AD_READ)
+		{
+			// cache miss while reading means it has to fill a whole cache line
+			// by reading 32 bytes...
+			c += 8 * M32*2;
+		}
+		return c;
 #elif defined(ACCOUNT_FOR_NON_SEQUENTIAL_ACCESS)
 		// this is the closest approximation I could find
 		// to the with-cache-controller timing
