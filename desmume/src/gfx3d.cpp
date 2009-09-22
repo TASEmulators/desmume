@@ -110,9 +110,9 @@ public:
 		if(size()>0 && (front().command == 0x15 || front().command == GFX3D_NOP_NOARG_HACK || front().command == 0x11 || front().command == 0x41) && val != 0) {
 			//apparently a zero is swallowed in this case but if another value is sent 
 			//processing will continue
-			//if(commandsPending.front() == GFX3D_NOP_NOARG_HACK)
-			//{}
-			//else
+			if(front().command == GFX3D_NOP_NOARG_HACK)
+			{}
+			else
 			{
 				//printf("gxf: sending hack %02X: (dummy=0)\n", front().command);
 				GFX_FIFOsend(front().command,0);
