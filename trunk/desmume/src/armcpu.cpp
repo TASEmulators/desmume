@@ -507,10 +507,9 @@ armcpu_flagIrq( armcpu_t *armcpu) {
 template<int PROCNUM>
 u32 armcpu_exec()
 {
-	// gocha: In most cases (FIXME: but *not* always),
-	// fetching and executing are processed parallelly.
+	// Usually, fetching and executing are processed parallelly.
 	// So this function stores the cycles of each process to
-	// the variables below, and returns the larger one.
+	// the variables below, and returns appropriate cycle count.
 	u32 cFetch = 0;
 	u32 cExecute = 0;
 
