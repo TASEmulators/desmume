@@ -96,39 +96,18 @@ public:
 	{
 		reset();
 	}
-	void test() {
-		printf("test 1: 0x00412321\n");
-		receive(0x00412321); receive(1); receive(2); receive(3); receive(0);
-		//21: 1
-		//23: 2
-		//23: 3
-		//41: 4 (a dud parameter)
-		printf("test 2: 0x00002321\n");
-		receive(0x00002321); receive(1); receive(2); receive(3);
-		//21: 1
-		//23: 2
-		//23: 3
-		printf("test 3: 0x11111111\n"); 
-		receive(0x11111111); 
-		receive(1);
-		//11: 1 (a dud parameter)
-		printf("test 4: 0x00000011, 0x29111111\n"); 
-		receive(0x00000011); receive(0x29111111); receive(1);
-		//11: 17
-		//11: 688984337
-		//11: 1
-		printf("test 5: 0x00004127\n");
-		receive(0x00004127); receive(1); receive(0);//final one should be a dud
-	}
 	void reset() {
 		countdown = 0;
-		commandsPending = std::queue<u8>();
-		countdowns = std::queue<u8>();
+		commandCursor = 4;
+		for(int i=0;i<4;i++) {
+			commandsPending[i].command = 0;
+			commandsPending[i].countdown = 0;
+		}
 	}
 	//todo - things in here other than the very first thing involving GFX3D_NOP_NOARG_HACK I am not too sure about.
 	void receive(u32 val) {
 		bool hack = false;
-		if(commandsPending.size()>0 && (commandsPending.front() == 0x15 || commandsPending.front() == GFX3D_NOP_NOARG_HACK || commandsPending.front() == 0x11 || commandsPending.front() == 0x41) && val != 0) {
+		if(size()>0 && (front().command == 0x15 || front().command == GFX3D_NOP_NOARG_HACK || front().command == 0x11 || front().command == 0x41) && val != 0) {
 			//apparently a zero is swallowed in this case but if another value is sent 
 			//processing will continue
 			//if(commandsPending.front() == GFX3D_NOP_NOARG_HACK)
@@ -136,7 +115,7 @@ public:
 			//else
 			{
 				//printf("gxf: sending hack %02X: (dummy=0)\n", commandsPending.front());
-				GFX_FIFOsend(commandsPending.front(),0);
+				GFX_FIFOsend(front().command,0);
 			}
 			hack = true;
 			goto hackTrigger;
@@ -147,21 +126,20 @@ public:
 			//if(commandsPending.front() == GFX3D_NOP_NOARG_HACK)
 			//{}
 			//else 
-				GFX_FIFOsend(commandsPending.front(),val);
+				GFX_FIFOsend(front().command,val);
 			hackTrigger:
 			countdown--;
 			while(countdown==0) {
-				commandsPending.pop();
-				countdowns.pop();
+				dequeue();
 			trigger:
 				//dont set hack to false if you jumped from below! it needs to be true for when you jump down from above.
 				//oh my what a mess.
-				if(countdowns.empty()) break;
-				countdown = countdowns.front();
+				if(size()==0) break;
+				countdown = front().countdown;
 				if(!countdown) {
-					if(commandsPending.front() != INVALID_COMMAND /*&& commandsPending.front() != GFX3D_NOP_NOARG_HACK*/) {
+					if(front().command != INVALID_COMMAND /*&& commandsPending.front() != GFX3D_NOP_NOARG_HACK*/) {
 						//printf("[%06d]gxf: sending %02X: (dummy=0)\n", currFrameCounter,commandsPending.front());
-						GFX_FIFOsend(commandsPending.front(),0);
+						GFX_FIFOsend(front().command,0);
 					}
 				}
 			}
@@ -182,11 +160,11 @@ decode:
 				u8 cmd = commands[i];
 				u8 type = commandTypes[i];
 				if(type == INVALID_COMMAND) {
-					commandsPending.push(INVALID_COMMAND);
+					commandsPending[i].command = INVALID_COMMAND;
 				} else {
 					if(type == UNDEFINED_COMMAND) 
-						commandsPending.push(GFX3D_NOP_NOARG_HACK); //enqueue a single undefined command we know how to handle
-					else commandsPending.push(cmd);
+						commandsPending[i].command = GFX3D_NOP_NOARG_HACK;  //enqueue a single undefined command we know how to handle
+					else commandsPending[i].command = cmd;
 				}
 				if(type == UNDEFINED_COMMAND || type == 0x00) {
 					//these are valid commands with no parameters. they might need special handling
@@ -199,35 +177,44 @@ decode:
 						}
 					}
 					if(safe) {
-						countdowns.push(0);
+						commandsPending[i].countdown = 0;
 					} else {
 						//we need to receive a dummy parameter in this case
-						countdowns.push(1);
+						commandsPending[i].countdown = 1;
 					}
 				} else if(type != INVALID_COMMAND) {
-					countdowns.push(type);
-				} else countdowns.push(0);
+					commandsPending[i].countdown = type;
+				} else commandsPending[i].countdown = 0;
 			}
 
-			countdown = countdowns.front();
+			commandCursor = 0;
+			countdown = front().countdown;
 			if(countdown==0) 
 				goto trigger;
 		}
 	}
-	std::queue<u8> commandsPending;
-	std::queue<u8> countdowns;
+
+	struct CommandItem {
+		u8 command, countdown;
+	} commandsPending[4];
+
+	u32 commandCursor;
 	u8 countdown;
+
+private:
+	void dequeue() { commandCursor++; }
+	CommandItem& front() { return commandsPending[commandCursor]; }
+	u32 size() { return 4-commandCursor; }
+public:
 
 	void savestate(EMUFILE *f)
 	{
+		//TODO - next time we invalidate savestates, simplify this format.
 		write32le(0,f); //version
-		std::queue<u8> temp = commandsPending;
-		write32le(temp.size(),f);
-		while(!temp.empty()) { write8le(temp.front(),f); temp.pop(); }
-		temp = countdowns;
-		write32le(temp.size(),f);
-		while(!temp.empty()) { write8le(temp.front(),f); temp.pop(); }
-		
+		write32le(size(),f);
+		for(u32 i=commandCursor;i<4;i++) write8le(commandsPending[i].command,f);
+		write32le(0,f);
+		for(u32 i=commandCursor;i<4;i++) write8le(commandsPending[i].countdown,f);
 		write8le(countdown,f);
 	}
 	
@@ -237,14 +224,14 @@ decode:
 		if(read32le(&version,f) != 1) return false;
 		if(version != 0) return false;
 
-		assert(commandsPending.size()==0);
-		assert(countdowns.size()==0);
-
-		u32 temp;
-		read32le(&temp,f);
-		for(u32 i=0;i<temp;i++) { u8 temp8; read8le(&temp8,f); commandsPending.push(temp8); }
-		read32le(&temp,f);
-		for(u32 i=0;i<temp;i++) { u8 temp8; read8le(&temp8,f); countdowns.push(temp8); }
+		u32 tempsize;
+		read32le(&tempsize,f);
+		commandCursor = 4-tempsize;
+		for(u32 i=0;i<commandCursor;i++) commandsPending[i].command = 0;
+		for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i].command,f);
+		read32le(&tempsize,f);
+		for(u32 i=0;i<commandCursor;i++) commandsPending[i].countdown = 0;
+		for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i].countdown,f);
 
 		read8le(&countdown,f);
 
@@ -363,7 +350,6 @@ static u32 clInd = 0;
 
 static u32 clInd2 = 0;
 BOOL isSwapBuffers = FALSE;
-bool isVBlank = false;
 
 static u32 BTind = 0;
 static u32 PTind = 0;
@@ -553,7 +539,6 @@ void gfx3d_reset()
 	
 	clInd2 = 0;
 	isSwapBuffers = FALSE;
-	isVBlank = false;
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
@@ -1713,6 +1698,8 @@ void gfx3d_execute3D()
 
 	if(GFX_PIPErecv(&cmd, &param))
 	{
+		//if (isSwapBuffers) printf("Executing while swapbuffers is pending: %d:%08X\n",cmd,param);
+
 		//since we did anything at all, incur a pipeline motion cost.
 		//also, we can't let gxfifo sequencer stall until the fifo is empty.
 		//see...
@@ -1746,6 +1733,7 @@ void gfx3d_execute3D()
 
 void gfx3d_glFlush(u32 v)
 {
+	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
 #if 0
@@ -1871,7 +1859,6 @@ static void gfx3d_doFlush()
 
 void gfx3d_VBlankSignal()
 {
-	isVBlank = true;
 	if (isSwapBuffers)
 	{
 #ifndef FLUSHMODE_HACK
@@ -1884,8 +1871,6 @@ void gfx3d_VBlankSignal()
 
 void gfx3d_VBlankEndSignal(bool skipFrame)
 {
-	isVBlank = false;
-
 	if (!drawPending) return;
 	drawPending = FALSE;
 

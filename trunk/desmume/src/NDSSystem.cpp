@@ -1953,9 +1953,12 @@ static void execHardware_hstart_vcount()
 	u16 vmatch = T1ReadWord(MMU.ARM9_REG, 4);
 	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
 	{
+		//arm9 vmatch
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 4);
-		if(T1ReadWord(MMU.ARM9_REG, 4) & 32)
+		if(T1ReadWord(MMU.ARM9_REG, 4) & 32) {
+			//printf("VMATCH FIRING! vc=%03d\n",nds.VCount);
 			NDS_makeARM9Int(2);
+		}
 	}
 	else
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFB);
@@ -1963,6 +1966,7 @@ static void execHardware_hstart_vcount()
 	vmatch = T1ReadWord(MMU.ARM7_REG, 4);
 	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
 	{
+		//arm7 vmatch
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
 			NDS_makeARM7Int(2);
@@ -2153,7 +2157,7 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-//static bool dolog = false;
+//static bool dolog = true;
 
 FORCEINLINE void arm9log()
 {
@@ -2311,8 +2315,8 @@ void NDS_exec(s32 nb)
 
 #ifndef NDEBUG
 			//what we find here is dependent on the timing constants above
-			if(nds_timer>next && (nds_timer-next)>22)
-				printf("curious. please report: over by %d\n",(int)(nds_timer-next));
+			//if(nds_timer>next && (nds_timer-next)>22)
+			//	printf("curious. please report: over by %d\n",(int)(nds_timer-next));
 #endif
 
 			//if we were waiting for an irq, don't wait too long:
@@ -2347,6 +2351,7 @@ void execHardware_interrupts()
 		if ( armcpu_irqException(&NDS_ARM9))
 #endif
 		{
+			//printf("ARM9 interrupt! flags: %08X ; mask: %08X ; result: %08X\n",MMU.reg_IF[0],MMU.reg_IE[0],MMU.reg_IF[0]&MMU.reg_IE[0]);
 			//nds.ARM9Cycle = nds.cycles;
 		}
 	}

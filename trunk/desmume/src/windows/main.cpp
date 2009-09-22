@@ -1819,6 +1819,13 @@ class WinDriver : public BaseDriver
 
 		return ESTEP_DONE;
 	}
+
+	virtual void DEBUG_UpdateIORegView(eDebug_IOReg category)
+	{
+		extern bool anyLiveIORegViews;
+		if(anyLiveIORegViews)
+			RefreshAllIORegViews();
+	}
 };
 
 std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault)
