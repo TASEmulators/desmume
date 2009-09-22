@@ -44,6 +44,7 @@
 
 	// makes non-sequential accesses slower than sequential ones.
 #define ACCOUNT_FOR_NON_SEQUENTIAL_ACCESS
+	//(SOMETIMES THIS IS A BIG SPEED HIT!)
 
 	// enables emulation of code fetch waits.
 #define ACCOUNT_FOR_CODE_FETCH_CYCLES

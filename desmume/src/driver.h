@@ -53,6 +53,13 @@ public:
 	virtual bool EMU_IsFastForwarding() { return false; }
 	virtual bool EMU_HasEmulationStarted() { return true; }
 	virtual bool EMU_IsAtFrameBoundary() { return true; }
+
+	enum eDebug_IOReg
+	{
+		EDEBUG_IOREG_DMA
+	};
+
+	virtual void DEBUG_UpdateIORegView(eDebug_IOReg category) { }
 };
 extern BaseDriver* driver;
 

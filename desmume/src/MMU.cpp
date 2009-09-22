@@ -47,10 +47,6 @@
 #include "readwrite.h"
 #include "MMU_timing.h"
 
-#ifdef WIN32
-#include "windows/IORegView.h"
-#endif
-
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
 #else
@@ -767,6 +763,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		MMU_VRAMmapRefreshBank(i);
 
 	//printf(vramConfiguration.describe().c_str());
+	//printf("vram remapped at vcount=%d\n",nds.VCount);
 
 	//if texInfo changed, trigger notifications
 	if(memcmp(&oldTexInfo,&MMU.texInfo,sizeof(MMU_struct::TextureInfo)))
@@ -1815,7 +1812,7 @@ u32 TGXSTAT::read32()
 	
 	ret |= gxfifo_irq; //user's irq flags
 
-	//printf("Returning gxstat read: %08X\n",ret);
+	//printf("vc=%03d Returning gxstat read: %08X\n",nds.VCount,ret);
 	return ret;
 }
 
@@ -1995,10 +1992,7 @@ if(_startmode==0 && wordcount==1) {
 	if(!doNotStart)
 		doSchedule();
 
-	//todo - make a driver stub for this so that we dont have to conditionalize it everywhere
-#ifdef WIN32
-	RefreshAllIORegViews();
-#endif
+	driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
 }
 
 void DmaController::exec()
@@ -2050,7 +2044,7 @@ start:
 
 		if(triggered)
 		{
-			//if(procnum==0) printf("%08lld trig type %d dma#%d with words %d at src:%08X dst:%08X gxf:%d",nds_timer,startmode,chan,wordcount,saddr,daddr,gxFIFO.size);
+			//if(procnum==0) printf("vc=%03d %08lld trig type %d dma#%d w/words %d at src:%08X dst:%08X gxf:%d",nds.VCount,nds_timer,startmode,chan,wordcount,saddr,daddr,gxFIFO.size);
 			if(saddr ==0x023BCCEC && wordcount==118) {
 				int zzz=9;
 			}
@@ -2064,9 +2058,7 @@ start:
 		}
 	}
 
-#ifdef WIN32
-	RefreshAllIORegViews();
-#endif
+	driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
 }
 
 void DmaController::doCopy()
@@ -2162,6 +2154,7 @@ void triggerDma(EDMAMode mode)
 void DmaController::tryTrigger(EDMAMode mode)
 {
 	if(startmode != mode) return;
+	if(!enable) return;
 
 	//hmm dont trigger it if its already running! 
 	//but paused things need triggers to continue
@@ -2696,13 +2689,13 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 #endif
 					if(val & (1<<15))
 					{
-						//LOG("Main core on top\n");
+						//printf("Main core on top (vcount=%d)\n",nds.VCount);
 						MainScreen.offset = 0;
 						SubScreen.offset = 192;
 					}
 					else
 					{
-						//LOG("Main core on bottom\n");
+						//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}

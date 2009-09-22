@@ -42,6 +42,9 @@
 //#define FORCEINLINE
 //#define SSE2_NOINTRIN
 
+//compilation speed hack (cuts time exactly in half by cutting out permutations)
+//#define DISABLE_MOSAIC
+
 extern BOOL click;
 NDS_Screen MainScreen;
 NDS_Screen SubScreen;
@@ -2133,9 +2136,12 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					//useful for debugging individual layers
 					//if(gpu->core == 1 || i16 != 2) continue;
 
+#ifndef DISABLE_MOSAIC
 					if(gpu->curr_mosaic_enabled)
 						gpu->modeRender<true>(i16);
-					else gpu->modeRender<false>(i16);
+					else 
+#endif
+						gpu->modeRender<false>(i16);
 				} //layer enabled
 			}
 		}

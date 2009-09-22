@@ -282,6 +282,7 @@ static const int kYMargin = 1;
 
 typedef std::vector<CIORegView*> TIORegViewList;
 static TIORegViewList liveIORegViews;
+bool anyLiveIORegViews = false;
 
 void RefreshAllIORegViews()
 {
@@ -303,6 +304,7 @@ CIORegView::CIORegView()
 	, yoff(0)
 {
 	liveIORegViews.push_back(this);
+	anyLiveIORegViews = true;
 }
 
 CIORegView::~CIORegView()
@@ -311,6 +313,7 @@ CIORegView::~CIORegView()
 	UnregWndClass("DeSmuME_IORegView");
 	//TODO - is this thread safe? which thread do these calls come from
 	liveIORegViews.erase(std::find(liveIORegViews.begin(),liveIORegViews.end(),this));
+	if(liveIORegViews.size()==0) anyLiveIORegViews = false;
 }
 
 /*--------------------------------------------------------------------------*/
