@@ -2397,7 +2397,6 @@ void NDS_Reset()
 	}
 
 	MMU_Reset();
-	MMU_new.backupDevice.reset();
 
 	//ARM7 BIOS IRQ HANDLER
 	if(CommonSettings.UseExtBIOS == true)

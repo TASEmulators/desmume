@@ -971,7 +971,11 @@ void MMU_Reset()
 	MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
 	MMU.dscard[ARMCPU_ARM7].mode = CardMode_Normal;
 
+	//HACK!!!
+	//until we improve all our session tracking stuff, we need to save the backup memory filename
+	std::string bleh = MMU_new.backupDevice.filename;
 	new(&MMU_new) MMU_struct_new;
+	MMU_new.backupDevice.filename = bleh;
 
 	MMU_timing.arm7codeFetch.Reset();
 	MMU_timing.arm7dataFetch.Reset();
