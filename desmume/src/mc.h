@@ -112,6 +112,9 @@ public:
 	//way too much if we flush whenever we read.
 	void lazy_flush();
 
+public: //SHOULD BE PRIVATE!!!!!!!!
+	std::string filename;
+
 private:
 	bool write_enable;	//is write enabled?
 	u32 com;	//persistent command actually handled
@@ -119,7 +122,6 @@ private:
 	u32 addr;
 	bool isMovieMode;
 
-	std::string filename;
 	std::vector<u8> data;
 	std::vector<u8> data_autodetect;
 	enum STATE {

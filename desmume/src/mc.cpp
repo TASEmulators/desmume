@@ -263,6 +263,8 @@ bool BackupDevice::load_state(EMUFILE* is)
 
 BackupDevice::BackupDevice()
 {
+	isMovieMode = false;
+	reset();
 }
 
 //due to unfortunate shortcomings in the emulator architecture, 
