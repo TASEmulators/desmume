@@ -107,11 +107,14 @@ public:
 	//todo - things in here other than the very first thing involving GFX3D_NOP_NOARG_HACK I am not too sure about.
 	void receive(u32 val) {
 		bool hack = false;
-		if(size()>0 && (front().command == 0x15 || front().command == GFX3D_NOP_NOARG_HACK || front().command == 0x11 || front().command == 0x41) && val != 0) {
+		if(size()>0 && val != 0 && 
+			(front().command == 0x15 || front().command == 0x11 || front().command == 0x41
+			|| front().command == GFX3D_NOP_NOARG_HACK  //nintendogs dalmatian sends these I think.
+			))
+		{
 			//apparently a zero is swallowed in this case but if another value is sent 
 			//processing will continue
-			if(front().command == GFX3D_NOP_NOARG_HACK)
-			{}
+			if(front().command == GFX3D_NOP_NOARG_HACK) { }
 			else
 			{
 				//printf("gxf: sending hack %02X: (dummy=0)\n", front().command);
@@ -137,7 +140,9 @@ public:
 				if(size()==0) break;
 				countdown = front().countdown;
 				if(!countdown) {
-					if(front().command != INVALID_COMMAND /*&& commandsPending.front() != GFX3D_NOP_NOARG_HACK*/) {
+					if(front().command != INVALID_COMMAND 
+						&& front().command != GFX3D_NOP_NOARG_HACK //g.i. joe sends these in the form of 0xFF commands 
+						){
 						//printf("[%06d]gxf: sending %02X: (dummy=0)\n", currFrameCounter,front().command);
 						GFX_FIFOsend(front().command,0);
 					}
