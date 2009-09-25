@@ -965,15 +965,21 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					return true;
 				case IDC_C_WATCH_REMOVE:
 					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST));
-					RemoveWatch(watchIndex);
-					ListView_SetItemCount(GetDlgItem(hDlg,IDC_WATCHLIST),WatchCount);	
-					RWfileChanged=true;
-					SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+					if(watchIndex != -1)
+					{
+						RemoveWatch(watchIndex);
+						ListView_SetItemCount(GetDlgItem(hDlg,IDC_WATCHLIST),WatchCount);	
+						RWfileChanged=true;
+						SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+					}
 					return true;
 				case IDC_C_WATCH_EDIT:
 					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST));
-					DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITWATCH), hDlg, (DLGPROC) EditWatchProc,(LPARAM) watchIndex);
-					SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+					if(watchIndex != -1)
+					{
+						DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITWATCH), hDlg, (DLGPROC) EditWatchProc,(LPARAM) watchIndex);
+						SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+					}
 					return true;
 				case IDC_C_WATCH:
 					rswatches[WatchCount].Address = rswatches[WatchCount].WrongEndian = 0;
@@ -984,12 +990,15 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					return true;
 				case IDC_C_WATCH_DUPLICATE:
 					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST));
-					rswatches[WatchCount].Address = rswatches[watchIndex].Address;
-					rswatches[WatchCount].WrongEndian = rswatches[watchIndex].WrongEndian;
-					rswatches[WatchCount].Size = rswatches[watchIndex].Size;
-					rswatches[WatchCount].Type = rswatches[watchIndex].Type;
-					DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITWATCH), hDlg, (DLGPROC) EditWatchProc,(LPARAM) WatchCount);
-					SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+					if(watchIndex != -1)
+					{
+						rswatches[WatchCount].Address = rswatches[watchIndex].Address;
+						rswatches[WatchCount].WrongEndian = rswatches[watchIndex].WrongEndian;
+						rswatches[WatchCount].Size = rswatches[watchIndex].Size;
+						rswatches[WatchCount].Type = rswatches[watchIndex].Type;
+						DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITWATCH), hDlg, (DLGPROC) EditWatchProc,(LPARAM) WatchCount);
+						SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+					}
 					return true;
 				case IDC_C_WATCH_UP:
 				{
@@ -1038,7 +1047,10 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_C_ADDCHEAT:
 				{
 					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST)) | (1 << 24);
-//					DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) searchIndex);	//TODO: made a IDD_EDITCHEAT dialog, and EditCheatProc (are they in GENS?) and integrate into cheats system
+					if(watchIndex != -1)
+					{
+//						DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) searchIndex);	//TODO: made a IDD_EDITCHEAT dialog, and EditCheatProc (are they in GENS?) and integrate into cheats system
+					}
 					break;
 				}
 				case IDCANCEL:
