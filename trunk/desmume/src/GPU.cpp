@@ -1103,29 +1103,32 @@ FORCEINLINE void rot_scale_op(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s
 	const s32 dx = (s32)PA;
 	const s32 dy = (s32)PC;
 
-	// as an optimization, specially handle the fairly common case of
-	// "unrotated + unscaled + no boundary checking required"
-	if(dx==0x100 && dy==0)
-	{
-		s32 auxX = x.bits.Integer;
-		if(WRAP || auxX + LG < wh)
-		{
-			s32 auxY = y.bits.Integer;
-			if(WRAP)
-			{
-				auxY = auxY & (ht-1);
-				auxX = auxX & (wh-1);
-			}
-			for(int i = 0; i < LG; ++i)
-			{
-				fun(gpu, auxX, auxY, wh, map, tile, pal, i);
-				auxX++;
-				if(WRAP)
-					auxX = auxX & (wh-1);
-			}
-			return;
-		}
-	}
+	//not safe for 128 wide nonwrapping BG
+	//and probably not safe for other size nonwrapping BG which are scrolled near their edge
+
+	//// as an optimization, specially handle the fairly common case of
+	//// "unrotated + unscaled + no boundary checking required"
+	//if(dx==0x100 && dy==0)
+	//{
+	//	s32 auxX = x.bits.Integer;
+	//	if(WRAP || auxX + LG < wh)
+	//	{
+	//		s32 auxY = y.bits.Integer;
+	//		if(WRAP)
+	//		{
+	//			auxY = auxY & (ht-1);
+	//			auxX = auxX & (wh-1);
+	//		}
+	//		for(int i = 0; i < LG; ++i)
+	//		{
+	//			fun(gpu, auxX, auxY, wh, map, tile, pal, i);
+	//			auxX++;
+	//			if(WRAP)
+	//				auxX = auxX & (wh-1);
+	//		}
+	//		return;
+	//	}
+	//}
 	
 	for(int i = 0; i < LG; ++i)
 	{
@@ -2135,6 +2138,11 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 
 					//useful for debugging individual layers
 					//if(gpu->core == 1 || i16 != 2) continue;
+
+					if(gpu->core == 0 || i16 == 2)
+					{
+						int zzz=9;
+					}
 
 #ifndef DISABLE_MOSAIC
 					if(gpu->curr_mosaic_enabled)
