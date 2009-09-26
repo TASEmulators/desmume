@@ -201,6 +201,7 @@
     <ClCompile Include="..\cp15.cpp" />
     <ClCompile Include="..\debug.cpp" />
     <ClCompile Include="..\Disassembler.cpp" />
+    <ClCompile Include="..\emufile.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
     <ClCompile Include="..\fs-windows.cpp" />
     <ClCompile Include="..\gdbstub\gdbstub.cpp" />
@@ -294,6 +295,7 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
+    <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\FIFO.h" />
     <ClInclude Include="..\fs.h" />

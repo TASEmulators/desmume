@@ -84,6 +84,9 @@
     <ClCompile Include="..\Disassembler.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="..\emufile.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
     <ClCompile Include="..\FIFO.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -344,6 +347,9 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\driver.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\emufile.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\fat.h">
