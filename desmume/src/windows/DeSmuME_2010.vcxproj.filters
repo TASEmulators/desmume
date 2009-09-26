@@ -210,6 +210,9 @@
     <ClCompile Include="filter\hq2x.cpp">
       <Filter>Windows\filters</Filter>
     </ClCompile>
+    <ClCompile Include="filter\lq2x.cpp">
+      <Filter>Windows\filters</Filter>
+    </ClCompile>
     <ClCompile Include="filter\scanline.cpp">
       <Filter>Windows\filters</Filter>
     </ClCompile>
