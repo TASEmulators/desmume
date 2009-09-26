@@ -243,6 +243,7 @@
     <ClCompile Include="filter\2xsai.cpp" />
     <ClCompile Include="filter\bilinear.cpp" />
     <ClCompile Include="filter\hq2x.cpp" />
+    <ClCompile Include="filter\lq2x.cpp" />
     <ClCompile Include="filter\scanline.cpp" />
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
