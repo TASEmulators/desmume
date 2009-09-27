@@ -372,7 +372,7 @@ static void closeRecordingMovie()
 {
 	if(osRecordingMovie)
 	{
-//		delete osRecordingMovie;
+		delete osRecordingMovie;
 		osRecordingMovie = 0;
 	}
 }
