@@ -48,11 +48,12 @@ static LPCTSTR hotkeyPageTitle[] = {
 
 struct SCustomKey
 {
-	typedef void (*THandler) (int param);
+	typedef void (*THandlerDown) (int param, bool justPressed);
+	typedef void (*THandlerUp) (int param);
 	WORD key;
 	WORD modifiers;
-	THandler handleKeyDown;
-	THandler handleKeyUp;
+	THandlerDown handleKeyDown;
+	THandlerUp handleKeyUp;
 	HotkeyPage page;
 	std::wstring name;
 	const char* code;
@@ -106,12 +107,12 @@ void InitCustomKeys (SCustomKeys *keys);
 int GetModifiers(int key);
 
 //HOTKEY HANDLERS
-void HK_PrintScreen(int);
-void HK_StateSaveSlot(int);
-void HK_StateLoadSlot(int);
-void HK_StateSetSlot(int);
-void HK_Pause(int);
-void HK_FastForward(int);
+void HK_PrintScreen(int, bool);
+void HK_StateSaveSlot(int, bool);
+void HK_StateLoadSlot(int, bool);
+void HK_StateSetSlot(int, bool);
+void HK_Pause(int, bool);
+void HK_FastForward(int, bool);
 
 extern bool AutoHoldPressed;
 

@@ -324,87 +324,54 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 //	const char *cflash_disk_image_file;
 //};
 
-int KeyInDelayInCount=30;
-
-static int lastTime = timeGetTime();
-int repeattime;
+static int KeyInDelayMSec = 0;
+static int KeyInRepeatMSec = 16;
 
 VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 {
-	//
-//	if(timeGetTime() - lastTime > 5)
-//	{
-		bool S9xGetState (WORD KeyIdent);
+	bool S9xGetState (WORD KeyIdent);
 
-		/*		if(GUI.JoystickHotkeys)
-		{
-		static uint32 joyState [256];
+	static DWORD lastTime = timeGetTime();
+	DWORD currentTime = timeGetTime();
 
-		for(int i = 0 ; i < 255 ; i++)
-		{
-		bool active = !S9xGetState(0x8000|i);
+	static struct JoyState {
+		bool wasPressed;
+		DWORD firstPressedTime;
+		DWORD lastPressedTime;
+		WORD repeatCount;
+	} joyState [256];
+	static bool initialized = false;
 
-		if(active)
-		{
-		if(joyState[i] < ULONG_MAX) // 0xffffffffUL
-		joyState[i]++;
-		if(joyState[i] == 1 || joyState[i] >= (unsigned) KeyInDelayInCount)
-		PostMessage(GUI.hWnd, WM_CUSTKEYDOWN, (WPARAM)(0x8000|i),(LPARAM)(NULL));
+	if(!initialized) {
+		for(int i = 0; i < 256; i++) {
+			joyState[i].wasPressed = false;
+			joyState[i].repeatCount = 1;
 		}
-		else
-		{
-		if(joyState[i])
-		{
-		joyState[i] = 0;
-		PostMessage(GUI.hWnd, WM_CUSTKEYUP, (WPARAM)(0x8000|i),(LPARAM)(NULL));
-		}
-		}
-		}
-		}*/
-		//		if((!GUI.InactivePause || !Settings.ForcedPause)
-		//				|| (GUI.BackgroundInput || !(Settings.ForcedPause & (PAUSE_INACTIVE_WINDOW | PAUSE_WINDOW_ICONISED))))
-		//		{
-		static u32 joyState [256];
-		static bool initialized = false;
-		if(!initialized) {
-			memset(joyState,0,sizeof(joyState));
-			initialized = true;
-		}
-		for(int i = 0 ; i < 256 ; i++)
-		{
-			bool active = !S9xGetState(i);
-			if(active)
-			{
-				if(joyState[i] < ULONG_MAX) // 0xffffffffUL
-					joyState[i]++;
-				if(joyState[i] == 1 || joyState[i] == (unsigned) KeyInDelayInCount) {
+		initialized = true;
+	}
 
+	for (int i = 0; i < 256; i++) {
+		bool active = !S9xGetState(i);
 
-					//HEY HEY HEY! this only repeats once. this is what it needs to be like for frame advance.
-					//if anyone wants a different kind of repeat, then the whole setup will need to be redone
-
-					//sort of fix the auto repeating
-					//TODO find something better
-				//	repeattime++;
-				//	if(repeattime % 10 == 0) {
-					//printf("trigger %d\n",i);
-						PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(NULL));
-						repeattime=0;
-				//	}
-				}
-			}
-			else
-			{
-				if(joyState[i])
-				{
-					joyState[i] = 0;
-					PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, (WPARAM)(i),(LPARAM)(NULL));
-				}
+		if (active) {
+			bool keyRepeat = (currentTime - joyState[i].firstPressedTime) >= (DWORD)KeyInDelayMSec;
+			if (!joyState[i].wasPressed || keyRepeat) {
+				if (!joyState[i].wasPressed)
+					joyState[i].firstPressedTime = currentTime;
+				joyState[i].lastPressedTime = currentTime;
+				if (keyRepeat && joyState[i].repeatCount < 0xffff)
+					joyState[i].repeatCount++;
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(joyState[i].repeatCount | (joyState[i].wasPressed ? 0x40000000 : 0)));
 			}
 		}
-		//	}
-	//	lastTime = timeGetTime();
-//	}
+		else {
+			joyState[i].repeatCount = 1;
+			if (joyState[i].wasPressed)
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, (WPARAM)(i),(LPARAM)(joyState[i].repeatCount | (joyState[i].wasPressed ? 0x40000000 : 0)));
+		}
+		joyState[i].wasPressed = active;
+	}
+	lastTime = currentTime;
 }
 
 void ScaleScreen(float factor)
@@ -2139,7 +2106,33 @@ int _main()
 		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, true);
 	}
 
-	int KeyInRepeatMSec=20;
+	DWORD wmTimerRes;
+	TIMECAPS tc;
+	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
+	{
+		wmTimerRes = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
+		timeBeginPeriod (wmTimerRes);
+	}
+	else
+	{
+		wmTimerRes = 5;
+		timeBeginPeriod (wmTimerRes);
+	}
+
+	if (KeyInDelayMSec == 0) {
+		DWORD dwKeyboardDelay;
+		SystemParametersInfo(SPI_GETKEYBOARDDELAY, 0, &dwKeyboardDelay, 0);
+		KeyInDelayMSec = 250 * (dwKeyboardDelay + 1);
+	}
+	if (KeyInRepeatMSec == 0) {
+		DWORD dwKeyboardSpeed;
+		SystemParametersInfo(SPI_GETKEYBOARDSPEED, 0, &dwKeyboardSpeed, 0);
+		KeyInRepeatMSec = (int)(1000.0/(((30.0-2.5)/31.0)*dwKeyboardSpeed+2.5));
+	}
+	if (KeyInRepeatMSec < (int)wmTimerRes)
+		KeyInRepeatMSec = (int)wmTimerRes;
+	if (KeyInDelayMSec < KeyInRepeatMSec)
+		KeyInDelayMSec = KeyInRepeatMSec;
 
 	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
@@ -2232,7 +2225,7 @@ int _main()
 	
 	if(cmdline.load_slot != 0)
 	{
-		HK_StateLoadSlot(cmdline.load_slot);
+		HK_StateLoadSlot(cmdline.load_slot, true);
 	}
 
 	MainWindow->Show(SW_NORMAL);
@@ -2841,7 +2834,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 		SCustomKey *key = &CustomKeys.key(0);
 		while (!IsLastCustomKey(key)) {
 			if (wParam == key->key && modifiers == key->modifiers && key->handleKeyDown) {
-				key->handleKeyDown(key->param);
+				key->handleKeyDown(key->param, lParam & 0x40000000 ? false : true);
 				hitHotKey = true;
 			}
 			key++;
@@ -3547,7 +3540,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_CLOSEROM:
 			return CloseRom(),0;
 		case IDM_PRINTSCREEN:
-			HK_PrintScreen(0);
+			HK_PrintScreen(0, true);
 			return 0;
 		case IDM_QUICK_PRINTSCREEN:
 			{
@@ -3743,38 +3736,38 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_STATE_SAVE_F8:
 		case IDM_STATE_SAVE_F9:
 		case IDM_STATE_SAVE_F10:
-				HK_StateSaveSlot( abs(IDM_STATE_SAVE_F1 - LOWORD(wParam)) +1);
+				HK_StateSaveSlot( abs(IDM_STATE_SAVE_F1 - LOWORD(wParam)) +1, true);
 				return 0;
 
 		case IDM_STATE_LOAD_F1:
-			HK_StateLoadSlot(1);
+			HK_StateLoadSlot(1, true);
 			return 0;
 		case IDM_STATE_LOAD_F2:
-			HK_StateLoadSlot(2);
+			HK_StateLoadSlot(2, true);
 			return 0;
 		case IDM_STATE_LOAD_F3:
-			HK_StateLoadSlot(3);
+			HK_StateLoadSlot(3, true);
 			return 0;
 		case IDM_STATE_LOAD_F4:
-			HK_StateLoadSlot(4);
+			HK_StateLoadSlot(4, true);
 			return 0;
 		case IDM_STATE_LOAD_F5:
-			HK_StateLoadSlot(5);
+			HK_StateLoadSlot(5, true);
 			return 0;
 		case IDM_STATE_LOAD_F6:
-			HK_StateLoadSlot(6);
+			HK_StateLoadSlot(6, true);
 			return 0;
 		case IDM_STATE_LOAD_F7:
-			HK_StateLoadSlot(7);
+			HK_StateLoadSlot(7, true);
 			return 0;
 		case IDM_STATE_LOAD_F8:
-			HK_StateLoadSlot(8);
+			HK_StateLoadSlot(8, true);
 			return 0;
 		case IDM_STATE_LOAD_F9:
-			HK_StateLoadSlot(9);
+			HK_StateLoadSlot(9, true);
 			return 0;
 		case IDM_STATE_LOAD_F10:
-			HK_StateLoadSlot(10);
+			HK_StateLoadSlot(10, true);
 			return 0;
 		case IDM_IMPORTBACKUPMEMORY:
 			{
