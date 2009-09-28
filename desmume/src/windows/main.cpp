@@ -1258,9 +1258,7 @@ static void StepRunLoop_User()
 		mainLoopData.toolframecount = 0;
 	}
 
-
-	Update_RAM_Watch();
-	Update_RAM_Search();
+	Update_RAM_Search(); // Update_RAM_Watch() is also called.
 
 	mainLoopData.fpsframecount++;
 	QueryPerformanceCounter((LARGE_INTEGER *)&mainLoopData.curticks);
@@ -3413,8 +3411,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					if ((fileDropped[extIndex+3] >= '0' && fileDropped[extIndex+3] <= '9') || fileDropped[extIndex+3] == '-' || fileDropped[extIndex+3] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
 					{
 						savestate_load(filename);
-						Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
-						Update_RAM_Search();		//hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
+													//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
+						Update_RAM_Search();		//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
 					}
 				}
 			}
@@ -3692,8 +3690,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				}
 
 				savestate_load(SavName);
-				Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
-				Update_RAM_Search();		//hotkey.cpp - HK_StateLoadSlot also calls these functions
+											//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
+				Update_RAM_Search();		//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot also calls these functions
 				NDS_UnPause();
 			}
 			return 0;
