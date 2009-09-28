@@ -83,8 +83,8 @@ void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
 //======================================================================================
 //=====================================HANDLERS=========================================
 //======================================================================================
-void HK_OpenROM(int) {OpenFile();}
-void HK_PrintScreen(int param)
+void HK_OpenROM(int, bool justPressed) {OpenFile();}
+void HK_PrintScreen(int param, bool justPressed)
 {
 	char outFilename[MAX_PATH];
 	
@@ -130,9 +130,9 @@ void HK_PrintScreen(int param)
 		NDS_WriteBMP(filename.c_str());
 }
 
-void HK_StateSaveSlot(int num)
+void HK_StateSaveSlot(int num, bool justPressed)
 {
-	if (romloaded)
+	if (romloaded && justPressed)
 	{
 		if (!paused)
 		{
@@ -147,9 +147,9 @@ void HK_StateSaveSlot(int num)
 	}
 }
 
-void HK_StateLoadSlot(int num)
+void HK_StateLoadSlot(int num, bool justPressed)
 {
-	if (romloaded)
+	if (romloaded && justPressed)
 	{
 		BOOL wasPaused = paused;
 		NDS_Pause();
@@ -166,7 +166,7 @@ void HK_StateLoadSlot(int num)
 	}
 }
 
-void HK_StateSetSlot(int num)
+void HK_StateSetSlot(int num, bool justPressed)
 {
 	if (romloaded)
 	{
@@ -175,23 +175,23 @@ void HK_StateSetSlot(int num)
 	}
 }
 
-void HK_StateQuickSaveSlot(int)
+void HK_StateQuickSaveSlot(int, bool justPressed)
 {
-	HK_StateSaveSlot(lastSaveState);
+	HK_StateSaveSlot(lastSaveState, justPressed);
 }
 
-void HK_StateQuickLoadSlot(int)
+void HK_StateQuickLoadSlot(int, bool justPressed)
 {
-	HK_StateLoadSlot(lastSaveState);
+	HK_StateLoadSlot(lastSaveState, justPressed);
 }
 
-void HK_MicrophoneKeyDown(int) { NDS_setMic(1); }
+void HK_MicrophoneKeyDown(int, bool justPressed) { NDS_setMic(1); }
 void HK_MicrophoneKeyUp(int) { NDS_setMic(0); }
 
-void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
+void HK_AutoHoldKeyDown(int, bool justPressed) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
-void HK_StylusAutoHoldKeyDown(int) {
+void HK_StylusAutoHoldKeyDown(int, bool justPressed) {
 	StylusAutoHoldPressed = !StylusAutoHoldPressed;
 	if (StylusAutoHoldPressed)
 		NDS_setTouchPos(winLastTouch.x, winLastTouch.y);
@@ -199,29 +199,29 @@ void HK_StylusAutoHoldKeyDown(int) {
 		NDS_releaseTouch();
 }
 
-void HK_AutoHoldClearKeyDown(int) {
+void HK_AutoHoldClearKeyDown(int, bool justPressed) {
 	ClearAutoHold();
 	StylusAutoHoldPressed = false;
 	if (!userTouchesScreen)
 		NDS_releaseTouch();
 }
 
-void HK_Reset(int) {ResetGame();}
+void HK_Reset(int, bool justPressed) {ResetGame();}
 
-void HK_RecordAVI(int) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
-void HK_RecordWAV(int) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(); }
+void HK_RecordAVI(int, bool justPressed) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
+void HK_RecordWAV(int, bool justPressed) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(); }
 
-void HK_ToggleFrame(int) {CommonSettings.hud.FrameCounterDisplay ^= true;}
-void HK_ToggleFPS(int) {CommonSettings.hud.FpsDisplay ^= true;}
-void HK_ToggleInput(int) {CommonSettings.hud.ShowInputDisplay ^= true;}
-void HK_ToggleLag(int) {CommonSettings.hud.ShowLagFrameCounter ^= true;}
-void HK_ResetLagCounter(int) {
+void HK_ToggleFrame(int, bool justPressed) {CommonSettings.hud.FrameCounterDisplay ^= true;}
+void HK_ToggleFPS(int, bool justPressed) {CommonSettings.hud.FpsDisplay ^= true;}
+void HK_ToggleInput(int, bool justPressed) {CommonSettings.hud.ShowInputDisplay ^= true;}
+void HK_ToggleLag(int, bool justPressed) {CommonSettings.hud.ShowLagFrameCounter ^= true;}
+void HK_ResetLagCounter(int, bool justPressed) {
 	lagframecounter=0;
 	LagFrameFlag=0;
 	lastLag=0;
 	TotalLagFrames=0;
 }
-void HK_ToggleReadOnly(int) {
+void HK_ToggleReadOnly(int, bool justPressed) {
 	movie_readonly ^= true; 
 	if(movie_readonly)
 		osd->addLine("Read Only");
@@ -229,7 +229,7 @@ void HK_ToggleReadOnly(int) {
 		osd->addLine("Read+Write");
 }
 
-void HK_PlayMovie(int) 
+void HK_PlayMovie(int, bool justPressed) 
 {
 	if (romloaded)
 	{
@@ -241,11 +241,11 @@ void HK_PlayMovie(int)
 
 bool rewinding = false;
 
-void HK_RewindKeyDown(int) {rewinding = true;}
+void HK_RewindKeyDown(int, bool justPressed) {rewinding = true;}
 
 void HK_RewindKeyUp(int){rewinding = false;}
 
-void HK_RecordMovie(int) 
+void HK_RecordMovie(int, bool justPressed) 
 {
 	if (romloaded)
 	{
@@ -255,68 +255,68 @@ void HK_RecordMovie(int)
 	}
 }
 
-void HK_StopMovie(int) 
+void HK_StopMovie(int, bool justPressed) 
 {
 	FCEUI_StopMovie();
 }
 
-void HK_NewLuaScriptDown(int) 
+void HK_NewLuaScriptDown(int, bool justPressed) 
 {
 	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDC_NEW_LUA_SCRIPT, 0);
 }
-void HK_CloseLuaScriptsDown(int) 
+void HK_CloseLuaScriptsDown(int, bool justPressed) 
 {
 	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDC_CLOSE_LUA_SCRIPTS, 0);
 }
-void HK_MostRecentLuaScriptDown(int) 
+void HK_MostRecentLuaScriptDown(int, bool justPressed) 
 {
 	SendMessage(MainWindow->getHWnd(), WM_COMMAND, IDD_LUARECENT_RESERVE_START, 0);
 }
 
-void HK_TurboRightKeyDown(int) { Turbo.R = true; }
+void HK_TurboRightKeyDown(int, bool justPressed) { Turbo.R = true; }
 void HK_TurboRightKeyUp(int) { Turbo.R = false; }
 
-void HK_TurboLeftKeyDown(int) { Turbo.L = true; }
+void HK_TurboLeftKeyDown(int, bool justPressed) { Turbo.L = true; }
 void HK_TurboLeftKeyUp(int) { Turbo.L = false; }
 
-void HK_TurboRKeyDown(int) { Turbo.E = true; }
+void HK_TurboRKeyDown(int, bool justPressed) { Turbo.E = true; }
 void HK_TurboRKeyUp(int) { Turbo.E = false; }
 
-void HK_TurboLKeyDown(int) { Turbo.W = true; }
+void HK_TurboLKeyDown(int, bool justPressed) { Turbo.W = true; }
 void HK_TurboLKeyUp(int) { Turbo.W = false; }
 
-void HK_TurboDownKeyDown(int) { Turbo.D = true; }
+void HK_TurboDownKeyDown(int, bool justPressed) { Turbo.D = true; }
 void HK_TurboDownKeyUp(int) { Turbo.D = false; }
 
-void HK_TurboUpKeyDown(int) { Turbo.U = true; }
+void HK_TurboUpKeyDown(int, bool justPressed) { Turbo.U = true; }
 void HK_TurboUpKeyUp(int) { Turbo.U = false; }
 
-void HK_TurboBKeyDown(int) { Turbo.B = true; }
+void HK_TurboBKeyDown(int, bool justPressed) { Turbo.B = true; }
 void HK_TurboBKeyUp(int) { Turbo.B = false; }
 
-void HK_TurboAKeyDown(int) { Turbo.A = true; }
+void HK_TurboAKeyDown(int, bool justPressed) { Turbo.A = true; }
 void HK_TurboAKeyUp(int) { Turbo.A = false; }
 
-void HK_TurboXKeyDown(int) { Turbo.X = true; }
+void HK_TurboXKeyDown(int, bool justPressed) { Turbo.X = true; }
 void HK_TurboXKeyUp(int) { Turbo.X = false; }
 
-void HK_TurboYKeyDown(int) { Turbo.Y = true; }
+void HK_TurboYKeyDown(int, bool justPressed) { Turbo.Y = true; }
 void HK_TurboYKeyUp(int) { Turbo.Y = false; }
 
-void HK_TurboStartKeyDown(int) { Turbo.S = true; }
+void HK_TurboStartKeyDown(int, bool justPressed) { Turbo.S = true; }
 void HK_TurboStartKeyUp(int) { Turbo.S = false; }
 
-void HK_TurboSelectKeyDown(int) { Turbo.T = true; }
+void HK_TurboSelectKeyDown(int, bool justPressed) { Turbo.T = true; }
 void HK_TurboSelectKeyUp(int) { Turbo.T = false; }
 
-void HK_NextSaveSlot(int) { 
+void HK_NextSaveSlot(int, bool justPressed) { 
 	lastSaveState++; 
 	if(lastSaveState>9) 
 		lastSaveState=0; 
 	osd->addLine("State %i selected", lastSaveState);
 }
 
-void HK_PreviousSaveSlot(int) { 
+void HK_PreviousSaveSlot(int, bool justPressed) { 
 
 	if(lastSaveState==0) 
 		lastSaveState=9; 
@@ -325,16 +325,16 @@ void HK_PreviousSaveSlot(int) {
 	osd->addLine("State %i selected", lastSaveState);
 }
 
-void HK_Pause(int) { Pause(); }
-void HK_FastForwardToggle(int) { FastForward ^=1; }
-void HK_FastForwardKeyDown(int) { FastForward = 1; }
+void HK_Pause(int, bool justPressed) { Pause(); }
+void HK_FastForwardToggle(int, bool justPressed) { FastForward ^=1; }
+void HK_FastForwardKeyDown(int, bool justPressed) { FastForward = 1; }
 void HK_FastForwardKeyUp(int) { FastForward = 0; }
-void HK_IncreaseSpeed(int) { IncreaseSpeed(); }
-void HK_DecreaseSpeed(int) { DecreaseSpeed(); }
-void HK_FrameAdvanceKeyDown(int) { FrameAdvance(true); }
+void HK_IncreaseSpeed(int, bool justPressed) { IncreaseSpeed(); }
+void HK_DecreaseSpeed(int, bool justPressed) { DecreaseSpeed(); }
+void HK_FrameAdvanceKeyDown(int, bool justPressed) { FrameAdvance(true); }
 void HK_FrameAdvanceKeyUp(int) { FrameAdvance(false); }
 
-void HK_ToggleRasterizer(int) { 
+void HK_ToggleRasterizer(int, bool justPressed) { 
 	if(cur3DCore == GPU3D_OPENGL)
 		cur3DCore = GPU3D_SWRAST;
 	else cur3DCore = GPU3D_OPENGL;
