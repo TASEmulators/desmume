@@ -3418,6 +3418,24 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			
 			//-------------------------------------------------------
+			//Check if Lua script file
+			//-------------------------------------------------------
+			if (!(fileDropped.find(".lua") == string::npos) && (fileDropped.find(".lua") == fileDropped.length()-4))	 //ROM is already loaded and .dsm in filename
+			{
+				if(LuaScriptHWnds.size() < 16)
+				{
+					char temp [1024];
+					strcpy(temp, fileDropped.c_str());
+					HWND IsScriptFileOpen(const char* Path);
+					if(!IsScriptFileOpen(temp))
+					{
+						HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+						SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)temp);
+					}
+				}
+			}
+			
+			//-------------------------------------------------------
 			//Else load it as a ROM
 			//-------------------------------------------------------
 
