@@ -990,7 +990,7 @@ static void DoDisplay(bool firstTime)
 	const int size = video.size();
 	u16* src = (u16*)video.srcBuffer;
 	for(int i=0;i<size;i++)
-		video.buffer[i] = RGB15TO24_REVERSE(src[i]);
+ 		video.buffer[i] = RGB15TO24_REVERSE(src[i]);
 
 	if(firstTime)
 	{
@@ -4680,11 +4680,11 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					ZeroMemory(&ofn, sizeof(ofn));
 					ofn.lStructSize = sizeof(ofn);
 					ofn.hwndOwner = hDlg;
-					ofn.lpstrFilter = "Any file(*.*)\0*.*\0\0";
+					ofn.lpstrFilter = "8bit PCM mono WAV file(*.wav)\0*.wav\0\0";
 					ofn.nFilterIndex = 1;
 					ofn.lpstrFile = fileName;
 					ofn.nMaxFile = 256;
-					ofn.lpstrDefExt = "bin";
+					ofn.lpstrDefExt = "wav";
 					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 					char buffer[MAX_PATH];

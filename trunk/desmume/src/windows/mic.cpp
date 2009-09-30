@@ -8,13 +8,14 @@
 	Note : I added these notes because the microphone isn't 
 	documented on GBATek.
 */
+
 #include "NDSSystem.h"
 #include "../types.h"
 #include "../debug.h"
 #include "../mic.h"
 #include "../movie.h"
 #include "readwrite.h"
-#include <iostream>
+#include <vector>
 #include <fstream>
 
 int MicDisplay;
@@ -64,28 +65,128 @@ static char* samplebuffer = NULL;
 static int samplebuffersize = 0;
 static FILE* fp = NULL;
 
-bool LoadSample(const char *name)
-{
-	std::ifstream fl(name);
+EMUFILE_MEMORY newWavData;
 
-	if (!fl.is_open())
-	{
-		return false;
+static bool dataChunk(EMUFILE* inf)
+{
+	bool found = false;
+
+	// seek to just after the RIFF header
+	inf->fseek(12,SEEK_SET);
+
+	// search for a format chunk
+	for (;;) {
+		char chunk_id[4];
+		u32   chunk_length;
+
+		if(inf->eof()) return found;
+		if(inf->fread(chunk_id, 4) != 4) return found;
+		if(!read32le(&chunk_length, inf)) return found;
+
+		// if we found a data chunk, excellent!
+      if (memcmp(chunk_id, "data", 4) == 0) {
+		  found = true;
+		  u8* temp = new u8[chunk_length];
+		  if(inf->fread(temp,chunk_length) != chunk_length) {
+			  delete[] temp;
+			  return false;
+		  }
+		  newWavData.fwrite(temp,chunk_length);
+		  delete[] temp;
+		  chunk_length = 0;
+	  }
+
+	  inf->fseek(chunk_length,SEEK_CUR);
 	}
 
-	fl.seekg( 0, std::ios::end );
-	size_t len = fl.tellg();
+	return found;
+}
 
-	// Avoid mem leaks
-	if (samplebuffer != NULL)
-		delete[] samplebuffer;
+static bool formatChunk(EMUFILE* inf)
+{
+	// seek to just after the RIFF header
+	inf->fseek(12,SEEK_SET);
 
-	samplebuffersize = len;
-	samplebuffer = new char[len];
+	// search for a format chunk
+	for (;;) {
+		char chunk_id[4];
+		u32   chunk_length;
 
-	fl.seekg(0, std::ios::beg);
-	fl.read (samplebuffer, len);
-	fl.close();
+		inf->fread(chunk_id, 4);
+		if(!read32le(&chunk_length, inf)) return false;
+
+		// if we found a format chunk, excellent!
+		if (memcmp(chunk_id, "fmt ", 4) == 0 && chunk_length >= 16) {
+
+			// read format chunk
+			u16 format_tag;
+			u16 channel_count;
+			u32 samples_per_second;
+			//u32 bytes_per_second   = read32_le(chunk + 8);
+			//u16 block_align        = read16_le(chunk + 12);
+			u16 bits_per_sample;
+
+			if(read16le(&format_tag,inf)!=1) return false;
+			if(read16le(&channel_count,inf)!=1) return false;
+			if(read32le(&samples_per_second,inf)!=1) return false;
+			inf->fseek(6,SEEK_CUR);
+			if(read16le(&bits_per_sample,inf)!=1) return false;
+
+			chunk_length -= 16;
+
+			// format_tag must be 1 (WAVE_FORMAT_PCM)
+			// we only support mono 8bit
+			if (format_tag != 1 ||
+				channel_count != 1 ||
+				bits_per_sample != 8) {
+					MessageBox(0,"not a valid RIFF WAVE file; must be 8bit mono pcm",0,0);
+					return false;
+			}
+
+			return true;
+		}
+
+		inf->fseek(chunk_length,SEEK_CUR);
+	}
+	return false;
+}
+
+bool LoadSample(const char *name)
+{
+	EMUFILE_FILE inf(name,"rb");
+
+	//wav reading code adapted from AUDIERE (LGPL)
+
+    // read the RIFF header
+    u8 riff_id[4];
+    u32 riff_length;
+    u8 riff_datatype[4];
+
+    inf.fread(riff_id, 4);
+    read32le(&riff_length,&inf);
+    inf.fread(riff_datatype, 4);
+
+	if (inf.size() < 12 ||
+        memcmp(riff_id, "RIFF", 4) != 0 ||
+        riff_length == 0 ||
+        memcmp(riff_datatype, "WAVE", 4) != 0) {
+			MessageBox(0,"not a valid RIFF WAVE file",0,0);
+			return false;
+	}
+   
+	 if (!formatChunk(&inf))
+      return false;
+    
+	 if(!dataChunk(&inf)) {
+		 MessageBox(0,"not a valid WAVE file. some unknown problem.",0,0);
+		 return false;
+	 }
+
+	 delete[] samplebuffer;
+	 samplebuffersize = (int)newWavData.size();
+	 samplebuffer = new char[samplebuffersize];
+	 memcpy(samplebuffer,newWavData.buf(),samplebuffersize);
+ 	new(&newWavData) EMUFILE_MEMORY();
 
 	SampleLoaded=1;
 

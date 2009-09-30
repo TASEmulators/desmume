@@ -44,8 +44,10 @@ public:
 
 	bool fail() { return failbit; }
 
-	void fread(const void *ptr, size_t bytes){
-		_fread(ptr,bytes);
+	bool eof() { return size()==ftell(); }
+
+	size_t fread(const void *ptr, size_t bytes){
+		return _fread(ptr,bytes);
 	}
 
 	void unget() { fseek(-1,SEEK_CUR); }
