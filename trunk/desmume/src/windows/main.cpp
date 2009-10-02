@@ -4857,11 +4857,12 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 					WritePrivateProfileString("Sound", "SoundCore2", tempstr, IniName);
 
 					// Write Sound Buffer size
+					int tmp_size_buf = sndbuffersize;
 					GetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr, 6);
 					sscanf(tempstr, "%d", &sndbuffersize);
 					WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
 
-					if(sndcoretype != SPU_currentCoreNum)
+					if( (sndcoretype != SPU_currentCoreNum) || (sndbuffersize != tmp_size_buf) )
 					{
 						Lock lock;
 						SPU_ChangeSoundCore(sndcoretype, sndbuffersize);

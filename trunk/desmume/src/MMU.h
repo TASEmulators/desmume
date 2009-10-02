@@ -119,6 +119,7 @@ struct TGXSTAT : public TRegister_32
 	u8 se; //stack error
 	u8 gxfifo_irq; //irq configuration
 
+	void reset();
 	
 	virtual u32 read32();
 	virtual void write32(const u32 val);
