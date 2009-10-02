@@ -64,6 +64,8 @@ But since we're not sure how we'll eventually want this, I am leaving it sort of
 in this function: */
 static void gfx3d_doFlush();
 
+#define TESTS_ENABLED 1
+
 #define INVALID_COMMAND 0xFF
 #define UNDEFINED_COMMAND 0xCC
 static const u8 gfx3d_commandTypes[] = {
@@ -1339,8 +1341,13 @@ void gfx3d_glViewPort(u32 v)
 
 BOOL gfx3d_glBoxTest(u32 v)
 {
-	//gxstat &= 0xFFFFFFFD;		// clear boxtest bit
-	//gxstat |= 0x00000001;		// busy
+#ifdef TESTS_ENABLED
+	MMU_new.gxstat.tr = 0;		// clear boxtest bit
+	MMU_new.gxstat.tb = 1;		// busy
+#else
+	MMU_new.gxstat.tr = 1;		// HACK!!!
+	MMU_new.gxstat.tb = 0;
+#endif
 
 	BTcoords[BTind++] = float16table[v & 0xFFFF];
 	BTcoords[BTind++] = float16table[v >> 16];
@@ -1355,7 +1362,7 @@ BOOL gfx3d_glBoxTest(u32 v)
 	if (BTind < 5) return FALSE;
 	BTind = 0;
 
-	//gxstat &= 0xFFFFFFFE;		// clear busy bit
+	MMU_new.gxstat.tb = 0;		// clear busy
 	GFX_DELAY(103);
 
 #if 0
@@ -1369,7 +1376,7 @@ BOOL gfx3d_glBoxTest(u32 v)
 	INFO("\n");*/
 #endif
 
-#if 0
+#ifdef TESTS_ENABLED
 
 	// 0 - X coordinate				1 - Y coordinate			2 - Z coordinate			
 	// 3 - Width					4 - Height					5 - Depth
@@ -1420,19 +1427,18 @@ BOOL gfx3d_glBoxTest(u32 v)
 			//if(face==0)INFO("box test: testing face %i, vtx %i: %f %f %f %f\n", face, vtx, 
 			//	boxCoords[face][vtx][0], boxCoords[face][vtx][1], boxCoords[face][vtx][2], boxCoords[face][vtx][3]);
 
-			if ((boxCoords[face][vtx][0] >= -1.0f) && (boxCoords[face][vtx][0] <= 1.0f) &&
-				(boxCoords[face][vtx][1] >= -1.0f) && (boxCoords[face][vtx][1] <= 1.0f) &&
-				(boxCoords[face][vtx][2] >= -1.0f) && (boxCoords[face][vtx][2] <= 1.0f))
+			if ((boxCoords[face][vtx][0] >= 0.0f) && (boxCoords[face][vtx][0] <= 1.0f) &&
+				(boxCoords[face][vtx][1] >= 0.0f) && (boxCoords[face][vtx][1] <= 1.0f) &&
+				(boxCoords[face][vtx][2] >= 0.0f) && (boxCoords[face][vtx][2] <= 1.0f))
 			{
-				gxstat |= 0x00000002;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+				MMU_new.gxstat.tr = 1;
 				return TRUE;
 			}
 		}
 	}
 
 #else
-	//gxstat |= 0x00000002;		// hack
+	MMU_new.gxstat.tr = 1;				// hack
 #endif
 
 	return TRUE;
@@ -1440,7 +1446,9 @@ BOOL gfx3d_glBoxTest(u32 v)
 
 BOOL gfx3d_glPosTest(u32 v)
 {
-	//gxstat |= 0x00000001;		// busy
+#ifdef TESTS_ENABLED
+	MMU_new.gxstat.tb = 1;
+#endif
 
 	PTcoords[PTind++] = float16table[v & 0xFFFF];
 	PTcoords[PTind++] = float16table[v >> 16];
@@ -1453,7 +1461,7 @@ BOOL gfx3d_glPosTest(u32 v)
 	MatrixMultVec4x4(mtxCurrent[1], PTcoords);
 	MatrixMultVec4x4(mtxCurrent[0], PTcoords);
 
-	//gxstat &= 0xFFFFFFFE;
+	MMU_new.gxstat.tb = 0;
 
 	GFX_DELAY(9);
 
@@ -1462,8 +1470,6 @@ BOOL gfx3d_glPosTest(u32 v)
 
 void gfx3d_glVecTest(u32 v)
 {
-	//gxstat &= 0xFFFFFFFE;
-
 	GFX_DELAY(5);
 	//INFO("NDS_glVecTest\n");
 }

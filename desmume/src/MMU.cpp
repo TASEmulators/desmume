@@ -101,7 +101,7 @@ void mmu_log_debug_ARM9(u32 adr, const char *fmt, ...)
 {
 	if (adr < 0x4000000) return;
 	if (adr > 0x4100014) return;
-
+#if 1
 	if (adr >= 0x4000000 && adr <= 0x400006E) return;		// Display Engine A
 	if (adr >= 0x40000B0 && adr <= 0x4000134) return;		// DMA, Timers and Keypad
 	if (adr >= 0x4000180 && adr <= 0x40001BC) return;		// IPC/ROM
@@ -110,7 +110,7 @@ void mmu_log_debug_ARM9(u32 adr, const char *fmt, ...)
 	if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
 	if (adr >= 0x4001000 && adr <= 0x400106E) return;		// Display Engine B
 	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
-
+#endif
 	va_list list;
 	char msg[512];
 
@@ -127,13 +127,13 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 {
 	if (adr < 0x4000004) return;
 	if (adr > 0x4808FFF) return;
-
+#if 1
 	if (adr >= 0x4000004 && adr <= 0x40001C4) return;		// ARM7 I/O Map
 	if (adr >= 0x4000204 && adr <= 0x400030C) return;		// Memory and IRQ Control
 	if (adr >= 0x4000400 && adr <= 0x400051E) return;		// Sound Registers
 	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
-	//if (adr >= 0x4800000 && adr <= 0x4808FFF) return;		// WLAN Registers
-
+	if (adr >= 0x4800000 && adr <= 0x4808FFF) return;		// WLAN Registers
+#endif
 	va_list list;
 	char msg[512];
 
@@ -857,6 +857,7 @@ void MMU_Init(void) {
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
+	MMU_new.gxstat.reset();
 	
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -915,6 +916,7 @@ void MMU_Reset()
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
+	MMU_new.gxstat.reset();
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -1785,17 +1787,21 @@ static INLINE void write_timer(int proc, int timerIndex, u16 val)
 //	NDS_RescheduleDMA();
 //}
 
+void TGXSTAT::reset()
+{
+	gxfifo_irq = se = tr = tb = 0;
+}
+
 u32 TGXSTAT::read32()
 {
 	u32 ret = 0;
-
-	tr = 1; //HACK!!!! tests no work now! (need this to make ff4 entities show up)
-	tb = 0; //HACK!!!! tests no work now! (need this to make ff4 entities show up)
 
 	ret |= tb|(tr<<1);
 
 	int _hack_getMatrixStackLevel(int which);
 	
+	// stack position always equal zero. possible timings is wrong
+	// using in "The Wild West"
 	ret |= ((_hack_getMatrixStackLevel(0) << 13) | (_hack_getMatrixStackLevel(1) << 8)); //matrix stack levels //no proof that these are needed yet
 
 	//todo: stack busy flag (bit14)
@@ -1810,13 +1816,13 @@ u32 TGXSTAT::read32()
 	if(isSwapBuffers) ret |= BIT(27);
 	//if fifo is nonempty, we're busy
 	if(gxFIFO.size!=0) ret |= BIT(27);
-
-
-
 	
-	ret |= gxfifo_irq; //user's irq flags
+	ret |= ((gxfifo_irq & 0x3) << 30); //user's irq flags
 
 	//printf("vc=%03d Returning gxstat read: %08X\n",nds.VCount,ret);
+
+	//ret = (2 << 8);
+	//INFO("gxSTAT 0x%08X (proj %i, pos %i)\n", ret, _hack_getMatrixStackLevel(1), _hack_getMatrixStackLevel(2));
 	return ret;
 }
 
