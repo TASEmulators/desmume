@@ -1792,6 +1792,7 @@ void TGXSTAT::reset()
 	gxfifo_irq = se = tr = tb = 0;
 }
 
+extern CACHE_ALIGN MatrixStack	mtxStack[4];
 u32 TGXSTAT::read32()
 {
 	u32 ret = 0;
@@ -1829,8 +1830,13 @@ u32 TGXSTAT::read32()
 void TGXSTAT::write32(const u32 val)
 {
 	gxfifo_irq = (val>>30)&3;
-	if(BIT15(val)) se = 0; //clear stack error flag
-	//if(BIT15(val)) gfx3d_ClearStack(); //??
+	if(BIT15(val)) 
+	{
+		// Writing "1" to Bit15 does reset the Error Flag (Bit15), 
+		// and additionally resets the Projection Stack Pointer (Bit13)
+		mtxStack[0].position = 0;
+		se = 0; //clear stack error flag
+	}
 	//printf("gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);
 
 		//if (val & (1<<29))		// clear? (only in homebrew?)
