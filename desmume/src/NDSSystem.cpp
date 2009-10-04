@@ -1946,6 +1946,12 @@ static void execHardware_hstart_vblankStart()
 
 	//trigger vblank dmas
 	triggerDma(EDMAMode_VBlank);
+
+	//tracking for arm9 load average
+	nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
+	nds.idleFrameCounter++;
+	nds.idleFrameCounter &= 15;
+	nds.idleCycles = 0;
 }
 
 static void execHardware_hstart_vcount()
@@ -2232,7 +2238,9 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			}
 			else
 			{
+				s32 temp = arm9;
 				arm9 = min(s32next, arm9 + kIrqWait);
+				nds.idleCycles += arm9-temp;
 			}
 		}
 		if(doarm7 && (!doarm9 || arm7 <= timer))
