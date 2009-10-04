@@ -1279,6 +1279,8 @@ static void StepRunLoop_User()
 		load = std::min(100,std::max(0,(int)(load*100/1120380)));
 		Hud.arm9load = load;
 	}
+
+	Hud.cpuloopIterationCount = nds.cpuloopIterationCount;
 }
 
 static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1)

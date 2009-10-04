@@ -41,6 +41,7 @@
 #include "movie.h"
 #include "Disassembler.h"
 #include "readwrite.h"
+#include "debug.h"
 
 #include "path.h"
 
@@ -51,6 +52,8 @@ PathInfo path;
 		#undef EXPERIMENTAL_WIFI
 	#endif
 #endif
+
+//#undef EXPERIMENTAL_WIFI
 
 TCommonSettings CommonSettings;
 static BaseDriver _stub_driver;
@@ -1544,6 +1547,7 @@ struct TSequenceItem_GXFIFO : public TSequenceItem
 
 	FORCEINLINE void exec()
 	{
+		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[4]++);
 		while(isTriggered()) {
 			enabled = false;
 			gfx3d_execute3D();
@@ -1571,14 +1575,12 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 
 	FORCEINLINE u64 next()
 	{
-		//todo - change this to go through an entire overflow cycle instead of a single increment
-		//however, in order to do this, we need to change the counter read emulation to calculate its value
-		//instead of just plucking the uptodate value (which would no longer be kept uptodate)
 		return nds.timerCycle[procnum][num];
 	}
 
 	FORCEINLINE void exec()
 	{
+		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[13+procnum*4+num]++);
 		u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
 		bool first = true, over;
 		//we'll need to check chained timers..
@@ -1646,6 +1648,8 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 
 	FORCEINLINE void exec()
 	{
+		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[5+procnum*4+chan]++);
+
 		//printf("exec from TSequenceItem_DMA: %d %d\n",procnum,chan);
 		controller->exec();
 //		//give gxfifo dmas a chance to re-trigger
@@ -1698,6 +1702,7 @@ struct TSequenceItem_divider : public TSequenceItem
 
 	void exec()
 	{
+		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[2]++);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, (u32)MMU.divResult);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, (u32)(MMU.divResult >> 32));
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, (u32)MMU.divMod);
@@ -1724,6 +1729,7 @@ struct TSequenceItem_sqrtunit : public TSequenceItem
 
 	FORCEINLINE void exec()
 	{
+		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[3]++);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, MMU.sqrtResult);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, MMU.sqrtCnt);
 		MMU.sqrtRunning = FALSE;
@@ -2029,6 +2035,7 @@ static void execHardware_hstart()
 
 void NDS_Reschedule()
 {
+	DEBUG_statistics.sequencerExecutionCounters[0]++;
 	sequencer.reschedule = true;
 }
 
@@ -2091,6 +2098,9 @@ void Sequencer::execHardware()
 {
 	if(dispcnt.isTriggered())
 	{
+
+		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[1]++);
+
 		switch(dispcnt.param)
 		{
 		case ESI_DISPCNT_HStart:
@@ -2280,6 +2290,10 @@ void NDS_exec(s32 nb)
 
 	sequencer.nds_vblankEnded = false;
 
+	nds.cpuloopIterationCount = 0;
+
+	IF_DEVELOPER(for(int i=0;i<32;i++) DEBUG_statistics.sequencerExecutionCounters[i] = 0);
+
 	if(nds.sleeping)
 	{
 		gpu_UpdateRender();
@@ -2292,6 +2306,7 @@ void NDS_exec(s32 nb)
 	{
 		for(;;)
 		{
+			nds.cpuloopIterationCount++;
 			sequencer.execHardware();
 
 			//break out once per frame
@@ -2333,6 +2348,8 @@ void NDS_exec(s32 nb)
 			if(NDS_ARM7.waitIRQ) nds_arm7_timer = nds_timer;
 		}
 	}
+
+	//DEBUG_statistics.printSequencerExecutionCounters();
 
 	//end of frame emulation housekeeping
 	if(LagFrameFlag)
