@@ -1797,7 +1797,7 @@ static LRESULT CALLBACK HotInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam
 	case WM_TIMER:
 		if(hwnd == selectedItem)
 		{
-			//FunkyJoyStickTimer();
+			FunkyJoyStickTimer();
 		}
 		SetTimer(hwnd,747,125,NULL);
 		break;
