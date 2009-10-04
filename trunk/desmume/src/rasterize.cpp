@@ -1316,6 +1316,7 @@ static void SoftRastRender()
 	if(gfx3d.enableFog)
 	{
 		u8* fogDensity = MMU.MMU_MEM[ARMCPU_ARM9][0x40] + 0x360;
+#if 0
 		//TODO - this might be a little slow; 
 		//we might need to hash all the variables and only recompute this when something changes
 		const int increment = (0x400 >> gfx3d.fogShift);
@@ -1339,8 +1340,28 @@ static void SoftRastRender()
 			fogTable[i] = fogDensity[31];
 			done: ;
 		}
+#else
+		// this should behave exactly the same as the previous loop,
+		// except much faster. (because it's not a 2d loop and isn't so branchy either)
+		// maybe it's fast enough to not need to be cached, now.
+		const int increment = ((1 << 10) >> gfx3d.fogShift);
+		const int incrementDivShift = 10 - gfx3d.fogShift;
+		u32 fogOffset = min<u32>(max<u32>(gfx3d.fogOffset, 0), 32768);
+		u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
+		u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
+		assert(iMin <= iMax);
+		memset(fogTable, fogDensity[0], iMin);
+		for(u32 i = iMin; i < iMax; i++) {
+			int num = (i - fogOffset + (increment-1));
+			int j = (num >> incrementDivShift) - 1;
+			u32 value = (num & ~(increment-1)) + fogOffset;
+			u32 diff = value - i;
+			assert(j >= 1 && j < 32);
+			fogTable[i] = ((diff*fogDensity[j-1] + (increment-diff)*fogDensity[j]) >> incrementDivShift);
+		}
+		memset(fogTable+iMax, fogDensity[31], 32768-iMax);
+#endif
 	}
-
 	//convert colors to float to get more precision in case we need it
 	for(int i=0;i<gfx3d.vertlist->count;i++)
 		gfx3d.vertlist->list[i].color_to_float();
