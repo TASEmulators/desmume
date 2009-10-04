@@ -857,8 +857,8 @@ void MMU_Init(void) {
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
-	MMU_new.gxstat.reset();
-	
+	new(&MMU_new) MMU_struct_new;	
+
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
 	MMU.fw.fp = NULL;
@@ -916,7 +916,6 @@ void MMU_Reset()
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
-	MMU_new.gxstat.reset();
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -1786,11 +1785,6 @@ static INLINE void write_timer(int proc, int timerIndex, u16 val)
 //
 //	NDS_RescheduleDMA();
 //}
-
-void TGXSTAT::reset()
-{
-	gxfifo_irq = se = tr = tb = 0;
-}
 
 extern CACHE_ALIGN MatrixStack	mtxStack[4];
 u32 TGXSTAT::read32()
