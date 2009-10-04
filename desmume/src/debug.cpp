@@ -124,6 +124,12 @@ void DebugStatistics::print()
 	}
 }
 
+void DebugStatistics::printSequencerExecutionCounters()
+{
+	for(int i=0;i<21;i++) printf("%06d ",sequencerExecutionCounters[i]);
+	printf("\n");
+}
+
 void DEBUG_reset()
 {
 	DEBUG_statistics = DebugStatistics();

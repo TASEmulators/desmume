@@ -26,6 +26,12 @@
 #include "config.h"
 #endif
 
+#ifdef DEVELOPER
+#define IF_DEVELOPER(X) X
+#else
+#define IF_DEVELOPER(X)
+#endif
+
 #ifdef _MSC_VER
 #define ENABLE_SSE
 #define ENABLE_SSE2

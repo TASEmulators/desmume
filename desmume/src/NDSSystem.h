@@ -179,6 +179,7 @@ typedef struct
 	s32 idleCycles;
 	s32 runCycleCollector[16];
 	s32 idleFrameCounter;
+	s32 cpuloopIterationCount; //counts the number of times during a frame that a reschedule happened
 
 	//if the game was booted on a debug console, this is set
 	BOOL debugConsole;
