@@ -976,7 +976,7 @@ void MMU_Reset()
 	//until we improve all our session tracking stuff, we need to save the backup memory filename
 	std::string bleh = MMU_new.backupDevice.filename;
 	new(&MMU_new) MMU_struct_new;
-	MMU_new.backupDevice.filename = bleh;
+	MMU_new.backupDevice.load_rom(bleh.c_str());
 
 	MMU_timing.arm7codeFetch.Reset();
 	MMU_timing.arm7dataFetch.Reset();
