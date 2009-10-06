@@ -142,6 +142,15 @@ struct POLY {
 	u32 viewport;
 	float miny, maxy;
 
+	void setVertIndexes(int a, int b, int c, int d=-1)
+	{
+		vertIndexes[0] = a;
+		vertIndexes[1] = b;
+		vertIndexes[2] = c;
+		if(d != -1) { vertIndexes[3] = d; type = 4; }
+		else type = 3;
+	}
+
 	bool isTranslucent()
 	{
 		//alpha != 31 -> translucent
@@ -200,6 +209,18 @@ struct VERT {
 			float u,v;
 		};
 	};
+	void set_coord(float x, float y, float z, float w) { 
+		this->x = x; 
+		this->y = y; 
+		this->z = z; 
+		this->w = w; 
+	}
+	void set_coord(float* coords) { 
+		x = coords[0];
+		y = coords[1];
+		z = coords[2];
+		w = coords[3];
+	}
 	u8 color[3];
 	float fcolor[3];
 	void color_to_float() {
@@ -234,6 +255,36 @@ struct VERTLIST {
 struct VIEWPORT {
 	int x, y, width, height;
 	void decode(u32 v);
+};
+
+//The worst case we've managed to think of so far would be a viewport zoomed in a little bit 
+//on a diamond, with cut-out bits in all four corners
+#define MAX_CLIPPED_VERTS 8
+
+class GFX3D_Clipper
+{
+public:
+	
+	struct TClippedPoly
+	{
+		int type; //otherwise known as "count" of verts
+		POLY* poly;
+		VERT clipVerts[MAX_CLIPPED_VERTS];
+	};
+
+	//the entry point for poly clipping
+	void clipPoly(POLY* poly, VERT** verts);
+
+	//the output of clipping operations goes into here.
+	//be sure you init it before clipping!
+	TClippedPoly *clippedPolys;
+	int clippedPolyCounter;
+
+private:
+	TClippedPoly tempClippedPoly;
+	TClippedPoly outClippedPoly;
+	FORCEINLINE void clipSegmentVsPlane(VERT** verts, const int coord, int which);
+	FORCEINLINE void clipPolyVsPlane(const int coord, int which);
 };
 
 //used to communicate state to the renderer

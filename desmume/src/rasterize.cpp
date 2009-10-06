@@ -26,9 +26,6 @@
 //the shape rasterizers contained herein are based on code supplied by Chris Hecker from 
 //http://chrishecker.com/Miscellaneous_Technical_Articles
 
-//The worst case we've managed to think of so far would be a viewport zoomed in a little bit 
-//on a diamond, with cut-out bits in all four corners
-#define MAX_CLIPPED_VERTS 8
 
 //TODO - due to a late change of a y-coord flipping, our winding order is wrong
 //this causes us to have to flip the verts for every front-facing poly.
@@ -73,16 +70,11 @@ static u8 decal_table[32][64][64];
 static u8 index_lookup_table[65];
 static u8 index_start_table[8];
 
-static struct TClippedPoly
-{
-	int type;
-	POLY* poly;
-	VERT clipVerts[MAX_CLIPPED_VERTS];
-} *clippedPolys = NULL;
+static GFX3D_Clipper clipper;
+static GFX3D_Clipper::TClippedPoly *clippedPolys = NULL;
 static int clippedPolyCounter;
 
-TClippedPoly tempClippedPoly;
-TClippedPoly outClippedPoly;
+
 
 ////optimized float floor useful in limited cases
 ////from http://www.stereopsis.com/FPU.html#convert
@@ -252,10 +244,10 @@ struct Fragment
 
 static VERT* verts[MAX_CLIPPED_VERTS];
 
-INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
-{
-	verts[vert_index] = &rawvert;
-}
+//INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
+//{
+//	verts[vert_index] = &rawvert;
+//}
 
 static Fragment screen[256*192];
 static FragmentColor screenColor[256*192];
@@ -922,7 +914,7 @@ static char SoftRastInit(void)
 	{
 		tables_generated = true;
 
-		clippedPolys = new TClippedPoly[POLYLIST_SIZE*2];
+		clipper.clippedPolys = clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
 
 		for(int i=0;i<64;i++)
 		{
@@ -1079,167 +1071,6 @@ static void SoftRastConvertFramebuffer()
 }
 
 
-template<typename T>
-static T interpolate(const float ratio, const T& x0, const T& x1) {
-	return (T)(x0 + (float)(x1-x0) * (ratio));
-}
-
-
-//http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
-static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
-{
-	VERT ret;
-
-	float coord_inside = inside->coord[coord];
-	float coord_outside = outside->coord[coord];
-	float w_inside = inside->coord[3];
-	float w_outside = outside->coord[3];
-
-	float t;
-
-	if(which==-1) {
-		w_outside = -w_outside;
-		w_inside = -w_inside;
-	}
-	
-	t = (coord_inside - w_inside)/ ((w_outside-w_inside) - (coord_outside-coord_inside));
-	
-
-#define INTERP(X) ret . X = interpolate(t, inside-> X ,outside-> X )
-	
-	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
-	INTERP(texcoord[0]); INTERP(texcoord[1]);
-
-	if(CommonSettings.HighResolutionInterpolateColor)
-	{
-		INTERP(fcolor[0]); INTERP(fcolor[1]); INTERP(fcolor[2]);
-	}
-	else
-	{
-		INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
-		ret.color_to_float();
-	}
-
-	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
-	//of the clip volume through interpolation
-	if(which==-1)
-		ret.coord[coord] = -ret.coord[3];
-	else
-		ret.coord[coord] = ret.coord[3];
-
-	return ret;
-}
-
-//#define CLIPLOG(X) printf(X);
-//#define CLIPLOG2(X,Y,Z) printf(X,Y,Z);
-#define CLIPLOG(X)
-#define CLIPLOG2(X,Y,Z)
-
-static FORCEINLINE void clipSegmentVsPlane(VERT** verts, const int coord, int which)
-{
-	bool out0, out1;
-	if(which==-1) 
-		out0 = verts[0]->coord[coord] < -verts[0]->coord[3];
-	else 
-		out0 = verts[0]->coord[coord] > verts[0]->coord[3];
-	if(which==-1) 
-		out1 = verts[1]->coord[coord] < -verts[1]->coord[3];
-	else
-		out1 = verts[1]->coord[coord] > verts[1]->coord[3];
-
-	//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
-	//if(coord==2 && which==1) {
-	//	out0 = verts[0]->coord[2] < 0;
-	//	out1 = verts[1]->coord[2] < 0;
-	//}
-
-	//both outside: insert no points
-	if(out0 && out1) {
-		CLIPLOG(" both outside\n");
-	}
-
-	//both inside: insert the first point
-	if(!out0 && !out1) 
-	{
-		CLIPLOG(" both inside\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
-	}
-
-	//exiting volume: insert the clipped point and the first (interior) point
-	if(!out0 && out1)
-	{
-		CLIPLOG(" exiting\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[0],verts[1], coord, which);
-	}
-
-	//entering volume: insert clipped point
-	if(out0 && !out1) {
-		CLIPLOG(" entering\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[1],verts[0], coord, which);
-		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
-
-	}
-}
-
-static FORCEINLINE void clipPolyVsPlane(const int coord, int which)
-{
-	outClippedPoly.type = 0;
-	CLIPLOG2("Clipping coord %d against %f\n",coord,x);
-	for(int i=0;i<tempClippedPoly.type;i++)
-	{
-		VERT* testverts[2] = {&tempClippedPoly.clipVerts[i],&tempClippedPoly.clipVerts[(i+1)%tempClippedPoly.type]};
-		clipSegmentVsPlane(testverts, coord, which);
-	}
-
-	//this doesnt seem to help any. leaving it until i decide to get rid of it
-	//int j = index_start_table[tempClippedPoly.type-3];
-	//for(int i=0;i<tempClippedPoly.type;i++,j+=2)
-	//{
-	//	VERT* testverts[2] = {&tempClippedPoly.clipVerts[index_lookup_table[j]],&tempClippedPoly.clipVerts[index_lookup_table[j+1]]};
-	//	clipSegmentVsPlane(testverts, coord, which);
-	//}
-
-	tempClippedPoly = outClippedPoly;
-}
-
-static void clipPoly(POLY* poly)
-{
-	int type = poly->type;
-
-	CLIPLOG("==Begin poly==\n");
-
-	tempClippedPoly.clipVerts[0] = gfx3d.vertlist->list[poly->vertIndexes[0]];
-	tempClippedPoly.clipVerts[1] = gfx3d.vertlist->list[poly->vertIndexes[1]];
-	tempClippedPoly.clipVerts[2] = gfx3d.vertlist->list[poly->vertIndexes[2]];
-	if(type==4)
-		tempClippedPoly.clipVerts[3] = gfx3d.vertlist->list[poly->vertIndexes[3]];
-
-	
-	tempClippedPoly.type = type;
-
-	clipPolyVsPlane(0, -1); 
-	clipPolyVsPlane(0, 1);
-	clipPolyVsPlane(1, -1);
-	clipPolyVsPlane(1, 1);
-	clipPolyVsPlane(2, -1);
-	clipPolyVsPlane(2, 1);
-	//TODO - we need to parameterize back plane clipping
-
-	
-	if(tempClippedPoly.type < 3)
-	{
-		//a totally clipped poly. discard it.
-		//or, a degenerate poly. we're not handling these right now
-	}
-	else
-	{
-		//TODO - build right in this list instead of copying
-		clippedPolys[clippedPolyCounter] = tempClippedPoly;
-		clippedPolys[clippedPolyCounter].poly = poly;
-		clippedPolyCounter++;
-	}
-
-}
 
 static void SoftRastRender()
 {
@@ -1367,11 +1198,23 @@ static void SoftRastRender()
 		gfx3d.vertlist->list[i].color_to_float();
 
 	//submit all polys to clipper
-	clippedPolyCounter = 0;
+	clipper.clippedPolyCounter = 0;
 	for(int i=0;i<gfx3d.polylist->count;i++)
 	{
-		clipPoly(&gfx3d.polylist->list[gfx3d.indexlist[i]]);
+		POLY* poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
+		VERT* clipVerts[4] = {
+			&gfx3d.vertlist->list[poly->vertIndexes[0]],
+			&gfx3d.vertlist->list[poly->vertIndexes[1]],
+			&gfx3d.vertlist->list[poly->vertIndexes[2]],
+			poly->type==4
+				?&gfx3d.vertlist->list[poly->vertIndexes[3]]
+				:NULL
+		};
+
+		clipper.clipPoly(poly,clipVerts);
+
 	}
+	clippedPolyCounter = clipper.clippedPolyCounter;
 
 	//printf("%d %d %d %d\n",gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
 //			printf("%f\n",vert.coord[0]);
@@ -1379,7 +1222,7 @@ static void SoftRastRender()
 	//viewport transforms
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
-		TClippedPoly &poly = clippedPolys[i];
+		GFX3D_Clipper::TClippedPoly &poly = clippedPolys[i];
 		for(int j=0;j<poly.type;j++)
 		{
 			VERT &vert = poly.clipVerts[j];
@@ -1428,7 +1271,7 @@ static void SoftRastRender()
 	{
 		polynum = i;
 
-		TClippedPoly &clippedPoly = clippedPolys[i];
+		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
 		POLY *poly = clippedPoly.poly;
 		int type = clippedPoly.type;
 

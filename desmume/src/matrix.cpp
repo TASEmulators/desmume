@@ -25,10 +25,7 @@
 #include <assert.h>
 #include "matrix.h"
 
-//-------------------------
-//switched SSE functions: implementations for no SSE
-#ifndef ENABLE_SSE
-void MatrixMultVec4x4 (const float *matrix, float *vecPtr)
+void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
 	float y = vecPtr[1];
@@ -39,6 +36,15 @@ void MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9] + w * matrix[13];
 	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10] + w * matrix[14];
 	vecPtr[3] = x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15];
+}
+
+
+//-------------------------
+//switched SSE functions: implementations for no SSE
+#ifndef ENABLE_SSE
+void MatrixMultVec4x4 (const float *matrix, float *vecPtr)
+{
+	_NOSSE_MatrixMultVec4x4(matrix, vecPtr);
 }
 
 

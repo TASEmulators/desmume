@@ -53,7 +53,7 @@ PathInfo path;
 	#endif
 #endif
 
-//#undef EXPERIMENTAL_WIFI
+#undef EXPERIMENTAL_WIFI
 
 TCommonSettings CommonSettings;
 static BaseDriver _stub_driver;
@@ -2035,7 +2035,7 @@ static void execHardware_hstart()
 
 void NDS_Reschedule()
 {
-	DEBUG_statistics.sequencerExecutionCounters[0]++;
+	IF_DEVELOPER(if(!sequencer.reschedule) DEBUG_statistics.sequencerExecutionCounters[0]++;);
 	sequencer.reschedule = true;
 }
 
