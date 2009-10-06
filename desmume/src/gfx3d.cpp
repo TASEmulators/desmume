@@ -1543,10 +1543,6 @@ void gfx3d_glVecTest(u32 v)
 	s16 y = (s16)(normal[1]);
 	s16 z = (s16)(normal[2]);
 
-	x = rand();
-	y = rand();
-	z = rand();
-
 	MMU_new.gxstat.tb = 0;		// clear busy
 	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x630, x);
 	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x632, y);
