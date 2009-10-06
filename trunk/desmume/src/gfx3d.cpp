@@ -259,6 +259,7 @@ using std::max;
 using std::min;
 
 GFX3D gfx3d;
+static GFX3D_Clipper boxtestClipper;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
@@ -1339,25 +1340,14 @@ void gfx3d_glViewPort(u32 v)
 	GFX_DELAY(1);
 }
 
+int boxcounter = 0;
 BOOL gfx3d_glBoxTest(u32 v)
 {
-#ifdef TESTS_ENABLED
 	MMU_new.gxstat.tr = 0;		// clear boxtest bit
 	MMU_new.gxstat.tb = 1;		// busy
-#else
-	MMU_new.gxstat.tr = 1;		// HACK!!!
-	MMU_new.gxstat.tb = 0;
-#endif
 
 	BTcoords[BTind++] = float16table[v & 0xFFFF];
 	BTcoords[BTind++] = float16table[v >> 16];
-
-	// 0 - X coordinate
-	// 1 - Y coordinate
-	// 2 - Z coordinate
-	// 3 - Width
-	// 4 - Height
-	// 5 - Depth
 
 	if (BTind < 5) return FALSE;
 	BTind = 0;
@@ -1376,76 +1366,101 @@ BOOL gfx3d_glBoxTest(u32 v)
 	INFO("\n");*/
 #endif
 
-#ifdef TESTS_ENABLED
+	//(crafted to be clear, not fast.)
 
-	// 0 - X coordinate				1 - Y coordinate			2 - Z coordinate			
-	// 3 - Width					4 - Height					5 - Depth
-	ALIGN(16) float boxCoords[6][4][4] = {
-		// near
-		{	{BTcoords[0],				BTcoords[1],				BTcoords[2],				1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2],				1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}, 
-			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}},
-		// far
-		{	{BTcoords[0],				BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}},
-		// left
-		{	{BTcoords[0],				BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0],				BTcoords[1],				BTcoords[2],				1.0f}, 
-			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}, 
-			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}},
-		// right
-		{	{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2],				1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}},
-		// top
-		{	{BTcoords[0],				BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1],				BTcoords[2],				1.0f}, 
-			{BTcoords[0],				BTcoords[1],				BTcoords[2],				1.0f}},
-		// bottom
-		{	{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2]+BTcoords[5],	1.0f}, 
-			{BTcoords[0]+BTcoords[3],	BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}, 
-			{BTcoords[0],				BTcoords[1]+BTcoords[4],	BTcoords[2],				1.0f}}
-	};
+	//there is a still a problem in here.
+	//nanostray title, ff4, ice age 3 work
+	//garfields nightmare, strawberry shortcake do not.
+	//but i think it is a timing issue, since
+	//1. shortcake can be made to flicker by tweaking btcoords
+	//2. the flicker can be made to go away by making dma cost todo instead of todo/4
+	//the game is probably doing a box test and then dmaing an object to gxfifo,
+	//and then being sloppy about how long to wait before the next box test.
+	//(maybe bus lock would fix it)
+	//this doesnt seem to help garfield. garfield does seem to work better when its 
+	//rendering is being constrained by the box test, but the box test is still failing in that game
 
-	for(int face = 0; face < 6; face++)
+	float x = BTcoords[0];
+	float y = BTcoords[1];
+	float z = BTcoords[2];
+	float w = BTcoords[3];
+	float h = BTcoords[4];
+	float d = BTcoords[5];
+
+	//craft the coords by adding extents to startpoint
+	VERT verts[8];
+	verts[0].set_coord(x,y,z,1);
+	verts[1].set_coord(x+w,y,z,1);
+	verts[2].set_coord(x+w,y+h,z,1);
+	verts[3].set_coord(x,y+h,z,1);
+	verts[4].set_coord(x,y,z+d,1);
+	verts[5].set_coord(x+w,y,z+d,1);
+	verts[6].set_coord(x+w,y+h,z+d,1);
+	verts[7].set_coord(x,y+h,z+d,1);
+
+	//transform all coords
+	for(int i=0;i<8;i++) {
+		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
+
+		//yuck.. cant use the sse2 accelerated ones because vert.coords is not cache aligned or something
+		//i dunno
+		
+		void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
+		_NOSSE_MatrixMultVec4x4(mtxCurrent[1],verts[i].coord);
+		_NOSSE_MatrixMultVec4x4(mtxCurrent[0],verts[i].coord);
+	}
+
+	//craft the faces of the box (clockwise)
+	POLY polys[6];
+	polys[0].setVertIndexes(7,6,5,4); //near 
+	polys[1].setVertIndexes(0,1,2,3); //far
+	polys[2].setVertIndexes(0,3,7,4); //left
+	polys[3].setVertIndexes(6,2,1,5); //right
+	polys[4].setVertIndexes(3,2,6,7); //top
+	polys[5].setVertIndexes(0,4,5,1); //bottom
+
+	//setup the clipper
+	GFX3D_Clipper::TClippedPoly tempClippedPoly;
+	boxtestClipper.clippedPolyCounter = 0;
+	boxtestClipper.clippedPolys = &tempClippedPoly;
+
+	//clip each poly
+	for(int i=0;i<6;i++) 
 	{
-		for(int vtx = 0; vtx < 4; vtx++)
-		{
-			MatrixMultVec4x4(mtxCurrent[1], boxCoords[face][vtx]);
-			MatrixMultVec4x4(mtxCurrent[0], boxCoords[face][vtx]);
+		POLY* poly = &polys[i];
+		VERT* vertTable[4] = {
+			&verts[poly->vertIndexes[0]],
+			&verts[poly->vertIndexes[1]],
+			&verts[poly->vertIndexes[2]],
+			&verts[poly->vertIndexes[3]]
+		};
 
-			boxCoords[face][vtx][0] = ((boxCoords[face][vtx][0] + boxCoords[face][vtx][3]) / (2.0f * boxCoords[face][vtx][3]));
-			boxCoords[face][vtx][1] = ((boxCoords[face][vtx][1] + boxCoords[face][vtx][3]) / (2.0f * boxCoords[face][vtx][3]));
-			boxCoords[face][vtx][2] = ((boxCoords[face][vtx][2] + boxCoords[face][vtx][3]) / (2.0f * boxCoords[face][vtx][3]));
-
-			//if(face==0)INFO("box test: testing face %i, vtx %i: %f %f %f %f\n", face, vtx, 
-			//	boxCoords[face][vtx][0], boxCoords[face][vtx][1], boxCoords[face][vtx][2], boxCoords[face][vtx][3]);
-
-			if ((boxCoords[face][vtx][0] >= 0.0f) && (boxCoords[face][vtx][0] <= 1.0f) &&
-				(boxCoords[face][vtx][1] >= 0.0f) && (boxCoords[face][vtx][1] <= 1.0f) &&
-				(boxCoords[face][vtx][2] >= 0.0f) && (boxCoords[face][vtx][2] <= 1.0f))
-			{
-				MMU_new.gxstat.tr = 1;
-				return TRUE;
-			}
+		boxtestClipper.clipPoly(poly,vertTable);
+		
+		//if any portion of this poly was retained, then the test passes.
+		if(boxtestClipper.clippedPolyCounter>0) {
+			//printf("%06d PASS\n",boxcounter);
+			MMU_new.gxstat.tr = 1;
+			break;
 		}
 	}
 
-#else
-	MMU_new.gxstat.tr = 1;				// hack
-#endif
+	if(MMU_new.gxstat.tr == 0)
+	{
+		//printf("%06d FAIL\n",boxcounter);
+	}
+
+	//MMU_new.gxstat.tr = 1;
+	//MMU_new.gxstat.tr = 0;
+
+	boxcounter++;
 
 	return TRUE;
 }
 
 BOOL gfx3d_glPosTest(u32 v)
 {
+	printf("POSTEST\n");
 #ifdef TESTS_ENABLED
 	MMU_new.gxstat.tb = 1;
 #endif
@@ -1470,6 +1485,7 @@ BOOL gfx3d_glPosTest(u32 v)
 
 void gfx3d_glVecTest(u32 v)
 {
+	printf("VECTEST\n");
 	GFX_DELAY(5);
 	//INFO("NDS_glVecTest\n");
 }
@@ -1709,19 +1725,26 @@ void gfx3d_execute3D()
 	if (isSwapBuffers) return;
 #endif
 
-	if(GFX_PIPErecv(&cmd, &param))
-	{
-		//if (isSwapBuffers) printf("Executing while swapbuffers is pending: %d:%08X\n",cmd,param);
+	//this is a SPEED HACK
+	//fifo is currently emulated more accurately than it probably needs to be.
+	//without this batch size the emuloop will escape way too often to run fast.
+	const int HACK_FIFO_BATCH_SIZE = 32;
 
-		//since we did anything at all, incur a pipeline motion cost.
-		//also, we can't let gxfifo sequencer stall until the fifo is empty.
-		//see...
-		GFX_DELAY(1); 
+	for(int i=0;i<HACK_FIFO_BATCH_SIZE;i++) {
+		if(GFX_PIPErecv(&cmd, &param))
+		{
+			//if (isSwapBuffers) printf("Executing while swapbuffers is pending: %d:%08X\n",cmd,param);
 
-		//..these guys will ordinarily set a delay, but multi-param operations won't
-		//for the earlier params.
-		//printf("%05d:%03d:%12lld: executed 3d: %02X %08X\n",currFrameCounter, nds.VCount, nds_timer , cmd, param);
-		gfx3d_execute(cmd, param);
+			//since we did anything at all, incur a pipeline motion cost.
+			//also, we can't let gxfifo sequencer stall until the fifo is empty.
+			//see...
+			GFX_DELAY(1); 
+
+			//..these guys will ordinarily set a delay, but multi-param operations won't
+			//for the earlier params.
+			//printf("%05d:%03d:%12lld: executed 3d: %02X %08X\n",currFrameCounter, nds.VCount, nds_timer , cmd, param);
+			gfx3d_execute(cmd, param);
+		} else break;
 	}
 
 
@@ -1743,9 +1766,9 @@ void gfx3d_execute3D()
 	//}
 }
 
-
 void gfx3d_glFlush(u32 v)
 {
+	boxcounter = 0;
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
@@ -2176,4 +2199,171 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	gfx3d.vertlist->count=0;
 
 	return true;
+}
+
+//-------------------
+//clipping
+//-------------------
+
+//#define CLIPLOG(X) printf(X);
+//#define CLIPLOG2(X,Y,Z) printf(X,Y,Z);
+#define CLIPLOG(X)
+#define CLIPLOG2(X,Y,Z)
+
+template<typename T>
+static T interpolate(const float ratio, const T& x0, const T& x1) {
+	return (T)(x0 + (float)(x1-x0) * (ratio));
+}
+
+
+//http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
+static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
+{
+	VERT ret;
+
+	float coord_inside = inside->coord[coord];
+	float coord_outside = outside->coord[coord];
+	float w_inside = inside->coord[3];
+	float w_outside = outside->coord[3];
+
+	float t;
+
+	if(which==-1) {
+		w_outside = -w_outside;
+		w_inside = -w_inside;
+	}
+	
+	t = (coord_inside - w_inside)/ ((w_outside-w_inside) - (coord_outside-coord_inside));
+	
+
+#define INTERP(X) ret . X = interpolate(t, inside-> X ,outside-> X )
+	
+	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
+	INTERP(texcoord[0]); INTERP(texcoord[1]);
+
+	if(CommonSettings.HighResolutionInterpolateColor)
+	{
+		INTERP(fcolor[0]); INTERP(fcolor[1]); INTERP(fcolor[2]);
+	}
+	else
+	{
+		INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
+		ret.color_to_float();
+	}
+
+	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
+	//of the clip volume through interpolation
+	if(which==-1)
+		ret.coord[coord] = -ret.coord[3];
+	else
+		ret.coord[coord] = ret.coord[3];
+
+	return ret;
+}
+
+FORCEINLINE void GFX3D_Clipper::clipSegmentVsPlane(VERT** verts, const int coord, int which)
+{
+	bool out0, out1;
+	if(which==-1) 
+		out0 = verts[0]->coord[coord] < -verts[0]->coord[3];
+	else 
+		out0 = verts[0]->coord[coord] > verts[0]->coord[3];
+	if(which==-1) 
+		out1 = verts[1]->coord[coord] < -verts[1]->coord[3];
+	else
+		out1 = verts[1]->coord[coord] > verts[1]->coord[3];
+
+	//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
+	//if(coord==2 && which==1) {
+	//	out0 = verts[0]->coord[2] < 0;
+	//	out1 = verts[1]->coord[2] < 0;
+	//}
+
+	//both outside: insert no points
+	if(out0 && out1) {
+		CLIPLOG(" both outside\n");
+	}
+
+	//both inside: insert the first point
+	if(!out0 && !out1) 
+	{
+		CLIPLOG(" both inside\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
+	}
+
+	//exiting volume: insert the clipped point and the first (interior) point
+	if(!out0 && out1)
+	{
+		CLIPLOG(" exiting\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[0],verts[1], coord, which);
+	}
+
+	//entering volume: insert clipped point
+	if(out0 && !out1) {
+		CLIPLOG(" entering\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[1],verts[0], coord, which);
+		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
+
+	}
+}
+
+FORCEINLINE void GFX3D_Clipper::clipPolyVsPlane(const int coord, int which)
+{
+	outClippedPoly.type = 0;
+	CLIPLOG2("Clipping coord %d against %f\n",coord,x);
+	for(int i=0;i<tempClippedPoly.type;i++)
+	{
+		VERT* testverts[2] = {&tempClippedPoly.clipVerts[i],&tempClippedPoly.clipVerts[(i+1)%tempClippedPoly.type]};
+		clipSegmentVsPlane(testverts, coord, which);
+	}
+
+	//this doesnt seem to help any. leaving it until i decide to get rid of it
+	//int j = index_start_table[tempClippedPoly.type-3];
+	//for(int i=0;i<tempClippedPoly.type;i++,j+=2)
+	//{
+	//	VERT* testverts[2] = {&tempClippedPoly.clipVerts[index_lookup_table[j]],&tempClippedPoly.clipVerts[index_lookup_table[j+1]]};
+	//	clipSegmentVsPlane(testverts, coord, which);
+	//}
+
+	tempClippedPoly = outClippedPoly;
+}
+
+
+void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
+{
+	int type = poly->type;
+
+	CLIPLOG("==Begin poly==\n");
+
+	tempClippedPoly.clipVerts[0] = *verts[0];
+	tempClippedPoly.clipVerts[1] = *verts[1];
+	tempClippedPoly.clipVerts[2] = *verts[2];
+	if(type==4)
+		tempClippedPoly.clipVerts[3] = *verts[3];
+
+	
+	tempClippedPoly.type = type;
+
+	clipPolyVsPlane(0, -1); 
+	clipPolyVsPlane(0, 1);
+	clipPolyVsPlane(1, -1);
+	clipPolyVsPlane(1, 1);
+	clipPolyVsPlane(2, -1);
+	clipPolyVsPlane(2, 1);
+	//TODO - we need to parameterize back plane clipping
+
+	
+	if(tempClippedPoly.type < 3)
+	{
+		//a totally clipped poly. discard it.
+		//or, a degenerate poly. we're not handling these right now
+	}
+	else
+	{
+		//TODO - build right in this list instead of copying
+		clippedPolys[clippedPolyCounter] = tempClippedPoly;
+		clippedPolys[clippedPolyCounter].poly = poly;
+		clippedPolyCounter++;
+	}
+
 }
