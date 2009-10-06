@@ -1341,6 +1341,8 @@ void gfx3d_glViewPort(u32 v)
 }
 
 int boxcounter = 0;
+int passcounter=0;
+int failcounter=0;
 BOOL gfx3d_glBoxTest(u32 v)
 {
 	MMU_new.gxstat.tr = 0;		// clear boxtest bit
@@ -1405,9 +1407,9 @@ BOOL gfx3d_glBoxTest(u32 v)
 		//yuck.. cant use the sse2 accelerated ones because vert.coords is not cache aligned or something
 		//i dunno
 		
-		void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
-		_NOSSE_MatrixMultVec4x4(mtxCurrent[1],verts[i].coord);
-		_NOSSE_MatrixMultVec4x4(mtxCurrent[0],verts[i].coord);
+		//void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
+		//_NOSSE_MatrixMultVec4x4(mtxCurrent[1],verts[i].coord);
+		//_NOSSE_MatrixMultVec4x4(mtxCurrent[0],verts[i].coord);
 	}
 
 	//craft the faces of the box (clockwise)
@@ -1424,6 +1426,42 @@ BOOL gfx3d_glBoxTest(u32 v)
 	boxtestClipper.clippedPolyCounter = 0;
 	boxtestClipper.clippedPolys = &tempClippedPoly;
 
+	////-----------------------------
+	////awesome hack:
+	////emit the box as geometry for testing
+	//for(int i=0;i<6;i++) 
+	//{
+	//	POLY* poly = &polys[i];
+	//	VERT* vertTable[4] = {
+	//		&verts[poly->vertIndexes[0]],
+	//		&verts[poly->vertIndexes[1]],
+	//		&verts[poly->vertIndexes[2]],
+	//		&verts[poly->vertIndexes[3]]
+	//	};
+
+	//	gfx3d_glBegin(1);
+	//	for(int i=0;i<4;i++) {
+	//		coord[0] = vertTable[i]->x;
+	//		coord[1] = vertTable[i]->y;
+	//		coord[2] = vertTable[i]->z;
+	//		SetVertex();
+	//	}
+	//	gfx3d_glEnd();
+	//}
+	////---------------------
+
+	//transform all coords
+	for(int i=0;i<8;i++) {
+		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
+
+		//yuck.. cant use the sse2 accelerated ones because vert.coords is not cache aligned or something
+		//i dunno
+		
+		void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
+		_NOSSE_MatrixMultVec4x4(mtxCurrent[1],verts[i].coord);
+		_NOSSE_MatrixMultVec4x4(mtxCurrent[0],verts[i].coord);
+	}
+
 	//clip each poly
 	for(int i=0;i<6;i++) 
 	{
@@ -1439,17 +1477,20 @@ BOOL gfx3d_glBoxTest(u32 v)
 		
 		//if any portion of this poly was retained, then the test passes.
 		if(boxtestClipper.clippedPolyCounter>0) {
-			//printf("%06d PASS\n",boxcounter);
+			//printf("%06d PASS %d\n",boxcounter,gxFIFO.size);
 			MMU_new.gxstat.tr = 1;
+			passcounter++;
 			break;
 		}
 	}
 
 	if(MMU_new.gxstat.tr == 0)
 	{
-		//printf("%06d FAIL\n",boxcounter);
+		//printf("%06d FAIL %d\n",boxcounter,gxFIFO.size);
+		failcounter++;
 	}
-
+	
+	//if(boxcounter==0)
 	//MMU_new.gxstat.tr = 1;
 	//MMU_new.gxstat.tr = 0;
 
@@ -1593,6 +1634,7 @@ unsigned short gfx3d_glGetVecRes(unsigned int index)
 //#define _3D_LOG_EXEC
 void gfx3d_execute(u8 cmd, u32 param)
 {
+	//printf("*** gxFIFO: exec 0x%02X, size %03i\n", cmd, gxFIFO.size);
 #ifdef _3D_LOG_EXEC
 	u32 gxstat2 = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	INFO("*** gxFIFO: exec 0x%02X, tail %03i, gxstat 0x%08X (timer %i)\n", cmd, gxFIFO.tail, gxstat2, nds_timer);
@@ -1768,7 +1810,10 @@ void gfx3d_execute3D()
 
 void gfx3d_glFlush(u32 v)
 {
+	//printf("flush: fail: %d pass:%d\n",failcounter,passcounter);
 	boxcounter = 0;
+	failcounter=0;
+	passcounter=0;
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
@@ -1931,6 +1976,9 @@ void gfx3d_sendCommandToFIFO(u32 val)
 void gfx3d_sendCommand(u32 cmd, u32 param)
 {
 	cmd = (cmd & 0x01FF) >> 2;
+
+	//printf("gxFIFO: send 0x%02X: val=0x%08X, size=%03i (direct)\n", cmd, param, gxFIFO.size);
+
 #ifdef _3D_LOG
 	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i (direct)\n", cmd, param, gxPIPE.tail, gxFIFO.tail);
 #endif
