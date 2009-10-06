@@ -1501,7 +1501,9 @@ BOOL gfx3d_glBoxTest(u32 v)
 
 BOOL gfx3d_glPosTest(u32 v)
 {
-	printf("POSTEST\n");
+	//this is apparently tested by transformers decepticons and ultimate spiderman
+
+	//printf("POSTEST\n");
 #ifdef TESTS_ENABLED
 	MMU_new.gxstat.tb = 1;
 #endif
@@ -1526,9 +1528,30 @@ BOOL gfx3d_glPosTest(u32 v)
 
 void gfx3d_glVecTest(u32 v)
 {
-	printf("VECTEST\n");
 	GFX_DELAY(5);
-	//INFO("NDS_glVecTest\n");
+
+	printf("VECTEST\n");
+
+	CACHE_ALIGN float normal[4] = { normalTable[v&1023],
+						normalTable[(v>>10)&1023],
+						normalTable[(v>>20)&1023],
+						1};
+
+	MatrixMultVec4x4(mtxCurrent[2], normal);
+
+	s16 x = (s16)(normal[0]);
+	s16 y = (s16)(normal[1]);
+	s16 z = (s16)(normal[2]);
+
+	x = rand();
+	y = rand();
+	z = rand();
+
+	MMU_new.gxstat.tb = 0;		// clear busy
+	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x630, x);
+	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x632, y);
+	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x634, z);
+
 }
 //================================================================================= Geometry Engine
 //================================================================================= (end)
