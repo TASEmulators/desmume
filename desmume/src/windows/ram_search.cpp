@@ -1,5 +1,5 @@
 //RamSearch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
-//Authors: Upthorn, Nitsuja, adelikat
+//Authors: Nitsuja, Upthorn, adelikat
 
 // A few notes about this implementation of a RAM search window:
 //
@@ -61,7 +61,8 @@ struct MemoryRegion
 	unsigned int hardwareAddress; // hardware address of the start of this region
 	unsigned int size; // number of bytes to the end of this region
 	unsigned char* softwareAddress; // pointer to the start of the live emulator source values for this region
-	BOOL byteSwapped; // true if this is a byte-swapped region of memory
+	//BOOL byteSwapped; // true if this is a byte-swapped region of memory
+	BOOL isDtcm;
 
 	unsigned int virtualIndex; // index into s_prevValues, s_curValues, and s_numChanges, valid after being initialized in ResetMemoryRegions()
 	unsigned int itemIndex; // index into listbox items, valid when s_itemIndicesInvalid is false
@@ -77,7 +78,9 @@ static BOOL s_itemIndicesInvalid = true; // if true, the link from listbox items
 static BOOL s_prevValuesNeedUpdate = true; // if true, the "prev" values should be updated using the "cur" values on the next frame update signaled
 static unsigned int s_maxItemIndex = 0; // max currently valid item index, the listbox sometimes tries to update things past the end of the list so we need to know this to ignore those attempts
 
-static const MemoryRegion s_prgRegion    = {  0x02000000, 0x400000, (unsigned char*)MMU.MAIN_MEM,     false};
+static const MemoryRegion s_mainMemRegion = {  0x02000000, 0x400000, (unsigned char*)MMU.MAIN_MEM,     false};
+static const MemoryRegion s_dtcmRegion    = {  0x027C0000,   0x4000, (unsigned char*)MMU.ARM9_DTCM,     true};
+static const MemoryRegion s_itcmRegion    = {  0x01000000,   0x8000, (unsigned char*)MMU.ARM9_ITCM,    false};
 
 /*
 static const MemoryRegion s_prgRegion    = {  0x020000, SEGACD_RAM_PRG_SIZE, (unsigned char*)Ram_Prg,     true};
@@ -112,8 +115,10 @@ void ResetMemoryRegions()
 //	Clear_Sound_Buffer();
 
 	s_activeMemoryRegions.clear();
-		
-	s_activeMemoryRegions.push_back(s_prgRegion);
+
+	s_activeMemoryRegions.push_back(s_mainMemRegion);
+	s_activeMemoryRegions.push_back(s_itcmRegion);
+	s_activeMemoryRegions.push_back(s_dtcmRegion);
 	
 	/*if(Genesis_Started || _32X_Started || SegaCD_Started)
 	{
@@ -135,10 +140,10 @@ void ResetMemoryRegions()
 	{
 		MemoryRegion& region = *iter;
 		region.virtualIndex = nextVirtualIndex;
-		assert(((intptr_t)region.softwareAddress & 1) == 0 && "somebody need to reimplement ReadValueAtSoftwareAddress()");
+		assert(((intptr_t)region.softwareAddress & 1) == 0 && "somebody needs to reimplement ReadValueAtSoftwareAddress()");
 		nextVirtualIndex = region.virtualIndex + region.size;
 	}
-//	assert(nextVirtualIndex <= MAX_RAM_SIZE); TODO
+	assert(nextVirtualIndex <= MAX_RAM_SIZE);
 }
 
 // eliminates a range of hardware addresses from the search results
@@ -181,7 +186,7 @@ int DeactivateRegion(MemoryRegion& region, MemoryList::iterator& iter, unsigned 
 	{
 		// split region
 		int eraseSize = (hardwareAddress + size) - region.hardwareAddress;
-		MemoryRegion region2 = {region.hardwareAddress + eraseSize, region.size - eraseSize, region.softwareAddress + eraseSize, region.byteSwapped, region.virtualIndex + eraseSize};
+		MemoryRegion region2 = {region.hardwareAddress + eraseSize, region.size - eraseSize, region.softwareAddress + eraseSize, /*region.byteSwapped,*/ region.isDtcm, region.virtualIndex + eraseSize};
 		region.size = hardwareAddress - region.hardwareAddress;
 		iter = s_activeMemoryRegions.insert(++iter, region2);
 		s_itemIndicesInvalid = TRUE;
@@ -298,9 +303,9 @@ void UpdateRegionsT()
 		++iter;
 		const MemoryRegion* nextRegion = (iter == s_activeMemoryRegions.end()) ? NULL : &*iter;
 
-		if(region.byteSwapped)
-			UpdateRegionT<stepType, compareType, 1>(region, nextRegion);
-		else
+		//if(region.byteSwapped)
+		//	UpdateRegionT<stepType, compareType, 1>(region, nextRegion);
+		//else
 			UpdateRegionT<stepType, compareType, 0>(region, nextRegion);
 	}
 
@@ -359,7 +364,8 @@ void ItemIndexToVirtualRegion(unsigned int itemIndex, MemoryRegion& virtualRegio
 	virtualRegion.hardwareAddress = region.hardwareAddress + bytesWithinRegion;
 	virtualRegion.softwareAddress = region.softwareAddress + bytesWithinRegion;
 	virtualRegion.virtualIndex = region.virtualIndex + bytesWithinRegion;
-	virtualRegion.byteSwapped = region.byteSwapped;
+	//virtualRegion.byteSwapped = region.byteSwapped;
+	virtualRegion.isDtcm = region.isDtcm;
 	virtualRegion.itemIndex = itemIndex;
 	return;
 }
@@ -432,7 +438,10 @@ unsigned int GetHardwareAddressFromItemIndex(unsigned int itemIndex)
 {
 	MemoryRegion virtualRegion;
 	ItemIndexToVirtualRegion<stepType,compareType>(itemIndex, virtualRegion);
-	return virtualRegion.hardwareAddress;
+	unsigned int address = virtualRegion.hardwareAddress;
+	if(virtualRegion.isDtcm)
+		address = (address & 0x3FFF) | MMU.DTCMRegion;
+	return address;
 }
 
 // this one might be unreliable, haven't used it much
@@ -441,6 +450,9 @@ unsigned int HardwareAddressToItemIndex(unsigned int hardwareAddress)
 {
 	if(s_itemIndicesInvalid)
 		CalculateItemIndices(sizeof(stepType));
+
+	if((hardwareAddress & ~0x3FFF) == MMU.DTCMRegion)
+		hardwareAddress = (hardwareAddress & 0x3FFF) | s_dtcmRegion.hardwareAddress;
 
 	for(MemoryList::iterator iter = s_activeMemoryRegions.begin(); iter != s_activeMemoryRegions.end(); ++iter)
 	{
@@ -743,7 +755,7 @@ bool Set_RS_Val()
 			break;
 		case 'a':
 			rs_val = ReadControlInt(IDC_EDIT_COMPAREADDRESS, true, success);
-			if(!success || rs_val < 0 || rs_val > 0x06040000)
+			if(!success || rs_val < 0 /*|| rs_val > 0x060400FF*/)
 				return false;
 			break;
 		case 'n': {
@@ -1215,8 +1227,13 @@ void Update_RAM_Search() //keeps RAM values up to date in the search and watch w
 
 	if(RamSearchHWnd)
 	{
+		static u32 lastDtcmRegion = 0;
+		bool dtcmChanged = (lastDtcmRegion != MMU.DTCMRegion);
+		if(dtcmChanged)
+			lastDtcmRegion = MMU.DTCMRegion;
+
 		HWND lv = GetDlgItem(RamSearchHWnd,IDC_RAMLIST);
-		if(prevValuesNeededUpdate != s_prevValuesNeedUpdate)
+		if(prevValuesNeededUpdate != s_prevValuesNeedUpdate || dtcmChanged)
 		{
 			// previous values got updated, refresh everything visible
 			ListView_Update(lv, -1);
@@ -1437,6 +1454,17 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			rs_val_valid = Set_RS_Val();
 
 			ListView_SetCallbackMask(GetDlgItem(hDlg,IDC_RAMLIST), LVIS_FOCUSED|LVIS_SELECTED);
+
+			// HACK: somehow the listbox disappears the second time the window opens
+			// unless we do this. obviously some specific part of this is all that matters
+			// but I haven't felt like tracking it down yet.
+			{
+				char typeSize = rs_type_size;
+				rs_type_size = ((typeSize == 'w') ? 'b' : 'w');
+				signal_new_size();
+				rs_type_size = typeSize;
+				signal_new_size();
+			}
 
 			return true;
 		}	break;
