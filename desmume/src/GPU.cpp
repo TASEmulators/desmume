@@ -369,7 +369,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			break;
 		case 3: // Display from Main RAM
 			// nothing to be done here
-			// see GPU_ligne who gets data from FIFO.
+			// see GPU_RenderLine who gets data from FIFO.
 			break;
 	}
 
@@ -1948,7 +1948,7 @@ void GFXDummyOnScreenText(char *string, ...)
 
 
 /*****************************************************************************/
-//			GPU_ligne
+//			GPU_RenderLine
 /*****************************************************************************/
 
 void GPU_set_DISPCAPCNT(u32 val)
@@ -1999,7 +1999,7 @@ void GPU_set_DISPCAPCNT(u32 val)
 			gpu->dispCapCnt.srcA, gpu->dispCapCnt.srcB);*/
 }
 
-static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
+static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 {
 	CACHE_ALIGN u8 spr[512];
 	CACHE_ALIGN u8 sprAlpha[256];
@@ -2166,7 +2166,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	}
 }
 
-template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
+template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 {
 	//this macro takes advantage of the fact that there are only two possible values for capx
 	#define CAPCOPY(SRC,DST) \
@@ -2352,7 +2352,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 	}
 }
 
-static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
+static INLINE void GPU_RenderLine_MasterBrightness(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 
@@ -2505,7 +2505,7 @@ void GPU::update_winh(int WIN_NUM)
 	}
 }
 
-void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
+void GPU_RenderLine(NDS_Screen * screen, u16 l, bool skip)
 {
 	GPU * gpu = screen->gpu;
 
@@ -2530,7 +2530,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		gpu->currLine = l;
 		if (gpu->core == GPU_MAIN) 
 		{
-			GPU_ligne_DispCapture<true>(l);
+			GPU_RenderLine_DispCapture<true>(l);
 			if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
 		}
 		return;
@@ -2551,7 +2551,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		if(!(gpu->core == GPU_MAIN && (gpu->dispCapCnt.enabled || l == 0 || l == 191)))
 		{
 			gpu->currLine = l;
-			GPU_ligne_MasterBrightness(screen, l);
+			GPU_RenderLine_MasterBrightness(screen, l);
 			return;
 		}
 	}
@@ -2585,7 +2585,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		GPU_tempScanline = screen->gpu->currDst = (u8 *)GPU_tempScanlineBuffer;
 	}
 
-	GPU_ligne_layer(screen, l);
+	GPU_RenderLine_layer(screen, l);
 
 	switch (gpu->dispMode)
 	{
@@ -2626,12 +2626,12 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		//BUG!!! if someone is capturing and displaying both from the fifo, then it will have been 
 		//consumed above by the display before we get here
 		//(is that even legal? i think so)
-		GPU_ligne_DispCapture<false>(l);
+		GPU_RenderLine_DispCapture<false>(l);
 		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
 	}
 
 
-	GPU_ligne_MasterBrightness(screen, l);
+	GPU_RenderLine_MasterBrightness(screen, l);
 }
 
 void gpu_savestate(EMUFILE* os)
