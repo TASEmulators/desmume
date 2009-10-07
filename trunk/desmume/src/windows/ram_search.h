@@ -1,5 +1,5 @@
 //RamSearch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
-//Authors: Upthorn, Nitsuja, adelikat
+//Authors: Nitsuja, Upthorn, adelikat
 
 #ifndef RAM_SEARCH_H
 #define RAM_SEARCH_H
@@ -25,7 +25,7 @@
 
 //#define MAX_RAM_SIZE (0x112000)
 //#define MAX_RAM_SIZE (0xD2000)
-#define MAX_RAM_SIZE (0x400000)
+#define MAX_RAM_SIZE (0x400000 + 0x8000 + 0x4000)
 
 extern char rs_type_size;
 extern int ResultCount;

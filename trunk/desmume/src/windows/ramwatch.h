@@ -1,5 +1,5 @@
 //RamWatch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
-//Authors: Upthorn, Nitsuja, adelikat
+//Authors: adelikat, Upthorn, Nitsuja
 
 #ifndef RAMWATCH_H
 #define RAMWATCH_H
