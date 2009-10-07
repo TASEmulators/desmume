@@ -937,7 +937,7 @@ void GPU_addBack(GPU *, u8 num);
 int GPU_ChangeGraphicsCore(int coreid);
 
 void GPU_set_DISPCAPCNT(u32 val) ;
-void GPU_ligne(NDS_Screen * screen, u16 l, bool skip = false) ;
+void GPU_RenderLine(NDS_Screen * screen, u16 l, bool skip = false) ;
 void GPU_setMasterBrightness (GPU *gpu, u16 val);
 
 inline void GPU_setWIN0_H(GPU* gpu, u16 val) { gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF; gpu->need_update_winh[0] = true; }
