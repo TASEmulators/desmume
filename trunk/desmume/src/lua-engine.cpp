@@ -4356,6 +4356,7 @@ void registerLibs(lua_State* L)
 	luaL_register(L, "input", inputlib); // for user input
 	luaL_register(L, "movie", movielib);
 	luaL_register(L, "sound", soundlib);
+	luaL_register(L, "bit", bit_funcs); // LuaBitOp library
 
 	luaL_register(L, "agg", aggbasicshapes);
 	luaL_register(L, "agg", agggeneralattributes);
@@ -4369,11 +4370,13 @@ void registerLibs(lua_State* L)
 	lua_register(L, "addressof", addressof);
 	lua_register(L, "copytable", copytable);
 
+	// old bit operation functions
 	lua_register(L, "AND", bit_band);
 	lua_register(L, "OR", bit_bor);
 	lua_register(L, "XOR", bit_bxor);
 	lua_register(L, "SHIFT", bit_bshift_emulua);
 	lua_register(L, "BIT", bitbit);
+
 	luabitop_validate(L);
 
 	// populate s_cFuncInfoMap the first time
