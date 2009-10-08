@@ -70,24 +70,8 @@ static int issoundmuted;
 
 //////////////////////////////////////////////////////////////////////////////
 
-static volatile bool doterminate;
-static volatile bool terminated;
-
 extern volatile int win_sound_samplecounter;
 
-DWORD WINAPI SNDDXThread( LPVOID )
-{
-	for(;;) {
-		if(doterminate) break;
-		{
-			Lock lock;
-			SPU_Emulate_user();
-		}
-		Sleep(10);
-	}
-	terminated = true;
-	return 0;
-}
 
 int SNDDXInit(int buffersize)
 {
@@ -185,10 +169,6 @@ int SNDDXInit(int buffersize)
 	soundvolume = DSBVOLUME_MAX;
 	issoundmuted = 0;
 
-	doterminate = false;
-	terminated = false;
-	CreateThread(0,0,SNDDXThread,0,0,0);
-
 	return 0;
 }
 
@@ -197,11 +177,6 @@ int SNDDXInit(int buffersize)
 void SNDDXDeInit()
 {
 	DWORD status=0;
-
-	doterminate = true;
-	while(!terminated) {
-		Sleep(1);
-	}
 
 	if (lpDSB2)
 	{

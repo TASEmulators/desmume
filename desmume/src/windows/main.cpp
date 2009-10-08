@@ -1198,6 +1198,7 @@ static void StepRunLoop_Core()
 	{
 		Lock lock;
 		NDS_exec<false>();
+		SPU_Emulate_user();
 		win_sound_samplecounter = 735;
 	}
 	inFrameBoundary = true;
