@@ -2116,14 +2116,12 @@ void Sequencer::execHardware()
 		}
 	}
 
-#ifndef PUBLIC_RELEASE
 #ifdef EXPERIMENTAL_WIFI
 	if(wifi.isTriggered())
 	{
 		WIFI_usTrigger();
 		wifi.timestamp += kWifiCycles;
 	}
-#endif
 #endif
 	
 	if(divider.isTriggered()) divider.exec();
