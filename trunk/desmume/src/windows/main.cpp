@@ -1198,8 +1198,8 @@ static void StepRunLoop_Core()
 	{
 		Lock lock;
 		NDS_exec<false>();
-		SPU_Emulate_user();
 		win_sound_samplecounter = 735;
+		SPU_Emulate_user();
 	}
 	inFrameBoundary = true;
 	DRV_AviVideoUpdate((u16*)GPU_screen);
@@ -2990,6 +2990,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
+			SPU_Pause(1);
+
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
 			MENUITEMINFO mii;
@@ -3125,11 +3127,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			return 0;
 		}
-		/*case WM_EXITMENULOOP:
+	case WM_EXITMENULOOP:
 		{
-		if (tmp_execute==2) NDS_UnPause();
-		return 0;
-		}*/
+			SPU_Pause(0);
+			return 0;
+		}
 
 	case WM_CREATE:
 		{
