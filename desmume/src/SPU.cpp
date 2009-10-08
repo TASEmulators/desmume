@@ -515,15 +515,6 @@ void SPU_struct::KeyOn(int channel)
 
 //////////////////////////////////////////////////////////////////////////////
 
-u32 SPU_ReadLong(u32 addr)
-{
-	addr &= 0xFFF;
-
-	return T1ReadLong(MMU.ARM7_REG, addr);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
 void SPU_struct::WriteByte(u32 addr, u8 val)
 {
 	channel_struct &thischan=channels[(addr >> 4) & 0xF];

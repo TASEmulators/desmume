@@ -1049,12 +1049,12 @@ TEMPLATE static u32 isDebugger()
 
 TEMPLATE static u32 SoundBias()
 {
-     u32 current = SPU_ReadLong(0x4000504);
-     if (cpu->R[0] > current)
-	SPU_WriteLong(0x4000504, current + 0x1);
-     else
-	SPU_WriteLong(0x4000504, current - 0x1);
-     return cpu->R[1];
+     u32 curBias = _MMU_read32<ARMCPU_ARM7>(0x04000504);
+	 u32 newBias = (curBias == 0) ? 0x000:0x200;
+	 u32 delay = (newBias > curBias) ? (newBias-curBias) : (curBias-newBias);
+
+	 _MMU_write32<ARMCPU_ARM7>(0x04000504, newBias);
+     return cpu->R[1] * delay;
 }
 
 TEMPLATE static u32 getBootProcs()
