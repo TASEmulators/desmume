@@ -870,9 +870,10 @@ static void cflash_write(unsigned int address,unsigned int data)
 						}
 
 						CFLASHLOG("Wrote %u bytes\n", written);
+					
+						currLBA += 512;
+						sector_write_index = 0;
 					}
-					currLBA += 512;
-					sector_write_index = 0;
 				}
 				else		// TODO: write to real partition
 				{
