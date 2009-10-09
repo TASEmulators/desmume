@@ -1021,7 +1021,7 @@ void SPU_Emulate_core()
 		SPU_MixAudio<false>(SPU_core,spu_core_samples);
 }
 
-void SPU_Emulate_user()
+void SPU_Emulate_user(bool mix)
 {
 	if(!SPU_user)
 		return;
@@ -1037,7 +1037,7 @@ void SPU_Emulate_user()
 		//printf("mix %i samples\n", audiosize);
 		if (audiosize > SPU_user->bufsize)
 			audiosize = SPU_user->bufsize;
-		SPU_MixAudio<true>(SPU_user,audiosize);
+		if (mix) SPU_MixAudio<true>(SPU_user,audiosize);
 		SNDCore->UpdateAudio(SPU_user->outbuf, audiosize);
 	}
 }

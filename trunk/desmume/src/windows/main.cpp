@@ -265,6 +265,7 @@ extern bool userTouchesScreen;
 int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
 int sndvolume=100;
+HANDLE hSoundThreadWakeup = INVALID_HANDLE_VALUE;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
@@ -1199,7 +1200,7 @@ static void StepRunLoop_Core()
 		Lock lock;
 		NDS_exec<false>();
 		win_sound_samplecounter = 735;
-		SPU_Emulate_user();
+		SetEvent(hSoundThreadWakeup);
 	}
 	inFrameBoundary = true;
 	DRV_AviVideoUpdate((u16*)GPU_screen);
@@ -1819,6 +1820,8 @@ int _main()
 	display_invoke_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	display_wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
+	hSoundThreadWakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
+
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
 	gdbstub_handle_t arm7_gdb_stub;
@@ -2272,6 +2275,8 @@ int _main()
 	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
 
 	UnregWndClass("DeSmuME");
+
+	CloseHandle(hSoundThreadWakeup);
 
 	return 0;
 }
@@ -2990,8 +2995,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
-			SPU_Pause(1);
-
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
 			MENUITEMINFO mii;
@@ -3125,11 +3128,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			// recent/active scripts menu
 			PopulateLuaSubmenu();
 
-			return 0;
-		}
-	case WM_EXITMENULOOP:
-		{
-			SPU_Pause(0);
 			return 0;
 		}
 

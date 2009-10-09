@@ -140,7 +140,7 @@ void SPU_WriteByte(u32 addr, u8 val);
 void SPU_WriteWord(u32 addr, u16 val);
 void SPU_WriteLong(u32 addr, u32 val);
 void SPU_Emulate_core(void);
-void SPU_Emulate_user(void);
+void SPU_Emulate_user(bool mix = true);
 
 extern SPU_struct *SPU_core, *SPU_user;
 extern int spu_core_samples;
