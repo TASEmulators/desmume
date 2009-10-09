@@ -1188,6 +1188,11 @@ LRESULT CustomDraw (LPARAM lParam)
 //extern "C" int disableRamSearchUpdate;
 void Update_RAM_Search() //keeps RAM values up to date in the search and watch windows
 {
+	if(RamWatchHWnd)
+	{
+		Update_RAM_Watch();
+	}
+
 	if (!RamSearchHWnd) return;
 //	if(disableRamSearchUpdate)
 //		return;
@@ -1270,11 +1275,6 @@ void Update_RAM_Search() //keeps RAM values up to date in the search and watch w
 				}
 			}
 		}
-	}
-
-	if(RamWatchHWnd)
-	{
-		Update_RAM_Watch();
 	}
 }
 
