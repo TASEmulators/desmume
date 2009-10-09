@@ -71,7 +71,37 @@ static int issoundmuted;
 //////////////////////////////////////////////////////////////////////////////
 
 //extern volatile int win_sound_samplecounter;
+HANDLE hSNDDXThread = INVALID_HANDLE_VALUE;
+extern HANDLE hSoundThreadWakeup;
+bool bTerminateSoundThread = false;
+bool bSilence = false;
 
+DWORD WINAPI SNDDXThread( LPVOID )
+{
+	for(;;) 
+	{
+		if(bTerminateSoundThread) break;
+
+		if (bSilence)
+		{
+			if (WaitForSingleObject(hSoundThreadWakeup, 10) == WAIT_OBJECT_0)
+				bSilence = false;
+		}
+		else
+		{
+			// If the sound thread wakeup event is not signaled after a quarter second, output silence
+			if (WaitForSingleObject(hSoundThreadWakeup, 250) == WAIT_TIMEOUT)
+				bSilence = true;
+		}
+
+		{
+			Lock lock;
+			SPU_Emulate_user(!bSilence);
+		}
+	}
+
+	return 0;
+}
 
 int SNDDXInit(int buffersize)
 {
@@ -169,6 +199,10 @@ int SNDDXInit(int buffersize)
 	soundvolume = DSBVOLUME_MAX;
 	issoundmuted = 0;
 
+	bSilence = false;
+	bTerminateSoundThread = false;
+	hSNDDXThread = CreateThread(0, 0, SNDDXThread, 0, 0, 0);
+
 	return 0;
 }
 
@@ -177,6 +211,10 @@ int SNDDXInit(int buffersize)
 void SNDDXDeInit()
 {
 	DWORD status=0;
+
+	bTerminateSoundThread = true;
+	SetEvent(hSoundThreadWakeup);
+	WaitForSingleObject(hSNDDXThread, INFINITE);
 
 	if (lpDSB2)
 	{
@@ -200,6 +238,8 @@ void SNDDXDeInit()
 		lpDS8->Release();
 		lpDS8 = NULL;
 	}
+
+	delete stereodata16;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -211,14 +251,6 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 	DWORD buffer1_size, buffer2_size;
 	DWORD status;
 
-/*	int samplecounter;
-	{
-		Lock lock;
-		samplecounter = win_sound_samplecounter -= num_samples;
-	}
-
-	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
-*/
 	lpDSB2->GetStatus(&status);
 
 	if (status & DSBSTATUS_BUFFERLOST)
@@ -226,12 +258,13 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
 	lpDSB2->Lock(soundoffset, num_samples * sizeof(s16) * 2, &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
 
-/*	if(silence) {
+	if(bSilence) 
+	{
 		memset(buffer1, 0, buffer1_size);
 		if(buffer2)
 			memset(buffer2, 0, buffer2_size);
 	}
-	else*/
+	else
 	{
 		memcpy(buffer1, buffer, buffer1_size);
 		if (buffer2)
