@@ -29,6 +29,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <time.h>
+#include <glib.h>
 #include "debug.h"
 
 #include "aggdraw.h"
@@ -36,7 +37,6 @@
 #include "NDSSystem.h"
 #include "mic.h"
 #include "saves.h"
-#include "glib.h"
 
 bool HudEditorMode = false;
 OSDCLASS	*osd = NULL;
