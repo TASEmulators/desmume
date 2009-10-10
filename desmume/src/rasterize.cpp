@@ -1288,6 +1288,7 @@ static void SoftRastRender()
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
 		//because it is too convoluted right now.
 		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
+#if 0
 		//TODO - is this good enough for quads and other shapes? we think so.
 		float ab[2], ac[2];
 		Vector2Copy(ab, verts[1].coord);
@@ -1296,6 +1297,18 @@ static void SoftRastRender()
 		Vector2Subtract(ac, verts[0].coord);
 		float cross = Vector2Cross(ab, ac);
 		polyAttr.backfacing = (cross>0);
+#else
+		// actually, the answer to the above question seems to be NO, it's not good enough,
+		// because we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
+		// this version should handle those cases better.
+		int n = type - 1;
+		float facing = (verts[0].y + verts[n].y) * (verts[0].x - verts[n].x)
+		             + (verts[1].y + verts[0].y) * (verts[1].x - verts[0].x)
+		             + (verts[2].y + verts[1].y) * (verts[2].x - verts[1].x);
+		for(int i = 2; i < n; i++)
+			facing += (verts[i+1].y + verts[i].y) * (verts[i+1].x - verts[i].x);
+		polyAttr.backfacing = (facing < 0);
+#endif
 
 		if(!polyAttr.isVisible(polyAttr.backfacing)) {
 			culled++;
