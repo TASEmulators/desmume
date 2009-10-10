@@ -1,0 +1,9 @@
+#!/bin/sh
+
+for filename in desmume.app/libs/*
+do
+  echo $filename
+  otool -L $filename | grep "Cairo.framework"
+  otool -L $filename | grep "Gtk.framework"
+  otool -L $filename | grep "GLib.framework"
+done;
