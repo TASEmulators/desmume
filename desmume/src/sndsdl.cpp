@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include "types.h"
 #include "SPU.h"
 #include "sndsdl.h"

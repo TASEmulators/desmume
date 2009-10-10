@@ -88,17 +88,17 @@ if test "x$osmesa" = "xyes" ; then
 fi
 
 dnl - Check for GTK and/or libglade
-FOUND_GLIB=no
+FOUND_GLIB=yes
 HAVE_ALSA=no
 GLIB_VER=2.8
 GTK_VER=2.6
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
   if test ! "x$HAVE_PKG" = "x" ; then
-    PKG_CHECK_MODULES(GLIB,
-                      glib-2.0 >= $GLIB_VER,
-                      FOUND_GLIB=yes,
-                      FOUND_GLIB=no)
+    #PKG_CHECK_MODULES(GLIB,
+    #                  glib-2.0 >= $GLIB_VER,
+    #                  FOUND_GLIB=yes,
+    #                  FOUND_GLIB=no)
 
     PKG_CHECK_MODULES(GTK,
                       gtk+-2.0 >= $GTK_VER,
@@ -236,7 +236,11 @@ case $target in
     UI_DIR="windows"
     ;;
   *darwin*)
-    LIBS="$LIBS -framework OpenGL"
+    LIBS="$LIBS -framework OpenGL -framework Gtk -framework GLib"
+    CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers "
+    AC_SUBST(CPPFLAGS)
+    GLIB_LIBS=""
+    AC_SUBST(GLIB_LIBS)
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;

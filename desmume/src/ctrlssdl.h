@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 //#include <pthread.h>
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include "MMU.h"
 
 #include "types.h"
