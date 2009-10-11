@@ -87,6 +87,11 @@ if test "x$osmesa" = "xyes" ; then
 	])
 fi
 
+dnl - hack to help zero build gtk frontend macos x package
+AC_ARG_ENABLE(macosxhack,
+	      [AC_HELP_STRING(--enable-macosxhack, hack to build MacOSX package)],
+	      [GTK_MACOSX_HACK=yes])
+
 dnl - Check for GTK and/or libglade
 FOUND_GLIB=no
 HAVE_ALSA=no
@@ -173,9 +178,10 @@ else
    AC_MSG_ERROR([Antigrain library is required to build desmume])
 fi
 
-dnl - depends on glib, reference pkg-config since it is needed for checking glib
 if test "x$FOUND_GLIB" = "xno"; then
-   AC_MSG_ERROR([Glib and pkg-config are required to build desmume])
+   if test ! "x$GTK_MACOSX_HACK" = "xyes"; then
+     AC_MSG_ERROR([Glib is required to build desmume])
+   fi
 fi
 
 dnl - If the gtkGLext package is available define the corresponding C macro
@@ -236,11 +242,14 @@ case $target in
     UI_DIR="windows"
     ;;
   *darwin*)
-    LIBS="$LIBS -framework OpenGL -framework Gtk -framework GLib"
-    CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers "
-    AC_SUBST(CPPFLAGS)
-    GLIB_LIBS=""
-    AC_SUBST(GLIB_LIBS)
+    LIBS="$LIBS -framework OpenGL"
+    if test "x$GTK_MACOSX_HACK" = "xyes" ; then
+      LIBS="$LIBS -framework OpenGL -framework Gtk -framework GLib"
+      CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers "
+      AC_SUBST(CPPFLAGS)
+      GLIB_LIBS=""
+      AC_SUBST(GLIB_LIBS)
+    fi
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;
