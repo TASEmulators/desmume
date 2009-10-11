@@ -533,7 +533,9 @@ int NDS_Init( void) {
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
 
+#ifdef EXPERIMENTAL_WIFI
 	WIFI_Init() ;
+#endif
 
 	nds.FW_ARM9BootCode = NULL;
 	nds.FW_ARM7BootCode = NULL;
@@ -2626,7 +2628,9 @@ void NDS_Reset()
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
 
+#ifdef EXPERIMENTAL_WIFI
 	WIFI_Reset();
+#endif
 
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 
