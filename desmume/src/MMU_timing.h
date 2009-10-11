@@ -47,7 +47,7 @@
 	//(SOMETIMES THIS IS A BIG SPEED HIT!)
 
 	// enables emulation of code fetch waits.
-#define ACCOUNT_FOR_CODE_FETCH_CYCLES
+//#define ACCOUNT_FOR_CODE_FETCH_CYCLES
 
 	// makes access to DTCM (arm9 only) fast.
 #define ACCOUNT_FOR_DATA_TCM_SPEED
@@ -255,6 +255,7 @@ extern MMU_struct_timing MMU_timing;
 // calculates the time a single memory access takes,
 // in units of cycles of the current processor.
 // this function replaces what used to be MMU_WAIT16 and MMU_WAIT32.
+// this may have side effects, so don't call it more than necessary.
 template<int PROCNUM, MMU_ACCESS_TYPE AT, int READSIZE, MMU_ACCESS_DIRECTION DIRECTION>
 FORCEINLINE u32 _MMU_accesstime(u32 addr, bool sequential)
 {
