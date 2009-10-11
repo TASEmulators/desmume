@@ -7230,6 +7230,7 @@ TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 	
 	if(cpu->swi_tab) {
 		swinum &= 0x1F;
+		//printf("%d ARM SWI %d\n",PROCNUM,swinum);
 		return cpu->swi_tab[swinum]() + 3;
 	} else {
         /* TODO (#1#): translocated SWI vectors */
