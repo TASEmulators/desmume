@@ -863,6 +863,7 @@ TEMPLATE static  u32 FASTCALL OP_SWI_THUMB(const u32 i)
 		 //zero 30-jun-2009 - but they say that the ideas 0xFF should crash the device...
 		 //u32 swinum = cpu->instruction & 0xFF;
 		swinum &= 0x1F;
+		//printf("%d ARM SWI %d\n",PROCNUM,swinum);
         return cpu->swi_tab[swinum]() + 3;  
 	}
 	else {

@@ -505,7 +505,6 @@ void DrawHUD()
 	if (CommonSettings.hud.FpsDisplay) 
 	{
 		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d (%02d%%)%s", Hud.fps, Hud.fps3d, Hud.arm9load, driver->EMU_IsEmulationPaused() ? " (paused)" : "");
-		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y+20, "[%07d]", Hud.cpuloopIterationCount);
 	}
 
 	if (CommonSettings.hud.FrameCounterDisplay) 
@@ -531,7 +530,7 @@ void DrawHUD()
 	#ifdef WIN32
 	if (CommonSettings.hud.ShowMicrophone) 
 	{
-		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
+		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%03d [%07d]",MicDisplay, Hud.cpuloopIterationCount);
 	}
 	#endif
 
