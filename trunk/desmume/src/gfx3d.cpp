@@ -45,7 +45,7 @@
 #include "readwrite.h"
 #include "FIFO.h"
 #include <queue>
-#include "movie.h"
+//#include "movie.h"
 
 /*
 thoughts on flush timing:
@@ -2272,6 +2272,10 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 //clipping
 //-------------------
 
+// this is optional for now in case someone has trouble with the new method
+// or wants to toggle it to compare
+#define OPTIMIZED_CLIPPING_METHOD
+
 //#define CLIPLOG(X) printf(X);
 //#define CLIPLOG2(X,Y,Z) printf(X,Y,Z);
 #define CLIPLOG(X)
@@ -2284,7 +2288,11 @@ static T interpolate(const float ratio, const T& x0, const T& x1) {
 
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
+#ifdef OPTIMIZED_CLIPPING_METHOD
+template<int coord, int which> static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside)
+#else
 static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
+#endif
 {
 	VERT ret;
 
@@ -2327,6 +2335,172 @@ static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int wh
 
 	return ret;
 }
+
+#ifdef OPTIMIZED_CLIPPING_METHOD
+
+#define MAX_SCRATCH_CLIP_VERTS (4*6 + 40)
+static VERT scratchClipVerts [MAX_SCRATCH_CLIP_VERTS];
+static int numScratchClipVerts = 0;
+
+template <int coord, int which, class Next>
+class ClipperPlane
+{
+public:
+	ClipperPlane(Next& next) : m_next(next) {}
+
+	void init(VERT* verts)
+	{
+		m_prevVert =  NULL;
+		m_firstVert = NULL;
+		m_next.init(verts);
+	}
+
+	void clipVert(VERT* vert)
+	{
+		if(m_prevVert)
+			this->clipSegmentVsPlane(m_prevVert, vert);
+		else
+			m_firstVert = vert;
+		m_prevVert = vert;
+	}
+
+	// closes the loop and returns the number of clipped output verts
+	int finish()
+	{
+		this->clipVert(m_firstVert);
+		return m_next.finish();
+	}
+
+private:
+
+	VERT* m_prevVert;
+	VERT* m_firstVert;
+	Next& m_next;
+
+	FORCEINLINE void clipSegmentVsPlane(VERT* vert0, VERT* vert1)
+	{
+		float* vert0coord = vert0->coord;
+		float* vert1coord = vert1->coord;
+		bool out0, out1;
+		if(which==-1) 
+			out0 = vert0coord[coord] < -vert0coord[3];
+		else 
+			out0 = vert0coord[coord] > vert0coord[3];
+		if(which==-1) 
+			out1 = vert1coord[coord] < -vert1coord[3];
+		else
+			out1 = vert1coord[coord] > vert1coord[3];
+
+		//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
+		//if(coord==2 && which==1) {
+		//	out0 = vert0coord[2] < 0;
+		//	out1 = vert1coord[2] < 0;
+		//}
+
+		//both outside: insert no points
+		if(out0 && out1) {
+			CLIPLOG(" both outside\n");
+		}
+
+		//both inside: insert the next point
+		if(!out0 && !out1) 
+		{
+			CLIPLOG(" both inside\n");
+			m_next.clipVert(vert1);
+		}
+
+		//exiting volume: insert the clipped point
+		if(!out0 && out1)
+		{
+			CLIPLOG(" exiting\n");
+			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(vert0,vert1);
+			m_next.clipVert(&scratchClipVerts[numScratchClipVerts++]);
+		}
+
+		//entering volume: insert clipped point and the next (interior) point
+		if(out0 && !out1) {
+			CLIPLOG(" entering\n");
+			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(vert1,vert0);
+			m_next.clipVert(&scratchClipVerts[numScratchClipVerts++]);
+			m_next.clipVert(vert1);
+		}
+	}
+};
+
+class ClipperOutput
+{
+public:
+	void init(VERT* verts)
+	{
+		m_nextDestVert = verts;
+		m_numVerts = 0;
+	}
+	void clipVert(VERT* vert)
+	{
+		assert((u32)m_numVerts < MAX_CLIPPED_VERTS);
+		*m_nextDestVert++ = *vert;
+		m_numVerts++;
+	}
+	int finish()
+	{
+		return m_numVerts;
+	}
+private:
+	VERT* m_nextDestVert;
+	int m_numVerts;
+};
+
+// see "Template juggling with Sutherland-Hodgman" http://www.codeguru.com/cpp/misc/misc/graphics/article.php/c8965__2/
+// for the idea behind setting things up like this.
+static ClipperOutput clipperOut;
+typedef ClipperPlane<2, 1,ClipperOutput> Stage6; static Stage6 clipper6 (clipperOut); // back plane //TODO - we need to parameterize back plane clipping
+typedef ClipperPlane<2,-1,Stage6> Stage5;        static Stage5 clipper5 (clipper6); // front plane
+typedef ClipperPlane<1, 1,Stage5> Stage4;        static Stage4 clipper4 (clipper5); // top plane
+typedef ClipperPlane<1,-1,Stage4> Stage3;        static Stage3 clipper3 (clipper4); // bottom plane
+typedef ClipperPlane<0, 1,Stage3> Stage2;        static Stage2 clipper2 (clipper3); // right plane
+typedef ClipperPlane<0,-1,Stage2> Stage1;        static Stage1 clipper  (clipper2); // left plane
+
+void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
+{
+	CLIPLOG("==Begin poly==\n");
+
+	int type = poly->type;
+	numScratchClipVerts = 0;
+
+	clipper.init(clippedPolys[clippedPolyCounter].clipVerts);
+	for(int i=0;i<type;i++)
+		clipper.clipVert(verts[i]);
+	int outType = clipper.finish();
+
+	assert((u32)outType < MAX_CLIPPED_VERTS);
+	if(outType < 3)
+	{
+		//a totally clipped poly. discard it.
+		//or, a degenerate poly. we're not handling these right now
+	}
+	else
+	{
+		clippedPolys[clippedPolyCounter].type = outType;
+		clippedPolys[clippedPolyCounter].poly = poly;
+		clippedPolyCounter++;
+	}
+}
+
+void GFX3D_Clipper::clipSegmentVsPlane(VERT** verts, const int coord, int which)
+{
+	// not used (it's probably ok to delete this function)
+	assert(0);
+}
+
+void GFX3D_Clipper::clipPolyVsPlane(const int coord, int which)
+{
+	// not used (it's probably ok to delete this function)
+	assert(0);
+}
+
+#else // if not OPTIMIZED_CLIPPING_METHOD:
 
 FORCEINLINE void GFX3D_Clipper::clipSegmentVsPlane(VERT** verts, const int coord, int which)
 {
@@ -2434,3 +2608,5 @@ void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 	}
 
 }
+#endif
+
