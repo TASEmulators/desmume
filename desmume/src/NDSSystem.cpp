@@ -533,9 +533,7 @@ int NDS_Init( void) {
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
 
-#ifdef EXPERIMENTAL_WIFI
 	WIFI_Init() ;
-#endif
 
 	nds.FW_ARM9BootCode = NULL;
 	nds.FW_ARM7BootCode = NULL;
@@ -2392,6 +2390,8 @@ void execHardware_interrupts()
 	}
 }
 
+static void resetUserInput();
+
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
@@ -2576,6 +2576,8 @@ void NDS_Reset()
 	LidClosed = FALSE;
 	countLid = 0;
 
+	resetUserInput();
+
 	/*
 	* Setup a copy of the firmware user settings in memory.
 	* (this is what the DS firmware would do).
@@ -2624,9 +2626,7 @@ void NDS_Reset()
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
 
-#ifdef EXPERIMENTAL_WIFI
 	WIFI_Reset();
-#endif
 
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 
@@ -2725,6 +2725,10 @@ static bool loadUserInput(EMUFILE* is, UserInput& input, int version)
 	read32le(&input.mic.micButtonPressed, is);
 	return true;
 }
+static void resetUserInput(UserInput& input)
+{
+	memset(&input, 0, sizeof(UserInput));
+}
 // (userinput is kind of a misnomer, e.g. finalUserInput has to mirror nds.pad, nds.touchX, etc.)
 static void saveUserInput(EMUFILE* os)
 {
@@ -2743,6 +2747,11 @@ static bool loadUserInput(EMUFILE* is, int version)
 	for(int i = 0; i < 14; i++)
 		read32le((u32*)&TurboTime.array[i], is);
 	return rv;
+}
+static void resetUserInput()
+{
+	resetUserInput(finalUserInput);
+	resetUserInput(intermediateUserInput);
 }
 
 static inline void gotInputRequest()

@@ -353,8 +353,8 @@ struct MMU_struct
 	memory_chip_t fw;
 
 	nds_dscard dscard[2];
-	u32 CheckTimers;
-	u32 CheckDMAs;
+	//u32 CheckTimers;
+	//u32 CheckDMAs;
 };
 
 //this contains things which can't be memzeroed because they are smarter classes

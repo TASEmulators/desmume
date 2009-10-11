@@ -3307,6 +3307,15 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
     return 0;
 }
 
+DEFINE_LUA_FUNCTION(emu_reset, "")
+{
+	extern bool _HACK_DONT_STOPMOVIE;
+	_HACK_DONT_STOPMOVIE = true;
+	NDS_Reset();
+	_HACK_DONT_STOPMOVIE = false;
+	return 0;
+}
+
 // TODO
 /*
 DEFINE_LUA_FUNCTION(emu_loadrom, "filename")
@@ -4051,6 +4060,7 @@ static const struct luaL_reg emulib [] =
 	{"print", print}, // sure, why not
 	{"openscript", emu_openscript},
 //	{"loadrom", emu_loadrom},
+	{"reset", emu_reset},
 	// alternative names
 //	{"openrom", emu_loadrom},
 	{NULL, NULL}
