@@ -178,8 +178,8 @@ SFORMAT SF_NDS[]={
 	{ 0 }
 };
 
-extern u32 DMASrc[2][4];
-extern u32 DMADst[2][4];
+//extern u32 DMASrc[2][4];
+//extern u32 DMADst[2][4];
 
 SFORMAT SF_MMU[]={
 	{ "M7BI", 1, sizeof(MMU.ARM7_BIOS), MMU.ARM7_BIOS},
@@ -212,8 +212,8 @@ SFORMAT SF_MMU[]={
 	{ "MDCR", 4, 8,       MMU.DMACrt},
 	{ "MDMA", 4, 8,       MMU.DMAing},
 	{ "MDMC", 4, 8,       MMU.DMACompleted},
-	{ "MDSR", 4, 8,       DMASrc},
-	{ "MDDS", 4, 8,       DMADst},
+	//{ "MDSR", 4, 8,       DMASrc},
+	//{ "MDDS", 4, 8,       DMADst},
 
 	{ "MDV1", 4, 1,       &MMU.divRunning},
 	{ "MDV2", 8, 1,       &MMU.divResult},
@@ -239,8 +239,8 @@ SFORMAT SF_MMU[]={
 	{ "MC0T", 4, 1,       &MMU.dscard[0].transfer_count},
 	{ "MC1A", 4, 1,       &MMU.dscard[1].address},
 	{ "MC1T", 4, 1,       &MMU.dscard[1].transfer_count},
-	{ "MCHT", 4, 1,       &MMU.CheckTimers},
-	{ "MCHD", 4, 1,       &MMU.CheckDMAs},
+	//{ "MCHT", 4, 1,       &MMU.CheckTimers},
+	//{ "MCHD", 4, 1,       &MMU.CheckDMAs},
 
 	//fifos
 	{ "F0TH", 1, 1,       &ipc_fifo[0].head},
@@ -1113,6 +1113,8 @@ static void loadstate()
 	// no need to restore 0x60 since control and MMU.ARM9_REG are both in the savestates, and restoring it could mess up the ack bits anyway
 
 	SetupMMU(nds.debugConsole);
+
+	execute = !driver->EMU_IsEmulationPaused();
 }
 
 bool savestate_load(EMUFILE* is)

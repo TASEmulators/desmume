@@ -342,7 +342,7 @@ static u8 MM3x3ind = 0;
 // Data for vertex submission
 static CACHE_ALIGN float	coord[4] = {0.0, 0.0, 0.0, 0.0};
 static char		coordind = 0;
-static u32 vtxFormat;
+static u32 vtxFormat = 0;
 static BOOL inBegin = FALSE;
 
 // Data for basic transforms
@@ -350,7 +350,7 @@ static CACHE_ALIGN float	trans[4] = {0.0, 0.0, 0.0, 0.0};
 static int		transind = 0;
 static CACHE_ALIGN float	scale[4] = {0.0, 0.0, 0.0, 0.0};
 static int		scaleind = 0;
-static u32 viewport;
+static u32 viewport = 0;
 
 //various other registers
 static float _t=0, _s=0;
@@ -513,6 +513,24 @@ void gfx3d_reset()
 	twiddleLists();
 	gfx3d.polylist = polylist;
 	gfx3d.vertlist = vertlist;
+
+	polyAttr = 0;
+	textureFormat = 0;
+	texturePalette = 0;
+	polyAttrPending = 0;
+	mode = 0;
+	memset(coord, 0, sizeof(coord));
+	coordind = 0;
+	vtxFormat = 0;
+	memset(trans, 0, sizeof(trans));
+	transind = 0;
+	memset(scale, 0, sizeof(scale));
+	scaleind = 0;
+	viewport = 0;
+	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
+	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
+	memset(colorRGB, 0, sizeof(colorRGB));
+	memset(&tempVertInfo, 0, sizeof(tempVertInfo));
 
 	MatrixInit (mtxCurrent[0]);
 	MatrixInit (mtxCurrent[1]);

@@ -185,7 +185,7 @@ void MatrixStackInit(MatrixStack *stack)
 {
 	for (int i = 0; i < stack->size; i++)
 	{
-		MatrixInit(&stack->matrix[i]);
+		MatrixInit(&stack->matrix[i*16]);
 	}
 	stack->position = 0;
 }

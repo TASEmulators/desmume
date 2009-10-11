@@ -891,8 +891,8 @@ void MMU_DeInit(void) {
 
 u32 rom_mask = 0;
 
-u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
-u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
+//u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
+//u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_Reset()
 {
@@ -937,6 +937,17 @@ void MMU_Reset()
 	memset(MMU.DMACompleted,  0, sizeof(BOOL) * 2 * 4);
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
+
+	MMU.divRunning = 0;
+	MMU.divResult = 0;
+	MMU.divMod = 0;
+	MMU.divCnt = 0;
+	MMU.divCycles = 0;
+
+	MMU.sqrtRunning = 0;
+	MMU.sqrtResult = 0;
+	MMU.sqrtCnt = 0;
+	MMU.sqrtCycles = 0;
 
 	MMU.SPI_CNT = 0;
 	MMU.AUX_SPI_CNT = 0;

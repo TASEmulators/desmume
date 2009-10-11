@@ -673,10 +673,12 @@ bool WIFI_Init()
 
 	WIFI_resetRF(&wifiMac.RF) ;
 	wifi_netEnabled = false;
+#ifdef EXPERIMENTAL_WIFI
 	if(driver->WIFI_Host_InitSystem())
 	{
 		wifi_netEnabled = true;
 	}
+#endif
 	wifiMac.powerOn = FALSE;
 	wifiMac.powerOnPending = FALSE;
 	
@@ -684,7 +686,9 @@ bool WIFI_Init()
 	wifiMac.rfPins = 0x0004;
 
 	wifiCom = wifiComs[CommonSettings.wifi.mode];
+#ifdef EXPERIMENTAL_WIFI
 	wifiCom->Init();
+#endif
 
 	return true;
 }
@@ -700,10 +704,12 @@ void WIFI_Reset()
 
 	WIFI_resetRF(&wifiMac.RF) ;
 	wifi_netEnabled = false;
+#ifdef EXPERIMENTAL_WIFI
 	if(driver->WIFI_Host_InitSystem())
 	{
 		wifi_netEnabled = true;
 	}
+#endif
 	wifiMac.powerOn = FALSE;
 	wifiMac.powerOnPending = FALSE;
 	
@@ -711,7 +717,9 @@ void WIFI_Reset()
 	wifiMac.rfPins = 0x0004;
 
 	wifiCom = wifiComs[CommonSettings.wifi.mode];
+#ifdef EXPERIMENTAL_WIFI
 	wifiCom->Reset();
+#endif
 }
 
 
