@@ -429,7 +429,6 @@ extern struct TCommonSettings {
 		, DebugConsole(false)
 		, single_core(true)
 		, spuInterpolationMode(SPUInterpolation_Linear)
-		, spuAdpcmCache(false)
 		, gfx3d_flushMode(0)
 		, manualBackupType(0)
 	{
@@ -464,7 +463,6 @@ extern struct TCommonSettings {
 	} wifi;
 
 	SPUInterpolationMode spuInterpolationMode;
-	bool spuAdpcmCache;
 
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
 	int gfx3d_flushMode;
