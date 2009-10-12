@@ -68,12 +68,9 @@ extern SoundInterface_struct SNDDummy;
 extern SoundInterface_struct SNDFile;
 extern int SPU_currentCoreNum;
 
-class ADPCMCacheItem;
-
 struct channel_struct
 {
 	channel_struct()
-		: cacheItem(NULL)
 	{}
 	u32 num;
    u8 vol;
@@ -99,10 +96,11 @@ struct channel_struct
    // ADPCM specific
    u32 lastsampcnt;
    s16 pcm16b, pcm16b_last;
+   s16 loop_pcm16b;
    int index;
+   int loop_index;
    u16 x;
    s16 psgnoise_last;
-   ADPCMCacheItem *cacheItem;
 } ;
 
 class SPU_struct

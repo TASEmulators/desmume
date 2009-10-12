@@ -2151,7 +2151,6 @@ int _main()
 	sndcoretype = GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
 	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
-	CommonSettings.spuAdpcmCache = GetPrivateProfileInt("Sound","SPUAdpcmCache",0,IniName)!=0;
 
 	EnterCriticalSection(&win_execute_sync);
 	int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
@@ -4816,9 +4815,6 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_ADDSTRING, 0, (LPARAM)"Cosine (slowest, sounds best)");
 			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_SETCURSEL, (int)CommonSettings.spuInterpolationMode, 0);
 
-			//setup cache setting
-			CheckDlgButton(hDlg, IDC_SPU_CACHE,  CommonSettings.spuAdpcmCache?BST_CHECKED:BST_UNCHECKED   );
-
 			// Setup Sound Buffer Size Edit Text
 			sprintf(tempstr, "%d", sndbuffersize);
 			SetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr);
@@ -4879,10 +4875,6 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 					//write interpolation type
 					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);
 					WritePrivateProfileInt("Sound","SPUInterpolation",(int)CommonSettings.spuInterpolationMode, IniName);
-
-					//write cache setting
-					CommonSettings.spuAdpcmCache = IsDlgButtonChecked(hDlg, IDC_SPU_CACHE) != 0;
-					WritePrivateProfileInt("Sound","SPUAdpcmCache",CommonSettings.spuAdpcmCache?1:0, IniName);
 
 					return TRUE;
 				}
