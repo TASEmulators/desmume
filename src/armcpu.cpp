@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "Disassembler.h"
 #include "NDSSystem.h"
+#include "lua-engine.h"
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -523,6 +524,7 @@ u32 armcpu_exec()
 	{
 		if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
 		{
+			CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 4, ARMPROC.instruction, LUAMEMHOOK_EXEC); // should report even if condition=false?
 			if(PROCNUM==0) {
 #ifdef WANTASMLISTING
 				char txt[128];
@@ -547,6 +549,7 @@ u32 armcpu_exec()
 		return CommonSettings.armFastFetchExecute ? std::max(cFetch, cExecute) : (cFetch + cExecute);
 	}
 
+	CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 2, ARMPROC.instruction, LUAMEMHOOK_EXEC);
 	if(PROCNUM==0)
 		cExecute += thumb_instructions_set_0[ARMPROC.instruction>>6]();
 	else

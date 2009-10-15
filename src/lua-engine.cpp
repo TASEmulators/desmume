@@ -165,8 +165,8 @@ static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaul
 {
 	// get first argument: address
 	unsigned int addr = luaL_checkinteger(L,1);
-	if((addr & ~0xFFFFFF) == ~0xFFFFFF)
-		addr &= 0xFFFFFF;
+	//if((addr & ~0xFFFFFF) == ~0xFFFFFF)
+	//	addr &= 0xFFFFFF;
 
 	// get optional second argument: size
 	int size = defaultSize;
@@ -233,24 +233,24 @@ LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 	if(cpunameIndex)
 	{
 		const char* cpuName = lua_tostring(L, cpunameIndex);
-		if(!stricmp(cpuName, "sub") || !stricmp(cpuName, "s68k"))
-			cpuID = 1;
+//		if(!stricmp(cpuName, "sub") || !stricmp(cpuName, "s68k"))
+//			cpuID = 1;
 		lua_remove(L, cpunameIndex);
 	}
 
-	switch(cpuID)
-	{
-	case 0: // m68k:
-		return hookType;
-
-	case 1: // s68k:
-		switch(hookType)
-		{
-		case LUAMEMHOOK_WRITE: return LUAMEMHOOK_WRITE_SUB;
-		case LUAMEMHOOK_READ: return LUAMEMHOOK_READ_SUB;
-		case LUAMEMHOOK_EXEC: return LUAMEMHOOK_EXEC_SUB;
-		}
-	}
+//	switch(cpuID)
+//	{
+//	case 0: // m68k:
+//		return hookType;
+//
+//	case 1: // s68k:
+//		switch(hookType)
+//		{
+//		case LUAMEMHOOK_WRITE: return LUAMEMHOOK_WRITE_SUB;
+//		case LUAMEMHOOK_READ: return LUAMEMHOOK_READ_SUB;
+//		case LUAMEMHOOK_EXEC: return LUAMEMHOOK_EXEC_SUB;
+//		}
+//	}
 	return hookType;
 }
 
@@ -1761,46 +1761,46 @@ struct registerPointerMap
 
 #define RPM_ENTRY(name,var) {name, (unsigned int*)&var, sizeof(var)},
 
-registerPointerMap m68kPointerMap [] = {
-/*	RPM_ENTRY("a0", main68k_context.areg[0])
-	RPM_ENTRY("a1", main68k_context.areg[1])
-	RPM_ENTRY("a2", main68k_context.areg[2])
-	RPM_ENTRY("a3", main68k_context.areg[3])
-	RPM_ENTRY("a4", main68k_context.areg[4])
-	RPM_ENTRY("a5", main68k_context.areg[5])
-	RPM_ENTRY("a6", main68k_context.areg[6])
-	RPM_ENTRY("a7", main68k_context.areg[7])
-	RPM_ENTRY("d0", main68k_context.dreg[0])
-	RPM_ENTRY("d1", main68k_context.dreg[1])
-	RPM_ENTRY("d2", main68k_context.dreg[2])
-	RPM_ENTRY("d3", main68k_context.dreg[3])
-	RPM_ENTRY("d4", main68k_context.dreg[4])
-	RPM_ENTRY("d5", main68k_context.dreg[5])
-	RPM_ENTRY("d6", main68k_context.dreg[6])
-	RPM_ENTRY("d7", main68k_context.dreg[7])
-	RPM_ENTRY("pc", main68k_context.pc)
-	RPM_ENTRY("sr", main68k_context.sr)*/
+registerPointerMap arm9PointerMap [] = {
+	RPM_ENTRY("r0", NDS_ARM9.R[0])
+	RPM_ENTRY("r1", NDS_ARM9.R[1])
+	RPM_ENTRY("r2", NDS_ARM9.R[2])
+	RPM_ENTRY("r3", NDS_ARM9.R[3])
+	RPM_ENTRY("r4", NDS_ARM9.R[4])
+	RPM_ENTRY("r5", NDS_ARM9.R[5])
+	RPM_ENTRY("r6", NDS_ARM9.R[6])
+	RPM_ENTRY("r7", NDS_ARM9.R[7])
+	RPM_ENTRY("r8", NDS_ARM9.R[8])
+	RPM_ENTRY("r9", NDS_ARM9.R[9])
+	RPM_ENTRY("r10", NDS_ARM9.R[10])
+	RPM_ENTRY("r11", NDS_ARM9.R[11])
+	RPM_ENTRY("r12", NDS_ARM9.R[12])
+	RPM_ENTRY("r13", NDS_ARM9.R[13])
+	RPM_ENTRY("r14", NDS_ARM9.R[14])
+	RPM_ENTRY("r15", NDS_ARM9.R[15])
+	RPM_ENTRY("cpsr", NDS_ARM9.CPSR.val)
+	RPM_ENTRY("spsr", NDS_ARM9.SPSR.val)
 	{}
 };
-registerPointerMap s68kPointerMap [] = {/*
-	RPM_ENTRY("a0", sub68k_context.areg[0])
-	RPM_ENTRY("a1", sub68k_context.areg[1])
-	RPM_ENTRY("a2", sub68k_context.areg[2])
-	RPM_ENTRY("a3", sub68k_context.areg[3])
-	RPM_ENTRY("a4", sub68k_context.areg[4])
-	RPM_ENTRY("a5", sub68k_context.areg[5])
-	RPM_ENTRY("a6", sub68k_context.areg[6])
-	RPM_ENTRY("a7", sub68k_context.areg[7])
-	RPM_ENTRY("d0", sub68k_context.dreg[0])
-	RPM_ENTRY("d1", sub68k_context.dreg[1])
-	RPM_ENTRY("d2", sub68k_context.dreg[2])
-	RPM_ENTRY("d3", sub68k_context.dreg[3])
-	RPM_ENTRY("d4", sub68k_context.dreg[4])
-	RPM_ENTRY("d5", sub68k_context.dreg[5])
-	RPM_ENTRY("d6", sub68k_context.dreg[6])
-	RPM_ENTRY("d7", sub68k_context.dreg[7])
-	RPM_ENTRY("pc", sub68k_context.pc)
-	RPM_ENTRY("sr", sub68k_context.sr)*/
+registerPointerMap arm7PointerMap [] = {
+	RPM_ENTRY("r0", NDS_ARM7.R[0])
+	RPM_ENTRY("r1", NDS_ARM7.R[1])
+	RPM_ENTRY("r2", NDS_ARM7.R[2])
+	RPM_ENTRY("r3", NDS_ARM7.R[3])
+	RPM_ENTRY("r4", NDS_ARM7.R[4])
+	RPM_ENTRY("r5", NDS_ARM7.R[5])
+	RPM_ENTRY("r6", NDS_ARM7.R[6])
+	RPM_ENTRY("r7", NDS_ARM7.R[7])
+	RPM_ENTRY("r8", NDS_ARM7.R[8])
+	RPM_ENTRY("r9", NDS_ARM7.R[9])
+	RPM_ENTRY("r10", NDS_ARM7.R[10])
+	RPM_ENTRY("r11", NDS_ARM7.R[11])
+	RPM_ENTRY("r12", NDS_ARM7.R[12])
+	RPM_ENTRY("r13", NDS_ARM7.R[13])
+	RPM_ENTRY("r14", NDS_ARM7.R[14])
+	RPM_ENTRY("r15", NDS_ARM7.R[15])
+	RPM_ENTRY("cpsr", NDS_ARM7.CPSR.val)
+	RPM_ENTRY("spsr", NDS_ARM7.SPSR.val)
 	{}
 };
 
@@ -1811,11 +1811,11 @@ struct cpuToRegisterMap
 }
 cpuToRegisterMaps [] =
 {
-	{"m68k.", m68kPointerMap},
-	{"main.", m68kPointerMap},
-	{"s68k.", s68kPointerMap},
-	{"sub.",  s68kPointerMap},
-	{"", m68kPointerMap},
+	{"arm9.", arm9PointerMap},
+	{"main.", arm9PointerMap},
+	{"arm7.", arm7PointerMap},
+	{"sub.",  arm7PointerMap},
+	{"", arm9PointerMap},
 };
 
 
@@ -3696,13 +3696,13 @@ static const struct luaL_reg memorylib [] =
 	{"writelong", memory_writedword},
 
 	// memory hooks
-//	{"registerwrite", memory_registerwrite},
-//	{"registerread", memory_registerread},
-//	{"registerexec", memory_registerexec},
+	{"registerwrite", memory_registerwrite},
+	{"registerread", memory_registerread},
+	{"registerexec", memory_registerexec},
 	// alternate names
-//	{"register", memory_registerwrite},
-//	{"registerrun", memory_registerexec},
-//	{"registerexecute", memory_registerexec},
+	{"register", memory_registerwrite},
+	{"registerrun", memory_registerexec},
+	{"registerexecute", memory_registerexec},
 
 	{NULL, NULL}
 };
@@ -3923,6 +3923,7 @@ void registerLibs(lua_State* L)
 	luaL_register(L, "input", inputlib); // for user input
 	luaL_register(L, "movie", movielib);
 	luaL_register(L, "sound", soundlib);
+	luaL_register(L, "bit", bit_funcs); // LuaBitOp library
 
 	luaL_register(L, "agg", aggbasicshapes);
 	luaL_register(L, "agg", agggeneralattributes);
@@ -4575,8 +4576,8 @@ void CallRegisteredLuaMemHook(unsigned int address, int size, unsigned int value
 	// (on my system that consistently took 200 ms total in the former case and 350 ms total in the latter case)
 	if(hookedRegions[hookType].NotEmpty())
 	{
-		if((hookType <= LUAMEMHOOK_EXEC) && (address >= 0xE00000))
-			address |= 0xFF0000; // account for mirroring of RAM
+		//if((hookType <= LUAMEMHOOK_EXEC) && (address >= 0xE00000))
+		//	address |= 0xFF0000; // account for mirroring of RAM
 		if(hookedRegions[hookType].Contains(address, size))
 			CallRegisteredLuaMemHook_LuaMatch(address, size, value, hookType); // something has hooked this specific address
 	}
