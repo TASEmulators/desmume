@@ -249,11 +249,13 @@ public:
 
 } gxf_hardware;
 
-//#define GFX_DELAY(x) MMU.gfx3dCycles = nds_timer + (1*x);
-//#define GFX_DELAY_M2(x) MMU.gfx3dCycles += (1*x);
-
-#define GFX_DELAY(x) NDS_RescheduleGXFIFO(4);
-#define GFX_DELAY_M2(x) NDS_RescheduleGXFIFO(4);
+//these were 4 for the longest time (this is MUCH, MUCH less than their theoretical values)
+//but it was changed to 1 for strawberry shortcake, which was issuing direct commands 
+//while the fifo was full, apparently expecting the fifo not to be full by that time.
+//in general we are finding that 3d takes less time than we think....
+//although maybe the true culprit was charging the cpu less time for the dma.
+#define GFX_DELAY(x) NDS_RescheduleGXFIFO(1);
+#define GFX_DELAY_M2(x) NDS_RescheduleGXFIFO(1);
 
 using std::max;
 using std::min;
@@ -363,7 +365,7 @@ BOOL isSwapBuffers = FALSE;
 
 static u32 BTind = 0;
 static u32 PTind = 0;
-static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+static u16 BTcoords[6] = {0, 0, 0, 0, 0, 0};
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 
 //raw ds format poly attributes
@@ -1358,16 +1360,13 @@ void gfx3d_glViewPort(u32 v)
 	GFX_DELAY(1);
 }
 
-int boxcounter = 0;
-int passcounter=0;
-int failcounter=0;
 BOOL gfx3d_glBoxTest(u32 v)
 {
 	MMU_new.gxstat.tr = 0;		// clear boxtest bit
 	MMU_new.gxstat.tb = 1;		// busy
 
-	BTcoords[BTind++] = float16table[v & 0xFFFF];
-	BTcoords[BTind++] = float16table[v >> 16];
+	BTcoords[BTind++] = v & 0xFFFF;
+	BTcoords[BTind++] = v >> 16;
 
 	if (BTind < 5) return FALSE;
 	BTind = 0;
@@ -1388,47 +1387,34 @@ BOOL gfx3d_glBoxTest(u32 v)
 
 	//(crafted to be clear, not fast.)
 
-	//there is a still a problem in here.
-	//nanostray title, ff4, ice age 3 work
-	//garfields nightmare, strawberry shortcake do not.
-	//but i think it is a timing issue, since
-	//1. shortcake can be made to flicker by tweaking btcoords
-	//2. the flicker can be made to go away by making dma cost todo instead of todo/4
-	//the game is probably doing a box test and then dmaing an object to gxfifo,
-	//and then being sloppy about how long to wait before the next box test.
-	//(maybe bus lock would fix it)
-	//this doesnt seem to help garfield. garfield does seem to work better when its 
-	//rendering is being constrained by the box test, but the box test is still failing in that game
+	//nanostray title, ff4, ice age 3 depend on this and work
+	//garfields nightmare and strawberry shortcake DO DEPEND on the overflow behavior.
 
-	float x = BTcoords[0];
-	float y = BTcoords[1];
-	float z = BTcoords[2];
-	float w = BTcoords[3];
-	float h = BTcoords[4];
-	float d = BTcoords[5];
+	u16 ux = BTcoords[0];
+	u16 uy = BTcoords[1];
+	u16 uz = BTcoords[2];
+	u16 uw = BTcoords[3];
+	u16 uh = BTcoords[4];
+	u16 ud = BTcoords[5];
 
 	//craft the coords by adding extents to startpoint
+	float x = float16table[ux];
+	float y = float16table[uy];
+	float z = float16table[uz];
+	float xw = float16table[(ux+uw)&0xFFFF]; //&0xFFFF not necessary for u16+u16 addition but added for emphasis
+	float yh = float16table[(uy+uh)&0xFFFF];
+	float zd = float16table[(uz+ud)&0xFFFF];
+
+	//eight corners of cube
 	VERT verts[8];
 	verts[0].set_coord(x,y,z,1);
-	verts[1].set_coord(x+w,y,z,1);
-	verts[2].set_coord(x+w,y+h,z,1);
-	verts[3].set_coord(x,y+h,z,1);
-	verts[4].set_coord(x,y,z+d,1);
-	verts[5].set_coord(x+w,y,z+d,1);
-	verts[6].set_coord(x+w,y+h,z+d,1);
-	verts[7].set_coord(x,y+h,z+d,1);
-
-	//transform all coords
-	for(int i=0;i<8;i++) {
-		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
-
-		//yuck.. cant use the sse2 accelerated ones because vert.coords is not cache aligned or something
-		//i dunno
-		
-		//void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
-		//_NOSSE_MatrixMultVec4x4(mtxCurrent[1],verts[i].coord);
-		//_NOSSE_MatrixMultVec4x4(mtxCurrent[0],verts[i].coord);
-	}
+	verts[1].set_coord(xw,y,z,1);
+	verts[2].set_coord(xw,yh,z,1);
+	verts[3].set_coord(x,yh,z,1);
+	verts[4].set_coord(x,y,zd,1);
+	verts[5].set_coord(xw,y,zd,1);
+	verts[6].set_coord(xw,yh,zd,1);
+	verts[7].set_coord(x,yh,zd,1);
 
 	//craft the faces of the box (clockwise)
 	POLY polys[6];
@@ -1497,7 +1483,6 @@ BOOL gfx3d_glBoxTest(u32 v)
 		if(boxtestClipper.clippedPolyCounter>0) {
 			//printf("%06d PASS %d\n",boxcounter,gxFIFO.size);
 			MMU_new.gxstat.tr = 1;
-			passcounter++;
 			break;
 		}
 	}
@@ -1505,15 +1490,8 @@ BOOL gfx3d_glBoxTest(u32 v)
 	if(MMU_new.gxstat.tr == 0)
 	{
 		//printf("%06d FAIL %d\n",boxcounter,gxFIFO.size);
-		failcounter++;
 	}
 	
-	//if(boxcounter==0)
-	//MMU_new.gxstat.tr = 1;
-	//MMU_new.gxstat.tr = 0;
-
-	boxcounter++;
-
 	return TRUE;
 }
 
@@ -1847,10 +1825,6 @@ void gfx3d_execute3D()
 
 void gfx3d_glFlush(u32 v)
 {
-	//printf("flush: fail: %d pass:%d\n",failcounter,passcounter);
-	boxcounter = 0;
-	failcounter=0;
-	passcounter=0;
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
@@ -2162,6 +2136,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLPC", 4, 4, PTcoords},
+	{ "GBTC", 2, 6, &BTcoords[0]},
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
 	{ "GFSZ", 4, 1, &gxFIFO.size},
