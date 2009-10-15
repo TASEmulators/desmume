@@ -1,6 +1,7 @@
 #ifndef LUA_SCRIPT_H
 #define LUA_SCRIPT_H
 
+#include "types.h"
 
 void OpenLuaContext(int uid, void(*print)(int uid, const char* str) = 0, void(*onstart)(int uid) = 0, void(*onstop)(int uid, bool statusOK) = 0);
 void RunLuaScriptFile(int uid, const char* filename);
@@ -90,6 +91,113 @@ void RestartAllLuaScripts();
 void EnableStopAllLuaScripts(bool enable);
 void DontWorryLua();
 
+
+
+#include <vector>
+#include <algorithm>
+
+// the purpose of this structure is to provide a way of
+// QUICKLY determining whether a memory address range has a hook associated with it,
+// with a bias toward fast rejection because the majority of addresses will not be hooked.
+// (it must not use any part of Lua or perform any per-script operations,
+//  otherwise it would definitely be too slow.)
+// calculating the regions when a hook is added/removed may be slow,
+// but this is an intentional tradeoff to obtain a high speed of checking during later execution
+struct TieredRegion
+{
+	template<unsigned int maxGap>
+	struct Region
+	{
+		struct Island
+		{
+			unsigned int start;
+			unsigned int end;
+			FORCEINLINE bool Contains(unsigned int address, int size) const { return address < end && address+size > start; }
+		};
+		std::vector<Island> islands;
+
+		void Calculate(const std::vector<unsigned int>& bytes)
+		{
+			islands.clear();
+
+			unsigned int lastEnd = ~0;
+
+			std::vector<unsigned int>::const_iterator iter = bytes.begin();
+			std::vector<unsigned int>::const_iterator end = bytes.end();
+			for(; iter != end; ++iter)
+			{
+				unsigned int addr = *iter;
+				if(addr < lastEnd || addr > lastEnd + (long long)maxGap)
+				{
+					islands.push_back(Island());
+					islands.back().start = addr;
+				}
+				islands.back().end = addr+1;
+				lastEnd = addr+1;
+			}
+		}
+
+		bool Contains(unsigned int address, int size) const
+		{
+			std::vector<Island>::const_iterator iter = islands.begin();
+			std::vector<Island>::const_iterator end = islands.end();
+			for(; iter != end; ++iter)
+				if(iter->Contains(address, size))
+					return true;
+			return false;
+		}
+	};
+
+	Region<0xFFFFFFFF> broad;
+	Region<0x1000> mid;
+	Region<0> narrow;
+
+	void Calculate(std::vector<unsigned int>& bytes)
+	{
+		std::sort(bytes.begin(), bytes.end());
+
+		broad.Calculate(bytes);
+		mid.Calculate(bytes);
+		narrow.Calculate(bytes);
+	}
+
+	TieredRegion()
+	{
+		Calculate(std::vector<unsigned int>());
+	}
+
+	FORCEINLINE int NotEmpty()
+	{
+		return broad.islands.size();
+	}
+
+	// note: it is illegal to call this if NotEmpty() returns 0
+	FORCEINLINE bool Contains(unsigned int address, int size)
+	{
+		return broad.islands[0].Contains(address,size) &&
+		       mid.Contains(address,size) &&
+			   narrow.Contains(address,size);
+	}
+};
+extern TieredRegion hookedRegions [LUAMEMHOOK_COUNT];
+
+void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, unsigned int value, LuaMemHookType hookType);
+
+FORCEINLINE void CallRegisteredLuaMemHook(unsigned int address, int size, unsigned int value, LuaMemHookType hookType)
+{
+	// performance critical! (called VERY frequently)
+	// I suggest timing a large number of calls to this function in Release if you change anything in here,
+	// before and after, because even the most innocent change can make it become 30% to 400% slower.
+	// a good amount to test is: 100000000 calls with no hook set, and another 100000000 with a hook set.
+	// (on my system that consistently took 200 ms total in the former case and 350 ms total in the latter case)
+	if(hookedRegions[hookType].NotEmpty())
+	{
+		//if((hookType <= LUAMEMHOOK_EXEC) && (address >= 0xE00000))
+		//	address |= 0xFF0000; // gens: account for mirroring of RAM
+		if(hookedRegions[hookType].Contains(address, size))
+			CallRegisteredLuaMemHook_LuaMatch(address, size, value, hookType); // something has hooked this specific address
+	}
+}
 
 
 #endif
