@@ -298,7 +298,9 @@ u8 Mic_ReadSample()
 				micReadSamplePos=0;
 		} else {
 			//use the "random" values
-			tmp = random[micReadSamplePos >> 1];
+			if(CommonSettings.micMode == TCommonSettings::InternalNoise)
+				tmp = random[micReadSamplePos >> 1];
+			else tmp = rand();
 			micReadSamplePos++;
 			if(micReadSamplePos == ARRAY_SIZE(random)*2)
 				micReadSamplePos=0;

@@ -3783,6 +3783,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						return;
 						
 						case 2 :
+							//printf("%08X\n",MMU.SPI_CMD);
 							switch(MMU.SPI_CMD & 0x70)
 							{
 								case 0x00 :

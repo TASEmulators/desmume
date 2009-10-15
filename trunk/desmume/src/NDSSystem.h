@@ -429,8 +429,9 @@ extern struct TCommonSettings {
 		, DebugConsole(false)
 		, single_core(true)
 		, spuInterpolationMode(SPUInterpolation_Linear)
-		, gfx3d_flushMode(0)
+		//, gfx3d_flushMode(0)
 		, manualBackupType(0)
+		, micMode(InternalNoise)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -462,10 +463,18 @@ extern struct TCommonSettings {
 		int infraBridgeAdapter;
 	} wifi;
 
+	enum MicMode
+	{
+		InternalNoise = 0,
+		Sample = 1,
+		Random = 2,
+	} micMode;
+
+
 	SPUInterpolationMode spuInterpolationMode;
 
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
-	int gfx3d_flushMode;
+	//int gfx3d_flushMode;
 
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
 	int manualBackupType;
