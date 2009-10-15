@@ -1526,7 +1526,7 @@ void gfx3d_glVecTest(u32 v)
 {
 	GFX_DELAY(5);
 
-	printf("VECTEST\n");
+	//printf("VECTEST\n");
 
 	CACHE_ALIGN float normal[4] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
