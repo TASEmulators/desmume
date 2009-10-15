@@ -1791,8 +1791,6 @@ DEFINE_LUA_FUNCTION(memory_isvalid, "address")
 	return 1;
 }
 
-// TODO
-/*
 struct registerPointerMap
 {
 	const char* registerName;
@@ -1802,46 +1800,46 @@ struct registerPointerMap
 
 #define RPM_ENTRY(name,var) {name, (unsigned int*)&var, sizeof(var)},
 
-registerPointerMap m68kPointerMap [] = {
-	RPM_ENTRY("a0", main68k_context.areg[0])
-	RPM_ENTRY("a1", main68k_context.areg[1])
-	RPM_ENTRY("a2", main68k_context.areg[2])
-	RPM_ENTRY("a3", main68k_context.areg[3])
-	RPM_ENTRY("a4", main68k_context.areg[4])
-	RPM_ENTRY("a5", main68k_context.areg[5])
-	RPM_ENTRY("a6", main68k_context.areg[6])
-	RPM_ENTRY("a7", main68k_context.areg[7])
-	RPM_ENTRY("d0", main68k_context.dreg[0])
-	RPM_ENTRY("d1", main68k_context.dreg[1])
-	RPM_ENTRY("d2", main68k_context.dreg[2])
-	RPM_ENTRY("d3", main68k_context.dreg[3])
-	RPM_ENTRY("d4", main68k_context.dreg[4])
-	RPM_ENTRY("d5", main68k_context.dreg[5])
-	RPM_ENTRY("d6", main68k_context.dreg[6])
-	RPM_ENTRY("d7", main68k_context.dreg[7])
-	RPM_ENTRY("pc", main68k_context.pc)
-	RPM_ENTRY("sr", main68k_context.sr)
+registerPointerMap arm9PointerMap [] = {
+	RPM_ENTRY("r0", NDS_ARM9.R[0])
+	RPM_ENTRY("r1", NDS_ARM9.R[1])
+	RPM_ENTRY("r2", NDS_ARM9.R[2])
+	RPM_ENTRY("r3", NDS_ARM9.R[3])
+	RPM_ENTRY("r4", NDS_ARM9.R[4])
+	RPM_ENTRY("r5", NDS_ARM9.R[5])
+	RPM_ENTRY("r6", NDS_ARM9.R[6])
+	RPM_ENTRY("r7", NDS_ARM9.R[7])
+	RPM_ENTRY("r8", NDS_ARM9.R[8])
+	RPM_ENTRY("r9", NDS_ARM9.R[9])
+	RPM_ENTRY("r10", NDS_ARM9.R[10])
+	RPM_ENTRY("r11", NDS_ARM9.R[11])
+	RPM_ENTRY("r12", NDS_ARM9.R[12])
+	RPM_ENTRY("r13", NDS_ARM9.R[13])
+	RPM_ENTRY("r14", NDS_ARM9.R[14])
+	RPM_ENTRY("r15", NDS_ARM9.R[15])
+	RPM_ENTRY("cpsr", NDS_ARM9.CPSR.val)
+	RPM_ENTRY("spsr", NDS_ARM9.SPSR.val)
 	{}
 };
-registerPointerMap s68kPointerMap [] = {
-	RPM_ENTRY("a0", sub68k_context.areg[0])
-	RPM_ENTRY("a1", sub68k_context.areg[1])
-	RPM_ENTRY("a2", sub68k_context.areg[2])
-	RPM_ENTRY("a3", sub68k_context.areg[3])
-	RPM_ENTRY("a4", sub68k_context.areg[4])
-	RPM_ENTRY("a5", sub68k_context.areg[5])
-	RPM_ENTRY("a6", sub68k_context.areg[6])
-	RPM_ENTRY("a7", sub68k_context.areg[7])
-	RPM_ENTRY("d0", sub68k_context.dreg[0])
-	RPM_ENTRY("d1", sub68k_context.dreg[1])
-	RPM_ENTRY("d2", sub68k_context.dreg[2])
-	RPM_ENTRY("d3", sub68k_context.dreg[3])
-	RPM_ENTRY("d4", sub68k_context.dreg[4])
-	RPM_ENTRY("d5", sub68k_context.dreg[5])
-	RPM_ENTRY("d6", sub68k_context.dreg[6])
-	RPM_ENTRY("d7", sub68k_context.dreg[7])
-	RPM_ENTRY("pc", sub68k_context.pc)
-	RPM_ENTRY("sr", sub68k_context.sr)
+registerPointerMap arm7PointerMap [] = {
+	RPM_ENTRY("r0", NDS_ARM7.R[0])
+	RPM_ENTRY("r1", NDS_ARM7.R[1])
+	RPM_ENTRY("r2", NDS_ARM7.R[2])
+	RPM_ENTRY("r3", NDS_ARM7.R[3])
+	RPM_ENTRY("r4", NDS_ARM7.R[4])
+	RPM_ENTRY("r5", NDS_ARM7.R[5])
+	RPM_ENTRY("r6", NDS_ARM7.R[6])
+	RPM_ENTRY("r7", NDS_ARM7.R[7])
+	RPM_ENTRY("r8", NDS_ARM7.R[8])
+	RPM_ENTRY("r9", NDS_ARM7.R[9])
+	RPM_ENTRY("r10", NDS_ARM7.R[10])
+	RPM_ENTRY("r11", NDS_ARM7.R[11])
+	RPM_ENTRY("r12", NDS_ARM7.R[12])
+	RPM_ENTRY("r13", NDS_ARM7.R[13])
+	RPM_ENTRY("r14", NDS_ARM7.R[14])
+	RPM_ENTRY("r15", NDS_ARM7.R[15])
+	RPM_ENTRY("cpsr", NDS_ARM7.CPSR.val)
+	RPM_ENTRY("spsr", NDS_ARM7.SPSR.val)
 	{}
 };
 
@@ -1852,11 +1850,11 @@ struct cpuToRegisterMap
 }
 cpuToRegisterMaps [] =
 {
-	{"m68k.", m68kPointerMap},
-	{"main.", m68kPointerMap},
-	{"s68k.", s68kPointerMap},
-	{"sub.",  s68kPointerMap},
-	{"", m68kPointerMap},
+	{"arm9.", arm9PointerMap},
+	{"main.", arm9PointerMap},
+	{"arm7.", arm7PointerMap},
+	{"sub.",  arm7PointerMap},
+	{"", arm9PointerMap},
 };
 
 
@@ -1923,7 +1921,6 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 	}
 	return 0;
 }
-*/
 
 DEFINE_LUA_FUNCTION(state_create, "[location]")
 {
@@ -4118,8 +4115,8 @@ static const struct luaL_reg memorylib [] =
 	{"writeword", memory_writeword},
 	{"writedword", memory_writedword},
 	{"isvalid", memory_isvalid},
-	//{"getregister", memory_getregister},
-	//{"setregister", memory_setregister},
+	{"getregister", memory_getregister},
+	{"setregister", memory_setregister},
 	// alternate naming scheme for word and double-word and unsigned
 	{"readbyteunsigned", memory_readbyte},
 	{"readwordunsigned", memory_readword},
