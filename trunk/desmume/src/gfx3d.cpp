@@ -1785,7 +1785,7 @@ void gfx3d_execute3D()
 	//this is a SPEED HACK
 	//fifo is currently emulated more accurately than it probably needs to be.
 	//without this batch size the emuloop will escape way too often to run fast.
-	const int HACK_FIFO_BATCH_SIZE = 32;
+	const int HACK_FIFO_BATCH_SIZE = 64;
 
 	for(int i=0;i<HACK_FIFO_BATCH_SIZE;i++) {
 		if(GFX_PIPErecv(&cmd, &param))
@@ -1801,6 +1801,15 @@ void gfx3d_execute3D()
 			//for the earlier params.
 			//printf("%05d:%03d:%12lld: executed 3d: %02X %08X\n",currFrameCounter, nds.VCount, nds_timer , cmd, param);
 			gfx3d_execute(cmd, param);
+
+			//this is a COMPATIBILITY HACK.
+			//this causes 3d to take virtually no time whatsoever to execute.
+			//this was done for marvel nemesis, but a similar family of 
+			//hacks for ridiculously fast 3d execution has proven necessary for a number of games.
+			//the true answer is probably dma bus blocking.. but lets go ahead and try this and
+			//check the compatibility, at the very least it will be nice to know if any games suffer from
+			//3d running too fast
+			MMU.gfx3dCycles = nds_timer+1;
 		} else break;
 	}
 
