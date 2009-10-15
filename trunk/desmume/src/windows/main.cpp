@@ -3421,7 +3421,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//-------------------------------------------------------
 			//Check if Lua script file
 			//-------------------------------------------------------
-			if (!(fileDropped.find(".lua") == string::npos) && (fileDropped.find(".lua") == fileDropped.length()-4))	 //ROM is already loaded and .dsm in filename
+			else if (!(fileDropped.find(".lua") == string::npos) && (fileDropped.find(".lua") == fileDropped.length()-4))	 //ROM is already loaded and .dsm in filename
 			{
 				if(LuaScriptHWnds.size() < 16)
 				{
@@ -3434,6 +3434,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 						SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)temp);
 					}
 				}
+			}
+			
+			//-------------------------------------------------------
+			//Check if watchlist file
+			//-------------------------------------------------------
+			else if (!(fileDropped.find(".wch") == string::npos) && (fileDropped.find(".wch") == fileDropped.length()-4))	 //ROM is already loaded and .dsm in filename
+			{
+				if(!RamWatchHWnd)
+				{
+					RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), hwnd, (DLGPROC) RamWatchProc);
+					//				DialogsOpen++;
+				}
+				else
+					SetForegroundWindow(RamWatchHWnd);
+				Load_Watches(true, fileDropped.c_str());
 			}
 			
 			//-------------------------------------------------------
