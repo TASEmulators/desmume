@@ -2937,10 +2937,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				{
 					RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), hwnd, (DLGPROC) RamWatchProc);
 					//				DialogsOpen++;
-					Load_Watches(true, fileDropped.c_str());
 				}
 				else
 					SetForegroundWindow(RamWatchHWnd);
+				Load_Watches(true, fileDropped.c_str());
 			}
 			
 			//-------------------------------------------------------
