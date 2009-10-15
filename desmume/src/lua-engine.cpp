@@ -158,7 +158,7 @@ static const char* luaCallIDStrings [] =
 };
 static const int _makeSureWeHaveTheRightNumberOfStrings [sizeof(luaCallIDStrings)/sizeof(*luaCallIDStrings) == LUACALL_COUNT ? 1 : 0];
 
-/*static const char* luaMemHookTypeStrings [] =
+static const char* luaMemHookTypeStrings [] =
 {
 	"MEMHOOK_WRITE",
 	"MEMHOOK_READ",
@@ -169,7 +169,6 @@ static const int _makeSureWeHaveTheRightNumberOfStrings [sizeof(luaCallIDStrings
 	"MEMHOOK_EXEC_SUB",
 };
 static const int _makeSureWeHaveTheRightNumberOfStrings2 [sizeof(luaMemHookTypeStrings)/sizeof(*luaMemHookTypeStrings) == LUAMEMHOOK_COUNT ? 1 : 0];
-*/
 
 void StopScriptIfFinished(int uid, bool justReturned = false);
 void SetSaveKey(LuaContextInfo& info, const char* key);
@@ -180,17 +179,14 @@ void RefreshScriptSpeedStatus();
 static char* rawToCString(lua_State* L, int idx=0);
 static const char* toCString(lua_State* L, int idx=0);
 
-/*
-// disabled, see comment above implementation of CalculateMemHookRegions
-
 static void CalculateMemHookRegions(LuaMemHookType hookType);
 
 static int memory_registerHook(lua_State* L, LuaMemHookType hookType, int defaultSize)
 {
 	// get first argument: address
 	unsigned int addr = luaL_checkinteger(L,1);
-	if((addr & ~0xFFFFFF) == ~0xFFFFFF)
-		addr &= 0xFFFFFF;
+	//if((addr & ~0xFFFFFF) == ~0xFFFFFF)
+	//	addr &= 0xFFFFFF;
 
 	// get optional second argument: size
 	int size = defaultSize;
@@ -257,24 +253,24 @@ LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 	if(cpunameIndex)
 	{
 		const char* cpuName = lua_tostring(L, cpunameIndex);
-		if(!stricmp(cpuName, "sub") || !stricmp(cpuName, "s68k"))
-			cpuID = 1;
+//		if(!stricmp(cpuName, "sub") || !stricmp(cpuName, "s68k"))
+//			cpuID = 1;
 		lua_remove(L, cpunameIndex);
 	}
 
-	switch(cpuID)
-	{
-	case 0: // m68k:
-		return hookType;
-
-	case 1: // s68k:
-		switch(hookType)
-		{
-		case LUAMEMHOOK_WRITE: return LUAMEMHOOK_WRITE_SUB;
-		case LUAMEMHOOK_READ: return LUAMEMHOOK_READ_SUB;
-		case LUAMEMHOOK_EXEC: return LUAMEMHOOK_EXEC_SUB;
-		}
-	}
+//	switch(cpuID)
+//	{
+//	case 0: // m68k:
+//		return hookType;
+//
+//	case 1: // s68k:
+//		switch(hookType)
+//		{
+//		case LUAMEMHOOK_WRITE: return LUAMEMHOOK_WRITE_SUB;
+//		case LUAMEMHOOK_READ: return LUAMEMHOOK_READ_SUB;
+//		case LUAMEMHOOK_EXEC: return LUAMEMHOOK_EXEC_SUB;
+//		}
+//	}
 	return hookType;
 }
 
@@ -290,7 +286,6 @@ DEFINE_LUA_FUNCTION(memory_registerexec, "address,[size=2,][cpuname=\"main\",]fu
 {
 	return memory_registerHook(L, MatchHookTypeToCPU(L,LUAMEMHOOK_EXEC), 2);
 }
-*/
 
 DEFINE_LUA_FUNCTION(emu_registerbefore, "func")
 {
@@ -4139,13 +4134,13 @@ static const struct luaL_reg memorylib [] =
 	{"writelong", memory_writedword},
 
 	// memory hooks
-//	{"registerwrite", memory_registerwrite},
-//	{"registerread", memory_registerread},
-//	{"registerexec", memory_registerexec},
+	{"registerwrite", memory_registerwrite},
+	{"registerread", memory_registerread},
+	{"registerexec", memory_registerexec},
 	// alternate names
-//	{"register", memory_registerwrite},
-//	{"registerrun", memory_registerexec},
-//	{"registerexecute", memory_registerexec},
+	{"register", memory_registerwrite},
+	{"registerrun", memory_registerexec},
+	{"registerexecute", memory_registerexec},
 
 	{NULL, NULL}
 };
@@ -4440,14 +4435,14 @@ void registerLibs(lua_State* L)
 		}
 		lua_pop(L,1);
 	}
-/*
+
 	// push arrays for storing hook functions in
 	for(int i = 0; i < LUAMEMHOOK_COUNT; i++)
 	{
 		lua_newtable(L);
 		lua_setfield(L, LUA_REGISTRYINDEX, luaMemHookTypeStrings[i]);
 	}
-*/
+
 	// register type
 	luaL_newmetatable(L, "EMUFILE_MEMORY*");
 	lua_pushcfunction(L, gcEMUFILE_MEMORY);
@@ -4844,10 +4839,8 @@ void StopLuaScript(int uid)
 			info.started = false;
 			
 			info.numMemHooks = 0;
-/*
 			for(int i = 0; i < LUAMEMHOOK_COUNT; i++)
 				CalculateMemHookRegions((LuaMemHookType)i);
-*/
 		}
 		RefreshScriptStartedStatus();
 	}
@@ -4860,7 +4853,7 @@ void CloseLuaContext(int uid)
 	luaContextInfo.erase(uid);
 }
 
-/*
+
 // the purpose of this structure is to provide a way of
 // QUICKLY determining whether a memory address range has a hook associated with it,
 // with a bias toward fast rejection because the majority of addresses will not be hooked.
@@ -5049,13 +5042,12 @@ void CallRegisteredLuaMemHook(unsigned int address, int size, unsigned int value
 	// (on my system that consistently took 200 ms total in the former case and 350 ms total in the latter case)
 	if(hookedRegions[hookType].NotEmpty())
 	{
-		if((hookType <= LUAMEMHOOK_EXEC) && (address >= 0xE00000))
-			address |= 0xFF0000; // account for mirroring of RAM
+		//if((hookType <= LUAMEMHOOK_EXEC) && (address >= 0xE00000))
+		//	address |= 0xFF0000; // gens: account for mirroring of RAM
 		if(hookedRegions[hookType].Contains(address, size))
 			CallRegisteredLuaMemHook_LuaMatch(address, size, value, hookType); // something has hooked this specific address
 	}
 }
-*/
 
 bool AnyLuaActive()
 {

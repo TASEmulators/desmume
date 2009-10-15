@@ -31,6 +31,7 @@
 #include "Disassembler.h"
 #include "NDSSystem.h"
 #include "MMU_timing.h"
+#include "lua-engine.h"
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -540,6 +541,7 @@ u32 armcpu_exec()
 			|| (TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)) //handles any condition
 			)
 		{
+			CallRegisteredLuaMemHook(ARMPROC.R[15], 4, ARMPROC.instruction, LUAMEMHOOK_EXEC); // should report even if condition=false?
 			if(PROCNUM==0) {
 				#ifdef DEVELOPER
 				DEBUG_statistics.instructionHits[0].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
@@ -566,6 +568,7 @@ u32 armcpu_exec()
 		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
 	}
 
+	CallRegisteredLuaMemHook(ARMPROC.R[15], 2, ARMPROC.instruction, LUAMEMHOOK_EXEC);
 	if(PROCNUM==0)
 	{
 		#ifdef DEVELOPER
