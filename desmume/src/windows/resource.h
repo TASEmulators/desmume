@@ -169,10 +169,10 @@
 #define IDM_RENDER_HQ2X                 552
 #define IDM_RENDER_2XSAI                553
 #define IDM_RENDER_SUPER2XSAI           554
-#define IDM_RENDER_SUPEREAGLE			555
-#define IDM_RENDER_SCANLINE				556
-#define IDM_RENDER_BILINEAR				557
-#define IDM_RENDER_NEAREST2X			558
+#define IDM_RENDER_SUPEREAGLE           555
+#define IDM_RENDER_SCANLINE             556
+#define IDM_RENDER_BILINEAR             557
+#define IDM_RENDER_NEAREST2X            558
 #define IDD_IO_REG                      601
 #define IDM_RECORD_MOVIE                602
 #define IDM_PLAY_MOVIE                  603
@@ -651,6 +651,8 @@
 #define IDC_MICSAMPLEBROWSE             5003
 #define IDC_MICSAMPLE                   5004
 #define IDC_USEMICSAMPLE                5005
+#define IDC_USEMICRAND                  5009
+#define IDC_USENOISE                    5010
 #define IDC_CPU                         6000
 #define IDC_IOREG                       6001
 #define IDD_CHEAT_ADD_XX_CODE           10005
@@ -781,9 +783,9 @@
 #define IDC_HKCOMBO                     60077
 #define IDD_KEYCUSTOM                   60078
 #define IDM_HOTKEY_CONFIG               60079
-#define IDM_RENDER_HQ2XS				60081
-#define IDM_RENDER_LQ2X					60082
-#define IDM_RENDER_LQ2XS				60083
+#define IDM_RENDER_HQ2XS                60081
+#define IDM_RENDER_LQ2X                 60082
+#define IDM_RENDER_LQ2XS                60083
 
 // Next default values for new objects
 // 
@@ -791,7 +793,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1011
+#define _APS_NEXT_CONTROL_VALUE         1012
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

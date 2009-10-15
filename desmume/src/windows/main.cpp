@@ -287,7 +287,6 @@ int emu_paused = 0;
 bool frameAdvance = false;
 bool staterewindingenabled = false;
 
-bool UseMicSample = false;
 unsigned short windowSize = 0;
 
 /* the firmware settings */
@@ -2141,7 +2140,7 @@ int _main()
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
 	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
-	CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
+	//CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
 
 #ifdef BETA_VERSION
@@ -4397,7 +4396,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			int i;
 
 			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.HighResolutionInterpolateColor?1:0);
-			CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
+			//CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
 
 			for(i = 0; core3DList[i] != NULL; i++)
 			{
@@ -4417,8 +4416,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
 					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.HighResolutionInterpolateColor?1:0, IniName);
-					CommonSettings.gfx3d_flushMode = (IsDlgButtonChecked(hw,IDC_ALTERNATEFLUSH) == BST_CHECKED)?1:0;
-					WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
+					//CommonSettings.gfx3d_flushMode = (IsDlgButtonChecked(hw,IDC_ALTERNATEFLUSH) == BST_CHECKED)?1:0;
+					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
 			case IDCANCEL:
 				{
@@ -4431,8 +4430,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					NDS_3D_ChangeCore(GPU3D_OPENGL);
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_OPENGL);
 					WritePrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
-					CommonSettings.gfx3d_flushMode = 0;
-					WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
+					//CommonSettings.gfx3d_flushMode = 0;
+					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
 				return TRUE;
 			}
@@ -4627,12 +4626,14 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 		{
 			HWND cur;
 
-			UseMicSample = GetPrivateProfileBool("Use Mic Sample", "UseMicSample", false, IniName);
-			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((UseMicSample == true) ? BST_CHECKED : BST_UNCHECKED));
-			GetPrivateProfileString("Use Mic Sample", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
+			CommonSettings.micMode = (TCommonSettings::MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)TCommonSettings::InternalNoise, IniName);
+			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((CommonSettings.micMode == TCommonSettings::Sample) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hDlg, IDC_USEMICRAND, ((CommonSettings.micMode == TCommonSettings::Random) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hDlg, IDC_USENOISE, ((CommonSettings.micMode == TCommonSettings::InternalNoise) ? BST_CHECKED : BST_UNCHECKED));
+			GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 			SetDlgItemText(hDlg, IDC_MICSAMPLE, MicSampleName);
 
-			if(UseMicSample == false)
+			if(CommonSettings.micMode != TCommonSettings::Sample)
 			{
 				cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
 				EnableWindow(cur, FALSE);
@@ -4654,14 +4655,20 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					{
 						HWND cur;
 
-						UseMicSample = IsDlgCheckboxChecked(hDlg, IDC_USEMICSAMPLE);
+						if(IsDlgCheckboxChecked(hDlg, IDC_USEMICSAMPLE))
+							CommonSettings.micMode = TCommonSettings::Sample;
+						else if(IsDlgCheckboxChecked(hDlg, IDC_USEMICRAND))
+							CommonSettings.micMode = TCommonSettings::Random;
+						else if(IsDlgCheckboxChecked(hDlg, IDC_USENOISE))
+							CommonSettings.micMode = TCommonSettings::InternalNoise;
+
 						cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
 						GetWindowText(cur, MicSampleName, 256);
 		
-						WritePrivateProfileInt("Use Mic Sample", "UseMicSample", ((UseMicSample == true) ? 1 : 0), IniName);
-						WritePrivateProfileString("Use Mic Sample", "MicSampleFile", MicSampleName, IniName);
+						WritePrivateProfileInt("MicSettings", "MicMode", (int)CommonSettings.micMode, IniName);
+						WritePrivateProfileString("MicSettings", "MicSampleFile", MicSampleName, IniName);
 
-						if (UseMicSample)
+						if (CommonSettings.micMode == TCommonSettings::Sample)
 						{
 							if (!LoadSample(MicSampleName))
 							{
@@ -4676,6 +4683,8 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 				}
 				return TRUE;
 
+			case IDC_USENOISE:
+			case IDC_USEMICRAND:
 			case IDC_USEMICSAMPLE:
 				{
 					HWND cur;
