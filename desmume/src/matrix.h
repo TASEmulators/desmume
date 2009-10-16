@@ -39,8 +39,8 @@ struct MatrixStack
 {
 	MatrixStack(int size);
 	float	*matrix;
-	int		position;
-	int		size;
+	s32		position;
+	s32		size;
 };
 
 void	MatrixInit				(float *matrix);

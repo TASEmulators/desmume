@@ -24,6 +24,7 @@
 #include <math.h>
 #include <assert.h>
 #include "matrix.h"
+#include "MMU.h"
 
 void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 {
@@ -217,12 +218,17 @@ MatrixStack::MatrixStack(int size)
 
 void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 {
+	//printf("SetPosition: %d by %d",stack->position,pos);
 	stack->position += pos;
 
-	if (stack->position < 0)
-		stack->position = 0;
-	else if (stack->position > stack->size)	
-		stack->position = stack->size+1;
+	//this wraparound behavior fixed sims apartment pets which was constantly going up to 32
+	s32 newpos = stack->position;
+	stack->position &= (stack->size);
+
+	if(newpos != stack->position)
+		MMU_new.gxstat.se = 1;
+
+	//printf(" to %d (size %d)\n",stack->position,stack->size);
 }
 
 void MatrixStackPushMatrix (MatrixStack *stack, const float *ptr)

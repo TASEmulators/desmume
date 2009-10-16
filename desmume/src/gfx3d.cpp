@@ -342,7 +342,7 @@ static u8 MM4x3ind = 0;
 static u8 MM3x3ind = 0;
 
 // Data for vertex submission
-static CACHE_ALIGN float	coord[4] = {0.0, 0.0, 0.0, 0.0};
+static CACHE_ALIGN u16		u16coord[4] = {0, 0, 0, 0};
 static char		coordind = 0;
 static u32 vtxFormat = 0;
 static BOOL inBegin = FALSE;
@@ -521,7 +521,7 @@ void gfx3d_reset()
 	texturePalette = 0;
 	polyAttrPending = 0;
 	mode = 0;
-	memset(coord, 0, sizeof(coord));
+	u16coord[0] = u16coord[1] = u16coord[2] = u16coord[3] = 0;
 	coordind = 0;
 	vtxFormat = 0;
 	memset(trans, 0, sizeof(trans));
@@ -584,6 +584,12 @@ void gfx3d_reset()
 //Submit a vertex to the GE
 static void SetVertex()
 {
+	float coord[3] = {
+			float16table[u16coord[0]],
+			float16table[u16coord[1]],
+			float16table[u16coord[2]]
+	};
+
 	ALIGN(16) float coordTransformed[4] = { coord[0], coord[1], coord[2], 1.f };
 
 	if (texCoordinateTransform == 3)
@@ -812,11 +818,15 @@ void gfx3d_glPopMatrix(s32 i)
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
+	//6 bits, sign extended
+	//this was necessary to fix sims apartment pets
+	i = (i<<26)>>26;
 	
 	if (i > mtxStack[mymode].position)
 	{
 		//was commented out before zero sep modifications
-		MMU_new.gxstat.se = 1;
+		//handled in matrix now
+		//MMU_new.gxstat.se = 1;
 	//	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 	//	return;
 	}
@@ -1198,14 +1208,17 @@ BOOL gfx3d_glVertex16b(unsigned int v)
 {
 	if(coordind==0)
 	{
-		coord[0]		= float16table[v&0xFFFF];
-		coord[1]		= float16table[v>>16];
+		//coord[0]		= float16table[v&0xFFFF];
+		//coord[1]		= float16table[v>>16];
+		u16coord[0] = v&0xFFFF;
+		u16coord[1] = (v>>16)&0xFFFF;
 
 		++coordind;
 		return FALSE;
 	}
 
-	coord[2]	  = float16table[v&0xFFFF];
+	//coord[2]	  = float16table[v&0xFFFF];
+	u16coord[2] = v&0xFFFF;
 
 	coordind = 0;
 	SetVertex ();
@@ -1216,9 +1229,12 @@ BOOL gfx3d_glVertex16b(unsigned int v)
 
 void gfx3d_glVertex10b(u32 v)
 {
-	coord[0]		= float10Table[v&1023];
-	coord[1]		= float10Table[(v>>10)&1023];
-	coord[2]		= float10Table[(v>>20)&1023];
+	//coord[0]		= float10Table[v&1023];
+	//coord[1]		= float10Table[(v>>10)&1023];
+	//coord[2]		= float10Table[(v>>20)&1023];
+	u16coord[0] = (v&1023)<<6;
+	u16coord[1] = ((v>>10)&1023)<<6;
+	u16coord[2] = ((v>>20)&1023)<<6;
 
 	GFX_DELAY(8);
 	SetVertex ();
@@ -1226,8 +1242,10 @@ void gfx3d_glVertex10b(u32 v)
 
 void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 {
-	coord[one]		= float16table[v&0xffff];
-	coord[two]		= float16table[v>>16];
+	//coord[one]		= float16table[v&0xffff];
+	//coord[two]		= float16table[v>>16];
+	u16coord[one]		= v&0xffff;
+	u16coord[two]		= (v>>16)&0xFFFF;
 
 	SetVertex ();
 
@@ -1236,9 +1254,14 @@ void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 
 void gfx3d_glVertex_rel(u32 v)
 {
-	coord[0]		+= float10RelTable[v&1023];
-	coord[1]		+= float10RelTable[(v>>10)&1023];
-	coord[2]		+= float10RelTable[(v>>20)&1023];
+	//coord[0]		+= float10RelTable[v&1023];
+	//coord[1]		+= float10RelTable[(v>>10)&1023];
+	//coord[2]		+= float10RelTable[(v>>20)&1023];
+
+	u16coord[0] += (u16)(((s16)((v&1023)<<6))>>6);
+	u16coord[1] += (u16)(((s16)(((v>>10)&1023)<<6))>>6);
+	u16coord[2] += (u16)(((s16)(((v>>20)&1023)<<6))>>6);
+
 
 	SetVertex ();
 
@@ -1526,7 +1549,7 @@ void gfx3d_glVecTest(u32 v)
 {
 	GFX_DELAY(5);
 
-	//printf("VECTEST\n");
+	printf("VECTEST\n");
 
 	CACHE_ALIGN float normal[4] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
@@ -2127,7 +2150,7 @@ SFORMAT SF_GFX3D[]={
 	{ "MM4I", 1, 1, &MM4x4ind},
 	{ "MM3I", 1, 1, &MM4x3ind},
 	{ "MMxI", 1, 1, &MM3x3ind},
-	{ "GCOR", 4, 1, coord},
+	{ "GSCO", 4, 1, u16coord},
 	{ "GCOI", 1, 1, &coordind},
 	{ "GVFM", 4, 1, &vtxFormat},
 	{ "GTRN", 4, 4, trans},
