@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Desmume 0.9.5\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2007-09-11 01:38-0400\n"
-"PO-Revision-Date: 2009-10-17 22:08-0300\n"
+"PO-Revision-Date: 2009-10-18 13:01-0300\n"
 "Last-Translator: Felipe <felipefpl@ig.com.br>\n"
 "Language-Team: Felipe\n"
 "MIME-Version: 1.0\n"
@@ -64,7 +64,7 @@ msgstr "*** Falhou em criar o pixmap.\n"
 
 #: ../src/gtk-glade/gdk_3Demu.c:168
 msgid "*** No appropriate OpenGL-capable visual found.\n"
-msgstr "*** Nenhum visual -capaz do OpenGL achado.\n"
+msgstr "*** Nenhum visual -capaz do OpenGL encontrado.\n"
 
 #: ../src/gtk-glade/gdk_3Demu.c:181
 msgid "Failed to create the GdkGLPixmap\n"
@@ -82,7 +82,7 @@ msgstr "não pôde achar o manejador do sinal '%s'."
 #: ../src/gtk-glade/main.c:106
 #, c-format
 msgid "USAGE: %s [OPTIONS] [nds-file]\n"
-msgstr "USO: %s [OPTIONS] [nds-file]\n"
+msgstr "USO: %s [OPÇÕES] [arquivo-nds]\n"
 
 #: ../src/gtk-glade/main.c:107
 msgid "OPTIONS:\n"
@@ -97,11 +97,11 @@ msgid ""
 "   --disable-3d        Disables the 3D emulation\n"
 "\n"
 msgstr ""
-"   --soft-convert      Use uma conversão de cor via software durante a\n"
+"   --soft-convert      Usa conversão de cor via software durante a\n"
 "                       renderização da tela em OpenGl. Pode produzir melhores ou piores\n"
 "                       taxas de frames dependendo do hardware.\n"
 "   \n"
-"   --disable-3d        Disabilita a emulação 3D\n"
+"   --disable-3d        Desativa a emulação 3D\n"
 "\n"
 
 #: ../src/gtk-glade/main.c:116
@@ -156,7 +156,7 @@ msgstr "Arquivo NDS (\"%s\") já definido\n"
 #: ../src/gtk-glade/main.c:198
 #, c-format
 msgid "USAGE: %s [options] [nds-file]\n"
-msgstr "US0: %s [opções] [arquivo-nds]\n"
+msgstr "USO: %s [opções] [arquivo-nds]\n"
 
 #: ../src/gtk-glade/main.c:199
 #, c-format
@@ -496,7 +496,7 @@ msgstr "Ferramentas"
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:75
 msgid "True Gap"
-msgstr "Verdadeira Lacuna"
+msgstr "Lacuna Real"
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:76
 msgid "Up : "
@@ -580,8 +580,8 @@ msgid ""
 "ARM9 cpu\n"
 "ARM7 cpu"
 msgstr ""
-"ARM9 cpu\n"
-"ARM7 cpu"
+"cpu ARM9\n"
+"cpu ARM7"
 
 #: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:10
 msgid "BMP"
