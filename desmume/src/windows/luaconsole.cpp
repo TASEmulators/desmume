@@ -598,7 +598,9 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					{
 						// tell the OS to open the file with its associated editor,
 						// without blocking on it or leaving a command window open.
-						ShellExecute(NULL, "edit", PhysicalName, NULL, NULL, SW_SHOWNORMAL);
+						if((int)ShellExecute(NULL, "edit", PhysicalName, NULL, NULL, SW_SHOWNORMAL) == SE_ERR_NOASSOC)
+							if((int)ShellExecute(NULL, "open", PhysicalName, NULL, NULL, SW_SHOWNORMAL) == SE_ERR_NOASSOC)
+								ShellExecute(NULL, NULL, "notepad", PhysicalName, NULL, SW_SHOWNORMAL);
 					}
 					if(created)
 					{
