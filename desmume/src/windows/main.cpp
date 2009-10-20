@@ -194,6 +194,11 @@ inline bool IsDlgCheckboxChecked(HWND hDlg, int id)
 	return IsDlgButtonChecked(hDlg,id) == BST_CHECKED;
 }
 
+void CheckDlgItem(HWND hDlg, int id, bool checked)
+{
+	CheckDlgButton(hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
+}
+
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
 char SavName[MAX_PATH] = "";
@@ -261,11 +266,11 @@ extern bool userTouchesScreen;
 
 /*__declspec(thread)*/ bool inFrameBoundary = false;
 
-//static char IniName[MAX_PATH];
-int sndcoretype=SNDCORE_DIRECTX;
-int sndbuffersize=735*4;
-int sndvolume=100;
-HANDLE hSoundThreadWakeup = INVALID_HANDLE_VALUE;
+static int sndcoretype=SNDCORE_DIRECTX;
+static int sndbuffersize=735*4;
+static int sndvolume=100;
+static int snd_synchmode=0;
+static int snd_synchmethod=0;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
@@ -1198,8 +1203,8 @@ static void StepRunLoop_Core()
 	{
 		Lock lock;
 		NDS_exec<false>();
+		SPU_Emulate_user();
 		win_sound_samplecounter = 735;
-		SetEvent(hSoundThreadWakeup);
 	}
 	inFrameBoundary = true;
 	DRV_AviVideoUpdate((u16*)GPU_screen);
@@ -1736,12 +1741,12 @@ class WinDriver : public BaseDriver
 
 	virtual bool EMU_IsEmulationPaused()
 	{
-		return emu_paused;
+		return emu_paused!=0;
 	}
 
 	virtual bool EMU_IsFastForwarding()
 	{
-		return FastForward;
+		return FastForward!=0;
 	}
 
 	virtual bool EMU_HasEmulationStarted()
@@ -1819,8 +1824,6 @@ int _main()
 	display_invoke_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	display_invoke_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	display_wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-	hSoundThreadWakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
@@ -2151,6 +2154,10 @@ int _main()
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
 	SPU_SetVolume(sndvolume);
 
+	snd_synchmode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
+	snd_synchmethod = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);
+	SPU_SetSynchMode(snd_synchmode,snd_synchmethod);
+
 	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", FALSE, IniName);
 	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", FALSE, IniName);
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
@@ -2261,8 +2268,6 @@ int _main()
 	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
 
 	UnregWndClass("DeSmuME");
-
-	CloseHandle(hSoundThreadWakeup);
 
 	return 0;
 }
@@ -2992,8 +2997,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	static int tmp_execute;
 	switch (message)                  // handle the messages
 	{
+		case WM_EXITMENULOOP:
+			SPU_Pause(0);
+			break;
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
+			SPU_Pause(1);
+
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
 			MENUITEMINFO mii;
@@ -4810,7 +4820,20 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 	return FALSE;
 }
 
-LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static void SoundSettings_updateVolumeReadout(HWND hDlg)
+{
+	SetDlgItemInt(hDlg,IDC_VOLUME,SendMessage(GetDlgItem(hDlg,IDC_SLVOLUME),TBM_GETPOS,0,0),FALSE);
+}
+
+static void SoundSettings_updateSynchMode(HWND hDlg)
+{
+	BOOL en = IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_SYNCH)?TRUE:FALSE;
+	EnableWindow(GetDlgItem(hDlg,IDC_GROUP_SYNCHMETHOD),en);
+	EnableWindow(GetDlgItem(hDlg,IDC_SYNCHMETHOD_N),en);
+	EnableWindow(GetDlgItem(hDlg,IDC_SYNCHMETHOD_Z),en);
+}
+
+static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static UINT_PTR timerid=0;
 	switch (uMsg)
@@ -4819,6 +4842,7 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 		{
 			int i;
 			char tempstr[MAX_PATH];
+			
 			// Setup Sound Core Combo box
 			SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_RESETCONTENT, 0, 0);
 			SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)"None");
@@ -4832,6 +4856,15 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 				if (sndcoretype == SNDCoreList[i]->id)
 					SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_SETCURSEL, i, 0);
 			}
+
+			//update the synch mode
+			CheckDlgItem(hDlg,IDC_SYNCHMODE_DUAL,snd_synchmode==0);
+			CheckDlgItem(hDlg,IDC_SYNCHMODE_SYNCH,snd_synchmode==1);
+			SoundSettings_updateSynchMode(hDlg);
+
+			//update the synch method
+			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_N,snd_synchmethod==0);
+			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_Z,snd_synchmethod==1);
 
 			//setup interpolation combobox
 			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_RESETCONTENT, 0, 0);
@@ -4849,10 +4882,15 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 
 			// Set Selected Volume
 			SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETPOS, TRUE, sndvolume);
+			SoundSettings_updateVolumeReadout(hDlg);
 
 			timerid = SetTimer(hDlg, 1, 500, NULL);
 			return TRUE;
 		}
+	case WM_HSCROLL:
+		SoundSettings_updateVolumeReadout(hDlg);
+		break;
+
 	case WM_TIMER:
 		{
 			if (timerid == wParam)
@@ -4868,6 +4906,11 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 		{
 			switch (LOWORD(wParam))
 			{
+			case IDC_SYNCHMODE_DUAL:
+			case IDC_SYNCHMODE_SYNCH:
+				SoundSettings_updateSynchMode(hDlg);
+				break;
+
 			case IDOK:
 				{
 					char tempstr[MAX_PATH];
@@ -4896,6 +4939,18 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 					sprintf(tempstr, "%d", sndvolume);
 					WritePrivateProfileString("Sound", "Volume", tempstr, IniName);
 					SPU_SetVolume(sndvolume);
+
+					//save the synch mode
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_DUAL)) snd_synchmode = 0;
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_SYNCH)) snd_synchmode = 1;
+					WritePrivateProfileInt("Sound", "SynchMode", snd_synchmode, IniName);
+
+					//save the synch method
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_N)) snd_synchmethod = 0;
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_Z)) snd_synchmethod = 1;
+					WritePrivateProfileInt("Sound", "SynchMethod", snd_synchmethod, IniName);
+
+					SPU_SetSynchMode(snd_synchmode, snd_synchmethod);
 
 					//write interpolation type
 					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);

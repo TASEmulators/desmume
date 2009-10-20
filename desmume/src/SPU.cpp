@@ -23,16 +23,16 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include <stdlib.h>
-#include <string.h>
-
 #define _USE_MATH_DEFINES
 #include <math.h>
 #ifndef M_PI
 #define M_PI 3.1415926535897932386
 #endif
 
-#define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
+#include <stdlib.h>
+#include <string.h>
+#include <queue>
+#include <vector>
 
 #include "debug.h"
 #include "MMU.h"
@@ -43,12 +43,465 @@
 #include "NDSSystem.h"
 #include "matrix.h"
 
+#define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
+
 //#undef FORCEINLINE
 //#define FORCEINLINE
+
+class ISynchronizingAudioBuffer
+{
+public:
+	virtual void enqueue_samples(s16* buf, int samples_provided) = 0;
+
+	//returns the number of samples actually supplied, which may not match the number requested
+	virtual int output_samples(s16* buf, int samples_requested) = 0;
+};
+
+template<typename T> inline T _abs(T val)
+{
+	if(val<0) return -val;
+	else return val;
+}
+
+template<typename T> inline T moveValueTowards(T val, T target, T incr)
+{
+	incr = _abs(incr);
+	T delta = _abs(target-val);
+	if(val<target) val += incr;
+	else if(val>target) val -= incr;
+	T newDelta = _abs(target-val);
+	if(newDelta >= delta)
+		val = target;
+	return val;
+}
+
+
+class ZeromusSynchronizer : public ISynchronizingAudioBuffer
+{
+public:
+	ZeromusSynchronizer()
+		: mixqueue_go(false)
+		,
+		#ifdef NDEBUG
+		adjustobuf(200,1000)
+		#else
+		adjustobuf(22000,44000)
+		#endif
+	{
+
+	}
+
+	bool mixqueue_go;
+
+	virtual void enqueue_samples(s16* buf, int samples_provided)
+	{
+		for(int i=0;i<samples_provided;i++) {
+			s16 left = *buf++;
+			s16 right = *buf++;
+			adjustobuf.enqueue(left,right);
+		}
+	}
+
+	//returns the number of samples actually supplied, which may not match the number requested
+	virtual int output_samples(s16* buf, int samples_requested)
+	{
+		int done = 0;
+		if(!mixqueue_go) {
+			if(adjustobuf.size > 200)
+				mixqueue_go = true;
+		}
+		else
+		{
+			for(int i=0;i<samples_requested;i++) {
+				if(adjustobuf.size==0) {
+					mixqueue_go = false;
+					break;
+				}
+				done++;
+				s16 left, right;
+				adjustobuf.dequeue(left,right);
+				*buf++ = left;
+				*buf++ = right;
+			}
+		}
+		
+		return done;
+	}
+
+private:
+	class Adjustobuf
+	{
+	public:
+		Adjustobuf(int _minLatency, int _maxLatency)
+			: size(0)
+			, minLatency(_minLatency)
+			, maxLatency(_maxLatency)
+		{
+			rollingTotalSize = 0;
+			targetLatency = (maxLatency + minLatency)/2;
+			rate = 1.0f;
+			cursor = 0.0f;
+			curr[0] = curr[1] = 0;
+			kAverageSize = 80000;
+		}
+
+		float rate, cursor;
+		int minLatency, targetLatency, maxLatency;
+		std::queue<s16> buffer;
+		int size;
+		s16 curr[2];
+
+		std::queue<int> statsHistory;
+
+		void enqueue(s16 left, s16 right) 
+		{
+			buffer.push(left);
+			buffer.push(right);
+			size++;
+		}
+
+		s64 rollingTotalSize;
+
+		u32 kAverageSize;
+
+		void addStatistic()
+		{
+			statsHistory.push(size);
+			rollingTotalSize += size;
+			if(statsHistory.size()>kAverageSize)
+			{
+				rollingTotalSize -= statsHistory.front();
+				statsHistory.pop();
+
+				float averageSize = (float)(rollingTotalSize / kAverageSize);
+				//static int ctr=0;  ctr++; if((ctr&127)==0) printf("avg size: %f curr size: %d rate: %f\n",averageSize,size,rate);
+				{
+					float targetRate;
+					if(averageSize < targetLatency)
+					{
+						targetRate = 1.0f - (targetLatency-averageSize)/kAverageSize;
+					}
+					else if(averageSize > targetLatency) {
+						targetRate = 1.0f + (averageSize-targetLatency)/kAverageSize;
+					} else targetRate = 1.0f;
+				
+					//rate = moveValueTowards(rate,targetRate,0.001f);
+					rate = targetRate;
+				}
+
+			}
+
+
+		}
+
+		void dequeue(s16& left, s16& right)
+		{
+			left = right = 0; 
+			addStatistic();
+			if(size==0) { return; }
+			cursor += rate;
+			while(cursor>1.0f) {
+				cursor -= 1.0f;
+				if(size>0) {
+					curr[0] = buffer.front(); buffer.pop();
+					curr[1] = buffer.front(); buffer.pop();
+					size--;
+				}
+			}
+			left = curr[0]; 
+			right = curr[1];
+		}
+	} adjustobuf;
+};
+
+class NitsujaSynchronizer : public ISynchronizingAudioBuffer
+{
+private:
+	template<typename T>
+	struct ssampT
+	{
+		T l, r;
+		enum { TMAX = (1 << ((sizeof(T) * 8) - 1)) - 1 };
+		ssampT() {}
+		ssampT(T ll, T rr) : l(ll), r(rr) {}
+		template<typename T2>
+		ssampT(ssampT<T2> s) : l(s.l), r(s.r) {}
+		ssampT operator+(const ssampT& rhs)
+		{
+			s32 l2 = l+rhs.l;
+			s32 r2 = r+rhs.r;
+			if(l2 > TMAX) l2 = TMAX;
+			if(l2 < -TMAX) l2 = -TMAX;
+			if(r2 > TMAX) r2 = TMAX;
+			if(r2 < -TMAX) r2 = -TMAX;
+			return ssampT(l2, r2);
+		}
+		ssampT operator/(int rhs)
+		{
+			return ssampT(l/rhs,r/rhs);
+		}
+		ssampT operator*(int rhs)
+		{
+			s32 l2 = l*rhs;
+			s32 r2 = r*rhs;
+			if(l2 > TMAX) l2 = TMAX;
+			if(l2 < -TMAX) l2 = -TMAX;
+			if(r2 > TMAX) r2 = TMAX;
+			if(r2 < -TMAX) r2 = -TMAX;
+			return ssampT(l2, r2);
+		}
+		ssampT muldiv (int num, int den)
+		{
+			num = std::max<T>(0,num);
+			return ssampT(((s32)l * num) / den, ((s32)r * num) / den);
+		}
+		ssampT faded (ssampT rhs, int cur, int start, int end)
+		{
+			if(cur <= start)
+				return *this;
+			if(cur >= end)
+				return rhs;
+
+			//float ang = 3.14159f * (float)(cur - start) / (float)(end - start);
+			//float amt = (1-cosf(ang))*0.5f;
+			//cur = start + (int)(amt * (end - start));
+
+			int inNum = cur - start;
+			int outNum = end - cur;
+			int denom = end - start;
+
+			int lrv = ((int)l * outNum + (int)rhs.l * inNum) / denom;
+			int rrv = ((int)r * outNum + (int)rhs.r * inNum) / denom;
+
+			return ssampT<T>(lrv,rrv);
+		}
+	};
+
+	typedef ssampT<s16> ssamp;
+
+	std::vector<ssamp> sampleQueue;
+
+	// reflects x about y if x exceeds y.
+	FORCEINLINE int reflectAbout(int x, int y)
+	{
+			//return (x)+(x)/(y)*(2*((y)-(x))-1);
+			return (x<y) ? x : (2*y-x-1);
+	}
+
+	void emit_samples(s16* outbuf, ssamp* samplebuf, int samples)
+	{
+		for(int i=0;i<samples;i++) {
+			*outbuf++ = samplebuf[i].l;
+			*outbuf++ = samplebuf[i].r;
+		}
+	}
+	 
+public:
+	NitsujaSynchronizer()
+	{}
+
+	virtual void enqueue_samples(s16* buf, int samples_provided)
+	{
+		for(int i=0;i<samples_provided;i++)
+		{
+			sampleQueue.push_back(ssamp(buf[0],buf[1]));
+			buf += 2;
+		}
+	}
+
+	virtual int output_samples(s16* buf, int samples_requested)
+	{
+		int audiosize = samples_requested;
+		int queued = sampleQueue.size();
+		// truncate input and output sizes to 8 because I am too lazy to deal with odd numbers
+		audiosize &= ~7;
+		queued &= ~7;
+
+		if(queued > 0x200 && audiosize > 0) // is there any work to do?
+		{
+			// are we going at normal speed?
+			// or more precisely, are the input and output queues/buffers of similar size?
+			if(queued > 900 || audiosize > queued * 2)
+			{
+				// not normal speed. we have to resample it somehow in this case.
+				static std::vector<ssamp> outsamples;
+				outsamples.clear();
+				if(audiosize <= queued)
+				{
+					// fast forward speed
+					// this is the easy case, just crossfade it and it sounds ok
+					for(int i = 0; i < audiosize; i++)
+					{
+						int j = i + queued - audiosize;
+						ssamp outsamp = sampleQueue[i].faded(sampleQueue[j], i,0,audiosize);
+						outsamples.push_back(ssamp(outsamp));
+					}
+				}
+				else
+				{
+					// slow motion speed
+					// here we take a very different approach,
+					// instead of crossfading it, we select a single sample from the queue
+					// and make sure that the index we use to select a sample is constantly moving
+					// and that it starts at the first sample in the queue and ends on the last one.
+					//
+					// hopefully the index doesn't move discontinuously or we'll get slight crackling
+					// (there might still be a minor bug here that causes this occasionally)
+					//
+					// here's a diagram of how the index we sample from moves:
+					//
+					// queued (this axis represents the index we sample from. the top means the end of the queue)
+					// ^
+					// |   --> audiosize (this axis represents the output index we write to, right meaning forward in output time/position)
+					// |   A           C       C  end
+					//    A A     B   C C     C
+					//   A   A   A B C   C   C
+					//  A     A A   B     C C
+					// A       A           C
+					// start
+					//
+					// yes, this means we are spending some stretches of time playing the sound backwards,
+					// but the stretches are short enough that this doesn't sound weird.
+					// apparently this also sounds less "echoey" or "robotic" than only playing it forwards.
+
+					int midpointX = audiosize >> 1;
+					int midpointY = queued >> 1;
+
+					// all we need to do here is calculate the X position of the leftmost "B" in the above diagram.
+					// TODO: we should calculate it with a simple equation like
+					//   midpointXOffset = min(something,somethingElse);
+					// but it's a little difficult to work it out exactly
+					// so here's a stupid search for the value for now:
+
+					int prevA = 999999;
+					int midpointXOffset = queued/2;
+					while(true)
+					{
+						int a = abs(reflectAbout((midpointX - midpointXOffset) % (queued*2), queued) - midpointY) - midpointXOffset;
+						if(((a > 0) != (prevA > 0) || (a < 0) != (prevA < 0)) && prevA != 999999)
+						{
+							if((a + prevA)&1) // there's some sort of off-by-one problem with this search since we're moving diagonally...
+								midpointXOffset++; // but this fixes it most of the time...
+							break; // found it
+						}
+						prevA = a;
+						midpointXOffset--;
+						if(midpointXOffset < 0)
+						{
+							midpointXOffset = 0;
+							break; // failed somehow? let's just omit the "B" stretch in this case.
+						}
+					}
+					int leftMidpointX = midpointX - midpointXOffset;
+					int rightMidpointX = midpointX + midpointXOffset;
+					int leftMidpointY = reflectAbout((leftMidpointX) % (queued*2), queued);
+					int rightMidpointY = (queued-1) - reflectAbout((((int)audiosize-1 - rightMidpointX + queued*2) % (queued*2)), queued);
+
+					// output the left almost-half of the sound (section "A")
+					for(int x = 0; x < leftMidpointX; x++)
+					{
+						int i = reflectAbout(x % (queued*2), queued);
+						outsamples.push_back(sampleQueue[i]);
+					}
+
+					// output the middle stretch (section "B")
+					int y = leftMidpointY;
+					int dyMidLeft  = (leftMidpointY  < midpointY) ? 1 : -1;
+					int dyMidRight = (rightMidpointY > midpointY) ? 1 : -1;
+					for(int x = leftMidpointX; x < midpointX; x++, y+=dyMidLeft)
+						outsamples.push_back(sampleQueue[y]);
+					for(int x = midpointX; x < rightMidpointX; x++, y+=dyMidRight)
+						outsamples.push_back(sampleQueue[y]);
+
+					// output the end of the queued sound (section "C")
+					for(int x = rightMidpointX; x < audiosize; x++)
+					{
+						int i = (queued-1) - reflectAbout((((int)audiosize-1 - x + queued*2) % (queued*2)), queued);
+						outsamples.push_back(sampleQueue[i]);
+					}
+					assert(outsamples.back().l == sampleQueue[queued-1].l);
+				} //end else
+
+				// if the user SPU mixed some channels, mix them in with our output now
+#ifdef HYBRID_SPU
+				SPU_MixAudio<2>(SPU_user,audiosize);
+				for(int i = 0; i < audiosize; i++)
+					outsamples[i] = outsamples[i] + *(ssamp*)(&SPU_user->outbuf[i*2]);
+#endif
+
+				emit_samples(buf,&outsamples[0],audiosize);
+				sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
+				return audiosize;
+			}
+			else
+			{
+				// normal speed
+				// just output the samples straightforwardly.
+				//
+				// at almost-full speeds (like 50/60 FPS)
+				// what will happen is that we rapidly fluctuate between entering this branch
+				// and entering the "slow motion speed" branch above.
+				// but that's ok! because all of these branches sound similar enough that we can get away with it.
+				// so the two cases actually complement each other.
+
+				if(audiosize >= queued)
+				{
+#ifdef HYBRID_SPU
+					SPU_MixAudio<2>(SPU_user,queued);
+					for(int i = 0; i < queued; i++)
+						sampleQueue[i] = sampleQueue[i] + *(ssamp*)(&SPU_user->outbuf[i*2]);
+#endif
+					emit_samples(buf,&sampleQueue[0],queued);
+					sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
+					return queued;
+				}
+				else
+				{
+#ifdef HYBRID_SPU
+					SPU_MixAudio<2>(SPU_user,audiosize);
+					for(int i = 0; i < audiosize; i++)
+						sampleQueue[i] = sampleQueue[i] + *(ssamp*)(&SPU_user->outbuf[i*2]);
+#endif
+					emit_samples(buf,&sampleQueue[0],audiosize);
+					sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin()+audiosize);
+					return audiosize;
+				}
+
+			} //end normal speed
+
+		} //end if there is any work to do
+		else
+		{
+			return 0;
+		}
+
+	} //output_samples
+
+private:
+
+}; //NitsujaSynchronizer
+
+//static ISynchronizingAudioBuffer* synchronizer = new ZeromusSynchronizer();
+static ISynchronizingAudioBuffer* synchronizer = new NitsujaSynchronizer();
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
 int SPU_currentCoreNum = SNDCORE_DUMMY;
+static int volume = 100;
+
+enum ESynchMode
+{
+	ESynchMode_DualSynchAsynch,
+	ESynchMode_Synchronous
+};
+static ESynchMode synchmode = ESynchMode_DualSynchAsynch;
+
+enum ESynchMethod
+{
+	ESynchMethod_N, //nitsuja's
+	ESynchMethod_Z //zero's
+};
+static ESynchMethod synchmethod = ESynchMethod_N;
 
 static SoundInterface_struct *SNDCore=NULL;
 extern SoundInterface_struct *SNDCoreList[];
@@ -93,8 +546,6 @@ static const double ARM7_CLOCK = 33513982;
 
 static double samples = 0;
 
-//////////////////////////////////////////////////////////////////////////////
-
 template<typename T>
 static FORCEINLINE T MinMax(T val, T min, T max)
 {
@@ -106,7 +557,7 @@ static FORCEINLINE T MinMax(T val, T min, T max)
 	return val;
 }
 
-//////////////////////////////////////////////////////////////////////////////
+//--------------external spu interface---------------
 
 int SPU_ChangeSoundCore(int coreid, int buffersize)
 {
@@ -153,6 +604,8 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 	//enable the user spu
 	SPU_user = new SPU_struct(buffersize);
 
+	SNDCore->SetVolume(volume);
+
 	return 0;
 }
 
@@ -161,20 +614,19 @@ SoundInterface_struct *SPU_SoundCore()
 	return SNDCore;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
 //static double cos_lut[256];
-
 int SPU_Init(int coreid, int buffersize)
 {
 	int i, j;
 
+	//for some reason we dont use the cos lut anymore... did someone decide it was slow?
 	//for(int i=0;i<256;i++)
 	//	cos_lut[i] = cos(i/256.0*M_PI);
 
 	SPU_core = new SPU_struct(740);
 	SPU_Reset();
 
+	//create adpcm decode accelerator lookups
 	for(i = 0; i < 16; i++)
 	{
 		for(j = 0; j < 89; j++)
@@ -183,7 +635,6 @@ int SPU_Init(int coreid, int buffersize)
 			if(i & 0x8) precalcdifftbl[j][i] = -precalcdifftbl[j][i];
 		}
 	}
-
 	for(i = 0; i < 8; i++)
 	{
 		for(j = 0; j < 89; j++)
@@ -195,8 +646,6 @@ int SPU_Init(int coreid, int buffersize)
 	return SPU_ChangeSoundCore(coreid, buffersize);
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
 void SPU_Pause(int pause)
 {
 	if (SNDCore == NULL) return;
@@ -207,15 +656,26 @@ void SPU_Pause(int pause)
 		SNDCore->UnMuteAudio();
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void SPU_SetSynchMode(int mode, int method)
+{
+	synchmode = (ESynchMode)mode;
+	if(synchmethod != (ESynchMethod)method)
+	{
+		synchmethod = (ESynchMethod)method;
+		delete synchronizer;
+		//grr does this need to be locked? spu might need a lock method
+		if(synchmethod == ESynchMethod_N)
+			synchronizer = new NitsujaSynchronizer();
+		else synchronizer = new ZeromusSynchronizer();
+	}
+}
 
 void SPU_SetVolume(int volume)
 {
+	::volume = volume;
 	if (SNDCore)
 		SNDCore->SetVolume(volume);
 }
-
-//////////////////////////////////////////////////////////////////////////////
 
 
 void SPU_Reset(void)
@@ -228,6 +688,7 @@ void SPU_Reset(void)
 	if(SNDCore && SPU_user) {
 		SNDCore->DeInit();
 		SNDCore->Init(SPU_user->bufsize*2);
+		SNDCore->SetVolume(volume);
 		//todo - check success?
 	}
 
@@ -237,6 +698,8 @@ void SPU_Reset(void)
 
 	samples = 0;
 }
+
+//------------------------------------------
 
 void SPU_struct::reset()
 {
@@ -782,8 +1245,7 @@ FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* cons
 	}
 }
 
-template<bool actuallyMix> 
-static void SPU_MixAudio(SPU_struct *SPU, int length)
+static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 {
 	u8 vol;
 
@@ -849,11 +1311,13 @@ void SPU_Emulate_core()
 	samples += samples_per_hline;
 	spu_core_samples = (int)(samples);
 	samples -= spu_core_samples;
-	
-	if(driver->AVI_IsRecording() || driver->WAV_IsRecording())
-		SPU_MixAudio<true>(SPU_core,spu_core_samples);
-	else 
-		SPU_MixAudio<false>(SPU_core,spu_core_samples);
+
+	bool synchronize = (synchmode == ESynchMode_Synchronous);
+	bool mix = driver->AVI_IsRecording() || driver->WAV_IsRecording() || synchronize;
+
+	SPU_MixAudio(mix,SPU_core,spu_core_samples);
+	if(synchronize)
+		synchronizer->enqueue_samples(SPU_core->outbuf, spu_core_samples);
 }
 
 void SPU_Emulate_user(bool mix)
@@ -872,8 +1336,19 @@ void SPU_Emulate_user(bool mix)
 		//printf("mix %i samples\n", audiosize);
 		if (audiosize > SPU_user->bufsize)
 			audiosize = SPU_user->bufsize;
-		if (mix) SPU_MixAudio<true>(SPU_user,audiosize);
-		SNDCore->UpdateAudio(SPU_user->outbuf, audiosize);
+
+		if(synchmode == ESynchMode_Synchronous)
+		{
+			int done = synchronizer->output_samples(SPU_user->outbuf, audiosize);
+			for(int j=0;j<done;j++)
+				SNDCore->UpdateAudio(&SPU_user->outbuf[j*2],1);
+		}
+		else
+		{
+			SPU_MixAudio(mix,SPU_user,audiosize);
+			SNDCore->UpdateAudio(SPU_user->outbuf, audiosize);
+		}
+
 	}
 }
 
@@ -901,51 +1376,15 @@ SoundInterface_struct SNDDummy = {
 	SNDDummySetVolume
 };
 
-//////////////////////////////////////////////////////////////////////////////
+int SNDDummyInit(int buffersize) { return 0; }
+void SNDDummyDeInit() {}
+void SNDDummyUpdateAudio(s16 *buffer, u32 num_samples) { }
+u32 SNDDummyGetAudioSpace() { return 740; }
+void SNDDummyMuteAudio() {}
+void SNDDummyUnMuteAudio() {}
+void SNDDummySetVolume(int volume) {}
 
-int SNDDummyInit(int buffersize)
-{
-	return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDDummyDeInit()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDDummyUpdateAudio(s16 *buffer, u32 num_samples)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-u32 SNDDummyGetAudioSpace()
-{
-	return 740;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDDummyMuteAudio()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDDummyUnMuteAudio()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDDummySetVolume(int volume)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
+//---------wav writer------------
 
 typedef struct {
 	char id[4];

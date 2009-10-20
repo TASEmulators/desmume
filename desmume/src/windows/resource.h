@@ -308,7 +308,6 @@
 #define IDC_GGREEN                      1005
 #define IDC_EDIT12                      1006
 #define IDC_ROTATE270                   1006
-#define IDC_SPU_CACHE                   1006
 #define IDC_GRED                        1006
 #define IDC_WIFIMODE0                   1006
 #define IDC_ARM7BIOSBROWSE              1007
@@ -336,14 +335,20 @@
 #define IDC_RAWDUMP                     1012
 #define IDC_REFRESH                     1012
 #define IDC_WINDOW3X                    1012
+#define IDC_SYNCHMODE_DUAL              1012
 #define IDC_EDIT02                      1013
 #define IDC_WINDOW4X                    1013
 #define IDC_VIEWMODE                    1013
+#define IDC_SYNCHMODE_SYNCH             1013
 #define IDC_EDIT04                      1014
 #define IDC_FIRMWAREBROWSE              1014
+#define IDC_VOLUME                      1014
+#define IDC_SYNCHMETHOD_N               1015
 #define IDC_BGMAP_CHARBASE              1016
 #define IDC_FIRMWAREBOOT                1016
+#define IDC_SYNCHMETHOD_Z               1016
 #define IDC_BGMAP_SCRBASE               1017
+#define IDC_GROUP_SYNCHMETHOD           1017
 #define IDC_AUTOUPDATE_ASM              1018
 #define IDC_BGMAP_PRIO                  1018
 #define IDC_BGMAP_PAL                   1019
@@ -793,7 +798,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1012
+#define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

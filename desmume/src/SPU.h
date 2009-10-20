@@ -131,6 +131,7 @@ SoundInterface_struct *SPU_SoundCore();
 int SPU_Init(int coreid, int buffersize);
 void SPU_Pause(int pause);
 void SPU_SetVolume(int volume);
+void SPU_SetSynchMode(int mode, int method);
 void SPU_Reset(void);
 void SPU_DeInit(void);
 void SPU_KeyOn(int channel);

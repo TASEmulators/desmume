@@ -69,37 +69,22 @@ static LONG soundvolume;
 static int issoundmuted;
 
 //////////////////////////////////////////////////////////////////////////////
+static volatile bool doterminate;
+static volatile bool terminated;
 
-//extern volatile int win_sound_samplecounter;
-HANDLE hSNDDXThread = INVALID_HANDLE_VALUE;
-extern HANDLE hSoundThreadWakeup;
-bool bTerminateSoundThread = false;
-bool bSilence = false;
+extern volatile int win_sound_samplecounter;
 
 DWORD WINAPI SNDDXThread( LPVOID )
 {
-	for(;;) 
-	{
-		if(bTerminateSoundThread) break;
-
-		if (bSilence)
-		{
-			if (WaitForSingleObject(hSoundThreadWakeup, 10) == WAIT_OBJECT_0)
-				bSilence = false;
-		}
-		else
-		{
-			// If the sound thread wakeup event is not signaled after a quarter second, output silence
-			if (WaitForSingleObject(hSoundThreadWakeup, 250) == WAIT_TIMEOUT)
-				bSilence = true;
-		}
-
+	for(;;) {
+		if(doterminate) break;
 		{
 			Lock lock;
-			SPU_Emulate_user(!bSilence);
+			SPU_Emulate_user();
 		}
+		Sleep(10);
 	}
-
+	terminated = true;
 	return 0;
 }
 
@@ -199,9 +184,9 @@ int SNDDXInit(int buffersize)
 	soundvolume = DSBVOLUME_MAX;
 	issoundmuted = 0;
 
-	bSilence = false;
-	bTerminateSoundThread = false;
-	hSNDDXThread = CreateThread(0, 0, SNDDXThread, 0, 0, 0);
+	doterminate = false;
+	terminated = false;
+	CreateThread(0,0,SNDDXThread,0,0,0);
 
 	return 0;
 }
@@ -212,9 +197,10 @@ void SNDDXDeInit()
 {
 	DWORD status=0;
 
-	bTerminateSoundThread = true;
-	SetEvent(hSoundThreadWakeup);
-	WaitForSingleObject(hSNDDXThread, INFINITE);
+	doterminate = true;
+	while(!terminated) {
+		Sleep(1);
+	}
 
 	if (lpDSB2)
 	{
@@ -251,15 +237,22 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 	DWORD buffer1_size, buffer2_size;
 	DWORD status;
 
-	lpDSB2->GetStatus(&status);
+	int samplecounter;
+	{
+		Lock lock;
+		samplecounter = win_sound_samplecounter -= num_samples;
+	}
+
+	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
+
+	IDirectSoundBuffer8_GetStatus(lpDSB2, &status);
 
 	if (status & DSBSTATUS_BUFFERLOST)
 		return; // fix me
 
-	lpDSB2->Lock(soundoffset, num_samples * sizeof(s16) * 2, &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
+	IDirectSoundBuffer8_Lock(lpDSB2, soundoffset, num_samples * sizeof(s16) * 2, &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
 
-	if(bSilence) 
-	{
+	if(silence) {
 		memset(buffer1, 0, buffer1_size);
 		if(buffer2)
 			memset(buffer2, 0, buffer2_size);
@@ -274,8 +267,9 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 	soundoffset += buffer1_size + buffer2_size;
 	soundoffset %= soundbufsize;
 
-	lpDSB2->Unlock(buffer1, buffer1_size, buffer2, buffer2_size);
+	IDirectSoundBuffer8_Unlock(lpDSB2, buffer1, buffer1_size, buffer2, buffer2_size);
 }
+
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -319,8 +313,16 @@ void SNDDXUnMuteAudio()
 
 void SNDDXSetVolume(int volume)
 {
-	if (!lpDSB2) return ;     /* might happen when changing sounddevice on the fly, caused a gpf */
-	soundvolume = (((LONG)volume) - 100) * 100;
+	if (!lpDSB2) return ;     //might happen when changing sounddevice on the fly, caused a gpf
+
+	if(volume==0)
+		soundvolume = DSBVOLUME_MIN;
+	else
+	{
+		float attenuate = 1000 * (float)log(100.0f/volume);
+		soundvolume = -(int)attenuate;
+	}
+	
 	if (!issoundmuted)
 		lpDSB2->SetVolume(soundvolume);
 }
