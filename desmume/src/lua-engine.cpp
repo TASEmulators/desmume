@@ -1202,11 +1202,11 @@ static UBits barg(lua_State *L, int idx)
 /* Return bit type. */
 #define BRET(b)  lua_pushnumber(L, (lua_Number)(SBits)(b)); return 1;
 
-static int bit_tobit(lua_State *L) { BRET(barg(L, 1)) }
-static int bit_bnot(lua_State *L) { BRET(~barg(L, 1)) }
+DEFINE_LUA_FUNCTION(bit_tobit, "x") { BRET(barg(L, 1)) }
+DEFINE_LUA_FUNCTION(bit_bnot, "x") { BRET(~barg(L, 1)) }
 
 #define BIT_OP(func, opr) \
-  static int func(lua_State *L) { int i; UBits b = barg(L, 1); \
+  DEFINE_LUA_FUNCTION(func, "x1 [,x2...]") { int i; UBits b = barg(L, 1); \
     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
 BIT_OP(bit_band, &=)
 BIT_OP(bit_bor, |=)
@@ -1218,7 +1218,7 @@ BIT_OP(bit_bxor, ^=)
 #define brol(b, n)  ((b << n) | (b >> (32-n)))
 #define bror(b, n)  ((b << (32-n)) | (b >> n))
 #define BIT_SH(func, fn) \
-  static int func(lua_State *L) { \
+  DEFINE_LUA_FUNCTION(func, "x, n") { \
     UBits b = barg(L, 1); UBits n = barg(L, 2) & 31; BRET(fn(b, n)) }
 BIT_SH(bit_lshift, bshl)
 BIT_SH(bit_rshift, bshr)
@@ -1226,14 +1226,14 @@ BIT_SH(bit_arshift, bsar)
 BIT_SH(bit_rol, brol)
 BIT_SH(bit_ror, bror)
 
-static int bit_bswap(lua_State *L)
+DEFINE_LUA_FUNCTION(bit_bswap, "x")
 {
   UBits b = barg(L, 1);
   b = (b >> 24) | ((b >> 8) & 0xff00) | ((b & 0xff00) << 8) | (b << 24);
   BRET(b)
 }
 
-static int bit_tohex(lua_State *L)
+DEFINE_LUA_FUNCTION(bit_tohex, "x [,n]")
 {
   UBits b = barg(L, 1);
   SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
@@ -1294,7 +1294,7 @@ bool luabitop_validate(lua_State *L) // originally named as luaopen_bit
 
 // LuaBitOp ends here
 
-static int bit_bshift_emulua(lua_State *L)
+DEFINE_LUA_FUNCTION(bitshift, "num,shift")
 {
 	int shift = luaL_checkinteger(L,2);
 	if (shift < 0) {
@@ -4376,7 +4376,7 @@ void registerLibs(lua_State* L)
 	lua_register(L, "AND", bit_band);
 	lua_register(L, "OR", bit_bor);
 	lua_register(L, "XOR", bit_bxor);
-	lua_register(L, "SHIFT", bit_bshift_emulua);
+	lua_register(L, "SHIFT", bitshift);
 	lua_register(L, "BIT", bitbit);
 
 	luabitop_validate(L);
