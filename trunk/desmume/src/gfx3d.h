@@ -257,9 +257,10 @@ struct VIEWPORT {
 	void decode(u32 v);
 };
 
-//The worst case we've managed to think of so far would be a viewport zoomed in a little bit 
-//on a diamond, with cut-out bits in all four corners
-#define MAX_CLIPPED_VERTS 8
+//ok, imagine the plane that cuts diagonally across a cube such that it clips
+//out to be a hexagon. within that plane, draw a quad such that it cuts off
+//four corners of the hexagon, and you will observe a decagon
+#define MAX_CLIPPED_VERTS 10
 
 class GFX3D_Clipper
 {
