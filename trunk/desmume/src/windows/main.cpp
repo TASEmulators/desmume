@@ -1802,6 +1802,7 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 	return buf;
 }
 
+DWORD wmTimerRes;
 int _main()
 {
 	InitDecoder();
@@ -2108,19 +2109,6 @@ int _main()
 		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, true);
 	}
 
-	DWORD wmTimerRes;
-	TIMECAPS tc;
-	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
-	{
-		wmTimerRes = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
-		timeBeginPeriod (wmTimerRes);
-	}
-	else
-	{
-		wmTimerRes = 5;
-		timeBeginPeriod (wmTimerRes);
-	}
-
 	if (KeyInDelayMSec == 0) {
 		DWORD dwKeyboardDelay;
 		SystemParametersInfo(SPI_GETKEYBOARDDELAY, 0, &dwKeyboardDelay, 0);
@@ -2285,12 +2273,25 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
-	timeBeginPeriod(1);
+	TIMECAPS tc;
+	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
+	{
+		wmTimerRes = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
+		timeBeginPeriod (wmTimerRes);
+	}
+	else
+	{
+		wmTimerRes = 5;
+		timeBeginPeriod (wmTimerRes);
+	}
+
 	g_thread_init (NULL);
 	hAppInst=hThisInstance;
 	OpenConsole();			// Init debug console
 
 	int ret = _main();
+
+	timeEndPeriod (wmTimerRes);
 
 	CloseConsole();
 
