@@ -1340,8 +1340,7 @@ void SPU_Emulate_user(bool mix)
 		if(synchmode == ESynchMode_Synchronous)
 		{
 			int done = synchronizer->output_samples(SPU_user->outbuf, audiosize);
-			for(int j=0;j<done;j++)
-				SNDCore->UpdateAudio(&SPU_user->outbuf[j*2],1);
+			SNDCore->UpdateAudio(SPU_user->outbuf,done);
 		}
 		else
 		{
