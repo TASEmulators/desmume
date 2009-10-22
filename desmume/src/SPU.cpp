@@ -217,85 +217,63 @@ private:
 class NitsujaSynchronizer : public ISynchronizingAudioBuffer
 {
 private:
-	template<typename T>
-	struct ssampT
+	struct ssamp
 	{
-		T l, r;
-		enum { TMAX = (1 << ((sizeof(T) * 8) - 1)) - 1 };
-		ssampT() {}
-		ssampT(T ll, T rr) : l(ll), r(rr) {}
-		template<typename T2>
-		ssampT(ssampT<T2> s) : l(s.l), r(s.r) {}
-		ssampT operator+(const ssampT& rhs)
-		{
-			s32 l2 = l+rhs.l;
-			s32 r2 = r+rhs.r;
-			if(l2 > TMAX) l2 = TMAX;
-			if(l2 < -TMAX) l2 = -TMAX;
-			if(r2 > TMAX) r2 = TMAX;
-			if(r2 < -TMAX) r2 = -TMAX;
-			return ssampT(l2, r2);
-		}
-		ssampT operator/(int rhs)
-		{
-			return ssampT(l/rhs,r/rhs);
-		}
-		ssampT operator*(int rhs)
-		{
-			s32 l2 = l*rhs;
-			s32 r2 = r*rhs;
-			if(l2 > TMAX) l2 = TMAX;
-			if(l2 < -TMAX) l2 = -TMAX;
-			if(r2 > TMAX) r2 = TMAX;
-			if(r2 < -TMAX) r2 = -TMAX;
-			return ssampT(l2, r2);
-		}
-		ssampT muldiv (int num, int den)
-		{
-			num = std::max<T>(0,num);
-			return ssampT(((s32)l * num) / den, ((s32)r * num) / den);
-		}
-		ssampT faded (ssampT rhs, int cur, int start, int end)
-		{
-			if(cur <= start)
-				return *this;
-			if(cur >= end)
-				return rhs;
-
-			//float ang = 3.14159f * (float)(cur - start) / (float)(end - start);
-			//float amt = (1-cosf(ang))*0.5f;
-			//cur = start + (int)(amt * (end - start));
-
-			int inNum = cur - start;
-			int outNum = end - cur;
-			int denom = end - start;
-
-			int lrv = ((int)l * outNum + (int)rhs.l * inNum) / denom;
-			int rrv = ((int)r * outNum + (int)rhs.r * inNum) / denom;
-
-			return ssampT<T>(lrv,rrv);
-		}
+		s16 l, r;
+		ssamp() {}
+		ssamp(s16 ll, s16 rr) : l(ll), r(rr) {}
 	};
-
-	typedef ssampT<s16> ssamp;
 
 	std::vector<ssamp> sampleQueue;
 
-	// reflects x about y if x exceeds y.
-	FORCEINLINE int reflectAbout(int x, int y)
+	// returns values going between 0 and y-1 in a saw wave pattern, based on x
+	static FORCEINLINE int pingpong(int x, int y)
 	{
-			//return (x)+(x)/(y)*(2*((y)-(x))-1);
-			return (x<y) ? x : (2*y-x-1);
+		x %= 2*y;
+		if(x >= y)
+			x = 2*y - x - 1;
+		return x;
+
+		// in case we want to switch to odd buffer sizes for more sharpness
+		//x %= 2*(y-1);
+		//if(x >= y)
+		//	x = 2*(y-1) - x;
+		//return x;
 	}
 
-	void emit_samples(s16* outbuf, ssamp* samplebuf, int samples)
+	static FORCEINLINE ssamp crossfade (ssamp lhs, ssamp rhs,  int cur, int start, int end)
 	{
-		for(int i=0;i<samples;i++) {
-			*outbuf++ = samplebuf[i].l;
-			*outbuf++ = samplebuf[i].r;
-		}
+		if(cur <= start)
+			return lhs;
+		if(cur >= end)
+			return rhs;
+
+		// in case we want sine wave interpolation instead of linear here
+		//float ang = 3.14159f * (float)(cur - start) / (float)(end - start);
+		//cur = start + (int)((1-cosf(ang))*0.5f * (end - start));
+
+		int inNum = cur - start;
+		int outNum = end - cur;
+		int denom = end - start;
+
+		int lrv = ((int)lhs.l * outNum + (int)rhs.l * inNum) / denom;
+		int rrv = ((int)lhs.r * outNum + (int)rhs.r * inNum) / denom;
+
+		return ssamp(lrv,rrv);
 	}
-	 
+
+	static FORCEINLINE void emit_sample(s16*& outbuf, ssamp sample)
+	{
+		*outbuf++ = sample.l;
+		*outbuf++ = sample.r;
+	}
+
+	static FORCEINLINE void emit_samples(s16*& outbuf, const ssamp* samplebuf, int samples)
+	{
+		for(int i=0;i<samples;i++)
+			emit_sample(outbuf,samplebuf[i]);
+	}
+
 public:
 	NitsujaSynchronizer()
 	{}
@@ -313,7 +291,8 @@ public:
 	{
 		int audiosize = samples_requested;
 		int queued = sampleQueue.size();
-		// truncate input and output sizes to 8 because I am too lazy to deal with odd numbers
+
+		// truncate input and output sizes to multiples of 8 because I am too lazy to deal with odd numbers
 		audiosize &= ~7;
 		queued &= ~7;
 
@@ -324,8 +303,6 @@ public:
 			if(queued > 900 || audiosize > queued * 2)
 			{
 				// not normal speed. we have to resample it somehow in this case.
-				static std::vector<ssamp> outsamples;
-				outsamples.clear();
 				if(audiosize <= queued)
 				{
 					// fast forward speed
@@ -333,8 +310,8 @@ public:
 					for(int i = 0; i < audiosize; i++)
 					{
 						int j = i + queued - audiosize;
-						ssamp outsamp = sampleQueue[i].faded(sampleQueue[j], i,0,audiosize);
-						outsamples.push_back(ssamp(outsamp));
+						ssamp outsamp = crossfade(sampleQueue[i],sampleQueue[j], i,0,audiosize);
+						emit_sample(buf,outsamp);
 					}
 				}
 				else
@@ -362,7 +339,9 @@ public:
 					//
 					// yes, this means we are spending some stretches of time playing the sound backwards,
 					// but the stretches are short enough that this doesn't sound weird.
-					// apparently this also sounds less "echoey" or "robotic" than only playing it forwards.
+					// this lets us avoid most crackling problems due to the endpoints matching up.
+					// TODO: it might help to calculate the approximate fundamental frequency
+					// and reduce either buffer size such that the reflections line up with it.
 
 					int midpointX = audiosize >> 1;
 					int midpointY = queued >> 1;
@@ -377,7 +356,7 @@ public:
 					int midpointXOffset = queued/2;
 					while(true)
 					{
-						int a = abs(reflectAbout((midpointX - midpointXOffset) % (queued*2), queued) - midpointY) - midpointXOffset;
+						int a = abs(pingpong(midpointX - midpointXOffset, queued) - midpointY) - midpointXOffset;
 						if(((a > 0) != (prevA > 0) || (a < 0) != (prevA < 0)) && prevA != 999999)
 						{
 							if((a + prevA)&1) // there's some sort of off-by-one problem with this search since we're moving diagonally...
@@ -389,19 +368,20 @@ public:
 						if(midpointXOffset < 0)
 						{
 							midpointXOffset = 0;
-							break; // failed somehow? let's just omit the "B" stretch in this case.
+							break; // failed to find it. the two sides probably meet exactly in the center.
 						}
 					}
+
 					int leftMidpointX = midpointX - midpointXOffset;
 					int rightMidpointX = midpointX + midpointXOffset;
-					int leftMidpointY = reflectAbout((leftMidpointX) % (queued*2), queued);
-					int rightMidpointY = (queued-1) - reflectAbout((((int)audiosize-1 - rightMidpointX + queued*2) % (queued*2)), queued);
+					int leftMidpointY = pingpong(leftMidpointX, queued);
+					int rightMidpointY = (queued-1) - pingpong((int)audiosize-1 - rightMidpointX + queued*2, queued);
 
 					// output the left almost-half of the sound (section "A")
 					for(int x = 0; x < leftMidpointX; x++)
 					{
-						int i = reflectAbout(x % (queued*2), queued);
-						outsamples.push_back(sampleQueue[i]);
+						int i = pingpong(x, queued);
+						emit_sample(buf,sampleQueue[i]);
 					}
 
 					// output the middle stretch (section "B")
@@ -409,27 +389,18 @@ public:
 					int dyMidLeft  = (leftMidpointY  < midpointY) ? 1 : -1;
 					int dyMidRight = (rightMidpointY > midpointY) ? 1 : -1;
 					for(int x = leftMidpointX; x < midpointX; x++, y+=dyMidLeft)
-						outsamples.push_back(sampleQueue[y]);
+						emit_sample(buf,sampleQueue[y]);
 					for(int x = midpointX; x < rightMidpointX; x++, y+=dyMidRight)
-						outsamples.push_back(sampleQueue[y]);
+						emit_sample(buf,sampleQueue[y]);
 
 					// output the end of the queued sound (section "C")
 					for(int x = rightMidpointX; x < audiosize; x++)
 					{
-						int i = (queued-1) - reflectAbout((((int)audiosize-1 - x + queued*2) % (queued*2)), queued);
-						outsamples.push_back(sampleQueue[i]);
+						int i = (queued-1) - pingpong((int)audiosize-1 - x + queued*2, queued);
+						emit_sample(buf,sampleQueue[i]);
 					}
-					assert(outsamples.back().l == sampleQueue[queued-1].l);
 				} //end else
 
-				// if the user SPU mixed some channels, mix them in with our output now
-#ifdef HYBRID_SPU
-				SPU_MixAudio<2>(SPU_user,audiosize);
-				for(int i = 0; i < audiosize; i++)
-					outsamples[i] = outsamples[i] + *(ssamp*)(&SPU_user->outbuf[i*2]);
-#endif
-
-				emit_samples(buf,&outsamples[0],audiosize);
 				sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
 				return audiosize;
 			}
@@ -446,22 +417,12 @@ public:
 
 				if(audiosize >= queued)
 				{
-#ifdef HYBRID_SPU
-					SPU_MixAudio<2>(SPU_user,queued);
-					for(int i = 0; i < queued; i++)
-						sampleQueue[i] = sampleQueue[i] + *(ssamp*)(&SPU_user->outbuf[i*2]);
-#endif
 					emit_samples(buf,&sampleQueue[0],queued);
 					sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
 					return queued;
 				}
 				else
 				{
-#ifdef HYBRID_SPU
-					SPU_MixAudio<2>(SPU_user,audiosize);
-					for(int i = 0; i < audiosize; i++)
-						sampleQueue[i] = sampleQueue[i] + *(ssamp*)(&SPU_user->outbuf[i*2]);
-#endif
 					emit_samples(buf,&sampleQueue[0],audiosize);
 					sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin()+audiosize);
 					return audiosize;

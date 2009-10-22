@@ -62,7 +62,7 @@ LPDIRECTSOUNDBUFFER lpDSB, lpDSB2;
 
 extern WINCLASS	*MainWindow;
 
-static s16 *stereodata16;
+static s16 *stereodata16=0;
 static u32 soundoffset=0;
 static u32 soundbufsize;
 static LONG soundvolume;
@@ -95,14 +95,14 @@ int SNDDXInit(int buffersize)
 	HRESULT ret;
 	char tempstr[512];
 
-	if ((ret = DirectSoundCreate8(NULL, &lpDS8, NULL)) != DS_OK)
+	if (FAILED(ret = DirectSoundCreate8(NULL, &lpDS8, NULL)))
 	{
 		sprintf(tempstr, "DirectSound8Create error: %s - %s", DXGetErrorString8(ret), DXGetErrorDescription8(ret));
 		MessageBox (NULL, tempstr, "Error",  MB_OK | MB_ICONINFORMATION);
 		return -1;
 	}
 
-	if ((ret = lpDS8->SetCooperativeLevel(MainWindow->getHWnd(), DSSCL_PRIORITY)) != DS_OK)
+	if (FAILED(ret = lpDS8->SetCooperativeLevel(MainWindow->getHWnd(), DSSCL_PRIORITY)))
 	{
 		sprintf(tempstr, "IDirectSound8_SetCooperativeLevel error: %s - %s", DXGetErrorString8(ret), DXGetErrorDescription8(ret));
 		MessageBox (NULL, tempstr, "Error",  MB_OK | MB_ICONINFORMATION);
@@ -115,7 +115,7 @@ int SNDDXInit(int buffersize)
 	dsbdesc.dwBufferBytes = 0;
 	dsbdesc.lpwfxFormat = NULL;
 
-	if ((ret = lpDS8->CreateSoundBuffer(&dsbdesc, &lpDSB, NULL)) != DS_OK)
+	if (FAILED(ret = lpDS8->CreateSoundBuffer(&dsbdesc, &lpDSB, NULL)))
 	{
 		sprintf(tempstr, "Error when creating primary sound buffer: %s - %s", DXGetErrorString8(ret), DXGetErrorDescription8(ret));
 		MessageBox (NULL, tempstr, "Error",  MB_OK | MB_ICONINFORMATION);
@@ -132,7 +132,7 @@ int SNDDXInit(int buffersize)
 	wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
 	wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
 
-	if ((ret = lpDSB->SetFormat(&wfx)) != DS_OK)
+	if (FAILED(ret = lpDSB->SetFormat(&wfx)))
 	{
 		sprintf(tempstr, "IDirectSoundBuffer8_SetFormat error: %s - %s", DXGetErrorString8(ret), DXGetErrorDescription8(ret));
 		MessageBox (NULL, tempstr, "Error",  MB_OK | MB_ICONINFORMATION);
@@ -147,7 +147,7 @@ int SNDDXInit(int buffersize)
 	dsbdesc.dwBufferBytes = soundbufsize;
 	dsbdesc.lpwfxFormat = &wfx;
 
-	if ((ret = lpDS8->CreateSoundBuffer(&dsbdesc, &lpDSB2, NULL)) != DS_OK)
+	if (FAILED(ret = lpDS8->CreateSoundBuffer(&dsbdesc, &lpDSB2, NULL)))
 	{
 		if (ret == DSERR_CONTROLUNAVAIL ||
 			ret == DSERR_INVALIDCALL ||
@@ -159,7 +159,7 @@ int SNDDXInit(int buffersize)
 				DSBCAPS_CTRLVOLUME | DSBCAPS_GETCURRENTPOSITION2 |
 				DSBCAPS_LOCSOFTWARE;
 
-			if ((ret = lpDS8->CreateSoundBuffer(&dsbdesc, &lpDSB2, NULL)) != DS_OK)
+			if (FAILED(ret = lpDS8->CreateSoundBuffer(&dsbdesc, &lpDSB2, NULL)))
 			{
 				sprintf(tempstr, "Error when creating secondary sound buffer: %s - %s", DXGetErrorString8(ret), DXGetErrorDescription8(ret));
 				MessageBox (NULL, tempstr, "Error",  MB_OK | MB_ICONINFORMATION);
@@ -226,6 +226,7 @@ void SNDDXDeInit()
 	}
 
 	delete stereodata16;
+	stereodata16=0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -235,7 +236,6 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 	LPVOID buffer1;
 	LPVOID buffer2;
 	DWORD buffer1_size, buffer2_size;
-	DWORD status;
 
 	int samplecounter;
 	{
@@ -245,12 +245,14 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
 	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
 
-	IDirectSoundBuffer8_GetStatus(lpDSB2, &status);
-
-	if (status & DSBSTATUS_BUFFERLOST)
-		return; // fix me
-
-	IDirectSoundBuffer8_Lock(lpDSB2, soundoffset, num_samples * sizeof(s16) * 2, &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
+	HRESULT hr = lpDSB2->Lock(soundoffset, num_samples * sizeof(s16) * 2,
+	                          &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
+	if(FAILED(hr))
+	{
+		if(hr == DSBSTATUS_BUFFERLOST)
+			lpDSB2->Restore();
+		return;
+	}
 
 	if(silence) {
 		memset(buffer1, 0, buffer1_size);
@@ -260,37 +262,42 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 	else
 	{
 		memcpy(buffer1, buffer, buffer1_size);
-		if (buffer2)
+		if(buffer2)
 			memcpy(buffer2, ((u8 *)buffer)+buffer1_size, buffer2_size);
 	}
 
 	soundoffset += buffer1_size + buffer2_size;
 	soundoffset %= soundbufsize;
 
-	IDirectSoundBuffer8_Unlock(lpDSB2, buffer1, buffer1_size, buffer2, buffer2_size);
+	lpDSB2->Unlock(buffer1, buffer1_size, buffer2, buffer2_size);
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
 
+static inline u32 circularDist(u32 from, u32 to, u32 size)
+{
+	if(size == 0)
+		return 0;
+	s32 diff = (s32)(to - from);
+	while(diff < 0)
+		diff += size;
+	return (u32)diff;
+}
+
 u32 SNDDXGetAudioSpace()
 {
-	//return 735;
 	DWORD playcursor, writecursor;
-	u32 freespace=0;
-
-	if (lpDSB2->GetCurrentPosition(&playcursor, &writecursor) != DS_OK)
+	if(FAILED(lpDSB2->GetCurrentPosition(&playcursor, &writecursor)))
 		return 0;
 
-	if (soundoffset > playcursor)
-		freespace = soundbufsize - soundoffset + playcursor;
-	else
-		freespace = playcursor - soundoffset;
+	u32 curToWrite = circularDist(soundoffset, writecursor, soundbufsize);
+	u32 curToPlay = circularDist(soundoffset, playcursor, soundbufsize);
 
-	//   if (freespace > 512)
-	return (freespace / 2 / 2);
-	//   else
-	//      return 0;
+	if(curToWrite < curToPlay)
+		return 0; // in-between the two cursors. we shouldn't write anything during this time.
+
+	return curToPlay / (sizeof(s16) * 2);
 }
 
 //////////////////////////////////////////////////////////////////////////////
