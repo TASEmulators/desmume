@@ -4831,6 +4831,7 @@ static void SoundSettings_updateSynchMode(HWND hDlg)
 	EnableWindow(GetDlgItem(hDlg,IDC_GROUP_SYNCHMETHOD),en);
 	EnableWindow(GetDlgItem(hDlg,IDC_SYNCHMETHOD_N),en);
 	EnableWindow(GetDlgItem(hDlg,IDC_SYNCHMETHOD_Z),en);
+	EnableWindow(GetDlgItem(hDlg,IDC_SYNCHMETHOD_P),en);
 }
 
 static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -4865,6 +4866,7 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 			//update the synch method
 			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_N,snd_synchmethod==0);
 			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_Z,snd_synchmethod==1);
+			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_P,snd_synchmethod==2);
 
 			//setup interpolation combobox
 			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_RESETCONTENT, 0, 0);
@@ -4948,6 +4950,7 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 					//save the synch method
 					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_N)) snd_synchmethod = 0;
 					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_Z)) snd_synchmethod = 1;
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_P)) snd_synchmethod = 2;
 					WritePrivateProfileInt("Sound", "SynchMethod", snd_synchmethod, IniName);
 
 					SPU_SetSynchMode(snd_synchmode, snd_synchmethod);
