@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="shift_jis"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
@@ -274,7 +274,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib 7zip.lib"
+				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib winpcap\wpcap.lib 7zip.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z;agg"
 				DelayLoadDLLs="wpcap.dll"
@@ -1093,6 +1093,130 @@
 				RelativePath="..\addons\rumblepak.cpp"
 				>
 			</File>
+		</Filter>
+		<Filter
+			Name="metaspu"
+			>
+			<File
+				RelativePath="..\metaspu\metaspu.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\metaspu\metaspu.h"
+				>
+			</File>
+			<File
+				RelativePath="..\metaspu\SndOut.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\metaspu\SndOut.h"
+				>
+			</File>
+			<File
+				RelativePath="..\metaspu\Timestretcher.cpp"
+				>
+			</File>
+			<Filter
+				Name="SoundTouch"
+				>
+				<File
+					RelativePath="..\metaspu\SoundTouch\3dnow_win.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\AAFilter.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\AAFilter.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\BPMDetect.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\cpu_detect.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\cpu_detect_x86_win.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\FIFOSampleBuffer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\FIFOSampleBuffer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\FIFOSamplePipe.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\FIRFilter.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\FIRFilter.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\mmx_optimized.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\RateTransposer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\RateTransposer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\SoundTouch.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\SoundTouch.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\sse_optimized.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\STTypes.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\TDStretch.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\TDStretch.h"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\WavFile.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\metaspu\SoundTouch\WavFile.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="win32"
+				>
+				<File
+					RelativePath="..\metaspu\win32\ConfigSoundtouch.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\addons.cpp"

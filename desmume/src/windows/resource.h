@@ -351,6 +351,7 @@
 #define IDC_GROUP_SYNCHMETHOD           1017
 #define IDC_AUTOUPDATE_ASM              1018
 #define IDC_BGMAP_PRIO                  1018
+#define IDC_SYNCHMETHOD_P               1018
 #define IDC_BGMAP_PAL                   1019
 #define IDC_VISIBLE                     1019
 #define IDC_BGMAP_SIZE                  1020

@@ -47,6 +47,7 @@ libdesmume_a_SOURCES = \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp fs.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
+	metaspu/metaspu.cpp \
 	version.h
 
 if HAVE_ALSA
