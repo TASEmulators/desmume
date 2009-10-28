@@ -1020,6 +1020,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\utils\task.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\task.h"
+					>
+				</File>
+				<File
 					RelativePath="..\utils\valuearray.h"
 					>
 				</File>

@@ -644,10 +644,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\buildconfig.h"
-				>
-			</File>
-			<File
 				RelativePath=".\cheatsWin.cpp"
 				>
 			</File>
@@ -969,6 +965,14 @@
 			</File>
 			<File
 				RelativePath="..\utils\md5.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\task.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\task.h"
 				>
 			</File>
 			<File

@@ -1002,7 +1002,7 @@ static void DoDisplay(bool firstTime)
 		//on single core systems, draw straight to the screen
 		//we only do this once per emulated frame because we don't want to waste time redrawing
 		//on such lousy computers
-		if(CommonSettings.single_core)
+		if(CommonSettings.single_core())
 		{
 			aggDraw.hud->attach((u8*)video.buffer, 256, 384, 1024);
 			DoDisplay_DrawHud();
@@ -1025,7 +1025,7 @@ static void DoDisplay(bool firstTime)
 	//apply user's filter
 	video.filter();
 
-	if(!CommonSettings.single_core)
+	if(!CommonSettings.single_core())
 	{
 		//draw and composite the OSD (but not if we are drawing osd straight to screen)
 		DoDisplay_DrawHud();
@@ -1081,7 +1081,7 @@ void KillDisplay()
 
 void Display()
 {
-	if(CommonSettings.single_core)
+	if(CommonSettings.single_core())
 	{
 		video.srcBuffer = (u8*)GPU_screen;
 		DoDisplay(true);
@@ -1229,7 +1229,7 @@ static void StepRunLoop_Paused()
 	Sleep(100);
 
 	// periodically update single-core OSD when paused and in the foreground
-	if(CommonSettings.single_core && GetActiveWindow() == mainLoopData.hwnd)
+	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
 	{
 		video.srcBuffer = (u8*)GPU_screen;
 		DoDisplay(true);
@@ -1718,7 +1718,7 @@ class WinDriver : public BaseDriver
 		// in multi-core mode now the display thread will probably
 		// wait for an invocation in this thread to happen,
 		// so handle that ASAP
-		if(!CommonSettings.single_core)
+		if(!CommonSettings.single_core())
 		{
 			ResetEvent(display_invoke_ready_event);
 			SetEvent(display_wakeup_event);
@@ -1844,11 +1844,7 @@ int _main()
 	//this helps give a substantial speedup for singlecore users
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
-	if(systemInfo.dwNumberOfProcessors==1)
-		CommonSettings.single_core = true;
-	else
-		CommonSettings.single_core = false;
-
+	CommonSettings.num_cores = systemInfo.dwNumberOfProcessors;
 
 	char text[80];
 
@@ -1948,7 +1944,7 @@ int _main()
 
 	//in case this isnt actually a singlecore system, but the user requested it
 	//then restrict ourselves to one core
-	if(CommonSettings.single_core)
+	if(CommonSettings.single_core())
 		SetProcessAffinityMask(GetCurrentProcess(),1);
 
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
@@ -2130,7 +2126,9 @@ int _main()
 	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
-	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
+	CommonSettings.GFX3D_HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
+	CommonSettings.GFX3D_EdgeMark = GetPrivateProfileBool("3D", "EnableEdgeMark", 1, IniName);
+	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
 	//CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
 
@@ -3379,7 +3377,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			else
 			{
-				if(CommonSettings.single_core)
+				if(CommonSettings.single_core())
 				{
 					video.srcBuffer = (u8*)GPU_screen;
 					DoDisplay(true);
@@ -4406,7 +4404,9 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 		{
 			int i;
 
-			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.HighResolutionInterpolateColor?1:0);
+			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.GFX3D_HighResolutionInterpolateColor?1:0);
+			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK,CommonSettings.GFX3D_EdgeMark?1:0);
+			CheckDlgButton(hw,IDC_3DSETTINGS_FOG,CommonSettings.GFX3D_Fog?1:0);
 			//CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
 
 			for(i = 0; core3DList[i] != NULL; i++)
@@ -4423,10 +4423,14 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			{
 			case IDOK:
 				{
-					CommonSettings.HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw,IDC_INTERPOLATECOLOR);
+					CommonSettings.GFX3D_HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw,IDC_INTERPOLATECOLOR);
+					CommonSettings.GFX3D_EdgeMark = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_EDGEMARK);
+					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
 					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
-					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.HighResolutionInterpolateColor?1:0, IniName);
+					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor?1:0, IniName);
+					WritePrivateProfileInt("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark?1:0, IniName);
+					WritePrivateProfileInt("3D", "EnableFog", CommonSettings.GFX3D_Fog?1:0, IniName);
 					//CommonSettings.gfx3d_flushMode = (IsDlgButtonChecked(hw,IDC_ALTERNATEFLUSH) == BST_CHECKED)?1:0;
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}

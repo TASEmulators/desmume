@@ -5,47 +5,62 @@
 
 enum TexCache_TexFormat
 {
-	TexFormat_32bpp,
-	TexFormat_15bpp
+	TexFormat_None, //used when nothing yet is cached
+	TexFormat_32bpp, //used by ogl renderer
+	TexFormat_15bpp //used by rasterizer
 };
 
-#define MAX_TEXTURE 500
-
-
-struct CACHE_ALIGN TextureCache
+class ADPCMCacheItem
 {
-	u32					id;
-	u32					frm;
-	u32					mode;
-	u32					pal;
-	u32					sizeX;
-	u32					sizeY;
-	float				invSizeX;
-	float				invSizeY;
+public:
+	ADPCMCacheItem() 
+		: decoded(NULL)
+		, decode_len(0)
+		, next(NULL)
+		, prev(NULL)
+		, lockCount(0)
+		, cacheFormat(TexFormat_None)
+		, deleteCallback(NULL)
+		, suspectedInvalid(false)
+	{}
+	~ADPCMCacheItem() {
+		delete[] decoded;
+		if(deleteCallback) deleteCallback(this);
+	}
+	void unlock() { 
+		lockCount--;
+	}
+	void lock() { 
+		lockCount++;
+	}
+	u32 decode_len;
+	u32 mode;
+	u8* decoded; //decoded texture data
+	ADPCMCacheItem *next, *prev; //double linked list
+	int lockCount;
+	bool suspectedInvalid;
 
+	u32 texformat, texpal;
+	u32 sizeX, sizeY;
+	float invSizeX, invSizeY;
+
+	void* texid; //used by ogl renderer for the texid
+	void (*deleteCallback)(ADPCMCacheItem*);
+
+	TexCache_TexFormat cacheFormat;
+
+	//TODO - this is a little wasteful
 	struct {
-	int					textureSize, indexSize;
-	u8					texture[128*1024]; // 128Kb texture slot
-	u8					palette[256*2];
+		int					textureSize, indexSize;
+		u8					texture[128*1024]; // 128Kb texture slot
+		u8					palette[256*2];
 	} dump;
-
-	//set if this texture is suspected be invalid due to a vram reconfigure
-	bool				suspectedInvalid;
 };
-
-extern TextureCache	*texcache;
-
-extern void (*TexCache_BindTexture)(u32 texnum);
-extern void (*TexCache_BindTextureData)(u32 texnum, u8* data);
-
-void TexCache_Reset();
-
-template<TexCache_TexFormat>
-void TexCache_SetTexture(u32 format, u32 texpal);
 
 void TexCache_Invalidate();
+void TexCache_Reset();
+void TexCache_EvictFrame();
 
-extern u8 *TexCache_texMAP;
-TextureCache* TexCache_Curr();
+ADPCMCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal);
 
 #endif

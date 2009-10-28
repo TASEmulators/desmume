@@ -736,6 +736,9 @@ struct GPU
 	u16 *currentFadeInColors, *currentFadeOutColors;
 	bool blend2[8];
 
+	CACHE_ALIGN u16 tempScanlineBuffer[256];
+	u8 *tempScanline;
+
 	u8	MasterBrightMode;
 	u32 MasterBrightFactor;
 

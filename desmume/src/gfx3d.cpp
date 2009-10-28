@@ -2341,7 +2341,7 @@ static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int wh
 	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
 	INTERP(texcoord[0]); INTERP(texcoord[1]);
 
-	if(CommonSettings.HighResolutionInterpolateColor)
+	if(CommonSettings.GFX3D_HighResolutionInterpolateColor)
 	{
 		INTERP(fcolor[0]); INTERP(fcolor[1]); INTERP(fcolor[2]);
 	}

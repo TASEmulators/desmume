@@ -1881,6 +1881,14 @@ void Sequencer::init()
 	#endif
 }
 
+//this isnt helping much right now. work on it later
+//#include "utils/task.h"
+//Task taskSubGpu(true);
+//void* renderSubScreen(void*)
+//{
+//	GPU_RenderLine(&SubScreen, nds.VCount, SkipCur2DFrame);
+//	return NULL;
+//}
 
 static void execHardware_hblank()
 {
@@ -1907,8 +1915,10 @@ static void execHardware_hblank()
 		//in practice we need to be more forgiving, in case things have overrun the scanline start.
 		//this should be safe since games cannot do anything timing dependent until this next
 		//scanline begins, anyway (as this scanline was in the middle of drawing)
+		//taskSubGpu.execute(renderSubScreen,NULL);
 		GPU_RenderLine(&MainScreen, nds.VCount, SkipCur2DFrame);
 		GPU_RenderLine(&SubScreen, nds.VCount, SkipCur2DFrame);
+		//taskSubGpu.finish();
 
 		//trigger hblank dmas
 		//but notice, we do that just after we finished drawing the line
@@ -1963,12 +1973,12 @@ static void execHardware_hstart_vblankStart()
 static void execHardware_hstart_vcount()
 {
 	u16 vmatch = T1ReadWord(MMU.ARM9_REG, 4);
-	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
+	vmatch = ((vmatch>>8)|((vmatch<<1)&(1<<8)));
+	if(nds.VCount==vmatch)
 	{
 		//arm9 vmatch
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM9_REG, 4) & 32) {
-			//printf("VMATCH FIRING! vc=%03d\n",nds.VCount);
 			NDS_makeARM9Int(2);
 		}
 	}
@@ -1976,7 +1986,8 @@ static void execHardware_hstart_vcount()
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFB);
 
 	vmatch = T1ReadWord(MMU.ARM7_REG, 4);
-	if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
+	vmatch = ((vmatch>>8)|((vmatch<<1)&(1<<8)));
+	if(nds.VCount==vmatch)
 	{
 		//arm7 vmatch
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
