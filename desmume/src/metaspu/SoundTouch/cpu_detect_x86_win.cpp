@@ -71,6 +71,9 @@ uint detectCPUextensions(void)
 
     if (_dwDisabledISA == 0xffffffff) return 0;
 
+	//zeromus 28-oct-2009 - changed to compile on 64bits msvc
+#if (defined(_MSC_VER) && !defined(_M_X64)) || !defined(_MSC_VER)
+
     _asm 
     {
         ; check if 'cpuid' instructions is available by toggling eflags bit 21
@@ -121,6 +124,8 @@ uint detectCPUextensions(void)
 
         mov     res, esi
     }
+
+#endif
 
     return res & ~_dwDisabledISA;
 }
