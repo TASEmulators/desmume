@@ -24,6 +24,8 @@
 //so, it doesnt composite to 2d correctly.
 //(re: new super mario brothers renders the stormclouds at the beginning)
 
+#include <queue>
+
 #include "OGLRender.h"
 #include "debug.h"
 
@@ -208,9 +210,8 @@ static void _xglDisable(GLenum cap) {
 	CTASSERT((cap-0x0B00)<0x100); \
 	_xglDisable(cap); }
 
+static std::queue<GLuint> freeTextureIds;
 
-
-GLenum			oglTempTextureID[MAX_TEXTURE];
 GLenum			oglToonTableTextureID;
 
 #define NOSHADERS(s)					{ hasShaders = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(%s)\n", s); return; }
@@ -252,16 +253,15 @@ GLenum			oglToonTableTextureID;
 
 bool hasShaders = false;
 
-/* Vertex shader */
 GLuint vertexShaderID;
-/* Fragment shader */
 GLuint fragmentShaderID;
-/* Shader program */
 GLuint shaderProgram;
 
 static GLuint hasTexLoc;
 static GLuint texBlendLoc;
 static bool hasTexture = false;
+
+static ADPCMCacheItem* currTexture = NULL;
 
 /* Shaders init */
 
@@ -337,44 +337,53 @@ static void OGLReset()
 	}
 
 	TexCache_Reset();
-
-	for (int i = 0; i < MAX_TEXTURE; i++)
-		texcache[i].id=oglTempTextureID[i];
+	currTexture = NULL;
 
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 }
 
+//static class OGLTexCacheUser : public ITexCacheUser
+//{
+//public:
+//	virtual void BindTexture(u32 tx)
+//	{
+//		glBindTexture(GL_TEXTURE_2D,(GLuint)texcache[tx].id);
+//		glMatrixMode (GL_TEXTURE);
+//		glLoadIdentity ();
+//		glScaled (texcache[tx].invSizeX, texcache[tx].invSizeY, 1.0f);
+//
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[tx].frm) ? (BIT18(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[tx].frm) ? (BIT19(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+//	}
+//
+//	virtual void BindTextureData(u32 tx, u8* data)
+//	{
+//		BindTexture(tx);
+//
+//	#if 0
+//		for (int i=0; i < texcache[tx].sizeX * texcache[tx].sizeY*4; i++)
+//			data[i] = 0xFF;
+//	#endif
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+//			texcache[tx].sizeX, texcache[tx].sizeY, 0, 
+//			GL_RGBA, GL_UNSIGNED_BYTE, data);
+//	}
+//} textures;
+//
+//static TexCacheUnit texCacheUnit;
 
-
-
-static void BindTexture(u32 tx)
+static void expandFreeTextures()
 {
-	glBindTexture(GL_TEXTURE_2D,(GLuint)texcache[tx].id);
-	glMatrixMode (GL_TEXTURE);
-	glLoadIdentity ();
-	glScaled (texcache[tx].invSizeX, texcache[tx].invSizeY, 1.0f);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[tx].frm) ? (BIT18(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[tx].frm) ? (BIT19(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+	const int kInitTextures = 128;
+	GLuint oglTempTextureID[kInitTextures];
+	glGenTextures(kInitTextures, &oglTempTextureID[0]);
+	for(int i=0;i<kInitTextures;i++)
+		freeTextureIds.push(oglTempTextureID[i]);
 }
-
-static void BindTextureData(u32 tx, u8* data)
-{
-	BindTexture(tx);
-
-#if 0
-	for (int i=0; i < texcache[tx].sizeX * texcache[tx].sizeY*4; i++)
-		data[i] = 0xFF;
-#endif
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
-		texcache[tx].sizeX, texcache[tx].sizeY, 0, 
-		GL_RGBA, GL_UNSIGNED_BYTE, data);
-}
-
 
 static char OGLInit(void)
 {
@@ -388,9 +397,7 @@ static char OGLInit(void)
 	if(!BEGINGL())
 		return 0;
 
-	TexCache_BindTexture = BindTexture;
-	TexCache_BindTextureData = BindTextureData;
-	glGenTextures (MAX_TEXTURE, &oglTempTextureID[0]);
+	expandFreeTextures();
 
 	glPixelStorei(GL_PACK_ALIGNMENT,8);
 
@@ -498,10 +505,26 @@ static void OGLClose()
 		hasShaders = false;
 	}
 
-	glDeleteTextures(MAX_TEXTURE, &oglTempTextureID[0]);
+	//kill the tex cache to free all the texture ids
+	TexCache_Reset();
+
+	while(!freeTextureIds.empty())
+	{
+		GLuint temp = freeTextureIds.front();
+		freeTextureIds.pop();
+		glDeleteTextures(1,&temp);
+	}
+	//glDeleteTextures(MAX_TEXTURE, &oglTempTextureID[0]);
 	glDeleteTextures(1, &oglToonTableTextureID);
 
 	ENDGL();
+}
+
+static void texDeleteCallback(ADPCMCacheItem* item)
+{
+	freeTextureIds.push((GLuint)item->texid);
+	if(currTexture == item)
+		currTexture = NULL;
 }
 
 static void setTexture(unsigned int format, unsigned int texpal)
@@ -529,7 +552,43 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	}
 
 
-	TexCache_SetTexture<TexFormat_32bpp>(format, texpal);
+//	texCacheUnit.TexCache_SetTexture<TexFormat_32bpp>(format, texpal);
+	ADPCMCacheItem* newTexture = TexCache_SetTexture(TexFormat_32bpp,format,texpal);
+	if(newTexture != currTexture)
+	{
+		currTexture = newTexture;
+		//has the ogl renderer initialized the texture?
+		if(!currTexture->deleteCallback)
+		{
+			currTexture->deleteCallback = texDeleteCallback;
+			if(freeTextureIds.empty()) expandFreeTextures();
+			currTexture->texid = (void*)freeTextureIds.front();
+			freeTextureIds.pop();
+
+			glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(currTexture->texformat) ? (BIT18(currTexture->texformat)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(currTexture->texformat) ? (BIT19(currTexture->texformat)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+				currTexture->sizeX, currTexture->sizeY, 0, 
+				GL_RGBA, GL_UNSIGNED_BYTE, currTexture->decoded);
+		}
+		else
+		{
+			//otherwise, just bind it
+			glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
+		}
+
+		//in either case, we need to setup the tex mtx
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();
+		glScalef(currTexture->invSizeX, currTexture->invSizeY, 1.0f);
+
+	}
 }
 
 
@@ -901,6 +960,9 @@ static void OGLRender()
 			glEnd();
 		}
 	}
+
+	//needs to happen before endgl because it could free some textureids for expired cache items
+	TexCache_EvictFrame();
 
 	ENDGL();
 

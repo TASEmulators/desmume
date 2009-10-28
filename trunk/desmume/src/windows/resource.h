@@ -277,7 +277,6 @@
 #define IDC_SOUNDCORECB                 1000
 #define IDC_USEEXTBIOS                  1000
 #define ID_BROWSE                       1000
-#define IDC_ALTERNATEFLUSH              1001
 #define IDC_BGMAP_BGXCNT                1001
 #define IDC_CHECKBOX_DEBUGGERMODE       1001
 #define IDC_EDIT01                      1001
@@ -630,7 +629,9 @@
 #define IDC_GI_FATOFS                   4464
 #define IDC_INTERPOLATECOLOR            4464
 #define IDC_GI_FATSIZE                  4465
+#define IDC_3DSETTINGS_EDGEMARK         4465
 #define IDC_GI_ICONTITLEOFS             4466
+#define IDC_3DSETTINGS_FOG              4466
 #define IDC_GI_USEDROMSIZE              4467
 #define IDC_GI_ICON                     4469
 #define IDC_GI_TITLE                    4470

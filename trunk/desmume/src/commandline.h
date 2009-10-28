@@ -75,8 +75,7 @@ private:
 	char* _cflash_path;
 	char* _bios_arm9, *_bios_arm7;
 	int _bios_swi;
-	int _single_core;
-	int _multi_core;
+	int _num_cores;
 };
 
 #endif

@@ -148,7 +148,7 @@ void Agg_init()
 	aggDraw.target = targets[0];
 
 	//if we're single core, we don't want to waste time compositing
-	if(CommonSettings.single_core)
+	if(CommonSettings.single_core())
 		aggDraw.hud = &agg_targetScreen;
 
 	//and the more clever compositing isnt supported in non-windows

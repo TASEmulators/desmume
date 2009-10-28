@@ -55,9 +55,6 @@ GPU::MosaicLookup GPU::mosaicLookup;
 //#define DEBUG_TRI
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
-u8 *GPU_tempScanline;
-CACHE_ALIGN u16 GPU_tempScanlineBuffer[256];
-
 CACHE_ALIGN u8 sprWin[256];
 
 
@@ -2237,7 +2234,7 @@ template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
 
 									u8 *src;
-									src = (u8*)(GPU_tempScanline);
+									src = (u8*)(gpu->tempScanline);
 									CAPCOPY(src,cap_dst);
 								}
 							break;
@@ -2279,7 +2276,7 @@ template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 						if (gpu->dispCapCnt.srcA == 0)
 						{
 							// Capture screen (BG + OBJ + 3D)
-							srcA = (u16*)(GPU_tempScanline);
+							srcA = (u16*)(gpu->tempScanline);
 						}
 						else
 						{
@@ -2579,10 +2576,10 @@ void GPU_RenderLine(NDS_Screen * screen, u16 l, bool skip)
 	//generate the 2d engine output
 	if(gpu->dispMode == 1) {
 		//optimization: render straight to the output buffer when thats what we are going to end up displaying anyway
-		GPU_tempScanline = screen->gpu->currDst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
+		gpu->tempScanline = screen->gpu->currDst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
 	} else {
 		//otherwise, we need to go to a temp buffer
-		GPU_tempScanline = screen->gpu->currDst = (u8 *)GPU_tempScanlineBuffer;
+		gpu->tempScanline = screen->gpu->currDst = (u8 *)gpu->tempScanlineBuffer;
 	}
 
 	GPU_RenderLine_layer(screen, l);
