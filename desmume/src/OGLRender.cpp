@@ -562,7 +562,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		{
 			currTexture->deleteCallback = texDeleteCallback;
 			if(freeTextureIds.empty()) expandFreeTextures();
-			currTexture->texid = (void*)freeTextureIds.front();
+			currTexture->texid = (u32)freeTextureIds.front();
 			freeTextureIds.pop();
 
 			glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
