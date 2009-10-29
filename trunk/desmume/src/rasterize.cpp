@@ -341,9 +341,10 @@ public:
 	int SLI_MASK, SLI_VALUE;
 
 	RasterizerUnit()
-		: sampler(*this)
+		: sampler()
 		, shader(sampler)
 	{
+		sampler.unit = this;
 	}
 
 	ADPCMCacheItem* lastTexKey;
@@ -397,11 +398,9 @@ public:
 
 	struct Sampler
 	{
-		Sampler(RasterizerUnit& _unit)
-			: unit(_unit)
-		{}
+		Sampler() {}
 
-		RasterizerUnit& unit;
+		RasterizerUnit* unit;
 			
 		int width, height;
 		int wmask, hmask;
@@ -474,7 +473,7 @@ public:
 			dowrap(iu,iv);
 
 			FragmentColor color;
-			color.color = ((u32*)unit.lastTexKey->decoded)[(iv<<wshift)+iu];
+			color.color = ((u32*)unit->lastTexKey->decoded)[(iv<<wshift)+iu];
 			return color;
 		}
 
@@ -953,7 +952,7 @@ static int rasterizerCores;
 
 void* execRasterizerUnit(void* arg)
 {
-	s32 which = (s32)arg;
+	intptr_t which = (intptr_t)arg;
 	rasterizerUnit[which].mainLoop<true>();
 	return 0;
 }

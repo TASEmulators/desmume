@@ -44,7 +44,7 @@ public:
 	u32 sizeX, sizeY;
 	float invSizeX, invSizeY;
 
-	u32 texid; //used by ogl renderer for the texid
+	u64 texid; //used by ogl renderer for the texid
 	void (*deleteCallback)(ADPCMCacheItem*);
 
 	TexCache_TexFormat cacheFormat;
