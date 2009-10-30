@@ -67,7 +67,7 @@ static u8 index_start_table[8];
 
 static GFX3D_Clipper clipper;
 static GFX3D_Clipper::TClippedPoly *clippedPolys = NULL;
-static ADPCMCacheItem* polyTexKeys[POLYLIST_SIZE];
+static TexCacheItem* polyTexKeys[POLYLIST_SIZE];
 static bool polyVisible[POLYLIST_SIZE];
 static bool polyBackfacing[POLYLIST_SIZE];
 static int clippedPolyCounter;
@@ -347,7 +347,7 @@ public:
 		sampler.unit = this;
 	}
 
-	ADPCMCacheItem* lastTexKey;
+	TexCacheItem* lastTexKey;
 	
 	VERT* verts[MAX_CLIPPED_VERTS];
 
@@ -1337,7 +1337,7 @@ static void SoftRastRender()
 		}
 	}
 
-	ADPCMCacheItem* lastTexKey = NULL;
+	TexCacheItem* lastTexKey = NULL;
 	u32 lastTextureFormat = 0, lastTexturePalette = 0;
 	bool needInitTexture = true;
 	for(int i=0;i<clippedPolyCounter;i++)

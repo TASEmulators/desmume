@@ -10,10 +10,10 @@ enum TexCache_TexFormat
 	TexFormat_15bpp //used by rasterizer
 };
 
-class ADPCMCacheItem
+class TexCacheItem
 {
 public:
-	ADPCMCacheItem() 
+	TexCacheItem() 
 		: decoded(NULL)
 		, decode_len(0)
 		, next(NULL)
@@ -23,7 +23,7 @@ public:
 		, deleteCallback(NULL)
 		, suspectedInvalid(false)
 	{}
-	~ADPCMCacheItem() {
+	~TexCacheItem() {
 		delete[] decoded;
 		if(deleteCallback) deleteCallback(this);
 	}
@@ -36,7 +36,7 @@ public:
 	u32 decode_len;
 	u32 mode;
 	u8* decoded; //decoded texture data
-	ADPCMCacheItem *next, *prev; //double linked list
+	TexCacheItem *next, *prev; //double linked list
 	int lockCount;
 	bool suspectedInvalid;
 
@@ -45,7 +45,7 @@ public:
 	float invSizeX, invSizeY;
 
 	u64 texid; //used by ogl renderer for the texid
-	void (*deleteCallback)(ADPCMCacheItem*);
+	void (*deleteCallback)(TexCacheItem*);
 
 	TexCache_TexFormat cacheFormat;
 
@@ -61,6 +61,6 @@ void TexCache_Invalidate();
 void TexCache_Reset();
 void TexCache_EvictFrame();
 
-ADPCMCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal);
+TexCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal);
 
 #endif
