@@ -172,6 +172,9 @@ public:
 
 	DmaController() :
 		enable(0), irq(0), bitWidth(EDMABitWidth_16), repeatMode(0), _startmode(0), 
+		//if saddr isnt cleared then rings of fate will trigger copy protection
+		//by inspecting dma3 saddr when it boots
+		saddr(0), daddr(0),
 		sar(EDMASourceUpdate_Increment), dar(EDMADestinationUpdate_Increment),
 		wordcount(0), startmode(EDMAMode_Immediate),
 		sad(&saddr),
@@ -325,12 +328,6 @@ struct MMU_struct
 	u32 reg_IE[2];
 	u32 reg_IF[2];
 
-	u32 DMAStartTime[2][4];
-	u64 DMACycle[2][4];
-	u32 DMACrt[2][4];
-	BOOL DMAing[2][4];
-	BOOL DMACompleted[2][4];
-
 	BOOL divRunning;
 	s64 divResult;
 	s64 divMod;
@@ -356,8 +353,6 @@ struct MMU_struct
 	memory_chip_t fw;
 
 	nds_dscard dscard[2];
-	//u32 CheckTimers;
-	//u32 CheckDMAs;
 };
 
 //this contains things which can't be memzeroed because they are smarter classes

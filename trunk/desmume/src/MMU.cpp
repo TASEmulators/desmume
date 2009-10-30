@@ -891,9 +891,6 @@ void MMU_DeInit(void) {
 
 u32 rom_mask = 0;
 
-//u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
-//u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
-
 void MMU_Reset()
 {
 	memset(MMU.ARM9_DTCM, 0, sizeof(MMU.ARM9_DTCM));
@@ -929,12 +926,6 @@ void MMU_Reset()
 	memset(MMU.reg_IME,       0, sizeof(u32) * 2);
 	memset(MMU.reg_IE,        0, sizeof(u32) * 2);
 	memset(MMU.reg_IF,        0, sizeof(u32) * 2);
-	
-	memset(MMU.DMAStartTime,  0, sizeof(u32) * 2 * 4);
-	memset(MMU.DMACycle,      0, sizeof(MMU.DMACycle));
-	memset(MMU.DMACrt,        0, sizeof(u32) * 2 * 4);
-	memset(MMU.DMAing,        0, sizeof(BOOL) * 2 * 4);
-	memset(MMU.DMACompleted,  0, sizeof(BOOL) * 2 * 4);
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 
@@ -1428,152 +1419,6 @@ u32 MMU_readFromGC()
 	return val;
 }
 
-//template<int PROCNUM> 
-//void FASTCALL MMU_doDMA(u32 num)
-//{
-//	u32 src = DMASrc[PROCNUM][num];
-//	u32 dst = DMADst[PROCNUM][num];
-//    u32 taille = 0;
-//	bool paused = false;
-//
-//	//if (dst == 0x022DD4E0)
-//	//	printf("proc %i dma %i: src=%08X, dst=%08X, size=%i, repmode=%i\n",
-//	//	PROCNUM, num, src, dst, (MMU.DMACrt[PROCNUM][num]&0x1FFFFF), MMU.DMAStartTime[PROCNUM][num]);
-//
-//
-//	if(src==dst)
-//	{
-//		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
-//		return;
-//	}
-//
-//
-//	if((!(MMU.DMACrt[PROCNUM][num]&(1<<31)))&&(!(MMU.DMACrt[PROCNUM][num]&(1<<25))))
-//	{       /* not enabled and not to be repeated */
-//		MMU.DMAStartTime[PROCNUM][num] = 0;
-//		MMU.DMACycle[PROCNUM][num] = 0;
-//		//MMU.DMAing[PROCNUM][num] = FALSE;
-//		return;
-//	}
-//	
-//	//word count
-//	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
-//	if(taille == 0) taille = 0x200000; //according to gbatek..
-//	
-//	//for main memory display fifo dmas, check for normal conditions and then dma all 128 bytes at once
-//	//(theyll get sent to the fifo, which can handle more than it ought to be able to)
-//	if ((MMU.DMAStartTime[PROCNUM][num]==EDMAMode_MemDisplay) &&
-//		(taille==4) &&
-//		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))
-//		taille = 128; 
-//	
-//	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_Card)
-//		taille *= 0x80;
-//
-//	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo) {
-//		u32 todo = std::min(taille,(u32)112);
-//		//not necessarily the best time to do this...
-//		//we send 112 words at a time to gxfifo.
-//		//we need to deduct whatever we send from the counter in the dma controller
-//		u32 remain = taille - todo;
-//		taille = todo;
-//		MMU.DMACrt[PROCNUM][num] &= ~0x1FFFFF;
-//		MMU.DMACrt[PROCNUM][num] |= remain;
-//		if(remain != 0) paused = true;
-//		
-//		//not a good time to do this either but i have no choice right now..
-//		if(remain == 0) {
-//			//disable the channel
-//			u8* regs = PROCNUM==0?MMU.ARM9_REG:MMU.ARM7_REG;
-//			T1WriteLong(regs, 0xB8 + (0xC*num), T1ReadLong(regs, 0xB8 + (0xC*num)) & 0x7FFFFFFF);
-//			MMU.DMACrt[PROCNUM][num] &= 0x7FFFFFFF; //blehhh i hate this shit being mirrored in memory
-//		}
-//	}
-//
-//	MMU.DMACycle[PROCNUM][num] = taille + nds_timer;  //TODO - surely this is a gross simplification
-//
-//	MMU.DMAing[PROCNUM][num] = TRUE;
-//	MMU.CheckDMAs |= (1<<(num+(PROCNUM<<2)));
-//	
-//	DMALOG("ARM%c: DMA%d run src=%08X dst=%08X start=%d taille=%d repeat=%s %08X\r\n",
-//		(PROCNUM==0)?'9':'7', num, src, dst, MMU.DMAStartTime[PROCNUM][num], taille,
-//		(MMU.DMACrt[PROCNUM][num]&(1<<25))?"on":"off",MMU.DMACrt[PROCNUM][num]);
-//
-//	NDS_RescheduleDMA();
-//
-//	// transfer
-//	{
-//		u32 i=0;
-//		// 32 bit or 16 bit transfer ?
-//		int sz = ((MMU.DMACrt[PROCNUM][num]>>26)&1)? 4 : 2; 
-//		int dstinc,srcinc;
-//		int u=(MMU.DMACrt[PROCNUM][num]>>21);
-//		switch(u & 0x3) {
-//			case 0 :  dstinc =  sz; break;
-//			case 1 :  dstinc = -sz; break;
-//			case 2 :  dstinc =   0; break;
-//			case 3 :  dstinc =  sz; break; //reload
-//			default:
-//				return;
-//		}
-//		switch((u >> 2)&0x3) {
-//			case 0 :  srcinc =  sz; break;
-//			case 1 :  srcinc = -sz; break;
-//			case 2 :  srcinc =   0; break;
-//			case 3 :  // reserved
-//				return;
-//			default:
-//				return;
-//		}
-//
-//		//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
-//		//then danny phantom title screen will be filled with a garbage char which is made by
-//		//dmaing from 0x00000000 to 0x06000000
-//		if ((MMU.DMACrt[PROCNUM][num]>>26)&1)
-//			for(; i < taille; ++i)
-//			{
-//				if (MMU.DMAStartTime[PROCNUM][num] == EDMAMode_GXFifo)
-//				{
-//					/*if ( gxFIFO.size > 255 )
-//					{
-//						paused = true;
-//						MMU.DMACrt[PROCNUM][num] &= 0xFFE00000;
-//						MMU.DMACrt[PROCNUM][num] |= ((taille-i) & 0x1FFFFF);
-//						MMU.DMAing[PROCNUM][num] = FALSE;
-//						MMU.DMACycle[PROCNUM][num] = nds_timer+1;
-//						break;
-//					}*/
-//
-//					printf("DMAING TO GXFIFO FROM: %08X, val:%08X (fifosize:%d)\n",src,_MMU_read32<PROCNUM,MMU_AT_DMA>(src),gxFIFO.size);
-//				}
-//
-//				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
-//				dst += dstinc;
-//				src += srcinc;
-//			}
-//		else
-//			for(; i < taille; ++i)
-//			{
-//				_MMU_write16<PROCNUM,MMU_AT_DMA>(dst, _MMU_read16<PROCNUM,MMU_AT_DMA>(src));
-//				dst += dstinc;
-//				src += srcinc;
-//			}
-//			
-//		//write back the addresses
-//		DMASrc[PROCNUM][num] = src;
-//		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
-//			DMADst[PROCNUM][num] = dst;
-//
-//		//this is probably not the best place to do it, but the dma code in ndssystem is so bad i didnt want to touch it
-//		//until it all gets rewritten. so this is here as a reminder, at least.
-//		//(there is no proof for this code, but it is reasonable)
-//		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB0+12*num, DMASrc[PROCNUM][num]);
-//		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB4+12*num, DMADst[PROCNUM][num]);
-//
-//		if (!paused)
-//			MMU.DMACompleted[PROCNUM][num] = true;
-//	}
-//}
 
 #ifdef MMU_ENABLE_ACL
 
@@ -1751,51 +1596,6 @@ static INLINE void write_timer(int proc, int timerIndex, u16 val)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x102+timerIndex*4, val);
 	NDS_RescheduleTimers();
 }
-
-//template<int proc> static INLINE void write_dma_hictrl(const int dmanum, const u16 val)
-//{
-//	u32 baseAddr = 0xB0 + dmanum*12;
-//
-//	//write this control value
-//	T1WriteWord(MMU.MMU_MEM[proc][0x40], baseAddr+10, val);
-//
-//	//read back the src and dst addr
-//	DMASrc[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr);
-//	DMADst[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+4);
-//
-//	//analyze the control value
-//	u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+8);
-//	if(proc==ARMCPU_ARM9) MMU.DMAStartTime[proc][dmanum] = (v>>27) & 0x7;
-//	else {
-//		static const EDMAMode lookup[] = {EDMAMode_Immediate,EDMAMode_VBlank,EDMAMode_Card,EDMAMode7_Wifi};
-//		MMU.DMAStartTime[proc][dmanum] = lookup[(v>>28) & 0x3];
-//		if(MMU.DMAStartTime[proc][dmanum] == EDMAMode7_Wifi && (dmanum==1 || dmanum==3))
-//			MMU.DMAStartTime[proc][dmanum] = EDMAMode7_GBASlot;
-//	}
-//	MMU.DMACrt[proc][dmanum] = v;
-//	MMU.DMACompleted[proc][dmanum] = false;
-//	MMU.DMAing[proc][dmanum] = false;
-//
-//	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate)
-//	{
-//		MMU_doDMA<proc>(dmanum);
-//	}
-//
-//	if (MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
-//	{
-////#ifdef _3DINFO
-////		INFO("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s (gxFIFO tail %03i)\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF", gxFIFO.tail);
-////#endif
-//		//if the gxfifo is ready to receive a dma, we need to trigger it now
-//		if(gxFIFO.size <= 127)
-//			MMU_doDMA<proc>(dmanum);
-//	}
-//
-//
-//	DMALOG("ARM%c: DMA%d control src=0x%08X dst=0x%08X %s\n", (proc==0)?'9':'7', dmanum, DMASrc[proc][dmanum], DMADst[proc][dmanum], ((val>>15)&0x01)?"ON":"OFF");
-//
-//	NDS_RescheduleDMA();
-//}
 
 extern CACHE_ALIGN MatrixStack	mtxStack[4];
 u32 TGXSTAT::read32()

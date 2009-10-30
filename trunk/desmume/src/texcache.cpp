@@ -167,12 +167,14 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 
 #if defined (DEBUG_DUMP_TEXTURE) && defined (WIN32)
 #define DO_DEBUG_DUMP_TEXTURE
-static void DebugDumpTexture(int which)
+static void DebugDumpTexture(TexCacheItem* item)
 {
+	static int ctr=0;
 	char fname[100];
-	sprintf(fname,"c:\\dump\\%d.bmp", which);
+	sprintf(fname,"c:\\dump\\%d.bmp", ctr);
+	ctr++;
 
-	NDS_WriteBMP_32bppBuffer(texcache[which].sizeX,texcache[which].sizeY,TexCache_texMAP,fname);
+	NDS_WriteBMP_32bppBuffer(item->sizeX,item->sizeY,item->decoded,fname);
 }
 #endif
 
@@ -182,30 +184,30 @@ static void DebugDumpTexture(int which)
 //I am really unhappy with the ref counting. this needs to be automatic.
 //We could do something better than a linear search through cache items, but it may not be worth it.
 //Also we may need to rescan more often (every time a sample loops)
-class ADPCMCache
+class TexCache
 {
 public:
-	ADPCMCache()
+	TexCache()
 		: list_front(NULL)
 		, list_back(NULL)
 		, cache_size(0)
 	{}
 
-	ADPCMCacheItem *list_front, *list_back;
+	TexCacheItem *list_front, *list_back;
 
 	//this ought to be enough for anyone
 	static const u32 kMaxCacheSize = 64*1024*1024; 
 	//this is not really precise, it is off by a constant factor
 	u32 cache_size;
 
-	void list_remove(ADPCMCacheItem* item) {
+	void list_remove(TexCacheItem* item) {
 		if(item->next) item->next->prev = item->prev;
 		if(item->prev) item->prev->next = item->next;
 		if(item == list_front) list_front = item->next;
 		if(item == list_back) list_back = item->prev;
 	}
 
-	void list_push_front(ADPCMCacheItem* item)
+	void list_push_front(TexCacheItem* item)
 	{
 		item->next = list_front;
 		if(list_front) list_front->prev = item;
@@ -215,7 +217,7 @@ public:
 	}
 
 	template<TexCache_TexFormat TEXFORMAT>
-	ADPCMCacheItem* scan(u32 format, u32 texpal)
+	TexCacheItem* scan(u32 format, u32 texpal)
 	{
 		//for each texformat, number of palette entries
 		static const int palSizes[] = {0, 32, 4, 16, 256, 0, 8, 0};
@@ -282,7 +284,7 @@ public:
 			mspal.dump(pal);
 		#endif
 
-		for(ADPCMCacheItem* curr = list_front;curr;curr=curr->next)
+		for(TexCacheItem* curr = list_front;curr;curr=curr->next)
 		{
 			//conditions where we reject matches:
 			//when the teximage or texpal params dont match 
@@ -330,7 +332,7 @@ public:
 		//evict(); //reduce the size of the cache if necessary
 		//TODO - as a peculiarity of the texcache, eviction must happen after the entire 3d frame runs
 		//to support separate cache and read passes
-		ADPCMCacheItem* newitem = new ADPCMCacheItem();
+		TexCacheItem* newitem = new TexCacheItem();
 		list_push_front(newitem);
 		//newitem->lock();
 		newitem->suspectedInvalid = false;
@@ -621,16 +623,11 @@ public:
 			}
 		} //switch(texture format)
 
-	/*if(user)
-		user->BindTextureData(tx,TexCache_texMAP);
-
 #ifdef DO_DEBUG_DUMP_TEXTURE
-	DebugDumpTexture(tx);
-#endif*/
+	DebugDumpTexture(newitem);
+#endif
 
 		return newitem;
-
-
 	} //scan()
 
 	void evict(const u32 target = kMaxCacheSize) {
@@ -639,7 +636,7 @@ public:
 		//if we really wanted to hold ourselves to it, we could evict to kMaxCacheSize-nextItemSize
 		while(cache_size > target)
 		{
-			ADPCMCacheItem *oldest = list_back;
+			TexCacheItem *oldest = list_back;
 			while(oldest && oldest->lockCount>0) oldest = oldest->prev; //find an unlocked one
 			if(!oldest) 
 			{
@@ -653,7 +650,7 @@ public:
 			delete oldest;
 		}
 	}
-} adpcmCache;
+} texCache;
 
 void TexCache_Reset()
 {
@@ -664,7 +661,7 @@ void TexCache_Reset()
 
 	//texcache_start=0;
 	//texcache_stop=MAX_TEXTURE<<1;
-	adpcmCache.evict(0);
+	texCache.evict(0);
 }
 
 void TexCache_Invalidate()
@@ -683,15 +680,15 @@ void TexCache_Invalidate()
 	//	if(texcache[i].mode == TEXMODE_4X4)
 	//		texcache[i].frm = 0;
 	//}
-	adpcmCache.evict(0);
+	texCache.evict(0);
 }
 
-ADPCMCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal)
+TexCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal)
 {
 	switch(TEXFORMAT)
 	{
-	case TexFormat_32bpp: return adpcmCache.scan<TexFormat_32bpp>(format,texpal);
-	case TexFormat_15bpp: return adpcmCache.scan<TexFormat_15bpp>(format,texpal);
+	case TexFormat_32bpp: return texCache.scan<TexFormat_32bpp>(format,texpal);
+	case TexFormat_15bpp: return texCache.scan<TexFormat_15bpp>(format,texpal);
 	default: assert(false); return NULL;
 	}
 }
@@ -699,5 +696,5 @@ ADPCMCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u3
 //call this periodically to keep the tex cache clean
 void TexCache_EvictFrame()
 {
-	adpcmCache.evict();
+	texCache.evict();
 }

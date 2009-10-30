@@ -261,7 +261,7 @@ static GLuint hasTexLoc;
 static GLuint texBlendLoc;
 static bool hasTexture = false;
 
-static ADPCMCacheItem* currTexture = NULL;
+static TexCacheItem* currTexture = NULL;
 
 /* Shaders init */
 
@@ -520,7 +520,7 @@ static void OGLClose()
 	ENDGL();
 }
 
-static void texDeleteCallback(ADPCMCacheItem* item)
+static void texDeleteCallback(TexCacheItem* item)
 {
 	freeTextureIds.push((GLuint)item->texid);
 	if(currTexture == item)
@@ -553,7 +553,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 
 //	texCacheUnit.TexCache_SetTexture<TexFormat_32bpp>(format, texpal);
-	ADPCMCacheItem* newTexture = TexCache_SetTexture(TexFormat_32bpp,format,texpal);
+	TexCacheItem* newTexture = TexCache_SetTexture(TexFormat_32bpp,format,texpal);
 	if(newTexture != currTexture)
 	{
 		currTexture = newTexture;
