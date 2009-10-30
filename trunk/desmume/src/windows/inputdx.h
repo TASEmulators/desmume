@@ -24,6 +24,8 @@
 #define INPUTDX_INCLUDED
 
 #include <mmsystem.h>
+#define DIRECTINPUT_VERSION 0x0800
+#include "directx/dinput.h"
 
 typedef struct
 {
@@ -79,6 +81,7 @@ struct SJoypad {
 
 
 struct SJoyState{
+	LPDIRECTINPUTDEVICE8 Device;
     bool Attached;
     JOYCAPS Caps;
     int Threshold;
@@ -102,7 +105,7 @@ struct SJoyState{
     bool VDown;
     bool ZUp;
     bool ZDown;
-    bool Button[32];
+    bool Button[128];
 };
 
 extern SJoypad Joypad[16];
