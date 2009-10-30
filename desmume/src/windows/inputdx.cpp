@@ -19,7 +19,7 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //*/
 
-
+//TODO - rumble is broken. hopefully nobody will notice
 
 #ifdef __MINGW32__
 #define _WIN32_IE 0x0501
@@ -276,18 +276,19 @@ typedef char TcDIBuf[512];
 
 TcDIBuf					cDIBuf;
 LPDIRECTINPUT8			pDI;
-LPDIRECTINPUTDEVICE8	pJoystick;
 DIDEVCAPS				DIJoycap;
 LPDIRECTINPUTEFFECT     pEffect;
-char	JoystickName[255];
 BOOL	Feedback;
 
 
 static LPDIRECTINPUT8		tmp_pDI = NULL;
-static BOOL					tmp_Feedback = FALSE;
 static char					tmp_device_name[255] = { 0 };
 static LPDIRECTINPUTDEVICE8 tmp_Device = NULL;
 static LPDIRECTINPUTDEVICE8 tmp_Joystick = NULL;
+
+std::vector<LPDIRECTINPUTDEVICE8> joyDevices;
+std::vector<std::string> joyDeviceNames;
+std::vector<bool> joyDeviceFeedback;
 
 BOOL CALLBACK EnumCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
 {
@@ -297,25 +298,21 @@ BOOL CALLBACK EnumCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
 		return DIENUM_CONTINUE;
 	}
 
-	strcpy(tmp_device_name, lpddi->tszProductName);
-	if (lpddi->guidFFDriver.Data1) tmp_Feedback = TRUE;
-	return DIENUM_STOP;
+	joyDevices.push_back(tmp_Device);
+	joyDeviceNames.push_back(lpddi->tszProductName);
+	if (lpddi->guidFFDriver.Data1) joyDeviceFeedback.push_back(true);
+	else joyDeviceFeedback.push_back(false);
+	return DIENUM_CONTINUE;
 }
 
 
-LPDIRECTINPUTDEVICE8 EnumDevices(LPDIRECTINPUT8 pDI)
+static void EnumDevices(LPDIRECTINPUT8 pDI)
 {
 	tmp_pDI = pDI;
-	tmp_Feedback = FALSE;
-	memset(tmp_device_name, 0, 255);
-	if( FAILED( pDI->EnumDevices(DI8DEVCLASS_GAMECTRL,
+	pDI->EnumDevices(DI8DEVCLASS_GAMECTRL,
 									EnumCallback,
 									NULL,
-									DIEDFL_ATTACHEDONLY) ) )
-			return NULL;
-	Feedback = tmp_Feedback;
-	strcpy(JoystickName, tmp_device_name);
-	return tmp_Device;
+									DIEDFL_ATTACHEDONLY);
 }
 
 BOOL CALLBACK EnumObjects(const DIDEVICEOBJECTINSTANCE* pdidoi,VOID* pContext)
@@ -439,90 +436,99 @@ static void SaveInputConfig()
 
 BOOL di_init()
 {
+	Feedback = FALSE;
 	HWND hParentWnd = MainWindow->getHWnd();
 
 	pDI = NULL;
-	pJoystick = NULL;
-	Feedback = FALSE;
 	memset(cDIBuf, 0, sizeof(cDIBuf));
-	memset(JoystickName, 0, sizeof(JoystickName));
 
 	if(FAILED(DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,IID_IDirectInput8,(void**)&pDI,NULL)))
 		return FALSE;
 
+	memset(&JoystickF,0,sizeof(JoystickF));
 
-	pJoystick = EnumDevices(pDI);
+	EnumDevices(pDI);
 
-	if (pJoystick)
-	{
-		if(!FAILED(pJoystick->SetDataFormat(&c_dfDIJoystick2)))
+	for(int i=0;i<(int)joyDevices.size();i++) {
+		JoystickF[i].Attached = true;
+		JoystickF[i].Device = joyDevices[i];
+
+		LPDIRECTINPUTDEVICE8 pJoystick = joyDevices[i];
+
+		if (pJoystick)
 		{
-			if(FAILED(pJoystick->SetCooperativeLevel(hParentWnd,DISCL_BACKGROUND|DISCL_EXCLUSIVE)))
+			if(!FAILED(pJoystick->SetDataFormat(&c_dfDIJoystick2)))
 			{
-				pJoystick->Release();
-				pJoystick = NULL;
+				if(FAILED(pJoystick->SetCooperativeLevel(hParentWnd,DISCL_BACKGROUND|DISCL_EXCLUSIVE)))
+				{
+					pJoystick->Release();
+					pJoystick = NULL;
+				}
+				else
+				{
+					tmp_Joystick = pJoystick;
+					pJoystick->EnumObjects(::EnumObjects, (VOID*)hParentWnd, DIDFT_ALL);
+					memset(&DIJoycap,0,sizeof(DIDEVCAPS));
+					DIJoycap.dwSize=sizeof(DIDEVCAPS);
+					pJoystick->GetCapabilities(&DIJoycap);
+				}
 			}
 			else
 			{
-				tmp_Joystick = pJoystick;
-				pJoystick->EnumObjects(::EnumObjects, (VOID*)hParentWnd, DIDFT_ALL);
-				memset(&DIJoycap,0,sizeof(DIDEVCAPS));
-				DIJoycap.dwSize=sizeof(DIDEVCAPS);
-				pJoystick->GetCapabilities(&DIJoycap);
+				JoystickF[i].Attached = false;
+				JoystickF[i].Device = NULL;
+				pJoystick->Release();
+				pJoystick = NULL;
 			}
 		}
-		else
+
+		if (pJoystick)
 		{
-			pJoystick->Release();
-			pJoystick = NULL;
-		}
-	}
+			DIPROPDWORD dipdw;
+			dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+			dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+			dipdw.diph.dwObj = 0;
+			dipdw.diph.dwHow = DIPH_DEVICE;
+			dipdw.dwData = 0;
+			if ( !FAILED( pJoystick->SetProperty(DIPROP_AUTOCENTER, &dipdw.diph) ) )
+			{
+				DWORD		rgdwAxes[1] = { DIJOFS_Y };
+				LONG		rglDirection[2] = { 0 };
+				DICONSTANTFORCE		cf = { 0 };
+				DIEFFECT	eff;
 
-	if (pJoystick)
-	{
-		DIPROPDWORD dipdw;
-		dipdw.diph.dwSize = sizeof(DIPROPDWORD);
-		dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-		dipdw.diph.dwObj = 0;
-		dipdw.diph.dwHow = DIPH_DEVICE;
-		dipdw.dwData = 0;
-		if ( !FAILED( pJoystick->SetProperty(DIPROP_AUTOCENTER, &dipdw.diph) ) )
+				cf.lMagnitude = (DI_FFNOMINALMAX * 100);
+				
+				memset(&eff, 0, sizeof(eff));
+				eff.dwSize = sizeof(DIEFFECT);
+				eff.dwFlags = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
+				eff.dwDuration = INFINITE;
+				eff.dwSamplePeriod = 0;
+				eff.dwGain = DI_FFNOMINALMAX;
+				eff.dwTriggerButton = DIEB_NOTRIGGER;
+				eff.dwTriggerRepeatInterval = 0;
+				eff.cAxes = 1;
+				eff.rgdwAxes = rgdwAxes;
+				eff.rglDirection = rglDirection;
+				eff.lpEnvelope = 0;
+				eff.cbTypeSpecificParams = sizeof( DICONSTANTFORCE );
+				eff.lpvTypeSpecificParams = &cf;
+				eff.dwStartDelay = 0;
+
+				//if( FAILED( pJoystick->CreateEffect(GUID_ConstantForce, &eff, &pEffect, NULL) ) )
+				//	Feedback = FALSE;
+			}
+			else
+				//Feedback = FALSE;
+			{}
+		}
+
+		INFO("DirectX Input: \n");
+		if (pJoystick != NULL)
 		{
-			DWORD		rgdwAxes[1] = { DIJOFS_Y };
-			LONG		rglDirection[2] = { 0 };
-			DICONSTANTFORCE		cf = { 0 };
-			DIEFFECT	eff;
-
-			cf.lMagnitude = (DI_FFNOMINALMAX * 100);
-			
-			memset(&eff, 0, sizeof(eff));
-			eff.dwSize = sizeof(DIEFFECT);
-			eff.dwFlags = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
-			eff.dwDuration = INFINITE;
-			eff.dwSamplePeriod = 0;
-			eff.dwGain = DI_FFNOMINALMAX;
-			eff.dwTriggerButton = DIEB_NOTRIGGER;
-			eff.dwTriggerRepeatInterval = 0;
-			eff.cAxes = 1;
-			eff.rgdwAxes = rgdwAxes;
-			eff.rglDirection = rglDirection;
-			eff.lpEnvelope = 0;
-			eff.cbTypeSpecificParams = sizeof( DICONSTANTFORCE );
-			eff.lpvTypeSpecificParams = &cf;
-			eff.dwStartDelay = 0;
-
-			if( FAILED( pJoystick->CreateEffect(GUID_ConstantForce, &eff, &pEffect, NULL) ) )
-				Feedback = FALSE;
+			INFO("   - gamecontrol successfully inited: %s\n", joyDeviceNames[i].c_str());
+			if (joyDeviceFeedback[i]) INFO("\t\t\t\t      (with FeedBack support)\n");
 		}
-		else
-			Feedback = FALSE;
-	}
-
-	INFO("DirectX Input: \n");
-	if (pJoystick != NULL)
-	{
-		INFO("   - gamecontrol successfully inited: %s\n", JoystickName);
-		if (Feedback) INFO("\t\t\t\t      (with FeedBack support)\n");
 	}
 
 	paused = FALSE;
@@ -530,10 +536,10 @@ BOOL di_init()
 	return TRUE;
 }
 
-BOOL JoystickEnabled()
-{
-	return (pJoystick==NULL?FALSE:TRUE);
-}
+//BOOL JoystickEnabled()
+//{
+//	return (pJoystick==NULL?FALSE:TRUE);
+//}
 
 
 HWND funky;
@@ -643,69 +649,73 @@ void S9xUpdateJoyState()
 {
 	memset(&Joystick[0],0,sizeof(Joystick[0]));
 
-	int C = 0;
-	if (pJoystick)
+	for(int C=0;C<16;C++)
 	{
-		DIJOYSTATE2 JoyStatus;
-
-		HRESULT hr=pJoystick->Poll();
-		if (FAILED(hr))	
-			pJoystick->Acquire();
-		else
+		if(!JoystickF[C].Attached) continue;
+		LPDIRECTINPUTDEVICE8 pJoystick = JoystickF[C].Device;
+		if (pJoystick)
 		{
-			hr=pJoystick->GetDeviceState(sizeof(JoyStatus),&JoyStatus);
-			if (FAILED(hr)) hr=pJoystick->Acquire();
+			DIJOYSTATE2 JoyStatus;
+
+			HRESULT hr=pJoystick->Poll();
+			if (FAILED(hr))	
+				pJoystick->Acquire();
 			else
 			{
-				CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[0].Left,Joystick[0].Right);
-				CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[0].Up,Joystick[0].Down);
-		
-				 switch (JoyStatus.rgdwPOV[0])
+				hr=pJoystick->GetDeviceState(sizeof(JoyStatus),&JoyStatus);
+				if (FAILED(hr)) hr=pJoystick->Acquire();
+				else
 				{
-             case JOY_POVBACKWARD:
-                Joystick[C].PovDown = true;
-                break;
-			case 4500:
-				//Joystick[C].PovUpRight = true;
-				Joystick[C].PovUp = true;
-				Joystick[C].PovRight = true;
-				break;
-			case 13500:
-				//Joystick[C].PovDnRight = true;
-				Joystick[C].PovDown = true;
-				Joystick[C].PovRight = true;
-				break;
-			case 22500:
-				//Joystick[C].PovDnLeft = true;
-				Joystick[C].PovDown = true;
-				Joystick[C].PovLeft = true;
-				break;
-			case 31500:
-				//Joystick[C].PovUpLeft = true;
-				Joystick[C].PovUp = true;
-				Joystick[C].PovLeft = true;
-				break;
+					CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[0].Left,Joystick[0].Right);
+					CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[0].Up,Joystick[0].Down);
+			
+					 switch (JoyStatus.rgdwPOV[0])
+					{
+				 case JOY_POVBACKWARD:
+					Joystick[C].PovDown = true;
+					break;
+				case 4500:
+					//Joystick[C].PovUpRight = true;
+					Joystick[C].PovUp = true;
+					Joystick[C].PovRight = true;
+					break;
+				case 13500:
+					//Joystick[C].PovDnRight = true;
+					Joystick[C].PovDown = true;
+					Joystick[C].PovRight = true;
+					break;
+				case 22500:
+					//Joystick[C].PovDnLeft = true;
+					Joystick[C].PovDown = true;
+					Joystick[C].PovLeft = true;
+					break;
+				case 31500:
+					//Joystick[C].PovUpLeft = true;
+					Joystick[C].PovUp = true;
+					Joystick[C].PovLeft = true;
+					break;
 
-            case JOY_POVFORWARD:
-                Joystick[C].PovUp = true;
-                break;
+				case JOY_POVFORWARD:
+					Joystick[C].PovUp = true;
+					break;
 
-            case JOY_POVLEFT:
-				Joystick[C].PovLeft = true;
-                break;
+				case JOY_POVLEFT:
+					Joystick[C].PovLeft = true;
+					break;
 
-            case JOY_POVRIGHT:
-				Joystick[C].PovRight = true;
-                break;
+				case JOY_POVRIGHT:
+					Joystick[C].PovRight = true;
+					break;
 
-            default:
-                break;
+				default:
+					break;
+					}
+
+	   for(int B=0;B<128;B++)
+			if( JoyStatus.rgbButtons[B] )
+				Joystick[C].Button[B] = true;
+
 				}
-
-   for(int B=0;B<128;B++)
-        if( JoyStatus.rgbButtons[B] )
-			Joystick[C].Button[B] = true;
-
 			}
 		}
 	}
@@ -713,157 +723,162 @@ void S9xUpdateJoyState()
 
 void di_poll_scan()
 {
-	int C = 0;
-	if (pJoystick)
+	for(int C=0;C<16;C++)
 	{
-		DIJOYSTATE2 JoyStatus;
-
-		HRESULT hr=pJoystick->Poll();
-		if (FAILED(hr))	
-			pJoystick->Acquire();
-		else
+		//if(!JoystickF[C].Attached) continue;
+		LPDIRECTINPUTDEVICE8 pJoystick = JoystickF[C].Device;
+		if(!pJoystick) continue;
+		if (pJoystick)
 		{
-			hr=pJoystick->GetDeviceState(sizeof(JoyStatus),&JoyStatus);
-			if (FAILED(hr)) hr=pJoystick->Acquire();
+			DIJOYSTATE2 JoyStatus;
+
+			HRESULT hr=pJoystick->Poll();
+			if (FAILED(hr))	
+				pJoystick->Acquire();
 			else
 			{
-				CheckAxis(0,0,JoyStatus.lX,-10000,10000,Joystick[0].Left,Joystick[0].Right);
-				CheckAxis(0,2,JoyStatus.lY,-10000,10000,Joystick[0].Down,Joystick[0].Up);
-		
-				 switch (JoyStatus.rgdwPOV[0])
+				hr=pJoystick->GetDeviceState(sizeof(JoyStatus),&JoyStatus);
+				if (FAILED(hr)) hr=pJoystick->Acquire();
+				else
 				{
-             case JOY_POVBACKWARD:
-                if( !JoystickF[C].PovDown)
-                {   JoystickChanged( C, 7); }
+					CheckAxis(0,0,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
+					CheckAxis(0,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
+			
+					 switch (JoyStatus.rgdwPOV[0])
+					{
+				 case JOY_POVBACKWARD:
+					if( !JoystickF[C].PovDown)
+					{   JoystickChanged( C, 7); }
 
-                JoystickF[C].PovDown = true;
-                JoystickF[C].PovUp = false;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-                break;
-			case 4500:
-				if( !JoystickF[C].PovUpRight)
-                {   JoystickChanged( C, 52); }
-				JoystickF[C].PovDown = false;
-                JoystickF[C].PovUp = false;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = true;
-				break;
-			case 13500:
-				if( !JoystickF[C].PovDnRight)
-                {   JoystickChanged( C, 50); }
-				JoystickF[C].PovDown = false;
-                JoystickF[C].PovUp = false;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = true;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-				break;
-			case 22500:
-				if( !JoystickF[C].PovDnLeft)
-                {   JoystickChanged( C, 49); }
-				JoystickF[C].PovDown = false;
-                JoystickF[C].PovUp = false;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = true;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-				break;
-			case 31500:
-				if( !JoystickF[C].PovUpLeft)
-                {   JoystickChanged( C, 51); }
-				JoystickF[C].PovDown = false;
-                JoystickF[C].PovUp = false;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = true;
-				JoystickF[C].PovUpRight = false;
-				break;
+					JoystickF[C].PovDown = true;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
+				case 4500:
+					if( !JoystickF[C].PovUpRight)
+					{   JoystickChanged( C, 52); }
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = true;
+					break;
+				case 13500:
+					if( !JoystickF[C].PovDnRight)
+					{   JoystickChanged( C, 50); }
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = true;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
+				case 22500:
+					if( !JoystickF[C].PovDnLeft)
+					{   JoystickChanged( C, 49); }
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = true;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
+				case 31500:
+					if( !JoystickF[C].PovUpLeft)
+					{   JoystickChanged( C, 51); }
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = true;
+					JoystickF[C].PovUpRight = false;
+					break;
 
-            case JOY_POVFORWARD:
-                if( !JoystickF[C].PovUp)
-                {   JoystickChanged( C, 6); }
+				case JOY_POVFORWARD:
+					if( !JoystickF[C].PovUp)
+					{   JoystickChanged( C, 6); }
 
-                JoystickF[C].PovDown = false;
-                JoystickF[C].PovUp = true;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-                break;
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = true;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
 
-            case JOY_POVLEFT:
-                if( !JoystickF[C].PovLeft)
-                {   JoystickChanged( C, 4); }
+				case JOY_POVLEFT:
+					if( !JoystickF[C].PovLeft)
+					{   JoystickChanged( C, 4); }
 
-				JoystickF[C].PovDown = false;
-				JoystickF[C].PovUp = false;
-				JoystickF[C].PovLeft = true;
-				JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-                break;
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = true;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
 
-            case JOY_POVRIGHT:
-                if( !JoystickF[C].PovRight)
-                {   JoystickChanged( C, 5); }
+				case JOY_POVRIGHT:
+					if( !JoystickF[C].PovRight)
+					{   JoystickChanged( C, 5); }
 
-				JoystickF[C].PovDown = false;
-				JoystickF[C].PovUp = false;
-				JoystickF[C].PovLeft = false;
-				JoystickF[C].PovRight = true;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-                break;
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = true;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
 
-            default:
-                JoystickF[C].PovDown = false;
-                JoystickF[C].PovUp = false;
-                JoystickF[C].PovLeft = false;
-                JoystickF[C].PovRight = false;
-				JoystickF[C].PovDnLeft = false;
-				JoystickF[C].PovDnRight = false;
-				JoystickF[C].PovUpLeft = false;
-				JoystickF[C].PovUpRight = false;
-                break;
+				default:
+					JoystickF[C].PovDown = false;
+					JoystickF[C].PovUp = false;
+					JoystickF[C].PovLeft = false;
+					JoystickF[C].PovRight = false;
+					JoystickF[C].PovDnLeft = false;
+					JoystickF[C].PovDnRight = false;
+					JoystickF[C].PovUpLeft = false;
+					JoystickF[C].PovUpRight = false;
+					break;
+					}
+
+	   for(int B=0;B<128;B++)
+			if( JoyStatus.rgbButtons[B] )
+			{
+				if( !JoystickF[C].Button[B])
+				{
+					JoystickChanged( C, (short)(8+B));
+					JoystickF[C].Button[B] = true;
 				}
-
-   for(int B=0;B<128;B++)
-        if( JoyStatus.rgbButtons[B] )
-        {
-            if( !JoystickF[C].Button[B])
-            {
-                JoystickChanged( C, (short)(8+B));
-                JoystickF[C].Button[B] = true;
-            }
-        }
-        else
-        {   JoystickF[C].Button[B] = false; }
+			}
+			else
+			{   JoystickF[C].Button[B] = false; }
 
 
+				}
 			}
 		}
-	}
+	} // C loop
 
 }
 
@@ -1941,8 +1956,8 @@ switch(msg)
 		//for( C = 0; C != 16; C ++)
 	 //       JoystickF[C].Attached = joyGetDevCaps( JOYSTICKID1+C, &JoystickF[C].Caps, sizeof( JOYCAPS)) == JOYERR_NOERROR;
 
-		memset(&JoystickF[0],0,sizeof(JoystickF[0]));
-		JoystickF[0].Attached = pJoystick != NULL;
+		//memset(&JoystickF[0],0,sizeof(JoystickF[0]));
+		//JoystickF[0].Attached = pJoystick != NULL;
 
 
 		//for(i=1;i<6;i++)
