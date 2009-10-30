@@ -332,7 +332,8 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 static int KeyInDelayMSec = 0;
 static int KeyInRepeatMSec = 16;
 
-VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+template<bool JOYSTICK>
+static void InputTimer()
 {
 	bool S9xGetState (WORD KeyIdent);
 
@@ -355,28 +356,35 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 		initialized = true;
 	}
 
-	for (int i = 0; i < 256; i++) {
+	for (int z = 0; z < 256; z++) {
+		int i = z | (JOYSTICK?0x8000:0);
 		bool active = !S9xGetState(i);
 
 		if (active) {
-			bool keyRepeat = (currentTime - joyState[i].firstPressedTime) >= (DWORD)KeyInDelayMSec;
-			if (!joyState[i].wasPressed || keyRepeat) {
-				if (!joyState[i].wasPressed)
-					joyState[i].firstPressedTime = currentTime;
-				joyState[i].lastPressedTime = currentTime;
-				if (keyRepeat && joyState[i].repeatCount < 0xffff)
-					joyState[i].repeatCount++;
-				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(joyState[i].repeatCount | (joyState[i].wasPressed ? 0x40000000 : 0)));
+			bool keyRepeat = (currentTime - joyState[z].firstPressedTime) >= (DWORD)KeyInDelayMSec;
+			if (!joyState[z].wasPressed || keyRepeat) {
+				if (!joyState[z].wasPressed)
+					joyState[z].firstPressedTime = currentTime;
+				joyState[z].lastPressedTime = currentTime;
+				if (keyRepeat && joyState[z].repeatCount < 0xffff)
+					joyState[z].repeatCount++;
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
 			}
 		}
 		else {
-			joyState[i].repeatCount = 1;
-			if (joyState[i].wasPressed)
-				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, (WPARAM)(i),(LPARAM)(joyState[i].repeatCount | (joyState[i].wasPressed ? 0x40000000 : 0)));
+			joyState[z].repeatCount = 1;
+			if (joyState[z].wasPressed)
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, (WPARAM)(i),(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
 		}
-		joyState[i].wasPressed = active;
+		joyState[z].wasPressed = active;
 	}
 	lastTime = currentTime;
+}
+
+VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+{
+	InputTimer<false>();
+	InputTimer<true>();
 }
 
 void ScaleScreen(float factor)
