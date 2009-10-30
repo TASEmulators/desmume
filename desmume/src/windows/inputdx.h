@@ -23,6 +23,8 @@
 #ifndef INPUTDX_INCLUDED
 #define INPUTDX_INCLUDED
 
+#include <mmsystem.h>
+
 typedef struct
 {
     COLORREF crForeGnd;    // Foreground text colour
@@ -78,7 +80,7 @@ struct SJoypad {
 
 struct SJoyState{
     bool Attached;
-    //JOYCAPS Caps;
+    JOYCAPS Caps;
     int Threshold;
     bool Left;
     bool Right;
