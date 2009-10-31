@@ -369,6 +369,8 @@ extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation
 
 extern BOOL isSwapBuffers;
 
+int _hack_getMatrixStackLevel(int);
+
 void gfx3d_glFlush(u32 v);
 // end GE commands
 
