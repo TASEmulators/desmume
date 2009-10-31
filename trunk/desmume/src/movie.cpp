@@ -932,7 +932,7 @@ static bool FCEUMOV_PostLoad(void)
 }
 
 
-bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount)
+bool FCEUI_MovieGetInfo(EMUFILE* fp, MOVIE_INFO& info, bool skipFrameCount)
 {
 	//MovieData md;
 	//if(!LoadFM2(md, fp, INT_MAX, skipFrameCount))
