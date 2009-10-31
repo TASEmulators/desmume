@@ -509,10 +509,12 @@ void DrawHUD()
 
 	if (CommonSettings.hud.FrameCounterDisplay) 
 	{
-		if (movieMode == MOVIEMODE_PLAY)
-			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d/%d",currFrameCounter,currMovieData.records.size());
-		else if(movieMode == MOVIEMODE_RECORD) 
+		if(movieMode == MOVIEMODE_RECORD) 
 			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",currFrameCounter);
+		else if (movieMode == MOVIEMODE_PLAY)
+			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d/%d",currFrameCounter,currMovieData.records.size());
+		else if (movieMode == MOVIEMODE_FINISHED)
+			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d/%d (finished)",currFrameCounter,currMovieData.records.size());
 		else
 			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d (no movie)",currFrameCounter);
 	}
@@ -658,7 +660,7 @@ void OSDCLASS::setListCoord(u16 x, u16 y)
 	lineText_y = y;
 }
 
-void OSDCLASS::setLineColor(u8 r=255, u8 b=255, u8 g=255)
+void OSDCLASS::setLineColor(u8 r=255, u8 g=255, u8 b=255)
 {
 	lineText_color = AggColor(r,g,b);
 }

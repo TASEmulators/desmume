@@ -3421,6 +3421,9 @@ DEFINE_LUA_FUNCTION(movie_getmode, "")
 	case MOVIEMODE_INACTIVE:
 		lua_pushstring(L, "inactive");
 		break;
+	case MOVIEMODE_FINISHED:
+		lua_pushstring(L, "finished");
+		break;
 	default:
 		lua_pushnil(L);
 		break;

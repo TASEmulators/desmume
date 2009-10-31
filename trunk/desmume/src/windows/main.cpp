@@ -1738,13 +1738,9 @@ class WinDriver : public BaseDriver
 	virtual void EMU_PauseEmulation(bool pause)
 	{
 		if(pause)
-		{
-			void Pause(); Pause();
-		}
+			Pause();
 		else
-		{
-			void Unpause(); Unpause();
-		}
+			Unpause();
 	}
 
 	virtual bool EMU_IsEmulationPaused()
@@ -2875,10 +2871,18 @@ void Unpause()
 void Pause()
 {
 	lastPauseFromLostFocus = FALSE;
+	if (!emu_paused) NDS_Pause();
+	emu_paused = 1;
+}
+
+void TogglePause()
+{
+	lastPauseFromLostFocus = FALSE;
 	if (emu_paused) NDS_UnPause();
 	else NDS_Pause();
 	emu_paused ^= 1;
 }
+
 
 bool first;
 
