@@ -223,10 +223,24 @@ void HK_ResetLagCounter(int, bool justPressed) {
 }
 void HK_ToggleReadOnly(int, bool justPressed) {
 	movie_readonly ^= true; 
+
+	char msg [64];
+	char* pMsg = msg;
 	if(movie_readonly)
-		osd->addLine("Read Only");
+		pMsg += sprintf(pMsg, "Read-Only");
 	else
-		osd->addLine("Read+Write");
+		pMsg += sprintf(pMsg, "Read+Write");
+	if(movieMode == MOVIEMODE_INACTIVE)
+		pMsg += sprintf(pMsg, " (no movie)");
+	if(movieMode == MOVIEMODE_FINISHED)
+		pMsg += sprintf(pMsg, " (finished)");
+	if(movieMode == MOVIEMODE_INACTIVE)
+		osd->setLineColor(255,0,0);
+	else if(movieMode == MOVIEMODE_FINISHED)
+		osd->setLineColor(255,255,0);
+	else
+		osd->setLineColor(255,255,255);
+	osd->addLine(msg);
 }
 
 void HK_PlayMovie(int, bool justPressed) 
@@ -325,7 +339,7 @@ void HK_PreviousSaveSlot(int, bool justPressed) {
 	osd->addLine("State %i selected", lastSaveState);
 }
 
-void HK_Pause(int, bool justPressed) { Pause(); }
+void HK_Pause(int, bool justPressed) { TogglePause(); }
 void HK_FastForwardToggle(int, bool justPressed) { FastForward ^=1; }
 void HK_FastForwardKeyDown(int, bool justPressed) { FastForward = 1; }
 void HK_FastForwardKeyUp(int) { FastForward = 0; }

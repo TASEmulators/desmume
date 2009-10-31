@@ -10,6 +10,8 @@ void NDS_UnPause(bool showMsg = true);
 void LoadSaveStateInfo();
 void Display();
 void Pause();
+void Unpause();
+void TogglePause();
 void FrameAdvance(bool state);
 void ResetGame();	//Resets game (for the menu item & hotkey
 void AviRecordTo();

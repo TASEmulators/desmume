@@ -2802,7 +2802,7 @@ void NDS_setTouchPos(u16 x, u16 y)
 	rawUserInput.touch.touchY = NDS_getADCTouchPosY(y);
 	rawUserInput.touch.isTouch = true;
 
-	if(movieMode != MOVIEMODE_INACTIVE)
+	if(movieMode != MOVIEMODE_INACTIVE && movieMode != MOVIEMODE_FINISHED)
 	{
 		// just in case, since the movie only stores 8 bits per touch coord
 		rawUserInput.touch.touchX &= 0x0FF0;

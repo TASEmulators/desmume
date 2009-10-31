@@ -176,7 +176,8 @@ MovieData::MovieData()
 
 void MovieData::truncateAt(int frame)
 {
-	records.resize(frame);
+	if(records.size() < frame)
+		records.resize(frame);
 }
 
 
@@ -384,6 +385,13 @@ static void StopPlayback()
 	movieMode = MOVIEMODE_INACTIVE;
 }
 
+/// Stop movie playback without closing the movie.
+static void FinishPlayback()
+{
+	driver->USR_InfoMessage("Movie finished playing.");
+	movieMode = MOVIEMODE_FINISHED;
+}
+
 
 /// Stop movie recording
 static void StopRecording()
@@ -398,7 +406,7 @@ static void StopRecording()
 
 void FCEUI_StopMovie()
 {
-	if(movieMode == MOVIEMODE_PLAY)
+	if(movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_FINISHED)
 		StopPlayback();
 	else if(movieMode == MOVIEMODE_RECORD)
 		StopRecording();
@@ -421,7 +429,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 		return "LoadMovie doesn't support browsing yet";
 
 	//mbg 6/10/08 - we used to call StopMovie here, but that cleared curMovieFilename and gave us crashes...
-	if(movieMode == MOVIEMODE_PLAY)
+	if(movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_FINISHED)
 		StopPlayback();
 	else if(movieMode == MOVIEMODE_RECORD)
 		StopRecording();
@@ -626,7 +634,7 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 		 //stop when we run out of frames
 		 if(currFrameCounter == (int)currMovieData.records.size())
 		 {
-			 StopPlayback();
+			 FinishPlayback();
 		 }
 		 else
 		 {
@@ -758,7 +766,7 @@ void mov_savestate(EMUFILE* fp)
 	//if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
 	//	return currMovieData.dump(os, true);
 	//else return 0;
-	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
+	if(movieMode != MOVIEMODE_INACTIVE)
 	{
 		write32le(kMOVI,fp);
 		currMovieData.dump(fp, true);
@@ -834,7 +842,7 @@ bool mov_loadstate(EMUFILE* fp, int size)
 	//  then, we must discard this movie and just load the savestate
 
 
-	if(movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_RECORD)
+	if(movieMode != MOVIEMODE_INACTIVE)
 	{
 		//handle moviefile mismatch
 		if(tempMovieData.guid != currMovieData.guid)
@@ -854,7 +862,30 @@ bool mov_loadstate(EMUFILE* fp, int size)
 
 		closeRecordingMovie();
 
-		if(movie_readonly)
+		if(!movie_readonly)
+		{
+			////truncate before we copy, just to save some time
+			//tempMovieData.truncateAt(currFrameCounter); // disabled because this can really screw things up and shouldn't usually be faster
+
+			currMovieData = tempMovieData;
+			currMovieData.rerecordCount = currRerecordCount;
+		}
+
+		if(currFrameCounter > currMovieData.records.size())
+		{
+			// if the frame counter is longer than our current movie,
+			// switch to "finished" mode.
+			// this is a mode that behaves like "inactive"
+			// except it permits switching to play/record by loading an earlier savestate.
+			// (and we continue to store the finished movie in savestates made while finished)
+			osd->setLineColor(255,0,0); // let's make the text red too to hopefully catch the user's attention a bit.
+			FinishPlayback();
+			osd->setLineColor(255,255,255);
+
+			//FCEU_PrintError("Savestate is from a frame (%d) after the final frame in the movie (%d). This is not permitted.", currFrameCounter, currMovieData.records.size()-1);
+			//return false;
+		}
+		else if(movie_readonly)
 		{
 			//-------------------------------------------------------------
 			//this code would reload the movie from disk. allegedly it is helpful to hexers, but
@@ -872,21 +903,10 @@ bool mov_loadstate(EMUFILE* fp, int size)
 			//}
 			//-------------------------------------------------------------
 
-			//if the frame counter is longer than our current movie, then error
-			if(currFrameCounter > (int)currMovieData.records.size())
-			{
-				FCEU_PrintError("Savestate is from a frame (%d) after the final frame in the movie (%d). This is not permitted.", currFrameCounter, currMovieData.records.size()-1);
-				return false;
-			}
-
 			movieMode = MOVIEMODE_PLAY;
 		}
 		else
 		{
-			//truncate before we copy, just to save some time
-			tempMovieData.truncateAt(currFrameCounter);
-			currMovieData = tempMovieData;
-			
 		//	#ifdef _S9XLUA_H
 		//	if(!FCEU_LuaRerecordCountSkip())
 				currRerecordCount++;
@@ -1014,7 +1034,6 @@ static bool CheckFileExists(const char* filename)
 		
 	if (!fp)
 	{
-		fclose(fp);
 		return false; 
 	}
 	else
