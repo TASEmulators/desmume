@@ -781,14 +781,14 @@ static void gfx3d_glLightDirection_cache(int index)
 }
 
 //===============================================================================
-void gfx3d_glMatrixMode(u32 v)
+static void gfx3d_glMatrixMode(u32 v)
 {
 	mode = (v&3);
 
 	GFX_DELAY(1);
 }
 
-void gfx3d_glPushMatrix()
+static void gfx3d_glPushMatrix()
 {
 	//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
@@ -813,7 +813,7 @@ void gfx3d_glPushMatrix()
 	//gxstat |= ((mtxStack[0].position << 13) | (mtxStack[1].position << 8));
 }
 
-void gfx3d_glPopMatrix(s32 i)
+static void gfx3d_glPopMatrix(s32 i)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -842,7 +842,7 @@ void gfx3d_glPopMatrix(s32 i)
 	//gxstat |= ((mtxStack[0].position << 13) | (mtxStack[1].position << 8));
 }
 
-void gfx3d_glStoreMatrix(u32 v)
+static void gfx3d_glStoreMatrix(u32 v)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -862,7 +862,7 @@ void gfx3d_glStoreMatrix(u32 v)
 		MatrixStackLoadMatrix (&mtxStack[1], v, mtxCurrent[1]);
 }
 
-void gfx3d_glRestoreMatrix(u32 v)
+static void gfx3d_glRestoreMatrix(u32 v)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -885,7 +885,7 @@ void gfx3d_glRestoreMatrix(u32 v)
 
 }
 
-void gfx3d_glLoadIdentity()
+static void gfx3d_glLoadIdentity()
 {
 	MatrixIdentity (mtxCurrent[mode]);
 
@@ -897,7 +897,7 @@ void gfx3d_glLoadIdentity()
 	//printf("identity: %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
 }
 
-BOOL gfx3d_glLoadMatrix4x4(s32 v)
+static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 {
 	mtxCurrent[mode][ML4x4ind] = (float)v;
 
@@ -916,7 +916,7 @@ BOOL gfx3d_glLoadMatrix4x4(s32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glLoadMatrix4x3(s32 v)
+static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 {
 	mtxCurrent[mode][ML4x3ind] = (float)v;
 
@@ -939,7 +939,7 @@ BOOL gfx3d_glLoadMatrix4x3(s32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glMultMatrix4x4(s32 v)
+static BOOL gfx3d_glMultMatrix4x4(s32 v)
 {
 	mtxTemporal[MM4x4ind] = (float)v;
 
@@ -965,7 +965,7 @@ BOOL gfx3d_glMultMatrix4x4(s32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glMultMatrix4x3(s32 v)
+static BOOL gfx3d_glMultMatrix4x3(s32 v)
 {
 	mtxTemporal[MM4x3ind] = (float)v;
 
@@ -997,7 +997,7 @@ BOOL gfx3d_glMultMatrix4x3(s32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glMultMatrix3x3(s32 v)
+static BOOL gfx3d_glMultMatrix3x3(s32 v)
 {
 	mtxTemporal[MM3x3ind] = (float)v;
 
@@ -1032,7 +1032,7 @@ BOOL gfx3d_glMultMatrix3x3(s32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glScale(s32 v)
+static BOOL gfx3d_glScale(s32 v)
 {
 	scale[scaleind] = fix2float(v);
 
@@ -1054,7 +1054,7 @@ BOOL gfx3d_glScale(s32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glTranslate(s32 v)
+static BOOL gfx3d_glTranslate(s32 v)
 {
 	trans[transind] = fix2float(v);
 
@@ -1078,7 +1078,7 @@ BOOL gfx3d_glTranslate(s32 v)
 	return TRUE;
 }
 
-void gfx3d_glColor3b(u32 v)
+static void gfx3d_glColor3b(u32 v)
 {
 	colorRGB[0] = (v&0x1F);
 	colorRGB[1] = ((v>>5)&0x1F);
@@ -1086,7 +1086,7 @@ void gfx3d_glColor3b(u32 v)
 	GFX_DELAY(1);
 }
 
-void gfx3d_glNormal(u32 v)
+static void gfx3d_glNormal(u32 v)
 {
 	int i,c;
 	ALIGN(16) float normal[4] = { normalTable[v&1023],
@@ -1181,7 +1181,7 @@ void gfx3d_glNormal(u32 v)
 	GFX_DELAY_M2((lightMask>>3) & 0x01);
 }
 
-void gfx3d_glTexCoord(u32 val)
+static void gfx3d_glTexCoord(u32 val)
 {
 	_t = (s16)(val>>16);
 	_s = (s16)(val&0xFFFF);
@@ -1204,7 +1204,7 @@ void gfx3d_glTexCoord(u32 val)
 	GFX_DELAY(1);
 }
 
-BOOL gfx3d_glVertex16b(unsigned int v)
+static BOOL gfx3d_glVertex16b(unsigned int v)
 {
 	if(coordind==0)
 	{
@@ -1227,7 +1227,7 @@ BOOL gfx3d_glVertex16b(unsigned int v)
 	return TRUE;
 }
 
-void gfx3d_glVertex10b(u32 v)
+static void gfx3d_glVertex10b(u32 v)
 {
 	//coord[0]		= float10Table[v&1023];
 	//coord[1]		= float10Table[(v>>10)&1023];
@@ -1240,7 +1240,7 @@ void gfx3d_glVertex10b(u32 v)
 	SetVertex ();
 }
 
-void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
+static void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 {
 	//coord[one]		= float16table[v&0xffff];
 	//coord[two]		= float16table[v>>16];
@@ -1252,7 +1252,7 @@ void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 	GFX_DELAY(8);
 }
 
-void gfx3d_glVertex_rel(u32 v)
+static void gfx3d_glVertex_rel(u32 v)
 {
 	//coord[0]		+= float10RelTable[v&1023];
 	//coord[1]		+= float10RelTable[(v>>10)&1023];
@@ -1268,7 +1268,7 @@ void gfx3d_glVertex_rel(u32 v)
 	GFX_DELAY(8);
 }
 
-void gfx3d_glPolygonAttrib (u32 val)
+static void gfx3d_glPolygonAttrib (u32 val)
 {
 	if(inBegin) {
 		//PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
@@ -1278,14 +1278,14 @@ void gfx3d_glPolygonAttrib (u32 val)
 	GFX_DELAY(1);
 }
 
-void gfx3d_glTexImage(u32 val)
+static void gfx3d_glTexImage(u32 val)
 {
 	textureFormat = val;
 	gfx3d_glTexImage_cache();
 	GFX_DELAY(1);
 }
 
-void gfx3d_glTexPalette(u32 val)
+static void gfx3d_glTexPalette(u32 val)
 {
 	texturePalette = val;
 	GFX_DELAY(1);
@@ -1300,7 +1300,7 @@ void gfx3d_glTexPalette(u32 val)
 	21-25 Ambient Reflection Green
 	26-30 Ambient Reflection Blue
 */
-void gfx3d_glMaterial0(u32 val)
+static void gfx3d_glMaterial0(u32 val)
 {
 	dsDiffuse = val&0xFFFF;
 	dsAmbient = val>>16;
@@ -1314,7 +1314,7 @@ void gfx3d_glMaterial0(u32 val)
 	GFX_DELAY(4);
 }
 
-void gfx3d_glMaterial1(u32 val)
+static void gfx3d_glMaterial1(u32 val)
 {
 	dsSpecular = val&0xFFFF;
 	dsEmission = val>>16;
@@ -1327,7 +1327,7 @@ void gfx3d_glMaterial1(u32 val)
 	20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
 	30-31 Light Number                     (0..3)
 */
-void gfx3d_glLightDirection (u32 v)
+static void gfx3d_glLightDirection (u32 v)
 {
 	int index = v>>30;
 
@@ -1336,14 +1336,14 @@ void gfx3d_glLightDirection (u32 v)
 	GFX_DELAY(6);
 }
 
-void gfx3d_glLightColor (u32 v)
+static void gfx3d_glLightColor (u32 v)
 {
 	int index = v>>30;
 	lightColor[index] = v;
 	GFX_DELAY(1);
 }
 
-BOOL gfx3d_glShininess (u32 val)
+static BOOL gfx3d_glShininess (u32 val)
 {
 	shininessTable[shininessInd++] = ((val & 0xFF) / 256.0f);
 	shininessTable[shininessInd++] = (((val >> 8) & 0xFF) / 256.0f);
@@ -1356,7 +1356,7 @@ BOOL gfx3d_glShininess (u32 val)
 	return TRUE;
 }
 
-void gfx3d_glBegin(u32 v)
+static void gfx3d_glBegin(u32 v)
 {
 	inBegin = TRUE;
 	vtxFormat = v&0x03;
@@ -1368,7 +1368,7 @@ void gfx3d_glBegin(u32 v)
 	GFX_DELAY(1);
 }
 
-void gfx3d_glEnd(void)
+static void gfx3d_glEnd(void)
 {
 	inBegin = FALSE;
 	tempVertInfo.count = 0;
@@ -1377,13 +1377,13 @@ void gfx3d_glEnd(void)
 
 // swap buffers - skipped
 
-void gfx3d_glViewPort(u32 v)
+static void gfx3d_glViewPort(u32 v)
 {
 	viewport = v;
 	GFX_DELAY(1);
 }
 
-BOOL gfx3d_glBoxTest(u32 v)
+static BOOL gfx3d_glBoxTest(u32 v)
 {
 	MMU_new.gxstat.tr = 0;		// clear boxtest bit
 	MMU_new.gxstat.tb = 1;		// busy
@@ -1518,7 +1518,7 @@ BOOL gfx3d_glBoxTest(u32 v)
 	return TRUE;
 }
 
-BOOL gfx3d_glPosTest(u32 v)
+static BOOL gfx3d_glPosTest(u32 v)
 {
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 
@@ -1545,7 +1545,7 @@ BOOL gfx3d_glPosTest(u32 v)
 	return TRUE;
 }
 
-void gfx3d_glVecTest(u32 v)
+static void gfx3d_glVecTest(u32 v)
 {
 	GFX_DELAY(5);
 
@@ -1670,7 +1670,7 @@ unsigned short gfx3d_glGetVecRes(unsigned int index)
 }
 
 //#define _3D_LOG_EXEC
-void gfx3d_execute(u8 cmd, u32 param)
+static void gfx3d_execute(u8 cmd, u32 param)
 {
 	//printf("*** gxFIFO: exec 0x%02X, size %03i\n", cmd, gxFIFO.size);
 #ifdef _3D_LOG_EXEC
