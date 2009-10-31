@@ -138,7 +138,7 @@ bool CommandLine::validate()
 		return false;
 	}
 
-	if(_bios_arm9 && !_bios_arm7 || _bios_arm7 && !_bios_arm9) {
+	if((_bios_arm9 && !_bios_arm7) || (_bios_arm7 && !_bios_arm9)) {
 		g_printerr("If either bios-arm7 or bios-arm9 are specified, both must be.\n");
 		return false;
 	}
