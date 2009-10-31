@@ -421,19 +421,19 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
 
 extern struct TCommonSettings {
 	TCommonSettings() 
-		: UseExtBIOS(false)
+		: GFX3D_HighResolutionInterpolateColor(true)
+		, GFX3D_EdgeMark(true)
+		, GFX3D_Fog(true)
+		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
 		, UseExtFirmware(false)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
-		, num_cores(1)
-		, spuInterpolationMode(SPUInterpolation_Linear)
 		//, gfx3d_flushMode(0)
-		, manualBackupType(0)
+		, num_cores(1)
 		, micMode(InternalNoise)
-		, GFX3D_HighResolutionInterpolateColor(true)
-		, GFX3D_EdgeMark(true)
-		, GFX3D_Fog(true)
+		, spuInterpolationMode(SPUInterpolation_Linear)
+		, manualBackupType(0)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
