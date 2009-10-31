@@ -14,14 +14,14 @@ class TexCacheItem
 {
 public:
 	TexCacheItem() 
-		: decoded(NULL)
-		, decode_len(0)
+		: decode_len(0)
+		, decoded(NULL)
 		, next(NULL)
 		, prev(NULL)
 		, lockCount(0)
-		, cacheFormat(TexFormat_None)
-		, deleteCallback(NULL)
 		, suspectedInvalid(false)
+		, deleteCallback(NULL)
+		, cacheFormat(TexFormat_None)
 	{}
 	~TexCacheItem() {
 		delete[] decoded;
