@@ -171,19 +171,20 @@ public:
 	void tryTrigger(EDMAMode mode);
 
 	DmaController() :
-		enable(0), irq(0), bitWidth(EDMABitWidth_16), repeatMode(0), _startmode(0), 
+		enable(0), irq(0), repeatMode(0), _startmode(0),
+		wordcount(0), startmode(EDMAMode_Immediate),
+		bitWidth(EDMABitWidth_16),
+		sar(EDMASourceUpdate_Increment), dar(EDMADestinationUpdate_Increment),
 		//if saddr isnt cleared then rings of fate will trigger copy protection
 		//by inspecting dma3 saddr when it boots
 		saddr(0), daddr(0),
-		sar(EDMASourceUpdate_Increment), dar(EDMADestinationUpdate_Increment),
-		wordcount(0), startmode(EDMAMode_Immediate),
-		sad(&saddr),
-		dad(&daddr),
 		check(FALSE),
 		running(FALSE),
 		paused(FALSE),
 		triggered(FALSE),
-		nextEvent(0)
+		nextEvent(0),
+		sad(&saddr),
+		dad(&daddr)
 	{
 		sad.controller = this;
 		dad.controller = this;
