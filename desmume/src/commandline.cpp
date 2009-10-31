@@ -40,10 +40,10 @@ CommandLine::CommandLine()
 , _record_movie_file(0)
 , _cflash_image(0)
 , _cflash_path(0)
-, _num_cores(-1)
 , _bios_arm9(NULL)
 , _bios_arm7(NULL)
 , _bios_swi(0)
+, _num_cores(-1)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
