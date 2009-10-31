@@ -950,7 +950,7 @@ static Task rasterizerUnitTask[4];
 static RasterizerUnit rasterizerUnit[4];
 static int rasterizerCores;
 
-void* execRasterizerUnit(void* arg)
+static void* execRasterizerUnit(void* arg)
 {
 	intptr_t which = (intptr_t)arg;
 	rasterizerUnit[which].mainLoop<true>();
