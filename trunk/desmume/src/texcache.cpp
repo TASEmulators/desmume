@@ -1,6 +1,7 @@
 #include <string.h>
 #include <algorithm>
 #include <assert.h>
+#include <map>
 
 #include "texcache.h"
 
@@ -178,8 +179,6 @@ static void DebugDumpTexture(TexCacheItem* item)
 }
 #endif
 
-
-
 //notes on the cache:
 //I am really unhappy with the ref counting. this needs to be automatic.
 //We could do something better than a linear search through cache items, but it may not be worth it.
@@ -188,32 +187,26 @@ class TexCache
 {
 public:
 	TexCache()
-		: list_front(NULL)
-		, list_back(NULL)
-		, cache_size(0)
+		: cache_size(0)
 	{}
 
-	TexCacheItem *list_front, *list_back;
+	TTexCacheItemMultimap index;
 
 	//this ought to be enough for anyone
 	static const u32 kMaxCacheSize = 64*1024*1024; 
 	//this is not really precise, it is off by a constant factor
 	u32 cache_size;
 
-	void list_remove(TexCacheItem* item) {
-		if(item->next) item->next->prev = item->prev;
-		if(item->prev) item->prev->next = item->next;
-		if(item == list_front) list_front = item->next;
-		if(item == list_back) list_back = item->prev;
+	void list_remove(TexCacheItem* item)
+	{
+		index.erase(item->iterator);
+		cache_size -= item->decode_len;
 	}
 
 	void list_push_front(TexCacheItem* item)
 	{
-		item->next = list_front;
-		if(list_front) list_front->prev = item;
-		else list_back = item;
-		item->prev = NULL;
-		list_front = item;
+		item->iterator = index.insert(std::make_pair(item->texformat,item));
+		cache_size += item->decode_len;
 	}
 
 	template<TexCache_TexFormat TEXFORMAT>
@@ -284,18 +277,23 @@ public:
 			mspal.dump(pal);
 		#endif
 
-		for(TexCacheItem* curr = list_front;curr;curr=curr->next)
+			//TODO - as a special optimization, keep the last item returned and check it first
+
+		for(TTexCacheItemMultimap::iterator it(index.find(format)); it != index.end(); ++it)
 		{
+			TexCacheItem* curr = it->second;
+			
 			//conditions where we reject matches:
 			//when the teximage or texpal params dont match 
 			//(this is our key for identifying textures in the cache)
-			if(curr->texformat != format) continue;
+			//NEW: due to using format as a key we dont need to check this anymore
+			//if(curr->texformat != format) continue;
 			if(curr->texpal != texpal) continue;
 
 			//we're being asked for a different format than what we had cached.
+			//TODO - this could be done at the entire cache level instead of checking repeatedly
 			if(curr->cacheFormat != TEXFORMAT) goto REJECT;
 
-			//not used anymore -- add another method to purge suspicious items from the cache
 			//the texture matches params, but isnt suspected invalid. accept it.
 			if (!curr->suspectedInvalid) return curr;
 
@@ -315,9 +313,9 @@ public:
 			}
 
 			//we found a match. just return it
-			//curr->lock();
-			list_remove(curr);
-			list_push_front(curr);
+			//REMINDER to make it primary/newest when we have smarter code
+			//list_remove(curr);
+			//list_push_front(curr);
 			return curr;
 
 		REJECT:
@@ -333,8 +331,6 @@ public:
 		//TODO - as a peculiarity of the texcache, eviction must happen after the entire 3d frame runs
 		//to support separate cache and read passes
 		TexCacheItem* newitem = new TexCacheItem();
-		list_push_front(newitem);
-		//newitem->lock();
 		newitem->suspectedInvalid = false;
 		newitem->texformat = format;
 		newitem->cacheFormat = TEXFORMAT;
@@ -346,11 +342,11 @@ public:
 		newitem->dump.textureSize = ms.dump(newitem->dump.texture,sizeof(newitem->dump.texture));
 		newitem->decode_len = sizeX*sizeY*4;
 		newitem->mode = textureMode;
-		cache_size += newitem->decode_len;
 		newitem->decoded = new u8[newitem->decode_len];
-		
-		u32 *dwdst = (u32*)newitem->decoded;
+		list_push_front(newitem);
+		//printf("allocating: up to %d with %d items\n",cache_size,index.size());
 
+		u32 *dwdst = (u32*)newitem->decoded;
 		
 		//dump palette data for cache keying
 		if(palSize)
@@ -632,43 +628,34 @@ public:
 
 	void invalidate()
 	{
-		for(TexCacheItem* curr = list_front;curr;curr=curr->next)
-		{
-			curr->suspectedInvalid = true;
-		}
+		for(TTexCacheItemMultimap::iterator it(index.begin()); it != index.end(); ++it)
+			it->second->suspectedInvalid = true;
 	}
 
-	void evict(const u32 target = kMaxCacheSize) {
-		//evicts old cache items until it is less than the max cache size
-		//this means we actually can exceed the cache by the size of the next item.
-		//if we really wanted to hold ourselves to it, we could evict to kMaxCacheSize-nextItemSize
+	void evict(u32 target = kMaxCacheSize)
+	{
+		//dont do anything unless we're over the target
+		if(cache_size<target) return;
+
+		//aim at cutting the cache to half of the max size
+		target/=2;
+
+		//evicts items in an arbitrary order until it is less than the max cache size
+		//TODO - do this based on age and not arbitrarily
 		while(cache_size > target)
 		{
-			TexCacheItem *oldest = list_back;
-			while(oldest && oldest->lockCount>0) oldest = oldest->prev; //find an unlocked one
-			if(!oldest) 
-			{
-				//nothing we can do, everything in the cache is locked. maybe we're leaking.
-				//just quit trying to evict
-				return;
-			}
-			list_remove(oldest);
-			cache_size -= oldest->decode_len;
+			if(index.size()==0) break; //just in case.. doesnt seem possible, cache_size wouldve been 0
+
+			TexCacheItem* item = index.begin()->second;
+			list_remove(item);
 			//printf("evicting! totalsize:%d\n",cache_size);
-			delete oldest;
+			delete item;
 		}
 	}
 } texCache;
 
 void TexCache_Reset()
 {
-	//if(TexCache_texMAP == NULL) TexCache_texMAP = new u8[1024*2048*4]; 
-	//if(texcache == NULL) texcache = new TextureCache[MAX_TEXTURE+1];
-
-	//memset(texcache,0,sizeof(TextureCache[MAX_TEXTURE+1]));
-
-	//texcache_start=0;
-	//texcache_stop=MAX_TEXTURE<<1;
 	texCache.evict(0);
 }
 
