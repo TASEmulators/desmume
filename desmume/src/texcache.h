@@ -2,6 +2,7 @@
 #define _TEXCACHE_H_
 
 #include "common.h"
+#include <map>
 
 enum TexCache_TexFormat
 {
@@ -10,15 +11,16 @@ enum TexCache_TexFormat
 	TexFormat_15bpp //used by rasterizer
 };
 
+class TexCacheItem;
+
+typedef std::multimap<u32,TexCacheItem*> TTexCacheItemMultimap;
+
 class TexCacheItem
 {
 public:
 	TexCacheItem() 
 		: decode_len(0)
 		, decoded(NULL)
-		, next(NULL)
-		, prev(NULL)
-		, lockCount(0)
 		, suspectedInvalid(false)
 		, deleteCallback(NULL)
 		, cacheFormat(TexFormat_None)
@@ -27,18 +29,11 @@ public:
 		delete[] decoded;
 		if(deleteCallback) deleteCallback(this);
 	}
-	void unlock() { 
-		lockCount--;
-	}
-	void lock() { 
-		lockCount++;
-	}
 	u32 decode_len;
 	u32 mode;
 	u8* decoded; //decoded texture data
-	TexCacheItem *next, *prev; //double linked list
-	int lockCount;
 	bool suspectedInvalid;
+	TTexCacheItemMultimap::iterator iterator;
 
 	u32 texformat, texpal;
 	u32 sizeX, sizeY;
