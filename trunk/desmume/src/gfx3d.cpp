@@ -1996,9 +1996,10 @@ void gfx3d_VBlankSignal()
 void gfx3d_VBlankEndSignal(bool skipFrame)
 {
 	if (!drawPending) return;
+	if(skipFrame) return;
+
 	drawPending = FALSE;
 
-	if(skipFrame) return;
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
