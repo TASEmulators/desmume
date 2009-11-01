@@ -11,18 +11,35 @@ int FastForward=0;
 static u64 tmethod,tfreq;
 static const u64 core_desiredfps = 3920763; //59.8261
 static u64 desiredfps = core_desiredfps;
-static u64 desiredFpsScaler = 256;
+static int desiredFpsScalerIndex = 2;
+static u64 desiredFpsScalers [] = {
+	1024,
+	512,
+	256, // 100%
+	224,
+	192,
+	128, // 50%
+	96,
+	64, // 25%
+	42,
+	32,
+	16,
+};
 
 void IncreaseSpeed(void) {
 
-	desiredFpsScaler*=2;
+	if(desiredFpsScalerIndex)
+		desiredFpsScalerIndex--;
+	u64 desiredFpsScaler = desiredFpsScalers[desiredFpsScalerIndex];
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
 	printf("Throttle fps scaling increased to: %f\n",desiredFpsScaler/256.0);
 }
 
 void DecreaseSpeed(void) {
 
-	desiredFpsScaler/=2;
+	if(desiredFpsScalerIndex != sizeof(desiredFpsScalers)/sizeof(desiredFpsScalers[0]) - 1)
+		desiredFpsScalerIndex++;
+	u64 desiredFpsScaler = desiredFpsScalers[desiredFpsScalerIndex];
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
 	printf("Throttle fps scaling decreased to: %f\n",desiredFpsScaler/256.0);
 }
