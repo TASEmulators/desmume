@@ -2824,7 +2824,9 @@ int HandleKeyUp(WPARAM wParam, LPARAM lParam, int modifiers)
 	SCustomKey *key = &CustomKeys.key(0);
 
 	while (!IsLastCustomKey(key)) {
-		if (wParam == key->key && modifiers == key->modifiers && key->handleKeyUp) {
+		// the modifiers check here was disabled to fix the following problem:
+		// hold tab, hold alt, release tab, release alt -> fast forward gets stuck on
+		if (key->handleKeyUp && wParam == key->key /*&& modifiers == key->modifiers*/) {
 			key->handleKeyUp(key->param);
 		}
 		key++;
