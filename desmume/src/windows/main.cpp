@@ -2904,7 +2904,7 @@ void FrameAdvance(bool state)
 		} else {
 			// frame advance button still held down,
 			// start or continue executing at normal speed
-			execute = TRUE;
+			Unpause();
 			frameAdvance = false;
 		}
 	} else {
@@ -2913,9 +2913,7 @@ void FrameAdvance(bool state)
 		frameAdvance = false;
 
 		// pause immediately
-		emu_halt();
-		SPU_Pause(1);
-		emu_paused = 1;
+		Pause();
 	}
 }
 
@@ -3038,7 +3036,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, romloaded);
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
-			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded);
+			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded && movieMode != MOVIEMODE_PLAY);
 			DesEnableMenuItem(mainMenu, IDM_CLOSEROM,          romloaded);
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_LIST,       romloaded);
@@ -4999,7 +4997,8 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 
 void ResetGame()
 {
-	NDS_Reset();
+	if(movieMode != MOVIEMODE_PLAY)
+		NDS_Reset();
 }
 
 //adelikat: This function changes a menu item's text
@@ -5039,12 +5038,26 @@ const char* GetModifierString(int num)
 	}
 }
 
+static void TranslateKeyForMenu(WORD keyz,char *out)
+{
+	if(keyz == 0 || keyz == VK_ESCAPE)
+	{
+		// because it doesn't make sense to list a menu item as "disabled"
+		// when actually only its hotkey is disabled
+		*out = 0;
+	}
+	else
+	{
+		void TranslateKey(WORD keyz,char *out);	//adelikat: Yeah hackey
+		TranslateKey(keyz,out);
+	}
+}
+
 //adelikat:  This function find the current hotkey assignments for corresponding menu items
 //			 and appends it to the menu item.  This function works correctly for all language menus
 //		     However, a Menu item in the Resource file must NOT have a /t (tab) in its caption.
 void UpdateHotkeyAssignments()
 {
-	extern void TranslateKey(WORD keyz,char *out);	//adelikat: Yeah hackey
 	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
 	char str[255];		//Temp string 
 	string text;		//Used to manipulate menu item text
@@ -5059,7 +5072,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");								//Find the tab
 	if (truncate >= 1)										//Truncate if it exists
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.OpenROM.key, str);
+	TranslateKeyForMenu(CustomKeys.OpenROM.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.OpenROM.modifiers));
 	text.append("\t" + keyname);
@@ -5071,7 +5084,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.PrintScreen.key, str);
+	TranslateKeyForMenu(CustomKeys.PrintScreen.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.PrintScreen.modifiers));
 	text.append("\t" + keyname);
@@ -5085,7 +5098,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.RecordAVI.key, str);
+	TranslateKeyForMenu(CustomKeys.RecordAVI.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.RecordAVI.modifiers));
 	text.append("\t" + keyname);
@@ -5097,7 +5110,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.StopAVI.key, str);
+	TranslateKeyForMenu(CustomKeys.StopAVI.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.StopAVI.modifiers));
 	text.append("\t" + keyname);
@@ -5112,7 +5125,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.Pause.key, str);
+	TranslateKeyForMenu(CustomKeys.Pause.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.Pause.modifiers));
 	text.append("\t" + keyname);
@@ -5124,7 +5137,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.Reset.key, str);
+	TranslateKeyForMenu(CustomKeys.Reset.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.Reset.modifiers));
 	text.append("\t" + keyname);
@@ -5138,7 +5151,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.ToggleFrameCounter.key, str);
+	TranslateKeyForMenu(CustomKeys.ToggleFrameCounter.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.ToggleFrameCounter.modifiers));
 	text.append("\t" + keyname);
@@ -5150,7 +5163,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.ToggleFPS.key, str);
+	TranslateKeyForMenu(CustomKeys.ToggleFPS.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.ToggleFPS.modifiers));
 	text.append("\t" + keyname);
@@ -5162,7 +5175,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.ToggleInput.key, str);
+	TranslateKeyForMenu(CustomKeys.ToggleInput.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.ToggleInput.modifiers));
 	text.append("\t" + keyname);
@@ -5174,7 +5187,7 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");
 	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.ToggleLag.key, str);
+	TranslateKeyForMenu(CustomKeys.ToggleLag.key, str);
 	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.ToggleLag.modifiers));
 	text.append("\t" + keyname);
