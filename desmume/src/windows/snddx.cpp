@@ -122,7 +122,8 @@ int SNDDXInit(int buffersize)
 		return -1;
 	}
 
-	soundbufsize = buffersize * 2 * 2;
+	soundbufsize = buffersize * 2; // caller already multiplies buffersize by 2
+	soundoffset = 0;
 
 	memset(&wfx, 0, sizeof(wfx));
 	wfx.wFormatTag = WAVE_FORMAT_PCM;

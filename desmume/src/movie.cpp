@@ -176,7 +176,7 @@ MovieData::MovieData()
 
 void MovieData::truncateAt(int frame)
 {
-	if(records.size() < frame)
+	if(records.size() > frame)
 		records.resize(frame);
 }
 
@@ -727,6 +727,8 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 		 assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
 		 assert((mr.touch.x << 4) == nds.touchX && (mr.touch.y << 4) == nds.touchY);
 
+		 currMovieData.truncateAt(currFrameCounter);
+
 		 mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
 		 currMovieData.records.push_back(mr);
 
@@ -864,9 +866,6 @@ bool mov_loadstate(EMUFILE* fp, int size)
 
 		if(!movie_readonly)
 		{
-			////truncate before we copy, just to save some time
-			//tempMovieData.truncateAt(currFrameCounter); // disabled because this can really screw things up and shouldn't usually be faster
-
 			currMovieData = tempMovieData;
 			currMovieData.rerecordCount = currRerecordCount;
 		}
