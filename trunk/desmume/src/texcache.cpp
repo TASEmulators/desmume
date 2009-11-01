@@ -279,9 +279,12 @@ public:
 
 			//TODO - as a special optimization, keep the last item returned and check it first
 
-		for(TTexCacheItemMultimap::iterator it(index.find(format)); it != index.end(); ++it)
+		for(std::pair<TTexCacheItemMultimap::iterator,TTexCacheItemMultimap::iterator>
+			iters = index.equal_range(format);
+			iters.first != iters.second;
+			++iters.first)
 		{
-			TexCacheItem* curr = it->second;
+			TexCacheItem* curr = iters.first->second;
 			
 			//conditions where we reject matches:
 			//when the teximage or texpal params dont match 
