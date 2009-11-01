@@ -630,6 +630,14 @@ public:
 		return newitem;
 	} //scan()
 
+	void invalidate()
+	{
+		for(TexCacheItem* curr = list_front;curr;curr=curr->next)
+		{
+			curr->suspectedInvalid = true;
+		}
+	}
+
 	void evict(const u32 target = kMaxCacheSize) {
 		//evicts old cache items until it is less than the max cache size
 		//this means we actually can exceed the cache by the size of the next item.
@@ -666,21 +674,8 @@ void TexCache_Reset()
 
 void TexCache_Invalidate()
 {
-	////well, this is a very blunt instrument.
-	////lets just flag all the textures as invalid.
-	//for(int i=0;i<MAX_TEXTURE+1;i++) {
-	//	texcache[i].suspectedInvalid = true;
-
-	//	//invalidate all 4x4 textures when texture palettes change mappings
-	//	//this is necessary because we arent tracking 4x4 texture palettes to look for changes.
-	//	//Although I concede this is a bit paranoid.. I think the odds of anyone changing 4x4 palette data
-	//	//without also changing the texture data is pretty much zero.
-	//	//
-	//	//TODO - move this to a separate signal: split into TexReconfigureSignal and TexPaletteReconfigureSignal
-	//	if(texcache[i].mode == TEXMODE_4X4)
-	//		texcache[i].frm = 0;
-	//}
-	texCache.evict(0);
+	//note that this gets called whether texdata or texpalette gets reconfigured.
+	texCache.invalidate();
 }
 
 TexCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal)

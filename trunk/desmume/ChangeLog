@@ -5,16 +5,24 @@ This totally changes the timing, and totally breaks old savestates.
 
 Highlights:
   * win32: lua engine, path configuration, 7z dearchiving support
-  * rewritten main emulation loop
+  * rewritten main emulation loop and improve general cpu timing
+  * synchronous SPU mode to fix	streaming sounds
   
 General/Core:
+ bug: rewrite main emulation loop, fixes a lot of timings
+ bug: add more detailed timing emulation, removes much bogus lag
+ bug: rewrite DMA and gxfifo to fix a bunch of bugs
  bug: fix cflash directory support for non-windows
  bug: fix freeze in cart irq
  bug: correctly emulate dma to/from tcm
  bug: fix in thumb LSR carryflag
- enh: add guitar grip emulation
+ bug: fix adpcm looping, remove adpcm caching (no longer necessary)
+ bug: fixes to swi 3,4,5, and arm7#8
+ bug: fixes to exmemstat and ipc sync registers
+ enh: gbaslot: add guitar grip, gbagame flash support, expansion memory pak
  enh: add more powerful antigrain-based drawing library and rewrite OSD system
  enh: ideas-style debugging prints
+ enh: most optimizations now SSE instead of SSE2
 
 Graphics:
  bug: fixing of obj blending, bmp obj rendering, and some obj window cases
@@ -26,21 +34,33 @@ Graphics:
  bug: fix simultaneous vram display and capture via same bank
  bug: fix 3d overflow acknowledge registers
  bug: change 3d cores to use 18bit color
+ bug: fix boxtest, move clipper to main graphics engine
+ bug: fix failure in some cases of polygon clipping
+ bug: fix disp3cnt emulations
+ bug: swrast: fix backface culling of nonconvex polys
  bug: swrast: add clear image and scroll emulation
  bug: swrast: add fog emulation
  bug: swrast: fixes to shadow rendering
+ bug: swrast: preliminary edge marking, works decent
+ enh: swrast: multicore optimization for a few fps speedup
   
 Windows:
- bug: improve map view tool to support more modes
+ bug: fix support for multiple gamepads and gamepad hotkeys
+ bug: fix mic noise code and load wav instead of raw; effective in more cases
+ enh: improve map view tool to support more modes
  enh: added 2x resizing filters (hq2x, hq2xs, lq2x, lq2xs, 2xsai, supereagle)
                                 (scanlines, nearest, bilinear)
  enh: soundview can now mute channels
  enh: multicore optimization for filters, rotation, OSD
  enh: new ioregview
-
+ enh: common commandline system, many arguments shared with linux
+ enh: setup x64 build type
+ enh: choose any gap size by dragging bottom window edge (must be enabled)
+ 
 Linux:
  enh: alsa microphone support
  enh: hud and osd notification for gtk and cli frontends
+ enh: add support for the SSE optimizations
 
 0.9.2 -> 0.9.4 (r1844->r2352->r2437)
 
