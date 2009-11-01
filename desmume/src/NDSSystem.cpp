@@ -804,6 +804,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 #endif
 
 	cheatsSearchClose();
+	FCEUI_StopMovie();
+
 	MMU_unsetRom();
 	NDS_SetROM((u8*)gameInfo.romdata, mask);
 	NDS_Reset();
@@ -952,6 +954,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 #endif
 void NDS_FreeROM(void)
 {
+	FCEUI_StopMovie();
 	if ((u8*)MMU.CART_ROM == (u8*)gameInfo.romdata)
 		gameInfo.romdata = NULL;
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)
