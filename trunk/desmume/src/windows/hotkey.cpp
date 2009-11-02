@@ -37,6 +37,7 @@
 #include "pathsettings.h"
 #include "GPU_osd.h"
 #include "path.h"
+#include "video.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -204,6 +205,21 @@ void HK_AutoHoldClearKeyDown(int, bool justPressed) {
 	StylusAutoHoldPressed = false;
 	if (!userTouchesScreen)
 		NDS_releaseTouch();
+}
+
+extern VideoInfo video;
+extern void doLCDsLayout();
+void HK_LCDsMode(int)
+{
+	video.layout++;
+	if (video.layout > 2) video.layout = 0;
+	doLCDsLayout();
+}
+
+extern void LCDsSwap();
+void HK_LCDsSwap(int)
+{
+	LCDsSwap();
 }
 
 void HK_Reset(int, bool justPressed) {ResetGame();}
@@ -621,6 +637,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
 
+	// Movie/Tools page -----------------------------------------
 	keys->Rewind.handleKeyDown = HK_RewindKeyDown;
 	keys->Rewind.handleKeyUp = HK_RewindKeyUp;
 	keys->Rewind.code = "Rewind";
@@ -646,6 +663,19 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->MostRecentLuaScript.page = HOTKEY_PAGE_MOVIE;
 	keys->MostRecentLuaScript.key = NULL;
 
+	keys->LCDsMode.handleKeyUp = HK_LCDsMode;
+	keys->LCDsMode.code = "LCDsLayoutMode";
+	keys->LCDsMode.name = L"LCDs layout mode";
+	keys->LCDsMode.page = HOTKEY_PAGE_MOVIE;
+	keys->LCDsMode.key = VK_END;
+
+	keys->LCDsSwap.handleKeyUp = HK_LCDsSwap;
+	keys->LCDsSwap.code = "LCDsSwap";
+	keys->LCDsSwap.name = L"LCDs swap";
+	keys->LCDsSwap.page = HOTKEY_PAGE_MOVIE;
+	keys->LCDsSwap.key = VK_NEXT;
+
+	//StateSlots Page --------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
 	keys->NextSaveSlot.code = "NextSaveSlot";
 	keys->NextSaveSlot.name = L"Next Save Slot";
