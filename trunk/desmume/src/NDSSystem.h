@@ -254,6 +254,12 @@ struct GameInfo
 		: romdata(NULL)
 	{}
 
+	void loadData(char* buf, int size)
+	{
+		resize(size);
+		memcpy(romdata,buf,size);
+	}
+
 	void resize(int size) {
 		if(romdata != NULL) delete[] romdata;
 		romdata = new char[size];

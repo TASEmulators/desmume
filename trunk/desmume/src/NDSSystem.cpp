@@ -724,7 +724,7 @@ void GameInfo::populate()
 static std::vector<char> buffer;
 static std::vector<char> v;
 
-static void loadrom(std::vector<char>* buf, std::string fname) {
+static void loadrom(std::string fname) {
 
 	FILE* inf = fopen(fname.c_str(),"rb");
 	if(!inf) return;
@@ -741,40 +741,33 @@ static void loadrom(std::vector<char>* buf, std::string fname) {
 
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
 {
-	int					type;
+	int					type = ROM_NDS;
 	u32					 mask;
 	char				buf[MAX_PATH];
 
 	if (filename == NULL)
 		return -1;
 	
-    path.init(filename);
+    path.init(logicalFilename);
 
 	if ( path.isdsgba(path.path)) {
 		type = ROM_DSGBA;
-		loadrom(&buffer, path.path);
-		gameInfo.romsize = buffer.size();
+		loadrom(path.path);
 	}
 	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
-		loadrom(NULL, path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
+		loadrom(path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
 		//...but since the data was extracted to gameInfo then it is ok
 		type = ROM_NDS;
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
 	else if (path.isdsgba(std::string(logicalFilename))) {
-
-		std::vector<char> v(gameInfo.romdata, gameInfo.romdata + gameInfo.romsize);
-		v.erase(v.begin(),v.begin()+DSGBA_LOADER_SIZE);
-		buffer.assign( v.begin(), v.end() );
-		gameInfo.romdata = &buffer[0];
-		gameInfo.romsize = buffer.size();
+		type = ROM_DSGBA;
 	}
 
 	if(type == ROM_DSGBA)
 	{
-		buffer.erase(buffer.begin(),buffer.begin()+DSGBA_LOADER_SIZE);
-		gameInfo.romdata = &buffer[0];
-		gameInfo.romsize = buffer.size();
+		std::vector<char> v(gameInfo.romdata + DSGBA_LOADER_SIZE, gameInfo.romdata + gameInfo.romsize);
+		gameInfo.loadData(&v[0],gameInfo.romsize - DSGBA_LOADER_SIZE);
 	}
 
 	//check that size is at least the size of the header
