@@ -538,7 +538,7 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen)
 			y = 191;
 
 		// finally, make it relative to the correct screen
-		if(bottomScreen)
+		if((bottomScreen) && (video.swap == 0))
 			y -= 192;
 	}
 	else
