@@ -188,7 +188,7 @@ LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 
 #define WM_CUSTINVOKE	(WM_USER+52)
 
-
+void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
 inline bool IsDlgCheckboxChecked(HWND hDlg, int id)
 {
 	return IsDlgButtonChecked(hDlg,id) == BST_CHECKED;
@@ -395,8 +395,26 @@ void ScaleScreen(float factor)
 		int defh = GetPrivateProfileInt("Video", "Window height", 384, IniName);
 
 		// fix for wrong rotation
-		int w1x = video.rotatedwidthgap();
-		int h1x = video.rotatedheightgap();
+		int w1x = 0; 
+		int h1x = 0; 
+
+		if (video.layout == 0)
+		{
+			w1x = video.rotatedwidthgap();
+			h1x = video.rotatedheightgap();
+		}
+		else
+			if (video.layout == 1)
+			{
+				w1x = video.rotatedwidthgap() * 2;
+				h1x = video.rotatedheightgap() / 2;
+			}
+			else
+				if (video.layout == 2)
+				{
+					w1x = video.rotatedwidthgap();
+					h1x = video.rotatedheightgap() / 2;
+				}
 		if((defw > defh) != (w1x > h1x))
 		{
 			int temp = defw;
@@ -404,6 +422,7 @@ void ScaleScreen(float factor)
 			defh = temp;
 		}
 		// fix for wrong gap
+
 		if(defh*w1x < h1x*defw)
 			defh = defw*h1x/w1x;
 		else if(defw*h1x < w1x*defh)
@@ -417,7 +436,14 @@ void ScaleScreen(float factor)
 			factor = 1.5f;
 		else if(factor==65534)
 			factor = 2.5f;
-		MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
+		if (video.layout == 0)
+			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
+		else
+			if (video.layout == 1)
+				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2), (int)(video.rotatedheightgap() * factor / 2));
+			else
+				if (video.layout == 2)
+					MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor / 2));
 	}
 }
 
@@ -434,23 +460,43 @@ void UnscaleScreenCoords(s32& x, s32& y)
 	RECT r;
 	HWND hwnd = MainWindow->getHWnd();
 	GetClientRect(hwnd,&r);
-	int defwidth = video.width, defheight = (video.height+video.screengap);
+	int defwidth = video.width;
+	int defheight = video.height;
 	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
-	// translate from scaling (screen resolution to 256x384 or 512x192) 
-	switch (video.rotation)
+	if (video.layout == 0)
 	{
-	case 0:
-	case 180:
-		x = (x*defwidth) / winwidth;
-		y = (y*defheight) / winheight;
-		break ;
-	case 90:
-	case 270:
-		x = (x*defheight) / winwidth;
-		y = (y*defwidth) / winheight;
-		break ;
+		defheight += video.screengap;
+
+		// translate from scaling (screen resolution to 256x384 or 512x192) 
+		switch (video.rotation)
+		{
+			case 0:
+			case 180:
+				x = (x*defwidth) / winwidth;
+				y = (y*defheight) / winheight;
+				break ;
+			case 90:
+			case 270:
+				x = (x*defheight) / winwidth;
+				y = (y*defwidth) / winheight;
+				break ;
+		}
 	}
+	else
+		if (video.layout == 1)
+		{
+			//INFO("----- coords x = %i, y = %i\n", x, y);
+			x = (x*defwidth) / winwidth * 2;
+			y = (y*defheight) / winheight / 2;
+		}
+		else
+			if (video.layout == 2)
+			{
+				//INFO("----- coords x = %i, y = %i\n", x, y);
+				x = (x*defwidth) / winwidth;
+				y = (y*defheight) / winheight / 2;
+			}
 
 	x = x/video.ratio();
 	y = y/video.ratio();
@@ -462,36 +508,54 @@ void UnscaleScreenCoords(s32& x, s32& y)
 void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen)
 {
 	s32 tx=x, ty=y;
-	int gapSize = video.screengap / video.ratio();
 
-	// first deal with rotation
-	switch(video.rotation)
+	if (video.layout == 0)
 	{
-	case 90:
-		x = ty;
-		y = (383+gapSize)-tx;
-		break;
-	case 180:
-		x = 255-tx;
-		y = (383+gapSize)-ty;
-		break;
-	case 270:
-		x = 255-ty;
-		y = tx;
-		break;
+		int gapSize = video.screengap / video.ratio();
+		// first deal with rotation
+		switch(video.rotation)
+		{
+			case 90:
+				x = ty;
+				y = (383+gapSize)-tx;
+				break;
+			case 180:
+				x = 255-tx;
+				y = (383+gapSize)-ty;
+				break;
+			case 270:
+				x = 255-ty;
+				y = tx;
+				break;
+		}
+
+		// then deal with screen gap
+		if(y > 191 + gapSize)
+			y -= gapSize;
+		else if(y > 191 + gapSize/2)
+			y = 192;
+		else if(y > 191)
+			y = 191;
+
+		// finally, make it relative to the correct screen
+		if(bottomScreen)
+			y -= 192;
 	}
-
-	// then deal with screen gap
-	if(y > 191 + gapSize)
-		y -= gapSize;
-	else if(y > 191 + gapSize/2)
-		y = 192;
-	else if(y > 191)
-		y = 191;
-
-	// finally, make it relative to the correct screen
-	if(bottomScreen)
-		y -= 192;
+	else
+		if (video.layout == 1)
+		{
+			if (video.swap == 0)
+				x = tx - 255;
+			else
+				x = tx;
+			//INFO("X=%i, Y=%i (tx = %i, ty = %i)\n", x, y, tx, ty);
+		}
+		else
+			if (video.layout == 2)
+			{
+				x = tx;
+				//INFO("X=%i, Y=%i (tx = %i, ty = %i)\n", x, y, tx, ty);
+			}
 }
 
 // END Rotation definitions
@@ -888,6 +952,135 @@ template<typename T, int bpp> static void doRotate(void* dst)
 	}
 }
 
+void UpdateWndRects(HWND hwnd);
+
+void LCDsSwap()
+{
+	video.swap = !video.swap;
+	MainWindow->checkMenu(ID_LCDS_SWAP, !video.swap);
+	WritePrivateProfileInt("Video", "LCDsSwap", video.swap, IniName);
+}
+
+void doLCDsLayout()
+{
+	RECT rc = { 0 };
+	int oldheight, oldwidth;
+	int newheight, newwidth;
+
+	GetClientRect(MainWindow->getHWnd(), &rc);
+	oldwidth = (rc.right - rc.left);
+	oldheight = (rc.bottom - rc.top);
+	newwidth = oldwidth;
+	newheight = oldheight;
+
+	if (video.layout == 0)
+	{
+		DesEnableMenuItem(mainMenu, IDC_ROTATE0, true);
+		DesEnableMenuItem(mainMenu, IDC_ROTATE90, true);
+		DesEnableMenuItem(mainMenu, IDC_ROTATE180, true);
+		DesEnableMenuItem(mainMenu, IDC_ROTATE270, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NONE, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_BORDER, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NDSGAP, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NDSGAP2, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_DRAGEDIT, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORWHITE, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, true);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, true);
+
+		if (video.layout_old == 1)
+		{
+			newwidth = oldwidth / 2;
+			newheight = oldheight * 2;
+		}
+		else
+			if (video.layout_old == 2)
+			{
+				newwidth = oldwidth;
+				newheight = oldheight * 2;
+			}
+				else
+				{
+					newwidth = oldwidth;
+					newheight = oldheight;
+				}
+		MainWindow->checkMenu(ID_LCDS_VERTICAL, true);
+		MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
+		MainWindow->checkMenu(ID_LCDS_ONE, false);
+
+
+	}
+	else
+	{
+		DesEnableMenuItem(mainMenu, IDC_ROTATE0, false);
+		DesEnableMenuItem(mainMenu, IDC_ROTATE90, false);
+		DesEnableMenuItem(mainMenu, IDC_ROTATE180, false);
+		DesEnableMenuItem(mainMenu, IDC_ROTATE270, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NONE, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_BORDER, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NDSGAP, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NDSGAP2, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_DRAGEDIT, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORWHITE, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, false);
+		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, false);
+
+		if (video.layout == 1)
+		{
+			if (video.layout_old == 0)
+			{
+				newwidth = oldwidth * 2;
+				newheight = oldheight / 2;
+			}
+			else
+				if (video.layout_old == 2)
+				{
+					newwidth = oldwidth * 2;
+					newheight = oldheight;
+				}
+				else
+					{
+						newwidth = oldwidth;
+						newheight = oldheight;
+					}
+			MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
+			MainWindow->checkMenu(ID_LCDS_VERTICAL, true);
+			MainWindow->checkMenu(ID_LCDS_ONE, false);
+		}
+		else
+			if (video.layout == 2)
+			{
+				if (video.layout_old == 0)
+				{
+					newwidth = oldwidth;
+					newheight = oldheight / 2;
+				}
+				else
+					if (video.layout_old == 1)
+					{
+						newwidth = oldwidth / 2;
+						newheight = oldheight;
+					}
+					else
+						{
+							newwidth = oldwidth;
+							newheight = oldheight;
+						}
+				MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
+				MainWindow->checkMenu(ID_LCDS_VERTICAL, false);
+				MainWindow->checkMenu(ID_LCDS_ONE, true);
+			}
+			else
+				return;
+	}
+
+	video.layout_old = video.layout;
+	WritePrivateProfileInt("Video", "LCDsLayout", video.layout, IniName);
+	SetMinWindowSize();
+	MainWindow->setClientSize(newwidth, newheight);
+	UpdateWndRects(MainWindow->getHWnd());
+}
+
 //the directdraw final presentation portion of display, including rotating
 static void DD_DoDisplay()
 {
@@ -923,21 +1116,27 @@ static void DD_DoDisplay()
 
 	lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
 
-	// Main screen
-	if(lpPrimarySurface->Blt(&MainScreenRect, lpBackSurface, &MainScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
+	if (video.layout != 2)
+	{
+		// Main screen
+		if(lpPrimarySurface->Blt(&MainScreenRect, lpBackSurface, (video.swap == 0)?&MainScreenSrcRect:&SubScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
+		{
+			LOG("DirectDraw buffers is lost\n");
+			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
+				IDirectDrawSurface7_Restore(lpBackSurface);
+		}
+	}
+
+	// Sub screen
+	if(lpPrimarySurface->Blt(video.layout == 2?&MainScreenRect:&SubScreenRect, lpBackSurface, (video.swap == 0)?&SubScreenSrcRect:&MainScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
 	{
 		LOG("DirectDraw buffers is lost\n");
 		if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
 			IDirectDrawSurface7_Restore(lpBackSurface);
 	}
 
-	// Sub screen
-	if(lpPrimarySurface->Blt(&SubScreenRect, lpBackSurface, &SubScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
-	{
-		LOG("DirectDraw buffers is lost\n");
-		if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
-			IDirectDrawSurface7_Restore(lpBackSurface);
-	}
+	if (video.layout == 1) return;
+	if (video.layout == 2) return;
 
 	// Gap
 	if(video.screengap > 0)
@@ -1396,7 +1595,7 @@ DWORD WINAPI run()
 	InitSpeedThrottle();
 
 	osd->setRotate(video.rotation);
-
+	//doLCDsLayout();
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
 	{
 		MessageBox(hwnd,"Unable to initialize DirectDraw","Error",MB_OK);
@@ -1899,6 +2098,13 @@ int _main()
 	if(WndY < -10000) WndY = CW_USEDEFAULT; // (happens if you close desmume while it's minimized)
 	video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
 	video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
+	video.layout_old = video.layout = GetPrivateProfileInt("Video", "LCDsLayout", 0, IniName);
+	if (video.layout > 2)
+	{
+		video.layout = video.layout_old = 0;
+	}
+	video.swap = GetPrivateProfileInt("Video", "LCDsSwap", 0, IniName);
+	if (video.swap > 1) video.swap = 1;
 	
 	CommonSettings.hud.FpsDisplay = GetPrivateProfileBool("Display","Display Fps", false, IniName);
 	CommonSettings.hud.FrameCounterDisplay = GetPrivateProfileBool("Display","FrameCounter", false, IniName);
@@ -2317,23 +2523,14 @@ void UpdateWndRects(HWND hwnd)
 
 	GetClientRect(hwnd, &rc);
 
-	if((video.rotation == 90) || (video.rotation == 270))
+	if (video.layout == 1)
 	{
 		wndWidth = (rc.bottom - rc.top);
 		wndHeight = (rc.right - rc.left);
-	}
-	else
-	{
-		wndWidth = (rc.right - rc.left);
-		wndHeight = (rc.bottom - rc.top);
-	}
 
-	ratio = ((float)wndHeight / (float)defHeight);
-	oneScreenHeight = (int)((video.height/2) * ratio);
-	gapHeight = (wndHeight - (oneScreenHeight * 2));
+		ratio = ((float)wndHeight / (float)defHeight);
+		oneScreenHeight = (int)((video.height/2) * ratio);
 
-	if((video.rotation == 90) || (video.rotation == 270))
-	{
 		// Main screen
 		ptClient.x = rc.left;
 		ptClient.y = rc.top;
@@ -2346,81 +2543,134 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
 
-		//if there was no specified screen gap, extend the top screen to cover the extra column
-		if(video.screengap == 0) MainScreenRect.right += gapHeight;
-
 		// Sub screen
-		ptClient.x = (rc.left + oneScreenHeight + gapHeight);
+		ptClient.x = (rc.left + oneScreenHeight);
 		ptClient.y = rc.top;
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.left = ptClient.x;
 		SubScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight + gapHeight + oneScreenHeight);
+		ptClient.x = (rc.left + oneScreenHeight + oneScreenHeight);
 		ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.right = ptClient.x;
 		SubScreenRect.bottom = ptClient.y;
-
-		// Gap
-		GapRect.left = (rc.left + oneScreenHeight);
-		GapRect.top = rc.top;
-		GapRect.right = (rc.left + oneScreenHeight + gapHeight);
-		GapRect.bottom = (rc.top + wndWidth);
 	}
 	else
+	if (video.layout == 2)
 	{
+
+		wndWidth = (rc.bottom - rc.top);
+		wndHeight = (rc.right - rc.left);
+
+		ratio = ((float)wndHeight / (float)defHeight);
+		oneScreenHeight = (int)((video.height) * ratio);
+
 		// Main screen
 		ptClient.x = rc.left;
 		ptClient.y = rc.top;
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.left = ptClient.x;
 		MainScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + wndWidth);
-		ptClient.y = (rc.top + oneScreenHeight);
+		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
+	}
+	else
+	if (video.layout == 0)
+	{
+		if((video.rotation == 90) || (video.rotation == 270))
+		{
+			wndWidth = (rc.bottom - rc.top);
+			wndHeight = (rc.right - rc.left);
+		}
+		else
+		{
+			wndWidth = (rc.right - rc.left);
+			wndHeight = (rc.bottom - rc.top);
+		}
 
-		//if there was no specified screen gap, extend the top screen to cover the extra row
-		if(video.screengap == 0) MainScreenRect.bottom += gapHeight;
+		ratio = ((float)wndHeight / (float)defHeight);
+		oneScreenHeight = (int)((video.height/2) * ratio);
+		gapHeight = (wndHeight - (oneScreenHeight * 2));
 
-		// Sub screen
-		ptClient.x = rc.left;
-		ptClient.y = (rc.top + oneScreenHeight + gapHeight);
-		ClientToScreen(hwnd, &ptClient);
-		SubScreenRect.left = ptClient.x;
-		SubScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + wndWidth);
-		ptClient.y = (rc.top + oneScreenHeight + gapHeight + oneScreenHeight);
-		ClientToScreen(hwnd, &ptClient);
-		SubScreenRect.right = ptClient.x;
-		SubScreenRect.bottom = ptClient.y;
+		if((video.rotation == 90) || (video.rotation == 270))
+		{
+			// Main screen
+			ptClient.x = rc.left;
+			ptClient.y = rc.top;
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.left = ptClient.x;
+			MainScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + oneScreenHeight);
+			ptClient.y = (rc.top + wndWidth);
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.right = ptClient.x;
+			MainScreenRect.bottom = ptClient.y;
 
-		// Gap
-		GapRect.left = rc.left;
-		GapRect.top = (rc.top + oneScreenHeight);
-		GapRect.right = (rc.left + wndWidth);
-		GapRect.bottom = (rc.top + oneScreenHeight + gapHeight);
+			//if there was no specified screen gap, extend the top screen to cover the extra column
+			if(video.screengap == 0) MainScreenRect.right += gapHeight;
+
+			// Sub screen
+			ptClient.x = (rc.left + oneScreenHeight + gapHeight);
+			ptClient.y = rc.top;
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.left = ptClient.x;
+			SubScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + oneScreenHeight + gapHeight + oneScreenHeight);
+			ptClient.y = (rc.top + wndWidth);
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.right = ptClient.x;
+			SubScreenRect.bottom = ptClient.y;
+
+			// Gap
+			GapRect.left = (rc.left + oneScreenHeight);
+			GapRect.top = rc.top;
+			GapRect.right = (rc.left + oneScreenHeight + gapHeight);
+			GapRect.bottom = (rc.top + wndWidth);
+		}
+		else
+		{
+			// Main screen
+			ptClient.x = rc.left;
+			ptClient.y = rc.top;
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.left = ptClient.x;
+			MainScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + wndWidth);
+			ptClient.y = (rc.top + oneScreenHeight);
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.right = ptClient.x;
+			MainScreenRect.bottom = ptClient.y;
+
+			//if there was no specified screen gap, extend the top screen to cover the extra row
+			if(video.screengap == 0) MainScreenRect.bottom += gapHeight;
+
+			// Sub screen
+			ptClient.x = rc.left;
+			ptClient.y = (rc.top + oneScreenHeight + gapHeight);
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.left = ptClient.x;
+			SubScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + wndWidth);
+			ptClient.y = (rc.top + oneScreenHeight + gapHeight + oneScreenHeight);
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.right = ptClient.x;
+			SubScreenRect.bottom = ptClient.y;
+
+			// Gap
+			GapRect.left = rc.left;
+			GapRect.top = (rc.top + oneScreenHeight);
+			GapRect.right = (rc.left + wndWidth);
+			GapRect.bottom = (rc.top + oneScreenHeight + gapHeight);
+		}
 	}
 }
 
 void UpdateScreenRects()
 {
-	if((video.rotation == 90) || (video.rotation == 270))
-	{
-		// Main screen
-		MainScreenSrcRect.left = 0;
-		MainScreenSrcRect.top = 0;
-		MainScreenSrcRect.right = video.height/2;
-		MainScreenSrcRect.bottom = video.width;
-
-		// Sub screen
-		SubScreenSrcRect.left = video.height/2;
-		SubScreenSrcRect.top = 0;
-		SubScreenSrcRect.right = video.height;
-		SubScreenSrcRect.bottom = video.width;
-	}
-	else
+	if (video.layout == 1)
 	{
 		// Main screen
 		MainScreenSrcRect.left = 0;
@@ -2433,6 +2683,52 @@ void UpdateScreenRects()
 		SubScreenSrcRect.top = video.height/2;
 		SubScreenSrcRect.right = video.width;
 		SubScreenSrcRect.bottom = video.height;
+	}
+	else
+	if (video.layout == 2)
+	{
+		// Main screen
+		MainScreenSrcRect.left = 0;
+		MainScreenSrcRect.top = 0;
+		MainScreenSrcRect.right = video.width;
+		MainScreenSrcRect.bottom = video.height/2;
+
+		// Sub screen
+		SubScreenSrcRect.left = 0;
+		SubScreenSrcRect.top = video.height/2;
+		SubScreenSrcRect.right = video.width;
+		SubScreenSrcRect.bottom = video.height;
+	}
+	else
+	{
+		if((video.rotation == 90) || (video.rotation == 270))
+		{
+			// Main screen
+			MainScreenSrcRect.left = 0;
+			MainScreenSrcRect.top = 0;
+			MainScreenSrcRect.right = video.height/2;
+			MainScreenSrcRect.bottom = video.width;
+
+			// Sub screen
+			SubScreenSrcRect.left = video.height/2;
+			SubScreenSrcRect.top = 0;
+			SubScreenSrcRect.right = video.height;
+			SubScreenSrcRect.bottom = video.width;
+		}
+		else
+		{
+			// Main screen
+			MainScreenSrcRect.left = 0;
+			MainScreenSrcRect.top = 0;
+			MainScreenSrcRect.right = video.width;
+			MainScreenSrcRect.bottom = video.height/2;
+
+			// Sub screen
+			SubScreenSrcRect.left = 0;
+			SubScreenSrcRect.top = video.height/2;
+			SubScreenSrcRect.right = video.width;
+			SubScreenSrcRect.bottom = video.height;
+		}
 	}
 }
 
@@ -3065,6 +3361,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			
 			//Pause
 			MainWindow->checkMenu(IDM_PAUSE, ((paused)));
+			// LCDs layout
+			MainWindow->checkMenu(ID_LCDS_VERTICAL, ((video.layout==0)));
+			MainWindow->checkMenu(ID_LCDS_HORIZONTAL, ((video.layout==1)));
+			MainWindow->checkMenu(ID_LCDS_ONE, ((video.layout==2)));
+			MainWindow->checkMenu(ID_LCDS_SWAP, video.swap);
 			//Force Maintain Ratio
 			MainWindow->checkMenu(IDC_FORCERATIO, ((ForceRatio)));
 			//Screen rotation
@@ -3145,6 +3446,22 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			// recent/active scripts menu
 			PopulateLuaSubmenu();
+
+			if (video.layout != 0)
+			{
+				DesEnableMenuItem(mainMenu, IDC_ROTATE0, false);
+				DesEnableMenuItem(mainMenu, IDC_ROTATE90, false);
+				DesEnableMenuItem(mainMenu, IDC_ROTATE180, false);
+				DesEnableMenuItem(mainMenu, IDC_ROTATE270, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NONE, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_BORDER, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NDSGAP, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_NDSGAP2, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_DRAGEDIT, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORWHITE, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, false);
+				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, false);
+			}
 
 			return 0;
 		}
@@ -3264,9 +3581,28 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			{
 				bool horizontalDrag = (wParam == WMSZ_LEFT) || (wParam == WMSZ_RIGHT);
 				bool verticalDrag = (wParam == WMSZ_TOP) || (wParam == WMSZ_BOTTOM);
-				int minX = video.rotatedwidthgap();
-				int minY = video.rotatedheightgap();
-				if(verticalDrag && !sideways && SeparationBorderDrag)
+				int minX = 0;
+				int minY = 0;
+
+				if (video.layout == 0)
+				{
+					minX = video.rotatedwidthgap();
+					minY = video.rotatedheightgap();
+				}
+				else
+					if (video.layout == 1)
+					{
+						minX = video.rotatedwidthgap() * 2;
+						minY = video.rotatedheightgap() / 2;
+					}
+					else
+						if (video.layout == 2)
+						{
+							minX = video.rotatedwidthgap();
+							minY = video.rotatedheightgap() / 2;
+						}
+
+				if(verticalDrag && sideways && SeparationBorderDrag)
 				{
 					forceRatioFlags |= WINCLASS::KEEPX;
 					minY = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
@@ -3289,6 +3625,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->sizingMsg(wParam, lParam, forceRatioFlags);
 
+			if (video.layout == 1) return 1;
+			if (video.layout == 2) return 1;
 
 			if(setGap)
 			{
@@ -3500,6 +3838,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			else
 			{
+				if ((video.layout == 2) && (video.swap == 1)) return 0;
 				ToDSScreenRelativeCoords(x,y,true);
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
@@ -4099,6 +4438,28 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_STOPMOVIE:
 			FCEUI_StopMovie();
 			return 0;
+
+		case ID_LCDS_VERTICAL:
+			if (video.layout == 0) return 0;
+			video.layout = 0;
+			doLCDsLayout();
+			return 0;
+		case ID_LCDS_HORIZONTAL:
+			if (video.layout == 1) return 0;
+			video.layout = 1;
+			doLCDsLayout();
+			return 0;
+
+		case ID_LCDS_ONE:
+			if (video.layout == 2) return 0;
+			video.layout = 2;
+			doLCDsLayout();
+			return 0;
+
+		case ID_LCDS_SWAP:
+			LCDsSwap();
+			return 0;
+
 		case ID_VIEW_FRAMECOUNTER:
 			CommonSettings.hud.FrameCounterDisplay ^= true;
 			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
@@ -5000,7 +5361,7 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 void ResetGame()
 {
 	if(movieMode != MOVIEMODE_PLAY)
-		NDS_Reset();
+			NDS_Reset();
 }
 
 //adelikat: This function changes a menu item's text

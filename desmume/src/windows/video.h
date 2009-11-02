@@ -9,6 +9,9 @@ public:
 
 	int rotation;
 	int screengap;
+	int layout;
+	int layout_old;
+	int	swap;
 
 	int currentfilter;
 

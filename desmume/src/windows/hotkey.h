@@ -91,6 +91,8 @@ struct SCustomKeys
 	SCustomKey ToggleLag;
 	SCustomKey ResetLagCounter;
 	SCustomKey StylusAutoHold;
+	SCustomKey LCDsMode;
+	SCustomKey LCDsSwap;
 	SCustomKey LastItem; // dummy, must be last
 
 	//--methods--

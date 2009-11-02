@@ -704,6 +704,10 @@
 #define IDC_BGMAP_ROTSCALE              40052
 #define IDM_SHUT_UP                     40053
 #define IDC_WINDOW2_5X                  40054
+#define ID_LCDS_VERTICAL                40055
+#define ID_LCDS_HORIZONTAL              40056
+#define ID_LCDS_ONE                     40057
+#define ID_LCDS_SWAP                    40058
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
