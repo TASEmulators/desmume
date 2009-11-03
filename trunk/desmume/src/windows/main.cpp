@@ -504,8 +504,9 @@ void UnscaleScreenCoords(s32& x, s32& y)
 
 // input x,y should be windows client-space coords already at 1x scaling.
 // output is in pixels relative to the top-left of the chosen screen.
+// (-1 == top screen, 1 == bottom screen, 0 == absolute vertically aligned)
 // the gap between screens (if any) is subtracted away from the output y.
-void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen)
+void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 {
 	s32 tx=x, ty=y;
 
@@ -536,26 +537,46 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen)
 			y = 192;
 		else if(y > 191)
 			y = 191;
-
-		// finally, make it relative to the correct screen
-		if((bottomScreen) && (video.swap == 0))
-			y -= 192;
 	}
-	else
-		if (video.layout == 1)
+
+	// finally, make it relative to the correct screen
+	if (video.layout == 0 || video.layout == 2)
+	{
+		if(whichScreen)
 		{
-			if (video.swap == 0)
-				x = tx - 255;
+			bool topOnTop = (video.swap == 0) || (video.swap == 2 && !MainScreen.offset) || (video.swap == 3 && MainScreen.offset);
+			bool bottom = (whichScreen > 0);
+			if(topOnTop)
+				y += bottom ? -192 : 0;
 			else
-				x = tx;
-			//INFO("X=%i, Y=%i (tx = %i, ty = %i)\n", x, y, tx, ty);
+				y += (y < 192) ? (bottom ? 0 : 192) : (bottom ? 0 : -192);
+		}
+	}
+	else if (video.layout == 1) // side-by-side
+	{
+		if(whichScreen)
+		{
+			bool topOnTop = (video.swap == 0) || (video.swap == 2 && !MainScreen.offset) || (video.swap == 3 && MainScreen.offset);
+			bool bottom = (whichScreen > 0);
+			if(topOnTop)
+				x += bottom ? -256 : 0;
+			else
+				x += (x < 256) ? (bottom ? 0 : 256) : (bottom ? 0 : -256);
 		}
 		else
-			if (video.layout == 2)
+		{
+			if(x >= 256)
 			{
-				x = tx;
-				//INFO("X=%i, Y=%i (tx = %i, ty = %i)\n", x, y, tx, ty);
+				x -= 256;
+				y += 192;
 			}
+			else if(x < 0)
+			{
+				x += 256;
+				y -= 192;
+			}
+		}
+	}
 }
 
 // END Rotation definitions
@@ -953,16 +974,21 @@ template<typename T, int bpp> static void doRotate(void* dst)
 }
 
 void UpdateWndRects(HWND hwnd);
+void FixAspectRatio();
 
-void LCDsSwap()
+void LCDsSwap(int swapVal)
 {
-	video.swap = !video.swap;
-	MainWindow->checkMenu(ID_LCDS_SWAP, !video.swap);
+	if(swapVal == -1) swapVal = video.swap ^ 1; // -1 means to flip the existing setting
+	if(swapVal < 0 || swapVal > 3) swapVal = 0;
+	if(osd && !(swapVal & video.swap & 1)) osd->swapScreens = !osd->swapScreens; // 1-frame fixup
+	video.swap = swapVal;
 	WritePrivateProfileInt("Video", "LCDsSwap", video.swap, IniName);
 }
 
 void doLCDsLayout()
 {
+	osd->singleScreen = (video.layout == 2);
+
 	RECT rc = { 0 };
 	int oldheight, oldwidth;
 	int newheight, newwidth;
@@ -1078,6 +1104,7 @@ void doLCDsLayout()
 	WritePrivateProfileInt("Video", "LCDsLayout", video.layout, IniName);
 	SetMinWindowSize();
 	MainWindow->setClientSize(newwidth, newheight);
+	FixAspectRatio();
 	UpdateWndRects(MainWindow->getHWnd());
 }
 
@@ -1116,23 +1143,45 @@ static void DD_DoDisplay()
 
 	lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
 
-	if (video.layout != 2)
+	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
+	RECT* srcRects [2];
+
+	if(video.swap == 0)
 	{
-		// Main screen
-		if(lpPrimarySurface->Blt(&MainScreenRect, lpBackSurface, (video.swap == 0)?&MainScreenSrcRect:&SubScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
+		srcRects[0] = &MainScreenSrcRect;
+		srcRects[1] = &SubScreenSrcRect;
+		if(osd) osd->swapScreens = false;
+	}
+	else if(video.swap == 1)
+	{
+		srcRects[0] = &SubScreenSrcRect;
+		srcRects[1] = &MainScreenSrcRect;
+		if(osd) osd->swapScreens = true;
+	}
+	else if(video.swap == 2)
+	{
+		srcRects[0] = (MainScreen.offset) ? &SubScreenSrcRect : &MainScreenSrcRect;
+		srcRects[1] = (MainScreen.offset) ? &MainScreenSrcRect : &SubScreenSrcRect;
+		if(osd) osd->swapScreens = (MainScreen.offset != 0);
+	}
+	else if(video.swap == 3)
+	{
+		srcRects[0] = (MainScreen.offset) ? &MainScreenSrcRect : &SubScreenSrcRect;
+		srcRects[1] = (MainScreen.offset) ? &SubScreenSrcRect : &MainScreenSrcRect;
+		if(osd) osd->swapScreens = (SubScreen.offset != 0);
+	}
+
+	for(int i = 0; i < 2; i++)
+	{
+		if(i && video.layout == 2)
+			break;
+
+		if(lpPrimarySurface->Blt(dstRects[i], lpBackSurface, srcRects[i], DDBLT_WAIT, 0) == DDERR_SURFACELOST)
 		{
 			LOG("DirectDraw buffers is lost\n");
 			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
 				IDirectDrawSurface7_Restore(lpBackSurface);
 		}
-	}
-
-	// Sub screen
-	if(lpPrimarySurface->Blt(video.layout == 2?&MainScreenRect:&SubScreenRect, lpBackSurface, (video.swap == 0)?&SubScreenSrcRect:&MainScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
-	{
-		LOG("DirectDraw buffers is lost\n");
-		if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
-			IDirectDrawSurface7_Restore(lpBackSurface);
 	}
 
 	if (video.layout == 1) return;
@@ -2104,7 +2153,6 @@ int _main()
 		video.layout = video.layout_old = 0;
 	}
 	video.swap = GetPrivateProfileInt("Video", "LCDsSwap", 0, IniName);
-	if (video.swap > 1) video.swap = 1;
 	
 	CommonSettings.hud.FpsDisplay = GetPrivateProfileBool("Display","Display Fps", false, IniName);
 	CommonSettings.hud.FrameCounterDisplay = GetPrivateProfileBool("Display","FrameCounter", false, IniName);
@@ -2286,6 +2334,8 @@ int _main()
 #else
 	NDS_Init ();
 #endif
+
+	osd->singleScreen = (video.layout == 2);
 
 	/*
 	* Activate the GDB stubs
@@ -2517,7 +2567,9 @@ void UpdateWndRects(HWND hwnd)
 	RECT rc;
 
 	int wndWidth, wndHeight;
-	int defHeight = (video.height + video.screengap);
+	int defHeight = video.height;
+	if(video.layout == 0)
+		defHeight += video.screengap;
 	float ratio;
 	int oneScreenHeight, gapHeight;
 
@@ -3365,7 +3417,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_LCDS_VERTICAL, ((video.layout==0)));
 			MainWindow->checkMenu(ID_LCDS_HORIZONTAL, ((video.layout==1)));
 			MainWindow->checkMenu(ID_LCDS_ONE, ((video.layout==2)));
-			MainWindow->checkMenu(ID_LCDS_SWAP, video.swap);
+			// LCDs swap
+			MainWindow->checkMenu(ID_LCDS_NOSWAP,  video.swap == 0);
+			MainWindow->checkMenu(ID_LCDS_SWAP,    video.swap == 1);
+			MainWindow->checkMenu(ID_LCDS_MAINGPU, video.swap == 2);
+			MainWindow->checkMenu(ID_LCDS_SUBGPU,  video.swap == 3);
 			//Force Maintain Ratio
 			MainWindow->checkMenu(IDC_FORCERATIO, ((ForceRatio)));
 			//Screen rotation
@@ -3833,13 +3889,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			if(HudEditorMode)
 			{
-				ToDSScreenRelativeCoords(x,y,false);
+				ToDSScreenRelativeCoords(x,y,0);
 				EditHud(x,y, &Hud);
 			}
 			else
 			{
-				if ((video.layout == 2) && (video.swap == 1)) return 0;
-				ToDSScreenRelativeCoords(x,y,true);
+				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && !MainScreen.offset) || (video.swap == 3 && MainScreen.offset))) return 0;
+				ToDSScreenRelativeCoords(x,y,1);
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
 				NDS_setTouchPos(x, y);
@@ -4456,8 +4512,17 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			doLCDsLayout();
 			return 0;
 
+		case ID_LCDS_NOSWAP:
+			LCDsSwap(0);
+			return 0;
 		case ID_LCDS_SWAP:
-			LCDsSwap();
+			LCDsSwap(1);
+			return 0;
+		case ID_LCDS_MAINGPU:
+			LCDsSwap(2);
+			return 0;
+		case ID_LCDS_SUBGPU:
+			LCDsSwap(3);
 			return 0;
 
 		case ID_VIEW_FRAMECOUNTER:

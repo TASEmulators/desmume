@@ -3631,7 +3631,7 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 	// mouse position in game screen pixel coordinates
 	{
 		void UnscaleScreenCoords(s32& x, s32& y);
-		void ToDSScreenRelativeCoords(s32& x, s32& y, bool bottomScreen);
+		void ToDSScreenRelativeCoords(s32& x, s32& y, int bottomScreen);
 
 		POINT point;
 		GetCursorPos(&point);
@@ -3640,7 +3640,7 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 		s32 y (point.y);
 
 		UnscaleScreenCoords(x,y);
-		ToDSScreenRelativeCoords(x,y,true);
+		ToDSScreenRelativeCoords(x,y,1);
 
 		lua_pushinteger(L, x);
 		lua_setfield(L, -2, "xmouse");

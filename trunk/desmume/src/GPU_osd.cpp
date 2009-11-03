@@ -56,6 +56,26 @@ static bool IsHudDummy (HudCoordinates *hud)
 	return (hud->x == 666 && hud->y == 666);
 }
 
+template<typename T>
+static T calcY(T y) // alters a GUI element y coordinate as necessary to obey swapScreens and singleScreen settings
+{
+	if(osd->singleScreen)
+	{
+		if(y >= 192)
+			y -= 192;
+		if(osd->swapScreens)
+			y += 192;
+	}
+	else if(osd->swapScreens)
+	{
+		if(y >= 192)
+			y -= 192;
+		else
+			y += 192;
+	}
+	return y;
+}
+
 void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 
 	u32 i = 0;
@@ -70,7 +90,7 @@ void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 		}
 
 		if((x >= hud.x && x <= hud.x + hud.xsize) && 
-			(y >= hud.y && y <= hud.y + hud.ysize) && !hudstruct->clicked ) {
+			(calcY(y) >= calcY(hud.y) && calcY(y) <= calcY(hud.y) + hud.ysize) && !hudstruct->clicked ) {
 
 				hud.clicked=1;
 				hud.storedx = x - hud.x;
@@ -200,7 +220,7 @@ static void drawPad(double x, double y, double ratio) {
 
 	// aligning to odd half-pixel boundaries prevents agg2d from blurring thin straight lines
 	x = floor(x) + 0.5;
-	y = floor(y) + 0.5;
+	y = floor(calcY(y)) + 0.5;
 	double xc = 41 - 0.5;
 	double yc = 20 - 0.5;
 
@@ -346,7 +366,7 @@ static void TextualInputDisplay() {
 		std::string str(buttonChars+i, 2);
 		str[1] = '\0';
 
-		aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y, str);
+		aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y), str);
 	}
 
 	// touch pad
@@ -362,7 +382,7 @@ static void TextualInputDisplay() {
 		{
 			sprintf(str, "%d,%d", gameTouchX, gameTouchY);
 			aggDraw.hud->lineColor(255,255,255,255);
-			aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y, str);
+			aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y), str);
 		}
 		else
 		{
@@ -370,19 +390,20 @@ static void TextualInputDisplay() {
 			{
 				sprintf(str, "%d,%d", gameTouchX, gameTouchY);
 				aggDraw.hud->lineColor(255,48,48,255);
-				aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y-(physicalTouchOn?8:0), str);
+				aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y)-(physicalTouchOn?8:0), str);
 			}
 			if(physicalTouchOn)
 			{
 				sprintf(str, "%d,%d", physicalTouchX, physicalTouchY);
 				aggDraw.hud->lineColor(0,255,0,255);
-				aggDraw.hud->renderTextDropshadowed(x, Hud.InputDisplay.y+(gameTouchOn?8:0), str);
+				aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y)+(gameTouchOn?8:0), str);
 			}
 		}
 	}
 }
 
 static void TouchDisplay() {
+	// note: calcY should not be used in this function.
 	aggDraw.hud->lineWidth(1.0);
 
 	temptouch.X = NDS_getRawUserInput().touch.touchX >> 4;
@@ -400,7 +421,7 @@ static void TouchDisplay() {
 				aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
 				aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
 				aggDraw.hud->fillColor(0, 0, 0, touchalpha[i]);
-				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y-1 + 192, temptouch.X+1, temptouch.Y+1 + 192);
+				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y + 192-1, temptouch.X+1, temptouch.Y + 192+1);
 			}
 		}
 	}
@@ -427,7 +448,7 @@ static s64 slotTimer=0;
 
 static void DrawStateSlots(){
 
-	const int yloc = Hud.SavestateSlots.y; //160
+	const int yloc = calcY(Hud.SavestateSlots.y); //160
 	const int xloc = Hud.SavestateSlots.x; //8
 
 	s64 fadecounter = 512 - (hudTimer-slotTimer)/4; //change constant to alter fade speed
@@ -476,10 +497,10 @@ static void DrawEditableElementIndicators()
 		aggDraw.hud->fillColor(0,0,0,0);
 		aggDraw.hud->lineColor(0,0,0,64);
 		aggDraw.hud->lineWidth(2.0);
-		aggDraw.hud->rectangle(hud.x,hud.y,hud.x+hud.xsize+1.0,hud.y+hud.ysize+1.0);
+		aggDraw.hud->rectangle(hud.x,calcY(hud.y),hud.x+hud.xsize+1.0,calcY(hud.y)+hud.ysize+1.0);
 		aggDraw.hud->lineColor(255,hud.clicked?127:255,0,255);
 		aggDraw.hud->lineWidth(1.0);
-		aggDraw.hud->rectangle(hud.x-0.5,hud.y-0.5,hud.x+hud.xsize+0.5,hud.y+hud.ysize+0.5);
+		aggDraw.hud->rectangle(hud.x-0.5,calcY(hud.y)-0.5,hud.x+hud.xsize+0.5,calcY(hud.y)+hud.ysize+0.5);
 		i++;
 	}
 }
@@ -561,6 +582,9 @@ OSDCLASS::OSDCLASS(u8 core)
 	}
 
 	rotAngle = 0;
+
+	singleScreen = false;
+	swapScreens = false;
 
 	needUpdate = false;
 
@@ -705,7 +729,7 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 	va_end(list);
 
 	aggDraw.hud->lineColor(255,255,255);
-	aggDraw.hud->renderTextDropshadowed(x,y,msg);
+	aggDraw.hud->renderTextDropshadowed(x,calcY(y),msg);
 
 	needUpdate = true;
 }
