@@ -708,6 +708,9 @@
 #define ID_LCDS_HORIZONTAL              40056
 #define ID_LCDS_ONE                     40057
 #define ID_LCDS_SWAP                    40058
+#define ID_LCDS_NOSWAP                  40059
+#define ID_LCDS_MAINGPU                 40060
+#define ID_LCDS_SUBGPU                  40061
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002

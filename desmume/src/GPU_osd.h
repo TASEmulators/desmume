@@ -104,8 +104,12 @@ private:
 	bool	needUpdate;
 
 	bool	checkTimers();
+
 public:
 	char	name[7];		// for debuging
+	bool    singleScreen;
+	bool    swapScreens;
+
 	OSDCLASS(u8 core);
 	~OSDCLASS();
 

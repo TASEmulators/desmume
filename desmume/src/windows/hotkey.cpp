@@ -216,10 +216,10 @@ void HK_LCDsMode(int)
 	doLCDsLayout();
 }
 
-extern void LCDsSwap();
+extern void LCDsSwap(int);
 void HK_LCDsSwap(int)
 {
-	LCDsSwap();
+	LCDsSwap(-1);
 }
 
 void HK_Reset(int, bool justPressed) {ResetGame();}

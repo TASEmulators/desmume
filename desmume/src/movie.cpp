@@ -727,8 +727,6 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 		 assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
 		 assert((mr.touch.x << 4) == nds.touchX && (mr.touch.y << 4) == nds.touchY);
 
-		 currMovieData.truncateAt(currFrameCounter);
-
 		 mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
 		 currMovieData.records.push_back(mr);
 
@@ -912,6 +910,7 @@ bool mov_loadstate(EMUFILE* fp, int size)
 		//	#endif
 			
 			currMovieData.rerecordCount = currRerecordCount;
+			currMovieData.truncateAt(currFrameCounter);
 
 			openRecordingMovie(curMovieFilename);
 			if(!osRecordingMovie)
