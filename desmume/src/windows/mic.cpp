@@ -153,7 +153,11 @@ static bool formatChunk(EMUFILE* inf)
 
 bool LoadSample(const char *name)
 {
+	SampleLoaded = 0;
+	if(!name) return true;
+	 
 	EMUFILE_FILE inf(name,"rb");
+	if(inf.fail()) return false;
 
 	//wav reading code adapted from AUDIERE (LGPL)
 
@@ -193,8 +197,23 @@ bool LoadSample(const char *name)
 	return true;
 }
 
-BOOL Mic_Init() {
+BOOL Mic_DeInit_Physical()
+{
+	if(!Mic_Inited)
+		return TRUE;
 
+	INFO("win32 microphone DEinit OK\n");
+
+	Mic_Inited = FALSE;
+
+	waveInReset(waveIn);
+	waveInClose(waveIn);
+
+	return TRUE;
+}
+
+BOOL Mic_Init_Physical()
+{
 	if(Mic_Inited)
 		return TRUE;
 
@@ -220,8 +239,6 @@ BOOL Mic_Init() {
 	wfx.nAvgBytesPerSec = 16000;
 	wfx.wBitsPerSample = 8;
 
-	int x = sizeof(DWORD_PTR);
-
 	hr = waveInOpen(&waveIn, WAVE_MAPPER, &wfx, (DWORD_PTR)waveInProc, 0, CALLBACK_FUNCTION);
 	MIC_CHECKERR(hr)
 
@@ -239,14 +256,26 @@ BOOL Mic_Init() {
 	MIC_CHECKERR(hr)
 
 	Mic_Inited = TRUE;
+	INFO("win32 microphone init OK\n");
+
+	return TRUE;
+}
+
+BOOL Mic_Init() {
+
+	micReadSamplePos = 0;
+	
 	return TRUE;
 }
 
 void Mic_Reset()
 {
+	micReadSamplePos = 0;
+	
 	if(!Mic_Inited)
 		return;
 
+	//reset physical
 	memset(Mic_TempBuf, 0x80, MIC_BUFSIZE);
 	memset(Mic_Buffer[0], 0x80, MIC_BUFSIZE);
 	memset(Mic_Buffer[1], 0x80, MIC_BUFSIZE);
@@ -254,19 +283,10 @@ void Mic_Reset()
 
 	Mic_WriteBuf = 0;
 	Mic_PlayBuf = 1;
-
-	micReadSamplePos = 0;
 }
 
 void Mic_DeInit()
 {
-	if(!Mic_Inited)
-		return;
-
-	Mic_Inited = FALSE;
-
-	waveInReset(waveIn);
-	waveInClose(waveIn);
 }
 
 static const u8 random[32] =
@@ -279,34 +299,10 @@ static const u8 random[32] =
 
 u8 Mic_ReadSample()
 {
-
-	if(!Mic_Inited)
-		return 0;
-
 	u8 ret;
 	u8 tmp;
-	if(NDS_getFinalUserInput().mic.micButtonPressed) {
-		if(SampleLoaded) {
-			//use a sample
-			//TODO: what if a movie is active?
-			// for now I'm going to hope that if anybody records a movie with a sample loaded,
-			// either they know what they're doing and plan to distribute the sample,
-			// or they're playing a game where it doesn't even matter or they never press the mic button.
-			tmp = samplebuffer[micReadSamplePos >> 1];
-			micReadSamplePos++;
-			if(micReadSamplePos == samplebuffersize*2)
-				micReadSamplePos=0;
-		} else {
-			//use the "random" values
-			if(CommonSettings.micMode == TCommonSettings::InternalNoise)
-				tmp = random[micReadSamplePos >> 1];
-			else tmp = rand();
-			micReadSamplePos++;
-			if(micReadSamplePos == ARRAY_SIZE(random)*2)
-				micReadSamplePos=0;
-		}
-	} 
-	else {
+	if(CommonSettings.micMode == TCommonSettings::Physical)
+	{
 		if(movieMode == MOVIEMODE_INACTIVE)
 		{
 			//normal mic behavior
@@ -317,9 +313,41 @@ u8 Mic_ReadSample()
 			//since we're not recording Mic_Buffer to the movie, use silence
 			tmp = 0x80;
 		}
+	}
+	else
+	{
+		if(NDS_getFinalUserInput().mic.micButtonPressed)
+		{
+			if(SampleLoaded)
+			{
+				//use a sample
+				//TODO: what if a movie is active?
+				// for now I'm going to hope that if anybody records a movie with a sample loaded,
+				// either they know what they're doing and plan to distribute the sample,
+				// or they're playing a game where it doesn't even matter or they never press the mic button.
+				tmp = samplebuffer[micReadSamplePos >> 1];
+				micReadSamplePos++;
+				if(micReadSamplePos == samplebuffersize*2)
+					micReadSamplePos=0;
+			}
+			else
+			{
+				//use the "random" values
+				if(CommonSettings.micMode == TCommonSettings::InternalNoise)
+					tmp = random[micReadSamplePos >> 1];
+				else tmp = rand();
+				micReadSamplePos++;
+				if(micReadSamplePos == ARRAY_SIZE(random)*2)
+					micReadSamplePos=0;
+			}
+		}
+		else
+		{
+			tmp = 0x80;
 
-		//reset mic button buffer pos if not pressed
-		micReadSamplePos=0;
+			//reset mic button buffer pos if not pressed
+			micReadSamplePos=0;
+		}
 	}
 
 	if(Mic_BufPos & 0x1)

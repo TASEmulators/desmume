@@ -353,6 +353,7 @@
 #define IDC_SYNCHMETHOD_P               1018
 #define IDC_BGMAP_PAL                   1019
 #define IDC_VISIBLE                     1019
+#define IDC_USEPHYSICAL                 1019
 #define IDC_BGMAP_SIZE                  1020
 #define IDC_BGMAP_SCROLL                1021
 #define IDC_BGMAP_MOSAIC                1025
@@ -807,7 +808,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1018
+#define _APS_NEXT_CONTROL_VALUE         1020
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
