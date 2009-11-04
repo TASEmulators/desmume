@@ -157,10 +157,8 @@ FORCEINLINE int iround(float f) {
 
 typedef int fixed28_4;
 
-static bool failure;
-
 // handle floor divides and mods correctly 
-FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod)
+FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod, bool& failure)
 {
 	//These must be caused by invalid or degenerate shapes.. not sure yet.
 	//check it out in the mario face intro of SM64
@@ -222,7 +220,7 @@ FORCEINLINE int Ceil28_4( fixed28_4 Value ) {
 
 struct edge_fx_fl {
 	edge_fx_fl() {}
-	edge_fx_fl(int Top, int Bottom, VERT** verts);
+	edge_fx_fl(int Top, int Bottom, VERT** verts, bool& failure);
 	FORCEINLINE int Step();
 
 	VERT** verts;
@@ -254,7 +252,7 @@ struct edge_fx_fl {
 	void FORCEINLINE doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
 
-FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts) {
+FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& failure) {
 	this->verts = verts;
 	Y = Ceil28_4((fixed28_4)verts[Top]->y);
 	int YEnd = Ceil28_4((fixed28_4)verts[Bottom]->y);
@@ -266,8 +264,8 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts) {
 		long dM = long(verts[Bottom]->x - verts[Top]->x);
 	
 		long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
-		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm);
-		FloorDivMod(dM*16,dN*16,XStep,Numerator);
+		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm,failure);
+		FloorDivMod(dM*16,dN*16,XStep,Numerator,failure);
 		Denominator = dN*16;
 	
 		float YPrestep = Fixed28_4ToFloat((fixed28_4)(Y*16 - verts[Top]->y));
@@ -830,7 +828,7 @@ public:
 	template<bool SLI>
 	void shape_engine(int type, bool backwards)
 	{
-		failure = false;
+		bool failure = false;
 
 		switch(type) {
 			case 3: sort_verts<3>(backwards); break;
@@ -857,8 +855,8 @@ public:
 			//so that they can be continued on down the shape
 			assert(rv != type);
 			int _lv = lv==type?0:lv; //make sure that we ask for vert 0 when the variable contains the starting value
-			if(step_left) left = edge_fx_fl(_lv,lv-1,(VERT**)&verts);
-			if(step_right) right = edge_fx_fl(rv,rv+1,(VERT**)&verts);
+			if(step_left) left = edge_fx_fl(_lv,lv-1,(VERT**)&verts, failure);
+			if(step_right) right = edge_fx_fl(rv,rv+1,(VERT**)&verts, failure);
 			step_left = step_right = false;
 
 			//handle a failure in the edge setup due to nutty polys
