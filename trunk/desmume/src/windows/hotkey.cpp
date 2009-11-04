@@ -222,6 +222,19 @@ void HK_LCDsSwap(int)
 	LCDsSwap(-1);
 }
 
+extern int sndvolume;
+void HK_IncreaseVolume(int, bool justPressed)
+{
+	sndvolume = std::min(100, sndvolume + 5);
+	SPU_SetVolume(sndvolume);
+}
+
+void HK_DecreaseVolume(int, bool justPressed)
+{
+	sndvolume = std::max(0, sndvolume - 5);
+	SPU_SetVolume(sndvolume);
+}
+
 void HK_Reset(int, bool justPressed) {ResetGame();}
 
 void HK_RecordAVI(int, bool justPressed) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
@@ -674,6 +687,18 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->LCDsSwap.name = L"LCDs swap";
 	keys->LCDsSwap.page = HOTKEY_PAGE_MOVIE;
 	keys->LCDsSwap.key = VK_NEXT;
+
+	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
+	keys->IncreaseVolume.code = "IncreaseVolume";
+	keys->IncreaseVolume.name = L"Increase Volume";
+	keys->IncreaseVolume.page = HOTKEY_PAGE_MOVIE;
+	keys->IncreaseVolume.key = NULL;
+
+	keys->DecreaseVolume.handleKeyDown = HK_DecreaseVolume;
+	keys->DecreaseVolume.code = "DecreaseVolume";
+	keys->DecreaseVolume.name = L"Decrease Volume";
+	keys->DecreaseVolume.page = HOTKEY_PAGE_MOVIE;
+	keys->DecreaseVolume.key = NULL;
 
 	//StateSlots Page --------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
