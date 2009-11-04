@@ -270,9 +270,9 @@ extern bool userTouchesScreen;
 
 static int sndcoretype=SNDCORE_DIRECTX;
 static int sndbuffersize=735*4;
-static int sndvolume=100;
 static int snd_synchmode=0;
 static int snd_synchmethod=0;
+int sndvolume=100;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
@@ -3596,7 +3596,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
 				}
 
-
 				for(int i = 0; i < MAX_RECENT_SCRIPTS; i++)
 				{
 					char str[256];
@@ -3604,6 +3603,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					WritePrivateProfileString("Scripting", str, &Recent_Scripts[i][0], IniName);
 				}
 
+				WritePrivateProfileInt("Sound", "Volume", sndvolume, IniName);
 
 				ExitRunLoop();
 			}
@@ -4498,7 +4498,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 
 		case IDM_PAUSE:
-			Pause();
+			TogglePause();
 			return 0;
 
 		case IDM_GBASLOT:
