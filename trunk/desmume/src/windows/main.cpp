@@ -146,6 +146,8 @@ const int kGapNDS = 64; // extremely tilted (but some games seem to use this val
 const int kGapNDS2 = 90; // more normal viewing angle
 
 static BOOL OpenCore(const char* filename);
+BOOL Mic_DeInit_Physical();
+BOOL Mic_Init_Physical();
 
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
@@ -2059,6 +2061,26 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 	return buf;
 }
 
+static void RefreshMicSettings()
+{
+	Mic_DeInit_Physical();
+	if(CommonSettings.micMode == TCommonSettings::Sample)
+	{
+		if(!LoadSample(MicSampleName))
+		{
+			MessageBox(NULL, "Unable to read the mic sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
+		}
+	}
+	else
+	{
+		LoadSample(NULL);
+		if(CommonSettings.micMode == TCommonSettings::Physical)
+		{
+			Mic_Init_Physical();
+		}
+	}
+}
+
 DWORD wmTimerRes;
 int _main()
 {
@@ -2160,6 +2182,10 @@ int _main()
 	CommonSettings.hud.ShowGraphicalInputDisplay = GetPrivateProfileBool("Display","Display Graphical Input", false, IniName);
 	CommonSettings.hud.ShowLagFrameCounter = GetPrivateProfileBool("Display","Display Lag Counter", false, IniName);
 	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", false, IniName);
+
+	CommonSettings.micMode = (TCommonSettings::MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)TCommonSettings::InternalNoise, IniName);
+	GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
+	RefreshMicSettings();
 	
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	SeparationBorderDrag = GetPrivateProfileBool("Display", "Window Split Border Drag", true, IniName);
@@ -5082,6 +5108,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((CommonSettings.micMode == TCommonSettings::Sample) ? BST_CHECKED : BST_UNCHECKED));
 			CheckDlgButton(hDlg, IDC_USEMICRAND, ((CommonSettings.micMode == TCommonSettings::Random) ? BST_CHECKED : BST_UNCHECKED));
 			CheckDlgButton(hDlg, IDC_USENOISE, ((CommonSettings.micMode == TCommonSettings::InternalNoise) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hDlg, IDC_USEPHYSICAL, ((CommonSettings.micMode == TCommonSettings::Physical) ? BST_CHECKED : BST_UNCHECKED));
 			GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 			SetDlgItemText(hDlg, IDC_MICSAMPLE, MicSampleName);
 
@@ -5103,31 +5130,23 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 				{
 					int val = 0;
 
-					if((romloaded)) //|| (val == IDYES))
-					{
-						HWND cur;
+					HWND cur;
 
-						if(IsDlgCheckboxChecked(hDlg, IDC_USEMICSAMPLE))
-							CommonSettings.micMode = TCommonSettings::Sample;
-						else if(IsDlgCheckboxChecked(hDlg, IDC_USEMICRAND))
-							CommonSettings.micMode = TCommonSettings::Random;
-						else if(IsDlgCheckboxChecked(hDlg, IDC_USENOISE))
-							CommonSettings.micMode = TCommonSettings::InternalNoise;
+					if(IsDlgCheckboxChecked(hDlg, IDC_USEMICSAMPLE))
+						CommonSettings.micMode = TCommonSettings::Sample;
+					else if(IsDlgCheckboxChecked(hDlg, IDC_USEMICRAND))
+						CommonSettings.micMode = TCommonSettings::Random;
+					else if(IsDlgCheckboxChecked(hDlg, IDC_USENOISE))
+						CommonSettings.micMode = TCommonSettings::InternalNoise;
+					else if(IsDlgCheckboxChecked(hDlg, IDC_USEPHYSICAL))
+						CommonSettings.micMode = TCommonSettings::Physical;
 
-						cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
-						GetWindowText(cur, MicSampleName, 256);
-		
-						WritePrivateProfileInt("MicSettings", "MicMode", (int)CommonSettings.micMode, IniName);
-						WritePrivateProfileString("MicSettings", "MicSampleFile", MicSampleName, IniName);
-
-						if (CommonSettings.micMode == TCommonSettings::Sample)
-						{
-							if (!LoadSample(MicSampleName))
-							{
-								MessageBox(hDlg, "Unable to read the sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
-							}
-						}
-					}
+					cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
+					GetWindowText(cur, MicSampleName, 256);
+	
+					WritePrivateProfileInt("MicSettings", "MicMode", (int)CommonSettings.micMode, IniName);
+					WritePrivateProfileString("MicSettings", "MicSampleFile", MicSampleName, IniName);
+					RefreshMicSettings();
 				}
 			case IDCANCEL:
 				{

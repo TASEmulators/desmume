@@ -176,7 +176,7 @@ MovieData::MovieData()
 
 void MovieData::truncateAt(int frame)
 {
-	if(records.size() > frame)
+	if((int)records.size() > frame)
 		records.resize(frame);
 }
 
@@ -868,7 +868,7 @@ bool mov_loadstate(EMUFILE* fp, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 		}
 
-		if(currFrameCounter > currMovieData.records.size())
+		if(currFrameCounter > (int)currMovieData.records.size())
 		{
 			// if the frame counter is longer than our current movie,
 			// switch to "finished" mode.

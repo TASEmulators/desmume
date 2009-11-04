@@ -479,6 +479,7 @@ extern struct TCommonSettings {
 		InternalNoise = 0,
 		Sample = 1,
 		Random = 2,
+		Physical = 3,
 	} micMode;
 
 
