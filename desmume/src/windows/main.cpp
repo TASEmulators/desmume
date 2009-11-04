@@ -2133,6 +2133,7 @@ int _main()
 
 	if(CFlashFileMode==ADDON_CFLASH_MODE_Path) 
 	{
+		CFlash_Path = CFlashPath;
 		CFlash_Mode = ADDON_CFLASH_MODE_Path;
 	}
 	else 
