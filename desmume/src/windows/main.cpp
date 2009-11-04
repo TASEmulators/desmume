@@ -1630,6 +1630,12 @@ static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1
 		SPU_Pause(1);
 	}
 	ServiceDisplayThreadInvocations();
+
+	if(execute && emu_paused && !frameAdvance)
+	{
+		// safety net against running out of control in case this ever happens.
+		Unpause(); Pause();
+	}
 }
 
 DWORD WINAPI run()
@@ -3240,6 +3246,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 void Unpause()
 {
 	lastPauseFromLostFocus = FALSE;
+	if (!execute && !emu_paused) NDS_Pause(false), emu_paused=true;
 	if (emu_paused) NDS_UnPause();
 	emu_paused = 0;
 }
@@ -3247,6 +3254,7 @@ void Unpause()
 void Pause()
 {
 	lastPauseFromLostFocus = FALSE;
+	if (execute && emu_paused) NDS_UnPause(false), emu_paused=false;
 	if (!emu_paused) NDS_Pause();
 	emu_paused = 1;
 }
