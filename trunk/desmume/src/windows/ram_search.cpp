@@ -497,10 +497,10 @@ struct DummyType { typedef T t; };
 	: sizeTypeID == 'd' \
 		? (isSigned \
 			? (requireAligned \
-				? functionName<short, COMMAHACK(signed,long)>(__VA_ARGS__) \
+				? functionName<long, COMMAHACK(signed,long)>(__VA_ARGS__) \
 				: functionName<char, COMMAHACK(signed,long)>(__VA_ARGS__)) \
 			: (requireAligned \
-				? functionName<short, COMMAHACK(unsigned,long)>(__VA_ARGS__) \
+				? functionName<long, COMMAHACK(unsigned,long)>(__VA_ARGS__) \
 				: functionName<char, COMMAHACK(unsigned,long)>(__VA_ARGS__))) \
 	: functionName<char, COMMAHACK(signed,char)>(__VA_ARGS__))
 
@@ -514,7 +514,7 @@ struct DummyType { typedef T t; };
 			: functionName<char, COMMAHACK(sign,type)>(__VA_ARGS__)) \
 	: sizeTypeID == 'd' \
 		? (requireAligned \
-			? functionName<short, COMMAHACK(sign,type)>(__VA_ARGS__) \
+			? functionName<long, COMMAHACK(sign,type)>(__VA_ARGS__) \
 			: functionName<char, COMMAHACK(sign,type)>(__VA_ARGS__)) \
 	: functionName<char, COMMAHACK(sign,type)>(__VA_ARGS__))
 
@@ -982,7 +982,7 @@ void UpdatePossibilities(int rs_possible, int regions);
 
 void CompactAddrs()
 {
-	int size = (rs_type_size=='b' || !noMisalign) ? 1 : 2;
+	int size = (rs_type_size=='b' || !noMisalign) ? 1 : (rs_type_size=='w' ? 2 : 4);
 	int prevResultCount = ResultCount;
 
 	CalculateItemIndices(size);
@@ -1065,8 +1065,8 @@ void signal_new_size ()
 {
 	HWND lv = GetDlgItem(RamSearchHWnd,IDC_RAMLIST);
 
-	int oldSize = (rs_last_type_size=='b' || !rs_last_no_misalign) ? 1 : 2;
-	int newSize = (rs_type_size=='b' || !noMisalign) ? 1 : 2;
+	int oldSize = (rs_last_type_size=='b' || !rs_last_no_misalign) ? 1 : (rs_last_type_size=='w' ? 2 : 4);
+	int newSize = (rs_type_size=='b' || !noMisalign) ? 1 : (rs_type_size=='w' ? 2 : 4);
 	bool numberOfItemsChanged = (oldSize != newSize);
 
 	unsigned int itemsPerPage = ListView_GetCountPerPage(lv);
@@ -1082,7 +1082,7 @@ void signal_new_size ()
 		// unfortunately this can take a while if the user has a huge range of items selected
 //		Clear_Sound_Buffer();
 		int selCount = ListView_GetSelectedCount(lv);
-		int size = (rs_last_type_size=='b' || !rs_last_no_misalign) ? 1 : 2;
+		int size = (rs_last_type_size=='b' || !rs_last_no_misalign) ? 1 : (rs_last_type_size=='w' ? 2 : 4);
 		int watchIndex = -1;
 		for(int i = 0; i < selCount; ++i)
 		{
@@ -1799,7 +1799,7 @@ invalid_field:
 					RamSearchSaveUndoStateIfNotTooBig(hDlg);
 
 					HWND ramListControl = GetDlgItem(hDlg,IDC_RAMLIST);
-					int size = (rs_type_size=='b' || !noMisalign) ? 1 : 2;
+					int size = (rs_type_size=='b' || !noMisalign) ? 1 : (rs_type_size=='w' ? 2 : 4);
 					int selCount = ListView_GetSelectedCount(ramListControl);
 					int watchIndex = -1;
 
