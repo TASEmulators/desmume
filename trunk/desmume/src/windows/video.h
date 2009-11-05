@@ -158,11 +158,11 @@ public:
 			case 0:
 				return width;
 			case 90:
-				return height + screengap;
+				return height + ((layout == 0) ? screengap : 0);
 			case 180:
 				return width;
 			case 270:
-				return height + screengap;
+				return height + ((layout == 0) ? screengap : 0);
 			default:
 				return 0;
 		}
@@ -171,11 +171,11 @@ public:
 	int rotatedheightgap() {
 		switch(rotation) {
 			case 0:
-				return height + screengap;
+				return height + ((layout == 0) ? screengap : 0);
 			case 90:
 				return width;
 			case 180:
-				return height + screengap;
+				return height + ((layout == 0) ? screengap : 0);
 			case 270:
 				return width;
 			default:

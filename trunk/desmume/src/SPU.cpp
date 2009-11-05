@@ -225,8 +225,15 @@ void SPU_SetSynchMode(int mode, int method)
 		synchmethod = (ESynchMethod)method;
 		delete synchronizer;
 		//grr does this need to be locked? spu might need a lock method
+		  // or maybe not, maybe the platform-specific code that calls this function can deal with it.
 		synchronizer = metaspu_construct(synchmethod);
 	}
+}
+
+void SPU_ClearOutputBuffer()
+{
+	if(SNDCore && SNDCore->ClearBuffer)
+		SNDCore->ClearBuffer();
 }
 
 void SPU_SetVolume(int volume)
@@ -896,17 +903,13 @@ void SPU_Emulate_user(bool mix)
 		if (audiosize > SPU_user->bufsize)
 			audiosize = SPU_user->bufsize;
 
+		int samplesOutput;
 		if(synchmode == ESynchMode_Synchronous)
-		{
-			int done = synchronizer->output_samples(SPU_user->outbuf, audiosize);
-			SNDCore->UpdateAudio(SPU_user->outbuf,done);
-		}
+			samplesOutput = synchronizer->output_samples(SPU_user->outbuf, audiosize);
 		else
-		{
-			SPU_MixAudio(mix,SPU_user,audiosize);
-			SNDCore->UpdateAudio(SPU_user->outbuf, audiosize);
-		}
+			samplesOutput = (SPU_MixAudio(mix,SPU_user,audiosize), audiosize);
 
+		SNDCore->UpdateAudio(SPU_user->outbuf, samplesOutput);
 	}
 }
 

@@ -44,6 +44,7 @@ u32 SNDDXGetAudioSpace();
 void SNDDXMuteAudio();
 void SNDDXUnMuteAudio();
 void SNDDXSetVolume(int volume);
+void SNDDXClearAudioBuffer();
 
 SoundInterface_struct SNDDIRECTX = {
 	SNDCORE_DIRECTX,
@@ -54,7 +55,8 @@ SoundInterface_struct SNDDIRECTX = {
 	SNDDXGetAudioSpace,
 	SNDDXMuteAudio,
 	SNDDXUnMuteAudio,
-	SNDDXSetVolume
+	SNDDXSetVolume,
+	SNDDXClearAudioBuffer,
 };
 
 LPDIRECTSOUND8 lpDS8;
@@ -67,6 +69,8 @@ static u32 soundoffset=0;
 static u32 soundbufsize;
 static LONG soundvolume;
 static int issoundmuted;
+static bool insilence;
+static int samplecounter_fakecontribution = 0;
 
 //////////////////////////////////////////////////////////////////////////////
 static volatile bool doterminate;
@@ -234,17 +238,43 @@ void SNDDXDeInit()
 
 void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 {
-	LPVOID buffer1;
-	LPVOID buffer2;
-	DWORD buffer1_size, buffer2_size;
-
 	int samplecounter;
 	{
 		Lock lock;
-		samplecounter = win_sound_samplecounter -= num_samples;
+		if(num_samples)
+		{
+			samplecounter = win_sound_samplecounter -= num_samples - samplecounter_fakecontribution;
+			samplecounter_fakecontribution = 0;
+		}
+		else
+		{
+			samplecounter = win_sound_samplecounter -= 245;
+			samplecounter_fakecontribution += 245;
+		}
 	}
 
 	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
+
+	if(insilence)
+	{
+		if(silence)
+			return;
+		else
+			insilence = false;
+	}
+	else
+	{
+		if(silence)
+		{
+			insilence = true;
+			SNDDXClearAudioBuffer();
+			return;
+		}
+	}
+
+	LPVOID buffer1;
+	LPVOID buffer2;
+	DWORD buffer1_size, buffer2_size;
 
 	HRESULT hr = lpDSB2->Lock(soundoffset, num_samples * sizeof(s16) * 2,
 	                          &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
@@ -255,23 +285,29 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 		return;
 	}
 
-	if(silence) {
-		memset(buffer1, 0, buffer1_size);
-		if(buffer2)
-			memset(buffer2, 0, buffer2_size);
-	}
-	else
-	{
-		memcpy(buffer1, buffer, buffer1_size);
-		if(buffer2)
-			memcpy(buffer2, ((u8 *)buffer)+buffer1_size, buffer2_size);
-	}
+	memcpy(buffer1, buffer, buffer1_size);
+	if(buffer2)
+		memcpy(buffer2, ((u8 *)buffer)+buffer1_size, buffer2_size);
 
 	soundoffset += buffer1_size + buffer2_size;
 	soundoffset %= soundbufsize;
 
 	lpDSB2->Unlock(buffer1, buffer1_size, buffer2, buffer2_size);
 }
+
+
+
+void SNDDXClearAudioBuffer()
+{
+	LPVOID buffer1;
+	DWORD buffer1_size;
+	HRESULT hr = lpDSB2->Lock(0, 0, &buffer1, &buffer1_size, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+	if(FAILED(hr))
+		return;
+	memset(buffer1, 0, buffer1_size);
+	lpDSB2->Unlock(buffer1, buffer1_size, NULL, 0);
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////
