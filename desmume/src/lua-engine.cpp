@@ -18,11 +18,8 @@
 #endif
 
 
-// a few functions that maybe aren't part of the Lua engine
+// functions that maybe aren't part of the Lua engine
 // but didn't make sense to add to BaseDriver (at least not yet)
-static void Clear_Sound_Buffer() {
-	if(SPU_user) SPU_user->ShutUp();
-}
 static bool IsHardwareAddressValid(u32 address) {
 	// maybe TODO? let's say everything is valid.
 	return true;
@@ -1402,7 +1399,7 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		bool stopworrying = true;
 		if(!info.panic)
 		{
-			Clear_Sound_Buffer();
+			SPU_ClearOutputBuffer();
 #if defined(ASK_USER_ON_FREEZE) && defined(_WIN32)
 			DialogsOpen++;
 			int answer = MessageBox(HWnd, "A Lua script has been running for quite a while. Maybe it is in an infinite loop.\n\nWould you like to stop the script?\n\n(Yes to stop it now,\n No to keep running and not ask again,\n Cancel to keep running but ask again later)", "Lua Alert", MB_YESNOCANCEL | MB_DEFBUTTON3 | MB_ICONASTERISK);
@@ -3464,7 +3461,7 @@ DEFINE_LUA_FUNCTION(movie_close, "")
 
 DEFINE_LUA_FUNCTION(sound_clear, "")
 {
-	Clear_Sound_Buffer();
+	SPU_ClearOutputBuffer();
 	return 0;
 }
 

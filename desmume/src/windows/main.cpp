@@ -5422,7 +5422,10 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_P)) snd_synchmethod = 2;
 					WritePrivateProfileInt("Sound", "SynchMethod", snd_synchmethod, IniName);
 
-					SPU_SetSynchMode(snd_synchmode, snd_synchmethod);
+					{
+						Lock lock;
+						SPU_SetSynchMode(snd_synchmode, snd_synchmethod);
+					}
 
 					//write interpolation type
 					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);
