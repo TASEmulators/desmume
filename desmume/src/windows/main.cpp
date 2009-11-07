@@ -3693,13 +3693,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 							minY = video.rotatedheightgap() / 2;
 						}
 
-				if(verticalDrag && !sideways && SeparationBorderDrag)
+				if(verticalDrag && !sideways && SeparationBorderDrag && video.layout == 0)
 				{
 					forceRatioFlags |= WINCLASS::KEEPX;
 					minY = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
 					setGap = true;
 				}
-				else if(horizontalDrag && sideways && SeparationBorderDrag)
+				else if(horizontalDrag && sideways && SeparationBorderDrag && video.layout == 0)
 				{
 					forceRatioFlags |= WINCLASS::KEEPY;
 					minX = (MainScreenRect.right - MainScreenRect.left) + (SubScreenRect.right - SubScreenRect.left);
