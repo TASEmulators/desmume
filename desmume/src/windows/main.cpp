@@ -269,7 +269,7 @@ extern bool userTouchesScreen;
 /*__declspec(thread)*/ bool inFrameBoundary = false;
 
 static int sndcoretype=SNDCORE_DIRECTX;
-static int sndbuffersize=735*4;
+static int sndbuffersize=735*8;
 static int snd_synchmode=0;
 static int snd_synchmethod=0;
 int sndvolume=100;
@@ -2430,7 +2430,7 @@ int _main()
 #endif
 	LOG("Init sound core\n");
 	sndcoretype = GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
-	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
+	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize2", 735*8, IniName);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
 
 	EnterCriticalSection(&win_execute_sync);
@@ -3693,7 +3693,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 							minY = video.rotatedheightgap() / 2;
 						}
 
-				if(verticalDrag && sideways && SeparationBorderDrag)
+				if(verticalDrag && !sideways && SeparationBorderDrag)
 				{
 					forceRatioFlags |= WINCLASS::KEEPX;
 					minY = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
@@ -5397,7 +5397,7 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 					int tmp_size_buf = sndbuffersize;
 					GetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr, 6);
 					sscanf(tempstr, "%d", &sndbuffersize);
-					WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
+					WritePrivateProfileString("Sound", "SoundBufferSize2", tempstr, IniName);
 
 					if( (sndcoretype != SPU_currentCoreNum) || (sndbuffersize != tmp_size_buf) )
 					{
