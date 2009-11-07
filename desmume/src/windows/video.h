@@ -8,6 +8,7 @@ public:
 	int height;
 
 	int rotation;
+	int rotation_userset;
 	int screengap;
 	int layout;
 	int layout_old;
