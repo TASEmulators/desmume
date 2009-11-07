@@ -252,7 +252,7 @@ bool romloaded = false;
 
 void SetScreenGap(int gap);
 
-void SetRotate(HWND hwnd, int rot);
+void SetRotate(HWND hwnd, int rot, bool user=true);
 
 bool ForceRatio = true;
 bool SeparationBorderDrag = true;
@@ -989,6 +989,13 @@ void LCDsSwap(int swapVal)
 
 void doLCDsLayout()
 {
+	if(video.layout != 0)
+	{
+		// rotation is not supported in the alternate layouts
+		if(video.rotation != 0)
+			SetRotate(MainWindow->getHWnd(), 0, false);
+	}
+
 	osd->singleScreen = (video.layout == 2);
 
 	RECT rc = { 0 };
@@ -1003,7 +1010,6 @@ void doLCDsLayout()
 
 	if (video.layout == 0)
 	{
-		DesEnableMenuItem(mainMenu, IDC_ROTATE0, true);
 		DesEnableMenuItem(mainMenu, IDC_ROTATE90, true);
 		DesEnableMenuItem(mainMenu, IDC_ROTATE180, true);
 		DesEnableMenuItem(mainMenu, IDC_ROTATE270, true);
@@ -1040,7 +1046,6 @@ void doLCDsLayout()
 	}
 	else
 	{
-		DesEnableMenuItem(mainMenu, IDC_ROTATE0, false);
 		DesEnableMenuItem(mainMenu, IDC_ROTATE90, false);
 		DesEnableMenuItem(mainMenu, IDC_ROTATE180, false);
 		DesEnableMenuItem(mainMenu, IDC_ROTATE270, false);
@@ -1105,9 +1110,22 @@ void doLCDsLayout()
 	video.layout_old = video.layout;
 	WritePrivateProfileInt("Video", "LCDsLayout", video.layout, IniName);
 	SetMinWindowSize();
+	if(video.rotation == 90 || video.rotation == 270)
+	{
+		int temp = newwidth;
+		newwidth = newheight;
+		newheight = temp;
+	}
 	MainWindow->setClientSize(newwidth, newheight);
 	FixAspectRatio();
 	UpdateWndRects(MainWindow->getHWnd());
+
+	if(video.layout == 0)
+	{
+		// restore user-set rotation if we forcibly disabled it before
+		if(video.rotation != video.rotation_userset)
+			SetRotate(MainWindow->getHWnd(), video.rotation_userset, false);
+	}
 }
 
 //the directdraw final presentation portion of display, including rotating
@@ -2169,6 +2187,7 @@ int _main()
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
+	video.rotation_userset =  GetPrivateProfileInt("Video","Window Rotate Set", video.rotation, IniName);
 	ForceRatio = GetPrivateProfileBool("Video","Window Force Ratio", 1, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
@@ -2842,7 +2861,7 @@ void SetScreenGap(int gap)
 }
 
 //========================================================================================
-void SetRotate(HWND hwnd, int rot)
+void SetRotate(HWND hwnd, int rot, bool user)
 {
 	Lock lock (win_backbuffer_sync);
 
@@ -2906,6 +2925,11 @@ void SetRotate(HWND hwnd, int rot)
 	}
 
 	WritePrivateProfileInt("Video","Window Rotate",video.rotation,IniName);
+	if(user)
+	{
+		video.rotation_userset = video.rotation;
+		WritePrivateProfileInt("Video","Window Rotate Set",video.rotation_userset,IniName);
+	}
 
 	gpu_SetRotateScreen(video.rotation);
 
@@ -3370,7 +3394,7 @@ void FilterUpdate (HWND hwnd, bool user)
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
 	SetScreenGap(video.screengap);
-	SetRotate(hwnd, video.rotation);
+	SetRotate(hwnd, video.rotation, false);
 	if(user && windowSize==0) {}
 	else ScaleScreen(windowSize);
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
@@ -3460,10 +3484,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Force Maintain Ratio
 			MainWindow->checkMenu(IDC_FORCERATIO, ((ForceRatio)));
 			//Screen rotation
-			MainWindow->checkMenu(IDC_ROTATE0, ((video.rotation==0)));
-			MainWindow->checkMenu(IDC_ROTATE90, ((video.rotation==90)));
-			MainWindow->checkMenu(IDC_ROTATE180, ((video.rotation==180)));
-			MainWindow->checkMenu(IDC_ROTATE270, ((video.rotation==270)));
+			MainWindow->checkMenu(IDC_ROTATE0, ((video.rotation_userset==0)));
+			MainWindow->checkMenu(IDC_ROTATE90, ((video.rotation_userset==90)));
+			MainWindow->checkMenu(IDC_ROTATE180, ((video.rotation_userset==180)));
+			MainWindow->checkMenu(IDC_ROTATE270, ((video.rotation_userset==270)));
 
 			//Window Size
 			MainWindow->checkMenu(IDC_WINDOW1X, ((windowSize==1)));
@@ -3540,7 +3564,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			if (video.layout != 0)
 			{
-				DesEnableMenuItem(mainMenu, IDC_ROTATE0, false);
 				DesEnableMenuItem(mainMenu, IDC_ROTATE90, false);
 				DesEnableMenuItem(mainMenu, IDC_ROTATE180, false);
 				DesEnableMenuItem(mainMenu, IDC_ROTATE270, false);
