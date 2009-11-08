@@ -265,9 +265,9 @@ public:
 		int audiosize = samples_requested;
 		int queued = sampleQueue.size();
 
-		// truncate input and output sizes to multiples of 8 because I am too lazy to deal with odd numbers
-		audiosize &= ~7;
-		queued &= ~7;
+		// I am too lazy to deal with odd numbers
+		audiosize &= ~1;
+		queued &= ~1;
 
 		if(queued > 0x200 && audiosize > 0) // is there any work to do?
 		{
@@ -313,8 +313,50 @@ public:
 					// yes, this means we are spending some stretches of time playing the sound backwards,
 					// but the stretches are short enough that this doesn't sound weird.
 					// this lets us avoid most crackling problems due to the endpoints matching up.
-					// TODO: it might help to calculate the approximate fundamental frequency
-					// and reduce either buffer size such that the reflections line up with it.
+
+					// first calculate a shorter-than-full window
+					// that has minimal slope at the endpoints
+					// (to further reduce crackling, especially in sine waves)
+					int beststart = 0, extraAtEnd = 0;
+					{
+						int bestend = queued;
+						static const int worstdiff = 99999999;
+						int beststartdiff = worstdiff;
+						int bestenddiff = worstdiff;
+						for(int i = 0; i < 128; i+=2)
+						{
+							int diff = abs(sampleQueue[i].l - sampleQueue[i+1].l) + abs(sampleQueue[i].r - sampleQueue[i+1].r);
+							if(diff < beststartdiff)
+							{
+								beststartdiff = diff;
+								beststart = i;
+							}
+						}
+						for(int i = queued-3; i > queued-3-128; i-=2)
+						{
+							int diff = abs(sampleQueue[i].l - sampleQueue[i+1].l) + abs(sampleQueue[i].r - sampleQueue[i+1].r);
+							if(diff < bestenddiff)
+							{
+								bestenddiff = diff;
+								bestend = i+1;
+							}
+						}
+
+						extraAtEnd = queued - bestend;
+						queued = bestend - beststart;
+
+						int oksize = queued;
+						while(oksize + queued*2 + beststart + extraAtEnd <= samples_requested)
+							oksize += queued*2;
+						audiosize = oksize;
+
+						for(int x = 0; x < beststart; x++)
+						{
+							emit_sample(buf,sampleQueue[x]);
+						}
+						sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + beststart);
+					}
+
 
 					int midpointX = audiosize >> 1;
 					int midpointY = queued >> 1;
@@ -372,6 +414,14 @@ public:
 						int i = (queued-1) - pingpong((int)audiosize-1 - x + queued*2, queued);
 						emit_sample(buf,sampleQueue[i]);
 					}
+
+					for(int x = 0; x < extraAtEnd; x++)
+					{
+						int i = queued + x;
+						emit_sample(buf,sampleQueue[i]);
+					}
+					queued += extraAtEnd;
+					audiosize += beststart + extraAtEnd;
 				} //end else
 
 				sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
