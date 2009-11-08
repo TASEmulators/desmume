@@ -47,14 +47,6 @@
 
 PathInfo path;
 
-#if 0
-	#ifndef PUBLIC_RELEASE
-		#undef EXPERIMENTAL_WIFI
-	#endif
-#endif
-
-#undef EXPERIMENTAL_WIFI
-
 TCommonSettings CommonSettings;
 static BaseDriver _stub_driver;
 BaseDriver* driver = &_stub_driver;
@@ -533,9 +525,7 @@ int NDS_Init( void) {
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
 
-#ifdef EXPERIMENTAL_WIFI
 	WIFI_Init() ;
-#endif
 
 	nds.FW_ARM9BootCode = NULL;
 	nds.FW_ARM7BootCode = NULL;
@@ -562,9 +552,7 @@ void NDS_DeInit(void) {
 	MMU_DeInit();
 	gpu3D->NDS_3D_Close();
 
-#ifdef EXPERIMENTAL_WIFI
 	WIFI_DeInit();
-#endif
 	cheatsSearchClose();
 }
 
@@ -1958,7 +1946,7 @@ void Sequencer::init()
 	dma_1_3.controller = &MMU_new.dma[1][3];
 
 
-	#ifdef EXPERIMENTAL_WIFI
+	#ifdef EXPERIMENTAL_WIFI_COMM
 	wifi.enabled = true;
 	wifi.timestamp = kWifiCycles;
 	#else
@@ -2169,7 +2157,7 @@ u64 Sequencer::findNext()
 	if(sqrtunit.isEnabled()) next = _fast_min(next,sqrtunit.next());
 	if(gxfifo.enabled) next = _fast_min(next,gxfifo.next());
 
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 	next = _fast_min(next,wifi.next());
 #endif
 
@@ -2207,7 +2195,7 @@ void Sequencer::execHardware()
 		}
 	}
 
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 	if(wifi.isTriggered())
 	{
 		WIFI_usTrigger();
@@ -2722,9 +2710,7 @@ void NDS_Reset()
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
 
-#ifdef EXPERIMENTAL_WIFI
 	WIFI_Reset();
-#endif
 
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 

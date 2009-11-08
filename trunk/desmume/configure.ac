@@ -224,10 +224,10 @@ fi
 
 dnl - wifi support
 AC_ARG_ENABLE(wifi,
-	      [AC_HELP_STRING(--enable-wifi, enable experimental wifi support)],
+	      [AC_HELP_STRING(--enable-wifi, enable experimental wifi comm support)],
 	      [
 		AC_CHECK_LIB(pcap, main,[
-		  AC_DEFINE(EXPERIMENTAL_WIFI)
+		  AC_DEFINE(EXPERIMENTAL_WIFI_COMM)
 		  LIBS="$LIBS -lpcap"
 		])
 	      ])

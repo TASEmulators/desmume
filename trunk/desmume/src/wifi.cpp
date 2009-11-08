@@ -25,10 +25,11 @@
 #include "debug.h"
 #include "bits.h"
 
-#ifdef EXPERIMENTAL_WIFI
+
 
 #ifdef WIN32
 	#include <winsock2.h> 	 
+	#include <ws2tcpip.h>
 	#define socket_t    SOCKET 	 
 	#define sockaddr_t  SOCKADDR
 	#include "windriver.h"
@@ -41,7 +42,6 @@
 	#define socket_t    int 	 
 	#define sockaddr_t  struct sockaddr
 	#define closesocket close
-	#include "pcap/pcap.h"
 #endif
 
 #ifndef INVALID_SOCKET 	 
@@ -53,10 +53,14 @@
 bool wifi_netEnabled = false;
 socket_t wifi_socket = INVALID_SOCKET;
 sockaddr_t sendAddr;
-pcap_t *wifi_bridge = NULL;
 
 const u8 BroadcastMAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
+#ifdef EXPERIMENTAL_WIFI_COMM
+#ifndef WIN32
+#include "pcap/pcap.h"
+#endif
+pcap_t *wifi_bridge = NULL;
 #endif
 
 wifimac_t wifiMac;
@@ -216,8 +220,6 @@ FW_WFCProfile FW_WFCProfile3 = {"",
 								{0, 0}
 							   } ;
 
-#ifdef EXPERIMENTAL_WIFI
-
 /*******************************************************************************
 
 	Communication interface
@@ -239,6 +241,7 @@ void SoftAP_Reset();
 void SoftAP_SendPacket(u8 *packet, u32 len);
 void SoftAP_usTrigger();
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 WifiComInterface SoftAP = {
 	SoftAP_Init,
 	SoftAP_DeInit,
@@ -246,6 +249,7 @@ WifiComInterface SoftAP = {
 	SoftAP_SendPacket,
 	SoftAP_usTrigger
 };
+#endif
 
 bool Adhoc_Init();
 void Adhoc_DeInit();
@@ -263,7 +267,9 @@ WifiComInterface Adhoc = {
 
 WifiComInterface* wifiComs[] = {
 	&Adhoc,
+#ifdef EXPERIMENTAL_WIFI_COMM
 	&SoftAP,
+#endif
 	NULL
 };
 WifiComInterface* wifiCom;
@@ -305,6 +311,7 @@ INLINE u32 WIFI_alignedLen(u32 len)
 	return ((len + 3) & ~3);
 }
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 #ifdef WIN32
 static pcap_t *desmume_pcap_open(const char *source, int snaplen, int flags,
 		int read_timeout, char *errbuf)
@@ -358,6 +365,7 @@ static int desmume_pcap_sendpacket(pcap_t *p, u_char *buf, int size)
 {
 	return pcap_sendpacket(p, buf, size);
 }
+#endif
 #endif
 
 /*******************************************************************************
@@ -1954,6 +1962,7 @@ const u8 SoftAP_AssocResponse[] = {
 
 //todo - make a class to wrap this
 //todo - zeromus - inspect memory leak safety of all this
+#ifdef EXPERIMENTAL_WIFI_COMM
 static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index) {
 	pcap_if_t *curr = alldevs;
 	for(int i=0;i<index;i++)
@@ -2267,3 +2276,4 @@ void SoftAP_usTrigger()
 }
 
 #endif
+
