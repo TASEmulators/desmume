@@ -41,6 +41,7 @@ InputCust * GetInputCustom(HWND hwnd);
 #define CUSTKEY_ALT_MASK   0x01
 #define CUSTKEY_CTRL_MASK  0x02
 #define CUSTKEY_SHIFT_MASK 0x04
+#define CUSTKEY_NONE_MASK  0x08
 
 struct SJoypad {
     BOOL Enabled;
