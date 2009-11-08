@@ -358,7 +358,7 @@ static void TextualInputDisplay() {
 		else if(pressedForGame)
 			aggDraw.hud->lineColor(255,48,48,255);
 		else if(physicallyPressed)
-			aggDraw.hud->lineColor(0,255,0,255);
+			aggDraw.hud->lineColor(0,192,0,255);
 		else
 			continue;
 
@@ -395,7 +395,7 @@ static void TextualInputDisplay() {
 			if(physicalTouchOn)
 			{
 				sprintf(str, "%d,%d", physicalTouchX, physicalTouchY);
-				aggDraw.hud->lineColor(0,255,0,255);
+				aggDraw.hud->lineColor(0,192,0,255);
 				aggDraw.hud->renderTextDropshadowed(x, calcY(Hud.InputDisplay.y)+(gameTouchOn?8:0), str);
 			}
 		}

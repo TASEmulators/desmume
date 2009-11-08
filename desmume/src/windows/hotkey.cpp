@@ -240,10 +240,10 @@ void HK_Reset(int, bool justPressed) {ResetGame();}
 void HK_RecordAVI(int, bool justPressed) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
 void HK_RecordWAV(int, bool justPressed) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(WAVMODE_CORE); }
 
-void HK_ToggleFrame(int, bool justPressed) {CommonSettings.hud.FrameCounterDisplay ^= true;}
-void HK_ToggleFPS(int, bool justPressed) {CommonSettings.hud.FpsDisplay ^= true;}
-void HK_ToggleInput(int, bool justPressed) {CommonSettings.hud.ShowInputDisplay ^= true;}
-void HK_ToggleLag(int, bool justPressed) {CommonSettings.hud.ShowLagFrameCounter ^= true;}
+void HK_ToggleFrame(int, bool justPressed) { SendMessage(MainWindow->getHWnd(), WM_COMMAND, ID_VIEW_FRAMECOUNTER, 0); }
+void HK_ToggleFPS(int, bool justPressed) { SendMessage(MainWindow->getHWnd(), WM_COMMAND, ID_VIEW_DISPLAYFPS, 0); }
+void HK_ToggleInput(int, bool justPressed) { SendMessage(MainWindow->getHWnd(), WM_COMMAND, ID_VIEW_DISPLAYINPUT, 0); }
+void HK_ToggleLag(int, bool justPressed) { SendMessage(MainWindow->getHWnd(), WM_COMMAND, ID_VIEW_DISPLAYLAG, 0); }
 void HK_ResetLagCounter(int, bool justPressed) {
 	lagframecounter=0;
 	LagFrameFlag=0;
@@ -275,11 +275,7 @@ void HK_ToggleReadOnly(int, bool justPressed) {
 void HK_PlayMovie(int, bool justPressed) 
 {
 	if (romloaded)
-	{
-		//NDS_Pause();
-		//Replay_LoadMovie();
-		//NDS_UnPause();
-	}
+		Replay_LoadMovie();
 }
 
 bool rewinding = false;
@@ -291,11 +287,7 @@ void HK_RewindKeyUp(int){rewinding = false;}
 void HK_RecordMovie(int, bool justPressed) 
 {
 	if (romloaded)
-	{
-		//NDS_Pause();
-		//MovieRecordTo();
-		//NDS_UnPause();
-	}
+		MovieRecordTo();
 }
 
 void HK_StopMovie(int, bool justPressed) 
@@ -368,7 +360,7 @@ void HK_PreviousSaveSlot(int, bool justPressed) {
 	osd->addLine("State %i selected", lastSaveState);
 }
 
-void HK_Pause(int, bool justPressed) { TogglePause(); }
+void HK_Pause(int, bool justPressed) { if(justPressed) TogglePause(); }
 void HK_FastForwardToggle(int, bool justPressed) { FastForward ^=1; }
 void HK_FastForwardKeyDown(int, bool justPressed) { FastForward = 1; }
 void HK_FastForwardKeyUp(int) { FastForward = 0; }
