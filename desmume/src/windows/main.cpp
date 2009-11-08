@@ -1938,7 +1938,7 @@ class WinDriver : public BaseDriver
 {
 	virtual bool WIFI_Host_InitSystem() 
 	{
-		#ifdef EXPERIMENTAL_WIFI
+		#ifdef EXPERIMENTAL_WIFI_COMM
 			WSADATA wsaData; 	 
 			WORD version = MAKEWORD(1,1); 	 
 			if (WSAStartup(version, &wsaData)) 	 
@@ -1955,12 +1955,12 @@ class WinDriver : public BaseDriver
 			FreeLibrary(temp);
 			return true;
 		#else
-			return false ;
+			return false;
 		#endif
 	}
 	virtual void WIFI_Host_ShutdownSystem() 
 	{
-		#ifdef EXPERIMENTAL_WIFI 	 
+		#ifdef EXPERIMENTAL_WIFI_COMM 	 
 			WSACleanup(); 	 
 		#endif
 	}
@@ -2301,7 +2301,7 @@ int _main()
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 	EnableMenuItem(mainMenu, IDM_WIFISETTINGS, MF_ENABLED);
 #endif
 
@@ -3399,7 +3399,7 @@ void RunConfig(CONFIGSCREEN which)
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_PATHSETTINGS), hwnd, (DLGPROC)PathSettingsDlgProc);
 		break;
 	case CONFIGSCREEN_WIFI:
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 		if(wifi_netEnabled)
 		{
 			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
@@ -5281,7 +5281,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	#ifdef EXPERIMENTAL_WIFI
+	#ifdef EXPERIMENTAL_WIFI_COMM
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:

@@ -86,7 +86,7 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	BITMAPV4HEADER bmi;
 	u16 lg;
 	u16 ht;
-	BGxPARMS * parms;
+	//BGxPARMS * parms;
 
 	//CreateBitmapIndirect(&bmi);
 	memset(&bmi, 0, sizeof(bmi));

@@ -3411,15 +3411,13 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		}
 	}
 
-#ifdef EXPERIMENTAL_WIFI
 	if ((adr & 0xFF800000) == 0x04800000)
 	{
 		/* is wifi hardware, dont intermix with regular hardware registers */
 		// 8-bit writes to wifi I/O and RAM are ignored
 		// Reference: http://nocash.emubase.de/gbatek.htm#dswifiiomap
-		return ;
+		return;
 	}
-#endif
 
 	if (adr >> 24 == 4)
 	{
@@ -3459,8 +3457,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		return;
 	}
 
-#ifdef EXPERIMENTAL_WIFI
-
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
@@ -3468,9 +3464,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
 		return;
 	}
-#else
-	//if ((adr>=0x04800000)&&(adr<0x05000000)) return ;
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -3765,7 +3758,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
-#ifdef EXPERIMENTAL_WIFI
 	if ((adr & 0xFF800000) == 0x04800000) 
 	{
 		// access to non regular hw registers
@@ -3775,7 +3767,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
 		return;
 	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -3880,8 +3871,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
 	mmu_log_debug_ARM7(adr, "(read08) %0x%X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
 
-#ifdef EXPERIMENTAL_WIFI
-	/* wifi mac access */
+	// wifi mac access 
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
 		if (adr & 1)
@@ -3889,7 +3879,6 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		else
 			return WIFI_read16(adr) & 0xFF;
 	}
-#endif
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
@@ -3915,11 +3904,9 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
 	mmu_log_debug_ARM7(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
 
-#ifdef EXPERIMENTAL_WIFI
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return WIFI_read16(adr) ;
-#endif
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
@@ -3984,11 +3971,9 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
 	mmu_log_debug_ARM7(adr, "(read32) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
 
-#ifdef EXPERIMENTAL_WIFI
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
-#endif
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);

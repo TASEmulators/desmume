@@ -13,5 +13,8 @@
 //#define DEVELOPER //enables dev+ features
 //#define GDB_STUB //enables the gdb stub. for some reason this is separate from dev+ for now
 
+//#define EXPERIMENTAL_WIFI_COMM //enables experimental wifi communication features which do not actually work yet
+//basic wifi register emulation is still enabled, to at least make it seem like the wifi is working in an empty universe
+
 
 #endif //_USERCONFIG_H

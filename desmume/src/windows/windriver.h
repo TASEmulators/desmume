@@ -26,7 +26,7 @@
 #include "../common.h"
 #include "CWindow.h"
 
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 #include <pcap.h>
 #include <remote-ext.h> //uh?
 
