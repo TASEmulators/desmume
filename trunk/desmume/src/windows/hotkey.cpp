@@ -238,7 +238,7 @@ void HK_DecreaseVolume(int, bool justPressed)
 void HK_Reset(int, bool justPressed) {ResetGame();}
 
 void HK_RecordAVI(int, bool justPressed) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
-void HK_RecordWAV(int, bool justPressed) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(); }
+void HK_RecordWAV(int, bool justPressed) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(WAVMODE_CORE); }
 
 void HK_ToggleFrame(int, bool justPressed) {CommonSettings.hud.FrameCounterDisplay ^= true;}
 void HK_ToggleFPS(int, bool justPressed) {CommonSettings.hud.FpsDisplay ^= true;}

@@ -318,7 +318,7 @@ void SPU_struct::ShutUp()
 
 static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
 {
-	chan->sampinc = (((double)ARM7_CLOCK) / (44100 * 2)) / (double)(0x10000 - chan->timer);
+	chan->sampinc = (((double)ARM7_CLOCK) / (DESMUME_SAMPLE_RATE * 2)) / (double)(0x10000 - chan->timer);
 }
 
 void SPU_struct::KeyOn(int channel)
@@ -870,7 +870,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 static const int dots_per_clock = 6;
 static const int dots_per_hline = 355;
 static const double time_per_hline = (double)1.0/((double)ARM7_CLOCK/dots_per_clock/dots_per_hline);
-static const double samples_per_hline = time_per_hline * 44100;
+static const double samples_per_hline = time_per_hline * DESMUME_SAMPLE_RATE;
 int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
@@ -910,6 +910,7 @@ void SPU_Emulate_user(bool mix)
 			samplesOutput = (SPU_MixAudio(mix,SPU_user,audiosize), audiosize);
 
 		SNDCore->UpdateAudio(SPU_user->outbuf, samplesOutput);
+		WAV_WavSoundUpdate(SPU_user->outbuf, samplesOutput, WAVMODE_USER);
 	}
 }
 
@@ -940,7 +941,7 @@ SoundInterface_struct SNDDummy = {
 int SNDDummyInit(int buffersize) { return 0; }
 void SNDDummyDeInit() {}
 void SNDDummyUpdateAudio(s16 *buffer, u32 num_samples) { }
-u32 SNDDummyGetAudioSpace() { return 740; }
+u32 SNDDummyGetAudioSpace() { return DESMUME_SAMPLE_RATE/60 + 5; }
 void SNDDummyMuteAudio() {}
 void SNDDummyUnMuteAudio() {}
 void SNDDummySetVolume(int volume) {}
@@ -992,7 +993,7 @@ bool WavWriter::open(const std::string & fname)
 	fmt.chunk.size = 16; // we'll fix this at the end
 	fmt.compress = 1; // PCM
 	fmt.numchan = 2; // Stereo
-	fmt.rate = 44100;
+	fmt.rate = DESMUME_SAMPLE_RATE;
 	fmt.bitspersample = 16;
 	fmt.blockalign = fmt.bitspersample / 8 * fmt.numchan;
 	fmt.bytespersec = fmt.rate * fmt.blockalign;
@@ -1044,26 +1045,33 @@ void WAV_End()
 	wavWriter.close();
 }
 
-bool WAV_Begin(const char* fname)
+bool WAV_Begin(const char* fname, WAVMode mode)
 {
 	WAV_End();
 
 	if(!wavWriter.open(fname))
 		return false;
 
+	if(mode == WAVMODE_ANY)
+		mode = WAVMODE_CORE;
+	wavWriter.mode = mode;
+
 	driver->USR_InfoMessage("WAV recording started.");
 
 	return true;
 }
 
-bool WAV_IsRecording()
+bool WAV_IsRecording(WAVMode mode)
 {
-	return wavWriter.isRecording();
+	if(wavWriter.mode == mode || mode == WAVMODE_ANY)
+		return wavWriter.isRecording();
+	return false;
 }
 
-void WAV_WavSoundUpdate(void* soundData, int numSamples)
+void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode)
 {
-	wavWriter.update(soundData, numSamples);
+	if(wavWriter.mode == mode || mode == WAVMODE_ANY)
+		wavWriter.update(soundData, numSamples);
 }
 
 

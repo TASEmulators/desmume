@@ -140,6 +140,10 @@ void wxTest() {
 
 #endif
 
+#ifndef PUBLIC_RELEASE
+#define DEVELOPER_MENU_ITEMS
+#endif
+
 const int kGapNone = 0;
 const int kGapBorder = 5;
 const int kGapNDS = 64; // extremely tilted (but some games seem to use this value)
@@ -269,7 +273,7 @@ extern bool userTouchesScreen;
 /*__declspec(thread)*/ bool inFrameBoundary = false;
 
 static int sndcoretype=SNDCORE_DIRECTX;
-static int sndbuffersize=735*8;
+static int sndbuffersize=DESMUME_SAMPLE_RATE*8/60;
 static int snd_synchmode=0;
 static int snd_synchmethod=0;
 int sndvolume=100;
@@ -1481,7 +1485,7 @@ static void StepRunLoop_Core()
 		Lock lock;
 		NDS_exec<false>();
 		//SPU_Emulate_user();
-		win_sound_samplecounter = 735;
+		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
 	inFrameBoundary = true;
 	DRV_AviVideoUpdate((u16*)GPU_screen);
@@ -1843,6 +1847,12 @@ int MenuInit()
 	GetRecentRoms();
 
 	ResetSaveStateTimes();
+
+#ifndef DEVELOPER_MENU_ITEMS
+	// menu items that are only useful for desmume developers (maybe)
+	HMENU fileMenu = GetSubMenu(mainMenu, 0);
+	DeleteMenu(fileMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
+#endif
 
 	return 1;
 }
@@ -2450,7 +2460,7 @@ int _main()
 #endif
 	LOG("Init sound core\n");
 	sndcoretype = GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
-	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize2", 735*8, IniName);
+	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize2", DESMUME_SAMPLE_RATE*8/60, IniName);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
 
 	EnterCriticalSection(&win_execute_sync);
@@ -3019,7 +3029,7 @@ void WavEnd()
 }
 
 //Shows an Open File menu and starts recording an WAV
-void WavRecordTo()
+void WavRecordTo(int wavmode)
 {
 	NDS_Pause();
 
@@ -3061,7 +3071,7 @@ void WavRecordTo()
 
 	if(GetSaveFileName(&ofn))
 	{
-		WAV_Begin(szChoice);
+		WAV_Begin(szChoice, (WAVMode)wavmode);
 	}
 
 	NDS_UnPause();
@@ -3462,6 +3472,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_LIST,       romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
 			//DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
+#ifdef DEVELOPER_MENU_ITEMS
+			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDUSERSPUWAV,    romloaded && !WAV_IsRecording());
+#endif
 
 			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
@@ -4098,8 +4111,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			if (WAV_IsRecording())
 				WAV_End();
 			else
-				WavRecordTo();
+				WavRecordTo(WAVMODE_CORE);
 			break;
+#ifdef DEVELOPER_MENU_ITEMS
+		case IDM_FILE_RECORDUSERSPUWAV:
+			if (WAV_IsRecording())
+				WAV_End();
+			else
+				WavRecordTo(WAVMODE_USER);
+			break;
+#endif
 		case IDC_STATEREWINDING:
 			if(staterewindingenabled) staterewindingenabled = false;
 			else staterewindingenabled = true;
