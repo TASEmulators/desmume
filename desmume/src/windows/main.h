@@ -16,7 +16,7 @@ void FrameAdvance(bool state);
 void ResetGame();	//Resets game (for the menu item & hotkey
 void AviRecordTo();
 void AviEnd();
-void WavRecordTo();
+void WavRecordTo(int wavmode);
 void WavEnd();
 
 extern bool frameCounterDisplay;

@@ -694,6 +694,7 @@
 #define IDM_SCREENSEP_COLORWHITE        40023
 #define IDM_SCREENSEP_COLORGRAY         40024
 #define IDM_SCREENSEP_COLORBLACK        40025
+#define IDM_FILE_RECORDUSERSPUWAV       40026
 #define ID_FILE_RECENTROM               40034
 #define IDC_SAVETYPE7                   40037
 #define IDM_DEFSIZE                     40038

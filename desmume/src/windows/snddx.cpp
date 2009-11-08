@@ -132,7 +132,7 @@ int SNDDXInit(int buffersize)
 	memset(&wfx, 0, sizeof(wfx));
 	wfx.wFormatTag = WAVE_FORMAT_PCM;
 	wfx.nChannels = 2;
-	wfx.nSamplesPerSec = 44100;
+	wfx.nSamplesPerSec = DESMUME_SAMPLE_RATE;
 	wfx.wBitsPerSample = 16;
 	wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
 	wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
@@ -248,12 +248,12 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 		}
 		else
 		{
-			samplecounter = win_sound_samplecounter -= 245;
-			samplecounter_fakecontribution += 245;
+			samplecounter = win_sound_samplecounter -= DESMUME_SAMPLE_RATE/180;
+			samplecounter_fakecontribution += DESMUME_SAMPLE_RATE/180;
 		}
 	}
 
-	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
+	bool silence = (samplecounter<-DESMUME_SAMPLE_RATE*15/60); //behind by more than a quarter second -> silence
 
 	if(insilence)
 	{
@@ -266,6 +266,12 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 	{
 		if(silence)
 		{
+#ifndef PUBLIC_RELEASE
+			extern volatile bool execute;
+			if(execute)
+				printf("snddx: emergency cleared sound buffer. (%d, %d, %d)\n", win_sound_samplecounter, num_samples, samplecounter_fakecontribution);
+#endif
+			samplecounter_fakecontribution = 0;
 			insilence = true;
 			SNDDXClearAudioBuffer();
 			return;
@@ -299,13 +305,18 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
 void SNDDXClearAudioBuffer()
 {
+	// we shouldn't need to provide 2 buffers since it's 1 contiguous range
+	// but maybe newer directsound implementations have issues
 	LPVOID buffer1;
-	DWORD buffer1_size;
-	HRESULT hr = lpDSB2->Lock(0, 0, &buffer1, &buffer1_size, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+	LPVOID buffer2;
+	DWORD buffer1_size, buffer2_size;
+	HRESULT hr = lpDSB2->Lock(0, 0, &buffer1, &buffer1_size, &buffer2, &buffer2_size, DSBLOCK_ENTIREBUFFER);
 	if(FAILED(hr))
 		return;
 	memset(buffer1, 0, buffer1_size);
-	lpDSB2->Unlock(buffer1, buffer1_size, NULL, 0);
+	if(buffer2)
+		memset(buffer2, 0, buffer2_size);
+	lpDSB2->Unlock(buffer1, buffer1_size, buffer2, buffer2_size);
 }
 
 

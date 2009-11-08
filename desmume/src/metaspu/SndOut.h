@@ -80,8 +80,11 @@ static const int SndOutVolumeShift = 0;
 // is too problematic. :)
 //this is hardcoded differently for metaspu
 //edit - zeromus 23-oct-2009
-//static const int SampleRate = 48000;
-static const int SampleRate = 44100;
+////static const int SampleRate = 48000;
+//static const int SampleRate = 44100;
+//edit - nitsuja: make it use the global sample rate define
+#include "..\SPU.h"
+static const int SampleRate = DESMUME_SAMPLE_RATE;
 
 extern int FindOutputModuleById( const wchar_t* omodid );
 
