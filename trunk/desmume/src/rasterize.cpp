@@ -863,14 +863,6 @@ public:
 			if(failure) 
 				return;
 			
-			if(left.Height<0 || right.Height<0)
-			{
-				//i have NO IDEA WHY THIS HAPPENS
-				//but i think it was corrupting things in a bad way
-				//which was only revealed by the multicored rasterizer
-				return;
-			}
-
 			runscanlines<SLI>(&left,&right);
 
 			//if we ran out of an edge, step to the next one
