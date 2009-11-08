@@ -29,6 +29,7 @@ public:
 	
 	typedef void * (*TWork)(void *);
 
+	// initialize task runner
 	void start(bool spinlock);
 
 	//execute some work
@@ -36,6 +37,9 @@ public:
 
 	//wait for the work to complete
 	void* finish();
+
+	// does the opposite of start
+	void shutdown();
 
 	class Impl;
 	Impl *impl;

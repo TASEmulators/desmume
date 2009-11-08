@@ -32,6 +32,7 @@ public:
 	bool spinlock;
 
 	void start(bool spinlock);
+	void shutdown();
 
 	//execute some work
 	void execute(const TWork &work, void* param);
@@ -60,14 +61,7 @@ static void* killTask(void* task)
 
 Task::Impl::~Impl()
 {
-	if(!bStarted) return;
-
-	execute(killTask,this);
-	finish();
-
-	CloseHandle(incomingWork);
-	CloseHandle(workDone);
-	CloseHandle(hThread);
+	shutdown();
 }
 
 Task::Impl::Impl()
@@ -76,6 +70,9 @@ Task::Impl::Impl()
 	, bWorkDone(true)
 	, bKill(false)
 	, bStarted(false)
+	, incomingWork(INVALID_HANDLE_VALUE)
+	, workDone(INVALID_HANDLE_VALUE)
+	, hThread(INVALID_HANDLE_VALUE)
 {
 }
 
@@ -112,6 +109,22 @@ void Task::Impl::start(bool spinlock)
 	workDone = CreateEvent(NULL,FALSE,FALSE,NULL);
 	hThread = CreateThread(NULL,0,Task::Impl::s_taskProc,(void*)this, 0, NULL);
 }
+void Task::Impl::shutdown()
+{
+	if(!bStarted) return;
+	bStarted = false;
+
+	execute(killTask,this);
+	finish();
+
+	CloseHandle(incomingWork);
+	CloseHandle(workDone);
+	CloseHandle(hThread);
+
+	incomingWork = INVALID_HANDLE_VALUE;
+	workDone = INVALID_HANDLE_VALUE;
+	hThread = INVALID_HANDLE_VALUE;
+}
 
 void Task::Impl::execute(const TWork &work, void* param) 
 {
@@ -144,6 +157,7 @@ public:
 	~Impl() {}
 
 	void start(bool spinlock) {}
+	void shutdown() {}
 
 	void* ret;
 	void execute(const TWork &work, void* param) { ret = work(param); }
@@ -168,7 +182,8 @@ public:
 	pthread_t thread;
 	static void* s_taskProc(void *ptr);
 	void taskProc();
-	void init();
+	void start();
+	void shutdown();
 
 	//the work function that shall be executed
 	TWork work;
@@ -243,10 +258,17 @@ void Task::Impl::taskProc()
 	}
 }
 
-void Task::Impl::init()
+void Task::Impl::start()
 {
 	pthread_create( &thread, NULL, Task::Impl::s_taskProc, (void*)this );     
 	initialized = true;
+}
+void Task::Impl::shutdown()
+{
+	if(!initialized)
+		return;
+	// pthread_join or something, NYI, this code is all disabled anyway at the time of this writing
+	initialized = false;
 }
 
 void Task::Impl::execute(const TWork &work, void* param) 
@@ -271,6 +293,7 @@ void* Task::Impl::finish()
 #endif
 
 void Task::start(bool spinlock) { impl->start(spinlock); }
+void Task::shutdown() { impl->shutdown(); }
 Task::Task() : impl(new Task::Impl()) {}
 Task::~Task() { delete impl; }
 void Task::execute(const TWork &work, void* param) { impl->execute(work,param); }
