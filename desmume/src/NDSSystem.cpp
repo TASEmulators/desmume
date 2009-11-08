@@ -1490,23 +1490,25 @@ public:
 	void OmitSkip(bool force, bool forceEvenIfCapturing=false)
 	{
 		nextSkip = false;
-		if((force && !lastCapturing) || forceEvenIfCapturing)
+		if((force && consecutiveNonCaptures > 30) || forceEvenIfCapturing)
 		{
 			SkipCur2DFrame = false;
 			SkipCur3DFrame = false;
 			SkipNext2DFrame = false;
+			if(forceEvenIfCapturing)
+				consecutiveNonCaptures = 0;
 		}
 	}
 	void Advance()
 	{
 		bool capturing = (MainScreen.gpu->dispCapCnt.enabled || (MainScreen.gpu->dispCapCnt.val & 0x80000000));
 
-		if(capturing && !lastCapturing)
+		if(capturing && consecutiveNonCaptures > 30)
 		{
 			// the worst-looking graphics corruption problems from frameskip
 			// are the result of skipping the capture on first frame it turns on.
 			// so we do this to handle the capture immediately,
-			// despite the risk of 1 frame of 2d/3d mismatch.
+			// despite the risk of 1 frame of 2d/3d mismatch or wrong screen display.
 			SkipNext2DFrame = false;
 			nextSkip = false;
 		}
@@ -1520,7 +1522,10 @@ public:
 			nextSkip = false;
 		}
 
-		lastCapturing = capturing;
+		if(capturing)
+			consecutiveNonCaptures = 0;
+		else if(!(consecutiveNonCaptures > 9000)) // arbitrary cap to avoid eventual wrap
+			consecutiveNonCaptures++;
 		lastLastOffset = lastOffset;
 		lastOffset = MainScreen.offset;
 		lastSkip = skipped;
@@ -1548,7 +1553,7 @@ public:
 		SkipCur2DFrame = false;
 		SkipCur3DFrame = false;
 		SkipNext2DFrame = false;
-		lastCapturing = false;
+		consecutiveNonCaptures = 0;
 	}
 private:
 	bool nextSkip;
@@ -1556,7 +1561,7 @@ private:
 	bool lastSkip;
 	int lastOffset;
 	int lastLastOffset;
-	bool lastCapturing;
+	int consecutiveNonCaptures;
 	bool SkipCur2DFrame;
 	bool SkipCur3DFrame;
 	bool SkipNext2DFrame;
@@ -2252,6 +2257,9 @@ bool nds_loadstate(EMUFILE* is, int size)
 	temp &= sequencer.load(is, version);
 	if(version <= 1 || !temp) return temp;
 	temp &= loadUserInput(is, version);
+
+	frameSkipper.OmitSkip(true, true);
+
 	return temp;
 }
 
