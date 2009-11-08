@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include "types.h"
 
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 
 #define HAVE_REMOTE
 #define WPCAP
@@ -509,7 +509,7 @@ typedef struct
 } wifimac_t ;
 
 // desmume host communication
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 typedef struct pcap pcap_t;
 extern pcap_t *wifi_bridge;
 #endif
