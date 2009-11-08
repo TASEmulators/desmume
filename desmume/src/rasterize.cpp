@@ -939,6 +939,7 @@ public:
 static Task rasterizerUnitTask[4];
 static RasterizerUnit rasterizerUnit[4];
 static int rasterizerCores;
+static bool rasterizerUnitTasksInited = false;
 
 static void* execRasterizerUnit(void* arg)
 {
@@ -949,9 +950,10 @@ static void* execRasterizerUnit(void* arg)
 
 static char SoftRastInit(void)
 {
-	static bool tables_generated = false;
-	if(!tables_generated)
+	if(!rasterizerUnitTasksInited)
 	{
+		rasterizerUnitTasksInited = true;
+
 		if(CommonSettings.num_cores>=4)
 		{
 			rasterizerCores = 4;
@@ -981,8 +983,11 @@ static char SoftRastInit(void)
 			rasterizerUnit[0].SLI_MASK = 0;
 			rasterizerUnit[0].SLI_VALUE = 0;
 		}
+	}
 
-
+	static bool tables_generated = false;
+	if(!tables_generated)
+	{
 		tables_generated = true;
 
 		clipper.clippedPolys = clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
@@ -1023,6 +1028,9 @@ static void SoftRastReset() {
 
 static void SoftRastClose()
 {
+	for(int i=0;i<4;i++)
+		rasterizerUnitTask[i].shutdown();
+	rasterizerUnitTasksInited = false;
 }
 
 static void SoftRastVramReconfigureSignal() {

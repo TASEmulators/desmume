@@ -2549,7 +2549,13 @@ int _main()
 	}
 
 	MainWindow->Show(SW_NORMAL);
+
+	
+	//------DO EVERYTHING
 	run();
+
+
+	//------SHUTDOWN
 
 	KillDisplay();
 
@@ -2559,11 +2565,11 @@ int _main()
 
 	NDS_DeInit();
 
-	//------SHUTDOWN
-
 #ifdef DEBUG
 	//LogStop();
 #endif
+
+	timeKillEvent(hKeyInputTimer);
 
 	GInfo_DeInit();
 
