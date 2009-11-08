@@ -2136,7 +2136,7 @@ switch(msg)
 
 bool S9xGetState (WORD KeyIdent)
 {
-	if(KeyIdent == 0 || KeyIdent == VK_ESCAPE) // if it's the 'disabled' key, it's never pressed
+	if(KeyIdent == 0 || KeyIdent == 0xFF || KeyIdent == VK_ESCAPE) // if it's the 'disabled' key, it's never pressed
 		return true;
 
 	//TODO - option for background game keys

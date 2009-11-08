@@ -337,7 +337,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 //};
 
 static int KeyInDelayMSec = 0;
-static int KeyInRepeatMSec = 16;
+static int KeyInRepeatMSec = 8;
 
 template<bool JOYSTICK>
 static void InputTimer()
@@ -375,13 +375,19 @@ static void InputTimer()
 				joyState[z].lastPressedTime = currentTime;
 				if (keyRepeat && joyState[z].repeatCount < 0xffff)
 					joyState[z].repeatCount++;
-				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
+				int mods = GetInitialModifiers(i);
+				WPARAM wparam = i | (mods << 8);
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, wparam,(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
 			}
 		}
 		else {
 			joyState[z].repeatCount = 1;
 			if (joyState[z].wasPressed)
-				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, (WPARAM)(i),(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
+			{
+				int mods = GetInitialModifiers(i);
+				WPARAM wparam = i | (mods << 8);
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, wparam,(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
+			}
 		}
 		joyState[z].wasPressed = active;
 	}
@@ -3231,17 +3237,36 @@ void CloseRom()
 	NDS_Reset();
 }
 
+int GetInitialModifiers(int key) // async version for input thread
+{
+	if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
+		return CUSTKEY_NONE_MASK;
+
+	int modifiers = 0;
+	if(GetAsyncKeyState(VK_MENU   )&0x8000) modifiers |= CUSTKEY_ALT_MASK;
+	if(GetAsyncKeyState(VK_CONTROL)&0x8000) modifiers |= CUSTKEY_CTRL_MASK;
+	if(GetAsyncKeyState(VK_SHIFT  )&0x8000) modifiers |= CUSTKEY_SHIFT_MASK;
+	if(!modifiers)                          modifiers |= CUSTKEY_NONE_MASK;
+	return modifiers;
+}
 int GetModifiers(int key)
 {
-	int modifiers = 0;
-
 	if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
 		return 0;
 
-	if(GetKeyState(VK_MENU   )&0x8000) modifiers |= CUSTKEY_ALT_MASK;
-	if(GetKeyState(VK_CONTROL)&0x8000) modifiers |= CUSTKEY_CTRL_MASK;
-	if(GetKeyState(VK_SHIFT  )&0x8000) modifiers |= CUSTKEY_SHIFT_MASK;
+	int bakedModifiers = (key >> 8) & (CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK | CUSTKEY_NONE_MASK);
+	if(bakedModifiers)
+		return bakedModifiers & ~CUSTKEY_NONE_MASK;
+
+	int modifiers = 0;
+	if(GetKeyState(VK_MENU   )&0x80) modifiers |= CUSTKEY_ALT_MASK;
+	if(GetKeyState(VK_CONTROL)&0x80) modifiers |= CUSTKEY_CTRL_MASK;
+	if(GetKeyState(VK_SHIFT  )&0x80) modifiers |= CUSTKEY_SHIFT_MASK;
 	return modifiers;
+}
+int PurgeModifiers(int key)
+{
+	return key & ~((CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK | CUSTKEY_NONE_MASK) << 8);
 }
 
 int HandleKeyUp(WPARAM wParam, LPARAM lParam, int modifiers)
@@ -3277,10 +3302,10 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 			key++;
 		}
 
-		// don't pull down menu if alt is a hotkey or the menu isn't there, unless no game is running
-		//if(!Settings.StopEmulation && ((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey || GetMenu (GUI.hWnd) == NULL) && !GetAsyncKeyState(VK_F4)))
-		/*if(((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey || GetMenu (MainWindow->getHWnd()) == NULL) && !GetAsyncKeyState(VK_F4)))
-			return 0;*/
+		// don't pull down menu with Alt or F10 if it is a hotkey, unless no game is running
+		if(romloaded && ((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey) && !GetAsyncKeyState(VK_F4)))
+			return 0;
+
 		return 1;
 	}
 
@@ -3819,6 +3844,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_CUSTKEYDOWN:
 		{
 			int modifiers = GetModifiers(wParam);
+			wParam = PurgeModifiers(wParam);
 			if(!HandleKeyMessage(wParam,lParam, modifiers))
 				return 0;
 			break;
@@ -3831,6 +3857,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_CUSTKEYUP:
 		{
 			int modifiers = GetModifiers(wParam);
+			wParam = PurgeModifiers(wParam);
 			HandleKeyUp(wParam, lParam, modifiers);
 		}
 		break;
