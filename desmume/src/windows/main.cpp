@@ -2467,7 +2467,10 @@ int _main()
 
 	snd_synchmode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
 	snd_synchmethod = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);
-	SPU_SetSynchMode(snd_synchmode,snd_synchmethod);
+	{
+		Lock lock;
+		SPU_SetSynchMode(snd_synchmode,snd_synchmethod);
+	}
 
 	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", FALSE, IniName);
 	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", FALSE, IniName);
