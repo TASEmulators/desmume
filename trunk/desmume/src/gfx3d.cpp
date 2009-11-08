@@ -2223,7 +2223,7 @@ SFORMAT SF_GFX3D[]={
 void gfx3d_savestate(EMUFILE* os)
 {
 	//version
-	write32le(3,os);
+	write32le(4,os);
 
 	//dump the render lists
 	OSWRITE(vertlist->count);
@@ -2241,6 +2241,10 @@ void gfx3d_savestate(EMUFILE* os)
 	}
 
 	gxf_hardware.savestate(os);
+
+	// evidently these need to be saved because we don't cache the matrix that would need to be used to properly regenerate them
+	OSWRITE(cacheLightDirection);
+	OSWRITE(cacheHalfVector);
 }
 
 bool gfx3d_loadstate(EMUFILE* is, int size)
@@ -2290,6 +2294,12 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	gfx3d.vertlist = &vertlists[listTwiddle^1];
 	gfx3d.polylist->count=0;
 	gfx3d.vertlist->count=0;
+
+	if(version >= 4)
+	{
+		OSREAD(cacheLightDirection);
+		OSREAD(cacheHalfVector);
+	}
 
 	return true;
 }
