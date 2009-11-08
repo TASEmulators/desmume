@@ -292,6 +292,7 @@ int frameskiprate=0;
 int lastskiprate=0;
 int emu_paused = 0;
 bool frameAdvance = false;
+bool continuousframeAdvancing = false;
 bool staterewindingenabled = false;
 
 unsigned short windowSize = 0;
@@ -1576,7 +1577,7 @@ static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1
 		mainLoopData.framestoskip = 0; // otherwise switches to lower frameskip rates will lag behind
 	}
 
-	if(!mainLoopData.skipnextframe || forceFrameSkip == 0)
+	if(!mainLoopData.skipnextframe || forceFrameSkip == 0 || frameAdvance || (continuousframeAdvancing && !FastForward))
 	{
 		mainLoopData.framesskipped = 0;
 
@@ -1647,13 +1648,13 @@ static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1
 		emu_halt();
 		SPU_Pause(1);
 	}
-	ServiceDisplayThreadInvocations();
-
 	if(execute && emu_paused && !frameAdvance)
 	{
 		// safety net against running out of control in case this ever happens.
 		Unpause(); Pause();
 	}
+
+	ServiceDisplayThreadInvocations();
 }
 
 DWORD WINAPI run()
@@ -3292,10 +3293,11 @@ void TogglePause()
 }
 
 
-bool first;
+bool first = true;
 
 void FrameAdvance(bool state)
 {
+	continuousframeAdvancing = false;
 	if(!romloaded)
 		return;
 	if(state) {
@@ -3310,11 +3312,17 @@ void FrameAdvance(bool state)
 				execute = TRUE;
 				frameAdvance = true;
 			}
+			// this seems to reduce the average recovery time (by about 1 frame)
+			// when switching from frameskipping to frameadvance.
+			// we could pass 1 in to force it to happen even earlier
+			// but that can result in 2d and 3d looking out of sync for 1 frame.
+			NDS_OmitFrameSkip();
 		} else {
 			// frame advance button still held down,
 			// start or continue executing at normal speed
 			Unpause();
 			frameAdvance = false;
+			continuousframeAdvancing = true;
 		}
 	} else {
 		// frame advance button released
