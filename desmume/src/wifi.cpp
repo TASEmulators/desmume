@@ -235,13 +235,13 @@ struct WifiComInterface
 	void (*usTrigger)();
 };
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 bool SoftAP_Init();
 void SoftAP_DeInit();
 void SoftAP_Reset();
 void SoftAP_SendPacket(u8 *packet, u32 len);
 void SoftAP_usTrigger();
 
-#ifdef EXPERIMENTAL_WIFI_COMM
 WifiComInterface SoftAP = {
 	SoftAP_Init,
 	SoftAP_DeInit,
@@ -249,7 +249,6 @@ WifiComInterface SoftAP = {
 	SoftAP_SendPacket,
 	SoftAP_usTrigger
 };
-#endif
 
 bool Adhoc_Init();
 void Adhoc_DeInit();
@@ -264,10 +263,11 @@ WifiComInterface Adhoc = {
         Adhoc_SendPacket,
         Adhoc_usTrigger
 };
+#endif
 
 WifiComInterface* wifiComs[] = {
-	&Adhoc,
 #ifdef EXPERIMENTAL_WIFI_COMM
+	&Adhoc,
 	&SoftAP,
 #endif
 	NULL
