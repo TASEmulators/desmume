@@ -1479,14 +1479,98 @@ int NDS_LoadFirmware(const char *filename)
 
 void NDS_Sleep() { nds.sleeping = TRUE; }
 
-bool SkipCur2DFrame = false, SkipNext2DFrame = false;
-bool SkipCur3DFrame = false;
+
+class FrameSkipper
+{
+public:
+	void RequestSkip()
+	{
+		nextSkip = true;
+	}
+	void OmitSkip(bool force, bool forceEvenIfCapturing=false)
+	{
+		nextSkip = false;
+		if((force && !lastCapturing) || forceEvenIfCapturing)
+		{
+			SkipCur2DFrame = false;
+			SkipCur3DFrame = false;
+			SkipNext2DFrame = false;
+		}
+	}
+	void Advance()
+	{
+		bool capturing = (MainScreen.gpu->dispCapCnt.enabled || (MainScreen.gpu->dispCapCnt.val & 0x80000000));
+
+		if(capturing && !lastCapturing)
+		{
+			// the worst-looking graphics corruption problems from frameskip
+			// are the result of skipping the capture on first frame it turns on.
+			// so we do this to handle the capture immediately,
+			// despite the risk of 1 frame of 2d/3d mismatch.
+			SkipNext2DFrame = false;
+			nextSkip = false;
+		}
+		else if(lastOffset != MainScreen.offset && lastSkip && !skipped)
+		{
+			// if we're switching from not skipping to skipping
+			// and the screens are also switching around this frame,
+			// go for 1 extra frame without skipping.
+			// this avoids the scenario where we only draw one of the two screens
+			// when a game is switching screens every frame.
+			nextSkip = false;
+		}
+
+		lastCapturing = capturing;
+		lastLastOffset = lastOffset;
+		lastOffset = MainScreen.offset;
+		lastSkip = skipped;
+		skipped = nextSkip;
+		nextSkip = false;
+
+		SkipCur2DFrame = SkipNext2DFrame;
+		SkipCur3DFrame = skipped;
+		SkipNext2DFrame = skipped;
+	}
+	FORCEINLINE bool ShouldSkip2D()
+	{
+		return SkipCur2DFrame;
+	}
+	FORCEINLINE bool ShouldSkip3D()
+	{
+		return SkipCur3DFrame;
+	}
+	FrameSkipper()
+	{
+		nextSkip = false;
+		skipped = false;
+		lastSkip = false;
+		lastOffset = 0;
+		SkipCur2DFrame = false;
+		SkipCur3DFrame = false;
+		SkipNext2DFrame = false;
+		lastCapturing = false;
+	}
+private:
+	bool nextSkip;
+	bool skipped;
+	bool lastSkip;
+	int lastOffset;
+	int lastLastOffset;
+	bool lastCapturing;
+	bool SkipCur2DFrame;
+	bool SkipCur3DFrame;
+	bool SkipNext2DFrame;
+};
+static FrameSkipper frameSkipper;
+
 
 void NDS_SkipNextFrame() {
 	if (!driver->AVI_IsRecording()) {
-		SkipNext2DFrame = true;
-		SkipCur3DFrame = true;
+		frameSkipper.RequestSkip();
 	}
+}
+void NDS_OmitFrameSkip(int force) {
+	frameSkipper.OmitSkip(force > 0, force > 1);
 }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
@@ -1912,8 +1996,8 @@ static void execHardware_hblank()
 		//this should be safe since games cannot do anything timing dependent until this next
 		//scanline begins, anyway (as this scanline was in the middle of drawing)
 		//taskSubGpu.execute(renderSubScreen,NULL);
-		GPU_RenderLine(&MainScreen, nds.VCount, SkipCur2DFrame);
-		GPU_RenderLine(&SubScreen, nds.VCount, SkipCur2DFrame);
+		GPU_RenderLine(&MainScreen, nds.VCount, frameSkipper.ShouldSkip2D());
+		GPU_RenderLine(&SubScreen, nds.VCount, frameSkipper.ShouldSkip2D());
 		//taskSubGpu.finish();
 
 		//trigger hblank dmas
@@ -1932,6 +2016,9 @@ static void execHardware_hstart_vblankEnd()
 	//turn off vblank status bit
 	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFE);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
+
+	//some emulation housekeeping
+	frameSkipper.Advance();
 }
 
 static void execHardware_hstart_vblankStart()
@@ -1948,13 +2035,6 @@ static void execHardware_hstart_vblankStart()
 
 	//some emulation housekeeping
 	gfx3d_VBlankSignal();
-	if(SkipNext2DFrame)
-	{
-		SkipCur2DFrame = true;
-		SkipNext2DFrame = false;
-	}
-	else
-		SkipCur2DFrame = false;
 
 	//trigger vblank dmas
 	triggerDma(EDMAMode_VBlank);
@@ -2035,8 +2115,7 @@ static void execHardware_hstart()
 	//end of 3d vblank
 	if(nds.VCount==214)
 	{
-		gfx3d_VBlankEndSignal(SkipCur3DFrame);
-		SkipCur3DFrame = false;
+		gfx3d_VBlankEndSignal(frameSkipper.ShouldSkip3D());
 	}
 }
 
