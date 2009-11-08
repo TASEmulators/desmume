@@ -681,7 +681,7 @@ bool WIFI_Init()
 
 	WIFI_resetRF(&wifiMac.RF) ;
 	wifi_netEnabled = false;
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 	if(driver->WIFI_Host_InitSystem())
 	{
 		wifi_netEnabled = true;
@@ -693,17 +693,19 @@ bool WIFI_Init()
 	wifiMac.rfStatus = 0x0000;
 	wifiMac.rfPins = 0x0004;
 
+	if((u32)CommonSettings.wifi.mode >= ARRAY_SIZE(wifiComs))
+		CommonSettings.wifi.mode = 0;
 	wifiCom = wifiComs[CommonSettings.wifi.mode];
-#ifdef EXPERIMENTAL_WIFI
-	wifiCom->Init();
-#endif
+	if(wifiCom)
+		wifiCom->Init();
 
 	return true;
 }
 
 void WIFI_DeInit()
 {
-	wifiCom->DeInit();
+	if(wifiCom)
+		wifiCom->DeInit();
 }
 
 void WIFI_Reset()
@@ -712,7 +714,7 @@ void WIFI_Reset()
 
 	WIFI_resetRF(&wifiMac.RF) ;
 	wifi_netEnabled = false;
-#ifdef EXPERIMENTAL_WIFI
+#ifdef EXPERIMENTAL_WIFI_COMM
 	if(driver->WIFI_Host_InitSystem())
 	{
 		wifi_netEnabled = true;
@@ -724,10 +726,11 @@ void WIFI_Reset()
 	wifiMac.rfStatus = 0x0000;
 	wifiMac.rfPins = 0x0004;
 
+	if((u32)CommonSettings.wifi.mode >= ARRAY_SIZE(wifiComs))
+		CommonSettings.wifi.mode = 0;
 	wifiCom = wifiComs[CommonSettings.wifi.mode];
-#ifdef EXPERIMENTAL_WIFI
-	wifiCom->Reset();
-#endif
+	if(wifiCom)
+		wifiCom->Reset();
 }
 
 
@@ -948,7 +951,8 @@ static void WIFI_ExtraTXStart()
 
 		// Note: Extra transfers trigger two TX start interrupts according to GBATek
 		WIFI_triggerIRQ(WIFI_IRQ_TXSTART);
-		wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
+		if(wifiCom)
+			wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
 		WIFI_triggerIRQ(WIFI_IRQ_UNK);
 
 		if (BIT13(wifiMac.TXStatCnt))
@@ -1015,7 +1019,8 @@ static void WIFI_BeaconTXStart()
 		*(u32*)&wifiMac.circularBuffer[address + 6 + ((txLen-4) >> 1)] = crc32;
 
 		WIFI_triggerIRQ(WIFI_IRQ_TXSTART);
-		wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
+		if(wifiCom)
+			wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[address+6], txLen);
 
 		if (BIT15(wifiMac.TXStatCnt))
 		{
@@ -1672,7 +1677,8 @@ void WIFI_usTrigger()
 				wifiMac.txSlotBusy[slot] = 0;
 				wifiMac.TXSlot[slot] &= 0x7FFF;
 
-				wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[wifiMac.txSlotAddr[slot]+6], wifiMac.txSlotLen[slot]);
+				if(wifiCom)
+					wifiCom->SendPacket((u8*)&wifiMac.circularBuffer[wifiMac.txSlotAddr[slot]+6], wifiMac.txSlotLen[slot]);
 
 				while((wifiMac.txSlotBusy[wifiMac.txCurSlot] == 0) && (wifiMac.txCurSlot > 0))
 					wifiMac.txCurSlot--;
@@ -1695,7 +1701,8 @@ void WIFI_usTrigger()
 		}
 	}
 
-	wifiCom->usTrigger();
+	if(wifiCom)
+		wifiCom->usTrigger();
 }
 
 /*******************************************************************************
