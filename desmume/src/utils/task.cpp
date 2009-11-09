@@ -103,6 +103,9 @@ void Task::Impl::taskProc()
 
 void Task::Impl::start(bool spinlock)
 {
+	bIncomingWork = false;
+	bWorkDone = true;
+	bKill = false;
 	bStarted = true;
 	this->spinlock = spinlock;
 	incomingWork = CreateEvent(NULL,FALSE,FALSE,NULL);
