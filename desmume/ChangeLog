@@ -1,42 +1,48 @@
-0.9.4 -> ??? (r2437-r???)
+0.9.4 -> 0.9.5 (r2437-r30??)
 
-??? introduces an entirely rewritten main emulation loop. 
+0.9.5 introduces an entirely rewritten main emulation loop
 This totally changes the timing, and totally breaks old savestates.
 
-Highlights:
-  * win32: lua engine, path configuration, 7z dearchiving support
-  * rewritten main emulation loop and improve general cpu timing
+Assorted Highlights:
   * synchronous SPU mode to fix	streaming sounds
+  * win32: lua engine, path configuration, 7z dearchiving support
   
 General/Core:
- bug: rewrite main emulation loop, fixes a lot of timings
+ bug: rewrite main emulation loop and cycle accounting, fixes a lot of timings
  bug: add more detailed timing emulation, removes much bogus lag
- bug: rewrite DMA and gxfifo to fix a bunch of bugs
- bug: fix cflash directory support for non-windows
+ bug: rewrite DMA,gxfifo,gxstat; fix many games and no more alternate flush mode
+ bug: fix cflash directory support for non-windows and sector-writing
  bug: fix freeze in cart irq
  bug: correctly emulate dma to/from tcm
  bug: fix in thumb LSR carryflag
+ bug: fix thumb BX PC switch to arm state
  bug: fix adpcm looping, remove adpcm caching (no longer necessary)
- bug: fixes to swi 3,4,5, and arm7#8
+ bug: fixes to swi 3,4,5,8,0x10
  bug: fixes to exmemstat and ipc sync registers
+ bug: support new backup commands
+ bug: improve bootup bios/firmware emulation steps
  enh: gbaslot: add guitar grip, gbagame flash support, expansion memory pak
  enh: add more powerful antigrain-based drawing library and rewrite OSD system
  enh: ideas-style debugging prints
  enh: most optimizations now SSE instead of SSE2
+ enh: more improvements to frameskipping and frame advance/speed controls
 
 Graphics:
- bug: fixing of obj blending, bmp obj rendering, and some obj window cases
  bug: fix backdrop blending with garbage
  bug: fix 256B granularity sprite addressing for sub gpu
+ bug: fix obj blending, bmp obj rendering, and some obj window cases
  bug: fix 128-wide captures
+ bug: fix 16color BG line buffer overflow
  bug: fix color overflow in capture blending
  bug: fix disp fifo capture
  bug: fix simultaneous vram display and capture via same bank
  bug: fix 3d overflow acknowledge registers
  bug: change 3d cores to use 18bit color
- bug: fix boxtest, move clipper to main graphics engine
+ bug: fix boxtest (addition overflow!), move clipper to main graphics engine
  bug: fix failure in some cases of polygon clipping
- bug: fix disp3cnt emulations
+ bug: fix disp3dcnt emulations
+ bug: fixes to poly sorting
+ bug: fix ogl renderer wireframe support	
  bug: swrast: fix backface culling of nonconvex polys
  bug: swrast: add clear image and scroll emulation
  bug: swrast: add fog emulation
@@ -47,15 +53,25 @@ Graphics:
 Windows:
  bug: fix support for multiple gamepads and gamepad hotkeys
  bug: fix mic noise code and load wav instead of raw; effective in more cases
- enh: improve map view tool to support more modes
+ bug: fix for several sticky and broken hotkeys, and f10 hotkeys
+ bug: fixes in ram search, add DTCM and ITCM searching, ...
+ bug: fix sound settings vol slider
+ bug: recover from missing window -32000 problem
+ bug: don't turn on mic unless mic input is enabled
+ enh: setup x64 build type and fix associated bugs
+ enh: side-by-side and single screen view modes, many fixes to window resizing
+ enh: choose any gap size by dragging bottom window edge (must be enabled)
+ enh: choose a gap color
+ enh: import/export no$GBA savefiles directly
  enh: added 2x resizing filters (hq2x, hq2xs, lq2x, lq2xs, 2xsai, supereagle)
-                                (scanlines, nearest, bilinear)
- enh: soundview can now mute channels
+                                (scanlines, nearest2x, bilinear)
  enh: multicore optimization for filters, rotation, OSD
+ enh: soundview can now mute channels
  enh: new ioregview
  enh: common commandline system, many arguments shared with linux
- enh: setup x64 build type
- enh: choose any gap size by dragging bottom window edge (must be enabled)
+ enh: improve map view tool to support more modes
+ enh: add "FORCE AS CURRENT" recovery tool for mis-sized savefiles
+ enh: add some kind of very small savestate rewinding buffer
  
 Linux:
  enh: alsa microphone support
