@@ -882,7 +882,7 @@ void SPU_Emulate_core()
 	bool mix = driver->AVI_IsRecording() || driver->WAV_IsRecording() || synchronize;
 
 	SPU_MixAudio(mix,SPU_core,spu_core_samples);
-	if(synchronize)
+	if(synchronize && SPU_user)
 		synchronizer->enqueue_samples(SPU_core->outbuf, spu_core_samples);
 }
 
