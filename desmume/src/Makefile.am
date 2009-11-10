@@ -8,34 +8,37 @@ SUBDIRS = . gdbstub $(UI_DIR)
 else
 SUBDIRS = . $(UI_DIR)
 endif
-DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade windows
+DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
-        armcpu.cpp armcpu.h ARM9.h \
-        arm_instructions.cpp arm_instructions.h \
-        bios.cpp bios.h bits.h cp15.cpp cp15.h \
+	armcpu.cpp armcpu.h \
+	arm_instructions.cpp arm_instructions.h \
+	agg2d.h agg2d.inl \
+	aggdraw.cpp aggdraw.h \
+	bios.cpp bios.h bits.h cp15.cpp cp15.h \
 	commandline.h commandline.cpp \
 	common.cpp common.h \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
-	dscard.h emufile.h emufile.cpp fat.h FIFO.cpp FIFO.h \
+	emufile.h emufile.cpp fat.h FIFO.cpp FIFO.h \
 	GPU.cpp GPU.h \
 	GPU_osd.cpp GPU_osd.h \
-        mem.h mc.cpp mc.h \
+	mem.h mc.cpp mc.h \
 	path.h \
 	readwrite.cpp readwrite.h \
 	wifi.cpp wifi.h \
-        MMU.cpp MMU.h MMU_timing.h NDSSystem.cpp NDSSystem.h registers.h \
+	mic.h \
+	MMU.cpp MMU.h MMU_timing.h NDSSystem.cpp NDSSystem.h registers.h \
 	OGLRender.cpp OGLRender.h \
 	ROMReader.cpp ROMReader.h \
 	render3D.cpp render3D.h \
 	rtc.cpp rtc.h \
-        saves.cpp saves.h \
-        SPU.cpp SPU.h \
+	saves.cpp saves.h \
+	SPU.cpp SPU.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
 	texcache.cpp texcache.h \
-        thumb_instructions.cpp thumb_instructions.h types.h \
+	thumb_instructions.cpp thumb_instructions.h types.h \
 	shaders.h \
 	movie.cpp movie.h \
 	PACKED.h PACKED_END.h \
@@ -44,11 +47,11 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	utils/task.cpp utils/task.h \
-        addons.cpp addons.h \
+	addons.cpp addons.h \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp fs.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
-	metaspu/metaspu.cpp \
+	metaspu/metaspu.cpp metaspu/metaspu.h \
 	version.h
 
 if HAVE_ALSA
