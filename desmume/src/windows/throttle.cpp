@@ -1,5 +1,6 @@
-//THIS SPEED THROTTLE IS TAKEN FROM FCEUX.
+//THIS SPEED THROTTLE WAS TAKEN FROM FCEUX.
 //Copyright (C) 2002 Xodnizel
+//(the code might look quite different by now, though...)
 
 #include "../common.h"
 #include "../types.h"
@@ -8,9 +9,10 @@
 #include <windows.h>
 
 int FastForward=0;
-static u64 tmethod,tfreq;
+static u64 tmethod,tfreq,afsfreq;
 static const u64 core_desiredfps = 3920763; //59.8261
 static u64 desiredfps = core_desiredfps;
+static float desiredspf = 65536.0f / core_desiredfps;
 static int desiredFpsScalerIndex = 2;
 static u64 desiredFpsScalers [] = {
 	1024,
@@ -32,6 +34,7 @@ void IncreaseSpeed(void) {
 		desiredFpsScalerIndex--;
 	u64 desiredFpsScaler = desiredFpsScalers[desiredFpsScalerIndex];
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
+	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling increased to: %f\n",desiredFpsScaler/256.0);
 }
 
@@ -41,6 +44,7 @@ void DecreaseSpeed(void) {
 		desiredFpsScalerIndex++;
 	u64 desiredFpsScaler = desiredFpsScalers[desiredFpsScalerIndex];
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
+	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling decreased to: %f\n",desiredFpsScaler/256.0);
 }
 
@@ -49,78 +53,150 @@ static u64 GetCurTime(void)
 	if(tmethod)
 	{
 		u64 tmp;
-
-		/* Practically, LARGE_INTEGER and u64 differ only by signness and name. */
 		QueryPerformanceCounter((LARGE_INTEGER*)&tmp);
-
-		return(tmp);
+		return tmp;
 	}
 	else
-		return((u64)GetTickCount());
-
+	{
+		return (u64)GetTickCount();
+	}
 }
 
 void InitSpeedThrottle(void)
 {
 	tmethod=0;
-	if(QueryPerformanceFrequency((LARGE_INTEGER*)&tfreq))
-	{
+	if(QueryPerformanceFrequency((LARGE_INTEGER*)&afsfreq))
 		tmethod=1;
-	}
 	else
-		tfreq=1000;
-	tfreq<<=16;    /* Adjustment for fps returned from FCEUI_GetDesiredFPS(). */
+		afsfreq=1000;
+	tfreq = afsfreq << 16;
 }
 
-static bool behind=false;
-bool ThrottleIsBehind() {
-	return behind;
-}
-
-int SpeedThrottle(void)
+void SpeedThrottle()
 {
-	static u64 ttime,ltime;
-
-	if(FastForward)
-		return (0);
-
-	behind = false;
+	static u64 ttime, ltime;
 
 waiter:
+	if(FastForward)
+		return;
 
-	ttime=GetCurTime();
+	ttime = GetCurTime();
 
-
-	if( (ttime-ltime) < (tfreq/desiredfps) )
+	if((ttime - ltime) < (tfreq / desiredfps))
 	{
 		u64 sleepy;
-		sleepy=(tfreq/desiredfps)-(ttime-ltime);  
-		sleepy*=1000;
-		if(tfreq>=65536)
-			sleepy/=tfreq>>16;
+		sleepy = (tfreq / desiredfps) - (ttime - ltime);  
+		sleepy *= 1000;
+		if(tfreq >= 65536)
+			sleepy /= afsfreq;
 		else
-			sleepy=0;
-		if(sleepy>100)
-		{
-			// block for a max of 100ms to
-			// keep the gui responsive
-			Sleep(100);
-			return 1;
-		}
-		Sleep((DWORD)sleepy);
+			sleepy = 0;
+		if(sleepy >= 10)
+			Sleep((DWORD)(sleepy / 2)); // reduce it further beacuse Sleep usually sleeps for more than the amount we tell it to
+		else if(sleepy > 0) // spin for <1 millisecond waits
+			SwitchToThread(); // limit to other threads on the same CPU core for other short waits
 		goto waiter;
 	}
 	if( (ttime-ltime) >= (tfreq*4/desiredfps))
 		ltime=ttime;
 	else
-	{
 		ltime+=tfreq/desiredfps;
-
-		if( (ttime-ltime) >= (tfreq/desiredfps) ) // Oops, we're behind!
-		{
-			behind = true;
-			return 0;
-		}
-	}
-	return(0);
 }
+
+
+// auto frameskip
+
+static u64 beginticks=0, endticks=0, diffticks=0;
+static std::vector<float> diffs;
+static const int SLIDING_WINDOW_SIZE = 32;
+static float fSkipFrames = 0;
+static float fSkipFramesError = 0;
+static int minSkip = 0, maxSkip = 9;
+
+static float maxDiff(const std::vector<float>& diffs)
+{
+	float maximum = 0;
+	for(int i = 0; i < diffs.size(); i++)
+		if(maximum < diffs[i])
+			maximum = diffs[i];
+	return maximum;
+}
+
+static void addDiff(float diff, std::vector<float>& diffs)
+{
+	// limit to about double the maximum, to reduce the impact of the occasional huge diffs
+	// (using the last or average entry is a bad idea because some games do their own frameskipping)
+	float maximum = maxDiff(diffs);
+	if(!diffs.empty() && diff > maximum * 2 + 0.0001f)
+		diff = maximum * 2 + 0.0001f;
+
+	diffs.push_back(diff);
+
+	if(diffs.size() > SLIDING_WINDOW_SIZE)
+		diffs.erase(diffs.begin());
+}
+
+static float average(const std::vector<float>& diffs)
+{
+	float avg = 0;
+	for(int i = 0; i < diffs.size(); i++)
+		avg += diffs[i];
+	if(diffs.size())
+		avg /= diffs.size();
+	return avg;
+}
+
+void AutoFrameSkip_NextFrame()
+{
+	endticks = GetCurTime();
+	diffticks = endticks - beginticks;
+
+	float diff = (float)diffticks / afsfreq;
+	addDiff(diff,diffs);
+
+	float avg = average(diffs);
+	float overby = (avg - (desiredspf + (fSkipFrames + 2) * 0.000025f)) * 8;
+	// try to avoid taking too long to catch up to the game running fast again
+	if(overby < 0 && fSkipFrames > 4)
+		overby = -fSkipFrames / 4;
+	else if(avg < desiredspf)
+		overby *= 8;
+
+	fSkipFrames += overby;
+	if(fSkipFrames < minSkip-1)
+		fSkipFrames = minSkip-1;
+	if(fSkipFrames > maxSkip+1)
+		fSkipFrames = maxSkip+1;
+
+	//printf("avg = %g, overby = %g, skipframes = %g\n", avg, overby, fSkipFrames);
+
+	beginticks = GetCurTime();
+}
+
+int AutoFrameSkip_GetSkipAmount(int min, int max)
+{
+	int rv = (int)fSkipFrames;
+	fSkipFramesError += fSkipFrames - rv;
+	while(fSkipFramesError >= 1.0f)
+	{
+		fSkipFramesError -= 1.0f;
+		rv++;
+	}
+	while(fSkipFramesError <= -1.0f)
+	{
+		fSkipFramesError += 1.0f;
+		rv--;
+	}
+	if(rv < min)
+		rv = min;
+	if(rv > max)
+		rv = max;
+	minSkip = min;
+	maxSkip = max;
+
+	//printf("SKIPPED: %d\n", rv);
+
+	return rv;
+}
+
+
