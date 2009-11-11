@@ -1463,8 +1463,6 @@ static struct MainLoopData
 	u64 lastticks;
 	u64 curticks;
 	u64 diffticks;
-	u32 framecount;
-	u64 onesecondticks;
 	u64 fpsticks;
 	HWND hwnd;
 	int fps;
@@ -1618,40 +1616,26 @@ static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1
 		if (mainLoopData.framestoskip < 1)
 			mainLoopData.framestoskip += ffSkipRate;
 	}
-	else if((autoframeskipenab || FrameLimit) && allowSleep)
+	else if((/*autoframeskipenab ||*/ FrameLimit) && allowSleep)
 	{
-		while(SpeedThrottle())
-		{
-		}
+		SpeedThrottle();
 	}
 
 	if (autoframeskipenab)
 	{
-		mainLoopData.framecount++;
-
-		if (mainLoopData.framecount > 60)
+		if(!frameAdvance && !continuousframeAdvancing)
 		{
-			mainLoopData.framecount = 1;
-			mainLoopData.onesecondticks = 0;
+			AutoFrameSkip_NextFrame();
+			if (mainLoopData.framestoskip < 1)
+				mainLoopData.framestoskip += AutoFrameSkip_GetSkipAmount(0,skipRate);
 		}
-
-		QueryPerformanceCounter((LARGE_INTEGER *)&mainLoopData.curticks);
-		mainLoopData.diffticks = mainLoopData.curticks - mainLoopData.lastticks;
-
-		if(ThrottleIsBehind() && (mainLoopData.framesskipped < ffSkipRate))
-		{
-			mainLoopData.skipnextframe = 1;
-			mainLoopData.framestoskip = 1;
-		}
-
-		mainLoopData.onesecondticks += mainLoopData.diffticks;
-		mainLoopData.lastticks = mainLoopData.curticks;
 	}
 	else
 	{
 		if (mainLoopData.framestoskip < 1)
 			mainLoopData.framestoskip += skipRate;
 	}
+
 	if (frameAdvance && allowSleep)
 	{
 		frameAdvance = false;
@@ -2424,17 +2408,20 @@ int _main()
 
 	GetPrivateProfileString("Video", "FrameSkip", "0", text, 80, IniName);
 
-	if (strcmp(text, "AUTO") == 0)
+	if(!strncmp(text, "AUTO", 4))
 	{
 		autoframeskipenab=1;
-		frameskiprate=0;
-		MainWindow->checkMenu(IDC_FRAMESKIPAUTO, true);
+		if(!text[4])
+			frameskiprate=9;
+		else
+			frameskiprate=atoi(text+4);
+		if(frameskiprate < 1)
+			frameskiprate = 9;
 	}
 	else
 	{
 		autoframeskipenab=0;
 		frameskiprate=atoi(text);
-		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, true);
 	}
 
 	if (KeyInDelayMSec == 0) {
@@ -3573,8 +3560,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit);
 			
 			//Frame Skip
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO, ((autoframeskipenab)));
-
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO1, (autoframeskipenab && frameskiprate==1) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO2, (autoframeskipenab && frameskiprate==2) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO3, (autoframeskipenab && frameskiprate==3) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO4, (autoframeskipenab && frameskiprate==4) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO5, (autoframeskipenab && frameskiprate==5) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO6, (autoframeskipenab && frameskiprate==6) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO7, (autoframeskipenab && frameskiprate==7) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO8, (autoframeskipenab && frameskiprate==8) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO9, (autoframeskipenab && frameskiprate==9) );
 			MainWindow->checkMenu(IDC_FRAMESKIP0, (!autoframeskipenab && frameskiprate==0) );
 			MainWindow->checkMenu(IDC_FRAMESKIP1, (!autoframeskipenab && frameskiprate==1) );
 			MainWindow->checkMenu(IDC_FRAMESKIP2, (!autoframeskipenab && frameskiprate==2) );
@@ -4740,7 +4734,23 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				if(tpaused) NDS_UnPause();
 			}
 			return 0;
-		case IDC_FRAMESKIPAUTO:
+		case IDC_FRAMESKIPAUTO1:
+		case IDC_FRAMESKIPAUTO2:
+		case IDC_FRAMESKIPAUTO3:
+		case IDC_FRAMESKIPAUTO4:
+		case IDC_FRAMESKIPAUTO5:
+		case IDC_FRAMESKIPAUTO6:
+		case IDC_FRAMESKIPAUTO7:
+		case IDC_FRAMESKIPAUTO8:
+		case IDC_FRAMESKIPAUTO9:
+			{
+				char text[80];
+				autoframeskipenab = 1;
+				frameskiprate = LOWORD(wParam) - (IDC_FRAMESKIPAUTO1 - 1);
+				sprintf(text, "AUTO%d", frameskiprate);
+				WritePrivateProfileString("Video", "FrameSkip", text, IniName);
+			}
+			return 0;
 		case IDC_FRAMESKIP0:
 		case IDC_FRAMESKIP1:
 		case IDC_FRAMESKIP2:
@@ -4752,19 +4762,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_FRAMESKIP8:
 		case IDC_FRAMESKIP9:
 			{
-				if(LOWORD(wParam) == IDC_FRAMESKIPAUTO)
-				{
-					autoframeskipenab = 1;
-					WritePrivateProfileString("Video", "FrameSkip", "AUTO", IniName);
-				}
-				else
-				{
-					char text[80];
-					autoframeskipenab = 0;
-					frameskiprate = LOWORD(wParam) - IDC_FRAMESKIP0;
-					sprintf(text, "%d", frameskiprate);
-					WritePrivateProfileString("Video", "FrameSkip", text, IniName);
-				}
+				char text[80];
+				autoframeskipenab = 0;
+				frameskiprate = LOWORD(wParam) - IDC_FRAMESKIP0;
+				sprintf(text, "%d", frameskiprate);
+				WritePrivateProfileString("Video", "FrameSkip", text, IniName);
 			}
 			return 0;
 		case IDC_NEW_LUA_SCRIPT:
