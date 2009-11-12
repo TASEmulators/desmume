@@ -216,49 +216,40 @@ TEMPLATE static u32 WaitByLoop()
 
 TEMPLATE u32 intrWaitARM()
 {
-     u32 intrFlagAdr = 0;
-     u32 intr = 0;
-     u32 intrFlag = 0;
+	u32 intrFlagAdr = 0;
+	u32 intr = 0;
+	u32 intrFlag = 0;
 
-	 BOOL noDiscard = ((cpu->R[0] == 0) && (PROCNUM == ARMCPU_ARM7));
-     
-     //emu_halt();
-     if(PROCNUM == ARMCPU_ARM7) 
-     {
-      intrFlagAdr = 0x380FFF8;
-     } else {
-      intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
-     }
-	 intr = _MMU_read32<PROCNUM>(intrFlagAdr);
-	 
-     intrFlag = (cpu->R[1] & intr);
-	 //INFO("ARM%c: wait for IRQ r0=0x%02X, r1=0x%08X - 0x%08X (flag 0x%08X)\n", PROCNUM?'7':'9', cpu->R[0], cpu->R[1], intr, intrFlag);
-	 if(!noDiscard)
-		intrFlag &= cpu->newIrqFlags;
+	//BOOL noDiscard = ((cpu->R[0] == 0) && (PROCNUM == ARMCPU_ARM7));
 
-	 // http://nocash.emubase.de/gbatek.htm#bioshaltfunctions
-	 // SWI 04h (GBA/NDS7/NDS9) - IntrWait
-	 // ... The function forcefully sets IME=1. ...
-	 _MMU_write32<PROCNUM>(0x04000208, 1);
+	if(PROCNUM == ARMCPU_ARM7)
+		intrFlagAdr = 0x380FFF8;
+	else
+		intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
 
-	 if(intrFlag)
-     {
-          // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
-          // on efface son(les) occurence(s).
-          intr ^= intrFlag;
-		  cpu->newIrqFlags ^= intrFlag;
-          _MMU_write32<PROCNUM>(intrFlagAdr, intr);
-          //cpu->switchMode(oldmode[cpu->proc_ID]);
-          return 1;
-     }
-     
-	 u32 instructAddr = cpu->instruct_adr;
-     cpu->R[15] = instructAddr;
-     cpu->next_instruction = instructAddr;
-     cpu->waitIRQ = 1;
-     //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
+	intr = _MMU_read32<PROCNUM>(intrFlagAdr);
+	intrFlag = (cpu->R[1] & intr);
 
-     return 1;
+	//INFO("ARM%c: wait for IRQ r0=0x%02X, r1=0x%08X - 0x%08X (flag 0x%08X)\n", PROCNUM?'7':'9', cpu->R[0], cpu->R[1], intr, intrFlag);
+	//if(!noDiscard)
+	//	intrFlag &= cpu->newIrqFlags;
+
+	_MMU_write32<PROCNUM>(0x04000208, 1);			// set IME=1
+
+	if (intrFlag)
+	{
+		intr ^= intrFlag;
+		if (intr)
+			_MMU_write32<PROCNUM>(intrFlagAdr, intr);
+		return wait4IRQ<PROCNUM>();
+	}
+	u32 instructAddr = cpu->instruct_adr;
+	cpu->R[15] = instructAddr;
+	cpu->next_instruction = instructAddr;
+	cpu->waitIRQ = 1;
+	cpu->wirq = 1;
+	
+	return 1;
 }
 
 TEMPLATE static u32 waitVBlankARM()
