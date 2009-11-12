@@ -212,6 +212,8 @@ TEMPLATE static u32 WaitByLoop()
 	return cpu->R[0] * 4;
 }
 
+//u32 oldmode[2];
+
 TEMPLATE static u32 wait4IRQ()
 {
      //execute= FALSE;
@@ -236,8 +238,6 @@ TEMPLATE static u32 wait4IRQ()
      //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
      return 1;
 }
-
-//u32 oldmode[2];
 
 TEMPLATE u32 intrWaitARM()
 {
