@@ -867,7 +867,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 //emulates one hline of the cpu core.
 //this will produce a variable number of samples, calculated to keep a 44100hz output
 //in sync with the emulator framerate
-static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 60.0f) / 263.0f;
+static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
 int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
@@ -879,7 +879,7 @@ void SPU_Emulate_core()
 	bool mix = driver->AVI_IsRecording() || driver->WAV_IsRecording() || synchronize;
 
 	SPU_MixAudio(mix,SPU_core,spu_core_samples);
-	if(synchronize && SPU_user)
+	if(synchronize)
 		synchronizer->enqueue_samples(SPU_core->outbuf, spu_core_samples);
 }
 
