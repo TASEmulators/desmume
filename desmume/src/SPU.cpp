@@ -867,10 +867,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 //emulates one hline of the cpu core.
 //this will produce a variable number of samples, calculated to keep a 44100hz output
 //in sync with the emulator framerate
-static const int dots_per_clock = 6;
-static const int dots_per_hline = 355;
-static const double time_per_hline = (double)1.0/((double)ARM7_CLOCK/dots_per_clock/dots_per_hline);
-static const double samples_per_hline = time_per_hline * DESMUME_SAMPLE_RATE;
+static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 60.0f) / 263.0f;
 int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
