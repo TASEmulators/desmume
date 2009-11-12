@@ -175,8 +175,6 @@ typedef struct armcpu_t
 	BOOL wIRQ;
 	BOOL wirq;
 
-	u32 newIrqFlags;
-
 	u32 (* *swi_tab)();
 
 #ifdef GDB_STUB
@@ -224,8 +222,6 @@ static INLINE void setIF(int PROCNUM, u32 flag)
 {
 	MMU.reg_IF[PROCNUM] |= flag;
 
-	if(ARMPROC.waitIRQ)
-		ARMPROC.newIrqFlags |= flag;
 	extern void NDS_Reschedule();
 	NDS_Reschedule();
 }
