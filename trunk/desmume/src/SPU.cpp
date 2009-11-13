@@ -378,7 +378,6 @@ void SPU_struct::KeyOn(int channel)
 		}
 	}
 	
-	thischan.status = CHANSTAT_PLAY;
 	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 }
 
@@ -407,6 +406,7 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 			thischan.format = (val >> 5) & 0x3;
 			if((!thischan.status) && BIT7(val))
 				KeyOn((addr >> 4) & 0xF);
+			thischan.status = BIT7(val);
 			break;
 		}
 	}
@@ -446,7 +446,8 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		thischan.repeat = (val >> 11) & 0x3;
 		thischan.format = (val >> 13) & 0x3;
 		if((!thischan.status) && BIT15(val))
-				KeyOn((addr >> 4) & 0xF);
+			KeyOn((addr >> 4) & 0xF);
+		thischan.status = BIT15(val);
 		break;
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
@@ -497,7 +498,8 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 		thischan.repeat = (val >> 27) & 0x3;
 		thischan.format = (val >> 29) & 0x3;
 		if((!thischan.status) && BIT31(val))
-				KeyOn((addr >> 4) & 0xF);
+			KeyOn((addr >> 4) & 0xF);
+		thischan.status = BIT31(val);
 		break;
 	case 0x4:
 		thischan.addr = val & 0x7FFFFFF;
