@@ -409,6 +409,7 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 
 static u32 CP15wait4IRQ(armcpu_t *cpu)
 {
+	u32 instructAddr = cpu->instruct_adr;
 	/* on the first call, wirq is not set */
 	if(cpu->wirq)
 	{
@@ -420,16 +421,16 @@ static u32 CP15wait4IRQ(armcpu_t *cpu)
 			return 1;   /* return execution */
 		}
 		/* otherwise, repeat this instruction */
-		cpu->R[15] = cpu->instruct_adr;
-		cpu->next_instruction = cpu->R[15];
+		cpu->R[15] = instructAddr;
+		cpu->next_instruction = instructAddr;
 		return 1;
 	}
 	/* first run, set us into waiting state */
 	cpu->waitIRQ = 1;
 	cpu->wirq = 1;
 	/* and set next instruction to repeat this */
-	cpu->R[15] = cpu->instruct_adr;
-	cpu->next_instruction = cpu->R[15];
+	cpu->R[15] = instructAddr;
+	cpu->next_instruction = instructAddr;
 	/* CHECKME: IME shouldn't be modified (?) */
 	MMU.reg_IME[0] = 1;
 	return 1;

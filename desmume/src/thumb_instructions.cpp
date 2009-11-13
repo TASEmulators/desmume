@@ -882,37 +882,52 @@ TEMPLATE static  u32 FASTCALL OP_STMIA_THUMB(const u32 i)
 {
 	u32 adr = cpu->R[REG_NUM(i, 8)];
 	u32 c = 0, j;
+	u32 erList = 1; //Empty Register List
 
-	 if (BIT_N(i, REG_NUM(i, 8)))
-		 printf("STMIA with Rb in Rlist\n");
+	if (BIT_N(i, REG_NUM(i, 8)))
+		printf("STMIA with Rb in Rlist\n");
 
 	for(j = 0; j<8; ++j)
+	{
 		if(BIT_N(i, j))
 		{
 			WRITE32(cpu->mem_if->data, adr, cpu->R[j]);
 			c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(adr);
 			adr += 4;
+			erList = 0; //Register List isnt empty
 		}
+	}
+
+	if (erList)
+		 printf("STMIA with Empty Rlist\n");
+
 	cpu->R[REG_NUM(i, 8)] = adr;
-	 return MMU_aluMemCycles<PROCNUM>(2, c);
+	return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
 TEMPLATE static  u32 FASTCALL OP_LDMIA_THUMB(const u32 i)
 {
-	 u32 regIndex = REG_NUM(i, 8);
+	u32 regIndex = REG_NUM(i, 8);
 	u32 adr = cpu->R[regIndex];
 	u32 c = 0, j;
+	u32 erList = 1; //Empty Register List
 
-	 if (BIT_N(i, REG_NUM(i, 8)))
-		 printf("LDMIA with Rb in Rlist\n");
+	//if (BIT_N(i, regIndex))
+	//	 printf("LDMIA with Rb in Rlist at %08X\n",cpu->instruct_adr);
 
 	for(j = 0; j<8; ++j)
+	{
 		if(BIT_N(i, j))
 		{
 			cpu->R[j] = READ32(cpu->mem_if->data, adr);
 			c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr);
 			adr += 4;
+			erList = 0; //Register List isnt empty
 		}
+	}
+
+	if (erList)
+		 printf("LDMIA with Empty Rlist\n");
 
 	// Only over-write if not on the read list
 	if(!BIT_N(i, regIndex))
