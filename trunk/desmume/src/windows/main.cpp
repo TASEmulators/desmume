@@ -68,6 +68,7 @@
 #include "throttle.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
+#include "../cheatSystem.h"
 #include "Mmsystem.h"
 #include "../mic.h"
 #include "../common.h"
@@ -160,6 +161,7 @@ const unsigned int clearid = IDM_RECENT_RESERVED0;			// ID for the Clear recent 
 const unsigned int baseid = IDM_RECENT_RESERVED1;			//Base identifier for the recent ROMs items
 static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
 //--------------------------------------
+static bool _cheatsDisabled = false;
 
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
@@ -2144,6 +2146,8 @@ int _main()
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
 	CommonSettings.num_cores = systemInfo.dwNumberOfProcessors;
+
+	_cheatsDisabled = false;
 
 	char text[80];
 
@@ -4602,6 +4606,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_CHEATS_SEARCH:
 			CheatsSearchDialog(hwnd);
 			return 0;
+
+		case IDM_CHEATS_DISABLE:
+			_cheatsDisabled = !_cheatsDisabled;
+			cheatsDisable(_cheatsDisabled);
+			MainWindow->checkMenu(IDM_CHEATS_DISABLE, _cheatsDisabled );
+			return 0;
+
 		case IDM_RECORD_MOVIE:
 			MovieRecordTo();
 			return 0;
