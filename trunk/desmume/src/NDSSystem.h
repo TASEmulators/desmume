@@ -380,7 +380,6 @@ static INLINE void NDS_ARM9HBlankInt(void)
     {
          //MMU.reg_IF[0] |= 2;// & (MMU.reg_IME[0] << 1);// (MMU.reg_IE[0] & (1<<1));
 		setIF(0, 2);
-         NDS_ARM9.wIRQ = TRUE;
     }
 }
 
@@ -390,7 +389,6 @@ static INLINE void NDS_ARM7HBlankInt(void)
     {
         // MMU.reg_IF[1] |= 2;// & (MMU.reg_IME[1] << 1);// (MMU.reg_IE[1] & (1<<1));
 		setIF(1, 2);
-         NDS_ARM7.wIRQ = TRUE;
     }
 }
 
@@ -400,7 +398,6 @@ static INLINE void NDS_ARM9VBlankInt(void)
     {
         // MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
 		setIF(0, 1);
-         NDS_ARM9.wIRQ = TRUE;
               //emu_halt();
               /*logcount++;*/
     }
@@ -411,7 +408,6 @@ static INLINE void NDS_ARM7VBlankInt(void)
     if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8)
         // MMU.reg_IF[1] |= 1;// & (MMU.reg_IME[1]);// (MMU.reg_IE[1] & 1);
 		setIF(1, 1);
-         NDS_ARM7.wIRQ = TRUE;
          //emu_halt();
 }
 

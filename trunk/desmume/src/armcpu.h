@@ -172,7 +172,6 @@ typedef struct armcpu_t
 	u32 intVector;
 	u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5
 	BOOL waitIRQ;
-	BOOL wIRQ;
 	BOOL wirq;
 
 	u32 (* *swi_tab)();
@@ -235,7 +234,6 @@ static INLINE void NDS_makeARM9Int(u32 num)
         /* generate the interrupt if enabled */
 	if ((MMU.reg_IE[0] & (1 << num)) && MMU.reg_IME[0])
 	{
-		NDS_ARM9.wIRQ = TRUE;
 		NDS_ARM9.waitIRQ = FALSE;
 	}
 }
@@ -249,7 +247,6 @@ static INLINE void NDS_makeARM7Int(u32 num)
         /* generate the interrupt if enabled */
 	if ((MMU.reg_IE[1] & (1 << num)) && MMU.reg_IME[1])
 	{
-		NDS_ARM7.wIRQ = TRUE;
 		NDS_ARM7.waitIRQ = FALSE;
 	}
 }

@@ -1162,6 +1162,14 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 				card.transfer_count = 1;
 			}
 			break;
+		// Nand Write?
+		//case 0x8B:
+		case 0x85:
+			{
+				card.address = 0;
+				card.transfer_count = 0x80;
+			}
+			break;
 
 		// Data read
 		case 0x00:
@@ -1256,10 +1264,10 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 		default:
 			{
-				LOG("WRITE CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
+				INFO("WRITE CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
 					card.command[0], card.command[1], card.command[2], card.command[3],
 					card.command[4], card.command[5], card.command[6], card.command[7]);
-				LOG("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
+				INFO("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 
 				card.address = 0;
 				card.transfer_count = 0;
@@ -1305,9 +1313,15 @@ u32 MMU_readFromGC()
 			val = 0; //Unsure what to return here so return 0 for now
 			break;
 
-		// Nand Error?
+		// Nand Status?
 		case 0xD6:
-			val = 0x80; //0x80 == ok?
+			//0x80 == busy
+			val = 0x20; //0x20 == ready
+			break;
+
+		//case 0x8B:
+		case 0x85:
+			val = 0; //Unsure what to return here so return 0 for now
 			break;
 
 		// Data read
@@ -1318,7 +1332,7 @@ u32 MMU_readFromGC()
 				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
 				if((card.command[0] == 0xB7) && (card.address < 0x8000))
 				{
-					LOG("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
+					INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
 						card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 
 					card.address = (0x8000 + (card.address&0x1FF));
@@ -1394,10 +1408,10 @@ u32 MMU_readFromGC()
 		// --- Ninja SD commands end ---------------------------------
 
 		default:
-			LOG("READ CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
+			INFO("READ CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
 					card.command[0], card.command[1], card.command[2], card.command[3],
 					card.command[4], card.command[5], card.command[6], card.command[7]);
-			LOG("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
+			INFO("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 			break;
 
 	}
@@ -2616,7 +2630,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 						// raise an interrupt request to the CPU if needed
 						if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9])
 						{
-							NDS_ARM9.wIRQ = TRUE;
 							NDS_ARM9.waitIRQ = FALSE;
 						}
 					}
@@ -2632,7 +2645,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					// raise an interrupt request to the CPU if needed
 					if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
 					{
-						NDS_ARM9.wIRQ = TRUE;
 						NDS_ARM9.waitIRQ = FALSE;
 					}
 				}
@@ -2647,7 +2659,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					// raise an interrupt request to the CPU if needed
 					if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
 					{
-						NDS_ARM9.wIRQ = TRUE;
 						NDS_ARM9.waitIRQ = FALSE;
 					}
 				}
@@ -3024,7 +3035,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 						// raise an interrupt request to the CPU if needed
 						if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
 						{
-							NDS_ARM9.wIRQ = TRUE;
 							NDS_ARM9.waitIRQ = FALSE;
 						}
 					}
@@ -3041,7 +3051,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					// raise an interrupt request to the CPU if needed
 					if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
 					{
-						NDS_ARM9.wIRQ = TRUE;
 						NDS_ARM9.waitIRQ = FALSE;
 					}
 				}
@@ -3661,7 +3670,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						/* raise an interrupt request to the CPU if needed */
 						if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7])
 						{
-							NDS_ARM7.wIRQ = TRUE;
 							NDS_ARM7.waitIRQ = FALSE;
 						}
 					}
@@ -3677,7 +3685,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					/* raise an interrupt request to the CPU if needed */
 					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
 					{
-						NDS_ARM7.wIRQ = TRUE;
 						NDS_ARM7.waitIRQ = FALSE;
 					}
 				}
@@ -3693,7 +3700,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					/* raise an interrupt request to the CPU if needed */
 					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
 					{
-						NDS_ARM7.wIRQ = TRUE;
 						NDS_ARM7.waitIRQ = FALSE;
 					}
 				}
@@ -3800,7 +3806,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 					// raise an interrupt request to the CPU if needed
 					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
 					{
-						NDS_ARM7.wIRQ = TRUE;
 						NDS_ARM7.waitIRQ = FALSE;
 					}
 				}
@@ -3817,7 +3822,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 					/* raise an interrupt request to the CPU if needed */
 					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
 					{
-						NDS_ARM7.wIRQ = TRUE;
 						NDS_ARM7.waitIRQ = FALSE;
 					}
 				}

@@ -101,7 +101,7 @@ SFORMAT SF_ARM7[]={
 	{ "7int", 4, 1, &NDS_ARM7.intVector },
 	{ "7LDT", 1, 1, &NDS_ARM7.LDTBit },
 	{ "7Wai", 4, 1, &NDS_ARM7.waitIRQ },
-	{ "7wIR", 4, 1, &NDS_ARM7.wIRQ, },
+	//{ "7wIR", 4, 1, &NDS_ARM7.wIRQ, },
 	{ "7wir", 4, 1, &NDS_ARM7.wirq, },
 	{ 0 }
 };
@@ -138,7 +138,7 @@ SFORMAT SF_ARM9[]={
 	{ "9int", 4, 1, &NDS_ARM9.intVector},
 	{ "9LDT", 1, 1, &NDS_ARM9.LDTBit},
 	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
-	{ "9wIR", 4, 1, &NDS_ARM9.wIRQ},
+	//{ "9wIR", 4, 1, &NDS_ARM9.wIRQ},
 	{ "9wir", 4, 1, &NDS_ARM9.wirq},
 	{ 0 }
 };

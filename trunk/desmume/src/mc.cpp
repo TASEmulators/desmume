@@ -485,7 +485,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 				break;
 
 			default:
-				printf("COMMAND%c: Unhandled Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, NDS_ARM9.instruct_adr);
+				printf("COMMAND%c: Unhandled Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
 				break;
 		}
 	}
@@ -857,7 +857,7 @@ u32 BackupDevice::pad_up_size(u32 startSize)
 		printf("PANIC! Couldn't pad up save size. Refusing to pad.\n");
 		padSize = startSize;
 	}
-	return padSize;
+		return padSize;
 }
 
 void BackupDevice::lazy_flush()
