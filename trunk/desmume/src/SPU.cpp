@@ -329,20 +329,23 @@ void SPU_struct::KeyOn(int channel)
 
 	adjust_channel_timer(&thischan);
 
-	//   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
+	//LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X,"
+	//		"timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, 
+	//		chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
+
 	switch(thischan.format)
 	{
 	case 0: // 8-bit
 		thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 2;
 	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
-		thischan.sampcnt = 0;
+		thischan.sampcnt = -3;
 		break;
 	case 1: // 16-bit
 		thischan.buf16 = (s16 *)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 1;
 	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
-		thischan.sampcnt = 0;
+		thischan.sampcnt = -3;
 		break;
 	case 2: // ADPCM
 		{
@@ -351,7 +354,7 @@ void SPU_struct::KeyOn(int channel)
 			thischan.pcm16b_last = thischan.pcm16b;
 			thischan.index = thischan.buf8[2] & 0x7F;
 			thischan.lastsampcnt = 7;
-			thischan.sampcnt = 8;
+			thischan.sampcnt = -3;
 			thischan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
 		//	thischan.loopstart = thischan.loopstart << 3;
 		//	thischan.length = (thischan.length << 3) + thischan.loopstart;
@@ -359,6 +362,7 @@ void SPU_struct::KeyOn(int channel)
 		}
 	case 3: // PSG
 		{
+			thischan.sampcnt = -1;
 			thischan.x = 0x7FFF;
 			break;
 		}
@@ -374,6 +378,7 @@ void SPU_struct::KeyOn(int channel)
 		}
 	}
 	
+	thischan.status = CHANSTAT_PLAY;
 	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 }
 
@@ -400,8 +405,7 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 			thischan.waveduty = val & 0x7;
 			thischan.repeat = (val >> 3) & 0x3;
 			thischan.format = (val >> 5) & 0x3;
-			thischan.status = (val >> 7) & 0x1;
-			if(thischan.status)
+			if((!thischan.status) && BIT7(val))
 				KeyOn((addr >> 4) & 0xF);
 			break;
 		}
@@ -441,9 +445,8 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		thischan.waveduty = (val >> 8) & 0x7;
 		thischan.repeat = (val >> 11) & 0x3;
 		thischan.format = (val >> 13) & 0x3;
-		thischan.status = (val >> 15) & 0x1;
-		if (thischan.status)
-			KeyOn((addr >> 4) & 0xF);
+		if((!thischan.status) && BIT15(val))
+				KeyOn((addr >> 4) & 0xF);
 		break;
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
@@ -493,9 +496,8 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 		thischan.waveduty = (val >> 24) & 0x7;
 		thischan.repeat = (val >> 27) & 0x3;
 		thischan.format = (val >> 29) & 0x3;
-		thischan.status = (val >> 31) & 0x1;
-		if (thischan.status)
-			KeyOn((addr >> 4) & 0xF);
+		if((!thischan.status) && BIT31(val))
+				KeyOn((addr >> 4) & 0xF);
 		break;
 	case 0x4:
 		thischan.addr = val & 0x7FFFFFF;
@@ -551,6 +553,12 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 {
+	if (chan->sampcnt < 0)
+	{
+		*data = 0;
+		return;
+	}
+
 	u32 loc = sputrunc(chan->sampcnt);
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
@@ -567,25 +575,35 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8Bi
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
 {
-	const s16* const buf16 = chan->buf16;
-	const int shift = 1;
+	if (chan->sampcnt < 0)
+	{
+		*data = 0;
+		return;
+	}
+
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
 		u32 loc = sputrunc(chan->sampcnt);
-		s32 a = (s32)buf16[loc], b;
-		if(loc < (chan->totlength << shift) - 1)
+		s32 a = (s32)chan->buf16[loc], b;
+		if(loc < (chan->totlength << 1) - 1)
 		{
-			b = (s32)buf16[loc + 1];
+			b = (s32)chan->buf16[loc + 1];
 			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 		}
 		*data = a;
 	}
 	else
-		*data = (s32)buf16[sputrunc(chan->sampcnt)];
+		*data = (s32)chan->buf16[sputrunc(chan->sampcnt)];
 }
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
 {
+	if (chan->sampcnt < 8)
+	{
+		*data = 0;
+		return;
+	}
+
 	// No sense decoding, just return the last sample
 	if (chan->lastsampcnt != sputrunc(chan->sampcnt)){
 
@@ -619,6 +637,12 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void FetchADP
 
 static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 {
+	if (chan->sampcnt < 0)
+	{
+		*data = 0;
+		return;
+	}
+
 	if(chan->num < 8)
 	{
 		*data = 0;
