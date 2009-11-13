@@ -105,6 +105,8 @@ static u8 precalcindextbl[89][8];
 
 static const double ARM7_CLOCK = 33513982;
 
+static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
+
 static double samples = 0;
 
 template<typename T>
@@ -184,7 +186,7 @@ int SPU_Init(int coreid, int buffersize)
 	//for(int i=0;i<256;i++)
 	//	cos_lut[i] = cos(i/256.0*M_PI);
 
-	SPU_core = new SPU_struct(740);
+	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
 
 	//create adpcm decode accelerator lookups
@@ -867,7 +869,6 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 //emulates one hline of the cpu core.
 //this will produce a variable number of samples, calculated to keep a 44100hz output
 //in sync with the emulator framerate
-static const double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
 int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
