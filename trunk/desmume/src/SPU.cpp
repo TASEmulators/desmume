@@ -638,12 +638,12 @@ static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 		{
 			if(chan->x & 0x1)
 			{
-				chan->x = (chan->x >> 1);
+				chan->x = (chan->x >> 1) ^ 0x6000;
 				chan->psgnoise_last = -0x7FFF;
 			}
 			else
 			{
-				chan->x = ((chan->x >> 1) ^ 0x6000);
+				chan->x >>= 1;
 				chan->psgnoise_last = 0x7FFF;
 			}
 		}
