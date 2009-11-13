@@ -60,6 +60,7 @@ extern BOOL cheatsPop();
 extern void cheatsStackClear();
 extern void cheatsProcess();
 extern void cheatGetXXcodeString(CHEATS_LIST cheat, char *res_buf);
+extern void cheatsDisable(bool disable);
 
 // ==================================================== cheat search
 extern void cheatsSearchInit(u8 type, u8 size, u8 sign);
