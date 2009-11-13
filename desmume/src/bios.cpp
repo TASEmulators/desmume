@@ -211,7 +211,30 @@ TEMPLATE static u32 WaitByLoop()
 	return cpu->R[0] * 4;
 }
 
-//u32 oldmode[2];
+TEMPLATE static u32 wait4IRQ()
+{
+     //execute= FALSE;
+     u32 instructAddr = cpu->instruct_adr;
+     if(cpu->wirq)
+     {
+          if(!cpu->waitIRQ)
+          {
+               cpu->waitIRQ = 0;
+               cpu->wirq = 0;
+               //cpu->switchMode(oldmode[cpu->proc_ID]);
+               return 1;
+          }
+          cpu->R[15] = instructAddr;
+          cpu->next_instruction = instructAddr;
+          return 1;
+     }
+     cpu->waitIRQ = 1;
+     cpu->wirq = 1;
+     cpu->R[15] = instructAddr;
+     cpu->next_instruction = instructAddr;
+     //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
+     return 1;
+}
 
 TEMPLATE u32 intrWaitARM()
 {
@@ -256,31 +279,6 @@ TEMPLATE static u32 waitVBlankARM()
 	cpu->R[0] = 1;
 	cpu->R[1] = 1;
 	return intrWaitARM<PROCNUM>();
-}
-
-TEMPLATE static u32 wait4IRQ()
-{
-     //execute= FALSE;
-     u32 instructAddr = cpu->instruct_adr;
-     if(cpu->wirq)
-     {
-          if(!cpu->waitIRQ)
-          {
-               cpu->waitIRQ = 0;
-               cpu->wirq = 0;
-               //cpu->switchMode(oldmode[cpu->proc_ID]);
-               return 1;
-          }
-          cpu->R[15] = instructAddr;
-          cpu->next_instruction = instructAddr;
-          return 1;
-     }
-     cpu->waitIRQ = 1;
-     cpu->wirq = 1;
-     cpu->R[15] = instructAddr;
-     cpu->next_instruction = instructAddr;
-     //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
-     return 1;
 }
 
 TEMPLATE static u32 sleep()
