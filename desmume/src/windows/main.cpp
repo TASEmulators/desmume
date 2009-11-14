@@ -3142,33 +3142,18 @@ LRESULT OpenFile()
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hwnd;
 
-	//  To avoid #ifdef hell, we'll do a little trick, as lpstrFilter
-	// needs 0 terminated string, and standard string library, of course,
-	// can't help us with string creation: just put a '|' were a string end
-	// should be, and later transform prior assigning to the OPENFILENAME structure
-	strncpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|",512);
-#ifdef HAVE_LIBZZIP
-	strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz, *.7z, *.rar, *.bz2)|*.nds;*.ds.gba;*.zip;*.gz;*.7z;*.rar;*.bz2|",512);
-#endif			
+	ofn.lpstrFilter = 
+		"All Usable Files (*.nds, *.ds.gba, *.zip, *.7z, *.rar, *.bz2)\0*.nds;*.ds.gba;*.zip;*.7z;*.rar;*.bz2\0"
+		"NDS ROM file (*.nds)\0*.nds\0"
+		"NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0"
+		"Zipped NDS ROM file (*.zip)\0*.zip\0"
+		"7Zipped NDS ROM file (*.7z)\0*.7z\0"
+		"RARed NDS ROM file (*.rar)\0*.rar\0"
+		"BZipped NDS ROM file (*.bz2)\0*.bz2\0"
+		"Any file (*.*)\0*.*\0"
+		"\0"
+		; //gzip doesnt actually work right now
 
-#ifdef HAVE_LIBZZIP
-	strncat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|",512 - strlen(fileFilter));
-#endif
-#ifdef HAVE_LIBZ
-	strncat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|",512 - strlen(fileFilter));
-#endif
-	strncat (fileFilter, "7Zipped NDS ROM file (*.7z)|*.7z|",512 - strlen(fileFilter));
-	strncat (fileFilter, "RARed NDS ROM file (*.rar)|*.rar|",512 - strlen(fileFilter));
-	strncat (fileFilter, "BZipped NDS ROM file (*.bz2)|*.bz2|",512 - strlen(fileFilter));
-	
-	strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
-
-	filterSize = strlen(fileFilter);
-	for (i = 0; i < filterSize; i++)
-	{
-		if (fileFilter[i] == '|')	fileFilter[i] = '\0';
-	}
-	ofn.lpstrFilter = fileFilter;
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFile =  filename;
 	ofn.nMaxFile = MAX_PATH;
@@ -3180,23 +3165,24 @@ LRESULT OpenFile()
 	path.getpath(path.ROMS, buffer);
 	ofn.lpstrInitialDir = buffer;
 
-
-	if (GetOpenFileName(&ofn) == NULL) {
+	if (GetOpenFileName(&ofn) == NULL)
+	{
 		NDS_UnPause();
 		return 0;
 	}
-	else {
-	if(path.savelastromvisit)
+	else
 	{
-		char *lchr, buffer[MAX_PATH];
-		ZeroMemory(buffer, sizeof(buffer));
+		if(path.savelastromvisit)
+		{
+			char *lchr, buffer[MAX_PATH];
+			ZeroMemory(buffer, sizeof(buffer));
 
-		lchr = strrchr(filename, '\\');
-		strncpy(buffer, filename, strlen(filename) - strlen(lchr));
-		
-		path.setpath(path.ROMS, buffer);
-		WritePathSettings();
-	}
+			lchr = strrchr(filename, '\\');
+			strncpy(buffer, filename, strlen(filename) - strlen(lchr));
+			
+			path.setpath(path.ROMS, buffer);
+			WritePathSettings();
+		}
 	}
 
 	if(!OpenCore(filename))
