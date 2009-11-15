@@ -145,6 +145,8 @@ void HK_StateSaveSlot(int num, bool justPressed)
 			savestate_slot(num);	//Savestate
 		
 		LoadSaveStateInfo();
+
+		AutoFrameSkip_IgnorePreviousDelay();
 	}
 }
 
@@ -164,6 +166,8 @@ void HK_StateLoadSlot(int num, bool justPressed)
 			NDS_UnPause();
 		else
 			Display();
+
+		AutoFrameSkip_IgnorePreviousDelay();
 	}
 }
 
