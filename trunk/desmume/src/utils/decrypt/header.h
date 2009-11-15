@@ -1,5 +1,5 @@
 //taken from ndstool
-//http://devkitpro.cvs.sourceforge.net/viewvc/devkitpro/tools/nds/ndstool/include/header.h?revision=1.14
+//http://devkitpro.svn.sourceforge.net/viewvc/devkitpro/trunk/tools/nds/ndstool/include/header.h?revision=2447
 
 /* header.h - this file is part of DeSmuME
  *

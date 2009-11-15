@@ -1,7 +1,4 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
 	Copyright (C) 2006 Mic
     Copyright (C) 2009 CrazyMax 
 	Copyright (C) 2009 DeSmuME team

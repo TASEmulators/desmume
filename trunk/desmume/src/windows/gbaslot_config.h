@@ -1,5 +1,4 @@
-/*  
-	Copyright (C) 2008 shash
+/*  Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
