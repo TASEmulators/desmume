@@ -37,6 +37,7 @@ Graphics:
  bug: fix disp fifo capture
  bug: fix simultaneous vram display and capture via same bank
  bug: fix 3d overflow acknowledge registers
+ bug: fix 32bit toon table writes
  bug: change 3d cores to use 18bit color
  bug: fix boxtest (addition overflow!), move clipper to main graphics engine
  bug: fix failure in some cases of polygon clipping
