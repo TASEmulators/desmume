@@ -261,7 +261,7 @@ TEMPLATE u32 intrWaitARM()
 	if (intrFlag)
 	{
 		intr ^= intrFlag;
-		if (intr)
+		//if (intr)
 			_MMU_write32<PROCNUM>(intrFlagAdr, intr);
 		return wait4IRQ<PROCNUM>();
 	}

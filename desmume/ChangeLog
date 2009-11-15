@@ -59,13 +59,11 @@ Windows:
  bug: fix sound settings vol slider
  bug: recover from missing window -32000 problem
  bug: don't turn on mic unless mic input is enabled
- enh: setup x64 build type and fix associated bugs
+ enh: x64 build type now supported
  enh: side-by-side and single screen view modes, many fixes to window resizing
  enh: choose any gap size by dragging bottom window edge (must be enabled)
  enh: choose a gap color
  enh: import/export no$GBA savefiles directly
- enh: added 2x resizing filters (hq2x, hq2xs, lq2x, lq2xs, 2xsai, supereagle)
-                                (scanlines, nearest2x, bilinear)
  enh: multicore optimization for filters, rotation, OSD
  enh: soundview can now mute channels
  enh: new ioregview
@@ -73,7 +71,10 @@ Windows:
  enh: improve map view tool to support more modes
  enh: add "FORCE AS CURRENT" recovery tool for mis-sized savefiles
  enh: add some kind of very small savestate rewinding buffer
- 
+ enh: autoframeskip works better
+ enh: added 2x resizing filters (hq2x, hq2xs, lq2x, lq2xs, 2xsai, supereagle)
+                                (scanlines, nearest2x, bilinear)
+                                  
 Linux:
  enh: alsa microphone support
  enh: hud and osd notification for gtk and cli frontends
