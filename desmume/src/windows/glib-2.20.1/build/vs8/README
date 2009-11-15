@@ -1,4 +1,0 @@
-Note that this is mostly experimental and not really maintained. It
-seems that the OAH project at https://code.launchpad.net/oah might be
-a better choice if you want to start building GLib (and more of the
-GTK+ stack) with Visual Studio.
