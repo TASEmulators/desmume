@@ -1024,6 +1024,7 @@ static char SoftRastInit(void)
 }
 
 static void SoftRastReset() {
+	TexCache_Reset();
 }
 
 static void SoftRastClose()
