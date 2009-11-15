@@ -6,7 +6,7 @@
 #include "../types.h"
 #include "../debug.h"
 #include "../console.h"
-#include <windows.h>
+#include "throttle.h"
 
 int FastForward=0;
 static u64 tmethod,tfreq,afsfreq;
@@ -70,17 +70,23 @@ void InitSpeedThrottle(void)
 	else
 		afsfreq=1000;
 	tfreq = afsfreq << 16;
+
+	AutoFrameSkip_IgnorePreviousDelay();
 }
+
+static void AutoFrameSkip_BeforeThrottle();
+
+static u64 ltime;
 
 void SpeedThrottle()
 {
-	static u64 ttime, ltime;
+	AutoFrameSkip_BeforeThrottle();
 
 waiter:
 	if(FastForward)
 		return;
 
-	ttime = GetCurTime();
+	u64 ttime = GetCurTime();
 
 	if((ttime - ltime) < (tfreq / desiredfps))
 	{
@@ -106,70 +112,79 @@ waiter:
 
 // auto frameskip
 
-static u64 beginticks=0, endticks=0, diffticks=0;
-static std::vector<float> diffs;
-static const int SLIDING_WINDOW_SIZE = 32;
+static u64 beginticks=0, endticks=0, preThrottleEndticks=0;
 static float fSkipFrames = 0;
 static float fSkipFramesError = 0;
-static int minSkip = 0, maxSkip = 9;
+static int lastSkip = 0;
+static float lastError = 0;
+static float integral = 0;
 
-static float maxDiff(const std::vector<float>& diffs)
+void AutoFrameSkip_IgnorePreviousDelay()
 {
-	float maximum = 0;
-	for(int i = 0; i < diffs.size(); i++)
-		if(maximum < diffs[i])
-			maximum = diffs[i];
-	return maximum;
+	beginticks = GetCurTime();
+
+	// this seems to be a stable way of allowing the skip frames to
+	// quickly adjust to a faster environment (e.g. after a loadstate)
+	// without causing oscillation or a sudden change in skip rate
+	fSkipFrames *= 0.5f;
 }
 
-static void addDiff(float diff, std::vector<float>& diffs)
+static void AutoFrameSkip_BeforeThrottle()
 {
-	// limit to about double the maximum, to reduce the impact of the occasional huge diffs
-	// (using the last or average entry is a bad idea because some games do their own frameskipping)
-	float maximum = maxDiff(diffs);
-	if(!diffs.empty() && diff > maximum * 2 + 0.0001f)
-		diff = maximum * 2 + 0.0001f;
-
-	diffs.push_back(diff);
-
-	if(diffs.size() > SLIDING_WINDOW_SIZE)
-		diffs.erase(diffs.begin());
-}
-
-static float average(const std::vector<float>& diffs)
-{
-	float avg = 0;
-	for(int i = 0; i < diffs.size(); i++)
-		avg += diffs[i];
-	if(diffs.size())
-		avg /= diffs.size();
-	return avg;
+	preThrottleEndticks = GetCurTime();
 }
 
 void AutoFrameSkip_NextFrame()
 {
 	endticks = GetCurTime();
-	diffticks = endticks - beginticks;
 
+	// calculate time since last frame
+	u64 diffticks = endticks - beginticks;
 	float diff = (float)diffticks / afsfreq;
-	addDiff(diff,diffs);
 
-	float avg = average(diffs);
-	float overby = (avg - (desiredspf + (fSkipFrames + 2) * 0.000025f)) * 8;
-	// try to avoid taking too long to catch up to the game running fast again
-	if(overby < 0 && fSkipFrames > 4)
-		overby = -fSkipFrames / 4;
-	else if(avg < desiredspf)
-		overby *= 8;
+	// calculate time since last frame not including throttle sleep time
+	if(!preThrottleEndticks) // if we didn't throttle, use the non-throttle time
+		preThrottleEndticks = endticks;
+	u64 diffticksUnthrottled = preThrottleEndticks - beginticks;
+	float diffUnthrottled = (float)diffticksUnthrottled / afsfreq;
 
-	fSkipFrames += overby;
-	if(fSkipFrames < minSkip-1)
-		fSkipFrames = minSkip-1;
-	if(fSkipFrames > maxSkip+1)
-		fSkipFrames = maxSkip+1;
 
-	//printf("avg = %g, overby = %g, skipframes = %g\n", avg, overby, fSkipFrames);
+	float error = diffUnthrottled - desiredspf;
 
+
+	// reset way-out-of-range values
+	if(diff > 1)
+		diff = 1;
+	if(error > 1 || error < -1)
+		error = 0;
+	if(diffUnthrottled > 1)
+		diffUnthrottled = desiredspf;
+
+	float derivative = (error - lastError) / diff;
+	lastError = error;
+
+	integral = integral + (error * diff);
+	integral *= 0.99f; // since our integral isn't reliable, reduce it to 0 over time.
+
+	// "PID controller" constants
+	// this stuff is probably being done all wrong, but these seem to work ok
+	static const float Kp = 40.0f;
+	static const float Ki = 0.55f;
+	static const float Kd = 0.04f;
+
+	float errorTerm = error * Kp;
+	float derivativeTerm = derivative * Kd;
+	float integralTerm = integral * Ki;
+	float adjustment = errorTerm + derivativeTerm + integralTerm;
+
+	// apply the output adjustment
+	fSkipFrames += adjustment;
+
+	// if we're running too slowly, prevent the throttle from kicking in
+	if(adjustment > 0 && fSkipFrames > 0)
+		ltime-=tfreq/desiredfps;
+
+	preThrottleEndticks = 0;
 	beginticks = GetCurTime();
 }
 
@@ -177,25 +192,41 @@ int AutoFrameSkip_GetSkipAmount(int min, int max)
 {
 	int rv = (int)fSkipFrames;
 	fSkipFramesError += fSkipFrames - rv;
-	while(fSkipFramesError >= 1.0f)
+
+	// resolve accumulated fractional error
+	// where doing so doesn't push us out of range
+	while(fSkipFramesError >= 1.0f && rv <= lastSkip && rv < max)
 	{
 		fSkipFramesError -= 1.0f;
 		rv++;
 	}
-	while(fSkipFramesError <= -1.0f)
+	while(fSkipFramesError <= -1.0f && rv >= lastSkip && rv > min)
 	{
 		fSkipFramesError += 1.0f;
 		rv--;
 	}
+
+	// restrict skip amount to requested range
 	if(rv < min)
 		rv = min;
 	if(rv > max)
 		rv = max;
-	minSkip = min;
-	maxSkip = max;
 
-	//printf("SKIPPED: %d\n", rv);
+	// limit maximum error accumulation (it's mainly only for fractional components)
+	if(fSkipFramesError >= 4.0f)
+		fSkipFramesError = 4.0f;
+	if(fSkipFramesError <= -4.0f)
+		fSkipFramesError = -4.0f;
 
+	// limit ongoing skipframes to requested range + 1 on each side
+	if(fSkipFrames < min-1)
+		fSkipFrames = min-1;
+	if(fSkipFrames > max+1)
+		fSkipFrames = max+1;
+
+//	printf("%d", rv);
+
+	lastSkip = rv;
 	return rv;
 }
 

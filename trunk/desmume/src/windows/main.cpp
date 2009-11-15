@@ -1805,6 +1805,7 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 			OpenRWRecentFile(0);	
 			RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), MainWindow->getHWnd(), (DLGPROC) RamWatchProc);
 		}
+		if (autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
 
 		return TRUE;		
 	}
@@ -3292,6 +3293,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 void Unpause()
 {
 	lastPauseFromLostFocus = FALSE;
+	if (emu_paused && autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
 	if (!execute && !emu_paused) NDS_Pause(false), emu_paused=true;
 	if (emu_paused) NDS_UnPause();
 	emu_paused = 0;
@@ -3308,6 +3310,7 @@ void Pause()
 void TogglePause()
 {
 	lastPauseFromLostFocus = FALSE;
+	if (emu_paused && autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
 	if (emu_paused) NDS_UnPause();
 	else NDS_Pause();
 	emu_paused ^= 1;
@@ -3444,6 +3447,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		case WM_EXITMENULOOP:
 			SPU_Pause(0);
+			if (autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
 			break;
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
@@ -4746,6 +4750,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				frameskiprate = LOWORD(wParam) - (IDC_FRAMESKIPAUTO1 - 1);
 				sprintf(text, "AUTO%d", frameskiprate);
 				WritePrivateProfileString("Video", "FrameSkip", text, IniName);
+				AutoFrameSkip_IgnorePreviousDelay();
 			}
 			return 0;
 		case IDC_FRAMESKIP0:
