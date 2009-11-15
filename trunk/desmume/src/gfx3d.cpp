@@ -1625,6 +1625,7 @@ void gfx3d_UpdateToonTable(u8 offset, u16 val)
 
 void gfx3d_UpdateToonTable(u8 offset, u32 val)
 {
+	//C.O.P. sets toon table via this method
 	gfx3d.u16ToonTable[offset] = val & 0xFFFF;
 	gfx3d.u16ToonTable[offset+1] = val >> 16;
 }
