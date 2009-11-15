@@ -788,7 +788,11 @@ bool mov_loadstate(EMUFILE* fp, int size)
 	u32 cookie;
 	if(read32le(&cookie,fp) != 1) return false;
 	if(cookie == kNOMO)
+	{
+		if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
+			FinishPlayback();
 		return true;
+	}
 	else if(cookie != kMOVI)
 		return false;
 
