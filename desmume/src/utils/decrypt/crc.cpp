@@ -1,5 +1,5 @@
 //taken from ndstool
-//http://devkitpro.cvs.sourceforge.net/viewvc/devkitpro/tools/nds/ndstool/source/crc.cpp?revision=1.2
+//http://devkitpro.svn.sourceforge.net/viewvc/devkitpro/trunk/tools/nds/ndstool/source/crc.cpp?revision=1587
 
 /* crc.cpp - this file is part of DeSmuME
  *

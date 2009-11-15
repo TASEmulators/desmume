@@ -1,8 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
-    Copyright 2008 CrazyMax (mtabachenko)
+    Copyright (C) 2008 CrazyMax (mtabachenko)
 
     This file is part of DeSmuME
 

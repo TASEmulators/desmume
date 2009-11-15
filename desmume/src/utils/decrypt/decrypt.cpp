@@ -1,5 +1,5 @@
 //taken from ndstool
-//http://devkitpro.cvs.sourceforge.net/viewvc/devkitpro/tools/nds/ndstool/source/encryption.cpp?revision=1.2
+//http://devkitpro.svn.sourceforge.net/viewvc/devkitpro/trunk/tools/nds/ndstool/source/encryption.cpp?revision=1565
 
 /* decrypt.cpp - this file is part of DeSmuME
  *
