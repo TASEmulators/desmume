@@ -4047,7 +4047,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			else if(wParam == clearid)
 			{
 				/* Clear all the recent ROMs */
-				ClearRecentRoms();
+				if(IDOK == MessageBox(hwnd, "OK to clear recent ROMs list?","DeSmuME",MB_OKCANCEL))
+					ClearRecentRoms();
 			}
 
 			if(wParam >= IDD_LUARECENT_RESERVE_START &&
