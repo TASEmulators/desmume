@@ -191,8 +191,6 @@ fi
 
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR=""
-PO_FILES=""
-PO_FILES_IN=""
 if test "x$HAVE_SDL" = "xyes"; then
   # SDL adds just a cli
   UI_DIR="cli $UI_DIR"
@@ -213,8 +211,6 @@ if test "x$HAVE_SDL" = "xyes"; then
       ALL_LINGUAS="fr nb pt_BR sv zh_CN"
       AM_GLIB_GNU_GETTEXT
       PO_DIR="po"
-      PO_FILES="intltool-extract intltool-merge intltool-update"
-      PO_FILES_IN="intltool-extract.in intltool-merge.in intltool-update.in"
       PO_MAKEFILE="po/Makefile.in"
     ],[
       echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed. The gtk-glade UI requires intltool and gettext."
@@ -257,8 +253,6 @@ esac
 
 AC_SUBST(UI_DIR)
 AC_SUBST(PO_DIR)
-AC_SUBST(PO_FILES)
-AC_SUBST(PO_FILES_IN)
 
 dnl - Gdb stub
 AC_ARG_ENABLE(gdb-stub,
