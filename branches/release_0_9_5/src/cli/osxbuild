@@ -1,0 +1,7 @@
+rm -rf desmume.app
+mkdir desmume.app
+mkdir desmume.app/MacOS
+cp desmume-cli desmume.app/MacOS
+cp Info.plist desmume.app
+~/dylibbundler -cd -d desmume.app/libs -b -x desmume.app/MacOS/desmume-cli
+
