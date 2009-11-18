@@ -139,7 +139,7 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
 
     # Need check for both lua and lua5.1 to run on debian, see mysql bug #29945
     PKG_CHECK_MODULES(LUA,
-                      $LUAPC >= 5.1,
+                      lua >= 5.1,
                       HAVE_LUA=yes,
                       HAVE_LUA=no)
     PKG_CHECK_MODULES(LUA,
