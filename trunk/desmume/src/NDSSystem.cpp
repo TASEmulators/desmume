@@ -2964,6 +2964,36 @@ static void NDS_applyFinalInput()
 	((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
+	u16 k_cnt = ((u16 *)MMU.ARM9_REG)[0x132>>1];
+	if ( k_cnt & (1<<14))
+	{
+		//INFO("ARM9: KeyPad IRQ (pad 0x%04X, cnt 0x%04X (condition %s))\n", pad, k_cnt, k_cnt&(1<<15)?"AND":"OR");
+		u16 k_cnt_selected = (k_cnt & 0x3F);
+		if (k_cnt&(1<<15))	// AND
+		{
+			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeARM9Int(12);
+		}
+		else				// OR
+		{
+			if (~pad & k_cnt_selected) NDS_makeARM9Int(12);
+		}
+	}
+
+	k_cnt = ((u16 *)MMU.ARM7_REG)[0x132>>1];
+	if ( k_cnt & (1<<14))
+	{
+		//INFO("ARM7: KeyPad IRQ (pad 0x%04X, cnt 0x%04X (condition %s))\n", pad, k_cnt, k_cnt&(1<<15)?"AND":"OR");
+		u16 k_cnt_selected = (k_cnt & 0x3F);
+		if (k_cnt&(1<<15))	// AND
+		{
+			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeARM7Int(12);
+		}
+		else				// OR
+		{
+			if (~pad & k_cnt_selected) NDS_makeARM7Int(12);
+		}
+	}
+
 
 	if(input.touch.isTouch)
 	{
