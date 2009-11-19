@@ -3680,7 +3680,7 @@ static int line(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.target->line(x1, y1, x2, y2);
+	aggDraw.hud->line(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -3695,7 +3695,7 @@ static int triangle(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.target->triangle(x1, y1, x2, y2, x3, y3);
+	aggDraw.hud->triangle(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -3708,7 +3708,7 @@ static int rectangle(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.target->rectangle(x1, y1, x2, y2);
+	aggDraw.hud->rectangle(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -3722,7 +3722,7 @@ static int roundedRect(lua_State *L) {
 	y2 = luaL_checknumber(L,4) + 0.5;
 	r  = luaL_checknumber(L,5);
 
-	aggDraw.target->roundedRect(x1, y1, x2, y2, r);
+	aggDraw.hud->roundedRect(x1, y1, x2, y2, r);
 
 	return 0;
 }
@@ -3735,7 +3735,7 @@ static int ellipse(lua_State *L) {
 	rx = luaL_checknumber(L,3);
 	ry = luaL_checknumber(L,4);
 
-	aggDraw.target->ellipse(cx, cy, rx, ry);
+	aggDraw.hud->ellipse(cx, cy, rx, ry);
 
 	return 0;
 }
@@ -3750,7 +3750,7 @@ static int arc(lua_State *L) {
 	start = luaL_checknumber(L,5);
 	sweep = luaL_checknumber(L,6);
 
-	aggDraw.target->arc(cx, cy,rx, ry, start, sweep);
+	aggDraw.hud->arc(cx, cy,rx, ry, start, sweep);
 
 	return 0;
 }
@@ -3766,7 +3766,7 @@ static int star(lua_State *L) {
 	startAngle = luaL_checknumber(L,5);
 	numRays = luaL_checkinteger(L,6);
 
-	aggDraw.target->star(cx, cy, r1, r2, startAngle, numRays);
+	aggDraw.hud->star(cx, cy, r1, r2, startAngle, numRays);
 
 	return 0;
 }
@@ -3781,7 +3781,7 @@ static int curve(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.target->curve(x1, y1, x2, y2, x3, y3);
+	aggDraw.hud->curve(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -3828,14 +3828,14 @@ static int fillColor(lua_State *L) {
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.target->fillColor(r, g, b, a);
+	aggDraw.hud->fillColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noFill(lua_State *L) {
 
-	aggDraw.target->noFill();
+	aggDraw.hud->noFill();
 	return 0;
 }
 
@@ -3844,14 +3844,14 @@ static int lineColor(lua_State *L) {
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.target->lineColor(r, g, b, a);
+	aggDraw.hud->lineColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noLine(lua_State *L) {
 
-	aggDraw.target->noLine();
+	aggDraw.hud->noLine();
 	return 0;
 }
 
@@ -3860,7 +3860,7 @@ static int lineWidth(lua_State *L) {
 	double w;
 	w = luaL_checknumber(L,1);
 
-	aggDraw.target->lineWidth(w);
+	aggDraw.hud->lineWidth(w);
 
 	return 0;
 }
@@ -3893,7 +3893,7 @@ static int setFont(lua_State *L) {
 	const char *choice;
 	choice = luaL_checkstring(L,1);
 
-	aggDraw.target->setFont(choice);
+	aggDraw.hud->setFont(choice);
 	return 0;
 }
 
@@ -3905,7 +3905,7 @@ static int text(lua_State *L) {
 	y = luaL_checkinteger(L, 2);
 	choice = luaL_checkstring(L,3);
 
-	aggDraw.target->renderTextDropshadowed(x,y,choice);
+	aggDraw.hud->renderTextDropshadowed(x,y,choice);
 	return 0;
 }
 
