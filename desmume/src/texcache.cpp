@@ -465,7 +465,7 @@ public:
 				//this check isnt necessary since the addressing is tied to the texture data which will also run out:
 				//if(msIndex.numItems != 1) PROGINFO("Your 4x4 texture index has overrun its slot.\n");
 
-	#define PAL4X4(offset) ( *(u16*)( MMU.texInfo.texPalSlot[((paletteAddress + (offset)*2)>>14)] + ((paletteAddress + (offset)*2)&0x3FFF) ) )
+	#define PAL4X4(offset) ( *(u16*)( MMU.texInfo.texPalSlot[((paletteAddress + (offset)*2)>>14)&0x7] + ((paletteAddress + (offset)*2)&0x3FFF) ) )
 
 				u16* slot1;
 				u32* map = (u32*)ms.items[0].ptr;
