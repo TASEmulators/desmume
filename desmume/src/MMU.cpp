@@ -1963,7 +1963,10 @@ void DmaController::doCopy()
 
 	//reschedule an event for the end of this dma, and figure out how much it cost us
 	doSchedule();
-	nextEvent += todo/4; //TODO - surely this is a gross simplification
+
+	// zeromus, check it
+	if (wordcount > todo)
+		nextEvent += todo/4; //TODO - surely this is a gross simplification
 	//apparently moon has very, very tight timing (i didnt spy it using waitbyloop swi...)
 	//so lets bump this down a bit for now,
 	//(i think this code is in nintendo libraries)
@@ -2071,7 +2074,7 @@ static INLINE void write_auxspicnt(const int proc, const int size, const int adr
 //================================================= MMU write 08
 void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 {
-	mmu_log_debug_ARM9(adr, "(write08) %0x%X", val);
+	mmu_log_debug_ARM9(adr, "(write08) 0x%02X", val);
 
 	if(adr < 0x02000000)
 	{
@@ -2287,7 +2290,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 //================================================= MMU ARM9 write 16
 void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
-	mmu_log_debug_ARM9(adr, "(write16) %0x%X", val);
+	mmu_log_debug_ARM9(adr, "(write16) 0x%04X", val);
 
 	if (adr < 0x02000000)
 	{
@@ -2772,7 +2775,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 //================================================= MMU ARM9 write 32
 void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 {
-	mmu_log_debug_ARM9(adr, "(write32) %0x%X", val);
+	mmu_log_debug_ARM9(adr, "(write32) 0x%08X", val);
 
 	if(adr<0x02000000)
 	{
@@ -3165,7 +3168,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 //================================================= MMU ARM9 read 08
 u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
-	mmu_log_debug_ARM9(adr, "(read08) %0x%X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
+	mmu_log_debug_ARM9(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 
 	if(adr<0x02000000)
 		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
@@ -3197,7 +3200,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 //================================================= MMU ARM9 read 16
 u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
-	mmu_log_debug_ARM9(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
+	mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
 
 	if(adr<0x02000000)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
@@ -3278,7 +3281,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 //================================================= MMU ARM9 read 32
 u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
-	mmu_log_debug_ARM9(adr, "(read32) %0x%X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
+	mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
 
 	if(adr<0x02000000) 
 		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
@@ -3393,7 +3396,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 //================================================= MMU ARM7 write 08
 void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
-	mmu_log_debug_ARM7(adr, "(write08) %0x%X", val);
+	mmu_log_debug_ARM7(adr, "(write08) 0x%02X", val);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3402,14 +3405,12 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	}
 
 	adr &= 0x0FFFFFFF;
-    // This is bad, remove it
+
 	if ((adr>=0x04000400)&&(adr<0x0400051D)) 
 	{
 		SPU_WriteByte(adr, val);
 		return;
     }
-
-	adr &= 0x0FFFFFFF;
 
 	if(adr == 0x04000301)
 	{
@@ -3458,7 +3459,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 //================================================= MMU ARM7 write 16
 void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
-	mmu_log_debug_ARM7(adr, "(write16) %0x%X", val);
+	mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3476,7 +3477,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 	adr &= 0x0FFFFFFF;
 
-	// This is bad, remove it
 	if ((adr>=0x04000400)&&(adr<0x0400051D))
 	{
 		SPU_WriteWord(adr, val);
@@ -3756,7 +3756,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 //================================================= MMU ARM7 write 32
 void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
-	mmu_log_debug_ARM7(adr, "(write32) %0x%X", val);
+	mmu_log_debug_ARM7(adr, "(write32) 0x%08X", val);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3776,7 +3776,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 	adr &= 0x0FFFFFFF;
 
-    // This is bad, remove it
     if ((adr>=0x04000400)&&(adr<0x0400051D))
     {
         SPU_WriteLong(adr, val);
@@ -3873,7 +3872,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 //================================================= MMU ARM7 read 08
 u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
-	mmu_log_debug_ARM7(adr, "(read08) %0x%X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
+	mmu_log_debug_ARM7(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
 
 	// wifi mac access 
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -3906,7 +3905,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 //================================================= MMU ARM7 read 16
 u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
-	mmu_log_debug_ARM7(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+	mmu_log_debug_ARM7(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
 
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -3973,7 +3972,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 //================================================= MMU ARM7 read 32
 u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
-	mmu_log_debug_ARM7(adr, "(read32) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+	mmu_log_debug_ARM7(adr, "(read32) 0x%08X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
 
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
