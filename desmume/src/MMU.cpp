@@ -1690,6 +1690,11 @@ void MMU_struct_new::write_dma(const int proc, const int size, const u32 _adr, c
 	const u32 chan = adr/12;
 	const u32 regnum = (adr - chan*12)>>2;
 
+	if(proc==0&&chan==0)
+	{
+		int zzz=9;
+	}
+
 	if(proc==1) {
 		int zzz=9;
 	}
@@ -1731,7 +1736,7 @@ bool DmaController::loadstate(EMUFILE* f)
 {
 	u32 version;
 	if(read32le(&version,f) != 1) return false;
-	if(version != 0) return false;
+	if(version >1) return false;
 
 	read8le(&enable,f); read8le(&irq,f); read8le(&repeatMode,f); read8le(&_startmode,f);
 	read8le(&userEnable,f);
@@ -1745,12 +1750,18 @@ bool DmaController::loadstate(EMUFILE* f)
 	read32le(&check,f); read32le(&running,f); read32le(&paused,f); read32le(&triggered,f); 
 	read64le(&nextEvent,f);
 
+	if(version==1)
+	{
+		read32le(&saddr_user,f);
+		read32le(&daddr_user,f);
+	}
+
 	return true;
 }
 
 void DmaController::savestate(EMUFILE *f)
 {
-	write32le(0,f); //version
+	write32le(1,f); //version
 	write8le(enable,f); write8le(irq,f); write8le(repeatMode,f); write8le(_startmode,f);
 	write8le(userEnable,f);
 	write32le(wordcount,f);
@@ -1761,10 +1772,16 @@ void DmaController::savestate(EMUFILE *f)
 	write32le(saddr,f); write32le(daddr,f);
 	write32le(check,f); write32le(running,f); write32le(paused,f); write32le(triggered,f); 
 	write64le(nextEvent,f);
+	write32le(saddr_user,f);
+	write32le(daddr_user,f);
 }
 
 void DmaController::write32(const u32 val)
 {
+	if(this->chan==0 && this->procnum==0)
+	{
+		int zzz=9;
+	}
 	if(running)
 	{
 		//desp triggers this a lot. figure out whats going on
@@ -1797,6 +1814,15 @@ void DmaController::write32(const u32 val)
 	//make sure we don't get any old triggers
 	if(!wasEnable && enable)
 		triggered = FALSE;
+
+	if(enable)
+	{
+		//address registers are reloaded from user's settings whenever dma is enabled
+		//this is tested well by contra4 classic games, which use this to hdma scroll registers
+		//specifically in the fit-screen mode.
+		saddr = saddr_user;
+		daddr = daddr_user;
+	}
 
 	//printf("dma %d,%d set to startmode %d with wordcount set to: %08X\n",procnum,chan,_startmode,wordcount);
 if(_startmode==0 && wordcount==1) {
@@ -1934,6 +1960,12 @@ void DmaController::doCopy()
 
 	u32 src = saddr;
 	u32 dst = daddr;
+
+	if(chan==0&&procnum==0)
+	{
+		int zzz=9;
+	}
+
 
 	//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
 	//then danny phantom title screen will be filled with a garbage char which is made by
@@ -2092,7 +2124,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if (adr >> 24 == 4)
 	{
-		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM9,8,adr,val); return; }
+		if(MMU_new.is_dma(adr)) { 
+			MMU_new.write_dma(ARMCPU_ARM9,8,adr,val); 
+			return;
+		}
 		
 		switch(adr)
 		{
@@ -2424,30 +2459,30 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				GPU_setMOSAIC(SubScreen.gpu,val) ; 	 
 				break ;
 				*/
-			case REG_DISPA_BG0HOFS:
-				GPU_setBGxHOFS(0, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG0VOFS:
-				GPU_setBGxVOFS(0, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG1HOFS:
-				GPU_setBGxHOFS(1, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG1VOFS:
-				GPU_setBGxVOFS(1, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG2HOFS:
-				GPU_setBGxHOFS(2, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG2VOFS:
-				GPU_setBGxVOFS(2, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG3HOFS:
-				GPU_setBGxHOFS(3, MainScreen.gpu, val);
-				break;
-			case REG_DISPA_BG3VOFS:
-				GPU_setBGxVOFS(3, MainScreen.gpu, val);
-				break;
+			//case REG_DISPA_BG0HOFS:
+			//	GPU_setBGxHOFS(0, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG0VOFS:
+			//	GPU_setBGxVOFS(0, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG1HOFS:
+			//	GPU_setBGxHOFS(1, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG1VOFS:
+			//	GPU_setBGxVOFS(1, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG2HOFS:
+			//	GPU_setBGxHOFS(2, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG2VOFS:
+			//	GPU_setBGxVOFS(2, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG3HOFS:
+			//	GPU_setBGxHOFS(3, MainScreen.gpu, val);
+			//	break;
+			//case REG_DISPA_BG3VOFS:
+			//	GPU_setBGxVOFS(3, MainScreen.gpu, val);
+			//	break;
 
 			case REG_DISPA_WIN0H: 	 
 				GPU_setWIN0_H (MainScreen.gpu,val) ; 	 
@@ -2480,7 +2515,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				GPU_setWINOUT16(MainScreen.gpu, val) ; 	 
 				break ; 	 
 
-			case REG_DISPB_BG0HOFS:
+		/*	case REG_DISPB_BG0HOFS:
 				GPU_setBGxHOFS(0, SubScreen.gpu, val);
 				break;
 			case REG_DISPB_BG0VOFS:
@@ -2503,7 +2538,8 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				break;
 			case REG_DISPB_BG3VOFS:
 				GPU_setBGxVOFS(3, SubScreen.gpu, val);
-				break;
+				break;*/
+
 			case REG_DISPB_WININ: 	 
 				GPU_setWININ(SubScreen.gpu, val) ; 	 
 				break ; 	 
@@ -2871,7 +2907,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				break;
 		}
 
-		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM9,32,adr,val); return; }
+		if(MMU_new.is_dma(adr)) { 
+			MMU_new.write_dma(ARMCPU_ARM9,32,adr,val);
+			return;
+		}
 
 		switch(adr)
 		{
@@ -2937,6 +2976,11 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				gfx3d_glFogOffset(val);
 				return;
 			}
+
+			//case REG_DISPA_BG0HOFS:
+			//	GPU_setBGxHOFS(0, MainScreen.gpu, val&0xFFFF);
+			//	GPU_setBGxVOFS(0, MainScreen.gpu, (val>>16));
+			//	break;
 
 			case REG_DISPA_WININ: 	 
 			{
