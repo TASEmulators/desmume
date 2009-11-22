@@ -842,6 +842,7 @@ void MMU_Init(void) {
 	memset(&MMU, 0, sizeof(MMU_struct));
 
 	MMU.CART_ROM = MMU.UNUSED_RAM;
+	MMU.CART_ROM_MASK = 3;
 
     for(i = 0x80; i<0xA0; ++i)
     {
@@ -902,6 +903,8 @@ void MMU_Reset()
 	memset(MMU.MAIN_MEM,  0, sizeof(MMU.MAIN_MEM));
 
 	memset(MMU.blank_memory,  0, sizeof(MMU.blank_memory));
+	memset(MMU.UNUSED_RAM,    0, sizeof(MMU.UNUSED_RAM));
+	memset(MMU.MORE_UNUSED_RAM,    0, sizeof(MMU.UNUSED_RAM));
 	
 	memset(MMU.ARM7_ERAM,     0, sizeof(MMU.ARM7_ERAM));
 	memset(MMU.ARM7_REG,      0, sizeof(MMU.ARM7_REG));
@@ -1008,6 +1011,7 @@ void MMU_unsetRom()
 {
 	unsigned int i;
 	MMU.CART_ROM=MMU.UNUSED_RAM;
+	MMU.CART_ROM_MASK = 3;
 	
 	for(i = 0x80; i<0xA0; ++i)
 	{

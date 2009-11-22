@@ -565,6 +565,7 @@ BOOL NDS_SetROM(u8 * rom, u32 mask)
 
 NDS_header * NDS_getROMHeader(void)
 {
+	if(MMU.CART_ROM == MMU.UNUSED_RAM) return NULL;
 	NDS_header * header = new NDS_header;
 
 	memcpy(header->gameTile, MMU.CART_ROM, 12);
@@ -939,7 +940,10 @@ void NDS_FreeROM(void)
 	if ((u8*)MMU.CART_ROM == (u8*)gameInfo.romdata)
 		gameInfo.romdata = NULL;
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)
+	{
+		memset(MMU.CART_ROM,0xCC,128);
 		delete [] MMU.CART_ROM;
+	}
 	MMU_unsetRom();
 }
 
