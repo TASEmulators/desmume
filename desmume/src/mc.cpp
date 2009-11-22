@@ -358,6 +358,7 @@ void BackupDevice::reset_command()
 				//another modern typical case..
 				//but unfortunately we select this case for spider-man 3, when what it meant to do was
 				//present the archaic 1+2 case
+				//it seems that over the hedge does this also.
 				addr_size = 2;
 				break;
 			case 4:
