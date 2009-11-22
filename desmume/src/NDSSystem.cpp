@@ -940,10 +940,7 @@ void NDS_FreeROM(void)
 	if ((u8*)MMU.CART_ROM == (u8*)gameInfo.romdata)
 		gameInfo.romdata = NULL;
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)
-	{
-		memset(MMU.CART_ROM,0xCC,128);
 		delete [] MMU.CART_ROM;
-	}
 	MMU_unsetRom();
 }
 
