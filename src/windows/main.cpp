@@ -1490,7 +1490,7 @@ static void StepRunLoop_Core()
 	{
 		Lock lock;
 		NDS_exec<false>();
-		//SPU_Emulate_user();
+		SPU_Emulate_user();
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
 	inFrameBoundary = true;
@@ -1886,6 +1886,11 @@ void SetLanguage(int langid)
 		// Chinese
 		setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
+		break;
+	case 4:
+		// Italian
+		setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		break;
 
 	default: break;
@@ -4793,6 +4798,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_LANG_CHINESE_SIMPLIFIED:
 			SaveLanguage(3);
 			ChangeLanguage(3);
+			CheckLanguage(LOWORD(wParam));
+			return 0;
+		case IDC_LANGITALIAN:
+			SaveLanguage(4);
+			ChangeLanguage(4);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
 		
