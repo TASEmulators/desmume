@@ -1494,6 +1494,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 	u16 l = currLine;
 	GPU *gpu = this;
 
+
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
 	u8 block = gpu->sprBoundary;
@@ -1723,10 +1724,15 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 						if(colour && (prioTab[sprX]>=prio))
 						{
-							T2WriteWord(dst, (sprX<<1), LE_TO_LOCAL_16(T2ReadWord(pal, colour << 1)));
-							dst_alpha[sprX] = 16;
-							typeTab[sprX] = spriteInfo->Mode;
-							prioTab[sprX] = prio;
+							if(spriteInfo->Mode==2)
+								sprWin[sprX] = 1;
+							else
+							{
+								T2WriteWord(dst, (sprX<<1), LE_TO_LOCAL_16(T2ReadWord(pal, colour << 1)));
+								dst_alpha[sprX] = 16;
+								typeTab[sprX] = spriteInfo->Mode;
+								prioTab[sprX] = prio;
+							}
 						}
 					}
 
