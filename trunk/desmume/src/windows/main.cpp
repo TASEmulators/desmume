@@ -1887,6 +1887,11 @@ void SetLanguage(int langid)
 		setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		break;
+	case 4:
+		// Italian
+		setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
+		break;
 
 	default: break;
 		break;
@@ -4793,6 +4798,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_LANG_CHINESE_SIMPLIFIED:
 			SaveLanguage(3);
 			ChangeLanguage(3);
+			CheckLanguage(LOWORD(wParam));
+			return 0;
+		case IDC_LANGITALIAN:
+			SaveLanguage(4);
+			ChangeLanguage(4);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
 		

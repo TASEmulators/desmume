@@ -811,6 +811,7 @@
 #define IDM_RENDER_HQ2XS                60081
 #define IDM_RENDER_LQ2X                 60082
 #define IDM_RENDER_LQ2XS                60083
+#define IDC_LANGITALIAN                 60084
 
 // Next default values for new objects
 // 
