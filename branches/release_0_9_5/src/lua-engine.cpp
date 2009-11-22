@@ -2928,12 +2928,13 @@ static void LuaDisplayString (const char *str, int x, int y, u32 color, u32 outl
 
 DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 {
+	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
+	int y = luaL_checkinteger(L,2);
+
 	if(DeferGUIFuncIfNeeded(L))
 		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
 		          // (the only way to avoid this deferring is to be in a gui.register or emu.registerafter callback)
 
-	int x = luaL_checkinteger(L,1);
-	int y = luaL_checkinteger(L,2);
 	const char* str = toCString(L,3); // better than using luaL_checkstring here (more permissive)
 	
 	if(str && *str)
@@ -2952,13 +2953,14 @@ DEFINE_LUA_FUNCTION(gui_text, "x,y,str[,color=\"white\"[,outline=\"black\"]]")
 
 DEFINE_LUA_FUNCTION(gui_box, "x1,y1,x2,y2[,fill[,outline]]")
 {
-	if(DeferGUIFuncIfNeeded(L))
-		return 0;
-
-	int x1 = luaL_checkinteger(L,1);
+	int x1 = luaL_checkinteger(L,1); // have to check for errors before deferring
 	int y1 = luaL_checkinteger(L,2);
 	int x2 = luaL_checkinteger(L,3);
 	int y2 = luaL_checkinteger(L,4);
+
+	if(DeferGUIFuncIfNeeded(L))
+		return 0;
+
 	int fillcolor = getcolor(L,5,0xFFFFFF3F);
 	int outlinecolor = getcolor(L,6,fillcolor|0xFF);
 
@@ -3028,11 +3030,12 @@ DEFINE_LUA_FUNCTION(gui_box, "x1,y1,x2,y2[,fill[,outline]]")
 //   or it can be a preset color like 'red', 'orange', 'blue', 'white', etc.
 DEFINE_LUA_FUNCTION(gui_pixel, "x,y[,color=\"white\"]")
 {
+	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
+	int y = luaL_checkinteger(L,2);
+
 	if(DeferGUIFuncIfNeeded(L))
 		return 0;
 
-	int x = luaL_checkinteger(L,1);
-	int y = luaL_checkinteger(L,2);
 	int color = getcolor(L,3,0xFFFFFFFF);
 	if(color & 0xFF)
 	{
@@ -3065,13 +3068,14 @@ DEFINE_LUA_FUNCTION(gui_getpixel, "x,y")
 }
 DEFINE_LUA_FUNCTION(gui_line, "x1,y1,x2,y2[,color=\"white\"[,skipfirst=false]]")
 {
-	if(DeferGUIFuncIfNeeded(L))
-		return 0;
-
-	int x1 = luaL_checkinteger(L,1);
+	int x1 = luaL_checkinteger(L,1); // have to check for errors before deferring
 	int y1 = luaL_checkinteger(L,2);
 	int x2 = luaL_checkinteger(L,3);
 	int y2 = luaL_checkinteger(L,4);
+
+	if(DeferGUIFuncIfNeeded(L))
+		return 0;
+
 	int color = getcolor(L,5,0xFFFFFFFF);
 	int skipFirst = lua_toboolean(L,6);
 
@@ -3193,9 +3197,6 @@ DEFINE_LUA_FUNCTION(gui_gdscreenshot, "[whichScreen='both']")
 // example: gui.gdoverlay(gd.createFromPng("myimage.png"):gdStr())
 DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 {
-	if(DeferGUIFuncIfNeeded(L))
-		return 0;
-
 	int xStart = 0;
 	int yStart = 0;
 
@@ -3207,7 +3208,11 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 			yStart = lua_tointeger(L,index++);
 	}
 
-	luaL_checktype(L,index,LUA_TSTRING);
+	luaL_checktype(L,index,LUA_TSTRING); // have to check for errors before deferring
+
+	if(DeferGUIFuncIfNeeded(L))
+		return 0;
+
 	const unsigned char* ptr = (const unsigned char*)lua_tostring(L,index++);
 
 	// GD format header for truecolor image (11 bytes)
@@ -3680,7 +3685,7 @@ static int line(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.target->line(x1, y1, x2, y2);
+	aggDraw.hud->line(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -3695,7 +3700,7 @@ static int triangle(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.target->triangle(x1, y1, x2, y2, x3, y3);
+	aggDraw.hud->triangle(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -3708,7 +3713,7 @@ static int rectangle(lua_State *L) {
 	x2 = luaL_checknumber(L,3) + 0.5;
 	y2 = luaL_checknumber(L,4) + 0.5;
 
-	aggDraw.target->rectangle(x1, y1, x2, y2);
+	aggDraw.hud->rectangle(x1, y1, x2, y2);
 
 	return 0;
 }
@@ -3722,7 +3727,7 @@ static int roundedRect(lua_State *L) {
 	y2 = luaL_checknumber(L,4) + 0.5;
 	r  = luaL_checknumber(L,5);
 
-	aggDraw.target->roundedRect(x1, y1, x2, y2, r);
+	aggDraw.hud->roundedRect(x1, y1, x2, y2, r);
 
 	return 0;
 }
@@ -3735,7 +3740,7 @@ static int ellipse(lua_State *L) {
 	rx = luaL_checknumber(L,3);
 	ry = luaL_checknumber(L,4);
 
-	aggDraw.target->ellipse(cx, cy, rx, ry);
+	aggDraw.hud->ellipse(cx, cy, rx, ry);
 
 	return 0;
 }
@@ -3750,7 +3755,7 @@ static int arc(lua_State *L) {
 	start = luaL_checknumber(L,5);
 	sweep = luaL_checknumber(L,6);
 
-	aggDraw.target->arc(cx, cy,rx, ry, start, sweep);
+	aggDraw.hud->arc(cx, cy,rx, ry, start, sweep);
 
 	return 0;
 }
@@ -3766,7 +3771,7 @@ static int star(lua_State *L) {
 	startAngle = luaL_checknumber(L,5);
 	numRays = luaL_checkinteger(L,6);
 
-	aggDraw.target->star(cx, cy, r1, r2, startAngle, numRays);
+	aggDraw.hud->star(cx, cy, r1, r2, startAngle, numRays);
 
 	return 0;
 }
@@ -3781,7 +3786,7 @@ static int curve(lua_State *L) {
 	x3 = luaL_checknumber(L,5) + 0.5;
 	y3 = luaL_checknumber(L,6) + 0.5;
 
-	aggDraw.target->curve(x1, y1, x2, y2, x3, y3);
+	aggDraw.hud->curve(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
@@ -3828,14 +3833,14 @@ static int fillColor(lua_State *L) {
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.target->fillColor(r, g, b, a);
+	aggDraw.hud->fillColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noFill(lua_State *L) {
 
-	aggDraw.target->noFill();
+	aggDraw.hud->noFill();
 	return 0;
 }
 
@@ -3844,14 +3849,14 @@ static int lineColor(lua_State *L) {
 	int r,g,b,a;
 	getColorForAgg(L, r,g,b,a);
 
-	aggDraw.target->lineColor(r, g, b, a);
+	aggDraw.hud->lineColor(r, g, b, a);
 
 	return 0;
 }
 
 static int noLine(lua_State *L) {
 
-	aggDraw.target->noLine();
+	aggDraw.hud->noLine();
 	return 0;
 }
 
@@ -3860,7 +3865,7 @@ static int lineWidth(lua_State *L) {
 	double w;
 	w = luaL_checknumber(L,1);
 
-	aggDraw.target->lineWidth(w);
+	aggDraw.hud->lineWidth(w);
 
 	return 0;
 }
@@ -3893,7 +3898,7 @@ static int setFont(lua_State *L) {
 	const char *choice;
 	choice = luaL_checkstring(L,1);
 
-	aggDraw.target->setFont(choice);
+	aggDraw.hud->setFont(choice);
 	return 0;
 }
 
@@ -3905,7 +3910,7 @@ static int text(lua_State *L) {
 	y = luaL_checkinteger(L, 2);
 	choice = luaL_checkstring(L,3);
 
-	aggDraw.target->renderTextDropshadowed(x,y,choice);
+	aggDraw.hud->renderTextDropshadowed(x,y,choice);
 	return 0;
 }
 
@@ -3924,16 +3929,14 @@ static const struct luaL_reg aggcustom [] =
 //
 static int gui_osdtext(lua_State *L)
 {
+	int x = luaL_checkinteger(L,1); // have to check for errors before deferring
+	int y = luaL_checkinteger(L,2);
+
 	if(DeferGUIFuncIfNeeded(L))
 		return 0; // we have to wait until later to call this function because we haven't emulated the next frame yet
 		          // (the only way to avoid this deferring is to be in a gui.register or emu.registerafter callback)
 
-	const char *msg;
-	int x, y;
-
-	x = luaL_checkinteger(L,1);
-	y = luaL_checkinteger(L,2);
-	msg = toCString(L,3);
+	const char* msg = toCString(L,3);
 
 	osd->addFixed(x, y, "%s", msg);
 

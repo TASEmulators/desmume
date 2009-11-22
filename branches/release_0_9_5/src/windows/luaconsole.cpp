@@ -276,6 +276,8 @@ void OnStop(int hDlgAsInt, bool statusOK)
 	SetActiveWindow(hDlg); // bring to front among other script/secondary windows, since a stopped script will have some message for the user that would be easier to miss otherwise
 	if(prevWindow == MainWindow->getHWnd()) SetActiveWindow(prevWindow);
 
+	PrintToWindowConsole(hDlgAsInt, "script stopped.\r\n");
+
 	info.started = false;
 	EnableWindow(GetDlgItem(hDlg, IDC_BUTTON_LUABROWSE), true);
 	EnableWindow(GetDlgItem(hDlg, IDC_BUTTON_LUASTOP), false);
