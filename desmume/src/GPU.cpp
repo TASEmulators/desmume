@@ -868,10 +868,9 @@ template<bool MOSAIC> void lineLarge8bpp(GPU * gpu)
 		return;
 	}
 
-	BGxOFS * ofs = &gpu->dispx_st->dispx_BGxOFS[gpu->currBgNum];
 	u8 num = gpu->currBgNum;
-	u16 XBG = T1ReadWord((u8 *)&ofs->BGxHOFS, 0);
-	u16 YBG = gpu->currLine + T1ReadWord((u8 *)&ofs->BGxVOFS, 0);
+	u16 XBG = gpu->getHOFS(gpu->currBgNum);
+	u16 YBG = gpu->currLine + gpu->getVOFS(gpu->currBgNum);
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
 	u16 wmask  = (lg-1);
@@ -1214,10 +1213,6 @@ static void lineNull(GPU * gpu)
 
 template<bool MOSAIC> void lineText(GPU * gpu)
 {
-	BGxOFS * ofs = &gpu->dispx_st->dispx_BGxOFS[gpu->currBgNum];
-
-
-
 	if(gpu->debug)
 	{
 		const s32 wh = gpu->BGSize[gpu->currBgNum][0];
@@ -1225,8 +1220,8 @@ template<bool MOSAIC> void lineText(GPU * gpu)
 	}
 	else
 	{
-		const u16 vofs = T1ReadWord((u8 *)&ofs->BGxVOFS,0);
-		const u16 hofs = T1ReadWord((u8 *)&ofs->BGxHOFS,0);
+		const u16 vofs = gpu->getVOFS(gpu->currBgNum);
+		const u16 hofs = gpu->getHOFS(gpu->currBgNum);
 		renderline_textBG<MOSAIC>(gpu, hofs, gpu->currLine + vofs, 256);
 	}
 }
@@ -2115,8 +2110,7 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 						{
 							gpu->currBgNum = 0;
 
-							BGxOFS *bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
-							u16 hofs = (T1ReadWord((u8*)&bgofs->BGxHOFS, 0) & 0x1FF);
+							const u16 hofs = gpu->getHOFS(i16);
 
 							gfx3d_GetLineData(l, &gpu->_3dColorLine);
 							u8* colorLine = gpu->_3dColorLine;
