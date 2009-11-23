@@ -844,6 +844,9 @@ struct GPU
 		updateBLDALPHA();
 	}
 
+	u32 getHOFS(int bg) { return T1ReadWord(&dispx_st->dispx_BGxOFS[bg].BGxHOFS,0) & 0x1FF; }
+	u32 getVOFS(int bg) { return T1ReadWord(&dispx_st->dispx_BGxOFS[bg].BGxVOFS,0) & 0x1FF; }
+
 	typedef u8 TBlendTable[32][32];
 	TBlendTable *blendTable;
 
