@@ -1,3 +1,13 @@
+0.9.5 -> 0.9.6 (r3075-r3???)
+
+General/Core:
+ bug: emulate keypad interrupt
+ bug: fix dma address reloading
+ bug: fix rom close memory corruption
+
+Graphics:
+ bug: fix a mistakenly rendered OBJ window
+ 
 0.9.4 -> 0.9.5 (r2437-r3075)
 
 0.9.5 introduces an entirely rewritten main emulation loop
@@ -72,6 +82,7 @@ Windows:
  enh: add "FORCE AS CURRENT" recovery tool for mis-sized savefiles
  enh: add some kind of very small savestate rewinding buffer
  enh: autoframeskip works better
+ enh: add Italian translation
  enh: added 2x resizing filters (hq2x, hq2xs, lq2x, lq2xs, 2xsai, supereagle)
                                 (scanlines, nearest2x, bilinear)
                                   
