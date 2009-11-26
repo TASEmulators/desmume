@@ -1,4 +1,4 @@
-0.9.4 -> 0.9.5 (r2437-r30??)
+0.9.4 -> 0.9.5 (r2437-r3075)
 
 0.9.5 introduces an entirely rewritten main emulation loop
 This totally changes the timing, and totally breaks old savestates.
