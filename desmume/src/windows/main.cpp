@@ -936,7 +936,7 @@ template<typename T> static void doRotate(void* dst)
 					else
 						for(int y = 0; y < height; y++)
 						{
-							memcpy(buffer, src, width * sizeof(u32));
+							memcpy(buffer, &src[y * width], width * sizeof(u32));
 							buffer += pitch;
 						}
 				else // if(video.rotation==180)
