@@ -378,8 +378,7 @@ void HK_ToggleRasterizer(int, bool justPressed) {
 		cur3DCore = GPU3D_SWRAST;
 	else cur3DCore = GPU3D_OPENGL;
 
-	NDS_3D_ChangeCore(cur3DCore);
-	WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
+	Change3DCoreWithFallbackAndSave(cur3DCore);
 }
 
 //======================================================================================

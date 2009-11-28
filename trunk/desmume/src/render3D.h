@@ -61,7 +61,7 @@ extern GPU3DInterface gpu3DNull;
 extern GPU3DInterface *gpu3D;
 
 void NDS_3D_SetDriver (int core3DIndex);
-void NDS_3D_ChangeCore(int newCore);
+bool NDS_3D_ChangeCore(int newCore);
 
 #endif
  

@@ -2134,6 +2134,9 @@ static void RefreshMicSettings()
 	}
 }
 
+#define GPU3D_NULL_SAVED -1
+#define GPU3D_DEFAULT  GPU3D_OPENGL
+
 DWORD wmTimerRes;
 int _main()
 {
@@ -2471,12 +2474,16 @@ int _main()
 
 	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
-	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_DEFAULT, IniName);
+	if(cur3DCore == GPU3D_NULL_SAVED)
+		cur3DCore = GPU3D_NULL;
+	else if(cur3DCore == GPU3D_NULL) // this value shouldn't be saved anymore
+		cur3DCore = GPU3D_DEFAULT;
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
 	CommonSettings.GFX3D_EdgeMark = GetPrivateProfileBool("3D", "EnableEdgeMark", 1, IniName);
 	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
 	//CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
-	NDS_3D_ChangeCore(cur3DCore);
+	Change3DCoreWithFallbackAndSave(cur3DCore);
 
 #ifdef BETA_VERSION
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
@@ -4991,6 +4998,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
   return DefWindowProc (hwnd, message, wParam, lParam);
 }
 
+void Change3DCoreWithFallbackAndSave(int newCore, int fallbackCore)
+{
+	if(!NDS_3D_ChangeCore(newCore) && newCore != fallbackCore)
+		NDS_3D_ChangeCore(fallbackCore);
+	int gpu3dSaveValue = ((cur3DCore != GPU3D_NULL) ? cur3DCore : GPU3D_NULL_SAVED);
+	WritePrivateProfileInt("3D", "Renderer", gpu3dSaveValue, IniName);
+}
+
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 {
 	switch(msg)
@@ -5021,8 +5036,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw,IDC_INTERPOLATECOLOR);
 					CommonSettings.GFX3D_EdgeMark = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_EDGEMARK);
 					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
-					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
-					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
+					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor?1:0, IniName);
 					WritePrivateProfileInt("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark?1:0, IniName);
 					WritePrivateProfileInt("3D", "EnableFog", CommonSettings.GFX3D_Fog?1:0, IniName);
@@ -5037,9 +5051,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 			case IDC_DEFAULT:
 				{
-					NDS_3D_ChangeCore(GPU3D_OPENGL);
-					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_OPENGL);
-					WritePrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+					Change3DCoreWithFallbackAndSave(GPU3D_DEFAULT);
+					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), cur3DCore);
 					//CommonSettings.gfx3d_flushMode = 0;
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
