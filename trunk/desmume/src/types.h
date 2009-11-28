@@ -33,8 +33,11 @@
 #endif
 
 #ifdef _MSC_VER
-#define ENABLE_SSE
-#define ENABLE_SSE2
+	#define ENABLE_SSE
+	#define ENABLE_SSE2
+	#ifdef DEVELOPER
+		#define HAVE_LUA
+	#endif
 #endif
 
 #ifdef __GNUC__
