@@ -897,69 +897,55 @@ int CreateDDrawBuffers()
 }
 
 
-template<typename T, int bpp> static T realConvert(u16 val)
-{
-	switch(bpp)
-	{
-		case 24: case 32:
-			return RGB15TO24_REVERSE(val);
-		case 16: return RGB15TO16_REVERSE(val);
-		default:
-			return 0;
-	}
-}
-
-
-template<typename T, int bpp> static FORCEINLINE T ddconvert(u32 val)
-{
-	//not supported yet, needs to drop from 32 to 16
-	return val;
-	//switch(bpp)
-	//{
-	//	case 24: case 32:
-	//		return RGB15TO24_REVERSE(val);
-	//	case 16: return RGB15TO16_REVERSE(val);
-	//	default:
-	//		return 0;
-	//}
-}
-
-template<typename T, int bpp> static void doRotate(void* dst)
+template<typename T> static void doRotate(void* dst)
 {
 	u8* buffer = (u8*)dst;
 	int size = video.size();
 	u32* src = (u32*)video.finalBuffer();
+	int width = video.width;
+	int height = video.height;
+	int pitch = ddsd.lPitch;
 	switch(video.rotation)
 	{
 	case 0:
 	case 180:
 		{
-			if(ddsd.lPitch == 1024)
+			if(pitch == 1024)
 			{
-				if(video.rotation==180)
+				if(video.rotation==0)
+					if(sizeof(T) == sizeof(u32))
+						memcpy(buffer, src, size * sizeof(u32));
+					else
+						for(int i = 0; i < size; i++)
+							((T*)buffer)[i] = src[i];
+				else // if(video.rotation==180)
 					for(int i = 0, j=size-1; j>=0; i++,j--)
-						((T*)buffer)[i] = ddconvert<T,bpp>((src)[j]);
-				else
-					for(int i = 0; i < size; i++)
-						((T*)buffer)[i] = ddconvert<T,bpp>(src[i]);
+						((T*)buffer)[i] = src[j];
 			}
 			else
 			{
-				if(video.rotation==180)
-					for(int y = 0; y < video.height; y++)
-					{
-						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = ddconvert<T,bpp>(src[video.height*video.width - (y * video.width) - x - 1]);
+				if(video.rotation==0)
+					if(sizeof(T) != sizeof(u32))
+						for(int y = 0; y < height; y++)
+						{
+							for(int x = 0; x < width; x++)
+								((T*)buffer)[x] = src[(y * width) + x];
 
-						buffer += ddsd.lPitch;
-					}
-				else
-					for(int y = 0; y < video.height; y++)
+							buffer += pitch;
+						}
+					else
+						for(int y = 0; y < height; y++)
+						{
+							memcpy(buffer, src, width * sizeof(u32));
+							buffer += pitch;
+						}
+				else // if(video.rotation==180)
+					for(int y = 0; y < height; y++)
 					{
-						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = ddconvert<T,bpp>(src[(y * video.width) + x]);
+						for(int x = 0; x < width; x++)
+							((T*)buffer)[x] = src[height*width - (y * width) - x - 1];
 
-						buffer += ddsd.lPitch;
+						buffer += pitch;
 					}
 			}
 		}
@@ -968,25 +954,26 @@ template<typename T, int bpp> static void doRotate(void* dst)
 	case 270:
 		{
 			if(video.rotation == 90)
-				for(int y = 0; y < video.width; y++)
+				for(int y = 0; y < width; y++)
 				{
-					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = ddconvert<T,bpp>(src[(((video.height-1)-x) * video.width) + y]);
+					for(int x = 0; x < height; x++)
+						((T*)buffer)[x] = src[(((height-1)-x) * width) + y];
 
-					buffer += ddsd.lPitch;
+					buffer += pitch;
 				}
 			else
-				for(int y = 0; y < video.width; y++)
+				for(int y = 0; y < width; y++)
 				{
-					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = ddconvert<T,bpp>(src[((x) * video.width) + (video.width-1) - y]);
+					for(int x = 0; x < height; x++)
+						((T*)buffer)[x] = src[((x) * width) + (width-1) - y];
 
-					buffer += ddsd.lPitch;
+					buffer += pitch;
 				}
 		}
 		break;
 	}
 }
+
 
 void UpdateWndRects(HWND hwnd);
 void FixAspectRatio();
@@ -1141,6 +1128,24 @@ void doLCDsLayout()
 	}
 }
 
+#pragma pack(push,1)
+struct pix24
+{
+	u8 b,g,r;
+	FORCEINLINE pix24(u32 s) : b(s&0xFF), g((s&0xFF00)>>8), r((s&0xFF0000)>>16) {}
+};
+struct pix16
+{
+	u16 c;
+	FORCEINLINE pix16(u32 s) : c(((s&0xF8)>>3) | ((s&0xFC00)>>5) | ((s&0xF80000)>>8)) {}
+};
+struct pix15
+{
+	u16 c;
+	FORCEINLINE pix15(u32 s) : c(((s&0xF8)>>3) | ((s&0xF800)>>6) | ((s&0xF80000)>>9)) {}
+};
+#pragma pack(pop)
+
 //the directdraw final presentation portion of display, including rotating
 static void DD_DoDisplay()
 {
@@ -1150,25 +1155,40 @@ static void DD_DoDisplay()
 	ddsd.dwFlags=DDSD_ALL;
 	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
 
-	if (res==DDERR_SURFACELOST)
+	if(FAILED(res))
 	{
-		LOG("DirectDraw buffers is lost\n");
-		if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
-			IDirectDrawSurface7_Restore(lpBackSurface);
-	} else if(res != DD_OK)
-		return;
+		if (res==DDERR_SURFACELOST)
+		{
+			LOG("DirectDraw buffers is lost\n");
+			if (FAILED(IDirectDrawSurface7_Restore(lpPrimarySurface))
+			 || FAILED(IDirectDrawSurface7_Restore(lpBackSurface)))
+				if(CreateDDrawBuffers() < 0)
+					return;
+		}
+		else
+			return;
+	}
 
 	char* buffer = (char*)ddsd.lpSurface;
 
 	switch(ddsd.ddpfPixelFormat.dwRGBBitCount)
 	{
-	case 32: doRotate<u32,32>(ddsd.lpSurface); break;
-	case 24: doRotate<u32,24>(ddsd.lpSurface); break;
-	case 16: doRotate<u16,16>(ddsd.lpSurface); break;
+	case 32:
+		doRotate<u32>(ddsd.lpSurface);
+		break;
+	case 24:
+		doRotate<pix24>(ddsd.lpSurface);
+		break;
+	case 16:
+		if(ddsd.ddpfPixelFormat.dwGBitMask != 0x3E0)
+			doRotate<pix16>(ddsd.lpSurface);
+		else
+			doRotate<pix15>(ddsd.lpSurface);
+		break;
 	default:
 		{
 			INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
-			emu_halt();
+			//emu_halt();
 		}
 		break;
 	}
