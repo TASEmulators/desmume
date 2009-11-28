@@ -27,6 +27,8 @@ extern bool ShowLagFrameCounter;
 #define GPU3D_OPENGL 1
 #define GPU3D_SWRAST 2
 
+extern void Change3DCoreWithFallbackAndSave(int newCore, int fallbackCore=GPU3D_SWRAST);
+
 extern int backupmemorytype;
 extern u32 backupmemorysize;
 
