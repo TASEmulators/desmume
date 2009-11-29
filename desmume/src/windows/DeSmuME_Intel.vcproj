@@ -1241,6 +1241,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\filter\epx.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\filter\filter.h"
 					>
 				</File>
