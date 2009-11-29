@@ -638,6 +638,8 @@
 		<File 
 			RelativePath=".\filter\bilinear.cpp"/>
 		<File 
+			RelativePath=".\filter\epx.cpp"/>
+		<File 
 			RelativePath=".\filter\filter.h"/>
 		<File 
 			RelativePath=".\filter\hq2x.cpp"/>

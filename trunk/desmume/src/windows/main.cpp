@@ -481,7 +481,7 @@ void UnscaleScreenCoords(s32& x, s32& y)
 
 	if (video.layout == 0)
 	{
-		defheight += video.screengap;
+		defheight += video.scaledscreengap();
 
 		// translate from scaling (screen resolution to 256x384 or 512x192) 
 		switch (video.rotation)
@@ -513,8 +513,8 @@ void UnscaleScreenCoords(s32& x, s32& y)
 				y = (y*defheight) / winheight / 2;
 			}
 
-	x = x/video.ratio();
-	y = y/video.ratio();
+	x = video.dividebyratio(x);
+	y = video.dividebyratio(y);
 }
 
 // input x,y should be windows client-space coords already at 1x scaling.
@@ -527,7 +527,7 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 
 	if (video.layout == 0)
 	{
-		int gapSize = video.screengap / video.ratio();
+		int gapSize = video.dividebyratio(video.scaledscreengap());
 		// first deal with rotation
 		switch(video.rotation)
 		{
@@ -2671,7 +2671,7 @@ void UpdateWndRects(HWND hwnd)
 	int wndWidth, wndHeight;
 	int defHeight = video.height;
 	if(video.layout == 0)
-		defHeight += video.screengap;
+		defHeight += video.scaledscreengap();
 	float ratio;
 	int oneScreenHeight, gapHeight;
 
@@ -3623,6 +3623,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_SCANLINE, video.currentfilter == video.SCANLINE );
 			MainWindow->checkMenu(IDM_RENDER_BILINEAR, video.currentfilter == video.BILINEAR );
 			MainWindow->checkMenu(IDM_RENDER_NEAREST2X, video.currentfilter == video.NEAREST2X );
+			MainWindow->checkMenu(IDM_RENDER_EPX, video.currentfilter == video.EPX );
+			MainWindow->checkMenu(IDM_RENDER_EPX1POINT5, video.currentfilter == video.EPX1POINT5 );
 
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
@@ -4256,6 +4258,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				FilterUpdate(hwnd);
 			}
 			break;
+		case IDM_RENDER_EPX:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.EPX);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_EPX1POINT5:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.EPX1POINT5);
+				FilterUpdate(hwnd);
+			}
+			break;
+
 		case IDM_STATE_LOAD:
 			{
 				OPENFILENAME ofn;

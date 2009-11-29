@@ -32,6 +32,10 @@ public:
 		HQ2XS,
 		LQ2X,
 		LQ2XS,
+        EPX,
+        EPX1POINT5,
+
+		NUM_FILTERS,
 	};
 
 
@@ -42,6 +46,9 @@ public:
 
 	void setfilter(int filter) {
 
+		if(filter < 0 || filter >= NUM_FILTERS)
+			filter = NONE;
+
 		currentfilter = filter;
 
 		switch(filter) {
@@ -50,9 +57,13 @@ public:
 				width = 256;
 				height = 384;
 				break;
+			case EPX1POINT5:
+				width = 256*3/2;
+				height = 384*3/2;
+				break;
 			default:
-				width = 512;
-				height = 768;
+				width = 256*2;
+				height = 384*2;
 				break;
 		}
 	}
@@ -74,9 +85,9 @@ public:
 		src.Pitch = 512;
 		src.Surface = (u8*)buffer;
 
-		dst.Height = 768;
-		dst.Width = 512;
-		dst.Pitch = 1024;
+		dst.Height = height;
+		dst.Width = width;
+		dst.Pitch = width*2;
 		dst.Surface = (u8*)filteredbuffer;
 
 		switch(currentfilter)
@@ -113,6 +124,12 @@ public:
 			case NEAREST2X:
 				RenderNearest2X(src,dst);
 				break;
+			case EPX:
+				RenderEPX(src,dst);
+				break;
+			case EPX1POINT5:
+				RenderEPX_1Point5x(src,dst);
+				break;
 		}
 	}
 
@@ -120,8 +137,8 @@ public:
 		return width*height;
 	}
 
-	int ratio() {
-		return width / 256;
+	int dividebyratio(int x) {
+		return x * 256 / width;
 	}
 
 	int rotatedwidth() {
@@ -159,11 +176,11 @@ public:
 			case 0:
 				return width;
 			case 90:
-				return height + ((layout == 0) ? screengap : 0);
+				return height + ((layout == 0) ? scaledscreengap() : 0);
 			case 180:
 				return width;
 			case 270:
-				return height + ((layout == 0) ? screengap : 0);
+				return height + ((layout == 0) ? scaledscreengap() : 0);
 			default:
 				return 0;
 		}
@@ -172,15 +189,19 @@ public:
 	int rotatedheightgap() {
 		switch(rotation) {
 			case 0:
-				return height + ((layout == 0) ? screengap : 0);
+				return height + ((layout == 0) ? scaledscreengap() : 0);
 			case 90:
 				return width;
 			case 180:
-				return height + ((layout == 0) ? screengap : 0);
+				return height + ((layout == 0) ? scaledscreengap() : 0);
 			case 270:
 				return width;
 			default:
 				return 0;
 		}
+	}
+
+	int scaledscreengap() {
+		return screengap * height / 384;
 	}
 };

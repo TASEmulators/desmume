@@ -34,3 +34,6 @@ void RenderSuper2xSaI (SSurface Src, SSurface Dst);
 void RenderSuperEagle (SSurface Src, SSurface Dst);
 void RenderScanline( SSurface Src, SSurface Dst);
 void RenderBilinear( SSurface Src, SSurface Dst);
+void RenderEPX( SSurface Src, SSurface Dst);
+void RenderEPX_1Point5x( SSurface Src, SSurface Dst);
+
