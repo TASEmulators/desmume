@@ -2022,9 +2022,9 @@ void DmaController::doCopy()
 
 void triggerDma(EDMAMode mode)
 {
-	MACRODO2(2, {
+	MACRODO2(0, {
 		const int i=X;
-		MACRODO4(4, {
+		MACRODO4(0, {
 			const int j=X;
 			MMU_new.dma[i][j].tryTrigger(mode);
 		});
