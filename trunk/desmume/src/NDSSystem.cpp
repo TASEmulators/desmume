@@ -1777,11 +1777,11 @@ struct TSequenceItem_divider : public TSequenceItem
 	void exec()
 	{
 		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[2]++);
+		MMU_new.div.busy = 0;
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, (u32)MMU.divResult);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, (u32)(MMU.divResult >> 32));
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, (u32)MMU.divMod);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, (u32)(MMU.divMod >> 32));
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280, MMU.divCnt);
 		MMU.divRunning = FALSE;
 	}
 
@@ -1804,8 +1804,8 @@ struct TSequenceItem_sqrtunit : public TSequenceItem
 	FORCEINLINE void exec()
 	{
 		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[3]++);
+		MMU_new.sqrt.busy = 0;
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, MMU.sqrtResult);
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, MMU.sqrtCnt);
 		MMU.sqrtRunning = FALSE;
 	}
 
@@ -2254,7 +2254,7 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-//static bool dolog = true;
+//bool dolog = true;
 
 FORCEINLINE void arm9log()
 {
@@ -2267,8 +2267,8 @@ FORCEINLINE void arm9log()
 		else
 			des_arm_instructions_set[INDEX(NDS_ARM9.instruction)](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, dasmbuf);
 
-		printf("%05d %12lld 9:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
-			currFrameCounter, nds_timer, 
+		printf("%05d:%03d %12lld 9:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
+			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM9.instruct_adr,NDS_ARM9.instruction, dasmbuf, 
 			NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
 			NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15]);  
@@ -2287,8 +2287,8 @@ FORCEINLINE void arm7log()
 		else
 			des_arm_instructions_set[INDEX(NDS_ARM7.instruction)](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, dasmbuf);
 		
-		printf("%05d %12lld 7:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
-			currFrameCounter, nds_timer, 
+		printf("%05d:%03d %12lld 7:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
+			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM7.instruct_adr,NDS_ARM7.instruction, dasmbuf, 
 			NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
 			NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15]);

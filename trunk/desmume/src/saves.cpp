@@ -205,12 +205,10 @@ SFORMAT SF_MMU[]={
 	{ "MDV1", 4, 1,       &MMU.divRunning},
 	{ "MDV2", 8, 1,       &MMU.divResult},
 	{ "MDV3", 8, 1,       &MMU.divMod},
-	{ "MDV4", 4, 1,       &MMU.divCnt},
 	{ "MDV5", 8, 1,       &MMU.divCycles},
 
 	{ "MSQ1", 4, 1,       &MMU.sqrtRunning},
 	{ "MSQ2", 4, 1,       &MMU.sqrtResult},
-	{ "MSQ3", 4, 1,       &MMU.sqrtCnt},
 	{ "MSQ4", 8, 1,       &MMU.sqrtCycles},
 	
 	//begin memory chips
@@ -254,7 +252,7 @@ SFORMAT SF_MOVIE[]={
 
 static void mmu_savestate(EMUFILE* os)
 {
-	u32 version = 3;
+	u32 version = 4;
 	write32le(version,os);
 	
 	//version 2:
@@ -272,6 +270,10 @@ static void mmu_savestate(EMUFILE* os)
 	MMU_timing.arm7dataFetch.savestate(os, version);
 	MMU_timing.arm9codeCache.savestate(os, version);
 	MMU_timing.arm9dataCache.savestate(os, version);
+
+	//version 4:
+	MMU_new.sqrt.savestate(os);
+	MMU_new.div.savestate(os);
 }
 
 SFORMAT SF_WIFI[]={
@@ -414,13 +416,11 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 		if(is->fail()) return false;
 	}
 
-	if(version < 2)
-		return true;
+	if(version < 2) return true;
 
 	bool ok = MMU_new.backupDevice.load_state(is);
 
-	if(version < 3)
-		return true;
+	if(version < 3) return true;
 
 	ok &= MMU_new.gxstat.loadstate(is);
 	
@@ -434,6 +434,11 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	ok &= MMU_timing.arm7dataFetch.loadstate(is, version);
 	ok &= MMU_timing.arm9codeCache.loadstate(is, version);
 	ok &= MMU_timing.arm9dataCache.loadstate(is, version);
+
+	if(version < 4) return true;
+
+	ok &= MMU_new.sqrt.loadstate(is,version);
+	ok &= MMU_new.div.loadstate(is,version);
 
 	return ok;
 }

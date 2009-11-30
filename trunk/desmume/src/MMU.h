@@ -1,7 +1,4 @@
 /*	Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com 
-
 	Copyright (C) 2007 shash
 	Copyright (C) 2007-2009 DeSmuME team
 
@@ -30,6 +27,7 @@
 #include "registers.h"
 #include "mc.h"
 #include "bits.h"
+#include "readwrite.h"
 #ifdef HAVE_LUA
 #include "lua-engine.h"
 #endif
@@ -77,7 +75,9 @@ enum EDMADestinationUpdate
 	EDMADestinationUpdate_IncrementReload = 3,
 };
 
-
+//TODO
+//n.b. this may be a bad idea, for complex registers like the dma control register.
+//we need to know exactly what part was written to, instead of assuming all 32bits were written.
 class TRegister_32
 {
 public:
@@ -130,6 +130,60 @@ struct TGXSTAT : public TRegister_32
 };
 
 void triggerDma(EDMAMode mode);
+
+class DivController
+{
+public:
+	DivController()
+		: mode(0), busy(0)
+	{}
+	void exec();
+	u8 mode, busy, div0;
+	u16 read16() { return mode|(busy<<15)|(div0<<14); }
+	void write16(u16 val) { 
+		mode = val&3;
+		//todo - do we clear the div0 flag here or is that strictly done by the divider unit?
+	}
+	void savestate(EMUFILE* os)
+	{
+		write8le(&mode,os);
+		write8le(&busy,os);
+		write8le(&div0,os);
+	}
+	bool loadstate(EMUFILE* is, int version)
+	{
+		int ret = 1;
+		ret &= read8le(&mode,is);
+		ret &= read8le(&busy,is);
+		ret &= read8le(&div0,is);
+		return ret==1;
+	}
+};
+
+class SqrtController
+{
+public:
+	SqrtController()
+		: mode(0), busy(0)
+	{}
+	void exec();
+	u8 mode, busy;
+	u16 read16() { return mode|(busy<<15); }
+	void write16(u16 val) { mode = val&1; }
+	void savestate(EMUFILE* os)
+	{
+		write8le(&mode,os);
+		write8le(&busy,os);
+	}
+	bool loadstate(EMUFILE* is, int version)
+	{
+		int ret=1;
+		ret &= read8le(&mode,is);
+		ret &= read8le(&busy,is);
+		return ret==1;
+	}
+};
+
 
 class DmaController
 {
@@ -334,12 +388,10 @@ struct MMU_struct
 	BOOL divRunning;
 	s64 divResult;
 	s64 divMod;
-	u32 divCnt;
 	u64 divCycles;
 
 	BOOL sqrtRunning;
 	u32 sqrtResult;
-	u32 sqrtCnt;
 	u64 sqrtCycles;
 
 	u16 SPI_CNT;
@@ -365,6 +417,8 @@ struct MMU_struct_new
 	BackupDevice backupDevice;
 	DmaController dma[2][4];
 	TGXSTAT gxstat;
+	SqrtController sqrt;
+	DivController div;
 
 	void write_dma(const int proc, const int size, const u32 adr, const u32 val);
 	u32 read_dma(const int proc, const int size, const u32 adr);

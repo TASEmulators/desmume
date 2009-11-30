@@ -1,7 +1,4 @@
 /*	Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com 
-
 	Copyright (C) 2007 shash
 	Copyright (C) 2007-2009 DeSmuME team
 
@@ -935,12 +932,10 @@ void MMU_Reset()
 	MMU.divRunning = 0;
 	MMU.divResult = 0;
 	MMU.divMod = 0;
-	MMU.divCnt = 0;
 	MMU.divCycles = 0;
 
 	MMU.sqrtRunning = 0;
 	MMU.sqrtResult = 0;
-	MMU.sqrtCnt = 0;
 	MMU.sqrtCycles = 0;
 
 	MMU.SPI_CNT = 0;
@@ -1026,31 +1021,36 @@ char txt[80];
 
 static void execsqrt() {
 	u32 ret;
-	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0);
+	u8 mode = MMU_new.sqrt.mode;
+	MMU_new.sqrt.busy = 1;
 
-	if (cnt&1) { 
+	if (mode) { 
 		u64 v = T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
 		ret = (u32)isqrt(v);
 	} else {
 		u32 v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
 		ret = (u32)isqrt(v);
 	}
+
+	//clear the result while the sqrt unit is busy
+	//todo - is this right? is it reasonable?
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, 0);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, cnt | 0x8000);
 
 	MMU.sqrtCycles = nds_timer + 26;
 	MMU.sqrtResult = ret;
-	MMU.sqrtCnt = (cnt & 0x7FFF);
 	MMU.sqrtRunning = TRUE;
 	NDS_Reschedule();
 }
 
 static void execdiv() {
-	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280);
+	
 	s64 num,den;
 	s64 res,mod;
+	u8 mode = MMU_new.div.mode;
+	MMU_new.div.busy = 1;
+	MMU_new.div.div0 = 0;
 
-	switch(cnt&3)
+	switch(mode)
 	{
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
@@ -1075,14 +1075,12 @@ static void execdiv() {
 	{
 		res = ((num < 0) ? 1 : -1);
 		mod = num;
-		cnt |= 0x4000;
-		cnt &= 0x7FFF;
+		MMU_new.div.div0 = 1;
 	}
 	else
 	{
 		res = num / den;
 		mod = num % den;
-		cnt &= 0x3FFF;
 	}
 
 	DIVLOG("DIV %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num, 
@@ -1093,11 +1091,9 @@ static void execdiv() {
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, 0);
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, 0);
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, 0);
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280, ((cnt & 0xBFFF) | 0x8000));
 
 	MMU.divResult = res;
 	MMU.divMod = mod;
-	MMU.divCnt = (cnt & 0x7FFF);
 	MMU.divRunning = TRUE;
 	NDS_Reschedule();
 }
@@ -2141,6 +2137,11 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		
 		switch(adr)
 		{
+			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
+			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
+			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
+			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
+
 			case REG_DISPA_DISP3DCNT:
 			{
 				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
@@ -2406,39 +2407,49 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 
 			// Alpha test reference value - Parameters:1
-			case 0x04000340:
+			case eng_3D_ALPHA_TEST_REF:
 			{
 				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x340>>1] = val;
 				gfx3d_glAlphaFunc(val);
 				return;
 			}
 			// Clear background color setup - Parameters:2
-			case 0x04000350:
+			case eng_3D_CLEAR_COLOR:
 			{
 				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x350>>1] = val;
 				gfx3d_glClearColor(val);
 				return;
 			}
 			// Clear background depth setup - Parameters:2
-			case 0x04000354:
+			case eng_3D_CLEAR_DEPTH:
 			{
 				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x354>>1] = val;
 				gfx3d_glClearDepth(val);
 				return;
 			}
 			// Fog Color - Parameters:4b
-			case 0x04000358:
+			case eng_3D_FOG_COLOR:
 			{
 				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x358>>1] = val;
 				gfx3d_glFogColor(val);
 				return;
 			}
-			case 0x0400035C:
+			case eng_3D_FOG_OFFSET:
 			{
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x35C>>1] = val;
 				gfx3d_glFogOffset(val);
 				return;
 			}
+
+			case REG_DIVCNT:
+				MMU_new.div.write16(val);
+				execdiv();
+				return;
+
+			case REG_SQRTCNT:
+				MMU_new.sqrt.write16(val);
+				execsqrt();
+				return;
 
 			case REG_DISPA_BLDCNT: 	 
 				GPU_setBLDCNT(MainScreen.gpu,val) ; 	 
@@ -2924,6 +2935,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
+			case REG_SQRTCNT: printf("ERROR 32bit SQRTCNT WRITE\n"); return;
+			case REG_DIVCNT:  printf("ERROR 32bit DIVCNT WRITE\n"); return;
+
+
 			case eng_3D_GXSTAT:
 				MMU_new.gxstat.write32(val);
 				break;
@@ -3239,6 +3254,15 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 
 		switch(adr)
 		{
+			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
+			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
+			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
+			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
+			case REG_DIVCNT: printf("ERROR 8bit DIVCNT READ\n"); return 0;
+			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT READ\n"); return 0;
+			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT READ\n"); return 0;
+			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT READ\n"); return 0;
+
 			case eng_3D_GXSTAT:
 				return MMU_new.gxstat.read(8,adr);
 		}
@@ -3271,8 +3295,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		// Address is an IO register
 		switch(adr)
 		{
-			case eng_3D_GXSTAT:
-				return MMU_new.gxstat.read(16,adr);
+			case REG_SQRTCNT: return MMU_new.sqrt.read16();
+			case REG_DIVCNT: return MMU_new.div.read16();
+			case eng_3D_GXSTAT: return MMU_new.gxstat.read(16,adr);
 
 			// ============================================= 3D
 			case eng_3D_RAM_COUNT:
@@ -3352,50 +3377,53 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 		switch(adr)
 		{
-			case 0x04000640:
-			case 0x04000644:
-			case 0x04000648:
-			case 0x0400064C:
-			case 0x04000650:
-			case 0x04000654:
-			case 0x04000658:
-			case 0x0400065C:
-			case 0x04000660:
-			case 0x04000664:
-			case 0x04000668:
-			case 0x0400066C:
-			case 0x04000670:
-			case 0x04000674:
-			case 0x04000678:
-			case 0x0400067C:
+			case REG_SQRTCNT: printf("ERROR 32bit SQRTCNT READ\n"); return 0;
+			case REG_DIVCNT: printf("ERROR 32bit DIVCNT READ\n"); return 0;
+
+			case eng_3D_CLIPMTX_RESULT:
+			case eng_3D_CLIPMTX_RESULT+4:
+			case eng_3D_CLIPMTX_RESULT+8:
+			case eng_3D_CLIPMTX_RESULT+12:
+			case eng_3D_CLIPMTX_RESULT+16:
+			case eng_3D_CLIPMTX_RESULT+20:
+			case eng_3D_CLIPMTX_RESULT+24:
+			case eng_3D_CLIPMTX_RESULT+28:
+			case eng_3D_CLIPMTX_RESULT+32:
+			case eng_3D_CLIPMTX_RESULT+36:
+			case eng_3D_CLIPMTX_RESULT+40:
+			case eng_3D_CLIPMTX_RESULT+44:
+			case eng_3D_CLIPMTX_RESULT+48:
+			case eng_3D_CLIPMTX_RESULT+52:
+			case eng_3D_CLIPMTX_RESULT+56:
+			case eng_3D_CLIPMTX_RESULT+60:
 			{
 				//LOG("4000640h..67Fh - CLIPMTX_RESULT - Read Current Clip Coordinates Matrix (R)");
 				return gfx3d_GetClipMatrix ((adr-0x04000640)/4);
 			}
-			case 0x04000680:
-			case 0x04000684:
-			case 0x04000688:
-			case 0x0400068C:
-			case 0x04000690:
-			case 0x04000694:
-			case 0x04000698:
-			case 0x0400069C:
-			case 0x040006A0:
+			case eng_3D_VECMTX_RESULT:
+			case eng_3D_VECMTX_RESULT+4:
+			case eng_3D_VECMTX_RESULT+8:
+			case eng_3D_VECMTX_RESULT+12:
+			case eng_3D_VECMTX_RESULT+16:
+			case eng_3D_VECMTX_RESULT+20:
+			case eng_3D_VECMTX_RESULT+24:
+			case eng_3D_VECMTX_RESULT+28:
+			case eng_3D_VECMTX_RESULT+32:
 			{
 				//LOG("4000680h..6A3h - VECMTX_RESULT - Read Current Directional Vector Matrix (R)");
 				return gfx3d_GetDirectionalMatrix ((adr-0x04000680)/4);
 			}
 
-			case 0x4000604:
+			case eng_3D_RAM_COUNT:
 			{
 				return (gfx3d_GetNumPolys()) | ((gfx3d_GetNumVertex()) << 16);
 				//LOG ("read32 - RAM_COUNT -> 0x%X", ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF])>>2]);
 			}
 
-			case 0x04000620:
-			case 0x04000624:
-			case 0x04000628:
-			case 0x0400062C:
+			case eng_3D_POS_RESULT:
+			case eng_3D_POS_RESULT+4:
+			case eng_3D_POS_RESULT+8:
+			case eng_3D_POS_RESULT+12:
 			{
 				return gfx3d_glGetPosRes((adr & 0xF) >> 2);
 			}
@@ -3420,18 +3448,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 					u32 val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], (adr + 2) & 0xFFF);
 					return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2] | (val<<16);
 				}	
-			/*
-			case 0x04000640 :	// TODO (clear): again, ??? 
-				LOG("read proj\r\n");
-			return 0;
-			case 0x04000680 :
-				LOG("read roat\r\n");
-			return 0;
-			case 0x04000620 :
-				LOG("point res\r\n");
-			return 0;
-			*/
-            case REG_GCDATAIN:
+     
+			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM9>();
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
