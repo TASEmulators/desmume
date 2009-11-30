@@ -28,6 +28,7 @@
 
 //well. just for the sake of consistency
 int write8le(u8 b, EMUFILE *fp);
+inline int write8le(u8* b, EMUFILE *fp) { return write8le(*b,fp); }
 int write16le(u16 b, EMUFILE* os);
 int write32le(u32 b, EMUFILE* os);
 int write64le(u64 b, EMUFILE* os);
