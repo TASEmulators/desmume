@@ -1,4 +1,4 @@
-0.9.5 -> 0.9.6 (r3075-r3???)
+0.9.5 -> 0.9.6 (r3075-r3107-r3xxx)
 
 General/Core:
  bug: emulate keypad interrupt
@@ -8,10 +8,15 @@ General/Core:
 Graphics:
  bug: fix a mistakenly rendered OBJ window
  
+Windows:
+ bug: fix 16bpp display
+ enh: add EPX and EPX1.5X resize filters
+ 
 0.9.4 -> 0.9.5 (r2437-r3075)
 
 0.9.5 introduces an entirely rewritten main emulation loop
 This totally changes the timing, and totally breaks old savestates.
+The OSX build is now based on the GTK port which is more up-to-date.
 
 Assorted Highlights:
   * synchronous SPU mode to fix	streaming sounds
