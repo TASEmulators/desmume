@@ -60,11 +60,10 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 	{
 		case WM_INITDIALOG: 
 		{
-			SetWindowText(GetDlgItem(dialog, IDC_PATHIMG), tmp_cflash_filename);
-			SetWindowText(GetDlgItem(dialog, IDC_PATH), tmp_cflash_path);
 			switch (tmp_CFlashMode)
 			{
 				case ADDON_CFLASH_MODE_Path:
+					SetFocus(GetDlgItem(dialog,IDC_RFOLDER));
 					CheckDlgButton(dialog, IDC_RFOLDER, BST_CHECKED);
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
@@ -74,6 +73,7 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				break;
 
 				case ADDON_CFLASH_MODE_File:
+					SetFocus(GetDlgItem(dialog,IDC_RFILE));
 					CheckDlgButton(dialog, IDC_RFILE, BST_CHECKED);
 					EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), TRUE);
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), TRUE);
@@ -83,6 +83,7 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				break;
 
 				case ADDON_CFLASH_MODE_RomPath:
+					SetFocus(GetDlgItem(dialog,IDC_PATHDESMUME));
 					CheckDlgButton(dialog, IDC_PATHDESMUME, BST_CHECKED);
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
@@ -90,11 +91,10 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
 					_OKbutton = TRUE;
 				break;
-				default:
-					return FALSE;
-
 			}
-			return TRUE;
+			SetWindowText(GetDlgItem(dialog, IDC_PATHIMG), tmp_cflash_filename);
+			SetWindowText(GetDlgItem(dialog, IDC_PATH), tmp_cflash_path);
+			return FALSE;
 		}
 
 		case WM_COMMAND:
@@ -105,19 +105,15 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				{
 					int filterSize = 0, i = 0;
                     OPENFILENAME ofn;
-                    char filename[MAX_PATH] = "",
-						 fileFilter[512]="";
+                    char filename[MAX_PATH] = "";
+
                     
                     ZeroMemory(&ofn, sizeof(ofn));
                     ofn.lStructSize = sizeof(ofn);
                     ofn.hwndOwner = dialog;
 
-					strncpy (fileFilter, "Compact Flash image (*.img)|*.img||",512 - strlen(fileFilter));
-					strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
+					const char *fileFilter = "Compact Flash image (*.img)\0*.img\0Any file (*.*)\0*.*\0";
 					
-					filterSize = strlen(fileFilter);
-					for (i = 0; i < filterSize; i++)
-						if (fileFilter[i] == '|')	fileFilter[i] = '\0';
                     ofn.lpstrFilter = fileFilter;
                     ofn.nFilterIndex = 1;
                     ofn.lpstrFile =  filename;
@@ -144,7 +140,7 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					bp.pidlRoot=NULL;
 					bp.pszDisplayName=NULL;
 					bp.lpszTitle="Select directory for Compact Flash";
-					bp.ulFlags=BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+					bp.ulFlags=BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
 					bp.lpfn=NULL;
 	
 					LPITEMIDLIST tmp = SHBrowseForFolder((LPBROWSEINFO)&bp);
@@ -173,7 +169,6 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 
 						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
 						EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
-
 						if (!strlen(tmp_cflash_filename))
 							EnableWindow(OKbutton, FALSE);
 					}
@@ -248,20 +243,17 @@ INT_PTR CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 					{
 							int filterSize = 0, i = 0;
                             OPENFILENAME ofn;
-                            char filename[MAX_PATH] = "",
-								 fileFilter[512]="";
+                            char filename[MAX_PATH] = "";
                             
                             ZeroMemory(&ofn, sizeof(ofn));
                             ofn.lStructSize = sizeof(ofn);
                             ofn.hwndOwner = dialog;
 
-							// TODO: add another gba file formats and archs
-							strncpy (fileFilter, "GameBoy Advance ROM (*.gba)|*.gba||",512 - strlen(fileFilter));
-							strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
+							// TODO: add another gba file formats and archs (??wtf??)
+							const char* fileFilter =	"GameBoy Advance ROM (*.gba)\0*.gba\0"
+														"NDS ROM (for nitroFS roms) (*.nds)\0*.nds\0"
+														"Any file (*.*)\0*.*\0";
 							
-							filterSize = strlen(fileFilter);
-							for (i = 0; i < filterSize; i++)
-								if (fileFilter[i] == '|')	fileFilter[i] = '\0';
                             ofn.lpstrFilter = fileFilter;
                             ofn.nFilterIndex = 1;
                             ofn.lpstrFile =  filename;
