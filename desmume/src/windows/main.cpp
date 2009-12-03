@@ -293,7 +293,7 @@ GPU3DInterface *core3DList[] = {
 	NULL
 };
 
-bool autoframeskipenab=0;
+bool autoframeskipenab=1;
 int frameskiprate=0;
 int lastskiprate=0;
 int emu_paused = 0;
@@ -1638,12 +1638,12 @@ static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1
 		if (mainLoopData.framestoskip < 1)
 			mainLoopData.framestoskip += ffSkipRate;
 	}
-	else if((/*autoframeskipenab ||*/ FrameLimit) && allowSleep)
+	else if((/*autoframeskipenab && frameskiprate ||*/ FrameLimit) && allowSleep)
 	{
 		SpeedThrottle();
 	}
 
-	if (autoframeskipenab)
+	if (autoframeskipenab && frameskiprate)
 	{
 		if(!frameAdvance && !continuousframeAdvancing)
 		{
@@ -1825,7 +1825,7 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 			OpenRWRecentFile(0);	
 			RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), MainWindow->getHWnd(), (DLGPROC) RamWatchProc);
 		}
-		if (autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
+		if (autoframeskipenab && frameskiprate) AutoFrameSkip_IgnorePreviousDelay();
 
 		return TRUE;		
 	}
@@ -2439,7 +2439,7 @@ int _main()
 	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	
 	CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
-	GetPrivateProfileString("Video", "FrameSkip", "0", text, 80, IniName);
+	GetPrivateProfileString("Video", "FrameSkip", "AUTO0", text, 80, IniName);
 
 	if(!strncmp(text, "AUTO", 4))
 	{
@@ -3325,7 +3325,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 void Unpause()
 {
 	lastPauseFromLostFocus = FALSE;
-	if (emu_paused && autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
+	if (emu_paused && autoframeskipenab && frameskiprate) AutoFrameSkip_IgnorePreviousDelay();
 	if (!execute && !emu_paused) NDS_Pause(false), emu_paused=true;
 	if (emu_paused) NDS_UnPause();
 	emu_paused = 0;
@@ -3342,7 +3342,7 @@ void Pause()
 void TogglePause()
 {
 	lastPauseFromLostFocus = FALSE;
-	if (emu_paused && autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
+	if (emu_paused && autoframeskipenab && frameskiprate) AutoFrameSkip_IgnorePreviousDelay();
 	if (emu_paused) NDS_UnPause();
 	else NDS_Pause();
 	emu_paused ^= 1;
@@ -3479,7 +3479,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		case WM_EXITMENULOOP:
 			SPU_Pause(0);
-			if (autoframeskipenab) AutoFrameSkip_IgnorePreviousDelay();
+			if (autoframeskipenab && frameskiprate) AutoFrameSkip_IgnorePreviousDelay();
 			break;
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
@@ -3586,25 +3586,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit);
 			
 			//Frame Skip
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO1, (autoframeskipenab && frameskiprate==1) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO2, (autoframeskipenab && frameskiprate==2) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO3, (autoframeskipenab && frameskiprate==3) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO4, (autoframeskipenab && frameskiprate==4) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO5, (autoframeskipenab && frameskiprate==5) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO6, (autoframeskipenab && frameskiprate==6) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO7, (autoframeskipenab && frameskiprate==7) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO8, (autoframeskipenab && frameskiprate==8) );
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO9, (autoframeskipenab && frameskiprate==9) );
-			MainWindow->checkMenu(IDC_FRAMESKIP0, (!autoframeskipenab && frameskiprate==0) );
-			MainWindow->checkMenu(IDC_FRAMESKIP1, (!autoframeskipenab && frameskiprate==1) );
-			MainWindow->checkMenu(IDC_FRAMESKIP2, (!autoframeskipenab && frameskiprate==2) );
-			MainWindow->checkMenu(IDC_FRAMESKIP3, (!autoframeskipenab && frameskiprate==3) );
-			MainWindow->checkMenu(IDC_FRAMESKIP4, (!autoframeskipenab && frameskiprate==4) );
-			MainWindow->checkMenu(IDC_FRAMESKIP5, (!autoframeskipenab && frameskiprate==5) );
-			MainWindow->checkMenu(IDC_FRAMESKIP6, (!autoframeskipenab && frameskiprate==6) );
-			MainWindow->checkMenu(IDC_FRAMESKIP7, (!autoframeskipenab && frameskiprate==7) );
-			MainWindow->checkMenu(IDC_FRAMESKIP8, (!autoframeskipenab && frameskiprate==8) );
-			MainWindow->checkMenu(IDC_FRAMESKIP9, (!autoframeskipenab && frameskiprate==9) );
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO, autoframeskipenab);
+			DesEnableMenuItem(mainMenu, IDC_FRAMESKIPAUTO, frameskiprate!=0);
+			MainWindow->checkMenu(IDC_FRAMESKIP0, frameskiprate==0);
+			MainWindow->checkMenu(IDC_FRAMESKIP1, frameskiprate==1);
+			MainWindow->checkMenu(IDC_FRAMESKIP2, frameskiprate==2);
+			MainWindow->checkMenu(IDC_FRAMESKIP3, frameskiprate==3);
+			MainWindow->checkMenu(IDC_FRAMESKIP4, frameskiprate==4);
+			MainWindow->checkMenu(IDC_FRAMESKIP5, frameskiprate==5);
+			MainWindow->checkMenu(IDC_FRAMESKIP6, frameskiprate==6);
+			MainWindow->checkMenu(IDC_FRAMESKIP7, frameskiprate==7);
+			MainWindow->checkMenu(IDC_FRAMESKIP8, frameskiprate==8);
+			MainWindow->checkMenu(IDC_FRAMESKIP9, frameskiprate==9);
 
 			//gpu visibility toggles
 			MainWindow->checkMenu(IDM_MGPU, CommonSettings.showGpu.main );
@@ -4785,20 +4778,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				if(tpaused) NDS_UnPause();
 			}
 			return 0;
-		case IDC_FRAMESKIPAUTO1:
-		case IDC_FRAMESKIPAUTO2:
-		case IDC_FRAMESKIPAUTO3:
-		case IDC_FRAMESKIPAUTO4:
-		case IDC_FRAMESKIPAUTO5:
-		case IDC_FRAMESKIPAUTO6:
-		case IDC_FRAMESKIPAUTO7:
-		case IDC_FRAMESKIPAUTO8:
-		case IDC_FRAMESKIPAUTO9:
+		case IDC_FRAMESKIPAUTO:
 			{
 				char text[80];
-				autoframeskipenab = 1;
-				frameskiprate = LOWORD(wParam) - (IDC_FRAMESKIPAUTO1 - 1);
-				sprintf(text, "AUTO%d", frameskiprate);
+				autoframeskipenab = !autoframeskipenab;
+				sprintf(text, "%s%d", autoframeskipenab ? "AUTO" : "", frameskiprate);
 				WritePrivateProfileString("Video", "FrameSkip", text, IniName);
 				AutoFrameSkip_IgnorePreviousDelay();
 			}
@@ -4815,9 +4799,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_FRAMESKIP9:
 			{
 				char text[80];
-				autoframeskipenab = 0;
 				frameskiprate = LOWORD(wParam) - IDC_FRAMESKIP0;
-				sprintf(text, "%d", frameskiprate);
+				sprintf(text, "%s%d", autoframeskipenab ? "AUTO" : "", frameskiprate);
 				WritePrivateProfileString("Video", "FrameSkip", text, IniName);
 			}
 			return 0;
