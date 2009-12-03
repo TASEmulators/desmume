@@ -96,15 +96,7 @@
 #define IDC_LANGDANISH                  212
 #define IDM_MGPU                        213
 #define IDM_SGPU                        214
-#define IDC_FRAMESKIPAUTO1              221
-#define IDC_FRAMESKIPAUTO2              222
-#define IDC_FRAMESKIPAUTO3              223
-#define IDC_FRAMESKIPAUTO4              224
-#define IDC_FRAMESKIPAUTO5              225
-#define IDC_FRAMESKIPAUTO6              226
-#define IDC_FRAMESKIPAUTO7              227
-#define IDC_FRAMESKIPAUTO8              228
-#define IDC_FRAMESKIPAUTO9              229
+#define IDC_FRAMESKIPAUTO               221
 #define IDC_8_BIT                       302
 #define IDC_16_BIT                      303
 #define IDC_32_BIT                      304
