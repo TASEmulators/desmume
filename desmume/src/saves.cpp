@@ -983,7 +983,7 @@ bool savestate_save(EMUFILE* outstream, int compressionLevel)
 	outstream->fseek(0,SEEK_SET);
 	outstream->fwrite(magic,16);
 	write32le(SAVESTATE_VERSION,outstream);
-	write32le(DESMUME_VERSION_NUMERIC,outstream); //desmume version
+	write32le(EMU_DESMUME_VERSION_NUMERIC(),outstream); //desmume version
 	write32le(len,outstream); //uncompressed length
 	write32le(comprlen,outstream); //compressed length (-1 if it is not compressed)
 

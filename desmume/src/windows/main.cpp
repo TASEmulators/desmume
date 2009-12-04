@@ -2292,7 +2292,7 @@ int _main()
 		SetProcessAffinityMask(GetCurrentProcess(),1);
 
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
-	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX, WndY, video.width,video.height+video.screengap,
+	if (!MainWindow->create((char*)EMU_DESMUME_NAME_AND_VERSION(), WndX, WndY, video.width,video.height+video.screengap,
 		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{

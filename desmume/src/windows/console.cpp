@@ -78,7 +78,7 @@ void OpenConsole()
 	*stderr = *fp;
 
 	memset(buf,0,256);
-	sprintf(buf,"%s OUTPUT", DESMUME_NAME_AND_VERSION);
+	sprintf(buf,"%s OUTPUT", EMU_DESMUME_NAME_AND_VERSION());
 	SetConsoleTitle(TEXT(buf));
 	csize.X = 60;
 	csize.Y = 800;
@@ -91,7 +91,7 @@ void OpenConsole()
 	SetConsoleCP(GetACP());
 	SetConsoleOutputCP(GetACP());
 	if(attached) printlog("\n");
-	printlog("%s\n",DESMUME_NAME_AND_VERSION);
+	printlog("%s\n",EMU_DESMUME_NAME_AND_VERSION());
 	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
 
 
