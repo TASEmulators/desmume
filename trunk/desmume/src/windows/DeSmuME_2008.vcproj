@@ -941,6 +941,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\version.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\version.h"
 				>
 			</File>
