@@ -52,7 +52,7 @@ libdesmume_a_SOURCES = \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
-	version.h
+	version.cpp version.h
 
 if HAVE_ALSA
 libdesmume_a_SOURCES += mic_alsa.cpp

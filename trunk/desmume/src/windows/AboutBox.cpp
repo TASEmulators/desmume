@@ -87,8 +87,8 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 		{
 			char buf[2048];
 			memset(buf, 0, sizeof(buf));
-			wsprintf(buf, "version %s", DESMUME_VERSION_STRING DESMUME_COMPILER_DETAIL);
-			SetDlgItemText(dialog, IDC_TXT_VERSION, buf);
+			std::string version = (std::string)"version " + EMU_DESMUME_VERSION_STRING() + EMU_DESMUME_COMPILER_DETAIL();
+			SetDlgItemText(dialog, IDC_TXT_VERSION, version.c_str());
 
 			memset(buf, 0, sizeof(buf));
 			wsprintf(buf, "compiled: %s %s", __DATE__,__TIME__);
