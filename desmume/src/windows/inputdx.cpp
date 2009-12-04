@@ -647,10 +647,9 @@ void CheckAxis_game (int val, int min, int max, bool &first, bool &second)
 
 void S9xUpdateJoyState()
 {
-	memset(&Joystick[0],0,sizeof(Joystick[0]));
-
 	for(int C=0;C<16;C++)
 	{
+		memset(&Joystick[C],0,sizeof(Joystick[C]));
 		if(!JoystickF[C].Attached) continue;
 		LPDIRECTINPUTDEVICE8 pJoystick = JoystickF[C].Device;
 		if (pJoystick)
@@ -666,8 +665,8 @@ void S9xUpdateJoyState()
 				if (FAILED(hr)) hr=pJoystick->Acquire();
 				else
 				{
-					CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[0].Left,Joystick[0].Right);
-					CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[0].Up,Joystick[0].Down);
+					CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
+					CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[C].Up,Joystick[C].Down);
 			
 					 switch (JoyStatus.rgdwPOV[0])
 					{
@@ -741,8 +740,8 @@ void di_poll_scan()
 				if (FAILED(hr)) hr=pJoystick->Acquire();
 				else
 				{
-					CheckAxis(0,0,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
-					CheckAxis(0,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
+					CheckAxis(C,0,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
+					CheckAxis(C,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
 			
 					 switch (JoyStatus.rgdwPOV[0])
 					{
