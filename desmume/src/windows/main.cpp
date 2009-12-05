@@ -1912,6 +1912,11 @@ void SetLanguage(int langid)
 		setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		break;
+	case 5:
+		// Japanese
+		setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
+		break;
 
 	default: break;
 		break;
@@ -1931,7 +1936,7 @@ void SaveLanguage(int langid)
 void CheckLanguage(UINT id)
 {
 	int i;
-	for (i = IDC_LANGENGLISH; i < IDC_LANG_CHINESE_SIMPLIFIED+1; i++)
+	for (i = IDC_LANGENGLISH; i < IDC_LANGJAPANESE+1; i++)
 		MainWindow->checkMenu(i, false);
 
 	MainWindow->checkMenu(id, true);
@@ -4822,6 +4827,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ChangeLanguage(1);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
+		case IDC_LANGDANISH:
+			SaveLanguage(2);
+			ChangeLanguage(2);
+			CheckLanguage(LOWORD(wParam));
+			return 0;
 		case IDC_LANG_CHINESE_SIMPLIFIED:
 			SaveLanguage(3);
 			ChangeLanguage(3);
@@ -4832,12 +4842,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ChangeLanguage(4);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
-		
-		case IDC_LANGDANISH:
-			SaveLanguage(2);
-			ChangeLanguage(2);
+		case IDC_LANGJAPANESE:
+			SaveLanguage(5);
+			ChangeLanguage(5);
 			CheckLanguage(LOWORD(wParam));
-		return 0;
+			return 0;
 
 		case IDC_FRAMELIMIT:
 			FrameLimit ^= 1;
