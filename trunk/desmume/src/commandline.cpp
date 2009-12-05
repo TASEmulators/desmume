@@ -40,6 +40,7 @@ CommandLine::CommandLine()
 , _record_movie_file(0)
 , _cflash_image(0)
 , _cflash_path(0)
+, _gbaslot_rom(0)
 , _bios_arm9(NULL)
 , _bios_arm7(NULL)
 , _bios_swi(0)
@@ -69,6 +70,7 @@ void CommandLine::loadCommonOptions()
 		{ "start-paused", 0, 0, G_OPTION_ARG_NONE, &start_paused, "Indicates that emulation should start paused", "START_PAUSED"},
 		{ "cflash-image", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_image, "Requests cflash in gbaslot with fat image at this path", "CFLASH_IMAGE"},
 		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
+		{ "gbaslot-rom", 0, 0, G_OPTION_ARG_FILENAME, &_gbaslot_rom, "Requests this GBA rom in gbaslot", "GBASLOT_ROM"},
 		{ "bios-arm9", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm9, "Uses the arm9 bios provided at the specified path", "BIOS_ARM9_PATH"},
 		{ "bios-arm7", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm7, "Uses the arm7 bios provided at the specified path", "BIOS_ARM7_PATH"},
 		{ "bios-swi", 0, 0, G_OPTION_ARG_INT, &_bios_swi, "Uses SWI from the provided bios files", "BIOS_SWI"},
@@ -100,6 +102,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_record_movie_file) record_movie_file = _record_movie_file;
 	if(_cflash_image) cflash_image = _cflash_image;
 	if(_cflash_path) cflash_path = _cflash_path;
+	if(_gbaslot_rom) gbaslot_rom = _gbaslot_rom;
 
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
 
@@ -145,6 +148,10 @@ bool CommandLine::validate()
 
 	if(_bios_swi && (!_bios_arm7 || !_bios_arm9)) {
 		g_printerr("If either bios-swi is used, bios-arm9 and bios-arm7 must be specified.\n");
+	}
+
+	if(_cflash_image && _gbaslot_rom || _cflash_path && _gbaslot_rom) {
+		g_printerr("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
 	}
 
 	return true;

@@ -44,6 +44,7 @@ CMemView::CMemView()
 	, selAddress(0x00000000)
 	, selNewVal(0x00000000)
 {
+	PostInitialize();
 }
 
 CMemView::~CMemView()

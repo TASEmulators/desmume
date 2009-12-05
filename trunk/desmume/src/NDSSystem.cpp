@@ -2663,10 +2663,8 @@ void NDS_Reset()
 
 	resetUserInput();
 
-	/*
-	* Setup a copy of the firmware user settings in memory.
-	* (this is what the DS firmware would do).
-	*/
+	//Setup a copy of the firmware user settings in memory.
+	//(this is what the DS firmware would do).
 	{
 		u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
 		int fw_index;
@@ -2687,6 +2685,30 @@ void NDS_Reset()
 
 	// Write the header checksum to memory (the firmware needs it to see the cart)
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
+
+	//--------------------------------
+	//setup the homebrew argv
+	//this is useful for nitrofs apps which are emulating themselves via cflash
+	//struct __argv {
+	//	int argvMagic;		//!< argv magic number, set to 0x5f617267 ('_arg') if valid 
+	//	char *commandLine;	//!< base address of command line, set of null terminated strings
+	//	int length;			//!< total length of command line
+	//	int argc;			//!< internal use, number of arguments
+	//	char **argv;		//!< internal use, argv pointer
+	//};
+	std::string rompath = "fat:/" + path.RomName;
+	const u32 kCommandline = 0x027E0000;
+	//const u32 kCommandline = 0x027FFF84;
+	_MMU_write32<ARMCPU_ARM9>(0x027FFF70, 0x5f617267);
+	_MMU_write32<ARMCPU_ARM9>(0x027FFF74, kCommandline); //(commandline starts here)
+	_MMU_write32<ARMCPU_ARM9>(0x027FFF78, rompath.size()+1);
+	//0x027FFF7C (argc)
+	//0x027FFF80 (argv)
+	for(size_t i=0;i<rompath.size();i++)
+		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
+	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
+	//--------------------------------
+
 
 	// Save touchscreen calibration info in a structure
 	// so we can easily access it at any time

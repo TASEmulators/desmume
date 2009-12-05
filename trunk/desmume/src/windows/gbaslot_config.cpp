@@ -20,6 +20,7 @@
 #include "gbaslot_config.h"
 #include <windowsx.h>
 #include "resource.h"
+#include "main.h"
 #include "debug.h"
 #include "../addons.h"
 #include "../NDSSystem.h"
@@ -39,7 +40,10 @@ bool		_OKbutton = false;
 SGuitar		tmp_Guitar;
 bool		needReset = true;
 
-std::string CFlashPath, CFlashName;
+//these are the remembered preset values for directory and filename
+//they are named very verbosely to distinguish them from the currently-configured values in addons.cpp
+std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
+UINT win32_CFlash_cfgMode;
 
 INT_PTR CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -442,8 +446,8 @@ void GBAslotDialog(HWND hwnd)
 {
 	temp_type = addon_type;
 	last_type = temp_type;
-	strcpy(tmp_cflash_filename, CFlashName.c_str());
-	strcpy(tmp_cflash_path, CFlashPath.c_str());
+	strcpy(tmp_cflash_filename, win32_CFlash_cfgFileName.c_str());
+	strcpy(tmp_cflash_path, win32_CFlash_cfgDirectory.c_str());
 	strcpy(tmp_gbagame_filename, GBAgameName);
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	tmp_CFlashMode = CFlash_Mode;
@@ -461,16 +465,17 @@ void GBAslotDialog(HWND hwnd)
 					needReset = false;
 				break;
 			case NDS_ADDON_CFLASH:
-				CFlash_Mode = tmp_CFlashMode;
+				//save current values for win32 configuration
+				//(no tmp for mode, a little weird but thats just how it evolved)
+				win32_CFlash_cfgMode = CFlash_Mode;
+				win32_CFlash_cfgDirectory = tmp_cflash_path;
+				win32_CFlash_cfgFileName = tmp_cflash_filename;
 				WritePrivateProfileInt("GBAslot.CFlash","fileMode",CFlash_Mode,IniName);
 				WritePrivateProfileString("GBAslot.CFlash","path",tmp_cflash_path,IniName);
 				WritePrivateProfileString("GBAslot.CFlash","filename",tmp_cflash_filename,IniName);
-				if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
-					CFlash_Path = tmp_cflash_path;
-				else if(CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
-					CFlash_Path = "";
-				else
-					CFlash_Path = tmp_cflash_filename;
+
+				WIN_InstallCFlash();
+
 				needReset = true;
 				break;
 			case NDS_ADDON_RUMBLEPAK:

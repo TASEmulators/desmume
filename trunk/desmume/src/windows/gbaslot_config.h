@@ -22,7 +22,8 @@
 #include "../common.h"
 #include <string>
 
-extern std::string CFlashPath, CFlashName;
+extern std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
+extern UINT win32_CFlash_cfgMode;
 
 extern void GBAslotDialog(HWND hwnd);
 

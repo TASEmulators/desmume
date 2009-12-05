@@ -135,14 +135,21 @@ CToolWindow::CToolWindow(char* className, WNDPROC proc, char* title, int width, 
 		rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, NULL, hAppInst, (LPVOID)this);
 }
 
-CToolWindow::CToolWindow(int ID, DLGPROC proc, char* title)
+CToolWindow::CToolWindow(int _ID, DLGPROC _proc, char* _title)
 	: hWnd(NULL)
+	, ID(_ID)
+	, proc(_proc)
+	, title(_title)
+{
+}
+
+void CToolWindow::PostInitialize()
 {
 	hWnd = CreateDialogParam(hAppInst, MAKEINTRESOURCE(ID), HWND_DESKTOP, proc, (LPARAM)this);
 	if (hWnd == NULL)
 		return;
 
-	SetWindowText(hWnd, title);
+	SetWindowText(hWnd, title.c_str());
 	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hAppInst, "ICONDESMUME"));
 }
 
