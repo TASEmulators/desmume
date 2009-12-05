@@ -5,6 +5,7 @@ General/Core:
  bug: fix dma address reloading
  bug: fix rom close memory corruption
  bug: fix div and sqrt busy flag bug
+ bug: fix vectest
 
 Graphics:
  bug: fix a mistakenly rendered OBJ window
@@ -13,6 +14,7 @@ Windows:
  bug: fix 16bpp display
  bug: more fixes to multi-gamepads
  enh: add EPX and EPX1.5X resize filters
+ enh: add a japanese translation which will soon be stale like the others
  
 0.9.4 -> 0.9.5 (r2437-r3075)
 

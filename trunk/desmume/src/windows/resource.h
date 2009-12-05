@@ -94,8 +94,11 @@
 #define IDC_LANGENGLISH                 210
 #define IDC_LANGFRENCH                  211
 #define IDC_LANGDANISH                  212
-#define IDM_MGPU                        213
-#define IDM_SGPU                        214
+#define IDC_LANG_CHINESE_SIMPLIFIED     213
+#define IDC_LANGITALIAN                 214
+#define IDC_LANGJAPANESE                215
+#define IDM_MGPU                        219
+#define IDM_SGPU                        220
 #define IDC_FRAMESKIPAUTO               221
 #define IDC_8_BIT                       302
 #define IDC_16_BIT                      303
@@ -690,7 +693,6 @@
 #define IDM_FILE_RECORDWAV              40017
 #define IDM_EXPORTBACKUPMEMORY          40018
 #define IDM_STOPMOVIE                   40019
-#define IDC_LANG_CHINESE_SIMPLIFIED     40020
 #define IDM_SCREENSEP_NDSGAP2           40021
 #define IDM_SCREENSEP_DRAGEDIT          40022
 #define IDM_SCREENSEP_COLORWHITE        40023
@@ -805,13 +807,12 @@
 #define IDM_RENDER_HQ2XS                60081
 #define IDM_RENDER_LQ2X                 60082
 #define IDM_RENDER_LQ2XS                60083
-#define IDC_LANGITALIAN                 60084
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        105
+#define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40008
 #define _APS_NEXT_CONTROL_VALUE         1020
 #define _APS_NEXT_SYMED_VALUE           101
