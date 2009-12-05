@@ -1549,7 +1549,9 @@ static void gfx3d_glVecTest(u32 v)
 {
 	GFX_DELAY(5);
 
-	printf("VECTEST\n");
+	//this is tested by phoenix wright in its evidence inspector modelviewer
+	//i am not sure exactly what it is doing, maybe it is testing to ensure
+	//that the normal vector for the point of interest is camera-facing.
 
 	CACHE_ALIGN float normal[4] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
@@ -1558,9 +1560,9 @@ static void gfx3d_glVecTest(u32 v)
 
 	MatrixMultVec4x4(mtxCurrent[2], normal);
 
-	s16 x = (s16)(normal[0]);
-	s16 y = (s16)(normal[1]);
-	s16 z = (s16)(normal[2]);
+	s16 x = (s16)(normal[0]*4096);
+	s16 y = (s16)(normal[1]*4096);
+	s16 z = (s16)(normal[2]*4096);
 
 	MMU_new.gxstat.tb = 0;		// clear busy
 	T1WriteWord(MMU.MMU_MEM[0][0x40], 0x630, x);
