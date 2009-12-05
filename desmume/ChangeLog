@@ -6,6 +6,8 @@ General/Core:
  bug: fix rom close memory corruption
  bug: fix div and sqrt busy flag bug
  bug: fix vectest
+ enh: support devkitpro argv
+ enh: add gbaslot-rom commandline
 
 Graphics:
  bug: fix a mistakenly rendered OBJ window

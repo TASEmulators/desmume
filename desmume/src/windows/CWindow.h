@@ -83,6 +83,9 @@ public:
 	// can unregister any window classes they use.
 	virtual ~CToolWindow();
 
+	// this must be called by the derived class constructor. sigh.
+	void PostInitialize();
+
 	// Show(), Hide()
 	// These ones are quite self-explanatory, I guess.
 	void Show() { ShowWindow(hWnd, SW_SHOW); }
@@ -102,6 +105,11 @@ public:
 
 	// Handle to the window.
 	HWND hWnd;
+
+private:
+	int ID;
+	DLGPROC proc;
+	std::string title;
 };
 
 //-----------------------------------------------------------------------------

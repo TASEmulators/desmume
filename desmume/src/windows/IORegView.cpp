@@ -304,6 +304,7 @@ CIORegView::CIORegView()
 {
 	liveIORegViews.push_back(this);
 	anyLiveIORegViews = true;
+	PostInitialize();
 }
 
 CIORegView::~CIORegView()

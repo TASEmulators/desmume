@@ -44,6 +44,7 @@ public:
 	int start_paused;
 	std::string cflash_image;
 	std::string cflash_path;
+	std::string gbaslot_rom;
 
 	//load up the common commandline options
 	void loadCommonOptions();
@@ -73,6 +74,7 @@ private:
 	char* _record_movie_file;
 	char* _cflash_image;
 	char* _cflash_path;
+	char* _gbaslot_rom;
 	char* _bios_arm9, *_bios_arm7;
 	int _bios_swi;
 	int _num_cores;

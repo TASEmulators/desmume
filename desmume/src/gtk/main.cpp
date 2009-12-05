@@ -1791,6 +1791,12 @@ common_gtk_main( struct configured_features *my_config)
     if (my_config->is_cflash_configured)
         addon_type = NDS_ADDON_CFLASH;
 
+	if(my_config->gbaslot_rom != "")
+	{
+		addon_type = NDS_ADDON_GBAGAME;
+		strcpy(GBAgameName, my_config->gbaslot_rom.c_str());
+	}
+
     switch (addon_type) {
     case NDS_ADDON_CFLASH:
     case NDS_ADDON_RUMBLEPAK:

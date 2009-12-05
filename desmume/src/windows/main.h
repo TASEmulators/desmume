@@ -32,5 +32,6 @@ extern void Change3DCoreWithFallbackAndSave(int newCore, int fallbackCore=GPU3D_
 extern int backupmemorytype;
 extern u32 backupmemorysize;
 
+void WIN_InstallCFlash();
 
 #endif

@@ -2188,36 +2188,14 @@ int _main()
 	GetINIPath();
 
 	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
-	UINT CFlashFileMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
-	
-	CFlashPath = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
-	CFlashName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
+	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
+	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
+	win32_CFlash_cfgFileName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
 	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
 
-	if(CFlashFileMode==ADDON_CFLASH_MODE_Path) 
-	{
-		CFlash_Path = CFlashPath;
-		CFlash_Mode = ADDON_CFLASH_MODE_Path;
-	}
-	else 
-		if(CFlashFileMode==ADDON_CFLASH_MODE_File)
-		{
-			CFlash_Path = CFlashName;
-			CFlash_Mode = ADDON_CFLASH_MODE_File;
-		}
-		else 
-			{
-				CFlash_Path = "";
-				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
-			}
+	WIN_InstallCFlash();
 
-	//init_configured_features( &my_config);
-	/*if ( !fill_configured_features( &my_config, lpszArgument)) {
-		MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
-		return 0;
-	}*/
 	ColorCtrl_Register();
-
 	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, "ICONDESMUME")))
 	{
 		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
@@ -2308,7 +2286,7 @@ int _main()
 
 	gpu_SetRotateScreen(video.rotation);
 
-	/* default the firmware settings, they may get changed later */
+	//default the firmware settings, they may get changed later
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
 
 	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
@@ -2364,11 +2342,16 @@ int _main()
 	    addon_type = NDS_ADDON_CFLASH;
 		//push the commandline-provided options into the current config slots
 		if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
-			CFlashPath = CFlash_Path;
+			win32_CFlash_cfgDirectory = CFlash_Path;
 		else 
-			CFlashName = CFlash_Path;
+			win32_CFlash_cfgFileName = CFlash_Path;
 	}
 
+	if(cmdline.gbaslot_rom != "")
+	{
+		addon_type = NDS_ADDON_GBAGAME;
+		strcpy(GBAgameName, cmdline.gbaslot_rom.c_str());
+	}
 
 	switch (addon_type)
 	{
@@ -5875,4 +5858,27 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 	else return "Too many script windows are already open.";
 
 	return NULL;
+}
+
+//TODO maybe should be repurposed into an entire WIN_InstallAddon
+void WIN_InstallCFlash()
+{
+	//install cflash values into emulator
+	if(win32_CFlash_cfgMode==ADDON_CFLASH_MODE_Path) 
+	{
+		CFlash_Path = win32_CFlash_cfgDirectory;
+		CFlash_Mode = ADDON_CFLASH_MODE_Path;
+	}
+	else 
+		if(win32_CFlash_cfgMode==ADDON_CFLASH_MODE_File)
+		{
+			CFlash_Path = win32_CFlash_cfgFileName;
+			CFlash_Mode = ADDON_CFLASH_MODE_File;
+		}
+		else 
+			{
+				CFlash_Path = "";
+				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
+			}
+
 }
