@@ -857,13 +857,14 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 			keyset.insert(sf->desc);
 			#endif
 
+
 		#ifdef LOCAL_LE
 			// no need to ever loop one at a time if not flipping byte order
 			os->fwrite((char *)sf->v,size*count);
 		#else
-			if(sz == 1) {
+			if(size == 1) {
 				//special case: write a huge byte array
-				os->fwrite((char *)sf->v,1,count);
+				os->fwrite((char *)sf->v,count);
 			} else {
 				for(int i=0;i<count;i++) {
 					FlipByteOrder((u8*)sf->v + i*size, size);
