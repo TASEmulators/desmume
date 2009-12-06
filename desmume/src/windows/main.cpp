@@ -3473,8 +3473,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		{
 			SPU_Pause(1);
 
-			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
-
 			MENUITEMINFO mii;
 			TCHAR menuItemString[256];
 			ZeroMemory(&mii, sizeof(MENUITEMINFO));
@@ -3634,6 +3632,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, false);
 				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, false);
 			}
+
+			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
 			return 0;
 		}
@@ -5589,15 +5589,17 @@ void ResetGame()
 }
 
 //adelikat: This function changes a menu item's text
-void ChangeMenuItemText(int menuitem, string text)
+void ChangeMenuItemText(int menuitem, wstring text)
 {
-	MENUITEMINFO moo;
+	MENUITEMINFOW moo;
 	moo.cbSize = sizeof(moo);
 	moo.fMask = MIIM_TYPE;
 	moo.cch = NULL;
-	GetMenuItemInfo(mainMenu, menuitem, FALSE, &moo);
-	moo.dwTypeData = (LPSTR)text.c_str();
-	SetMenuItemInfo(mainMenu, menuitem, FALSE, &moo);
+	if(GetMenuItemInfoW(mainMenu, menuitem, FALSE, &moo))
+	{
+		moo.dwTypeData = (LPWSTR)text.c_str();
+		SetMenuItemInfoW(mainMenu, menuitem, FALSE, &moo);
+	}
 }
 
 const char* GetModifierString(int num)
@@ -5640,146 +5642,56 @@ static void TranslateKeyForMenu(WORD keyz,char *out)
 	}
 }
 
+void UpdateHotkeyAssignment(const SCustomKey& hotkey, DWORD menuItemId)
+{
+	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
+	char str[256];		//Temp string 
+	wchar_t wstr[256];	//Temp string 
+	wstring text;		//Used to manipulate menu item text
+	wstring keyname;	//Used to hold the name of the hotkey
+	int truncate;		//Used to truncate the hotkey config from the menu item
+	
+	HMENU menu = GetMenuItemParent(menuItemId);
+	if(!GetMenuStringW(menu,menuItemId, wstr, 255, MF_BYCOMMAND))	//Get menu item text
+		return;
+	text = wstr;											//Store in string object
+	truncate = text.find(L"\t");							//Find the tab
+	if (truncate >= 1)										//Truncate if it exists
+		text = text.substr(0,truncate);
+	TranslateKeyForMenu(hotkey.key, str);
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, 255);
+	keyname = wstr;
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, GetModifierString(hotkey.modifiers), -1, wstr, 255);
+	keyname.insert(0,wstr);
+	text.append(L"\t" + keyname);
+	ChangeMenuItemText(menuItemId, text);
+}
+
 //adelikat:  This function find the current hotkey assignments for corresponding menu items
 //			 and appends it to the menu item.  This function works correctly for all language menus
 //		     However, a Menu item in the Resource file must NOT have a /t (tab) in its caption.
 void UpdateHotkeyAssignments()
 {
-	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
-	char str[255];		//Temp string 
-	string text;		//Used to manipulate menu item text
-	string keyname;		//Used to hold the name of the hotkey
-	int truncate;		//Used to truncate the hotkey config from the menu item
-	//-------------------------------FILE---------------------------------------
-	
-	
-	//Open ROM
-	GetMenuString(mainMenu,IDM_OPEN, str, 255, IDM_OPEN);	//Get menu item text
-	text = str;												//Store in string object
-	truncate = text.find("\t");								//Find the tab
-	if (truncate >= 1)										//Truncate if it exists
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.OpenROM.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.OpenROM.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(IDM_OPEN, text);
-
-	//Save Screenshot As...
-	GetMenuString(mainMenu,IDM_PRINTSCREEN, str, 255, IDM_PRINTSCREEN);	
-	text = str;
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.PrintScreen.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.PrintScreen.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(IDM_PRINTSCREEN, text);
-
-	//adelikat: Why don't these work?  GetMenuString returns null for these IDs yet those are the valid ID numbers
-	/*
-	//Record AVI
-	GetMenuString(mainMenu,IDM_FILE_RECORDAVI, str, 255, IDM_FILE_RECORDAVI);	
-	text = str;
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.RecordAVI.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.RecordAVI.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(IDM_FILE_RECORDAVI, text);
-
-	//Stop AVI
-	GetMenuString(mainMenu,IDM_FILE_STOPAVI, str, 255, IDM_FILE_STOPAVI);	
-	text = str;
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.StopAVI.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.StopAVI.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(IDM_FILE_STOPAVI, text);
-*/
-	
-	//-------------------------------EMULATION----------------------------------
-
-	//Pause
-	GetMenuString(mainMenu,IDM_PAUSE, str, 255, IDM_PAUSE);	
-	text = str;								
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.Pause.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.Pause.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(IDM_PAUSE, text);
-
-	//Reset
-	GetMenuString(mainMenu,IDM_RESET, str, 255, IDM_RESET);
-	text = str;	
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.Reset.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.Reset.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(IDM_RESET, text);
-
-	//-------------------------------EMULATION----------------------------------
-/*
-	//Display Frame Counter
-	GetMenuString(mainMenu,ID_VIEW_FRAMECOUNTER, str, 255, ID_VIEW_FRAMECOUNTER);
-	text = str;	
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.ToggleFrameCounter.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.ToggleFrameCounter.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(ID_VIEW_FRAMECOUNTER, text);
-
-	//Display FPS
-	GetMenuString(mainMenu,ID_VIEW_DISPLAYFPS, str, 255, ID_VIEW_DISPLAYFPS);
-	text = str;	
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.ToggleFPS.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.ToggleFPS.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(ID_VIEW_DISPLAYFPS, text);
-
-	//Display Input
-	GetMenuString(mainMenu,ID_VIEW_DISPLAYINPUT, str, 255, ID_VIEW_DISPLAYINPUT);
-	text = str;	
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.ToggleInput.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.ToggleInput.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(ID_VIEW_DISPLAYINPUT, text);
-
-	//Display Lag Counter
-	GetMenuString(mainMenu,ID_VIEW_DISPLAYLAG, str, 255, ID_VIEW_DISPLAYLAG);
-	text = str;	
-	truncate = text.find("\t");
-	if (truncate >= 1)
-		text = text.substr(0,truncate);
-	TranslateKeyForMenu(CustomKeys.ToggleLag.key, str);
-	keyname = str;
-	keyname.insert(0,GetModifierString(CustomKeys.ToggleLag.modifiers));
-	text.append("\t" + keyname);
-	ChangeMenuItemText(ID_VIEW_DISPLAYLAG, text);
-*/
+	UpdateHotkeyAssignment(CustomKeys.OpenROM, IDM_OPEN);
+	UpdateHotkeyAssignment(CustomKeys.PrintScreen, IDM_PRINTSCREEN);
+	UpdateHotkeyAssignment(CustomKeys.RecordAVI, IDM_FILE_RECORDAVI);
+	UpdateHotkeyAssignment(CustomKeys.Pause, IDM_PAUSE);
+	UpdateHotkeyAssignment(CustomKeys.Reset, IDM_RESET);
+	UpdateHotkeyAssignment(CustomKeys.ToggleFrameCounter, ID_VIEW_FRAMECOUNTER);
+	UpdateHotkeyAssignment(CustomKeys.ToggleFPS, ID_VIEW_DISPLAYFPS);
+	UpdateHotkeyAssignment(CustomKeys.ToggleInput, ID_VIEW_DISPLAYINPUT);
+	UpdateHotkeyAssignment(CustomKeys.ToggleLag, ID_VIEW_DISPLAYLAG);
+	UpdateHotkeyAssignment(CustomKeys.PlayMovie, IDM_PLAY_MOVIE);
+	UpdateHotkeyAssignment(CustomKeys.RecordMovie, IDM_RECORD_MOVIE);
+	UpdateHotkeyAssignment(CustomKeys.StopMovie, IDM_STOPMOVIE);
+	UpdateHotkeyAssignment(CustomKeys.RecordWAV, IDM_FILE_RECORDWAV);
+	UpdateHotkeyAssignment(CustomKeys.NewLuaScript, IDC_NEW_LUA_SCRIPT);
+	UpdateHotkeyAssignment(CustomKeys.MostRecentLuaScript, IDD_LUARECENT_RESERVE_START);
+	UpdateHotkeyAssignment(CustomKeys.CloseLuaScripts, IDC_CLOSE_LUA_SCRIPTS);
+	for(int i = 0; i < 10; i++)
+		UpdateHotkeyAssignment(CustomKeys.Save[(i+1)%10], IDM_STATE_SAVE_F1 + i);
+	for(int i = 0; i < 10; i++)
+		UpdateHotkeyAssignment(CustomKeys.Load[(i+1)%10], IDM_STATE_LOAD_F1 + i);
 }
 
 
