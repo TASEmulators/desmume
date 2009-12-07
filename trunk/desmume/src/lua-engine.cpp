@@ -3217,14 +3217,16 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 
 	// GD format header for truecolor image (11 bytes)
 	ptr++;
-	ptr++;
+	bool trueColor = (*ptr++ == 254);
+	if (!trueColor) {
+		luaL_error(L, "indexed images are not supported");
+		return 0;
+	}
 	int width = *ptr++ << 8;
 	width |= *ptr++;
 	int height = *ptr++ << 8;
 	height |= *ptr++;
 	ptr += 5;
-
-	u8* Dst = (u8*)curGuiData.data;
 
 	LuaContextInfo& info = GetCurrentInfo();
 	int alphaMul = info.transparencyModifier;
@@ -3234,6 +3236,7 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 		return 0;
 
 	prepare_drawing();
+	u8* Dst = (u8*)curGuiData.data;
 	gui_adjust_coord(xStart,yStart);
 
 	int xMin = curGuiData.xMin;
@@ -3245,14 +3248,16 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 	// since there aren't that many possible opacity levels,
 	// do the opacity modification calculations beforehand instead of per pixel
 	int opacMap[256];
-	for(int i = 0; i < 256; i++)
+	for(int i = 0; i < 128; i++)
 	{
-		int opac = 255 - (i << 1); // not sure why, but gdstr seems to divide each alpha value by 2
+		int opac = 255 - ((i << 1) | (i & 1)); // gdAlphaMax = 127, not 255
 		opac = (opac * alphaMul) / 255;
 		if(opac < 0) opac = 0;
 		if(opac > 255) opac = 255;
-		opacMap[i] = 255 - opac;
+		opacMap[i] = opac;
 	}
+	for(int i = 128; i < 256; i++)
+		opacMap[i] = 0; // what should we do for them, actually?
 
 	Dst += yStart * strideBytes;
 	for(int y = yStart; y < height+yStart && y < yMax; y++, Dst += strideBytes)
