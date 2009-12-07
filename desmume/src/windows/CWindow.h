@@ -110,6 +110,9 @@ private:
 	int ID;
 	DLGPROC proc;
 	std::string title;
+	char* className;
+	int width, height;
+	int whichInit;
 };
 
 //-----------------------------------------------------------------------------

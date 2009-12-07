@@ -119,20 +119,15 @@ void UnregWndClass(string name)
 // Base toolwindow class
 //-----------------------------------------------------------------------------
 
-CToolWindow::CToolWindow(char* className, WNDPROC proc, char* title, int width, int height)
+CToolWindow::CToolWindow(char* _className, WNDPROC _proc, char* _title, int _width, int _height)
 	: hWnd(NULL)
+	, className(_className)
+	, proc((DLGPROC)_proc)
+	, title(_title)
+	, width(_width)
+	, height(_height)
+	, whichInit(0)
 {
-	DWORD style = WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	RECT rc;
-
-	rc.left = 0;
-	rc.right = width;
-	rc.top = 0;
-	rc.bottom = height;
-	AdjustWindowRect(&rc, style, FALSE);
-
-	hWnd = CreateWindow(className, title, style, CW_USEDEFAULT, CW_USEDEFAULT, 
-		rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, NULL, hAppInst, (LPVOID)this);
 }
 
 CToolWindow::CToolWindow(int _ID, DLGPROC _proc, char* _title)
@@ -140,17 +135,35 @@ CToolWindow::CToolWindow(int _ID, DLGPROC _proc, char* _title)
 	, ID(_ID)
 	, proc(_proc)
 	, title(_title)
+	, whichInit(1)
 {
 }
 
 void CToolWindow::PostInitialize()
 {
-	hWnd = CreateDialogParam(hAppInst, MAKEINTRESOURCE(ID), HWND_DESKTOP, proc, (LPARAM)this);
-	if (hWnd == NULL)
-		return;
+	if(whichInit==0)
+	{
+		DWORD style = WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+		RECT rc;
 
-	SetWindowText(hWnd, title.c_str());
-	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hAppInst, "ICONDESMUME"));
+		rc.left = 0;
+		rc.right = width;
+		rc.top = 0;
+		rc.bottom = height;
+		AdjustWindowRect(&rc, style, FALSE);
+
+		hWnd = CreateWindow(className, title.c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, 
+			rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, NULL, hAppInst, (LPVOID)this);
+	}
+	else
+	{
+		hWnd = CreateDialogParam(hAppInst, MAKEINTRESOURCE(ID), HWND_DESKTOP, proc, (LPARAM)this);
+		if (hWnd == NULL)
+			return;
+
+		SetWindowText(hWnd, title.c_str());
+		SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hAppInst, "ICONDESMUME"));
+	}
 }
 
 CToolWindow::~CToolWindow()
