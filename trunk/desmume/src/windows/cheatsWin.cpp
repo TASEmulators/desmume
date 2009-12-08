@@ -195,7 +195,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				memset(editBuf, 0, sizeof(editBuf));
 
 				GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 10);
-				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 10);
+				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 11);
 				
 				CheckDlgButton(dialog, IDC_CHECK1, BST_CHECKED);
 				CheckDlgButton(dialog, searchSizeIDDs[searchAddSize], BST_CHECKED);
@@ -217,7 +217,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 						{
 							oldEditProc = saveOldEditProc;
 							searchAddAddress = tmp_addr;
-							searchAddValue = atol(editBuf[1]);
+							searchAddValue = strtoul(editBuf[1],NULL,10);
 
 							EndDialog(dialog, TRUE);
 						}
@@ -258,14 +258,14 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 10);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 11);
 						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) )
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;
 						}
 						
-						u32 val = atol(editBuf[1]);
+						u32 val = strtoul(editBuf[1],NULL,10);
 						if (val > searchRange[searchAddSize][1])
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
