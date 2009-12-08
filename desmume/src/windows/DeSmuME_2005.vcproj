@@ -1419,6 +1419,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\firmware.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\firmware.h"
+			>
+		</File>
+		<File
 			RelativePath="..\fs-windows.cpp"
 			>
 		</File>

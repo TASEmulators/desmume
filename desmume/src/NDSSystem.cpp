@@ -42,6 +42,7 @@
 #include "Disassembler.h"
 #include "readwrite.h"
 #include "debug.h"
+#include "firmware.h"
 
 #include "path.h"
 
@@ -55,15 +56,9 @@ std::string InputDisplayString;
 static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 
-
 GameInfo gameInfo;
-
-// the count of bytes copied from the firmware into memory 
-#define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
-
-BOOL fw_success = FALSE;
-
 NDSSystem nds;
+CFIRMWARE	*firmware = NULL;
 
 using std::min;
 using std::max;
@@ -74,415 +69,6 @@ int lastLag;
 int TotalLagFrames;
 
 TSCalInfo TSCal;
-
-/* ------------------------------------------------------------------------- */
-/* FIRMWARE DECRYPTION */
-
-static u32 keyBuf[0x412];
-static u32 keyCode[3];
-
-#define DWNUM(i) ((i) >> 2)
-
-static u32 bswap32(u32 val)
-{
-	return (((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24));
-}
-
-static BOOL getKeyBuf()
-{
-	int dummy;
-	FILE *file = fopen(CommonSettings.ARM7BIOS, "rb");
-
-	if(file == NULL)
-		return FALSE;
-
-	fseek(file, 0x30, SEEK_SET);
-	dummy = fread(keyBuf, 0x412, 4, file);
-
-	fclose(file);
-	return TRUE;
-}
-
-static void crypt64BitUp(u32 *ptr)
-{
-	u32 Y = ptr[0];
-	u32 X = ptr[1];
-
-	for(u32 i = 0x00; i <= 0x0F; i++)
-	{
-		u32 Z = (keyBuf[i] ^ X);
-		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
-		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
-		X = (keyBuf[DWNUM(0x848 + (((Z >> 8) & 0xFF) << 2))] ^ X);
-		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
-		X = (Y ^ X);
-		Y = Z;
-	}
-
-	ptr[0] = (X ^ keyBuf[DWNUM(0x40)]);
-	ptr[1] = (Y ^ keyBuf[DWNUM(0x44)]);
-}
-
-static void crypt64BitDown(u32 *ptr)
-{
-	u32 Y = ptr[0];
-	u32 X = ptr[1];
-
-	for(u32 i = 0x11; i >= 0x02; i--)
-	{
-		u32 Z = (keyBuf[i] ^ X);
-		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
-		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
-		X = (keyBuf[DWNUM(0x848 + (((Z >> 8) & 0xFF) << 2))] ^ X);
-		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
-		X = (Y ^ X);
-		Y = Z;
-	}
-
-	ptr[0] = (X ^ keyBuf[DWNUM(0x04)]);
-	ptr[1] = (Y ^ keyBuf[DWNUM(0x00)]);
-}
-
-static void applyKeycode(u32 modulo)
-{
-	crypt64BitUp(&keyCode[1]);
-	crypt64BitUp(&keyCode[0]);
-
-	u32 scratch[2] = {0x00000000, 0x00000000};
-
-	for(u32 i = 0; i <= 0x44; i += 4)
-	{
-		keyBuf[DWNUM(i)] = (keyBuf[DWNUM(i)] ^ bswap32(keyCode[DWNUM(i % modulo)]));
-	}
-
-	for(u32 i = 0; i <= 0x1040; i += 8)
-	{
-		crypt64BitUp(scratch);
-		keyBuf[DWNUM(i)] = scratch[1];
-		keyBuf[DWNUM(i+4)] = scratch[0];
-	}
-}
-
-static BOOL initKeycode(u32 idCode, int level, u32 modulo)
-{
-	if(getKeyBuf() == FALSE)
-		return FALSE;
-
-	keyCode[0] = idCode;
-	keyCode[1] = (idCode >> 1);
-	keyCode[2] = (idCode << 1);
-
-	if(level >= 1) applyKeycode(modulo);
-	if(level >= 2) applyKeycode(modulo);
-
-	keyCode[1] <<= 1;
-	keyCode[2] >>= 1;
-
-	if(level >= 3) applyKeycode(modulo);
-
-	return TRUE;
-}
-
-static u16 getBootCodeCRC16()
-{
-	unsigned int i, j;
-	u32 crc = 0xFFFF;
-	const u16 val[8] = {0xC0C1, 0xC181, 0xC301, 0xC601, 0xCC01, 0xD801, 0xF001, 0xA001};
-
-	for(i = 0; i < nds.FW_ARM9BootCodeSize; i++)
-	{
-		crc = (crc ^ nds.FW_ARM9BootCode[i]);
-
-		for(j = 0; j < 8; j++) 
-		{
-			if(crc & 0x0001)
-				crc = ((crc >> 1) ^ (val[j] << (7-j)));
-			else
-				crc =  (crc >> 1);
-		}
-	}
-
-	for(i = 0; i < nds.FW_ARM7BootCodeSize; i++)
-	{
-		crc = (crc ^ nds.FW_ARM7BootCode[i]);
-
-		for(j = 0; j < 8; j++) 
-		{
-			if(crc & 0x0001)
-				crc = ((crc >> 1) ^ (val[j] << (7-j)));
-			else
-				crc =  (crc >> 1);
-		}
-	}
-
-	return (crc & 0xFFFF);
-}
-
-static u32 * decryptFirmwareBlock(const char *blockName, u32 *src, u32 &size)
-{
-	u32 curBlock[2];
-	u32 *dst;
-	u32 i, j;
-	u32 xIn = 4, xOut = 0;
-	u32 len;
-	u32 offset;
-	u32 windowOffset;
-	u32 xLen;
-	u8 d;
-	u16 data;
-
-	memcpy(curBlock, src, 8);
-	crypt64BitDown(curBlock);
-
-	u32 blockSize = (curBlock[0] >> 8);
-	size = blockSize;
-
-	INFO("Firmware: %s final size: %i bytes\n", blockName, blockSize);
-
-	dst = (u32*)new u8[blockSize];
-
-	xLen = blockSize;
-
-	while(xLen > 0)
-	{
-		d = T1ReadByte((u8*)curBlock, (xIn % 8));
-		xIn++;
-		if((xIn % 8) == 0)
-		{
-			memcpy(curBlock, (((u8*)src) + xIn), 8);
-			crypt64BitDown(curBlock);
-		}
-
-		for(i = 0; i < 8; i++)
-		{
-			if(d & 0x80)
-			{
-				data = (T1ReadByte((u8*)curBlock, (xIn % 8)) << 8);
-				xIn++;
-				if((xIn % 8) == 0)
-				{
-					memcpy(curBlock, (((u8*)src) + xIn), 8);
-					crypt64BitDown(curBlock);
-				}
-				data |= T1ReadByte((u8*)curBlock, (xIn % 8));
-				xIn++;
-				if((xIn % 8) == 0)
-				{
-					memcpy(curBlock, (((u8*)src) + xIn), 8);
-					crypt64BitDown(curBlock);
-				}
-
-				len = (data >> 12) + 3;
-				offset = (data & 0xFFF);
-				windowOffset = (xOut - offset - 1);
-
-				for(j = 0; j < len; j++)
-				{
-					T1WriteByte((u8*)dst, xOut, T1ReadByte((u8*)dst, windowOffset));
-					xOut++;
-					windowOffset++;
-
-					xLen--;
-					if(xLen == 0)
-						goto lz77End;
-				}
-			}
-			else
-			{
-				T1WriteByte((u8*)dst, xOut, T1ReadByte((u8*)curBlock, (xIn % 8)));
-				xOut++;
-				xIn++;
-				if((xIn % 8) == 0)
-				{
-					memcpy(curBlock, (((u8*)src) + xIn), 8);
-					crypt64BitDown(curBlock);
-				}
-
-				xLen--;
-				if(xLen == 0)
-					goto lz77End;
-			}
-
-			d = ((d << 1) & 0xFF);
-		}
-	}
-
-lz77End:
-
-	return dst;
-}
-
-static BOOL decryptFirmware(u8 *data)
-{
-	u16 shifts;
-	u16 shift1, shift2, shift3, shift4;
-	u32 part1addr, part2addr, part3addr, part4addr, part5addr;
-	u32 part1ram, part2ram;
-
-	shifts = T1ReadWord(data, 0x14);
-	shift1 = (shifts & 0x7);
-	shift2 = ((shifts >> 3) & 0x7);
-	shift3 = ((shifts >> 6) & 0x7);
-	shift4 = ((shifts >> 9) & 0x7);
-
-	part1addr = T1ReadWord(data, 0x0C);
-	part1addr = (part1addr << (2+shift1));
-
-	INFO("Firmware: ARM9 boot code address: %05X\n", part1addr);
-
-	part1ram = T1ReadWord(data, 0x0E);
-	part1ram = (0x02800000 - (part1ram << (2+shift2)));
-
-	INFO("Firmware: ARM9 boot code RAM address: %08X\n", part1ram);
-
-	part2addr = T1ReadWord(data, 0x10);
-	part2addr = (part2addr << (2+shift3));
-
-	INFO("Firmware: ARM7 boot code address: %05X\n", part2addr);
-
-	part2ram = T1ReadWord(data, 0x12);
-	part2ram = (0x03810000 - (part2ram << (2+shift4)));
-
-	INFO("Firmware: ARM7 boot code RAM address: %08X\n", part2ram);
-
-	part3addr = T1ReadWord(data, 0x00);
-	part3addr = (part3addr << 3);
-
-	INFO("Firmware: ARM9 GUI code address: %05X\n", part3addr);
-
-	part4addr = T1ReadWord(data, 0x02);
-	part4addr = (part4addr << 3);
-
-	INFO("Firmware: ARM7 GUI code address: %05X\n", part4addr);
-
-	part5addr = T1ReadWord(data, 0x16);
-	part5addr = (part5addr << 3);
-
-	INFO("Firmware: data/gfx address: %05X\n", part5addr);
-
-	if(initKeycode(T1ReadLong(data, 0x08), 1, 0xC) == FALSE) return FALSE;
-	crypt64BitDown((u32*)&data[0x18]);
-	if(initKeycode(T1ReadLong(data, 0x08), 2, 0xC) == FALSE) return FALSE;
-
-	nds.FW_ARM9BootCode = (u8*)decryptFirmwareBlock("ARM9 boot code", (u32*)&data[part1addr], nds.FW_ARM9BootCodeSize);
-	nds.FW_ARM7BootCode = (u8*)decryptFirmwareBlock("ARM7 boot code", (u32*)&data[part2addr], nds.FW_ARM7BootCodeSize);
-
-	nds.FW_ARM9BootCodeAddr = part1ram;
-	nds.FW_ARM7BootCodeAddr = part2ram;
-
-	u16 crc16_header = T1ReadWord(data, 0x06);
-	u16 crc16_mine = getBootCodeCRC16();
-	if(crc16_header != crc16_mine)
-	{
-		INFO("Firmware: error: the boot code CRC16 (%04X) doesn't match the value in the firmware header (%04X).\n", 
-			crc16_mine, crc16_header);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-/* ------------------------------------------------------------------------- */
-
-static u32
-calc_CRC16( u32 start, const u8 *data, int count) {
-	int i,j;
-	u32 crc = start & 0xffff;
-	const u16 val[8] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
-	for(i = 0; i < count; i++)
-	{
-		crc = crc ^ data[i];
-
-		for(j = 0; j < 8; j++) {
-			int do_bit = 0;
-
-			if ( crc & 0x1)
-				do_bit = 1;
-
-			crc = crc >> 1;
-
-			if ( do_bit) {
-				crc = crc ^ (val[j] << (7-j));
-			}
-		}
-	}
-	return crc;
-}
-
-static int
-copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data) {
-	/*
-	* Determine which of the two user settings in the firmware is the current
-	* and valid one and then copy this into the destination buffer.
-	*
-	* The current setting will have a greater count.
-	* Settings are only valid if its CRC16 is correct.
-	*/
-	int user1_valid = 0;
-	int user2_valid = 0;
-	u32 user_settings_offset;
-	u32 fw_crc;
-	u32 crc;
-	int copy_good = 0;
-
-	user_settings_offset = fw_data[0x20];
-	user_settings_offset |= fw_data[0x21] << 8;
-	user_settings_offset <<= 3;
-
-	if ( user_settings_offset <= 0x3FE00) {
-		s32 copy_settings_offset = -1;
-
-		crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset],
-			NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
-		fw_crc = fw_data[user_settings_offset + 0x72];
-		fw_crc |= fw_data[user_settings_offset + 0x73] << 8;
-		if ( crc == fw_crc) {
-			user1_valid = 1;
-		}
-
-		crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset + 0x100],
-			NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
-		fw_crc = fw_data[user_settings_offset + 0x100 + 0x72];
-		fw_crc |= fw_data[user_settings_offset + 0x100 + 0x73] << 8;
-		if ( crc == fw_crc) {
-			user2_valid = 1;
-		}
-
-		if ( user1_valid) {
-			if ( user2_valid) {
-				u16 count1, count2;
-
-				count1 = fw_data[user_settings_offset + 0x70];
-				count1 |= fw_data[user_settings_offset + 0x71] << 8;
-
-				count2 = fw_data[user_settings_offset + 0x100 + 0x70];
-				count2 |= fw_data[user_settings_offset + 0x100 + 0x71] << 8;
-
-				if ( count2 > count1) {
-					copy_settings_offset = user_settings_offset + 0x100;
-				}
-				else {
-					copy_settings_offset = user_settings_offset;
-				}
-			}
-			else {
-				copy_settings_offset = user_settings_offset;
-			}
-		}
-		else if ( user2_valid) {
-			/* copy the second user settings */
-			copy_settings_offset = user_settings_offset + 0x100;
-		}
-
-		if ( copy_settings_offset > 0) {
-			memcpy( dest_buffer, &fw_data[copy_settings_offset],
-				NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
-			copy_good = 1;
-		}
-	}
-
-	return copy_good;
-}
 
 void Desmume_InitOnce()
 {
@@ -526,9 +112,6 @@ int NDS_Init( void) {
 		return -1;
 
 	WIFI_Init() ;
-
-	nds.FW_ARM9BootCode = NULL;
-	nds.FW_ARM7BootCode = NULL;
 
 	// Init calibration info
 	TSCal.adc.x1 = 0x0200;
@@ -1236,238 +819,6 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
 	fclose(file);
 
 	return 1;
-}
-
-
-static void fill_user_data_area( struct NDS_fw_config_data *user_settings,u8 *data, int count)
-{
-	u32 crc;
-	int i;
-	u8 *ts_cal_data_area;
-
-	memset( data, 0, 0x100);
-
-	// version
-	data[0x00] = 5;
-	data[0x01] = 0;
-
-	// colour
-	data[0x02] = user_settings->fav_colour;
-
-	// birthday month and day
-	data[0x03] = user_settings->birth_month;
-	data[0x04] = user_settings->birth_day;
-
-	//nickname and length
-	for ( i = 0; i < MAX_FW_NICKNAME_LENGTH; i++) {
-		data[0x06 + (i * 2)] = user_settings->nickname[i] & 0xff;
-		data[0x06 + (i * 2) + 1] = (user_settings->nickname[i] >> 8) & 0xff;
-	}
-
-	data[0x1a] = user_settings->nickname_len;
-
-	//Message
-	for ( i = 0; i < MAX_FW_MESSAGE_LENGTH; i++) {
-		data[0x1c + (i * 2)] = user_settings->message[i] & 0xff;
-		data[0x1c + (i * 2) + 1] = (user_settings->message[i] >> 8) & 0xff;
-	}
-
-	data[0x50] = user_settings->message_len;
-
-	//touch screen calibration
-	ts_cal_data_area = &data[0x58];
-	for ( i = 0; i < 2; i++) {
-		// ADC x y
-		*ts_cal_data_area++ = user_settings->touch_cal[i].adc_x & 0xff;
-		*ts_cal_data_area++ = (user_settings->touch_cal[i].adc_x >> 8) & 0xff;
-		*ts_cal_data_area++ = user_settings->touch_cal[i].adc_y & 0xff;
-		*ts_cal_data_area++ = (user_settings->touch_cal[i].adc_y >> 8) & 0xff;
-
-		//screen x y
-		*ts_cal_data_area++ = user_settings->touch_cal[i].screen_x;
-		*ts_cal_data_area++ = user_settings->touch_cal[i].screen_y;
-	}
-
-	//language and flags
-	data[0x64] = user_settings->language;
-	data[0x65] = 0xfc;
-
-	//update count and crc
-	data[0x70] = count & 0xff;
-	data[0x71] = (count >> 8) & 0xff;
-
-	crc = calc_CRC16( 0xffff, data, 0x70);
-	data[0x72] = crc & 0xff;
-	data[0x73] = (crc >> 8) & 0xff;
-
-	memset( &data[0x74], 0xff, 0x100 - 0x74);
-}
-
-// creates an firmware flash image, which contains all needed info to initiate a wifi connection
-int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
-{
-	//Create the firmware header
-
-	memset( MMU.fw.data, 0, 0x40000);
-
-	//firmware identifier
-	MMU.fw.data[0x8] = 'M';
-	MMU.fw.data[0x8 + 1] = 'A';
-	MMU.fw.data[0x8 + 2] = 'C';
-	MMU.fw.data[0x8 + 3] = 'P';
-
-	// DS type
-	if ( user_settings->ds_type == NDS_FW_DS_TYPE_LITE)
-		MMU.fw.data[0x1d] = 0x20;
-	else
-		MMU.fw.data[0x1d] = 0xff;
-
-	//User Settings offset 0x3fe00 / 8
-	MMU.fw.data[0x20] = 0xc0;
-	MMU.fw.data[0x21] = 0x7f;
-
-
-	//User settings (at 0x3FE00 and 0x3FF00)
-
-	fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
-	fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
-
-	// Wifi config length
-	MMU.fw.data[0x2C] = 0x38;
-	MMU.fw.data[0x2D] = 0x01;
-
-	MMU.fw.data[0x2E] = 0x00;
-
-	//Wifi version
-	MMU.fw.data[0x2F] = 0x00;
-
-	//MAC address
-	memcpy((MMU.fw.data + 0x36), FW_Mac, sizeof(FW_Mac));
-
-	//Enabled channels
-	MMU.fw.data[0x3C] = 0xFE;
-	MMU.fw.data[0x3D] = 0x3F;
-
-	MMU.fw.data[0x3E] = 0xFF;
-	MMU.fw.data[0x3F] = 0xFF;
-
-	//RF related
-	MMU.fw.data[0x40] = 0x02;
-	MMU.fw.data[0x41] = 0x18;
-	MMU.fw.data[0x42] = 0x0C;
-
-	MMU.fw.data[0x43] = 0x01;
-
-	//Wifi I/O init values
-	memcpy((MMU.fw.data + 0x44), FW_WIFIInit, sizeof(FW_WIFIInit));
-
-	//Wifi BB init values
-	memcpy((MMU.fw.data + 0x64), FW_BBInit, sizeof(FW_BBInit));
-
-	//Wifi RF init values
-	memcpy((MMU.fw.data + 0xCE), FW_RFInit, sizeof(FW_RFInit));
-
-	//Wifi channel-related init values
-	memcpy((MMU.fw.data + 0xF2), FW_RFChannel, sizeof(FW_RFChannel));
-	memcpy((MMU.fw.data + 0x146), FW_BBChannel, sizeof(FW_BBChannel));
-	memset((MMU.fw.data + 0x154), 0x10, 0xE);
-
-	//WFC profiles
-	memcpy((MMU.fw.data + 0x3FA40), &FW_WFCProfile1, sizeof(FW_WFCProfile));
-	memcpy((MMU.fw.data + 0x3FB40), &FW_WFCProfile2, sizeof(FW_WFCProfile));
-	memcpy((MMU.fw.data + 0x3FC40), &FW_WFCProfile3, sizeof(FW_WFCProfile));
-	(*(u16*)(MMU.fw.data + 0x3FAFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FA00), 0xFE);
-	(*(u16*)(MMU.fw.data + 0x3FBFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FB00), 0xFE);
-	(*(u16*)(MMU.fw.data + 0x3FCFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FC00), 0xFE);
-
-
-	MMU.fw.data[0x162] = 0x19;
-	memset((MMU.fw.data + 0x163), 0xFF, 0x9D);
-
-	//Wifi settings CRC16
-	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
-
-	return TRUE ;
-}
-
-void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
-	const char *default_nickname = "yopyop";
-	const char *default_message = "DeSmuME makes you happy!";
-	int i;
-	int str_length;
-
-	memset( fw_config, 0, sizeof( struct NDS_fw_config_data));
-	fw_config->ds_type = NDS_FW_DS_TYPE_FAT;
-
-	fw_config->fav_colour = 7;
-
-	fw_config->birth_day = 23;
-	fw_config->birth_month = 6;
-
-	str_length = strlen( default_nickname);
-	for ( i = 0; i < str_length; i++) {
-		fw_config->nickname[i] = default_nickname[i];
-	}
-	fw_config->nickname_len = str_length;
-
-	str_length = strlen( default_message);
-	for ( i = 0; i < str_length; i++) {
-		fw_config->message[i] = default_message[i];
-	}
-	fw_config->message_len = str_length;
-
-	/* default to English */
-	fw_config->language = 1;
-
-	/* default touchscreen calibration */
-	fw_config->touch_cal[0].adc_x = 0x200;
-	fw_config->touch_cal[0].adc_y = 0x200;
-	fw_config->touch_cal[0].screen_x = 0x20 + 1; // calibration screen coords are 1-based,
-	fw_config->touch_cal[0].screen_y = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
-
-	fw_config->touch_cal[1].adc_x = 0xe00;
-	fw_config->touch_cal[1].adc_y = 0x800;
-	fw_config->touch_cal[1].screen_x = 0xe0 + 1;
-	fw_config->touch_cal[1].screen_y = 0x80 + 1;
-}
-
-int NDS_LoadFirmware(const char *filename)
-{
-	int i;
-	unsigned long size;
-	//FILE *file;
-
-	if ((MMU.fw.fp = fopen(filename, "rb+")) == NULL)
-		return -1;
-
-	fseek(MMU.fw.fp, 0, SEEK_END);
-	size = ftell(MMU.fw.fp);
-	fseek(MMU.fw.fp, 0, SEEK_SET);
-
-	if(size > MMU.fw.size)
-	{
-		fclose(MMU.fw.fp);
-		fw_success = FALSE;
-		return -1;
-	}
-
-	i = fread(MMU.fw.data, size, 1, MMU.fw.fp);
-	//fclose(file);
-
-	INFO("Firmware: decrypting NDS firmware %s...\n", filename);
-
-	if(decryptFirmware(MMU.fw.data) == FALSE)
-	{
-		INFO("Firmware: decryption failed.\n");
-		fw_success = FALSE;
-	}
-	else
-	{
-		INFO("Firmware: decryption successful.\n");
-		fw_success = TRUE;
-	}
-
-	return i;
 }
 
 void NDS_Sleep() { nds.sleeping = TRUE; }
@@ -2484,9 +1835,10 @@ static void resetUserInput();
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
-	u32 src;
-	u32 dst;
-	FILE* inf = 0;
+	u32 src = 0;
+	u32 dst = 0;
+	bool fw_success = false;
+	FILE* inf = NULL;
 	NDS_header * header = NDS_getROMHeader();
 
 	DEBUG_reset();
@@ -2582,35 +1934,23 @@ void NDS_Reset()
 #endif
 	}
 
-	if(CommonSettings.UseExtFirmware == true)
-		NDS_LoadFirmware(CommonSettings.Firmware);
-
-	if((CommonSettings.UseExtBIOS == true) && (CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
+	if (firmware)
 	{
-		// Copy firmware boot codes to their respective locations
-
-		src = 0;
-		dst = nds.FW_ARM9BootCodeAddr;
-		for(u32 i = 0; i < (nds.FW_ARM9BootCodeSize >> 2); i++)
-		{
-			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(nds.FW_ARM9BootCode, src));
-			src += 4; dst += 4;
-		}
-
-		src = 0;
-		dst = nds.FW_ARM7BootCodeAddr;
-		for(u32 i = 0; i < (nds.FW_ARM7BootCodeSize >> 2); i++)
-		{
-			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(nds.FW_ARM7BootCode, src));
-			src += 4; dst += 4;
-		}
-
+		delete [] firmware;
+		firmware = NULL;
+	}
+	firmware = new CFIRMWARE();
+	fw_success = firmware->load();
+	if ((CommonSettings.UseExtBIOS == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
+	{
 		// Copy secure area to memory if needed
 		if ((header->ARM9src >= 0x4000) && (header->ARM9src < 0x8000))
 		{
 			src = header->ARM9src;
 			dst = header->ARM9cpy;
+
 			u32 size = (0x8000 - src) >> 2;
+			INFO("Copy secure area from 0x%08X to 0x%08X (size %i/0x%08X)\n", src, dst, size, size);
 			for (u32 i = 0; i < size; i++)
 			{
 				_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
@@ -2618,10 +1958,20 @@ void NDS_Reset()
 			}
 		}
 
-		armcpu_init(&NDS_ARM9, nds.FW_ARM9BootCodeAddr);
-		armcpu_init(&NDS_ARM7, nds.FW_ARM7BootCodeAddr);
-		//armcpu_init(&NDS_ARM9, 0xFFFF0000);
-		//armcpu_init(&NDS_ARM7, 0x00000000);
+		if (firmware->patched)
+		{
+			armcpu_init(&NDS_ARM7, 0x00000008);
+			armcpu_init(&NDS_ARM9, 0xFFFF0008);
+		}
+		else
+		{
+			//INFO("Booting at ARM9: 0x%08X, ARM7: 0x%08X\n", firmware->ARM9bootAddr, firmware->ARM7bootAddr);
+			// need for firmware
+			//armcpu_init(&NDS_ARM7, 0x00000008);
+			//armcpu_init(&NDS_ARM9, 0xFFFF0008);
+			armcpu_init(&NDS_ARM7, firmware->ARM7bootAddr);
+			armcpu_init(&NDS_ARM9, firmware->ARM9bootAddr);
+		}
 	}
 	else
 	{
@@ -2686,9 +2036,8 @@ void NDS_Reset()
 	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
 	//zero 27-jun-09 : why did this copy 0x90 more? gbatek says its not stored in ram.
 	//for (i = 0; i < ((0x170+0x90)/4); i++) {
-	for (int i = 0; i < ((0x170)/4); i++) {
+	for (int i = 0; i < ((0x170)/4); i++)
 		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
-	}
 
 	// Write the header checksum to memory (the firmware needs it to see the cart)
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
@@ -2715,6 +2064,13 @@ void NDS_Reset()
 		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
 	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
 	//--------------------------------
+
+	if ((firmware->patched) && (CommonSettings.UseExtBIOS == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
+	{
+		// HACK! for flashme
+		_MMU_write32<ARMCPU_ARM9>(0x27FFE24, firmware->ARM9bootAddr);
+		_MMU_write32<ARMCPU_ARM7>(0x27FFE34, firmware->ARM7bootAddr);
+	}
 
 
 	// Save touchscreen calibration info in a structure

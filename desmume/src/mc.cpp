@@ -117,6 +117,7 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 	buffer = new u8[size];
 	memset(buffer,0,size);
 
+	if (mc->data) delete [] mc->data;
 	mc->data = buffer;
 	if(!buffer) { return NULL; }
 	mc->size = size;
