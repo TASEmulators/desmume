@@ -82,3 +82,4 @@ extern int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
 extern void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config);
 
 #endif
+
