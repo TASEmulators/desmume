@@ -27,6 +27,7 @@
 #include "keyval_names.h"
 #include "rasterize.h"
 #include "desmume.h"
+#include "firmware.h"
 
 #ifdef GDB_STUB
 #include "../gdbstub.h"

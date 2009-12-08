@@ -53,6 +53,7 @@
 #include "../rasterize.h"
 #include "../saves.h"
 #include "../mic.h"
+#include "../firmware.h"
 #include "../GPU_osd.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"

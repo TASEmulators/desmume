@@ -31,6 +31,7 @@
 #include <SDL.h>
 
 #include "types.h"
+#include "firmware.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
 #include "sndsdl.h"
