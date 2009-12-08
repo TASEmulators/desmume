@@ -2501,6 +2501,7 @@ int _main()
 	}
 
 	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", FALSE, IniName);
+	CommonSettings.EnsataEmulation = GetPrivateProfileBool("Emulation", "EnsataEmulation", FALSE, IniName);
 	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", FALSE, IniName);
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
 	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
@@ -5066,11 +5067,12 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 		{
 			HWND cur;
 
-			CheckDlgButton(hDlg, IDC_CHECKBOX_DEBUGGERMODE, ((CommonSettings.DebugConsole == true) ? BST_CHECKED : BST_UNCHECKED));
-			CheckDlgButton(hDlg, IDC_USEEXTBIOS, ((CommonSettings.UseExtBIOS == true) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgItem(hDlg,IDC_CHECKBOX_DEBUGGERMODE,CommonSettings.DebugConsole);
+			CheckDlgItem(hDlg,IDC_CHECKBOX_ENSATAEMULATION,CommonSettings.EnsataEmulation);
+			CheckDlgItem(hDlg,IDC_USEEXTBIOS,CommonSettings.UseExtBIOS);
+			CheckDlgItem(hDlg, IDC_BIOSSWIS, CommonSettings.SWIFromBIOS);
 			SetDlgItemText(hDlg, IDC_ARM9BIOS, CommonSettings.ARM9BIOS);
 			SetDlgItemText(hDlg, IDC_ARM7BIOS, CommonSettings.ARM7BIOS);
-			CheckDlgButton(hDlg, IDC_BIOSSWIS, ((CommonSettings.SWIFromBIOS == true) ? BST_CHECKED : BST_UNCHECKED));
 
 			if(CommonSettings.UseExtBIOS == false)
 			{
@@ -5132,8 +5134,10 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					CommonSettings.BootFromFirmware = IsDlgCheckboxChecked(hDlg, IDC_FIRMWAREBOOT);
 
 					CommonSettings.DebugConsole = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
+					CommonSettings.EnsataEmulation = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_ENSATAEMULATION);
 
 					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
+					WritePrivateProfileInt("Emulation", "EnsataEmulation", ((CommonSettings.EnsataEmulation == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
 					WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
 					WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);

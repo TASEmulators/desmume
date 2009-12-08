@@ -1528,6 +1528,22 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 
 	sync_l |= val & 0x6000;
 
+	if(nds.ensataEmulation && proc==1 && nds.ensataIpcSyncCounter<9) {
+		u32 iteration = (val&0x0F00)>>8;
+
+		if(iteration==8-nds.ensataIpcSyncCounter)
+			nds.ensataIpcSyncCounter++;
+		else printf("ERROR: ENSATA IPC SYNC HACK FAILED; BAD THINGS MAY HAPPEN\n");
+
+		//for some reason, the arm9 doesn't handshake when ensata is detected.
+		//so we complete the protocol here, which is to mirror the values 8..0 back to 
+		//the arm7 as they are written by the arm7
+		sync_r &= 0xF0FF;
+		sync_r |= (iteration<<8);
+		sync_l &= 0xFFF0;
+		sync_l |= iteration;
+	}
+
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, sync_l);
 	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, sync_r);
 
@@ -2141,6 +2157,12 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
 			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
 			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
+
+			//ensata putchar port
+			case 0x04FFF000:
+				if(nds.ensataEmulation)
+					printf("%c",val);
+				break;
 
 			case REG_DISPA_DISP3DCNT:
 			{
@@ -2815,11 +2837,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return;
 	}
 
-	if(adr>=0x05000000 && adr<0x06000000)
-	{
-		int zzz=9;
-	}
-
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
@@ -2924,6 +2941,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommand(adr, val);
 				return;
+
 			default:
 				break;
 		}
@@ -2938,6 +2956,26 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_SQRTCNT: printf("ERROR 32bit SQRTCNT WRITE\n"); return;
 			case REG_DIVCNT:  printf("ERROR 32bit DIVCNT WRITE\n"); return;
 
+			//ensata handshaking port?
+			case 0x04FFF010:
+				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_ack && val == 0x13579bdf)
+					nds.ensataHandshake = ENSATA_HANDSHAKE_confirm;
+				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_confirm && val == 0xfdb97531)
+				{
+					printf("ENSATA HANDSHAKE COMPLETE\n");
+					nds.ensataHandshake = ENSATA_HANDSHAKE_complete;
+				}
+				break;
+
+			//todo - these are usually write only regs (these and 1000 more)
+			//shouldnt we block them from getting written? ugh
+			case eng_3D_CLIPMTX_RESULT:
+				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_none && val==0x2468ace0)
+				{
+					printf("ENSATA HANDSHAKE BEGIN\n");
+					nds.ensataHandshake = ENSATA_HANDSHAKE_query;
+				}
+				break;
 
 			case eng_3D_GXSTAT:
 				MMU_new.gxstat.write32(val);
@@ -3298,6 +3336,13 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_SQRTCNT: return MMU_new.sqrt.read16();
 			case REG_DIVCNT: return MMU_new.div.read16();
 			case eng_3D_GXSTAT: return MMU_new.gxstat.read(16,adr);
+
+			case REG_DISPA_VCOUNT:
+				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_query)
+				{
+					nds.ensataHandshake = ENSATA_HANDSHAKE_ack;
+					return 270;
+				}
 
 			// ============================================= 3D
 			case eng_3D_RAM_COUNT:

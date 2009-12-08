@@ -150,7 +150,16 @@ void NDS_RescheduleGXFIFO(u32 cost);
 void NDS_RescheduleDMA();
 void NDS_RescheduleTimers();
 
-typedef struct
+enum ENSATA_HANDSHAKE
+{
+	ENSATA_HANDSHAKE_none = 0,
+	ENSATA_HANDSHAKE_query = 1,
+	ENSATA_HANDSHAKE_ack = 2,
+	ENSATA_HANDSHAKE_confirm = 3,
+	ENSATA_HANDSHAKE_complete = 4,
+};
+
+struct NDSSystem
 {
 	s32 wifiCycle;
 	s32 cycles;
@@ -184,9 +193,18 @@ typedef struct
 	//if the game was booted on a debug console, this is set
 	BOOL debugConsole;
 
+	//set if the user requests ensata emulation
+	BOOL ensataEmulation;
+
+	//there is a hack in the ipc sync for ensata. this tracks its state
+	u32 ensataIpcSyncCounter;
+
+	//maintains the state of the ensata handshaking protocol
+	u32 ensataHandshake;
+
 	bool isInVblank() const { return VCount >= 192; } 
 	bool isIn3dVblank() const { return VCount >= 192 && VCount<215; } 
-} NDSSystem;
+};
 
 /** /brief A touchscreen calibration point.
  */
@@ -432,7 +450,7 @@ extern struct TCommonSettings {
 		, UseExtFirmware(false)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
-		//, gfx3d_flushMode(0)
+		, EnsataEmulation(false)
 		, num_cores(1)
 		, micMode(InternalNoise)
 		, spuInterpolationMode(SPUInterpolation_Linear)
@@ -462,6 +480,7 @@ extern struct TCommonSettings {
 	bool BootFromFirmware;
 
 	bool DebugConsole;
+	bool EnsataEmulation;
 
 	int num_cores;
 	bool single_core() { return num_cores==1; }
