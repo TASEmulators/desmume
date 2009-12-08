@@ -479,6 +479,13 @@ void UnscaleScreenCoords(s32& x, s32& y)
 	int defheight = video.height;
 	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
+	if(winwidth == 0 || winheight == 0)
+	{
+		x = 0;
+		y = 0;
+		return;
+	}
+
 	if (video.layout == 0)
 	{
 		defheight += video.scaledscreengap();
