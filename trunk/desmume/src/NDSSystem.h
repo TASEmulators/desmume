@@ -260,8 +260,6 @@ int NDS_Init ( void);
 void Desmume_InitOnce();
 
 void NDS_DeInit(void);
-void
-NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config);
 
 BOOL NDS_SetROM(u8 * rom, u32 mask);
 NDS_header * NDS_getROMHeader(void);
@@ -377,7 +375,6 @@ void nds_savestate(EMUFILE* os);
 bool nds_loadstate(EMUFILE* is, int size);
 
 int NDS_WriteBMP(const char *filename);
-int NDS_LoadFirmware(const char *filename);
 int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
 
 void NDS_Sleep();

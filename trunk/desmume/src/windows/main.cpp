@@ -89,6 +89,7 @@
 #include "directx/ddraw.h"
 #include "video.h"
 #include "path.h"
+#include "../firmware.h"
 
 #include "aggdraw.h"
 #include "agg2d.h"

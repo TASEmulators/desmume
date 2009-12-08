@@ -21,7 +21,7 @@ libdesmume_a_SOURCES = \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
 	emufile.h emufile.cpp fat.h FIFO.cpp FIFO.h \
-	GPU.cpp GPU.h \
+	firmware.cpp firmware.h GPU.cpp GPU.h \
 	GPU_osd.cpp GPU_osd.h \
 	mem.h mc.cpp mc.h \
 	path.h \
