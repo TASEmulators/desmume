@@ -3343,6 +3343,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 					nds.ensataHandshake = ENSATA_HANDSHAKE_ack;
 					return 270;
 				}
+				break;
 
 			// ============================================= 3D
 			case eng_3D_RAM_COUNT:
