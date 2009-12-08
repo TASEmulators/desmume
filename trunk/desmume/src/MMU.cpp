@@ -2953,8 +2953,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
-			case REG_SQRTCNT: printf("ERROR 32bit SQRTCNT WRITE\n"); return;
-			case REG_DIVCNT:  printf("ERROR 32bit DIVCNT WRITE\n"); return;
+			case REG_SQRTCNT: MMU_new.sqrt.write16((u16)val); return;
+			case REG_DIVCNT: MMU_new.div.write16((u16)val); return;
 
 			//ensata handshaking port?
 			case 0x04FFF010:
@@ -3422,8 +3422,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 		switch(adr)
 		{
-			case REG_SQRTCNT: printf("ERROR 32bit SQRTCNT READ\n"); return 0;
-			case REG_DIVCNT: printf("ERROR 32bit DIVCNT READ\n"); return 0;
+			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
+			case REG_DIVCNT: return MMU_new.div.read16();
+			//I guess we'll do this also
+			case REG_SQRTCNT: return MMU_new.sqrt.read16();
 
 			case eng_3D_CLIPMTX_RESULT:
 			case eng_3D_CLIPMTX_RESULT+4:
