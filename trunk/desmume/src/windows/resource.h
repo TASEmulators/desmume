@@ -298,6 +298,7 @@
 #define IDC_MFRAMES                     1003
 #define IDC_ROTATE0                     1003
 #define IDC_BUTTON2                     1003
+#define IDC_CHECKBOX_ENSATAEMULATION    1003
 #define IDC_ARM9BIOSBROWSE              1004
 #define IDC_EDIT11                      1004
 #define IDC_GI_GAMECODE                 1004

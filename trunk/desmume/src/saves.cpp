@@ -173,6 +173,9 @@ SFORMAT SF_NDS[]={
 	{ "_TPY", 2, 1, &nds.touchY},
 	{ "_TPB", 4, 1, &nds.isTouch},
 	{ "_DBG", 4, 1, &nds.debugConsole},
+	{ "_ENS", 4, 1, &nds.ensataEmulation},
+	{ "_ENH", 4, 1, &nds.ensataHandshake},
+	{ "_ENI", 4, 1, &nds.ensataIpcSyncCounter},
 	{ 0 }
 };
 

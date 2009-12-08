@@ -2652,6 +2652,9 @@ void NDS_Reset()
 	nds.touchX = nds.touchY = 0;
 	nds.isTouch = 0;
 	nds.debugConsole = CommonSettings.DebugConsole;
+	nds.ensataEmulation = CommonSettings.EnsataEmulation;
+	nds.ensataHandshake = ENSATA_HANDSHAKE_none;
+	nds.ensataIpcSyncCounter = 0;
 	SetupMMU(nds.debugConsole);
 
 	_MMU_write16<ARMCPU_ARM9>(0x04000130, 0x3FF);
