@@ -744,13 +744,17 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		loadrom(path.path);
 	}
 	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
+		type = ROM_NDS;
 		loadrom(path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
 		//...but since the data was extracted to gameInfo then it is ok
-		type = ROM_NDS;
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
 	else if (path.isdsgba(std::string(logicalFilename))) {
 		type = ROM_DSGBA;
+	} else {
+		//well, try to load it as an nds rom anyway
+		type = ROM_NDS;
+		loadrom(path.path);
 	}
 
 	if(type == ROM_DSGBA)
