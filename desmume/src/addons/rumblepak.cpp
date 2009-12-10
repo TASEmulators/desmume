@@ -57,7 +57,7 @@ static void RumblePak_write32(u32 adr, u32 val)
 
 static u8   RumblePak_read08(u32 adr)
 {
-	return (0);
+	return (0xFF);
 }
 
 static u16  RumblePak_read16(u32 adr)
@@ -70,7 +70,7 @@ static u16  RumblePak_read16(u32 adr)
 
 static u32  RumblePak_read32(u32 adr)
 {
-	return (0);
+	return (0xFFFFFFFF);
 }
 
 static void RumblePak_info(char *info)

@@ -92,7 +92,7 @@ static u8   ExpMemory_read08(u32 adr)
 	if (adr >= 0x09000000)
 	{
 		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return (0);
+		if (offs >= expMemSize) return (0xFF);
 		return (T1ReadByte(expMemory, offs));
 	}
 
@@ -109,7 +109,7 @@ static u16  ExpMemory_read16(u32 adr)
 	if (adr >= 0x09000000)
 	{
 		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return (0);
+		if (offs >= expMemSize) return (0xFFFF);
 		return (T1ReadWord(expMemory, offs));
 	}
 
@@ -123,7 +123,7 @@ static u32  ExpMemory_read32(u32 adr)
 	if (adr >= 0x09000000)
 	{
 		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return (0);
+		if (offs >= expMemSize) return (0xFFFFFFFF);
 		return (T1ReadLong(expMemory, offs));
 	}
 

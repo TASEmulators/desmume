@@ -125,7 +125,8 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 	if (adr < 0x4000004) return;
 	if (adr > 0x4808FFF) return;
 #if 1
-	if (adr >= 0x4000004 && adr <= 0x40001C4) return;		// ARM7 I/O Map
+	if (adr >= 0x4000004 && adr < 0x4000180) return;		// ARM7 I/O Map
+	if (adr >= 0x4000180 && adr <= 0x40001C4) return;		// IPC/ROM
 	if (adr >= 0x4000204 && adr <= 0x400030C) return;		// Memory and IRQ Control
 	if (adr >= 0x4000400 && adr <= 0x400051E) return;		// Sound Registers
 	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
@@ -2343,7 +2344,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 		}
 
-		MMU.MMU_MEM[ARMCPU_ARM9][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
+		MMU.MMU_MEM[ARMCPU_ARM9][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM9][0x40]]=val;
 		return;
 	}
 
@@ -2833,7 +2834,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 		}
 
-		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val); 
+		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM9][0x40], val); 
 		return;
 	}
 
@@ -3256,7 +3257,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			}
 		}
 
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][0x40], val);
 		return;
 	}
 	if(adr>=0x05000000 && adr<0x06200000)
@@ -3304,6 +3305,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case eng_3D_GXSTAT:
 				return MMU_new.gxstat.read(8,adr);
 		}
+		return MMU.MMU_MEM[ARMCPU_ARM9][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM9][0x40]];
 	}
 
 	bool unmapped;	
@@ -3316,7 +3318,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 //================================================= MMU ARM9 read 16
 u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
-	mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
+	mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]));
 
 	if(adr<0x02000000)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
@@ -3392,7 +3394,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 
 		}
 
-		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
+		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][0x40]);
 	}
 
 	bool unmapped;
@@ -3406,7 +3408,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 //================================================= MMU ARM9 read 32
 u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
-	mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
+	mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
 
 	if(adr<0x02000000) 
 		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
@@ -3500,7 +3502,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM9>();
 		}
-		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
+		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][0x40]);
 	}
 	
 	bool unmapped;
@@ -3566,6 +3568,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 			write_auxspicnt(9,8,1,val);
 			return;
 		}
+		MMU.MMU_MEM[ARMCPU_ARM7][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM7][0x40]]=val;
+		return;
 	}
 
 	bool unmapped;
@@ -3862,7 +3866,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 		}
 
-		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
+		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x40], val); 
 		return;
 	}
 
@@ -3977,7 +3981,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				MMU_writeToGCControl<ARMCPU_ARM7>(val);
 				return;
 		}
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM7][0x40], val);
 		return;
 	}
 
@@ -4008,24 +4012,27 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 	if (adr == REG_RTC) return (u8)rtcRead();
 
+	adr &= 0x0FFFFFFF;
+
 	if (adr >> 24 == 4)
 	{
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,8,adr); 
 
 		// Address is an IO register
 		//switch(adr) {}
+		return MMU.MMU_MEM[ARMCPU_ARM7][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM7][0x40]];
 	}
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return 0;
 
-    return MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]];
+    return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
 }
 //================================================= MMU ARM7 read 16
 u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
-	mmu_log_debug_ARM7(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+	mmu_log_debug_ARM7(adr, "(read16) 0x%04X", T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]));
 
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4078,7 +4085,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_POSTFLG:
 				return 1;
 		}
-		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]); 
+		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM7][0x40]); 
 	}
 
 	bool unmapped;
@@ -4092,7 +4099,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 //================================================= MMU ARM7 read 32
 u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
-	mmu_log_debug_ARM7(adr, "(read32) 0x%08X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+	mmu_log_debug_ARM7(adr, "(read32) 0x%08X", T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]));
 
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4138,7 +4145,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				return MMU_readFromGC<ARMCPU_ARM7>();
 
 		}
-		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
+		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
 	}
 
 	bool unmapped;

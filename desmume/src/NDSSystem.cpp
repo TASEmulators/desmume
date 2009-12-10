@@ -1876,6 +1876,10 @@ void NDS_Reset()
 		INFO("ARM7 BIOS is loaded.\n");
 	} else {
 		NDS_ARM7.swi_tab = ARM7_swi_tab;
+
+		for (int t = 0; t < 16384; t++)
+			MMU.ARM7_BIOS[t] = 0xFF;
+
 		_MMU_write32<ARMCPU_ARM7>(0x00, 0xE25EF002);
 		_MMU_write32<ARMCPU_ARM7>(0x04, 0xEAFFFFFE);
 		_MMU_write32<ARMCPU_ARM7>(0x18, 0xEA000000);
@@ -1902,18 +1906,7 @@ void NDS_Reset()
 		INFO("ARM9 BIOS is loaded.\n");
 	} else {
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
-#if 0
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000000);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0020, 0xE92D500F);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0024, 0xEE190F11);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0028, 0xE1A00620);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF002C, 0xE1A00600);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0030, 0xE2800C40);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0034, 0xE28FE000);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0038, 0xE510F004);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF003C, 0xE8BD500F);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0040, 0xE25EF004);
-#else
+
 		for (int t = 0; t < 4096; t++)
 			MMU.ARM9_BIOS[t] = 0xFF;
 
@@ -1931,7 +1924,6 @@ void NDS_Reset()
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF028C, 0xE510F004);
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0290, 0xE8BD500F);
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0294, 0xE25EF004);
-#endif
 	}
 
 	if (firmware)
@@ -2075,14 +2067,19 @@ void NDS_Reset()
 
 	// Save touchscreen calibration info in a structure
 	// so we can easily access it at any time
-	TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x58);
-	TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x5A);
-	TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x5C);
-	TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x5D);
-	TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x5E);
-	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM9>(0x027FFC80 + 0x60);
-	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x62);
-	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM9>(0x027FFC80 + 0x63);
+	TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x58);
+	TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5A);
+	TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5C);
+	TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5D);
+	TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5E);
+	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60);
+	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
+	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
+
+	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
+	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
+	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
+	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
 
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
@@ -2143,13 +2140,13 @@ INLINE u16 NDS_getADCTouchPosX(u16 scrX)
 	// we're basically adjusting the ADC results to
 	// compensate for how they will be interpreted.
 	// the actual system doesn't do this transformation.
-	int rv = (scrX - TSCal.scr.x1 + 1) * (TSCal.adc.x2 - TSCal.adc.x1) / (TSCal.scr.x2 - TSCal.scr.x1) + TSCal.adc.x1;
+	int rv = (scrX - TSCal.scr.x1 + 1) * TSCal.adc.width / TSCal.scr.width + TSCal.adc.x1;
 	rv = min(0xFFF, max(0, rv));
 	return (u16)rv;
 }
 INLINE u16 NDS_getADCTouchPosY(u16 scrY)
 {
-	int rv = (scrY - TSCal.scr.y1 + 1) * (TSCal.adc.y2 - TSCal.adc.y1) / (TSCal.scr.y2 - TSCal.scr.y1) + TSCal.adc.y1;
+	int rv = (scrY - TSCal.scr.y1 + 1) * TSCal.adc.height / TSCal.scr.height + TSCal.adc.y1;
 	rv = min(0xFFF, max(0, rv));
 	return (u16)rv;
 }

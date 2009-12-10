@@ -65,7 +65,7 @@ void CFIRMWARE::crypt64BitDown(u32 *ptr)
 		u32 Z = (keyBuf[i] ^ X);
 		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
 		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
-		X = (keyBuf[DWNUM(0x848 + (((Z >> 8) & 0xFF) << 2))] ^ X);
+		X = (keyBuf[DWNUM(0x848 + (((Z >> 8)  & 0xFF) << 2))] ^ X);
 		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
 		X = (Y ^ X);
 		Y = Z;
@@ -117,7 +117,6 @@ bool CFIRMWARE::initKeycode(u32 idCode, int level, u32 modulo)
 	return TRUE;
 }
 
-// TODO
 u16 CFIRMWARE::getBootCodeCRC16()
 {
 	unsigned int i, j;
@@ -338,11 +337,14 @@ bool CFIRMWARE::load()
 	
 	u32	src = 0;
 	
-	if (CommonSettings.UseExtFirmware == false) return false;
-	if (strlen(CommonSettings.Firmware) == 0) return false;
+	if (CommonSettings.UseExtFirmware == false)
+		return false;
+	if (strlen(CommonSettings.Firmware) == 0)
+		return false;
 	
 	FILE	*fp = fopen(CommonSettings.Firmware, "rb");
-	if (!fp) return false;
+	if (!fp)
+		return false;
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -352,13 +354,28 @@ bool CFIRMWARE::load()
 		return false;
 	}
 	data = new u8 [size];
-	if (!data) { fclose(fp); return false; }
-	if (fread(data, 1, size, fp) != size)  { delete [] data; fclose(fp); return false; }
+	if (!data)
+	{
+		fclose(fp);
+		return false;
+	}
+
+	if (fread(data, 1, size, fp) != size)
+	{
+		delete [] data;
+		fclose(fp);
+		return false; 
+	}
 
 	memcpy(&header, data, sizeof(header));
 	if ((header.fw_identifier[0] != 'M') ||
 			(header.fw_identifier[1] != 'A') ||
-				(header.fw_identifier[2] != 'C'))  { delete [] data; fclose(fp); return false; }
+				(header.fw_identifier[2] != 'C'))
+				{
+					delete [] data;
+					fclose(fp);
+					return false;
+				}
 
 	shift1 = ((header.shift_amounts >> 0) & 0x07);
 	shift2 = ((header.shift_amounts >> 3) & 0x07);
@@ -377,24 +394,64 @@ bool CFIRMWARE::load()
 	ARM9bootAddr = part1ram;
 	ARM7bootAddr = part2ram;
 
-	if(initKeycode(T1ReadLong(data, 0x08), 1, 0xC) == FALSE) { delete [] data; fclose(fp); return false; };
+	if(initKeycode(T1ReadLong(data, 0x08), 1, 0xC) == FALSE)
+	{
+		delete [] data;
+		fclose(fp);
+		return false;
+	}
+
+#if 0
 	crypt64BitDown((u32*)&data[0x18]);
-	if(initKeycode(T1ReadLong(data, 0x08), 2, 0xC) == FALSE) { delete [] data; fclose(fp); return false; };
+#else
+	// hack?
+	data[0x18] = 0x00;
+	data[0x19] = 0x00;
+	data[0x1A] = 0x00;
+	data[0x1B] = 0x00;
+
+	data[0x1C] = 0x00;
+	data[0x1D] = 0xFF;
+	data[0x1E] = 0x00;
+	data[0x1F] = 0x00;
+#endif
+
+	if(initKeycode(T1ReadLong(data, 0x08), 2, 0xC) == FALSE)
+	{
+		delete [] data;
+		fclose(fp);
+		return false;
+	}
 
 	size9 = decrypt(data + part1addr, tmp_data9);
-	if (!tmp_data9) { delete [] data; fclose(fp); return false; };
+	if (!tmp_data9)
+	{
+		delete [] data;
+		fclose(fp);
+		return false;
+	}
 
 	size7 = decrypt(data + part2addr, tmp_data7);
-	if (!tmp_data7) { delete [] tmp_data9; delete [] data; fclose(fp); return false; };
+	if (!tmp_data7)
+	{
+		delete [] tmp_data9;
+		delete [] data;
+		fclose(fp);
+		return false;
+	}
 
 	u16 crc16_mine = getBootCodeCRC16();
 
 	if (crc16_mine != header.part12_boot_crc16)
 	{
 		INFO("Firmware: ERROR: the boot code CRC16 (0x%04X) doesn't match the value in the firmware header (0x%04X)", crc16_mine, header.part12_boot_crc16);
-		delete [] tmp_data9; delete [] tmp_data7; delete [] data; fclose(fp); 
+		delete [] tmp_data9;
+		delete [] tmp_data7;
+		delete [] data;
+		fclose(fp); 
 		return false;
 	}
+
 	// Copy firmware boot codes to their respective locations
 	src = 0;
 	for(u32 i = 0; i < (size9 >> 2); i++)
@@ -469,10 +526,21 @@ bool CFIRMWARE::load()
 		ARM7bootAddr = part2ram;
 
 		size9 = decompress(data + part1addr, tmp_data9);
-		if (!tmp_data9) { delete [] data; fclose(fp); return false; };
+		if (!tmp_data9) 
+		{
+			delete [] data;
+			fclose(fp);
+			return false;
+		}
 
 		size7 = decompress(data + part2addr, tmp_data7);
-		if (!tmp_data7) { delete [] tmp_data9; delete [] data; fclose(fp); return false; };
+		if (!tmp_data7)
+		{
+			delete [] tmp_data9;
+			delete [] data;
+			fclose(fp);
+			return false;
+		};
 		// Copy firmware boot codes to their respective locations
 		src = 0;
 		for(u32 i = 0; i < (size9 >> 2); i++)

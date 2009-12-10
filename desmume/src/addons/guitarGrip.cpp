@@ -38,7 +38,7 @@ static u8   guitarGrip_read08(u32 adr)
 {
 	//INFO("GuitarGrip: read 08 at 0x%08X\n", adr);
 	if (adr == 0x0A000000) return (~guitarKeyStatus);
-	return (0x0);
+	return (0xFF);
 }
 static u16  guitarGrip_read16(u32 adr)
 {
@@ -46,12 +46,12 @@ static u16  guitarGrip_read16(u32 adr)
 	if (adr == 0x080000BE) return (0xF9FF);
 	if (adr == 0x0801FFFE) return (0xF9FF);
 
-	return (0);
+	return (0xFFFF);
 }
 static u32  guitarGrip_read32(u32 adr)
 {
 	//INFO("GuitarGrip: read 32 at 0x%08X\n", adr);
-	return (0);
+	return (0xFFFFFFFF);
 }
 static void guitarGrip_info(char *info) { strcpy(info, "Guitar Grip for Guitar Hero games"); }
 
