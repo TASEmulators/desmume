@@ -20,6 +20,9 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+// icon gradient: #f6f6fb to #8080c0
+// RGB(246, 246, 251) to RGB(128, 128, 192)
+
 #include "windriver.h"
 #include <algorithm>
 #include <shellapi.h>
@@ -1904,11 +1907,6 @@ void SetLanguage(int langid)
 		// French       
 		setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
-		break;
-	case 2:
-		// Danish
-		setLanguage(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
 		break;
 	case 3:
 		// Chinese
@@ -4819,11 +4817,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ChangeLanguage(1);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
-		case IDC_LANGDANISH:
-			SaveLanguage(2);
-			ChangeLanguage(2);
-			CheckLanguage(LOWORD(wParam));
-			return 0;
 		case IDC_LANG_CHINESE_SIMPLIFIED:
 			SaveLanguage(3);
 			ChangeLanguage(3);
@@ -5569,6 +5562,7 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 
 					//write interpolation type
 					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);
+					//SPU_SetInterpolationMode(CommonSettings.spuInterpolationMode);
 					WritePrivateProfileInt("Sound","SPUInterpolation",(int)CommonSettings.spuInterpolationMode, IniName);
 
 					return TRUE;
