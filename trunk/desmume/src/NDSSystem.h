@@ -295,12 +295,16 @@ typedef struct TSCalInfo
 	{
 		u16 x1, x2;
 		u16 y1, y2;
+		u16 width;
+		u16 height;
 	} adc;
 
 	struct scr
 	{
 		u8 x1, x2;
 		u8 y1, y2;
+		u16 width;
+		u16 height;
 	} scr;
 
 } TSCalInfo;
