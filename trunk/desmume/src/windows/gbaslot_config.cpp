@@ -379,7 +379,7 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
 
 			_OKbutton = false;
-			wndConfig=CreateDialog(hAppInst, MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), 
+			wndConfig=CreateDialogW(hAppInst, MAKEINTRESOURCEW(GBAslot_IDDs[temp_type]), 
 										dialog, (DLGPROC)GBAslot_Procs[temp_type]);
 			if ( (temp_type == 0) || (_OKbutton) )
 				EnableWindow(OKbutton, TRUE);
@@ -421,8 +421,8 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 						{
 							if (wndConfig) DestroyWindow(wndConfig);
 							_OKbutton = false;
-							wndConfig=CreateDialog(hAppInst, 
-								MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), dialog, 
+							wndConfig=CreateDialogW(hAppInst, 
+								MAKEINTRESOURCEW(GBAslot_IDDs[temp_type]), dialog, 
 								(DLGPROC)GBAslot_Procs[temp_type]);
 							if ( (temp_type == 0) || (_OKbutton) )
 								EnableWindow(OKbutton, TRUE);
@@ -453,7 +453,7 @@ void GBAslotDialog(HWND hwnd)
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
 	needReset = true;
-	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
+	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
 	{
 		switch (temp_type)

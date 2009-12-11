@@ -603,6 +603,12 @@
 #define IDC_SOUND5MUTE                  2006
 #define IDC_SOUND6MUTE                  2007
 #define IDC_SOUND7MUTE                  2008
+#define ICONDESMUME                     2009
+#define IDD_REPLAYINP                   2010
+#define IDD_REPLAY_METADATA             2011
+#define MENU_PRINCIPAL                  2012
+#define RAMWATCH_MENU                   2013
+#define RECENTROMS                      2014
 #define IDC_GI_FATOFS                   4464
 #define IDC_INTERPOLATECOLOR            4464
 #define IDC_GI_FATSIZE                  4465
@@ -687,6 +693,7 @@
 #define ID_LCDS_SUBGPU                  40061
 #define IDM_CHEATS_DISABLE              40062
 #define IDM_CHEATS_SEARCH               40063
+#define ID_RAMSEARCH_CAPTIONTEXT        40064
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002

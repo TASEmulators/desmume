@@ -21,6 +21,7 @@
 #include "CWindow.h"
 #include "IORegView.h"
 #include "debug.h"
+#include "resource.h"
 
 DWORD GetFontQuality()
 {
@@ -162,7 +163,7 @@ void CToolWindow::PostInitialize()
 			return;
 
 		SetWindowText(hWnd, title.c_str());
-		SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hAppInst, "ICONDESMUME"));
+		SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME)));
 	}
 }
 
@@ -559,7 +560,7 @@ DWORD TOOLSCLASS::ThreadFunc()
 	LOG("Start thread\n");
 
 	GetLastError();
-	hwnd = CreateDialog(hInstance, MAKEINTRESOURCE(idd), NULL, (DLGPROC) dlgproc);
+	hwnd = CreateDialogW(hInstance, MAKEINTRESOURCEW(idd), NULL, (DLGPROC) dlgproc);
 
 	if (!hwnd) 
 	{

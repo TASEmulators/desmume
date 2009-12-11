@@ -76,8 +76,8 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	hwnd = GetDlgItem(hDlg, IDC_FORMATEDIT);
 	Edit_LimitText(hwnd, MAX_FORMAT);
 
-	HWND toolTip = CreateWindowEx(NULL, 
-		TOOLTIPS_CLASS, NULL, 
+	HWND toolTip = CreateWindowExW(NULL, 
+		TOOLTIPS_CLASSW, NULL, 
 		TTS_ALWAYSTIP, 
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT,
