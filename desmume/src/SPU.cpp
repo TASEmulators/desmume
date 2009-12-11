@@ -47,10 +47,10 @@
 
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
 
-//#undef FORCEINLINE
-//#define FORCEINLINE
-
-
+//#ifdef FASTBUILD
+//	#undef FORCEINLINE
+//	#define FORCEINLINE
+//#endif
 
 //static ISynchronizingAudioBuffer* synchronizer = metaspu_construct(ESynchMethod_Z);
 static ISynchronizingAudioBuffer* synchronizer = metaspu_construct(ESynchMethod_N);

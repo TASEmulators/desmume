@@ -38,12 +38,12 @@
 #include "NDSSystem.h"
 #include "readwrite.h"
 
-//#undef FORCEINLINE
-//#define FORCEINLINE
-//#define SSE2_NOINTRIN
-
-//compilation speed hack (cuts time exactly in half by cutting out permutations)
-//#define DISABLE_MOSAIC
+//#ifdef FASTBUILD
+//	#undef FORCEINLINE
+//	#define FORCEINLINE
+//	//compilation speed hack (cuts time exactly in half by cutting out permutations)
+//	#define DISABLE_MOSAIC
+//#endif
 
 extern BOOL click;
 NDS_Screen MainScreen;
