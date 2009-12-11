@@ -1864,10 +1864,10 @@ joinThread_gdb( void *thread_handle) {
 
 int MenuInit()
 {
-	mainMenu = LoadMenu(hAppInst, "MENU_PRINCIPAL"); //Load Menu, and store handle
+	mainMenu = LoadMenu(hAppInst, MAKEINTRESOURCE(MENU_PRINCIPAL)); //Load Menu, and store handle
 	if (!MainWindow->setMenu(mainMenu)) return 0;
 
-	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
+	recentromsmenu = LoadMenu(hAppInst, MAKEINTRESOURCE(RECENTROMS));
 	GetRecentRoms();
 
 	ResetSaveStateTimes();
@@ -2202,7 +2202,7 @@ int _main()
 	WIN_InstallCFlash();
 
 	ColorCtrl_Register();
-	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, "ICONDESMUME")))
+	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
 	{
 		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
 		exit(-1);
@@ -3416,25 +3416,25 @@ void RunConfig(CONFIGSCREEN which)
 		RunHotkeyConfig();
 		break;
 	case CONFIGSCREEN_FIRMWARE:
-		DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
+		DialogBoxW(hAppInst,MAKEINTRESOURCEW(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
 		break;
 	case CONFIGSCREEN_SOUND:
-		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
+		DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
 		break;
 	case CONFIGSCREEN_EMULATION:
-		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
+		DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
 		break; 
 	case CONFIGSCREEN_MICROPHONE:
-		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_MICROPHONE), hwnd, (DLGPROC)MicrophoneSettingsDlgProc);
+		DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_MICROPHONE), hwnd, (DLGPROC)MicrophoneSettingsDlgProc);
 		break;
 	case CONFIGSCREEN_PATHSETTINGS:
-		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_PATHSETTINGS), hwnd, (DLGPROC)PathSettingsDlgProc);
+		DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_PATHSETTINGS), hwnd, (DLGPROC)PathSettingsDlgProc);
 		break;
 	case CONFIGSCREEN_WIFI:
 #ifdef EXPERIMENTAL_WIFI_COMM
 		if(wifi_netEnabled)
 		{
-			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
+			DialogBoxW(hAppInst,MAKEINTRESOURCEW(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
 		}
 		else
 		{
@@ -3480,18 +3480,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		{
 			SPU_Pause(1);
 
-			MENUITEMINFO mii;
-			TCHAR menuItemString[256];
-			ZeroMemory(&mii, sizeof(MENUITEMINFO));
+			MENUITEMINFOW mii;
+			WCHAR menuItemString[256];
+			ZeroMemory(&mii, sizeof(MENUITEMINFOW));
 			//Check if AVI is recording
-			mii.cbSize = sizeof(MENUITEMINFO);
+			mii.cbSize = sizeof(MENUITEMINFOW);
 			mii.fMask = MIIM_STRING;
-			LoadString(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
+			LoadStringW(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
 			mii.dwTypeData = menuItemString;
-			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
+			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
 			//Check if WAV is recording
-			LoadString(hAppInst, !WAV_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
-			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
+			LoadStringW(hAppInst, !WAV_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
+			SetMenuItemInfoW(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
 
 			//Menu items dependent on a ROM loaded
 			DesEnableMenuItem(mainMenu, IDM_GAME_INFO,         romloaded);
@@ -3968,7 +3968,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					HWND IsScriptFileOpen(const char* Path);
 					if(!IsScriptFileOpen(temp))
 					{
-						HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+						HWND hDlg = CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
 						SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)temp);
 					}
 				}
@@ -4084,7 +4084,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					HWND IsScriptFileOpen(const char* Path);
 					if(!IsScriptFileOpen(temp))
 					{
-						HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+						HWND hDlg = CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
 						SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)temp);
 					}
 				}
@@ -4450,7 +4450,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_GAME_INFO:
 			{
-				//CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
+				//CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_GAME_INFO), hwnd, GinfoView_Proc);
 				GInfo_DlgOpen(hwnd);
 			}
 			return 0;
@@ -4469,7 +4469,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_IOREG:
 			//ViewRegisters->open();
-			if (!RegWndClass("DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, LoadIcon(hAppInst, "ICONDESMUME"), sizeof(CIORegView*)))
+			if (!RegWndClass("DeSmuME_IORegView", IORegView_Proc, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME)), sizeof(CIORegView*)))
 				return 0;
 
 			OpenToolWindow(new CIORegView());
@@ -4768,7 +4768,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					NDS_Pause();
 				}
 
-				DialogBox(hAppInst, MAKEINTRESOURCE(IDD_3DSETTINGS), hwnd, (DLGPROC)GFX3DSettingsDlgProc);
+				DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_3DSETTINGS), hwnd, (DLGPROC)GFX3DSettingsDlgProc);
 
 				if(tpaused) NDS_UnPause();
 			}
@@ -4801,7 +4801,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDC_NEW_LUA_SCRIPT:
 			if(LuaScriptHWnds.size() < 16)
-				CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+				CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
 			break;
 		case IDC_CLOSE_LUA_SCRIPTS:
 			for(int i=(int)LuaScriptHWnds.size()-1; i>=0; i--)
@@ -4885,7 +4885,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					tpaused=true;
 					NDS_Pause();
 				}
-				DialogBox(hAppInst,MAKEINTRESOURCE(IDD_ABOUT_BOX), hwnd, (DLGPROC) AboutBox_Proc);
+				DialogBoxW(hAppInst,MAKEINTRESOURCEW(IDD_ABOUT_BOX), hwnd, (DLGPROC) AboutBox_Proc);
 				if (tpaused)
 					NDS_UnPause();
 
@@ -5761,7 +5761,7 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 		{
 			HWND prevWindow = GetActiveWindow();
 
-			HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+			HWND hDlg = CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
 			SendMessage(hDlg,WM_COMMAND,IDC_NOTIFY_SUBSERVIENT,TRUE);
 			SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)filename);
 

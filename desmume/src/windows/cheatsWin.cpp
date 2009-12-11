@@ -754,7 +754,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					searchAddValue = 0;
 					searchAddMode = 0;
 					searchAddFreeze = 1;
-					if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsAddProc))
+					if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsAddProc))
 					{
 						LVITEM lvi;
 						char buf[256];
@@ -794,7 +794,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 							return TRUE;
 					cheatXXaction = 0;				// 0 = add
 
-					if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
+					if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
 					{
 						LVITEM lvi;
 
@@ -834,7 +834,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					switch (tempCheat.type)
 					{
 						case 0:				// internal
-							if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
+							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
 							{
 								char buf[256];
 								cheatsGet(&tempCheat, cheatEditPos);
@@ -857,7 +857,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 								cheatXXtype = 1;
 							cheatXXaction = 1;		// 1 = edit
 
-							if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
+							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
 							{
 								cheatsGet(&tempCheat, cheatEditPos);
 								if (tempCheat.enabled)
@@ -907,7 +907,7 @@ void CheatsListDialog(HWND hwnd)
 {
 	if (!cheatsPush()) return;
 	memset(&tempCheat, 0, sizeof(CHEATS_LIST));
-	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_LIST), hwnd, (DLGPROC) CheatsListBox_Proc);
+	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_LIST), hwnd, (DLGPROC) CheatsListBox_Proc);
 	if (res)
 	{
 		cheatsSave();
@@ -1102,7 +1102,7 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 						searchAddValue = atol(buf);
 						searchAddMode = 1;
 						searchAddSize = searchSize;
-						DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsAddProc);
+						DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsAddProc);
 					}
 				return TRUE;
 			}
@@ -1187,7 +1187,7 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 			hBView =	GetDlgItem(dialog, IDC_BVIEW);
 			hBSearch =	GetDlgItem(dialog, IDC_BSEARCH);
 			
-			searchWnd=CreateDialog(hAppInst, MAKEINTRESOURCE(searchIDDs[searchType][searchStep]), 
+			searchWnd=CreateDialogW(hAppInst, MAKEINTRESOURCEW(searchIDDs[searchType][searchStep]), 
 										dialog, (DLGPROC)CheatsSearchSubWnds[searchType][searchStep]);
 			return TRUE;
 		}
@@ -1203,7 +1203,7 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				return TRUE;
 
 				case IDC_BVIEW:
-					DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_SEARCH_VIEW), dialog, (DLGPROC)CheatsSearchViewWnd);
+					DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_SEARCH_VIEW), dialog, (DLGPROC)CheatsSearchViewWnd);
 				return TRUE;
 
 				case IDC_BSEARCH:
@@ -1222,7 +1222,7 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 
 					searchStep++;
 					if (searchWnd) DestroyWindow(searchWnd);
-					searchWnd=CreateDialog(hAppInst, MAKEINTRESOURCE(searchIDDs[searchType][searchStep]), 
+					searchWnd=CreateDialogW(hAppInst, MAKEINTRESOURCEW(searchIDDs[searchType][searchStep]), 
 										dialog, (DLGPROC)CheatsSearchSubWnds[searchType][searchStep]);
 					if (searchType == 0)
 					{
@@ -1240,7 +1240,7 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 					searchStep = 0;
 					searchNumberResults = 0;
 					if (searchWnd) DestroyWindow(searchWnd);
-					searchWnd=CreateDialog(hAppInst, MAKEINTRESOURCE(searchIDDs[searchType][searchStep]), 
+					searchWnd=CreateDialogW(hAppInst, MAKEINTRESOURCEW(searchIDDs[searchType][searchStep]), 
 										dialog, (DLGPROC)CheatsSearchSubWnds[searchType][searchStep]);
 				return TRUE;
 			}
@@ -1252,7 +1252,7 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 
 void CheatsSearchDialog(HWND hwnd)
 {
-	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_SEARCH), hwnd, (DLGPROC) CheatsSearchProc);
+	DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_SEARCH), hwnd, (DLGPROC) CheatsSearchProc);
 }
 
 void CheatsSearchReset()

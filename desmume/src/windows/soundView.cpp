@@ -80,7 +80,7 @@ BOOL SoundView_DlgOpen(HWND hParentWnd)
 	if(SoundView_Data == NULL)
 		return 0;
 
-	hDlg = CreateDialogParam(hAppInst, MAKEINTRESOURCE(IDD_SOUND_VIEW), hParentWnd, SoundView_DlgProc, (LPARAM)SoundView_Data);
+	hDlg = CreateDialogParamW(hAppInst, MAKEINTRESOURCEW(IDD_SOUND_VIEW), hParentWnd, SoundView_DlgProc, (LPARAM)SoundView_Data);
 	if(hDlg == NULL)
 	{
 		delete SoundView_Data;

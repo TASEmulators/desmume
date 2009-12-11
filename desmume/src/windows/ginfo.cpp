@@ -63,7 +63,7 @@ BOOL GInfo_DlgOpen(HWND hParentWnd)
 {
 	HWND hDlg;
 
-	hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hParentWnd, GInfo_DlgProc);
+	hDlg = CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_GAME_INFO), hParentWnd, GInfo_DlgProc);
 	if(hDlg == NULL)
 		return 0;
 

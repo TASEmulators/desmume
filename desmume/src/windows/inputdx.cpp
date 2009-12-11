@@ -2711,12 +2711,12 @@ switch(msg)
 
 void RunInputConfig()
 {
-	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_INPUTCONFIG), MainWindow->getHWnd(), DlgInputConfig);
+	DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_INPUTCONFIG), MainWindow->getHWnd(), DlgInputConfig);
 }
 
 void RunHotkeyConfig()
 {
-	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_KEYCUSTOM), MainWindow->getHWnd(), DlgHotkeyConfig);
+	DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_KEYCUSTOM), MainWindow->getHWnd(), DlgHotkeyConfig);
 }
 
 
