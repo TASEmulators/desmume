@@ -122,6 +122,10 @@ int NDS_Init( void) {
 	TSCal.adc.y2 = 0x0800;
 	TSCal.scr.x2 = 0xE0 + 1;
 	TSCal.scr.y2 = 0x80 + 1;
+	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
+	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
+	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
+	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
 
 	return 0;
 }
