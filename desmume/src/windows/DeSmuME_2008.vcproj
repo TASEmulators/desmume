@@ -79,7 +79,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua-vc8-Win32-debug.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
-				AdditionalLibraryDirectories=".\zlib123;glib-2.20.1;.\lua;.\7z;agg"
+				AdditionalLibraryDirectories=".\zlib123;.\lua;.\7z;agg;.libs"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -168,7 +168,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib shlwapi.lib winpcap\x64\wpcap.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
-				AdditionalLibraryDirectories=".\zlib123;glib-2.20.1;.\lua;.\7z;agg"
+				AdditionalLibraryDirectories=".\zlib123;.\lua;.\7z;agg;.libs"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -261,7 +261,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
-				AdditionalLibraryDirectories=".\zlib123;glib-2.20.1;.\lua;.\7z;agg"
+				AdditionalLibraryDirectories=".\zlib123;.\lua;.\7z;agg;.libs"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -355,7 +355,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib shlwapi.lib winpcap\x64\wpcap.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
-				AdditionalLibraryDirectories=".\zlib123;glib-2.20.1;.\lua;.\7z;agg"
+				AdditionalLibraryDirectories=".\zlib123;.\lua;.\7z;agg;.libs"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -424,7 +424,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;&quot;lua\include&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD"
 				StringPooling="true"
 				ExceptionHandling="1"
 				StructMemberAlignment="0"
@@ -449,7 +449,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
-				AdditionalLibraryDirectories=".\zlib123;glib-2.20.1;.\lua;.\7z;agg"
+				AdditionalLibraryDirectories=".\zlib123;.\lua;.\7z;agg;.libs"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -544,7 +544,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib shlwapi.lib winpcap\x64\wpcap.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_releaseFastBuild.exe"
-				AdditionalLibraryDirectories=".\zlib123;glib-2.20.1;.\lua;.\7z;agg"
+				AdditionalLibraryDirectories=".\zlib123;.\lua;.\7z;agg;.libs"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -1530,6 +1530,74 @@
 				<File
 					RelativePath=".\resources.rc"
 					>
+				</File>
+			</Filter>
+			<Filter
+				Name="libs"
+				>
+				<File
+					RelativePath=".\glib-2.20.1\glib-2.20.1.7z"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*"
+							AdditionalDependencies="unrar.exe;unrar_and_touch.bat;7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*"
+							AdditionalDependencies="unrar.exe;unrar_and_touch.bat;7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*"
+							AdditionalDependencies="unrar.exe;unrar_and_touch.bat;7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*"
+							AdditionalDependencies="unrar.exe;unrar_and_touch.bat;7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release FastBuild|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*"
+							AdditionalDependencies="unrar.exe;unrar_and_touch.bat;7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release FastBuild|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*"
+							AdditionalDependencies="unrar.exe;unrar_and_touch.bat;7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
 				</File>
 			</Filter>
 		</Filter>
