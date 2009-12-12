@@ -39,8 +39,10 @@ static	u32		searchAddValue = 0;
 static	u8		searchAddMode = 0;
 static	u8		searchAddFreeze = 1;
 static	u8		searchAddSize = 0;
+static	const char*	searchAddDesc = 0;
 static	char	editBuf[3][75] = { 0 };
 static	u32		cheatEditPos = 0;
+static	u8		cheatAddPasteCheck = 0;
 static	u8		cheatXXtype = 0;
 static	u8		cheatXXaction = 0;
 
@@ -68,14 +70,13 @@ char *searchRangeText[2][4] = { {"[0..255]", "[0..65536]", "[0..16777215]", "[0.
 
 u32 searchRange[4][2] = { 
 							{ 0, 255 },
-							{ 0, 65536 },
+							{ 0, 65535 },
 							{ 0, 16777215 },
 							{ 0, 4294967295 }
 						};
 
 LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	// TODO: check paste
 	if (msg == WM_CHAR)
 	{
 		switch (wParam)
@@ -91,15 +92,25 @@ LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			case '8':
 			case '9':
 				break;
+			case 'o':
+			case 'O':
+				wParam = '0';
+				break;
 			case '-':
 				{
-					u8 pos = 0;
+					u32 pos = 0;
 					SendMessage(hwnd, EM_GETSEL, (WPARAM)&pos, NULL);
 					if (pos != 0) wParam = 0;
 				}
 				break;
 
 			case VK_BACK:
+			case 0x3: // ^C
+			case 0x18: // ^X
+			case 0x1a: // ^Z
+				break;
+			case 0x16: // ^V
+				cheatAddPasteCheck = true;
 				break;
 			default:
 				wParam = 0;
@@ -113,7 +124,6 @@ LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 LONG_PTR CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	// TODO: check paste
 	if (msg == WM_CHAR)
 	{
 		switch (wParam)
@@ -143,7 +153,17 @@ LONG_PTR CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 			case 'f':
 				wParam -= 32;
 				break;
+			case 'o':
+			case 'O':
+				wParam = '0';
+				break;
 			case VK_BACK:
+			case 0x3: // ^C
+			case 0x18: // ^X
+			case 0x1a: // ^Z
+				break;
+			case 0x16: // ^V
+				cheatAddPasteCheck = true;
 				break;
 			default:
 				wParam = 0;
@@ -165,26 +185,29 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 			{	
 				saveOldEditProc = oldEditProc;
 				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
-				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 10, 0);
+				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 11, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, 75, 0);
 				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
 				oldEditProc = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG_PTR)EditValueProc);
 
-				if (searchAddMode == 1)
+				if (searchAddMode == 1 || searchAddMode == 2)
 				{
-					char buf[10];
+					char buf[12];
 					searchAddAddress &= 0x00FFFFFF;
 					wsprintf(buf, "%06X", searchAddAddress);
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf);
 					wsprintf(buf, "%i", searchAddValue);
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
 					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
-					EnableWindow(GetDlgItem(dialog, IDC_EDIT1), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_RADIO1), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_RADIO2), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_RADIO3), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_RADIO4), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_RADIO8), FALSE);
+					if (searchAddMode == 1)
+					{
+						EnableWindow(GetDlgItem(dialog, IDC_EDIT1), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_RADIO1), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_RADIO2), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_RADIO3), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_RADIO4), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_RADIO8), FALSE);
+					}
 				}
 				else
 				{
@@ -193,14 +216,26 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				}
 
 				memset(editBuf, 0, sizeof(editBuf));
+				if(searchAddDesc)
+				{
+					strncpy(editBuf[2], searchAddDesc, sizeof(editBuf[2]) - 1);
+					SetWindowText(GetDlgItem(dialog, IDC_EDIT3), editBuf[2]);
+				}
+				searchAddDesc = 0;
 
 				GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 10);
 				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 11);
 				
 				CheckDlgButton(dialog, IDC_CHECK1, BST_CHECKED);
 				CheckDlgButton(dialog, searchSizeIDDs[searchAddSize], BST_CHECKED);
+
+				if(searchAddMode == 2)
+				{
+					SetFocus(GetDlgItem(dialog, IDC_EDIT2));
+					SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETSEL, 0, -1);
+				}
 			}
-		return TRUE;
+		return searchAddMode != 2;
 
 		case WM_COMMAND:
 		{
@@ -213,7 +248,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					
 					if (cheatsAdd(searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
 					{
-						if ((searchAddMode == 0) || (cheatsSave() && searchAddMode == 1))
+						if ((searchAddMode == 0) || (cheatsSave() && (searchAddMode == 1 || searchAddMode == 2)))
 						{
 							oldEditProc = saveOldEditProc;
 							searchAddAddress = tmp_addr;
@@ -235,20 +270,32 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 8);
-						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) )
+
+						u32 val = 0;
+						sscanf_s(editBuf[0], "%x", &val);
+						val &= 0x00FFFFFF;
+
+						if(cheatAddPasteCheck)
+						{
+							cheatAddPasteCheck = 0;
+							char temp [12];
+							sprintf(temp, "%06X", val);
+							if(strcmp(editBuf[0], temp))
+							{
+								strcpy(editBuf[0], temp);
+								int sel1=-1, sel2=0;
+								SendMessage(GetDlgItem(dialog , IDC_EDIT1), EM_GETSEL, (WPARAM)&sel1, (LPARAM)&sel2);
+								SetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0]);
+								SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETSEL, sel1, sel2);
+							}
+						}
+
+						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) || val > 0x400000)
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;
 						}
 						
-						u32 val = 0;
-						sscanf_s(editBuf[0], "%x", &val);
-						val &= 0x00FFFFFF;
-						if (val > 0x400000)
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
 					return TRUE;
@@ -258,19 +305,35 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 11);
-						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) )
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 12);
+						int parseOffset = 0;
+						if(editBuf[1][0] && editBuf[1][1] == '-')
+							parseOffset = 1; // typed something in front of -
+						u32 val = strtoul(editBuf[1]+parseOffset,NULL,10);
+
+						if(cheatAddPasteCheck || parseOffset)
+						{
+							cheatAddPasteCheck = 0;
+							val &= searchRange[searchAddSize][1];
+							char temp [12];
+							sprintf(temp, "%u", val);
+							if(strcmp(editBuf[1], temp))
+							{
+								strcpy(editBuf[1], temp);
+								int sel1=-1, sel2=0;
+								SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_GETSEL, (WPARAM)&sel1, (LPARAM)&sel2);
+								SetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1]);
+								SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETSEL, sel1, sel2);
+							}
+						}
+
+						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1]))
+							|| (val > searchRange[searchAddSize][1] && !(editBuf[1][0] == '-' && u32(-s32(val))-1 <= searchRange[searchAddSize][1])) )
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;
 						}
-						
-						u32 val = strtoul(editBuf[1],NULL,10);
-						if (val > searchRange[searchAddSize][1])
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
+
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
 					return TRUE;
@@ -393,16 +456,31 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, 10);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, 12);
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf2, 8);
-						if ( (strlen(buf2) < 6) || (!strlen(buf)) )
+						int parseOffset = 0;
+						if(buf[0] && buf[1] == '-')
+							parseOffset = 1; // typed something in front of -
+						u32 val = strtoul(buf+parseOffset,NULL,10);
+
+						if(cheatAddPasteCheck || parseOffset)
 						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
+							cheatAddPasteCheck = 0;
+							val &= searchRange[tempCheat.size][1];
+							char temp [12];
+							sprintf(temp, "%u", val);
+							if(strcmp(buf, temp))
+							{
+								strcpy(buf, temp);
+								int sel1=-1, sel2=0;
+								SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_GETSEL, (WPARAM)&sel1, (LPARAM)&sel2);
+								SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
+								SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETSEL, sel1, sel2);
+							}
 						}
-						
-						u32 val = atol(buf);
-						if (val > searchRange[tempCheat.size][1])
+
+						if ( (strlen(buf2) < 6) || (!strlen(buf))
+							|| (val > searchRange[tempCheat.size][1] && !(buf[0] == '-' && u32(-s32(val))-1 <= searchRange[tempCheat.size][1])) )
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;
@@ -919,6 +997,32 @@ void CheatsListDialog(HWND hwnd)
 	}
 }
 
+void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const char* description)
+{
+	searchAddAddress = address;
+	searchAddValue = value;
+	searchAddMode = 2;
+	searchAddFreeze = 1;
+	searchAddSize = size - 1;
+	searchAddDesc = description;
+
+	if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD), parentHwnd, (DLGPROC) CheatsAddProc))
+	{
+		// disabled here for now because it's modal and that's annoying.
+		//CheatsListDialog(listParentHwnd);
+		//
+		//char buf[256];
+		//cheatsGet(&tempCheat, cheatEditPos);
+		//if (tempCheat.enabled)
+		//	ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
+		//wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+		//ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
+		//ltoa(tempCheat.lo[0], buf, 10);
+		//ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
+		//ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
+	}
+}
+
 
 // ================================================================================== Search
 INT_PTR CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
@@ -953,7 +1057,7 @@ INT_PTR CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						char buf[10];
+						char buf[12];
 						GetWindowText(GetDlgItem(dialog, IDC_EVALUE), buf, 10);
 						if (!strlen(buf))
 						{

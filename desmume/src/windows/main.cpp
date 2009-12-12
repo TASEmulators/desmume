@@ -4683,7 +4683,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case ID_VIEW_FRAMECOUNTER:
 			CommonSettings.hud.FrameCounterDisplay ^= true;
-			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
+			WritePrivateProfileBool("Display", "FrameCounter", CommonSettings.hud.FrameCounterDisplay, IniName);
+			osd->clear();
 			return 0;
 
 		case ID_VIEW_DISPLAYFPS:

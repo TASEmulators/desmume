@@ -8,6 +8,8 @@
 // update every single value in RAM every single frame, and
 // keep track of the exact number of frames across which each value has changed,
 // without causing the emulation to run noticeably slower than normal.
+// [note: in DeSmuME it is noticeably slower because the emulation is already only barely fast enough.
+//  but especially after narrowing down the search results a little, it's still decently fast.]
 //
 // The data representation was changed from one entry per valid address
 // to one entry per contiguous range of uneliminated addresses
@@ -38,6 +40,7 @@
 #include <assert.h>
 #include <commctrl.h>
 #include "ramwatch.h"
+#include "cheatsWin.h"
 #include <list>
 #include <vector>
 #ifdef _WIN32
@@ -1043,7 +1046,7 @@ void RefreshRamListSelectedCountControlStatus(HWND hDlg)
 		if(selCount < 2 || prevSelCount < 2)
 		{
 			EnableWindow(GetDlgItem(hDlg, IDC_C_WATCH), (selCount == 1 && WatchCount < MAX_WATCH_COUNT) ? TRUE : FALSE);
-			EnableWindow(GetDlgItem(hDlg, IDC_C_ADDCHEAT), (selCount == 1) ? /*TRUE*/FALSE : FALSE);
+			EnableWindow(GetDlgItem(hDlg, IDC_C_ADDCHEAT), (selCount == 1) ? TRUE : FALSE);
 			EnableWindow(GetDlgItem(hDlg, IDC_C_ELIMINATE), (selCount >= 1) ? TRUE : FALSE);
 		}
 		prevSelCount = selCount;
@@ -1680,14 +1683,15 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				}	{rv = true; break;}
 				case IDC_C_ADDCHEAT:
 				{
-//					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_RAMLIST));
-//					Liste_GG[CheatCount].restore = Liste_GG[CheatCount].data = rsresults[watchIndex].cur;
-//					Liste_GG[CheatCount].addr = rsresults[watchIndex].Address;
-//					Liste_GG[CheatCount].size = rs_type_size;
-//					Liste_GG[CheatCount].Type = rs_t;
-//					Liste_GG[CheatCount].oper = '=';
-//					Liste_GG[CheatCount].mode = 0;
-//					DialogBoxParam(ghInstance, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) 0);
+					int cheatItemIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_RAMLIST));
+					if(cheatItemIndex >= 0)
+					{
+						u32 address = CALL_WITH_T_SIZE_TYPES(GetHardwareAddressFromItemIndex, rs_type_size,rs_t=='s',noMisalign, cheatItemIndex);
+						u8 size = (rs_type_size=='b') ? 1 : (rs_type_size=='w' ? 2 : 4);
+						u32 value = CALL_WITH_T_SIZE_TYPES(GetCurValueFromItemIndex, rs_type_size,rs_t=='s',noMisalign, cheatItemIndex);
+						CheatsAddDialog(hDlg, address, value, size);
+					}
+					{rv = true; break;}
 				}
 				case IDC_C_RESET:
 				{
