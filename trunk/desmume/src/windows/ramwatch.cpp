@@ -7,6 +7,7 @@
 #include "NDSSystem.h"
 #include "ramwatch.h"
 #include "ram_search.h"
+#include "cheatsWin.h"
 #include <assert.h>
 #include <windows.h>
 #include <commctrl.h>
@@ -48,9 +49,9 @@ unsigned int GetCurrentValue(AddressWatcher& watch)
 
 	switch (watch.Size)
 	{
-	case 0x62: return val_u8;
-	case 0x77: return val_u16;
-	case 0x64: return val_u32;
+	case 'b': return val_u8;
+	case 'w': return val_u16;
+	case 'd': return val_u32;
 	default: return 0;
 	}
 //	return ReadValueAtHardwareAddress(watch.Address, watch.Size == 'd' ? 4 : watch.Size == 'w' ? 2 : 1);
@@ -1046,10 +1047,14 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 				case IDC_C_ADDCHEAT:
 				{
-					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST)) | (1 << 24);
+					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST));
 					if(watchIndex != -1)
 					{
-//						DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) searchIndex);	//TODO: made a IDD_EDITCHEAT dialog, and EditCheatProc (are they in GENS?) and integrate into cheats system
+						u32 address = rswatches[watchIndex].Address;
+						u8 size = (rswatches[watchIndex].Size=='b') ? 1 : (rswatches[watchIndex].Size=='w' ? 2 : 4);
+						u32 value = rswatches[watchIndex].CurValue;
+						const char* desc = rswatches[watchIndex].comment;
+						CheatsAddDialog(hDlg, address, value, size, desc);
 					}
 					break;
 				}
