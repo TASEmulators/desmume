@@ -115,7 +115,7 @@ FORCEINLINE s32 s32floor(float f)
 
 //switched SSE2 functions
 //-------------
-#ifdef ENABLE_SSE
+#ifdef ENABLE_SSE2
 
 template<int NUM>
 FORCEINLINE void memset_u16_le(void* dst, u16 val)
