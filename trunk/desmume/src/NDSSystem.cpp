@@ -1586,27 +1586,37 @@ static bool loadUserInput(EMUFILE* is, int version);
 void nds_savestate(EMUFILE* os)
 {
 	//version
-	write32le(2,os);
+	write32le(3,os);
 
 	sequencer.save(os);
 
 	saveUserInput(os);
+
+	write32le(LidClosed,os);
+	write8le(countLid,os);
 }
 
 bool nds_loadstate(EMUFILE* is, int size)
 {
+	// this isn't part of the savestate loading logic, but
+	// don't skip the next frame after loading a savestate
+	frameSkipper.OmitSkip(true, true);
+
 	//read version
 	u32 version;
 	if(read32le(&version,is) != 1) return false;
 
-	if(version > 2) return false;
+	if(version > 3) return false;
 
 	bool temp = true;
 	temp &= sequencer.load(is, version);
 	if(version <= 1 || !temp) return temp;
 	temp &= loadUserInput(is, version);
 
-	frameSkipper.OmitSkip(true, true);
+	if(version < 3) return temp;
+
+	read32le(&LidClosed,is);
+	read8le(&countLid,is);
 
 	return temp;
 }

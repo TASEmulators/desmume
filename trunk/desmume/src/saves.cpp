@@ -176,6 +176,7 @@ SFORMAT SF_NDS[]={
 	{ "_ENS", 4, 1, &nds.ensataEmulation},
 	{ "_ENH", 4, 1, &nds.ensataHandshake},
 	{ "_ENI", 4, 1, &nds.ensataIpcSyncCounter},
+	{ "_SLP", 4, 1, &nds.sleeping},
 	{ 0 }
 };
 
