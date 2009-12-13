@@ -2442,7 +2442,7 @@ int _main()
 			frameskiprate=9;
 		else
 			frameskiprate=atoi(text+4);
-		if(frameskiprate < 1)
+		if(frameskiprate < 0)
 			frameskiprate = 9;
 	}
 	else
@@ -3689,7 +3689,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_BILINEAR, video.currentfilter == video.BILINEAR );
 			MainWindow->checkMenu(IDM_RENDER_NEAREST2X, video.currentfilter == video.NEAREST2X );
 			MainWindow->checkMenu(IDM_RENDER_EPX, video.currentfilter == video.EPX );
+			MainWindow->checkMenu(IDM_RENDER_EPXPLUS, video.currentfilter == video.EPXPLUS );
 			MainWindow->checkMenu(IDM_RENDER_EPX1POINT5, video.currentfilter == video.EPX1POINT5 );
+			MainWindow->checkMenu(IDM_RENDER_EPXPLUS1POINT5, video.currentfilter == video.EPXPLUS1POINT5 );
+			MainWindow->checkMenu(IDM_RENDER_NEAREST1POINT5, video.currentfilter == video.NEAREST1POINT5 );
+			MainWindow->checkMenu(IDM_RENDER_NEARESTPLUS1POINT5, video.currentfilter == video.NEARESTPLUS1POINT5 );
 
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
@@ -4333,10 +4337,38 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				FilterUpdate(hwnd);
 			}
 			break;
+		case IDM_RENDER_EPXPLUS:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.EPXPLUS);
+				FilterUpdate(hwnd);
+			}
+			break;
 		case IDM_RENDER_EPX1POINT5:
 			{
 				Lock lock (win_backbuffer_sync);
 				video.setfilter(video.EPX1POINT5);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_EPXPLUS1POINT5:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.EPXPLUS1POINT5);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_NEAREST1POINT5:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.NEAREST1POINT5);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_NEARESTPLUS1POINT5:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.NEARESTPLUS1POINT5);
 				FilterUpdate(hwnd);
 			}
 			break;
