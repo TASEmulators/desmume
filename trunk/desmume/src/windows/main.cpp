@@ -3385,6 +3385,82 @@ void FrameAdvance(bool state)
 	}
 }
 
+//-----------------------------------------------------------------------------
+//   Put screenshot in clipboard
+//-----------------------------------------------------------------------------
+
+void ScreenshotToClipboard()
+{
+	const char* nameandver = EMU_DESMUME_NAME_AND_VERSION();
+	bool twolinever = strlen(nameandver) > 32;
+
+	HFONT hFont = CreateFont(14, 8, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FIXED_PITCH, "Lucida Console");
+
+	HDC hScreenDC = GetDC(NULL);
+	HDC hMemDC = CreateCompatibleDC(hScreenDC);
+	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, 256, 384 + (14 * (twolinever ? 5:4)));
+	HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hMemBitmap);
+	HFONT hOldFont = (HFONT)SelectObject(hMemDC, hFont);
+
+	RECT rc; SetRect(&rc, 0, 0, 256, 384 + (14 * (twolinever ? 5:4)));
+
+	BITMAPV4HEADER bmi;
+	memset(&bmi, 0, sizeof(bmi));
+    bmi.bV4Size = sizeof(bmi);
+    bmi.bV4Planes = 1;
+    bmi.bV4BitCount = 16;
+    bmi.bV4V4Compression = BI_RGB | BI_BITFIELDS;
+    bmi.bV4RedMask = 0x001F;
+    bmi.bV4GreenMask = 0x03E0;
+    bmi.bV4BlueMask = 0x7C00;
+    bmi.bV4Width = 256;
+    bmi.bV4Height = -384;
+
+	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+	SetDIBitsToDevice(hMemDC, 0, 0, 256, 384, 0, 0, 0, 384, &GPU_screen[0], (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	
+	SetBkColor(hMemDC, RGB(255, 255, 255));
+	SetTextColor(hMemDC, RGB(64, 64, 130));
+
+	if (twolinever)
+	{
+		int i;
+		for (i = 31; i > 0; i--)
+			if (nameandver[i] == ' ')
+				break;
+
+		TextOut(hMemDC, 0, 384 + 14, &nameandver[0], i+1);
+		TextOut(hMemDC, 8, 384 + 14*2, &nameandver[i+1], strlen(nameandver) - (i+1));
+	}
+	else
+		TextOut(hMemDC, 0, 384 + 14, nameandver, strlen(nameandver));
+
+	char str[32];
+	memcpy(&str[0], &MMU.CART_ROM[0], 12); str[12] = '\0';
+	int titlelen = strlen(str); 
+	str[titlelen] = ' ';
+	memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
+	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
+
+	sprintf(str, "FPS: %i/%i | %s", mainLoopData.fps, mainLoopData.fps3d, paused ? "Paused":"Running");
+	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
+
+	OpenClipboard(NULL);
+	EmptyClipboard();
+	SetClipboardData(CF_BITMAP, hMemBitmap);
+	CloseClipboard();
+
+	SelectObject(hMemDC, hOldBitmap);
+	SelectObject(hMemDC, hOldFont);
+	ReleaseDC(NULL, hScreenDC);
+	DeleteDC(hMemDC);
+}
+
+//-----------------------------------------------------------------------------
+//   Config dialogs
+//-----------------------------------------------------------------------------
+
 enum CONFIGSCREEN
 {
 	CONFIGSCREEN_INPUT,
@@ -3860,6 +3936,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		}
 	case WM_KEYUP:
+		if (wParam == VK_SNAPSHOT) { ScreenshotToClipboard(); return 0; }
 		input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
