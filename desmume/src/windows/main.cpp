@@ -3455,6 +3455,9 @@ void ScreenshotToClipboard()
 	SelectObject(hMemDC, hOldFont);
 	ReleaseDC(NULL, hScreenDC);
 	DeleteDC(hMemDC);
+
+	DeleteObject(hMemBitmap);
+	DeleteObject(hFont);
 }
 
 //-----------------------------------------------------------------------------
