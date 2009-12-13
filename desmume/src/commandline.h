@@ -28,6 +28,9 @@
 typedef struct _GOptionContext GOptionContext;
 typedef struct _GError GError;
 
+//hacky commandline options that i didnt want to route through commonoptions
+extern int _commandline_linux_nojoy;
+
 //this class will also eventually try to take over the responsibility of using the args that it handles
 //for example: preparing the emulator run by loading the rom, savestate, and/or movie in the correct pattern.
 //it should also populate CommonSettings with its initial values

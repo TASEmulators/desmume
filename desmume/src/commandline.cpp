@@ -31,6 +31,7 @@
 #include "NDSSystem.h"
 
 int scanline_filter_a = 2, scanline_filter_b = 4;
+int _commandline_linux_nojoy = 0;
 
 CommandLine::CommandLine()
 : is_cflash_configured(false)
@@ -77,6 +78,9 @@ void CommandLine::loadCommonOptions()
 		{ "num-cores", 0, 0, G_OPTION_ARG_INT, &_num_cores, "Override numcores detection and use this many", "NUM_CORES"},
 		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (edge) (default 2)", "SCANLINE_FILTER_A"},
 		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
+		#ifndef _MSC_VER
+		{ "nojoy", 0, 0, G_OPTION_ARG_INT, &_commandline_linux_nojoy, "Disables joystick support", "NOJOY"},
+		#endif
 		#ifdef GDB_STUB
 		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
 		{ "arm7gdb", 0, 0, G_OPTION_ARG_INT, &arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
@@ -107,6 +111,7 @@ bool CommandLine::parse(int argc,char **argv)
 	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
 	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM7BIOS,_bios_arm7); }
+	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
 	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
 
 	if (argc == 2)

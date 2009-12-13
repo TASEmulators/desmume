@@ -23,6 +23,7 @@
 #include "ctrlssdl.h"
 #include "saves.h"
 #include "SPU.h"
+#include "commandline.h"
 
 u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
@@ -89,6 +90,12 @@ void load_default_config(const u16 kbCfg[])
 BOOL init_joy( void) {
   int i;
   BOOL joy_init_good = TRUE;
+
+  //user asked for no joystick
+  if(_commandline_linux_nojoy) {
+	  printf("skipping joystick init\n");
+	  return TRUE;
+  }
 
   set_joy_keys(default_joypad_cfg);
 
