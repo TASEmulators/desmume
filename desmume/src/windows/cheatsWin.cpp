@@ -224,7 +224,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				searchAddDesc = 0;
 
 				GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 10);
-				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 11);
+				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 12);
 				
 				CheckDlgButton(dialog, IDC_CHECK1, BST_CHECKED);
 				CheckDlgButton(dialog, searchSizeIDDs[searchAddSize], BST_CHECKED);
@@ -430,8 +430,8 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf, 8);
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf2, 10);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf, 10);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf2, 12);
 						if ( (strlen(buf) < 6) || (!strlen(buf2)) )
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
@@ -457,7 +457,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, 12);
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf2, 8);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf2, 10);
 						int parseOffset = 0;
 						if(buf[0] && buf[1] == '-')
 							parseOffset = 1; // typed something in front of -
