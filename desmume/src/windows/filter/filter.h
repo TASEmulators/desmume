@@ -35,5 +35,8 @@ void RenderSuperEagle (SSurface Src, SSurface Dst);
 void RenderScanline( SSurface Src, SSurface Dst);
 void RenderBilinear( SSurface Src, SSurface Dst);
 void RenderEPX( SSurface Src, SSurface Dst);
+void RenderEPXPlus( SSurface Src, SSurface Dst);
 void RenderEPX_1Point5x( SSurface Src, SSurface Dst);
-
+void RenderEPXPlus_1Point5x( SSurface Src, SSurface Dst);
+void RenderNearest_1Point5x( SSurface Src, SSurface Dst);
+void RenderNearestPlus_1Point5x( SSurface Src, SSurface Dst);

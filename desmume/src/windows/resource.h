@@ -176,7 +176,11 @@
 #define IDM_RENDER_BILINEAR             557
 #define IDM_RENDER_NEAREST2X            558
 #define IDM_RENDER_EPX                  559
-#define IDM_RENDER_EPX1POINT5           560
+#define IDM_RENDER_EPXPLUS              560
+#define IDM_RENDER_EPX1POINT5           561
+#define IDM_RENDER_EPXPLUS1POINT5       562
+#define IDM_RENDER_NEAREST1POINT5       563
+#define IDM_RENDER_NEARESTPLUS1POINT5   564
 #define IDD_IO_REG                      601
 #define IDM_RECORD_MOVIE                602
 #define IDM_PLAY_MOVIE                  603
