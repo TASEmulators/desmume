@@ -27,9 +27,20 @@
 #include "debug.h"
 #include <stdio.h>
 
+class VIEW3D_Driver
+{
+public:
+	virtual void Launch() {}
+	virtual void NewFrame() {}
+	virtual bool IsRunning() { return false; }
+};
+
 //each platform needs to implement this, although it doesnt need to implement any functions
 class BaseDriver {
 public:
+	BaseDriver();
+	~BaseDriver();
+
 	virtual bool WIFI_Host_InitSystem() { return FALSE; }
 	virtual void WIFI_Host_ShutdownSystem() {}
 
@@ -60,6 +71,10 @@ public:
 	};
 
 	virtual void DEBUG_UpdateIORegView(eDebug_IOReg category) { }
+
+	VIEW3D_Driver* view3d;
+	void VIEW3D_Shutdown();
+	void VIEW3D_Init();
 };
 extern BaseDriver* driver;
 

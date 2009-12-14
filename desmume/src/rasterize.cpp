@@ -44,10 +44,10 @@
 #include "NDSSystem.h"
 #include "utils/task.h"
 
-//#undef FORCEINLINE
-//#define FORCEINLINE
-//#undef INLINE
-//#define INLINE
+#undef FORCEINLINE
+#define FORCEINLINE
+#undef INLINE
+#define INLINE
 
 using std::min;
 using std::max;
@@ -64,13 +64,6 @@ static u8 modulate_table[64][64];
 static u8 decal_table[32][64][64];
 static u8 index_lookup_table[65];
 static u8 index_start_table[8];
-
-static GFX3D_Clipper clipper;
-static GFX3D_Clipper::TClippedPoly *clippedPolys = NULL;
-static TexCacheItem* polyTexKeys[POLYLIST_SIZE];
-static bool polyVisible[POLYLIST_SIZE];
-static bool polyBackfacing[POLYLIST_SIZE];
-static int clippedPolyCounter;
 
 
 
@@ -115,40 +108,13 @@ static FORCEINLINE int fastFloor(float f)
 }
 
 
-
-
-union FragmentColor {
-	u32 color;
-	struct {
-		u8 r,g,b,a;
-	};
-};
-
-struct Fragment
-{
-	u32 depth;
-
-	struct {
-		u8 opaque, translucent;
-	} polyid;
-
-	u8 stencil;
-
-	struct {
-		u8 isTranslucentPoly:1;
-		u8 fogged:1;
-	};
-};
-
 //INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 //{
 //	verts[vert_index] = &rawvert;
 //}
 
-static Fragment screen[256*192];
-static FragmentColor screenColor[256*192];
-static FragmentColor toonTable[32];
-static u8 fogTable[32768];
+static Fragment _screen[256*192];
+static FragmentColor _screenColor[256*192];
 
 FORCEINLINE int iround(float f) {
 	return (int)f; //lol
@@ -300,7 +266,7 @@ FORCEINLINE int edge_fx_fl::Step() {
 
 static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & src)
 {
-	if(gfx3d.enableAlphaBlending)
+	if(gfx3d.state.enableAlphaBlending)
 	{
 		if(src.a == 0 || dst.a == 0)
 		{
@@ -330,8 +296,51 @@ static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & sr
 	}
 }
 
+struct PolyAttr
+{
+	u32 val;
 
+	bool decalMode;
+	bool translucentDepthWrite;
+	bool drawBackPlaneIntersectingPolys;
+	u8 polyid;
+	u8 alpha;
+	bool backfacing;
+	bool translucent;
+	u8 fogged;
 
+	bool isVisible(bool backfacing) 
+	{
+		//this was added after adding multi-bit stencil buffer
+		//it seems that we also need to prevent drawing back faces of shadow polys for rendering
+		u32 mode = (val>>4)&0x3;
+		if(mode==3 && polyid !=0) return !backfacing;
+		//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
+		//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
+
+		switch((val>>6)&3) {
+			case 0: return false;
+			case 1: return backfacing;
+			case 2: return !backfacing;
+			case 3: return true;
+			default: assert(false); return false;
+		}
+	}
+
+	void setup(u32 polyAttr)
+	{
+		val = polyAttr;
+		decalMode = BIT14(val);
+		translucentDepthWrite = BIT11(val);
+		polyid = (polyAttr>>24)&0x3F;
+		alpha = (polyAttr>>16)&0x1F;
+		drawBackPlaneIntersectingPolys = BIT12(val);
+		fogged = BIT15(val);
+	}
+
+};
+
+template<bool RENDERER>
 class RasterizerUnit
 {
 public:
@@ -339,67 +348,20 @@ public:
 	int SLI_MASK, SLI_VALUE;
 
 	RasterizerUnit()
-		: sampler()
-		, shader(sampler)
 	{
-		sampler.unit = this;
 	}
 
 	TexCacheItem* lastTexKey;
 	
 	VERT* verts[MAX_CLIPPED_VERTS];
 
-	struct PolyAttr
-	{
-		u32 val;
-
-		bool decalMode;
-		bool translucentDepthWrite;
-		bool drawBackPlaneIntersectingPolys;
-		u8 polyid;
-		u8 alpha;
-		bool backfacing;
-		bool translucent;
-		u8 fogged;
-
-		bool isVisible(bool backfacing) 
-		{
-			//this was added after adding multi-bit stencil buffer
-			//it seems that we also need to prevent drawing back faces of shadow polys for rendering
-			u32 mode = (val>>4)&0x3;
-			if(mode==3 && polyid !=0) return !backfacing;
-			//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
-			//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
-
-			switch((val>>6)&3) {
-				case 0: return false;
-				case 1: return backfacing;
-				case 2: return !backfacing;
-				case 3: return true;
-				default: assert(false); return false;
-			}
-		}
-
-		void setup(u32 polyAttr)
-		{
-			val = polyAttr;
-			decalMode = BIT14(val);
-			translucentDepthWrite = BIT11(val);
-			polyid = (polyAttr>>24)&0x3F;
-			alpha = (polyAttr>>16)&0x1F;
-			drawBackPlaneIntersectingPolys = BIT12(val);
-			fogged = BIT15(val);
-		}
-
-	} polyAttr;
+    PolyAttr polyAttr;
 
 
 	struct Sampler
 	{
 		Sampler() {}
 
-		RasterizerUnit* unit;
-			
 		int width, height;
 		int wmask, hmask;
 		int wrap;
@@ -461,135 +423,129 @@ public:
 				case 0xF: hflip(iu); vflip(iv); break;
 			}
 		}
-
-		FORCEINLINE FragmentColor sample(float u, float v)
-		{
-			//finally, we can use floor here. but, it is slower than we want.
-			//the best solution is probably to wait until the pipeline is full of fixed point
-			s32 iu = s32floor(u);
-			s32 iv = s32floor(v);
-			dowrap(iu,iv);
-
-			FragmentColor color;
-			color.color = ((u32*)unit->lastTexKey->decoded)[(iv<<wshift)+iu];
-			return color;
-		}
-
 	} sampler;
+
+	FORCEINLINE FragmentColor sample(float u, float v)
+	{
+		//finally, we can use floor here. but, it is slower than we want.
+		//the best solution is probably to wait until the pipeline is full of fixed point
+		s32 iu = s32floor(u);
+		s32 iv = s32floor(v);
+		sampler.dowrap(iu,iv);
+
+		FragmentColor color;
+		color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
+		return color;
+	}
 
 	struct Shader
 	{
-		Shader(Sampler& _sampler)
-			:sampler(_sampler)
-		{}
-		Sampler& sampler;
 		u8 mode;
-		void setup(u32 polyattr)
-		{
-			mode = (polyattr>>4)&0x3;
-			//if there is no texture set, then set to the mode which doesnt even use a texture
-			//(no texture makes sense for toon/highlight mode)
-			if(sampler.texFormat == 0 && (mode == 0 || mode == 1))
-				mode = 4;
-		}
-
 		float invu, invv, w;
 		FragmentColor materialColor;
-		
-		FORCEINLINE void shade(FragmentColor& dst)
-		{
-			FragmentColor texColor;
-			float u,v;
+	} shader;
 
-			switch(mode)
+	FORCEINLINE void shade(FragmentColor& dst)
+	{
+		FragmentColor texColor;
+		float u,v;
+
+		switch(shader.mode)
+		{
+		case 0: //modulate
+			u = shader.invu*shader.w;
+			v = shader.invv*shader.w;
+			texColor = sample(u,v);
+			dst.r = modulate_table[texColor.r][shader.materialColor.r];
+			dst.g = modulate_table[texColor.g][shader.materialColor.g];
+			dst.b = modulate_table[texColor.b][shader.materialColor.b];
+			dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(shader.materialColor.a)]>>1;
+			//dst.color.components.a = 31;
+			//#ifdef _MSC_VER
+			//if(GetAsyncKeyState(VK_SHIFT)) {
+			//	//debugging tricks
+			//	dst = materialColor;
+			//	if(GetAsyncKeyState(VK_TAB)) {
+			//		u8 alpha = dst.a;
+			//		dst.color = polynum*8+8;
+			//		dst.a = alpha;
+			//	}
+			//}
+			//#endif
+			break;
+		case 1: //decal
+			u = shader.invu*shader.w;
+			v = shader.invv*shader.w;
+			texColor = sample(u,v);
+			dst.r = decal_table[texColor.a][texColor.r][shader.materialColor.r];
+			dst.g = decal_table[texColor.a][texColor.g][shader.materialColor.g];
+			dst.b = decal_table[texColor.a][texColor.b][shader.materialColor.b];
+			dst.a = shader.materialColor.a;
+			break;
+		case 2: //toon/highlight shading
 			{
-			case 0: //modulate
-				u = invu*w;
-				v = invv*w;
-				texColor = sampler.sample(u,v);
-				dst.r = modulate_table[texColor.r][materialColor.r];
-				dst.g = modulate_table[texColor.g][materialColor.g];
-				dst.b = modulate_table[texColor.b][materialColor.b];
-				dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(materialColor.a)]>>1;
-				//dst.color.components.a = 31;
-				//#ifdef _MSC_VER
-				//if(GetAsyncKeyState(VK_SHIFT)) {
-				//	//debugging tricks
-				//	dst = materialColor;
-				//	if(GetAsyncKeyState(VK_TAB)) {
-				//		u8 alpha = dst.a;
-				//		dst.color = polynum*8+8;
-				//		dst.a = alpha;
-				//	}
-				//}
-				//#endif
-				break;
-			case 1: //decal
-				u = invu*w;
-				v = invv*w;
-				texColor = sampler.sample(u,v);
-				dst.r = decal_table[texColor.a][texColor.r][materialColor.r];
-				dst.g = decal_table[texColor.a][texColor.g][materialColor.g];
-				dst.b = decal_table[texColor.a][texColor.b][materialColor.b];
-				dst.a = materialColor.a;
-				break;
-			case 2: //toon/highlight shading
+				u = shader.invu*shader.w;
+				v = shader.invv*shader.w;
+				texColor = sample(u,v);
+				FragmentColor toonColor = engine->toonTable[shader.materialColor.r>>1];
+				if(sampler.texFormat == 0)
 				{
-					u = invu*w;
-					v = invv*w;
-					texColor = sampler.sample(u,v);
-					FragmentColor toonColor = toonTable[materialColor.r>>1];
-					if(sampler.texFormat == 0)
+					//if no texture is set then we dont need to modulate texture with toon 
+					//but rather just use toon directly
+					dst = toonColor;
+					dst.a = shader.materialColor.a;
+				}
+				else
+				{
+					if(gfx3d.state.shading == GFX3D_State::HIGHLIGHT)
 					{
-						//if no texture is set then we dont need to modulate texture with toon 
-						//but rather just use toon directly
-						dst = toonColor;
-						dst.a = materialColor.a;
+						dst.r = modulate_table[texColor.r][shader.materialColor.r];
+						dst.g = modulate_table[texColor.g][shader.materialColor.r];
+						dst.b = modulate_table[texColor.b][shader.materialColor.r];
+						dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(shader.materialColor.a)]>>1;
+
+						dst.r = min<u8>(63, (dst.r + toonColor.r));
+						dst.g = min<u8>(63, (dst.g + toonColor.g));
+						dst.b = min<u8>(63, (dst.b + toonColor.b));
 					}
 					else
 					{
-						if(gfx3d.shading == GFX3D::HIGHLIGHT)
-						{
-							dst.r = modulate_table[texColor.r][materialColor.r];
-							dst.g = modulate_table[texColor.g][materialColor.r];
-							dst.b = modulate_table[texColor.b][materialColor.r];
-							dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(materialColor.a)]>>1;
-
-							dst.r = min<u8>(63, (dst.r + toonColor.r));
-							dst.g = min<u8>(63, (dst.g + toonColor.g));
-							dst.b = min<u8>(63, (dst.b + toonColor.b));
-						}
-						else
-						{
-							dst.r = modulate_table[texColor.r][toonColor.r];
-							dst.g = modulate_table[texColor.g][toonColor.g];
-							dst.b = modulate_table[texColor.b][toonColor.b];
-							dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(materialColor.a)]>>1;
-						}
+						dst.r = modulate_table[texColor.r][toonColor.r];
+						dst.g = modulate_table[texColor.g][toonColor.g];
+						dst.b = modulate_table[texColor.b][toonColor.b];
+						dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(shader.materialColor.a)]>>1;
 					}
-
 				}
-				break;
-			case 3: //shadows
-				//is this right? only with the material color?
-				dst = materialColor;
-				break;
-			case 4: //our own special mode which only uses the material color (for when texturing is disabled)
-				dst = materialColor;
-				break;
 
 			}
-		}
+			break;
+		case 3: //shadows
+			//is this right? only with the material color?
+			dst = shader.materialColor;
+			break;
+		case 4: //our own special mode which only uses the material color (for when texturing is disabled)
+			dst = shader.materialColor;
+			break;
 
-	} shader;
+		}
+	}
+
+	void setupShader(u32 polyattr)
+	{
+		shader.mode = (polyattr>>4)&0x3;
+		//if there is no texture set, then set to the mode which doesnt even use a texture
+		//(no texture makes sense for toon/highlight mode)
+		if(sampler.texFormat == 0 && (shader.mode == 0 || shader.mode == 1))
+			shader.mode = 4;
+	}
 
 	FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z)
 	{
-		Fragment &destFragment = screen[adr];
-		FragmentColor &destFragmentColor = screenColor[adr];
+		Fragment &destFragment = engine->screen[adr];
+		FragmentColor &destFragmentColor = engine->screenColor[adr];
 
 		u32 depth;
-		if(gfx3d.wbuffer)
+		if(gfx3d.state.wbuffer)
 		{
 			//not sure about this
 			//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
@@ -666,15 +622,15 @@ public:
 
 		//pixel shader
 		FragmentColor shaderOutput;
-		shader.shade(shaderOutput);
+		shade(shaderOutput);
 
 		//we shouldnt do any of this if we generated a totally transparent pixel
 		if(shaderOutput.a != 0)
 		{
 			//alpha test (don't have any test cases for this...? is it in the right place...?)
-			if(gfx3d.enableAlphaTest)
+			if(gfx3d.state.enableAlphaTest)
 			{
-				if(shaderOutput.a < gfx3d.alphaTestRef)
+				if(shaderOutput.a < gfx3d.state.alphaTestRef)
 					goto rejected_fragment;
 			}
 
@@ -742,11 +698,15 @@ public:
 			(pRight->color[1].curr - color[1]) * invWidth,
 			(pRight->color[2].curr - color[2]) * invWidth };
 
-		int adr = (pLeft->Y<<8)+XStart;
+		int adr = (pLeft->Y*engine->width)+XStart;
 
 		//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 		//better check the Y value.
-		if(pLeft->Y<0 || pLeft->Y>191) {
+		if(RENDERER && (pLeft->Y<0 || pLeft->Y>191)) {
+			printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
+			return;
+		}
+		if(!RENDERER && (pLeft->Y<0 || pLeft->Y>=engine->height)) {
 			printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
 			return;
 		}
@@ -755,7 +715,11 @@ public:
 
 		while(width-- > 0)
 		{
-			if(x<0 || x>255) {
+			if(RENDERER && (x<0 || x>255)) {
+				printf("rasterizer rendering at x=%d! oops!\n",x);
+				return;
+			}
+			if(!RENDERER && (x<0 || x>=engine->width)) {
 				printf("rasterizer rendering at x=%d! oops!\n",x);
 				return;
 			}
@@ -881,9 +845,12 @@ public:
 
 	}
 
+	SoftRasterizerEngine* engine;
+
 	template<bool SLI>
-	void mainLoop()
+	FORCEINLINE void mainLoop(SoftRasterizerEngine* const engine)
 	{
+		this->engine = engine;
 		lastTexKey = NULL;
 
 		//a counter for how many polys got culled
@@ -893,11 +860,11 @@ public:
 		u32 lastTextureFormat = 0, lastTexturePalette = 0;
 
 		//iterate over polys
-		for(int i=0;i<clippedPolyCounter;i++)
+		for(int i=0;i<engine->clippedPolyCounter;i++)
 		{
-			if(!polyVisible[i]) continue;
+			if(!engine->polyVisible[i]) continue;
 
-			GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+			GFX3D_Clipper::TClippedPoly &clippedPoly = engine->clippedPolys[i];
 			POLY *poly = clippedPoly.poly;
 			int type = clippedPoly.type;
 
@@ -916,17 +883,17 @@ public:
 				lastTexturePalette = poly->texPalette;
 			}
 
-			lastTexKey = polyTexKeys[i];
+			lastTexKey = engine->polyTexKeys[i];
 
 			//hmm... shader gets setup every time because it depends on sampler which may have just changed
-			shader.setup(poly->polyAttr);
+			setupShader(poly->polyAttr);
 
 			for(int j=0;j<type;j++)
 				this->verts[j] = &clippedPoly.clipVerts[j];
 			for(int j=type;j<MAX_CLIPPED_VERTS;j++)
 				this->verts[j] = NULL;
 
-			polyAttr.backfacing = polyBackfacing[i];
+			polyAttr.backfacing = engine->polyBackfacing[i];
 
 			shape_engine<SLI>(type,!polyAttr.backfacing);
 		}
@@ -935,16 +902,18 @@ public:
 
 }; //rasterizerUnit
 
+static SoftRasterizerEngine mainSoftRasterizer;
 
 static Task rasterizerUnitTask[4];
-static RasterizerUnit rasterizerUnit[4];
+static RasterizerUnit<true> rasterizerUnit[4];
+static RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
 static int rasterizerCores;
 static bool rasterizerUnitTasksInited = false;
 
 static void* execRasterizerUnit(void* arg)
 {
 	intptr_t which = (intptr_t)arg;
-	rasterizerUnit[which].mainLoop<true>();
+	rasterizerUnit[which].mainLoop<true>(&mainSoftRasterizer);
 	return 0;
 }
 
@@ -953,6 +922,9 @@ static char SoftRastInit(void)
 	if(!rasterizerUnitTasksInited)
 	{
 		rasterizerUnitTasksInited = true;
+
+		_HACK_viewer_rasterizerUnit.SLI_MASK = 1;
+		_HACK_viewer_rasterizerUnit.SLI_VALUE = 0;
 
 		if(CommonSettings.num_cores>=4)
 		{
@@ -989,8 +961,6 @@ static char SoftRastInit(void)
 	if(!tables_generated)
 	{
 		tables_generated = true;
-
-		clipper.clippedPolys = clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
 
 		for(int i=0;i<64;i++)
 		{
@@ -1038,7 +1008,153 @@ static void SoftRastVramReconfigureSignal() {
 	TexCache_Invalidate();
 }
 
-static void SoftRastFramebufferProcess()
+static void SoftRastConvertFramebuffer()
+{
+	memcpy(gfx3d_convertedScreen,_screenColor,256*192*4);
+}
+
+void SoftRasterizerEngine::initFramebuffer(const int width, const int height, const bool clearImage)
+{
+	const int todo = width*height;
+
+	Fragment clearFragment;
+	FragmentColor clearFragmentColor;
+	clearFragment.isTranslucentPoly = 0;
+	clearFragmentColor.r = GFX3D_5TO6(gfx3d.state.clearColor&0x1F);
+	clearFragmentColor.g = GFX3D_5TO6((gfx3d.state.clearColor>>5)&0x1F);
+	clearFragmentColor.b = GFX3D_5TO6((gfx3d.state.clearColor>>10)&0x1F);
+	clearFragmentColor.a = ((gfx3d.state.clearColor>>16)&0x1F);
+	clearFragment.polyid.opaque = (gfx3d.state.clearColor>>24)&0x3F;
+	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
+	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
+	//but in spiderman2 some fires with polyid 0 try to render on top of the background
+	clearFragment.polyid.translucent = kUnsetTranslucentPolyID; 
+	clearFragment.depth = gfx3d.state.clearDepth;
+	clearFragment.stencil = 0;
+	clearFragment.isTranslucentPoly = 0;
+	clearFragment.fogged = BIT15(gfx3d.state.clearColor);
+	for(int i=0;i<todo;i++)
+		screen[i] = clearFragment;
+
+	if(clearImage)
+	{
+		//need to handle this somehow..
+		assert(width==256 && height==192);
+
+		u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
+		u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
+
+		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
+		//uses the scroll registers in the main game engine
+		u16 scroll = T1ReadWord(MMU.ARM9_REG,0x356); //CLRIMAGE_OFFSET
+		u16 xscroll = scroll&0xFF;
+		u16 yscroll = (scroll>>8)&0xFF;
+
+		FragmentColor *dstColor = screenColor;
+		Fragment *dst = screen;
+
+		for(int iy=0;iy<192;iy++) {
+			int y = ((iy + yscroll)&255)<<8;
+			for(int ix=0;ix<256;ix++) {
+				int x = (ix + xscroll)&255;
+				int adr = y + x;
+				
+				//this is tested by harry potter and the order of the phoenix.
+				//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
+				//(or use a special zero fill in the bulk clearing above)
+				u16 col = clearImage[adr];
+				dstColor->color = RGB15TO6665(col,31*(col>>15));
+				
+				//this is tested quite well in the sonic chronicles main map mode
+				//where depth values are used for trees etc you can walk behind
+				u32 depth = clearDepth[adr];
+				dst->fogged = BIT15(depth);
+				//TODO - might consider a lookup table for this
+				dst->depth = gfx3d_extendDepth_15_to_24(depth&0x7FFF);
+
+				dstColor++;
+				dst++;
+			}
+		}
+	}
+	else 
+		for(int i=0;i<todo;i++)
+			screenColor[i] = clearFragmentColor;
+}
+
+void SoftRasterizerEngine::updateToonTable()
+{
+	//convert the toon colors
+	for(int i=0;i<32;i++) {
+		toonTable[i].r = GFX3D_5TO6((gfx3d.state.u16ToonTable[i])&0x1F);
+		toonTable[i].g = GFX3D_5TO6((gfx3d.state.u16ToonTable[i]>>5)&0x1F);
+		toonTable[i].b = GFX3D_5TO6((gfx3d.state.u16ToonTable[i]>>10)&0x1F);
+	}
+}
+
+void SoftRasterizerEngine::updateFogTable()
+{
+	u8* fogDensity = MMU.MMU_MEM[ARMCPU_ARM9][0x40] + 0x360;
+#if 0
+	//TODO - this might be a little slow; 
+	//we might need to hash all the variables and only recompute this when something changes
+	const int increment = (0x400 >> gfx3d.fogShift);
+	for(u32 i=0;i<32768;i++) {
+		if(i<gfx3d.fogOffset) {
+			fogTable[i] = fogDensity[0];
+			continue;
+		}
+		for(int j=0;j<32;j++) {
+			u32 value = gfx3d.fogOffset + increment*(j+1);
+			if(i<=value) {
+				if(j==0) {
+					fogTable[i] = fogDensity[0];
+					goto done;
+				} else {
+					fogTable[i] = ((value-i)*fogDensity[j-1] + (increment-(value-i))*fogDensity[j])/increment;
+					goto done;
+				}
+			}
+		}
+		fogTable[i] = fogDensity[31];
+		done: ;
+	}
+#else
+	// this should behave exactly the same as the previous loop,
+	// except much faster. (because it's not a 2d loop and isn't so branchy either)
+	// maybe it's fast enough to not need to be cached, now.
+	const int increment = ((1 << 10) >> gfx3d.state.fogShift);
+	const int incrementDivShift = 10 - gfx3d.state.fogShift;
+	u32 fogOffset = min<u32>(max<u32>(gfx3d.state.fogOffset, 0), 32768);
+	u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
+	u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
+	assert(iMin <= iMax);
+	memset(fogTable, fogDensity[0], iMin);
+	for(u32 i = iMin; i < iMax; i++) {
+		int num = (i - fogOffset + (increment-1));
+		int j = (num >> incrementDivShift) - 1;
+		u32 value = (num & ~(increment-1)) + fogOffset;
+		u32 diff = value - i;
+		assert(j >= 1 && j < 32);
+		fogTable[i] = ((diff*fogDensity[j-1] + (increment-diff)*fogDensity[j]) >> incrementDivShift);
+	}
+	memset(fogTable+iMax, fogDensity[31], 32768-iMax);
+#endif
+}
+
+void SoftRasterizerEngine::updateFloatColors()
+{
+	//convert colors to float to get more precision in case we need it
+	for(int i=0;i<vertlist->count;i++)
+		vertlist->list[i].color_to_float();
+}
+
+SoftRasterizerEngine::SoftRasterizerEngine()
+{
+	this->clippedPolys = clipper.clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
+}
+
+void SoftRasterizerEngine::framebufferProcess()
 {
 	// this looks ok although it's still pretty much a hack,
 	// it needs to be redone with low-level accuracy at some point,
@@ -1047,7 +1163,7 @@ static void SoftRastFramebufferProcess()
 	// - the edges are completely sharp/opaque on the very brief title screen intro,
 	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 	// - the character edges in-level are clearly transparent, and also show well through shield powerups.
-	if(gfx3d.enableEdgeMarking && CommonSettings.GFX3D_EdgeMark)
+	if(gfx3d.state.enableEdgeMarking && CommonSettings.GFX3D_EdgeMark)
 	{ 
 		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
 		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
@@ -1117,12 +1233,12 @@ static void SoftRastFramebufferProcess()
 		}
 	}
 
-	if(gfx3d.enableFog && CommonSettings.GFX3D_Fog)
+	if(gfx3d.state.enableFog && CommonSettings.GFX3D_Fog)
 	{
-		u32 r = GFX3D_5TO6((gfx3d.fogColor)&0x1F);
-		u32 g = GFX3D_5TO6((gfx3d.fogColor>>5)&0x1F);
-		u32 b = GFX3D_5TO6((gfx3d.fogColor>>10)&0x1F);
-		u32 a = (gfx3d.fogColor>>16)&0x1F;
+		u32 r = GFX3D_5TO6((gfx3d.state.fogColor)&0x1F);
+		u32 g = GFX3D_5TO6((gfx3d.state.fogColor>>5)&0x1F);
+		u32 b = GFX3D_5TO6((gfx3d.state.fogColor>>10)&0x1F);
+		u32 a = (gfx3d.state.fogColor>>16)&0x1F;
 		for(int i=0;i<256*192;i++)
 		{
 			Fragment &destFragment = screen[i];
@@ -1132,7 +1248,7 @@ static void SoftRastFramebufferProcess()
 			assert(fogIndex<32768);
 			u8 fog = fogTable[fogIndex];
 			if(fog==127) fog=128;
-			if(!gfx3d.enableFogAlphaOnly)
+			if(!gfx3d.state.enableFogAlphaOnly)
 			{
 				destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
 				destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
@@ -1143,157 +1259,37 @@ static void SoftRastFramebufferProcess()
 	}
 }
 
-static void SoftRastConvertFramebuffer()
+void SoftRasterizerEngine::performClipping(bool hirez)
 {
-	memcpy(gfx3d_convertedScreen,screenColor,256*192*4);
-}
-
-static void SoftRastRender()
-{
-	Fragment clearFragment;
-	FragmentColor clearFragmentColor;
-	clearFragment.isTranslucentPoly = 0;
-	clearFragmentColor.r = GFX3D_5TO6(gfx3d.clearColor&0x1F);
-	clearFragmentColor.g = GFX3D_5TO6((gfx3d.clearColor>>5)&0x1F);
-	clearFragmentColor.b = GFX3D_5TO6((gfx3d.clearColor>>10)&0x1F);
-	clearFragmentColor.a = ((gfx3d.clearColor>>16)&0x1F);
-	clearFragment.polyid.opaque = (gfx3d.clearColor>>24)&0x3F;
-	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
-	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
-	//but in spiderman2 some fires with polyid 0 try to render on top of the background
-	clearFragment.polyid.translucent = kUnsetTranslucentPolyID; 
-	clearFragment.depth = gfx3d.clearDepth;
-	clearFragment.stencil = 0;
-	clearFragment.isTranslucentPoly = 0;
-	clearFragment.fogged = BIT15(gfx3d.clearColor);
-	for(int i=0;i<256*192;i++)
-		screen[i] = clearFragment;
-
-	if(gfx3d.enableClearImage)
-	{
-		u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
-		u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
-
-		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
-		//uses the scroll registers in the main game engine
-		u16 scroll = T1ReadWord(MMU.ARM9_REG,0x356); //CLRIMAGE_OFFSET
-		u16 xscroll = scroll&0xFF;
-		u16 yscroll = (scroll>>8)&0xFF;
-
-		FragmentColor *dstColor = screenColor;
-		Fragment *dst = screen;
-
-		for(int iy=0;iy<192;iy++) {
-			int y = ((iy + yscroll)&255)<<8;
-			for(int ix=0;ix<256;ix++) {
-				int x = (ix + xscroll)&255;
-				int adr = y + x;
-				
-				//this is tested by harry potter and the order of the phoenix.
-				//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
-				//(or use a special zero fill in the bulk clearing above)
-				u16 col = clearImage[adr];
-				dstColor->color = RGB15TO6665(col,31*(col>>15));
-				
-				//this is tested quite well in the sonic chronicles main map mode
-				//where depth values are used for trees etc you can walk behind
-				u32 depth = clearDepth[adr];
-				dst->fogged = BIT15(depth);
-				//TODO - might consider a lookup table for this
-				dst->depth = gfx3d_extendDepth_15_to_24(depth&0x7FFF);
-
-				dstColor++;
-				dst++;
-			}
-		}
-	}
-	else 
-		for(int i=0;i<256*192;i++)
-			screenColor[i] = clearFragmentColor;
-
-	//convert the toon colors
-	//TODO for a slight speedup this could be cached in gfx3d (oglrenderer could benefit as well)
-	for(int i=0;i<32;i++) {
-		toonTable[i].r = GFX3D_5TO6((gfx3d.u16ToonTable[i])&0x1F);
-		toonTable[i].g = GFX3D_5TO6((gfx3d.u16ToonTable[i]>>5)&0x1F);
-		toonTable[i].b = GFX3D_5TO6((gfx3d.u16ToonTable[i]>>10)&0x1F);
-	}
-
-	//setup fog variables (but only if fog is enabled)
-	if(gfx3d.enableFog && CommonSettings.GFX3D_Fog)
-	{
-		u8* fogDensity = MMU.MMU_MEM[ARMCPU_ARM9][0x40] + 0x360;
-#if 0
-		//TODO - this might be a little slow; 
-		//we might need to hash all the variables and only recompute this when something changes
-		const int increment = (0x400 >> gfx3d.fogShift);
-		for(u32 i=0;i<32768;i++) {
-			if(i<gfx3d.fogOffset) {
-				fogTable[i] = fogDensity[0];
-				continue;
-			}
-			for(int j=0;j<32;j++) {
-				u32 value = gfx3d.fogOffset + increment*(j+1);
-				if(i<=value) {
-					if(j==0) {
-						fogTable[i] = fogDensity[0];
-						goto done;
-					} else {
-						fogTable[i] = ((value-i)*fogDensity[j-1] + (increment-(value-i))*fogDensity[j])/increment;
-						goto done;
-					}
-				}
-			}
-			fogTable[i] = fogDensity[31];
-			done: ;
-		}
-#else
-		// this should behave exactly the same as the previous loop,
-		// except much faster. (because it's not a 2d loop and isn't so branchy either)
-		// maybe it's fast enough to not need to be cached, now.
-		const int increment = ((1 << 10) >> gfx3d.fogShift);
-		const int incrementDivShift = 10 - gfx3d.fogShift;
-		u32 fogOffset = min<u32>(max<u32>(gfx3d.fogOffset, 0), 32768);
-		u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
-		u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
-		assert(iMin <= iMax);
-		memset(fogTable, fogDensity[0], iMin);
-		for(u32 i = iMin; i < iMax; i++) {
-			int num = (i - fogOffset + (increment-1));
-			int j = (num >> incrementDivShift) - 1;
-			u32 value = (num & ~(increment-1)) + fogOffset;
-			u32 diff = value - i;
-			assert(j >= 1 && j < 32);
-			fogTable[i] = ((diff*fogDensity[j-1] + (increment-diff)*fogDensity[j]) >> incrementDivShift);
-		}
-		memset(fogTable+iMax, fogDensity[31], 32768-iMax);
-#endif
-	}
-	//convert colors to float to get more precision in case we need it
-	for(int i=0;i<gfx3d.vertlist->count;i++)
-		gfx3d.vertlist->list[i].color_to_float();
-
 	//submit all polys to clipper
-	clipper.clippedPolyCounter = 0;
-	for(int i=0;i<gfx3d.polylist->count;i++)
+	clipper.reset();
+	for(int i=0;i<polylist->count;i++)
 	{
-		POLY* poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
+		POLY* poly = &polylist->list[indexlist->list[i]];
 		VERT* clipVerts[4] = {
-			&gfx3d.vertlist->list[poly->vertIndexes[0]],
-			&gfx3d.vertlist->list[poly->vertIndexes[1]],
-			&gfx3d.vertlist->list[poly->vertIndexes[2]],
+			&vertlist->list[poly->vertIndexes[0]],
+			&vertlist->list[poly->vertIndexes[1]],
+			&vertlist->list[poly->vertIndexes[2]],
 			poly->type==4
-				?&gfx3d.vertlist->list[poly->vertIndexes[3]]
+				?&vertlist->list[poly->vertIndexes[3]]
 				:NULL
 		};
 
-		clipper.clipPoly(poly,clipVerts);
-
+		if(hirez)
+			clipper.clipPoly<true>(poly,clipVerts);
+		else
+			clipper.clipPoly<false>(poly,clipVerts);
 	}
 	clippedPolyCounter = clipper.clippedPolyCounter;
+}
 
-	//printf("%d %d %d %d\n",gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
-//			printf("%f\n",vert.coord[0]);
+template<bool CUSTOM> void SoftRasterizerEngine::performViewportTransforms(int width, int height)
+{
+	const float xfactor = width/256.0f;
+	const float yfactor = height/192.0f;
+	const float xmax = 256.0f*xfactor-0.001f; //fudge factor to keep from overrunning render buffers
+	const float ymax = 192.0f*yfactor-0.001f;
+
 
 	//viewport transforms
 	for(int i=0;i<clippedPolyCounter;i++)
@@ -1323,66 +1319,31 @@ static void SoftRastRender()
 			//viewport transformation
 			VIEWPORT viewport;
 			viewport.decode(poly.poly->viewport);
-			vert.coord[0] *= viewport.width;
-			vert.coord[0] += viewport.x;
-			vert.coord[1] *= viewport.height;
-			vert.coord[1] += viewport.y;
-			vert.coord[1] = 192 - vert.coord[1];
+			vert.coord[0] *= viewport.width * xfactor;
+			vert.coord[0] += viewport.x * xfactor;
+			vert.coord[1] *= viewport.height * yfactor;
+			vert.coord[1] += viewport.y * yfactor;
+			vert.coord[1] = ymax - vert.coord[1];
 
 			//well, i guess we need to do this to keep Princess Debut from rendering huge polys.
 			//there must be something strange going on
-			vert.coord[0] = max(0.0f,min(256.0f,vert.coord[0]));
-			vert.coord[1] = max(0.0f,min(192.0f,vert.coord[1]));
+			vert.coord[0] = max(0.0f,min(xmax,vert.coord[0]));
+			vert.coord[1] = max(0.0f,min(ymax,vert.coord[1]));
 		}
 	}
+}
+//these templates needed to be instantiated manually
+template void SoftRasterizerEngine::performViewportTransforms<true>(int width, int height);
+template void SoftRasterizerEngine::performViewportTransforms<false>(int width, int height);
 
-	TexCacheItem* lastTexKey = NULL;
-	u32 lastTextureFormat = 0, lastTexturePalette = 0;
-	bool needInitTexture = true;
+void SoftRasterizerEngine::performCoordAdjustment(const bool skipBackfacing)
+{
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
 		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
 		POLY *poly = clippedPoly.poly;
 		int type = clippedPoly.type;
-
 		VERT* verts = &clippedPoly.clipVerts[0];
-
-
-		RasterizerUnit::PolyAttr polyAttr;
-		polyAttr.setup(poly->polyAttr);
-
-		//HACK: backface culling
-		//this should be moved to gfx3d, but first we need to redo the way the lists are built
-		//because it is too convoluted right now.
-		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
-#if 0
-		//TODO - is this good enough for quads and other shapes? we think so.
-		float ab[2], ac[2];
-		Vector2Copy(ab, verts[1].coord);
-		Vector2Copy(ac, verts[2].coord);
-		Vector2Subtract(ab, verts[0].coord);
-		Vector2Subtract(ac, verts[0].coord);
-		float cross = Vector2Cross(ab, ac);
-		polyAttr.backfacing = (cross>0);
-#else
-		// actually, the answer to the above question seems to be NO, it's not good enough,
-		// because we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
-		// this version should handle those cases better.
-		int n = type - 1;
-		float facing = (verts[0].y + verts[n].y) * (verts[0].x - verts[n].x)
-					 + (verts[1].y + verts[0].y) * (verts[1].x - verts[0].x)
-					 + (verts[2].y + verts[1].y) * (verts[2].x - verts[1].x);
-		for(int j = 2; j < n; j++)
-			facing += (verts[j+1].y + verts[j].y) * (verts[j+1].x - verts[j].x);
-		polyBackfacing[i] = polyAttr.backfacing = (facing < 0);
-#endif
-
-		if(!polyAttr.isVisible(polyAttr.backfacing)) {
-			polyVisible[i] = false;
-			continue;
-		}
-
-		polyVisible[i] = true;
 
 		//here is a hack which needs to be removed.
 		//at some point our shape engine needs these to be converted to "fixed point"
@@ -1390,6 +1351,21 @@ static void SoftRastRender()
 		for(int j=0;j<type;j++)
 			for(int k=0;k<2;k++)
 				verts[j].coord[k] = (float)iround(16.0f * verts[j].coord[k]);
+	}
+}
+
+void SoftRasterizerEngine::setupTextures(const bool skipBackfacing)
+{
+	TexCacheItem* lastTexKey = NULL;
+	u32 lastTextureFormat = 0, lastTexturePalette = 0;
+	bool needInitTexture = true;
+	for(int i=0;i<clippedPolyCounter;i++)
+	{
+		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		POLY *poly = clippedPoly.poly;
+
+		PolyAttr polyAttr;
+		polyAttr.setup(poly->polyAttr);
 
 		//make sure all the textures we'll need are cached
 		if(needInitTexture || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
@@ -1403,10 +1379,77 @@ static void SoftRastRender()
 		//printf("%08X %d\n",poly->texParam,rasterizerUnit[0].textures.currentNum);
 		polyTexKeys[i] = lastTexKey;
 	}
+}
+
+void SoftRasterizerEngine::performBackfaceTests()
+{
+	for(int i=0;i<clippedPolyCounter;i++)
+	{
+		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		POLY *poly = clippedPoly.poly;
+		int type = clippedPoly.type;
+		VERT* verts = &clippedPoly.clipVerts[0];
+
+		PolyAttr polyAttr;
+		polyAttr.setup(poly->polyAttr);
+
+		//HACK: backface culling
+		//this should be moved to gfx3d, but first we need to redo the way the lists are built
+		//because it is too convoluted right now.
+		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
+			
+		//an older approach
+		//(not good enough for quads and other shapes)
+		//float ab[2], ac[2]; Vector2Copy(ab, verts[1].coord); Vector2Copy(ac, verts[2].coord); Vector2Subtract(ab, verts[0].coord); 
+		//Vector2Subtract(ac, verts[0].coord); float cross = Vector2Cross(ab, ac); polyAttr.backfacing = (cross>0); 
+
+		//a better approach
+		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
+		// this version should handle those cases better.
+		int n = type - 1;
+		float facing = (verts[0].y + verts[n].y) * (verts[0].x - verts[n].x)
+					 + (verts[1].y + verts[0].y) * (verts[1].x - verts[0].x)
+					 + (verts[2].y + verts[1].y) * (verts[2].x - verts[1].x);
+		for(int j = 2; j < n; j++)
+			facing += (verts[j+1].y + verts[j].y) * (verts[j+1].x - verts[j].x);
+		
+		polyBackfacing[i] = polyAttr.backfacing = (facing < 0);
+		polyVisible[i] = polyAttr.isVisible(polyAttr.backfacing);
+	}
+}
+
+void _HACK_Viewer_ExecUnit(SoftRasterizerEngine* engine)
+{
+	_HACK_viewer_rasterizerUnit.mainLoop<false>(engine);
+}
+
+static void SoftRastRender()
+{
+	mainSoftRasterizer.polylist = gfx3d.polylist;
+	mainSoftRasterizer.vertlist = gfx3d.vertlist;
+	mainSoftRasterizer.indexlist = &gfx3d.indexlist;
+	mainSoftRasterizer.screen = _screen;
+	mainSoftRasterizer.screenColor = _screenColor;
+	mainSoftRasterizer.width = 256;
+	mainSoftRasterizer.height = 192;
+
+	//setup fog variables (but only if fog is enabled)
+	if(gfx3d.state.enableFog && CommonSettings.GFX3D_Fog)
+		mainSoftRasterizer.updateFogTable();
+	
+	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.state.enableClearImage);
+	mainSoftRasterizer.updateToonTable();
+	mainSoftRasterizer.updateFloatColors();
+	mainSoftRasterizer.performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor);
+	mainSoftRasterizer.performViewportTransforms<false>(256,192);
+	mainSoftRasterizer.performBackfaceTests();
+	mainSoftRasterizer.performCoordAdjustment(true);
+	mainSoftRasterizer.setupTextures(true);
+
 
 	if(rasterizerCores==1)
 	{
-		rasterizerUnit[0].mainLoop<false>();
+		rasterizerUnit[0].mainLoop<false>(&mainSoftRasterizer);
 	}
 	else
 	{
@@ -1416,7 +1459,8 @@ static void SoftRastRender()
 
 	TexCache_EvictFrame();
 
-	SoftRastFramebufferProcess();
+
+	mainSoftRasterizer.framebufferProcess();
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 	SoftRastConvertFramebuffer();
