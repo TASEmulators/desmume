@@ -251,6 +251,10 @@ struct VERTLIST {
 	int count;
 };
 
+struct INDEXLIST {
+	int list[POLYLIST_SIZE];
+};
+
 
 struct VIEWPORT {
 	int x, y, width, height;
@@ -274,12 +278,13 @@ public:
 	};
 
 	//the entry point for poly clipping
-	void clipPoly(POLY* poly, VERT** verts);
+	template<bool hirez> void clipPoly(POLY* poly, VERT** verts);
 
 	//the output of clipping operations goes into here.
 	//be sure you init it before clipping!
 	TClippedPoly *clippedPolys;
 	int clippedPolyCounter;
+	void reset() { clippedPolyCounter=0; }
 
 private:
 	TClippedPoly tempClippedPoly;
@@ -289,9 +294,9 @@ private:
 };
 
 //used to communicate state to the renderer
-struct GFX3D
+struct GFX3D_State
 {
-	GFX3D()
+	GFX3D_State()
 		: enableTexturing(true)
 		, enableAlphaTest(true)
 		, enableAlphaBlending(true)
@@ -302,34 +307,26 @@ struct GFX3D
 		, enableFogAlphaOnly(false)
 		, fogShift(0)
 		, shading(TOON)
-		, polylist(0)
-		, vertlist(0)
 		, alphaTestRef(0)
 		, clearDepth(1)
 		, clearColor(0)
 		, fogColor(0)
 		, fogOffset(0)
-		, frameCtr(0)
-		, frameCtrRaw(0)
 	{
 		for(int i=0;i<ARRAY_SIZE(u16ToonTable);i++)
 			u16ToonTable[i] = 0;
+		for(int i=0;i<ARRAY_SIZE(shininessTable);i++)
+			shininessTable[i] = 0;
 	}
+
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
 		enableAntialiasing, enableEdgeMarking, enableClearImage, enableFog, enableFogAlphaOnly;
-
-	u32 fogShift;
 
 	static const u32 TOON = 0;
 	static const u32 HIGHLIGHT = 1;
 	u32 shading;
 
-	POLYLIST* polylist;
-	VERTLIST* vertlist;
-	int indexlist[POLYLIST_SIZE];
-
 	BOOL wbuffer, sortmode;
-
 	u8 alphaTestRef;
 
 	u32 clearDepth;
@@ -341,14 +338,43 @@ struct GFX3D
 	};
 	#include "PACKED_END.h"
 	u32 fogOffset;
+	u32 fogShift;
+
+	u16 u16ToonTable[32];
+	float shininessTable[128];
+};
+
+struct Viewer3d_State
+{
+	GFX3D_State state;
+	VERTLIST vertlist;
+	POLYLIST polylist;
+	INDEXLIST indexlist;
+};
+
+extern Viewer3d_State viewer3d_state;
+
+struct GFX3D
+{
+	GFX3D()
+		: frameCtr(0)
+		, frameCtrRaw(0)
+		, polylist(0)
+		, vertlist(0){
+	}
+
+	GFX3D_State state;
+
+
+	POLYLIST* polylist;
+	VERTLIST* vertlist;
+	INDEXLIST indexlist;
 
 	//ticks every time flush() is called
 	int frameCtr;
 
 	//you can use this to track how many real frames passed, for comparing to frameCtr;
 	int frameCtrRaw;
-
-	u16 u16ToonTable[32];
 };
 extern GFX3D gfx3d;
 

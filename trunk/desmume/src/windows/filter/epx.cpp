@@ -36,12 +36,12 @@ void RenderEPX (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	uint32 *lpDst = (uint32*)Dst.Surface;
 
-	for(int j = 0; j < srcHeight; j++)
+	for(uint32 j = 0; j < srcHeight; j++)
 	{
 		uint32* SrcLine = lpSrc + srcPitch*j;
 		uint32* DstLine1 = lpDst + dstPitch*(j*2);
 		uint32* DstLine2 = lpDst + dstPitch*(j*2+1);
-		for(int i = 0; i < srcWidth; i++)
+		for(uint32 i = 0; i < srcWidth; i++)
 		{
 			uint32 L = *(SrcLine-1);
 			uint32 C = *(SrcLine);
@@ -86,13 +86,13 @@ void RenderEPX_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(int yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
+	for(uint32 yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
 	{
 		u32* SrcLine = lpSrc + srcPitch*yi;
 		u32* DstLine1 = lpDst + dstPitch*(yo);
 		u32* DstLine2 = lpDst + dstPitch*(yo+1);
 		u32* DstLine3 = lpDst + dstPitch*(yo+2);
-		for(int xi=0; xi < srcWidth; xi+=2)
+		for(uint32 xi=0; xi < srcWidth; xi+=2)
 		{
 			u32                                s10 = *(SrcLine-srcPitch),   s20 = *(SrcLine-srcPitch+1),   s30 = *(SrcLine-srcPitch+2);
 			u32 s01 = *(SrcLine-1),            s11 = *(SrcLine),            s21 = *(SrcLine+1),            s31 = *(SrcLine+2);
@@ -147,12 +147,12 @@ void RenderEPXPlus (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	uint32 *lpDst = (uint32*)Dst.Surface;
 
-	for(int j = 0; j < srcHeight; j++)
+	for(uint32 j = 0; j < srcHeight; j++)
 	{
 		uint32* SrcLine = lpSrc + srcPitch*j;
 		uint32* DstLine1 = lpDst + dstPitch*(j*2);
 		uint32* DstLine2 = lpDst + dstPitch*(j*2+1);
-		for(int i = 0; i < srcWidth; i++)
+		for(uint32 i = 0; i < srcWidth; i++)
 		{
 			uint32 L = *(SrcLine-1);
 			uint32 C = *(SrcLine);
@@ -185,13 +185,13 @@ void RenderEPXPlus_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(int yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
+	for(uint32 yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
 	{
 		u32* SrcLine = lpSrc + srcPitch*yi;
 		u32* DstLine1 = lpDst + dstPitch*(yo);
 		u32* DstLine2 = lpDst + dstPitch*(yo+1);
 		u32* DstLine3 = lpDst + dstPitch*(yo+2);
-		for(int xi=0; xi < srcWidth; xi+=2)
+		for(uint32 xi=0; xi < srcWidth; xi+=2)
 		{
 			u32                                s10 = *(SrcLine-srcPitch),   s20 = *(SrcLine-srcPitch+1),   s30 = *(SrcLine-srcPitch+2);
 			u32 s01 = *(SrcLine-1),            s11 = *(SrcLine),            s21 = *(SrcLine+1),            s31 = *(SrcLine+2);
@@ -239,7 +239,7 @@ void RenderNearest_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	uint32 *lpDst = (uint32*)Dst.Surface;
 
-	for(int yi = 0, yo = 0; yi < srcHeight; yi+=2, yo+=3)
+	for(uint32 yi = 0, yo = 0; yi < srcHeight; yi+=2, yo+=3)
 	{
 		u32* srcPix1 = lpSrc + srcPitch*(yi);
 		u32* srcPix2 = lpSrc + srcPitch*(yi+1);
@@ -247,7 +247,7 @@ void RenderNearest_1Point5x (SSurface Src, SSurface Dst)
 		u32* dstPix2 = lpDst + dstPitch*(yo+1);
 		u32* dstPix3 = lpDst + dstPitch*(yo+2);
 
-		for(int xi = 0; xi < srcWidth; xi+=2)
+		for(uint32 xi = 0; xi < srcWidth; xi+=2)
 		{
 			*dstPix1++ = *srcPix1++;
 			*dstPix1++ = *srcPix1;
@@ -280,7 +280,7 @@ void RenderNearestPlus_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	uint32 *lpDst = (uint32*)Dst.Surface;
 
-	for(int j = 0, y = 0; j < srcHeight; j+=2, y+=3)
+	for(uint32 j = 0, y = 0; j < srcHeight; j+=2, y+=3)
 	{
 		u32* srcPix = lpSrc + srcPitch*j;
 		u32* dstPix = lpDst + dstPitch*y;
@@ -289,7 +289,7 @@ void RenderNearestPlus_1Point5x (SSurface Src, SSurface Dst)
 #define SET(dx,dy,val) *(dstPix+(dy)*dstPitch+(dx)) = (val)
 #define BETTER(dx,dy,dx2,dy2) (GET(dx,dy) == GET(dx2,dy2) && GET(dx2,dy) != GET(dx,dy2))
 
-		for(int i = 0, x = 0; i < srcWidth; i+=2, x+=3, srcPix+=2, dstPix+=3)
+		for(uint32 i = 0, x = 0; i < srcWidth; i+=2, x+=3, srcPix+=2, dstPix+=3)
 		{
 			SET(0,0,GET(0,0));
 			SET(1,0,GET(1,0));

@@ -45,7 +45,6 @@
 #include "readwrite.h"
 #include "FIFO.h"
 #include <queue>
-//#include "movie.h"
 
 /*
 thoughts on flush timing:
@@ -63,8 +62,6 @@ resolved since then by deferring actual rendering to the next vcount=0 (giving t
 But since we're not sure how we'll eventually want this, I am leaving it sort of reconfigurable, doing all the work
 in this function: */
 static void gfx3d_doFlush();
-
-#define TESTS_ENABLED 1
 
 #define INVALID_COMMAND 0xFF
 #define UNDEFINED_COMMAND 0xCC
@@ -261,6 +258,7 @@ using std::max;
 using std::min;
 
 GFX3D gfx3d;
+Viewer3d_State viewer3d_state;
 static GFX3D_Clipper boxtestClipper;
 
 //tables that are provided to anyone
@@ -381,8 +379,7 @@ static u32 lightColor[4] = {0,0,0,0};
 static u32 lightDirection[4] = {0,0,0,0};
 //material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
-// Shininess
-static float shininessTable[128] = {0};
+//used for indexing the shininess table during parameters to shininess command
 static int shininessInd = 0;
 
 
@@ -565,7 +562,7 @@ void gfx3d_reset()
 
 	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
 
-	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
+	gfx3d.state.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
 	
 	clInd2 = 0;
 	isSwapBuffers = FALSE;
@@ -1147,7 +1144,7 @@ static void gfx3d_glNormal(u32 v)
 			if(dsSpecular & 0x8000)
 			{
 				int shininessIndex = (int)(shininessLevel * 128);
-				if(shininessIndex >= (int)ARRAY_SIZE(shininessTable)) {
+				if(shininessIndex >= (int)ARRAY_SIZE(gfx3d.state.shininessTable)) {
 					//we can't print this right now, because when a game triggers this it triggers it _A_LOT_
 					//so wait until we have per-frame diagnostics.
 					//this was tested using Princess Debut (US) after proceeding through the intro and getting the tiara.
@@ -1159,7 +1156,7 @@ static void gfx3d_glNormal(u32 v)
 					//PROGINFO("ERROR: shininess table out of bounds.\n  maybe an emulator error; maybe a non-unit normal; setting to 0\n");
 					shininessIndex = 0;
 				}
-				shininessLevel = shininessTable[shininessIndex];
+				shininessLevel = gfx3d.state.shininessTable[shininessIndex];
 			}
 
 			for(c = 0; c < 3; c++)
@@ -1345,10 +1342,10 @@ static void gfx3d_glLightColor (u32 v)
 
 static BOOL gfx3d_glShininess (u32 val)
 {
-	shininessTable[shininessInd++] = ((val & 0xFF) / 256.0f);
-	shininessTable[shininessInd++] = (((val >> 8) & 0xFF) / 256.0f);
-	shininessTable[shininessInd++] = (((val >> 16) & 0xFF) / 256.0f);
-	shininessTable[shininessInd++] = (((val >> 24) & 0xFF) / 256.0f);
+	gfx3d.state.shininessTable[shininessInd++] = ((val & 0xFF) / 256.0f);
+	gfx3d.state.shininessTable[shininessInd++] = (((val >> 8) & 0xFF) / 256.0f);
+	gfx3d.state.shininessTable[shininessInd++] = (((val >> 16) & 0xFF) / 256.0f);
+	gfx3d.state.shininessTable[shininessInd++] = (((val >> 24) & 0xFF) / 256.0f);
 
 	if (shininessInd < 128) return FALSE;
 	shininessInd = 0;
@@ -1450,8 +1447,8 @@ static BOOL gfx3d_glBoxTest(u32 v)
 
 	//setup the clipper
 	GFX3D_Clipper::TClippedPoly tempClippedPoly;
-	boxtestClipper.clippedPolyCounter = 0;
 	boxtestClipper.clippedPolys = &tempClippedPoly;
+	boxtestClipper.reset();
 
 	////-----------------------------
 	////awesome hack:
@@ -1500,7 +1497,7 @@ static BOOL gfx3d_glBoxTest(u32 v)
 			&verts[poly->vertIndexes[3]]
 		};
 
-		boxtestClipper.clipPoly(poly,vertTable);
+		boxtestClipper.clipPoly<false>(poly,vertTable);
 		
 		//if any portion of this poly was retained, then the test passes.
 		if(boxtestClipper.clippedPolyCounter>0) {
@@ -1523,9 +1520,7 @@ static BOOL gfx3d_glPosTest(u32 v)
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 
 	//printf("POSTEST\n");
-#ifdef TESTS_ENABLED
 	MMU_new.gxstat.tb = 1;
-#endif
 
 	PTcoords[PTind++] = float16table[v & 0xFFFF];
 	PTcoords[PTind++] = float16table[v >> 16];
@@ -1584,23 +1579,23 @@ void VIEWPORT::decode(u32 v)
 
 void gfx3d_glClearColor(u32 v)
 {
-	gfx3d.clearColor = v;
+	gfx3d.state.clearColor = v;
 }
 
 void gfx3d_glFogColor(u32 v)
 {
-	gfx3d.fogColor = v;
+	gfx3d.state.fogColor = v;
 }
 
 void gfx3d_glFogOffset (u32 v)
 {
-	gfx3d.fogOffset = (v&0x7fff);
+	gfx3d.state.fogOffset = (v&0x7fff);
 }
 
 void gfx3d_glClearDepth(u32 v)
 {
 	v &= 0x7FFF;
-	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(v);
+	gfx3d.state.clearDepth = gfx3d_extendDepth_15_to_24(v);
 }
 
 // Ignored for now
@@ -1622,14 +1617,14 @@ int gfx3d_GetNumVertex()
 
 void gfx3d_UpdateToonTable(u8 offset, u16 val)
 {
-	gfx3d.u16ToonTable[offset] =  val;
+	gfx3d.state.u16ToonTable[offset] =  val;
 }
 
 void gfx3d_UpdateToonTable(u8 offset, u32 val)
 {
 	//C.O.P. sets toon table via this method
-	gfx3d.u16ToonTable[offset] = val & 0xFFFF;
-	gfx3d.u16ToonTable[offset+1] = val >> 16;
+	gfx3d.state.u16ToonTable[offset] = val & 0xFFFF;
+	gfx3d.state.u16ToonTable[offset+1] = val >> 16;
 }
 
 s32 gfx3d_GetClipMatrix (unsigned int index)
@@ -1658,7 +1653,7 @@ void gfx3d_ClearStack()
 
 void gfx3d_glAlphaFunc(u32 v)
 {
-	gfx3d.alphaTestRef = v&31;
+	gfx3d.state.alphaTestRef = v&31;
 }
 
 unsigned int gfx3d_glGetPosRes(unsigned int index)
@@ -1861,8 +1856,8 @@ void gfx3d_execute3D()
 void gfx3d_glFlush(u32 v)
 {
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
-	gfx3d.sortmode = BIT0(v);
-	gfx3d.wbuffer = BIT1(v);
+	gfx3d.state.sortmode = BIT0(v);
+	gfx3d.state.wbuffer = BIT1(v);
 #if 0
 	if (isSwapBuffers)
 	{
@@ -1913,17 +1908,17 @@ static void gfx3d_doFlush()
 	gfx3d.vertlist = vertlist;
 
 	//and also our current render state
-	if(BIT1(control)) gfx3d.shading = GFX3D::HIGHLIGHT;
-	else gfx3d.shading = GFX3D::TOON;
-	gfx3d.enableTexturing = BIT0(control);
-	gfx3d.enableAlphaTest = BIT2(control);
-	gfx3d.enableAlphaBlending = BIT3(control);
-	gfx3d.enableAntialiasing = BIT4(control);
-	gfx3d.enableEdgeMarking = BIT5(control);
-	gfx3d.enableFogAlphaOnly = BIT6(control);
-	gfx3d.enableFog = BIT7(control);
-	gfx3d.enableClearImage = BIT14(control);
-	gfx3d.fogShift = (control>>8)&0xF;
+	if(BIT1(control)) gfx3d.state.shading = GFX3D_State::HIGHLIGHT;
+	else gfx3d.state.shading = GFX3D_State::TOON;
+	gfx3d.state.enableTexturing = BIT0(control);
+	gfx3d.state.enableAlphaTest = BIT2(control);
+	gfx3d.state.enableAlphaBlending = BIT3(control);
+	gfx3d.state.enableAntialiasing = BIT4(control);
+	gfx3d.state.enableEdgeMarking = BIT5(control);
+	gfx3d.state.enableFogAlphaOnly = BIT6(control);
+	gfx3d.state.enableFog = BIT7(control);
+	gfx3d.state.enableClearImage = BIT14(control);
+	gfx3d.state.fogShift = (control>>8)&0xF;
 
 	int polycount = polylist->count;
 
@@ -1956,30 +1951,39 @@ static void gfx3d_doFlush()
 	for(int i=0;i<polycount;i++) {
 		POLY &poly = polylist->list[i];
 		if(!poly.isTranslucent())
-			gfx3d.indexlist[ctr++] = i;
+			gfx3d.indexlist.list[ctr++] = i;
 	}
 	int opaqueCount = ctr;
 	//then look for translucent polys
 	for(int i=0;i<polycount;i++) {
 		POLY &poly = polylist->list[i];
 		if(poly.isTranslucent())
-			gfx3d.indexlist[ctr++] = i;
+			gfx3d.indexlist.list[ctr++] = i;
 	}
 
 	//now we have to sort the opaque polys by y-value.
 	//(test case: harvest moon island of happiness character cretor UI)
 	//should this be done after clipping??
-	std::sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
+	std::sort(gfx3d.indexlist.list, gfx3d.indexlist.list + opaqueCount, gfx3d_ysort_compare);
 	
-	if(!gfx3d.sortmode)
+	if(!gfx3d.state.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::sort(gfx3d.indexlist + opaqueCount, gfx3d.indexlist + polycount, gfx3d_ysort_compare);
+		std::sort(gfx3d.indexlist.list + opaqueCount, gfx3d.indexlist.list + polycount, gfx3d_ysort_compare);
 	}
 
 	//switch to the new lists
 	twiddleLists();
+
+	if(driver->view3d->IsRunning())
+	{
+		viewer3d_state.state = gfx3d.state;
+		viewer3d_state.polylist = *gfx3d.polylist;
+		viewer3d_state.vertlist = *gfx3d.vertlist;
+		viewer3d_state.indexlist = gfx3d.indexlist;
+		driver->view3d->NewFrame();
+	}
 
 	drawPending = TRUE;
 }
@@ -2192,26 +2196,26 @@ SFORMAT SF_GFX3D[]={
 	{ "GMEM", 2, 1, &dsEmission},
 	{ "GFLP", 4, 1, &flushPending},
 	{ "GDRP", 4, 1, &drawPending},
-	{ "GSET", 4, 1, &gfx3d.enableTexturing},
-	{ "GSEA", 4, 1, &gfx3d.enableAlphaTest},
-	{ "GSEB", 4, 1, &gfx3d.enableAlphaBlending},
-	{ "GSEX", 4, 1, &gfx3d.enableAntialiasing},
-	{ "GSEE", 4, 1, &gfx3d.enableEdgeMarking},
-	{ "GSEC", 4, 1, &gfx3d.enableClearImage},
-	{ "GSEF", 4, 1, &gfx3d.enableFog},
-	{ "GSEO", 4, 1, &gfx3d.enableFogAlphaOnly},
-	{ "GFSH", 4, 1, &gfx3d.fogShift},
-	{ "GSSH", 4, 1, &gfx3d.shading},
-	{ "GSWB", 4, 1, &gfx3d.wbuffer},
-	{ "GSSM", 4, 1, &gfx3d.sortmode},
-	{ "GSAR", 1, 1, &gfx3d.alphaTestRef},
+	{ "GSET", 4, 1, &gfx3d.state.enableTexturing},
+	{ "GSEA", 4, 1, &gfx3d.state.enableAlphaTest},
+	{ "GSEB", 4, 1, &gfx3d.state.enableAlphaBlending},
+	{ "GSEX", 4, 1, &gfx3d.state.enableAntialiasing},
+	{ "GSEE", 4, 1, &gfx3d.state.enableEdgeMarking},
+	{ "GSEC", 4, 1, &gfx3d.state.enableClearImage},
+	{ "GSEF", 4, 1, &gfx3d.state.enableFog},
+	{ "GSEO", 4, 1, &gfx3d.state.enableFogAlphaOnly},
+	{ "GFSH", 4, 1, &gfx3d.state.fogShift},
+	{ "GSSH", 4, 1, &gfx3d.state.shading},
+	{ "GSWB", 4, 1, &gfx3d.state.wbuffer},
+	{ "GSSM", 4, 1, &gfx3d.state.sortmode},
+	{ "GSAR", 1, 1, &gfx3d.state.alphaTestRef},
 	{ "GSVP", 4, 1, &viewport},
-	{ "GSCC", 4, 1, &gfx3d.clearColor},
-	{ "GSCD", 4, 1, &gfx3d.clearDepth},
-	{ "GSFC", 4, 4, &gfx3d.fogColor},
-	{ "GSFO", 4, 1, &gfx3d.fogOffset},
-	{ "GST2", 2, 32, gfx3d.u16ToonTable},
-	{ "GSST", 4, 128, shininessTable},
+	{ "GSCC", 4, 1, &gfx3d.state.clearColor},
+	{ "GSCD", 4, 1, &gfx3d.state.clearDepth},
+	{ "GSFC", 4, 4, &gfx3d.state.fogColor},
+	{ "GSFO", 4, 1, &gfx3d.state.fogOffset},
+	{ "GST2", 2, 32, gfx3d.state.u16ToonTable},
+	{ "GSST", 4, 128, &gfx3d.state.shininessTable[0]},
 	{ "GSSI", 4, 1, &shininessInd},
 	//------------------------
 	{ "GTST", 4, 1, &triStripToggle},
@@ -2328,7 +2332,7 @@ static T interpolate(const float ratio, const T& x0, const T& x1) {
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
 #ifdef OPTIMIZED_CLIPPING_METHOD
-template<int coord, int which> static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside)
+template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, VERT* inside, VERT* outside)
 #else
 static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
 #endif
@@ -2355,7 +2359,8 @@ static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int wh
 	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
 	INTERP(texcoord[0]); INTERP(texcoord[1]);
 
-	if(CommonSettings.GFX3D_HighResolutionInterpolateColor)
+	//if(CommonSettings.GFX3D_HighResolutionInterpolateColor)
+	if(hirez)
 	{
 		INTERP(fcolor[0]); INTERP(fcolor[1]); INTERP(fcolor[2]);
 	}
@@ -2394,20 +2399,20 @@ public:
 		m_next.init(verts);
 	}
 
-	void clipVert(VERT* vert)
+	void clipVert(bool hirez, VERT* vert)
 	{
 		if(m_prevVert)
-			this->clipSegmentVsPlane(m_prevVert, vert);
+			this->clipSegmentVsPlane(hirez, m_prevVert, vert);
 		else
 			m_firstVert = vert;
 		m_prevVert = vert;
 	}
 
 	// closes the loop and returns the number of clipped output verts
-	int finish()
+	int finish(bool hirez)
 	{
-		this->clipVert(m_firstVert);
-		return m_next.finish();
+		this->clipVert(hirez, m_firstVert);
+		return m_next.finish(hirez);
 	}
 
 private:
@@ -2416,7 +2421,7 @@ private:
 	VERT* m_firstVert;
 	Next& m_next;
 
-	FORCEINLINE void clipSegmentVsPlane(VERT* vert0, VERT* vert1)
+	FORCEINLINE void clipSegmentVsPlane(bool hirez, VERT* vert0, VERT* vert1)
 	{
 		float* vert0coord = vert0->coord;
 		float* vert1coord = vert1->coord;
@@ -2445,7 +2450,7 @@ private:
 		if(!out0 && !out1) 
 		{
 			CLIPLOG(" both inside\n");
-			m_next.clipVert(vert1);
+			m_next.clipVert(hirez,vert1);
 		}
 
 		//exiting volume: insert the clipped point
@@ -2453,17 +2458,17 @@ private:
 		{
 			CLIPLOG(" exiting\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(vert0,vert1);
-			m_next.clipVert(&scratchClipVerts[numScratchClipVerts++]);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez,vert0,vert1);
+			m_next.clipVert(hirez,&scratchClipVerts[numScratchClipVerts++]);
 		}
 
 		//entering volume: insert clipped point and the next (interior) point
 		if(out0 && !out1) {
 			CLIPLOG(" entering\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(vert1,vert0);
-			m_next.clipVert(&scratchClipVerts[numScratchClipVerts++]);
-			m_next.clipVert(vert1);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez,vert1,vert0);
+			m_next.clipVert(hirez,&scratchClipVerts[numScratchClipVerts++]);
+			m_next.clipVert(hirez,vert1);
 		}
 	}
 };
@@ -2476,13 +2481,13 @@ public:
 		m_nextDestVert = verts;
 		m_numVerts = 0;
 	}
-	void clipVert(VERT* vert)
+	void clipVert(bool hirez, VERT* vert)
 	{
 		assert((u32)m_numVerts < MAX_CLIPPED_VERTS);
 		*m_nextDestVert++ = *vert;
 		m_numVerts++;
 	}
-	int finish()
+	int finish(bool hirez)
 	{
 		return m_numVerts;
 	}
@@ -2501,7 +2506,7 @@ typedef ClipperPlane<1,-1,Stage4> Stage3;        static Stage3 clipper3 (clipper
 typedef ClipperPlane<0, 1,Stage3> Stage2;        static Stage2 clipper2 (clipper3); // right plane
 typedef ClipperPlane<0,-1,Stage2> Stage1;        static Stage1 clipper  (clipper2); // left plane
 
-void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
+template<bool hirez> void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 {
 	CLIPLOG("==Begin poly==\n");
 
@@ -2510,8 +2515,8 @@ void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 
 	clipper.init(clippedPolys[clippedPolyCounter].clipVerts);
 	for(int i=0;i<type;i++)
-		clipper.clipVert(verts[i]);
-	int outType = clipper.finish();
+		clipper.clipVert(hirez,verts[i]);
+	int outType = clipper.finish(hirez);
 
 	assert((u32)outType < MAX_CLIPPED_VERTS);
 	if(outType < 3)
@@ -2526,6 +2531,9 @@ void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 		clippedPolyCounter++;
 	}
 }
+//these templates needed to be instantiated manually
+template void GFX3D_Clipper::clipPoly<true>(POLY* poly, VERT** verts);
+template void GFX3D_Clipper::clipPoly<false>(POLY* poly, VERT** verts);
 
 void GFX3D_Clipper::clipSegmentVsPlane(VERT** verts, const int coord, int which)
 {

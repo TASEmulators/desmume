@@ -1,4 +1,4 @@
-0.9.5 -> 0.9.6 (r3075-r3107-r3xxx)
+0.9.5 -> 0.9.6 (r3075-r3153-r3xxx)
 
 General/Core:
  bug: emulate keypad interrupt
@@ -6,6 +6,7 @@ General/Core:
  bug: fix rom close memory corruption
  bug: fix div and sqrt busy flag bug
  bug: fix vectest
+ bug: fix lid savestate desync
  enh: support devkitpro argv
  enh: add gbaslot-rom commandline
 
@@ -15,8 +16,14 @@ Graphics:
 Windows:
  bug: fix 16bpp display
  bug: more fixes to multi-gamepads
+ bug: cheat windows robustification
  enh: add EPX and EPX1.5X resize filters
  enh: add a japanese translation which will soon be stale like the others
+ enh: add fancy printscreen with emulator info on it
+ 
+Linux/OSX:
+ bug: fix building for nosse2 systems
+ enh: add --nojoy=1 to fix laptops with accelerometers
  
 0.9.4 -> 0.9.5 (r2437-r3075)
 

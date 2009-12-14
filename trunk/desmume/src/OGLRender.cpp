@@ -683,7 +683,7 @@ static void BeginRenderPoly()
 		{
 			lastEnvMode = envMode;
 
-			int _envModes[4] = {0, 1, (2 + gfx3d.shading), 0};
+			int _envModes[4] = {0, 1, (2 + gfx3d.state.shading), 0};
 			glUniform1i(texBlendLoc, _envModes[envMode]);
 		}
 	}
@@ -721,16 +721,16 @@ static void InstallPolygonAttrib(unsigned long val)
 
 static void Control()
 {
-	if(gfx3d.enableTexturing) glEnable (GL_TEXTURE_2D);
+	if(gfx3d.state.enableTexturing) glEnable (GL_TEXTURE_2D);
 	else glDisable (GL_TEXTURE_2D);
 
-	if(gfx3d.enableAlphaTest)
+	if(gfx3d.state.enableAlphaTest)
 		// FIXME: alpha test should pass gfx3d.alphaTestRef==poly->getAlpha
-		glAlphaFunc	(GL_GREATER, gfx3d.alphaTestRef/31.f);
+		glAlphaFunc	(GL_GREATER, gfx3d.state.alphaTestRef/31.f);
 	else
 		glAlphaFunc	(GL_GREATER, 0);
 
-	if(gfx3d.enableAlphaBlending)
+	if(gfx3d.state.enableAlphaBlending)
 	{
 		glEnable		(GL_BLEND);
 	}
@@ -825,21 +825,23 @@ static void OGLRender()
 		
 		//generate a 8888 toon table from the ds format one and store it in a texture
 		u32 rgbToonTable[32];
-		for(int i=0;i<32;i++) rgbToonTable[i] = RGB15TO32(gfx3d.u16ToonTable[i], 255);
+		for(int i=0;i<32;i++) 
+			rgbToonTable[i] = RGB15TO32(gfx3d.state.u16ToonTable[i], 255);
+
 		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbToonTable);
 	}
 
 	xglDepthMask(GL_TRUE);
 
 	float clearColor[4] = {
-		((float)(gfx3d.clearColor&0x1F))/31.0f,
-		((float)((gfx3d.clearColor>>5)&0x1F))/31.0f,
-		((float)((gfx3d.clearColor>>10)&0x1F))/31.0f,
-		((float)((gfx3d.clearColor>>16)&0x1F))/31.0f,
+		((float)(gfx3d.state.clearColor&0x1F))/31.0f,
+		((float)((gfx3d.state.clearColor>>5)&0x1F))/31.0f,
+		((float)((gfx3d.state.clearColor>>10)&0x1F))/31.0f,
+		((float)((gfx3d.state.clearColor>>16)&0x1F))/31.0f,
 	};
 	glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
-	glClearDepth(gfx3d.clearDepth);
-	glClearStencil((gfx3d.clearColor >> 24) & 0x3F);
+	glClearDepth(gfx3d.state.clearDepth);
+	glClearStencil((gfx3d.state.clearColor >> 24) & 0x3F);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glMatrixMode(GL_PROJECTION);
@@ -854,7 +856,7 @@ static void OGLRender()
 		// int lastProjIndex = -1;
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
-			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
+			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
 			int type = poly->type;
 
 			//a very macro-level state caching approach:

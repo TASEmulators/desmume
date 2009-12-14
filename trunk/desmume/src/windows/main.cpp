@@ -108,12 +108,30 @@ using namespace std;
 
 VideoInfo video;
 
-//#define WX_STUB
+#define WX_STUB
 
 #ifdef WX_STUB
 
-// for compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
+#ifdef _M_X64  
+	#ifdef __WXDEBUG__
+		#pragma comment(lib,"wxmsw28d_core-x64.lib")
+		#pragma comment(lib,"wxbase28d-x64.lib")
+	#else
+		#pragma comment(lib,"wxmsw28_core-x64.lib")
+		#pragma comment(lib,"wxbase28-x64.lib")
+	#endif
+#else
+	#ifdef __WXDEBUG__
+		#pragma comment(lib,"wxmsw28d_core.lib")
+		#pragma comment(lib,"wxbase28d.lib")
+	#else
+		#pragma comment(lib,"wxmsw28_core.lib")
+		#pragma comment(lib,"wxbase28.lib")
+	#endif
+#endif
+#pragma comment(lib,"comctl32.lib")
+#include "../wxdlg/wxdlg3dViewer.h"
 
 class wxDesmumeApp : public wxApp
 {
@@ -130,17 +148,11 @@ public:
 
 IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
 
-class wxTestModeless : public wxFrame
-{
-public:
-	wxTestModeless(const wxChar *title, int x, int y)
-       : wxFrame(NULL, wxID_ANY, title, wxPoint(x, y), wxSize(700, 450))    
-	{}
-};
-
 void wxTest() {
-    wxTestModeless *frame = new wxTestModeless(_T("Controls wxWidgets App"), 50, 50);
-    frame->Show(true);
+	//wxdlg3dViewer *viewer = new wxdlg3dViewer(NULL);
+	//viewer->Show(true);
+    //wxTestModeless *frame = new wxTestModeless(_T("Controls wxWidgets App"), 50, 50);
+    //frame->Show(true);
 }
 
 #endif
@@ -2575,6 +2587,10 @@ int _main()
 
 	MainWindow->Show(SW_NORMAL);
 
+	//DEBUG TEST HACK
+	//driver->VIEW3D_Init();
+	//driver->view3d->Launch();
+	//---------
 	
 	//------DO EVERYTHING
 	run();
@@ -3395,7 +3411,7 @@ void ScreenshotToClipboard()
 	bool twolinever = strlen(nameandver) > 32;
 
 	HFONT hFont = CreateFont(14, 8, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
-		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FIXED_PITCH, "Lucida Console");
+		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FIXED_PITCH, "Lucida Console");
 
 	HDC hScreenDC = GetDC(NULL);
 	HDC hMemDC = CreateCompatibleDC(hScreenDC);
@@ -4594,6 +4610,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			OpenToolWindow(new CMemView());
 			return 0;
+		case IDM_VIEW3D:
+			driver->VIEW3D_Init();
+			driver->view3d->Launch();
+			return 0;
 		case IDM_SOUND_VIEW:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);
 			return 0;
@@ -4988,10 +5008,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_ABOUT:
 			{
-			#ifdef WX_STUB
-				wxTest();
-				return 0;
-			#endif
 				bool tpaused=false;
 				if (execute) 
 				{
