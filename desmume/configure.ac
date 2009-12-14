@@ -189,6 +189,25 @@ if test "x$HAVE_GTKGLEXT" = "xyes"; then
    AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
 fi
 
+dnl - Check for wxWidgets
+
+dnl - if --enable-wxwidget is used, check for it
+AC_ARG_ENABLE([wxwidget],
+               [AC_HELP_STRING([--enable-wxwidget], [add some cross platform windows])],
+               [wxwidget=$enableval],
+               [wxwidget=no])
+if test "x$wxwidget" = "xyes" ; then
+	m4_include(wxwin.m4)
+	AM_PATH_WXCONFIG([2.4.0], wxwin=1)
+	if test "x$wxwin" = "x1"; then
+		CPPFLAGS="$CPPFLAGS $WX_CPPFLAGS"
+		CXXFLAGS="$CXXFLAGS $WX_CXXFLAGS_ONLY"
+		CFLAGS="$CFLAGS $WX_CFLAGS_ONLY"
+		LIBS="$LIBS $WX_LIBS"
+		AC_DEFINE([HAVE_WX])
+	fi
+fi
+
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR=""
 if test "x$HAVE_SDL" = "xyes"; then
