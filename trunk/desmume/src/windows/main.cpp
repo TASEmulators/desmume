@@ -108,10 +108,6 @@ using namespace std;
 
 VideoInfo video;
 
-#define WX_STUB
-
-#ifdef WX_STUB
-
 #include "wx/wxprec.h"
 #ifdef _M_X64  
 	#ifdef __WXDEBUG__
@@ -133,20 +129,20 @@ VideoInfo video;
 #pragma comment(lib,"comctl32.lib")
 #include "../wxdlg/wxdlg3dViewer.h"
 
-class wxDesmumeApp : public wxApp
-{
-public:
-	//call me each frame or something.
-	//sort of an idle routine
-	static void frameUpdate()
-	{
-		if(!wxTheApp) return;
-		wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
-		self->DeletePendingObjects();
-	}
-};
+//class wxDesmumeApp : public wxApp
+//{
+//public:
+//	//call me each frame or something.
+//	//sort of an idle routine
+//	static void frameUpdate()
+//	{
+//		if(!wxTheApp) return;
+//		wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
+//		self->DeletePendingObjects();
+//	}
+//};
 
-IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
+//IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
 
 void wxTest() {
 	//wxdlg3dViewer *viewer = new wxdlg3dViewer(NULL);
@@ -154,8 +150,6 @@ void wxTest() {
     //wxTestModeless *frame = new wxTestModeless(_T("Controls wxWidgets App"), 50, 50);
     //frame->Show(true);
 }
-
-#endif
 
 #ifndef PUBLIC_RELEASE
 #define DEVELOPER_MENU_ITEMS
@@ -2643,36 +2637,36 @@ int _main()
 	return 0;
 }
 
-int WINAPI WinMain (HINSTANCE hThisInstance,
-					HINSTANCE hPrevInstance,
-					LPSTR lpszArgument,
-					int nFunsterStil)
-
-{
-	TIMECAPS tc;
-	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
-	{
-		wmTimerRes = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
-		timeBeginPeriod (wmTimerRes);
-	}
-	else
-	{
-		wmTimerRes = 5;
-		timeBeginPeriod (wmTimerRes);
-	}
-
-	g_thread_init (NULL);
-	hAppInst=hThisInstance;
-	OpenConsole();			// Init debug console
-
-	int ret = _main();
-
-	timeEndPeriod (wmTimerRes);
-
-	CloseConsole();
-
-	return ret;
-}
+//int WINAPI WinMain (HINSTANCE hThisInstance,
+//					HINSTANCE hPrevInstance,
+//					LPSTR lpszArgument,
+//					int nFunsterStil)
+//
+//{
+//	TIMECAPS tc;
+//	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
+//	{
+//		wmTimerRes = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
+//		timeBeginPeriod (wmTimerRes);
+//	}
+//	else
+//	{
+//		wmTimerRes = 5;
+//		timeBeginPeriod (wmTimerRes);
+//	}
+//
+//	g_thread_init (NULL);
+//	hAppInst=hThisInstance;
+//	OpenConsole();			// Init debug console
+//
+//	int ret = _main();
+//
+//	timeEndPeriod (wmTimerRes);
+//
+//	CloseConsole();
+//
+//	return ret;
+//}
 
 void UpdateWndRects(HWND hwnd)
 {

@@ -54,6 +54,9 @@ libdesmume_a_SOURCES = \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
 	version.cpp version.h
 
+if HAVE_WX
+libdesmume_a_SOURCES += wxdlg/wxdlg3dViewer.cpp
+endif
 if HAVE_ALSA
 libdesmume_a_SOURCES += mic_alsa.cpp
 else
