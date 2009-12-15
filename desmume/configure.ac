@@ -208,6 +208,8 @@ if test "x$wxwidget" = "xyes" ; then
 	fi
 fi
 
+AM_CONDITIONAL([HAVE_WX], [test "x$wxwidget" = "xyes"])
+
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR=""
 if test "x$HAVE_SDL" = "xyes"; then

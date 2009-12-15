@@ -25,11 +25,12 @@
 #include "gfx3d.h"
 
 #ifdef _MSC_VER
-#define USE_WX
+#define HAVE_WX
 #endif
 
-#ifdef USE_WX
+#ifdef HAVE_WX
 #include "wx/wxprec.h"
+#include "wx/wx.h"
 #include "wxdlg/wxdlg3dViewer.h"
 
 const int kVewportWidth = 512;
@@ -159,7 +160,7 @@ void BaseDriver::VIEW3D_Shutdown()
 void BaseDriver::VIEW3D_Init()
 {
 	VIEW3D_Shutdown();
-#ifdef USE_WX
+#ifdef HAVE_WX
 	view3d = new VIEW3D_Driver_WX();
 #endif
 }

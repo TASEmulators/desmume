@@ -57,6 +57,25 @@
 #include "gdbstub.h"
 #endif
 
+
+#ifdef HAVE_WX
+#include "wx/wx.h"
+class wxDesmumeApp : public wxApp
+{
+public:
+	//call me each frame or something.
+	//sort of an idle routine
+	static void frameUpdate()
+	{
+		if(!wxTheApp) return;
+		wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
+		self->DeletePendingObjects();
+	}
+};
+
+IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
+#endif
+
 #ifdef HAVE_LIBOSMESA
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -108,6 +127,7 @@ static void LoadStateDialog();
 void Launch();
 void Pause();
 static void Printscreen();
+static void View3d();
 static void Reset();
 static void Edit_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
@@ -276,6 +296,10 @@ static const GtkActionEntry action_entries[] = {
       { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
       { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
+#ifdef HAVE_WX
+	//for some reason the menu item doesnt show up....
+	  { "view3d",      NULL,      "View 3d",        NULL,       NULL,   View3d },
+#endif
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "LayersMenu", NULL, "_Layers" },
       { "CheatMenu", NULL, "_Cheat" },
@@ -953,6 +977,12 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 }
 #endif
 
+static void View3d()
+{
+	driver->VIEW3D_Init();
+	driver->view3d->Launch();
+}
+
 static void Reset()
 {
     NDS_Reset();
@@ -1619,6 +1649,10 @@ gboolean EmuLoop(gpointer data)
         }
     }
 
+	#ifdef HAVE_WX
+	wxDesmumeApp::frameUpdate();
+	#endif
+
     return TRUE;
 }
 
@@ -2078,6 +2112,10 @@ int main (int argc, char *argv[])
   if ( !fill_configured_features( &my_config, argc, argv)) {
     exit(0);
   }
+
+#ifdef HAVE_WX
+	wxInitialize();
+#endif
 
   return common_gtk_main( &my_config);
 }

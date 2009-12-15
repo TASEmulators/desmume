@@ -333,7 +333,7 @@
               <string name="proxy-type">"wbStaticBoxSizerProxy"</string>
               <string name="proxy-Id name">"wxID_ANY"</string>
               <long name="proxy-Id value">-1</long>
-              <string name="proxy-Label">"Display options"</string>
+              <string name="proxy-Label">"Display optionsss"</string>
               <string name="proxy-Member variable name">""</string>
               <string name="proxy-Sizer member variable name">""</string>
               <string name="proxy-Foreground colour">""</string>
