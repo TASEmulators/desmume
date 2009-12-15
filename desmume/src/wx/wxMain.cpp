@@ -16,6 +16,8 @@
 #include "wx/stdpaths.h"
 
 #include "LuaWindow.h"
+#include "PadSimple/GUI/ConfigDlg.h"
+#include "PadSimple/pluginspecs_pad.h"
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -45,13 +47,40 @@ public:
 			this);
 	}
 
-	bool up,down,left,right,x,y,a,b,l,r,start,select;
-
 	void applyInput(){
-		//TODO
-		return;
 
-		u16 pad = (0 |
+		bool up,down,left,right,x,y,a,b,l,r,start,select;
+
+		up = down = left = right = x = y = a = b = l = r = start = select = false;
+
+		SPADStatus s;
+		memset(&s,0,sizeof(s));
+		PAD_GetStatus(0, &s);
+
+		if(s.button & PAD_BUTTON_LEFT)
+			left = true;
+		if(s.button & PAD_BUTTON_RIGHT)
+			right = true;
+		if(s.button & PAD_BUTTON_UP)
+			up = true;
+		if(s.button & PAD_BUTTON_DOWN)
+			down = true;
+		if(s.button & PAD_BUTTON_A)
+			a = true;
+		if(s.button & PAD_BUTTON_B)
+			b = true;
+		if(s.button & PAD_BUTTON_X)
+			x = true;
+		if(s.button & PAD_BUTTON_Y)
+			y = true;
+		if(s.button & PAD_TRIGGER_L)
+			l = true;
+		if(s.button & PAD_TRIGGER_R)
+			r = true;
+		if(s.button & PAD_BUTTON_START)
+			start = true;
+
+		u16 pad1 = (0 |
 			((a ? 0 : 0x80) >> 7) |
 			((b ? 0 : 0x80) >> 6) |
 			((select? 0 : 0x80) >> 5) |
@@ -63,8 +92,8 @@ public:
 			((r ? 0 : 0x80) << 1) |
 			((l ? 0 : 0x80) << 2)) ;
 
-		((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad;
-		((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
+		((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad1;
+		((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad1;
 
 		bool debug = false;
 		bool lidClosed = false;
@@ -77,79 +106,6 @@ public:
 			0x0034;
 
 		((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
-	}
-
-	void OnKeyDown(wxKeyEvent &event){
-
-		switch(event.m_keyCode) {
-case WXK_UP:
-	up = true;
-	break;
-case WXK_DOWN:
-	down = true;
-	break;
-case WXK_LEFT:
-	left = true;
-	break;
-case WXK_RIGHT:
-	right = true;
-	break;
-case WXK_RETURN:
-	start = true;
-	break;
-case WXK_SHIFT:
-	select = true;
-	break;
-case 65://a
-	y = true;
-	break;
-case 83://s
-	x = true;
-	break;
-case 90://z
-	b = true;
-	break;
-case 88://x
-	a = true;
-	break;
-		}
-		// printf("%d",event.m_keyCode);
-	}
-
-	void OnKeyUp(wxKeyEvent &event){
-
-		switch(event.m_keyCode) {
-case WXK_UP:
-	up = false;
-	break;
-case WXK_DOWN:
-	down = false;
-	break;
-case WXK_LEFT:
-	left = false;
-	break;
-case WXK_RIGHT:
-	right = false;
-	break;
-case WXK_RETURN:
-	start = false;
-	break;
-case WXK_SHIFT:
-	select = false;
-	break;
-case 65://a
-	y = false;
-	break;
-case 83://s
-	x = false;
-	break;
-case 90://z
-	b = false;
-	break;
-case 88://x
-	a = false;
-	break;
-		}
 	}
 
 	//TODO integrate paths system?
@@ -313,6 +269,11 @@ case 88://x
 		new wxLuaWindow(this, wxDefaultPosition, wxSize(600, 390));
 	}
 
+	void OnOpenControllerConfiguration(wxCommandEvent& WXUNUSED (event))
+	{
+		new PADConfigDialogSimple(this);
+	}
+
 	wxMenu* MakeStatesSubMenu( int baseid ) const
 	{
 		wxMenu* mnuSubstates = new wxMenu();
@@ -369,7 +330,8 @@ enum
 	wQuickScreenshot,
 	wLuaWindow,
 	wLoadState01,
-	wSaveState01 = wLoadState01+20
+	wSaveState01 = wLoadState01+20,
+	wConfigureControls
 };
 
 void DesmumeFrame::Menu_SaveStates(wxCommandEvent &event){savestate_slot(event.GetId() - wSaveState01 - 1);}
@@ -389,8 +351,6 @@ EVT_MENU(wDisplayInput,DesmumeFrame::displayInput)
 EVT_MENU(wDisplayGraphicalInput,DesmumeFrame::displayGraphicalInput)
 EVT_MENU(wDisplayLagCounter,DesmumeFrame::displayLagCounter)
 EVT_MENU(wDisplayMicrophone,DesmumeFrame::displayMicrophone)
-EVT_KEY_DOWN(DesmumeFrame::OnKeyDown)
-EVT_KEY_UP(DesmumeFrame::OnKeyUp)
 
 EVT_MENU(wMainGPU,DesmumeFrame::mainGPU)
 EVT_MENU(wMainBG0,DesmumeFrame::mainBG0)
@@ -425,6 +385,8 @@ EVT_MENU(w3dView,DesmumeFrame::_3dView)
 
 EVT_MENU(wLuaWindow,DesmumeFrame::OnOpenLuaWindow)
 
+EVT_MENU(wConfigureControls,DesmumeFrame::OnOpenControllerConfiguration)
+
 END_EVENT_TABLE()
 
 IMPLEMENT_APP(Desmume)
@@ -447,9 +409,15 @@ bool Desmume::OnInit()
 	DesmumeFrame *frame = new DesmumeFrame((char*)EMU_DESMUME_NAME_AND_VERSION());
 	frame->Show(true);
 
+	SPADInitialize PADInitialize;
+	PADInitialize.padNumber = 1;
+	extern void Initialize(void *init);
+	Initialize(&PADInitialize);
+
 	//TODO
 	addon_type = NDS_ADDON_NONE;
 	addonsChangePak(addon_type);
+
 	return true;
 }
 
@@ -478,8 +446,9 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 		fileMenu->AppendSubMenu(loads,"Load State");
 #define ConnectMenuRange( id_start, inc, handler ) \
 	Connect( id_start, id_start + inc, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(DesmumeFrame::handler) )
-		ConnectMenuRange(wLoadState01+1, 10, Menu_LoadStates);
-		ConnectMenuRange(wSaveState01+1, 10, Menu_SaveStates);
+		//TODO something is wrong here
+//		ConnectMenuRange(wLoadState01+1, 10, Menu_LoadStates);
+//		ConnectMenuRange(wSaveState01+1, 10, Menu_SaveStates);
 	}
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wImportBackupMemory, "Import Backup Memory...");
@@ -522,6 +491,9 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 		layersMenu->Append(wSubBG2,"Sub BG 2");
 		layersMenu->Append(wSubBG3,"Sub BG 3");
 	}
+
+	configMenu->Append(wConfigureControls,"Controls");
+
 	toolsMenu->AppendSeparator();
 	toolsMenu->AppendSubMenu(layersMenu,"View Layers");
 
