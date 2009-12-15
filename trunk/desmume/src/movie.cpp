@@ -458,6 +458,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 			opened = true;
 //		}
 //		fs.close();
+		delete fp;
 //	}
 	if(!opened)
 	{
@@ -465,6 +466,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 //		fstream fs (fname, std::ios_base::in);
 		loadedfm2 = LoadFM2(currMovieData, fp, INT_MAX, false);
 //		fs.close();
+		delete fp;
 	}
 
 	if(!loadedfm2)
@@ -1093,7 +1095,7 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 	MovieData md = currMovieData;								//Get current movie data
 	EMUFILE* outf = new EMUFILE_FILE(backupFn.c_str(),"wb"); //FCEUD_UTF8_fstream(backupFn, "wb");	//open/create file
 	md.dump(outf,false);										//dump movie data
-//	delete outf;												//clean up, delete file object
+	delete outf;												//clean up, delete file object
 	
 	//TODO, decide if fstream successfully opened the file and print error message if it doesn't
 
