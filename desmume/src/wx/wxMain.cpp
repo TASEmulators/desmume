@@ -313,6 +313,19 @@ case 88://x
 		new wxLuaWindow(this, wxDefaultPosition, wxSize(600, 390));
 	}
 
+	wxMenu* MakeStatesSubMenu( int baseid ) const
+	{
+		wxMenu* mnuSubstates = new wxMenu();
+
+		for (int i = 0; i < 10; i++)
+		{
+			mnuSubstates->Append( baseid+i+1, wxString::Format("Slot %d", i) );
+		}
+		return mnuSubstates;
+	}
+	void Menu_SaveStates(wxCommandEvent &event);
+	void Menu_LoadStates(wxCommandEvent &event);
+
 private:
 	DECLARE_EVENT_TABLE()
 };
@@ -354,8 +367,13 @@ enum
 	wStopMovie,
 	wSaveScreenshotAs,
 	wQuickScreenshot,
-	wLuaWindow
+	wLuaWindow,
+	wLoadState01,
+	wSaveState01 = wLoadState01+20
 };
+
+void DesmumeFrame::Menu_SaveStates(wxCommandEvent &event){savestate_slot(event.GetId() - wSaveState01 - 1);}
+void DesmumeFrame::Menu_LoadStates(wxCommandEvent &event){loadstate_slot(event.GetId() - wLoadState01 - 1);}
 
 BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 EVT_PAINT(DesmumeFrame::onPaint)
@@ -453,6 +471,16 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wSaveStateAs, "Save State As...");
 	fileMenu->Append(wLoadStateFrom, "Load State From...");
+	{
+		wxMenu* saves(DesmumeFrame::MakeStatesSubMenu(wSaveState01));
+		wxMenu* loads(DesmumeFrame::MakeStatesSubMenu(wLoadState01));
+		fileMenu->AppendSubMenu(saves,"Save State");
+		fileMenu->AppendSubMenu(loads,"Load State");
+#define ConnectMenuRange( id_start, inc, handler ) \
+	Connect( id_start, id_start + inc, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(DesmumeFrame::handler) )
+		ConnectMenuRange(wLoadState01+1, 10, Menu_LoadStates);
+		ConnectMenuRange(wSaveState01+1, 10, Menu_SaveStates);
+	}
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wImportBackupMemory, "Import Backup Memory...");
 	fileMenu->Append(wExportBackupMemory, "Export Backup Memory...");
