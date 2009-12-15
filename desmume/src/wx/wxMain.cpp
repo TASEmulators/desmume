@@ -15,6 +15,8 @@
 
 #include "wx/stdpaths.h"
 
+#include "LuaWindow.h"
+
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
 #endif
@@ -306,6 +308,11 @@ case 88://x
 	void recordMovie(wxCommandEvent& event) {}
 	void stopMovie(wxCommandEvent& event) {FCEUI_StopMovie();}
 
+	void OnOpenLuaWindow(wxCommandEvent& WXUNUSED (event))
+	{
+		new wxLuaWindow(this, wxDefaultPosition, wxSize(600, 390));
+	}
+
 private:
 	DECLARE_EVENT_TABLE()
 };
@@ -346,7 +353,8 @@ enum
 	wRecordMovie,
 	wStopMovie,
 	wSaveScreenshotAs,
-	wQuickScreenshot
+	wQuickScreenshot,
+	wLuaWindow
 };
 
 BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
@@ -396,6 +404,8 @@ EVT_MENU(wStopMovie,DesmumeFrame::stopMovie)
 EVT_MENU(wRecordMovie,DesmumeFrame::recordMovie)
 
 EVT_MENU(w3dView,DesmumeFrame::_3dView)
+
+EVT_MENU(wLuaWindow,DesmumeFrame::OnOpenLuaWindow)
 
 END_EVENT_TABLE()
 
@@ -453,6 +463,8 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	fileMenu->Append(wPlayMovie, "Play Movie");
 	fileMenu->Append(wRecordMovie, "Record Movie");
 	fileMenu->Append(wStopMovie, "Stop Movie");
+	fileMenu->AppendSeparator();
+	fileMenu->Append(wLuaWindow, "New Lua Script Window...");
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wExit, "E&xit\tAlt-X", "Quit this program");
 
