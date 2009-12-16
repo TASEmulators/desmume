@@ -346,8 +346,10 @@ class RasterizerUnit
 public:
 
 	int SLI_MASK, SLI_VALUE;
+	bool _debug_thisPoly;
 
 	RasterizerUnit()
+		: _debug_thisPoly(false)
 	{
 	}
 
@@ -739,15 +741,77 @@ public:
 
 	//runs several scanlines, until an edge is finished
 	template<bool SLI>
-	void runscanlines(edge_fx_fl *left, edge_fx_fl *right)
+	void runscanlines(edge_fx_fl *left, edge_fx_fl *right,bool horizontal)
 	{
+		//oh lord, hack city for edge drawing
+
 		//do not overstep either of the edges
 		int Height = min(left->Height,right->Height);
+		bool first=true;
+		static int runctr=0;
+		runctr++;
 		while(Height--) {
-			if(!SLI || (left->Y & SLI_MASK) == SLI_VALUE)
-				drawscanline(left,right);
+			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
+			if(draw) drawscanline(left,right);
+			const int xl = left->X;
+			const int xr = right->X;
+			const int y = left->Y;
 			left->Step(); 
 			right->Step();
+
+			if(!RENDERER && _debug_thisPoly)
+			{
+				//debug drawing
+				bool top = (horizontal&&first);
+				bool bottom = (!Height&&horizontal);
+				if(Height || top || bottom)
+				{
+					if(draw)
+					{
+						int nxl = left->X;
+						int nxr = right->X;
+						if(top) {
+							int xs = min(xl,xr);
+							int xe = max(xl,xr);
+							for(int x=xs;x<=xe;x++) {
+								int adr = (y*engine->width)+x;
+								engine->screenColor[adr].r = 63;
+								engine->screenColor[adr].g = 0;
+								engine->screenColor[adr].b = 0;
+							}
+						} else if(bottom) {
+							int xs = min(xl,xr);
+							int xe = max(xl,xr);
+							for(int x=xs;x<=xe;x++) {
+								int adr = (y*engine->width)+x;
+								engine->screenColor[adr].r = 63;
+								engine->screenColor[adr].g = 0;
+								engine->screenColor[adr].b = 0;
+							}
+						} else
+						{
+							int xs = min(xl,nxl);
+							int xe = max(xl,nxl);
+							for(int x=xs;x<=xe;x++) {
+								int adr = (y*engine->width)+x;
+								engine->screenColor[adr].r = 63;
+								engine->screenColor[adr].g = 0;
+								engine->screenColor[adr].b = 0;
+							}
+							xs = min(xr,nxr);
+							xe = max(xr,nxr);
+							for(int x=xs;x<=xe;x++) {
+								int adr = (y*engine->width)+x;
+								engine->screenColor[adr].r = 63;
+								engine->screenColor[adr].g = 0;
+								engine->screenColor[adr].b = 0;
+							}
+						}
+
+					}
+				}
+				first = false;
+			}
 		}
 	}
 
@@ -789,6 +853,7 @@ public:
 	//This function can handle any convex N-gon up to octagons
 	//verts must be clockwise.
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
+	//Maybe it is like crow's algorithm
 	template<bool SLI>
 	void shape_engine(int type, bool backwards)
 	{
@@ -826,8 +891,9 @@ public:
 			//handle a failure in the edge setup due to nutty polys
 			if(failure) 
 				return;
-			
-			runscanlines<SLI>(&left,&right);
+
+			bool horizontal = left.Y == right.Y;
+			runscanlines<SLI>(&left,&right,horizontal);
 
 			//if we ran out of an edge, step to the next one
 			if(right.Height == 0) {
@@ -862,6 +928,7 @@ public:
 		//iterate over polys
 		for(int i=0;i<engine->clippedPolyCounter;i++)
 		{
+			if(!RENDERER) _debug_thisPoly = (i==engine->_debug_drawClippedUserPoly);
 			if(!engine->polyVisible[i]) continue;
 
 			GFX3D_Clipper::TClippedPoly &clippedPoly = engine->clippedPolys[i];
@@ -1150,6 +1217,7 @@ void SoftRasterizerEngine::updateFloatColors()
 }
 
 SoftRasterizerEngine::SoftRasterizerEngine()
+	: _debug_drawClippedUserPoly(-1)
 {
 	this->clippedPolys = clipper.clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
 }
@@ -1368,6 +1436,9 @@ void SoftRasterizerEngine::setupTextures(const bool skipBackfacing)
 		polyAttr.setup(poly->polyAttr);
 
 		//make sure all the textures we'll need are cached
+		//(otherwise on a multithreaded system there will be multiple writers-- 
+		//this SHOULD be read-only, although some day the texcache may collect statistics or something
+		//and then it won't be safe.
 		if(needInitTexture || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
 		{
 			lastTexKey = TexCache_SetTexture(TexFormat_15bpp,poly->texParam,poly->texPalette);

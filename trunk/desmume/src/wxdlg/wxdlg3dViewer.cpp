@@ -48,7 +48,9 @@ BEGIN_EVENT_TABLE( wxdlg3dViewer, wxDialog )
 ////@begin wxdlg3dViewer event table entries
     EVT_CLOSE( wxdlg3dViewer::OnCloseWindow )
 
-    EVT_CHECKBOX( ID_MATERIALINTERPOLATE, wxdlg3dViewer::OnMaterialInterpolateClick )
+    EVT_CHECKBOX( ID_CheckMaterialInterpolate, wxdlg3dViewer::OnMaterialInterpolateClick )
+
+    EVT_LIST_ITEM_SELECTED( ID_ListPolys, wxdlg3dViewer::OnListPolysSelected )
 
 ////@end wxdlg3dViewer event table entries
 
@@ -113,7 +115,9 @@ void wxdlg3dViewer::Init()
 {
 ////@begin wxdlg3dViewer member initialisation
     checkMaterialInterpolate = NULL;
+    panelTexture = NULL;
     panelViewport = NULL;
+    labelFrameCounter = NULL;
     labelUserPolycount = NULL;
     labelFinalPolycount = NULL;
     listPolys = NULL;
@@ -146,7 +150,7 @@ void wxdlg3dViewer::CreateControls()
     wxStaticBoxSizer* itemStaticBoxSizer4 = new wxStaticBoxSizer(itemStaticBoxSizer4Static, wxVERTICAL);
     itemBoxSizer3->Add(itemStaticBoxSizer4, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
-    checkMaterialInterpolate = new wxCheckBox( itemDialog1, ID_MATERIALINTERPOLATE, _("Material clip interpolation"), wxDefaultPosition, wxDefaultSize, 0 );
+    checkMaterialInterpolate = new wxCheckBox( itemDialog1, ID_CheckMaterialInterpolate, _("Material clip interpolation"), wxDefaultPosition, wxDefaultSize, 0 );
     checkMaterialInterpolate->SetValue(false);
     itemStaticBoxSizer4->Add(checkMaterialInterpolate, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
@@ -159,55 +163,66 @@ void wxdlg3dViewer::CreateControls()
     wxFlexGridSizer* itemFlexGridSizer8 = new wxFlexGridSizer(0, 2, 0, 0);
     itemBoxSizer3->Add(itemFlexGridSizer8, 1, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
-    panelViewport = new wxWindow( itemDialog1, ID_VIEWPORT, wxDefaultPosition, wxSize(256, 192), wxSIMPLE_BORDER );
+    panelTexture = new wxWindow( itemDialog1, ID_PanelTexture, wxDefaultPosition, wxSize(64, 64), wxSIMPLE_BORDER );
+    itemFlexGridSizer8->Add(panelTexture, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5);
+
+    wxStaticText* itemStaticText10 = new wxStaticText( itemDialog1, wxID_STATIC, _("3dviewer is unstable.\ndont use it."), wxDefaultPosition, wxDefaultSize, 0 );
+    itemFlexGridSizer8->Add(itemStaticText10, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5);
+
+    panelViewport = new wxWindow( itemDialog1, ID_PanelViewport, wxDefaultPosition, wxSize(256, 192), wxSIMPLE_BORDER );
     itemFlexGridSizer2->Add(panelViewport, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    wxFlexGridSizer* itemFlexGridSizer10 = new wxFlexGridSizer(3, 1, 0, 0);
-    itemFlexGridSizer10->AddGrowableRow(1);
-    itemFlexGridSizer2->Add(itemFlexGridSizer10, 1, wxALIGN_CENTER_HORIZONTAL|wxGROW|wxALL, 5);
+    wxFlexGridSizer* itemFlexGridSizer12 = new wxFlexGridSizer(3, 1, 0, 0);
+    itemFlexGridSizer12->AddGrowableRow(1);
+    itemFlexGridSizer2->Add(itemFlexGridSizer12, 1, wxALIGN_CENTER_HORIZONTAL|wxGROW|wxALL, 5);
 
-    wxStaticBox* itemStaticBoxSizer11Static = new wxStaticBox(itemDialog1, wxID_ANY, _("Choose One"));
-    wxStaticBoxSizer* itemStaticBoxSizer11 = new wxStaticBoxSizer(itemStaticBoxSizer11Static, wxVERTICAL);
-    itemFlexGridSizer10->Add(itemStaticBoxSizer11, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_BOTTOM|wxALL, 5);
+    wxStaticBox* itemStaticBoxSizer13Static = new wxStaticBox(itemDialog1, wxID_ANY, _("Choose One"));
+    wxStaticBoxSizer* itemStaticBoxSizer13 = new wxStaticBoxSizer(itemStaticBoxSizer13Static, wxVERTICAL);
+    itemFlexGridSizer12->Add(itemStaticBoxSizer13, 0, wxALIGN_CENTER_HORIZONTAL|wxALIGN_BOTTOM|wxALL, 5);
 
-    wxRadioButton* itemRadioButton12 = new wxRadioButton( itemDialog1, ID_RADIOBUTTON, _("Final Polylist"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemRadioButton12->SetValue(true);
-    itemStaticBoxSizer11->Add(itemRadioButton12, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
+    wxRadioButton* itemRadioButton14 = new wxRadioButton( itemDialog1, ID_RADIOBUTTON, _("Final Polylist"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemRadioButton14->SetValue(true);
+    itemStaticBoxSizer13->Add(itemRadioButton14, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
-    wxRadioButton* itemRadioButton13 = new wxRadioButton( itemDialog1, ID_RADIOBUTTON1, _("User Polylist"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemRadioButton13->SetValue(false);
-    itemRadioButton13->Enable(false);
-    itemStaticBoxSizer11->Add(itemRadioButton13, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
+    wxRadioButton* itemRadioButton15 = new wxRadioButton( itemDialog1, ID_RADIOBUTTON1, _("User Polylist"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemRadioButton15->SetValue(false);
+    itemRadioButton15->Enable(false);
+    itemStaticBoxSizer13->Add(itemRadioButton15, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
-    wxRadioButton* itemRadioButton14 = new wxRadioButton( itemDialog1, ID_RADIOBUTTON2, _("Display List"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemRadioButton14->SetValue(false);
-    itemRadioButton14->Enable(false);
-    itemStaticBoxSizer11->Add(itemRadioButton14, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
+    wxRadioButton* itemRadioButton16 = new wxRadioButton( itemDialog1, ID_RADIOBUTTON2, _("Display List"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemRadioButton16->SetValue(false);
+    itemRadioButton16->Enable(false);
+    itemStaticBoxSizer13->Add(itemRadioButton16, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
-    itemFlexGridSizer10->Add(5, 5, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5);
+    itemFlexGridSizer12->Add(5, 5, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    wxStaticBox* itemStaticBoxSizer16Static = new wxStaticBox(itemDialog1, wxID_ANY, _("Statistics"));
-    wxStaticBoxSizer* itemStaticBoxSizer16 = new wxStaticBoxSizer(itemStaticBoxSizer16Static, wxVERTICAL);
-    itemFlexGridSizer10->Add(itemStaticBoxSizer16, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxALL, 5);
+    wxStaticBox* itemStaticBoxSizer18Static = new wxStaticBox(itemDialog1, wxID_ANY, _("Statistics"));
+    wxStaticBoxSizer* itemStaticBoxSizer18 = new wxStaticBoxSizer(itemStaticBoxSizer18Static, wxVERTICAL);
+    itemFlexGridSizer12->Add(itemStaticBoxSizer18, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
-    labelUserPolycount = new wxStaticText( itemDialog1, wxID_STATIC, _("User Polys"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemStaticBoxSizer16->Add(labelUserPolycount, 0, wxALIGN_LEFT|wxALL, 1);
+    labelFrameCounter = new wxStaticText( itemDialog1, wxID_STATIC, _("Frame: 9999999"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemStaticBoxSizer18->Add(labelFrameCounter, 0, wxALIGN_LEFT|wxALL, 1);
+
+    labelUserPolycount = new wxStaticText( itemDialog1, wxID_STATIC, _("User Polys: 999999"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemStaticBoxSizer18->Add(labelUserPolycount, 0, wxALIGN_LEFT|wxALL, 1);
 
     labelFinalPolycount = new wxStaticText( itemDialog1, wxID_STATIC, _("Final Polys: "), wxDefaultPosition, wxDefaultSize, 0 );
-    itemStaticBoxSizer16->Add(labelFinalPolycount, 0, wxALIGN_LEFT|wxALL, 1);
+    itemStaticBoxSizer18->Add(labelFinalPolycount, 0, wxALIGN_LEFT|wxALL, 1);
 
-    wxStaticLine* itemStaticLine19 = new wxStaticLine( itemDialog1, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
-    itemFlexGridSizer2->Add(itemStaticLine19, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW|wxALL, 5);
+    wxStaticLine* itemStaticLine22 = new wxStaticLine( itemDialog1, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+    itemFlexGridSizer2->Add(itemStaticLine22, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW|wxALL, 5);
 
-    listPolys = new wxDesmumeListCtrl( itemDialog1, ID_DESMUMELISTCTRL1, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_VIRTUAL );
+    listPolys = new wxDesmumeListCtrl( itemDialog1, ID_ListPolys, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_VIRTUAL );
     itemFlexGridSizer2->Add(listPolys, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW|wxALL, 5);
 
-    tree = new wxTreeCtrl( itemDialog1, ID_TREECTRL, wxDefaultPosition, wxSize(99, 99), wxTR_HAS_BUTTONS |wxTR_HIDE_ROOT|wxTR_ROW_LINES|wxTR_SINGLE );
+    tree = new wxTreeCtrl( itemDialog1, ID_Tree, wxDefaultPosition, wxSize(99, 99), wxTR_HAS_BUTTONS |wxTR_HIDE_ROOT|wxTR_ROW_LINES|wxTR_SINGLE );
     itemFlexGridSizer2->Add(tree, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW|wxALL, 5);
 
     // Connect events and objects
-    panelViewport->Connect(ID_VIEWPORT, wxEVT_PAINT, wxPaintEventHandler(wxdlg3dViewer::OnPanelPaint), NULL, this);
-    panelViewport->Connect(ID_VIEWPORT, wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(wxdlg3dViewer::OnPanelEraseBackground), NULL, this);
+    panelTexture->Connect(ID_PanelTexture, wxEVT_PAINT, wxPaintEventHandler(wxdlg3dViewer::OnPaintPanelTexture), NULL, this);
+    panelTexture->Connect(ID_PanelTexture, wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(wxdlg3dViewer::OnDoNotEraseBackground), NULL, this);
+    panelViewport->Connect(ID_PanelViewport, wxEVT_PAINT, wxPaintEventHandler(wxdlg3dViewer::OnPanelPaint), NULL, this);
+    panelViewport->Connect(ID_PanelViewport, wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(wxdlg3dViewer::OnDoNotEraseBackground), NULL, this);
 ////@end wxdlg3dViewer content construction
 }
 
@@ -285,7 +300,7 @@ void wxdlg3dViewer::OnPanelPaint( wxPaintEvent& event )
  * wxEVT_ERASE_BACKGROUND event handler for ID_PANEL
  */
 
-void wxdlg3dViewer::OnPanelEraseBackground( wxEraseEvent& event )
+void wxdlg3dViewer::OnDoNotEraseBackground( wxEraseEvent& event )
 {
 	//blank to block background clearing
 }
@@ -374,3 +389,27 @@ void wxDesmumeListCtrl::CreateControls()
 }
 
 
+/*
+ * wxEVT_COMMAND_LIST_ITEM_SELECTED event handler for ID_LISTPOLYS
+ */
+
+void wxdlg3dViewer::OnListPolysSelected( wxListEvent& event )
+{
+////@begin wxEVT_COMMAND_LIST_ITEM_SELECTED event handler for ID_LISTPOLYS in wxdlg3dViewer.
+    // Before editing this code, remove the block markers.
+    event.Skip();
+////@end wxEVT_COMMAND_LIST_ITEM_SELECTED event handler for ID_LISTPOLYS in wxdlg3dViewer. 
+}
+
+
+/*
+ * wxEVT_PAINT event handler for ID_PanelTexture
+ */
+
+void wxdlg3dViewer::OnPaintPanelTexture( wxPaintEvent& event )
+{
+////@begin wxEVT_PAINT event handler for ID_PanelTexture in wxdlg3dViewer.
+    // Before editing this code, remove the block markers.
+    wxPaintDC dc(wxDynamicCast(event.GetEventObject(), wxWindow));
+////@end wxEVT_PAINT event handler for ID_PanelTexture in wxdlg3dViewer. 
+}

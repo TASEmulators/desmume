@@ -57,6 +57,9 @@ class TexCacheItem;
 class SoftRasterizerEngine
 {
 public:
+	//debug:
+	int _debug_drawClippedUserPoly;
+
 	SoftRasterizerEngine();
 	
 	void initFramebuffer(const int width, const int height, const bool clearImage);
