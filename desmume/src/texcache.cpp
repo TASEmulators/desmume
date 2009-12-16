@@ -179,10 +179,6 @@ static void DebugDumpTexture(TexCacheItem* item)
 }
 #endif
 
-//notes on the cache:
-//I am really unhappy with the ref counting. this needs to be automatic.
-//We could do something better than a linear search through cache items, but it may not be worth it.
-//Also we may need to rescan more often (every time a sample loops)
 class TexCache
 {
 public:
@@ -311,7 +307,7 @@ public:
 			if(mspal.size != 0 && memcmp(curr->dump.palette,pal,mspal.size)) goto REJECT;
 
 			//when the texture data doesn't match
-			if(ms.memcmp(&curr->dump.texture[0],sizeof(curr->dump.texture))) goto REJECT;
+			if(ms.memcmp(&curr->dump.texture[0],curr->dump.textureSize)) goto REJECT;
 
 			//if the texture is 4x4 then the index data must match
 			if(textureMode == TEXMODE_4X4)
