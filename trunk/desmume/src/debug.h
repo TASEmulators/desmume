@@ -119,7 +119,7 @@ public:
 #define CFLASHLOG(...) {}
 #endif
 
-#ifdef UNTESTEDOPCODELOG
+#ifdef UNTESTEDOPCODEDEBUG
 #define UNTESTEDOPCODELOG(...) LOGC(6, __VA_ARGS__)
 #else
 #define UNTESTEDOPCODELOG(...) {}
