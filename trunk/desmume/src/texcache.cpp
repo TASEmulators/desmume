@@ -642,7 +642,9 @@ public:
 
 	void evict(u32 target = kMaxCacheSize)
 	{
-		printf("%d %d/%d\n",index.size(),cache_size/1024,target/1024);
+		//debug print
+		//printf("%d %d/%d\n",index.size(),cache_size/1024,target/1024);
+
 		//dont do anything unless we're over the target
 		if(cache_size<target) return;
 
