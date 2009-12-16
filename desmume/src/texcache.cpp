@@ -26,7 +26,7 @@ public:
 	static const int MAXSIZE = 8;
 
 	MemSpan() 
-		: numItems(0)
+		: numItems(0), size(0)
 	{}
 
 	int numItems;
