@@ -23,6 +23,8 @@
 #include "wx/wx.h"
 #endif
 
+std::string executableDirectory;
+
 class Desmume: public wxApp
 {
 public:
@@ -409,6 +411,14 @@ bool Desmume::OnInit()
 	DesmumeFrame *frame = new DesmumeFrame((char*)EMU_DESMUME_NAME_AND_VERSION());
 	frame->Show(true);
 
+	char *p, *a;
+	std::string b = wxStandardPaths::Get().GetExecutablePath();
+	a = const_cast<char*>(b.c_str());
+	p = a + lstrlen(a);
+	while (p >= a && *p != '\\') p--;
+	if (++p >= a) *p = 0;
+
+	executableDirectory = std::string(a);
 	SPADInitialize PADInitialize;
 	PADInitialize.padNumber = 1;
 	extern void Initialize(void *init);
@@ -425,7 +435,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 : wxFrame(NULL, wxID_ANY, title)
 {
 
-	this->SetSize(256,384+46);//why 46?
+	this->SetClientSize(256,384);
 
 	wxMenu *fileMenu = new wxMenu;
 	wxMenu *emulationMenu = new wxMenu;

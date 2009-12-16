@@ -25,7 +25,7 @@
 //#include "LogManager.h"
 #include "pluginspecs_pad.h"
 #include "PadSimple.h"
-//#include "IniFile.h"
+#include "../IniFile.h"
 //#include "StringUtil.h"
 //#include "FileUtil.h"
 //#include "ChunkFile.h"
@@ -822,7 +822,7 @@ void PAD_Rumble(u8 _numPAD, unsigned int _uType, unsigned int _uStrength)
 //******************************************************************************
 // Load and save the configuration
 //******************************************************************************
-
+extern std::string executableDirectory;
 void LoadConfig()
 {
 	// Initialize first pad to standard controls
@@ -916,10 +916,9 @@ void LoadConfig()
 		46, // Mic (m)
 	};
 #endif
-	//TODO
-#if 0
 	IniFile file;
-	file.Load(FULL_CONFIG_DIR "pad.ini");
+
+	file.Load((executableDirectory + std::string("pad.ini")).c_str());
 
 	for(int i = 0; i < 4; i++)
 	{
@@ -953,16 +952,13 @@ void LoadConfig()
 #endif
 		}
 	}
-#endif
 }
 
 
 void SaveConfig()
 {
-	//TODO
-#if 0
 	IniFile file;
-	file.Load(FULL_CONFIG_DIR "pad.ini");
+	file.Load((executableDirectory + std::string("pad.ini")).c_str());
 
 	for(int i = 0; i < 4; i++)
 	{
@@ -989,6 +985,5 @@ void SaveConfig()
 			file.Set(SectionName, controlNames[x], pad[i].keyForControl[x]);
 		}
 	}
-	file.Save(FULL_CONFIG_DIR "pad.ini");
-#endif
+	file.Save((executableDirectory + std::string("pad.ini")).c_str());
 }
