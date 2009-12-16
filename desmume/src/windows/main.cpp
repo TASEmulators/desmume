@@ -2618,8 +2618,8 @@ int _main()
 	MainWindow->Show(SW_NORMAL);
 
 	//DEBUG TEST HACK
-	driver->VIEW3D_Init();
-	driver->view3d->Launch();
+	//driver->VIEW3D_Init();
+	//driver->view3d->Launch();
 	//---------
 	
 	//------DO EVERYTHING
