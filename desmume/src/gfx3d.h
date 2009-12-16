@@ -346,6 +346,7 @@ struct GFX3D_State
 
 struct Viewer3d_State
 {
+	int frameNumber;
 	GFX3D_State state;
 	VERTLIST vertlist;
 	POLYLIST polylist;

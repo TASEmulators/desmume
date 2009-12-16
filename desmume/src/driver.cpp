@@ -23,6 +23,7 @@
 #include "driver.h"
 #include "rasterize.h"
 #include "gfx3d.h"
+#include "texcache.h"
 
 
 #ifdef HAVE_WX
@@ -55,19 +56,28 @@ public:
 	void NewFrame()
 	{
 		listPolys->SetItemCount(viewer3d_state.polylist.count);
+		labelFrameCounter->SetLabel(wxString::Format("%s: %d",_("Frame"),viewer3d_state.frameNumber));
 		labelUserPolycount->SetLabel(wxString::Format("%s: %d",_("User Polys"),viewer3d_state.polylist.count));
 		labelFinalPolycount->SetLabel(wxString::Format("%s: %d",_("Final Polys"),viewer3d_state.polylist.count));
-		tree->DeleteAllItems();
-		wxTreeItemId root = tree->AddRoot("");
-		for(int i=0;i<viewer3d_state.polylist.count;i++)
-		{
-			tree->AppendItem(root,"hai kirin");
-		}
+		//tree->DeleteAllItems();
+		//tree->Freeze();
+		//wxTreeItemId root = tree->AddRoot("");
+		//for(int i=0;i<viewer3d_state.polylist.count;i++)
+		//{
+		//	tree->AppendItem(root,"hai kirin");
+		//}
+		//tree->Thaw();
 	}
 
 	virtual wxString OnGetItemText(const wxListCtrl* list, long item, long column) const
 	{
 		return "hi";
+	}
+
+	virtual void OnListPolysSelected( wxListEvent& event )
+	{
+		panelTexture->Refresh(false);
+		engine._debug_drawClippedUserPoly = GetSelectedListviewItem(listPolys);
 	}
 
 	void RedrawPanel(wxClientDC* dc)
@@ -113,6 +123,48 @@ public:
 	{
 		wxPaintDC dc(wxDynamicCast(event.GetEventObject(), wxWindow));
 		RedrawPanel(&dc);
+	}
+
+	int GetSelectedListviewItem(wxListCtrl* list)
+	{
+		 return list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	}
+
+	virtual void OnPaintPanelTexture( wxPaintEvent& event )
+	{
+		wxPaintDC dc(wxDynamicCast(event.GetEventObject(), wxWindow));
+		dc.SetBackground(*wxBLACK_BRUSH); dc.Clear();
+
+		int selection = GetSelectedListviewItem(listPolys);
+		if(selection < 0) return;
+		if(selection>=viewer3d_state.polylist.count) return;
+
+		POLY& poly = viewer3d_state.polylist.list[selection];
+
+		TexCacheItem* texkey = TexCache_SetTexture(TexFormat_32bpp,poly.texParam,poly.texPalette);
+		const u32 w = texkey->sizeX;
+		const u32 h = texkey->sizeY;
+		u8* const bmpdata = new u8[w*h*4];
+		for(int i=0;i<w*h;i++) {
+				bmpdata[i*3] = texkey->decoded[i*4];
+				bmpdata[i*3+1] = texkey->decoded[i*4+1];
+				bmpdata[i*3+2] = texkey->decoded[i*4+2];
+			}
+		for(int i=0;i<w*h;i++)
+			bmpdata[w*h*3+i] = texkey->decoded[i*4+3];
+
+		
+		wxImage image(w,h,false);
+		image.InitAlpha();
+		image.SetData(bmpdata,true);
+		image.SetAlpha(bmpdata+w*h*3,true);
+		wxBitmap bitmap(image);
+		double xscale = (double)panelTexture->GetSize().x / w;
+		double yscale = (double)panelTexture->GetSize().y / h;
+
+		dc.SetUserScale(xscale,yscale);
+		dc.DrawBitmap(bitmap,0,0);
+		delete[] bmpdata;
 	}
 };
 

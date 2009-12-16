@@ -48,21 +48,22 @@ class wxTreeCtrl;
 
 ////@begin control identifiers
 #define ID_X 10000
-#define ID_MATERIALINTERPOLATE 10004
+#define ID_CheckMaterialInterpolate 10004
 #define ID_CHECKBOX1 10008
-#define ID_VIEWPORT 10002
+#define ID_PanelTexture 10001
+#define ID_PanelViewport 10002
 #define ID_RADIOBUTTON 10005
 #define ID_RADIOBUTTON1 10006
 #define ID_RADIOBUTTON2 10007
-#define ID_DESMUMELISTCTRL1 10009
-#define ID_TREECTRL 10003
+#define ID_ListPolys 10009
+#define ID_Tree 10003
 #define SYMBOL_WXDLG3DVIEWER_STYLE wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxDIALOG_NO_PARENT|wxCLOSE_BOX|wxTAB_TRAVERSAL
 #define SYMBOL_WXDLG3DVIEWER_TITLE _("3D Viewer")
 #define SYMBOL_WXDLG3DVIEWER_IDNAME ID_X
 #define SYMBOL_WXDLG3DVIEWER_SIZE wxSize(399, 300)
 #define SYMBOL_WXDLG3DVIEWER_POSITION wxDefaultPosition
 #define SYMBOL_WXDESMUMELISTCTRL_STYLE wxLC_REPORT|wxLC_VIRTUAL
-#define SYMBOL_WXDESMUMELISTCTRL_IDNAME ID_DESMUMELISTCTRL1
+#define SYMBOL_WXDESMUMELISTCTRL_IDNAME ID_ListPolys
 #define SYMBOL_WXDESMUMELISTCTRL_SIZE wxDefaultSize
 #define SYMBOL_WXDESMUMELISTCTRL_POSITION wxDefaultPosition
 ////@end control identifiers
@@ -103,16 +104,22 @@ public:
 ////@begin wxdlg3dViewer event handler declarations
 
     /// wxEVT_CLOSE_WINDOW event handler for ID_X
-    void OnCloseWindow( wxCloseEvent& event );
+    virtual void OnCloseWindow( wxCloseEvent& event );
 
-    /// wxEVT_COMMAND_CHECKBOX_CLICKED event handler for ID_MATERIALINTERPOLATE
-    void OnMaterialInterpolateClick( wxCommandEvent& event );
+    /// wxEVT_COMMAND_CHECKBOX_CLICKED event handler for ID_CheckMaterialInterpolate
+    virtual void OnMaterialInterpolateClick( wxCommandEvent& event );
 
-    /// wxEVT_PAINT event handler for ID_VIEWPORT
-    void OnPanelPaint( wxPaintEvent& event );
+    /// wxEVT_PAINT event handler for ID_PanelTexture
+    virtual void OnPaintPanelTexture( wxPaintEvent& event );
 
-    /// wxEVT_ERASE_BACKGROUND event handler for ID_VIEWPORT
-    void OnPanelEraseBackground( wxEraseEvent& event );
+    /// wxEVT_ERASE_BACKGROUND event handler for ID_PanelTexture
+    virtual void OnDoNotEraseBackground( wxEraseEvent& event );
+
+    /// wxEVT_PAINT event handler for ID_PanelViewport
+    virtual void OnPanelPaint( wxPaintEvent& event );
+
+    /// wxEVT_COMMAND_LIST_ITEM_SELECTED event handler for ID_ListPolys
+    virtual void OnListPolysSelected( wxListEvent& event );
 
 ////@end wxdlg3dViewer event handler declarations
 
@@ -130,7 +137,9 @@ public:
 
 ////@begin wxdlg3dViewer member variables
     wxCheckBox* checkMaterialInterpolate;
+    wxWindow* panelTexture;
     wxWindow* panelViewport;
+    wxStaticText* labelFrameCounter;
     wxStaticText* labelUserPolycount;
     wxStaticText* labelFinalPolycount;
     wxDesmumeListCtrl* listPolys;

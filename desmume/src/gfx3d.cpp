@@ -44,6 +44,7 @@
 #include "NDSSystem.h"
 #include "readwrite.h"
 #include "FIFO.h"
+#include "movie.h" //only for currframecounter which really ought to be moved into the core emu....
 #include <queue>
 
 /*
@@ -1978,6 +1979,7 @@ static void gfx3d_doFlush()
 
 	if(driver->view3d->IsRunning())
 	{
+		viewer3d_state.frameNumber = currFrameCounter;
 		viewer3d_state.state = gfx3d.state;
 		viewer3d_state.polylist = *gfx3d.polylist;
 		viewer3d_state.vertlist = *gfx3d.vertlist;
