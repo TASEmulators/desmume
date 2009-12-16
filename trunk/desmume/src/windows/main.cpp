@@ -613,6 +613,35 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 
 // END Rotation definitions
 
+//-----window style handling----
+const u32 DWS_NORMAL = 0;
+const u32 DWS_ALWAYSONTOP = 1;
+const u32 DWS_LOCKDOWN = 2;
+
+static u32 currWindowStyle = DWS_NORMAL;
+static void SetStyle(u32 dws)
+{
+	//WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+
+	//pokefan's suggestion, there are a number of ways we could do this.
+	//i sort of like this because it is very visually indicative of being locked down
+	DWORD ws = GetWindowLong(MainWindow->getHWnd(),GWL_STYLE);
+	ws &= ~(WS_CAPTION | WS_POPUP | WS_THICKFRAME | WS_DLGFRAME   );
+	if(dws & DWS_LOCKDOWN)
+		ws |= WS_POPUP | WS_DLGFRAME   ;
+	else ws |= WS_CAPTION | WS_THICKFRAME;
+	SetWindowLong(MainWindow->getHWnd(),GWL_STYLE, ws);
+	
+	currWindowStyle = dws;
+	HWND insertAfter = HWND_NOTOPMOST;
+	if(dws & DWS_ALWAYSONTOP) 
+		insertAfter = HWND_TOPMOST;
+	SetWindowPos(MainWindow->getHWnd(), insertAfter, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+}
+
+static u32 GetStyle() { return currWindowStyle; }
+//---------
+
 void UpdateRecentRomsMenu()
 {
 	//This function will be called to populate the Recent Menu
@@ -2157,9 +2186,10 @@ static void RefreshMicSettings()
 DWORD wmTimerRes;
 int _main()
 {
+	//7zup initialization
 	InitDecoder();
 
-#ifdef WX_STUB
+#ifdef HAVE_WX
 	wxInitialize();
 #endif
 
@@ -2213,6 +2243,10 @@ int _main()
 		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
 		exit(-1);
 	}
+
+	u32 style = DWS_NORMAL;
+	if(GetPrivateProfileBool("Video","Window Always On Top", false, IniName)) style |= DWS_ALWAYSONTOP;
+	if(GetPrivateProfileBool("Video","Window Lockdown", false, IniName)) style |= DWS_LOCKDOWN;
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
@@ -2288,13 +2322,15 @@ int _main()
 
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
 	if (!MainWindow->create((char*)EMU_DESMUME_NAME_AND_VERSION(), WndX, WndY, video.width,video.height+video.screengap,
-		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
 		MessageBox(NULL, "Error creating main window", "DeSmuME", MB_OK);
 		delete MainWindow;
 		exit(-1);
 	}
+
+	SetStyle(style);
 
 	gpu_SetRotateScreen(video.rotation);
 
@@ -2582,8 +2618,8 @@ int _main()
 	MainWindow->Show(SW_NORMAL);
 
 	//DEBUG TEST HACK
-	//driver->VIEW3D_Init();
-	//driver->view3d->Launch();
+	driver->VIEW3D_Init();
+	driver->view3d->Launch();
 	//---------
 	
 	//------DO EVERYTHING
@@ -3550,6 +3586,7 @@ void FilterUpdate (HWND hwnd, bool user)
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
 }
 
+
 void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable)
 {
 	EnableMenuItem(hMenu, uIDEnableItem, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
@@ -3646,6 +3683,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_WINDOW2_5X, ((windowSize==65534)));
 			MainWindow->checkMenu(IDC_WINDOW3X, ((windowSize==3)));
 			MainWindow->checkMenu(IDC_WINDOW4X, ((windowSize==4)));
+			MainWindow->checkMenu(IDM_ALWAYS_ON_TOP, (GetStyle()&DWS_ALWAYSONTOP)!=0);
+			MainWindow->checkMenu(IDM_LOCKDOWN, (GetStyle()&DWS_LOCKDOWN)!=0);
 
 			//Screen Separation
 			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==kGapNone)));
@@ -5090,23 +5129,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ScaleScreen(1);
 			}
 			break;
+		case IDM_LOCKDOWN:
+			{
+				SetStyle(GetStyle()^DWS_LOCKDOWN);
+				WritePrivateProfileBool("Video", "Window Lockdown", (GetStyle()&DWS_LOCKDOWN)!=0, IniName);
+			}
+			return 0;
 		case IDM_ALWAYS_ON_TOP:
 			{
-				LONG exStyle = GetWindowLong(MainWindow->getHWnd(), GWL_EXSTYLE);
-				UINT menuCheck = MF_BYCOMMAND;
-				HWND insertAfter = HWND_TOPMOST;
-
-	
-				if(exStyle & WS_EX_TOPMOST)
-				{
-					menuCheck |= MF_UNCHECKED;
-					insertAfter = HWND_NOTOPMOST;
-				}
-				else
-					menuCheck |= MF_CHECKED;
-				
-				CheckMenuItem(mainMenu, IDM_ALWAYS_ON_TOP, menuCheck);
-				SetWindowPos(MainWindow->getHWnd(), insertAfter, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
+				SetStyle(GetStyle()^DWS_ALWAYSONTOP);
+				WritePrivateProfileBool("Video", "Window Always On Top", (GetStyle()&DWS_ALWAYSONTOP)!=0, IniName);
 			}
 			return 0;
 
