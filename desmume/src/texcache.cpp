@@ -193,7 +193,11 @@ public:
 	TTexCacheItemMultimap index;
 
 	//this ought to be enough for anyone
-	static const u32 kMaxCacheSize = 64*1024*1024; 
+	//static const u32 kMaxCacheSize = 64*1024*1024; 
+	//changed by zeromus on 15-dec. I couldnt find any games that were getting anywhere NEAR 64
+	static const u32 kMaxCacheSize = 16*1024*1024; 
+	//metal slug burns through sprites so fast, it can test it pretty quickly though
+
 	//this is not really precise, it is off by a constant factor
 	u32 cache_size;
 
@@ -307,7 +311,7 @@ public:
 			if(mspal.size != 0 && memcmp(curr->dump.palette,pal,mspal.size)) goto REJECT;
 
 			//when the texture data doesn't match
-			if(ms.memcmp(curr->dump.texture,sizeof(curr->dump.texture))) goto REJECT;
+			if(ms.memcmp(&curr->dump.texture[0],sizeof(curr->dump.texture))) goto REJECT;
 
 			//if the texture is 4x4 then the index data must match
 			if(textureMode == TEXMODE_4X4)
@@ -342,7 +346,6 @@ public:
 		newitem->sizeY=sizeY;
 		newitem->invSizeX=1.0f/((float)(sizeX));
 		newitem->invSizeY=1.0f/((float)(sizeY));
-		newitem->dump.textureSize = ms.dump(newitem->dump.texture,sizeof(newitem->dump.texture));
 		newitem->decode_len = sizeX*sizeY*4;
 		newitem->mode = textureMode;
 		newitem->decoded = new u8[newitem->decode_len];
@@ -356,13 +359,15 @@ public:
 		{
 			memcpy(newitem->dump.palette, pal, palSize*2);
 		}
-		//dump 4x4 index data for cache keying
-		newitem->dump.indexSize = 0;
+
+		//dump texture and 4x4 index data for cache keying
+		const int texsize = newitem->dump.textureSize = ms.size;
+		const int indexsize = newitem->dump.indexSize = msIndex.size;
+		newitem->dump.texture = new u8[texsize+indexsize];
+		ms.dump(&newitem->dump.texture[0],newitem->dump.maxTextureSize); //dump texture
 		if(textureMode == TEXMODE_4X4)
-		{
-			newitem->dump.indexSize = min(msIndex.size,(int)sizeof(newitem->dump.texture) - newitem->dump.textureSize);
-			msIndex.dump(newitem->dump.texture+newitem->dump.textureSize,newitem->dump.indexSize);
-		}
+			msIndex.dump(newitem->dump.texture+newitem->dump.textureSize,newitem->dump.indexSize); //dump 4x4
+
 
 		//============================================================================ 
 		//Texture conversion
@@ -637,6 +642,7 @@ public:
 
 	void evict(u32 target = kMaxCacheSize)
 	{
+		printf("%d %d/%d\n",index.size(),cache_size/1024,target/1024);
 		//dont do anything unless we're over the target
 		if(cache_size<target) return;
 

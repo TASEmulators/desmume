@@ -84,7 +84,7 @@ public:
 
 		engine.updateFogTable();
 	
-		engine.initFramebuffer(kViewportWidth,kViewportHeight,gfx3d.state.enableClearImage);
+		engine.initFramebuffer(kViewportWidth,kViewportHeight,gfx3d.state.enableClearImage?true:false);
 		engine.updateToonTable();
 		engine.updateFloatColors();
 		engine.performClipping(checkMaterialInterpolate->IsChecked());

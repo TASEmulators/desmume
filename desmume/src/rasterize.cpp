@@ -1437,7 +1437,7 @@ static void SoftRastRender()
 	if(gfx3d.state.enableFog && CommonSettings.GFX3D_Fog)
 		mainSoftRasterizer.updateFogTable();
 	
-	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.state.enableClearImage);
+	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.state.enableClearImage?true:false);
 	mainSoftRasterizer.updateToonTable();
 	mainSoftRasterizer.updateFloatColors();
 	mainSoftRasterizer.performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor);

@@ -44,11 +44,14 @@ public:
 
 	TexCache_TexFormat cacheFormat;
 
-	//TODO - this is a little wasteful
-	struct {
-		int					textureSize, indexSize;
-		u8					texture[128*1024]; // 128Kb texture slot
-		u8					palette[256*2];
+	struct Dump {
+		~Dump() {
+			delete[] texture;
+		}
+		int textureSize, indexSize;
+		static const int maxTextureSize=128*1024;
+		u8* texture;
+		u8 palette[256*2];
 	} dump;
 };
 
