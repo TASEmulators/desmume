@@ -1196,7 +1196,7 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL(const u32 i)
 //-----------------------------------------------------------------------------
 
 #define OP_SBC(a, b) \
-	cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] - shift_op - (!cpu->CPSR.bits.C); \
+	cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] - shift_op + cpu->CPSR.bits.C - 1; \
 	if(REG_POS(i,12)==15) \
 	{ \
 		cpu->next_instruction = cpu->R[15]; \
@@ -1207,7 +1207,7 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL(const u32 i)
 //zero 14-feb-2009 - reverting flag logic to fix zoning bug in ff4
 #define OP_SBCS(a, b) \
 	{ \
-	u32 tmp = v - (!cpu->CPSR.bits.C); \
+	u32 tmp = v + cpu->CPSR.bits.C - 1; \
 	cpu->R[REG_POS(i,12)] = tmp - shift_op; \
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -1220,8 +1220,8 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL(const u32 i)
 	} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(v, (u32)(!cpu->CPSR.bits.C), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)])); \
-	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, (u32)(!cpu->CPSR.bits.C), tmp) | SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]); \
+	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]); \
+	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]); \
 	return a; \
 	}
 
@@ -1356,7 +1356,7 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL(const u32 i)
 //-----------------------------------------------------------------------------
 
 #define OP_RSC(a, b) \
-	cpu->R[REG_POS(i,12)] =  shift_op - cpu->R[REG_POS(i,16)] - (!cpu->CPSR.bits.C); \
+	cpu->R[REG_POS(i,12)] =  shift_op - cpu->R[REG_POS(i,16)] + cpu->CPSR.bits.C - 1; \
 	if(REG_POS(i,12)==15) \
 	{ \
 		cpu->next_instruction = cpu->R[15]; \
@@ -1367,7 +1367,7 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL(const u32 i)
 //zero 14-feb-2009 - reverting flag logic to fix zoning bug in ff4
 #define OP_RSCS(a,b) \
 	{ \
-	u32 tmp = shift_op - (!cpu->CPSR.bits.C); \
+	u32 tmp = shift_op + cpu->CPSR.bits.C - 1; \
 	cpu->R[REG_POS(i,12)] = tmp - v; \
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -1380,8 +1380,8 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL(const u32 i)
 		} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(shift_op, (u32)(!cpu->CPSR.bits.C), (u32)tmp)) & (!UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)])); \
-	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(shift_op, (u32)(!cpu->CPSR.bits.C), (u32)tmp) | SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]); \
+	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]); \
+	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]); \
 	return a; \
 	}
 
@@ -3118,7 +3118,7 @@ TEMPLATE static u32 FASTCALL  OP_MSR_SPSR_IMM_VAL(const u32 i)
 TEMPLATE static u32 FASTCALL  OP_BX(const u32 i)
 {
 	u32 tmp = cpu->R[REG_POS(cpu->instruction, 0)];
-	
+
 	cpu->CPSR.bits.T = BIT0(tmp);
 	cpu->R[15] = tmp & 0xFFFFFFFE;
 	cpu->next_instruction = cpu->R[15];
