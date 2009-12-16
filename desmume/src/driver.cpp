@@ -24,20 +24,18 @@
 #include "rasterize.h"
 #include "gfx3d.h"
 
-#ifdef _MSC_VER
-#define HAVE_WX
-#endif
 
 #ifdef HAVE_WX
 #include "wx/wxprec.h"
 #include "wx/wx.h"
 #include "wxdlg/wxdlg3dViewer.h"
 
-const int kVewportWidth = 512;
+const int kViewportWidth = 256;
+const int kViewportHeight = 192;
 
 static SoftRasterizerEngine engine;
-static Fragment _screen[kVewportWidth*384];
-static FragmentColor _screenColor[kVewportWidth*384];
+static Fragment _screen[kViewportWidth*kViewportHeight];
+static FragmentColor _screenColor[kViewportWidth*kViewportHeight];
 
 extern void _HACK_Viewer_ExecUnit(SoftRasterizerEngine* engine);
 
@@ -54,6 +52,24 @@ public:
 		Update();
 	}
 
+	void NewFrame()
+	{
+		listPolys->SetItemCount(viewer3d_state.polylist.count);
+		labelUserPolycount->SetLabel(wxString::Format("%s: %d",_("User Polys"),viewer3d_state.polylist.count));
+		labelFinalPolycount->SetLabel(wxString::Format("%s: %d",_("Final Polys"),viewer3d_state.polylist.count));
+		tree->DeleteAllItems();
+		wxTreeItemId root = tree->AddRoot("");
+		for(int i=0;i<viewer3d_state.polylist.count;i++)
+		{
+			tree->AppendItem(root,"hai kirin");
+		}
+	}
+
+	virtual wxString OnGetItemText(const wxListCtrl* list, long item, long column) const
+	{
+		return "hi";
+	}
+
 	void RedrawPanel(wxClientDC* dc)
 	{
 		//------------
@@ -63,16 +79,16 @@ public:
 		engine.indexlist = &viewer3d_state.indexlist;
 		engine.screen = _screen;
 		engine.screenColor = _screenColor;
-		engine.width = kVewportWidth;
-		engine.height = 384;
+		engine.width = kViewportWidth;
+		engine.height = kViewportHeight;
 
 		engine.updateFogTable();
 	
-		engine.initFramebuffer(kVewportWidth,384,gfx3d.state.enableClearImage);
+		engine.initFramebuffer(kViewportWidth,kViewportHeight,gfx3d.state.enableClearImage);
 		engine.updateToonTable();
 		engine.updateFloatColors();
 		engine.performClipping(checkMaterialInterpolate->IsChecked());
-		engine.performViewportTransforms<true>(kVewportWidth,384);
+		engine.performViewportTransforms<true>(kViewportWidth,kViewportHeight);
 		engine.performBackfaceTests();
 		engine.performCoordAdjustment(false);
 		engine.setupTextures(false);
@@ -81,14 +97,14 @@ public:
 		//------------
 
 		//dc.SetBackground(*wxGREEN_BRUSH); dc.Clear();
-		u8 framebuffer[kVewportWidth*384*3];
-		for(int y=0,i=0;y<384;y++)
-			for(int x=0;x<kVewportWidth;x++,i++) {
+		u8 framebuffer[kViewportWidth*kViewportHeight*3];
+		for(int y=0,i=0;y<kViewportHeight;y++)
+			for(int x=0;x<kViewportWidth;x++,i++) {
 				framebuffer[i*3] = _screenColor[i].r<<2;
 				framebuffer[i*3+1] = _screenColor[i].g<<2;
 				framebuffer[i*3+2] = _screenColor[i].b<<2;
 			}
-		wxImage image(kVewportWidth,384,framebuffer,true);
+		wxImage image(kViewportWidth,kViewportHeight,framebuffer,true);
 		wxBitmap bitmap(image);
 		dc->DrawBitmap(bitmap,0,0);
 	}
@@ -135,6 +151,7 @@ public:
 			return;
 		}
 
+		viewer->NewFrame();
 		viewer->RepaintPanel();
 	}
 

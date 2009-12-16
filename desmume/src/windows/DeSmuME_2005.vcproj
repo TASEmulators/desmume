@@ -1564,10 +1564,6 @@
 				RelativePath="..\wxdlg\wxdlg3dViewer.h"
 				>
 			</File>
-			<File
-				RelativePath="..\wxdlg\wxMain.cpp"
-				>
-			</File>
 		</Filter>
 		<File
 			RelativePath="..\addons.cpp"

@@ -20,6 +20,7 @@ Windows:
  enh: add EPX and EPX1.5X resize filters
  enh: add a japanese translation which will soon be stale like the others
  enh: add fancy printscreen with emulator info on it
+ enh: add "lockdown" window mode to keep window safe from fast stylus action
  
 Linux/OSX:
  bug: fix building for nosse2 systems

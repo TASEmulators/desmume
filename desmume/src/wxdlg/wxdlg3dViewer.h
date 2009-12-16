@@ -25,11 +25,21 @@
 #include "wx/treectrl.h"
 ////@end includes
 
+class IListCtrlCallbacks
+{
+public:
+	virtual wxString OnGetItemText(const wxListCtrl* list, long item, long column) const = 0;
+};
+
+
 /*!
  * Forward declarations
  */
 
 ////@begin forward declarations
+class wxWindow;
+class wxDesmumeListCtrl;
+class wxTreeCtrl;
 ////@end forward declarations
 
 /*!
@@ -40,17 +50,21 @@
 #define ID_X 10000
 #define ID_MATERIALINTERPOLATE 10004
 #define ID_CHECKBOX1 10008
-#define ID_PANEL 10001
+#define ID_VIEWPORT 10002
 #define ID_RADIOBUTTON 10005
 #define ID_RADIOBUTTON1 10006
 #define ID_RADIOBUTTON2 10007
-#define ID_LISTCTRL 10002
+#define ID_DESMUMELISTCTRL1 10009
 #define ID_TREECTRL 10003
 #define SYMBOL_WXDLG3DVIEWER_STYLE wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxDIALOG_NO_PARENT|wxCLOSE_BOX|wxTAB_TRAVERSAL
 #define SYMBOL_WXDLG3DVIEWER_TITLE _("3D Viewer")
 #define SYMBOL_WXDLG3DVIEWER_IDNAME ID_X
-#define SYMBOL_WXDLG3DVIEWER_SIZE wxSize(399, 299)
+#define SYMBOL_WXDLG3DVIEWER_SIZE wxSize(399, 300)
 #define SYMBOL_WXDLG3DVIEWER_POSITION wxDefaultPosition
+#define SYMBOL_WXDESMUMELISTCTRL_STYLE wxLC_REPORT|wxLC_VIRTUAL
+#define SYMBOL_WXDESMUMELISTCTRL_IDNAME ID_DESMUMELISTCTRL1
+#define SYMBOL_WXDESMUMELISTCTRL_SIZE wxDefaultSize
+#define SYMBOL_WXDESMUMELISTCTRL_POSITION wxDefaultPosition
 ////@end control identifiers
 
 
@@ -58,7 +72,7 @@
  * wxdlg3dViewer class declaration
  */
 
-class wxdlg3dViewer: public wxDialog
+class wxdlg3dViewer: public wxDialog, public IListCtrlCallbacks
 {    
     DECLARE_DYNAMIC_CLASS( wxdlg3dViewer )
     DECLARE_EVENT_TABLE()
@@ -80,6 +94,9 @@ public:
     /// Creates the controls and sizers
     void CreateControls();
 
+	virtual wxString OnGetItemText(const wxListCtrl* list, long item, long column) const { 
+		return "";
+	}
 	virtual void RepaintPanel() {}
 	virtual void _OnPaintPanel( wxPaintEvent& event ) {};
 
@@ -91,10 +108,10 @@ public:
     /// wxEVT_COMMAND_CHECKBOX_CLICKED event handler for ID_MATERIALINTERPOLATE
     void OnMaterialInterpolateClick( wxCommandEvent& event );
 
-    /// wxEVT_PAINT event handler for ID_PANEL
+    /// wxEVT_PAINT event handler for ID_VIEWPORT
     void OnPanelPaint( wxPaintEvent& event );
 
-    /// wxEVT_ERASE_BACKGROUND event handler for ID_PANEL
+    /// wxEVT_ERASE_BACKGROUND event handler for ID_VIEWPORT
     void OnPanelEraseBackground( wxEraseEvent& event );
 
 ////@end wxdlg3dViewer event handler declarations
@@ -113,8 +130,56 @@ public:
 
 ////@begin wxdlg3dViewer member variables
     wxCheckBox* checkMaterialInterpolate;
-    wxPanel* panelViewport;
+    wxWindow* panelViewport;
+    wxStaticText* labelUserPolycount;
+    wxStaticText* labelFinalPolycount;
+    wxDesmumeListCtrl* listPolys;
+    wxTreeCtrl* tree;
 ////@end wxdlg3dViewer member variables
+};
+
+/*!
+ * wxDesmumeListCtrl class declaration
+ */
+
+class wxDesmumeListCtrl: public wxListCtrl
+{    
+    DECLARE_DYNAMIC_CLASS( wxDesmumeListCtrl )
+    DECLARE_EVENT_TABLE()
+
+public:
+	IListCtrlCallbacks* callbacks;
+
+	virtual wxString OnGetItemText(long item, long column) const { 
+		return callbacks->OnGetItemText(this,item,column);
+	}
+
+    /// Constructors
+    wxDesmumeListCtrl();
+    wxDesmumeListCtrl(wxWindow* parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxLC_ICON, const wxValidator& validator = wxDefaultValidator);
+
+    /// Creation
+    bool Create(wxWindow* parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxLC_ICON, const wxValidator& validator = wxDefaultValidator);
+
+    /// Destructor
+    ~wxDesmumeListCtrl();
+
+    /// Initialises member variables
+    void Init();
+
+    /// Creates the controls and sizers
+    void CreateControls();
+
+////@begin wxDesmumeListCtrl event handler declarations
+
+////@end wxDesmumeListCtrl event handler declarations
+
+////@begin wxDesmumeListCtrl member function declarations
+
+////@end wxDesmumeListCtrl member function declarations
+
+////@begin wxDesmumeListCtrl member variables
+////@end wxDesmumeListCtrl member variables
 };
 
 #endif

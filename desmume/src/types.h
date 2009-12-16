@@ -33,6 +33,7 @@
 #endif
 
 #ifdef _MSC_VER
+	#define HAVE_WX
 	#define ENABLE_SSE
 	#define ENABLE_SSE2
 	#ifdef DEVELOPER
