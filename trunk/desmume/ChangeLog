@@ -7,6 +7,7 @@ General/Core:
  bug: fix div and sqrt busy flag bug
  bug: fix vectest
  bug: fix lid savestate desync
+ bug: fix texcache memory GB explosion when games use tons of tiny 3d sprites
  enh: support devkitpro argv
  enh: add gbaslot-rom commandline
 
@@ -24,7 +25,9 @@ Windows:
  
 Linux/OSX:
  bug: fix building for nosse2 systems
+ bug: fix --num-cores
  enh: add --nojoy=1 to fix laptops with accelerometers
+ 
  
 0.9.4 -> 0.9.5 (r2437-r3075)
 
