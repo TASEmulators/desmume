@@ -3195,17 +3195,21 @@ DEFINE_LUA_FUNCTION(gui_gdscreenshot, "[whichScreen='both']")
 
 // draws a gd image that's in gdstr format to the screen
 // example: gui.gdoverlay(gd.createFromPng("myimage.png"):gdStr())
-DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
+DEFINE_LUA_FUNCTION(gui_gdoverlay, "[dx=0,dy=0,]gdimage[,sx=0,sy=0,width,height][,alphamul]")
 {
-	int xStart = 0;
-	int yStart = 0;
+	int xStartDst = 0;
+	int yStartDst = 0;
+	int xStartSrc = 0;
+	int yStartSrc = 0;
+	int width, height;
+	int numArgs = lua_gettop(L);
 
 	int index = 1;
 	if(lua_type(L,index) == LUA_TNUMBER)
 	{
-		xStart = lua_tointeger(L,index++);
+		xStartDst = lua_tointeger(L,index++);
 		if(lua_type(L,index) == LUA_TNUMBER)
-			yStart = lua_tointeger(L,index++);
+			yStartDst = lua_tointeger(L,index++);
 	}
 
 	luaL_checktype(L,index,LUA_TSTRING); // have to check for errors before deferring
@@ -3215,18 +3219,13 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 
 	const unsigned char* ptr = (const unsigned char*)lua_tostring(L,index++);
 
-	// GD format header for truecolor image (11 bytes)
-	ptr++;
-	bool trueColor = (*ptr++ == 254);
-	if (!trueColor) {
-		luaL_error(L, "indexed images are not supported");
-		return 0;
+	const bool defSrcRect = ((numArgs - index + 1) < 2);
+	if (!defSrcRect) {
+		xStartSrc = luaL_checkinteger(L, index++);
+		yStartSrc = luaL_checkinteger(L, index++);
+		width = luaL_checkinteger(L, index++);
+		height = luaL_checkinteger(L, index++);
 	}
-	int width = *ptr++ << 8;
-	width |= *ptr++;
-	int height = *ptr++ << 8;
-	height |= *ptr++;
-	ptr += 5;
 
 	LuaContextInfo& info = GetCurrentInfo();
 	int alphaMul = info.transparencyModifier;
@@ -3234,16 +3233,6 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 		alphaMul = (int)(alphaMul * lua_tonumber(L, index++));
 	if(alphaMul <= 0)
 		return 0;
-
-	prepare_drawing();
-	u8* Dst = (u8*)curGuiData.data;
-	gui_adjust_coord(xStart,yStart);
-
-	int xMin = curGuiData.xMin;
-	int yMin = curGuiData.yMin;
-	int xMax = curGuiData.xMax - 1;
-	int yMax = curGuiData.yMax - 1;
-	int strideBytes = curGuiData.stridePix * 4;
 
 	// since there aren't that many possible opacity levels,
 	// do the opacity modification calculations beforehand instead of per pixel
@@ -3259,24 +3248,96 @@ DEFINE_LUA_FUNCTION(gui_gdoverlay, "[x=0,y=0,]gdimage[,alphamul]")
 	for(int i = 128; i < 256; i++)
 		opacMap[i] = 0; // what should we do for them, actually?
 
-	Dst += yStart * strideBytes;
-	for(int y = yStart; y < height+yStart && y < yMax; y++, Dst += strideBytes)
+	// GD format header for truecolor image (11 bytes)
+	ptr++;
+	bool trueColor = (*ptr++ == 254);
+	int gdWidth = *ptr++ << 8;
+	gdWidth |= *ptr++;
+	int gdHeight = *ptr++ << 8;
+	gdHeight |= *ptr++;
+	int bytespp = (trueColor ? 4 : 1);
+	if (defSrcRect) {
+		width = gdWidth;
+		height = gdHeight;
+	}
+
+	if ((!trueColor && *ptr) || (trueColor && !*ptr)) {
+		luaL_error(L, "gdoverlay: inconsistent color type.");
+		return 0;
+	}
+	ptr++;
+	int colorsTotal = 0;
+	if (!trueColor) {
+		colorsTotal = *ptr++ << 8;
+		colorsTotal |= *ptr++;
+	}
+	int transparent = *ptr++ << 24;
+	transparent |= *ptr++ << 16;
+	transparent |= *ptr++ << 8;
+	transparent |= *ptr++;
+	struct { int r, g, b, a; } pal[256];
+	if (!trueColor) for (int i = 0; i < 256; i++) {
+		pal[i].r = *ptr++;
+		pal[i].g = *ptr++;
+		pal[i].b = *ptr++;
+		pal[i].a = opacMap[*ptr++];
+	}
+
+	prepare_drawing();
+	u8* Dst = (u8*)curGuiData.data;
+	gui_adjust_coord(xStartDst,yStartDst);
+
+	int xMin = curGuiData.xMin;
+	int yMin = curGuiData.yMin;
+	int xMax = curGuiData.xMax - 1;
+	int yMax = curGuiData.yMax - 1;
+	int strideBytes = curGuiData.stridePix * 4;
+
+	// limit source rect
+	if (xStartSrc < 0) {
+		width += xStartSrc;
+		xStartDst -= xStartSrc;
+		xStartSrc = 0;
+	}
+	if (yStartSrc < 0) {
+		height += yStartSrc;
+		yStartDst -= yStartSrc;
+		yStartSrc = 0;
+	}
+	if (xStartSrc + width >= gdWidth)
+		width = gdWidth - xStartSrc;
+	if (yStartSrc+height >= gdHeight)
+		height = gdHeight - yStartSrc;
+	if (width <= 0 || height <= 0)
+		return 0;
+	ptr += (yStartSrc * gdWidth + xStartSrc) * bytespp;
+
+	Dst += yStartDst * strideBytes;
+	for(int y = yStartDst; y < height+yStartDst && y < yMax; y++, Dst += strideBytes)
 	{
 		if(y < yMin)
-			ptr += width * 4;
+			ptr += gdWidth * bytespp;
 		else
 		{
-			int xA = (xStart < xMin ? xMin : xStart);
-			int xB = (xStart+width > xMax ? xMax : xStart+width);
-			ptr += (xA - xStart) * 4;
+			int xA = (xStartDst < xMin ? xMin : xStartDst);
+			int xB = (xStartDst+width > xMax ? xMax : xStartDst+width);
+			ptr += (xA - xStartDst) * bytespp;
 			for(int x = xA; x < xB; x++)
 			{
-				int opac = opacMap[ptr[0]];
-				u32 pix = (opac|(ptr[3]<<8)|(ptr[2]<<16)|(ptr[1]<<24));
-				blend32((u32*)(Dst+x*4), pix);
-				ptr += 4;
+				if (trueColor) {
+					int opac = opacMap[ptr[0]];
+					u32 pix = (opac|(ptr[3]<<8)|(ptr[2]<<16)|(ptr[1]<<24));
+					blend32((u32*)(Dst+x*4), pix);
+					ptr += 4;
+				}
+				else {
+					int palNo = ptr[0];
+					u32 pix = (pal[palNo].a|(pal[palNo].b<<8)|(pal[palNo].g<<16)|(pal[palNo].r<<24));
+					blend32((u32*)(Dst+x*4), pix);
+					ptr++;
+				}
 			}
-			ptr += (xStart+width - xB) * 4;
+			ptr += (gdWidth - (xB - xStartDst)) * bytespp;
 		}
 	}
 
