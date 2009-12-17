@@ -351,22 +351,26 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 	MENUBARINFO mbi;
 
-	/* Get the size of the border */
-	xborder = GetSystemMetrics(SM_CXSIZEFRAME);
-	yborder = GetSystemMetrics(SM_CYSIZEFRAME);
-	
 	/* Get the size of the menu bar */
 	ZeroMemory(&mbi, sizeof(mbi));
 	mbi.cbSize = sizeof(mbi);
 	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
 	ymenu = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
 
-	/* Get the size of the caption bar */
-	ycaption = GetSystemMetrics(SM_CYCAPTION);
+	RECT adjr;
+	SetRect(&adjr,0,0,minWidth,minHeight);
+	AdjustWindowRectEx(&adjr,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
 
-	/* Calculate the minimum size in pixels */
-	_minWidth = (xborder + minWidth + xborder);
-	_minHeight = (ycaption + yborder + ymenu + minHeight + yborder);
+	RECT frameInfo; 
+	SetRect(&frameInfo,0,0,0,0);
+	AdjustWindowRectEx(&frameInfo,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
+	int frameWidth = frameInfo.right-frameInfo.left;
+	int frameHeight = frameInfo.bottom-frameInfo.top;
+
+	// Calculate the minimum size in pixels
+	_minWidth = adjr.right-adjr.left;
+	_minHeight = adjr.bottom-adjr.top;
+
 
 	/* Clamp the size to the minimum size (256x384) */
 	rect->right = (rect->left + std::max(_minWidth, (int)(rect->right - rect->left)));
@@ -376,13 +380,13 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	bool verticalDrag = (wParam == WMSZ_TOP) || (wParam == WMSZ_BOTTOM);
 	if(verticalDrag && !(keepRatio & KEEPY))
 	{
-		int clientHeight = rect->bottom - rect->top  - ycaption - yborder - ymenu - yborder;
+		int clientHeight = rect->bottom - rect->top - frameWidth;
 		if(clientHeight < minHeight)
 			rect->bottom += minHeight - clientHeight;
 	}
 	else if(horizontalDrag && !(keepRatio & KEEPX))
 	{
-		int clientWidth = rect->right  - rect->left - xborder  - xborder;
+		int clientWidth = rect->right - rect->left - frameHeight;
 		if(clientWidth < minWidth)
 			rect->right += minWidth - clientWidth;
 	}
@@ -390,10 +394,10 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	{
 		/* Apply the ratio stuff */
 
-		float ratio1 = ((rect->right  - rect->left - xborder  - xborder                  ) / (float)minWidth);
-		float ratio2 = ((rect->bottom - rect->top  - ycaption - yborder - ymenu - yborder) / (float)minHeight);
-		LONG correctedHeight = (LONG)((rect->top  + ycaption + yborder + ymenu + (minHeight * ratio1) + yborder));
-		LONG correctedWidth  = (LONG)((rect->left +            xborder         + (minWidth  * ratio2) + xborder));
+		float ratio1 = ((rect->right  - rect->left - frameWidth ) / (float)minWidth);
+		float ratio2 = ((rect->bottom - rect->top  - frameHeight) / (float)minHeight);
+		LONG correctedHeight = (LONG)((rect->top  + frameHeight + (minHeight * ratio1)));
+		LONG correctedWidth  = (LONG)((rect->left + frameWidth + (minWidth  * ratio2)));
 
 		if(keepRatio & KEEPX)
 		{
@@ -454,10 +458,7 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 void WINCLASS::setClientSize(int width, int height)
 {
 	RECT rect;
-	rect.left = 0; rect.top = 0;
-	rect.bottom = height;
-	rect.right = width;
-
+	SetRect(&rect,0,0,width,height);
 	AdjustWindowRectEx(&rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
 	SetWindowPos(hwnd,0,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER);
 }
