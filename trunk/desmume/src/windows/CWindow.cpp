@@ -22,6 +22,7 @@
 #include "IORegView.h"
 #include "debug.h"
 #include "resource.h"
+#include <windowsx.h>
 
 DWORD GetFontQuality()
 {
@@ -452,43 +453,13 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 void WINCLASS::setClientSize(int width, int height)
 {
-	int xborder, yborder;
-	int ymenu, ymenunew;
-	int ycaption;
+	RECT rect;
+	rect.left = 0; rect.top = 0;
+	rect.bottom = height;
+	rect.right = width;
 
-	MENUBARINFO mbi;
-
-	RECT wndRect;
-	int finalx, finaly;
-
-	/* Get the size of the border */
-	xborder = GetSystemMetrics(SM_CXSIZEFRAME);
-	yborder = GetSystemMetrics(SM_CYSIZEFRAME);
-	
-	/* Get the size of the menu bar */
-	ZeroMemory(&mbi, sizeof(mbi));
-	mbi.cbSize = sizeof(mbi);
-	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
-	ymenu = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
-
-	/* Get the size of the caption bar */
-	ycaption = GetSystemMetrics(SM_CYCAPTION);
-
-	/* Finally, resize the window */
-	GetWindowRect(hwnd, &wndRect);
-	finalx = (xborder + width + xborder);
-	finaly = (ycaption + yborder + ymenu + height + yborder);
-	MoveWindow(hwnd, wndRect.left, wndRect.top, finalx, finaly, TRUE);
-
-	/* Oops, we also need to check if the height */
-	/* of the menu bar has changed after the resize */
-	ZeroMemory(&mbi, sizeof(mbi));
-	mbi.cbSize = sizeof(mbi);
-	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
-	ymenunew = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
-
-	if(ymenunew != ymenu)
-		MoveWindow(hwnd, wndRect.left, wndRect.top, finalx, (finaly + (ymenunew - ymenu)), TRUE);
+	AdjustWindowRectEx(&rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
+	SetWindowPos(hwnd,0,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER);
 }
 
 //========================================================= Thread class
