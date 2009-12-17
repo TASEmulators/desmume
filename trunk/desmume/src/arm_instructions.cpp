@@ -1207,7 +1207,7 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL(const u32 i)
 //zero 14-feb-2009 - reverting flag logic to fix zoning bug in ff4
 #define OP_SBCS(a, b) \
 	{ \
-	u32 tmp = v + cpu->CPSR.bits.C - 1; \
+	u32 tmp = v  + cpu->CPSR.bits.C - 1; \
 	cpu->R[REG_POS(i,12)] = tmp - shift_op; \
 	if(REG_POS(i,12)==15) \
 	{ \
@@ -1220,8 +1220,8 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL(const u32 i)
 	} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]); \
-	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]); \
+	cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(v, (u32)(!cpu->CPSR.bits.C), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)])); \
+	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, (u32)(!cpu->CPSR.bits.C), tmp) | SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]); \
 	return a; \
 	}
 
@@ -1380,8 +1380,8 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL(const u32 i)
 		} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]); \
-	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]); \
+	cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(shift_op, (u32)(!cpu->CPSR.bits.C), (u32)tmp)) & (!UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)])); \
+	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(shift_op, (u32)(!cpu->CPSR.bits.C), (u32)tmp) | SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]); \
 	return a; \
 	}
 
