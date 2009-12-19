@@ -96,7 +96,7 @@ public:
     void CreateControls();
 
 	virtual wxString OnGetItemText(const wxListCtrl* list, long item, long column) const { 
-		return "";
+		return wxT("");
 	}
 	virtual void RepaintPanel() {}
 	virtual void _OnPaintPanel( wxPaintEvent& event ) {};
