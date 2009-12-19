@@ -3992,7 +3992,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		}
 	case WM_KEYUP:
-		if (wParam == VK_SNAPSHOT) { ScreenshotToClipboard(); return 0; }
+		//handle ctr+printscreen: our own custom printscreener
+		if (wParam == VK_SNAPSHOT) { 
+			if(GetKeyState(VK_CONTROL)&0x8000)
+			{
+				ScreenshotToClipboard();
+				return 0;
+			}
+		}
 		input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
