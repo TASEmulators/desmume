@@ -1959,7 +1959,7 @@ void SetLanguage(int langid)
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		break;
 
-	default: break;
+	default:
 		break;
 	}
 
@@ -5123,9 +5123,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_DEFSIZE:
 			{
-				if(windowSize != 1)
-					windowSize = 0;
-
+				windowSize = 1;
 				ScaleScreen(1);
 			}
 			break;

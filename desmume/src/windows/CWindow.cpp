@@ -336,6 +336,24 @@ void WINCLASS::setMinSize(int width, int height)
 	minHeight = height;
 }
 
+void MyAdjustWindowRectEx(RECT* rect, HWND hwnd)
+{
+	AdjustWindowRectEx(rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
+	
+	//get height of one menu to subtract off
+	int cymenu = GetSystemMetrics(SM_CYMENU);
+	
+	//get the height of the actual menu to add back on
+	MENUBARINFO mbi;
+	ZeroMemory(&mbi, sizeof(mbi));
+	mbi.cbSize = sizeof(mbi);
+	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
+	int menuHeight = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
+
+	rect->bottom -= cymenu;
+	rect->bottom += menuHeight;
+}
+
 void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 {
 	RECT *rect = (RECT*)lParam;
@@ -359,11 +377,11 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 	RECT adjr;
 	SetRect(&adjr,0,0,minWidth,minHeight);
-	AdjustWindowRectEx(&adjr,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
+	MyAdjustWindowRectEx(&adjr,hwnd);
 
 	RECT frameInfo; 
 	SetRect(&frameInfo,0,0,0,0);
-	AdjustWindowRectEx(&frameInfo,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
+	MyAdjustWindowRectEx(&frameInfo,hwnd);
 	int frameWidth = frameInfo.right-frameInfo.left;
 	int frameHeight = frameInfo.bottom-frameInfo.top;
 
