@@ -475,10 +475,14 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 void WINCLASS::setClientSize(int width, int height)
 {
-	RECT rect;
-	SetRect(&rect,0,0,width,height);
-	AdjustWindowRectEx(&rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
-	SetWindowPos(hwnd,0,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER);
+	//yep, do it twice, once in case the menu wraps, and once to accomodate that wrap
+	for(int i=0;i<2;i++)
+	{
+		RECT rect;
+		SetRect(&rect,0,0,width,height);
+		MyAdjustWindowRectEx(&rect,hwnd);
+		SetWindowPos(hwnd,0,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER);
+	}
 }
 
 //========================================================= Thread class
