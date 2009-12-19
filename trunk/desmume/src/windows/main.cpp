@@ -2330,6 +2330,10 @@ int _main()
 		exit(-1);
 	}
 
+	//disable wacky stylus stuff
+	GlobalAddAtom("MicrosoftTabletPenServiceProperty");
+	SetProp(MainWindow->getHWnd(),"MicrosoftTabletPenServiceProperty",(HANDLE)1);
+
 	SetStyle(style);
 
 	gpu_SetRotateScreen(video.rotation);
