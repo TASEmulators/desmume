@@ -56,9 +56,9 @@ public:
 	void NewFrame()
 	{
 		listPolys->SetItemCount(viewer3d_state.polylist.count);
-		labelFrameCounter->SetLabel(wxString::Format("%s: %d",_("Frame"),viewer3d_state.frameNumber));
-		labelUserPolycount->SetLabel(wxString::Format("%s: %d",_("User Polys"),viewer3d_state.polylist.count));
-		labelFinalPolycount->SetLabel(wxString::Format("%s: %d",_("Final Polys"),viewer3d_state.polylist.count));
+		labelFrameCounter->SetLabel(wxString::Format(wxT("Frame: %d"),viewer3d_state.frameNumber));
+		labelUserPolycount->SetLabel(wxString::Format(wxT("User Polys: %d"),viewer3d_state.polylist.count));
+		labelFinalPolycount->SetLabel(wxString::Format(wxT("Final Polys: %d"),viewer3d_state.polylist.count));
 		//tree->DeleteAllItems();
 		//tree->Freeze();
 		//wxTreeItemId root = tree->AddRoot("");
@@ -71,7 +71,7 @@ public:
 
 	virtual wxString OnGetItemText(const wxListCtrl* list, long item, long column) const
 	{
-		return "hi";
+		return wxT("hi");
 	}
 
 	virtual void OnListPolysSelected( wxListEvent& event )

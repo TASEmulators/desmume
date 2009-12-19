@@ -71,7 +71,7 @@ wxdlg3dViewer::wxdlg3dViewer( wxWindow* parent, wxWindowID id, const wxString& c
     Init();
     Create(parent, id, caption, pos, size, style);
 	listPolys->callbacks = this;
-	listPolys->InsertColumn(0,"polys");
+	listPolys->InsertColumn(0,wxT("polys"));
 }
 
 
