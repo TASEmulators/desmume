@@ -22,7 +22,7 @@
 #ifndef _COMMON_H__
 #define _COMMON_H__
 
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER)
 #pragma warning(disable: 4995)
 #pragma warning(disable: 4996)
 #endif
@@ -95,6 +95,7 @@ char __forceinline *error()
 
 	return strdup((char*)lpMsgBuf);
 }
+#endif
 
 u8 __forceinline read8(u8 *mem, u32 offset)
 {
@@ -120,6 +121,5 @@ u64 __forceinline read64(u8 *mem, u32 offset)
 {
 	return (*(u64*)(mem + offset));
 }
-#endif
 
 #endif

@@ -34,9 +34,7 @@ typedef struct
 								// 1 - Action Replay
 								// 2 - Codebreakers
 	BOOL	enabled;
-	//u32		code[MAX_XX_CODE][2];
-	u32		hi[MAX_XX_CODE];
-	u32		lo[MAX_XX_CODE];
+	u32		code[MAX_XX_CODE][2];
 	char	description[75];
 	int		num;
 	u8		size;

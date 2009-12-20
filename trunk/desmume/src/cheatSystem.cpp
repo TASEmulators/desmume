@@ -54,8 +54,8 @@ void CHEATS::init(char *path)
 BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 {
 	if (num == MAX_CHEAT_LIST) return FALSE;
-	list[num].hi[0] = address & 0x00FFFFFF;
-	list[num].lo[0] = val;
+	list[num].code[0][0] = address & 0x00FFFFFF;
+	list[num].code[0][1] = val;
 	list[num].num = 1;
 	list[num].type = 0;
 	list[num].size = size;
@@ -68,8 +68,8 @@ BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
 {
 	if (pos > num) return FALSE;
-	list[pos].hi[0] = address & 0x00FFFFFF;
-	list[pos].lo[0] = val;
+	list[pos].code[0][0] = address & 0x00FFFFFF;
+	list[pos].code[0][1] = val;
 	list[pos].num = 1;
 	list[pos].type = 0;
 	list[pos].size = size;
@@ -97,11 +97,11 @@ void CHEATS::ARparser(CHEATS_LIST list)
 	
 	for (int i=0; i < list.num; i++)
 	{
-		type = list.hi[i] >> 28;
-		subtype = (list.hi[i] >> 24) & 0x0F;
+		type = list.code[i][0] >> 28;
+		subtype = (list.code[i][0] >> 24) & 0x0F;
 
-		hi = list.hi[i] & 0x0FFFFFFF;
-		lo = list.lo[i];
+		hi = list.code[i][0] & 0x0FFFFFFF;
+		lo = list.code[i][1];
 
 		if (if_flag > 0) 
 		{
@@ -368,7 +368,15 @@ void CHEATS::ARparser(CHEATS_LIST list)
 
 			case 0xE:
 			{
-				// TODO
+				u8	*tmp_code = (u8*)(list.code[i+1]);
+				u32 addr = hi+offset;
+
+				for (u32 t = 0; t < lo; t++)
+				{
+					u8	tmp = T1ReadByte(tmp_code, t);
+					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], tmp);
+					addr++;
+				}
 				i += (lo / 8);
 			}
 			break;
@@ -389,39 +397,16 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 {
 	int		count = 0;
 	u16		t = 0;
-	char	tmp_buf[sizeof(list->hi)+sizeof(list->lo)];
+	char	tmp_buf[sizeof(list->code)];
 
 	memset(tmp_buf, 0, sizeof(tmp_buf));
 	// remove wrong chars
 	for (unsigned int i=0; i < strlen(code); i++)
 	{
-		switch (code[i])
+		if (strchr(hexValid, code[i]))
 		{
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-			case 'A':
-			case 'a':
-			case 'B':
-			case 'b':
-			case 'C':
-			case 'c':
-			case 'D':
-			case 'd':
-			case 'E':
-			case 'e':
-			case 'F':
-			case 'f':
 				tmp_buf[t] = code[i];
 				t++;
-			break;
 		}
 	}
 
@@ -434,9 +419,9 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 	{
 		char buf[8] = {0};
 		strncpy(buf, tmp_buf+(i*16), 8);
-		sscanf_s(buf, "%x", &list->hi[i]);
+		sscanf_s(buf, "%x", &list->code[i][0]);
 		strncpy(buf, tmp_buf+(i*16) + 8, 8);
-		sscanf_s(buf, "%x", &list->lo[i]);
+		sscanf_s(buf, "%x", &list->code[i][1]);
 	}
 	
 	list->num = count;
@@ -552,7 +537,7 @@ u32	CHEATS::getSize()
 BOOL CHEATS::save()
 {
 	char	*types[] = {"DS", "AR", "CB"};
-	char	buf[(sizeof(list[0].hi)+sizeof(list[0].lo)) * 2 + 200] = { 0 };
+	char	buf[sizeof(list[0].code) * 2 + 200] = { 0 };
 	FILE	*flist = fopen((char *)filename, "w");
 
 	if (flist)
@@ -568,9 +553,9 @@ BOOL CHEATS::save()
 			for (int t = 0; t < list[i].num; t++)
 			{
 				char buf2[10] = { 0 };
-				sprintf(buf2, "%08X", list[i].hi[t]);
+				sprintf(buf2, "%08X", list[i].code[t][0]);
 				strcat(buf, buf2);
-				sprintf(buf2, "%08X", list[i].lo[t]);
+				sprintf(buf2, "%08X", list[i].code[t][1]);
 				strcat(buf, buf2);
 				if (t < (list[i].num - 1))
 					strcat(buf, ",");
@@ -609,10 +594,10 @@ char *CHEATS::clearCode(char *s)
 BOOL CHEATS::load()
 {
 	FILE			*flist = fopen((char *)filename, "r");
-	char			buf[(sizeof(list[0].hi)+sizeof(list[0].lo)) * 2 + 200] = { 0 };
+	char			buf[sizeof(list[0].code) * 2 + 200] = { 0 };
 	u32				last = 0;
 	CHEATS_LIST		tmp_cht = { 0 };
-	char			tmp_code[(sizeof(list[0].hi)+sizeof(list[0].lo)) * 2] = { 0 };
+	char			tmp_code[sizeof(list[0].code) * 2] = { 0 };
 	u32				line = 0;
 
 	if (flist)
@@ -660,20 +645,17 @@ BOOL CHEATS::load()
 			if (descr_pos != 0)
 				strcpy(tmp_cht.description, (buf + descr_pos + 1));
 
-#if 1
-			// TODO: remove later (its old)
 			tmp_cht.num = strlen(tmp_code) / 16;
 			for (int i = 0; i < tmp_cht.num; i++)
 			{
 				char tmp_buf[9] = {0};
 				
 				strncpy(tmp_buf, (char*)(tmp_code + (i*16)), 8);
-				sscanf_s(tmp_buf, "%x", &tmp_cht.hi[i]);
+				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][0]);
 				
 				strncpy(tmp_buf, (char*)(tmp_code + (i*16) + 8), 8);
-				sscanf_s(tmp_buf, "%x", &tmp_cht.lo[i]);
+				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][1]);
 			}
-#endif
 
 			memcpy(&list[last], &tmp_cht, sizeof(tmp_cht));
 			last++;
@@ -724,20 +706,20 @@ void CHEATS::process()
 		switch (list[i].type)
 		{
 			case 0:		// internal list system
-				//INFO("list at 0x02|%06X value %i (size %i)\n",list[i].hi[0], list[i].lo[0], list[i].size);
+				//INFO("list at 0x02|%06X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
 				switch (list[i].size)
 				{
-					case 0: T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], list[i].lo[0]); break;
-					case 1: T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], list[i].lo[0]); break;
+					case 0: T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], list[i].code[0][1]); break;
+					case 1: T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], list[i].code[0][1]); break;
 					case 2:
 						{
-							u32 tmp = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0]);
+							u32 tmp = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0]);
 							tmp &= 0xFF000000;
-							tmp |= (list[i].lo[0] & 0x00FFFFFF);
-							T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], tmp); 
+							tmp |= (list[i].code[0][1] & 0x00FFFFFF);
+							T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], tmp); 
 							break;
 						}
-					case 3: T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], list[i].lo[0]); break;
+					case 3: T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], list[i].code[0][1]); break;
 				}
 			break;
 
@@ -757,7 +739,7 @@ void CHEATS::getXXcodeString(CHEATS_LIST list, char *res_buf)
 
 	for (int i=0; i < list.num; i++)
 	{
-		sprintf(buf, "%08X %08X\n", list.hi[i], list.lo[i]);
+		sprintf(buf, "%08X %08X\n", list.code[i][0], list.code[i][1]);
 		strcat(res_buf, buf);
 	}
 }
