@@ -59,13 +59,13 @@ private:
 	char	*clearCode(char *s);
 
 public:
-	CHEATS::CHEATS():
+	CHEATS():
 				 num(0), currentGet(0), stack(0), numStack(0), disabled(0)
 	{
 		memset(list, 0, sizeof(list)); 
 		memset(filename, 0, sizeof(filename));
 	}
-	CHEATS::~CHEATS() {}
+	~CHEATS() {}
 
 	void	init(char *path);
 	BOOL	add(u8 size, u32 address, u32 val, char *description, BOOL enabled);
