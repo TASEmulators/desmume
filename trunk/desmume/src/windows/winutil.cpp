@@ -53,6 +53,19 @@ void GetINIPath()
 	}
 }
 
+void PreventScreensaver()
+{
+	//a 0,0 mouse motion is indeed sufficient
+	//i have been unable to notice any ill effects
+	INPUT fakeMouse;
+	fakeMouse.type = INPUT_MOUSE;
+	fakeMouse.mi.dx = fakeMouse.mi.dy = 0;
+	fakeMouse.mi.dwFlags = MOUSEEVENTF_MOVE;
+	fakeMouse.mi.time = 0;
+	fakeMouse.mi.dwExtraInfo = 0;
+	SendInput(1,&fakeMouse,sizeof(INPUT));
+}
+
 void WritePrivateProfileBool(char* appname, char* keyname, bool val, char* file)
 {
 	char temp[256] = "";

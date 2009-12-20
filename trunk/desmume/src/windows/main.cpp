@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-//#include <sstream>
 
 #include <Winuser.h>
 #include <Winnls.h>
@@ -83,6 +82,7 @@
 #include "video.h"
 #include "aggdraw.h"
 #include "agg2d.h"
+#include "winutil.h"
 
 //tools and dialogs
 #include "pathsettings.h"
@@ -3013,10 +3013,6 @@ void WavRecordTo(int wavmode)
 	NDS_UnPause();
 }
 
-
-
-
-
 static BOOL OpenCore(const char* filename)
 {
 	char LogicalName[1024], PhysicalName[1024];
@@ -3820,6 +3816,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_SYSKEYDOWN:
 	case WM_CUSTKEYDOWN:
 		{
+			//since the user has used a gamepad,
+			//send some fake input to keep the screensaver from running
+			PreventScreensaver();
+
 			int modifiers = GetModifiers(wParam);
 			wParam = PurgeModifiers(wParam);
 			if(!HandleKeyMessage(wParam,lParam, modifiers))
