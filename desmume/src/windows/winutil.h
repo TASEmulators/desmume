@@ -28,5 +28,6 @@
 extern char IniName[MAX_PATH];
 
 void GetINIPath();
+void PreventScreensaver();
 
 #endif
