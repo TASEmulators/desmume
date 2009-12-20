@@ -34,7 +34,7 @@ extern u8	logo_data[156];
 	#include <winsock2.h>
 	#include <windows.h>
 
-	
+
 
 	#define CLASSNAME "DeSmuME"
 
@@ -56,8 +56,7 @@ extern u8	logo_data[156];
 #endif
 
 extern u8	reverseBitsInByte(u8 x);
-extern void	removeCR(char *buf);
-extern u32	strlen_ws(char *buf);
+extern char *trim(char *s);
 
 #endif
 

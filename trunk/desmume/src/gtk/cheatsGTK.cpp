@@ -87,9 +87,9 @@ enabled_toggled(GtkCellRendererToggle * cell,
     path1 = gtk_tree_model_get_path (model, &iter);
     ii = gtk_tree_path_get_indices (path)[0];
 
-    cheatsGet(&cheat, ii);
+    cheats->get(&cheat, ii);
 
-    cheatsUpdate(cheat.size, cheat.hi[0], cheat.lo[0], cheat.description,
+    cheats->update(cheat.size, cheat.hi[0], cheat.lo[0], cheat.description,
                  enabled, ii);
 
     gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_ENABLED, enabled, -1);
@@ -118,7 +118,7 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
         path1 = gtk_tree_model_get_path (model, &iter);
         ii = gtk_tree_path_get_indices (path)[0];
 
-        cheatsGet(&cheat, ii);
+        cheats->get(&cheat, ii);
 
         gtk_tree_path_free (path1);
 
@@ -127,22 +127,22 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
             u32 v = atoi(new_text);
             switch (column) {
             case COLUMN_SIZE:
-                cheatsUpdate(v-1, cheat.hi[0], cheat.lo[0],
+                cheats->update(v-1, cheat.hi[0], cheat.lo[0],
                              cheat.description, cheat.enabled, ii);
                 break;
             case COLUMN_HI:
-                cheatsUpdate(cheat.size, v, cheat.lo[0], cheat.description,
+                cheats->update(cheat.size, v, cheat.lo[0], cheat.description,
                              cheat.enabled, ii);
                 break;
             case COLUMN_LO:
-                cheatsUpdate(cheat.size, cheat.hi[0], v, cheat.description,
+                cheats->update(cheat.size, cheat.hi[0], v, cheat.description,
                              cheat.enabled, ii);
                 break;
             }
             gtk_list_store_set(GTK_LIST_STORE(model), &iter, column,
                                atoi(new_text), -1);
         } else if (column == COLUMN_DESC){
-            cheatsUpdate(cheat.size, cheat.hi[0], cheat.lo[0],
+            cheats->update(cheat.size, cheat.hi[0], cheat.lo[0],
                          g_strdup(new_text), cheat.enabled, ii);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter, column,
                                g_strdup(new_text), -1);
@@ -166,7 +166,7 @@ static void cheat_list_remove_cheat(GtkWidget * widget, gpointer data)
         ii = gtk_tree_path_get_indices (path)[0];
 
         gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
-        cheatsRemove(ii);
+        cheats->remove(ii);
 
         gtk_tree_path_free (path);
     }
@@ -177,7 +177,7 @@ static void cheat_list_add_cheat(GtkWidget * widget, gpointer data)
 #define NEW_DESC "New cheat"
     GtkListStore *store = (GtkListStore *) data;
     GtkTreeIter iter;
-    cheatsAdd(1, 0, 0, g_strdup(NEW_DESC), FALSE);
+    cheats->add(1, 0, 0, g_strdup(NEW_DESC), FALSE);
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
                        COLUMN_ENABLED, FALSE,
@@ -271,7 +271,7 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
 
 static void cheatListEnd()
 {
-    cheatsSave();
+    cheats->save();
     if(shouldBeRunning)
         Launch();
 }
@@ -282,10 +282,10 @@ static GtkListStore *cheat_list_populate()
             G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_STRING);
 
     CHEATS_LIST cheat;
-    u32 chsize = cheatsGetSize();
+    u32 chsize = cheats->getSize();
     for(u32 ii = 0; ii < chsize; ii++){
         GtkTreeIter iter;
-        cheatsGet(&cheat, ii);
+        cheats->get(&cheat, ii);
         gtk_list_store_append(store, &iter);
         gtk_list_store_set(store, &iter,
                 COLUMN_ENABLED, cheat.enabled,

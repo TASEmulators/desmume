@@ -51,22 +51,13 @@ u8 reverseBitsInByte(u8 x)
 	return h;
 }
 
-void removeCR(char *buf)
+char *trim(char *s)
 {
-	int l=strlen(buf);
-	for (int i=0; i < l; i++)
-	{
-		if (buf[i]==0x0A) buf[i]=0;
-		if (buf[i]==0x0D) buf[i]=0;
-	}
-}
-
-u32 strlen_ws(char *buf)		// length without last spaces
-{
-	if (!strlen(buf)) return 0;
-	for (int i=strlen(buf); i>0; i--)
-	{
-		if (buf[i]!=32) return (i-1);		// space
-	}
-	return 0;
+	char *ptr = NULL;
+	if (!s) return NULL;
+	if (!*s) return s;
+	
+	for (ptr = s + strlen(s) - 1; (ptr >= s) && isspace(*ptr); ptr--);
+	ptr[1] = '\0';
+	return s;
 }

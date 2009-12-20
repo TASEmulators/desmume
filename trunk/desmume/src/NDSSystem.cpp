@@ -127,6 +127,9 @@ int NDS_Init( void) {
 	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
 	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
 
+	cheats = new CHEATS();
+	cheatSearch = new CHEATSEARCH();
+
 	return 0;
 }
 
@@ -140,7 +143,11 @@ void NDS_DeInit(void) {
 	gpu3D->NDS_3D_Close();
 
 	WIFI_DeInit();
-	cheatsSearchClose();
+	if (cheats)
+		delete cheats;
+	if (cheatSearch)
+		delete cheatSearch;
+
 }
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
@@ -376,7 +383,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	}
 #endif
 
-	cheatsSearchClose();
+	if (cheatSearch)
+		cheatSearch->close();
 	FCEUI_StopMovie();
 
 	MMU_unsetRom();
@@ -396,7 +404,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	path.getpathnoext(path.CHEATS, buf);
 	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
-	cheatsInit(buf);
+	cheats->init(buf);
 
 	gameInfo.populate();
 	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
@@ -495,7 +503,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 #endif
 
 
-	cheatsSearchClose();
+	if (cheatSearch)
+		cheatSearch->close();
 	MMU_unsetRom();
 	NDS_SetROM(data, mask);
 	NDS_Reset();
@@ -1813,7 +1822,8 @@ void NDS_exec(s32 nb)
 		lagframecounter = 0;
 	}
 	currFrameCounter++;
-	cheatsProcess();
+	if (cheats)
+		cheats->process();
 }
 
 void execHardware_interrupts()
@@ -2004,7 +2014,7 @@ void NDS_Reset()
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
 	}
-	
+
 	nds.wifiCycle = 0;
 	memset(nds.timerCycle, 0, sizeof(u64) * 2 * 4);
 	nds.VCount = 0;

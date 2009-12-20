@@ -28,63 +28,57 @@
 #include "MMU.h"
 #include "debug.h"
 
-static	CHEATS_LIST			cheats[MAX_CHEAT_LIST];
-static	u16					cheatsNum = 0;
-static	u8					cheatFilename[MAX_PATH];
-static	u32					cheatsCurrentGet = 0;
+CHEATS *cheats = NULL;
+CHEATSEARCH *cheatSearch = NULL;
 
-static	u8					*cheatsStack = NULL;
-static	u16					cheatsNumStack = 0;
-static	bool				cheatsDisabled = false;
-
-static void cheatsClear()
+void CHEATS::clear()
 {
-	memset(cheats, 0, sizeof(cheats));
+	memset(list, 0, sizeof(list));
 	for (int i = 0; i < MAX_CHEAT_LIST; i++)
-		cheats[i].type = 0xFF;
-	cheatsNum = 0;
-	cheatsCurrentGet = 0;
+		list[i].type = 0xFF;
+	num = 0;
+	currentGet = 0;
 }
 
-void cheatsInit(char *path)
+void CHEATS::init(char *path)
 {
-	cheatsClear();
-	strcpy((char *)cheatFilename, path);
+	clear();
+	strcpy((char *)filename, path);
 
-	if (cheatsStack) delete [] cheatsStack;
-	cheatsStack = NULL;
+	if (stack) delete [] stack;
+	stack = NULL;
 
-	cheatsLoad();
+	load();
 }
 
-BOOL cheatsAdd(u8 size, u32 address, u32 val, char *description, BOOL enabled)
+BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 {
-	if (cheatsNum == MAX_CHEAT_LIST) return FALSE;
-	cheats[cheatsNum].hi[0] = address & 0x00FFFFFF;
-	cheats[cheatsNum].lo[0] = val;
-	cheats[cheatsNum].num = 1;
-	cheats[cheatsNum].type = 0;
-	cheats[cheatsNum].size = size;
-	strcpy(cheats[cheatsNum].description, description);
-	cheats[cheatsNum].enabled = enabled;
-	cheatsNum++;
+	if (num == MAX_CHEAT_LIST) return FALSE;
+	list[num].hi[0] = address & 0x00FFFFFF;
+	list[num].lo[0] = val;
+	list[num].num = 1;
+	list[num].type = 0;
+	list[num].size = size;
+	strcpy(list[num].description, description);
+	list[num].enabled = enabled;
+	num++;
 	return TRUE;
 }
 
-BOOL cheatsUpdate(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
+BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
 {
-	if (pos > cheatsNum) return FALSE;
-	cheats[pos].hi[0] = address & 0x00FFFFFF;
-	cheats[pos].lo[0] = val;
-	cheats[pos].num = 1;
-	cheats[pos].type = 0;
-	cheats[pos].size = size;
-	strcpy(cheats[pos].description, description);
-	cheats[pos].enabled = enabled;
+	if (pos > num) return FALSE;
+	list[pos].hi[0] = address & 0x00FFFFFF;
+	list[pos].lo[0] = val;
+	list[pos].num = 1;
+	list[pos].type = 0;
+	list[pos].size = size;
+	strcpy(list[pos].description, description);
+	list[pos].enabled = enabled;
 	return TRUE;
 }
 
-static void cheats_ARparser(CHEATS_LIST cheat)
+void CHEATS::ARparser(CHEATS_LIST list)
 {
 	u8	type = 0;
 	u8	subtype = 0;
@@ -101,13 +95,13 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 	s32 loopbackline = 0;
 	u32 loop_flag = 0;
 	
-	for (int i=0; i < cheat.num; i++)
+	for (int i=0; i < list.num; i++)
 	{
-		type = cheat.hi[i] >> 28;
-		subtype = (cheat.hi[i] >> 24) & 0x0F;
+		type = list.hi[i] >> 28;
+		subtype = (list.hi[i] >> 24) & 0x0F;
 
-		hi = cheat.hi[i] & 0x0FFFFFFF;
-		lo = cheat.lo[i];
+		hi = list.hi[i] & 0x0FFFFFFF;
+		lo = list.lo[i];
 
 		if (if_flag > 0) 
 		{
@@ -373,11 +367,10 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 			break;
 
 			case 0xE:
-				for (u32 t = 0; t < lo; t++)
-				{
-					u8 tmp = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][(hi+t)>>20], (hi+t) & MMU.MMU_MASK[ARMCPU_ARM9][(hi+t)>>20]);
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][(offset+t)>>20], (offset+t) & MMU.MMU_MASK[ARMCPU_ARM9][(offset+t)>>20], tmp);
-				}
+			{
+				// TODO
+				i += (lo / 8);
+			}
 			break;
 
 			case 0xF:
@@ -392,11 +385,11 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 	}
 }
 
-static BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
+BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 {
 	int		count = 0;
 	u16		t = 0;
-	char	tmp_buf[sizeof(cheat->hi)+sizeof(cheat->lo)];
+	char	tmp_buf[sizeof(list->hi)+sizeof(list->lo)];
 
 	memset(tmp_buf, 0, sizeof(tmp_buf));
 	// remove wrong chars
@@ -441,304 +434,315 @@ static BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
 	{
 		char buf[8] = {0};
 		strncpy(buf, tmp_buf+(i*16), 8);
-		sscanf_s(buf, "%x", &cheat->hi[i]);
+		sscanf_s(buf, "%x", &list->hi[i]);
 		strncpy(buf, tmp_buf+(i*16) + 8, 8);
-		sscanf_s(buf, "%x", &cheat->lo[i]);
+		sscanf_s(buf, "%x", &list->lo[i]);
 	}
 	
-	cheat->num = count;
-	cheat->size = 0;
+	list->num = count;
+	list->size = 0;
 	return TRUE;
 }
 
-BOOL cheatsAdd_AR(char *code, char *description, BOOL enabled)
+BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 {
-	if (cheatsNum == MAX_CHEAT_LIST) return FALSE;
+	if (num == MAX_CHEAT_LIST) return FALSE;
 
-	if (!cheatsXXcodePreparser(&cheats[cheatsNum], code)) return FALSE;
+	if (!XXcodePreParser(&list[num], code)) return FALSE;
 	
-	cheats[cheatsNum].type = 1;
+	list[num].type = 1;
 	
-	strcpy(cheats[cheatsNum].description, description);
-	cheats[cheatsNum].enabled = enabled;
-	cheatsNum++;
+	strcpy(list[num].description, description);
+	list[num].enabled = enabled;
+	num++;
 	return TRUE;
 }
 
-BOOL cheatsUpdate_AR(char *code, char *description, BOOL enabled, u32 pos)
+BOOL CHEATS::update_AR(char *code, char *description, BOOL enabled, u32 pos)
 {
-	if (pos > cheatsNum) return FALSE;
+	if (pos > num) return FALSE;
 
 	if (code != NULL)
 	{
-		if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
-		strcpy(cheats[pos].description, description);
-		cheats[pos].type = 1;
+		if (!XXcodePreParser(&list[pos], code)) return FALSE;
+		strcpy(list[pos].description, description);
+		list[pos].type = 1;
 	}
 	
-	cheats[pos].enabled = enabled;
+	list[pos].enabled = enabled;
 	return TRUE;
 }
 
-BOOL cheatsAdd_CB(char *code, char *description, BOOL enabled)
+BOOL CHEATS::add_CB(char *code, char *description, BOOL enabled)
 {
-	if (cheatsNum == MAX_CHEAT_LIST) return FALSE;
+	if (num == MAX_CHEAT_LIST) return FALSE;
 
-	if (!cheatsXXcodePreparser(&cheats[cheatsNum], code)) return FALSE;
+	if (!XXcodePreParser(&list[num], code)) return FALSE;
 	
-	cheats[cheatsNum].type = 2;
+	list[num].type = 2;
 	
-	strcpy(cheats[cheatsNum].description, description);
-	cheats[cheatsNum].enabled = enabled;
-	cheatsNum++;
+	strcpy(list[num].description, description);
+	list[num].enabled = enabled;
+	num++;
 	return TRUE;
 }
 
-BOOL cheatsUpdate_CB(char *code, char *description, BOOL enabled, u32 pos)
+BOOL CHEATS::update_CB(char *code, char *description, BOOL enabled, u32 pos)
 {
-	if (pos > cheatsNum) return FALSE;
+	if (pos > num) return FALSE;
 
 	if (code != NULL)
 	{
-		if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
-		cheats[pos].type = 2;
-		strcpy(cheats[pos].description, description);
+		if (!XXcodePreParser(&list[pos], code)) return FALSE;
+		list[pos].type = 2;
+		strcpy(list[pos].description, description);
 	}
-	cheats[pos].enabled = enabled;
+	list[pos].enabled = enabled;
 	return TRUE;
 }
 
-BOOL cheatsRemove(u32 pos)
+BOOL CHEATS::remove(u32 pos)
 {
-	if (pos > cheatsNum) return FALSE;
-	if (cheatsNum == 0) return FALSE;
+	if (pos > num) return FALSE;
+	if (num == 0) return FALSE;
 
-	for (int i = pos; i < cheatsNum; i++)
-		memcpy(&cheats[i], &cheats[i+1], sizeof(CHEATS_LIST));
+	for (int i = pos; i < num; i++)
+		memcpy(&list[i], &list[i+1], sizeof(CHEATS_LIST));
 
-	memset(&cheats[cheatsNum], 0, sizeof(CHEATS_LIST));
+	memset(&list[num], 0, sizeof(CHEATS_LIST));
 
-	cheatsNum--;
+	num--;
 	return TRUE;
 }
 
-void cheatsGetListReset()
+void CHEATS::getListReset()
 {
-	cheatsCurrentGet = 0;
+	currentGet = 0;
 	return;
 }
 
-BOOL cheatsGetList(CHEATS_LIST *cheat)
+BOOL CHEATS::getList(CHEATS_LIST *cheat)
 {
-	if (cheatsCurrentGet > cheatsNum) 
+	if (currentGet > num) 
 	{
-		cheatsCurrentGet = 0;
+		currentGet = 0;
 		return FALSE;
 	}
-	memcpy(cheat, &cheats[cheatsCurrentGet++], sizeof(CHEATS_LIST));
-	if (cheatsCurrentGet > cheatsNum) 
+	memcpy(cheat, &list[currentGet++], sizeof(CHEATS_LIST));
+	if (currentGet > num) 
 	{
-		cheatsCurrentGet = 0;
+		currentGet = 0;
 		return FALSE;
 	}
 	return TRUE;
 }
 
-BOOL cheatsGet(CHEATS_LIST *cheat, u32 pos)
+BOOL CHEATS::get(CHEATS_LIST *cheat, u32 pos)
 {
-	if (pos > cheatsNum) return FALSE;
-	memcpy(cheat, &cheats[pos], sizeof(CHEATS_LIST));
+	if (pos > num) return FALSE;
+	memcpy(cheat, &list[pos], sizeof(CHEATS_LIST));
 	return TRUE;
 }
 
-u32	cheatsGetSize()
+u32	CHEATS::getSize()
 {
-	return cheatsNum;
+	return num;
 }
 
-BOOL cheatsSave()
+BOOL CHEATS::save()
 {
-	FILE	*fcheat = fopen((char *)cheatFilename, "w");
+	char	*types[] = {"DS", "AR", "CB"};
+	char	buf[(sizeof(list[0].hi)+sizeof(list[0].lo)) * 2 + 200] = { 0 };
+	FILE	*flist = fopen((char *)filename, "w");
 
-	if (fcheat)
+	if (flist)
 	{
-		fprintf(fcheat, "; DeSmuME cheat file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		fprintf(fcheat, "Name=%s\n", gameInfo.ROMserial);
-		fputs("; cheats list\n", fcheat);
-		for (int i = 0;  i < cheatsNum; i++)
+		fprintf(flist, "; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
+		fprintf(flist, "Name=%s\n", gameInfo.ROMserial);
+		fputs("; lists list\n", flist);
+		for (int i = 0;  i < num; i++)
 		{
-			fprintf(fcheat, "Desc=%s\n", cheats[i].description);
-			fprintf(fcheat, "Info=%i,%i,%i,%i\n", cheats[i].type, cheats[i].num, cheats[i].enabled, cheats[i].size);
-
-			if (cheats[i].num > 0)
+			if (list[i].num == 0) continue;
+			memset(buf, 0, sizeof(buf));
+			sprintf(buf, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
+			for (int t = 0; t < list[i].num; t++)
 			{
-				fprintf(fcheat, "Data=");
-				for (int t = 0; t < cheats[i].num; t++)
-				{
-					fprintf(fcheat, "%08X%08X", cheats[i].hi[t], cheats[i].lo[t]);
-					if (t < (cheats[i].num - 1)) fputs(",", fcheat);
-				}
-				fputs("\n", fcheat);
+				char buf2[10] = { 0 };
+				sprintf(buf2, "%08X", list[i].hi[t]);
+				strcat(buf, buf2);
+				sprintf(buf2, "%08X", list[i].lo[t]);
+				strcat(buf, buf2);
+				if (t < (list[i].num - 1))
+					strcat(buf, ",");
 			}
-			fputs("\n", fcheat);
+			strcat(buf, " ;");
+			strcat(buf, trim(list[i].description));
+			fprintf(flist, "%s\n", buf);
 		}
-
-		fclose(fcheat);
+		fputs("\n", flist);
+		fclose(flist);
 		return TRUE;
 	}
 
 	return FALSE;
 }
 
-BOOL cheatsLoad()
+char *CHEATS::clearCode(char *s)
 {
-	FILE	*fcheat = fopen((char *)cheatFilename, "r");
-	char	buf[1024];
-	int		last=0;
-	if (fcheat)
+	char	*buf = s;
+	if (!s) return NULL;
+	if (!*s) return s;
+
+	for (int i = 0; i < strlen(s); i++)
 	{
-		cheatsClear();
-		memset(buf, 0, 1024);
-
-		while (!feof(fcheat))
+		if (s[i] == ';') break;
+		if (strchr(hexValid, s[i]))
 		{
-			fgets(buf, 1024, fcheat);
-			if (buf[0] == ';') continue;
-			removeCR((char *)&buf);
-			if (!strlen_ws(buf)) continue;
-			if ( (buf[0] == 'D') &&
-					(buf[1] == 'e') &&
-					(buf[2] == 's') &&
-					(buf[3] == 'c') &&
-					(buf[4] == '=') )		// new cheat block
-			{
-				strncpy((char *)cheats[last].description, (char *)buf+5, strlen(buf)-5);
-				fgets(buf, 1024, fcheat);
-				if ( (buf[0] == 'I') &&
-						(buf[1] == 'n') &&
-						(buf[2] == 'f') &&
-						(buf[3] == 'o') &&
-						(buf[4] == '=') )		// Info cheat
-				{
-					u32		dstart = 5;
-					u32		dsize = 0;
-					char	bf[4] = { 0 };
+			*buf = s[i];
+			buf++;
+		}
+	}
+	*buf = 0;
+	return s;
+}
 
-					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
-					if (buf[dstart+dsize]==0) continue;			// error
-					strncpy(bf, (char*)buf+dstart, dsize);
-					cheats[last].type=atoi(bf);
-					dstart += (dsize+1); dsize=0;
-					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
-					if (buf[dstart+dsize]==0) continue;			// error
-					strncpy(bf, (char*)buf+dstart, dsize);
-					dstart += (dsize+1); dsize=0;
-					cheats[last].num=atoi(bf);
-					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
-					if (buf[dstart+dsize]==0) continue;			// error
-					strncpy(bf, (char*)(buf+dstart), dsize);
-					dstart += (dsize+1); dsize=0;
-					cheats[last].enabled=atoi(bf);
-					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
-					strncpy(bf, (char*)buf+dstart, dsize);
-					cheats[last].size=atoi(bf);
-					fgets(buf, 1024, fcheat);
-					if ( (buf[0] == 'D') &&
-							(buf[1] == 'a') &&
-							(buf[2] == 't') &&
-							(buf[3] == 'a') &&
-							(buf[4] == '=') )		// Data cheat
-					{
-						int		offs = 5;
-						char	tmp_buf[9];
-						memset(tmp_buf, 0, 9);
+BOOL CHEATS::load()
+{
+	FILE			*flist = fopen((char *)filename, "r");
+	char			buf[(sizeof(list[0].hi)+sizeof(list[0].lo)) * 2 + 200] = { 0 };
+	u32				last = 0;
+	CHEATS_LIST		tmp_cht = { 0 };
+	char			tmp_code[(sizeof(list[0].hi)+sizeof(list[0].lo)) * 2] = { 0 };
+	u32				line = 0;
 
-						for (int j=0; j<cheats[last].num; j++)
-						{
-							strncpy(tmp_buf, (char *)buf+offs, 8);
-							sscanf_s(tmp_buf, "%x", &cheats[last].hi[j]);
-							offs+=8;
-							strncpy(tmp_buf, (char *)buf+offs, 8);
-							sscanf_s(tmp_buf, "%x", &cheats[last].lo[j]);
-							offs+=8;
-							if (buf[offs] != ',') continue; //error
-							offs++;		// skip comma
-						}
-					}
+	if (flist)
+	{
+		INFO("Load lists: %s\n", filename);
+		clear();
+		last = 0; line = 0;
+		while (!feof(flist))
+		{
+			line++;				// only for debug
+			memset(buf, 0, sizeof(buf));
+			fgets(buf, sizeof(buf), flist);
+			strcpy(buf, trim(buf));
+			if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
+
+			memset(&tmp_cht, 0, sizeof(tmp_cht));
+			if ((buf[0] == 'D') && (buf[1] == 'S'))		// internal
+				tmp_cht.type = 0;
+			else
+				if ((buf[0] == 'A') && (buf[1] == 'R'))	// Action Replay
+					tmp_cht.type = 1;
+				else
+					if ((buf[0] == 'B') && (buf[1] == 'S'))	// Codebreaker
+						tmp_cht.type = 2;
 					else
-						continue;				// error
-				}
-				else 
-					continue;				// error
+						continue;
+			// TODO: CB not supported
+			if (tmp_cht.type == 3)
+			{
+				INFO("Cheats: Codebreaker code no supported at line %i\n", line);
+				continue;
+			}
+			
+			memset(tmp_code, 0, sizeof(tmp_code));
+			strcpy(tmp_code, (char*)(buf+5));
+			strcpy(tmp_code, clearCode(tmp_code));
+			if ((strlen(tmp_code) == 0) || (strlen(tmp_code) % 16 !=0))
+			{
+				INFO("Cheats: Syntax error at line %i\n", line);
+				continue;
+			}
 
-				last++;
-			} //		else parser error
+			tmp_cht.enabled = (buf[3] == '0')?false:true;
+			u32 descr_pos = (u32)(std::max<s32>(strchr((char*)buf, ';') - buf, 0));
+			if (descr_pos != 0)
+				strcpy(tmp_cht.description, (buf + descr_pos + 1));
+
+#if 1
+			// TODO: remove later (its old)
+			tmp_cht.num = strlen(tmp_code) / 16;
+			for (int i = 0; i < tmp_cht.num; i++)
+			{
+				char tmp_buf[9] = {0};
+				
+				strncpy(tmp_buf, (char*)(tmp_code + (i*16)), 8);
+				sscanf_s(tmp_buf, "%x", &tmp_cht.hi[i]);
+				
+				strncpy(tmp_buf, (char*)(tmp_code + (i*16) + 8), 8);
+				sscanf_s(tmp_buf, "%x", &tmp_cht.lo[i]);
+			}
+#endif
+
+			memcpy(&list[last], &tmp_cht, sizeof(tmp_cht));
+			last++;
 		}
-		fclose(fcheat);
 
-		//INFO("Loaded %i cheats\n", last);
-		cheatsNum = last;
+		fclose(flist);
+		num = last;
+		INFO("Added %i list codes\n", num);
 		return TRUE;
 	}
 	return FALSE;
 }
 
-BOOL cheatsPush()
+BOOL CHEATS::push()
 {
-	if (cheatsStack) return FALSE;
-	cheatsStack = new u8 [sizeof(cheats)];
-	memcpy(cheatsStack, cheats, sizeof(cheats));
-	cheatsNumStack = cheatsNum;
+	if (stack) return FALSE;
+	stack = new u8 [sizeof(list)];
+	memcpy(stack, list, sizeof(list));
+	numStack = num;
 	return TRUE;
 }
 
-BOOL cheatsPop()
+BOOL CHEATS::pop()
 {
-	if (!cheatsStack) return FALSE;
-	memcpy(cheats, cheatsStack, sizeof(cheats));
-	cheatsNum = cheatsNumStack;
-	delete [] cheatsStack;
-	cheatsStack = NULL;
+	if (!stack) return FALSE;
+	memcpy(list, stack, sizeof(list));
+	num = numStack;
+	delete [] stack;
+	stack = NULL;
 	return TRUE;
 }
 
-void cheatsStackClear()
+void CHEATS::stackClear()
 {
-	if (!cheatsStack) return;
-	delete [] cheatsStack;
-	cheatsStack = NULL;
+	if (!stack) return;
+	delete [] stack;
+	stack = NULL;
 }
 
-void cheatsProcess()
+void CHEATS::process()
 {
-	if (cheatsDisabled) return;
-	if (!cheatsNum) return;
-	for (int i = 0; i < cheatsNum; i++)
+	if (disabled) return;
+	if (!num) return;
+	for (int i = 0; i < num; i++)
 	{
-		if (!cheats[i].enabled) continue;
+		if (!list[i].enabled) continue;
 
-		switch (cheats[i].type)
+		switch (list[i].type)
 		{
-			case 0:		// internal cheat system
-				//INFO("cheat at 0x02|%06X value %i (size %i)\n",cheats[i].hi[0], cheats[i].lo[0], cheats[i].size);
-				switch (cheats[i].size)
+			case 0:		// internal list system
+				//INFO("list at 0x02|%06X value %i (size %i)\n",list[i].hi[0], list[i].lo[0], list[i].size);
+				switch (list[i].size)
 				{
-					case 0: T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
-					case 1: T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
+					case 0: T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], list[i].lo[0]); break;
+					case 1: T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], list[i].lo[0]); break;
 					case 2:
 						{
-							u32 tmp = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0]);
+							u32 tmp = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0]);
 							tmp &= 0xFF000000;
-							tmp |= (cheats[i].lo[0] & 0x00FFFFFF);
-							T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], tmp); 
+							tmp |= (list[i].lo[0] & 0x00FFFFFF);
+							T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], tmp); 
 							break;
 						}
-					case 3: T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
+					case 3: T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].hi[0], list[i].lo[0]); break;
 				}
 			break;
 
 			case 1:		// Action Replay
-				cheats_ARparser(cheats[i]);
+				ARparser(list[i]);
 				break;
 			case 2:		// Codebreaker
 				break;
@@ -747,88 +751,87 @@ void cheatsProcess()
 	}
 }
 
-void cheatGetXXcodeString(CHEATS_LIST cheat, char *res_buf)
+void CHEATS::getXXcodeString(CHEATS_LIST list, char *res_buf)
 {
 	char	buf[50] = { 0 };
 
-	for (int i=0; i < cheat.num; i++)
+	for (int i=0; i < list.num; i++)
 	{
-		sprintf(buf, "%08X %08X\n", cheat.hi[i], cheat.lo[i]);
+		sprintf(buf, "%08X %08X\n", list.hi[i], list.lo[i]);
 		strcat(res_buf, buf);
 	}
 }
 
-void cheatsDisable(bool disable)
+void CHEATS::disable(bool disable)
 {
-	cheatsDisabled = disable;
+	disabled = disable;
 }
 
 // ========================================== search
-u8					*searchStatMem = NULL;
-u8					*searchMem = NULL;
-u32					searchNumber = 0;
-u32					searchLastRecord = 0;
-
-u32					searchType = 0;
-u32					searchSize = 0;
-u32					searchSign = 0;
-
-void cheatsSearchInit(u8 type, u8 size, u8 sign)
+BOOL CHEATSEARCH::start(u8 type, u8 size, u8 sign)
 {
-	if (searchStatMem) return;
-	if (searchMem) return;
+	if (statMem) return FALSE;
+	if (mem) return FALSE;
 
-	searchStatMem = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
+	statMem = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
 	
-	memset(searchStatMem, 0xFF, ( 4 * 1024 * 1024 ) / 8);
+	memset(statMem, 0xFF, ( 4 * 1024 * 1024 ) / 8);
 
 	if (type == 1) // comparative search type (need 8Mb RAM !!! (4+4))
 	{
-		searchMem = new u8 [ ( 4 * 1024 * 1024 ) ];
-		memcpy(searchMem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
+		mem = new u8 [ ( 4 * 1024 * 1024 ) ];
+		memcpy(mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 	}
 
-	searchType = type;
-	searchSize = size;
-	searchSign = sign;
-	searchNumber = 0;
-	searchLastRecord = 0;
+	_type = type;
+	_size = size;
+	_sign = sign;
+	amount = 0;
+	lastRecord = 0;
 	
 	//INFO("Cheat search system is inited (type %s)\n", type?"comparative":"exact");
+	return TRUE;
 }
 
-void cheatsSearchClose()
+BOOL CHEATSEARCH::close()
 {
-	if (searchStatMem) delete [] searchStatMem;
-	searchStatMem = NULL;
+	if (statMem)
+	{
+		delete [] statMem;
+		statMem = NULL;
+	}
 
-	if (searchMem) delete [] searchMem;
-	searchMem = NULL;
-	searchNumber = 0;
-	searchLastRecord = 0;
+	if (mem)
+	{
+		delete [] mem;
+		mem = NULL;
+	}
+	amount = 0;
+	lastRecord = 0;
 	//INFO("Cheat search system is closed\n");
+	return FALSE;
 }
 
-u32 cheatsSearchValue(u32 val)
+u32 CHEATSEARCH::search(u32 val)
 {
-	searchNumber = 0;
+	amount = 0;
 
-	switch (searchSize)
+	switch (_size)
 	{
 		case 0:		// 1 byte
 			for (u32 i = 0; i < (4 * 1024 * 1024); i++)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (1<<offs))
+				if (statMem[addr] & (1<<offs))
 				{
 					if ( T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						searchStatMem[addr] |= (1<<offs);
-						searchNumber++;
+						statMem[addr] |= (1<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(1<<offs);
+					statMem[addr] &= ~(1<<offs);
 				}
 			}
 		break;
@@ -838,15 +841,15 @@ u32 cheatsSearchValue(u32 val)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (3<<offs))
+				if (statMem[addr] & (3<<offs))
 				{
 					if ( T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						searchStatMem[addr] |= (3<<offs);
-						searchNumber++;
+						statMem[addr] |= (3<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(3<<offs);
+					statMem[addr] &= ~(3<<offs);
 				}
 			}
 		break;
@@ -856,15 +859,15 @@ u32 cheatsSearchValue(u32 val)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (0x7<<offs))
+				if (statMem[addr] & (0x7<<offs))
 				{
 					if ( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == val )
 					{
-						searchStatMem[addr] |= (0x7<<offs);
-						searchNumber++;
+						statMem[addr] |= (0x7<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(0x7<<offs);
+					statMem[addr] &= ~(0x7<<offs);
 				}
 			}
 		break;
@@ -874,53 +877,53 @@ u32 cheatsSearchValue(u32 val)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (0xF<<offs))
+				if (statMem[addr] & (0xF<<offs))
 				{
 					if ( T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						searchStatMem[addr] |= (0xF<<offs);
-						searchNumber++;
+						statMem[addr] |= (0xF<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(0xF<<offs);
+					statMem[addr] &= ~(0xF<<offs);
 				}
 			}
 		break;
 	}
 
-	return (searchNumber);
+	return (amount);
 }
 
-u32 cheatsSearchComp(u8 comp)
+u32 CHEATSEARCH::search(u8 comp)
 {
 	BOOL	res = FALSE;
 
-	searchNumber = 0;
+	amount = 0;
 	
-	switch (searchSize)
+	switch (_size)
 	{
 		case 0:		// 1 byte
 			for (u32 i = 0; i < (4 * 1024 * 1024); i++)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (1<<offs))
+				if (statMem[addr] & (1<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadByte(searchMem, i)); break;
-						case 1: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadByte(searchMem, i)); break;
-						case 2: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadByte(searchMem, i)); break;
-						case 3: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadByte(searchMem, i)); break;
+						case 0: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadByte(mem, i)); break;
+						case 1: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadByte(mem, i)); break;
+						case 2: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadByte(mem, i)); break;
+						case 3: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadByte(mem, i)); break;
 						default: res = FALSE; break;
 					}
 					if ( res )
 					{
-						searchStatMem[addr] |= (1<<offs);
-						searchNumber++;
+						statMem[addr] |= (1<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(1<<offs);
+					statMem[addr] &= ~(1<<offs);
 				}
 			}
 		break;
@@ -930,23 +933,23 @@ u32 cheatsSearchComp(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (3<<offs))
+				if (statMem[addr] & (3<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadWord(searchMem, i)); break;
-						case 1: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadWord(searchMem, i)); break;
-						case 2: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadWord(searchMem, i)); break;
-						case 3: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadWord(searchMem, i)); break;
+						case 0: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadWord(mem, i)); break;
+						case 1: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadWord(mem, i)); break;
+						case 2: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadWord(mem, i)); break;
+						case 3: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadWord(mem, i)); break;
 						default: res = FALSE; break;
 					}
 					if ( res )
 					{
-						searchStatMem[addr] |= (3<<offs);
-						searchNumber++;
+						statMem[addr] |= (3<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(3<<offs);
+					statMem[addr] &= ~(3<<offs);
 				}
 			}
 		break;
@@ -956,23 +959,23 @@ u32 cheatsSearchComp(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (7<<offs))
+				if (statMem[addr] & (7<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) > (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
-						case 1: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) < (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
-						case 2: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
-						case 3: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) != (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
+						case 0: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) > (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
+						case 1: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) < (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
+						case 2: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
+						case 3: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) != (T1ReadLong(mem, i) & 0x00FFFFFF) ); break;
 						default: res = FALSE; break;
 					}
 					if ( res )
 					{
-						searchStatMem[addr] |= (7<<offs);
-						searchNumber++;
+						statMem[addr] |= (7<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(7<<offs);
+					statMem[addr] &= ~(7<<offs);
 				}
 			}
 		break;
@@ -982,59 +985,59 @@ u32 cheatsSearchComp(u8 comp)
 			{
 				u32	addr = (i >> 3);
 				u32	offs = (i % 8);
-				if (searchStatMem[addr] & (0xF<<offs))
+				if (statMem[addr] & (0xF<<offs))
 				{
 					switch (comp)
 					{
-						case 0: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadLong(searchMem, i)); break;
-						case 1: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadLong(searchMem, i)); break;
-						case 2: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadLong(searchMem, i)); break;
-						case 3: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadLong(searchMem, i)); break;
+						case 0: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadLong(mem, i)); break;
+						case 1: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadLong(mem, i)); break;
+						case 2: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadLong(mem, i)); break;
+						case 3: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadLong(mem, i)); break;
 						default: res = FALSE; break;
 					}
 					if ( res )
 					{
-						searchStatMem[addr] |= (0xF<<offs);
-						searchNumber++;
+						statMem[addr] |= (0xF<<offs);
+						amount++;
 						continue;
 					}
-					searchStatMem[addr] &= ~(0xF<<offs);
+					statMem[addr] &= ~(0xF<<offs);
 				}
 			}
 		break;
 	}
 
-	memcpy(searchMem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
+	memcpy(mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 
-	return (searchNumber);
+	return (amount);
 }
 
-u32 cheatSearchNumber()
+u32 CHEATSEARCH::getAmount()
 {
-	return (searchNumber);
+	return (amount);
 }
 
-BOOL cheatSearchGetList(u32 *address, u32 *curVal)
+BOOL CHEATSEARCH::getList(u32 *address, u32 *curVal)
 {
-	u8	step = (searchSize+1);
+	u8	step = (_size+1);
 	u8	stepMem = 1;
-	switch (searchSize)
+	switch (_size)
 	{
 		case 1: stepMem = 0x3; break;
 		case 2: stepMem = 0x7; break;
 		case 3: stepMem = 0xF; break;
 	}
 
-	for (u32 i = searchLastRecord; i < (4 * 1024 * 1024); i+=step)
+	for (u32 i = lastRecord; i < (4 * 1024 * 1024); i+=step)
 	{
 		u32	addr = (i >> 3);
 		u32	offs = (i % 8);
-		if (searchStatMem[addr] & (stepMem<<offs))
+		if (statMem[addr] & (stepMem<<offs))
 		{
 			*address = i;
-			searchLastRecord = i+step;
+			lastRecord = i+step;
 			
-			switch (searchSize)
+			switch (_size)
 			{
 				case 0: *curVal=(u32)T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
 				case 1: *curVal=(u32)T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
@@ -1044,11 +1047,11 @@ BOOL cheatSearchGetList(u32 *address, u32 *curVal)
 			}
 		}
 	}
-	searchLastRecord = 0;
+	lastRecord = 0;
 	return FALSE;
 }
 
-void cheatSearchGetListReset()
+void CHEATSEARCH::getListReset()
 {
-	searchLastRecord = 0;
+	lastRecord = 0;
 }

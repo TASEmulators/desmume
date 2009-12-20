@@ -246,9 +246,9 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					u32 tmp_addr = 0;
 					sscanf_s(editBuf[0], "%x", &tmp_addr);
 					
-					if (cheatsAdd(searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
+					if (cheats->add(searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
 					{
-						if ((searchAddMode == 0) || (cheatsSave() && (searchAddMode == 1 || searchAddMode == 2)))
+						if ((searchAddMode == 0) || (cheats->save() && (searchAddMode == 1 || searchAddMode == 2)))
 						{
 							oldEditProc = saveOldEditProc;
 							searchAddAddress = tmp_addr;
@@ -388,7 +388,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
 				oldEditProc = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG_PTR)EditValueProc);
 
-				cheatsGet(&tempCheat, cheatEditPos);
+				cheats->get(&tempCheat, cheatEditPos);
 				
 				memset(buf, 0, 100);
 				memset(buf2, 0, 100);
@@ -413,7 +413,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 			{
 				case IDOK:
 				{
-					if (cheatsUpdate(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos))
+					if (cheats->update(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos))
 					{
 						oldEditProc = saveOldEditProc;
 						EndDialog(dialog, TRUE);
@@ -559,10 +559,10 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 
 			if (cheatXXaction != 0)
 			{
-				char buf[sizeof(tempCheat.hi)+sizeof(tempCheat.lo)] = { 0 };
+				char buf[(sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2] = { 0 };
 				memset(buf, 0, sizeof(buf));
 
-				cheatGetXXcodeString(tempCheat, buf);
+				cheats->getXXcodeString(tempCheat, buf);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), tempCheat.description);
 
@@ -571,7 +571,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			}
 			CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);	
 
-			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, sizeof(tempCheat.hi)+sizeof(tempCheat.lo), 0);
+			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, (sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2, 0);
 			SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, sizeof(tempCheat.description), 0);
 		}
 		return TRUE;
@@ -582,7 +582,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			{
 				case IDOK:
 				{
-					char buf[sizeof(tempCheat.hi)+sizeof(tempCheat.lo)] = { 0 };
+					char buf[(sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2] = { 0 };
 
 					memset(buf, 0, sizeof(buf));
 					GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
@@ -591,7 +591,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 					{
 						if (cheatXXaction == 0)		// add
 						{
-							if (!cheatsAdd_AR(buf, tempCheat.description, tempCheat.enabled))
+							if (!cheats->add_AR(buf, tempCheat.description, tempCheat.enabled))
 							{
 								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", "DeSmuME",
 											MB_OK | MB_ICONERROR);
@@ -600,7 +600,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 						}
 						else						// edit
 						{
-							if (!cheatsUpdate_AR(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
+							if (!cheats->update_AR(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
 							{
 								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", "DeSmuME",
 											MB_OK | MB_ICONERROR);
@@ -612,7 +612,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 					{
 						if (cheatXXaction == 0)		// add
 						{
-							if (!cheatsAdd_CB(buf, tempCheat.description, tempCheat.enabled))
+							if (!cheats->add_CB(buf, tempCheat.description, tempCheat.enabled))
 							{
 								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", "DeSmuME",
 											MB_OK | MB_ICONERROR);
@@ -621,7 +621,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 						}
 						else						// edit
 						{
-							if (!cheatsUpdate_CB(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
+							if (!cheats->update_CB(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
 							{
 								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", "DeSmuME",
 											MB_OK | MB_ICONERROR);
@@ -640,7 +640,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 				case IDC_EDIT2:					// code
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						char buf[sizeof(tempCheat.hi)+sizeof(tempCheat.lo)] = { 0 };
+						char buf[(sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2] = { 0 };
 
 						memset(buf, 0, sizeof(buf));
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
@@ -712,9 +712,9 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			lvi.mask = LVIF_TEXT|LVIF_STATE;
 			lvi.iItem = INT_MAX;
 
-			cheatsGetListReset();
+			cheats->getListReset();
 			SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)FALSE,0);
-			while (cheatsGetList(&tempCheat))
+			while (cheats->getList(&tempCheat))
 			{
 				char buf[256];
 				if (tempCheat.enabled)
@@ -767,20 +767,20 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 				if ( tmp_msg->code == LVN_ITEMACTIVATE )
 				{
 					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
-					cheatsGet(&tempCheat, cheatEditPos);
+					cheats->get(&tempCheat, cheatEditPos);
 					tempCheat.enabled = !tempCheat.enabled;
 					switch (tempCheat.type)
 					{
 						case 0:		// internal
-							cheatsUpdate(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos);
+							cheats->update(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos);
 						break;
 
 						case 1:		// Action Replay
-							cheatsUpdate_AR(NULL, NULL, tempCheat.enabled, cheatEditPos);
+							cheats->update_AR(NULL, NULL, tempCheat.enabled, cheatEditPos);
 						break;
 
 						case 2:		// Codebreaker
-							cheatsUpdate_CB(NULL, NULL, tempCheat.enabled, cheatEditPos);
+							cheats->update_CB(NULL, NULL, tempCheat.enabled, cheatEditPos);
 						break;
 					}
 
@@ -815,7 +815,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			switch (LOWORD(wparam))
 			{
 				case IDOK:
-					if (cheatsSave())
+					if (cheats->save())
 					{
 						EndDialog(dialog, TRUE);
 					}
@@ -905,9 +905,9 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 				case IDC_BEDIT:
 				{
 					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
-					if (cheatEditPos > cheatsGetSize()) return TRUE;
+					if (cheatEditPos > cheats->getSize()) return TRUE;
 
-					cheatsGet(&tempCheat, cheatEditPos);
+					cheats->get(&tempCheat, cheatEditPos);
 
 					switch (tempCheat.type)
 					{
@@ -915,7 +915,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
 							{
 								char buf[256];
-								cheatsGet(&tempCheat, cheatEditPos);
+								cheats->get(&tempCheat, cheatEditPos);
 								if (tempCheat.enabled)
 									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
 								wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
@@ -937,7 +937,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
 							{
-								cheatsGet(&tempCheat, cheatEditPos);
+								cheats->get(&tempCheat, cheatEditPos);
 								if (tempCheat.enabled)
 									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
 
@@ -965,7 +965,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					int tmp_pos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
 					if (tmp_pos != -1)
 					{
-						if (cheatsRemove(tmp_pos))
+						if (cheats->remove(tmp_pos))
 						{
 							ListView_DeleteItem(cheatListView, tmp_pos);
 							EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
@@ -983,17 +983,17 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 void CheatsListDialog(HWND hwnd)
 {
-	if (!cheatsPush()) return;
-	memset(&tempCheat, 0, sizeof(CHEATS_LIST));
+	if (!cheats->push()) return;
+	memset(&tempCheat, 0, sizeof(tempCheat));
 	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_LIST), hwnd, (DLGPROC) CheatsListBox_Proc);
 	if (res)
 	{
-		cheatsSave();
-		cheatsStackClear();
+		cheats->save();
+		cheats->stackClear();
 	}
 	else
 	{
-		cheatsPop();
+		cheats->pop();
 	}
 }
 
@@ -1012,7 +1012,7 @@ void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const cha
 		//CheatsListDialog(listParentHwnd);
 		//
 		//char buf[256];
-		//cheatsGet(&tempCheat, cheatEditPos);
+		//cheats->get(&tempCheat, cheatEditPos);
 		//if (tempCheat.enabled)
 		//	ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
 		//wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
@@ -1169,9 +1169,9 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 				lvi.mask = LVIF_TEXT|LVIF_STATE;
 				lvi.iItem = INT_MAX;
 
-				cheatSearchGetListReset();
+				cheatSearch->getListReset();
 				SendMessage(searchListView, WM_SETREDRAW, (WPARAM)FALSE,0);
-				while (cheatSearchGetList(&address, &val))
+				while (cheatSearch->getList(&address, &val))
 				{
 					char buf[256];
 					wsprintf(buf, "0x02%06X", address);
@@ -1312,16 +1312,16 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 
 				case IDC_BSEARCH:
 					if (searchStep == 0)
-						cheatsSearchInit(searchType, searchSize, searchSign);
+						cheatSearch->start(searchType, searchSize, searchSign);
 					if (searchType == 0)
 					{
 						if (searchStep == 1)
-							searchNumberResults = cheatsSearchValue(exactVal);
+							searchNumberResults = cheatSearch->search((u32)exactVal);
 					}
 					else
 					{
 						if (searchStep == 2)
-							searchNumberResults = cheatsSearchComp(searchComp);
+							searchNumberResults = cheatSearch->search((u8)searchComp);
 					}
 
 					searchStep++;
@@ -1340,7 +1340,7 @@ INT_PTR CALLBACK CheatsSearchProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				return TRUE;
 
 				case IDC_BRESTART:
-					cheatsSearchClose();
+					cheatSearch->close();
 					searchStep = 0;
 					searchNumberResults = 0;
 					if (searchWnd) DestroyWindow(searchWnd);
