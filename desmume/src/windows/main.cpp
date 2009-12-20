@@ -4655,7 +4655,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_CHEATS_DISABLE:
 			_cheatsDisabled = !_cheatsDisabled;
-			cheatsDisable(_cheatsDisabled);
+			cheats->disable(_cheatsDisabled);
 			MainWindow->checkMenu(IDM_CHEATS_DISABLE, _cheatsDisabled );
 			return 0;
 
