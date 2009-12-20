@@ -336,7 +336,7 @@ void WINCLASS::setMinSize(int width, int height)
 	minHeight = height;
 }
 
-void MyAdjustWindowRectEx(RECT* rect, HWND hwnd)
+static void MyAdjustWindowRectEx(RECT* rect, HWND hwnd)
 {
 	AdjustWindowRectEx(rect,GetWindowStyle(hwnd),TRUE,GetWindowExStyle(hwnd));
 	
@@ -363,18 +363,6 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 	int _minWidth, _minHeight;
 
-	int xborder, yborder;
-	int ymenu, ymenunew;
-	int ycaption;
-
-	MENUBARINFO mbi;
-
-	/* Get the size of the menu bar */
-	ZeroMemory(&mbi, sizeof(mbi));
-	mbi.cbSize = sizeof(mbi);
-	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
-	ymenu = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
-
 	RECT adjr;
 	SetRect(&adjr,0,0,minWidth,minHeight);
 	MyAdjustWindowRectEx(&adjr,hwnd);
@@ -388,7 +376,6 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	// Calculate the minimum size in pixels
 	_minWidth = adjr.right-adjr.left;
 	_minHeight = adjr.bottom-adjr.top;
-
 
 	/* Clamp the size to the minimum size (256x384) */
 	rect->right = (rect->left + std::max(_minWidth, (int)(rect->right - rect->left)));
@@ -438,15 +425,6 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 			}
 		}
 	}
-
-	/* Check if the height of the menu has changed during the resize */
-	ZeroMemory(&mbi, sizeof(mbi));
-	mbi.cbSize = sizeof(mbi);
-	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
-	ymenunew = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
-
-	if(ymenunew != ymenu)
-		rect->bottom += (ymenunew - ymenu);
 
 	// prevent "pushing" the window across the screen when resizing from the left or top
 	if(wParam == WMSZ_LEFT || wParam == WMSZ_TOPLEFT || wParam == WMSZ_BOTTOMLEFT)

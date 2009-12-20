@@ -1305,14 +1305,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ginfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ginfo.h"
-				>
-			</File>
-			<File
 				RelativePath=".\hotkey.cpp"
 				>
 			</File>
@@ -1365,6 +1357,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\recentroms.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\recentroms.h"
+				>
+			</File>
+			<File
 				RelativePath=".\replay.cpp"
 				>
 			</File>
@@ -1390,6 +1390,14 @@
 			</File>
 			<File
 				RelativePath=".\throttle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\winutil.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\winutil.h"
 				>
 			</File>
 			<Filter
@@ -1441,6 +1449,14 @@
 				</File>
 				<File
 					RelativePath=".\disView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ginfo.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ginfo.h"
 					>
 				</File>
 				<File
