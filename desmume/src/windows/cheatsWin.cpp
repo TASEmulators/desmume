@@ -22,6 +22,7 @@
 #include "../cheatSystem.h"
 #include "resource.h"
 #include "../debug.h"
+#include "../utils/xstring.h"
 
 static	u8		searchType = 0;
 static	u8		searchSize = 0;
@@ -566,7 +567,8 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 				memset(buf, 0, sizeof(buf));
 
 				cheats->getXXcodeString(tempCheat, buf);
-				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
+				std::string bufstr = mass_replace(buf,"\n","\r\n");
+				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), bufstr.c_str());
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), tempCheat.description);
 
 				EnableWindow(GetDlgItem(dialog, IDOK), (strlen(buf) > 16)?TRUE:FALSE);

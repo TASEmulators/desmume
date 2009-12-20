@@ -589,7 +589,10 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 	std::string answer = source;
 	std::string::size_type j = 0;
 	while ((j = answer.find(victim, j)) != std::string::npos )
-	answer.replace(j, victim.length(), replacement);
+	{
+		answer.replace(j, victim.length(), replacement);
+		j+= replacement.length();
+	}
 	return answer;
 }
 
