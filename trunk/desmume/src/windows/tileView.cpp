@@ -23,6 +23,7 @@
 #include "commctrl.h"
 #include "resource.h"
 #include "debug.h"
+#include "main.h"
 #include "../MMU.h"
 #include "../gpu.h"
 

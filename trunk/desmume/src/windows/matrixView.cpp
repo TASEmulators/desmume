@@ -21,6 +21,7 @@
 #include <commctrl.h>
 #include "debug.h"
 #include "resource.h"
+#include "main.h"
 #include "gfx3d.h"
 
 typedef struct

@@ -1,7 +1,5 @@
-/*	Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
+/*	gfx3d.cpp
+	Copyright (C) 2006 yopyop
     Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME

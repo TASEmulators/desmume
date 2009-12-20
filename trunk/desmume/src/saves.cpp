@@ -64,11 +64,6 @@ static const char* magic = "DeSmuME SState\0";
 //a savestate chunk loader can set this if it wants to permit a silent failure (for compatibility)
 static bool SAV_silent_fail_flag;
 
-#ifndef MAX_PATH
-#define MAX_PATH 256
-#endif
-
-
 SFORMAT SF_ARM7[]={
 	{ "7INS", 4, 1, &NDS_ARM7.instruction },
 	{ "7INA", 4, 1, &NDS_ARM7.instruct_adr },

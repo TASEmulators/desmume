@@ -21,6 +21,7 @@
 
 #include "palView.h"
 #include <commctrl.h>
+#include "main.h"
 #include "debug.h"
 #include "resource.h"
 #include "../MMU.h"

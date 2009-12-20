@@ -37,56 +37,6 @@ u8	logo_data[156] = {
 	0x78,0x00,0x90,0xCB,0x88,0x11,0x3A,0x94,0x65,0xC0,0x7C,0x63,0x87,0xF0,0x3C,0xAF,
 	0xD6,0x25,0xE4,0x8B,0x38,0x0A,0xAC,0x72,0x21,0xD4,0xF8,0x07};
 
-#ifdef WIN32
-char IniName[MAX_PATH];
-
-void GetINIPath()
-{   
-	char		vPath[MAX_PATH], *szPath;
-    /*if (*vPath)
-       szPath = vPath;
-    else
-    {*/
-       char *p;
-       ZeroMemory(vPath, sizeof(vPath));
-       GetModuleFileName(NULL, vPath, sizeof(vPath));
-       p = vPath + lstrlen(vPath);
-       while (p >= vPath && *p != '\\') p--;
-       if (++p >= vPath) *p = 0;
-       szPath = vPath;
-    //}
-	if (strlen(szPath) + strlen("\\desmume.ini") < MAX_PATH)
-	{
-		sprintf(IniName, "%s\\desmume.ini",szPath);
-	} else if (MAX_PATH> strlen(".\\desmume.ini")) {
-		sprintf(IniName, ".\\desmume.ini");
-	} else
-	{
-		memset(IniName,0,MAX_PATH) ;
-	}
-}
-
-void WritePrivateProfileBool(char* appname, char* keyname, bool val, char* file)
-{
-	char temp[256] = "";
-	sprintf(temp, "%d", val?1:0);
-	WritePrivateProfileString(appname, keyname, temp, file);
-}
-
-bool GetPrivateProfileBool(const char* appname, const char* keyname, bool defval, const char* filename)
-{
-	return GetPrivateProfileInt(appname,keyname,defval?1:0,filename) != 0;
-}
-
-void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file)
-{
-	char temp[256] = "";
-	sprintf(temp, "%d", val);
-	WritePrivateProfileString(appname, keyname, temp, file);
-}
-
-#endif
-	
 u8 reverseBitsInByte(u8 x)
 {
 	u8 h = 0;

@@ -34,33 +34,7 @@ extern u8	logo_data[156];
 	#include <winsock2.h>
 	#include <windows.h>
 
-	#define IDT_VIEW_DISASM7						50001
-	#define IDT_VIEW_DISASM9                		50002
-	#define IDT_VIEW_MEM7                   		50003
-	#define IDT_VIEW_MEM9                   		50004
-	#define IDT_VIEW_IOREG                  		50005
-	#define IDT_VIEW_PAL                    		50006
-	#define IDT_VIEW_TILE                   		50007
-	#define IDT_VIEW_MAP                    		50008
-	#define IDT_VIEW_OAM                    		50009
-	#define IDT_VIEW_MATRIX                 		50010
-	#define IDT_VIEW_LIGHTS                 		50011
-	#define IDM_EXEC								50112
-
-	#define IDM_RECENT_RESERVED0                    65500
-	#define IDM_RECENT_RESERVED1                    65501
-	#define IDM_RECENT_RESERVED2                    65502
-	#define IDM_RECENT_RESERVED3                    65503
-	#define IDM_RECENT_RESERVED4                    65504
-	#define IDM_RECENT_RESERVED5                    65505
-	#define IDM_RECENT_RESERVED6                    65506
-	#define IDM_RECENT_RESERVED7                    65507
-	#define IDM_RECENT_RESERVED8                    65508
-	#define IDM_RECENT_RESERVED9                    65509
-	#define IDM_RECENT_RESERVED10                   65510
-	#define IDM_RECENT_RESERVED11                   65511
-	#define IDM_RECENT_RESERVED12                   65512
-	#define IDM_RECENT_RESERVED13                   65513
+	
 
 	#define CLASSNAME "DeSmuME"
 

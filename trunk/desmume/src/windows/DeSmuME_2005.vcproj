@@ -847,6 +847,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\recentroms.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\recentroms.h"
+				>
+			</File>
+			<File
 				RelativePath=".\replay.cpp"
 				>
 			</File>
@@ -896,6 +904,14 @@
 			</File>
 			<File
 				RelativePath=".\windriver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\winutil.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\winutil.h"
 				>
 			</File>
 			<Filter

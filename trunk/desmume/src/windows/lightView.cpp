@@ -23,6 +23,7 @@
 #include "gfx3d.h"
 #include "resource.h"
 #include "debug.h"
+#include "main.h"
 
 // Convert B5G5R5 color format into R8G8B8 color format
 unsigned int ColorConv_B5R5R5ToR8G8B8(const unsigned int color)

@@ -24,32 +24,69 @@
 // RGB(246, 246, 251) to RGB(128, 128, 192)
 
 #include "windriver.h"
+
 #include <algorithm>
-#include <shellapi.h>
-#include <shlwapi.h>
+#include <string>
+#include <vector>
+//#include <sstream>
+
 #include <Winuser.h>
 #include <Winnls.h>
 #include <windowsx.h>
+#include <mmsystem.h>
+#include <shellapi.h>
+#include <shlwapi.h>
 #include <commctrl.h>
 #include <commdlg.h>
-#include <stdio.h>
-#include <string>
-#include <vector>
-#include <sstream>
 #include <tchar.h>
-#include "gthread.h"
-#include "version.h"
-#include "CWindow.h"
+
+#include <stdio.h>
+
+//emulator core
+#include "../common.h" //wtf this needs to disappear
 #include "../MMU.h"
 #include "../armcpu.h"
 #include "../NDSSystem.h"
 #include "../debug.h"
 #include "../saves.h"
 #include "../addons.h"
+#include "../GPU_osd.h"
+#include "../OGLRender.h"
+#include "../rasterize.h"
+#include "../gfx3d.h"
+#include "../render3D.h"
+#include "../gdbstub.h"
+#include "../cheatSystem.h"
+#include "../mic.h"
+#include "../movie.h"
+#include "../firmware.h"
+#include "../lua-engine.h"
+#include "../path.h"
+
+//other random stuff
+#include "recentroms.h"
+#include "main.h"
 #include "resource.h"
-#include "GPU_osd.h"
-#include "memView.h"
-#include "disView.h"
+#include "CWindow.h"
+#include "gthread.h"
+#include "version.h"
+#include "inputdx.h"
+#include "console.h"
+#include "throttle.h"
+#include "hotkey.h"
+#include "snddx.h"
+#include "commandline.h"
+#include "7zip.h"
+#include "OpenArchive.h"
+#include "utils/xstring.h"
+#include "directx/ddraw.h"
+#include "video.h"
+#include "aggdraw.h"
+#include "agg2d.h"
+
+//tools and dialogs
+#include "pathsettings.h"
+#include "colorctrl.h"
 #include "ginfo.h"
 #include "IORegView.h"
 #include "palView.h"
@@ -58,44 +95,17 @@
 #include "mapview.h"
 #include "matrixview.h"
 #include "lightview.h"
-#include "inputdx.h"
-#include "FirmConfig.h"
-#include "AboutBox.h"
-#include "OGLRender.h"
-#include "rasterize.h"
-#include "../gfx3d.h"
-#include "../render3D.h"
-#include "../gdbstub.h"
-#include "colorctrl.h"
-#include "console.h"
-#include "throttle.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
-#include "../cheatSystem.h"
-#include "Mmsystem.h"
-#include "../mic.h"
-#include "../common.h"
-#include "main.h"
-#include "hotkey.h"
-#include "../movie.h"
-#include "../replay.h"
-#include "snddx.h"
+#include "memView.h"
+#include "disView.h"
+#include "FirmConfig.h"
+#include "AboutBox.h"
+#include "replay.h"
 #include "ramwatch.h"
 #include "ram_search.h"
 #include "aviout.h"
 #include "soundView.h"
-#include "commandline.h"
-#include "../lua-engine.h"
-#include "7zip.h"
-#include "pathsettings.h"
-#include "utils/xstring.h"
-#include "directx/ddraw.h"
-#include "video.h"
-#include "path.h"
-#include "../firmware.h"
-
-#include "aggdraw.h"
-#include "agg2d.h"
 
 using namespace std;
 
@@ -164,18 +174,11 @@ static BOOL OpenCore(const char* filename);
 BOOL Mic_DeInit_Physical();
 BOOL Mic_Init_Physical();
 
-//----Recent ROMs menu globals----------
-vector<string> RecentRoms;					//The list of recent ROM filenames
-const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
-const unsigned int clearid = IDM_RECENT_RESERVED0;			// ID for the Clear recent ROMs item
-const unsigned int baseid = IDM_RECENT_RESERVED1;			//Base identifier for the recent ROMs items
-static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
-//--------------------------------------
 static bool _cheatsDisabled = false;
 
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
-static HMENU mainMenu; //Holds handle to the main DeSmuME menu
+HMENU mainMenu; //Holds handle to the main DeSmuME menu
 
 DWORD hKeyInputTimer;
 
@@ -661,197 +664,7 @@ static void SetStyle(u32 dws)
 static u32 GetStyle() { return currWindowStyle; }
 //---------
 
-void UpdateRecentRomsMenu()
-{
-	//This function will be called to populate the Recent Menu
-	//The array must be in the proper order ahead of time
 
-	//UpdateRecentRoms will always call this
-	//This will be always called by GetRecentRoms on DesMume startup
-
-
-	//----------------------------------------------------------------------
-	//Get Menu item info
-
-	MENUITEMINFO moo;
-	moo.cbSize = sizeof(moo);
-	moo.fMask = MIIM_SUBMENU | MIIM_STATE;
-
-	GetMenuItemInfo(GetSubMenu(mainMenu, 0), ID_FILE_RECENTROM, FALSE, &moo);
-	moo.hSubMenu = GetSubMenu(recentromsmenu, 0);
-	//moo.fState = RecentRoms[0].c_str() ? MFS_ENABLED : MFS_GRAYED;
-	moo.fState = MFS_ENABLED;
-	SetMenuItemInfo(GetSubMenu(mainMenu, 0), ID_FILE_RECENTROM, FALSE, &moo);
-
-	//-----------------------------------------------------------------------
-
-	//-----------------------------------------------------------------------
-	//Clear the current menu items
-	for(int x = 0; x < MAX_RECENT_ROMS; x++)
-	{
-		DeleteMenu(GetSubMenu(recentromsmenu, 0), baseid + x, MF_BYCOMMAND);
-	}
-
-	if(RecentRoms.size() == 0)
-	{
-		EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_GRAYED);
-
-		moo.cbSize = sizeof(moo);
-		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_STATE | MIIM_TYPE;
-
-		moo.cch = 5;
-		moo.fType = 0;
-		moo.wID = baseid;
-		moo.dwTypeData = "None";
-		moo.fState = MF_GRAYED;
-
-		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, TRUE, &moo);
-
-		return;
-	}
-
-	EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_ENABLED);
-	DeleteMenu(GetSubMenu(recentromsmenu, 0), baseid, MF_BYCOMMAND);
-
-	HDC dc = GetDC(MainWindow->getHWnd());
-
-	//-----------------------------------------------------------------------
-	//Update the list using RecentRoms vector
-	for(int x = RecentRoms.size()-1; x >= 0; x--)	//Must loop in reverse order since InsertMenuItem will insert as the first on the list
-	{
-		string tmp = RecentRoms[x];
-		LPSTR tmp2 = (LPSTR)tmp.c_str();
-
-		PathCompactPath(dc, tmp2, 500);
-
-		moo.cbSize = sizeof(moo);
-		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
-
-		moo.cch = tmp.size();
-		moo.fType = 0;
-		moo.wID = baseid + x;
-		moo.dwTypeData = tmp2;
-		//LOG("Inserting: %s\n",tmp.c_str());  //Debug
-		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, 1, &moo);
-	}
-
-	ReleaseDC(MainWindow->getHWnd(), dc);
-	//-----------------------------------------------------------------------
-
-	HWND temp = MainWindow->getHWnd();
-	DrawMenuBar(temp);
-}
-
-void UpdateRecentRoms(const char* filename)
-{
-	//This function assumes filename is a ROM filename that was successfully loaded
-
-	string newROM = filename; //Convert to std::string
-
-	//--------------------------------------------------------------
-	//Check to see if filename is in list
-	vector<string>::iterator x;
-	vector<string>::iterator theMatch;
-	bool match = false;
-	for (x = RecentRoms.begin(); x < RecentRoms.end(); ++x)
-	{
-		if (newROM == *x)
-		{
-			//We have a match
-			match = true;	//Flag that we have a match
-			theMatch = x;	//Hold on to the iterator	(Note: the loop continues, so if for some reason we had a duplicate (which wouldn't happen under normal circumstances, it would pick the last one in the list)
-		}
-	}
-	//----------------------------------------------------------------
-	//If there was a match, remove it
-	if (match)
-		RecentRoms.erase(theMatch);
-
-	RecentRoms.insert(RecentRoms.begin(), newROM);	//Add to the array
-
-	//If over the max, we have too many, so remove the last entry
-	if (RecentRoms.size() > MAX_RECENT_ROMS)	
-		RecentRoms.pop_back();
-
-	//Debug
-	//for (int x = 0; x < RecentRoms.size(); x++)
-	//	LOG("Recent ROM: %s\n",RecentRoms[x].c_str());
-
-	UpdateRecentRomsMenu();
-}
-
-void RemoveRecentRom(std::string filename)
-{
-
-	vector<string>::iterator x;
-	vector<string>::iterator theMatch;
-	bool match = false;
-	for (x = RecentRoms.begin(); x < RecentRoms.end(); ++x)
-	{
-		if (filename == *x)
-		{
-			//We have a match
-			match = true;	//Flag that we have a match
-			theMatch = x;	//Hold on to the iterator	(Note: the loop continues, so if for some reason we had a duplicate (which wouldn't happen under normal circumstances, it would pick the last one in the list)
-		}
-	}
-	//----------------------------------------------------------------
-	//If there was a match, remove it
-	if (match)
-		RecentRoms.erase(theMatch);
-
-	UpdateRecentRomsMenu();
-}
-
-void GetRecentRoms()
-{
-	//This function retrieves the recent ROMs stored in the .ini file
-	//Then is populates the RecentRomsMenu array
-	//Then it calls Update RecentRomsMenu() to populate the menu
-
-	stringstream temp;
-	char tempstr[256];
-
-	// Avoids duplicating when changing the language.
-	RecentRoms.clear();
-
-	//Loops through all available recent slots
-	for (int x = 0; x < MAX_RECENT_ROMS; x++)
-	{
-		temp.str("");
-		temp << "Recent Rom " << (x+1);
-
-		GetPrivateProfileString("General",temp.str().c_str(),"", tempstr, 256, IniName);
-		if (tempstr[0])
-			RecentRoms.push_back(tempstr);
-	}
-	UpdateRecentRomsMenu();
-}
-
-void SaveRecentRoms()
-{
-	//This function stores the RecentRomsMenu array to the .ini file
-
-	stringstream temp;
-
-	//Loops through all available recent slots
-	for (int x = 0; x < MAX_RECENT_ROMS; x++)
-	{
-		temp.str("");
-		temp << "Recent Rom " << (x+1);
-		if (x < (int)RecentRoms.size())	//If it exists in the array, save it
-			WritePrivateProfileString("General",temp.str().c_str(),RecentRoms[x].c_str(),IniName);
-		else						//Else, make it empty
-			WritePrivateProfileString("General",temp.str().c_str(), "",IniName);
-	}
-}
-
-void ClearRecentRoms()
-{
-	RecentRoms.clear();
-	SaveRecentRoms();
-	UpdateRecentRomsMenu();
-}
 
 static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu = mainMenu)
 {
@@ -1325,7 +1138,7 @@ static void DD_DoDisplay()
 	}
 }
 
-//tripple buffering logic
+//triple buffering logic
 u16 displayBuffers[3][256*192*4];
 volatile int currDisplayBuffer=-1;
 volatile int newestDisplayBuffer=-2;
@@ -1898,6 +1711,31 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 	return FALSE;
 }
 
+void OpenRecentROM(int listNum)
+{
+	if (listNum > MAX_RECENT_ROMS) return; //Just in case
+	char filename[MAX_PATH];
+	strcpy(filename, RecentRoms[listNum].c_str());
+	//LOG("Attempting to load %s\n",filename);
+	if(OpenCore(filename))
+	{
+		romloaded = TRUE;
+	}
+	else
+	//Rom failed to load, ask the user how to handle it
+	{
+		string str = "Could not open ";
+		str.append(filename);
+		str.append("\n\nRemove from list?");
+		if (MessageBox(MainWindow->getHWnd(), str.c_str(), "File error", MB_YESNO) == IDYES)
+		{
+			RemoveRecentRom(RecentRoms[listNum]);
+		}
+	}
+
+	NDS_UnPause();
+}
+
 /*
 * The thread handling functions needed by the GDB stub code.
 */
@@ -1921,8 +1759,7 @@ int MenuInit()
 	mainMenu = LoadMenu(hAppInst, MAKEINTRESOURCE(MENU_PRINCIPAL)); //Load Menu, and store handle
 	if (!MainWindow->setMenu(mainMenu)) return 0;
 
-	recentromsmenu = LoadMenu(hAppInst, MAKEINTRESOURCE(RECENTROMS));
-	GetRecentRoms();
+	InitRecentRoms();
 
 	ResetSaveStateTimes();
 
@@ -2653,7 +2490,6 @@ int _main()
 
 	KillDisplay();
 
-	SaveRecentRoms();
 	DRV_AviEnd();
 	WAV_End();
 
@@ -3177,33 +3013,9 @@ void WavRecordTo(int wavmode)
 	NDS_UnPause();
 }
 
-void OpenRecentROM(int listNum)
-{
-	if (listNum > MAX_RECENT_ROMS) return; //Just in case
-	char filename[MAX_PATH];
-	strcpy(filename, RecentRoms[listNum].c_str());
-	//LOG("Attempting to load %s\n",filename);
-	if(OpenCore(filename))
-	{
-		romloaded = TRUE;
-	}
-	else
-	//Rom failed to load, ask the user how to handle it
-	{
-		string str = "Could not open ";
-		str.append(filename);
-		str.append("\n\nRemove from list?");
-		if (MessageBox(MainWindow->getHWnd(), str.c_str(), "File error", MB_YESNO) == IDYES)
-		{
-			RemoveRecentRom(RecentRoms[listNum]);
-		}
-	}
 
-	NDS_UnPause();
-}
 
-#include "OpenArchive.h"
-#include "utils/xstring.h"
+
 
 static BOOL OpenCore(const char* filename)
 {
@@ -3676,7 +3488,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			
 			//Gray the recent ROM menu item if there are no recent ROMs
-			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM,      RecentRoms.size()>0);
+			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM, RecentRoms.size()>0);
 
 			//Updated Checked menu items
 			
@@ -4235,12 +4047,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//wParam &= 0xFFFF;
 
 			// A menu item from the recent files menu was clicked.
-			if(wParam >= baseid && wParam <= baseid + MAX_RECENT_ROMS - 1)
+			if(wParam >= recentRoms_baseid && wParam <= recentRoms_baseid + MAX_RECENT_ROMS - 1)
 			{
-				int x = wParam - baseid;
+				int x = wParam - recentRoms_baseid;
 				OpenRecentROM(x);					
 			}
-			else if(wParam == clearid)
+			else if(wParam == recentRoms_clearid)
 			{
 				/* Clear all the recent ROMs */
 				if(IDOK == MessageBox(hwnd, "OK to clear recent ROMs list?","DeSmuME",MB_OKCANCEL))
