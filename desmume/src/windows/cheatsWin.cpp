@@ -392,10 +392,10 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				
 				memset(buf, 0, 100);
 				memset(buf2, 0, 100);
-				tempCheat.hi[0] &= 0x00FFFFFF;
-				wsprintf(buf, "%06X", tempCheat.hi[0]);
+				tempCheat.code[0][0] &= 0x00FFFFFF;
+				wsprintf(buf, "%06X", tempCheat.code[0][0]);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf);
-				wsprintf(buf, "%i", tempCheat.lo[0]);
+				wsprintf(buf, "%i", tempCheat.code[0][1]);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
 				strcpy(buf, tempCheat.description);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), buf);
@@ -413,7 +413,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 			{
 				case IDOK:
 				{
-					if (cheats->update(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos))
+					if (cheats->update(tempCheat.size, tempCheat.code[0][0], tempCheat.code[0][1], tempCheat.description, tempCheat.enabled, cheatEditPos))
 					{
 						oldEditProc = saveOldEditProc;
 						EndDialog(dialog, TRUE);
@@ -447,7 +447,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 							return TRUE;
 						}
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
-						tempCheat.hi[0] = val;
+						tempCheat.code[0][0] = val;
 					}
 					return TRUE;
 				}
@@ -486,7 +486,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 							return TRUE;
 						}
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
-						tempCheat.lo[0] = val;
+						tempCheat.code[0][1] = val;
 					}
 					return TRUE;
 				}
@@ -557,9 +557,12 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 				}
 			}
 
+			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, sizeof(tempCheat.code) * 1, 0);
+			SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, sizeof(tempCheat.description), 0);
+
 			if (cheatXXaction != 0)
 			{
-				char buf[(sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2] = { 0 };
+				char buf[sizeof(tempCheat.code)*2] = { 0 };
 				memset(buf, 0, sizeof(buf));
 
 				cheats->getXXcodeString(tempCheat, buf);
@@ -570,9 +573,6 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 				SetWindowText(GetDlgItem(dialog, IDOK), "Update");
 			}
 			CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);	
-
-			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, (sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2, 0);
-			SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, sizeof(tempCheat.description), 0);
 		}
 		return TRUE;
 
@@ -582,7 +582,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			{
 				case IDOK:
 				{
-					char buf[(sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2] = { 0 };
+					char buf[sizeof(tempCheat.code)*2] = { 0 };
 
 					memset(buf, 0, sizeof(buf));
 					GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
@@ -640,7 +640,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 				case IDC_EDIT2:					// code
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						char buf[(sizeof(tempCheat.hi)+sizeof(tempCheat.lo)) * 2] = { 0 };
+						char buf[sizeof(tempCheat.code)*2] = { 0 };
 
 						memset(buf, 0, sizeof(buf));
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
@@ -726,9 +726,9 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					case 0:					// Internal
 					{
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
-						wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+						wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
 						ListView_SetItemText(cheatListView, row, 1, buf);
-						ltoa(tempCheat.lo[0], buf, 10);
+						ltoa(tempCheat.code[0][1], buf, 10);
 						ListView_SetItemText(cheatListView, row, 2, buf);
 						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
 						break;
@@ -772,7 +772,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					switch (tempCheat.type)
 					{
 						case 0:		// internal
-							cheats->update(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos);
+							cheats->update(tempCheat.size, tempCheat.code[0][0], tempCheat.code[0][1], tempCheat.description, tempCheat.enabled, cheatEditPos);
 						break;
 
 						case 1:		// Action Replay
@@ -918,9 +918,9 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 								cheats->get(&tempCheat, cheatEditPos);
 								if (tempCheat.enabled)
 									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
-								wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+								wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
 								ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
-								ltoa(tempCheat.lo[0], buf, 10);
+								ltoa(tempCheat.code[0][1], buf, 10);
 								ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
 								ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
 								EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
@@ -1015,9 +1015,9 @@ void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const cha
 		//cheats->get(&tempCheat, cheatEditPos);
 		//if (tempCheat.enabled)
 		//	ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
-		//wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+		//wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
 		//ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
-		//ltoa(tempCheat.lo[0], buf, 10);
+		//ltoa(tempCheat.code[0][1], buf, 10);
 		//ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
 		//ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
 	}

@@ -89,7 +89,7 @@ enabled_toggled(GtkCellRendererToggle * cell,
 
     cheats->get(&cheat, ii);
 
-    cheats->update(cheat.size, cheat.hi[0], cheat.lo[0], cheat.description,
+    cheats->update(cheat.size, cheat.code[0][0], cheat.code[0][1], cheat.description,
                  enabled, ii);
 
     gtk_list_store_set(GTK_LIST_STORE(model), &iter, COLUMN_ENABLED, enabled, -1);
@@ -127,22 +127,22 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
             u32 v = atoi(new_text);
             switch (column) {
             case COLUMN_SIZE:
-                cheats->update(v-1, cheat.hi[0], cheat.lo[0],
+                cheats->update(v-1, cheat.code[0][0], cheat.code[0][1],
                              cheat.description, cheat.enabled, ii);
                 break;
             case COLUMN_HI:
-                cheats->update(cheat.size, v, cheat.lo[0], cheat.description,
+                cheats->update(cheat.size, v, cheat.code[0][1], cheat.description,
                              cheat.enabled, ii);
                 break;
             case COLUMN_LO:
-                cheats->update(cheat.size, cheat.hi[0], v, cheat.description,
+                cheats->update(cheat.size, cheat.code[0][0], v, cheat.description,
                              cheat.enabled, ii);
                 break;
             }
             gtk_list_store_set(GTK_LIST_STORE(model), &iter, column,
                                atoi(new_text), -1);
         } else if (column == COLUMN_DESC){
-            cheats->update(cheat.size, cheat.hi[0], cheat.lo[0],
+            cheats->update(cheat.size, cheat.code[0][0], cheat.code[0][1],
                          g_strdup(new_text), cheat.enabled, ii);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter, column,
                                g_strdup(new_text), -1);
@@ -290,8 +290,8 @@ static GtkListStore *cheat_list_populate()
         gtk_list_store_set(store, &iter,
                 COLUMN_ENABLED, cheat.enabled,
                 COLUMN_SIZE, cheat.size+1,
-                COLUMN_HI, cheat.hi[0],
-                COLUMN_LO, cheat.lo[0],
+                COLUMN_HI, cheat.code[0][0],
+                COLUMN_LO, cheat.code[0][1],
                 COLUMN_DESC, cheat.description,
                 -1);
     }
