@@ -602,7 +602,7 @@ BOOL CHEATS::load()
 
 	if (flist)
 	{
-		INFO("Load lists: %s\n", filename);
+		INFO("Load cheats: %s\n", filename);
 		clear();
 		last = 0; line = 0;
 		while (!feof(flist))
@@ -663,7 +663,7 @@ BOOL CHEATS::load()
 
 		fclose(flist);
 		num = last;
-		INFO("Added %i list codes\n", num);
+		INFO("Added %i cheat codes\n", num);
 		return TRUE;
 	}
 	return FALSE;

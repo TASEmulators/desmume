@@ -524,7 +524,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	path.getpathnoext(path.CHEATS, buf);
 	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
-	cheatsInit(buf);
+	cheats->init(buf);
 
 	gameInfo.populate();
 	gameInfo.crc = crc32(0,data,size);
