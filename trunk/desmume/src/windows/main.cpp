@@ -3031,7 +3031,7 @@ static BOOL OpenCore(const char* filename)
 	if(LoadROM(filename, LogicalName))
 	{
 		romloaded = TRUE;
-		NDS_UnPause();
+		Unpause();
 		return TRUE;
 	}
 	else return FALSE;
@@ -5597,7 +5597,10 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 void ResetGame()
 {
 	if(movieMode != MOVIEMODE_PLAY)
-			NDS_Reset();
+	{
+		NDS_Reset();
+		Unpause();
+	}
 }
 
 //adelikat: This function changes a menu item's text
