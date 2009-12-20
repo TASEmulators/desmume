@@ -21,6 +21,7 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+#include <string.h>
 #include "common.h"
 
 #define CHEAT_VERSION_MAJOR		2

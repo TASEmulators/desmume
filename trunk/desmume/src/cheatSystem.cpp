@@ -536,9 +536,9 @@ u32	CHEATS::getSize()
 
 BOOL CHEATS::save()
 {
-	char	*types[] = {"DS", "AR", "CB"};
-	char	buf[sizeof(list[0].code) * 2 + 200] = { 0 };
-	FILE	*flist = fopen((char *)filename, "w");
+	const char	*types[] = {"DS", "AR", "CB"};
+	char		buf[sizeof(list[0].code) * 2 + 200] = { 0 };
+	FILE		*flist = fopen((char *)filename, "w");
 
 	if (flist)
 	{
