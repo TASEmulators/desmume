@@ -985,6 +985,10 @@ void MMU_Reset()
 	MMU_timing.arm9dataFetch.Reset();
 	MMU_timing.arm9codeCache.Reset();
 	MMU_timing.arm9dataCache.Reset();
+
+	// Booted from card -- EXTREMELY IMPORTANT!!! Thanks to cReDiAr
+	MMU_write8(0,0x027ffc40,0x1);
+	MMU_write8(1,0x027ffc40,0x1);
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
