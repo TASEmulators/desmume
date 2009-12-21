@@ -57,11 +57,17 @@ libdesmume_a_SOURCES = \
 if HAVE_WX
 libdesmume_a_SOURCES += wxdlg/wxdlg3dViewer.cpp
 endif
+
+if HAVE_OPENAL
+libdesmume_a_SOURCES += mic_openal.cpp
+else
 if HAVE_ALSA
 libdesmume_a_SOURCES += mic_alsa.cpp
 else
 libdesmume_a_SOURCES += mic.cpp
 endif
+endif
+
 if HAVE_LIBAGG
 libdesmume_a_SOURCES += aggdraw.cpp
 endif

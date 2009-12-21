@@ -92,6 +92,21 @@ AC_ARG_ENABLE(macosxhack,
 	      [AC_HELP_STRING(--enable-macosxhack, hack to build MacOSX package)],
 	      [GTK_MACOSX_HACK=yes])
 
+HAVE_OPENAL=no
+dnl - openal support
+AC_ARG_ENABLE(openal,
+	      [AC_HELP_STRING(--enable-openal, enable experimental OpenAL microphone input)],
+	      [openal=$enableval],
+	      [openal=yes])
+
+if test "x$openal" = "xyes" ; then
+	AC_CHECK_LIB([openal], [main],[
+                HAVE_OPENAL=yes
+		AC_DEFINE(HAVE_OPENAL)
+		LIBS="$LIBS -lopenal"
+	])
+fi
+
 dnl - Check for GTK and/or libglade
 FOUND_GLIB=no
 HAVE_ALSA=no
@@ -149,9 +164,11 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     AC_SUBST(LUA_CFLAGS)
     AC_SUBST(LUA_LIBS)
 
-    PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
-    AC_SUBST(ALSA_CFLAGS)
-    AC_SUBST(ALSA_LIBS)
+    if test ! "x$HAVE_OPENAL" = "xyes" ; then
+      PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
+      AC_SUBST(ALSA_CFLAGS)
+      AC_SUBST(ALSA_LIBS)
+    fi
 
     PKG_CHECK_MODULES(LIBAGG, libagg >= 2.5.0, HAVE_LIBAGG=yes, HAVE_LIBAGG=no)
     AC_SUBST(LIBAGG_CFLAGS)
@@ -166,9 +183,12 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
 dnl -- force lua disabled
 AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
 
+AM_CONDITIONAL([HAVE_OPENAL], [test "${HAVE_OPENAL}" = "yes"])
 AM_CONDITIONAL([HAVE_ALSA], [test "${HAVE_ALSA}" = "yes"])
 if test "x$HAVE_ALSA" = "xno"; then
-   AC_DEFINE([FAKE_MIC])
+   if test "x$HAVE_OPENAL" = "xno"; then
+      AC_DEFINE([FAKE_MIC])
+   fi
 fi
 
 AM_CONDITIONAL([HAVE_LIBAGG], [test "${HAVE_LIBAGG}" = "yes"])
@@ -260,6 +280,10 @@ case $target in
     ;;
   *darwin*)
     LIBS="$LIBS -framework OpenGL"
+    if test "x$HAVE_OPENAL" = "xyes"; then
+      LIBS="$LIBS -framework OpenAL"
+      CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers/"
+    fi
     if test "x$GTK_MACOSX_HACK" = "xyes" ; then
       LIBS="$LIBS -framework OpenGL -framework Gtk -framework GLib"
       CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers "
