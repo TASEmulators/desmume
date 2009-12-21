@@ -647,9 +647,6 @@ const u32 DWS_FULLSCREEN = 4;
 static u32 currWindowStyle = DWS_NORMAL;
 static void SetStyle(u32 dws)
 {
-	//TEST
-	//dws |= DWS_FULLSCREEN;
-
 	//pokefan's suggestion, there are a number of ways we could do this.
 	//i sort of like this because it is very visually indicative of being locked down
 	DWORD ws = GetWindowLong(MainWindow->getHWnd(),GWL_STYLE);
@@ -1315,7 +1312,7 @@ static void DD_DoDisplay()
 
 	//this code fills in all the undrawn areas if we are in fullscreen mode.
 	//it is probably a waste of time to keep black-filling all this, but we need to do it to be safe.
-	if(GetStyle()&DWS_FULLSCREEN)
+	if(IsZoomed(MainWindow->getHWnd()))
 	{
 		RECT fullScreen;
 		GetWindowRect(MainWindow->getHWnd(),&fullScreen);
@@ -2409,7 +2406,7 @@ int _main()
 
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
 	if (!MainWindow->create((char*)EMU_DESMUME_NAME_AND_VERSION(), WndX, WndY, video.width,video.height+video.screengap,
-		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+		WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
 		MessageBox(NULL, "Error creating main window", "DeSmuME", MB_OK);
@@ -3914,6 +3911,8 @@ DOKEYDOWN:
 		{
 			if(message == WM_SYSKEYDOWN && wParam==VK_RETURN && !(lParam&0x40000000))
 			{
+				if(IsZoomed(hwnd))
+					ShowWindow(hwnd,SW_NORMAL); //maximize and fullscreen get mixed up so make sure no maximize now
 				ToggleFullscreen();
 			}
 			else
