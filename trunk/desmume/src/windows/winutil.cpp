@@ -85,3 +85,7 @@ void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file)
 	WritePrivateProfileString(appname, keyname, temp, file);
 }
 
+void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable)
+{
+	EnableMenuItem(hMenu, uIDEnableItem, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
+}
