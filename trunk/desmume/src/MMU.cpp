@@ -1357,7 +1357,11 @@ u32 MMU_readFromGC()
 				// As DeSmuME boots directly from the game, the chip
 				// ID in main mem is zero and this value needs to be
 				// zero too.
-				val = 0x00000000;
+
+				//staff of kings verifies this (it also uses the arm7 IRQ 20)
+				if(nds.cardEjected)
+					val = 0xFFFFFFFF;
+				else val = 0x00000000;
 			}
 			break;
 

@@ -180,6 +180,7 @@ struct NDSSystem
 	u32 FW_ARM7BootCodeSize;
 
 	BOOL sleeping;
+	BOOL cardEjected;
 
 	//this is not essential NDS runtime state.
 	//it was perhaps a mistake to put it here.
@@ -384,6 +385,7 @@ int NDS_WriteBMP(const char *filename);
 int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
 
 void NDS_Sleep();
+void NDS_ToggleCardEject();
 
 void NDS_SkipNextFrame();
 #define NDS_SkipFrame(s) if(s) NDS_SkipNext2DFrame();
