@@ -505,14 +505,34 @@ void SetMinWindowSize()
 		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 }
 
+static void GetNdsScreenRect(RECT* r)
+{
+	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
+	int left = min(dstRects[0]->left,dstRects[1]->left);
+	int top = min(dstRects[0]->top,dstRects[1]->top);
+	int right = max(dstRects[0]->right,dstRects[1]->right);
+	int bottom = max(dstRects[0]->bottom,dstRects[1]->bottom);
+	SetRect(r,left,top,right,bottom);
+}
+
 void UnscaleScreenCoords(s32& x, s32& y)
 {
-	RECT r;
 	HWND hwnd = MainWindow->getHWnd();
-	GetClientRect(hwnd,&r);
+	
 	int defwidth = video.width;
 	int defheight = video.height;
+
+	POINT pt;
+	pt.x = x; pt.y = y;
+	ClientToScreen(hwnd,&pt);
+	x = pt.x; y = pt.y;
+
+	RECT r;
+	GetNdsScreenRect(&r);
 	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
+
+	x -= r.left;
+	y -= r.top;
 
 	if(winwidth == 0 || winheight == 0)
 	{
@@ -557,6 +577,8 @@ void UnscaleScreenCoords(s32& x, s32& y)
 
 	x = video.dividebyratio(x);
 	y = video.dividebyratio(y);
+
+	printf("%d %d\n",x,y);
 }
 
 // input x,y should be windows client-space coords already at 1x scaling.
