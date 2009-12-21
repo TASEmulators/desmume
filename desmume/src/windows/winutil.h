@@ -31,4 +31,9 @@ void GetINIPath();
 void PreventScreensaver();
 void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
 
+inline bool operator==(const RECT& lhs, const RECT& rhs)
+{
+	return lhs.left == rhs.left && lhs.top == rhs.top && lhs.right == rhs.right && lhs.bottom == rhs.bottom;
+}
+
 #endif
