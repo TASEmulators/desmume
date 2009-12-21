@@ -23,11 +23,40 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <algorithm>
 #include "convert.h"
 
 CHEATS_LIST	list[MAX_CHEAT_LIST] = {0};
 u32			num = 0;
 char		ROMserial[50] = {0};
+
+static void convertSerial()
+{
+	const char *regions[] = {	"JPFSEDIRKH",
+								"JPN",
+								"EUR",
+								"FRA",
+								"ESP",
+								"USA",
+								"NOE",
+								"ITA",
+								"RUS",
+								"KOR",
+								"HOL",
+
+	};
+	char buf[5] = {0};
+
+	if (!ROMserial[0]) return;
+
+	memcpy(buf, &ROMserial[strlen(ROMserial)-6], 4);
+	sprintf(ROMserial, "NTR-%s-", buf);
+	u32 region = (u32)(std::max<s32>(strchr(regions[0], buf[3]) - regions[0] + 1, 0));
+	if (region != 0)
+		strcat(ROMserial, regions[region]);
+	else
+		memset(ROMserial, 0, sizeof(ROMserial));
+}
 
 static void cheatsClear()
 {
@@ -47,8 +76,9 @@ bool save(char *filename)
 	if (flist)
 	{
 		fprintf(flist, "; DeSmuME cheat file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		fprintf(flist, "Name=%s\n", ROMserial);
-		fputs("; lists list\n", flist);
+		fprintf(flist, "Name=\n");
+		fprintf(flist, "Serial=%s\n", ROMserial);
+		fputs("\n; lists list\n", flist);
 		for (unsigned int i = 0;  i < num; i++)
 		{
 			if (list[i].num == 0) continue;
@@ -199,6 +229,8 @@ bool load_1_3(char *fname)
 
 		//INFO("Loaded %i cheats\n", last);
 		num = last;
+
+		convertSerial();
 		return true;
 	}
 	return false;

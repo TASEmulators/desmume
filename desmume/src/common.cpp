@@ -61,3 +61,21 @@ char *trim(char *s)
 	ptr[1] = '\0';
 	return s;
 }
+
+char *removeSpecialChars(char *s)
+{
+	char	*buf = s;
+	if (!s) return NULL;
+	if (!*s) return s;
+
+	for (int i = 0; i < strlen(s); i++)
+	{
+		if (isspace(s[i]) && (s[i] != 0x20))
+			*buf = 0x20;
+		else
+			*buf = s[i];
+		buf++;
+	}
+	*buf = 0;
+	return s;
+}

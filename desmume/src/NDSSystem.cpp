@@ -266,9 +266,27 @@ static u32 ones32(u32 x)
 
 void GameInfo::populate()
 {
+	const char *regions[] = {	"JPFSEDIRKH",
+								"JPN",
+								"EUR",
+								"FRA",
+								"ESP",
+								"USA",
+								"NOE",
+								"ITA",
+								"RUS",
+								"KOR",
+								"HOL",
+
+	};
+
 	NDS_header * _header = NDS_getROMHeader();
 	header = *_header;
 	delete _header;
+
+	memset(ROMserial, 0, sizeof(ROMserial));
+	memset(ROMname, 0, sizeof(ROMname));
+	memset(ROMfullName, 0, sizeof(ROMfullName));
 
 	if (
 		// ??? in all Homebrews game title have is 2E0000EA
@@ -290,16 +308,28 @@ void GameInfo::populate()
 			header.makerCode == 0x0
 		)
 	{
-		memset(ROMserial, 0, sizeof(ROMserial));
 		strcpy(ROMserial, "Homebrew");
 	}
 	else
 	{
-		memset(ROMserial, '_', sizeof(ROMserial));
-		memcpy(ROMserial, header.gameTile, strlen(header.gameTile) < 12 ? strlen(header.gameTile) : 12);
-		memcpy(ROMserial+12+1, header.gameCode, 4);
-		memcpy(ROMserial+12+1+4, &header.makerCode, 2);
-		memset(ROMserial+19, '\0', 1);
+		strcpy(ROMserial,"NTR-    -");
+		memcpy(ROMserial+4, header.gameCode, 4);
+
+		u32 region = (u32)(std::max<s32>(strchr(regions[0],header.gameCode[3]) - regions[0] + 1, 0));
+		if (region != 0)
+			strcat(ROMserial, regions[region]);
+		else
+			strcat(ROMserial, "Unknown");
+		memcpy(ROMname, header.gameTile, 12);
+		trim(ROMname);
+
+		u8 num = (T1ReadByte((u8*)romdata, header.IconOff) == 1)?6:7;
+		for (int i = 0; i < num; i++)
+		{
+			wcstombs(ROMfullName[i], (wchar_t *)(romdata+header.IconOff+0x240+(i*0x100)), 0x100);
+			trim(ROMfullName[i]);
+		}
+
 	}
 }
 #ifdef WIN32
@@ -408,8 +438,9 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	gameInfo.populate();
 	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
-	INFO("\nROM crc: %08X\n\n", gameInfo.crc);
-	INFO("\nROM serial: %s\n", gameInfo.ROMserial);
+	INFO("\nROM crc: %08X\n", gameInfo.crc);
+	INFO("ROM serial: %s\n", gameInfo.ROMserial);
+	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
 
 	return 1;
 }
@@ -528,8 +559,9 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	gameInfo.populate();
 	gameInfo.crc = crc32(0,data,size);
-	INFO("\nROM crc: %08X\n\n", gameInfo.crc);
-	INFO("\nROM serial: %s\n", gameInfo.ROMserial);
+	INFO("\nROM crc: %08X\n", gameInfo.crc);
+	INFO("ROM serial: %s\n", gameInfo.ROMserial);
+	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
 
 	return ret;
 }

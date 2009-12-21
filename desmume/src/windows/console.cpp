@@ -1,6 +1,4 @@
-/*  Copyright (C) 2006 yopyop
-    Copyright (C) 2008 CrazyMax (mtabachenko)
-	Copyright (C) 2009 DeSmuME team
+/*  Copyright 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -16,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include "../common.h"
@@ -34,10 +32,10 @@ void printlog(const char *fmt, ...);
 
 void OpenConsole() 
 {
-	COORD csize;
-	CONSOLE_SCREEN_BUFFER_INFO csbiInfo; 
-	SMALL_RECT srect;
-	char buf[256];
+	COORD csize = {0};
+	CONSOLE_SCREEN_BUFFER_INFO csbiInfo = {0}; 
+	SMALL_RECT srect = {0};
+	char buf[256] = {0};
 
 	//dont do anything if we're already attached
 	if (hConsole) return;
@@ -61,40 +59,42 @@ void OpenConsole()
 	//if we failed to attach, then alloc a new console
 	if(!attached)
 	{
-		AllocConsole();
+		if (!AllocConsole()) return;
 	}
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
+	if (hConsole == INVALID_HANDLE_VALUE) return;
 	//redirect stdio
 	long lStdHandle = (long)hConsole;
 	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
 	if(hConHandle == -1)
 		return; //this fails from a visual studio command prompt
 	
+#if 1
 	FILE *fp = _fdopen( hConHandle, "w" );
+#else
+	FILE *fp = fopen( "c:\\desmume.log", "w" );
+#endif
 	*stdout = *fp;
 	//and stderr
 	*stderr = *fp;
 
-	memset(buf,0,256);
 	sprintf(buf,"%s OUTPUT", EMU_DESMUME_NAME_AND_VERSION());
 	SetConsoleTitle(TEXT(buf));
 	csize.X = 60;
 	csize.Y = 800;
-	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), csize);
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbiInfo);
+	SetConsoleScreenBufferSize(hConsole, csize);
+	GetConsoleScreenBufferInfo(hConsole, &csbiInfo);
 	srect = csbiInfo.srWindow;
 	srect.Right = srect.Left + 99;
 	srect.Bottom = srect.Top + 64;
-	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &srect);
+	SetConsoleWindowInfo(hConsole, TRUE, &srect);
 	SetConsoleCP(GetACP());
 	SetConsoleOutputCP(GetACP());
 	if(attached) printlog("\n");
 	printlog("%s\n",EMU_DESMUME_NAME_AND_VERSION());
 	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
-
-
 }
 
 void CloseConsole() {
