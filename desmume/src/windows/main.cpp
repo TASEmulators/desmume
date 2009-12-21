@@ -584,8 +584,6 @@ void UnscaleScreenCoords(s32& x, s32& y)
 
 	x = video.dividebyratio(x);
 	y = video.dividebyratio(y);
-
-	printf("%d %d\n",x,y);
 }
 
 // input x,y should be windows client-space coords already at 1x scaling.
