@@ -3276,11 +3276,11 @@ void ScreenshotToClipboard()
 
 	HDC hScreenDC = GetDC(NULL);
 	HDC hMemDC = CreateCompatibleDC(hScreenDC);
-	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, 256, 384 + (14 * (twolinever ? 5:4)));
+	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, 256, 384 + (14 * (twolinever ? 6:5)));
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hMemBitmap);
 	HFONT hOldFont = (HFONT)SelectObject(hMemDC, hFont);
 
-	RECT rc; SetRect(&rc, 0, 0, 256, 384 + (14 * (twolinever ? 5:4)));
+	RECT rc; SetRect(&rc, 0, 0, 256, 384 + (14 * (twolinever ? 6:5)));
 
 	BITMAPV4HEADER bmi;
 	memset(&bmi, 0, sizeof(bmi));
@@ -3322,6 +3322,9 @@ void ScreenshotToClipboard()
 
 	sprintf(str, "FPS: %i/%i | %s", mainLoopData.fps, mainLoopData.fps3d, paused ? "Paused":"Running");
 	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
+
+	sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 5:4), str, strlen(str));
 
 	OpenClipboard(NULL);
 	EmptyClipboard();

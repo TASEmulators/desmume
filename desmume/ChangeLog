@@ -11,7 +11,7 @@ General/Core:
  bug: fix huge rerecording movie file handle leak
  enh: support devkitpro argv
  enh: add gbaslot-rom commandline
- enh: add EXXXXXXX cheat codes
+ bug: fix EXXXXXXX cheat codes
 
 Graphics:
  bug: fix a mistakenly rendered OBJ window
