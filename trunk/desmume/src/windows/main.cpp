@@ -507,12 +507,19 @@ void SetMinWindowSize()
 
 static void GetNdsScreenRect(RECT* r)
 {
-	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
-	int left = min(dstRects[0]->left,dstRects[1]->left);
-	int top = min(dstRects[0]->top,dstRects[1]->top);
-	int right = max(dstRects[0]->right,dstRects[1]->right);
-	int bottom = max(dstRects[0]->bottom,dstRects[1]->bottom);
-	SetRect(r,left,top,right,bottom);
+	RECT zero; 
+	SetRect(&zero,0,0,0,0);
+	if(zero == MainScreenRect) *r = SubScreenRect;
+	else if(zero == SubScreenRect) *r = MainScreenRect;
+	else
+	{
+		RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
+		int left = min(dstRects[0]->left,dstRects[1]->left);
+		int top = min(dstRects[0]->top,dstRects[1]->top);
+		int right = max(dstRects[0]->right,dstRects[1]->right);
+		int bottom = max(dstRects[0]->bottom,dstRects[1]->bottom);
+		SetRect(r,left,top,right,bottom);
+	}
 }
 
 void UnscaleScreenCoords(s32& x, s32& y)
@@ -1074,11 +1081,17 @@ void LCDsSwap(int swapVal)
 
 void doLCDsLayout()
 {
+	HWND hwnd = MainWindow->getHWnd();
+
+	bool maximized = IsZoomed(hwnd)==TRUE;
+
+	if(maximized) ShowWindow(hwnd,SW_NORMAL);
+
 	if(video.layout != 0)
 	{
 		// rotation is not supported in the alternate layouts
 		if(video.rotation != 0)
-			SetRotate(MainWindow->getHWnd(), 0, false);
+			SetRotate(hwnd, 0, false);
 	}
 
 	osd->singleScreen = (video.layout == 2);
@@ -1087,7 +1100,7 @@ void doLCDsLayout()
 	int oldheight, oldwidth;
 	int newheight, newwidth;
 
-	GetClientRect(MainWindow->getHWnd(), &rc);
+	GetClientRect(hwnd, &rc);
 	oldwidth = (rc.right - rc.left);
 	oldheight = (rc.bottom - rc.top);
 	newwidth = oldwidth;
@@ -1201,16 +1214,19 @@ void doLCDsLayout()
 		newwidth = newheight;
 		newheight = temp;
 	}
+
 	MainWindow->setClientSize(newwidth, newheight);
 	FixAspectRatio();
-	UpdateWndRects(MainWindow->getHWnd());
+	UpdateWndRects(hwnd);
 
 	if(video.layout == 0)
 	{
 		// restore user-set rotation if we forcibly disabled it before
 		if(video.rotation != video.rotation_userset)
-			SetRotate(MainWindow->getHWnd(), video.rotation_userset, false);
+			SetRotate(hwnd, video.rotation_userset, false);
 	}
+
+	if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
 }
 
 #pragma pack(push,1)
@@ -1338,11 +1354,14 @@ static void DD_DoDisplay()
 	{
 		RECT fullScreen;
 		GetWindowRect(MainWindow->getHWnd(),&fullScreen);
-		int left = min(dstRects[0]->left,dstRects[1]->left);
-		int top = min(dstRects[0]->top,dstRects[1]->top);
-		int right = max(dstRects[0]->right,dstRects[1]->right);
-		int bottom = max(dstRects[0]->bottom,dstRects[1]->bottom);
+		RECT r;
+		GetNdsScreenRect(&r);
+		int left = r.left;
+		int top = r.top;
+		int right = r.right;
+		int bottom = r.bottom;
 		//printf("%d %d %d %d / %d %d %d %d\n",fullScreen.left,fullScreen.top,fullScreen.right,fullScreen.bottom,left,top,right,bottom);
+		//printf("%d %d %d %d / %d %d %d %d\n",MainScreenRect.left,MainScreenRect.top,MainScreenRect.right,MainScreenRect.bottom,SubScreenRect.left,SubScreenRect.top,SubScreenRect.right,SubScreenRect.bottom);
 		DD_FillRect(lpPrimarySurface,0,0,left,top,RGB(255,0,0)); //topleft
 		DD_FillRect(lpPrimarySurface,left,0,right,top,RGB(128,0,0)); //topcenter
 		DD_FillRect(lpPrimarySurface,right,0,fullScreen.right,top,RGB(0,255,0)); //topright
