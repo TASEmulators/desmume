@@ -397,10 +397,18 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	}
 	else
 	{
-		/* Apply the ratio stuff */
+		//Apply the ratio stuff
 
 		float ratio1 = ((rect->right  - rect->left - frameWidth ) / (float)minWidth);
 		float ratio2 = ((rect->bottom - rect->top  - frameHeight) / (float)minHeight);
+		float ratio = std::min(ratio1,ratio2);
+		if(keepRatio & FULLSCREEN)
+		{
+			keepRatio |= WINCLASS::KEEPX | WINCLASS::KEEPY;
+			ratio1 = ratio;
+			ratio2 = ratio;
+		}
+
 		LONG correctedHeight = (LONG)((rect->top  + frameHeight + (minHeight * ratio1)));
 		LONG correctedWidth  = (LONG)((rect->left + frameWidth + (minWidth  * ratio2)));
 
@@ -414,9 +422,9 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 					rect->bottom = correctedHeight;
 			}
 		}
-		else
+		//else
 		{
-			if((keepRatio & KEEPY) && (rect->right < correctedWidth))
+			if((keepRatio & KEEPY) && (rect->right < correctedWidth) || (keepRatio&FULLSCREEN))
 			{
 				if(horizontalDrag)
 					rect->bottom = correctedHeight;

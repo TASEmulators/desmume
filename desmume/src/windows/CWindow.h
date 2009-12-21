@@ -171,6 +171,7 @@ public:
 		NOKEEP = 0x0,
 		KEEPX  = 0x1,
 		KEEPY  = 0x2,
+		FULLSCREEN = 0x4,
 	};
 
 	void sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio = NOKEEP);

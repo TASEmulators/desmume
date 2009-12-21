@@ -29,5 +29,6 @@ extern char IniName[MAX_PATH];
 
 void GetINIPath();
 void PreventScreensaver();
+void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
 
 #endif

@@ -169,6 +169,8 @@ const int kGapNone = 0;
 const int kGapBorder = 5;
 const int kGapNDS = 64; // extremely tilted (but some games seem to use this value)
 const int kGapNDS2 = 90; // more normal viewing angle
+const int kScale1point5x = 65535;
+const int kScale2point5x = 65534;
 
 static BOOL OpenCore(const char* filename);
 BOOL Mic_DeInit_Physical();
@@ -178,7 +180,7 @@ static bool _cheatsDisabled = false;
 
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
-HMENU mainMenu; //Holds handle to the main DeSmuME menu
+HMENU mainMenu = NULL; //Holds handle to the main DeSmuME menu
 
 DWORD hKeyInputTimer;
 
@@ -190,6 +192,7 @@ CRITICAL_SECTION win_execute_sync;
 volatile int win_sound_samplecounter = 0;
 
 CRITICAL_SECTION win_backbuffer_sync;
+volatile bool backbuffer_invalidate = false;
 
 Lock::Lock() : m_cs(&win_execute_sync) { EnterCriticalSection(m_cs); }
 Lock::Lock(CRITICAL_SECTION& cs) : m_cs(&cs) { EnterCriticalSection(m_cs); }
@@ -254,7 +257,7 @@ WINCLASS	*MainWindow=NULL;
 //HDC  hdc;
 HACCEL hAccel;
 HINSTANCE hAppInst = NULL;
-RECT MainScreenRect, SubScreenRect, GapRect;
+RECT FullScreenRect, MainScreenRect, SubScreenRect, GapRect;
 RECT MainScreenSrcRect, SubScreenSrcRect;
 int WndX = 0;
 int WndY = 0;
@@ -479,9 +482,9 @@ void ScaleScreen(float factor)
 	}
 	else
 	{
-		if(factor==65535)
+		if(factor==kScale1point5x)
 			factor = 1.5f;
-		else if(factor==65534)
+		else if(factor==kScale2point5x)
 			factor = 2.5f;
 		if (video.layout == 0)
 			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
@@ -639,21 +642,31 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 const u32 DWS_NORMAL = 0;
 const u32 DWS_ALWAYSONTOP = 1;
 const u32 DWS_LOCKDOWN = 2;
+const u32 DWS_FULLSCREEN = 4;
 
 static u32 currWindowStyle = DWS_NORMAL;
 static void SetStyle(u32 dws)
 {
-	//WS_CAPTION | WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+	//TEST
+	//dws |= DWS_FULLSCREEN;
 
 	//pokefan's suggestion, there are a number of ways we could do this.
 	//i sort of like this because it is very visually indicative of being locked down
 	DWORD ws = GetWindowLong(MainWindow->getHWnd(),GWL_STYLE);
-	ws &= ~(WS_CAPTION | WS_POPUP | WS_THICKFRAME | WS_DLGFRAME   );
+	ws &= ~(WS_CAPTION | WS_POPUP | WS_THICKFRAME | WS_DLGFRAME );
 	if(dws & DWS_LOCKDOWN)
-		ws |= WS_POPUP | WS_DLGFRAME   ;
-	else ws |= WS_CAPTION | WS_THICKFRAME;
+		ws |= WS_POPUP | WS_DLGFRAME;
+	else if(!(dws&DWS_FULLSCREEN)) 
+		ws |= WS_CAPTION | WS_THICKFRAME;
+
 	SetWindowLong(MainWindow->getHWnd(),GWL_STYLE, ws);
-	
+
+
+	if((dws&DWS_FULLSCREEN)) 
+		SetMenu(MainWindow->getHWnd(),NULL);
+	else 
+		SetMenu(MainWindow->getHWnd(),mainMenu);
+
 	currWindowStyle = dws;
 	HWND insertAfter = HWND_NOTOPMOST;
 	if(dws & DWS_ALWAYSONTOP) 
@@ -662,6 +675,16 @@ static void SetStyle(u32 dws)
 }
 
 static u32 GetStyle() { return currWindowStyle; }
+
+static void ToggleFullscreen()
+{
+	u32 style = GetStyle();
+	style ^= DWS_FULLSCREEN;
+	SetStyle(style);
+	if(style&DWS_FULLSCREEN)
+		ShowWindow(MainWindow->getHWnd(),SW_MAXIMIZE);
+	else ShowWindow(MainWindow->getHWnd(),SW_NORMAL);
+}
 //---------
 
 
@@ -746,6 +769,8 @@ static void PopulateLuaSubmenu()
 
 int CreateDDrawBuffers()
 {
+	Lock lock (win_backbuffer_sync);
+
 	if (lpDDClipPrimary!=NULL) { IDirectDraw7_Release(lpDDClipPrimary); lpDDClipPrimary = NULL; }
 	if (lpPrimarySurface != NULL) { IDirectDraw7_Release(lpPrimarySurface); lpPrimarySurface = NULL; }
 	if (lpBackSurface != NULL) { IDirectDraw7_Release(lpBackSurface); lpBackSurface = NULL; }
@@ -767,10 +792,10 @@ int CreateDDrawBuffers()
 	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
 
 	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
-
 	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
 	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
 
+	backbuffer_invalidate = false;
 	return 1;
 }
 
@@ -852,8 +877,171 @@ template<typename T> static void doRotate(void* dst)
 	}
 }
 
+void UpdateWndRects(HWND hwnd)
+{
+	POINT ptClient;
+	RECT rc;
 
-void UpdateWndRects(HWND hwnd);
+	bool maximized = IsZoomed(hwnd);
+
+	int wndWidth, wndHeight;
+	int defHeight = video.height;
+	if(video.layout == 0)
+		defHeight += video.scaledscreengap();
+	float ratio;
+	int oneScreenHeight, gapHeight;
+
+	GetClientRect(hwnd, &rc);
+
+	if(maximized)
+		rc = FullScreenRect;
+
+
+	if (video.layout == 1)
+	{
+		wndWidth = (rc.bottom - rc.top);
+		wndHeight = (rc.right - rc.left);
+
+		ratio = ((float)wndHeight / (float)defHeight);
+		oneScreenHeight = (int)((video.height/2) * ratio);
+
+		// Main screen
+		ptClient.x = rc.left;
+		ptClient.y = rc.top;
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.left = ptClient.x;
+		MainScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.y = (rc.top + wndWidth);
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.right = ptClient.x;
+		MainScreenRect.bottom = ptClient.y;
+
+		// Sub screen
+		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.y = rc.top;
+		ClientToScreen(hwnd, &ptClient);
+		SubScreenRect.left = ptClient.x;
+		SubScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + oneScreenHeight + oneScreenHeight);
+		ptClient.y = (rc.top + wndWidth);
+		ClientToScreen(hwnd, &ptClient);
+		SubScreenRect.right = ptClient.x;
+		SubScreenRect.bottom = ptClient.y;
+	}
+	else
+	if (video.layout == 2)
+	{
+
+		wndWidth = (rc.bottom - rc.top);
+		wndHeight = (rc.right - rc.left);
+
+		ratio = ((float)wndHeight / (float)defHeight);
+		oneScreenHeight = (int)((video.height) * ratio);
+
+		// Main screen
+		ptClient.x = rc.left;
+		ptClient.y = rc.top;
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.left = ptClient.x;
+		MainScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.y = (rc.top + wndWidth);
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.right = ptClient.x;
+		MainScreenRect.bottom = ptClient.y;
+	}
+	else
+	if (video.layout == 0)
+	{
+		if((video.rotation == 90) || (video.rotation == 270))
+		{
+			wndWidth = (rc.bottom - rc.top);
+			wndHeight = (rc.right - rc.left);
+		}
+		else
+		{
+			wndWidth = (rc.right - rc.left);
+			wndHeight = (rc.bottom - rc.top);
+		}
+
+		ratio = ((float)wndHeight / (float)defHeight);
+		oneScreenHeight = (int)((video.height/2) * ratio);
+		gapHeight = (wndHeight - (oneScreenHeight * 2));
+
+		if((video.rotation == 90) || (video.rotation == 270))
+		{
+			// Main screen
+			ptClient.x = rc.left;
+			ptClient.y = rc.top;
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.left = ptClient.x;
+			MainScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + oneScreenHeight);
+			ptClient.y = (rc.top + wndWidth);
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.right = ptClient.x;
+			MainScreenRect.bottom = ptClient.y;
+
+			//if there was no specified screen gap, extend the top screen to cover the extra column
+			if(video.screengap == 0) MainScreenRect.right += gapHeight;
+
+			// Sub screen
+			ptClient.x = (rc.left + oneScreenHeight + gapHeight);
+			ptClient.y = rc.top;
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.left = ptClient.x;
+			SubScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + oneScreenHeight + gapHeight + oneScreenHeight);
+			ptClient.y = (rc.top + wndWidth);
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.right = ptClient.x;
+			SubScreenRect.bottom = ptClient.y;
+
+			// Gap
+			GapRect.left = (rc.left + oneScreenHeight);
+			GapRect.top = rc.top;
+			GapRect.right = (rc.left + oneScreenHeight + gapHeight);
+			GapRect.bottom = (rc.top + wndWidth);
+		}
+		else
+		{
+			// Main screen
+			ptClient.x = rc.left;
+			ptClient.y = rc.top;
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.left = ptClient.x;
+			MainScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + wndWidth);
+			ptClient.y = (rc.top + oneScreenHeight);
+			ClientToScreen(hwnd, &ptClient);
+			MainScreenRect.right = ptClient.x;
+			MainScreenRect.bottom = ptClient.y;
+
+			//if there was no specified screen gap, extend the top screen to cover the extra row
+			if(video.screengap == 0) MainScreenRect.bottom += gapHeight;
+
+			// Sub screen
+			ptClient.x = rc.left;
+			ptClient.y = (rc.top + oneScreenHeight + gapHeight);
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.left = ptClient.x;
+			SubScreenRect.top = ptClient.y;
+			ptClient.x = (rc.left + wndWidth);
+			ptClient.y = (rc.top + oneScreenHeight + gapHeight + oneScreenHeight);
+			ClientToScreen(hwnd, &ptClient);
+			SubScreenRect.right = ptClient.x;
+			SubScreenRect.bottom = ptClient.y;
+
+			// Gap
+			GapRect.left = rc.left;
+			GapRect.top = (rc.top + oneScreenHeight);
+			GapRect.right = (rc.left + wndWidth);
+			GapRect.bottom = (rc.top + oneScreenHeight + gapHeight);
+		}
+	}
+}
+
 void FixAspectRatio();
 
 void LCDsSwap(int swapVal)
@@ -1024,6 +1212,18 @@ struct pix15
 };
 #pragma pack(pop)
 
+static void DD_FillRect(LPDIRECTDRAWSURFACE7 surf, int left, int top, int right, int bottom, DWORD color)
+{
+	RECT r;
+	SetRect(&r,left,top,right,bottom);
+	DDBLTFX fx;
+	memset(&fx,0,sizeof(DDBLTFX));
+	fx.dwSize = sizeof(DDBLTFX);
+	//fx.dwFillColor = color;
+	fx.dwFillColor = 0; //color is just for debug
+	surf->Blt(&r,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&fx);
+}
+
 //the directdraw final presentation portion of display, including rotating
 static void DD_DoDisplay()
 {
@@ -1033,6 +1233,9 @@ static void DD_DoDisplay()
 	ddsd.dwFlags=DDSD_ALL;
 	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
 
+	if(backbuffer_invalidate)
+		goto CREATE;
+
 	if(FAILED(res))
 	{
 		if (res==DDERR_SURFACELOST)
@@ -1040,12 +1243,19 @@ static void DD_DoDisplay()
 			LOG("DirectDraw buffers is lost\n");
 			if (FAILED(IDirectDrawSurface7_Restore(lpPrimarySurface))
 			 || FAILED(IDirectDrawSurface7_Restore(lpBackSurface)))
+			{
+			CREATE:
 				if(CreateDDrawBuffers() < 0)
 					return;
+			}
 		}
 		else
 			return;
 	}
+
+	//res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
+	//if(FAILED(res))
+	//	return;
 
 	char* buffer = (char*)ddsd.lpSurface;
 
@@ -1065,7 +1275,8 @@ static void DD_DoDisplay()
 		break;
 	default:
 		{
-			INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
+			if(ddsd.ddpfPixelFormat.dwRGBBitCount != 0)
+				INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
 			//emu_halt();
 		}
 		break;
@@ -1100,6 +1311,27 @@ static void DD_DoDisplay()
 		srcRects[0] = (MainScreen.offset) ? &MainScreenSrcRect : &SubScreenSrcRect;
 		srcRects[1] = (MainScreen.offset) ? &SubScreenSrcRect : &MainScreenSrcRect;
 		if(osd) osd->swapScreens = (SubScreen.offset != 0);
+	}
+
+	//this code fills in all the undrawn areas if we are in fullscreen mode.
+	//it is probably a waste of time to keep black-filling all this, but we need to do it to be safe.
+	if(GetStyle()&DWS_FULLSCREEN)
+	{
+		RECT fullScreen;
+		GetWindowRect(MainWindow->getHWnd(),&fullScreen);
+		int left = min(dstRects[0]->left,dstRects[1]->left);
+		int top = min(dstRects[0]->top,dstRects[1]->top);
+		int right = max(dstRects[0]->right,dstRects[1]->right);
+		int bottom = max(dstRects[0]->bottom,dstRects[1]->bottom);
+		//printf("%d %d %d %d / %d %d %d %d\n",fullScreen.left,fullScreen.top,fullScreen.right,fullScreen.bottom,left,top,right,bottom);
+		DD_FillRect(lpPrimarySurface,0,0,left,top,RGB(255,0,0)); //topleft
+		DD_FillRect(lpPrimarySurface,left,0,right,top,RGB(128,0,0)); //topcenter
+		DD_FillRect(lpPrimarySurface,right,0,fullScreen.right,top,RGB(0,255,0)); //topright
+		DD_FillRect(lpPrimarySurface,0,top,left,bottom,RGB(0,128,0));  //left
+		DD_FillRect(lpPrimarySurface,right,top,fullScreen.right,bottom,RGB(0,0,255)); //right
+		DD_FillRect(lpPrimarySurface,0,bottom,left,fullScreen.bottom,RGB(0,0,128)); //bottomleft
+		DD_FillRect(lpPrimarySurface,left,bottom,right,fullScreen.bottom,RGB(255,0,255)); //bottomcenter
+		DD_FillRect(lpPrimarySurface,right,bottom,fullScreen.left,fullScreen.bottom,RGB(0,255,255)); //bottomright
 	}
 
 	for(int i = 0; i < 2; i++)
@@ -1782,7 +2014,6 @@ typedef int (WINAPI *setLanguageFunc)(LANGID id);
 
 void SetLanguage(int langid)
 {
-
 	HMODULE kernel32 = LoadLibrary("kernel32.dll");
 	FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
 	setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
@@ -2190,8 +2421,6 @@ int _main()
 	GlobalAddAtom("MicrosoftTabletPenServiceProperty");
 	SetProp(MainWindow->getHWnd(),"MicrosoftTabletPenServiceProperty",(HANDLE)1);
 
-	SetStyle(style);
-
 	gpu_SetRotateScreen(video.rotation);
 
 	//default the firmware settings, they may get changed later
@@ -2208,6 +2437,8 @@ int _main()
 		delete MainWindow;
 		exit(-1);
 	}
+
+	SetStyle(style);
 
 	SetMinWindowSize();
 
@@ -2477,6 +2708,7 @@ int _main()
 
 	MainWindow->Show(SW_NORMAL);
 
+
 	//DEBUG TEST HACK
 	//driver->VIEW3D_Init();
 	//driver->view3d->Launch();
@@ -2563,164 +2795,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	return ret;
 }
 
-void UpdateWndRects(HWND hwnd)
-{
-	POINT ptClient;
-	RECT rc;
-
-	int wndWidth, wndHeight;
-	int defHeight = video.height;
-	if(video.layout == 0)
-		defHeight += video.scaledscreengap();
-	float ratio;
-	int oneScreenHeight, gapHeight;
-
-	GetClientRect(hwnd, &rc);
-
-	if (video.layout == 1)
-	{
-		wndWidth = (rc.bottom - rc.top);
-		wndHeight = (rc.right - rc.left);
-
-		ratio = ((float)wndHeight / (float)defHeight);
-		oneScreenHeight = (int)((video.height/2) * ratio);
-
-		// Main screen
-		ptClient.x = rc.left;
-		ptClient.y = rc.top;
-		ClientToScreen(hwnd, &ptClient);
-		MainScreenRect.left = ptClient.x;
-		MainScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight);
-		ptClient.y = (rc.top + wndWidth);
-		ClientToScreen(hwnd, &ptClient);
-		MainScreenRect.right = ptClient.x;
-		MainScreenRect.bottom = ptClient.y;
-
-		// Sub screen
-		ptClient.x = (rc.left + oneScreenHeight);
-		ptClient.y = rc.top;
-		ClientToScreen(hwnd, &ptClient);
-		SubScreenRect.left = ptClient.x;
-		SubScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight + oneScreenHeight);
-		ptClient.y = (rc.top + wndWidth);
-		ClientToScreen(hwnd, &ptClient);
-		SubScreenRect.right = ptClient.x;
-		SubScreenRect.bottom = ptClient.y;
-	}
-	else
-	if (video.layout == 2)
-	{
-
-		wndWidth = (rc.bottom - rc.top);
-		wndHeight = (rc.right - rc.left);
-
-		ratio = ((float)wndHeight / (float)defHeight);
-		oneScreenHeight = (int)((video.height) * ratio);
-
-		// Main screen
-		ptClient.x = rc.left;
-		ptClient.y = rc.top;
-		ClientToScreen(hwnd, &ptClient);
-		MainScreenRect.left = ptClient.x;
-		MainScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight);
-		ptClient.y = (rc.top + wndWidth);
-		ClientToScreen(hwnd, &ptClient);
-		MainScreenRect.right = ptClient.x;
-		MainScreenRect.bottom = ptClient.y;
-	}
-	else
-	if (video.layout == 0)
-	{
-		if((video.rotation == 90) || (video.rotation == 270))
-		{
-			wndWidth = (rc.bottom - rc.top);
-			wndHeight = (rc.right - rc.left);
-		}
-		else
-		{
-			wndWidth = (rc.right - rc.left);
-			wndHeight = (rc.bottom - rc.top);
-		}
-
-		ratio = ((float)wndHeight / (float)defHeight);
-		oneScreenHeight = (int)((video.height/2) * ratio);
-		gapHeight = (wndHeight - (oneScreenHeight * 2));
-
-		if((video.rotation == 90) || (video.rotation == 270))
-		{
-			// Main screen
-			ptClient.x = rc.left;
-			ptClient.y = rc.top;
-			ClientToScreen(hwnd, &ptClient);
-			MainScreenRect.left = ptClient.x;
-			MainScreenRect.top = ptClient.y;
-			ptClient.x = (rc.left + oneScreenHeight);
-			ptClient.y = (rc.top + wndWidth);
-			ClientToScreen(hwnd, &ptClient);
-			MainScreenRect.right = ptClient.x;
-			MainScreenRect.bottom = ptClient.y;
-
-			//if there was no specified screen gap, extend the top screen to cover the extra column
-			if(video.screengap == 0) MainScreenRect.right += gapHeight;
-
-			// Sub screen
-			ptClient.x = (rc.left + oneScreenHeight + gapHeight);
-			ptClient.y = rc.top;
-			ClientToScreen(hwnd, &ptClient);
-			SubScreenRect.left = ptClient.x;
-			SubScreenRect.top = ptClient.y;
-			ptClient.x = (rc.left + oneScreenHeight + gapHeight + oneScreenHeight);
-			ptClient.y = (rc.top + wndWidth);
-			ClientToScreen(hwnd, &ptClient);
-			SubScreenRect.right = ptClient.x;
-			SubScreenRect.bottom = ptClient.y;
-
-			// Gap
-			GapRect.left = (rc.left + oneScreenHeight);
-			GapRect.top = rc.top;
-			GapRect.right = (rc.left + oneScreenHeight + gapHeight);
-			GapRect.bottom = (rc.top + wndWidth);
-		}
-		else
-		{
-			// Main screen
-			ptClient.x = rc.left;
-			ptClient.y = rc.top;
-			ClientToScreen(hwnd, &ptClient);
-			MainScreenRect.left = ptClient.x;
-			MainScreenRect.top = ptClient.y;
-			ptClient.x = (rc.left + wndWidth);
-			ptClient.y = (rc.top + oneScreenHeight);
-			ClientToScreen(hwnd, &ptClient);
-			MainScreenRect.right = ptClient.x;
-			MainScreenRect.bottom = ptClient.y;
-
-			//if there was no specified screen gap, extend the top screen to cover the extra row
-			if(video.screengap == 0) MainScreenRect.bottom += gapHeight;
-
-			// Sub screen
-			ptClient.x = rc.left;
-			ptClient.y = (rc.top + oneScreenHeight + gapHeight);
-			ClientToScreen(hwnd, &ptClient);
-			SubScreenRect.left = ptClient.x;
-			SubScreenRect.top = ptClient.y;
-			ptClient.x = (rc.left + wndWidth);
-			ptClient.y = (rc.top + oneScreenHeight + gapHeight + oneScreenHeight);
-			ClientToScreen(hwnd, &ptClient);
-			SubScreenRect.right = ptClient.x;
-			SubScreenRect.bottom = ptClient.y;
-
-			// Gap
-			GapRect.left = rc.left;
-			GapRect.top = (rc.top + oneScreenHeight);
-			GapRect.right = (rc.left + wndWidth);
-			GapRect.bottom = (rc.top + oneScreenHeight + gapHeight);
-		}
-	}
-}
 
 void UpdateScreenRects()
 {
@@ -3407,7 +3481,7 @@ void RunConfig(CONFIGSCREEN which)
 		NDS_UnPause();
 }
 
-void FilterUpdate (HWND hwnd, bool user)
+void FilterUpdate(HWND hwnd, bool user)
 {
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
@@ -3420,11 +3494,24 @@ void FilterUpdate (HWND hwnd, bool user)
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
 }
 
-
-void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable)
+void SaveWindowSize(HWND hwnd)
 {
-	EnableMenuItem(hMenu, uIDEnableItem, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
+	//dont save if window was maximized
+	if(IsZoomed(hwnd)) return;
+	RECT rc;
+	GetClientRect(hwnd, &rc);
+	WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
+	WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
 }
+
+void SaveWindowPos(HWND hwnd)
+{
+	//dont save if window was maximized
+	if(IsZoomed(hwnd)) return;
+	WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
+	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
+}
+
 
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -3512,9 +3599,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Window Size
 			MainWindow->checkMenu(IDC_WINDOW1X, ((windowSize==1)));
-			MainWindow->checkMenu(IDC_WINDOW1_5X, ((windowSize==65535)));
+			MainWindow->checkMenu(IDC_WINDOW1_5X, ((windowSize==kScale1point5x)));
 			MainWindow->checkMenu(IDC_WINDOW2X, ((windowSize==2)));
-			MainWindow->checkMenu(IDC_WINDOW2_5X, ((windowSize==65534)));
+			MainWindow->checkMenu(IDC_WINDOW2_5X, ((windowSize==kScale2point5x)));
 			MainWindow->checkMenu(IDC_WINDOW3X, ((windowSize==3)));
 			MainWindow->checkMenu(IDC_WINDOW4X, ((windowSize==4)));
 			MainWindow->checkMenu(IDM_ALWAYS_ON_TOP, (GetStyle()&DWS_ALWAYSONTOP)!=0);
@@ -3628,17 +3715,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 				if (windowSize==0)
 				{
-					//	 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
-					//	 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
-					RECT rc;
-					GetClientRect(hwnd, &rc);
-					WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
-					WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
+					SaveWindowSize(hwnd);
 				}
 
 				//Save window position
-				WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
-				WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
+				SaveWindowPos(hwnd);
 
 				//Save frame counter status
 				WritePrivateProfileInt("Display", "FrameCounter", CommonSettings.hud.FrameCounterDisplay, IniName);
@@ -3703,6 +3784,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_SIZING:
 		{
+			{
+				Lock lock(win_backbuffer_sync);
+				backbuffer_invalidate = true;
+			}
+			bool fullscreen = false;
+			if(wParam==999) { fullscreen = true; wParam = WMSZ_BOTTOMRIGHT; }
 			InvalidateRect(hwnd, NULL, FALSE); UpdateWindow(hwnd);
 
 			if(windowSize)
@@ -3768,7 +3855,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 
 
-			MainWindow->sizingMsg(wParam, lParam, forceRatioFlags);
+			MainWindow->sizingMsg(wParam, lParam, forceRatioFlags | (fullscreen?WINCLASS::FULLSCREEN:0));
 
 			if (video.layout == 1) return 1;
 			if (video.layout == 2) return 1;
@@ -3816,17 +3903,26 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
-	case WM_SYSKEYDOWN:
+	
 	case WM_CUSTKEYDOWN:
-		{
 			//since the user has used a gamepad,
 			//send some fake input to keep the screensaver from running
 			PreventScreensaver();
-
-			int modifiers = GetModifiers(wParam);
-			wParam = PurgeModifiers(wParam);
-			if(!HandleKeyMessage(wParam,lParam, modifiers))
-				return 0;
+			goto DOKEYDOWN;
+	case WM_SYSKEYDOWN:
+DOKEYDOWN:
+		{
+			if(message == WM_SYSKEYDOWN && wParam==VK_RETURN && !(lParam&0x40000000))
+			{
+				ToggleFullscreen();
+			}
+			else
+			{
+				int modifiers = GetModifiers(wParam);
+				wParam = PurgeModifiers(wParam);
+				if(!HandleKeyMessage(wParam,lParam, modifiers))
+					return 0;
+			}
 			break;
 		}
 	case WM_KEYUP:
@@ -3851,6 +3947,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		break;
 
 	case WM_SIZE:
+		{
+			Lock lock(win_backbuffer_sync);
+			backbuffer_invalidate = true;
+		}
 		switch(wParam)
 		{
 		case SIZE_MINIMIZED:
@@ -3867,7 +3967,29 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				if(pausedByMinimize)
 					NDS_UnPause();
 
+				if(wParam==SIZE_MAXIMIZED)
+				{
+					RECT fullscreen;
+					GetClientRect(hwnd,&fullscreen);
+					int fswidth = fullscreen.right-fullscreen.left;
+					int fsheight = fullscreen.bottom-fullscreen.top;
+
+				
+					//feed a fake window size to the aspect ratio protection logic.
+					FullScreenRect = fullscreen;
+					SendMessage(MainWindow->getHWnd(), WM_SIZING, 999, (LPARAM)&FullScreenRect);
+
+					int fakewidth = FullScreenRect.right-FullScreenRect.left;
+					int fakeheight = FullScreenRect.bottom-FullScreenRect.top;
+					
+					//now use it to create a new virtual area in the center of the client rect
+					int xfudge = (fswidth-fakewidth)/2;
+					int yfudge = (fsheight-fakeheight)/2;
+					OffsetRect(&FullScreenRect,xfudge,yfudge);
+				}
+				
 				UpdateWndRects(hwnd);
+
 			}
 			break;
 		}
@@ -4930,12 +5052,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 
 		case IDC_WINDOW1_5X:
-			windowSize=65535;
+			windowSize=kScale1point5x;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 		case IDC_WINDOW2_5X:
-			windowSize=65534;
+			windowSize=kScale2point5x;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
@@ -4968,11 +5090,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			else {
 				ForceRatio = TRUE;
 				FixAspectRatio();
-				RECT rc;
-				GetClientRect(hwnd, &rc);
 				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
-				WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
-				WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
 			}
 			break;
 
