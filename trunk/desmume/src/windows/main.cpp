@@ -3706,8 +3706,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 
 			//Save type
-			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
-			for(int i=0;i<7;i++) 
+			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7,IDC_SAVETYPE8};
+			for(int i=0;i<8;i++) 
 				MainWindow->checkMenu(savelist[i], false);
 			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], true);
 
@@ -4936,6 +4936,7 @@ DOKEYDOWN:
 		case IDC_SAVETYPE5: backup_setManualBackupType(4); return 0; 
 		case IDC_SAVETYPE6: backup_setManualBackupType(5); return 0; 
 		case IDC_SAVETYPE7: backup_setManualBackupType(6); return 0; 
+		case IDC_SAVETYPE8: backup_setManualBackupType(7); return 0; 
 
 		case IDM_RESET:
 			ResetGame();

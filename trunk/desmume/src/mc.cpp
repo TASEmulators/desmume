@@ -64,18 +64,19 @@ static const u8 kUninitializedSaveDataValue = 0x00;
 
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
-static const u32 saveSizes[] = {512,8*1024,32*1024,64*1024,256*1024,512*1024,0xFFFFFFFF};
+static const u32 saveSizes[] = {512,8*1024,32*1024,64*1024,256*1024,512*1024,1024*1024,0xFFFFFFFF};
 static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
 //the lookup table from user save types to save parameters
-static const int save_types[7][2] = {
+static const int save_types[8][2] = {
         {MC_TYPE_AUTODETECT,1},
         {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
         {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
         {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
         {MC_TYPE_FRAM,MC_SIZE_256KBITS},
         {MC_TYPE_FLASH,MC_SIZE_2MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
+		{MC_TYPE_FLASH,MC_SIZE_4MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_8MBITS}
 };
 
 void backup_setManualBackupType(int type)
@@ -917,13 +918,17 @@ void BackupDevice::raw_applyUserSettings(u32& size)
 {
 	//respect the user's choice of backup memory type
 	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT)
+	{
 		addr_size = addr_size_for_old_save_size(size);
+		data.resize(size);
+	}
 	else
 	{
 		int savetype = save_types[CommonSettings.manualBackupType][0];
 		int savesize = save_types[CommonSettings.manualBackupType][1];
 		addr_size = addr_size_for_old_save_type(savetype);
 		if((u32)savesize<size) size = savesize;
+		data.resize(savesize);
 	}
 
 	state = RUNNING;
@@ -936,10 +941,9 @@ bool BackupDevice::load_raw(const char* filename)
 	fseek(inf, 0, SEEK_END);
 	u32 size = (u32)ftell(inf);
 	fseek(inf, 0, SEEK_SET);
-	
+
 	raw_applyUserSettings(size);
 
-	data.resize(size);
 	fread(&data[0],1,size,inf);
 	fclose(inf);
 

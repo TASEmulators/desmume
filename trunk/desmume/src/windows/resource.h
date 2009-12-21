@@ -700,6 +700,7 @@
 #define ID_RAMSEARCH_CAPTIONTEXT        40064
 #define IDM_VIEW3D                      40065
 #define IDM_LOCKDOWN                    40066
+#define IDC_SAVETYPE8                   40067
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
