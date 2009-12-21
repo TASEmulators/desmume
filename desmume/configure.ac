@@ -96,7 +96,6 @@ HAVE_OPENAL=no
 dnl - openal support
 AC_ARG_ENABLE(openal,
 	      [AC_HELP_STRING(--enable-openal, enable experimental OpenAL microphone input)],
-	      [openal=$enableval],
 	      [openal=yes])
 
 if test "x$openal" = "xyes" ; then
