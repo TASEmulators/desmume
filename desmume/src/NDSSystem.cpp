@@ -93,8 +93,6 @@ int NDS_Init( void) {
 	MMU_Init();
 	nds.VCount = 0;
 
-	nds.sleeping = FALSE;
-
 	if (Screen_Init(GFXCORE_DUMMY) != 0)
 		return -1;
 
@@ -867,6 +865,15 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
 }
 
 void NDS_Sleep() { nds.sleeping = TRUE; }
+void NDS_ToggleCardEject()
+{
+	if(!nds.cardEjected)
+	{
+		//staff of kings will test this (it also uses the arm9 0xB8 poll)
+		NDS_makeInt(1, 20);
+	}
+	nds.cardEjected ^= TRUE;
+}
 
 
 class FrameSkipper
@@ -1900,6 +1907,9 @@ void NDS_Reset()
 	DEBUG_reset();
 
 	if (!header) return ;
+
+	nds.sleeping = FALSE;
+	nds.cardEjected = FALSE;
 
 	nds_timer = 0;
 	nds_arm9_timer = 0;
