@@ -543,8 +543,12 @@ BOOL CHEATS::save()
 	if (flist)
 	{
 		fprintf(flist, "; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		fprintf(flist, "Name=%s\n", gameInfo.ROMserial);
-		fputs("; lists list\n", flist);
+		strcpy(buf, gameInfo.ROMfullName[0]);
+		trim(buf);
+		removeSpecialChars(buf);
+		fprintf(flist, "Name=%s\n", buf);
+		fprintf(flist, "Serial=%s\n", gameInfo.ROMserial);
+		fputs("\n; lists list\n", flist);
 		for (int i = 0;  i < num; i++)
 		{
 			if (list[i].num == 0) continue;
@@ -610,7 +614,7 @@ BOOL CHEATS::load()
 			line++;				// only for debug
 			memset(buf, 0, sizeof(buf));
 			fgets(buf, sizeof(buf), flist);
-			strcpy(buf, trim(buf));
+			trim(buf);
 			if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
 
 			memset(&tmp_cht, 0, sizeof(tmp_cht));

@@ -57,6 +57,7 @@ extern u8	logo_data[156];
 
 extern u8	reverseBitsInByte(u8 x);
 extern char *trim(char *s);
+extern char *removeSpecialChars(char *s);
 
 #endif
 
