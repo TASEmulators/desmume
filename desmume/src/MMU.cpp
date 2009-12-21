@@ -3541,7 +3541,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
     }
 
-	if(adr == 0x04000301)
+	if(adr == REG_HALTCNT)
 	{
 		switch(val)
 		{

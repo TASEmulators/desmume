@@ -1795,7 +1795,11 @@ void NDS_exec(s32 nb)
 	if(nds.sleeping)
 	{
 		gpu_UpdateRender();
-		if((MMU.reg_IE[1] & MMU.reg_IF[1]) & (1<<22))
+
+		//speculative code: if ANY irq happens, wake up the arm7.
+		//I think the arm7 program analyzes the system and may decide not to wake up
+		//if it is dissatisfied with the conditions
+		if((MMU.reg_IE[1] & MMU.reg_IF[1]))
 		{
 			nds.sleeping = FALSE;
 		}
