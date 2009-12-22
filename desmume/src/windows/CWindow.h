@@ -23,6 +23,7 @@
 
 #include "../common.h"
 
+#include <commctrl.h>
 #include <string>
 #include <vector>
 #include <map>
