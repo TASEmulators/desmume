@@ -358,6 +358,7 @@ void CToolTip::AddToolTip(HWND hCtl, int uID, CRect rcRect, char* text)
 //-----------------------------------------------------------------------------
 
 CToolBar::CToolBar(HWND hParent)
+	: hidden(false)
 {
 	// Create the toolbar
 	// Note: dropdown buttons look like crap without TBSTYLE_FLAT
@@ -380,6 +381,24 @@ CToolBar::~CToolBar()
 	}
 
 	hBitmaps.clear();
+}
+
+void CToolBar::Show(bool bShow)
+{
+	DWORD style = GetWindowLong(hWnd, GWL_STYLE);
+
+	if (bShow)
+	{
+		hidden = false;
+		style |= WS_VISIBLE;
+	}
+	else
+	{
+		hidden = true;
+		style &= ~WS_VISIBLE;
+	}
+
+	SetWindowLong(hWnd, GWL_STYLE, style);
 }
 
 void CToolBar::OnSize()
@@ -529,6 +548,8 @@ void CToolBar::EnableButtonDropdown(int uID, bool bDropdown)
 
 int CToolBar::GetHeight()
 {
+	if (hidden) return 0;
+
 	RECT rc; GetWindowRect(hWnd, &rc);
 	return rc.bottom - rc.top;
 }
@@ -556,9 +577,6 @@ bool WINCLASS::create(LPSTR caption, int x, int y, int width, int height, int st
 	if (hwnd != NULL) return false;
 	
 	hwnd = CreateWindow(regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
-//	hwnd = CreateWindowEx(WS_EX_LAYERED, regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
-	//SetLayeredWindowAttributes(hwnd, 0, 254, LWA_ALPHA);
-	//
 	
 	if (hwnd != NULL) return true;
 	return false;

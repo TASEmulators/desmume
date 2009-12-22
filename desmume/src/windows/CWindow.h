@@ -203,6 +203,9 @@ public:
 
 	HWND GetHWnd() { return hWnd; }
 
+	void Show(bool bShow);
+	bool Visible() { return !hidden; }
+
 	void OnSize();
 
 	void AppendButton(int uID, int uBitmapID, DWORD dwState, bool bDropdown);
@@ -229,6 +232,8 @@ private:
 	typedef pair<int, HBITMAP> TBitmapPair;
 	typedef map<int, TBitmapPair> TBitmapList;
 	TBitmapList hBitmaps;
+
+	bool hidden;
 };
 
 
