@@ -3683,6 +3683,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_SCREENSEP_COLORWHITE, ((ScreenGapColor&0xFFFFFF) == 0xFFFFFF));
 			MainWindow->checkMenu(IDM_SCREENSEP_COLORGRAY, ((ScreenGapColor&0xFFFFFF) == 0x7F7F7F));
 			MainWindow->checkMenu(IDM_SCREENSEP_COLORBLACK, ((ScreenGapColor&0xFFFFFF) == 0x000000));
+
+			// Show toolbar
+			MainWindow->checkMenu(IDM_SHOWTOOLBAR, MainWindowToolbar->Visible());
 	
 			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
@@ -3777,6 +3780,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
 			MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
 			MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
+
+			bool showtb = GetPrivateProfileBool("Display", "Show Toolbar", true, IniName);
+			MainWindowToolbar->Show(showtb);
 
 			return 0;
 		}
@@ -5203,6 +5209,20 @@ DOKEYDOWN:
 			{
 				SetStyle(GetStyle()^DWS_ALWAYSONTOP);
 				WritePrivateProfileBool("Video", "Window Always On Top", (GetStyle()&DWS_ALWAYSONTOP)!=0, IniName);
+			}
+			return 0;
+
+		case IDM_SHOWTOOLBAR:
+			{
+				RECT rc; 
+				GetClientRect(hwnd, &rc); rc.top += MainWindowToolbar->GetHeight();
+
+				bool nowvisible = !MainWindowToolbar->Visible();
+				MainWindowToolbar->Show(nowvisible);
+
+				MainWindow->setClientSize(rc.right-rc.left, rc.bottom-rc.top);
+
+				WritePrivateProfileBool("Display", "Show Toolbar", nowvisible, IniName);
 			}
 			return 0;
 
