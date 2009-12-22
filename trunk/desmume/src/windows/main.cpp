@@ -5207,6 +5207,7 @@ DOKEYDOWN:
 		default:
 			return 0;
 		}
+		break;
 
 		case WM_NOTIFY:
 			{
