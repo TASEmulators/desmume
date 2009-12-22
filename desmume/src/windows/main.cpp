@@ -537,7 +537,7 @@ void UnscaleScreenCoords(s32& x, s32& y)
 
 	RECT r;
 	GetNdsScreenRect(&r);
-	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top) - MainWindowToolbar->GetHeight();
+	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
 	x -= r.left;
 	y -= r.top;
@@ -4206,7 +4206,7 @@ DOKEYDOWN:
 			SetCapture(hwnd);
 
 			s32 x = (s32)((s16)LOWORD(lParam));
-			s32 y = (s32)((s16)HIWORD(lParam)) - MainWindowToolbar->GetHeight();
+			s32 y = (s32)((s16)HIWORD(lParam));
 
 			UnscaleScreenCoords(x,y);
 
