@@ -88,7 +88,13 @@
 #include "pathsettings.h"
 #include "colorctrl.h"
 #include "ginfo.h"
-#include "tools.h"
+#include "IORegView.h"
+#include "palView.h"
+#include "tileView.h"
+#include "oamView.h"
+#include "mapview.h"
+#include "matrixview.h"
+#include "lightview.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
 #include "memView.h"
@@ -96,7 +102,10 @@
 #include "FirmConfig.h"
 #include "AboutBox.h"
 #include "replay.h"
+#include "ramwatch.h"
+#include "ram_search.h"
 #include "aviout.h"
+#include "soundView.h"
 
 using namespace std;
 
