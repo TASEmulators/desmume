@@ -710,6 +710,9 @@
 #define IDC_SAVETYPE8                   40067
 #define IDM_EJECTCARD                   40068
 #define IDM_SHOWTOOLBAR                 40069
+#define ID_CONFIG_DISPLAYMETHOD         40070
+#define ID_DISPLAYMETHOD_DIRECTDRAWHW   40071
+#define ID_DISPLAYMETHOD_DIRECTDRAWSW   40072
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -805,7 +808,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        118
-#define _APS_NEXT_COMMAND_VALUE         40070
+#define _APS_NEXT_COMMAND_VALUE         40073
 #define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

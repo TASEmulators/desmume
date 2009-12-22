@@ -25,11 +25,14 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include <string>
+
 extern char IniName[MAX_PATH];
 
 void GetINIPath();
 void PreventScreensaver();
 void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
+std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault);
 
 inline bool operator==(const RECT& lhs, const RECT& rhs)
 {

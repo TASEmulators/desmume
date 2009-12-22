@@ -89,3 +89,10 @@ void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable)
 {
 	EnableMenuItem(hMenu, uIDEnableItem, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
 }
+
+std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault)
+{
+	static char buf[65536];
+	GetPrivateProfileString(lpAppName, lpKeyName, lpDefault, buf, 65536, IniName);
+	return buf;
+}

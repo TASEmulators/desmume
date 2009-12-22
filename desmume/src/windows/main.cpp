@@ -667,10 +667,14 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 // END Rotation definitions
 
 //-----window style handling----
+const u32 DISPMETHOD_DDRAW_HW = 1;
+const u32 DISPMETHOD_DDRAW_SW = 2;
+
 const u32 DWS_NORMAL = 0;
 const u32 DWS_ALWAYSONTOP = 1;
 const u32 DWS_LOCKDOWN = 2;
 const u32 DWS_FULLSCREEN = 4;
+const u32 DWS_DDRAW_SW = 8;
 
 static u32 currWindowStyle = DWS_NORMAL;
 static void SetStyle(u32 dws)
@@ -810,6 +814,7 @@ int CreateDDrawBuffers()
 	ddsd.dwSize          = sizeof(ddsd);
 	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+	if(GetStyle()&DWS_DDRAW_SW) ddsd.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
 
 	ddsd.dwWidth         = video.rotatedwidth();
 	ddsd.dwHeight        = video.rotatedheight();
@@ -907,7 +912,7 @@ void UpdateWndRects(HWND hwnd)
 	POINT ptClient;
 	RECT rc;
 
-	bool maximized = IsZoomed(hwnd);
+	bool maximized = IsZoomed(hwnd)!=FALSE;
 
 	int wndWidth, wndHeight;
 	int defHeight = video.height;
@@ -2291,13 +2296,6 @@ class WinDriver : public BaseDriver
 	}
 };
 
-std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault)
-{
-	static char buf[65536];
-	GetPrivateProfileString(lpAppName, lpKeyName, lpDefault, buf, 65536, IniName);
-	return buf;
-}
-
 static void RefreshMicSettings()
 {
 	Mic_DeInit_Physical();
@@ -2385,6 +2383,10 @@ int _main()
 	u32 style = DWS_NORMAL;
 	if(GetPrivateProfileBool("Video","Window Always On Top", false, IniName)) style |= DWS_ALWAYSONTOP;
 	if(GetPrivateProfileBool("Video","Window Lockdown", false, IniName)) style |= DWS_LOCKDOWN;
+	
+	int dispMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
+	if(dispMethod == DISPMETHOD_DDRAW_SW)
+		style |= DWS_DDRAW_SW;
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
@@ -2993,6 +2995,7 @@ void SetRotate(HWND hwnd, int rot, bool user)
 		ddsd.dwSize          = sizeof(ddsd);
 		ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+		if(GetStyle()&DWS_DDRAW_SW) ddsd.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
 		ddsd.dwWidth         = video.rotatedwidth();
 		ddsd.dwHeight        = video.rotatedheight();
 
@@ -3645,7 +3648,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			
 			//emulation menu
 			MainWindow->checkMenu(IDM_PAUSE, ((paused)));
-			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected);
+			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected != FALSE);
 
 			// LCDs layout
 			MainWindow->checkMenu(ID_LCDS_VERTICAL, ((video.layout==0)));
@@ -3737,7 +3740,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
-			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_SW)==0);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
+
+			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected != FALSE);
 
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7,IDC_SAVETYPE8};
@@ -4992,6 +4998,24 @@ DOKEYDOWN:
 		case IDC_SAVETYPE6: backup_setManualBackupType(5); return 0; 
 		case IDC_SAVETYPE7: backup_setManualBackupType(6); return 0; 
 		case IDC_SAVETYPE8: backup_setManualBackupType(7); return 0; 
+
+		case ID_DISPLAYMETHOD_DIRECTDRAWHW:
+			{
+				Lock lock (win_backbuffer_sync);
+				SetStyle(GetStyle()&~DWS_DDRAW_SW);
+				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
+				backbuffer_invalidate = true;
+			}
+			break;
+
+		case ID_DISPLAYMETHOD_DIRECTDRAWSW:
+			{
+				Lock lock (win_backbuffer_sync);
+				SetStyle(GetStyle()|DWS_DDRAW_SW);
+				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_SW, IniName);
+				backbuffer_invalidate = true;
+			}
+			break;
 
 		case IDM_EJECTCARD:
 			NDS_ToggleCardEject();
