@@ -88,13 +88,7 @@
 #include "pathsettings.h"
 #include "colorctrl.h"
 #include "ginfo.h"
-#include "IORegView.h"
-#include "palView.h"
-#include "tileView.h"
-#include "oamView.h"
-#include "mapview.h"
-#include "matrixview.h"
-#include "lightview.h"
+#include "tools.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
 #include "memView.h"
@@ -102,10 +96,7 @@
 #include "FirmConfig.h"
 #include "AboutBox.h"
 #include "replay.h"
-#include "ramwatch.h"
-#include "ram_search.h"
 #include "aviout.h"
-#include "soundView.h"
 
 using namespace std;
 
@@ -181,6 +172,7 @@ static bool _cheatsDisabled = false;
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
 HMENU mainMenu = NULL; //Holds handle to the main DeSmuME menu
+CToolBar* MainWindowToolbar;
 
 DWORD hKeyInputTimer;
 
@@ -536,7 +528,7 @@ void UnscaleScreenCoords(s32& x, s32& y)
 
 	RECT r;
 	GetNdsScreenRect(&r);
-	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
+	int winwidth = (r.right-r.left), winheight = (r.bottom-r.top) - MainWindowToolbar->GetHeight();
 
 	x -= r.left;
 	y -= r.top;
@@ -914,16 +906,19 @@ void UpdateWndRects(HWND hwnd)
 		defHeight += video.scaledscreengap();
 	float ratio;
 	int oneScreenHeight, gapHeight;
+	int tbheight;
 
 	GetClientRect(hwnd, &rc);
 
 	if(maximized)
 		rc = FullScreenRect;
 
+	tbheight = MainWindowToolbar->GetHeight();
+
 
 	if (video.layout == 1)
 	{
-		wndWidth = (rc.bottom - rc.top);
+		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
 
 		ratio = ((float)wndHeight / (float)defHeight);
@@ -957,7 +952,7 @@ void UpdateWndRects(HWND hwnd)
 	if (video.layout == 2)
 	{
 
-		wndWidth = (rc.bottom - rc.top);
+		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
 
 		ratio = ((float)wndHeight / (float)defHeight);
@@ -980,13 +975,13 @@ void UpdateWndRects(HWND hwnd)
 	{
 		if((video.rotation == 90) || (video.rotation == 270))
 		{
-			wndWidth = (rc.bottom - rc.top);
+			wndWidth = (rc.bottom - rc.top) - tbheight;
 			wndHeight = (rc.right - rc.left);
 		}
 		else
 		{
 			wndWidth = (rc.right - rc.left);
-			wndHeight = (rc.bottom - rc.top);
+			wndHeight = (rc.bottom - rc.top) - tbheight;
 		}
 
 		ratio = ((float)wndHeight / (float)defHeight);
@@ -1064,6 +1059,13 @@ void UpdateWndRects(HWND hwnd)
 			GapRect.bottom = (rc.top + oneScreenHeight + gapHeight);
 		}
 	}
+
+	MainScreenRect.top += tbheight;
+	MainScreenRect.bottom += tbheight;
+	SubScreenRect.top += tbheight;
+	SubScreenRect.bottom += tbheight;
+	GapRect.top += tbheight;
+	GapRect.bottom += tbheight;
 }
 
 void FixAspectRatio();
@@ -1679,7 +1681,7 @@ static void StepRunLoop_Core()
 static void StepRunLoop_Paused()
 {
 	paused = TRUE;
-	Sleep(100);
+	Sleep(50);
 
 	// periodically update single-core OSD when paused and in the foreground
 	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
@@ -1881,6 +1883,8 @@ void NDS_Pause(bool showMsg)
 		SPU_Pause(1);
 		while (!paused) {}
 		if (showMsg) INFO("Emulation paused\n");
+
+		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
 	}
 }
 
@@ -1893,6 +1897,8 @@ void NDS_UnPause(bool showMsg)
 		execute = TRUE;
 		SPU_Pause(0);
 		if (showMsg) INFO("Emulation unpaused\n");
+
+		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 	}
 }
 
@@ -2934,7 +2940,7 @@ void SetRotate(HWND hwnd, int rot, bool user)
 
 	GetClientRect(hwnd, &rc);
 	oldwidth = (rc.right - rc.left);
-	oldheight = (rc.bottom - rc.top);
+	oldheight = (rc.bottom - rc.top) - MainWindowToolbar->GetHeight();
 	newwidth = oldwidth;
 	newheight = oldheight;
 
@@ -3138,6 +3144,13 @@ static BOOL OpenCore(const char* filename)
 	{
 		romloaded = TRUE;
 		Unpause();
+
+		// Update the toolbar
+		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
+		MainWindowToolbar->EnableButton(IDM_CLOSEROM, true);
+		MainWindowToolbar->EnableButton(IDM_RESET, true);
+		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
+
 		return TRUE;
 	}
 	else return FALSE;
@@ -3227,6 +3240,11 @@ void CloseRom()
 	execute = false;
 	Hud.resetTransient();
 	NDS_Reset();
+
+	MainWindowToolbar->EnableButton(IDM_PAUSE, false);
+	MainWindowToolbar->EnableButton(IDM_CLOSEROM, false);
+	MainWindowToolbar->EnableButton(IDM_RESET, false);
+	MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
 }
 
 int GetInitialModifiers(int key) // async version for input thread
@@ -3536,6 +3554,7 @@ void SaveWindowSize(HWND hwnd)
 	if(IsZoomed(hwnd)) return;
 	RECT rc;
 	GetClientRect(hwnd, &rc);
+	rc.top += MainWindowToolbar->GetHeight();
 	WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
 	WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
 }
@@ -3742,6 +3761,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			path.ReadPathSettings();
 			pausedByMinimize = FALSE;
 			UpdateScreenRects();
+
+			MainWindowToolbar = new CToolBar(hwnd);
+			MainWindowToolbar->AppendButton(IDM_OPEN, IDB_OPEN, TBSTATE_ENABLED, false);
+			MainWindowToolbar->AppendSeparator();
+			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
+			MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
+			MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
+
 			return 0;
 		}
 	case WM_DESTROY:
@@ -3791,6 +3818,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			else
 				NDS_UnPause();
+			delete MainWindowToolbar;
 			return 0;
 		}
 	case WM_MOVING:
@@ -3860,18 +3888,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					minX = video.rotatedwidthgap();
 					minY = video.rotatedheightgap();
 				}
-				else
-					if (video.layout == 1)
-					{
-						minX = video.rotatedwidthgap() * 2;
-						minY = video.rotatedheightgap() / 2;
-					}
-					else
-						if (video.layout == 2)
-						{
-							minX = video.rotatedwidthgap();
-							minY = video.rotatedheightgap() / 2;
-						}
+				else if (video.layout == 1)
+				{
+					minX = video.rotatedwidthgap() * 2;
+					minY = video.rotatedheightgap() / 2;
+				}
+				else if (video.layout == 2)
+				{
+					minX = video.rotatedwidthgap();
+					minY = video.rotatedheightgap() / 2;
+				}
 
 				if(verticalDrag && !sideways && SeparationBorderDrag && video.layout == 0)
 				{
@@ -3890,6 +3916,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					forceRatioFlags |= WINCLASS::KEEPX;
 					forceRatioFlags |= WINCLASS::KEEPY;
 				}
+
 				MainWindow->setMinSize(minX, minY);
 			}
 
@@ -3907,20 +3934,22 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				int wndWidth, wndHeight, wndHeightGapless;
 				if(sideways)
 				{
-					wndWidth = (rc.bottom - rc.top);
+					wndWidth = (rc.bottom - rc.top) - MainWindowToolbar->GetHeight();
 					wndHeight = (rc.right - rc.left);
 					wndHeightGapless = (MainScreenRect.right - MainScreenRect.left) + (SubScreenRect.right - SubScreenRect.left);
 				}
 				else
 				{
 					wndWidth = (rc.right - rc.left);
-					wndHeight = (rc.bottom - rc.top);
+					wndHeight = (rc.bottom - rc.top) - MainWindowToolbar->GetHeight();
 					wndHeightGapless = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
 				}
+
 				if(ForceRatio)
-					video.screengap = wndHeight * video.width / wndWidth - video.height;
+					video.screengap = (wndHeight * video.width / wndWidth - video.height);
 				else
 					video.screengap = wndHeight * video.height / wndHeightGapless - video.height;
+
 				UpdateWndRects(MainWindow->getHWnd());
 			}
 		}
@@ -4030,7 +4059,7 @@ DOKEYDOWN:
 				}
 				
 				UpdateWndRects(hwnd);
-
+				MainWindowToolbar->OnSize();
 			}
 			break;
 		}
@@ -4160,7 +4189,7 @@ DOKEYDOWN:
 			SetCapture(hwnd);
 
 			s32 x = (s32)((s16)LOWORD(lParam));
-			s32 y = (s32)((s16)HIWORD(lParam));
+			s32 y = (s32)((s16)HIWORD(lParam)) - MainWindowToolbar->GetHeight();
 
 			UnscaleScreenCoords(x,y);
 
@@ -4216,13 +4245,15 @@ DOKEYDOWN:
 			if(wParam >= recentRoms_baseid && wParam <= recentRoms_baseid + MAX_RECENT_ROMS - 1)
 			{
 				int x = wParam - recentRoms_baseid;
-				OpenRecentROM(x);					
+				OpenRecentROM(x);
+				return 0;
 			}
 			else if(wParam == recentRoms_clearid)
 			{
 				/* Clear all the recent ROMs */
-				if(IDOK == MessageBox(hwnd, "OK to clear recent ROMs list?","DeSmuME",MB_OKCANCEL))
+				if(IDOK == MessageBox(hwnd, "Are you sure you want to clear the recent ROMs list?", "DeSmuME", MB_OKCANCEL | MB_ICONQUESTION))
 					ClearRecentRoms();
+				return 0;
 			}
 
 			if(wParam >= IDD_LUARECENT_RESERVE_START &&
@@ -4240,6 +4271,8 @@ DOKEYDOWN:
 						SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)temp);
 					}
 				}
+
+				return 0;
 			}
 
 			if(wParam >= IDC_LUASCRIPT_RESERVE_START &&
@@ -4248,6 +4281,8 @@ DOKEYDOWN:
 				unsigned int index = wParam - IDC_LUASCRIPT_RESERVE_START;
 				if(LuaScriptHWnds.size() > index)
 					SetForegroundWindow(LuaScriptHWnds[index]);
+
+				return 0;
 			}
 
 		}
@@ -5160,7 +5195,41 @@ DOKEYDOWN:
 			}
 			return 0;
 
+		default:
+			return 0;
 		}
+
+		case WM_NOTIFY:
+			{
+				NMHDR nmhdr = *(NMHDR*)lParam;
+				switch (nmhdr.code)
+				{
+				case TBN_DROPDOWN:
+					{
+						NMTOOLBAR nmtb = *(NMTOOLBAR*)lParam;
+
+						if (nmtb.iItem == IDM_OPEN)
+						{
+							// Get the recent roms menu (too lazy to make a new menu :P )
+							HMENU _rrmenu = GetSubMenu(recentromsmenu, 0);
+
+							// Here are the coordinates we want the recent roms menu to popup at
+							POINT pt;
+							pt.x = nmtb.rcButton.left;
+							pt.y = nmtb.rcButton.bottom;
+
+							// Convert the coordinates to screen coordinates
+							ClientToScreen(hwnd, &pt);
+
+							// Finally show the menu; once the user chose a ROM, we'll get a WM_COMMAND
+							TrackPopupMenu(_rrmenu, 0, pt.x, pt.y, 0, hwnd, NULL);
+							return TBDDRET_DEFAULT;
+						}
+					}
+					return 0;
+				}
+			}
+			return 0;
 	}
   return DefWindowProc (hwnd, message, wParam, lParam);
 }

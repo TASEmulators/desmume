@@ -32,6 +32,7 @@ static const unsigned int recentRoms_clearid = IDM_RECENT_RESERVED0;			// ID for
 static const unsigned int recentRoms_baseid = IDM_RECENT_RESERVED1;			//Base identifier for the recent ROMs items
 
 extern std::vector<std::string> RecentRoms;					//The list of recent ROM filenames
+extern HMENU recentromsmenu;								// The handle to the recent ROMs menu
 
 void UpdateRecentRoms(const char* filename);
 void InitRecentRoms();

@@ -19,10 +19,17 @@
 */
 
 #include "CWindow.h"
+#include "main.h"
 #include "IORegView.h"
 #include "debug.h"
 #include "resource.h"
 #include <windowsx.h>
+
+#include <commctrl.h>
+
+//-----------------------------------------------------------------------------
+//   The Toolkit - Helpers
+//-----------------------------------------------------------------------------
 
 DWORD GetFontQuality()
 {
@@ -58,6 +65,59 @@ void GetFontSize(HWND hWnd, HFONT hFont, LPSIZE size)
 
 	SelectObject(dc, oldfont);
 	ReleaseDC(hWnd, dc);
+}
+
+void MakeBitmapPseudoTransparent(HBITMAP hBmp, COLORREF cKeyColor, COLORREF cNewKeyColor)
+{
+	u8 keyr = (cKeyColor >> 16) & 0xFF;
+	u8 keyg = (cKeyColor >> 8) & 0xFF;
+	u8 keyb = cKeyColor & 0xFF;
+	u8 nkeyr = (cNewKeyColor >> 16) & 0xFF;
+	u8 nkeyg = (cNewKeyColor >> 8) & 0xFF;
+	u8 nkeyb = cNewKeyColor & 0xFF;
+
+	BITMAP bmp;
+	BITMAPINFO bmpinfo;
+	u8* bmpdata = NULL;
+	
+	HDC dc = CreateCompatibleDC(NULL);
+
+	GetObject(hBmp, sizeof(BITMAP), &bmp);
+
+	memset(&bmpinfo, 0, sizeof(BITMAPINFO));
+	bmpinfo.bmiHeader.biSize = sizeof(BITMAPINFO);
+	bmpinfo.bmiHeader.biBitCount = 24;
+	bmpinfo.bmiHeader.biCompression = BI_RGB;
+	bmpinfo.bmiHeader.biHeight = bmp.bmHeight;
+	bmpinfo.bmiHeader.biWidth = bmp.bmWidth;
+	bmpinfo.bmiHeader.biPlanes = bmp.bmPlanes;
+	bmpdata = new u8[bmp.bmHeight * bmp.bmWidth * 3];
+
+	GetDIBits(dc, hBmp, 0, bmp.bmHeight, (LPVOID)bmpdata, &bmpinfo, DIB_RGB_COLORS);
+
+	int y2 = 0;
+	for (int y = 0; y < bmp.bmHeight; y++)
+	{
+		for (int x = 0; x < bmp.bmWidth; x++)
+		{
+			int idx = y2 + x*3;
+			u8 r = bmpdata[idx + 0];
+			u8 g = bmpdata[idx + 1];
+			u8 b = bmpdata[idx + 2];
+
+			if ((r == keyr) && (g == keyg) && (b == keyb))
+			{
+				bmpdata[idx + 0] = nkeyr;
+				bmpdata[idx + 1] = nkeyg;
+				bmpdata[idx + 2] = nkeyb;
+			}
+		}
+		y2 += bmp.bmWidth * 3;
+	}
+
+	SetDIBits(dc, hBmp, 0, bmp.bmHeight, (LPVOID)bmpdata, &bmpinfo, DIB_RGB_COLORS);
+	DeleteDC(dc);
+	delete bmpdata;
 }
 
 //-----------------------------------------------------------------------------
@@ -266,6 +326,213 @@ void RefreshAllToolWindows()
 	}
 }
 
+//-----------------------------------------------------------------------------
+//   The Toolkit - Tooltip API wrapper
+//-----------------------------------------------------------------------------
+
+CToolTip::CToolTip(HWND hParent)
+{
+	hWnd = CreateWindow(TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		hParent, NULL, hAppInst, NULL);
+}
+
+void CToolTip::AddToolTip(HWND hCtl, int uID, CRect rcRect, char* text)
+{
+	TOOLINFO ti;
+
+	memset(&ti, 0, sizeof(TOOLINFO));
+	ti.cbSize = sizeof(TOOLINFO);
+	ti.uFlags = TTF_SUBCLASS;
+	ti.hwnd = hCtl;
+	ti.uId = uID;
+	ti.rect = rcRect.ToMSRect();
+	printf("%i %i %i %i\n", rcRect.ToMSRect().top, ti.rect.left, ti.rect.bottom, ti.rect.right);
+	ti.lpszText = text;
+
+	SendMessage(hWnd, TTM_ADDTOOL, 0, (LPARAM)&ti);
+}
+
+//-----------------------------------------------------------------------------
+//   The Toolkit - Toolbar API wrapper
+//-----------------------------------------------------------------------------
+
+CToolBar::CToolBar(HWND hParent)
+{
+	// Create the toolbar
+	// Note: dropdown buttons look like crap without TBSTYLE_FLAT
+	hWnd = CreateWindowEx(0, TOOLBARCLASSNAME, 
+		NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | TBSTYLE_FLAT, 0, 0, 0, 0, 
+		hParent, NULL, hAppInst, NULL);
+
+	// Send it a few messages to finish setting it up
+	SendMessage(hWnd, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
+	SendMessage(hWnd, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS);
+}
+
+CToolBar::~CToolBar()
+{
+	// Delete all the HBITMAPs we kept stored
+	for (TBitmapList::iterator it = hBitmaps.begin(); 
+		it != hBitmaps.end(); it++)
+	{
+		DeleteObject(it->second.second);
+	}
+
+	hBitmaps.clear();
+}
+
+void CToolBar::OnSize()
+{
+	RECT rc;
+	int parentwidth;
+
+	GetClientRect(GetParent(hWnd), &rc);
+	parentwidth = rc.right - rc.left;
+
+	// When there's not enough space to fit all the buttons in one line,
+	// we have to add the 'linebreaks' ourselves
+	int numbtns = SendMessage(hWnd, TB_BUTTONCOUNT, 0, 0);
+	int curwidth = 0;
+
+	for (int i = 0; i < numbtns; i++)
+	{
+		SendMessage(hWnd, TB_GETITEMRECT, i, (LPARAM)&rc);
+		curwidth += (rc.right - rc.left);
+
+		if (i > 0)
+		{
+			TBBUTTON btn;
+			TBBUTTONINFO btninfo;
+
+			// Retrieve the command ID of the button just behind the current one
+			// if it's a separator, then try the button behind it
+			SendMessage(hWnd, TB_GETBUTTON, i-1, (LPARAM)&btn);
+			if (btn.idCommand == -1)
+				SendMessage(hWnd, TB_GETBUTTON, i-2, (LPARAM)&btn);
+
+			// Add/remove the TBSTATE_WRAP style if needed
+			btninfo.cbSize = sizeof(TBBUTTONINFO);
+			btninfo.dwMask = TBIF_STATE;
+			SendMessage(hWnd, TB_GETBUTTONINFO, btn.idCommand, (LPARAM)&btninfo);
+
+			btninfo.dwMask = TBIF_STATE;
+			if (curwidth > parentwidth) btninfo.fsState |= TBSTATE_WRAP;
+			else btninfo.fsState &= ~TBSTATE_WRAP;
+			SendMessage(hWnd, TB_SETBUTTONINFO, btn.idCommand, (LPARAM)&btninfo);
+
+			if (curwidth > parentwidth) curwidth = 0;
+		}
+	}
+
+	SetWindowPos(hWnd, NULL, 
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+		SWP_NOZORDER | SWP_NOMOVE);
+}
+
+void CToolBar::AppendButton(int uID, int uBitmapID, DWORD dwState, bool bDropdown)
+{
+	HBITMAP hbmp;
+	TBADDBITMAP bmp;
+	TBBUTTON btn;
+
+	// Get the bitmap and replace the key color (magenta) with the right color
+	hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
+	MakeBitmapPseudoTransparent(hbmp, RGB(255, 0, 255), GetSysColor(COLOR_BTNFACE));
+
+	// Add the bitmap to the toolbar's image list
+	bmp.hInst = NULL;
+	bmp.nID = (UINT_PTR)hbmp;
+
+	int bmpid = SendMessage(hWnd, TB_ADDBITMAP, 1, (LPARAM)&bmp);
+
+	// Save the bitmap (if it gets deleted, the toolbar is too)
+	hBitmaps[uBitmapID] = TBitmapPair(bmpid, hbmp);
+
+	// And finally add the button
+	memset(&btn, 0, sizeof(TBBUTTON));
+	btn.fsStyle = bDropdown ? TBSTYLE_DROPDOWN : TBSTYLE_BUTTON;
+	btn.fsState = dwState;
+	btn.idCommand = uID;
+	btn.iString = -1;
+	btn.iBitmap = bmpid;
+
+	SendMessage(hWnd, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+}
+
+void CToolBar::AppendSeparator()
+{
+	TBBUTTON btn;
+
+	memset(&btn, 0, sizeof(TBBUTTON));
+	btn.fsStyle = TBSTYLE_SEP;
+	btn.idCommand = -1;
+	btn.iString = -1;
+
+	SendMessage(hWnd, TB_ADDBUTTONS, 1, (LPARAM)&btn);
+}
+
+void CToolBar::ChangeButtonBitmap(int uID, int uBitmapID)
+{
+	int bmpid = 0;
+
+	// If we don't already have the bitmap, retrieve it,
+	// adapt it and store it in the list
+	TBitmapList::iterator it = hBitmaps.find(uBitmapID);
+
+	if (it == hBitmaps.end())
+	{
+		HBITMAP hbmp;
+		TBADDBITMAP bmp;
+
+		hbmp = LoadBitmap(hAppInst, MAKEINTRESOURCE(uBitmapID));
+		MakeBitmapPseudoTransparent(hbmp, RGB(255, 0, 255), GetSysColor(COLOR_BTNFACE));
+
+		bmp.hInst = NULL;
+		bmp.nID = (UINT_PTR)hbmp;
+
+		bmpid = SendMessage(hWnd, TB_ADDBITMAP, 1, (LPARAM)&bmp);
+
+		hBitmaps[uBitmapID] = TBitmapPair(bmpid, hbmp);
+	}
+	else
+		bmpid = hBitmaps[uBitmapID].first;
+
+	// Finally change the bitmap
+	SendMessage(hWnd, TB_CHANGEBITMAP, uID, MAKELPARAM(bmpid, 0));
+}
+
+void CToolBar::EnableButtonDropdown(int uID, bool bDropdown)
+{
+	TBBUTTONINFO btninfo;
+
+	memset(&btninfo, 0, sizeof(TBBUTTONINFO));
+	btninfo.cbSize = sizeof(TBBUTTONINFO);
+	btninfo.dwMask = TBIF_STYLE;
+
+	SendMessage(hWnd, TB_GETBUTTONINFO, uID, (LPARAM)&btninfo);
+
+	btninfo.dwMask = TBIF_STYLE;
+	if (bDropdown)
+	{
+		btninfo.fsStyle &= ~TBSTYLE_BUTTON;
+		btninfo.fsStyle |= TBSTYLE_DROPDOWN;
+	}
+	else
+	{
+		btninfo.fsStyle |= TBSTYLE_BUTTON;
+		btninfo.fsStyle &= ~TBSTYLE_DROPDOWN;
+	}
+
+	SendMessage(hWnd, TB_SETBUTTONINFO, uID, (LPARAM)&btninfo);
+}
+
+int CToolBar::GetHeight()
+{
+	RECT rc; GetWindowRect(hWnd, &rc);
+	return rc.bottom - rc.top;
+}
+
 
 WINCLASS::WINCLASS(LPSTR rclass, HINSTANCE hInst)
 {
@@ -289,6 +556,9 @@ bool WINCLASS::create(LPSTR caption, int x, int y, int width, int height, int st
 	if (hwnd != NULL) return false;
 	
 	hwnd = CreateWindow(regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
+//	hwnd = CreateWindowEx(WS_EX_LAYERED, regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
+	//SetLayeredWindowAttributes(hwnd, 0, 254, LWA_ALPHA);
+	//
 	
 	if (hwnd != NULL) return true;
 	return false;
@@ -363,6 +633,8 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 	int _minWidth, _minHeight;
 
+	int tbheight = MainWindowToolbar->GetHeight();
+
 	RECT adjr;
 	SetRect(&adjr,0,0,minWidth,minHeight);
 	MyAdjustWindowRectEx(&adjr,hwnd);
@@ -371,11 +643,11 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	SetRect(&frameInfo,0,0,0,0);
 	MyAdjustWindowRectEx(&frameInfo,hwnd);
 	int frameWidth = frameInfo.right-frameInfo.left;
-	int frameHeight = frameInfo.bottom-frameInfo.top;
+	int frameHeight = frameInfo.bottom-frameInfo.top + tbheight;
 
 	// Calculate the minimum size in pixels
 	_minWidth = adjr.right-adjr.left;
-	_minHeight = adjr.bottom-adjr.top;
+	_minHeight = adjr.bottom-adjr.top + tbheight;
 
 	/* Clamp the size to the minimum size (256x384) */
 	rect->right = (rect->left + std::max(_minWidth, (int)(rect->right - rect->left)));
@@ -461,6 +733,8 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 void WINCLASS::setClientSize(int width, int height)
 {
+	height += MainWindowToolbar->GetHeight();
+
 	//yep, do it twice, once in case the menu wraps, and once to accomodate that wrap
 	for(int i=0;i<2;i++)
 	{

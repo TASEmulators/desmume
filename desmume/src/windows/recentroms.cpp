@@ -32,7 +32,7 @@
 #include <shlwapi.h>
 
 std::vector<std::string> RecentRoms;					//The list of recent ROM filenames
-static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
+HMENU recentromsmenu;				//Handle to the recent ROMs submenu
 
 void PopulateRecentRomsMenu()
 {
@@ -181,6 +181,7 @@ void ClearRecentRoms()
 	RecentRoms.clear();
 	SaveRecentRoms();
 	PopulateRecentRomsMenu();
+	MainWindowToolbar->EnableButtonDropdown(IDM_OPEN, false);
 }
 
 
@@ -221,6 +222,7 @@ void UpdateRecentRoms(const char* filename)
 
 	PopulateRecentRomsMenu();
 	SaveRecentRoms();
+	MainWindowToolbar->EnableButtonDropdown(IDM_OPEN, true);
 }
 
 
@@ -229,4 +231,5 @@ void InitRecentRoms()
 	recentromsmenu = LoadMenu(hAppInst, MAKEINTRESOURCE(RECENTROMS));
 	LoadRecentRoms();
 	PopulateRecentRomsMenu();
+	MainWindowToolbar->EnableButtonDropdown(IDM_OPEN, !RecentRoms.empty());
 }

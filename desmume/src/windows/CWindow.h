@@ -25,11 +25,39 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <algorithm>
 
 using namespace std;
 
 extern CRITICAL_SECTION win_execute_sync;
+
+//-----------------------------------------------------------------------------
+//   The Toolkit - RECT wrapper
+//-----------------------------------------------------------------------------
+
+class CRect
+{
+public:
+	CRect(int x, int y, int width, int height)
+	{
+		rcRect.left = x; rcRect.top = y;
+		rcRect.right = x + width;
+		rcRect.bottom = y + height;
+	}
+	CRect(RECT rc)
+	{
+		memcpy(&rcRect, &rc, sizeof(RECT));
+		//rcRect = rc;
+	}
+
+	~CRect() {}
+
+	RECT ToMSRect() { return rcRect; }
+
+private:
+	RECT rcRect;
+};
 
 // GetFontQuality()
 // Returns a font quality value that can be passed to 
@@ -39,6 +67,12 @@ DWORD GetFontQuality();
 
 int DrawText(HDC hDC, char* text, int X, int Y, int Width, int Height, UINT format);
 void GetFontSize(HWND hWnd, HFONT hFont, LPSIZE size);
+
+// MakeBitmapPseudoTransparent(HBITMAP hBmp, COLORREF cKeyColor, COLORREF cNewKeyColor)
+// Replaces the RGB color cKeyColor with cNewKeyColor in the bitmap hBmp.
+// For use with toolbars and such. Replace a key color (like magenta) with the right
+// system color to make the bitmap pseudo-transparent.
+void MakeBitmapPseudoTransparent(HBITMAP hBmp, COLORREF cKeyColor, COLORREF cNewKeyColor);
 
 //-----------------------------------------------------------------------------
 // Window class handling
@@ -138,6 +172,64 @@ void CloseAllToolWindows();
 // Called once per frame when the emu is running.
 void RefreshAllToolWindows();
 
+//-----------------------------------------------------------------------------
+//   The Toolkit - Tooltip API wrapper
+//-----------------------------------------------------------------------------
+
+class CToolTip
+{
+public:
+	CToolTip(HWND hParent);
+	~CToolTip() {}
+
+	HWND GetHWnd() { return hWnd; }
+
+	void AddToolTip(HWND hCtl, int uID, CRect rcRect, char* text);
+
+private:
+	HWND hWnd;
+};
+
+//-----------------------------------------------------------------------------
+//   The Toolkit - Toolbar API wrapper
+//-----------------------------------------------------------------------------
+
+class CToolBar
+{
+public:
+	CToolBar(HWND hParent);
+	~CToolBar();
+
+	HWND GetHWnd() { return hWnd; }
+
+	void OnSize();
+
+	void AppendButton(int uID, int uBitmapID, DWORD dwState, bool bDropdown);
+	void AppendSeparator();
+
+	void EnableButton(int uID, bool bEnable) {
+		SendMessage(hWnd, TB_ENABLEBUTTON, uID, bEnable ? TRUE:FALSE); }
+	void CheckButton(int uID, bool bCheck) {
+		SendMessage(hWnd, TB_CHECKBUTTON, uID, bCheck ? TRUE:FALSE); }
+
+	void ChangeButtonBitmap(int uID, int uBitmapID);
+
+	void EnableButtonDropdown(int uID, bool bDropdown);
+
+	void SetToolTip(CToolTip tt);
+
+	int GetHeight();
+
+private:
+	HWND hWnd;
+	// We have to keep the bitmaps here because destroying them
+	// directly after use would also destroy the toolbar.
+	// They'll be destroyed when the CToolBar destructor is called.
+	typedef pair<int, HBITMAP> TBitmapPair;
+	typedef map<int, TBitmapPair> TBitmapList;
+	TBitmapList hBitmaps;
+};
+
 
 class WINCLASS
 {
@@ -163,6 +255,12 @@ public:
 	void Hide();
 
 	HWND getHWnd();
+
+	CRect GetRect()
+	{
+		RECT rc; GetWindowRect(hwnd, &rc);
+		return CRect(rc);
+	}
 
 	void setMinSize(int width, int height);
 
