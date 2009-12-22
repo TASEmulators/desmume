@@ -5,6 +5,7 @@
 extern WINCLASS	*MainWindow;
 extern HINSTANCE hAppInst;
 extern HMENU mainMenu; //Holds handle to the main DeSmuME menu
+extern CToolBar* MainWindowToolbar;
 
 extern volatile bool execute, paused;
 void NDS_Pause(bool showMsg = true);

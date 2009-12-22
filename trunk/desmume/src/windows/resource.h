@@ -11,19 +11,25 @@
 #define IDC_SETPNUM                     105
 #define IDC_SCROLLER                    106
 #define IDD_SOUNDSETTINGS               106
+#define IDB_FRAMEADVANCE                106
 #define IDC_GO                          107
 #define IDC_AUTO_UPDATE                 108
+#define IDB_OPEN                        108
 #define IDM_MEMORY                      109
 #define IDM_DISASSEMBLER                110
+#define IDB_PAUSE                       110
 #define IDD_3DSETTINGS                  111
 #define IDM_GAME_INFO                   111
+#define IDB_PLAY                        112
 #define IDD_GBASLOT                     113
 #define IDM_PAUSE                       113
 #define IDD_GBASLOT_CFLASH              114
 #define IDM_RESET                       114
+#define IDB_RESET                       114
 #define IDD_CHEAT_SEARCH_VIEW           115
 #define IDM_IOREG                       115
 #define IDD_CHEAT_LIST                  116
+#define IDB_STOP                        116
 #define IDD_CHEAT_ADD                   117
 #define IDM_PAL                         117
 #define IDM_TILE                        118
@@ -341,6 +347,7 @@
 #define IDC_SYNCHMETHOD_P               1018
 #define IDC_VISIBLE                     1019
 #define IDC_USEPHYSICAL                 1019
+#define IDC_SPLIT1                      1021
 #define IDC_DEFAULT                     1027
 #define IDC_3DCORE                      1028
 #define IDC_TXT_COMPILED                1029
@@ -796,9 +803,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        106
+#define _APS_NEXT_RESOURCE_VALUE        118
 #define _APS_NEXT_COMMAND_VALUE         40014
-#define _APS_NEXT_CONTROL_VALUE         1020
+#define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
