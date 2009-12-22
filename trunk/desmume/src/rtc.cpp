@@ -143,7 +143,8 @@ static void MovieTime(void) {
 static void rtcRecv()
 {
 	//INFO("RTC Read command 0x%02X\n", (rtc.cmd >> 1));
-	memset(rtc.data, 0, sizeof(rtc.data));
+
+	memset(&rtc.data[0], 0, sizeof(rtc.data));
 	switch (rtc.cmd >> 1)
 	{
 		case 0:				// status register 1
@@ -173,7 +174,7 @@ static void rtcRecv()
 					rtc.data[1]=toBCD(movie.month);
 					rtc.data[2]=toBCD(movie.monthday);
 					rtc.data[3]=(movie.weekday + 7) & 7;
-					if (rtc.data[3] == 7) rtc.data[3] = 0;
+					if (rtc.data[3] == 7) rtc.data[3] = 6;
 					if (!(rtc.regStatus1 & 0x02)) movie.hour %= 12;
 					rtc.data[4] = ((movie.hour < 12) ? 0x00 : 0x40) | toBCD(movie.hour);		
 					rtc.data[5]=toBCD(movie.minute);
@@ -186,7 +187,7 @@ static void rtcRecv()
 					rtc.data[1] = toBCD(tm_local->tm_mon);
 					rtc.data[2] = toBCD(tm_local->tm_mday);
 					rtc.data[3] = (tm_local->tm_wday + 7) & 7;
-					if (rtc.data[3] == 7) rtc.data[3] = 0;
+					if (rtc.data[3] == 7) rtc.data[3] = 6;
 					if (!(rtc.regStatus1 & 0x02)) tm_local->tm_hour %= 12;
 					rtc.data[4] = ((tm_local->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm_local->tm_hour);
 					rtc.data[5] =  toBCD(tm_local->tm_min);
@@ -245,7 +246,7 @@ static void rtcRecv()
 
 static void rtcSend()
 {
-	//INFO("RTC write 0x%02X\n", (rtc.cmd >> 1));
+	//INFO("RTC write command 0x%02X\n", (rtc.cmd >> 1));
 	switch (rtc.cmd >> 1)
 	{
 		case 0:				// status register 1
@@ -286,8 +287,9 @@ static void rtcSend()
 
 void rtcInit() 
 {
-	memset(&rtc, 0, sizeof(_RTC));
-	memcpy(rtc.cmdBitsSize,kDefaultCmdBitsSize,8);
+	memset(&rtc, 0, sizeof(rtc));
+	memcpy(&rtc.cmdBitsSize[0],kDefaultCmdBitsSize,8);
+
 	rtc.regStatus1 |= 0x02;
 }
 
@@ -385,13 +387,13 @@ void rtcWrite(u16 val)
 			if( (rtc._prevSCK) && (!rtc._SCK) )
 			{
 				rtc._REG = val;
-				if(rtc.data[rtc.bitsCount >> 3] >> (rtc.bitsCount & 0x07) & 0x01) 
+				if((rtc.data[(rtc.bitsCount >> 3)] >> (rtc.bitsCount & 0x07)) & 0x01) 
 					rtc._REG |= 0x01;
 				else
 					rtc._REG &= ~0x01;
 
 				rtc.bitsCount++;
-				if (rtc.bitsCount == rtc.cmdBitsSize[rtc.cmd >> 1])
+				if (rtc.bitsCount == rtc.cmdBitsSize[rtc.cmd >> 1] || (!(val & 0x04)))
 					rtc.cmdStat = 0;
 			}
 		break;
