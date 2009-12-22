@@ -1111,7 +1111,7 @@ void doLCDsLayout()
 
 	GetClientRect(hwnd, &rc);
 	oldwidth = (rc.right - rc.left);
-	oldheight = (rc.bottom - rc.top);
+	oldheight = (rc.bottom - rc.top) - MainWindowToolbar->GetHeight();
 	newwidth = oldwidth;
 	newheight = oldheight;
 
@@ -3977,6 +3977,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		break;
 
 	case WM_KEYDOWN:
+		//MainWindowToolbar->Show(false);
 		input_acquire();
 		if(wParam != VK_PAUSE)
 			break;
@@ -4005,6 +4006,7 @@ DOKEYDOWN:
 			break;
 		}
 	case WM_KEYUP:
+		//MainWindowToolbar->Show(true);
 		//handle ctr+printscreen: our own custom printscreener
 		if (wParam == VK_SNAPSHOT) { 
 			if(GetKeyState(VK_CONTROL)&0x8000)
