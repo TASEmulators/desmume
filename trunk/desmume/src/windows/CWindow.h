@@ -174,24 +174,6 @@ void CloseAllToolWindows();
 void RefreshAllToolWindows();
 
 //-----------------------------------------------------------------------------
-//   The Toolkit - Tooltip API wrapper
-//-----------------------------------------------------------------------------
-
-class CToolTip
-{
-public:
-	CToolTip(HWND hParent);
-	~CToolTip() {}
-
-	HWND GetHWnd() { return hWnd; }
-
-	void AddToolTip(HWND hCtl, int uID, CRect rcRect, char* text);
-
-private:
-	HWND hWnd;
-};
-
-//-----------------------------------------------------------------------------
 //   The Toolkit - Toolbar API wrapper
 //-----------------------------------------------------------------------------
 
@@ -217,10 +199,9 @@ public:
 		SendMessage(hWnd, TB_CHECKBUTTON, uID, bCheck ? TRUE:FALSE); }
 
 	void ChangeButtonBitmap(int uID, int uBitmapID);
-
 	void EnableButtonDropdown(int uID, bool bDropdown);
-
-	void SetToolTip(CToolTip tt);
+	void ChangeButtonID(int uIndex, int uNewID) {
+		SendMessage(hWnd, TB_SETCMDID, uIndex, MAKELPARAM(uNewID, 0)); }
 
 	int GetHeight();
 

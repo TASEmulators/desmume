@@ -1134,22 +1134,24 @@ void doLCDsLayout()
 		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, true);
 		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, true);
 
+		MainWindowToolbar->EnableButton(IDC_ROTATE90, true);
+		MainWindowToolbar->EnableButton(IDC_ROTATE270, true);
+
 		if (video.layout_old == 1)
 		{
 			newwidth = oldwidth / 2;
 			newheight = oldheight * 2;
 		}
+		else if (video.layout_old == 2)
+		{
+			newwidth = oldwidth;
+			newheight = oldheight * 2;
+		} 
 		else
-			if (video.layout_old == 2)
-			{
-				newwidth = oldwidth;
-				newheight = oldheight * 2;
-			}
-				else
-				{
-					newwidth = oldwidth;
-					newheight = oldheight;
-				}
+		{
+			newwidth = oldwidth;
+			newheight = oldheight;
+		}
 		MainWindow->checkMenu(ID_LCDS_VERTICAL, true);
 		MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
 		MainWindow->checkMenu(ID_LCDS_ONE, false);
@@ -1170,6 +1172,11 @@ void doLCDsLayout()
 		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, false);
 		DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, false);
 
+		// As rotation was reset to 0, the button IDs were reset to 
+		// IDC_ROTATE90 and IDC_ROTATE270.
+		MainWindowToolbar->EnableButton(IDC_ROTATE90, false);
+		MainWindowToolbar->EnableButton(IDC_ROTATE270, false);
+
 		if (video.layout == 1)
 		{
 			if (video.layout_old == 0)
@@ -1177,46 +1184,43 @@ void doLCDsLayout()
 				newwidth = oldwidth * 2;
 				newheight = oldheight / 2;
 			}
+			else if (video.layout_old == 2)
+			{
+				newwidth = oldwidth * 2;
+				newheight = oldheight;
+			}
 			else
-				if (video.layout_old == 2)
-				{
-					newwidth = oldwidth * 2;
-					newheight = oldheight;
-				}
-				else
-					{
-						newwidth = oldwidth;
-						newheight = oldheight;
-					}
+			{
+				newwidth = oldwidth;
+				newheight = oldheight;
+			}
 			MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
 			MainWindow->checkMenu(ID_LCDS_VERTICAL, true);
 			MainWindow->checkMenu(ID_LCDS_ONE, false);
 		}
-		else
-			if (video.layout == 2)
+		else if (video.layout == 2)
+		{
+			if (video.layout_old == 0)
 			{
-				if (video.layout_old == 0)
-				{
-					newwidth = oldwidth;
-					newheight = oldheight / 2;
-				}
-				else
-					if (video.layout_old == 1)
-					{
-						newwidth = oldwidth / 2;
-						newheight = oldheight;
-					}
-					else
-						{
-							newwidth = oldwidth;
-							newheight = oldheight;
-						}
-				MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
-				MainWindow->checkMenu(ID_LCDS_VERTICAL, false);
-				MainWindow->checkMenu(ID_LCDS_ONE, true);
+				newwidth = oldwidth;
+				newheight = oldheight / 2;
+			}
+			else if (video.layout_old == 1)
+			{
+				newwidth = oldwidth / 2;
+				newheight = oldheight;
 			}
 			else
-				return;
+			{
+				newwidth = oldwidth;
+				newheight = oldheight;
+			}
+			MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
+			MainWindow->checkMenu(ID_LCDS_VERTICAL, false);
+			MainWindow->checkMenu(ID_LCDS_ONE, true);
+		}
+		else
+			return;
 	}
 
 	video.layout_old = video.layout;
@@ -2986,6 +2990,18 @@ void SetRotate(HWND hwnd, int rot, bool user)
 
 	MainWindow->setClientSize(newwidth, newheight);
 
+	int cwid, ccwid;
+	switch (rot)
+	{
+		case 0: cwid = IDC_ROTATE90; ccwid = IDC_ROTATE270; break;
+		case 90: cwid = IDC_ROTATE180; ccwid = IDC_ROTATE0; break;
+		case 180: cwid = IDC_ROTATE270; ccwid = IDC_ROTATE90; break;
+		case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
+	}
+
+	MainWindowToolbar->ChangeButtonID(6, cwid);
+	MainWindowToolbar->ChangeButtonID(7, ccwid);
+
 	/* Recreate the DirectDraw back buffer */
 	if (lpBackSurface!=NULL)
 	{
@@ -3786,6 +3802,20 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
 			MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
 			MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
+			MainWindowToolbar->AppendSeparator();
+
+			int cwid, ccwid;
+			DWORD rotstate = (video.layout == 0) ? TBSTATE_ENABLED : 0;
+			switch (video.rotation)
+			{
+				case 0: cwid = IDC_ROTATE90; ccwid = IDC_ROTATE270; break;
+				case 90: cwid = IDC_ROTATE180; ccwid = IDC_ROTATE0; break;
+				case 180: cwid = IDC_ROTATE270; ccwid = IDC_ROTATE90; break;
+				case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
+			}
+
+			MainWindowToolbar->AppendButton(cwid, IDB_ROTATECW, rotstate, false);
+			MainWindowToolbar->AppendButton(ccwid, IDB_ROTATECCW, rotstate, false);
 
 			bool showtb = GetPrivateProfileBool("Display", "Show Toolbar", true, IniName);
 			MainWindowToolbar->Show(showtb);
@@ -5280,6 +5310,40 @@ DOKEYDOWN:
 							// Finally show the menu; once the user chose a ROM, we'll get a WM_COMMAND
 							TrackPopupMenu(_rrmenu, 0, pt.x, pt.y, 0, hwnd, NULL);
 							return TBDDRET_DEFAULT;
+						}
+					}
+					return 0;
+
+				case TTN_NEEDTEXT:
+					{
+						TOOLTIPTEXT* ttt = (TOOLTIPTEXT*)lParam;
+						ttt->hinst = hAppInst;
+
+						switch (ttt->hdr.idFrom)
+						{
+						case IDM_OPEN:
+							if (RecentRoms.empty()) ttt->lpszText = "Open a ROM";
+							else ttt->lpszText = "Open a ROM\nClick the arrow to open a recent ROM"; break;
+
+						case IDM_PAUSE:
+							if (paused) ttt->lpszText = "Resume emulation";
+							else ttt->lpszText = "Pause emulation"; break;
+
+						case IDM_CLOSEROM: ttt->lpszText = "Stop emulation"; break;
+						case IDM_RESET: ttt->lpszText = "Reset emulation"; break;
+
+						case IDC_ROTATE0:
+							if (video.rotation == 90) ttt->lpszText = "Rotate CCW";
+							else if (video.rotation == 270) ttt->lpszText = "Rotate CW"; break;
+						case IDC_ROTATE90:
+							if (video.rotation == 180) ttt->lpszText = "Rotate CCW";
+							else if (video.rotation == 0) ttt->lpszText = "Rotate CW"; break;
+						case IDC_ROTATE180:
+							if (video.rotation == 270) ttt->lpszText = "Rotate CCW";
+							else if (video.rotation == 90) ttt->lpszText = "Rotate CW"; break;
+						case IDC_ROTATE270:
+							if (video.rotation == 0) ttt->lpszText = "Rotate CCW";
+							else if (video.rotation == 180) ttt->lpszText = "Rotate CW"; break;
 						}
 					}
 					return 0;
