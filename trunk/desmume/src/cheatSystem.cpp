@@ -548,7 +548,7 @@ BOOL CHEATS::save()
 		removeSpecialChars(buf);
 		fprintf(flist, "Name=%s\n", buf);
 		fprintf(flist, "Serial=%s\n", gameInfo.ROMserial);
-		fputs("\n; lists list\n", flist);
+		fputs("\n; cheats list\n", flist);
 		for (int i = 0;  i < num; i++)
 		{
 			if (list[i].num == 0) continue;
