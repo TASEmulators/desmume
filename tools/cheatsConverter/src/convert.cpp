@@ -78,7 +78,7 @@ bool save(char *filename)
 		fprintf(flist, "; DeSmuME cheat file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
 		fprintf(flist, "Name=\n");
 		fprintf(flist, "Serial=%s\n", ROMserial);
-		fputs("\n; lists list\n", flist);
+		fputs("\n; cheats list\n", flist);
 		for (unsigned int i = 0;  i < num; i++)
 		{
 			if (list[i].num == 0) continue;
