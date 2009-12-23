@@ -655,13 +655,13 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	bool verticalDrag = (wParam == WMSZ_TOP) || (wParam == WMSZ_BOTTOM);
 	if(verticalDrag && !(keepRatio & KEEPY))
 	{
-		int clientHeight = rect->bottom - rect->top - frameWidth;
+		int clientHeight = rect->bottom - rect->top - frameHeight;
 		if(clientHeight < minHeight)
 			rect->bottom += minHeight - clientHeight;
 	}
 	else if(horizontalDrag && !(keepRatio & KEEPX))
 	{
-		int clientWidth = rect->right - rect->left - frameHeight;
+		int clientWidth = rect->right - rect->left - frameWidth;
 		if(clientWidth < minWidth)
 			rect->right += minWidth - clientWidth;
 	}

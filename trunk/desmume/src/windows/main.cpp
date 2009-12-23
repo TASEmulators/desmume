@@ -438,8 +438,14 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 	InputTimer<true>();
 }
 
-void ScaleScreen(float factor)
+void ScaleScreen(float factor, bool user)
 {
+	if(user) // have to exit maximized mode if the user told us to set a specific window size
+	{
+		bool maximized = IsZoomed(MainWindow->getHWnd())==TRUE;
+		if(maximized) ShowWindow(MainWindow->getHWnd(),SW_NORMAL);
+	}
+
 	if(windowSize == 0)
 	{
 		int defw = GetPrivateProfileInt("Video", "Window width", 256, IniName);
@@ -511,7 +517,7 @@ static void GetNdsScreenRect(RECT* r)
 	RECT zero; 
 	SetRect(&zero,0,0,0,0);
 	if(zero == MainScreenRect) *r = SubScreenRect;
-	else if(zero == SubScreenRect) *r = MainScreenRect;
+	else if(zero == SubScreenRect || video.layout == 2) *r = MainScreenRect;
 	else
 	{
 		RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
@@ -1140,12 +1146,12 @@ void doLCDsLayout()
 		if (video.layout_old == 1)
 		{
 			newwidth = oldwidth / 2;
-			newheight = oldheight * 2;
+			newheight = (oldheight * 2) + (video.screengap * oldheight / 192);
 		}
 		else if (video.layout_old == 2)
 		{
 			newwidth = oldwidth;
-			newheight = oldheight * 2;
+			newheight = (oldheight * 2) + (video.screengap * oldheight / 192);
 		} 
 		else
 		{
@@ -1155,8 +1161,6 @@ void doLCDsLayout()
 		MainWindow->checkMenu(ID_LCDS_VERTICAL, true);
 		MainWindow->checkMenu(ID_LCDS_HORIZONTAL, false);
 		MainWindow->checkMenu(ID_LCDS_ONE, false);
-
-
 	}
 	else
 	{
@@ -1177,12 +1181,14 @@ void doLCDsLayout()
 		MainWindowToolbar->EnableButton(IDC_ROTATE90, false);
 		MainWindowToolbar->EnableButton(IDC_ROTATE270, false);
 
+		int scaledGap = oldheight - ((MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top));
+
 		if (video.layout == 1)
 		{
 			if (video.layout_old == 0)
 			{
 				newwidth = oldwidth * 2;
-				newheight = oldheight / 2;
+				newheight = (oldheight - scaledGap) / 2;
 			}
 			else if (video.layout_old == 2)
 			{
@@ -1203,7 +1209,7 @@ void doLCDsLayout()
 			if (video.layout_old == 0)
 			{
 				newwidth = oldwidth;
-				newheight = oldheight / 2;
+				newheight = (oldheight - scaledGap) / 2;
 			}
 			else if (video.layout_old == 1)
 			{
@@ -1280,14 +1286,13 @@ static void DD_FillRect(LPDIRECTDRAWSURFACE7 surf, int left, int top, int right,
 //the directdraw final presentation portion of display, including rotating
 static void DD_DoDisplay()
 {
-	int res;
+	if(backbuffer_invalidate)
+		goto CREATE;
+
 	memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
 	ddsd.dwFlags=DDSD_ALL;
-	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
-
-	if(backbuffer_invalidate)
-		goto CREATE;
+	int res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
 
 	if(FAILED(res))
 	{
@@ -1298,8 +1303,8 @@ static void DD_DoDisplay()
 			 || FAILED(IDirectDrawSurface7_Restore(lpBackSurface)))
 			{
 			CREATE:
-				if(CreateDDrawBuffers() < 0)
-					return;
+				CreateDDrawBuffers();
+				return;
 			}
 		}
 		else
@@ -2499,7 +2504,7 @@ int _main()
 
 	SetMinWindowSize();
 
-	ScaleScreen(windowSize);
+	ScaleScreen(windowSize, false);
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
@@ -2922,13 +2927,13 @@ void FixAspectRatio()
 {
 	if(windowSize != 0)
 	{
-		ScaleScreen(windowSize);
+		ScaleScreen(windowSize, false);
 	}
 	else if(ForceRatio)
 	{
 		RECT rc;
 		GetWindowRect(MainWindow->getHWnd(), &rc);
-		SendMessage(MainWindow->getHWnd(), WM_SIZING, WMSZ_BOTTOMRIGHT, (LPARAM)&rc);
+		SendMessage(MainWindow->getHWnd(), WM_SIZING, WMSZ_BOTTOMRIGHT, (LPARAM)&rc); // calls WINCLASS::sizingMsg
 		MoveWindow(MainWindow->getHWnd(), rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE);
 	}
 }
@@ -2944,6 +2949,11 @@ void SetScreenGap(int gap)
 //========================================================================================
 void SetRotate(HWND hwnd, int rot, bool user)
 {
+	bool maximized = IsZoomed(hwnd)==TRUE;
+	if(((rot == 90) || (rot == 270)) == ((video.rotation == 90) || (video.rotation == 270)))
+		maximized = false; // no need to toggle out to windowed if the dimensions aren't changing
+	if(maximized) ShowWindow(hwnd,SW_NORMAL);
+	{
 	Lock lock (win_backbuffer_sync);
 
 	RECT rc;
@@ -2999,8 +3009,8 @@ void SetRotate(HWND hwnd, int rot, bool user)
 		case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
 	}
 
-	MainWindowToolbar->ChangeButtonID(6, cwid);
-	MainWindowToolbar->ChangeButtonID(7, ccwid);
+	MainWindowToolbar->ChangeButtonID(6, ccwid);
+	MainWindowToolbar->ChangeButtonID(7, cwid);
 
 	/* Recreate the DirectDraw back buffer */
 	if (lpBackSurface!=NULL)
@@ -3028,6 +3038,9 @@ void SetRotate(HWND hwnd, int rot, bool user)
 	gpu_SetRotateScreen(video.rotation);
 
 	UpdateScreenRects();
+	UpdateWndRects(hwnd);
+	}
+	if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
 }
 
 void AviEnd()
@@ -3171,7 +3184,8 @@ static BOOL OpenCore(const char* filename)
 	if(LoadROM(filename, LogicalName))
 	{
 		romloaded = TRUE;
-		Unpause();
+		if(movieMode == MOVIEMODE_INACTIVE)
+			Unpause();
 
 		// Update the toolbar
 		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
@@ -3268,6 +3282,12 @@ void CloseRom()
 	execute = false;
 	Hud.resetTransient();
 	NDS_Reset();
+
+	// clear screen so the last frame we rendered doesn't stick around
+	// (TODO: maybe NDS_Reset should do this?)
+	memset(GPU_screen, 0xFF, sizeof(GPU_screen));
+
+	InvalidateRect(MainWindow->getHWnd(), NULL, FALSE); // make sure the window refreshes with the cleared screen
 
 	MainWindowToolbar->EnableButton(IDM_PAUSE, false);
 	MainWindowToolbar->EnableButton(IDM_CLOSEROM, false);
@@ -3570,7 +3590,7 @@ void FilterUpdate(HWND hwnd, bool user)
 	SetScreenGap(video.screengap);
 	SetRotate(hwnd, video.rotation, false);
 	if(user && windowSize==0) {}
-	else ScaleScreen(windowSize);
+	else ScaleScreen(windowSize, false);
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
@@ -3605,6 +3625,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case WM_EXITMENULOOP:
 			SPU_Pause(0);
 			if (autoframeskipenab && frameskiprate) AutoFrameSkip_IgnorePreviousDelay();
+			if(MainWindowToolbar->Visible())
+				UpdateWindow(MainWindowToolbar->GetHWnd());
 			break;
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
@@ -3702,6 +3724,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_SCREENSEP_COLORWHITE, ((ScreenGapColor&0xFFFFFF) == 0xFFFFFF));
 			MainWindow->checkMenu(IDM_SCREENSEP_COLORGRAY, ((ScreenGapColor&0xFFFFFF) == 0x7F7F7F));
 			MainWindow->checkMenu(IDM_SCREENSEP_COLORBLACK, ((ScreenGapColor&0xFFFFFF) == 0x000000));
+			DesEnableMenuItem(mainMenu, IDM_SCREENSEP_DRAGEDIT, !IsZoomed(hwnd) && video.layout==0);
 
 			// Show toolbar
 			MainWindow->checkMenu(IDM_SHOWTOOLBAR, MainWindowToolbar->Visible());
@@ -3814,8 +3837,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
 			}
 
-			MainWindowToolbar->AppendButton(cwid, IDB_ROTATECW, rotstate, false);
 			MainWindowToolbar->AppendButton(ccwid, IDB_ROTATECCW, rotstate, false);
+			MainWindowToolbar->AppendButton(cwid, IDB_ROTATECW, rotstate, false);
 
 			bool showtb = GetPrivateProfileBool("Display", "Show Toolbar", true, IniName);
 			MainWindowToolbar->Show(showtb);
@@ -4110,6 +4133,10 @@ DOKEYDOWN:
 					int yfudge = (fsheight-fakeheight)/2;
 					OffsetRect(&FullScreenRect,xfudge,yfudge);
 				}
+				else if(wParam==SIZE_RESTORED)
+				{
+					FixAspectRatio();
+				}
 				
 				UpdateWndRects(hwnd);
 				MainWindowToolbar->OnSize();
@@ -4304,7 +4331,7 @@ DOKEYDOWN:
 			else if(wParam == recentRoms_clearid)
 			{
 				/* Clear all the recent ROMs */
-				if(IDOK == MessageBox(hwnd, "Are you sure you want to clear the recent ROMs list?", "DeSmuME", MB_OKCANCEL | MB_ICONQUESTION))
+				if(IDYES == MessageBox(hwnd, "Are you sure you want to clear the recent ROMs list?", "DeSmuME", MB_YESNO | MB_ICONQUESTION))
 					ClearRecentRoms();
 				return 0;
 			}
@@ -5205,32 +5232,32 @@ DOKEYDOWN:
 
 		case IDC_WINDOW1_5X:
 			windowSize=kScale1point5x;
-			ScaleScreen(windowSize);
+			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 		case IDC_WINDOW2_5X:
 			windowSize=kScale2point5x;
-			ScaleScreen(windowSize);
+			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 		case IDC_WINDOW1X:
 			windowSize=1;
-			ScaleScreen(windowSize);
+			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 		case IDC_WINDOW2X:
 			windowSize=2;
-			ScaleScreen(windowSize);
+			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 		case IDC_WINDOW3X:
 			windowSize=3;
-			ScaleScreen(windowSize);
+			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 		case IDC_WINDOW4X:
 			windowSize=4;
-			ScaleScreen(windowSize);
+			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 
@@ -5250,12 +5277,18 @@ DOKEYDOWN:
 		case IDM_DEFSIZE:
 			{
 				windowSize = 1;
-				ScaleScreen(1);
+				ScaleScreen(1, true);
 			}
 			break;
 		case IDM_LOCKDOWN:
 			{
+				RECT rc; 
+				GetClientRect(hwnd, &rc);
+
 				SetStyle(GetStyle()^DWS_LOCKDOWN);
+
+				MainWindow->setClientSize(rc.right-rc.left, rc.bottom-rc.top);
+
 				WritePrivateProfileBool("Video", "Window Lockdown", (GetStyle()&DWS_LOCKDOWN)!=0, IniName);
 			}
 			return 0;
@@ -5268,6 +5301,9 @@ DOKEYDOWN:
 
 		case IDM_SHOWTOOLBAR:
 			{
+				bool maximized = IsZoomed(hwnd)==TRUE;
+				if(maximized) ShowWindow(hwnd,SW_NORMAL);
+
 				RECT rc; 
 				GetClientRect(hwnd, &rc); rc.top += MainWindowToolbar->GetHeight();
 
@@ -5277,6 +5313,8 @@ DOKEYDOWN:
 				MainWindow->setClientSize(rc.right-rc.left, rc.bottom-rc.top);
 
 				WritePrivateProfileBool("Display", "Show Toolbar", nowvisible, IniName);
+
+				if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
 			}
 			return 0;
 
@@ -5955,7 +5993,8 @@ void ResetGame()
 	if(movieMode != MOVIEMODE_PLAY)
 	{
 		NDS_Reset();
-		Unpause();
+		if(movieMode == MOVIEMODE_INACTIVE)
+			Unpause();
 	}
 }
 
