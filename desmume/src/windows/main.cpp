@@ -199,13 +199,41 @@ Lock::Lock() : m_cs(&win_execute_sync) { EnterCriticalSection(m_cs); }
 Lock::Lock(CRITICAL_SECTION& cs) : m_cs(&cs) { EnterCriticalSection(m_cs); }
 Lock::~Lock() { LeaveCriticalSection(m_cs); }
 
-//===================== DirectDraw vars
-LPDIRECTDRAW7			lpDDraw=NULL;
-LPDIRECTDRAWSURFACE7	lpPrimarySurface=NULL;
-LPDIRECTDRAWSURFACE7	lpBackSurface=NULL;
-DDSURFACEDESC2			ddsd;
-LPDIRECTDRAWCLIPPER		lpDDClipPrimary=NULL;
-LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
+//====================== DirectDraw
+const char	*DDerrors[] = { "no errors",
+							"Unable to initialize DirectDraw", 
+							"Unable to set DirectDraw Cooperative Level",
+							"Unable to create DirectDraw primary surface",
+							"Unable to set DirectDraw clipper"};
+struct DDRAW
+{
+	DDRAW():
+		handle(NULL), clip(NULL)
+	{
+		surface.primary = NULL;
+		surface.back = NULL;
+		memset(&surfDesc, 0, sizeof(surfDesc));
+		memset(&surfDescBack, 0, sizeof(surfDescBack));
+	}
+
+	u32	create(HWND hwnd);
+	bool release();
+	bool createSurfaces(HWND hwnd);
+	bool lock();
+	bool unlock();
+	bool blt(LPRECT dst, LPRECT src);
+
+	LPDIRECTDRAW7			handle;
+	struct
+	{
+		LPDIRECTDRAWSURFACE7	primary;
+		LPDIRECTDRAWSURFACE7	back;
+	} surface;
+
+	DDSURFACEDESC2			surfDesc;
+	DDSURFACEDESC2			surfDescBack;
+	LPDIRECTDRAWCLIPPER		clip;
+} ddraw;
 
 //===================== Input vars
 #define WM_CUSTKEYDOWN	(WM_USER+50)
@@ -800,42 +828,6 @@ static void PopulateLuaSubmenu()
 	}
 }
 
-
-
-int CreateDDrawBuffers()
-{
-	Lock lock (win_backbuffer_sync);
-
-	if (lpDDClipPrimary!=NULL) { IDirectDraw7_Release(lpDDClipPrimary); lpDDClipPrimary = NULL; }
-	if (lpPrimarySurface != NULL) { IDirectDraw7_Release(lpPrimarySurface); lpPrimarySurface = NULL; }
-	if (lpBackSurface != NULL) { IDirectDraw7_Release(lpBackSurface); lpBackSurface = NULL; }
-
-	memset(&ddsd, 0, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-	ddsd.dwFlags = DDSD_CAPS;
-	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpPrimarySurface, NULL) != DD_OK) return -1;
-
-	memset(&ddsd, 0, sizeof(ddsd));
-	ddsd.dwSize          = sizeof(ddsd);
-	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
-	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
-	if(GetStyle()&DWS_DDRAW_SW) ddsd.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
-
-	ddsd.dwWidth         = video.rotatedwidth();
-	ddsd.dwHeight        = video.rotatedheight();
-
-	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
-
-	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
-	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
-	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
-
-	backbuffer_invalidate = false;
-	return 1;
-}
-
-
 template<typename T> static void doRotate(void* dst)
 {
 	u8* buffer = (u8*)dst;
@@ -843,7 +835,8 @@ template<typename T> static void doRotate(void* dst)
 	u32* src = (u32*)video.finalBuffer();
 	int width = video.width;
 	int height = video.height;
-	int pitch = ddsd.lPitch;
+	int pitch = ddraw.surfDescBack.lPitch;
+
 	switch(video.rotation)
 	{
 	case 0:
@@ -1286,62 +1279,32 @@ static void DD_FillRect(LPDIRECTDRAWSURFACE7 surf, int left, int top, int right,
 //the directdraw final presentation portion of display, including rotating
 static void DD_DoDisplay()
 {
-	if(backbuffer_invalidate)
-		goto CREATE;
+	if (!ddraw.lock()) return;
+	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
 
-	memset(&ddsd, 0, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	ddsd.dwFlags=DDSD_ALL;
-	int res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
-
-	if(FAILED(res))
+	switch(ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
 	{
-		if (res==DDERR_SURFACELOST)
-		{
-			LOG("DirectDraw buffers is lost\n");
-			if (FAILED(IDirectDrawSurface7_Restore(lpPrimarySurface))
-			 || FAILED(IDirectDrawSurface7_Restore(lpBackSurface)))
+		case 32:
+			doRotate<u32>(ddraw.surfDescBack.lpSurface);
+			break;
+		case 24:
+			doRotate<pix24>(ddraw.surfDescBack.lpSurface);
+			break;
+		case 16:
+			if(ddraw.surfDescBack.ddpfPixelFormat.dwGBitMask != 0x3E0)
+				doRotate<pix16>(ddraw.surfDescBack.lpSurface);
+			else
+				doRotate<pix15>(ddraw.surfDescBack.lpSurface);
+			break;
+		default:
 			{
-			CREATE:
-				CreateDDrawBuffers();
-				return;
+				if(ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount != 0)
+					INFO("Unsupported color depth: %i bpp\n", ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount);
+				//emu_halt();
 			}
-		}
-		else
-			return;
+			break;
 	}
-
-	//res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
-	//if(FAILED(res))
-	//	return;
-
-	char* buffer = (char*)ddsd.lpSurface;
-
-	switch(ddsd.ddpfPixelFormat.dwRGBBitCount)
-	{
-	case 32:
-		doRotate<u32>(ddsd.lpSurface);
-		break;
-	case 24:
-		doRotate<pix24>(ddsd.lpSurface);
-		break;
-	case 16:
-		if(ddsd.ddpfPixelFormat.dwGBitMask != 0x3E0)
-			doRotate<pix16>(ddsd.lpSurface);
-		else
-			doRotate<pix15>(ddsd.lpSurface);
-		break;
-	default:
-		{
-			if(ddsd.ddpfPixelFormat.dwRGBBitCount != 0)
-				INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
-			//emu_halt();
-		}
-		break;
-	}
-
-
-	lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
+	if (!ddraw.unlock()) return;
 
 	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
 	RECT* srcRects [2];
@@ -1385,14 +1348,14 @@ static void DD_DoDisplay()
 		int bottom = r.bottom;
 		//printf("%d %d %d %d / %d %d %d %d\n",fullScreen.left,fullScreen.top,fullScreen.right,fullScreen.bottom,left,top,right,bottom);
 		//printf("%d %d %d %d / %d %d %d %d\n",MainScreenRect.left,MainScreenRect.top,MainScreenRect.right,MainScreenRect.bottom,SubScreenRect.left,SubScreenRect.top,SubScreenRect.right,SubScreenRect.bottom);
-		DD_FillRect(lpPrimarySurface,0,0,left,top,RGB(255,0,0)); //topleft
-		DD_FillRect(lpPrimarySurface,left,0,right,top,RGB(128,0,0)); //topcenter
-		DD_FillRect(lpPrimarySurface,right,0,fullScreen.right,top,RGB(0,255,0)); //topright
-		DD_FillRect(lpPrimarySurface,0,top,left,bottom,RGB(0,128,0));  //left
-		DD_FillRect(lpPrimarySurface,right,top,fullScreen.right,bottom,RGB(0,0,255)); //right
-		DD_FillRect(lpPrimarySurface,0,bottom,left,fullScreen.bottom,RGB(0,0,128)); //bottomleft
-		DD_FillRect(lpPrimarySurface,left,bottom,right,fullScreen.bottom,RGB(255,0,255)); //bottomcenter
-		DD_FillRect(lpPrimarySurface,right,bottom,fullScreen.left,fullScreen.bottom,RGB(0,255,255)); //bottomright
+		DD_FillRect(ddraw.surface.primary,0,0,left,top,RGB(255,0,0)); //topleft
+		DD_FillRect(ddraw.surface.primary,left,0,right,top,RGB(128,0,0)); //topcenter
+		DD_FillRect(ddraw.surface.primary,right,0,fullScreen.right,top,RGB(0,255,0)); //topright
+		DD_FillRect(ddraw.surface.primary,0,top,left,bottom,RGB(0,128,0));  //left
+		DD_FillRect(ddraw.surface.primary,right,top,fullScreen.right,bottom,RGB(0,0,255)); //right
+		DD_FillRect(ddraw.surface.primary,0,bottom,left,fullScreen.bottom,RGB(0,0,128)); //bottomleft
+		DD_FillRect(ddraw.surface.primary,left,bottom,right,fullScreen.bottom,RGB(255,0,255)); //bottomcenter
+		DD_FillRect(ddraw.surface.primary,right,bottom,fullScreen.left,fullScreen.bottom,RGB(0,255,255)); //bottomright
 	}
 
 	for(int i = 0; i < 2; i++)
@@ -1400,12 +1363,7 @@ static void DD_DoDisplay()
 		if(i && video.layout == 2)
 			break;
 
-		if(lpPrimarySurface->Blt(dstRects[i], lpBackSurface, srcRects[i], DDBLT_WAIT, 0) == DDERR_SURFACELOST)
-		{
-			LOG("DirectDraw buffers is lost\n");
-			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
-				IDirectDrawSurface7_Restore(lpBackSurface);
-		}
+		if (!ddraw.blt(dstRects[i], srcRects[i])) return;
 	}
 
 	if (video.layout == 1) return;
@@ -1859,21 +1817,11 @@ DWORD WINAPI run()
 
 	osd->setRotate(video.rotation);
 	//doLCDsLayout();
-	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
-	{
-		MessageBox(hwnd,"Unable to initialize DirectDraw","Error",MB_OK);
-		return -1;
-	}
 
-	if (IDirectDraw7_SetCooperativeLevel(lpDDraw,hwnd, DDSCL_NORMAL) != DD_OK)
+	u32 res = ddraw.create(hwnd);
+	if (res != 0)
 	{
-		MessageBox(hwnd,"Unable to set DirectDraw Cooperative Level","Error",MB_OK);
-		return -1;
-	}
-
-	if (CreateDDrawBuffers()<1)
-	{
-		MessageBox(hwnd,"Unable to set DirectDraw buffers","Error",MB_OK);
+		MessageBox(hwnd,DDerrors[res],EMU_DESMUME_NAME_AND_VERSION(),MB_OK | MB_ICONERROR);
 		return -1;
 	}
 
@@ -2816,10 +2764,7 @@ int _main()
 
 	delete MainWindow;
 
-	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
-	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
-	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
-	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
+	ddraw.release();
 
 	UnregWndClass("DeSmuME");
 
@@ -3012,22 +2957,6 @@ void SetRotate(HWND hwnd, int rot, bool user)
 	MainWindowToolbar->ChangeButtonID(6, ccwid);
 	MainWindowToolbar->ChangeButtonID(7, cwid);
 
-	/* Recreate the DirectDraw back buffer */
-	if (lpBackSurface!=NULL)
-	{
-		IDirectDrawSurface7_Release(lpBackSurface);
-
-		memset(&ddsd, 0, sizeof(ddsd));
-		ddsd.dwSize          = sizeof(ddsd);
-		ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
-		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
-		if(GetStyle()&DWS_DDRAW_SW) ddsd.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
-		ddsd.dwWidth         = video.rotatedwidth();
-		ddsd.dwHeight        = video.rotatedheight();
-
-		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
-	}
-
 	WritePrivateProfileInt("Video","Window Rotate",video.rotation,IniName);
 	if(user)
 	{
@@ -3185,7 +3114,7 @@ static BOOL OpenCore(const char* filename)
 	{
 		romloaded = TRUE;
 		if(movieMode == MOVIEMODE_INACTIVE)
-			Unpause();
+		Unpause();
 
 		// Update the toolbar
 		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
@@ -5061,7 +4990,7 @@ DOKEYDOWN:
 				Lock lock (win_backbuffer_sync);
 				SetStyle(GetStyle()&~DWS_DDRAW_SW);
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
-				backbuffer_invalidate = true;
+				ddraw.createSurfaces(hwnd);
 			}
 			break;
 
@@ -5070,7 +4999,7 @@ DOKEYDOWN:
 				Lock lock (win_backbuffer_sync);
 				SetStyle(GetStyle()|DWS_DDRAW_SW);
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_SW, IniName);
-				backbuffer_invalidate = true;
+				ddraw.createSurfaces(hwnd);
 			}
 			break;
 
@@ -6203,4 +6132,121 @@ void WIN_InstallCFlash()
 				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 			}
 
+}
+
+// ================================================================= DDraw
+u32	DDRAW::create(HWND hwnd)
+{
+	if (handle) return 0;
+
+	if (FAILED(DirectDrawCreateEx(NULL, (LPVOID*)&handle, IID_IDirectDraw7, NULL)))
+		return 1;
+
+	if (FAILED(handle->SetCooperativeLevel(hwnd, DDSCL_NORMAL)))
+		return 2;
+
+	createSurfaces(hwnd);
+
+	return 0;
+}
+
+bool DDRAW::release()
+{
+	if (!handle) return true;
+	
+	if (clip !=NULL) 
+		clip->Release();
+
+	if (surface.primary != NULL)
+		surface.primary->Release();
+
+	if (FAILED(handle->Release())) return false;
+	return true;
+}
+
+bool DDRAW::createSurfaces(HWND hwnd)
+{
+	if (!handle) return true;
+
+	if (clip) clip->Release();
+	if (surface.back) surface.back->Release();
+	if (surface.primary) surface.primary->Release();
+
+	// primary
+	memset(&surfDesc, 0, sizeof(surfDesc));
+	surfDesc.dwSize = sizeof(surfDesc);
+	surfDesc.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	surfDesc.dwFlags = DDSD_CAPS;
+	if (FAILED(handle->CreateSurface(&surfDesc, &surface.primary, NULL)))
+		return false;
+
+	memset(&surfDescBack, 0, sizeof(surfDescBack));
+	surfDescBack.dwSize          = sizeof(surfDescBack);
+	surfDescBack.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+	surfDescBack.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+	
+	if(GetStyle()&DWS_DDRAW_SW)
+		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
+	else
+		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;
+
+	surfDescBack.dwWidth         = 384;
+	surfDescBack.dwHeight        = 384;
+
+	if (FAILED(handle->CreateSurface(&surfDescBack, &surface.back, NULL))) return false;
+	if (FAILED(handle->CreateClipper(0, &clip, NULL))) return false;
+	if (FAILED(clip->SetHWnd(0, hwnd))) return false;
+	if (FAILED(surface.primary->SetClipper(clip))) return false;
+
+	backbuffer_invalidate = false;
+
+	return true;
+}
+
+bool DDRAW::lock()
+{
+	if (!handle) return true;
+	if (!surface.back) return false;
+	memset(&surfDescBack, 0, sizeof(surfDescBack));
+	surfDescBack.dwSize = sizeof(surfDescBack);
+	surfDescBack.dwFlags = DDSD_ALL;
+
+	HRESULT res = surface.back->Lock(NULL, &surfDescBack, DDLOCK_WAIT | DDLOCK_WRITEONLY, NULL);
+	if (FAILED(res))
+	{
+		//INFO("DDraw failed: Lock %i\n", res);
+		if (res == DDERR_SURFACELOST)
+		{
+			res = surface.back->Restore();
+			if (FAILED(res)) return false;
+		}
+	}
+	return true;
+}
+
+bool DDRAW::unlock()
+{
+	if (!handle) return true;
+	if (!surface.back) return false;
+	if (FAILED(surface.back->Unlock((LPRECT)surfDescBack.lpSurface))) return false;
+	return true;
+}
+
+bool DDRAW::blt(LPRECT dst, LPRECT src)
+{
+	if (!handle) return true;
+	if (!surface.primary) return false;
+	if (!surface.back) return false;
+
+	HRESULT res = surface.primary->Blt(dst, surface.back, src, DDBLT_WAIT, 0);
+	if (FAILED(res))
+	{
+		//INFO("DDraw failed: Blt %i\n", res);
+		if (res == DDERR_SURFACELOST)
+		{
+			res = surface.primary->Restore();
+			if (FAILED(res)) return false;
+		}
+	}
+	return true;
 }
