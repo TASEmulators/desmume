@@ -34,7 +34,10 @@
 #define IDM_PAL                         117
 #define IDM_TILE                        118
 #define IDM_MAP                         119
+#define IDB_ROTATECCW                   119
 #define IDM_MBG0                        120
+#define IDB_BITMAP2                     120
+#define IDB_ROTATECW                    120
 #define IDM_MBG1                        121
 #define IDM_MBG2                        122
 #define IDM_MBG3                        123
@@ -756,6 +759,7 @@
 #define IDC_LUASCRIPT_RESERVE_END       58099
 #define IDD_LUARECENT_RESERVE_START     58100
 #define IDD_LUARECENT_RESERVE_END       58199
+#define IDC_FRAMEADVANCE				58200
 #define IDC_LABEL_HK1                   60001
 #define IDC_LABEL_HK2                   60002
 #define IDC_LABEL_HK3                   60003
@@ -807,7 +811,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        118
+#define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40073
 #define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101

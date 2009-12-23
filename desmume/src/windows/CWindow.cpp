@@ -327,33 +327,6 @@ void RefreshAllToolWindows()
 }
 
 //-----------------------------------------------------------------------------
-//   The Toolkit - Tooltip API wrapper
-//-----------------------------------------------------------------------------
-
-CToolTip::CToolTip(HWND hParent)
-{
-	hWnd = CreateWindow(TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		hParent, NULL, hAppInst, NULL);
-}
-
-void CToolTip::AddToolTip(HWND hCtl, int uID, CRect rcRect, char* text)
-{
-	TOOLINFO ti;
-
-	memset(&ti, 0, sizeof(TOOLINFO));
-	ti.cbSize = sizeof(TOOLINFO);
-	ti.uFlags = TTF_SUBCLASS;
-	ti.hwnd = hCtl;
-	ti.uId = uID;
-	ti.rect = rcRect.ToMSRect();
-	printf("%i %i %i %i\n", rcRect.ToMSRect().top, ti.rect.left, ti.rect.bottom, ti.rect.right);
-	ti.lpszText = text;
-
-	SendMessage(hWnd, TTM_ADDTOOL, 0, (LPARAM)&ti);
-}
-
-//-----------------------------------------------------------------------------
 //   The Toolkit - Toolbar API wrapper
 //-----------------------------------------------------------------------------
 
@@ -362,9 +335,9 @@ CToolBar::CToolBar(HWND hParent)
 {
 	// Create the toolbar
 	// Note: dropdown buttons look like crap without TBSTYLE_FLAT
-	hWnd = CreateWindowEx(0, TOOLBARCLASSNAME, 
-		NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | TBSTYLE_FLAT, 0, 0, 0, 0, 
-		hParent, NULL, hAppInst, NULL);
+	hWnd = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, 
+		WS_CHILD | WS_VISIBLE | WS_BORDER | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS, 
+		0, 0, 0, 0, hParent, NULL, hAppInst, NULL);
 
 	// Send it a few messages to finish setting it up
 	SendMessage(hWnd, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
@@ -403,6 +376,12 @@ void CToolBar::Show(bool bShow)
 
 void CToolBar::OnSize()
 {
+	// Not-fully-working wraparound handling code
+	// the toolbar behaves weirdly when it comes to separators
+	// TODO: figure out why.
+	// Note: right now this code is useless, but it may be useful
+	// if we use more toolbars
+#if 0
 	RECT rc;
 	int parentwidth;
 
@@ -419,31 +398,32 @@ void CToolBar::OnSize()
 		SendMessage(hWnd, TB_GETITEMRECT, i, (LPARAM)&rc);
 		curwidth += (rc.right - rc.left);
 
-		if (i > 0)
+		if (i > 1)
 		{
 			TBBUTTON btn;
 			TBBUTTONINFO btninfo;
+			int cmdid;
 
-			// Retrieve the command ID of the button just behind the current one
-			// if it's a separator, then try the button behind it
 			SendMessage(hWnd, TB_GETBUTTON, i-1, (LPARAM)&btn);
 			if (btn.idCommand == -1)
 				SendMessage(hWnd, TB_GETBUTTON, i-2, (LPARAM)&btn);
 
+			cmdid = btn.idCommand;
+
 			// Add/remove the TBSTATE_WRAP style if needed
 			btninfo.cbSize = sizeof(TBBUTTONINFO);
 			btninfo.dwMask = TBIF_STATE;
-			SendMessage(hWnd, TB_GETBUTTONINFO, btn.idCommand, (LPARAM)&btninfo);
+			SendMessage(hWnd, TB_GETBUTTONINFO, cmdid, (LPARAM)&btninfo);
 
 			btninfo.dwMask = TBIF_STATE;
 			if (curwidth > parentwidth) btninfo.fsState |= TBSTATE_WRAP;
 			else btninfo.fsState &= ~TBSTATE_WRAP;
-			SendMessage(hWnd, TB_SETBUTTONINFO, btn.idCommand, (LPARAM)&btninfo);
+			SendMessage(hWnd, TB_SETBUTTONINFO, cmdid, (LPARAM)&btninfo);
 
 			if (curwidth > parentwidth) curwidth = 0;
 		}
 	}
-
+#endif
 	SetWindowPos(hWnd, NULL, 
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
 		SWP_NOZORDER | SWP_NOMOVE);
@@ -551,7 +531,7 @@ int CToolBar::GetHeight()
 	if (hidden) return 0;
 
 	RECT rc; GetWindowRect(hWnd, &rc);
-	return rc.bottom - rc.top;
+	return rc.bottom - rc.top - 1;
 }
 
 
