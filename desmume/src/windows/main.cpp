@@ -6190,8 +6190,8 @@ bool DDRAW::createSurfaces(HWND hwnd)
 	else
 		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;
 
-	surfDescBack.dwWidth         = 384;
-	surfDescBack.dwHeight        = 384;
+	surfDescBack.dwWidth         = 384 * 2;
+	surfDescBack.dwHeight        = 384 * 2;
 
 	if (FAILED(handle->CreateSurface(&surfDescBack, &surface.back, NULL))) return false;
 	if (FAILED(handle->CreateClipper(0, &clip, NULL))) return false;
