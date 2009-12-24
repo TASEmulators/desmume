@@ -101,7 +101,6 @@
 #define IDM_IMPORTBACKUPMEMORY          201
 #define IDC_LANGENGLISH                 210
 #define IDC_LANGFRENCH                  211
-#define IDC_LANGDANISH                  212
 #define IDC_LANG_CHINESE_SIMPLIFIED     213
 #define IDC_LANGITALIAN                 214
 #define IDC_LANGJAPANESE                215
@@ -716,6 +715,7 @@
 #define ID_CONFIG_DISPLAYMETHOD         40070
 #define ID_DISPLAYMETHOD_DIRECTDRAWHW   40071
 #define ID_DISPLAYMETHOD_DIRECTDRAWSW   40072
+#define ID_HOTKEYS_TITLE				40073
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -755,6 +755,7 @@
 #define IDC_LABEL_BLUE                  50036
 #define IDC_LID                         50037
 #define IDD_INPUTCONFIG                 50038
+#define IDC_LABEL_BLUE1                 50039
 #define IDC_LUASCRIPT_RESERVE_START     58000
 #define IDC_LUASCRIPT_RESERVE_END       58099
 #define IDD_LUARECENT_RESERVE_START     58100
@@ -812,7 +813,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
-#define _APS_NEXT_COMMAND_VALUE         40073
+#define _APS_NEXT_COMMAND_VALUE         40074
 #define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -85,14 +85,22 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 	{
 		case WM_INITDIALOG: 
 		{
-			char buf[2048];
-			memset(buf, 0, sizeof(buf));
-			std::string version = (std::string)"version " + EMU_DESMUME_VERSION_STRING() + EMU_DESMUME_COMPILER_DETAIL();
-			SetDlgItemText(dialog, IDC_TXT_VERSION, version.c_str());
+			// Support Unicode text display
+			wchar_t wstr[256];
+			wchar_t wstr1[256];
+			wchar_t wstr2[256];
 
-			memset(buf, 0, sizeof(buf));
-			wsprintf(buf, "compiled: %s %s", __DATE__,__TIME__);
-			SetDlgItemText(dialog, IDC_TXT_COMPILED, buf);
+			GetDlgItemTextW(dialog, IDC_TXT_VERSION, wstr,256);
+			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, EMU_DESMUME_VERSION_STRING(), -1, wstr1, 255);
+			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, EMU_DESMUME_COMPILER_DETAIL(), -1, wstr2, 255);
+			wcscat(wstr, wcscat(wstr1, wstr2));
+			SetDlgItemTextW(dialog, IDC_TXT_VERSION, wstr);
+
+			GetDlgItemTextW(dialog, IDC_TXT_COMPILED, wstr,256);
+			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, __DATE__, -1, wstr1, 255);
+			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, __TIME__, -1, wstr2, 255);
+			wcscat(wstr, wcscat(wcscat(wstr1, L" "), wstr2));
+			SetDlgItemTextW(dialog, IDC_TXT_COMPILED, wstr);
 
 			for (int i = 0; i < SIZE_SCROLL_BUFFER; i++)
 				strcpy((char *)scroll_buffer[i], "\n");
