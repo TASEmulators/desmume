@@ -19,6 +19,7 @@
  */
 
 #include <alsa/asoundlib.h>
+#include <glib.h>
 #include "types.h"
 #include "mic.h"
 #include "debug.h"
@@ -41,46 +42,65 @@ static snd_pcm_t *pcm_handle;
 BOOL Mic_Init()
 {
     snd_pcm_hw_params_t *hwparams;
+    int err;
 
     if (Mic_Inited)
         return TRUE;
 
     // Open the default sound card in capture
-    if (snd_pcm_open(&pcm_handle, "plughw:0,0", SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK) < 0)
+    if ((err = snd_pcm_open(&pcm_handle, "plughw:0,0", SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK)) < 0) {
+        g_printerr("Failed to open device: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     // Allocate the snd_pcm_hw_params_t structure and fill it.
     snd_pcm_hw_params_alloca(&hwparams);
-    if (snd_pcm_hw_params_any(pcm_handle, hwparams) < 0)
+    if ((err = snd_pcm_hw_params_any(pcm_handle, hwparams)) < 0) {
+        g_printerr("Failed to setup hw parameters: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     //Set the access
-    if (snd_pcm_hw_params_set_access(pcm_handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
-        return FALSE ;
+    if ((err = snd_pcm_hw_params_set_access(pcm_handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
+        g_printerr("Failed to set access: %s\n", snd_strerror(err));
+        return FALSE;
+    }
 
     //dir 0 == exacte (Rate = 16K exacte)
-    if (snd_pcm_hw_params_set_rate(pcm_handle, hwparams, 16000, 0) < 0)
+    if ((err = snd_pcm_hw_params_set_rate(pcm_handle, hwparams, 16000, 0)) < 0) {
+        g_printerr("Failed to set rate: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     /* Set sample format */
-    if (snd_pcm_hw_params_set_format(pcm_handle, hwparams, SND_PCM_FORMAT_S8) < 0)
+    if ((err = snd_pcm_hw_params_set_format(pcm_handle, hwparams, SND_PCM_FORMAT_S8)) < 0) {
+        g_printerr("Failed to set format: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     // Set one channel (mono)
-    if (snd_pcm_hw_params_set_channels(pcm_handle, hwparams, 1) < 0)
+    if ((err = snd_pcm_hw_params_set_channels(pcm_handle, hwparams, 1)) < 0) {
+        g_printerr("Failed to set channels: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     // Set 2 periods
-    if (snd_pcm_hw_params_set_periods(pcm_handle, hwparams, 2, 0) < 0)
+    if ((err = snd_pcm_hw_params_set_periods(pcm_handle, hwparams, 2, 0)) < 0) {
+        g_printerr("Failed to set periods: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     // Set the buffer sise
-     if (snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, MIC_BUFSIZE) < 0)
+    if ((err = snd_pcm_hw_params_set_buffer_size(pcm_handle, hwparams, MIC_BUFSIZE)) < 0) {
+        g_printerr("Failed to set buffer size: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     //Set the params
-    if (snd_pcm_hw_params(pcm_handle, hwparams) < 0)
+    if ((err = snd_pcm_hw_params(pcm_handle, hwparams)) < 0) {
+        g_printerr("Failed to set hw parameters: %s\n", snd_strerror(err));
         return FALSE;
+    }
 
     Mic_Inited = TRUE;
     Mic_Reset();
