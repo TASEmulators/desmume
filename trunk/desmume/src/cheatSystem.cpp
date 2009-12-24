@@ -655,16 +655,22 @@ BOOL CHEATS::load()
 				strcpy(tmp_cht.description, (buf + descr_pos + 1));
 
 			tmp_cht.num = strlen(tmp_code) / 16;
+			if ((tmp_cht.type == 0) && (tmp_cht.num > 1))
+			{
+				INFO("Cheats: Too many values for internal cheat\n", line);
+				continue;
+			}
 			for (int i = 0; i < tmp_cht.num; i++)
 			{
 				char tmp_buf[9] = {0};
-				
+
 				strncpy(tmp_buf, (char*)(tmp_code + (i*16)), 8);
 				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][0]);
 
 				if (tmp_cht.type == 0)
 				{
 					tmp_cht.size = std::min<u32>(3, ((tmp_cht.code[i][0] & 0xF0000000) >> 28));
+					tmp_cht.code[i][0] &= 0x00FFFFFF;
 				}
 				
 				strncpy(tmp_buf, (char*)(tmp_code + (i*16) + 8), 8);
