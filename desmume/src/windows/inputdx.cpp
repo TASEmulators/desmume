@@ -58,29 +58,32 @@
 #include "directx/dinput.h"
 
 // Gamepad Dialog Strings
-#define INPUTCONFIG_TITLE "Input Configuration"
+// Support Unicode display
+//#define INPUTCONFIG_TITLE "Input Configuration"
 #define INPUTCONFIG_JPTOGGLE "Enabled"
 //#define INPUTCONFIG_DIAGTOGGLE "Toggle Diagonals"
 //#define INPUTCONFIG_OK "&OK"
 //#define INPUTCONFIG_CANCEL "&Cancel"
 #define INPUTCONFIG_JPCOMBO "Joypad #%d"
-#define INPUTCONFIG_LABEL_UP "Up"
-#define INPUTCONFIG_LABEL_DOWN "Down"
-#define INPUTCONFIG_LABEL_LEFT "Left"
-#define INPUTCONFIG_LABEL_RIGHT "Right"
-#define INPUTCONFIG_LABEL_A "A"
-#define INPUTCONFIG_LABEL_B "B"
-#define INPUTCONFIG_LABEL_X "X"
-#define INPUTCONFIG_LABEL_Y "Y"
-#define INPUTCONFIG_LABEL_L "L"
-#define INPUTCONFIG_LABEL_R "R"
-#define INPUTCONFIG_LABEL_START "Start"
-#define INPUTCONFIG_LABEL_SELECT "Select"
-#define INPUTCONFIG_LABEL_UPLEFT "Up Left"
-#define INPUTCONFIG_LABEL_UPRIGHT "Up Right"
-#define INPUTCONFIG_LABEL_DOWNRIGHT "Dn Right"
-#define INPUTCONFIG_LABEL_DOWNLEFT "Dn Left"
-#define INPUTCONFIG_LABEL_BLUE "Blue means the button is already mapped.\nPink means it conflicts with a custom hotkey.\nRed means it's reserved by Windows.\nButtons can be disabled using Escape.\nGrayed buttons arent supported yet (sorry!)"
+// Support Unicode display
+#define INPUTCONFIG_LABEL_UP IDC_LABEL_UP
+#define INPUTCONFIG_LABEL_DOWN IDC_LABEL_DOWN
+#define INPUTCONFIG_LABEL_LEFT IDC_LABEL_LEFT
+#define INPUTCONFIG_LABEL_RIGHT IDC_LABEL_RIGHT
+#define INPUTCONFIG_LABEL_A IDC_LABEL_A
+#define INPUTCONFIG_LABEL_B IDC_LABEL_B
+#define INPUTCONFIG_LABEL_X IDC_LABEL_X
+#define INPUTCONFIG_LABEL_Y IDC_LABEL_Y
+#define INPUTCONFIG_LABEL_L IDC_LABEL_L
+#define INPUTCONFIG_LABEL_R IDC_LABEL_R
+#define INPUTCONFIG_LABEL_START IDC_LABEL_START
+#define INPUTCONFIG_LABEL_SELECT IDC_LABEL_SELECT
+#define INPUTCONFIG_LABEL_UPLEFT IDC_LABEL_UPLEFT
+#define INPUTCONFIG_LABEL_UPRIGHT IDC_LABEL_UPRIGHT
+#define INPUTCONFIG_LABEL_DOWNRIGHT IDC_LABEL_DOWNRIGHT
+#define INPUTCONFIG_LABEL_DOWNLEFT IDC_LABEL_DOWNLEFT
+#define INPUTCONFIG_LABEL_BLUE IDC_LABEL_BLUE //"Blue means the button is already mapped.\nPink means it conflicts with a custom hotkey.\nRed means it's reserved by Windows.\nButtons can be disabled using Escape.\nGrayed buttons arent supported yet (sorry!)"
+
 #define INPUTCONFIG_LABEL_UNUSED ""
 #define INPUTCONFIG_LABEL_CLEAR_TOGGLES_AND_TURBO "Clear All"
 #define INPUTCONFIG_LABEL_MAKE_TURBO "TempTurbo"
@@ -93,7 +96,8 @@
 #define HOTKEYS_CONTROL_MOD "Ctrl + "
 #define HOTKEYS_SHIFT_MOD "Shift + "
 #define HOTKEYS_ALT_MOD "Alt + "
-#define HOTKEYS_LABEL_BLUE "Blue means the hotkey is already mapped.\nPink means it conflicts with a game button.\nRed means it's reserved by Windows.\nA hotkey can be disabled using Escape."
+// Support Unicode display
+#define HOTKEYS_LABEL_BLUE IDC_LABEL_BLUE1 //"Blue means the hotkey is already mapped.\nPink means it conflicts with a game button.\nRed means it's reserved by Windows.\nA hotkey can be disabled using Escape."
 #define HOTKEYS_HKCOMBO "Page %d"
 
 // gaming buttons and axes
@@ -193,8 +197,9 @@
 #define GAMEDEVICE_VK_F10 "F10"
 #define GAMEDEVICE_VK_F11 "F11"
 #define GAMEDEVICE_VK_F12 "F12"
-#define BUTTON_OK "&OK"
-#define BUTTON_CANCEL "&Cancel"
+// Support Unicode display
+#define BUTTON_OK L"&OK"
+#define BUTTON_CANCEL L"&Cancel"
 
 static TCHAR szClassName[] = _T("InputCustom");
 static TCHAR szHotkeysClassName[] = _T("InputCustomHot");
@@ -1872,30 +1877,31 @@ void EnableDisableKeyFields (int index, HWND hDlg)
 	bool enableUnTurboable;
 	if(index < 5)
 	{
-		SetDlgItemText(hDlg,IDC_LABEL_RIGHT,INPUTCONFIG_LABEL_RIGHT);
-		SetDlgItemText(hDlg,IDC_LABEL_UPLEFT,INPUTCONFIG_LABEL_UPLEFT);
-		SetDlgItemText(hDlg,IDC_LABEL_UPRIGHT,INPUTCONFIG_LABEL_UPRIGHT);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWNRIGHT,INPUTCONFIG_LABEL_DOWNRIGHT);
-		SetDlgItemText(hDlg,IDC_LABEL_UP,INPUTCONFIG_LABEL_UP);
-		SetDlgItemText(hDlg,IDC_LABEL_LEFT,INPUTCONFIG_LABEL_LEFT);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWN,INPUTCONFIG_LABEL_DOWN);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWNLEFT,INPUTCONFIG_LABEL_DOWNLEFT);
+		// Support Unicode display
+		SetDlgItemTextW(hDlg,IDC_LABEL_RIGHT,(LPWSTR)INPUTCONFIG_LABEL_RIGHT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UPLEFT,(LPWSTR)INPUTCONFIG_LABEL_UPLEFT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UPRIGHT,(LPWSTR)INPUTCONFIG_LABEL_UPRIGHT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWNRIGHT,(LPWSTR)INPUTCONFIG_LABEL_DOWNRIGHT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UP,(LPWSTR)INPUTCONFIG_LABEL_UP);
+		SetDlgItemTextW(hDlg,IDC_LABEL_LEFT,(LPWSTR)INPUTCONFIG_LABEL_LEFT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWN,(LPWSTR)INPUTCONFIG_LABEL_DOWN);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWNLEFT,(LPWSTR)INPUTCONFIG_LABEL_DOWNLEFT);
 		enableUnTurboable = true;
 	}
 	else
 	{		
-		SetDlgItemText(hDlg,IDC_LABEL_UP,INPUTCONFIG_LABEL_MAKE_TURBO);
-		SetDlgItemText(hDlg,IDC_LABEL_LEFT,INPUTCONFIG_LABEL_MAKE_HELD);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWN,INPUTCONFIG_LABEL_MAKE_TURBO_HELD);
-		SetDlgItemText(hDlg,IDC_LABEL_RIGHT,INPUTCONFIG_LABEL_CLEAR_TOGGLES_AND_TURBO);
-		SetDlgItemText(hDlg,IDC_LABEL_UPLEFT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_LABEL_UPRIGHT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWNLEFT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWNRIGHT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_UPLEFT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_UPRIGHT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_DWNLEFT,INPUTCONFIG_LABEL_UNUSED);
-		SetDlgItemText(hDlg,IDC_DWNRIGHT,INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UP,(LPWSTR)INPUTCONFIG_LABEL_MAKE_TURBO);
+		SetDlgItemTextW(hDlg,IDC_LABEL_LEFT,(LPWSTR)INPUTCONFIG_LABEL_MAKE_HELD);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWN,(LPWSTR)INPUTCONFIG_LABEL_MAKE_TURBO_HELD);
+		SetDlgItemTextW(hDlg,IDC_LABEL_RIGHT,(LPWSTR)INPUTCONFIG_LABEL_CLEAR_TOGGLES_AND_TURBO);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UPLEFT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UPRIGHT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWNLEFT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWNRIGHT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_UPLEFT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_UPRIGHT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_DWNLEFT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
+		SetDlgItemTextW(hDlg,IDC_DWNRIGHT,(LPWSTR)INPUTCONFIG_LABEL_UNUSED);
 		enableUnTurboable = false;
 	}
 
@@ -1921,28 +1927,31 @@ INT_PTR CALLBACK DlgInputConfig(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 switch(msg)
 	{
 	case WM_INITDIALOG:
+		// Support Unicode display
+		SetDlgItemTextW(hDlg,IDOK,BUTTON_OK);
+		SetDlgItemTextW(hDlg,IDCANCEL,BUTTON_CANCEL);
+		// Support Unicode display
+		//SetWindowText(hDlg,INPUTCONFIG_TITLE);
 		//if(DirectX.Clipped) S9xReRefresh();
-		SetWindowText(hDlg,INPUTCONFIG_TITLE);
 		//SetDlgItemText(hDlg,IDC_JPTOGGLE,INPUTCONFIG_JPTOGGLE);
-		SetDlgItemText(hDlg,IDOK,BUTTON_OK);
-		SetDlgItemText(hDlg,IDCANCEL,BUTTON_CANCEL);
 ///		SetDlgItemText(hDlg,IDC_DIAGTOGGLE,INPUTCONFIG_DIAGTOGGLE);
-		SetDlgItemText(hDlg,IDC_LABEL_UP,INPUTCONFIG_LABEL_UP);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWN,INPUTCONFIG_LABEL_DOWN);
-		SetDlgItemText(hDlg,IDC_LABEL_LEFT,INPUTCONFIG_LABEL_LEFT);
-		SetDlgItemText(hDlg,IDC_LABEL_A,INPUTCONFIG_LABEL_A);
-		SetDlgItemText(hDlg,IDC_LABEL_B,INPUTCONFIG_LABEL_B);
-		SetDlgItemText(hDlg,IDC_LABEL_X,INPUTCONFIG_LABEL_X);
-		SetDlgItemText(hDlg,IDC_LABEL_Y,INPUTCONFIG_LABEL_Y);
-		SetDlgItemText(hDlg,IDC_LABEL_L,INPUTCONFIG_LABEL_L);
-		SetDlgItemText(hDlg,IDC_LABEL_R,INPUTCONFIG_LABEL_R);
-		SetDlgItemText(hDlg,IDC_LABEL_START,INPUTCONFIG_LABEL_START);
-		SetDlgItemText(hDlg,IDC_LABEL_SELECT,INPUTCONFIG_LABEL_SELECT);
-		SetDlgItemText(hDlg,IDC_LABEL_UPRIGHT,INPUTCONFIG_LABEL_UPRIGHT);
-		SetDlgItemText(hDlg,IDC_LABEL_UPLEFT,INPUTCONFIG_LABEL_UPLEFT);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWNRIGHT,INPUTCONFIG_LABEL_DOWNRIGHT);
-		SetDlgItemText(hDlg,IDC_LABEL_DOWNLEFT,INPUTCONFIG_LABEL_DOWNLEFT);
-		SetDlgItemText(hDlg,IDC_LABEL_BLUE,INPUTCONFIG_LABEL_BLUE);
+		// Support Unicode display
+		SetDlgItemTextW(hDlg,IDC_LABEL_UP,(LPWSTR)INPUTCONFIG_LABEL_UP);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWN,(LPWSTR)INPUTCONFIG_LABEL_DOWN);
+		SetDlgItemTextW(hDlg,IDC_LABEL_LEFT,(LPWSTR)INPUTCONFIG_LABEL_LEFT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_A,(LPWSTR)INPUTCONFIG_LABEL_A);
+		SetDlgItemTextW(hDlg,IDC_LABEL_B,(LPWSTR)INPUTCONFIG_LABEL_B);
+		SetDlgItemTextW(hDlg,IDC_LABEL_X,(LPWSTR)INPUTCONFIG_LABEL_X);
+		SetDlgItemTextW(hDlg,IDC_LABEL_Y,(LPWSTR)INPUTCONFIG_LABEL_Y);
+		SetDlgItemTextW(hDlg,IDC_LABEL_L,(LPWSTR)INPUTCONFIG_LABEL_L);
+		SetDlgItemTextW(hDlg,IDC_LABEL_R,(LPWSTR)INPUTCONFIG_LABEL_R);
+		SetDlgItemTextW(hDlg,IDC_LABEL_START,(LPWSTR)INPUTCONFIG_LABEL_START);
+		SetDlgItemTextW(hDlg,IDC_LABEL_SELECT,(LPWSTR)INPUTCONFIG_LABEL_SELECT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UPRIGHT,(LPWSTR)INPUTCONFIG_LABEL_UPRIGHT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_UPLEFT,(LPWSTR)INPUTCONFIG_LABEL_UPLEFT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWNRIGHT,(LPWSTR)INPUTCONFIG_LABEL_DOWNRIGHT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_DOWNLEFT,(LPWSTR)INPUTCONFIG_LABEL_DOWNLEFT);
+		SetDlgItemTextW(hDlg,IDC_LABEL_BLUE,(LPWSTR)INPUTCONFIG_LABEL_BLUE);
 
 		for(i=5;i<10;i++)
 			Joypad[i].Left_Up = Joypad[i].Right_Up = Joypad[i].Left_Down = Joypad[i].Right_Down = 0;
@@ -2609,7 +2618,10 @@ switch(msg)
 		return true;
 	case WM_INITDIALOG:
 		//if(DirectX.Clipped) S9xReRefresh();
-		SetWindowText(hDlg,HOTKEYS_TITLE);
+		// Support Unicode display
+		wchar_t menuItemString[256];
+		LoadStringW(hAppInst, ID_HOTKEYS_TITLE, menuItemString, 256);
+		SetWindowTextW(hDlg, menuItemString);
 
 		// insert hotkey page list items
 		for(i = 0 ; i < NUM_HOTKEY_PAGE ; i++)
@@ -2626,7 +2638,8 @@ switch(msg)
 			GetAsyncKeyState(i);
 		}
 
-		SetDlgItemText(hDlg,IDC_LABEL_BLUE,HOTKEYS_LABEL_BLUE);
+		// Support Unicode display
+		SetDlgItemTextW(hDlg,IDC_LABEL_BLUE,(LPWSTR)HOTKEYS_LABEL_BLUE);
 
 		set_hotkeyinfo(hDlg);
 

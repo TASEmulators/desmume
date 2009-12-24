@@ -385,6 +385,14 @@ void HK_ToggleRasterizer(int, bool justPressed) {
 //=====================================DEFINITIONS======================================
 //======================================================================================
 
+//returns the specified resource string ID as a std::wstring
+std::wstring STRW(UINT id)
+{
+	wchar_t* wstr;
+	LoadStringW(NULL,id,(LPWSTR)&wstr,0);
+	return wstr;
+}
+
 void InitCustomKeys (SCustomKeys *keys)
 {
 	UINT i = 0;
@@ -407,6 +415,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->OpenROM.handleKeyDown = HK_OpenROM;
 	keys->OpenROM.code = "OpenROM";
 	keys->OpenROM.name = L"Open ROM";
+	//keys->OpenROM.name = STRW(ID_LOCALIZED_STRING);
 	keys->OpenROM.page = HOTKEY_PAGE_MAIN;
 	keys->OpenROM.key = 'O';
 	keys->OpenROM.modifiers = CUSTKEY_CTRL_MASK;
