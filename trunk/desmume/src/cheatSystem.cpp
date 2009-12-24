@@ -557,6 +557,11 @@ BOOL CHEATS::save()
 			for (int t = 0; t < list[i].num; t++)
 			{
 				char buf2[10] = { 0 };
+				if (list[i].type == 0)
+				{
+					list[i].code[t][0] &= 0x0FFFFFFF;
+					list[i].code[t][0] |= (list[i].size << 28);
+				}
 				sprintf(buf2, "%08X", list[i].code[t][0]);
 				strcat(buf, buf2);
 				sprintf(buf2, "%08X", list[i].code[t][1]);
@@ -656,6 +661,11 @@ BOOL CHEATS::load()
 				
 				strncpy(tmp_buf, (char*)(tmp_code + (i*16)), 8);
 				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][0]);
+
+				if (tmp_cht.type == 0)
+				{
+					tmp_cht.size = std::min<u32>(3, ((tmp_cht.code[i][0] & 0xF0000000) >> 28));
+				}
 				
 				strncpy(tmp_buf, (char*)(tmp_code + (i*16) + 8), 8);
 				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][1]);

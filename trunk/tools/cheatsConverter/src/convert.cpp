@@ -87,6 +87,11 @@ bool save(char *filename)
 			for (int t = 0; t < list[i].num; t++)
 			{
 				char buf2[10] = { 0 };
+				if (list[i].type == 0)
+				{
+					list[i].hi[t] &= 0x0FFFFFFF;
+					list[i].hi[t] |= (list[i].size << 28);
+				}
 				sprintf(buf2, "%08X", list[i].hi[t]);
 				strcat(buf, buf2);
 				sprintf(buf2, "%08X", list[i].lo[t]);
