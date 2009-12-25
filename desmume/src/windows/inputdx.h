@@ -118,6 +118,7 @@ void RunInputConfig();
 void RunHotkeyConfig();
 void input_acquire();
 void input_process();
+void LoadHotkeyConfig();
 
 struct SGuitar {
     BOOL Enabled;
