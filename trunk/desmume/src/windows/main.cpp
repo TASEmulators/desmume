@@ -260,17 +260,6 @@ struct DDRAW
 #define TABLET_DISABLE_FLICKFALLBACKKEYS   0x00100000
 #endif
 
-void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
-inline bool IsDlgCheckboxChecked(HWND hDlg, int id)
-{
-	return IsDlgButtonChecked(hDlg,id) == BST_CHECKED;
-}
-
-void CheckDlgItem(HWND hDlg, int id, bool checked)
-{
-	CheckDlgButton(hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
-}
-
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
 char SavName[MAX_PATH] = "";
@@ -290,6 +279,7 @@ RECT FullScreenRect, MainScreenRect, SubScreenRect, GapRect;
 RECT MainScreenSrcRect, SubScreenSrcRect;
 int WndX = 0;
 int WndY = 0;
+int currLanguage = LANGUAGE_ENGLISH;
 
 extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
@@ -2030,31 +2020,27 @@ void SetLanguage(int langid)
 	HMODULE kernel32 = LoadLibrary("kernel32.dll");
 	FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
 	setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
+	currLanguage = langid;
 
 	switch(langid)
 	{
-	case 0:
-		// English
+	case LANGUAGE_ENGLISH:
 		setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
 		break;
-	case 1:
-		// French       
+	case LANGUAGE_FRENCH:
 		setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
 		break;
-	case 3:
-		// Chinese
+	case LANGUAGE_CHINESE:
 		setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		break;
-	case 4:
-		// Italian
+	case LANGUAGE_ITALIAN:
 		setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		break;
-	case 5:
-		// Japanese
+	case LANGUAGE_JAPANESE:
 		setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		break;
@@ -2064,23 +2050,19 @@ void SetLanguage(int langid)
 	}
 
 	FreeLibrary(kernel32);
+
+	WritePrivateProfileInt("General", "Language", langid, IniName);
+	InitCustomKeys(&CustomKeys);
+	LoadHotkeyConfig();
 }
 
-void SaveLanguage(int langid)
+static void CheckLanguage(UINT id)
 {
-	char text[80];
+	//int i;
+	//for (i = IDC_LANGENGLISH; i < IDC_LANGJAPANESE+1; i++)
+	//	MainWindow->checkMenu(i, false);
 
-	sprintf(text, "%d", langid);
-	WritePrivateProfileString("General", "Language", text, IniName);
-}
-
-void CheckLanguage(UINT id)
-{
-	int i;
-	for (i = IDC_LANGENGLISH; i < IDC_LANGJAPANESE+1; i++)
-		MainWindow->checkMenu(i, false);
-
-	MainWindow->checkMenu(id, true);
+	//MainWindow->checkMenu(id, true);
 }
 
 void ChangeLanguage(int id)
@@ -5060,29 +5042,19 @@ DOKEYDOWN:
 				SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0,0);
 			break;
 		case IDC_LANGENGLISH:
-			SaveLanguage(0);
-			ChangeLanguage(0);
-			CheckLanguage(LOWORD(wParam));
+			ChangeLanguage(LANGUAGE_ENGLISH);
 			return 0;
 		case IDC_LANGFRENCH:
-			SaveLanguage(1);
-			ChangeLanguage(1);
-			CheckLanguage(LOWORD(wParam));
+			ChangeLanguage(LANGUAGE_FRENCH);
 			return 0;
 		case IDC_LANG_CHINESE_SIMPLIFIED:
-			SaveLanguage(3);
-			ChangeLanguage(3);
-			CheckLanguage(LOWORD(wParam));
+			ChangeLanguage(LANGUAGE_CHINESE);
 			return 0;
 		case IDC_LANGITALIAN:
-			SaveLanguage(4);
-			ChangeLanguage(4);
-			CheckLanguage(LOWORD(wParam));
+			ChangeLanguage(LANGUAGE_ITALIAN);
 			return 0;
 		case IDC_LANGJAPANESE:
-			SaveLanguage(5);
-			ChangeLanguage(5);
-			CheckLanguage(LOWORD(wParam));
+			ChangeLanguage(LANGUAGE_JAPANESE);
 			return 0;
 
 		case IDC_FRAMELIMIT:

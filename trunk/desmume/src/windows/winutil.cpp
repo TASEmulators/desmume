@@ -96,3 +96,22 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 	GetPrivateProfileString(lpAppName, lpKeyName, lpDefault, buf, 65536, IniName);
 	return buf;
 }
+
+std::wstring STRW(UINT id)
+{
+	wchar_t* wstr;
+	LoadStringW(NULL,id,(LPWSTR)&wstr,0);
+	if(wstr==0) return L"";
+	else return wstr;
+}
+
+bool IsDlgCheckboxChecked(HWND hDlg, int id)
+{
+	return IsDlgButtonChecked(hDlg,id) == BST_CHECKED;
+}
+
+void CheckDlgItem(HWND hDlg, int id, bool checked)
+{
+	CheckDlgButton(hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
+}
+

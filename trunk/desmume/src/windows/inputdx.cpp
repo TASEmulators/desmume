@@ -365,7 +365,7 @@ static void ReadGuitarControl(const char* name, WORD& output)
 	}
 }
 
-static void LoadHotkeyConfig()
+void LoadHotkeyConfig()
 {
 	SCustomKey *key = &CustomKeys.key(0);
 

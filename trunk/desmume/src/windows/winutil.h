@@ -33,6 +33,11 @@ void GetINIPath();
 void PreventScreensaver();
 void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
 std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault);
+void CheckDlgItem(HWND hDlg, int id, bool checked);
+bool IsDlgCheckboxChecked(HWND hDlg, int id);
+
+//returns the specified resource string ID as a std::wstring
+std::wstring STRW(UINT id);
 
 inline bool operator==(const RECT& lhs, const RECT& rhs)
 {
