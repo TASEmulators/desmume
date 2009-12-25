@@ -101,7 +101,6 @@ AC_ARG_ENABLE(openal,
 if test "x$openal" = "xyes" ; then
 	AC_CHECK_LIB([openal], [main],[
                 HAVE_OPENAL=yes
-		AC_DEFINE(HAVE_OPENAL)
 		LIBS="$LIBS -lopenal"
 	])
 fi
