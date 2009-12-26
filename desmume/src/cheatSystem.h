@@ -52,7 +52,6 @@ private:
 
 	u8					*stack;
 	u16					numStack;
-	bool				disabled;
 	
 	void	clear();
 	void	ARparser(CHEATS_LIST cheat);
@@ -61,7 +60,7 @@ private:
 
 public:
 	CHEATS():
-				 num(0), currentGet(0), stack(0), numStack(0), disabled(0)
+				 num(0), currentGet(0), stack(0), numStack(0)
 	{
 		memset(list, 0, sizeof(list)); 
 		memset(filename, 0, sizeof(filename));
@@ -87,7 +86,6 @@ public:
 	void	stackClear();
 	void	process();
 	void	getXXcodeString(CHEATS_LIST cheat, char *res_buf);
-	void	disable(bool disable);
 };
 
 class CHEATSEARCH

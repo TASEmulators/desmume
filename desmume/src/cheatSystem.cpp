@@ -717,7 +717,7 @@ void CHEATS::stackClear()
 
 void CHEATS::process()
 {
-	if (disabled) return;
+	if (CommonSettings.cheatsDisable) return;
 	if (!num) return;
 	for (int i = 0; i < num; i++)
 	{
@@ -762,11 +762,6 @@ void CHEATS::getXXcodeString(CHEATS_LIST list, char *res_buf)
 		sprintf(buf, "%08X %08X\n", list.code[i][0], list.code[i][1]);
 		strcat(res_buf, buf);
 	}
-}
-
-void CHEATS::disable(bool disable)
-{
-	disabled = disable;
 }
 
 // ========================================== search

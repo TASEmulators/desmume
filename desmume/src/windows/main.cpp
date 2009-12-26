@@ -176,8 +176,6 @@ static BOOL OpenCore(const char* filename);
 BOOL Mic_DeInit_Physical();
 BOOL Mic_Init_Physical();
 
-static bool _cheatsDisabled = false;
-
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
 HMENU mainMenu = NULL; //Holds handle to the main DeSmuME menu
@@ -2298,11 +2296,11 @@ int _main()
 	GetSystemInfo(&systemInfo);
 	CommonSettings.num_cores = systemInfo.dwNumberOfProcessors;
 
-	_cheatsDisabled = false;
-
 	char text[80];
 
 	GetINIPath();
+
+	CommonSettings.cheatsDisable = GetPrivateProfileInt("General", "cheatsDisable", false, IniName);
 
 	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
 	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
@@ -2362,7 +2360,7 @@ int _main()
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
-	
+
 	//Get Ram-Watch values
 	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
 	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
@@ -3695,6 +3693,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected != FALSE);
 
+			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable == true);
+
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7,IDC_SAVETYPE8};
 			for(int i=0;i<8;i++) 
@@ -4846,9 +4846,9 @@ DOKEYDOWN:
 			return 0;
 
 		case IDM_CHEATS_DISABLE:
-			_cheatsDisabled = !_cheatsDisabled;
-			cheats->disable(_cheatsDisabled);
-			MainWindow->checkMenu(IDM_CHEATS_DISABLE, _cheatsDisabled );
+			CommonSettings.cheatsDisable = !CommonSettings.cheatsDisable;
+			WritePrivateProfileBool("General", "cheatsDisable", CommonSettings.cheatsDisable, IniName);
+			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable );
 			return 0;
 
 		case IDM_RECORD_MOVIE:
