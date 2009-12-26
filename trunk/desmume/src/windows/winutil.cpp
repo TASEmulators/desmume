@@ -99,10 +99,10 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 
 std::wstring STRW(UINT id)
 {
-	wchar_t* wstr;
-	LoadStringW(NULL,id,(LPWSTR)&wstr,0);
-	if(wstr==0) return L"";
-	else return wstr;
+	static const int BUFSIZE = 32768;
+	static wchar_t wstr[BUFSIZE];
+	LoadStringW(NULL,id,wstr,BUFSIZE);
+	return wstr;
 }
 
 bool IsDlgCheckboxChecked(HWND hDlg, int id)
