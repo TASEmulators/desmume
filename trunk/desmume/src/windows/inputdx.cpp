@@ -394,7 +394,7 @@ static void LoadGuitarConfig()
 	memcpy(&Guitar,&DefaultGuitar,sizeof(Guitar));
 
 	//Guitar.Enabled = true;
-#define DO(X) ReadControl(#X,Guitar.X);
+#define DO(X) ReadGuitarControl(#X,Guitar.X);
 	DO(GREEN);
 	DO(RED);
 	DO(YELLOW);

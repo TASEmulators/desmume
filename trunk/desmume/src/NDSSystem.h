@@ -460,6 +460,7 @@ extern struct TCommonSettings {
 		, micMode(InternalNoise)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, manualBackupType(0)
+		, cheatsDisable(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -486,6 +487,8 @@ extern struct TCommonSettings {
 
 	bool DebugConsole;
 	bool EnsataEmulation;
+
+	bool cheatsDisable;
 
 	int num_cores;
 	bool single_core() { return num_cores==1; }
