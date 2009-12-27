@@ -557,13 +557,17 @@ BOOL CHEATS::save()
 			for (int t = 0; t < list[i].num; t++)
 			{
 				char buf2[10] = { 0 };
+
+				u32 adr = list[i].code[t][0];
 				if (list[i].type == 0)
 				{
-					list[i].code[t][0] &= 0x0FFFFFFF;
-					list[i].code[t][0] |= (list[i].size << 28);
+					//size of the cheat is written out as adr highest nybble
+					adr &= 0x0FFFFFFF;
+					adr |= (list[i].size << 28);
 				}
-				sprintf(buf2, "%08X", list[i].code[t][0]);
+				sprintf(buf2, "%08X", adr);
 				strcat(buf, buf2);
+				
 				sprintf(buf2, "%08X", list[i].code[t][1]);
 				strcat(buf, buf2);
 				if (t < (list[i].num - 1))
