@@ -291,13 +291,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 							}
 						}
 
-						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) || val > 0x400000)
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
-						
-						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 					}
 					return TRUE;
 				}
@@ -328,14 +322,8 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 							}
 						}
 
-						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1]))
-							|| (val > searchRange[searchAddSize][1] && !(editBuf[1][0] == '-' && u32(-s32(val))-1 <= searchRange[searchAddSize][1])) )
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
+						CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 
-						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
 					return TRUE;
 				}
@@ -349,15 +337,19 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 
 				case IDC_RADIO1:		// 1 byte
 					searchAddSize = 0;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 				return TRUE;
 				case IDC_RADIO2:		// 2 bytes
 					searchAddSize = 1;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 				return TRUE;
 				case IDC_RADIO3:		// 3 bytes
 					searchAddSize = 2;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 				return TRUE;
 				case IDC_RADIO4:		// 4 bytes
 					searchAddSize = 3;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 				return TRUE;
 
 				case IDC_CHECK1:
@@ -402,6 +394,9 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), buf);
 				EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 
+				GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 10);
+				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 12);
+
 				CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);
 				CheckDlgButton(dialog, searchSizeIDDs[tempCheat.size], BST_CHECKED);
 				SetWindowText(GetDlgItem(dialog, IDOK), "Update");
@@ -431,23 +426,12 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf, 10);
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf2, 12);
-						if ( (strlen(buf) < 6) || (!strlen(buf2)) )
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 10);
 						
 						u32 val = 0;
-						sscanf_s(buf, "%x", &val);
+						sscanf_s(editBuf[0], "%x", &val);
 						val &= 0x00FFFFFF;
-						if (val > 0x400000)
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
-						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 						tempCheat.code[0][0] = val;
 					}
 					return TRUE;
@@ -457,12 +441,12 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, 12);
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf2, 10);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 12);
+						
 						int parseOffset = 0;
-						if(buf[0] && buf[1] == '-')
+						if(editBuf[1][0] && editBuf[1][1] == '-')
 							parseOffset = 1; // typed something in front of -
-						u32 val = strtoul(buf+parseOffset,NULL,10);
+						u32 val = strtoul(editBuf[1]+parseOffset,NULL,10);
 
 						if(cheatAddPasteCheck || parseOffset)
 						{
@@ -470,23 +454,17 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 							val &= searchRange[tempCheat.size][1];
 							char temp [12];
 							sprintf(temp, "%u", val);
-							if(strcmp(buf, temp))
+							if(strcmp(editBuf[1], temp))
 							{
-								strcpy(buf, temp);
+								strcpy(editBuf[1], temp);
 								int sel1=-1, sel2=0;
 								SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_GETSEL, (WPARAM)&sel1, (LPARAM)&sel2);
-								SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
+								SetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1]);
 								SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETSEL, sel1, sel2);
 							}
 						}
 
-						if ( (strlen(buf2) < 6) || (!strlen(buf))
-							|| (val > searchRange[tempCheat.size][1] && !(buf[0] == '-' && u32(-s32(val))-1 <= searchRange[tempCheat.size][1])) )
-						{
-							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
-							return TRUE;
-						}
-						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 						tempCheat.code[0][1] = val;
 					}
 					return TRUE;
@@ -501,15 +479,19 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 
 				case IDC_RADIO1:		// 1 byte
 					tempCheat.size = 0;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 				return TRUE;
 				case IDC_RADIO2:		// 2 bytes
 					tempCheat.size = 1;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 				return TRUE;
 				case IDC_RADIO3:		// 3 bytes
 					tempCheat.size = 2;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 				return TRUE;
 				case IDC_RADIO4:		// 4 bytes
 					tempCheat.size = 3;
+					CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 				return TRUE;
 
 				case IDC_CHECK1:		// freeze
@@ -1371,4 +1353,24 @@ void CheatsSearchReset()
 	searchAddSize = 0;
 	exactVal = 0;
 	searchNumberResults = 0;
+}
+
+void CheatAddVerify(HWND dialog,char* addre, char* valu,u8 size)
+{
+	u32 fix = 0;
+	sscanf_s(addre, "%x", &fix);
+	fix &= 0x00FFFFFF;
+
+	int parseOffset = 0;
+	if(valu[0] && valu[1] == '-')
+		parseOffset = 1; // typed something in front of -
+	u32 fix2 = strtoul(valu+parseOffset,NULL,10);
+
+	if ( (strlen(addre) < 6) || (!strlen(valu)) || fix > 0x400000
+		|| (fix2 > searchRange[size][1] && !(valu[0] == '-' && u32(-s32(fix2))-1 <= searchRange[size][1]/2)) )
+	{
+		EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
+	}
+	else
+		EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 }
