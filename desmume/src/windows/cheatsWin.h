@@ -22,4 +22,5 @@
 extern void CheatsListDialog(HWND hwnd);
 extern void CheatsSearchDialog(HWND hwnd);
 extern void CheatsSearchReset();
+extern void CheatAddVerify(HWND dialog,char* addre, char* valu,u8 size);
 extern void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const char* description=0);
