@@ -116,7 +116,7 @@ static FORCEINLINE int fastFloor(float f)
 static Fragment _screen[256*192];
 static FragmentColor _screenColor[256*192];
 
-FORCEINLINE int iround(float f) {
+static FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
 
@@ -124,7 +124,7 @@ FORCEINLINE int iround(float f) {
 typedef int fixed28_4;
 
 // handle floor divides and mods correctly 
-FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod, bool& failure)
+static FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod, bool& failure)
 {
 	//These must be caused by invalid or degenerate shapes.. not sure yet.
 	//check it out in the mario face intro of SM64
@@ -155,10 +155,10 @@ FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long
 	}
 }
 
-FORCEINLINE fixed28_4 FloatToFixed28_4( float Value ) {
+static FORCEINLINE fixed28_4 FloatToFixed28_4( float Value ) {
 	return (fixed28_4)(Value * 16);
 }
-FORCEINLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
+static FORCEINLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
 	return Value / 16.0f;
 }
 //inline fixed16_16 FloatToFixed16_16( float Value ) {
@@ -167,11 +167,11 @@ FORCEINLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
 //inline float Fixed16_16ToFloat( fixed16_16 Value ) {
 //	return Value / 65536.0;
 //}
-FORCEINLINE fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
+static FORCEINLINE fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
 	// could make this asm to prevent overflow
 	return (A * B) / 16;	// 28.4 * 28.4 = 24.8 / 16 = 28.4
 }
-FORCEINLINE int Ceil28_4( fixed28_4 Value ) {
+static FORCEINLINE int Ceil28_4( fixed28_4 Value ) {
 	int ReturnValue;
 	int Numerator = Value - 1 + 16;
 	if(Numerator >= 0) {
