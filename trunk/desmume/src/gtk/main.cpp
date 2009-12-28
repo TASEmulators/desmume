@@ -202,16 +202,11 @@ static const char *ui_description =
 "      <menuitem action='micnoise'/>"
 #endif
 "      <menu action='FrameskipMenu'>"
+"        <menuitem action='frameskipA'/>"
 "        <menuitem action='frameskip0'/>"
 "        <menuitem action='frameskip1'/>"
 "        <menuitem action='frameskip2'/>"
 "        <menuitem action='frameskip3'/>"
-"        <menuitem action='frameskip4'/>"
-"        <menuitem action='frameskip5'/>"
-"        <menuitem action='frameskip6'/>"
-"        <menuitem action='frameskip7'/>"
-"        <menuitem action='frameskip8'/>"
-"        <menuitem action='frameskip9'/>"
 "      </menu>"
 "      <menu action='LayersMenu'>"
 "        <menuitem action='layermainbg0'/>"
@@ -339,17 +334,20 @@ static const GtkRadioActionEntry interpolation_entries[] = {
     { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, 1},
 };
 
+enum frameskip_enum {
+  FRAMESKIP_0 = 0,
+  FRAMESKIP_1 = 1,
+  FRAMESKIP_2 = 2,
+  FRAMESKIP_3 = 3,
+  FRAMESKIP_AUTO
+};
+
 static const GtkRadioActionEntry frameskip_entries[] = {
-    { "frameskip0", NULL, "_0", NULL, NULL, 0},
-    { "frameskip1", NULL, "_1", NULL, NULL, 1},
-    { "frameskip2", NULL, "_2", NULL, NULL, 2},
-    { "frameskip3", NULL, "_3", NULL, NULL, 3},
-    { "frameskip4", NULL, "_4", NULL, NULL, 4},
-    { "frameskip5", NULL, "_5", NULL, NULL, 5},
-    { "frameskip6", NULL, "_6", NULL, NULL, 6},
-    { "frameskip7", NULL, "_7", NULL, NULL, 7},
-    { "frameskip8", NULL, "_8", NULL, NULL, 8},
-    { "frameskip9", NULL, "_9", NULL, NULL, 9},
+    { "frameskipA", NULL, "_Auto", NULL, NULL, FRAMESKIP_AUTO},
+    { "frameskip0", NULL, "_0", NULL, NULL, FRAMESKIP_0},
+    { "frameskip1", NULL, "_1", NULL, NULL, FRAMESKIP_1},
+    { "frameskip2", NULL, "_2", NULL, NULL, FRAMESKIP_2},
+    { "frameskip3", NULL, "_3", NULL, NULL, FRAMESKIP_3},
 };
 
 static const GtkRadioActionEntry savet_entries[] = {
@@ -546,6 +544,7 @@ joinThread_gdb( void *thread_handle) {
 /************************ GTK *******************************/
 
 uint Frameskip = 0;
+bool autoframeskip = false;
 GdkInterpType Interpolation = GDK_INTERP_BILINEAR;
 
 static GtkWidget *pWindow;
@@ -1564,6 +1563,7 @@ static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
     Frameskip = gtk_radio_action_get_current_value(current) ;
+    autoframeskip = Frameskip == FRAMESKIP_AUTO;
 }
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
@@ -1607,7 +1607,7 @@ static inline void _updateDTools()
 
 gboolean EmuLoop(gpointer data)
 {
-    static Uint32 fps_SecStart, fps_FrameCount;
+    static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames; 
     static int limiter_frame_counter;
     unsigned int i;
     gchar Title[20];
@@ -1618,22 +1618,38 @@ gboolean EmuLoop(gpointer data)
     }
 
     /* If desmume is currently running */
-    fps_FrameCount += Frameskip + 1;
     if (!fps_SecStart)
       fps_SecStart = SDL_GetTicks();
 
-    if (SDL_GetTicks() - fps_SecStart >= 1000) {
-        fps_SecStart = SDL_GetTicks();
+    /* don't count autoframeskip as real frameskip  */
+    if (Frameskip == FRAMESKIP_AUTO)
+      Frameskip = 0;
+
+    fps_FrameCount += Frameskip + 1;
+    next_fps_SecStart = SDL_GetTicks();
+    if ((next_fps_SecStart - fps_SecStart) >= 1000) {
+        fps_SecStart = next_fps_SecStart;
 
         snprintf(Title, sizeof(Title), "Desmume - %dfps", fps_FrameCount);
         gtk_window_set_title(GTK_WINDOW(pWindow), Title);
+
+        float emu_ratio = fps_FrameCount / 60.0;
+        if (autoframeskip) {
+            if (emu_ratio < 1 && (fps_FrameCount - skipped_frames) > skipped_frames)
+                Frameskip = MIN(Frameskip+1, FRAMESKIP_AUTO-1);
+            if (emu_ratio > 1 || skipped_frames >= fps_FrameCount-Frameskip)
+                Frameskip = Frameskip ? Frameskip-1 : 0;
+        }
+        LOG("auto: %d fps: %u skipped: %u emu_ratio: %f Frameskip: %u\n", autoframeskip, fps_FrameCount, skipped_frames, emu_ratio, Frameskip);
         fps_FrameCount = 0;
+        skipped_frames = 0;
     }
 
     desmume_cycle();    /* Emule ! */
     for (i = 0; i < Frameskip; i++) {
         NDS_SkipNextFrame();
         desmume_cycle();
+        skipped_frames++;
     }
 
     _updateDTools();
