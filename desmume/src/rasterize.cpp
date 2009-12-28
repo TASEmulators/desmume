@@ -919,9 +919,6 @@ public:
 		this->engine = engine;
 		lastTexKey = NULL;
 
-		//a counter for how many polys got culled
-		int culled = 0;
-
 		u32 lastPolyAttr = 0;
 		u32 lastTextureFormat = 0, lastTexturePalette = 0;
 
@@ -1409,7 +1406,6 @@ void SoftRasterizerEngine::performCoordAdjustment(const bool skipBackfacing)
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
 		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
-		POLY *poly = clippedPoly.poly;
 		int type = clippedPoly.type;
 		VERT* verts = &clippedPoly.clipVerts[0];
 
