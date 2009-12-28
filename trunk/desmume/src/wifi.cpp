@@ -789,6 +789,7 @@ INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 len, u8 maxR
 	buf[11] = minRSSI;
 }
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 static void WIFI_RXPutWord(u16 val)
 {
 	/* abort when RX data queuing is not enabled */
@@ -816,6 +817,7 @@ static void WIFI_RXPutWord(u16 val)
 		wifiMac.RXHWWriteCursor = ((wifiMac.RXRangeBegin & 0x1FFE) >> 1);
 	}
 }
+#endif
 
 static void WIFI_TXStart(u8 slot)
 {
@@ -1711,6 +1713,7 @@ void WIFI_usTrigger()
 
  *******************************************************************************/
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 #define ADHOC_MAGIC					"NDSWIFI\0"
 #define ADHOC_PROTOCOL_VERSION 		0x0100  // v1.0
 
@@ -1969,7 +1972,6 @@ const u8 SoftAP_AssocResponse[] = {
 
 //todo - make a class to wrap this
 //todo - zeromus - inspect memory leak safety of all this
-#ifdef EXPERIMENTAL_WIFI_COMM
 static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index) {
 	pcap_if_t *curr = alldevs;
 	for(int i=0;i<index;i++)
