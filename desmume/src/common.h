@@ -28,7 +28,7 @@
 #include "types.h"
 #include <string>
 
-extern u8	logo_data[156];
+extern const u8	logo_data[156];
 #ifdef WIN32
 
 	#include <winsock2.h>
