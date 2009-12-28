@@ -147,6 +147,9 @@ static FORCEINLINE void memset_u16_le(void* dst, u16 val)
 
 #endif
 
+// NOSSE version always used in gfx3d.cpp
+void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
+
 //---------------------------
 //switched SSE functions
 #ifdef ENABLE_SSE
