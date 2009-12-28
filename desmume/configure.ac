@@ -247,7 +247,7 @@ if test "x$HAVE_SDL" = "xyes"; then
       GETTEXT_PACKAGE=desmume
       AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
       AC_SUBST(GETTEXT_PACKAGE)
-      ALL_LINGUAS="fr nb pt_BR sv zh_CN"
+      ALL_LINGUAS="fr nb pt_BR sv zh_CN zh_TW"
       AM_GLIB_GNU_GETTEXT
       PO_DIR="po"
       PO_MAKEFILE="po/Makefile.in"
