@@ -292,8 +292,8 @@ static const GtkActionEntry action_entries[] = {
       { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
 #ifdef HAVE_WX
-	//for some reason the menu item doesnt show up....
-	  { "view3d",      NULL,      "View 3d",        NULL,       NULL,   View3d },
+      //for some reason the menu item doesnt show up....
+      { "view3d",      NULL,      "View 3d",        NULL,       NULL,   View3d },
 #endif
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "LayersMenu", NULL, "_Layers" },
@@ -974,11 +974,13 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 }
 #endif
 
+#ifdef HAVE_WX
 static void View3d()
 {
 	driver->VIEW3D_Init();
 	driver->view3d->Launch();
 }
+#endif
 
 static void Reset()
 {
