@@ -127,7 +127,9 @@ static void LoadStateDialog();
 void Launch();
 void Pause();
 static void Printscreen();
+#ifdef HAVE_WX
 static void View3d();
+#endif
 static void Reset();
 static void Edit_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
