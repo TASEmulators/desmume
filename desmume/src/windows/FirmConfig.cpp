@@ -32,6 +32,7 @@
 
 #include "../debug.h"
 #include "../NDSSystem.h"
+#include "../firmware.h"
 
 static char nickname_buffer[11];
 static char message_buffer[27];
