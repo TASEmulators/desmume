@@ -216,7 +216,6 @@ static u8 gbaReadFlash(u32 adr)
 
 static u8 getSaveTypeGBA(const u8 *data, const u32 size)
 {
-	u8	type = 0;
 	u8	*dat = (u8 *)data;
 	
 	for (u32 i = 0; i < (size / 4); i++)

@@ -44,7 +44,7 @@ private:
 	u32		decompress(const u8 *in, u8* &out);
 
 public:
-	CFIRMWARE(): ARM9bootAddr(0), ARM7bootAddr(0), size9(0), size7(0), patched(0) {};
+	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0) {};
 	
 	bool load();
 
