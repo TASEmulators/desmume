@@ -153,7 +153,7 @@ bool CommandLine::validate()
 		g_printerr("If either bios-swi is used, bios-arm9 and bios-arm7 must be specified.\n");
 	}
 
-	if(_cflash_image && _gbaslot_rom || _cflash_path && _gbaslot_rom) {
+	if((_cflash_image && _gbaslot_rom) || (_cflash_path && _gbaslot_rom)) {
 		g_printerr("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
 	}
 
