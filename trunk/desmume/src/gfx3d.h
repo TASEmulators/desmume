@@ -305,13 +305,13 @@ struct GFX3D_State
 		, enableClearImage(false)
 		, enableFog(false)
 		, enableFogAlphaOnly(false)
-		, fogShift(0)
 		, shading(TOON)
 		, alphaTestRef(0)
 		, clearDepth(1)
 		, clearColor(0)
 		, fogColor(0)
 		, fogOffset(0)
+		, fogShift(0)
 	{
 		for(u32 i=0;i<ARRAY_SIZE(u16ToonTable);i++)
 			u16ToonTable[i] = 0;
@@ -358,10 +358,10 @@ extern Viewer3d_State viewer3d_state;
 struct GFX3D
 {
 	GFX3D()
-		: frameCtr(0)
-		, frameCtrRaw(0)
-		, polylist(0)
-		, vertlist(0){
+		: polylist(0)
+		, vertlist(0)
+		, frameCtr(0)
+		, frameCtrRaw(0) {
 	}
 
 	GFX3D_State state;
