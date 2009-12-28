@@ -87,7 +87,6 @@ public:
 		if(size==32) write32(val);
 		else {
 			const u32 offset = adr&3;
-			const u32 baseaddr = adr&~offset;
 			if(size==8) {
 				printf("WARNING! 8BIT DMA ACCESS\n"); 
 				u32 mask = 0xFF<<(offset<<3);
@@ -105,7 +104,6 @@ public:
 		if(size==32) return read32();
 		else {
 			const u32 offset = adr&3;
-			const u32 baseaddr = adr&~offset;
 			if(size==8) { printf("WARNING! 8BIT DMA ACCESS\n"); return (read32()>>(offset<<3))&0xFF; }
 			else return (read32()>>(offset<<3))&0xFFFF;
 		}
