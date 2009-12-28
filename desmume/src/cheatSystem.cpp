@@ -591,7 +591,7 @@ char *CHEATS::clearCode(char *s)
 	if (!s) return NULL;
 	if (!*s) return s;
 
-	for (int i = 0; i < strlen(s); i++)
+	for (u32 i = 0; i < strlen(s); i++)
 	{
 		if (s[i] == ';') break;
 		if (strchr(hexValid, s[i]))
@@ -622,7 +622,10 @@ BOOL CHEATS::load()
 		{
 			line++;				// only for debug
 			memset(buf, 0, sizeof(buf));
-			fgets(buf, sizeof(buf), flist);
+			if (fgets(buf, sizeof(buf), flist) == NULL) {
+				INFO("Cheats: Failed to read from flist at line %i\n", line);
+				continue;
+			}
 			trim(buf);
 			if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
 
