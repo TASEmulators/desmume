@@ -957,8 +957,6 @@ static void OpenNdsDialog()
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
         }
 
-        //Launch(NULL, pWindow);
-
         g_free(sPath);
         break;
     default:
@@ -1885,8 +1883,8 @@ common_gtk_main( struct configured_features *my_config)
     }
 #endif
 
-        /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
-           Perhaps it needs a "window" to catch events...? */
+    /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
+     * Perhaps it needs a "window" to catch events...? */
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
         g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
@@ -2080,10 +2078,6 @@ common_gtk_main( struct configured_features *my_config)
 #endif
 
     /* Main loop */
-
-//  gtk_idle_add(&EmuLoop, pWindow);
-//  g_idle_add(&EmuLoop, pWindow);
-
     gtk_main();
 
     desmume_free();
