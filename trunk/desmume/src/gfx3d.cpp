@@ -152,8 +152,6 @@ public:
 decode:
 			//printf("[%05d] gxf: decoding %08X\n",currFrameCounter,val);
 			
-			bool valid = true;
-			bool gimpyCommand = false;
 			const u8 commands[] = { val&0xFF, (val>>8)&0xFF, (val>>16)&0xFF, (val>>24)&0xFF };
 			const u8 commandTypes[] = { gfx3d_commandTypes[commands[0]], gfx3d_commandTypes[commands[1]],gfx3d_commandTypes[commands[2]], gfx3d_commandTypes[commands[3]] };
 
