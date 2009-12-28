@@ -313,9 +313,9 @@ struct GFX3D_State
 		, fogColor(0)
 		, fogOffset(0)
 	{
-		for(int i=0;i<ARRAY_SIZE(u16ToonTable);i++)
+		for(u32 i=0;i<ARRAY_SIZE(u16ToonTable);i++)
 			u16ToonTable[i] = 0;
-		for(int i=0;i<ARRAY_SIZE(shininessTable);i++)
+		for(u32 i=0;i<ARRAY_SIZE(shininessTable);i++)
 			shininessTable[i] = 0;
 	}
 
