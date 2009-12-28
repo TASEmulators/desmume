@@ -1926,6 +1926,8 @@ start:
 				if(gxFIFO.size<=127)
 					triggered = TRUE;
 				break;
+			default:
+				break;
 		}
 
 		if(triggered)
