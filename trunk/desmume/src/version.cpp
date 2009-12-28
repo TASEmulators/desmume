@@ -17,7 +17,8 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include <types.h>
+#include "types.h"
+#include "version.h"
 
 //todo - everyone will want to support this eventually, i suppose
 #ifdef _MSC_VER
