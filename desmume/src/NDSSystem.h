@@ -456,11 +456,11 @@ extern struct TCommonSettings {
 		, BootFromFirmware(false)
 		, DebugConsole(false)
 		, EnsataEmulation(false)
+		, cheatsDisable(false)
 		, num_cores(1)
 		, micMode(InternalNoise)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, manualBackupType(0)
-		, cheatsDisable(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
