@@ -278,6 +278,7 @@ RECT MainScreenSrcRect, SubScreenSrcRect;
 int WndX = 0;
 int WndY = 0;
 int currLanguage = LANGUAGE_ENGLISH;
+UINT currLanguageMenuItem = IDC_LANGENGLISH;
 
 extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
@@ -2023,22 +2024,27 @@ void SetLanguage(int langid)
 	switch(langid)
 	{
 	case LANGUAGE_ENGLISH:
+		currLanguageMenuItem = IDC_LANGENGLISH;
 		setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
 		break;
 	case LANGUAGE_FRENCH:
+		currLanguageMenuItem = IDC_LANGFRENCH;
 		setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
 		break;
 	case LANGUAGE_CHINESE:
+		currLanguageMenuItem = IDC_LANG_CHINESE_SIMPLIFIED;
 		setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		break;
 	case LANGUAGE_ITALIAN:
+		currLanguageMenuItem = IDC_LANGITALIAN;
 		setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
 		break;
 	case LANGUAGE_JAPANESE:
+		currLanguageMenuItem = IDC_LANGJAPANESE;
 		setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		break;
@@ -2054,15 +2060,6 @@ void SetLanguage(int langid)
 	LoadHotkeyConfig();
 }
 
-static void CheckLanguage(UINT id)
-{
-	//int i;
-	//for (i = IDC_LANGENGLISH; i < IDC_LANGJAPANESE+1; i++)
-	//	MainWindow->checkMenu(i, false);
-
-	//MainWindow->checkMenu(id, true);
-}
-
 void ChangeLanguage(int id)
 {
 	SetLanguage(id);
@@ -2070,7 +2067,6 @@ void ChangeLanguage(int id)
 	MenuDeinit();
 	MenuInit();
 }
-
 
 static void ExitRunLoop()
 {
@@ -2554,7 +2550,6 @@ int _main()
 #endif
 	
 	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	
-	CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
 	GetPrivateProfileString("Video", "FrameSkip", "AUTO0", text, 80, IniName);
 
@@ -3575,24 +3570,30 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDUSERSPUWAV,    romloaded && !WAV_IsRecording());
 #endif
 
+
 			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded /*&& movieMode == MOVIEMODE_INACTIVE*/));
 			DesEnableMenuItem(mainMenu, IDM_STOPMOVIE,         (romloaded && movieMode != MOVIEMODE_INACTIVE));
 
 			DesEnableMenuItem(mainMenu, ID_RAM_WATCH,          romloaded);
 			DesEnableMenuItem(mainMenu, ID_RAM_SEARCH,         romloaded);
+
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
 			{
 				DesEnableMenuItem(mainMenu, IDM_STATE_SAVE_F1+x,   romloaded);
 				DesEnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   romloaded);
 			}
-			
+
 			//Gray the recent ROM menu item if there are no recent ROMs
 			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM, RecentRoms.size()>0);
 
 			//Updated Checked menu items
-			
+
+			//language choices
+			for(UINT i = IDC_LANGENGLISH; i < IDC_LANGJAPANESE+1; i++)
+				MainWindow->checkMenu(i, i == currLanguageMenuItem);
+
 			//emulation menu
 			MainWindow->checkMenu(IDM_PAUSE, ((paused)));
 			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected != FALSE);
