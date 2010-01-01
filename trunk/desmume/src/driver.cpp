@@ -1,6 +1,6 @@
 /*  driver.cpp
 
-    Copyright (C) 2009 DeSmuME team
+    Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -145,12 +145,12 @@ public:
 		const u32 w = texkey->sizeX;
 		const u32 h = texkey->sizeY;
 		u8* const bmpdata = new u8[w*h*4];
-		for(int i=0;i<w*h;i++) {
+		for(u32 i=0;i<w*h;i++) {
 				bmpdata[i*3] = texkey->decoded[i*4];
 				bmpdata[i*3+1] = texkey->decoded[i*4+1];
 				bmpdata[i*3+2] = texkey->decoded[i*4+2];
 			}
-		for(int i=0;i<w*h;i++)
+		for(u32 i=0;i<w*h;i++)
 			bmpdata[w*h*3+i] = texkey->decoded[i*4+3];
 
 		

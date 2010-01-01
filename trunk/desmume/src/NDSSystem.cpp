@@ -1,8 +1,5 @@
 /*	Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com 
-
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -1671,7 +1668,7 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-//bool dolog = true;
+//bool dolog = false;
 
 FORCEINLINE void arm9log()
 {
@@ -1815,6 +1812,9 @@ void NDS_exec(s32 nb)
 			if(sequencer.nds_vblankEnded) break;
 			//it should be benign to execute execHardware in the next frame,
 			//since there won't be anything for it to do (everything should be scheduled in the future)
+
+			//bail in case the system halted
+			if(!execute) break;
 
 			execHardware_interrupts();
 

@@ -1,6 +1,6 @@
 /*	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2009 DeSmuME team
+	Copyright (C) 2007-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -592,6 +592,10 @@ inline void SetupMMU(BOOL debugConsole) {
   //if ( (adr & 0x0f800000) == 0x03800000) {
     //T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
       //         adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
+
+//ALERT!!!!!!!!!!!!!!
+//the following inline functions dont do the 0x0FFFFFFF mask.
+//this may result in some unexpected behavior
 
 FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
 {
