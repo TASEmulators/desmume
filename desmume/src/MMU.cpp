@@ -1,6 +1,6 @@
 /*	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2009 DeSmuME team
+	Copyright (C) 2007-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -2141,6 +2141,8 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 {
 	mmu_log_debug_ARM9(adr, "(write08) 0x%02X", val);
 
+	adr &= 0x0FFFFFFF;
+
 	if(adr < 0x02000000)
 	{
 		T1WriteByte(MMU.ARM9_ITCM, adr&0x7FFF, val);
@@ -2152,8 +2154,6 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		addon.write08(adr, val);
 		return;
 	}
-
-	adr &= 0x0FFFFFFF;
 
 	if (adr >> 24 == 4)
 	{
@@ -2371,6 +2371,8 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
 	mmu_log_debug_ARM9(adr, "(write16) 0x%04X", val);
 
+	adr &= 0x0FFFFFFE;
+
 	if (adr < 0x02000000)
 	{
 		T1WriteWord(MMU.ARM9_ITCM, adr&0x7FFF, val);
@@ -2382,8 +2384,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		addon.write16(adr, val);
 		return;
 	}
-
-	adr &= 0x0FFFFFFF;
 
 	if((adr >> 24) == 4)
 	{
@@ -2862,6 +2862,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 {
 	mmu_log_debug_ARM9(adr, "(write32) 0x%08X", val);
 
+	adr &= 0x0FFFFFFC;
+	
 	if(adr<0x02000000)
 	{
 		T1WriteLong(MMU.ARM9_ITCM, adr&0x7FFF, val);
@@ -2878,8 +2880,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	{
 		int zzz=9;
 	}
-
-	adr &= 0x0FFFFFFF;
 
 #if 0
 	if ((adr & 0xFF800000) == 0x04800000) {
@@ -3288,13 +3288,13 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
 	mmu_log_debug_ARM9(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 
+	adr &= 0x0FFFFFFF;
+
 	if(adr<0x02000000)
 		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
-
-	adr &= 0x0FFFFFFF;
 
 	if (adr >> 24 == 4)
 	{	//Address is an IO register
@@ -3329,13 +3329,13 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
 	mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF], adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]));
 
+	adr &= 0x0FFFFFFE;
+
 	if(adr<0x02000000)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
-
-	adr &= 0x0FFFFFFE;
 
 	if (adr >> 24 == 4)
 	{
@@ -3419,13 +3419,13 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
 	mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF], adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]));
 
+	adr &= 0x0FFFFFFC;
+
 	if(adr<0x02000000) 
 		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
-
-	adr &= 0x0FFFFFFC;
 
 	// Address is an IO register
 	if((adr >> 24) == 4)
@@ -3529,13 +3529,13 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
 	mmu_log_debug_ARM7(adr, "(write08) 0x%02X", val);
 
+	adr &= 0x0FFFFFFF;
+
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write08(adr, val);
 		return;
 	}
-
-	adr &= 0x0FFFFFFF;
 
 	if ((adr>=0x04000400)&&(adr<0x0400051D)) 
 	{
@@ -3594,6 +3594,8 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
 	mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
 
+	adr &= 0x0FFFFFFE;
+	
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write16(adr, val);
@@ -3607,8 +3609,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
 		return;
 	}
-
-	adr &= 0x0FFFFFFF;
 
 	if ((adr>=0x04000400)&&(adr<0x0400051D))
 	{
@@ -3891,6 +3891,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
 	mmu_log_debug_ARM7(adr, "(write32) 0x%08X", val);
 
+	adr &= 0x0FFFFFFC;
+
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write32(adr, val);
@@ -3906,8 +3908,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
 		return;
 	}
-
-	adr &= 0x0FFFFFFF;
 
     if ((adr>=0x04000400)&&(adr<0x0400051D))
     {
@@ -4007,6 +4007,8 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
 	mmu_log_debug_ARM7(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
 
+	adr &= 0x0FFFFFFF;
+
 	// wifi mac access 
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
@@ -4020,8 +4022,6 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		return addon.read08(adr);
 
 	if (adr == REG_RTC) return (u8)rtcRead();
-
-	adr &= 0x0FFFFFFF;
 
 	if (adr >> 24 == 4)
 	{
@@ -4043,14 +4043,14 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
 	mmu_log_debug_ARM7(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]));
 
+	adr &= 0x0FFFFFFE;
+
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return WIFI_read16(adr) ;
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
-
-	adr &= 0x0FFFFFFE;
 
 	if(adr>>24==4)
 	{	//Address is an IO register
@@ -4110,14 +4110,14 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
 	mmu_log_debug_ARM7(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]));
 
+	adr &= 0x0FFFFFFC;
+
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
-
-	adr &= 0x0FFFFFFC;
 
 	if((adr >> 24) == 4)
 	{	//Address is an IO register

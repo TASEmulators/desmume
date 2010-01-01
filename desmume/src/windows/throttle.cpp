@@ -220,9 +220,9 @@ int AutoFrameSkip_GetSkipAmount(int min, int max)
 
 	// limit ongoing skipframes to requested range + 1 on each side
 	if(fSkipFrames < min-1)
-		fSkipFrames = min-1;
+		fSkipFrames = (float)min-1;
 	if(fSkipFrames > max+1)
-		fSkipFrames = max+1;
+		fSkipFrames = (float)max+1;
 
 //	printf("%d", rv);
 

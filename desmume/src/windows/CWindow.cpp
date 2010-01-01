@@ -1,5 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    Copyright (C) 2006-2009 DeSmuME team
+    Copyright (C) 2006-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -117,7 +117,7 @@ void MakeBitmapPseudoTransparent(HBITMAP hBmp, COLORREF cKeyColor, COLORREF cNew
 
 	SetDIBits(dc, hBmp, 0, bmp.bmHeight, (LPVOID)bmpdata, &bmpinfo, DIB_RGB_COLORS);
 	DeleteDC(dc);
-	delete bmpdata;
+	delete[] bmpdata;
 }
 
 //-----------------------------------------------------------------------------
@@ -575,7 +575,7 @@ bool WINCLASS::createEx(LPSTR caption, int x, int y, int width, int height, int 
 bool WINCLASS::setMenu(HMENU menu)
 {
 	hmenu = menu;
-	return SetMenu(hwnd, hmenu)==TRUE;
+	return SetMenu(hwnd, hmenu)!=FALSE;
 }
 
 DWORD WINCLASS::checkMenu(UINT idd, bool check)

@@ -1,6 +1,6 @@
 /*  Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
 	This file is part of DeSmuME
 
@@ -6845,8 +6845,13 @@ TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 
 TEMPLATE static u32 FASTCALL OP_BKPT(const u32 i)
 {
-	/*LOG("Stopped (OP_BKPT) \n");
-	TRAPUNDEF();*/
+	static u32 last_bkpt = 0xFFFFFFFF;
+	if(i != last_bkpt)
+		printf("ARM OP_BKPT triggered\n");
+	last_bkpt = i;
+
+	//this is not 100% correctly emulated, but it does the job
+	cpu->next_instruction = cpu->instruct_adr;
 	return 4;
 }
 
