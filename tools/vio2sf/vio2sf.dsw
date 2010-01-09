@@ -1,9 +1,60 @@
 Microsoft Developer Studio Workspace File, Format Version 6.00
-# åxçê: Ç±ÇÃ‹∞∏ΩÕﬂ∞Ω Ãß≤Ÿ Çï“èWÇ‹ÇΩÇÕçÌèúÇµÇ»Ç¢Ç≈Ç≠ÇæÇ≥Ç¢!
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
 
 ###############################################################################
 
 Project: "foo_xsf8"=.\foo_xsf8.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pfc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foobar2000_SDK"=.\src\foobar8\foobar2000\SDK\foobar2000_SDK.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name utf8api
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foobar2000_component_client"=.\src\foobar8\foobar2000\foobar2000_component_client\foobar2000_component_client.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "foobar2000_sdk_helpers"=.\src\foobar8\foobar2000\helpers\foobar2000_sdk_helpers.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -47,6 +98,33 @@ Package=<5>
 
 Package=<4>
 {{{
+}}}
+
+###############################################################################
+
+Project: "pfc"=.\src\foobar8\pfc\pfc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "utf8api"=.\src\foobar8\foobar2000\utf8api\utf8api.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name pfc
+    End Project Dependency
 }}}
 
 ###############################################################################
