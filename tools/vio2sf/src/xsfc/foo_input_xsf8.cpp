@@ -1,3 +1,5 @@
+extern unsigned long dwInterpolation;
+
 #include "foobar2000/SDK/foobar2000.h"
 
 #include "../pversion.h"
@@ -148,6 +150,10 @@ public:
 				lpif->SetChannelMute(i, mute);
 			}
 			if (!output) detectSilence = 0;
+		}
+		if (lpif->dwInterfaceVersion >= 4)
+		{
+			lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_INTERPOLATION,&dwInterpolation);
 		}
 
 		while (pos < bufsize)

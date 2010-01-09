@@ -629,8 +629,10 @@ public:
 	static void DlgSetCheck(void *hwndDlg, int itm, bool chk) throw();
 	static bool DlgGetCheck(void *hwndDlg, int itm) throw();
 	static void DlgAddList(void *hwndDlg, int itm, TString item) throw();
+	static void DlgAddCombo(void *hwndDlg, int itm, TString item) throw();
 	static int DlgCntList(void *hwndDlg, int itm) throw();
 	static int DlgCurList(void *hwndDlg, int itm) throw();
+	static int DlgCurCombo(void *hwndDlg, int itm) throw();
 	static bool DlgGetList(void *hwndDlg, int itm, int cur) throw();
 	// File
 	typedef void *(*lpfnalloc)(void *pwork, size_t s);

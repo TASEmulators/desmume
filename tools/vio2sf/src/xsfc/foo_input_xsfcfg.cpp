@@ -7,6 +7,8 @@
 #include "tagget.h"
 #include "xsfcfg.h"
 
+#include "xsfui.rh"
+
 namespace
 {
 
@@ -167,6 +169,13 @@ protected:
 	{
 		switch (id)
 		{
+		case IDC_COMBO_INTERPOLATION:
+			if (cmd == CBN_SELCHANGE)
+			{
+				CFGUpdate(pcfg, hwndDlg);
+				CFGSave(pcfg);
+			}
+			break;
 		case 0x200: case 0x201: case 0x202:
 		case 0x203: case 0x204: case 0x205:
 			if (initialized)

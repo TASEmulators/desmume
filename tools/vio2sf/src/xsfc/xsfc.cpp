@@ -469,6 +469,20 @@ void TWin32::DlgAddList(void *hwndDlg, int itm, TString item)
 	}
 }
 
+void TWin32::DlgAddCombo(void *hwndDlg, int itm, TString item)
+{
+	try
+	{
+		if (IsUnicodeSupportedOS())
+			WndMsgSend(DlgItem(hwndDlg, itm), CB_ADDSTRING, 0, item.GetW());
+		else
+			WndMsgSend(DlgItem(hwndDlg, itm), CB_ADDSTRING, 0, TStringM(item).GetM());
+	}
+	catch (xsfc::EShortOfMemory e)
+	{
+	}
+}
+
 int TWin32::DlgCntList(void *hwndDlg, int itm)
 {
 	return (int)(INT_PTR)WndMsgSend(DlgItem(hwndDlg, itm), LB_GETCOUNT, 0, 0); 
@@ -477,6 +491,11 @@ int TWin32::DlgCntList(void *hwndDlg, int itm)
 int TWin32::DlgCurList(void *hwndDlg, int itm)
 {
 	return (int)(INT_PTR)WndMsgSend(DlgItem(hwndDlg, itm), LB_GETCURSEL, 0, 0); 
+}
+
+int TWin32::DlgCurCombo(void *hwndDlg, int itm)
+{
+	return (int)(INT_PTR)WndMsgSend(DlgItem(hwndDlg, itm), CB_GETCURSEL, 0, 0); 
 }
 
 bool TWin32::DlgGetList(void *hwndDlg, int itm, int cur)
