@@ -3365,10 +3365,6 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				return 0;
 				//almost worthless for now
 				//return (gfx3d_GetNumVertex());
-			//case 0x04000630:
-			//case 0x04000632:
-			//case 0x04000634:
-			//	return gfx3d_glGetVecRes((adr & 0xF) >> 1);
 			// ============================================= 3D end
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
