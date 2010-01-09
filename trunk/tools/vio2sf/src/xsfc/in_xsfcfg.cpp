@@ -151,10 +151,6 @@ static BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM l
 		::SetWindowTextA(hwndDlg, WINAMPPLUGIN_NAME);
 		::ShowWindow(GetDlgItem(hwndDlg, IDOK), SW_SHOWNA);
 		::ShowWindow(GetDlgItem(hwndDlg, IDCANCEL), SW_SHOWNA);
-		ComboBox_AddString(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), "None");
-		ComboBox_AddString(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), "Linear");
-		ComboBox_AddString(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), "Cosine");
-		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), dwInterpolation);
 		CFGLoad(pcfg);
 		CFGReset(pcfg, hwndDlg);
 		return TRUE;

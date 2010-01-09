@@ -1,3 +1,5 @@
+extern unsigned long dwInterpolation;
+
 #include "leakchk.h"
 
 #include "foobar2000/SDK/foobar2000.h"
@@ -72,7 +74,14 @@ public:
 	void start(void *p, DWORD l)
 	{
 		if (loadDrv()) 
+		{
+			if (lpif->dwInterfaceVersion >= 3)
+			{
+				lpif->SetExtendParam(1, CFGGetExtendParam1());
+				lpif->SetExtendParam(2, CFGGetExtendParam2());
+			}
 			m_genok = !lpif->Start(p, l);
+		}
 
 		skipSilenceOnStartSec = CFGGetSkipSilenceOnStartSec();
 
@@ -107,6 +116,10 @@ public:
 				lpif->SetChannelMute(i, mute);
 			}
 			if (!output) detectSilence = 0;
+		}
+		if (lpif->dwInterfaceVersion >= 4)
+		{
+			lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_INTERPOLATION,&dwInterpolation);
 		}
 
 		while (pos < bufsize)

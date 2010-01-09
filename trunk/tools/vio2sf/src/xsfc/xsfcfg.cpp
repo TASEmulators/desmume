@@ -209,6 +209,9 @@ void CFGReset(LPIConfigIO pcfg, void *hwndDlg)
 	{
 		char buf[128];
 		xsfc::TWin32::DlgSetCheck(hwndDlg, 0x200, dwPlayInfinitely == 1);
+		xsfc::TWin32::DlgAddCombo(hwndDlg, IDC_COMBO_INTERPOLATION, xsfc::TString("No interpolation"));
+		xsfc::TWin32::DlgAddCombo(hwndDlg, IDC_COMBO_INTERPOLATION, xsfc::TString("Linear interpolation"));
+		xsfc::TWin32::DlgAddCombo(hwndDlg, IDC_COMBO_INTERPOLATION, xsfc::TString("Cosine interpolation"));
 		ComboBox_SetCurSel(GetDlgItem((HWND)hwndDlg, IDC_COMBO_INTERPOLATION), dwInterpolation);
 		xsfc::TWin32::DlgSetText(hwndDlg, 0x201, sDefaultLength);
 		xsfc::TWin32::DlgSetText(hwndDlg, 0x202, sDefaultFade);
@@ -254,6 +257,7 @@ void CFGUpdate(LPIConfigIO pcfg, void *hwndDlg)
 	try
 	{
 		dwPlayInfinitely = xsfc::TWin32::DlgGetCheck(hwndDlg, 0x200) ? 1 : 0;
+		dwInterpolation = xsfc::TWin32::DlgCurCombo(hwndDlg, IDC_COMBO_INTERPOLATION);
 		sDefaultLength = xsfc::TWin32::DlgGetText(hwndDlg, 0x201);
 		sDefaultFade = xsfc::TWin32::DlgGetText(hwndDlg, 0x202);
 		dwSkipSilenceOnStartSec = xsfc::TWin32::DlgGetText(hwndDlg, 0x203).GetULong();
