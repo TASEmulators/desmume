@@ -1,6 +1,6 @@
 /*	gfx3d.cpp
 	Copyright (C) 2006 yopyop
-    Copyright (C) 2008-2009 DeSmuME team
+    Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -1547,7 +1547,7 @@ static void gfx3d_glVecTest(u32 v)
 	CACHE_ALIGN float normal[4] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
 						normalTable[(v>>20)&1023],
-						1};
+						0};
 
 	MatrixMultVec4x4(mtxCurrent[2], normal);
 
@@ -1655,12 +1655,6 @@ void gfx3d_glAlphaFunc(u32 v)
 unsigned int gfx3d_glGetPosRes(unsigned int index)
 {
 	return (unsigned int)(PTcoords[index] * 4096.0f);
-}
-
-unsigned short gfx3d_glGetVecRes(unsigned int index)
-{
-	//INFO("NDS_glGetVecRes\n");
-	return 0;
 }
 
 //#define _3D_LOG_EXEC
