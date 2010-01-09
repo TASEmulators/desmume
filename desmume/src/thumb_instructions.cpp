@@ -953,7 +953,7 @@ TEMPLATE static  u32 FASTCALL OP_SWI_THUMB(const u32 i)
 {
 	u32 swinum = cpu->instruction & 0xFF;
 
-	//ideas-style debug prints
+	//ideas-style debug prints (execute this SWI with the null terminated string address in R0)
 	if(swinum==0xFC) {
 		IdeasLog(cpu);
 		return 0;
