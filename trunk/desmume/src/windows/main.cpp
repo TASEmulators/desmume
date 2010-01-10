@@ -2611,7 +2611,7 @@ int _main()
 	if(spu_ret != 0)
 	{
 		MessageBox(MainWindow->getHWnd(),"Unable to initialize DirectSound","Error",MB_OK);
-		return -1;
+		sndcoretype = 0;
 	}
 
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
