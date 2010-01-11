@@ -63,14 +63,15 @@
 class wxDesmumeApp : public wxApp
 {
 public:
-	//call me each frame or something.
-	//sort of an idle routine
-	static void frameUpdate()
-	{
-		if(!wxTheApp) return;
-		wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
-		self->DeletePendingObjects();
-	}
+    //call me each frame or something.
+    //sort of an idle routine
+    static void frameUpdate()
+    {
+        if(!wxTheApp)
+            return;
+        wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
+        self->DeletePendingObjects();
+    }
 };
 
 IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
@@ -337,11 +338,11 @@ static const GtkRadioActionEntry interpolation_entries[] = {
 };
 
 enum frameskip_enum {
-  FRAMESKIP_0 = 0,
-  FRAMESKIP_1 = 1,
-  FRAMESKIP_2 = 2,
-  FRAMESKIP_3 = 3,
-  FRAMESKIP_AUTO
+    FRAMESKIP_0 = 0,
+    FRAMESKIP_1 = 1,
+    FRAMESKIP_2 = 2,
+    FRAMESKIP_3 = 3,
+    FRAMESKIP_AUTO
 };
 
 static const GtkRadioActionEntry frameskip_entries[] = {
@@ -979,8 +980,8 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 #ifdef HAVE_WX
 static void View3d()
 {
-	driver->VIEW3D_Init();
-	driver->view3d->Launch();
+    driver->VIEW3D_Init();
+    driver->view3d->Launch();
 }
 #endif
 
@@ -1667,9 +1668,9 @@ gboolean EmuLoop(gpointer data)
         }
     }
 
-	#ifdef HAVE_WX
-	wxDesmumeApp::frameUpdate();
-	#endif
+#ifdef HAVE_WX
+    wxDesmumeApp::frameUpdate();
+#endif
 
     return TRUE;
 }
@@ -2128,7 +2129,7 @@ int main (int argc, char *argv[])
   }
 
 #ifdef HAVE_WX
-	wxInitialize();
+  wxInitialize();
 #endif
 
   return common_gtk_main( &my_config);
