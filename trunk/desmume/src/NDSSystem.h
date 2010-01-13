@@ -1,8 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
-    Copyright (C) 2008-2009 DeSmuME team
+    Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -202,6 +199,14 @@ struct NDSSystem
 
 	//maintains the state of the ensata handshaking protocol
 	u32 ensataHandshake;
+
+	struct {
+		u8 lcd, gpuMain, gfx3d_render, gfx3d_geometry, gpuSub, dispswap;
+	} power1; //POWCNT1
+
+	struct {
+		u8 speakers, wifi /*(initial value=0)*/;
+	} power2; //POWCNT2
 
 	bool isInVblank() const { return VCount >= 192; } 
 	bool isIn3dVblank() const { return VCount >= 192 && VCount<215; } 

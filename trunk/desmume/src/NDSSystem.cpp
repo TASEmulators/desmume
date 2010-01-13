@@ -1914,6 +1914,9 @@ void NDS_Reset()
 
 	nds.sleeping = FALSE;
 	nds.cardEjected = FALSE;
+	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1;
+	nds.power2.speakers = 1;
+	nds.power2.wifi = 0;
 
 	nds_timer = 0;
 	nds_arm9_timer = 0;
@@ -2076,6 +2079,9 @@ void NDS_Reset()
 	_MMU_write16<ARMCPU_ARM9>(0x04000130, 0x3FF);
 	_MMU_write16<ARMCPU_ARM7>(0x04000130, 0x3FF);
 	_MMU_write08<ARMCPU_ARM7>(0x04000136, 0x43);
+
+	//picross polls this value when it boots. firmware sets it.
+	//_MMU_write16<ARMCPU_ARM9>(REG_POWCNT1, 0x20F);
 
 	LidClosed = FALSE;
 	countLid = 0;

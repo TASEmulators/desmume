@@ -97,8 +97,8 @@ u32 _MMU_MAIN_MEM_MASK32 = 0x3FFFFF & ~3;
 void mmu_log_debug_ARM9(u32 adr, const char *fmt, ...)
 {
 	if (adr < 0x4000000) return;
-	if (adr > 0x4100014) return;
-#if 1
+//	if (adr > 0x4100014) return;
+//#if 1
 	if (adr >= 0x4000000 && adr <= 0x400006E) return;		// Display Engine A
 	if (adr >= 0x40000B0 && adr <= 0x4000134) return;		// DMA, Timers and Keypad
 	if (adr >= 0x4000180 && adr <= 0x40001BC) return;		// IPC/ROM
@@ -107,7 +107,7 @@ void mmu_log_debug_ARM9(u32 adr, const char *fmt, ...)
 	if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
 	if (adr >= 0x4001000 && adr <= 0x400106E) return;		// Display Engine B
 	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
-#endif
+//#endif
 	va_list list;
 	char msg[512];
 
@@ -2604,17 +2604,16 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DISPB_MASTERBRIGHT:
 				GPU_setMasterBrightness (SubScreen.gpu, val);
 				break;
-			
-            case REG_POWCNT1 :
+
+            case REG_POWCNT1:
 				{
-// TODO: make this later
-#if 0			
-					u8	_LCD = (val) & 0x01;
-					u8	_2DEngineA = (val>>1) & 0x01;
-					u8	_2DEngineB = (val>>9) & 0x01;
-					u8	_3DRender = (val>>2) & 0x01;
-					u8	_3DGeometry = (val>>3) & 0x01;
-#endif
+					nds.power1.lcd = BIT0(val);
+					nds.power1.gpuMain = BIT1(val);
+					nds.power1.gfx3d_render = BIT2(val);
+					nds.power1.gfx3d_geometry = BIT3(val);
+					nds.power1.gpuSub = BIT9(val);
+					nds.power1.dispswap = BIT15(val);
+
 					if(val & (1<<15))
 					{
 						//printf("Main core on top (vcount=%d)\n",nds.VCount);
@@ -2627,8 +2626,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}
-
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x304, val);
 				}
 				
 				return;
@@ -3388,6 +3385,18 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
 
+            case REG_POWCNT1:
+				{
+					u16 ret = 0;
+					ret |= nds.power1.lcd?BIT(0):0;
+					ret |= nds.power1.gpuMain?BIT(1):0;
+					ret |= nds.power1.gfx3d_render?BIT(2):0;
+					ret |= nds.power1.gfx3d_geometry?BIT(3):0;
+					ret |= nds.power1.gpuSub?BIT(9):0;
+					ret |= nds.power1.dispswap?BIT(15):0;
+					return ret;
+				}
+
 			case 0x04000130:
 			case 0x04000136:
 				//not sure whether these should trigger from byte reads
@@ -3629,6 +3638,15 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204, (val & 0x7F) | (remote_proc & 0xFF80));
 			}
 			return;
+
+			
+			case REG_POWCNT2:
+				{
+					nds.power2.speakers = BIT0(val);
+					nds.power2.wifi = BIT0(val);
+				}
+				return;
+
 
 			case REG_AUXSPICNT:
 				write_auxspicnt(7,16,0,val);
@@ -4055,6 +4073,14 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 
 		switch(adr)
 		{
+			case REG_POWCNT2:
+				{
+					u16 ret = 0;
+					ret |= nds.power2.speakers?BIT(0):0;
+					ret |= nds.power2.wifi?BIT(1):0;
+					return ret;
+				}
+
 			case REG_RTC:
 				return rtcRead();
 

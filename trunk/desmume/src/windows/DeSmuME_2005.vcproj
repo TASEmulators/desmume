@@ -55,7 +55,7 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include"
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;_WIN32_WINNT=0x0501"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;_WIN32_WINNT=0x0501;_CRTDBG_MAPALLOC "
 				ExceptionHandling="1"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -436,6 +436,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP3"
 				Optimization="2"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"

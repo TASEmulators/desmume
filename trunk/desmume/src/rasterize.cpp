@@ -1,4 +1,4 @@
-/*  Copyright 2009 DeSmuME team
+/*  Copyright 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -44,10 +44,10 @@
 #include "NDSSystem.h"
 #include "utils/task.h"
 
-#undef FORCEINLINE
-#define FORCEINLINE
-#undef INLINE
-#define INLINE
+//#undef FORCEINLINE
+//#define FORCEINLINE
+//#undef INLINE
+//#define INLINE
 
 using std::min;
 using std::max;
@@ -932,7 +932,7 @@ public:
 			POLY *poly = clippedPoly.poly;
 			int type = clippedPoly.type;
 
-			//if(i == 0 || lastPolyAttr != poly->polyAttr)
+			if(i == 0 || lastPolyAttr != poly->polyAttr)
 			{
 				polyAttr.setup(poly->polyAttr);
 				polyAttr.translucent = poly->isTranslucent();
@@ -940,7 +940,7 @@ public:
 			}
 
 
-			//if(i == 0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
+			if(i == 0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
 			{
 				sampler.setup(poly->texParam);
 				lastTextureFormat = poly->texParam;
@@ -1352,8 +1352,8 @@ template<bool CUSTOM> void SoftRasterizerEngine::performViewportTransforms(int w
 {
 	const float xfactor = width/256.0f;
 	const float yfactor = height/192.0f;
-	const float xmax = 256.0f*xfactor-0.001f; //fudge factor to keep from overrunning render buffers
-	const float ymax = 192.0f*yfactor-0.001f;
+	const float xmax = 256.0f*xfactor-(CUSTOM?0.001f:0); //fudge factor to keep from overrunning render buffers
+	const float ymax = 192.0f*yfactor-(CUSTOM?0.001f:0);
 
 
 	//viewport transforms
