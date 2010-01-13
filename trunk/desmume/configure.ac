@@ -277,18 +277,17 @@ case $target in
     UI_DIR="windows"
     ;;
   *darwin*)
-    LIBS="$LIBS -framework OpenGL"
-    if test "x$HAVE_OPENAL" = "xyes"; then
-      LIBS="$LIBS -framework OpenAL"
-      CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers/"
-    fi
     if test "x$GTK_MACOSX_HACK" = "xyes" ; then
-      LIBS="$LIBS -framework OpenGL -framework Gtk -framework GLib"
-      CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers "
-      AC_SUBST(CPPFLAGS)
+      LIBS="$LIBS -framework Gtk -framework GLib"
+      CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers"
       GLIB_LIBS=""
       AC_SUBST(GLIB_LIBS)
     fi
+    dnl - openal is required on mac os x and we are not able to figure out if it's installed or not
+    AC_DEFINE(HAVE_OPENAL)
+    LIBS="$LIBS -framework OpenGL -framework OpenAL"
+    CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers"
+    AC_SUBST(CPPFLAGS)
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;
