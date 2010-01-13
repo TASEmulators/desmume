@@ -1,7 +1,7 @@
 /*  Copyright (C) 2006 Normmatt
     Copyright (C) 2006 Theo Berkau
     Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -173,6 +173,14 @@ SFORMAT SF_NDS[]={
 	{ "_ENI", 4, 1, &nds.ensataIpcSyncCounter},
 	{ "_SLP", 4, 1, &nds.sleeping},
 	{ "_CEJ", 4, 1, &nds.cardEjected},
+	{ "_P00", 1, 1, &nds.power1.lcd},
+	{ "_P01", 1, 1, &nds.power1.gpuMain},
+	{ "_P02", 1, 1, &nds.power1.gfx3d_render},
+	{ "_P03", 1, 1, &nds.power1.gfx3d_geometry},
+	{ "_P04", 1, 1, &nds.power1.gpuSub},
+	{ "_P05", 1, 1, &nds.power1.dispswap},
+	{ "_P06", 1, 1, &nds.power2.speakers},
+	{ "_P07", 1, 1, &nds.power2.wifi},
 	{ 0 }
 };
 
