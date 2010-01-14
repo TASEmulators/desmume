@@ -280,6 +280,7 @@ TEMPLATE static u32 FASTCALL  OP_UND(const u32 i)
 
 //-----------------------------------------------------------------------------
 //   AND / ANDS
+//   Timing: OK
 //-----------------------------------------------------------------------------
 
 #define OP_AND(a, b) \
@@ -2366,86 +2367,101 @@ TEMPLATE static u32 FASTCALL  OP_MVN_S_IMM_VAL(const u32 i)
 //   MUL / MULS / MLA / MLAS
 //-----------------------------------------------------------------------------
 
-#define OP_MUL_END(a,b) \
+#define MUL_Mxx_END(c) \
 	v >>= 8; \
 	if((v==0)||(v==0xFFFFFF)) \
-		return b; \
+		return c+1; \
 	v >>= 8; \
 	if((v==0)||(v==0xFFFF)) \
-		return b+1; \
+		return c+2; \
 	v >>= 8; \
 	if((v==0)||(v==0xFF)) \
-		return b+2; \
-	return a; \
+		return c+3; \
+	return c+4; \
 
 
 TEMPLATE static u32 FASTCALL  OP_MUL(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,8)] * v;
-	OP_MUL_END(5,2);
+	u32 v = cpu->R[REG_POS(i,8)];
+	cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,0)] * v;
+
+	MUL_Mxx_END(1);
 }
 
 TEMPLATE static u32 FASTCALL  OP_MLA(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	u32 a = cpu->R[REG_POS(i,8)];
+	u32 v = cpu->R[REG_POS(i,8)];
+	u32 a = cpu->R[REG_POS(i,0)];
 	u32 b = cpu->R[REG_POS(i,12)];
 	cpu->R[REG_POS(i,16)] = a * v + b;
 	
-	OP_MUL_END(6,3);
+	MUL_Mxx_END(2);
 }
 
 TEMPLATE static u32 FASTCALL  OP_MUL_S(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,8)] * v;
+	u32 v = cpu->R[REG_POS(i,8)];
+	cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,0)] * v;
 	
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0);
 	
-	OP_MUL_END(5,2);
+	MUL_Mxx_END(1);
 }
 
 TEMPLATE static u32 FASTCALL  OP_MLA_S(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,8)] * v + cpu->R[REG_POS(i,12)];
+	u32 v = cpu->R[REG_POS(i,8)];
+	cpu->R[REG_POS(i,16)] = cpu->R[REG_POS(i,0)] * v + cpu->R[REG_POS(i,12)];
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0);
-	OP_MUL_END(6,3);
+
+	MUL_Mxx_END(2);
 }
 
 //-----------------------------------------------------------------------------
 //   UMULL / UMULLS / UMLAL / UMLALS
 //-----------------------------------------------------------------------------
 
+#define MUL_UMxxL_END(c) \
+	v >>= 8; \
+	if(v==0) \
+		return c+1; \
+	v >>= 8; \
+	if(v==0) \
+		return c+2; \
+	v >>= 8; \
+	if(v==0) \
+		return c+3; \
+	return c+4; \
+
+
 TEMPLATE static u32 FASTCALL  OP_UMULL(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,8)];
+	u32 v = cpu->R[REG_POS(i,8)];
+	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,0)];
 	
 	cpu->R[REG_POS(i,12)] = (u32)res;
 	cpu->R[REG_POS(i,16)] = (u32)(res>>32);
 	  
-	OP_MUL_END(6,3);
+	MUL_UMxxL_END(2);
 }
 
 TEMPLATE static u32 FASTCALL  OP_UMLAL(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,8)] + (u64)cpu->R[REG_POS(i,12)];
+	u32 v = cpu->R[REG_POS(i,8)];
+	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,0)] + (u64)cpu->R[REG_POS(i,12)];
 	
 	cpu->R[REG_POS(i,12)] = (u32)res;
 	cpu->R[REG_POS(i,16)] += (u32)(res>>32);
 	
-	OP_MUL_END(7,4);
+	MUL_UMxxL_END(3);
 }
 
 TEMPLATE static u32 FASTCALL  OP_UMULL_S(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,8)];
+	u32 v = cpu->R[REG_POS(i,8)];
+	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,0)];
 	
 	cpu->R[REG_POS(i,12)] = (u32)res;
 	cpu->R[REG_POS(i,16)] = (u32)(res>>32);
@@ -2453,13 +2469,13 @@ TEMPLATE static u32 FASTCALL  OP_UMULL_S(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0) & (cpu->R[REG_POS(i,12)]==0);
 
-	OP_MUL_END(6,3);
+	MUL_UMxxL_END(2);
 }
 
 TEMPLATE static u32 FASTCALL  OP_UMLAL_S(const u32 i)
 {
-	u32 v = cpu->R[REG_POS(i,0)];
-	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,8)] + (u64)cpu->R[REG_POS(i,12)];
+	u32 v = cpu->R[REG_POS(i,8)];
+	u64 res = (u64)v * (u64)cpu->R[REG_POS(i,0)] + (u64)cpu->R[REG_POS(i,12)];
 	
 	cpu->R[REG_POS(i,12)] = (u32)res;
 	cpu->R[REG_POS(i,16)] += (u32)(res>>32);
@@ -2467,17 +2483,30 @@ TEMPLATE static u32 FASTCALL  OP_UMLAL_S(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,16)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,16)]==0) & (cpu->R[REG_POS(i,12)]==0);
 	
-	OP_MUL_END(7,4);
+	MUL_UMxxL_END(3);
 }
 
 //-----------------------------------------------------------------------------
 //   SMULL / SMULLS / SMLAL / SMLALS
 //-----------------------------------------------------------------------------
 
+#define MUL_SMxxL_END(c) \
+	v >>= 8; \
+	if((v==0)||(v==0xFFFFFF)) \
+		return c+1; \
+	v >>= 8; \
+	if((v==0)||(v==0xFFFF)) \
+		return c+2; \
+	v >>= 8; \
+	if((v==0)||(v==0xFF)) \
+		return c+3; \
+	return c+4; \
+
+
 TEMPLATE static u32 FASTCALL  OP_SMULL(const u32 i)
 {
-	s64 v = (s32)cpu->R[REG_POS(i,0)];
-	s64 b = (s32)cpu->R[REG_POS(i,8)];
+	s64 v = (s32)cpu->R[REG_POS(i,8)];
+	s64 b = (s32)cpu->R[REG_POS(i,0)];
 	s64 res = v * b;
 	
 	cpu->R[REG_POS(i,12)] = (u32)(res&0xFFFFFFFF);
@@ -2485,14 +2514,14 @@ TEMPLATE static u32 FASTCALL  OP_SMULL(const u32 i)
 	
 	v &= 0xFFFFFFFF;
 		
-	OP_MUL_END(6,3);
+	MUL_SMxxL_END(2);
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL(const u32 i)
 {
 	
-	s64 v = (s32)cpu->R[REG_POS(i,0)];
-	s64 b = (s32)cpu->R[REG_POS(i,8)];
+	s64 v = (s32)cpu->R[REG_POS(i,8)];
+	s64 b = (s32)cpu->R[REG_POS(i,0)];
 	s64 res = v * b + (u64)cpu->R[REG_POS(i,12)];
 	
 	//LOG("%08X * %08X + %08X%08X \r \n", cpu->R[REG_POS(i,0)], cpu->R[REG_POS(i,8)], cpu->R[REG_POS(i,16)], cpu->R[REG_POS(i,12)]);
@@ -2504,13 +2533,13 @@ TEMPLATE static u32 FASTCALL  OP_SMLAL(const u32 i)
 	
 	v &= 0xFFFFFFFF;
 		
-	OP_MUL_END(7,4);
+	MUL_SMxxL_END(3);
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMULL_S(const u32 i)
 {
-	s64 v = (s32)cpu->R[REG_POS(i,0)];
-	s64 b = (s32)cpu->R[REG_POS(i,8)];
+	s64 v = (s32)cpu->R[REG_POS(i,8)];
+	s64 b = (s32)cpu->R[REG_POS(i,0)];
 	s64 res = v * b;
 	
 	cpu->R[REG_POS(i,12)] = (u32)res;
@@ -2521,13 +2550,13 @@ TEMPLATE static u32 FASTCALL  OP_SMULL_S(const u32 i)
 
 	v &= 0xFFFFFFFF;
 		
-	OP_MUL_END(6,3);
+	MUL_SMxxL_END(2);
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL_S(const u32 i)
 {
-	s64 v = (s32)cpu->R[REG_POS(i,0)];
-	s64 b = (s32)cpu->R[REG_POS(i,8)];
+	s64 v = (s32)cpu->R[REG_POS(i,8)];
+	s64 b = (s32)cpu->R[REG_POS(i,0)];
 	s64 res = v * b + (u64)cpu->R[REG_POS(i,12)];
 	
 	cpu->R[REG_POS(i,12)] = (u32)res;
@@ -2538,7 +2567,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAL_S(const u32 i)
 
 	v &= 0xFFFFFFFF;
 
-	OP_MUL_END(7,4);
+	MUL_SMxxL_END(3);
 }
 
 //-----------------------------------------------------------------------------
