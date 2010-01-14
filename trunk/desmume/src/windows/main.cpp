@@ -2630,6 +2630,7 @@ int _main()
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
 	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
 	CommonSettings.SWIFromBIOS = GetPrivateProfileBool("BIOS", "SWIFromBIOS", FALSE, IniName);
+	CommonSettings.PatchSWI3 = GetPrivateProfileBool("BIOS", "PatchSWI3", FALSE, IniName);
 
 	CommonSettings.UseExtFirmware = GetPrivateProfileBool("Firmware", "UseExtFirmware", FALSE, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
@@ -5374,6 +5375,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			CheckDlgItem(hDlg,IDC_CHECKBOX_ENSATAEMULATION,CommonSettings.EnsataEmulation);
 			CheckDlgItem(hDlg,IDC_USEEXTBIOS,CommonSettings.UseExtBIOS);
 			CheckDlgItem(hDlg, IDC_BIOSSWIS, CommonSettings.SWIFromBIOS);
+			CheckDlgItem(hDlg, IDC_PATCHSWI3, CommonSettings.PatchSWI3);
 			SetDlgItemText(hDlg, IDC_ARM9BIOS, CommonSettings.ARM9BIOS);
 			SetDlgItemText(hDlg, IDC_ARM7BIOS, CommonSettings.ARM7BIOS);
 
@@ -5388,6 +5390,8 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 				cur = GetDlgItem(hDlg, IDC_ARM7BIOSBROWSE);
 				EnableWindow(cur, FALSE);
 				cur = GetDlgItem(hDlg, IDC_BIOSSWIS);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_PATCHSWI3);
 				EnableWindow(cur, FALSE);
 			}
 
@@ -5430,6 +5434,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
 					GetWindowText(cur, CommonSettings.ARM7BIOS, 256);
 					CommonSettings.SWIFromBIOS = IsDlgCheckboxChecked(hDlg, IDC_BIOSSWIS);
+					CommonSettings.PatchSWI3 = IsDlgCheckboxChecked(hDlg, IDC_PATCHSWI3);
 
 					CommonSettings.UseExtFirmware = IsDlgCheckboxChecked(hDlg, IDC_USEEXTFIRMWARE);
 					cur = GetDlgItem(hDlg, IDC_FIRMWARE);
@@ -5445,6 +5450,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
 					WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);
 					WritePrivateProfileInt("BIOS", "SWIFromBIOS", ((CommonSettings.SWIFromBIOS == true) ? 1 : 0), IniName);
+					WritePrivateProfileInt("BIOS", "PatchSWI3", ((CommonSettings.PatchSWI3 == true) ? 1 : 0), IniName);
 
 					WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
 					WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
@@ -5475,6 +5481,8 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					cur = GetDlgItem(hDlg, IDC_ARM7BIOSBROWSE);
 					EnableWindow(cur, enable);
 					cur = GetDlgItem(hDlg, IDC_BIOSSWIS);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_PATCHSWI3);
 					EnableWindow(cur, enable);
 					cur = GetDlgItem(hDlg, IDC_FIRMWAREBOOT);
 					EnableWindow(cur, (enable && IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE)));
