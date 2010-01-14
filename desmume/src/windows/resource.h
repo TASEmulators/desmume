@@ -350,6 +350,7 @@
 #define IDC_VISIBLE                     1019
 #define IDC_USEPHYSICAL                 1019
 #define IDC_SPLIT1                      1021
+#define IDC_PATCHSWI3					1022
 #define IDC_DEFAULT                     1027
 #define IDC_3DCORE                      1028
 #define IDC_TXT_COMPILED                1029

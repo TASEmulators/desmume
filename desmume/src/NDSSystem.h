@@ -456,6 +456,7 @@ extern struct TCommonSettings {
 		, GFX3D_Fog(true)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
+		, PatchSWI3(false)
 		, UseExtFirmware(false)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
@@ -484,6 +485,7 @@ extern struct TCommonSettings {
 	char ARM9BIOS[256];
 	char ARM7BIOS[256];
 	bool SWIFromBIOS;
+	bool PatchSWI3;
 
 	bool UseExtFirmware;
 	char Firmware[256];

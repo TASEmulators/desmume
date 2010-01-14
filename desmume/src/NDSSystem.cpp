@@ -1852,6 +1852,7 @@ void NDS_exec(s32 nb)
 	}
 
 	//DEBUG_statistics.printSequencerExecutionCounters();
+	//DEBUG_statistics.print();
 
 	//end of frame emulation housekeeping
 	if(LagFrameFlag)
@@ -1941,13 +1942,21 @@ void NDS_Reset()
 	else
 		inf = NULL;
 
-	if(inf) {
+	if(inf) 
+	{
 		fread(MMU.ARM7_BIOS,1,16384,inf);
 		fclose(inf);
+
 		if(CommonSettings.SWIFromBIOS == true) NDS_ARM7.swi_tab = 0;
 		else NDS_ARM7.swi_tab = ARM7_swi_tab;
+
+		if (CommonSettings.PatchSWI3)
+			_MMU_write16<ARMCPU_ARM7>(0x00002F08, 0x4770);
+
 		INFO("ARM7 BIOS is loaded.\n");
-	} else {
+	} 
+	else 
+	{
 		NDS_ARM7.swi_tab = ARM7_swi_tab;
 
 		for (int t = 0; t < 16384; t++)
@@ -1971,13 +1980,21 @@ void NDS_Reset()
 		inf = NULL;
 	//memcpy(MMU.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
 
-	if(inf) {
+	if(inf) 
+	{
 		fread(MMU.ARM9_BIOS,1,4096,inf);
 		fclose(inf);
+
 		if(CommonSettings.SWIFromBIOS == true) NDS_ARM9.swi_tab = 0;
 		else NDS_ARM9.swi_tab = ARM9_swi_tab;
+
+		if (CommonSettings.PatchSWI3)
+			_MMU_write16<ARMCPU_ARM9>(0xFFFF07CC, 0x4770);
+
 		INFO("ARM9 BIOS is loaded.\n");
-	} else {
+	} 
+	else 
+	{
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
 
 		for (int t = 0; t < 4096; t++)
