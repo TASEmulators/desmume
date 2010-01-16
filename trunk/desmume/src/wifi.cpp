@@ -1038,7 +1038,7 @@ static void WIFI_BeaconTXStart()
 void WIFI_write16(u32 address, u16 val)
 {
 	BOOL action = FALSE ;
-	if (!(MMU_read32(ARMCPU_ARM7,REG_PWRCNT) & 0x0002)) return ;		/* access to wifi hardware was disabled */
+	if (!nds.power2.wifi) return;
 
 	WIFI_LOG(5, "Write at address %08X, %04X\n", address, val);
 	//printf("WIFI: Write at address %08X, %04X, pc=%08X\n", address, val, NDS_ARM7.instruct_adr);
@@ -1413,7 +1413,7 @@ u16 WIFI_read16(u32 address)
 {
 	BOOL action = FALSE ;
 	u16 temp ;
-	if (!(MMU_read32(ARMCPU_ARM7,REG_PWRCNT) & 0x0002)) return 0 ;		/* access to wifi hardware was disabled */
+	if (!nds.power2.wifi) return 0;
 
 	//if (address != 0x0480819C)
 	//	printf("WIFI: Read at address %08X, pc=%08X, r1=%08X\n", address, NDS_ARM7.instruct_adr, NDS_ARM7.R[1]);
@@ -2178,7 +2178,7 @@ void SoftAP_usTrigger()
 			//if((wifiMac.SoftAP.usecCounter % (100 * 1024)) == 0)
 			if((wifiMac.SoftAP.usecCounter & 131071) == 0)
 			{
-			//	printf("send beacon, store to %04X (readcsr=%04X), size=%x\n", 
+				//printf("send beacon, store to %04X (readcsr=%04X), size=%x\n", 
 				//	wifiMac.RXHWWriteCursor<<1, wifiMac.RXReadCursor<<1, sizeof(SoftAP_Beacon)+12);
 				SoftAP_SendBeacon();
 			}
@@ -2229,6 +2229,7 @@ void SoftAP_usTrigger()
 
 	// EXTREMELY EXPERIMENTAL packet receiving code
 	// slow >.<
+	// should be in a separate thread, but let's make things work first
 	if (!(wifiMac.SoftAP.usecCounter & 1023))
 	{
 		pcap_pkthdr hdr;
