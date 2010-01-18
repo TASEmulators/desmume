@@ -156,7 +156,7 @@ const u8 FW_BBChannel[14]		= { 0xb3, 0xb3, 0xb3, 0xb3, 0xb3,	/* channel  1- 6 */
 						  } ;
 
 /* Note : the values are inspired from what I found in a firmware image from my DS */
-
+/*
 FW_WFCProfile FW_WFCProfile1 = {"",
 								"",
 								"",
@@ -172,6 +172,26 @@ FW_WFCProfile FW_WFCProfile1 = {"",
 								0,
 								0,
 								0xFF,
+								{0, 0, 0, 0, 0, 0, 0},
+								0,
+								{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+								{0, 0}
+							   } ;*/
+FW_WFCProfile FW_WFCProfile1 = {"SoftAP",
+								"",
+								"",
+								"",
+								"",
+								"",
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								0,
+								"",
+								0,
+								0,
+								0,
 								{0, 0, 0, 0, 0, 0, 0},
 								0,
 								{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -2240,8 +2260,8 @@ void SoftAP_usTrigger()
 		if (memcmp(&frame[6], &wifiMac.mac.bytes[0], 6))
 		{
 			if ((!memcmp(&frame[0], &BroadcastMAC[0], 6)) ||
-				(!memcmp(&frame[0], &wifiMac.bss.bytes[0], 6)) ||
-				(!memcmp(&wifiMac.bss.bytes[0], &BroadcastMAC[0], 6)))
+				(!memcmp(&frame[0], &wifiMac.mac.bytes[0], 6)) ||
+				(!memcmp(&wifiMac.mac.bytes[0], &BroadcastMAC[0], 6)))
 			{
 				WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 
@@ -2250,9 +2270,10 @@ void SoftAP_usTrigger()
 				u8 packet[2048];
 
 				//if (hdr.len >= 0x11D)
-				//printf("RECEIVED DATA FRAME: len=%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X, dhcptype=%02X\n",
-				//	24 + (hdr.len-12), frame[6], frame[7], frame[8], frame[9], frame[10], frame[11],
-				//	frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], *(u16*)&frame[12], frame[0x11C]);
+				if ((!memcmp(&frame[0], &wifiMac.mac.bytes[0], 6)))
+				printf("RECEIVED DATA FRAME: len=%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X\n",
+					24 + (hdr.len-12), frame[6], frame[7], frame[8], frame[9], frame[10], frame[11],
+					frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], *(u16*)&frame[12]);
 
 				WIFI_MakeRXHeader(packet, 0x0018, 20, packetLen, 0, 0);
 				*(u16*)&packet[12+0] = 0x0208;
