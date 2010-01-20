@@ -105,7 +105,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp5\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp2\plugins"
+				CommandLine="copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp5\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp2\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\kbmed\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\fb8&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\fb9\components"
 			/>
 		</Configuration>
 		<Configuration
@@ -200,7 +200,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp5\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp2\plugins"
+				CommandLine="copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp5\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp2\plugins&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
