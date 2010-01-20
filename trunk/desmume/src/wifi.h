@@ -372,6 +372,15 @@ typedef union
 	u16 val ;
 } wifiirq_t ;
 
+typedef struct
+{
+	bool enabled;
+	u16 address;
+
+	bool sending;
+	u16 remtime;
+} Wifi_TXLoc;
+
 /* wifimac_t: the buildin mac (arm7 addressrange: 0x04800000-0x04FFFFFF )*/
 /* http://www.akkit.org/info/dswifi.htm#WifiIOMap */
 
@@ -410,6 +419,10 @@ typedef struct
 	u32 txSlotAddr[3];
 	u32 txSlotLen[3];
 	u32 txSlotRemainingBytes[3];
+	bool ExtraSlotBusy;
+	u16 ExtraSlotAddr;
+	u16 ExtraSlotLen;
+	u16 ExtraSlotRemBytes;
 
 	/* receiving */
 	u16 RXCnt ;
@@ -513,7 +526,6 @@ typedef struct
 typedef struct pcap pcap_t;
 extern pcap_t *wifi_bridge;
 #endif
-extern bool wifi_netEnabled;
 
 extern wifimac_t wifiMac;
 

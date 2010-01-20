@@ -109,12 +109,10 @@
 
 using namespace std;
 
-#define HAVE_REMOTE
-#define WPCAP
-#define PACKET_SIZE 65535
-
-#include <pcap.h>
-#include <remote-ext.h> //uh?
+#ifdef EXPERIMENTAL_WIFI_COMM
+bool bSocketsAvailable = false;
+#include "winpcap.h"
+#endif
 
 VideoInfo video;
 
@@ -382,7 +380,9 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#ifdef EXPERIMENTAL_WIFI_COMM
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#endif
 
 //struct configured_features {
 //	u16 arm9_gdb_port;
@@ -1970,6 +1970,7 @@ void OpenRecentROM(int listNum)
 	NDS_UnPause();
 }
 
+
 /*
 * The thread handling functions needed by the GDB stub code.
 */
@@ -2074,36 +2075,37 @@ static void ExitRunLoop()
 	emu_halt();
 }
 
+//-----------------------------------------------------------------------------
+//   Platform driver for Win32
+//-----------------------------------------------------------------------------
+
 class WinDriver : public BaseDriver
 {
-	virtual bool WIFI_Host_InitSystem() 
-	{
-		#ifdef EXPERIMENTAL_WIFI_COMM
-			WSADATA wsaData; 	 
-			WORD version = MAKEWORD(1,1); 	 
-			if (WSAStartup(version, &wsaData)) 	 
-			{ 	 
-				printf("Failed initializing WSA.\n"); 	 
-				return false ; 	 
-			}
-			//require wpcap.dll
-			HMODULE temp = LoadLibrary("wpcap.dll");
-			if(temp == NULL) {
-				printf("Failed initializing wpcap.dll - SoftAP support disabled.\n");
-				return false;
-			}
-			FreeLibrary(temp);
-			return true;
-		#else
-			return false;
-		#endif
-	}
-	virtual void WIFI_Host_ShutdownSystem() 
-	{
-		#ifdef EXPERIMENTAL_WIFI_COMM 	 
-			WSACleanup(); 	 
-		#endif
-	}
+#ifdef EXPERIMENTAL_WIFI_COMM
+	virtual bool WIFI_SocketsAvailable() { return bSocketsAvailable; }
+	virtual bool WIFI_PCapAvailable() { return bWinPCapAvailable; }
+
+	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
+		return _pcap_findalldevs(alldevs, errbuf); }
+
+	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {
+		_pcap_freealldevs(alldevs); }
+
+	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) {
+		return _pcap_open_live(source, snaplen, flags, readtimeout, errbuf); }
+
+	virtual void PCAP_close(pcap_t* dev) {
+		_pcap_close(dev); }
+
+	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) {
+		return _pcap_setnonblock(dev, nonblock, errbuf); }
+
+	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) {
+		return _pcap_sendpacket(dev, data, len); }
+
+	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) {
+		return _pcap_dispatch(dev, num, callback, userdata); }
+#endif
 
 	virtual bool AVI_IsRecording()
 	{
@@ -2229,6 +2231,9 @@ class WinDriver : public BaseDriver
 	}
 };
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
 static void RefreshMicSettings()
 {
 	Mic_DeInit_Physical();
@@ -2260,6 +2265,16 @@ int _main()
 
 #ifdef HAVE_WX
 	wxInitialize();
+#endif
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+	WSADATA wsaData; 	 
+	WORD version = MAKEWORD(1,1); 
+
+	if (WSAStartup(version, &wsaData) == 0) 	  	 
+		bSocketsAvailable = true;
+
+	LoadWinPCap();
 #endif
 
 	driver = new WinDriver();
@@ -2743,6 +2758,10 @@ int _main()
 	ddraw.release();
 
 	UnregWndClass("DeSmuME");
+
+#ifdef EXPERIMENTAL_WIFI_COMM
+	WSACleanup();
+#endif
 
 	return 0;
 }
@@ -3470,18 +3489,11 @@ void RunConfig(CONFIGSCREEN which)
 	case CONFIGSCREEN_PATHSETTINGS:
 		DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_PATHSETTINGS), hwnd, (DLGPROC)PathSettingsDlgProc);
 		break;
-	case CONFIGSCREEN_WIFI:
 #ifdef EXPERIMENTAL_WIFI_COMM
-		if(wifi_netEnabled)
-		{
-			DialogBoxW(hAppInst,MAKEINTRESOURCEW(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
-		}
-		else
-		{
-			MessageBox(MainWindow->getHWnd(),"winpcap failed to initialize, and so wifi cannot be configured.","wifi system failure",0);
-		}
-#endif
+	case CONFIGSCREEN_WIFI:
+		DialogBoxW(hAppInst,MAKEINTRESOURCEW(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
 		break;
+#endif
 	}
 
 	if (tpaused)
@@ -3527,6 +3539,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	static int tmp_execute;
 	switch (message)                  // handle the messages
 	{
+		case WM_INITMENU:
+			{
+#ifdef EXPERIMENTAL_WIFI_COMM
+				if (!(bSocketsAvailable && bWinPCapAvailable))
+#endif
+					DeleteMenu(GetMenu(hwnd), IDM_WIFISETTINGS, MF_BYCOMMAND);
+			}
+			return 0;
+
 		case WM_EXITMENULOOP:
 			SPU_Pause(0);
 			if (autoframeskipenab && frameskiprate) AutoFrameSkip_IgnorePreviousDelay();
@@ -5661,9 +5682,9 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 	return FALSE;
 }
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	#ifdef EXPERIMENTAL_WIFI_COMM
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
@@ -5674,21 +5695,37 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			int i;
 			HWND cur;
 
-			CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
+			if (bSocketsAvailable && bWinPCapAvailable)
+				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
+			else if(bSocketsAvailable)
+				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0);
+			else if(bWinPCapAvailable)
+				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE1);
 
-			if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+			if (bWinPCapAvailable)
 			{
-				// TODO: fail more gracefully!
-				EndDialog(hDlg, TRUE);
-				return TRUE;
+				if(driver->PCAP_findalldevs(&alldevs, errbuf) == -1)
+				{
+					// TODO: fail more gracefully!
+					EndDialog(hDlg, TRUE);
+					return TRUE;
+				}
+
+				cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
+				for(i = 0, d = alldevs; d != NULL; i++, d = d->next)
+				{
+					ComboBox_AddString(cur, d->description);
+				}
+				ComboBox_SetCurSel(cur, CommonSettings.wifi.infraBridgeAdapter);
+			}
+			else
+			{
+				EnableWindow(GetDlgItem(hDlg, IDC_WIFIMODE1), FALSE);
+				EnableWindow(GetDlgItem(hDlg, IDC_BRIDGEADAPTER), FALSE);
 			}
 
-			cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
-			for(i = 0, d = alldevs; d != NULL; i++, d = d->next)
-			{
-				ComboBox_AddString(cur, d->description);
-			}
-			ComboBox_SetCurSel(cur, CommonSettings.wifi.infraBridgeAdapter);
+			if (!bSocketsAvailable)
+				EnableWindow(GetDlgItem(hDlg, IDC_WIFIMODE0), FALSE);
 		}
 		return TRUE;
 
@@ -5728,9 +5765,10 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 		}
 		return TRUE;
 	}
-#endif
+
 	return FALSE;
 }
+#endif
 
 static void SoundSettings_updateVolumeReadout(HWND hDlg)
 {

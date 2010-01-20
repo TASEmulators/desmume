@@ -27,6 +27,10 @@
 #include "debug.h"
 #include <stdio.h>
 
+#ifdef EXPERIMENTAL_WIFI_COMM
+#include <pcap.h>
+#endif
+
 class VIEW3D_Driver
 {
 public:
@@ -41,8 +45,18 @@ public:
 	BaseDriver();
 	~BaseDriver();
 
-	virtual bool WIFI_Host_InitSystem() { return FALSE; }
-	virtual void WIFI_Host_ShutdownSystem() {}
+#ifdef EXPERIMENTAL_WIFI_COMM
+	virtual bool WIFI_SocketsAvailable() { return true; }
+	virtual bool WIFI_PCapAvailable() { return false; }
+
+	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) { return -1; }
+	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {}
+	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) { return NULL; }
+	virtual void PCAP_close(pcap_t* dev) {}
+	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) { return -1; }
+	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) { return -1; }
+	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) { return -1; }
+#endif
 
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {}
 	virtual bool AVI_IsRecording() { return FALSE; }
