@@ -1962,7 +1962,7 @@ bool SoftAP_Init()
 	}
 
 	pcap_if_t* dev = WIFI_index_device(alldevs,CommonSettings.wifi.infraBridgeAdapter);
-	wifi_bridge = driver->PCAP_open(dev->name, PACKET_SIZE, 0, 1, errbuf);
+	wifi_bridge = driver->PCAP_open(dev->name, PACKET_SIZE, PCAP_OPENFLAG_PROMISCUOUS, 1, errbuf);
 	if(wifi_bridge == NULL)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to open %s: %s\n", (dev->description ? dev->description : "the network adapter"), errbuf);
@@ -2070,8 +2070,8 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 			u32 eflen = (len - 4 - 30 + 14);
 			u8 *ethernetframe = new u8[eflen];
 
-			printf("----- SENDING DATA FRAME: len=%i, ethertype=%04X, dhcptype=%02X -----\n",
-				len, *(u16*)&packet[30], packet[0x11C]);
+			printf("----- SENDING DATA FRAME: len=%i, ethertype=%04X -----\n",
+				len, *(u16*)&packet[30]);
 
 			// Destination address
 			ethernetframe[0] = packet[16];
@@ -2155,9 +2155,9 @@ void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_char* _
 	int wpacketLen = WIFI_alignedLen(26 + 6 + 2 + (h->len-14));
 	u8 wpacket[2048];
 
-	//printf("RECEIVED DATA FRAME: len=%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X\n",
-	//	24 + (hdr.len-12), frame[6], frame[7], frame[8], frame[9], frame[10], frame[11],
-	//	frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], *(u16*)&frame[12]);
+	//printf("RECEIVED DATA FRAME: len=%i/%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X\n",
+	//	24+ (h->caplen-12), 24 + (h->len-12), data[6], data[7], data[8], data[9], data[10], data[11],
+	//	data[0], data[1], data[2], data[3], data[4], data[5], *(u16*)&data[12]);
 
 	// Make a valid 802.11 frame
 	WIFI_MakeRXHeader(wpacket, 0x0018, 20, wpacketLen, 0, 0);
