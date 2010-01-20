@@ -3542,7 +3542,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case WM_INITMENU:
 			{
 #ifdef EXPERIMENTAL_WIFI_COMM
-				if (!(bSocketsAvailable && bWinPCapAvailable))
+				if (!(bSocketsAvailable || bWinPCapAvailable))
 #endif
 					DeleteMenu(GetMenu(hwnd), IDM_WIFISETTINGS, MF_BYCOMMAND);
 			}
