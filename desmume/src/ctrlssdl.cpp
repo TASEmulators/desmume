@@ -24,13 +24,12 @@
 #include "saves.h"
 #include "SPU.h"
 #include "commandline.h"
+#include "NDSSystem.h"
 
 u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
 u16 nbr_joy;
 mouse_status mouse;
-
-extern volatile BOOL execute;
 
 static SDL_Joystick **open_joysticks = NULL;
 
@@ -299,17 +298,22 @@ void set_mouse_coord(signed long x,signed long y)
 /* Update NDS keypad */
 void update_keypad(u16 keys)
 {
-#ifdef WORDS_BIGENDIAN
-  MMU.ARM9_REG[0x130] = ~keys & 0xFF;
-  MMU.ARM9_REG[0x131] = (~keys >> 8) & 0x3;
-  MMU.ARM7_REG[0x130] = ~keys & 0xFF;
-  MMU.ARM7_REG[0x131] = (~keys >> 8) & 0x3;
-#else
-  ((u16 *)MMU.ARM9_REG)[0x130>>1] = ~keys & 0x3FF;
-  ((u16 *)MMU.ARM7_REG)[0x130>>1] = ~keys & 0x3FF;
-#endif
-  /* Update X and Y buttons */
-  MMU.ARM7_REG[0x136] = ( ~( keys >> 10) & 0x3 ) | (MMU.ARM7_REG[0x136] & ~0x3);
+	NDS_beginProcessingInput();
+	UserButtons& input = NDS_getProcessingUserInput().buttons;
+	input.G = (keys>>12)&1;
+	input.E = (keys>>8)&1;
+	input.W = (keys>>9)&1;
+	input.X = (keys>>10)&1;
+	input.Y = (keys>>11)&1;
+	input.A = (keys>>0)&1;
+	input.S = (keys>>3)&1;
+	input.T = (keys>>2)&1;
+	input.U = (keys>>6)&1;
+	input.D = (keys>>7)&1;
+	input.L = (keys>>5)&1;
+	input.R = (keys>>4)&1;
+	input.F = 0;
+	NDS_endProcessingInput();
 }
 
 /* Retrieve current NDS keypad */
