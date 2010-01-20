@@ -3639,6 +3639,9 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			}
 			return;
 
+			case REG_EXTKEYIN: //readonly
+				return;
+
 			
 			case REG_POWCNT2:
 				{
@@ -4107,11 +4110,19 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				return MMU.AUX_SPI_CNT;
 
 			case REG_KEYINPUT:
-			case REG_EXTKEYIN:
 				//here is an example of what not to do:
-				//since the arm7 polls this every frame, we shouldnt count this as an input check
+				//since the arm7 polls this (and EXTKEYIN) every frame, we shouldnt count this as an input check
 				//LagFrameFlag=0;
 				break;
+
+			case REG_EXTKEYIN:
+				{
+					//this is gross. we should generate this whole reg instead of poking it in ndssystem
+					u16 ret = MMU.ARM7_REG[0x136];
+					if(nds.isTouch) ret &= ~64;
+					else ret |= 64;
+					return ret;
+				}
 
 			case REG_POSTFLG:
 				return 1;
