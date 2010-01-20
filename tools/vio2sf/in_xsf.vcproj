@@ -167,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="in_vio2sf.dll"
+				OutputFile="OUTPUT/winamp2/plugins/in_vio2sf.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				RandomizedBaseAddress="1"
@@ -371,6 +371,4 @@
 			>
 		</File>
 	</Files>
-	<Globals>
-	</Globals>
 </VisualStudioProject>

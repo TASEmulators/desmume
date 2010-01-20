@@ -74,7 +74,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="pfc.lib foobar2000_SDK.lib foobar2000_sdk_helpers.lib odbc32.lib odbccp32.lib"
-				OutputFile="foo_8_vio2sf.dll"
+				OutputFile="OUTPUT\fb8\foo_8_vio2sf.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				ProgramDatabaseFile=".\foo_xsf8___Win32_Release/foo_8_vio2sf.pdb"
@@ -364,6 +364,4 @@
 			>
 		</File>
 	</Files>
-	<Globals>
-	</Globals>
 </VisualStudioProject>

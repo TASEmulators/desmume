@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(SolutionDir)$(ProjectName).dll"
+				OutputFile="OUTPUT\fb9\components\foo_input_vio2sf.dll"
 				LinkIncremental="1"
 				GenerateManifest="true"
 				GenerateDebugInformation="false"
