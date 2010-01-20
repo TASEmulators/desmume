@@ -40,6 +40,8 @@ namespace PCAP {
 	extern "C" __declspec(dllexport) void __cdecl pcap_close(pcap_t *);
 	extern "C" __declspec(dllexport) pcap_t* __cdecl pcap_open(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
 	extern "C" __declspec(dllexport) void	__cdecl pcap_freealldevs(pcap_if_t *);
+	extern "C" __declspec(dllexport) int __cdecl pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf);
+	extern "C" __declspec(dllexport) int __cdecl pcap_dispatch(pcap_t* p, int cnt, pcap_handler callback, u_char* user);
 }
 
 #endif

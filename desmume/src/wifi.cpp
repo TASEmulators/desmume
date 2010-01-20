@@ -156,27 +156,7 @@ const u8 FW_BBChannel[14]		= { 0xb3, 0xb3, 0xb3, 0xb3, 0xb3,	/* channel  1- 6 */
 						  } ;
 
 /* Note : the values are inspired from what I found in a firmware image from my DS */
-/*
-FW_WFCProfile FW_WFCProfile1 = {"",
-								"",
-								"",
-								"",
-								"",
-								"",
-								{0, 0, 0, 0},
-								{0, 0, 0, 0},
-								{0, 0, 0, 0},
-								{0, 0, 0, 0},
-								0,
-								"",
-								0,
-								0,
-								0xFF,
-								{0, 0, 0, 0, 0, 0, 0},
-								0,
-								{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-								{0, 0}
-							   } ;*/
+
 FW_WFCProfile FW_WFCProfile1 = {"SoftAP",
 								"",
 								"",
@@ -331,6 +311,16 @@ INLINE u32 WIFI_alignedLen(u32 len)
 	return ((len + 3) & ~3);
 }
 
+// Fast MAC compare
+INLINE bool WIFI_compareMAC(u8* a, u8* b)
+{
+	return ((*(u32*)&a[0]) == (*(u32*)&b[0])) && ((*(u16*)&a[4]) == (*(u16*)&b[4]));
+}
+
+// TODO: implement all the PCAP wrapping better
+//  put that in the platform-driver class
+//  Win32: retrieve the PCAP functions through GetProcAddress()?
+
 #ifdef EXPERIMENTAL_WIFI_COMM
 #ifdef WIN32
 static pcap_t *desmume_pcap_open(const char *source, int snaplen, int flags,
@@ -354,9 +344,19 @@ static void desmume_pcap_close(pcap_t *p)
 	return PCAP::pcap_close(p);
 }
 
+static int desmume_pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+{
+	return PCAP::pcap_setnonblock(p, nonblock, errbuf);
+}
+
 static int desmume_pcap_sendpacket(pcap_t *p, u_char *buf, int size)
 {
 	return PCAP::pcap_sendpacket(p, buf, size);
+}
+
+static int desmume_pcap_dispatch(pcap_t* p, int cnt, pcap_handler callback, u_char* user)
+{
+	return PCAP::pcap_dispatch(p, cnt, callback, user);
 }
 
 #else
@@ -381,9 +381,19 @@ static void desmume_pcap_close(pcap_t *p)
 	return pcap_close(p);
 }
 
+static int desmume_pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+{
+	return pcap_setnonblock(p, nonblock, errbuf);
+}
+
 static int desmume_pcap_sendpacket(pcap_t *p, u_char *buf, int size)
 {
 	return pcap_sendpacket(p, buf, size);
+}
+
+static int desmume_pcap_dispatch(pcap_t* p, int cnt, pcap_handler callback, u_char* user)
+{
+	return pcap_dispatch(p, cnt, callback, user);
 }
 #endif
 #endif
@@ -2015,18 +2025,26 @@ bool SoftAP_Init()
 	{
 		if(desmume_pcap_findalldevs(&alldevs, errbuf) == -1)
 		{
-			printf("SoftAP: PCAP error with pcap_findalldevs_ex(): %s\n", errbuf);
+			printf("SoftAP: PCap: failed to find any network adapter: %s\n", errbuf);
 			return false;
 		}
 
-		wifi_bridge = desmume_pcap_open(WIFI_index_device(alldevs,CommonSettings.wifi.infraBridgeAdapter)->name, PACKET_SIZE, 0, 1, errbuf);
+		pcap_if_t* dev = WIFI_index_device(alldevs,CommonSettings.wifi.infraBridgeAdapter);
+		wifi_bridge = desmume_pcap_open(dev->name, PACKET_SIZE, 0, 1, errbuf);
 		if(wifi_bridge == NULL)
 		{
-			printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
+			printf("SoftAP: PCap: failed to open %s: %s\n", (dev->description ? dev->description : "the network adapter"), errbuf);
 			return false;
 		}
 
 		desmume_pcap_freealldevs(alldevs);
+
+		// Set non-blocking mode
+		if (desmume_pcap_setnonblock(wifi_bridge, 1, errbuf) == -1)
+		{
+			printf("SoftAP: PCap: failed to set non-blocking mode: %s\n", errbuf);
+			return false;
+		}
 	}
 
 	return true;
@@ -2186,6 +2204,59 @@ INLINE void SoftAP_SendBeacon()
 	wifiMac.SoftAP.curPacketSending = TRUE;
 }
 
+void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_char* _data)
+{
+	// safety checks
+	if ((_data == NULL) || (h == NULL))
+		return;
+
+	u8* data = (u8*)_data;
+
+	// reject the packet if it wasn't for us
+	if ((!WIFI_compareMAC(&data[0], (u8*)BroadcastMAC)) && (!WIFI_compareMAC(&data[0], wifiMac.mac.bytes)))
+		return;
+
+	// reject the packet if we just sent it
+	if (WIFI_compareMAC(&data[6], wifiMac.mac.bytes))
+		return;
+
+	// The packet was for us. Let's process it then.
+	WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
+
+	int wpacketLen = WIFI_alignedLen(26 + 6 + 2 + (h->len-14));
+	u8 wpacket[2048];
+
+	//printf("RECEIVED DATA FRAME: len=%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X\n",
+	//	24 + (hdr.len-12), frame[6], frame[7], frame[8], frame[9], frame[10], frame[11],
+	//	frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], *(u16*)&frame[12]);
+
+	// Make a valid 802.11 frame
+	WIFI_MakeRXHeader(wpacket, 0x0018, 20, wpacketLen, 0, 0);
+	*(u16*)&wpacket[12+0] = 0x0208;
+	*(u16*)&wpacket[12+2] = 0x0000;
+	memcpy(&wpacket[12+4], &data[0], 6);
+	memcpy(&wpacket[12+10], &SoftAP_MACAddr[0], 6);
+	memcpy(&wpacket[12+16], &data[6], 6);
+	*(u16*)&wpacket[12+22] = 0x0000;
+	*(u16*)&wpacket[12+24] = 0xAAAA;
+	*(u16*)&wpacket[12+26] = 0x0003;
+	*(u16*)&wpacket[12+28] = 0x0000;
+	*(u16*)&wpacket[12+30] = *(u16*)&data[12];
+	memcpy(&wpacket[12+32], &data[14], wpacketLen);
+
+	// put it in the RX buffer
+	for (int i = 0; i < (12 + wpacketLen); i += 2)
+	{
+		u16 word = *(u16*)&wpacket[i];
+		WIFI_RXPutWord(word);
+	}
+
+	// Done!
+	wifiMac.RXHWWriteCursorReg = ((wifiMac.RXHWWriteCursor + 1) & (~1));
+	wifiMac.RXNum++;
+	WIFI_triggerIRQ(WIFI_IRQ_RXEND);
+}
+
 void SoftAP_usTrigger()
 {
 	wifiMac.SoftAP.usecCounter++;
@@ -2248,62 +2319,10 @@ void SoftAP_usTrigger()
 	}
 
 	// EXTREMELY EXPERIMENTAL packet receiving code
-	// slow >.<
-	// should be in a separate thread, but let's make things work first
-	if (!(wifiMac.SoftAP.usecCounter & 1023))
-	{
-		pcap_pkthdr hdr;
-		u8* frame = (u8*)pcap_next(wifi_bridge, &hdr);
-		if (frame == NULL)
-			return;
-
-		if (memcmp(&frame[6], &wifiMac.mac.bytes[0], 6))
-		{
-			if ((!memcmp(&frame[0], &BroadcastMAC[0], 6)) ||
-				(!memcmp(&frame[0], &wifiMac.mac.bytes[0], 6)) ||
-				(!memcmp(&wifiMac.mac.bytes[0], &BroadcastMAC[0], 6)))
-			{
-				WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
-
-				int packetLen = WIFI_alignedLen(26 + 6 + 2 + (hdr.len-14));
-			//	u8* packet = new u8[12 + packetLen];
-				u8 packet[2048];
-
-				//if (hdr.len >= 0x11D)
-				if ((!memcmp(&frame[0], &wifiMac.mac.bytes[0], 6)))
-				printf("RECEIVED DATA FRAME: len=%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X\n",
-					24 + (hdr.len-12), frame[6], frame[7], frame[8], frame[9], frame[10], frame[11],
-					frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], *(u16*)&frame[12]);
-
-				WIFI_MakeRXHeader(packet, 0x0018, 20, packetLen, 0, 0);
-				*(u16*)&packet[12+0] = 0x0208;
-				*(u16*)&packet[12+2] = 0x0000;
-				memcpy(&packet[12+4], &frame[0], 6);
-				memcpy(&packet[12+10], &SoftAP_MACAddr[0], 6);
-				memcpy(&packet[12+16], &frame[6], 6);
-				*(u16*)&packet[12+22] = 0x0000;
-				*(u16*)&packet[12+24] = 0xAAAA;
-				*(u16*)&packet[12+26] = 0x0003;
-				*(u16*)&packet[12+28] = 0x0000;
-				*(u16*)&packet[12+30] = *(u16*)&frame[12];
-				memcpy(&packet[12+32], &frame[14], packetLen);
-
-				//printf("new dhcptype = %02X\n", packet[12+24+(0x11C-12)]);
-
-				for (int i = 0; i < (12 + packetLen); i += 2)
-				{
-					u16 word = *(u16*)&packet[i];
-					WIFI_RXPutWord(word);
-				}
-
-				wifiMac.RXHWWriteCursorReg = ((wifiMac.RXHWWriteCursor + 1) & (~1));
-				wifiMac.RXNum++;
-				WIFI_triggerIRQ(WIFI_IRQ_RXEND);
-
-				//delete packet;
-			}
-		}
-	}
+	// Can now receive 64 packets per millisecond. Completely arbitrary limit. Todo: tweak if needed.
+	// But due to using non-blocking mode, this shouldn't be as slow as it used to be.
+	if ((wifiMac.SoftAP.usecCounter & 1023) == 0)
+		desmume_pcap_dispatch(wifi_bridge, 64, SoftAP_RXHandler, NULL);
 }
 
 #endif
