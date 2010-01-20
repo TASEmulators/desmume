@@ -310,10 +310,16 @@ INLINE u32 WIFI_alignedLen(u32 len)
 	return ((len + 3) & ~3);
 }
 
-// Fast MAC compare
+// Fast MAC compares
+
 INLINE bool WIFI_compareMAC(u8* a, u8* b)
 {
 	return ((*(u32*)&a[0]) == (*(u32*)&b[0])) && ((*(u16*)&a[4]) == (*(u16*)&b[4]));
+}
+
+INLINE bool WIFI_isBroadcastMAC(u8* a)
+{
+	return ((*(u32*)&a[0]) == 0xFFFFFFFF) && ((*(u16*)&a[4]) == 0xFFFF);
 }
 
 /*******************************************************************************
@@ -1671,6 +1677,7 @@ bool Adhoc_Init()
 	if (!driver->WIFI_SocketsAvailable())
 	{
 		WIFI_LOG(1, "Ad-hoc: failed to initialize sockets.\n");
+		wifi_socket = INVALID_SOCKET;
 		return false;
 	}
 
@@ -1729,7 +1736,7 @@ void Adhoc_Reset()
 
 void Adhoc_SendPacket(u8* packet, u32 len)
 {
-	if (!driver->WIFI_SocketsAvailable())
+	if (wifi_socket < 0)
 		return;
 
 	WIFI_LOG(2, "Ad-hoc: sending a packet of %i bytes, frame control: %04X\n", len, *(u16*)&packet[0]);
@@ -1759,7 +1766,7 @@ void Adhoc_usTrigger()
 {
 	wifiMac.Adhoc.usecCounter++;
 
-	if (!driver->WIFI_SocketsAvailable())
+	if (wifi_socket < 0)
 		return;
 
 	// Check every millisecond if we received a packet
@@ -1802,11 +1809,11 @@ void Adhoc_usTrigger()
 			ptr += sizeof(Adhoc_FrameHeader);
 
 			// If the packet is for us, send it to the wifi core
-			if (memcmp(&ptr[10], &wifiMac.mac.bytes[0], 6))
+			if (!WIFI_compareMAC(&ptr[10], &wifiMac.mac.bytes[0]))
 			{
-				if ((!memcmp(&ptr[16], &BroadcastMAC[0], 6)) ||
-					(!memcmp(&ptr[16], &wifiMac.bss.bytes[0], 6)) ||
-					(!memcmp(&wifiMac.bss.bytes[0], &BroadcastMAC[0], 6)))
+				if (WIFI_isBroadcastMAC(&ptr[16]) ||
+					WIFI_compareMAC(&ptr[16], &wifiMac.bss.bytes[0]) ||
+					WIFI_isBroadcastMAC(&wifiMac.bss.bytes[0]))
 				{
 				/*	printf("packet was for us: mac=%02X:%02X.%02X.%02X.%02X.%02X, bssid=%02X:%02X.%02X.%02X.%02X.%02X\n",
 						wifiMac.mac.bytes[0], wifiMac.mac.bytes[1], wifiMac.mac.bytes[2], wifiMac.mac.bytes[3], wifiMac.mac.bytes[4], wifiMac.mac.bytes[5],
@@ -1941,6 +1948,7 @@ bool SoftAP_Init()
 	if (!driver->WIFI_PCapAvailable())
 	{
 		WIFI_LOG(1, "SoftAP: failed to initialize PCap.\n");
+		wifi_bridge = NULL;
 		return false;
 	}
 	
@@ -1967,6 +1975,7 @@ bool SoftAP_Init()
 	if (driver->PCAP_setnonblock(wifi_bridge, 1, errbuf) == -1)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to set non-blocking mode: %s\n", errbuf);
+		driver->PCAP_close(wifi_bridge); wifi_bridge = NULL;
 		return false;
 	}
 
@@ -2090,7 +2099,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 			// Checksum 
 			// TODO ?
 
-			if (driver->WIFI_PCapAvailable())
+			if(wifi_bridge != NULL)
 				driver->PCAP_sendpacket(wifi_bridge, ethernetframe, eflen);
 
 			delete ethernetframe;
@@ -2133,7 +2142,7 @@ void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_char* _
 	u8* data = (u8*)_data;
 
 	// reject the packet if it wasn't for us
-	if ((!WIFI_compareMAC(&data[0], (u8*)BroadcastMAC)) && (!WIFI_compareMAC(&data[0], wifiMac.mac.bytes)))
+	if (!(WIFI_isBroadcastMAC(&data[0]) || WIFI_compareMAC(&data[0], wifiMac.mac.bytes)))
 		return;
 
 	// reject the packet if we just sent it
@@ -2242,7 +2251,7 @@ void SoftAP_usTrigger()
 	// Can now receive 64 packets per millisecond. Completely arbitrary limit. Todo: tweak if needed.
 	// But due to using non-blocking mode, this shouldn't be as slow as it used to be.
 	if ((wifiMac.SoftAP.usecCounter & 1023) == 0)
-		if (driver->WIFI_PCapAvailable())
+		if(wifi_bridge != NULL)
 			driver->PCAP_dispatch(wifi_bridge, 64, SoftAP_RXHandler, NULL);
 }
 
