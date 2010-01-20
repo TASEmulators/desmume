@@ -77,10 +77,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32-debug.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib winpcap\wpcap.lib comctl32.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32-debug.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
-				DelayLoadDLLs="wpcap.dll"
+				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
 				RandomizedBaseAddress="1"
@@ -169,10 +169,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib winpcap\wpcap.lib comctl32.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
-				DelayLoadDLLs="wpcap.dll"
+				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				RandomizedBaseAddress="1"
@@ -239,7 +239,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;EXPERIMENTAL_WIFI_COMM"
 				StringPooling="true"
 				ExceptionHandling="1"
 				StructMemberAlignment="0"
@@ -262,10 +262,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib winpcap\wpcap.lib comctl32.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_dev+.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
-				DelayLoadDLLs="wpcap.dll"
+				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				LinkTimeCodeGeneration="0"
@@ -1390,6 +1390,10 @@
 			</File>
 			<File
 				RelativePath=".\throttle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\winpcap.h"
 				>
 			</File>
 			<File
