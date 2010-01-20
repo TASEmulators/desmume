@@ -194,9 +194,6 @@ static BOOL CALLBACK DialogProcPref(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		break;
 	case WM_INITDIALOG:
 		initialized = false;
-		ComboBox_AddString(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), "None");
-		ComboBox_AddString(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), "Linear");
-		ComboBox_AddString(GetDlgItem(hwndDlg, IDC_COMBO_INTERPOLATION), "Cosine");
 		CFGLoad(pcfg);
 		CFGReset(pcfg, hwndDlg);
 		initialized = true;
