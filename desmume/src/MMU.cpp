@@ -2139,9 +2139,9 @@ static INLINE void write_auxspicnt(const int proc, const int size, const int adr
 //================================================= MMU write 08
 void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 {
-	mmu_log_debug_ARM9(adr, "(write08) 0x%02X", val);
-
 	adr &= 0x0FFFFFFF;
+
+	mmu_log_debug_ARM9(adr, "(write08) 0x%02X", val);
 
 	if(adr < 0x02000000)
 	{
@@ -2369,9 +2369,9 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 //================================================= MMU ARM9 write 16
 void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
-	mmu_log_debug_ARM9(adr, "(write16) 0x%04X", val);
-
 	adr &= 0x0FFFFFFE;
+
+	mmu_log_debug_ARM9(adr, "(write16) 0x%04X", val);
 
 	if (adr < 0x02000000)
 	{
@@ -2857,10 +2857,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 //================================================= MMU ARM9 write 32
 void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 {
-	mmu_log_debug_ARM9(adr, "(write32) 0x%08X", val);
-
 	adr &= 0x0FFFFFFC;
 	
+	mmu_log_debug_ARM9(adr, "(write32) 0x%08X", val);
+
 	if(adr<0x02000000)
 	{
 		T1WriteLong(MMU.ARM9_ITCM, adr&0x7FFF, val);
@@ -3283,9 +3283,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 //================================================= MMU ARM9 read 08
 u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
-	mmu_log_debug_ARM9(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
-
 	adr &= 0x0FFFFFFF;
+	
+	mmu_log_debug_ARM9(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 
 	if(adr<0x02000000)
 		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
@@ -3324,9 +3324,9 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 //================================================= MMU ARM9 read 16
 u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
-	mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF], adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]));
-
 	adr &= 0x0FFFFFFE;
+
+	mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]));
 
 	if(adr<0x02000000)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
@@ -3402,10 +3402,6 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				//not sure whether these should trigger from byte reads
 				LagFrameFlag=0;
 				break;
-			
-			case REG_POSTFLG :
-				return 1;
-
 		}
 
 		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
@@ -3422,9 +3418,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 //================================================= MMU ARM9 read 32
 u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
-	mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF], adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]));
-
 	adr &= 0x0FFFFFFC;
+
+	mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]));
 
 	if(adr<0x02000000) 
 		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
@@ -3532,11 +3528,11 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 //================================================= MMU ARM7 write 08
 void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
-	mmu_log_debug_ARM7(adr, "(write08) 0x%02X", val);
-
 	adr &= 0x0FFFFFFF;
 
-	if (adr < 0x4001) return;	// PU BIOS
+	mmu_log_debug_ARM7(adr, "(write08) 0x%02X", val);
+
+	if (adr < 0x4000) return;	// PU BIOS
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3573,16 +3569,27 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 		switch(adr)
 		{
-		case REG_RTC:
-			rtcWrite(val);
-			return;
+			case REG_HALTCNT:
+				//printf("halt 0x%02X\n", val);
+				switch(val)
+				{
+					case 0xC0: NDS_Sleep(); break;
+					// TODO: its break firmware booting? but BIG speedup with ext. SWI
+					//case 0x80: NDS_ARM7.waitIRQ = 1; break;
+					default: break;
+				}
+				break;
+				
+			case REG_RTC:
+				rtcWrite(val);
+				return;
 
-		case REG_AUXSPICNT:
-			write_auxspicnt(9,8,0,val);
-			return;
-		case REG_AUXSPICNT+1:
-			write_auxspicnt(9,8,1,val);
-			return;
+			case REG_AUXSPICNT:
+				write_auxspicnt(9,8,0,val);
+				return;
+			case REG_AUXSPICNT+1:
+				write_auxspicnt(9,8,1,val);
+				return;
 		}
 		MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 		return;
@@ -3599,11 +3606,11 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 //================================================= MMU ARM7 write 16
 void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
-	mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
-
 	adr &= 0x0FFFFFFE;
 
-	if (adr < 0x4001) return;	// PU BIOS
+	mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
+
+	if (adr < 0x4000) return;	// PU BIOS
 	
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3910,11 +3917,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 //================================================= MMU ARM7 write 32
 void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
-	mmu_log_debug_ARM7(adr, "(write32) 0x%08X", val);
-
 	adr &= 0x0FFFFFFC;
 
-	if (adr < 0x4001) return;	// PU BIOS
+	mmu_log_debug_ARM7(adr, "(write32) 0x%08X", val);
+
+	if (adr < 0x4000) return;	// PU BIOS
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -4028,9 +4035,17 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 //================================================= MMU ARM7 read 08
 u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
+	adr &= 0x0FFFFFFF;
+
 	mmu_log_debug_ARM7(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
 
-	adr &= 0x0FFFFFFF;
+	if (adr < 0x4000)
+	{
+		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
+		//if (prot) INFO("MMU7 read 08 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
+		if (NDS_ARM7.R[15] > 0x3FFF)
+			return 0xFF;
+	}
 
 	// wifi mac access 
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4064,9 +4079,17 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 //================================================= MMU ARM7 read 16
 u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
+	adr &= 0x0FFFFFFE;
+
 	mmu_log_debug_ARM7(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]));
 
-	adr &= 0x0FFFFFFE;
+	if (adr < 0x4000)
+	{
+		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
+		//if (prot) INFO("MMU7 read 16 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
+		if (NDS_ARM7.R[15] > 0x3FFF)
+			return 0xFFFF;
+	}
 
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4129,9 +4152,6 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 					else ret |= 64;
 					return ret;
 				}
-
-			case REG_POSTFLG:
-				return 1;
 		}
 		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]); 
 	}
@@ -4147,9 +4167,17 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 //================================================= MMU ARM7 read 32
 u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
+	adr &= 0x0FFFFFFC;
+
 	mmu_log_debug_ARM7(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]));
 
-	adr &= 0x0FFFFFFC;
+	if (adr < 0x4000)
+	{
+		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
+		//if (prot) INFO("MMU7 read 32 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
+		if (NDS_ARM7.R[15] > 0x3FFF)
+			return 0xFFFFFFFF;
+	}
 
 	//wifi mac access
 	if ((adr>=0x04800000)&&(adr<0x05000000))
