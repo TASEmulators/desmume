@@ -3536,6 +3536,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	adr &= 0x0FFFFFFF;
 
+	if (adr < 0x4001) return;	// PU BIOS
+
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write08(adr, val);
@@ -3600,6 +3602,8 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
 
 	adr &= 0x0FFFFFFE;
+
+	if (adr < 0x4001) return;	// PU BIOS
 	
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3909,6 +3913,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	mmu_log_debug_ARM7(adr, "(write32) 0x%08X", val);
 
 	adr &= 0x0FFFFFFC;
+
+	if (adr < 0x4001) return;	// PU BIOS
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
