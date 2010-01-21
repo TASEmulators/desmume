@@ -2056,6 +2056,9 @@ void NDS_Reset()
 			armcpu_init(&NDS_ARM7, firmware->ARM7bootAddr);
 			armcpu_init(&NDS_ARM9, firmware->ARM9bootAddr);
 		}
+
+			_MMU_write08<ARMCPU_ARM9>(0x04000300, 0);
+			_MMU_write08<ARMCPU_ARM7>(0x04000300, 0);
 	}
 	else
 	{
@@ -2081,23 +2084,24 @@ void NDS_Reset()
 
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
-	
-		//bitbox 4k demo is so stripped down it relies on default stack values
-		//otherwise the arm7 will crash before making a sound
-		//(these according to gbatek softreset bios docs)
-		NDS_ARM7.R13_svc = 0x0380FFDC;
-		NDS_ARM7.R13_irq = 0x0380FFB0;
-		NDS_ARM7.R13_usr = 0x0380FF00;
-		NDS_ARM7.R[13] = NDS_ARM7.R13_usr;
-		//and let's set these for the arm9 while we're at it, though we have no proof
-		NDS_ARM9.R13_svc = 0x00803FC0;
-		NDS_ARM9.R13_irq = 0x00803FA0;
-		NDS_ARM9.R13_usr = 0x00803EC0;
-		NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
-		//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
-		//and how theyre named in desmume to match them up correctly. i just guessed.
+		
+		_MMU_write08<ARMCPU_ARM9>(0x04000300, 1);
+		_MMU_write08<ARMCPU_ARM7>(0x04000300, 1);
 	}
-
+	//bitbox 4k demo is so stripped down it relies on default stack values
+	//otherwise the arm7 will crash before making a sound
+	//(these according to gbatek softreset bios docs)
+	NDS_ARM7.R13_svc = 0x0380FFDC;
+	NDS_ARM7.R13_irq = 0x0380FFB0;
+	NDS_ARM7.R13_usr = 0x0380FF00;
+	NDS_ARM7.R[13] = NDS_ARM7.R13_usr;
+	//and let's set these for the arm9 while we're at it, though we have no proof
+	NDS_ARM9.R13_svc = 0x00803FC0;
+	NDS_ARM9.R13_irq = 0x00803FA0;
+	NDS_ARM9.R13_usr = 0x00803EC0;
+	NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
+	//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
+	//and how theyre named in desmume to match them up correctly. i just guessed.
 
 	nds.wifiCycle = 0;
 	memset(nds.timerCycle, 0, sizeof(u64) * 2 * 4);
