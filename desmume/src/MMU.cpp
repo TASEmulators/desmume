@@ -1988,11 +1988,6 @@ void DmaController::doCopy()
 	u32 src = saddr;
 	u32 dst = daddr;
 
-	if(chan==0&&procnum==0)
-	{
-		int zzz=9;
-	}
-
 
 	//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
 	//then danny phantom title screen will be filled with a garbage char which is made by
@@ -3540,7 +3535,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
 	}
 
-	if ((adr>=0x04000400)&&(adr<0x0400051D)) 
+	if ((adr>=0x04000400)&&(adr<0x04000520)) 
 	{
 		SPU_WriteByte(adr, val);
 		return;
@@ -3626,7 +3621,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		return;
 	}
 
-	if ((adr>=0x04000400)&&(adr<0x0400051D))
+	if ((adr>=0x04000400)&&(adr<0x04000520))
 	{
 		SPU_WriteWord(adr, val);
 		return;
@@ -3939,7 +3934,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
-    if ((adr>=0x04000400)&&(adr<0x0400051D))
+    if ((adr>=0x04000400)&&(adr<0x04000520))
     {
         SPU_WriteLong(adr, val);
         return;
@@ -4059,6 +4054,11 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
 
+    if ((adr>=0x04000400)&&(adr<0x04000520))
+    {
+        return SPU_ReadByte(adr);
+    }
+
 	if (adr == REG_RTC) return (u8)rtcRead();
 
 	if (adr >> 24 == 4)
@@ -4097,6 +4097,11 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
+
+    if ((adr>=0x04000400)&&(adr<0x04000520))
+    {
+        return SPU_ReadWord(adr);
+    }
 
 	if(adr>>24==4)
 	{	//Address is an IO register
@@ -4185,6 +4190,11 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
+
+    if ((adr>=0x04000400)&&(adr<0x04000520))
+    {
+        return SPU_ReadLong(adr);
+    }
 
 	if((adr >> 24) == 4)
 	{	//Address is an IO register

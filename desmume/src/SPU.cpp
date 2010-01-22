@@ -1,8 +1,7 @@
-/*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+/*  SPU.cpp
+    Copyright (C) 2006 yopyop
     Copyright (C) 2006 Theo Berkau
-    Copyright (C) 2008-2009 DeSmuME team
+    Copyright (C) 2008-2010 DeSmuME team
 
     Ideas borrowed from Stephane Dallongeville's SCSP core
 
@@ -323,11 +322,38 @@ static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
 	chan->sampinc = (((double)ARM7_CLOCK) / (DESMUME_SAMPLE_RATE * 2)) / (double)(0x10000 - chan->timer);
 }
 
+void SPU_struct::KeyProbe(int chan_num)
+{
+	channel_struct &thischan = channels[chan_num];
+	if(thischan.status == CHANSTAT_STOPPED)
+	{
+		if(thischan.keyon && regs.masteren)
+			KeyOn(chan_num);
+	}
+	else if(thischan.status == CHANSTAT_PLAY)
+	{
+		if(!thischan.keyon || !regs.masteren)
+			KeyOff(chan_num);
+	}
+}
+
+void SPU_struct::KeyOff(int channel)
+{
+	//printf("keyoff%d\n",channel);
+	channel_struct &thischan = channels[channel];
+	thischan.status = CHANSTAT_STOPPED;
+}
+
 void SPU_struct::KeyOn(int channel)
 {
 	channel_struct &thischan = channels[channel];
+	thischan.status = CHANSTAT_PLAY;
 
+	thischan.totlength = thischan.length + thischan.loopstart;
 	adjust_channel_timer(&thischan);
+
+	//printf("keyon %d totlength:%d\n",channel,thischan.totlength);
+
 
 	//LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X,"
 	//		"timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, 
@@ -369,6 +395,8 @@ void SPU_struct::KeyOn(int channel)
 	default: break;
 	}
 
+	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
+
 	if(thischan.format != 3)
 	{
 		if(thischan.double_totlength_shifted == 0)
@@ -377,157 +405,296 @@ void SPU_struct::KeyOn(int channel)
 			thischan.status = CHANSTAT_STOPPED;
 		}
 	}
-	
-	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_struct::WriteByte(u32 addr, u8 val)
+#define SETBYTE(which,oldval,newval) oldval = (oldval & (~(0xFF<<(which*8)))) | ((newval)<<(which*8))
+#define GETBYTE(which,val) ((val>>(which*8))&0xFF)
+
+
+u8 SPU_ReadByte(u32 addr) { 
+	addr &= 0xFFF;
+	return SPU_core->ReadByte(addr);
+}
+u16 SPU_ReadWord(u32 addr) {
+	addr &= 0xFFF;
+	return SPU_core->ReadWord(addr);
+}
+u32 SPU_ReadLong(u32 addr) {
+	addr &= 0xFFF;
+	return SPU_core->ReadLong(addr);
+}
+
+u16 SPU_struct::ReadWord(u32 addr)
 {
-	channel_struct &thischan=channels[(addr >> 4) & 0xF];
-	switch(addr & 0xF) {
-		case 0x0:
-			thischan.vol = val & 0x7F;
-			break;
-		case 0x1: {
-			thischan.datashift = val & 0x3;
-			if (thischan.datashift == 3)
-				thischan.datashift = 4;
-			thischan.hold = (val >> 7) & 0x1;
-			break;
-		}
-		case 0x2:
-			thischan.pan = val & 0x7F;
-			break;
-		case 0x3: {
-			thischan.waveduty = val & 0x7;
-			thischan.repeat = (val >> 3) & 0x3;
-			thischan.format = (val >> 5) & 0x3;
-			if((!thischan.status) && BIT7(val))
-				KeyOn((addr >> 4) & 0xF);
-			thischan.status = BIT7(val);
-			break;
-		}
+	return ReadByte(addr)|(ReadByte(addr+1)<<8);
+}
+
+u32 SPU_struct::ReadLong(u32 addr)
+{
+	return ReadByte(addr)|(ReadByte(addr+1)<<8)|(ReadByte(addr+2)<<16)|(ReadByte(addr+3)<<24);
+}
+
+u8 SPU_struct::ReadByte(u32 addr)
+{
+	switch(addr)
+	{
+	//SOUNDCNT
+	case 0x500: return regs.mastervol;
+	case 0x501: 
+		return (regs.ctl_left)|(regs.ctl_right<<2)|(regs.ctl_ch1<<4)|(regs.ctl_ch2<<5)|(regs.masteren<<7);
+	case 0x502: return 0;
+	case 0x503: return 0;
+
+	//SOUNDBIAS
+	case 0x504: return regs.soundbias&0xFF;
+	case 0x505: return (regs.soundbias>>8)&0xFF;
+	case 0x506: return 0;
+	case 0x507: return 0;
+	
+	//SNDCAP0CNT/SNDCAP1CNT
+	case 0x508:
+	case 0x509: {
+		u32 which = 0x509-addr;
+		return regs.cap[which].add
+			| (regs.cap[which].source<<1)
+			| (regs.cap[which].oneshot<<2)
+			| (regs.cap[which].bits8<<3)
+			| (regs.cap[which].active<<7);
+	}	
+
+	//SNDCAP0DAD
+	case 0x510: return GETBYTE(0,regs.cap[0].dad);
+	case 0x511: return GETBYTE(1,regs.cap[0].dad);
+	case 0x512: return GETBYTE(2,regs.cap[0].dad);
+	case 0x513: return GETBYTE(3,regs.cap[0].dad);
+
+	//SNDCAP0LEN
+	case 0x514: return GETBYTE(0,regs.cap[0].len);
+	case 0x515: return GETBYTE(1,regs.cap[0].len);
+	case 0x516: return 0; //not used
+	case 0x517: return 0; //not used
+
+	//SNDCAP1DAD
+	case 0x518: return GETBYTE(0,regs.cap[1].dad);
+	case 0x519: return GETBYTE(1,regs.cap[1].dad);
+	case 0x51A: return GETBYTE(2,regs.cap[1].dad);
+	case 0x51B: return GETBYTE(3,regs.cap[1].dad);
+
+	//SNDCAP1LEN
+	case 0x51C: return GETBYTE(0,regs.cap[1].len);
+	case 0x51D: return GETBYTE(1,regs.cap[1].len);
+	case 0x51E: return 0; //not used
+	case 0x51F: return 0; //not used
+
+	default: {
+		//individual channel regs
+
+		u32 chan_num = (addr >> 4) & 0xF;
+		if(chan_num>0xF) return 0;
+		channel_struct &thischan=channels[chan_num];
+
+		switch(addr & 0xF) {
+			case 0x0: return thischan.vol;
+			case 0x1: {
+				u8 ret = thischan.datashift;
+				if(ret==4) ret=3;
+				ret |= thischan.hold<<7;
+				return ret;
+			}
+			case 0x2: return thischan.pan;
+			case 0x3: return thischan.waveduty|(thischan.repeat<<3)|(thischan.format<<5)|((thischan.status == CHANSTAT_PLAY)?0x80:0);
+			case 0x4: return GETBYTE(0,thischan.addr);
+			case 0x5: return GETBYTE(1,thischan.addr);
+			case 0x6: return GETBYTE(2,thischan.addr);
+			case 0x7: return GETBYTE(3,thischan.addr);
+			case 0x8: return GETBYTE(0,thischan.timer);
+			case 0x9: return GETBYTE(1,thischan.timer);
+			case 0xA: return GETBYTE(0,thischan.loopstart);
+			case 0xB: return GETBYTE(1,thischan.loopstart);
+			case 0xC: return GETBYTE(0,thischan.length);
+			case 0xD: return GETBYTE(1,thischan.length);
+			case 0xE: return GETBYTE(2,thischan.length);
+			case 0xF: return GETBYTE(3,thischan.length);
+			default: return 0; //impossible
+		} //switch on individual channel regs
+		} //default case
+	} //switch on address
+}
+
+void SPU_struct::ProbeCapture(int which)
+{
+	//VERY UNTESTED -- HOW MUCH OF THIS RESETS, AND WHEN?
+
+	if(!regs.cap[which].active)
+	{
+		regs.cap[which].runtime.running = 0;
+		return;
 	}
 
+	regs.cap[which].runtime.running = 1;
+	regs.cap[which].runtime.curdad = regs.cap[which].dad;
+	u32 len = regs.cap[which].len;
+	if(len==0) len=1;
+	regs.cap[which].runtime.maxdad = regs.cap[which].dad + len*4;
+}
+
+void SPU_struct::WriteByte(u32 addr, u8 val)
+{
+	switch(addr)
+	{
+	//SOUNDCNT
+	case 0x500:
+		regs.mastervol = val&0x7F;
+		break;
+	case 0x501:
+		regs.ctl_left  = (val>>0)&3;
+		regs.ctl_right = (val>>2)&3;
+		regs.ctl_ch1 = (val>>4)&1;
+		regs.ctl_ch2 = (val>>5)&1;
+		regs.masteren = (val>>7)&1;
+		for(int i=0;i<16;i++)
+			KeyProbe(i);
+		break;
+	case 0x502: break; //not used
+	case 0x503: break; //not used
+
+	//SOUNDBIAS
+	case 0x504: SETBYTE(0,regs.soundbias, val); break;
+	case 0x505: SETBYTE(1,regs.soundbias, val&3); break;
+	case 0x506: break; //these dont answer anyway
+	case 0x507: break; //these dont answer anyway
+
+	//SNDCAP0CNT/SNDCAP1CNT
+	case 0x508:
+	case 0x509: {
+		u32 which = 0x509-addr;
+		regs.cap[which].add = BIT0(val);
+		regs.cap[which].source = BIT1(val);
+		regs.cap[which].oneshot = BIT2(val);
+		regs.cap[which].bits8 = BIT3(val);
+		regs.cap[which].active = BIT7(val);
+		ProbeCapture(which);
+	}
+
+	//SNDCAP0DAD
+	case 0x510: SETBYTE(0,regs.cap[0].dad,val); break;
+	case 0x511: SETBYTE(1,regs.cap[0].dad,val); break;
+	case 0x512: SETBYTE(2,regs.cap[0].dad,val); break;
+	case 0x513: SETBYTE(3,regs.cap[0].dad,val&7); break;
+
+	//SNDCAP0LEN
+	case 0x514: SETBYTE(0,regs.cap[0].len,val); break;
+	case 0x515: SETBYTE(1,regs.cap[0].len,val); break;
+	case 0x516: break; //not used
+	case 0x517: break; //not used
+
+	//SNDCAP1DAD
+	case 0x518: SETBYTE(0,regs.cap[1].dad,val); break;
+	case 0x519: SETBYTE(1,regs.cap[1].dad,val); break;
+	case 0x51A: SETBYTE(2,regs.cap[1].dad,val); break;
+	case 0x51B: SETBYTE(3,regs.cap[1].dad,val&7); break;
+
+	//SNDCAP1LEN
+	case 0x51C: SETBYTE(0,regs.cap[1].len,val); break;
+	case 0x51D: SETBYTE(1,regs.cap[1].len,val); break;
+	case 0x51E: break; //not used
+	case 0x51F: break; //not used
+
+
+	
+	default: {
+		//individual channel regs
+		
+		u32 chan_num = (addr >> 4) & 0xF;
+		if(chan_num>0xF) break;
+		channel_struct &thischan=channels[chan_num];
+
+		switch(addr & 0xF) {
+			case 0x0:
+				thischan.vol = val & 0x7F;
+				break;
+			case 0x1:
+				thischan.datashift = val & 0x3;
+				if (thischan.datashift == 3)
+					thischan.datashift = 4;
+				thischan.hold = (val >> 7) & 0x1;
+				break;
+			case 0x2:
+				thischan.pan = val & 0x7F;
+				break;
+			case 0x3:
+				thischan.waveduty = val & 0x7;
+				thischan.repeat = (val >> 3) & 0x3;
+				thischan.format = (val >> 5) & 0x3;
+				thischan.keyon = BIT7(val);
+				KeyProbe(chan_num);
+				break;
+			case 0x4: SETBYTE(0,thischan.addr,val); break;
+			case 0x5: SETBYTE(1,thischan.addr,val); break;
+			case 0x6: SETBYTE(2,thischan.addr,val); break;
+			case 0x7: SETBYTE(3,thischan.addr,val); break;
+			case 0x8: 
+				SETBYTE(0,thischan.timer,val); 
+				adjust_channel_timer(&thischan);
+				break;
+			case 0x9: 
+				SETBYTE(1,thischan.timer,val); 
+				adjust_channel_timer(&thischan);
+				break;
+			case 0xA: SETBYTE(0,thischan.loopstart,val); break;
+			case 0xB: SETBYTE(1,thischan.loopstart,val); break;
+			case 0xC: SETBYTE(0,thischan.length,val); break;
+			case 0xD: SETBYTE(1,thischan.length,val); break;
+			case 0xE: SETBYTE(2,thischan.length,val); break;
+			case 0xF: SETBYTE(3,thischan.length,val); break;
+		} //switch on individual channel regs
+		} //default case
+	} //switch on address
 }
 
 void SPU_WriteByte(u32 addr, u8 val)
 {
 	addr &= 0xFFF;
 
-	if (addr < 0x500)
-	{
-		SPU_core->WriteByte(addr,val);
-		if(SPU_user) SPU_user->WriteByte(addr,val);
-	}
-
-	T1WriteByte(MMU.ARM7_REG, addr, val);
+	SPU_core->WriteByte(addr,val);
+	if(SPU_user) SPU_user->WriteByte(addr,val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 void SPU_struct::WriteWord(u32 addr, u16 val)
 {
-	channel_struct &thischan=channels[(addr >> 4) & 0xF];
-	switch(addr & 0xF)
-	{
-	case 0x0:
-		thischan.vol = val & 0x7F;
-		thischan.datashift = (val >> 8) & 0x3;
-		if (thischan.datashift == 3)
-			thischan.datashift = 4;
-		thischan.hold = (val >> 15) & 0x1;
-		break;
-	case 0x2:
-		thischan.pan = val & 0x7F;
-		thischan.waveduty = (val >> 8) & 0x7;
-		thischan.repeat = (val >> 11) & 0x3;
-		thischan.format = (val >> 13) & 0x3;
-		if((!thischan.status) && BIT15(val))
-			KeyOn((addr >> 4) & 0xF);
-		thischan.status = BIT15(val);
-		break;
-	case 0x8:
-		thischan.timer = val & 0xFFFF;
-		adjust_channel_timer(&thischan);
-		break;
-	case 0xA:
-		thischan.loopstart = val;
-		thischan.totlength = thischan.length + thischan.loopstart;
-		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
-		break;
-	case 0xC:
-		WriteLong(addr,((u32)T1ReadWord(MMU.ARM7_REG, addr+2) << 16) | val);
-		break;
-	case 0xE:
-		WriteLong(addr,((u32)T1ReadWord(MMU.ARM7_REG, addr-2)) | ((u32)val<<16));
-		break;
-	}
+	WriteByte(addr,val&0xFF);
+	WriteByte(addr+1,(val>>8)&0xFF);
 }
 
 void SPU_WriteWord(u32 addr, u16 val)
 {
 	addr &= 0xFFF;
 
-	if (addr < 0x500)
-	{
-		SPU_core->WriteWord(addr,val);
-		if(SPU_user) SPU_user->WriteWord(addr,val);
-	}
-
-	T1WriteWord(MMU.ARM7_REG, addr, val);
+	SPU_core->WriteWord(addr,val);
+	if(SPU_user) SPU_user->WriteWord(addr,val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 void SPU_struct::WriteLong(u32 addr, u32 val)
 {
-	channel_struct &thischan=channels[(addr >> 4) & 0xF];
-	switch(addr & 0xF)
-	{
-	case 0x0:
-		thischan.vol = val & 0x7F;
-		thischan.datashift = (val >> 8) & 0x3;
-		if (thischan.datashift == 3)
-			thischan.datashift = 4;
-		thischan.hold = (val >> 15) & 0x1;
-		thischan.pan = (val >> 16) & 0x7F;
-		thischan.waveduty = (val >> 24) & 0x7;
-		thischan.repeat = (val >> 27) & 0x3;
-		thischan.format = (val >> 29) & 0x3;
-		if((!thischan.status) && BIT31(val))
-			KeyOn((addr >> 4) & 0xF);
-		thischan.status = BIT31(val);
-		break;
-	case 0x4:
-		thischan.addr = val & 0x7FFFFFF;
-		break;
-	case 0x8:
-		thischan.timer = val & 0xFFFF;
-		thischan.loopstart = val >> 16;
-		adjust_channel_timer(&thischan);
-		break;
-	case 0xC:
-		thischan.length = val & 0x3FFFFF;
-		thischan.totlength = thischan.length + thischan.loopstart;
-		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
-		break;
-	}
+	//printf("%08X: chan:%02X reg:%02X val:%08X\n",addr,(addr>>4)&0xF,addr&0xF,val);
+	WriteByte(addr,val&0xFF);
+	WriteByte(addr+1,(val>>8)&0xFF);
+	WriteByte(addr+2,(val>>16)&0xFF);
+	WriteByte(addr+3,(val>>24)&0xFF);
 }
 
 void SPU_WriteLong(u32 addr, u32 val)
 {
 	addr &= 0xFFF;
 
-	if (addr < 0x500)
-	{
-		SPU_core->WriteLong(addr,val);
-		if(SPU_user) SPU_user->WriteLong(addr,val);
-	}
-
-	T1WriteLong(MMU.ARM7_REG, addr, val);
+	SPU_core->WriteLong(addr,val);
+	if(SPU_user) SPU_user->WriteLong(addr,val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -841,28 +1008,30 @@ FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* cons
 
 static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 {
-	u8 vol;
-
 	if(actuallyMix)
 	{
 		memset(SPU->sndbuf, 0, length*4*2);
 		memset(SPU->outbuf, 0, length*2*2);
 	}
-	
-	// If the sound speakers are disabled, don't output audio
-	if(!(T1ReadWord(MMU.ARM7_REG, 0x304) & 0x01))
-		return;
 
-	// If Master Enable isn't set, don't output audio
-	if (!(T1ReadByte(MMU.ARM7_REG, 0x501) & 0x80))
-		return;
+	//we used to bail out if speakers were disabled.
+	//this is technically wrong. sound may still be captured, or something.
+	//in all likelihood, any game doing this probably master disabled the SPU also
+	//so, optimization of this case is probably not necessary.
+	//later, we'll just silence the output
+	bool speakers = T1ReadWord(MMU.ARM7_REG, 0x304) & 0x01;
 
-	vol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
+	//we used to use master enable here, and do nothing if audio is disabled.
+	//now, master enable is emulated better..
+	//but for a speed optimization we will still do it
+	if(!SPU->regs.masteren) return;
+
+	u8 vol = SPU->regs.mastervol;
 
 	for(int i=0;i<16;i++)
 	{
 		channel_struct *chan = &SPU->channels[i];
-	
+
 		if (chan->status != CHANSTAT_PLAY)
 			continue;
 
@@ -874,19 +1043,24 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 	}
 
 	// convert from 32-bit->16-bit
-	if(actuallyMix)
+	if(actuallyMix && speakers)
 		for (int i = 0; i < length*2; i++)
 		{
 			// Apply Master Volume
 			SPU->sndbuf[i] = spumuldiv7(SPU->sndbuf[i], vol);
 
+			u16 outsample;
 			if (SPU->sndbuf[i] > 0x7FFF)
-				SPU->outbuf[i] = 0x7FFF;
+				outsample = 0x7FFF;
 			else if (SPU->sndbuf[i] < -0x8000)
-				SPU->outbuf[i] = -0x8000;
+				outsample = -0x8000;
 			else
-				SPU->outbuf[i] = (s16)SPU->sndbuf[i];
+				outsample = (s16)SPU->sndbuf[i];
+
+			SPU->outbuf[i] = outsample;
 		}
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1105,7 +1279,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode)
 void spu_savestate(EMUFILE* os)
 {
 	//version
-	write32le(3,os);
+	write32le(4,os);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1132,9 +1306,33 @@ void spu_savestate(EMUFILE* os)
 		write32le(chan.index,os);
 		write16le(chan.x,os);
 		write16le(chan.psgnoise_last,os);
+		write8le(chan.keyon,os);
 	}
 
 	write64le(double_to_u64(samples),os);
+
+	write8le(spu->regs.mastervol,os);
+	write8le(spu->regs.ctl_left,os);
+	write8le(spu->regs.ctl_right,os);
+	write8le(spu->regs.ctl_ch1,os);
+	write8le(spu->regs.ctl_ch2,os);
+	write8le(spu->regs.masteren,os);
+	write16le(spu->regs.soundbias,os);
+
+	//save capture regs for later, when we're sure what we need
+	//for(int i=0;i<2;i++)
+	//{
+	//	write8le(spu->regs.cap[i].add,os);
+	//	write8le(spu->regs.cap[i].source,os);
+	//	write8le(spu->regs.cap[i].oneshot,os);
+	//	write8le(spu->regs.cap[i].bits8,os);
+	//	write8le(spu->regs.cap[i].active,os);
+	//	write32le(spu->regs.cap[i].dad,os);
+	//	write16le(spu->regs.cap[i].len,os);
+	//	write8le(spu->regs.cap[i].runtime.running,os);
+	//	write32le(spu->regs.cap[i].runtime.curdad,os);
+	//	write32le(spu->regs.cap[i].runtime.maxdad,os);
+	//}
 }
 
 bool spu_loadstate(EMUFILE* is, int size)
@@ -1164,6 +1362,7 @@ bool spu_loadstate(EMUFILE* is, int size)
 		read32le(&chan.length,is);
 		chan.totlength = chan.length + chan.loopstart;
 		chan.double_totlength_shifted = (double)(chan.totlength << format_shift[chan.format]);
+		//printf("%f\n",chan.double_totlength_shifted);
 		if(version >= 2)
 		{
 			read64le(&temp64,is); chan.sampcnt = u64_to_double(temp64);
@@ -1181,6 +1380,9 @@ bool spu_loadstate(EMUFILE* is, int size)
 		read16le(&chan.x,is);
 		read16le(&chan.psgnoise_last,is);
 
+		if(version>=4)
+			read8le(&chan.keyon,is);
+
 		//hopefully trigger a recovery of the adpcm looping system
 		chan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
 
@@ -1192,9 +1394,44 @@ bool spu_loadstate(EMUFILE* is, int size)
 		read64le(&temp64,is); samples = u64_to_double(temp64);
 	}
 
+	if(version>=4)
+	{
+		read8le(&spu->regs.mastervol,is);
+		read8le(&spu->regs.ctl_left,is);
+		read8le(&spu->regs.ctl_right,is);
+		read8le(&spu->regs.ctl_ch1,is);
+		read8le(&spu->regs.ctl_ch2,is);
+		read8le(&spu->regs.masteren,is);
+		read16le(&spu->regs.soundbias,is);
+
+		//save capture regs for later, when we're sure what we need
+		//for(int i=0;i<2;i++)
+		//{
+		//	read8le(&spu->regs.cap[i].add,is);
+		//	read8le(&spu->regs.cap[i].source,is);
+		//	read8le(&spu->regs.cap[i].oneshot,is);
+		//	read8le(&spu->regs.cap[i].bits8,is);
+		//	read8le(&spu->regs.cap[i].active,is);
+		//	read32le(&spu->regs.cap[i].dad,is);
+		//	read16le(&spu->regs.cap[i].len,is);
+		//	read8le(&spu->regs.cap[i].runtime.running,is);
+		//	read32le(&spu->regs.cap[i].runtime.curdad,is);
+		//	read32le(&spu->regs.cap[i].runtime.maxdad,is);
+		//}
+	}
+
+	//older versions didnt store a mastervol; 
+	//we must reload this or else games will start silent
+	if(version<4)
+	{
+		spu->regs.mastervol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
+	}
+
+
 	//copy the core spu (the more accurate) to the user spu
 	if(SPU_user) {
 		memcpy(SPU_user->channels,SPU_core->channels,sizeof(SPU_core->channels));
+		SPU_user->regs = SPU_core->regs;
 	}
 
 	return true;
