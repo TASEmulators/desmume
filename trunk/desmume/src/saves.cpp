@@ -291,8 +291,8 @@ SFORMAT SF_WIFI[]={
 	{ "W020", 2, 1, &wifiMac.rfStatus},
 	{ "W030", 2, 1, &wifiMac.rfPins},
 
-	{ "W040", 2, 1, &wifiMac.IE.val},
-	{ "W050", 2, 1, &wifiMac.IF.val},
+	{ "W040", 2, 1, &wifiMac.IE},
+	{ "W050", 2, 1, &wifiMac.IF},
 
 	{ "W060", 2, 1, &wifiMac.macMode},
 	{ "W070", 2, 1, &wifiMac.wepMode},
@@ -349,14 +349,10 @@ SFORMAT SF_WIFI[]={
 	{ "W370", 4, 1, &wifiMac.rfIOData.val},
 	{ "W380", 2, 1, &wifiMac.bbIOCnt.val},
 
-	{ "W390", 1, 1, &wifiMac.bbDataToWrite},
-
-	{ "W400", 2, 0x1000, &wifiMac.circularBuffer[0]},
+	{ "W400", 2, 0x1000, &wifiMac.RAM[0]},
 	{ "W410", 2, 1, &wifiMac.RXRangeBegin},
 	{ "W420", 2, 1, &wifiMac.RXRangeEnd},
-	{ "W430", 2, 1, &wifiMac.RXHWWriteCursor},
-	{ "W440", 2, 1, &wifiMac.RXHWWriteCursorReg},
-	{ "W450", 2, 1, &wifiMac.RXHWWriteCursorLatched},
+	{ "W430", 2, 1, &wifiMac.RXWriteCursor},
 	{ "W460", 2, 1, &wifiMac.RXReadCursor},
 	{ "W470", 2, 1, &wifiMac.RXUnits},
 	{ "W480", 2, 1, &wifiMac.RXBufCount},
@@ -371,14 +367,14 @@ SFORMAT SF_WIFI[]={
 	{ "W560", 4, 1, &wifiMac.curPacketPos[0]},
 	{ "W570", 4, 1, &wifiMac.curPacketSending[0]},
 
-	{ "W580", 2, 0x800, &wifiMac.ioMem[0]},
+	{ "W580", 2, 0x800, &wifiMac.IOPorts[0]},
 	{ "W590", 2, 1, &wifiMac.randomSeed},
 
-	{ "WX00", 8, 1, &wifiMac.SoftAP.usecCounter},
-	{ "WX10", 1, 4096, &wifiMac.SoftAP.curPacket[0]},
-	{ "WX20", 4, 1, &wifiMac.SoftAP.curPacketSize},
-	{ "WX30", 4, 1, &wifiMac.SoftAP.curPacketPos},
-	{ "WX40", 4, 1, &wifiMac.SoftAP.curPacketSending},
+	{ "WX00", 8, 1, &SoftAP.usecCounter},
+	{ "WX10", 1, 4096, &SoftAP.curPacket[0]},
+	{ "WX20", 4, 1, &SoftAP.curPacketSize},
+	{ "WX30", 4, 1, &SoftAP.curPacketPos},
+	{ "WX40", 4, 1, &SoftAP.curPacketSending},
 
 	{ 0 }
 };
