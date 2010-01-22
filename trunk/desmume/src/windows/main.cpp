@@ -1,7 +1,6 @@
 /*  main.cpp
-
 	Copyright 2006 Theo Berkau
-    Copyright (C) 2006-2009 DeSmuME team
+    Copyright (C) 2006-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -2311,7 +2310,7 @@ int _main()
 
 	GetINIPath();
 
-	CommonSettings.cheatsDisable = GetPrivateProfileInt("General", "cheatsDisable", false, IniName);
+	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 
 	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
 	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
