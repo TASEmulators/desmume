@@ -32,6 +32,7 @@ inline int write8le(u8* b, EMUFILE *fp) { return write8le(*b,fp); }
 int write16le(u16 b, EMUFILE* os);
 int write32le(u32 b, EMUFILE* os);
 int write64le(u64 b, EMUFILE* os);
+inline int write_double_le(double b, EMUFILE*is) { u64 temp = double_to_u64(b); int ret = write64le(temp,is); return ret; }
 
 int read8le(u8 *Bufo, EMUFILE*is);
 int read16le(u16 *Bufo, EMUFILE*is);
@@ -39,6 +40,7 @@ inline int read16le(s16 *Bufo, EMUFILE*is) { return read16le((u16*)Bufo,is); }
 int read32le(u32 *Bufo, EMUFILE*is);
 inline int read32le(s32 *Bufo, EMUFILE*is) { return read32le((u32*)Bufo,is); }
 int read64le(u64 *Bufo, EMUFILE*is);
+inline int read_double_le(double *Bufo, EMUFILE*is) { u64 temp; int ret = read64le(&temp,is); *Bufo = u64_to_double(temp); return ret; }
 int read16le(u16 *Bufo, std::istream *is);
 
 
