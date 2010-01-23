@@ -657,6 +657,7 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 
 void SPU_WriteByte(u32 addr, u8 val)
 {
+	//printf("%08X: chan:%02X reg:%02X val:%02X\n",addr,(addr>>4)&0xF,addr&0xF,val);
 	addr &= 0xFFF;
 
 	SPU_core->WriteByte(addr,val);
@@ -673,6 +674,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 
 void SPU_WriteWord(u32 addr, u16 val)
 {
+	//printf("%08X: chan:%02X reg:%02X val:%04X\n",addr,(addr>>4)&0xF,addr&0xF,val);
 	addr &= 0xFFF;
 
 	SPU_core->WriteWord(addr,val);
@@ -683,7 +685,6 @@ void SPU_WriteWord(u32 addr, u16 val)
 
 void SPU_struct::WriteLong(u32 addr, u32 val)
 {
-	//printf("%08X: chan:%02X reg:%02X val:%08X\n",addr,(addr>>4)&0xF,addr&0xF,val);
 	WriteByte(addr,val&0xFF);
 	WriteByte(addr+1,(val>>8)&0xFF);
 	WriteByte(addr+2,(val>>16)&0xFF);
@@ -692,6 +693,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 
 void SPU_WriteLong(u32 addr, u32 val)
 {
+	//printf("%08X: chan:%02X reg:%02X val:%08X\n",addr,(addr>>4)&0xF,addr&0xF,val);
 	addr &= 0xFFF;
 
 	SPU_core->WriteLong(addr,val);
@@ -890,7 +892,7 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 		}
 		else
 		{
-			SPU->KeyOff(chan->index);
+			SPU->KeyOff(chan->num);
 			SPU->bufpos = SPU->buflength;
 		}
 	}
@@ -924,7 +926,7 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 		else
 		{
 			chan->status = CHANSTAT_STOPPED;
-			SPU->KeyOff(chan->index);
+			SPU->KeyOff(chan->num);
 			SPU->bufpos = SPU->buflength;
 		}
 	}
