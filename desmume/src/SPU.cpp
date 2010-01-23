@@ -47,8 +47,8 @@
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
 
 //#ifdef FASTBUILD
-//	#undef FORCEINLINE
-//	#define FORCEINLINE
+	#undef FORCEINLINE
+	#define FORCEINLINE
 //#endif
 
 //static ISynchronizingAudioBuffer* synchronizer = metaspu_construct(ESynchMethod_Z);
@@ -538,6 +538,7 @@ void SPU_struct::ProbeCapture(int which)
 	u32 len = regs.cap[which].len;
 	if(len==0) len=1;
 	regs.cap[which].runtime.maxdad = regs.cap[which].dad + len*4;
+	regs.cap[which].runtime.sampcnt = 0;
 }
 
 void SPU_struct::WriteByte(u32 addr, u8 val)
@@ -889,10 +890,7 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 		}
 		else
 		{
-			chan->status = CHANSTAT_STOPPED;
-
-			if(SPU == SPU_core)
-				MMU.ARM7_REG[0x403 + (((chan-SPU->channels) ) * 0x10)] &= 0x7F;
+			SPU->KeyOff(chan->index);
 			SPU->bufpos = SPU->buflength;
 		}
 	}
@@ -926,8 +924,7 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 		else
 		{
 			chan->status = CHANSTAT_STOPPED;
-			if(SPU == SPU_core)
-				MMU.ARM7_REG[0x403 + (((chan-SPU->channels) ) * 0x10)] &= 0x7F;
+			SPU->KeyOff(chan->index);
 			SPU->bufpos = SPU->buflength;
 		}
 	}
@@ -943,6 +940,7 @@ template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_
 	}
 }
 
+//WORK
 template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS> 
 	FORCEINLINE static void ____SPU_ChanUpdate(SPU_struct* const SPU, channel_struct* const chan)
 {
@@ -1006,6 +1004,7 @@ FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* cons
 	}
 }
 
+//ENTER
 static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 {
 	if(actuallyMix)
@@ -1040,7 +1039,69 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 
 		// Mix audio
 		_SPU_ChanUpdate(!CommonSettings.spu_muteChannels[i] && actuallyMix, SPU, chan);
+		//_SPU_ChanUpdate(actuallyMix, SPU, chan);
 	}
+
+	//TODO - a lot of capture and output modes are not supported.
+	//this works in starfy, but not in nsmb, which requires the other modes.
+	//so, we'll have to support it soon
+
+#ifdef ENABLE_SOUND_CAPTURE
+
+	bool skipcap = false;
+#ifdef _MSC_VER
+	if(GetAsyncKeyState(VK_SHIFT)) skipcap=true;
+#endif
+
+	static FILE* test = NULL;
+	if(!test) test = fopen("d:\\raw.raw","wb");
+	if(SPU==SPU_core)
+	{
+		for(int capchan=0;capchan<2;capchan++)
+		{
+			if(SPU->regs.cap[capchan].runtime.running)
+			{
+				SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
+				for(int i=0;i<length;i++)
+				{
+					s32 sample = SPU->sndbuf[i*2+capchan];
+					u32 last = sputrunc(cap.runtime.sampcnt);
+					cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
+					u32 curr = sputrunc(cap.runtime.sampcnt);
+					for(u32 j=last+1;j<=curr;j++)
+					{
+						u32 multiplier;
+						
+						if(cap.bits8)
+						{
+							s8 sample8 = sample>>8;
+							if(skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+							else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
+							cap.runtime.curdad++;
+							multiplier = 4;
+						}
+						else
+						{
+							s16 sample16 = sample;
+							if(skipcap) _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+							else _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,sample16);
+							if(capchan==0) fwrite(&sample16,2,1,test);
+							cap.runtime.curdad+=2;
+							multiplier = 2;
+						}
+
+						if(cap.runtime.curdad>=cap.runtime.maxdad) {
+							cap.runtime.curdad = cap.dad;
+							cap.runtime.sampcnt -= cap.len*multiplier;
+						}
+					}
+				}
+			}
+		}
+	}
+
+#endif
+
 
 	// convert from 32-bit->16-bit
 	if(actuallyMix && speakers)
@@ -1279,7 +1340,7 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode)
 void spu_savestate(EMUFILE* os)
 {
 	//version
-	write32le(4,os);
+	write32le(5,os);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1319,20 +1380,20 @@ void spu_savestate(EMUFILE* os)
 	write8le(spu->regs.masteren,os);
 	write16le(spu->regs.soundbias,os);
 
-	//save capture regs for later, when we're sure what we need
-	//for(int i=0;i<2;i++)
-	//{
-	//	write8le(spu->regs.cap[i].add,os);
-	//	write8le(spu->regs.cap[i].source,os);
-	//	write8le(spu->regs.cap[i].oneshot,os);
-	//	write8le(spu->regs.cap[i].bits8,os);
-	//	write8le(spu->regs.cap[i].active,os);
-	//	write32le(spu->regs.cap[i].dad,os);
-	//	write16le(spu->regs.cap[i].len,os);
-	//	write8le(spu->regs.cap[i].runtime.running,os);
-	//	write32le(spu->regs.cap[i].runtime.curdad,os);
-	//	write32le(spu->regs.cap[i].runtime.maxdad,os);
-	//}
+	for(int i=0;i<2;i++)
+	{
+		write8le(spu->regs.cap[i].add,os);
+		write8le(spu->regs.cap[i].source,os);
+		write8le(spu->regs.cap[i].oneshot,os);
+		write8le(spu->regs.cap[i].bits8,os);
+		write8le(spu->regs.cap[i].active,os);
+		write32le(spu->regs.cap[i].dad,os);
+		write16le(spu->regs.cap[i].len,os);
+		write8le(spu->regs.cap[i].runtime.running,os);
+		write32le(spu->regs.cap[i].runtime.curdad,os);
+		write32le(spu->regs.cap[i].runtime.maxdad,os);
+		write_double_le(spu->regs.cap[i].runtime.sampcnt,os);
+	}
 }
 
 bool spu_loadstate(EMUFILE* is, int size)
@@ -1403,21 +1464,24 @@ bool spu_loadstate(EMUFILE* is, int size)
 		read8le(&spu->regs.ctl_ch2,is);
 		read8le(&spu->regs.masteren,is);
 		read16le(&spu->regs.soundbias,is);
+	}
 
-		//save capture regs for later, when we're sure what we need
-		//for(int i=0;i<2;i++)
-		//{
-		//	read8le(&spu->regs.cap[i].add,is);
-		//	read8le(&spu->regs.cap[i].source,is);
-		//	read8le(&spu->regs.cap[i].oneshot,is);
-		//	read8le(&spu->regs.cap[i].bits8,is);
-		//	read8le(&spu->regs.cap[i].active,is);
-		//	read32le(&spu->regs.cap[i].dad,is);
-		//	read16le(&spu->regs.cap[i].len,is);
-		//	read8le(&spu->regs.cap[i].runtime.running,is);
-		//	read32le(&spu->regs.cap[i].runtime.curdad,is);
-		//	read32le(&spu->regs.cap[i].runtime.maxdad,is);
-		//}
+	if(version>=5)
+	{
+		for(int i=0;i<2;i++)
+		{
+			read8le(&spu->regs.cap[i].add,is);
+			read8le(&spu->regs.cap[i].source,is);
+			read8le(&spu->regs.cap[i].oneshot,is);
+			read8le(&spu->regs.cap[i].bits8,is);
+			read8le(&spu->regs.cap[i].active,is);
+			read32le(&spu->regs.cap[i].dad,is);
+			read16le(&spu->regs.cap[i].len,is);
+			read8le(&spu->regs.cap[i].runtime.running,is);
+			read32le(&spu->regs.cap[i].runtime.curdad,is);
+			read32le(&spu->regs.cap[i].runtime.maxdad,is);
+			read_double_le(&spu->regs.cap[i].runtime.sampcnt,is);
+		}
 	}
 
 	//older versions didnt store a mastervol; 

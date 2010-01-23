@@ -147,6 +147,7 @@ public:
 			   u8 running;
 			   u32 curdad;
 			   u32 maxdad;
+			   double sampcnt;
 		   } runtime;
 	   } cap[2];
    } regs;
