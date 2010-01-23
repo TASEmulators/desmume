@@ -58,9 +58,12 @@
 #define CARDFLASH_DEEP_POWDOWN		0xB9    /* Not used*/
 #define CARDFLASH_WAKEUP			0xAB    /* Not used*/
 
-//this should probably be 0xFF but we're using 0x00 until we find out otherwise
-//(no$ appears definitely to initialized to 0xFF)
-static const u8 kUninitializedSaveDataValue = 0x00; 
+//since r2203 this was 0x00.
+//but baby pals proves finally that it should be 0xFF:
+//the game reads its initial sound volumes from uninitialized data, and if it is 0, the game will be silent
+//if it is 0xFF then the game starts with its sound and music at max, as presumably it is supposed to.
+//so in r3303 I finally changed it (no$ appears definitely to initialized to 0xFF)
+static const u8 kUninitializedSaveDataValue = 0xFF; 
 
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
