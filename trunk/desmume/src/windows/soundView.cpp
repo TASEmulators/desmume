@@ -1,8 +1,8 @@
-/*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+/*  soundView.cpp
 
-    This file is part of DeSmuME
+	Copyright (C) 2009-2010 DeSmuME team
+
+	This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include <windowsx.h>
 #include <commctrl.h>
 #include "soundView.h"
+#include "winutil.h"
 
 #include <assert.h>
 
@@ -204,6 +205,96 @@ void SoundView_Refresh()
 			SetDlgItemText(hDlg, IDC_SOUND0TMR+chanId, buf);
 			SetDlgItemText(hDlg, IDC_SOUND0POSLEN+chanId, buf);
 		}
+	} //chan loop
+
+	//ctrl
+	{
+		CheckDlgItem(hDlg,IDC_SNDCTRL_ENABLE,SPU_core->regs.masteren!=0);
+		CheckDlgItem(hDlg,IDC_SNDCTRL_CH1NOMIX,SPU_core->regs.ctl_ch1bypass!=0);
+		CheckDlgItem(hDlg,IDC_SNDCTRL_CH3NOMIX,SPU_core->regs.ctl_ch3bypass!=0);
+
+		sprintf(buf,"%04X",_MMU_ARM7_read16(0x04000500));
+		SetDlgItemText(hDlg,IDC_SNDCTRL_CTRL,buf);
+
+		sprintf(buf,"%04X",_MMU_ARM7_read16(0x04000504));
+		SetDlgItemText(hDlg,IDC_SNDCTRL_BIAS,buf);
+
+		sprintf(buf,"%02X",SPU_core->regs.mastervol);
+		SetDlgItemText(hDlg,IDC_SNDCTRL_VOL,buf);
+
+		sprintf(buf,"%01X",SPU_core->regs.ctl_left);
+		SetDlgItemText(hDlg,IDC_SNDCTRL_LEFTOUT,buf);
+
+		sprintf(buf,"%01X",SPU_core->regs.ctl_right);
+		SetDlgItemText(hDlg,IDC_SNDCTRL_RIGHTOUT,buf);
+
+		static const char* leftouttext[] = {"L-Mix","Ch1","Ch3","Ch1+3"};
+		static const char* rightouttext[] = {"R-Mix","Ch1","Ch3","Ch1+3"};
+
+		SetDlgItemText(hDlg,IDC_SNDCTRL_LEFTOUTTEXT,leftouttext[SPU_core->regs.ctl_left]);
+
+		SetDlgItemText(hDlg,IDC_SNDCTRL_RIGHTOUTTEXT,rightouttext[SPU_core->regs.ctl_right]);
+
+	}
+
+	//cap0
+	{
+		SPU_struct::REGS::CAP& cap = SPU_core->regs.cap[0];
+
+		CheckDlgItem(hDlg,IDC_CAP0_ADD,cap.add!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_SRC,cap.source!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_ONESHOT,cap.oneshot!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_TYPE,cap.bits8!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_ACTIVE,cap.active!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_RUNNING,cap.runtime.running!=0);
+
+		if(cap.source) SetDlgItemText(hDlg,IDC_CAP0_SRCTEXT,"Ch2");
+		else SetDlgItemText(hDlg,IDC_CAP0_SRCTEXT,"L-Mix");
+
+		if(cap.bits8) SetDlgItemText(hDlg,IDC_CAP0_TYPETEXT,"Pcm8");
+		else SetDlgItemText(hDlg,IDC_CAP0_TYPETEXT,"Pcm16");
+
+		sprintf(buf,"%02X",_MMU_ARM7_read08(0x04000508));
+		SetDlgItemText(hDlg,IDC_CAP0_CTRL,buf);
+
+		sprintf(buf,"%08X",cap.dad);
+		SetDlgItemText(hDlg,IDC_CAP0_DAD,buf);
+
+		sprintf(buf,"%08X",cap.len);
+		SetDlgItemText(hDlg,IDC_CAP0_LEN,buf);
+
+		sprintf(buf,"%08X",cap.runtime.curdad);
+		SetDlgItemText(hDlg,IDC_CAP0_CURDAD,buf);
+	}
+
+	//cap1
+	{
+		SPU_struct::REGS::CAP& cap = SPU_core->regs.cap[1];
+
+		CheckDlgItem(hDlg,IDC_CAP1_ADD,cap.add!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_SRC,cap.source!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_ONESHOT,cap.oneshot!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_TYPE,cap.bits8!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_ACTIVE,cap.active!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_RUNNING,cap.runtime.running!=0);
+
+		if(cap.source) SetDlgItemText(hDlg,IDC_CAP1_SRCTEXT,"Ch3"); //maybe call it "Ch3(+2)" if it fits
+		else SetDlgItemText(hDlg,IDC_CAP1_SRCTEXT,"R-Mix");
+
+		if(cap.bits8) SetDlgItemText(hDlg,IDC_CAP1_TYPETEXT,"Pcm8");
+		else SetDlgItemText(hDlg,IDC_CAP1_TYPETEXT,"Pcm16");
+
+		sprintf(buf,"%02X",_MMU_ARM7_read08(0x04000509));
+		SetDlgItemText(hDlg,IDC_CAP1_CTRL,buf);
+
+		sprintf(buf,"%08X",cap.dad);
+		SetDlgItemText(hDlg,IDC_CAP1_DAD,buf);
+
+		sprintf(buf,"%08X",cap.len);
+		SetDlgItemText(hDlg,IDC_CAP1_LEN,buf);
+
+		sprintf(buf,"%08X",cap.runtime.curdad);
+		SetDlgItemText(hDlg,IDC_CAP1_CURDAD,buf);
 	}
 }
 

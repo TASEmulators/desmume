@@ -466,6 +466,7 @@ extern struct TCommonSettings {
 		, micMode(InternalNoise)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, manualBackupType(0)
+		, spu_advanced(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -493,7 +494,7 @@ extern struct TCommonSettings {
 
 	bool DebugConsole;
 	bool EnsataEmulation;
-
+	
 	bool cheatsDisable;
 
 	int num_cores;
@@ -522,6 +523,7 @@ extern struct TCommonSettings {
 	int manualBackupType;
 
 	bool spu_muteChannels[16];
+	bool spu_advanced;
 
 	struct _ShowGpu {
 		_ShowGpu() : main(true), sub(true) {}

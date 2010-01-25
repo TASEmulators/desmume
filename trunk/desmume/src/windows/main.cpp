@@ -2369,6 +2369,8 @@ int _main()
 	FrameLimit = GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
+	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", false, IniName);
+
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
 	//Get Ram-Watch values
@@ -2638,17 +2640,17 @@ int _main()
 		SPU_SetSynchMode(snd_synchmode,snd_synchmethod);
 	}
 
-	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", FALSE, IniName);
-	CommonSettings.EnsataEmulation = GetPrivateProfileBool("Emulation", "EnsataEmulation", FALSE, IniName);
-	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", FALSE, IniName);
+	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", false, IniName);
+	CommonSettings.EnsataEmulation = GetPrivateProfileBool("Emulation", "EnsataEmulation", false, IniName);
+	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", false, IniName);
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
 	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
-	CommonSettings.SWIFromBIOS = GetPrivateProfileBool("BIOS", "SWIFromBIOS", FALSE, IniName);
-	CommonSettings.PatchSWI3 = GetPrivateProfileBool("BIOS", "PatchSWI3", FALSE, IniName);
+	CommonSettings.SWIFromBIOS = GetPrivateProfileBool("BIOS", "SWIFromBIOS", false, IniName);
+	CommonSettings.PatchSWI3 = GetPrivateProfileBool("BIOS", "PatchSWI3", false, IniName);
 
-	CommonSettings.UseExtFirmware = GetPrivateProfileBool("Firmware", "UseExtFirmware", FALSE, IniName);
+	CommonSettings.UseExtFirmware = GetPrivateProfileBool("Firmware", "UseExtFirmware", false, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
-	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", FALSE, IniName);
+	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
 	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
 	FilterUpdate(MainWindow->getHWnd(),false);
@@ -5835,6 +5837,9 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 			SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETPOS, TRUE, sndvolume);
 			SoundSettings_updateVolumeReadout(hDlg);
 
+			// Set spu advanced
+			CheckDlgItem(hDlg,IDC_SPU_ADVANCED,CommonSettings.spu_advanced);
+
 			timerid = SetTimer(hDlg, 1, 500, NULL);
 			return TRUE;
 		}
@@ -5909,8 +5914,11 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 
 					//write interpolation type
 					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);
-					//SPU_SetInterpolationMode(CommonSettings.spuInterpolationMode);
 					WritePrivateProfileInt("Sound","SPUInterpolation",(int)CommonSettings.spuInterpolationMode, IniName);
+
+					//write spu advanced
+					CommonSettings.spu_advanced = IsDlgCheckboxChecked(hDlg,IDC_SPU_ADVANCED);
+					WritePrivateProfileBool("Sound","SpuAdvanced",CommonSettings.spu_advanced,IniName);
 
 					return TRUE;
 				}

@@ -1,6 +1,6 @@
 /*  commandline.h
 
-    Copyright (C) 2009 DeSmuME team
+    Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -80,6 +80,7 @@ private:
 	char* _gbaslot_rom;
 	char* _bios_arm9, *_bios_arm7;
 	int _bios_swi;
+	int _spu_advanced;
 	int _num_cores;
 };
 
