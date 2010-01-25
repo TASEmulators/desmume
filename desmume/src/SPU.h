@@ -111,6 +111,7 @@ public:
    u32 bufpos;
    u32 buflength;
    s32 *sndbuf;
+   s32 lastdata; //the last sample that a channel generated
    s16 *outbuf;
    u32 bufsize;
    channel_struct channels[16];
@@ -121,17 +122,27 @@ public:
 			: mastervol(0)
 			, ctl_left(0)
 			, ctl_right(0)
-			, ctl_ch1(0)
-			, ctl_ch2(0)
+			, ctl_ch1bypass(0)
+			, ctl_ch3bypass(0)
 			, masteren(0)
 			, soundbias(0)
 	   {}
 
 	   u8 mastervol;
 	   u8 ctl_left, ctl_right;
-	   u8 ctl_ch1, ctl_ch2;
+	   u8 ctl_ch1bypass, ctl_ch3bypass;
 	   u8 masteren;
 	   u16 soundbias;
+
+	   enum LeftOutputMode
+	   {
+		   LOM_LEFT_MIXER=0, LOM_CH1=1, LOM_CH3=2, LOM_CH1_PLUS_CH3=3
+	   };
+
+	   enum RightOutputMode
+	   {
+		   ROM_RIGHT_MIXER=0, ROM_CH1=1, ROM_CH3=2, ROM_CH1_PLUS_CH3=3
+	   };
 
 	   struct CAP {
 		   CAP()

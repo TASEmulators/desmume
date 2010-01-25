@@ -1,7 +1,8 @@
-0.9.5 -> 0.9.6 (r3075-r3209-r3xxx)
+0.9.5 -> 0.9.6 (r3075-r3303-r3xxx)
 
 General/Core:
  bug: emulate keypad interrupt
+ bug: spu overhaul, add capture support
  bug: fix dma address reloading
  bug: fix rom close memory corruption
  bug: fix div and sqrt busy flag bug
@@ -9,9 +10,16 @@ General/Core:
  bug: fix lid savestate desync
  bug: fix texcache memory GB explosion when games use tons of tiny 3d sprites
  bug: fix huge rerecording movie file handle leak
- bug: fix EXXXXXXX cheat codes
+ bug: fix EXXXXXXX cheat codes and some add/edit/save/load bugs
  bug: add 8MBit flash emulation
  bug: fix firmware booted-from-card flag
+ bug: fix some failures to wake
+ bug: fix some rtc calendar logic
+ bug: op_bkpt emulation
+ bug: correctly emulate POWCNT1 and POWCNT2
+ bug: corrections to bootup stack configuration
+ bug: protect bios from being overwritten
+ bug: initialize save data to 0xFF instead of 0x00
  enh: support devkitpro argv
  enh: add gbaslot-rom commandline
 
@@ -23,6 +31,7 @@ Windows:
  bug: more fixes to multi-gamepads
  bug: cheat windows robustification
  bug: fix that sticky pause state when resetting and loading roms
+ bug: dont crash when no sound device is available
  enh: dont screensave while using gamepad
  enh: add EPX and EPX1.5X resize filters
  enh: add a japanese translation which will soon be stale like the others
@@ -30,10 +39,12 @@ Windows:
  enh: add "lockdown" window mode to keep window safe from fast stylus action
  enh: add alt+enter fullscreen command
  enh: add card eject command
+ enh: add ddraw software mode forcer
  
 Linux/OSX:
  bug: fix building for nosse2 systems
  bug: fix --num-cores
+ bug: fix occasional touchscreen failures
  enh: add --nojoy=1 to fix laptops with accelerometers
  
  

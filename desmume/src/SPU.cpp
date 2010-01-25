@@ -443,7 +443,7 @@ u8 SPU_struct::ReadByte(u32 addr)
 	//SOUNDCNT
 	case 0x500: return regs.mastervol;
 	case 0x501: 
-		return (regs.ctl_left)|(regs.ctl_right<<2)|(regs.ctl_ch1<<4)|(regs.ctl_ch2<<5)|(regs.masteren<<7);
+		return (regs.ctl_left)|(regs.ctl_right<<2)|(regs.ctl_ch1bypass<<4)|(regs.ctl_ch3bypass<<5)|(regs.masteren<<7);
 	case 0x502: return 0;
 	case 0x503: return 0;
 
@@ -456,7 +456,7 @@ u8 SPU_struct::ReadByte(u32 addr)
 	//SNDCAP0CNT/SNDCAP1CNT
 	case 0x508:
 	case 0x509: {
-		u32 which = 0x509-addr;
+		u32 which = addr-0x508;
 		return regs.cap[which].add
 			| (regs.cap[which].source<<1)
 			| (regs.cap[which].oneshot<<2)
@@ -552,8 +552,8 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 	case 0x501:
 		regs.ctl_left  = (val>>0)&3;
 		regs.ctl_right = (val>>2)&3;
-		regs.ctl_ch1 = (val>>4)&1;
-		regs.ctl_ch2 = (val>>5)&1;
+		regs.ctl_ch1bypass = (val>>4)&1;
+		regs.ctl_ch3bypass = (val>>5)&1;
 		regs.masteren = (val>>7)&1;
 		for(int i=0;i<16;i++)
 			KeyProbe(i);
@@ -570,13 +570,14 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 	//SNDCAP0CNT/SNDCAP1CNT
 	case 0x508:
 	case 0x509: {
-		u32 which = 0x509-addr;
+		u32 which = addr-0x508;
 		regs.cap[which].add = BIT0(val);
 		regs.cap[which].source = BIT1(val);
 		regs.cap[which].oneshot = BIT2(val);
 		regs.cap[which].bits8 = BIT3(val);
 		regs.cap[which].active = BIT7(val);
 		ProbeCapture(which);
+		break;
 	}
 
 	//SNDCAP0DAD
@@ -940,6 +941,7 @@ template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_
 		case 1: MixLR(SPU, chan, data); break;
 		case 2: MixR(SPU, chan, data); break;
 	}
+	SPU->lastdata = data;
 }
 
 //WORK
@@ -1006,6 +1008,169 @@ FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* cons
 	}
 }
 
+//ENTERNEW
+static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
+{
+	//the advanced spu function correctly handles all sound control mixing options, as well as capture
+	//this code is not entirely optimal, as it relies on sort of manhandling the core mixing functions
+	//in order to get the results it needs.
+
+	//THIS IS MAX HACKS!!!!
+	//AND NEEDS TO BE REWRITTEN ALONG WITH THE DEEPEST PARTS OF THE SPU
+	//ONCE WE KNOW THAT IT WORKS
+	
+	//BIAS gets ignored since our spu is still not bit perfect,
+	//and it doesnt matter for purposes of capture
+
+	//-----------DEBUG CODE
+	bool skipcap = false;
+	//-----------------
+
+	s32 samp0[2];
+	
+	//believe it or not, we are going to do this one sample at a time.
+	//like i said, it is slower.
+	for(int samp=0;samp<length;samp++)
+	{
+		SPU->sndbuf[0] = 0;
+		SPU->sndbuf[1] = 0;
+		SPU->buflength = 1;
+
+		s32 chanout[16];
+		s32 submix[32];
+
+		//generate each channel, and helpfully mix it at the same time
+		for(int i=0;i<16;i++)
+		{
+			channel_struct *chan = &SPU->channels[i];
+
+			if (chan->status == CHANSTAT_PLAY)
+			{
+				SPU->bufpos = 0;
+	
+				bool domix = actuallyMix && !CommonSettings.spu_muteChannels[i];
+				bool bypass = false;
+				if(i==1 && SPU->regs.ctl_ch1bypass) bypass=true;
+				if(i==3 && SPU->regs.ctl_ch3bypass) bypass=true;
+
+				//save our old mix accumulators so we can generate a clean panned sample
+				s32 save[] = {SPU->sndbuf[0],SPU->sndbuf[1]};
+				SPU->sndbuf[0] = SPU->sndbuf[1] = 0;
+
+				//get channel's next output sample.
+				_SPU_ChanUpdate(domix, SPU, chan);
+				chanout[i] = SPU->lastdata >> chan->datashift;
+
+				//save the panned results
+				submix[i*2] = SPU->sndbuf[0];
+				submix[i*2+1] = SPU->sndbuf[1];
+
+				//restore the old mix accumulator
+				SPU->sndbuf[0] = save[0];
+				SPU->sndbuf[1] = save[1];
+
+				//mix in this sample, unless we were bypassing it
+				if(!bypass)
+				{
+					SPU->sndbuf[0] += submix[i*2];
+					SPU->sndbuf[1] += submix[i*2+1];
+				}
+
+			}
+			else 
+			{
+				chanout[i] = 0;
+				submix[i*2] = 0;
+				submix[i*2+1] = 0;
+			}
+		}
+
+		s32 mixout[2] = {SPU->sndbuf[0],SPU->sndbuf[1]};
+		s32 sndout[2];
+		s32 capout[2];
+
+		//create SPU output
+		switch(SPU->regs.ctl_left)
+		{
+		case SPU_struct::REGS::LOM_LEFT_MIXER: sndout[0] = mixout[0]; break;
+		case SPU_struct::REGS::LOM_CH1: sndout[0] = submix[1*2+0]; break;
+		case SPU_struct::REGS::LOM_CH3: sndout[0] = submix[3*2+0]; break;
+		case SPU_struct::REGS::LOM_CH1_PLUS_CH3: sndout[0] = submix[1*2+0] + submix[3*2+0]; break;
+		}
+		switch(SPU->regs.ctl_right)
+		{
+		case SPU_struct::REGS::ROM_RIGHT_MIXER: sndout[1] = mixout[1]; break;
+		case SPU_struct::REGS::ROM_CH1: sndout[1] = submix[1*2+1]; break;
+		case SPU_struct::REGS::ROM_CH3: sndout[1] = submix[3*2+1]; break;
+		case SPU_struct::REGS::ROM_CH1_PLUS_CH3: sndout[1] = submix[1*2+1] + submix[3*2+1]; break;
+		}
+
+
+		//generate capture output ("capture bugs" from gbatek are not emulated)
+		if(SPU->regs.cap[0].source==0) 
+			capout[0] = mixout[0]; //cap0 = L-mix
+		else if(SPU->regs.cap[0].add)
+			capout[0] = chanout[0] + chanout[1]; //cap0 = ch0+ch1
+		else capout[0] = chanout[0]; //cap0 = ch0
+
+		if(SPU->regs.cap[1].source==0) 
+			capout[1] = mixout[1]; //cap1 = R-mix
+		else if(SPU->regs.cap[1].add)
+			capout[1] = chanout[2] + chanout[3]; //cap1 = ch2+ch3
+		else capout[1] = chanout[2]; //cap1 = ch2
+
+		//write the output sample where it is supposed to go
+		SPU->sndbuf[samp*2+0] = sndout[0];
+		SPU->sndbuf[samp*2+1] = sndout[1];
+		if(samp==0) {
+			samp0[0] = SPU->sndbuf[samp*2+0];
+			samp0[1] = SPU->sndbuf[samp*2+1];
+		}
+
+		for(int capchan=0;capchan<2;capchan++)
+		{
+			if(SPU->regs.cap[capchan].runtime.running)
+			{
+				SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
+				s32 sample = capout[capchan];
+				//s32 sample = 0;
+				u32 last = sputrunc(cap.runtime.sampcnt);
+				cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
+				u32 curr = sputrunc(cap.runtime.sampcnt);
+				for(u32 j=last;j<curr;j++)
+				{
+					u32 multiplier;
+					
+					if(cap.bits8)
+					{
+						s8 sample8 = sample>>8;
+						if(skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+						else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
+						cap.runtime.curdad++;
+						multiplier = 4;
+					}
+					else
+					{
+						s16 sample16 = sample;
+						if(skipcap) _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+						else _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,sample16);
+						cap.runtime.curdad+=2;
+						multiplier = 2;
+					}
+
+					if(cap.runtime.curdad>=cap.runtime.maxdad) {
+						cap.runtime.curdad = cap.dad;
+						cap.runtime.sampcnt -= cap.len*multiplier;
+					}
+				} //sampinc loop
+			} //if capchan running
+		} //capchan loop
+	} //main sample loop
+
+	SPU->sndbuf[0] = samp0[0];
+	SPU->sndbuf[1] = samp0[1];
+}
+
 //ENTER
 static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 {
@@ -1015,6 +1180,38 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 		memset(SPU->outbuf, 0, length*2*2);
 	}
 
+	//we used to use master enable here, and do nothing if audio is disabled.
+	//now, master enable is emulated better..
+	//but for a speed optimization we will still do it
+	if(!SPU->regs.masteren) return;
+
+	bool advanced = CommonSettings.spu_advanced ;
+
+	//branch here so that slow computers don't have to take the advanced (slower) codepath.
+	//it remainds to be seen exactly how much slower it is
+	//if it isnt much slower then we should refactor everything to be simpler, once it is working
+	if(advanced && SPU == SPU_core)
+	{
+		SPU_MixAudio_Advanced(actuallyMix, SPU, length);
+	}
+	else
+	{
+		//non-advanced mode
+		for(int i=0;i<16;i++)
+		{
+			channel_struct *chan = &SPU->channels[i];
+
+			if (chan->status != CHANSTAT_PLAY)
+				continue;
+
+			SPU->bufpos = 0;
+			SPU->buflength = length;
+
+			// Mix audio
+			_SPU_ChanUpdate(!CommonSettings.spu_muteChannels[i] && actuallyMix, SPU, chan);
+		}
+	}
+
 	//we used to bail out if speakers were disabled.
 	//this is technically wrong. sound may still be captured, or something.
 	//in all likelihood, any game doing this probably master disabled the SPU also
@@ -1022,88 +1219,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 	//later, we'll just silence the output
 	bool speakers = T1ReadWord(MMU.ARM7_REG, 0x304) & 0x01;
 
-	//we used to use master enable here, and do nothing if audio is disabled.
-	//now, master enable is emulated better..
-	//but for a speed optimization we will still do it
-	if(!SPU->regs.masteren) return;
-
 	u8 vol = SPU->regs.mastervol;
-
-	for(int i=0;i<16;i++)
-	{
-		channel_struct *chan = &SPU->channels[i];
-
-		if (chan->status != CHANSTAT_PLAY)
-			continue;
-
-		SPU->bufpos = 0;
-		SPU->buflength = length;
-
-		// Mix audio
-		_SPU_ChanUpdate(!CommonSettings.spu_muteChannels[i] && actuallyMix, SPU, chan);
-		//_SPU_ChanUpdate(actuallyMix, SPU, chan);
-	}
-
-	//TODO - a lot of capture and output modes are not supported.
-	//this works in starfy, but not in nsmb, which requires the other modes.
-	//so, we'll have to support it soon
-
-#ifdef ENABLE_SOUND_CAPTURE
-
-	bool skipcap = false;
-#ifdef _MSC_VER
-	if(GetAsyncKeyState(VK_SHIFT)) skipcap=true;
-#endif
-
-	static FILE* test = NULL;
-	if(!test) test = fopen("d:\\raw.raw","wb");
-	if(SPU==SPU_core)
-	{
-		for(int capchan=0;capchan<2;capchan++)
-		{
-			if(SPU->regs.cap[capchan].runtime.running)
-			{
-				SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
-				for(int i=0;i<length;i++)
-				{
-					s32 sample = SPU->sndbuf[i*2+capchan];
-					u32 last = sputrunc(cap.runtime.sampcnt);
-					cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
-					u32 curr = sputrunc(cap.runtime.sampcnt);
-					for(u32 j=last+1;j<=curr;j++)
-					{
-						u32 multiplier;
-						
-						if(cap.bits8)
-						{
-							s8 sample8 = sample>>8;
-							if(skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
-							else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
-							cap.runtime.curdad++;
-							multiplier = 4;
-						}
-						else
-						{
-							s16 sample16 = sample;
-							if(skipcap) _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
-							else _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,sample16);
-							if(capchan==0) fwrite(&sample16,2,1,test);
-							cap.runtime.curdad+=2;
-							multiplier = 2;
-						}
-
-						if(cap.runtime.curdad>=cap.runtime.maxdad) {
-							cap.runtime.curdad = cap.dad;
-							cap.runtime.sampcnt -= cap.len*multiplier;
-						}
-					}
-				}
-			}
-		}
-	}
-
-#endif
-
 
 	// convert from 32-bit->16-bit
 	if(actuallyMix && speakers)
@@ -1377,8 +1493,8 @@ void spu_savestate(EMUFILE* os)
 	write8le(spu->regs.mastervol,os);
 	write8le(spu->regs.ctl_left,os);
 	write8le(spu->regs.ctl_right,os);
-	write8le(spu->regs.ctl_ch1,os);
-	write8le(spu->regs.ctl_ch2,os);
+	write8le(spu->regs.ctl_ch1bypass,os);
+	write8le(spu->regs.ctl_ch3bypass,os);
 	write8le(spu->regs.masteren,os);
 	write16le(spu->regs.soundbias,os);
 
@@ -1462,8 +1578,8 @@ bool spu_loadstate(EMUFILE* is, int size)
 		read8le(&spu->regs.mastervol,is);
 		read8le(&spu->regs.ctl_left,is);
 		read8le(&spu->regs.ctl_right,is);
-		read8le(&spu->regs.ctl_ch1,is);
-		read8le(&spu->regs.ctl_ch2,is);
+		read8le(&spu->regs.ctl_ch1bypass,is);
+		read8le(&spu->regs.ctl_ch3bypass,is);
 		read8le(&spu->regs.masteren,is);
 		read16le(&spu->regs.soundbias,is);
 	}
@@ -1491,6 +1607,7 @@ bool spu_loadstate(EMUFILE* is, int size)
 	if(version<4)
 	{
 		spu->regs.mastervol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
+		spu->regs.masteren = BIT15(T1ReadWord(MMU.ARM7_REG, 0x500));
 	}
 
 

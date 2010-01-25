@@ -1,6 +1,6 @@
 /*  commandline.cpp
 
-    Copyright (C) 2009 DeSmuME team
+    Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -75,6 +75,7 @@ void CommandLine::loadCommonOptions()
 		{ "bios-arm9", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm9, "Uses the arm9 bios provided at the specified path", "BIOS_ARM9_PATH"},
 		{ "bios-arm7", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm7, "Uses the arm7 bios provided at the specified path", "BIOS_ARM7_PATH"},
 		{ "bios-swi", 0, 0, G_OPTION_ARG_INT, &_bios_swi, "Uses SWI from the provided bios files", "BIOS_SWI"},
+		{ "spu-advanced", 0, 0, G_OPTION_ARG_INT, &_spu_advanced, "Uses advanced SPU capture functions", "SPU_ADVANCED"},
 		{ "num-cores", 0, 0, G_OPTION_ARG_INT, &_num_cores, "Override numcores detection and use this many", "NUM_CORES"},
 		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (edge) (default 2)", "SCANLINE_FILTER_A"},
 		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
@@ -112,7 +113,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
 	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM7BIOS,_bios_arm7); }
 	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
-	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
+	if(_spu_advanced) CommonSettings.spu_advanced = true;
 
 	if (argc == 2)
 		nds_file = argv[1];
