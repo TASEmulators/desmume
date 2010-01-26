@@ -1,7 +1,6 @@
 /*	snddx.cpp
-	
 	Copyright (C) 2005-2007 Theo Berkau
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -203,9 +202,9 @@ void SNDDXDeInit()
 	DWORD status=0;
 
 	doterminate = true;
-	while(!terminated) {
+	while(!terminated)
 		Sleep(1);
-	}
+	terminated = false;
 
 	if (lpDSB2)
 	{
