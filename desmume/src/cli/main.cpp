@@ -55,6 +55,7 @@
 #include "../mic.h"
 #include "../firmware.h"
 #include "../GPU_osd.h"
+#include "gtk/desmume_config.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"
 #endif
@@ -748,6 +749,8 @@ int main(int argc, char ** argv) {
   int boost = 0;
   int error;
 
+  GKeyFile *keyfile;
+
 #ifdef DISPLAY_FPS
   u32 fps_timing = 0;
   u32 fps_frame_counter = 0;
@@ -922,8 +925,9 @@ int main(int argc, char ** argv) {
 
   /* Initialize joysticks */
   if(!init_joy()) return 1;
-  /* Load our own keyboard configuration */
-  set_kb_keys(cli_kb_cfg);
+  /* Load keyboard and joystick configuration */
+  keyfile = desmume_config_read_file(cli_kb_cfg);
+  desmume_config_dispose(keyfile);
 
   if ( !my_config.disable_limiter) {
     /* create the semaphore used for fps limiting */
@@ -1004,8 +1008,6 @@ int main(int argc, char ** argv) {
     }
 #endif
   }
-
-
 
   /* Unload joystick */
   uninit_joy();
