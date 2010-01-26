@@ -19,31 +19,13 @@
  */
 
 #include <glib.h>
-#include <gdk/gdkkeysyms.h>
 
 #include "ctrlssdl.h"
 #include "desmume_config.h"
 
 static const gchar *desmume_config_file = ".desmume.ini";
-static const u16 gtk_kb_cfg[NB_KEYS] = {
-    GDK_x,         // A
-    GDK_z,         // B
-    GDK_Shift_R,   // select
-    GDK_Return,    // start
-    GDK_Right,     // Right
-    GDK_Left,      // Left
-    GDK_Up,        // Up
-    GDK_Down,      // Down       
-    GDK_w,         // R
-    GDK_q,         // L
-    GDK_s,         // X
-    GDK_a,         // Y
-    GDK_p,         // DEBUG
-    GDK_o          // BOOST
-};
 
-
-GKeyFile *desmume_config_read_file()
+GKeyFile *desmume_config_read_file(const u16 *kb_cfg)
 {
     gchar *config_file;
     GKeyFile *keyfile;
@@ -59,7 +41,7 @@ GKeyFile *desmume_config_read_file()
 
     g_free(config_file);
 
-    load_default_config(gtk_kb_cfg);
+    load_default_config(kb_cfg);
     desmume_config_read_keys(keyfile);
     desmume_config_read_joykeys(keyfile);
 

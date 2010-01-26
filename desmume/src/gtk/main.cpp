@@ -379,6 +379,23 @@ GPU3DInterface *core3DList[] = {
 #endif
 };
 
+static const u16 gtk_kb_cfg[NB_KEYS] = {
+    GDK_x,         // A
+    GDK_z,         // B
+    GDK_Shift_R,   // select
+    GDK_Return,    // start
+    GDK_Right,     // Right
+    GDK_Left,      // Left
+    GDK_Up,        // Up
+    GDK_Down,      // Down       
+    GDK_w,         // R
+    GDK_q,         // L
+    GDK_s,         // X
+    GDK_a,         // Y
+    GDK_p,         // DEBUG
+    GDK_o          // BOOST
+};
+
 GKeyFile *keyfile;
 
 struct modify_key_ctx {
@@ -1944,7 +1961,7 @@ common_gtk_main( struct configured_features *my_config)
     if (dTools_running != NULL) 
       memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size); 
 
-    keyfile = desmume_config_read_file();
+    keyfile = desmume_config_read_file(gtk_kb_cfg);
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
