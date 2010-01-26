@@ -62,6 +62,11 @@ const u8 BroadcastMAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 pcap_t *wifi_bridge = NULL;
 #endif
 
+//sometimes this isnt defined
+#ifndef PCAP_OPENFLAG_PROMISCUOUS
+#define PCAP_OPENFLAG_PROMISCUOUS 1
+#endif
+
 wifimac_t wifiMac;
 Adhoc_t Adhoc;
 SoftAP_t SoftAP;

@@ -119,6 +119,7 @@ enum {
 
 gboolean EmuLoop(gpointer data);
 
+static void DoQuit();
 static void RecordMovieDialog();
 static void PlayMovieDialog();
 static void StopMovie();
@@ -288,7 +289,7 @@ static const GtkActionEntry action_entries[] = {
       { "loadfirmware","gtk-open",        "Load Firm_ware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
 #endif
       { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
-      { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   gtk_main_quit },
+      { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   DoQuit },
 
     { "EmulationMenu", NULL, "_Emulation" },
       { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
@@ -397,9 +398,6 @@ public:
   int disable_limiter;
   int savetype;
 
-  int arm9_gdb_port;
-  int arm7_gdb_port;
-
   int firmware_language;
 
   const char *cflash_disk_image_file;
@@ -411,9 +409,6 @@ public:
 static void
 init_configured_features( struct configured_features *config)
 {
-  config->arm9_gdb_port = 0;
-  config->arm7_gdb_port = 0;
-
   config->disable_sound = 0;
 
   config->engine_3d = 1;
@@ -1608,6 +1603,25 @@ static inline void _updateDTools()
 
 /////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
+class GtkDriver : public BaseDriver
+{
+public:
+	virtual void EMU_DebugIdleUpdate()
+	{
+		usleep(1000);
+		_updateDTools();
+		while (gtk_events_pending())
+			gtk_main_iteration();
+	}
+};
+
+static void DoQuit()
+{
+	emu_halt();
+	gtk_main_quit();
+}
+
+
 gboolean EmuLoop(gpointer data)
 {
     static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames; 
@@ -1811,6 +1825,8 @@ static gboolean timeout_exit_cb(gpointer data)
 static int
 common_gtk_main( struct configured_features *my_config)
 {
+	driver = new GtkDriver();
+
     SDL_TimerID limiter_timer = NULL;
 
     GtkAccelGroup * accel_group;
@@ -1865,7 +1881,7 @@ common_gtk_main( struct configured_features *my_config)
 
 #ifdef GDB_STUB
     if ( my_config->arm9_gdb_port != 0) {
-         arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
+		arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
                                           &arm9_memio,
                                           &arm9_base_memory_iface);
 

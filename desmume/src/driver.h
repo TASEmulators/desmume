@@ -78,6 +78,7 @@ public:
 	virtual bool EMU_IsFastForwarding() { return false; }
 	virtual bool EMU_HasEmulationStarted() { return true; }
 	virtual bool EMU_IsAtFrameBoundary() { return true; }
+	virtual void EMU_DebugIdleUpdate() {}
 
 	enum eDebug_IOReg
 	{
