@@ -1623,19 +1623,19 @@ static inline void _updateDTools()
 class GtkDriver : public BaseDriver
 {
 public:
-	virtual void EMU_DebugIdleUpdate()
-	{
-		usleep(1000);
-		_updateDTools();
-		while (gtk_events_pending())
-			gtk_main_iteration();
-	}
+    virtual void EMU_DebugIdleUpdate()
+    {
+        usleep(1000);
+        _updateDTools();
+        while (gtk_events_pending())
+            gtk_main_iteration();
+    }
 };
 
 static void DoQuit()
 {
-	emu_halt();
-	gtk_main_quit();
+    emu_halt();
+    gtk_main_quit();
 }
 
 
@@ -1842,7 +1842,7 @@ static gboolean timeout_exit_cb(gpointer data)
 static int
 common_gtk_main( struct configured_features *my_config)
 {
-	driver = new GtkDriver();
+    driver = new GtkDriver();
 
     SDL_TimerID limiter_timer = NULL;
 
