@@ -3721,7 +3721,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_SW)==0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
 
-			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected != FALSE);
+			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 
 			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable == true);
 
