@@ -44,20 +44,20 @@
 #define CLI_UI
 #endif
 
-#include "../MMU.h"
-#include "../NDSSystem.h"
-#include "../debug.h"
-#include "../sndsdl.h"
-#include "../ctrlssdl.h"
-#include "../render3D.h"
-#include "../rasterize.h"
-#include "../saves.h"
-#include "../mic.h"
-#include "../firmware.h"
-#include "../GPU_osd.h"
+#include "MMU.h"
+#include "NDSSystem.h"
+#include "debug.h"
+#include "sndsdl.h"
+#include "ctrlssdl.h"
+#include "render3D.h"
+#include "rasterize.h"
+#include "saves.h"
+#include "mic.h"
+#include "firmware.h"
+#include "GPU_osd.h"
 #include "gtk/desmume_config.h"
 #ifdef GDB_STUB
-#include "../gdbstub.h"
+#include "gdbstub.h"
 #endif
 
 volatile bool execute = false;
