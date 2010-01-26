@@ -22,7 +22,7 @@
 #include <SDL_thread.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <glib.h>
 
 #ifndef VERSION
 #define VERSION "Unknown version"
@@ -776,6 +776,10 @@ int main(int argc, char ** argv) {
   /* use any language set on the command line */
   if ( my_config.firmware_language != -1) {
     fw_config.language = my_config.firmware_language;
+  }
+
+  if ( !g_thread_supported()) {
+    g_thread_init( NULL);
   }
 
 #ifdef GDB_STUB
