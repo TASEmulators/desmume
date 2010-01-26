@@ -65,7 +65,6 @@ static void LoadWinPCap()
 	LOADSYMBOL(pcap_sendpacket);
 	LOADSYMBOL(pcap_dispatch);
 
-	CloseHandle(wpcap);
 	bWinPCapAvailable = true;
 }
 

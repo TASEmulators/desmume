@@ -2228,6 +2228,12 @@ class WinDriver : public BaseDriver
 		if(anyLiveIORegViews)
 			RefreshAllIORegViews();
 	}
+
+	virtual void EMU_DebugIdleUpdate()
+	{
+		CheckMessages();
+		Sleep(1);
+	}
 };
 
 //-----------------------------------------------------------------------------

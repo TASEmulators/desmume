@@ -111,14 +111,14 @@ armcpu_t NDS_ARM9;
 static void
 stall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-
+  printf("UNSTALL\n");
   armcpu->stalled = 1;
 }
                       
 static void
 unstall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-
+  printf("UNSTALL\n");
   armcpu->stalled = 0;
 }
 

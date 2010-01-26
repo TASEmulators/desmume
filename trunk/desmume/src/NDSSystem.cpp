@@ -1807,6 +1807,16 @@ void NDS_exec(s32 nb)
 	{
 		for(;;)
 		{
+		
+			#ifdef GDB_STUB
+				//at worst, this will happen once per scanline.
+				//does it need to be more accurate than that? we think now
+				while((NDS_ARM9.stalled || NDS_ARM7.stalled) && execute)
+				{
+					driver->EMU_DebugIdleUpdate();
+				}
+			#endif
+
 			nds.cpuloopIterationCount++;
 			sequencer.execHardware();
 
