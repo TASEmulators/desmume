@@ -134,6 +134,7 @@ static void View3d();
 #endif
 static void Reset();
 static void Edit_Controls();
+static void Edit_Joystick_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
 static void MenuLoad(GtkMenuItem *item, gpointer slot);
 static void About();
@@ -251,6 +252,7 @@ static const char *ui_description =
 "      </menu>"
 "      <menuitem action='gap'/>"
 "      <menuitem action='editctrls'/>"
+"      <menuitem action='editjoyctrls'/>"
 "      <menu action='ViewMenu'>"
 "        <menuitem action='view_menu'/>"
 "        <menuitem action='view_toolbar'/>"
@@ -307,7 +309,8 @@ static const GtkActionEntry action_entries[] = {
 
     { "ConfigMenu", NULL, "_Config" },
       { "ConfigSaveMenu", NULL, "_Saves" },
-      { "editctrls",  NULL,               "_Edit controls",NULL,       NULL,   Edit_Controls },
+      { "editctrls",  NULL,        "_Edit controls",NULL,    NULL,   Edit_Controls },
+      { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
       { "RotationMenu", NULL, "_Rotation" },
         { "rotate_0",   "gtk-orientation-portrait",          "_0",  NULL, NULL, G_CALLBACK(SetRotation) },
         { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, G_CALLBACK(SetRotation) },
@@ -401,6 +404,7 @@ GKeyFile *keyfile;
 struct modify_key_ctx {
     gint mk_key_chosen;
     GtkWidget *label;
+    u8 key_id;
 };
 
 static u16 Cur_Keypad = 0;
@@ -1432,6 +1436,122 @@ static void Edit_Controls()
     case GTK_RESPONSE_OK:
         memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
         desmume_config_update_keys(keyfile);
+        break;
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        break;
+    }
+    gtk_widget_destroy(ecDialog);
+
+}
+
+static void AcceptNewJoyKey(GtkWidget *w, GdkEventFocus *e, struct modify_key_ctx *ctx)
+{
+    gchar *YouPressed;
+
+    switch (ctx->key_id) {
+    case KEY_RIGHT:
+    case KEY_LEFT:
+        ctx->mk_key_chosen = get_joy_axis(KEY_LEFT, KEY_RIGHT);
+        break;
+    case KEY_UP:
+    case KEY_DOWN:
+        ctx->mk_key_chosen = get_joy_axis(KEY_UP, KEY_DOWN);
+        break;
+    default:
+        ctx->mk_key_chosen = get_joy_key(ctx->key_id);
+        break;
+    }
+
+    YouPressed = g_strdup_printf("You pressed : %d\nClick OK to keep this key.", ctx->mk_key_chosen);
+    gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
+    g_free(YouPressed);
+}
+
+static void Modify_JoyKey(GtkWidget* widget, gpointer data)
+{
+    struct modify_key_ctx ctx;
+    GtkWidget *mkDialog;
+    gchar *Key_Label;
+    gchar *Title;
+    gint Key;
+
+    Key = GPOINTER_TO_INT(data);
+    /* Joypad keys start at 1 */
+    ctx.key_id = Key+1;
+    ctx.mk_key_chosen = 0;
+    Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
+    mkDialog = gtk_dialog_new_with_buttons(Title,
+        GTK_WINDOW(pWindow),
+        GTK_DIALOG_MODAL,
+        GTK_STOCK_OK,GTK_RESPONSE_OK,
+        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+        NULL);
+
+    ctx.label = gtk_label_new(Title);
+    g_free(Title);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), ctx.label, TRUE, FALSE, 0);
+    gtk_widget_show_all(GTK_DIALOG(mkDialog)->vbox);
+
+    g_signal_connect(G_OBJECT(mkDialog), "focus_in_event", G_CALLBACK(AcceptNewJoyKey), &ctx);
+   
+    switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
+    case GTK_RESPONSE_OK:
+        switch (ctx.key_id) {
+        case KEY_RIGHT:
+        case KEY_LEFT:
+          Keypad_Temp[KEY_RIGHT-1] = Keypad_Temp[KEY_LEFT-1] = ctx.mk_key_chosen;
+        case KEY_UP:
+        case KEY_DOWN:
+          Keypad_Temp[KEY_UP-1] = Keypad_Temp[KEY_DOWN-1] = ctx.mk_key_chosen;
+        default:
+          Keypad_Temp[Key] = ctx.mk_key_chosen;
+        }
+        Key_Label = g_strdup_printf("%s (%d)", key_names[Key], Keypad_Temp[Key]);
+        gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
+        g_free(Key_Label);
+        break;
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        ctx.mk_key_chosen = 0;
+        break;
+    }
+
+    gtk_widget_destroy(mkDialog);
+
+}
+
+static void Edit_Joystick_Controls()
+{
+    GtkWidget *ecDialog;
+    GtkWidget *ecKey;
+    gchar *Key_Label;
+    int i;
+
+    memcpy(&Keypad_Temp, &joypad_cfg, sizeof(joypad_cfg));
+
+    ecDialog = gtk_dialog_new_with_buttons("Edit controls",
+                        GTK_WINDOW(pWindow),
+                        GTK_DIALOG_MODAL,
+                        GTK_STOCK_OK,GTK_RESPONSE_OK,
+                        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+                        NULL);
+
+    for(i = 0; i < NB_KEYS; i++) {
+        Key_Label = g_strdup_printf("%s (%d)", key_names[i], Keypad_Temp[i]);
+        ecKey = gtk_button_new_with_label(Key_Label);
+        g_free(Key_Label);
+        g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_JoyKey), GINT_TO_POINTER(i));
+        gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);
+    }
+
+    gtk_widget_show_all(GTK_DIALOG(ecDialog)->vbox);
+
+    switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
+    case GTK_RESPONSE_OK:
+        memcpy(&joypad_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
+        desmume_config_update_joykeys(keyfile);
+        break;
     case GTK_RESPONSE_CANCEL:
     case GTK_RESPONSE_NONE:
         break;
