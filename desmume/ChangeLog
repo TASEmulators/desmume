@@ -49,7 +49,8 @@ Linux/OSX:
  enh: add simple auto frameskip mode in the gtk frontend
  enh: add gui for configuring joystick in the gtk frontend
  enh: make the cli frontend read the ini config file too
- 
+ enh: additional OpenAL microphone backend
+
 0.9.4 -> 0.9.5 (r2437-r3075)
 
 0.9.5 introduces an entirely rewritten main emulation loop
