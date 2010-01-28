@@ -1951,7 +1951,7 @@ static void desmume_gtk_menu_tools (GtkActionGroup *ag)
 #ifdef HAVE_TIMEOUT
 static gboolean timeout_exit_cb(gpointer data)
 {
-    gtk_main_quit();
+    DoQuit();
     INFO("Quit after %d seconds timeout\n", GPOINTER_TO_INT(data));
 
     return FALSE;
@@ -2089,7 +2089,7 @@ common_gtk_main( struct configured_features *my_config)
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
-    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(DoQuit), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
     g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
 
