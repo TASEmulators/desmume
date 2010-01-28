@@ -196,8 +196,8 @@ static void clear_events( void)
   return;
 }
 
-/* Get and set a new joystick key */
-u16 get_set_joy_key(int index) {
+/* Get pressed joystick key */
+u16 get_joy_key(int index) {
   BOOL done = FALSE;
   SDL_Event event;
   u16 key = joypad_cfg[index];
@@ -220,9 +220,15 @@ u16 get_set_joy_key(int index) {
 
   if( SDL_JoystickEventState(SDL_QUERY) == SDL_ENABLE )
     SDL_JoystickEventState(SDL_IGNORE);
-  joypad_cfg[index] = key;
 
   return key;
+}
+
+/* Get and set a new joystick key */
+u16 get_set_joy_key(int index) {
+  joypad_cfg[index] = get_joy_key(index);
+
+  return joypad_cfg[index];
 }
 
 /* Reset corresponding key and its twin axis key */
@@ -239,8 +245,8 @@ static u16 get_joy_axis_twin(u16 key)
     }
 }
 
-/* Get and set a new joystick axis */
-void get_set_joy_axis(int index, int index_o) {
+/* Get a new joystick axis */
+u16 get_joy_axis(int index, int index_o) {
   BOOL done = FALSE;
   SDL_Event event;
   u16 key = joypad_cfg[index];
@@ -267,6 +273,14 @@ void get_set_joy_axis(int index, int index_o) {
     }
   if( SDL_JoystickEventState(SDL_QUERY) == SDL_ENABLE )
     SDL_JoystickEventState(SDL_IGNORE);
+
+  return key;
+}
+
+/* Get and set a new joystick axis */
+void get_set_joy_axis(int index, int index_o) {
+  u16 key = get_joy_axis(index, index_o);
+
   /* Update configuration */
   joypad_cfg[index]   = key;
   joypad_cfg[index_o] = joypad_cfg[index];
