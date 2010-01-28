@@ -1,10 +1,8 @@
-/*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
+/*  GPU.cpp
+	Copyright (C) 2006 yopyop
     Copyright (C) 2006-2007 Theo Berkau
     Copyright (C) 2007 shash
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -1302,17 +1300,13 @@ INLINE void render_sprite_BMP (GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u16 * s
 		color = LE_TO_LOCAL_16(src[x]);
 
 		// alpha bit = invisible
-		if ((color&0x8000)&&(prio<=prioTab[sprX]))
+		if ((color&0x8000)&&(prio<prioTab[sprX]))
 		{
-			/* if we don't draw, do not set prio, or else */
-		//	if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
-			{
-				T2WriteWord(dst, (sprX<<1), color);
-				dst_alpha[sprX] = alpha;
-				typeTab[sprX] = 3;
-				prioTab[sprX] = prio;
-				gpu->sprNum[sprX] = spriteNum;
-			}
+			T2WriteWord(dst, (sprX<<1), color);
+			dst_alpha[sprX] = alpha;
+			typeTab[sprX] = 3;
+			prioTab[sprX] = prio;
+			gpu->sprNum[sprX] = spriteNum;
 		}
 	}
 }
@@ -1330,17 +1324,13 @@ INLINE void render_sprite_256 (	GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u8 * s
 		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
-		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
+		if ((palette_entry>0)&&(prio<prioTab[sprX]))
 		{
-			/* if we don't draw, do not set prio, or else */
-			//if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
-			{
-				T2WriteWord(dst, (sprX<<1), color);
-				dst_alpha[sprX] = 16;
-				typeTab[sprX] = (alpha ? 1 : 0);
-				prioTab[sprX] = prio;
-				gpu->sprNum[sprX] = spriteNum;
-			}
+			T2WriteWord(dst, (sprX<<1), color);
+			dst_alpha[sprX] = 16;
+			typeTab[sprX] = (alpha ? 1 : 0);
+			prioTab[sprX] = prio;
+			gpu->sprNum[sprX] = spriteNum;
 		}
 	}
 }
@@ -1361,16 +1351,12 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
-		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
+		if ((palette_entry>0)&&(prio<prioTab[sprX]))
 		{
-			/* if we don't draw, do not set prio, or else */
-			//if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX ))
-			{
-				T2WriteWord(dst, (sprX<<1), color);
-				dst_alpha[sprX] = 16;
-				typeTab[sprX] = (alpha ? 1 : 0);
-				prioTab[sprX] = prio;
-			}
+			T2WriteWord(dst, (sprX<<1), color);
+			dst_alpha[sprX] = 16;
+			typeTab[sprX] = (alpha ? 1 : 0);
+			prioTab[sprX] = prio;
 		}
 	}
 }
@@ -1489,27 +1475,41 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 	u16 l = currLine;
 	GPU *gpu = this;
 
+	int cost = 0;
 
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
+	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam);
 	u8 block = gpu->sprBoundary;
 	u8 i;
 
-#ifdef WORDS_BIGENDIAN
-	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
-	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
-#endif
+	//what the hell? why is all this here? the #ifdefs in the bitfields definition should take care of this.
+	//this needs to be fixed anyway since i changed the sprite render order
+	//better yet, just dont do it this way at all. _OAM_ is so small, why not just copy it and then twiddle it?
 
-	for(i = 0; i<nbShow; ++i, --spriteInfo
-#ifdef WORDS_BIGENDIAN    
-	,*(((u16*)(spriteInfo+1))+1) = (*(((u16*)(spriteInfo+1))+1) << 1) | *(((u16*)(spriteInfo+1))+1) >> 15
-	,*(((u16*)(spriteInfo+1))+2) = (*(((u16*)(spriteInfo+1))+2) << 2) | *(((u16*)(spriteInfo+1))+2) >> 14
-	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
-	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
-#endif
+//#ifdef WORDS_BIGENDIAN
+//	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
+//	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
+//#endif
+
+	for(i = 0; i<nbShow; ++i, ++spriteInfo
+//#ifdef WORDS_BIGENDIAN    
+//	,*(((u16*)(spriteInfo+1))+1) = (*(((u16*)(spriteInfo+1))+1) << 1) | *(((u16*)(spriteInfo+1))+1) >> 15
+//	,*(((u16*)(spriteInfo+1))+2) = (*(((u16*)(spriteInfo+1))+2) << 2) | *(((u16*)(spriteInfo+1))+2) >> 14
+//	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
+//	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
+//#endif
 	)     
 	{
 		//for each sprite:
+		if(cost>=2130)
+		{
+			//out of sprite rendering time
+			//printf("sprite overflow!\n");
+			//return;		
+		}
+
+		//do we incur a cost if a sprite is disabled?? we guess so.
+		cost += 2;
 
 		size sprSize;
 		s32 sprX, sprY, x, y, lg;
@@ -1557,6 +1557,8 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			if ((l   <sprY) || (l >= sprY+fieldY) ||
 				(sprX==256) || (sprX+fieldX<=0))
 				continue;
+
+			cost += sprSize.x*2 + 10;
 
 			y = l - sprY;
 
@@ -1743,10 +1745,11 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 		else
 		{
 			u16 * pal;
-
 	
 			if (!compute_sprite_vars(spriteInfo, l, sprSize, sprX, sprY, x, y, lg, xdir))
 				continue;
+
+			cost += sprSize.x;
 
 			if (spriteInfo->Mode == 2)
 			{
@@ -1816,10 +1819,11 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 		}
 	}
 
-#ifdef WORDS_BIGENDIAN
-	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) << 1) | *(((u16*)spriteInfo)+1) >> 15;
-	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
-#endif
+//#ifdef WORDS_BIGENDIAN
+//	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) << 1) | *(((u16*)spriteInfo)+1) >> 15;
+//	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
+//#endif
+
 }
 
 
@@ -2133,10 +2137,8 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 					//useful for debugging individual layers
 					//if(gpu->core == 1 || i16 != 2) continue;
 
-					if(gpu->core == 0 || i16 == 2)
-					{
-						int zzz=9;
-					}
+
+
 
 #ifndef DISABLE_MOSAIC
 					if(gpu->curr_mosaic_enabled)
@@ -2801,51 +2803,3 @@ void gpu_SetRotateScreen(u16 angle)
 {
 	gpu_angle = angle;
 }
-
-//here is an old bg mosaic with some old code commented out. I am going to leave it here for a while to look at it
-//sometimes in case I find a problem with the mosaic.
-//static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
-//{
-//	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[bgnum].bits;
-//	bool enabled = bgCnt->Mosaic_Enable;
-//
-////	if(!opaque) color = 0xFFFF;
-////	else color &= 0x7FFF;
-//	if(!opaque)
-//		return;
-//
-//	//mosaic test hacks
-//	enabled = true;
-//
-//	//due to this early out, we will get incorrect behavior in cases where 
-//	//we enable mosaic in the middle of a frame. this is deemed unlikely.
-//	if(enabled)
-//	{
-//		u8 y = gpu->currLine;
-//
-//		//I intend to cache all this at the beginning of line rendering
-//		
-//		u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
-//		u8 mw = (mosaic_control & 0xF);
-//		u8 mh = ((mosaic_control>>4) & 0xF); 
-//
-//		//mosaic test hacks
-//		mw = 3;
-//		mh = 3;
-//
-//		MosaicLookup::TableEntry &te_x = mosaicLookup.table[mw][x];
-//		MosaicLookup::TableEntry &te_y = mosaicLookup.table[mh][y];
-//
-//		//int x_int;
-//		//if(enabled) 
-//			int x_int = te_x.trunc;
-//		//else x_int = x;
-//
-//		if(te_x.begin && te_y.begin) {}
-//		else color = gpu->MosaicColors.bg[bgnum][x_int];
-//		gpu->MosaicColors.bg[bgnum][x] = color;
-//	}
-//
-////	if(color != 0xFFFF)
-//		gpu->setFinalColorBck(gpu,0,bgnum,dst,color,x);
-//}
