@@ -46,7 +46,9 @@ Linux/OSX:
  bug: fix --num-cores
  bug: fix occasional touchscreen failures
  enh: add --nojoy=1 to fix laptops with accelerometers
- 
+ enh: add simple auto frameskip mode in the gtk frontend
+ enh: add gui for configuring joystick in the gtk frontend
+ enh: make the cli frontend read the ini config file too
  
 0.9.4 -> 0.9.5 (r2437-r3075)
 
