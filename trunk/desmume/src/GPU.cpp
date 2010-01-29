@@ -1626,7 +1626,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 						colour = src[offset];
 
-						if (colour && (prioTab[sprX]>=prio))
+						if (colour && (prio<prioTab[sprX]))
 						{ 
 							T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
 							dst_alpha[sprX] = 16;
@@ -1669,7 +1669,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 						colour = T1ReadWord (src, offset<<1);
 
-						if((colour&0x8000) && (prioTab[sprX]>=prio))
+						if((colour&0x8000) && (prio<prioTab[sprX]))
 						{
 							T2WriteWord(dst, (sprX<<1), colour);
 							dst_alpha[sprX] = spriteInfo->PaletteIndex;
@@ -1719,7 +1719,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 						if (auxX&1)	colour >>= 4;
 						else		colour &= 0xF;
 
-						if(colour && (prioTab[sprX]>=prio))
+						if(colour && (prio<prioTab[sprX]))
 						{
 							if(spriteInfo->Mode==2)
 								sprWin[sprX] = 1;
