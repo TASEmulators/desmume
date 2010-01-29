@@ -2133,7 +2133,7 @@ INLINE void SoftAP_SendBeacon()
 	SoftAP.curPacketSending = TRUE;
 }
 
-void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_char* _data)
+static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_char* _data)
 {
 	// safety checks
 	if ((_data == NULL) || (h == NULL))
