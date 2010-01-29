@@ -19,20 +19,35 @@
  */
 
 #include <glib.h>
+#include <glib/gstdio.h>
 
 #include "ctrlssdl.h"
 #include "desmume_config.h"
 
-static const gchar *desmume_config_file = ".desmume.ini";
+static const gchar *desmume_old_config_file = ".desmume.ini";
+static const gchar *desmume_config_dir = "desmume";
+static const gchar *desmume_config_file = "config";
 
 GKeyFile *desmume_config_read_file(const u16 *kb_cfg)
 {
-    gchar *config_file;
+    gchar *config_file, *config_dir, *old_config_file;
     GKeyFile *keyfile;
     GError *error = NULL;
     gboolean ret;
 
-    config_file = g_build_filename(g_get_home_dir(), desmume_config_file, NULL);
+    old_config_file = g_build_filename(g_get_home_dir(), desmume_old_config_file, NULL);
+    config_file = g_build_filename(g_get_user_config_dir(), desmume_config_dir, desmume_config_file, NULL);
+
+    config_dir = g_build_filename(g_get_user_config_dir(), desmume_config_dir, NULL);
+    g_mkdir_with_parents(config_dir, 0755);
+
+    if (!g_file_test(config_file, G_FILE_TEST_IS_REGULAR) && g_file_test(old_config_file, G_FILE_TEST_IS_REGULAR)) {
+        ret = g_rename(old_config_file, config_file);
+        if (ret) {
+            g_printerr("Failed to move old config file %s to new location %s \n", old_config_file, config_file);
+        }
+    }
+
     keyfile = g_key_file_new();
     ret = g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_NONE, &error);
     if (!ret) {
@@ -40,6 +55,8 @@ GKeyFile *desmume_config_read_file(const u16 *kb_cfg)
     }
 
     g_free(config_file);
+    g_free(config_dir);
+    g_free(old_config_file);
 
     load_default_config(kb_cfg);
     desmume_config_read_keys(keyfile);
@@ -56,12 +73,15 @@ void desmume_config_dispose(GKeyFile *keyfile)
 static gboolean desmume_config_write_file(GKeyFile *keyfile)
 {
     gchar *config_file;
+    gchar *config_dir;
     gchar *data;
     GError *error = NULL;
     gsize length;
     gboolean ret = TRUE;
 
-    config_file = g_build_filename(g_get_home_dir(), desmume_config_file, NULL);
+    config_dir = g_build_filename(g_get_user_config_dir(), desmume_config_dir, NULL);
+    g_mkdir_with_parents(config_dir, 0755);
+    config_file = g_build_filename(g_get_user_config_dir(), desmume_config_dir, desmume_config_file, NULL);
     data = g_key_file_to_data(keyfile, &length, NULL);
     ret = g_file_set_contents(config_file, data, length, &error);
     if (!ret) {
@@ -69,6 +89,7 @@ static gboolean desmume_config_write_file(GKeyFile *keyfile)
     }
 
     g_free(config_file);
+    g_free(config_dir);
     g_free(data);
 
     return ret;
