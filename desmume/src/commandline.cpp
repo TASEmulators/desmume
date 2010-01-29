@@ -45,6 +45,7 @@ CommandLine::CommandLine()
 , _bios_arm9(NULL)
 , _bios_arm7(NULL)
 , _bios_swi(0)
+, _spu_advanced(0)
 , _num_cores(-1)
 {
 	load_slot = 0;
