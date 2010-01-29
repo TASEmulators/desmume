@@ -1,5 +1,11 @@
 0.9.5 -> 0.9.6 (r3075-r3303-r3xxx)
 
+Users of gtk, cli and gtk-glade frontends please note that now we
+have a common directory in ~/.config/desmume for config file,
+saves and savestates. The old .desmume.ini will be moved
+automatically with the name config but you have to move your saves
+manually.
+
 General/Core:
  bug: emulate keypad interrupt
  bug: spu overhaul, add capture support
@@ -49,7 +55,8 @@ Linux/OSX:
  enh: add simple auto frameskip mode in the gtk frontend
  enh: add gui for configuring joystick in the gtk frontend
  enh: make the cli frontend read the ini config file too
- enh: additional OpenAL microphone backend
+ enh: additional OpenAL microphone backend (ncalexan)
+ enh: common place for config and saves (Jan Steffens)
 
 0.9.4 -> 0.9.5 (r2437-r3075)
 
