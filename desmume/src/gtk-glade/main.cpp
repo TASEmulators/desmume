@@ -525,8 +525,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
         uninit_joy();
 
 	SDL_Quit();
-	desmume_config_update_keys(keyfile);
-	desmume_config_update_joykeys(keyfile);
+	desmume_config_write_file(keyfile);
 	desmume_config_dispose(keyfile);
 	return EXIT_SUCCESS;
 }
