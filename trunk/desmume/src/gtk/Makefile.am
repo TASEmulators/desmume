@@ -16,7 +16,6 @@ desmume_SOURCES = \
 	../sndsdl.cpp \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
-	desmume_config.cpp desmume_config.h \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
 desmume_LDADD = ../libdesmume.a \

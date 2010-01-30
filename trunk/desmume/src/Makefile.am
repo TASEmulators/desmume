@@ -52,7 +52,8 @@ libdesmume_a_SOURCES = \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
-	version.cpp version.h
+	version.cpp version.h \
+	desmume_config.cpp desmume_config.h
 
 if HAVE_WX
 libdesmume_a_SOURCES += wxdlg/wxdlg3dViewer.cpp

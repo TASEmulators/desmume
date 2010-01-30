@@ -55,7 +55,7 @@
 #include "mic.h"
 #include "firmware.h"
 #include "GPU_osd.h"
-#include "gtk/desmume_config.h"
+#include "desmume_config.h"
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif

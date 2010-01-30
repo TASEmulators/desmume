@@ -26,8 +26,7 @@ desmume_glade_SOURCES =  \
 	dTools/callbacks_dtools.h \
 	dTools/dTools_display.h \
 	gdk_3Demu.cpp gdk_3Demu.h \
-	../sndsdl.h ../sndsdl.cpp ../ctrlssdl.h ../ctrlssdl.cpp \
-	../gtk/desmume_config.h ../gtk/desmume_config.cpp
+	../sndsdl.h ../sndsdl.cpp ../ctrlssdl.h ../ctrlssdl.cpp
 
 desmume_glade_LDADD = ../libdesmume.a \
 			$(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) \
