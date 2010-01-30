@@ -320,6 +320,7 @@ void update_keypad(u16 keys)
 	input.X = (keys>>10)&1;
 	input.Y = (keys>>11)&1;
 	input.A = (keys>>0)&1;
+	input.B = (keys>>1)&1;
 	input.S = (keys>>3)&1;
 	input.T = (keys>>2)&1;
 	input.U = (keys>>6)&1;
