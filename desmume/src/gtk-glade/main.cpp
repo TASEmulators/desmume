@@ -28,8 +28,7 @@
 #include "rasterize.h"
 #include "desmume.h"
 #include "firmware.h"
-
-#include "gtk/desmume_config.h"
+#include "desmume_config.h"
 
 #ifdef GDB_STUB
 #include "../gdbstub.h"
