@@ -959,7 +959,14 @@ TEMPLATE static  u32 FASTCALL OP_SWI_THUMB(const u32 i)
 		return 0;
 	}
 
-	if(cpu->swi_tab) {
+	//if the user has changed the intVector to point away from the nds bioses,
+	//then it doesn't really make any sense to use the builtin SWI's since 
+	//the bios ones aren't getting called anyway
+	bool bypassBuiltinSWI = 
+		(cpu->intVector == 0x00000000 && PROCNUM==0)
+		|| (cpu->intVector == 0xFFFF0000 && PROCNUM==1);
+
+	if(cpu->swi_tab && !bypassBuiltinSWI) {
 		 //zero 25-dec-2008 - in arm, we were masking to 0x1F. 
 		 //this is probably safer since an invalid opcode could crash the emu
 		 //zero 30-jun-2009 - but they say that the ideas 0xFF should crash the device...

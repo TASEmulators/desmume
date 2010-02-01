@@ -6844,8 +6844,15 @@ TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 		IdeasLog(cpu);
 		return 0;
 	}
-	
-	if(cpu->swi_tab) 
+
+	//if the user has changed the intVector to point away from the nds bioses,
+	//then it doesn't really make any sense to use the builtin SWI's since 
+	//the bios ones aren't getting called anyway
+	bool bypassBuiltinSWI = 
+		(cpu->intVector == 0x00000000 && PROCNUM==0)
+		|| (cpu->intVector == 0xFFFF0000 && PROCNUM==1);
+
+	if(cpu->swi_tab && !bypassBuiltinSWI)
 	{
 		swinum &= 0x1F;
 		//printf("%d ARM SWI %d \n",PROCNUM,swinum);
