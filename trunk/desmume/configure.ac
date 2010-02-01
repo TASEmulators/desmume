@@ -83,9 +83,11 @@ if test "x$osmesa" = "xyes" ; then
 	AC_CHECK_LIB(OSMesa, main,[
 		useosmesa=yes
 		AC_DEFINE(HAVE_LIBOSMESA)
-		LIBS="-lOSMesa $LIBS"
+		OSMESA_LIBS="-lOSMesa"
+		AC_SUBST(OSMESA_LIBS)
 	])
 fi
+AM_CONDITIONAL([HAVE_LIBOSMESA], [test "${useosmesa}" = "yes"])
 
 dnl - hack to help zero build gtk frontend macos x package
 AC_ARG_ENABLE(macosxhack,
