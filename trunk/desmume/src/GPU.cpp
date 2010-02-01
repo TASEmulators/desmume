@@ -1000,14 +1000,17 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 	}
 
 	yoff = ((YBG&7)<<3);
-
+	u8* tilePal;
 	xfin = 8 - (xoff&7);
+	u32 extPalMask = -dispCnt->ExBGxPalette_Enable;
 	for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
 	{
 		tmp = (xoff & (lg-1))>>3;
 		mapinfo = map + (tmp & 31) * 2;
 		if(tmp > 31) mapinfo += 32*32*2;
 		tileentry.val = T1ReadWord(MMU_gpu_map(mapinfo), 0);
+	
+		tilePal = pal + ((tileentry.bits.Palette<<8) & extPalMask);
 
 		line = (u8*)MMU_gpu_map(tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff));
 
@@ -1021,10 +1024,7 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 		}
 		for(; x < xfin; )
 		{
-			if(dispCnt->ExBGxPalette_Enable)
-				color = T1ReadWord(pal, ((*line) + (tileentry.bits.Palette<<8)) << 1);
-			else
-				color = T1ReadWord(pal, (*line) << 1);
+			color = T1ReadWord(tilePal, (*line) << 1);
 
 			gpu->__setFinalColorBck<MOSAIC,false>(color,x,*line);
 			

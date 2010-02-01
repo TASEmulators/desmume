@@ -447,7 +447,8 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 		{
 			armcp15->ctrl = val;
 			MMU.ARM9_RW_MODE = BIT7(val);
-			armcp15->cpu->intVector = 0x0FFF0000 * (BIT13(val));
+			//zero 31-jan-2010: change from 0x0FFF0000 to 0xFFFF0000 per gbatek
+			armcp15->cpu->intVector = 0xFFFF0000 * (BIT13(val));
 			armcp15->cpu->LDTBit = !BIT15(val); //TBit
 			/*if(BIT17(val))
 			{
