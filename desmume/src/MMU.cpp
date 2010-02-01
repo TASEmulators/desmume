@@ -3541,15 +3541,6 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
     }
 
-	if(adr == REG_HALTCNT)
-	{
-		switch(val)
-		{
-		case 0xC0: NDS_Sleep(); break;
-		default: break;
-		}
-	}
-
 	if ((adr & 0xFF800000) == 0x04800000)
 	{
 		/* is wifi hardware, dont intermix with regular hardware registers */
@@ -3564,6 +3555,17 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 		switch(adr)
 		{
+			case REG_POSTFLG:
+				// hack for patched firmwares
+				if (val == 1)
+				{
+					if (_MMU_ARM7_read08(REG_POSTFLG) != 0)
+						break;
+					_MMU_write32<ARMCPU_ARM9>(0x27FFE24, gameInfo.header.ARM9exe);
+					_MMU_write32<ARMCPU_ARM7>(0x27FFE34, gameInfo.header.ARM7exe);
+				}
+				break;
+
 			case REG_HALTCNT:
 				//printf("halt 0x%02X\n", val);
 				switch(val)
