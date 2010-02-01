@@ -751,7 +751,6 @@ int main(int argc, char ** argv) {
   if ( my_config.opengl_2d) {
     /* the flags to pass to SDL_SetVideoMode */
     sdl_videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
-    sdl_videoFlags |= SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
     sdl_videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
     sdl_videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
@@ -774,7 +773,7 @@ int main(int argc, char ** argv) {
       fprintf( stderr, "Video mode set failed: %s\n", SDL_GetError( ) );
       exit( -1);
     }
-    
+
 
     /* initialize OpenGL */
     if ( !initGL( screen_texture)) {
