@@ -23,6 +23,9 @@ desmume_LDADD = ../libdesmume.a \
 if HAVE_GDB_STUB
 desmume_LDADD += ../gdbstub/libgdbstub.a
 endif
+if HAVE_LIBOSMESA
+desmume_LDADD += $(OSMESA_LIBS)
+endif
 
 UPDATE_DESKTOP = \
   appsdir=$(DESTDIR)$(datadir)/applications ; \
