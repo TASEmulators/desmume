@@ -1009,9 +1009,7 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 		mapinfo = map + (tmp & 31) * 2;
 		if(tmp > 31) mapinfo += 32*32*2;
 		tileentry.val = T1ReadWord(MMU_gpu_map(mapinfo), 0);
-	
-		tilePal = pal + ((tileentry.bits.Palette<<8) & extPalMask);
-
+		tilePal = pal + ((tileentry.bits.Palette<<9)&extPalMask);
 		line = (u8*)MMU_gpu_map(tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff));
 
 		if(tileentry.bits.HFlip)
