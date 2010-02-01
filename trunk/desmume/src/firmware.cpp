@@ -20,8 +20,6 @@
 #include "firmware.h"
 #include "NDSSystem.h"
 
-//#define _FLASHME_SUPPORT			// bugged
-
 #define DWNUM(i) ((i) >> 2)
 
 bool CFIRMWARE::getKeyBuf()
@@ -353,6 +351,16 @@ bool CFIRMWARE::load()
 		fclose(fp);
 		return false;
 	}
+
+#if 1
+	if (size == 512*1024)
+	{
+		INFO("ERROR: 32Mbit (512Kb) firmware not supported\n");
+		fclose(fp);
+		return false;
+	}
+#endif
+
 	data = new u8 [size];
 	if (!data)
 	{
@@ -404,7 +412,7 @@ bool CFIRMWARE::load()
 #if 0
 	crypt64BitDown((u32*)&data[0x18]);
 #else
-	// hack?
+	// fix touch coords
 	data[0x18] = 0x00;
 	data[0x19] = 0x00;
 	data[0x1A] = 0x00;
@@ -471,18 +479,7 @@ bool CFIRMWARE::load()
 
 	patched = false;
 	if (data[0x17C] != 0xFF)
-	{
-#ifdef _FLASHME_SUPPORT
 		patched = true;
-#else
-		INFO("!!! ERROR: Firmware patched with 'Flashme' v");
-		if (data[0x17C] == 1) INFO("1..4");
-		else
-			INFO("%i", (u16)data[0x3F7FC] + 3);
-		INFO(" - not support\n");
-		return false;
-#endif
-	}
 
 	INFO("Firmware:\n");
 	INFO("- path: %s\n", CommonSettings.Firmware);
@@ -502,7 +499,6 @@ bool CFIRMWARE::load()
 	INFO("\n");
 	INFO("   * Data/GFX address:           0x%08X\n", part5addr);
 
-#ifdef _FLASHME_SUPPORT
 	if (patched)
 	{
 		u32 patch_offset = 0x3FC80;
@@ -568,10 +564,10 @@ bool CFIRMWARE::load()
 		INFO("   * ARM7 boot code RAM address: 0x%08X\n", ARM7bootAddr);
 		INFO("   * ARM7 unpacked size:         0x%08X (%i) bytes\n", size7, size7);
 	}
-#endif
 
 	// TODO: add 512Kb support
 	memcpy(MMU.fw.data, data, 256*1024);
+	MMU.fw.fp = NULL;
 
 	delete [] data; data = NULL;
 	return true;

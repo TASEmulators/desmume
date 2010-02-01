@@ -623,7 +623,7 @@ BOOL CHEATS::load()
 			line++;				// only for debug
 			memset(buf, 0, sizeof(buf));
 			if (fgets(buf, sizeof(buf), flist) == NULL) {
-				INFO("Cheats: Failed to read from flist at line %i\n", line);
+				//INFO("Cheats: Failed to read from flist at line %i\n", line);
 				continue;
 			}
 			trim(buf);
