@@ -486,23 +486,22 @@ fill_configured_features( struct configured_features *config,
   };
 
   config->loadCommonOptions();
-	g_option_context_add_main_entries (config->ctx, options, "options");
-	g_option_context_add_group (config->ctx, gtk_get_option_group (TRUE));
-	config->parse(argc,argv);
+  g_option_context_add_main_entries (config->ctx, options, "options");
+  g_option_context_add_group (config->ctx, gtk_get_option_group (TRUE));
+  config->parse(argc,argv);
 
-	if(!config->validate())
-		goto error;
+  if(!config->validate())
+    goto error;
 
-	if (config->savetype < 0 || config->savetype > 6) {
-		g_printerr("Accepted savetypes are from 0 to 6.\n");
-		return false;
-	}
+  if (config->savetype < 0 || config->savetype > 6) {
+    g_printerr("Accepted savetypes are from 0 to 6.\n");
+    return false;
+  }
 
   if (config->firmware_language < -1 || config->firmware_language > 5) {
     g_printerr("Firmware language must be set to a value from 0 to 5.\n");
     goto error;
   }
-
 
   if (config->engine_3d != 0 && config->engine_3d != 1
 #if defined(HAVE_LIBOSMESA)
@@ -534,7 +533,7 @@ fill_configured_features( struct configured_features *config,
 error:
   config->errorHelp(argv[0]);
 
-    return 0;
+  return 0;
 }
 
 
