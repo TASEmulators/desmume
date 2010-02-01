@@ -56,6 +56,7 @@
 #include "firmware.h"
 #include "GPU_osd.h"
 #include "desmume_config.h"
+#include "commandline.h"
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
@@ -127,37 +128,28 @@ const u16 cli_kb_cfg[NB_KEYS] =
 static BOOL enable_fake_mic;
 #endif
 
-struct my_config {
-  int load_slot;
-  u16 arm9_gdb_port;
-  u16 arm7_gdb_port;
-
+class configured_features : public CommandLine
+{
+public:
   int disable_sound;
-  int engine_3d;
-
-  int savetype;
-
-#ifdef INCLUDE_OPENGL_2D
-  int opengl_2d;
-  int soft_colour_convert;
-#endif
   int auto_pause;
   int disable_limiter;
   int frameskip;
   int fps_limiter_frame_period;
 
-  int firmware_language;
+  int engine_3d;
+  int savetype;
+  
+#ifdef INCLUDE_OPENGL_2D
+  int opengl_2d;
+  int soft_colour_convert;
+#endif
 
-  const char *nds_file;
-  const char *cflash_disk_image_file;
+  int firmware_language;
 };
 
 static void
-init_config( struct my_config *config) {
-  config->load_slot = 0;
-
-  config->arm9_gdb_port = 0;
-  config->arm7_gdb_port = 0;
+init_config( struct configured_features *config) {
 
   config->disable_sound = 0;
 
@@ -165,10 +157,6 @@ init_config( struct my_config *config) {
   config->disable_limiter = 0;
   config->frameskip = 0;
   config->fps_limiter_frame_period = FPS_LIMITER_FRAME_PERIOD;
-
-  config->nds_file = NULL;
-
-  config->cflash_disk_image_file = NULL;
 
   config->engine_3d = 1;
   config->savetype = 0;
@@ -184,207 +172,98 @@ init_config( struct my_config *config) {
 
 
 static int
-fill_config( struct my_config *config,
+fill_config( struct configured_features *config,
              int argc, char ** argv) {
-  int good_args = 1;
-  int print_usage = 0;
-  int i;
-
-  for ( i = 1; i < argc && good_args; i++) {
-    if ( strcmp( argv[i], "--help") == 0) {
-      printf( "USAGE: %s [options] <nds-file>\n", argv[0]);
-      printf( "OPTIONS:\n");
-      printf( "   --load-slot=NUM     Loads savegame from slot NUM\n");
-      printf( "   --auto-pause        Pause emulation of focus is lost.\n");
-      printf( "   --disable-sound     Disables the sound emulation\n");
-      printf( "   --disable-limiter   Disables the 60 fps limiter\n");
-      printf( "   --frameskip=N       Set frameskip to N\n");
-      printf( "   --limiter-period=N  Set frame period of the fps limiter to N (default: %d)\n", FPS_LIMITER_FRAME_PERIOD);
-      printf( "   --3d-engine=ENGINE  Select 3d rendering engine, available ENGINES:\n");
-      printf( "                         0 = 3d disabled\n");
-      printf( "                         1 = internal desmume software rasterizer (default)\n");
+  GOptionEntry options[] = {
+    { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
+    { "auto-pause", 0, 0, G_OPTION_ARG_NONE, &config->auto_pause, "Pause emulation if focus is lost", NULL},
+    { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
+    { "frameskip", 0, 0, G_OPTION_ARG_INT, &config->frameskip, "Set frameskip", "FRAMESKIP"},
+    { "limiter-period", 0, 0, G_OPTION_ARG_INT, &config->fps_limiter_frame_period, "Set frame period of the fps limiter", "LIMITER"},
+    { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
+        "\t\t\t\t\t\t  0 = 3d disabled\n"
+        "\t\t\t\t\t\t  1 = internal rasterizer (default)\n"
+        ,"ENGINE"},
+    { "save-type", 0, 0, G_OPTION_ARG_INT, &config->savetype, "Select savetype from the following:\n"
+    "\t\t\t\t\t\t  0 = Autodetect (default)\n"
+    "\t\t\t\t\t\t  1 = EEPROM 4kbit\n"
+    "\t\t\t\t\t\t  2 = EEPROM 64kbit\n"
+    "\t\t\t\t\t\t  3 = EEPROM 512kbit\n"
+    "\t\t\t\t\t\t  4 = FRAM 256kbit\n"
+    "\t\t\t\t\t\t  5 = FLASH 2mbit\n"
+    "\t\t\t\t\t\t  6 = FLASH 4mbit\n",
+    "SAVETYPE"},
 #ifdef INCLUDE_OPENGL_2D
-      printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
-      printf( "   --soft-convert      Use software colour conversion during OpenGL\n");
-      printf( "                       screen rendering. May produce better or worse\n");
-      printf( "                       frame rates depending on hardware.\n");
+    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
+    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour_convert, "Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.",
+     NULL},
 #endif
-      printf( "\n");
-      printf( "   --save-type=TYPE    Select savetype from the following:\n");
-      for(int jj = 0; save_type_names[jj] != NULL; jj++){
-          printf("                         %d = %s\n",jj,save_type_names[jj]);
-      }
+    { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
+    "\t\t\t\t\t\t  0 = Japanese\n"
+    "\t\t\t\t\t\t  1 = English\n"
+    "\t\t\t\t\t\t  2 = French\n"
+    "\t\t\t\t\t\t  3 = German\n"
+    "\t\t\t\t\t\t  4 = Italian\n"
+    "\t\t\t\t\t\t  5 = Spanish\n",
+    "LANG"},
+    { NULL }
+  };
 
-      printf( "\n");
-      printf( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
-      printf( "                         0 = Japanese\n");
-      printf( "                         1 = English\n");
-      printf( "                         2 = French\n");
-      printf( "                         3 = German\n");
-      printf( "                         4 = Italian\n");
-      printf( "                         5 = Spanish\n");
-      printf( "\n");
+  config->loadCommonOptions();
+  g_option_context_add_main_entries (config->ctx, options, "options");
+  config->parse(argc,argv);
+
+  if(!config->validate())
+    goto error;
+
+  if (config->savetype < 0 || config->savetype > 6) {
+    g_printerr("Accepted savetypes are from 0 to 6.\n");
+    return false;
+  }
+
+  if (config->firmware_language < -1 || config->firmware_language > 5) {
+    g_printerr("Firmware language must be set to a value from 0 to 5.\n");
+    goto error;
+  }
+
+  if (config->engine_3d != 0 && config->engine_3d != 1) {
+    g_printerr("Currently available engines: 0, 1.\n");
+    goto error;
+  }
+
+  if (config->frameskip < 0) {
+    g_printerr("Frameskip must be >= 0.\n");
+    goto error;
+  }
+
+  if (config->fps_limiter_frame_period < 0 || config->fps_limiter_frame_period > 30) {
+    g_printerr("FPS limiter period must be >= 0 and <= 30.\n");
+    goto error;
+  }
+
+  if (config->nds_file == "") {
+    g_printerr("Need to specify file to load.\n");
+    goto error;
+  }
+
 #ifdef GDB_STUB
-      printf( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
-      printf( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
-#endif
-      //printf( "   --sticky                Enable sticky keys and stylus\n");
-      printf( "\n");
-      printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
-      printf( "                       Enable disk image GBAMP compact flash emulation\n");
-      printf( "\n");
-      printf( "   --help              Display this message\n");
-      printf( "   --version           Display the version\n");
-      good_args = 0;
-    }
-    else if ( strcmp( argv[i], "--version") == 0) {
-      printf( "%s\n", VERSION);
-      good_args = 0;
-    }
-    else if ( strncmp( argv[i], "--load-slot=", 12) == 0) {
-      long slot = strtol( &argv[i][12], NULL, 10 );
-      if(slot >= 0 && slot <= 10)
-        config->load_slot = slot;
-      else
-        printf("Invalid slot number %ld\n", slot);
-    }
-    else if ( strcmp( argv[i], "--disable-sound") == 0) {
-      config->disable_sound = 1;
-    }
-#ifdef INCLUDE_OPENGL_2D
-    else if ( strcmp( argv[i], "--opengl-2d") == 0) {
-      config->opengl_2d = 1;
-    }
-    else if ( strcmp( argv[i], "--soft-convert") == 0) {
-      config->soft_colour_convert = 1;
-    }
-#endif
-    else if ( strcmp( argv[i], "--auto-pause") == 0) {
-      config->auto_pause = 1;
-    }
-    else if ( strcmp( argv[i], "--disable-limiter") == 0) {
-      config->disable_limiter = 1;
-    }
-    else if ( strncmp( argv[i], "--frameskip=", 12) == 0) {
-      char *end_char;
-      int frameskip = strtoul(&argv[i][12], &end_char, 10);
-
-      if ( frameskip >= 0 ) {
-        config->frameskip = frameskip;
-      }
-      else {
-        fprintf(stderr, "frameskip must be >=0\n");
-        good_args = 0;
-      }
-    }
-    else if ( strncmp( argv[i], "--limiter-period=", 17) == 0) {
-      char *end_char;
-      int period = strtoul(&argv[i][17], &end_char, 10);
-
-      if ( period >= 0 && period <= 30 ) {
-        config->fps_limiter_frame_period = period;
-      }
-      else {
-        fprintf(stderr, "fps lmiter period must be >=0 and <= 30!\n");
-        good_args = 0;
-      }
-    }
-    else if ( strncmp( argv[i], "--3d-engine=", 12) == 0) {
-      char *end_char;
-      int engine = strtoul( &argv[i][12], &end_char, 10);
-
-      if ( engine == 0 || engine == 1) {
-        config->engine_3d = engine;
-      }
-      else {
-        fprintf( stderr, "3d engine can be 0 or 1\n");
-        good_args = 0;
-      }
-    }
-    else if ( strncmp( argv[i], "--save-type=", 12) == 0) {
-      char *end_char;
-      int savetype = strtoul( &argv[i][12], &end_char, 10);
-      int last = sizeof(save_type_names)/sizeof(const char * )-2; // NULL terminator, 0-based 
-
-      if ( savetype >= 0 && savetype <= last) {
-        config->savetype = savetype;
-      }
-      else {
-        fprintf( stderr, "savetype can be 0-%d\n",last);
-        good_args = 0;
-      }
-    }
-    else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
-      char *end_char;
-      int lang = strtoul( &argv[i][9], &end_char, 10);
-
-      if ( lang >= 0 && lang <= 5) {
-        config->firmware_language = lang;
-      }
-      else {
-        fprintf( stderr, "Firmware language must be set to a value from 0 to 5.\n");
-        good_args = 0;
-      }
-    }
-#ifdef GDB_STUB
-    else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
-      char *end_char;
-      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
-
-      if ( port_num > 0 && port_num < 65536) {
-        config->arm9_gdb_port = port_num;
-      }
-      else {
-        fprintf( stderr, "ARM9 GDB stub port must be in the range 1 to 65535\n");
-        good_args = 0;
-      }
-    }
-    else if ( strncmp( argv[i], "--arm7gdb=", 10) == 0) {
-      char *end_char;
-      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
-
-      if ( port_num > 0 && port_num < 65536) {
-        config->arm7_gdb_port = port_num;
-      }
-      else {
-        fprintf( stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
-        good_args = 0;
-      }
-    }
-#endif
-    else if ( strncmp( argv[i], "--cflash=", 9) == 0) {
-      if ( config->cflash_disk_image_file == NULL) {
-        config->cflash_disk_image_file = &argv[i][9];
-      }
-      else {
-        fprintf( stderr, "CFlash disk image file (\"%s\") already set\n",
-                 config->cflash_disk_image_file);
-        good_args = 0;
-      }
-    }
-    else {
-      if ( config->nds_file == NULL) {
-        config->nds_file = argv[i];
-      }
-      else {
-        fprintf( stderr, "NDS file (\"%s\") already set\n", config->nds_file);
-        good_args = 0;
-      }
-    }
+  if (config->arm9_gdb_port != 0 && (config->arm9_gdb_port < 1 || config->arm9_gdb_port > 65535)) {
+    g_printerr("ARM9 GDB stub port must be in the range 1 to 65535\n");
+    goto error;
   }
 
-  if ( good_args) {
-    if ( config->nds_file == NULL) {
-      print_usage = 1;
-      good_args = 0;
-    }
+  if (config->arm7_gdb_port != 0 && (config->arm7_gdb_port < 1 || config->arm7_gdb_port > 65535)) {
+    g_printerr("ARM7 GDB stub port must be in the range 1 to 65535\n");
+    goto error;
   }
+#endif
 
-  if ( print_usage) {
-    fprintf( stderr, "USAGE: %s <nds-file>\n  %s --help for more info\n", argv[0], argv[0]);
-  }
+  return 1;
 
-  return good_args;
+error:
+  config->errorHelp(argv[0]);
+
+  return 0;
 }
 
 /*
@@ -643,7 +522,7 @@ Draw( void) {
   return;
 }
 
-static void desmume_cycle(int *sdl_quit, int *boost, struct my_config * my_config)
+static void desmume_cycle(int *sdl_quit, int *boost, struct configured_features * my_config)
 {
     static unsigned short keypad;
     static int focused = 1;
@@ -732,7 +611,7 @@ static void desmume_cycle(int *sdl_quit, int *boost, struct my_config * my_confi
 }
 
 int main(int argc, char ** argv) {
-  struct my_config my_config;
+  struct configured_features my_config;
 #ifdef GDB_STUB
   gdbstub_handle_t arm9_gdb_stub;
   gdbstub_handle_t arm7_gdb_stub;
@@ -828,9 +707,9 @@ int main(int argc, char ** argv) {
 
   backup_setManualBackupType(my_config.savetype);
 
-  error = NDS_LoadROM( my_config.nds_file );
+  error = NDS_LoadROM( my_config.nds_file.c_str() );
   if (error < 0) {
-    fprintf(stderr, "error while loading %s\n", my_config.nds_file);
+    fprintf(stderr, "error while loading %s\n", my_config.nds_file.c_str());
     exit(-1);
   }
 
