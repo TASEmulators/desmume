@@ -510,14 +510,14 @@ opengl_Draw( GLuint *texture, int software_convert) {
 static void
 Draw( void) {
   SDL_Surface *rawImage;
-	
+
   rawImage = SDL_CreateRGBSurfaceFrom((void*)&GPU_screen, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
   if(rawImage == NULL) return;
-	
+
   SDL_BlitSurface(rawImage, 0, surface, 0);
 
   SDL_UpdateRect(surface, 0, 0, 0, 0);
-  
+
   SDL_FreeSurface(rawImage);
   return;
 }
