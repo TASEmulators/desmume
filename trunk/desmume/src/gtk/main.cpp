@@ -421,7 +421,6 @@ public:
 
   int firmware_language;
 
-  const char *cflash_disk_image_file;
 #ifdef HAVE_TIMEOUT
   int timeout;
 #endif
@@ -437,8 +436,6 @@ init_configured_features( struct configured_features *config)
   config->disable_limiter = 0;
 
   config->savetype = 0;
-
-  config->cflash_disk_image_file = NULL;
 
 #ifdef HAVE_TIMEOUT
   config->timeout = 0;
