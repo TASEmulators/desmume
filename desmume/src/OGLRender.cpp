@@ -227,7 +227,7 @@ GLenum			oglToonTableTextureID;
 		log = new GLchar[logSize]; \
 		glGetShaderInfoLog(s, logSize, &logSize, log); \
 		INFO("SEVERE : FAILED TO COMPILE GL SHADER : %s\n", log); \
-		delete log; \
+		delete[] log; \
 		if(s)glDeleteShader(s); \
 		NOSHADERS("Failed to compile the "t" shader."); \
 	} \
@@ -244,7 +244,7 @@ GLenum			oglToonTableTextureID;
 		log = new GLchar[logSize]; \
 		glGetProgramInfoLog(p, logSize, &logSize, log); \
 		INFO("SEVERE : FAILED TO LINK GL SHADER PROGRAM : %s\n", log); \
-		delete log; \
+		delete[] log; \
 		if(s1)glDeleteShader(s1); \
 		if(s2)glDeleteShader(s2); \
 		NOSHADERS("Failed to link the shader program."); \
