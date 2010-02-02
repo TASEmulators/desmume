@@ -170,9 +170,7 @@ static int
 fill_config( struct configured_features *config,
              int argc, char ** argv) {
   GOptionEntry options[] = {
-    { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
     { "auto-pause", 0, 0, G_OPTION_ARG_NONE, &config->auto_pause, "Pause emulation if focus is lost", NULL},
-    { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
     { "frameskip", 0, 0, G_OPTION_ARG_INT, &config->frameskip, "Set frameskip", "FRAMESKIP"},
     { "limiter-period", 0, 0, G_OPTION_ARG_INT, &config->fps_limiter_frame_period, "Set frame period of the fps limiter", "LIMITER"},
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
