@@ -659,10 +659,10 @@ int NDS_WritePNG(const char *fname)
 
 	if(!(pp=fopen(fname, "wb")))
 	{
-		return 0;
+		goto PNGerr;
 	}
 	{
-		static uint8 header[8]={137,80,78,71,13,10,26,10};
+		const uint8 header[8]={137,80,78,71,13,10,26,10};
 		if(fwrite(header,8,1,pp)!=1)
 			goto PNGerr;
 	}
