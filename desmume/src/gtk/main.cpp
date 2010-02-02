@@ -414,9 +414,7 @@ u16 Keypad_Temp[NB_KEYS];
 class configured_features : public CommandLine
 {
 public:
-  int disable_sound;
   int engine_3d;
-  int disable_limiter;
   int savetype;
 
   int firmware_language;
@@ -429,11 +427,7 @@ public:
 static void
 init_configured_features( struct configured_features *config)
 {
-  config->disable_sound = 0;
-
   config->engine_3d = 1;
-
-  config->disable_limiter = 0;
 
   config->savetype = 0;
 
@@ -450,8 +444,6 @@ fill_configured_features( struct configured_features *config,
                           int argc, char ** argv)
 {
   GOptionEntry options[] = {
-    { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
-    { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"

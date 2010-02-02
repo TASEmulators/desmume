@@ -48,6 +48,10 @@ public:
 	std::string cflash_image;
 	std::string cflash_path;
 	std::string gbaslot_rom;
+#ifndef _MSC_VER
+	int disable_sound;
+	int disable_limiter;
+#endif
 
 	//load up the common commandline options
 	void loadCommonOptions();
