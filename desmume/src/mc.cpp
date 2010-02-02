@@ -698,13 +698,9 @@ bool BackupDevice::load_no_gba(const char *fname)
 		if (fread(in_buf, 1, fsize, fsrc) == fsize)
 		{
 			out_buf = new u8 [8 * 1024 * 1024 / 8];
-			for (int jj = 0; jj < 8 * 1024 * 1024 / 8; jj++)
-			{
-				out_buf[jj] = 0xFF;
-			}
-
 			u32 size = 0;
-	
+
+			memset(out_buf, 0xFF, 8 * 1024 * 1024 / 8);
 			if (no_gba_unpackSAV(in_buf, fsize, out_buf, size) == 0)
 			{
 				//printf("New size %i byte(s)\n", size);
