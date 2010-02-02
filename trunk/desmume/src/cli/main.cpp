@@ -131,9 +131,7 @@ static BOOL enable_fake_mic;
 class configured_features : public CommandLine
 {
 public:
-  int disable_sound;
   int auto_pause;
-  int disable_limiter;
   int frameskip;
   int fps_limiter_frame_period;
 
@@ -151,10 +149,7 @@ public:
 static void
 init_config( struct configured_features *config) {
 
-  config->disable_sound = 0;
-
   config->auto_pause = 0;
-  config->disable_limiter = 0;
   config->frameskip = 0;
   config->fps_limiter_frame_period = FPS_LIMITER_FRAME_PERIOD;
 
