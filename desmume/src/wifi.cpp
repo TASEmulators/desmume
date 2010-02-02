@@ -1717,7 +1717,7 @@ void Adhoc_SendPacket(u8* packet, u32 len)
 	
 	WIFI_LOG(4, "Ad-hoc: sent %i/%i bytes of packet.\n", nbytes, frameLen);
 
-	delete frame;
+	delete[] frame;
 }
 
 void Adhoc_usTrigger()
