@@ -211,12 +211,12 @@ fi
 
 dnl - Check for wxWidgets
 
-dnl - if --enable-wxwidget is used, check for it
-AC_ARG_ENABLE([wxwidget],
+dnl - if --enable-wxwidgets is used, check for it
+AC_ARG_ENABLE([wxwidgets],
                [AC_HELP_STRING([--enable-wxwidgets], [Enable cross platform wx widgets frontend])],
-               [wxwidget=$enableval],
-               [wxwidget=no])
-if test "x$wxwidget" = "xyes" ; then
+               [wxwidgets=$enableval],
+               [wxwidgets=no])
+if test "x$wxwidgets" = "xyes" ; then
 	m4_include(wxwin.m4)
 	AM_PATH_WXCONFIG([2.4.0], wxwin=yes)
 	if test "x$wxwin" = "xyes"; then
@@ -226,7 +226,7 @@ if test "x$wxwidget" = "xyes" ; then
 	fi
 fi
 
-AM_CONDITIONAL([HAVE_WX], [test "x$wxwidget" = "xyes"])
+AM_CONDITIONAL([HAVE_WX], [test "x$wxwidgets" = "xyes"])
 
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR=""
