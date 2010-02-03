@@ -121,7 +121,7 @@ public:
 
 	virtual void _OnPaintPanel( wxPaintEvent& event )
 	{
-		wxPaintDC dc(wxDynamicCast(event.GetEventObject(), wxWindow));
+		wxClientDC dc(wxDynamicCast(event.GetEventObject(), wxWindow));
 		RedrawPanel(&dc);
 	}
 
