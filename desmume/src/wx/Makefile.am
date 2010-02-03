@@ -9,9 +9,10 @@ pixmap_DATA = DeSmuME.xpm
 EXTRA_DIST = DeSmuME.xpm desmume.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
+	../sndsdl.cpp \
 	../driver.h ../driver.cpp \
 	../wxdlg/wxdlg3dViewer.h ../wxdlg/wxdlg3dViewer.cpp \
-	PadSimple/PadSimple.cpp \
+	PadSimple/PadSimple.cpp PadSimple/GUI/ConfigDlg.cpp \
 	InputCommon/X11InputBase.cpp \
 	InputCommon/XInput.cpp \
 	InputCommon/InputCommon.cpp \
@@ -19,6 +20,7 @@ desmume_SOURCES = \
 	InputCommon/Configuration.cpp \
 	InputCommon/SDL.cpp \
 	IniFile.cpp \
+	LuaWindow.cpp \
 	StringUtil.cpp \
 	wxMain.cpp
 desmume_LDADD = ../libdesmume.a \
