@@ -18,7 +18,7 @@ libdesmume_a_SOURCES = \
 	bios.cpp bios.h bits.h cp15.cpp cp15.h \
 	commandline.h commandline.cpp \
 	common.cpp common.h \
-	debug.cpp debug.h driver.cpp driver.h \
+	debug.cpp debug.h \
 	Disassembler.cpp Disassembler.h \
 	emufile.h emufile.cpp fat.h FIFO.cpp FIFO.h \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
@@ -54,10 +54,6 @@ libdesmume_a_SOURCES = \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
 	version.cpp version.h \
 	desmume_config.cpp desmume_config.h
-
-if HAVE_WX
-libdesmume_a_SOURCES += wxdlg/wxdlg3dViewer.cpp
-endif
 
 if HAVE_OPENAL
 libdesmume_a_SOURCES += mic_openal.cpp
