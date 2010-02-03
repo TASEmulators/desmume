@@ -3,12 +3,12 @@ include $(top_srcdir)/src/desmume.mk
 AM_CPPFLAGS += -DHAVE_WX=1 -DHAVE_X11=1 $(WX_CPPFLAGS) $(SDL_CFLAGS) $(LIBAGG_CFLAGS)
 
 Applicationsdir = $(datadir)/applications
-Applications_DATA = desmume.desktop
+Applications_DATA = wxdesmume.desktop
 pixmapdir = $(datadir)/pixmaps
 pixmap_DATA = DeSmuME.xpm
-EXTRA_DIST = DeSmuME.xpm desmume.desktop
-bin_PROGRAMS = desmume
-desmume_SOURCES = \
+EXTRA_DIST = wxdesmume.desktop
+bin_PROGRAMS = wxdesmume
+wxdesmume_SOURCES = \
 	../sndsdl.cpp \
 	../driver.h ../driver.cpp \
 	../wxdlg/wxdlg3dViewer.h ../wxdlg/wxdlg3dViewer.cpp \
@@ -23,8 +23,8 @@ desmume_SOURCES = \
 	LuaWindow.cpp \
 	StringUtil.cpp \
 	wxMain.cpp
-desmume_LDADD = ../libdesmume.a \
+wxdesmume_LDADD = ../libdesmume.a \
 	$(SDL_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(WX_LIBS)
 if HAVE_GDB_STUB
-desmume_LDADD += ../gdbstub/libgdbstub.a
+wxdesmume_LDADD += ../gdbstub/libgdbstub.a
 endif
