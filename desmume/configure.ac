@@ -368,6 +368,7 @@ AC_CONFIG_FILES([Makefile
                  src/gtk/doc/Makefile
                  src/gtk-glade/Makefile
                  src/gtk-glade/doc/Makefile
+                 src/wx/Makefile
 		 src/gdbstub/Makefile
 		 autopackage/default.apspec
 ])
