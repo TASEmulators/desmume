@@ -5,26 +5,63 @@
 #define lstrlen(a) strlen((a))
 #endif
 
-#undef WIN32
 #include "NDSSystem.h"
 #include "GPU_osd.h"
-#include "wx/wxprec.h"
+#include <wx/wxprec.h>
 #include "gfx3d.h"
 #include "version.h"
 #include "addons.h"
 #include "saves.h"
 #include "movie.h"
+#include "sndsdl.h"
+#include "render3D.h"
+#include "rasterize.h"
+#include "OGLRender.h"
 
-#include "wx/stdpaths.h"
+#include <wx/stdpaths.h>
 
 #include "LuaWindow.h"
 #include "PadSimple/GUI/ConfigDlg.h"
 #include "PadSimple/pluginspecs_pad.h"
 
 #ifndef WX_PRECOMP
-#include "wx/wx.h"
+#include <wx/wx.h>
 #endif
 
+SoundInterface_struct *SNDCoreList[] = {
+        &SNDDummy,
+#ifdef WIN32
+        &SNDDIRECTX,
+#else
+        &SNDSDL,
+#endif
+        NULL
+};
+
+GPU3DInterface *core3DList[] = {
+        &gpu3DNull,
+        &gpu3Dgl,
+        &gpu3DRasterize,
+        NULL
+};
+
+/* lua stuff stubs */
+#ifndef WIN32
+void OpenLuaContext(int, void (*)(int, char const*), void (*)(int), void (*)(int, bool))
+{
+}
+void RunLuaScriptFile(int, char const*)
+{
+}
+void StopLuaScript(int)
+{
+}
+void CloseLuaContext(int)
+{
+}
+#endif
+
+volatile bool execute = false;
 std::string executableDirectory;
 
 class Desmume: public wxApp

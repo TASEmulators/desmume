@@ -17,7 +17,7 @@
 
 #include <sstream>
 
-#include "Common.h"
+#include "common.h"
 #include "ConfigDlg.h"
 #include "../PadSimple.h"
 
