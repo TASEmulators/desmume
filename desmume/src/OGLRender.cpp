@@ -50,7 +50,7 @@ static void ENDGL() {
 	#include <GL/gl.h>
 	#include <GL/glext.h>
 #else
-#ifdef DESMUME_COCOA
+#ifdef __APPLE__
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #else
@@ -100,12 +100,12 @@ static u32 textureFormat=0, texturePalette=0;
 
 #ifdef _WIN32
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
-#elif !defined(DESMUME_COCOA)
+#elif !defined(__APPLE__)
 #include <GL/glx.h>
 #define INITOGLEXT(x,y) y = (x)glXGetProcAddress((const GLubyte *) #y);
 #endif
 
-#ifndef DESMUME_COCOA
+#ifndef __APPLE__
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 //zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
 typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, const GLchar **source, GLsizei *length);
@@ -415,7 +415,7 @@ static char OGLInit(void)
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-#ifndef DESMUME_COCOA
+#ifndef __APPLE__
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
