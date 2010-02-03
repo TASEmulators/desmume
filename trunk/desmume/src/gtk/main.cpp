@@ -261,6 +261,9 @@ static const char *ui_description =
 "    </menu>"
 "    <menu action='ToolsMenu'>"
 "      <menuitem action='ioregs'/>"
+#ifdef HAVE_WX
+"      <menuitem action='view3d'/>"
+#endif
 "    </menu>"
 "    <menu action='HelpMenu'>"
 "      <menuitem action='about'/>"
@@ -297,10 +300,6 @@ static const GtkActionEntry action_entries[] = {
       { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
       { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
-#ifdef HAVE_WX
-      //for some reason the menu item doesnt show up....
-      { "view3d",      NULL,      "View 3d",        NULL,       NULL,   View3d },
-#endif
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "LayersMenu", NULL, "_Layers" },
       { "CheatMenu", NULL, "_Cheat" },
@@ -320,6 +319,9 @@ static const GtkActionEntry action_entries[] = {
       { "ViewMenu", NULL, "_View" },
 
     { "ToolsMenu", NULL, "_Tools" },
+#ifdef HAVE_WX
+      { "view3d",      NULL,      "View 3d",        NULL,       NULL,   View3d },
+#endif
 
     { "HelpMenu", NULL, "_Help" },
       { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
