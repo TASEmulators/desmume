@@ -245,14 +245,14 @@ public:
 		wxFileDialog dialog(this,(wxChar *)"Import Backup Memory",wxGetHomeDir(),(wxChar *)"",(wxChar *)"*.duc, *.sav",wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
 			if (!NDS_ImportSave(dialog.GetPath()))
-				wxMessageBox(wxString::Format("Save was not successfully imported"),(wxChar *)"Error",wxOK | wxICON_ERROR,this);
+				wxMessageBox(wxString::Format((wxChar *)"Save was not successfully imported"),(wxChar *)"Error",wxOK | wxICON_ERROR,this);
 	}
 
 	void exportBackupMemory(wxCommandEvent& event) {
 		wxFileDialog dialog(this,(wxChar *)"Export Backup Memory",wxGetHomeDir(),(wxChar *)"",(wxChar *)"*.duc, *.sav",wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
 			if (!NDS_ExportSave(dialog.GetPath()))
-				wxMessageBox(wxString::Format("Save was not successfully exported"),"Error",wxOK | wxICON_ERROR,this);
+				wxMessageBox(wxString::Format((wxChar *)"Save was not successfully exported"),(wxChar *)"Error",wxOK | wxICON_ERROR,this);
 	}
 	void saveScreenshotAs(wxCommandEvent& event) {
 		wxFileDialog dialog(this,(wxChar *)"Save Screenshot As",wxGetHomeDir(),(wxChar *)"",(wxChar *)"*.png",wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
