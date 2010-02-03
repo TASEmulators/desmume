@@ -220,11 +220,9 @@ if test "x$wxwidget" = "xyes" ; then
 	m4_include(wxwin.m4)
 	AM_PATH_WXCONFIG([2.4.0], wxwin=1)
 	if test "x$wxwin" = "x1"; then
-		CPPFLAGS="$CPPFLAGS $WX_CPPFLAGS"
-		CXXFLAGS="$CXXFLAGS $WX_CXXFLAGS_ONLY"
-		CFLAGS="$CFLAGS $WX_CFLAGS_ONLY"
-		LIBS="$LIBS $WX_LIBS"
-		AC_DEFINE([HAVE_WX])
+		AC_SUBST(WX_CPPFLAGS)
+		AC_SUBST(WX_LIBS)
+   		AC_DEFINE([WANT_WX])
 	fi
 fi
 

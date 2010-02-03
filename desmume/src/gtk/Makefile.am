@@ -15,6 +15,7 @@ desmume_SOURCES = \
 	tools/ioregsView.cpp tools/ioregsView.h \
 	../sndsdl.cpp \
 	../ctrlssdl.h ../ctrlssdl.cpp \
+	../driver.h ../driver.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
@@ -25,6 +26,11 @@ desmume_LDADD += ../gdbstub/libgdbstub.a
 endif
 if HAVE_LIBOSMESA
 desmume_LDADD += $(OSMESA_LIBS)
+endif
+if HAVE_WX
+AM_CPPFLAGS += -DHAVE_WX=1 $(WX_CPPFLAGS)
+desmume_LDADD += $(WX_LIBS)
+desmume_SOURCES += ../wxdlg/wxdlg3dViewer.cpp
 endif
 
 UPDATE_DESKTOP = \
