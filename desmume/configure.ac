@@ -218,8 +218,8 @@ AC_ARG_ENABLE([wxwidget],
                [wxwidget=no])
 if test "x$wxwidget" = "xyes" ; then
 	m4_include(wxwin.m4)
-	AM_PATH_WXCONFIG([2.4.0], wxwin=1)
-	if test "x$wxwin" = "x1"; then
+	AM_PATH_WXCONFIG([2.4.0], wxwin=yes)
+	if test "x$wxwin" = "xyes"; then
 		AC_SUBST(WX_CPPFLAGS)
 		AC_SUBST(WX_LIBS)
    		AC_DEFINE([WANT_WX])
@@ -236,6 +236,9 @@ if test "x$HAVE_SDL" = "xyes"; then
   if test "x$HAVE_GTK" = "xyes"; then
     # GTK requires SDL
     UI_DIR="gtk $UI_DIR"
+  fi
+  if test "x$wxwin" = "xyes"; then
+    UI_DIR="wx $UI_DIR"
   fi
 
   if test "x$HAVE_LIBGLADE" = "xyes"; then
