@@ -19,6 +19,7 @@
 #define __PADSIMPLE_H__  
 
 //#include "Setup.h" // Common
+#include "types.h"
 
 // Constants for full-press sticks and triggers
 const int BUTTON_FULL = 255;

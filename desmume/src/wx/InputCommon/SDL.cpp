@@ -67,7 +67,7 @@ bool SearchDevices(std::vector<CONTROLLER_INFO> &_joyinfo, int &_NumPads, int &_
 		if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
 #endif
 		{
-			PanicAlert("Could not initialize SDL: %s", SDL_GetError());
+			//PanicAlert("Could not initialize SDL: %s", SDL_GetError());
 			return false;
 		}
 

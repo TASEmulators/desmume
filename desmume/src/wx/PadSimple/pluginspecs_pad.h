@@ -5,6 +5,8 @@
 #ifndef _PAD_H_INCLUDED__
 #define _PAD_H_INCLUDED__
 
+#include <wx/isql.h>
+#include "types.h"
 //#include "PluginSpecs.h"
 
 //#include "ExportProlog.h"

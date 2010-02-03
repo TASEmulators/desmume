@@ -30,7 +30,7 @@
 #include <wx/gbsizer.h>
 
 #if defined(HAVE_X11) && HAVE_X11
-#include "X11InputBase.h"
+#include "InputCommon/X11InputBase.h"
 #endif
 
 class PADConfigDialogSimple : public wxDialog

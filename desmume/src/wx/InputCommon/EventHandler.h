@@ -1,6 +1,6 @@
 #ifndef EVENTHANDER_H
 #define EVENTHANDER_H 1
-#include "Common.h"
+#include "common.h"
 #include <queue>
 #include "Event.hpp"
 
