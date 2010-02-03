@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "Common.h"
+#include "common.h"
 //#include "LogManager.h"
 #include "pluginspecs_pad.h"
 #include "PadSimple.h"

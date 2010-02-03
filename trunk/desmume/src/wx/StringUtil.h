@@ -23,7 +23,7 @@
 #include <vector>
 #include <string>
 
-#include "Common.h"
+#include "common.h"
 
 std::string StringFromFormat(const char* format, ...);
 void ToStringFromFormat(std::string* out, const char* format, ...);
