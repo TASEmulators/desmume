@@ -41,12 +41,9 @@ public:
 	void OnQuit(wxCommandEvent& WXUNUSED(event)){Close(true);}
 	void OnAbout(wxCommandEvent& WXUNUSED(event))
 	{
-		wxMessageBox(wxString::Format
-			(
-			_T("Desmume on %s"),
-			wxGetOsDescription()
-			),
-			"About Desmume",
+		wxString desmume_on(_T("Desmume on %s"), wxGetOsDescription());
+		wxMessageBox(desmume_on,
+			_T("About Desmume"),
 			wxOK | wxICON_INFORMATION,
 			this);
 	}
@@ -118,7 +115,7 @@ public:
 		if(dialog.ShowModal() == wxID_OK) {
 			NDS_Init ();
 			execute = true;
-			NDS_LoadROM(dialog.GetPath(), dialog.GetPath());
+			NDS_LoadROM(dialog.GetPath().mb_str(), dialog.GetPath().mb_str());
 		}
 	}
 
@@ -226,12 +223,12 @@ public:
 	void saveStateAs(wxCommandEvent& event) {
 		wxFileDialog dialog(this,_T("Save State As"),wxGetHomeDir(),_T(""),_T("*.dst"),wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
-			savestate_save (dialog.GetPath());
+			savestate_save (dialog.GetPath().mb_str());
 	}
 	void loadStateFrom(wxCommandEvent& event) {
 		wxFileDialog dialog(this,_T("Load State From"),wxGetHomeDir(),_T(""),_T("*.dst"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
-			savestate_load (dialog.GetPath());
+			savestate_load (dialog.GetPath().mb_str());
 	}
 
 	void closeRom(wxCommandEvent& event) {
@@ -244,23 +241,23 @@ public:
 	void importBackupMemory(wxCommandEvent& event) {
 		wxFileDialog dialog(this,_T("Import Backup Memory"),wxGetHomeDir(),_T(""),_T("*.duc, *.sav"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
-			if (!NDS_ImportSave(dialog.GetPath()))
+			if (!NDS_ImportSave(dialog.GetPath().mb_str()))
 				wxMessageBox(wxString::Format(_T("Save was not successfully imported")),_T("Error"),wxOK | wxICON_ERROR,this);
 	}
 
 	void exportBackupMemory(wxCommandEvent& event) {
 		wxFileDialog dialog(this,_T("Export Backup Memory"),wxGetHomeDir(),_T(""),_T("*.duc, *.sav"),wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
-			if (!NDS_ExportSave(dialog.GetPath()))
+			if (!NDS_ExportSave(dialog.GetPath().mb_str()))
 				wxMessageBox(wxString::Format(_T("Save was not successfully exported")),_T("Error"),wxOK | wxICON_ERROR,this);
 	}
 	void saveScreenshotAs(wxCommandEvent& event) {
 		wxFileDialog dialog(this,_T("Save Screenshot As"),wxGetHomeDir(),_T(""),_T("*.png"),wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK)
-			NDS_WritePNG(dialog.GetPath());
+			NDS_WritePNG(dialog.GetPath().mb_str());
 	}
 	void quickScreenshot(wxCommandEvent& event) {
-			NDS_WritePNG(wxStandardPaths::Get().GetExecutablePath());//TODO GetExecutablePath is wrong
+			NDS_WritePNG(wxStandardPaths::Get().GetExecutablePath().mb_str());//TODO GetExecutablePath is wrong
 	}
 
 	//TODO
@@ -410,11 +407,12 @@ bool Desmume::OnInit()
 	OpenConsole();
 #endif
 
-	DesmumeFrame *frame = new DesmumeFrame(_T(EMU_DESMUME_NAME_AND_VERSION()));
+        wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
+	DesmumeFrame *frame = new DesmumeFrame(emu_version);
 	frame->Show(true);
 
 	char *p, *a;
-	std::string b = wxStandardPaths::Get().GetExecutablePath();
+	std::string b = std::string(wxStandardPaths::Get().GetExecutablePath().mb_str());
 	a = const_cast<char*>(b.c_str());
 	p = a + lstrlen(a);
 	while (p >= a && *p != '\\') p--;
