@@ -213,7 +213,7 @@ dnl - Check for wxWidgets
 
 dnl - if --enable-wxwidget is used, check for it
 AC_ARG_ENABLE([wxwidget],
-               [AC_HELP_STRING([--enable-wxwidget], [add some cross platform windows])],
+               [AC_HELP_STRING([--enable-wxwidgets], [Enable cross platform wx widgets frontend])],
                [wxwidget=$enableval],
                [wxwidget=no])
 if test "x$wxwidget" = "xyes" ; then
