@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#if defined HAVE_WX && HAVE_WX
+#if defined(HAVE_WX)
 #include <wx/wx.h>
 #endif
 
@@ -98,7 +98,7 @@ bool EventHandler::TestEvent (Keys k, sf::Event e)
     return (false);
 }
 
-#if defined HAVE_WX && HAVE_WX 
+#if defined(HAVE_WX)
 // Taken from wxw source code
 sf::Key::Code EventHandler::wxCharCodeToSF(int id)
 {

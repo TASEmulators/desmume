@@ -21,7 +21,7 @@
 #include "version.h"
 
 //todo - everyone will want to support this eventually, i suppose
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(WXPORT)
 #include "svnrev.h"
 #else
 #ifdef SVN_REV

@@ -11,11 +11,13 @@
 #include "GPU_osd.h"
 #include "saves.h"
 #include "emufile.h"
-#ifdef WIN32
+#if defined(WIN32) && !defined(WXPORT)
 #include "main.h"
 #include "windows.h"
 #include "video.h"
 #endif
+
+using namespace std;
 
 
 // functions that maybe aren't part of the Lua engine
@@ -424,7 +426,7 @@ static int doPopup(lua_State* L, const char* deftype, const char* deficon)
 
 	static const char * const titles [] = {"Notice", "Question", "Warning", "Error"};
 	const char* answer = "ok";
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WXPORT)
 	static const int etypes [] = {MB_OK, MB_YESNO, MB_YESNOCANCEL, MB_OKCANCEL, MB_ABORTRETRYIGNORE};
 	static const int eicons [] = {MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONERROR};
 //	DialogsOpen++;
@@ -1274,7 +1276,7 @@ bool luabitop_validate(lua_State *L) // originally named as luaopen_bit
   if (b != (UBits)1437217655L || BAD_SAR) {  /* Perform a simple self-test. */
     const char *msg = "compiled with incompatible luaconf.h";
 #ifdef LUA_NUMBER_DOUBLE
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WXPORT)
     if (b == (UBits)1610612736L)
       msg = "use D3DCREATE_FPU_PRESERVE with DirectX";
 #endif
@@ -1346,7 +1348,7 @@ void indicateBusy(lua_State* L, bool busy)
 		lua_pop(L, 1);
 	}
 */
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WXPORT)
 	int uid = luaStateToUIDMap[L->l_G->mainthread];
 	HWND hDlg = (HWND)uid;
 	char str [1024];
@@ -1400,7 +1402,7 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		if(!info.panic)
 		{
 			SPU_ClearOutputBuffer();
-#if defined(ASK_USER_ON_FREEZE) && defined(_WIN32)
+#if defined(ASK_USER_ON_FREEZE) && defined(_WIN32) && !defined(WXPORT)
 			DialogsOpen++;
 			int answer = MessageBox(HWnd, "A Lua script has been running for quite a while. Maybe it is in an infinite loop.\n\nWould you like to stop the script?\n\n(Yes to stop it now,\n No to keep running and not ask again,\n Cancel to keep running but ask again later)", "Lua Alert", MB_YESNOCANCEL | MB_DEFBUTTON3 | MB_ICONASTERISK);
 			DialogsOpen--;
@@ -2508,7 +2510,7 @@ static void prepare_reading()
 	}
 	else
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(WXPORT)
 		extern VideoInfo video;
 		curGuiData.data = video.buffer;
 		curGuiData.stridePix = 256;
@@ -3356,7 +3358,7 @@ static void GetCurrentScriptDir(char* buffer, int bufLen)
 
 DEFINE_LUA_FUNCTION(emu_openscript, "filename")
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(WXPORT)
 	char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024); // make sure we can always find scripts that are in the same directory as the current script
 	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
 	extern const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, bool makeSubservient);
@@ -3536,7 +3538,7 @@ DEFINE_LUA_FUNCTION(sound_clear, "")
 	return 0;
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WXPORT)
 const char* s_keyToName[256] =
 {
 	NULL,
@@ -3650,7 +3652,7 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 {
 	lua_newtable(L);
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WXPORT)
 	// keyboard and mouse button status
 	{
 		int BackgroundInput = 0;//TODO

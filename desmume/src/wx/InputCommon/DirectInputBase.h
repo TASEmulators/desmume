@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #define DIRECTINPUT_VERSION 0x0800 // DirectInput
-#include <dinput.h>
+#include <directx/dinput.h>
 
 //#include "ConsoleWindow.h" // Common
 

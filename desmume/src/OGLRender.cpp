@@ -44,7 +44,7 @@ static void ENDGL() {
 		oglrender_endOpenGL();
 }
 
-#ifdef _WIN32
+#ifdef _WIN32 && !defined(WXPORT)
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
