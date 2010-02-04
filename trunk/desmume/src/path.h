@@ -1,6 +1,6 @@
 #include <string>
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(WXPORT)
 #include "resource.h"
 #else
 #include <glib.h>
@@ -312,7 +312,7 @@ public:
 
 	enum ImageFormat
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(WXPORT)
 		PNG = IDC_PNG,
 		BMP = IDC_BMP
 #else

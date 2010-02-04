@@ -30,7 +30,7 @@
 //#include "FileUtil.h"
 //#include "ChunkFile.h"
 
-#if defined(HAVE_WX) && HAVE_WX
+#if defined(HAVE_WX)
 	#include "GUI/ConfigDlg.h"
 	PADConfigDialogSimple* m_ConfigFrame = NULL;
 #endif
@@ -68,7 +68,7 @@ SPADInitialize g_PADInitialize;
 #ifdef _WIN32
 //HINSTANCE g_hInstance;
 
-#if defined(HAVE_WX) && HAVE_WX
+#if defined(HAVE_WX)
 class wxDLLApp : public wxApp
 {
 	bool OnInit()
@@ -88,7 +88,7 @@ BOOL APIENTRY aMain(HINSTANCE hinstDLL,	// DLL module handle
 	{
 	case DLL_PROCESS_ATTACH:
 		{
-#if defined(HAVE_WX) && HAVE_WX
+#if defined(HAVE_WX)
 			wxSetInstance((HINSTANCE)hinstDLL);
 			int argc = 0;
 			char **argv = NULL;
@@ -100,7 +100,7 @@ BOOL APIENTRY aMain(HINSTANCE hinstDLL,	// DLL module handle
 		break;
 
 	case DLL_PROCESS_DETACH:
-#if defined(HAVE_WX) && HAVE_WX
+#if defined(HAVE_WX)
 		wxEntryCleanup();
 #endif
 		break;
@@ -113,7 +113,7 @@ BOOL APIENTRY aMain(HINSTANCE hinstDLL,	// DLL module handle
 }
 #endif
 
-#if defined(HAVE_WX) && HAVE_WX
+#if defined(HAVE_WX)
 wxWindow* GetParentedWxWindow(HWND Parent)
 {
 #ifdef _WIN32

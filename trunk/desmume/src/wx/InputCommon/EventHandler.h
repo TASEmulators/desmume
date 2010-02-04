@@ -54,7 +54,7 @@ public:
     static void Destroy();
     bool addEvent(sf::Event *e);
     static bool TestEvent (Keys k, sf::Event e);
-#if defined HAVE_WX && HAVE_WX
+#if defined(HAVE_WX)
     static sf::Key::Code wxCharCodeToSF(int id);
 #endif
     static void SFKeyToString(sf::Key::Code keycode, char *keyStr);

@@ -32,7 +32,9 @@
 	#include <ws2tcpip.h>
 	#define socket_t    SOCKET 	 
 	#define sockaddr_t  SOCKADDR
-	#include "windriver.h"
+	#ifndef WXPORT
+		#include "windriver.h"
+	#endif
 #else
 	#include <unistd.h> 	 
 	#include <stdlib.h> 	 

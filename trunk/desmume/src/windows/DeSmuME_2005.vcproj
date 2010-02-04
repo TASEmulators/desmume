@@ -48,6 +48,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
@@ -1576,6 +1577,14 @@
 			<File
 				RelativePath="..\wxdlg\wxdlg3dViewer.cpp"
 				>
+				<FileConfiguration
+					Name="Release FastBuild|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						GeneratePreprocessedFile="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\wxdlg\wxdlg3dViewer.h"

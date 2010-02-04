@@ -18,6 +18,10 @@
 #include "rasterize.h"
 #include "OGLRender.h"
 
+#ifdef WIN32
+#include "snddx.h"
+#endif
+
 #include <wx/stdpaths.h>
 
 #include "LuaWindow.h"
@@ -31,7 +35,7 @@
 SoundInterface_struct *SNDCoreList[] = {
         &SNDDummy,
 #ifdef WIN32
-        &SNDDIRECTX,
+//        &SNDDIRECTX,
 #else
         &SNDSDL,
 #endif
@@ -39,10 +43,12 @@ SoundInterface_struct *SNDCoreList[] = {
 };
 
 GPU3DInterface *core3DList[] = {
-        &gpu3DNull,
-        &gpu3Dgl,
         &gpu3DRasterize,
-        NULL
+#ifndef WIN32
+        &gpu3Dgl,
+#endif
+        &gpu3DNull,
+		NULL
 };
 
 /* lua stuff stubs */
@@ -93,7 +99,11 @@ public:
 
 		SPADStatus s;
 		memset(&s,0,sizeof(s));
+
+		//TODO !!!!!!!!!!!!!!!!!!!!!! FIXME!!!!!!!!!!1
+#ifndef _MSC_VER
 		PAD_GetStatus(0, &s);
+#endif
 
 		if(s.button & PAD_BUTTON_LEFT)
 			left = true;
@@ -309,7 +319,9 @@ public:
 
 	void OnOpenControllerConfiguration(wxCommandEvent& WXUNUSED (event))
 	{
+#ifndef _MSC_VER
 		new PADConfigDialogSimple(this);
+#endif
 	}
 
 	wxMenu* MakeStatesSubMenu( int baseid ) const
@@ -438,6 +450,7 @@ bool Desmume::OnInit()
 
 	Desmume_InitOnce();
 	aggDraw.hud->attach((u8*)GPU_screen, 256, 384, 1024);//TODO
+	NDS_3D_ChangeCore(0);
 
 #ifdef __WIN32__
 	extern void OpenConsole();
@@ -459,7 +472,9 @@ bool Desmume::OnInit()
 	SPADInitialize PADInitialize;
 	PADInitialize.padNumber = 1;
 	extern void Initialize(void *init);
+#ifndef _WIN32
 	Initialize(&PADInitialize);
+#endif
 
 	//TODO
 	addon_type = NDS_ADDON_NONE;
@@ -561,3 +576,22 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	//	CreateStatusBar(2);
 	//	SetStatusText("Welcome to Desmume!");
 }
+
+#ifdef _WIN32
+/*
+* The thread handling functions needed by the GDB stub code.
+*/
+void *
+createThread_gdb( void (APIENTRY *thread_function)( void *data),
+				 void *thread_data) {
+					 void *new_thread = CreateThread( NULL, 0,
+						 (LPTHREAD_START_ROUTINE)thread_function, thread_data,
+						 0, NULL);
+
+					 return new_thread;
+}
+
+void
+joinThread_gdb( void *thread_handle) {
+}
+#endif
