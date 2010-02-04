@@ -78,9 +78,9 @@ public:
 	void OnQuit(wxCommandEvent& WXUNUSED(event)){Close(true);}
 	void OnAbout(wxCommandEvent& WXUNUSED(event))
 	{
-		wxString desmume_on(_T("Desmume on %s"), wxGetOsDescription());
-		wxMessageBox(desmume_on,
-			_T("About Desmume"),
+		wxMessageBox(
+			wxString::Format(wxT("Desmume on %s"),wxGetOsDescription().c_str()),
+			wxT("About Desmume"),
 			wxOK | wxICON_INFORMATION,
 			this);
 	}
