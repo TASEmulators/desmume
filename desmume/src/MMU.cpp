@@ -1526,6 +1526,72 @@ void validateIF_arm9()
 	else if(MMU_new.gxstat.gxfifo_irq == 0) MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
 }
 
+static u32 readreg_POWCNT1(const int size, const u32 adr) { 
+	switch(size)
+	{
+	case 8:
+		switch(adr)
+		{
+		case REG_POWCNT1: {
+			u8 ret = 0;		
+			ret |= nds.power1.lcd?BIT(0):0;
+			ret |= nds.power1.gpuMain?BIT(1):0;
+			ret |= nds.power1.gfx3d_render?BIT(2):0;
+			ret |= nds.power1.gfx3d_geometry?BIT(3):0;
+			return ret;
+			}
+		case REG_POWCNT1+1: {
+			u8 ret = 0;
+			ret |= nds.power1.gpuSub?BIT(1):0;
+			ret |= nds.power1.dispswap?BIT(7):0;
+			return ret;
+			}
+		}
+	case 16:
+	case 32:
+		return readreg_POWCNT1(8,adr)|(readreg_POWCNT1(8,adr)<<8);
+	}
+	assert(false);
+	return 0;
+}
+static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) { 
+	switch(size)
+	{
+	case 8:
+		switch(adr)
+		{
+		case REG_POWCNT1:
+			nds.power1.lcd = BIT0(val);
+			nds.power1.gpuMain = BIT1(val);
+			nds.power1.gfx3d_render = BIT2(val);
+			nds.power1.gfx3d_geometry = BIT3(val);
+			break;
+		case REG_POWCNT1+1:
+			nds.power1.gpuSub = BIT1(val);
+			nds.power1.dispswap = BIT7(val);
+			if(nds.power1.dispswap)
+			{
+				//printf("Main core on top (vcount=%d)\n",nds.VCount);
+				MainScreen.offset = 0;
+				SubScreen.offset = 192;
+			}
+			else
+			{
+				//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
+				MainScreen.offset = 192;
+				SubScreen.offset = 0;
+			}	
+			break;
+		}
+		break;
+	case 16:
+	case 32:
+		writereg_POWCNT1(8,adr,val&0xFF);
+		writereg_POWCNT1(8,adr+1,(val>>16)&0xFF);
+		break;
+	}
+}
+
 static INLINE void MMU_IPCSync(u8 proc, u32 val)
 {
 	//INFO("IPC%s sync 0x%04X (0x%02X|%02X)\n", proc?"7":"9", val, val >> 8, val & 0xFF);
@@ -2315,9 +2381,13 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM9));
 				return;
 
-			case 0x4000247:	
+			case REG_WRAMCNT:	
 				/* Update WRAMSTAT at the ARM7 side */
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val);
+				break;
+
+            case REG_POWCNT1:
+				writereg_POWCNT1(8,adr,val);
 				break;
 
 			case REG_VRAMCNTA:
@@ -2605,28 +2675,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				break;
 
             case REG_POWCNT1:
-				{
-					nds.power1.lcd = BIT0(val);
-					nds.power1.gpuMain = BIT1(val);
-					nds.power1.gfx3d_render = BIT2(val);
-					nds.power1.gfx3d_geometry = BIT3(val);
-					nds.power1.gpuSub = BIT9(val);
-					nds.power1.dispswap = BIT15(val);
-
-					if(val & (1<<15))
-					{
-						//printf("Main core on top (vcount=%d)\n",nds.VCount);
-						MainScreen.offset = 0;
-						SubScreen.offset = 192;
-					}
-					else
-					{
-						//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
-						MainScreen.offset = 192;
-						SubScreen.offset = 0;
-					}
-				}
-				
+				writereg_POWCNT1(16,adr,val);
 				return;
 
 			case REG_EXMEMCNT:
@@ -2962,6 +3011,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		{
 			case REG_SQRTCNT: MMU_new.sqrt.write16((u16)val); return;
 			case REG_DIVCNT: MMU_new.div.write16((u16)val); return;
+
+
+            case REG_POWCNT1: writereg_POWCNT1(32,adr,val); break;
+
 
 			//ensata handshaking port?
 			case 0x04FFF010:
@@ -3308,6 +3361,12 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT READ\n"); return 0;
 			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT READ\n"); return 0;
 
+			case REG_POWCNT1: 
+			case REG_POWCNT1+1: 
+			case REG_POWCNT1+2: 
+			case REG_POWCNT1+3:
+				return readreg_POWCNT1(8,adr);
+
 			case eng_3D_GXSTAT:
 				return MMU_new.gxstat.read(8,adr);
 		}
@@ -3384,17 +3443,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
 
-            case REG_POWCNT1:
-				{
-					u16 ret = 0;
-					ret |= nds.power1.lcd?BIT(0):0;
-					ret |= nds.power1.gpuMain?BIT(1):0;
-					ret |= nds.power1.gfx3d_render?BIT(2):0;
-					ret |= nds.power1.gfx3d_geometry?BIT(3):0;
-					ret |= nds.power1.gpuSub?BIT(9):0;
-					ret |= nds.power1.dispswap?BIT(15):0;
-					return ret;
-				}
+            case REG_POWCNT1: 
+			case REG_POWCNT1+2:
+				return readreg_POWCNT1(16,adr);
 
 			case 0x04000130:
 			case 0x04000136:
@@ -3510,6 +3561,9 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
      
 			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM9>();
+
+            case REG_POWCNT1: 
+				return readreg_POWCNT1(32,adr);
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
