@@ -1,6 +1,6 @@
 include $(top_srcdir)/src/desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LUA_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) 
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) 
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp
 if HAVE_GDB_STUB
@@ -69,6 +69,7 @@ if HAVE_LIBAGG
 libdesmume_a_SOURCES += aggdraw.cpp
 endif
 if HAVE_LUA
+AM_CPPFLAGS += $(LUA_CFLAGS)
 libdesmume_a_SOURCES += lua-engine.cpp
 endif
 if HAVE_GDB_STUB
