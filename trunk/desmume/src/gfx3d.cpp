@@ -566,6 +566,8 @@ void gfx3d_reset()
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
+
+	gfx3d.state.invalidateToon = true;
 }
 
 
@@ -1613,14 +1615,16 @@ int gfx3d_GetNumVertex()
 
 void gfx3d_UpdateToonTable(u8 offset, u16 val)
 {
-	gfx3d.state.u16ToonTable[offset] =  val;
+	gfx3d.state.rgbToonTable[offset] = RGB15TO32(val, 255);
+	gfx3d.state.invalidateToon = true;
 }
 
 void gfx3d_UpdateToonTable(u8 offset, u32 val)
 {
 	//C.O.P. sets toon table via this method
-	gfx3d.state.u16ToonTable[offset] = val & 0xFFFF;
-	gfx3d.state.u16ToonTable[offset+1] = val >> 16;
+	gfx3d.state.rgbToonTable[offset] = RGB15TO32(val & 0xFFFF, 255);
+	gfx3d.state.rgbToonTable[offset+1] = RGB15TO32(val >> 16, 255);
+	gfx3d.state.invalidateToon = true;
 }
 
 s32 gfx3d_GetClipMatrix (unsigned int index)
@@ -2205,7 +2209,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GSCD", 4, 1, &gfx3d.state.clearDepth},
 	{ "GSFC", 4, 4, &gfx3d.state.fogColor},
 	{ "GSFO", 4, 1, &gfx3d.state.fogOffset},
-	{ "GST2", 2, 32, gfx3d.state.u16ToonTable},
+	{ "GST3", 4, 32, gfx3d.state.rgbToonTable},
 	{ "GSST", 4, 128, &gfx3d.state.shininessTable[0]},
 	{ "GSSI", 4, 1, &shininessInd},
 	//------------------------
