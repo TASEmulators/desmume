@@ -32,6 +32,10 @@
 #include <wx/wx.h>
 #endif
 
+#ifdef GDB_STUB
+#include "gdbstub.h"
+#endif
+
 SoundInterface_struct *SNDCoreList[] = {
         &SNDDummy,
 #ifdef WIN32
@@ -102,7 +106,7 @@ public:
 
 		//TODO !!!!!!!!!!!!!!!!!!!!!! FIXME!!!!!!!!!!1
 #ifndef _MSC_VER
-		PAD_GetStatus(0, &s);
+//		PAD_GetStatus(0, &s);
 #endif
 
 		if(s.button & PAD_BUTTON_LEFT)
@@ -160,7 +164,7 @@ public:
 	void LoadRom(wxCommandEvent& event){
 		wxFileDialog dialog(this,_T("Load Rom"),wxGetHomeDir(),_T(""),_T("*.nds"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK) {
-			NDS_Init ();
+			NDSInitialize();
 			execute = true;
 			NDS_LoadROM(dialog.GetPath().mb_str(), dialog.GetPath().mb_str());
 		}
@@ -336,8 +340,17 @@ public:
 	}
 	void Menu_SaveStates(wxCommandEvent &event);
 	void Menu_LoadStates(wxCommandEvent &event);
+	void NDSInitialize();
 
 private:
+#ifdef GDB_STUB
+	gdbstub_handle_t arm9_gdb_stub;
+	gdbstub_handle_t arm7_gdb_stub;
+	struct armcpu_memory_iface *arm9_memio;
+	struct armcpu_memory_iface *arm7_memio;
+	struct armcpu_ctrl_iface *arm9_ctrl_iface;
+	struct armcpu_ctrl_iface *arm7_ctrl_iface;
+#endif
 	DECLARE_EVENT_TABLE()
 };
 
@@ -441,24 +454,40 @@ END_EVENT_TABLE()
 
 IMPLEMENT_APP(Desmume)
 
+static SPADInitialize PADInitialize;
+
+void DesmumeFrame::NDSInitialize() {
+#ifdef GDB_STUB
+	arm9_memio = &arm9_base_memory_iface;
+	arm7_memio = &arm7_base_memory_iface;
+	NDS_Init(	arm9_memio, &arm9_ctrl_iface,
+				arm7_memio, &arm7_ctrl_iface);
+#else
+	NDS_Init();
+#endif
+}
+
 bool Desmume::OnInit()
 {
+
 	if ( !wxApp::OnInit() )
 		return false;
-
-	NDS_Init ();
-
-	Desmume_InitOnce();
-	aggDraw.hud->attach((u8*)GPU_screen, 256, 384, 1024);//TODO
-	NDS_3D_ChangeCore(0);
+	
 
 #ifdef __WIN32__
 	extern void OpenConsole();
 	OpenConsole();
 #endif
 
-        wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
+	wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
 	DesmumeFrame *frame = new DesmumeFrame(emu_version);
+	frame->NDSInitialize();
+
+	Desmume_InitOnce();
+	aggDraw.hud->attach((u8*)GPU_screen, 256, 384, 1024);//TODO
+	NDS_3D_ChangeCore(0);
+
+
 	frame->Show(true);
 
 	char *p, *a;
@@ -469,9 +498,10 @@ bool Desmume::OnInit()
 	if (++p >= a) *p = 0;
 
 	executableDirectory = std::string(a);
-	SPADInitialize PADInitialize;
 	PADInitialize.padNumber = 1;
-	extern void Initialize(void *init);
+
+extern void Initialize(void *init);
+
 #ifndef _WIN32
 	Initialize(&PADInitialize);
 #endif
