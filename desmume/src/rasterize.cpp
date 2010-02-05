@@ -1148,12 +1148,14 @@ void SoftRasterizerEngine::initFramebuffer(const int width, const int height, co
 
 void SoftRasterizerEngine::updateToonTable()
 {
+	if (!gfx3d.state.invalidateToon) return;
 	//convert the toon colors
 	for(int i=0;i<32;i++) {
-		toonTable[i].r = GFX3D_5TO6((gfx3d.state.u16ToonTable[i])&0x1F);
-		toonTable[i].g = GFX3D_5TO6((gfx3d.state.u16ToonTable[i]>>5)&0x1F);
-		toonTable[i].b = GFX3D_5TO6((gfx3d.state.u16ToonTable[i]>>10)&0x1F);
+		toonTable[i].r = (gfx3d.state.rgbToonTable[i] >> 2) & 0x3F;
+		toonTable[i].g = (gfx3d.state.rgbToonTable[i] >> 10) & 0x3F;
+		toonTable[i].b = (gfx3d.state.rgbToonTable[i] >> 18) & 0x3F;
 	}
+	gfx3d.state.invalidateToon = false;
 }
 
 void SoftRasterizerEngine::updateFogTable()

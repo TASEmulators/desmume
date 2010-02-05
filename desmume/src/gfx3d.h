@@ -312,11 +312,13 @@ struct GFX3D_State
 		, fogColor(0)
 		, fogOffset(0)
 		, fogShift(0)
+		, invalidateToon(true)
 	{
-		for(u32 i=0;i<ARRAY_SIZE(u16ToonTable);i++)
-			u16ToonTable[i] = 0;
 		for(u32 i=0;i<ARRAY_SIZE(shininessTable);i++)
 			shininessTable[i] = 0;
+
+		for(u32 i=0;i<ARRAY_SIZE(rgbToonTable);i++)
+			rgbToonTable[i] = 0;
 	}
 
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
@@ -340,7 +342,8 @@ struct GFX3D_State
 	u32 fogOffset;
 	u32 fogShift;
 
-	u16 u16ToonTable[32];
+	bool invalidateToon;
+	u32 rgbToonTable[32];
 	float shininessTable[128];
 };
 

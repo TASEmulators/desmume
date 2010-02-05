@@ -44,7 +44,7 @@ static void ENDGL() {
 		oglrender_endOpenGL();
 }
 
-#ifdef _WIN32 && !defined(WXPORT)
+#if defined(_WIN32) && !defined(WXPORT)
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
@@ -337,6 +337,8 @@ static void OGLReset()
 	}
 
 	TexCache_Reset();
+	if (currTexture) 
+		delete currTexture;
 	currTexture = NULL;
 
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
@@ -565,7 +567,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 			currTexture->texid = (u64)freeTextureIds.front();
 			freeTextureIds.pop();
 
-			glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
+						glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -818,17 +820,14 @@ static void OGLRender()
 
 	if(hasShaders)
 	{
-		//TODO - maybe this should only happen if the toon table is stale (for a slight speedup)
+		if (gfx3d.state.invalidateToon)
+		{
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
 
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
-		
-		//generate a 8888 toon table from the ds format one and store it in a texture
-		u32 rgbToonTable[32];
-		for(int i=0;i<32;i++) 
-			rgbToonTable[i] = RGB15TO32(gfx3d.state.u16ToonTable[i], 255);
-
-		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbToonTable);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &gfx3d.state.rgbToonTable[0]);
+			gfx3d.state.invalidateToon = false;
+		}
 	}
 
 	xglDepthMask(GL_TRUE);
