@@ -1587,7 +1587,7 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) {
 	case 16:
 	case 32:
 		writereg_POWCNT1(8,adr,val&0xFF);
-		writereg_POWCNT1(8,adr+1,(val>>16)&0xFF);
+		writereg_POWCNT1(8,adr+1,(val>>8)&0xFF);
 		break;
 	}
 }
