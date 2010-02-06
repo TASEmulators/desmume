@@ -1549,7 +1549,7 @@ static u32 readreg_POWCNT1(const int size, const u32 adr) {
 		}
 	case 16:
 	case 32:
-		return readreg_POWCNT1(8,adr)|(readreg_POWCNT1(8,adr)<<8);
+		return readreg_POWCNT1(8,adr)|(readreg_POWCNT1(8,adr+1)<<8);
 	}
 	assert(false);
 	return 0;
