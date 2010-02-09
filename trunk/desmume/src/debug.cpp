@@ -222,6 +222,6 @@ void IdeasLog(armcpu_t* cpu)
 		if(!c) break;
 		printf("%c",c);
 	}
-	printf("\n");
+	//don't emit a newline. that is a pain in the butt.
 }
 
