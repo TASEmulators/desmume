@@ -1333,7 +1333,6 @@ u32 MMU_readFromGC()
 		case 0x00:
 		case 0xB7:
 			{
-				// TODO: prevent read if the address is out of range
 				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
 				if((card.command[0] == 0xB7) && (card.address < 0x8000))
 				{
@@ -1342,6 +1341,13 @@ u32 MMU_readFromGC()
 
 					card.address = (0x8000 + (card.address&0x1FF));
 				}
+
+				if(card.address >= gameInfo.romsize)
+				{
+					INFO("Reading beyond end of cart! ... %08X > %08X\n",card.address, gameInfo.romsize);
+				}
+				//but, this is actually handled by the cart rom buffer being oversized and full of 0xFF.
+				//is this a good idea? We think so.
 				val = T1ReadLong(MMU.CART_ROM, card.address & MMU.CART_ROM_MASK);
 			}
 			break;
