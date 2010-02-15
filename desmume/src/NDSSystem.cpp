@@ -195,7 +195,7 @@ NDS_header * NDS_getROMHeader(void)
 	memcpy(header->logo, MMU.CART_ROM + 192, 156);
 	header->logoCRC16 = T1ReadWord(MMU.CART_ROM, 348);
 	header->headerCRC16 = T1ReadWord(MMU.CART_ROM, 350);
-	memcpy(header->reserved, MMU.CART_ROM + 352, min(160, gameInfo.romsize - 352));
+	memcpy(header->reserved, MMU.CART_ROM + 352, min(160, (int)gameInfo.romsize - 352));
 
 	return header;
 } 
@@ -345,15 +345,16 @@ static void loadrom(std::string fname) {
 
 	gameInfo.resize(size);
 	fread(gameInfo.romdata,1,size,inf);
+	gameInfo.fillGap();
 	
 	fclose(inf);
 }
 
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
 {
-	int					type = ROM_NDS;
-	u32					 mask;
-	char				buf[MAX_PATH];
+	int	type = ROM_NDS;
+	u32 mask;
+	char buf[MAX_PATH];
 
 	if (filename == NULL)
 		return -1;
@@ -388,15 +389,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (gameInfo.romsize < 352) {
 		return -1;
 	}
+	
 
-	//zero 25-dec-08 - this used to yield a mask which was 2x large
-	//mask = size; 
-	mask = gameInfo.romsize-1; 
-	mask |= (mask >>1);
-	mask |= (mask >>2);
-	mask |= (mask >>4);
-	mask |= (mask >>8);
-	mask |= (mask >>16);
 
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
@@ -415,7 +409,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	FCEUI_StopMovie();
 
 	MMU_unsetRom();
-	NDS_SetROM((u8*)gameInfo.romdata, mask);
+	NDS_SetROM((u8*)gameInfo.romdata, gameInfo.mask);
 	NDS_Reset();
 
 	memset(buf, 0, MAX_PATH);
@@ -492,15 +486,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		return -1;
 	}
 
-	//zero 25-dec-08 - this used to yield a mask which was 2x large
-	//mask = size; 
-	mask = size-1; 
-	mask |= (mask >>1);
-	mask |= (mask >>2);
-	mask |= (mask >>4);
-	mask |= (mask >>8);
-	mask |= (mask >>16);
-
 	gameInfo.resize(size);
 
 	// Make sure old ROM is freed first(at least this way we won't be eating
@@ -508,7 +493,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if(MMU.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
-	data = new u8[mask + 1];
+	data = new u8[gameInfo.mask + 1];
 	if (!data)
 	{
 		reader->DeInit(file);
@@ -534,7 +519,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (cheatSearch)
 		cheatSearch->close();
 	MMU_unsetRom();
-	NDS_SetROM(data, mask);
+	NDS_SetROM(data, gameInfo.mask);
 	NDS_Reset();
 
 	free(noext);

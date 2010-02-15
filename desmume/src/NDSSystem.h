@@ -280,11 +280,31 @@ struct GameInfo
 	{
 		resize(size);
 		memcpy(romdata,buf,size);
+		romsize = (u32)size;
+		fillGap();
+	}
+
+	void fillGap()
+	{
+		memset(romdata+romsize,0xFF,allocatedSize-romsize);
 	}
 
 	void resize(int size) {
 		if(romdata != NULL) delete[] romdata;
-		romdata = new char[size];
+
+		//calculate the necessary mask for the requested size
+		mask = size-1; 
+		mask |= (mask >>1);
+		mask |= (mask >>2);
+		mask |= (mask >>4);
+		mask |= (mask >>8);
+		mask |= (mask >>16);
+
+		//now, we actually need to over-allocate, because bytes from anywhere protected by that mask
+		//could be read from the rom
+		allocatedSize = mask+1;
+
+		romdata = new char[allocatedSize];
 		romsize = size;
 	}
 	u32 crc;
@@ -294,7 +314,9 @@ struct GameInfo
 	char ROMfullName[7][0x100];
 	void populate();
 	char* romdata;
-	int romsize;
+	u32 romsize;
+	u32 allocatedSize;
+	u32 mask;
 };
 
 typedef struct TSCalInfo
