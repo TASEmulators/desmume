@@ -24,9 +24,11 @@
 #ifndef __GPU_OSD_
 #define __GPU_OSD_
 
+#include "types.h"
+
+#ifdef HAVE_LIBAGG
 #include <stdlib.h>
 #include <time.h>
-#include "types.h"
 
 #include "aggdraw.h"
 
@@ -125,4 +127,19 @@ public:
 };
 
 extern OSDCLASS	*osd;
+#else /* HAVE_LIBAGG */
+void DrawHUD();
+
+class OSDCLASS {
+public:
+  OSDCLASS(u8 core);
+  ~OSDCLASS();
+  void    update();
+  void    clear();
+  void    setLineColor(u8 r, u8 b, u8 g);
+  void    addLine(const char *fmt, ...);
+};
+
+extern OSDCLASS        *osd;
+#endif
 #endif

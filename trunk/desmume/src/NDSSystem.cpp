@@ -73,8 +73,10 @@ void Desmume_InitOnce()
 	if(initOnce) return;
 	initOnce = true;
 
+#ifdef HAVE_LIBAGG
 	extern void Agg_init(); //no need to include just for this
 	Agg_init();
+#endif
 }
 
 #ifdef GDB_STUB

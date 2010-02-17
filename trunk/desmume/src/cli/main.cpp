@@ -825,9 +825,11 @@ int main(int argc, char ** argv) {
     loadstate_slot(my_config.load_slot);
   }
 
+#ifdef HAVE_LIBAGG
   Desmume_InitOnce();
   Hud.reset();
   aggDraw.hud->attach(GPU_screen, 256, 384, 512);
+#endif
 
   while(!sdl_quit) {
     desmume_cycle(&sdl_quit, &boost, &my_config);

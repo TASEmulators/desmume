@@ -2043,9 +2043,11 @@ common_gtk_main( struct configured_features *my_config)
                       my_config->disable_sound);
 
     /* Init the hud / osd stuff */
+#ifdef HAVE_LIBAGG
     Desmume_InitOnce();
     Hud.reset();
     aggDraw.hud->attach(GPU_screen, 256, 384, 512);
+#endif
 
     /*
      * Activate the GDB stubs
