@@ -1,6 +1,6 @@
 include $(top_srcdir)/src/desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) 
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS)
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp
 if HAVE_GDB_STUB
@@ -14,7 +14,6 @@ libdesmume_a_SOURCES = \
 	armcpu.cpp armcpu.h \
 	arm_instructions.cpp arm_instructions.h \
 	agg2d.h agg2d.inl \
-	aggdraw.cpp aggdraw.h \
 	bios.cpp bios.h bits.h cp15.cpp cp15.h \
 	commandline.h commandline.cpp \
 	common.cpp common.h \
@@ -22,7 +21,7 @@ libdesmume_a_SOURCES = \
 	Disassembler.cpp Disassembler.h \
 	emufile.h emufile.cpp fat.h FIFO.cpp FIFO.h \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
-	GPU_osd.cpp GPU_osd.h \
+	GPU_osd.h \
 	mem.h mc.cpp mc.h \
 	path.h \
 	readwrite.cpp readwrite.h \
@@ -66,7 +65,9 @@ endif
 endif
 
 if HAVE_LIBAGG
-libdesmume_a_SOURCES += aggdraw.cpp
+libdesmume_a_SOURCES += aggdraw.cpp aggdraw.h GPU_osd.cpp
+else
+libdesmume_a_SOURCES += GPU_osd_stub.cpp
 endif
 if HAVE_LUA
 AM_CPPFLAGS += $(LUA_CFLAGS)
