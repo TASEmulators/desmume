@@ -238,7 +238,11 @@ if test "x$HAVE_SDL" = "xyes"; then
     UI_DIR="gtk $UI_DIR"
   fi
   if test "x$wxwin" = "xyes"; then
-    UI_DIR="wx $UI_DIR"
+    if test "x$HAVE_LIBAGG" = "xyes"; then
+      UI_DIR="wx $UI_DIR"
+    else
+      AC_MSG_WARN([Antigrain library not found, wxWidgets frontend will be disabled])
+    fi
   fi
 
   if test "x$HAVE_LIBGLADE" = "xyes"; then
