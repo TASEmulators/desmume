@@ -36,7 +36,6 @@
 #include "render3D.h"
 #include "gfx3d.h"
 #include "rtc.h"
-#include "GPU_osd.h"
 #include "mc.h"
 #include "addons.h"
 #include "mic.h"
