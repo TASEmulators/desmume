@@ -3167,6 +3167,14 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				SubScreen.gpu->setBLDALPHA(val>>16);
 				break;
 			}
+
+			case REG_DISPA_BLDY:
+				GPU_setBLDY_EVY(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_BLDY: 	 
+				GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
+				break;
+
 			case REG_DISPA_DISPCNT :
 				GPU_setVideoProp(MainScreen.gpu, val);
 				//GPULOG("MAIN INIT 32B %08X\r\n", val);
