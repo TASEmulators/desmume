@@ -57,6 +57,7 @@ Linux/OSX:
  enh: make the cli frontend read the ini config file too
  enh: additional OpenAL microphone backend (ncalexan)
  enh: common place for config and saves (Jan Steffens)
+ enh: libagg is now optional if you don't need the hud
 
 0.9.4 -> 0.9.5 (r2437-r3075)
 
