@@ -28,6 +28,8 @@
 #include "mc.h"
 #include "bits.h"
 #include "readwrite.h"
+#include "debug.h"
+
 #ifdef HAVE_LUA
 #include "lua-engine.h"
 #endif
@@ -542,11 +544,6 @@ FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
 }
 
 
-enum MMU_ACCESS_TYPE
-{
-	MMU_AT_CODE, MMU_AT_DATA, MMU_AT_GPU, MMU_AT_DMA
-};
-
 template<int PROCNUM, MMU_ACCESS_TYPE AT> u8 _MMU_read08(u32 addr);
 template<int PROCNUM, MMU_ACCESS_TYPE AT> u16 _MMU_read16(u32 addr);
 template<int PROCNUM, MMU_ACCESS_TYPE AT> u32 _MMU_read32(u32 addr);
@@ -587,11 +584,25 @@ inline void SetupMMU(BOOL debugConsole) {
 	_MMU_MAIN_MEM_MASK32 = _MMU_MAIN_MEM_MASK & ~3;
 }
 
-//TODO: at one point some of the early access code included this. consider re-adding it
-  //ARM7 private memory
-  //if ( (adr & 0x0f800000) == 0x03800000) {
-    //T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
-      //         adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
+
+FORCEINLINE void CheckMemoryDebugEvent(const EDEBUG_EVENT event, const MMU_ACCESS_TYPE type, const u32 procnum, const u32 addr, const u32 size, const u32 val)
+{
+	if(CheckDebugEvent(event))
+	{
+		DebugEventData.memAccessType = type;
+		DebugEventData.procnum = procnum;
+		DebugEventData.addr = addr;
+		DebugEventData.size = size;
+		DebugEventData.val = val;
+		HandleDebugEvent(event);
+
+		if(type == MMU_AT_CODE && event == DEBUG_EVENT_READ)
+		{
+			HandleDebugEvent(DEBUG_EVENT_EXECUTE);
+		}
+	}
+}
+
 
 //ALERT!!!!!!!!!!!!!!
 //the following inline functions dont do the 0x0FFFFFFF mask.
@@ -599,6 +610,8 @@ inline void SetupMMU(BOOL debugConsole) {
 
 FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
 {
+	CheckMemoryDebugEvent(DEBUG_EVENT_READ,AT,PROCNUM,addr,8,0);
+
 	//special handling for DMA: read 0 from TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
@@ -626,6 +639,8 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 
 FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) 
 {
+	CheckMemoryDebugEvent(DEBUG_EVENT_READ,AT,PROCNUM,addr,16,0);
+
 	//special handling for DMA: read 0 from TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
@@ -666,6 +681,8 @@ dunno:
 
 FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
 {
+	CheckMemoryDebugEvent(DEBUG_EVENT_READ,AT,PROCNUM,addr,32,0);
+
 	//special handling for DMA: read 0 from TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
@@ -721,6 +738,8 @@ dunno:
 
 FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u8 val)
 {
+	CheckMemoryDebugEvent(DEBUG_EVENT_WRITE,AT,PROCNUM,addr,8,val);
+
 	//special handling for DMA: discard writes to TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
@@ -755,6 +774,8 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 
 FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u16 val)
 {
+	CheckMemoryDebugEvent(DEBUG_EVENT_WRITE,AT,PROCNUM,addr,16,val);
+
 	//special handling for DMA: discard writes to TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
@@ -789,6 +810,8 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 
 FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u32 val)
 {
+	CheckMemoryDebugEvent(DEBUG_EVENT_WRITE,AT,PROCNUM,addr,32,val);
+
 	//special handling for DMA: discard writes to TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
@@ -822,21 +845,21 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 }
 
 
-#ifdef MMU_ENABLE_ACL
-	void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val);
-	void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val);
-	void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val);
-	u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access);
-	u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access);
-	u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access);
-#else
-	#define MMU_write8_acl(proc, adr, val)  _MMU_write08<proc>(adr, val)
-	#define MMU_write16_acl(proc, adr, val) _MMU_write16<proc>(adr, val)
-	#define MMU_write32_acl(proc, adr, val) _MMU_write32<proc>(adr, val)
-	#define MMU_read8_acl(proc,adr,access)  _MMU_read08<proc>(adr)
-	#define MMU_read16_acl(proc,adr,access) ((access==CP15_ACCESS_EXECUTE)?_MMU_read16<proc,MMU_AT_CODE>(adr):_MMU_read16<proc,MMU_AT_DATA>(adr))
-	#define MMU_read32_acl(proc,adr,access) ((access==CP15_ACCESS_EXECUTE)?_MMU_read32<proc,MMU_AT_CODE>(adr):_MMU_read32<proc,MMU_AT_DATA>(adr))
-#endif
+//#ifdef MMU_ENABLE_ACL
+//	void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val);
+//	void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val);
+//	void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val);
+//	u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access);
+//	u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access);
+//	u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access);
+//#else
+//	#define MMU_write8_acl(proc, adr, val)  _MMU_write08<proc>(adr, val)
+//	#define MMU_write16_acl(proc, adr, val) _MMU_write16<proc>(adr, val)
+//	#define MMU_write32_acl(proc, adr, val) _MMU_write32<proc>(adr, val)
+//	#define MMU_read8_acl(proc,adr,access)  _MMU_read08<proc>(adr)
+//	#define MMU_read16_acl(proc,adr,access) ((access==CP15_ACCESS_EXECUTE)?_MMU_read16<proc,MMU_AT_CODE>(adr):_MMU_read16<proc,MMU_AT_DATA>(adr))
+//	#define MMU_read32_acl(proc,adr,access) ((access==CP15_ACCESS_EXECUTE)?_MMU_read32<proc,MMU_AT_CODE>(adr):_MMU_read32<proc,MMU_AT_DATA>(adr))
+//#endif
 
 // Use this macros for reading/writing, so the GDB stub isn't broken
 #ifdef GDB_STUB

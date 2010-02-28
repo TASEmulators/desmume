@@ -200,9 +200,10 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 
 	*ctrl_iface_ret = &armcpu->ctrl_iface;
 
-	armcpu->stalled = 0;
 	armcpu->post_ex_fn = NULL;
 #endif
+
+	armcpu->stalled = 0;
 
 	armcpu_init(armcpu, 0);
 
@@ -387,7 +388,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		armcpu->instruction = MMU_read32_acl(PROCNUM, curInstruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
+		armcpu->instruction = _MMU_read32<PROCNUM,MMU_AT_CODE>(curInstruction&0xFFFFFFFC);
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
 		armcpu->R[15] = curInstruction + 8;
@@ -409,7 +410,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	armcpu->instruction = MMU_read16_acl(PROCNUM, curInstruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
+	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction&0xFFFFFFFE);
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
 	armcpu->R[15] = curInstruction + 4;

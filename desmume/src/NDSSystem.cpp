@@ -60,6 +60,8 @@ CFIRMWARE	*firmware = NULL;
 using std::min;
 using std::max;
 
+bool singleStep;
+bool nds_debug_continuing[2];
 int lagframecounter;
 int LagFrameFlag;
 int lastLag;
@@ -355,7 +357,6 @@ static void loadrom(std::string fname) {
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
 {
 	int	type = ROM_NDS;
-	u32 mask;
 	char buf[MAX_PATH];
 
 	if (filename == NULL)
@@ -1729,6 +1730,9 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			{
 				arm9log();
 				arm9 += armcpu_exec<ARMCPU_ARM9>();
+				#ifdef DEVELOPER
+					nds_debug_continuing[0] = false;
+				#endif
 			}
 			else
 			{
@@ -1743,6 +1747,9 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			{
 				arm7log();
 				arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
+				#ifdef DEVELOPER
+					nds_debug_continuing[1] = false;
+				#endif
 			}
 			else
 			{
@@ -1762,11 +1769,28 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	return std::make_pair(arm9, arm7);
 }
 
+void NDS_debug_break()
+{
+	NDS_ARM9.stalled = NDS_ARM7.stalled = 1;
+
+	//triggers an immediate exit from the cpu loop
+	NDS_Reschedule();
+}
+
+void NDS_debug_continue()
+{
+	NDS_ARM9.stalled = NDS_ARM7.stalled = 0;
+}
+
+void NDS_debug_step()
+{
+	NDS_debug_continue();
+	singleStep = true;
+}
+
 template<bool FORCE>
 void NDS_exec(s32 nb)
 {
-	//TODO - singlestep is broken
-
 	LagFrameFlag=1;
 
 	if((currFrameCounter&63) == 0)
@@ -1794,13 +1818,14 @@ void NDS_exec(s32 nb)
 	{
 		for(;;)
 		{
-		
-			#ifdef GDB_STUB
-				//at worst, this will happen once per scanline.
-				//does it need to be more accurate than that? we think now
+			//trap the debug-stalled condition
+			#ifdef DEVELOPER
+				singleStep = false;
+				//(gbd stub doesnt yet know how to trigger these immediately by calling reschedule)
 				while((NDS_ARM9.stalled || NDS_ARM7.stalled) && execute)
 				{
 					driver->EMU_DebugIdleUpdate();
+					nds_debug_continuing[0] = nds_debug_continuing[1] = true;
 				}
 			#endif
 
@@ -1825,12 +1850,27 @@ void NDS_exec(s32 nb)
 
 			sequencer.reschedule = false;
 
+			//cast these down to 32bits so that things run faster on 32bit procs
 			u64 nds_timer_base = nds_timer;
 			s32 arm9 = (s32)(nds_arm9_timer-nds_timer);
 			s32 arm7 = (s32)(nds_arm7_timer-nds_timer);
 			s32 s32next = (s32)(next-nds_timer);
 
+			#ifdef DEVELOPER
+				if(singleStep)
+				{
+					s32next = 1;
+				}
+			#endif
+
 			std::pair<s32,s32> arm9arm7 = armInnerLoop<true,true>(nds_timer_base,s32next,arm9,arm7);
+
+			#ifdef DEVELOPER
+				if(singleStep)
+				{
+					NDS_ARM9.stalled = NDS_ARM7.stalled = 1;
+				}
+			#endif
 
 			arm9 = arm9arm7.first;
 			arm7 = arm9arm7.second;
@@ -1902,6 +1942,8 @@ static void resetUserInput();
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
+	singleStep = false;
+	nds_debug_continuing[0] = nds_debug_continuing[1] = false;
 	u32 src = 0;
 	u32 dst = 0;
 	bool fw_success = false;

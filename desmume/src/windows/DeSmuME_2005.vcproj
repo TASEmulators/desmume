@@ -1582,7 +1582,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						GeneratePreprocessedFile="1"
+						GeneratePreprocessedFile="0"
 					/>
 				</FileConfiguration>
 			</File>
@@ -1657,10 +1657,6 @@
 		</File>
 		<File
 			RelativePath="..\bios.h"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmap1.bmp"
 			>
 		</File>
 		<File
@@ -1760,10 +1756,6 @@
 			>
 		</File>
 		<File
-			RelativePath="..\dscard.h"
-			>
-		</File>
-		<File
 			RelativePath="..\emufile.cpp"
 			>
 		</File>
@@ -1837,6 +1829,38 @@
 		</File>
 		<File
 			RelativePath="..\GPU_osd.h"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_FRAMEADVANCE.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_OPEN.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_PAUSE.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_PLAY.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_RESET.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_ROTATECCW.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_ROTATECW.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_STOP.bmp"
 			>
 		</File>
 		<File

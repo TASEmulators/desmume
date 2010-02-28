@@ -176,6 +176,9 @@ typedef struct armcpu_t
 
 	u32 (* *swi_tab)();
 
+  // flag indicating if the processor is stalled (for debugging)
+  int stalled;
+
 #ifdef GDB_STUB
   /** there is a pending irq for the cpu */
   int irq_flag;
@@ -187,8 +190,6 @@ typedef struct armcpu_t
   void *post_ex_fn_data;
 
 
-  /** flag indicating if the processor is stalled */
-  int stalled;
 
   /** the memory interface */
   struct armcpu_memory_iface *mem_if;

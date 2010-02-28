@@ -1,5 +1,5 @@
 /*  Copyright (C) 2008 Guillaume Duhamel
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -27,9 +27,73 @@
 #include "armcpu.h"
 #include "arm_instructions.h"
 #include "thumb_instructions.h"
+#include "cp15.h"
+#include "NDSSystem.h"
 
-std::vector<Logger *> Logger::channels;
+#ifdef HAVE_LUA
+#include "lua-engine.h"
+#endif
 
+TDebugEventData DebugEventData;
+u32 debugFlag;
+
+//DEBUG CONFIGURATION
+const bool debug_acl = false;
+
+bool acl_check_access(u32 adr, u32 access) {
+	//tweak the access value with the execution mode.
+	//user code is USR and every other mode is SYS.
+	//this is weird logic, but I didn't want to change..
+	access |= 1;
+	if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10) {
+		// is user mode access
+		access ^= 1;
+	}
+	if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE) {
+		HandleDebugEvent(DEBUG_EVENT_ACL_EXCEPTION);
+	}
+	return true;
+}
+
+
+void HandleDebugEvent_ACL_Exception()
+{
+	printf("ACL EXCEPTION!\n");
+	emu_halt();
+}
+
+void HandleDebugEvent_Read()
+{
+	if(!debug_acl) return;
+	if(DebugEventData.procnum != ARMCPU_ARM9) return; //acl only valid on arm9
+	acl_check_access(DebugEventData.addr,CP15_ACCESS_READ);
+}
+
+void HandleDebugEvent_Write()
+{
+	if(!debug_acl) return;
+	if(DebugEventData.procnum != ARMCPU_ARM9) return; //acl only valid on arm9
+	acl_check_access(DebugEventData.addr,CP15_ACCESS_WRITE);
+}
+
+void HandleDebugEvent_Execute()
+{
+	extern bool nds_debug_continuing[2];
+	//HACKY BREAKPOINTS!
+	//if(!nds_debug_continuing[DebugEventData.procnum]) //dont keep hitting the same breakpoint
+	//{
+	//	if((DebugEventData.addr & 0xFFFFFFF0) == 0x02000000)
+	//	{
+	//		void NDS_debug_break();
+	//		NDS_debug_break();
+	//	}
+	//}
+	if(!debug_acl) return;
+	if(DebugEventData.procnum != ARMCPU_ARM9) return; //acl only valid on arm9
+	acl_check_access(DebugEventData.addr,CP15_ACCESS_EXECUTE);
+}
+
+//------------------------------------------------
 DebugStatistics DEBUG_statistics;
 
 DebugStatistics::DebugStatistics()
@@ -132,9 +196,19 @@ void DebugStatistics::printSequencerExecutionCounters()
 
 void DEBUG_reset()
 {
+	//for now, just enable all debugging in developer builds
+#ifdef DEVELOPER
+	debugFlag = 1;
+#endif
+
 	DEBUG_statistics = DebugStatistics();
 	printf("DEBUG_reset: %08X\n",&DebugStatistics::print); //force a reference to this function
 }
+
+//----------------------------------------------------
+
+std::vector<Logger *> Logger::channels;
+
 
 static void defaultCallback(const Logger& logger, const char * message) {
 	logger.getOutput() << message;
@@ -215,7 +289,6 @@ void Logger::log(unsigned int channel, const char * file, unsigned int line, voi
 void IdeasLog(armcpu_t* cpu)
 {
 	u32 adr = cpu->R[0];
-	printf("EMULOG%c: ",cpu->proc_ID==0?'9':'7');
 	for(;;) {
 		u8 c = MMU_read8(cpu->proc_ID,adr);
 		adr++;

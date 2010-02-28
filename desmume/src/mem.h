@@ -1,20 +1,21 @@
-/*  Copyright 2005-2006 Guillaume Duhamel
-    Copyright 2005 Theo Berkau
+/*  Copyright (C) 2005 Theo Berkau
+	Copyright (C) 2005-2006 Guillaume Duhamel
+	Copyright (C) 2010 DeSmuME team
 
-    This file is part of Yabause.
+    This file is part of DeSmuME.
 
-    Yabause is free software; you can redistribute it and/or modify
+    DeSmuME is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Yabause is distributed in the hope that it will be useful,
+    DeSmuME is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Yabause; if not, write to the Free Software
+    along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
@@ -25,7 +26,15 @@
 #include <assert.h>
 #include "types.h"
 
-/* Type 1 Memory, faster for byte (8 bits) accesses */
+//this was originally declared in MMU.h but we suffered some organizational problems and had to remove it
+enum MMU_ACCESS_TYPE
+{
+	MMU_AT_CODE, //used for cpu prefetches
+	MMU_AT_DATA, //used for cpu read/write
+	MMU_AT_GPU, //used for gpu read/write
+	MMU_AT_DMA, //used for dma read/write (blocks access to TCM)
+	MMU_AT_DEBUG, //used for emulator debugging functions (bypasses some debug handling)
+};
 
 static INLINE u8 T1ReadByte(u8* const mem, const u32 addr)
 {
@@ -113,46 +122,47 @@ static INLINE void T1WriteLong(u8* const mem, const u32 addr, const u32 val)
 #endif
 }
 
-/* Type 2 Memory, faster for word (16 bits) accesses */
 
-static INLINE u8 T2ReadByte(u8* const  mem, const u32 addr)
-{
-#ifdef WORDS_BIGENDIAN
-   return mem[addr ^ 1];
-#else
-   return mem[addr];
-#endif
-}
+//static INLINE u8 T2ReadByte(u8* const  mem, const u32 addr)
+//{
+//#ifdef WORDS_BIGENDIAN
+//   return mem[addr ^ 1];
+//#else
+//   return mem[addr];
+//#endif
+//}
+//
 
-static INLINE u16 T2ReadWord(u8* const mem, const u32 addr)
+static INLINE u16 HostReadWord(u8* const mem, const u32 addr)
 {
    return *((u16 *) (mem + addr));
 }
 
-static INLINE u32 T2ReadLong(u8* const mem, const u32 addr)
-{
-#ifdef WORDS_BIGENDIAN
-   return *((u16 *) (mem + addr + 2)) << 16 | *((u16 *) (mem + addr));
-#else
-   return *((u32 *) (mem + addr));
-#endif
-}
+//
+//static INLINE u32 T2ReadLong(u8* const mem, const u32 addr)
+//{
+//#ifdef WORDS_BIGENDIAN
+//   return *((u16 *) (mem + addr + 2)) << 16 | *((u16 *) (mem + addr));
+//#else
+//   return *((u32 *) (mem + addr));
+//#endif
+//}
+//
+//static INLINE void T2WriteByte(u8* const mem, const u32 addr, const u8 val)
+//{
+//#ifdef WORDS_BIGENDIAN
+//   mem[addr ^ 1] = val;
+//#else
+//   mem[addr] = val;
+//#endif
+//}
 
-static INLINE void T2WriteByte(u8* const mem, const u32 addr, const u8 val)
-{
-#ifdef WORDS_BIGENDIAN
-   mem[addr ^ 1] = val;
-#else
-   mem[addr] = val;
-#endif
-}
-
-static INLINE void T2WriteWord(u8* const mem, const u32 addr, const u16 val)
+static INLINE void HostWriteWord(u8* const mem, const u32 addr, const u16 val)
 {
    *((u16 *) (mem + addr)) = val;
 }
 
-static INLINE void T2WriteLong(u8* const mem, const u32 addr, const u32 val)
+static INLINE void HostWriteTwoWords(u8* const mem, const u32 addr, const u32 val)
 {
 #ifdef WORDS_BIGENDIAN
    *((u16 *) (mem + addr + 2)) = val >> 16;
