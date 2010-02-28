@@ -2204,8 +2204,6 @@ bool S9xGetState (WORD KeyIdent)
 
 void S9xWinScanJoypads ()
 {
-    u32 PadState;
-
 	S9xUpdateJoyState();
 
     for (int J = 0; J < 8; J++)

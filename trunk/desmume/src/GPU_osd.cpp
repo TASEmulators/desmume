@@ -372,7 +372,7 @@ static void TextualInputDisplay() {
 	// touch pad
 	{
 		char str [32];
-		bool gameTouchOn = nds.isTouch;
+		BOOL gameTouchOn = nds.isTouch;
 		int gameTouchX = nds.touchX >> 4;
 		int gameTouchY = nds.touchY >> 4;
 		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;

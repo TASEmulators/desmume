@@ -795,10 +795,16 @@ TOOLSCLASS::~TOOLSCLASS()
 	close();
 }
 
-bool TOOLSCLASS::open()
+bool TOOLSCLASS::open(bool useThread)
 {
-	if (!createThread()) return false;
-	return true;
+	if(useThread)
+	{
+		if (!createThread()) return false;
+		else return true;
+	}
+
+	if(doOpen()) return false;
+	else return true;
 }
 
 bool TOOLSCLASS::close()
@@ -806,11 +812,8 @@ bool TOOLSCLASS::close()
 	return true;
 }
 
-DWORD TOOLSCLASS::ThreadFunc()
+DWORD TOOLSCLASS::doOpen()
 {
-	MSG		messages;
-	LOG("Start thread\n");
-
 	GetLastError();
 	hwnd = CreateDialogW(hInstance, MAKEINTRESOURCEW(idd), NULL, (DLGPROC) dlgproc);
 
@@ -822,16 +825,33 @@ DWORD TOOLSCLASS::ThreadFunc()
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);
+
+	return 0;
+}
+
+void TOOLSCLASS::doClose()
+{
+	unregClass();
+	hwnd = NULL;
+}
+
+DWORD TOOLSCLASS::ThreadFunc()
+{
+	LOG("Start thread\n");
+
+
+	DWORD ret = doOpen();
+	if(ret) return ret;
 	
+	MSG messages;
 	while (GetMessage (&messages, NULL, 0, 0))
 	{
 		TranslateMessage(&messages);
 		DispatchMessage(&messages);
 	}
 
-	unregClass();
-	hwnd = NULL;
-	
+	doClose();
+
 	closeThread();
 	return 0;
 }

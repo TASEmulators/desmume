@@ -78,7 +78,7 @@ BOOL armcp15_load(armcp15_t *armcp15, u8 CRd, u8 adr);
 BOOL armcp15_store(armcp15_t *armcp15, u8 CRd, u8 adr);
 BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
 BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
-INLINE BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access) ;
+BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access);
 
 
 #define CP15_ACCESS_WRITE         0

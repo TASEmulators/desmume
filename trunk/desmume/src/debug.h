@@ -1,5 +1,5 @@
 /*  Copyright (C) 2008 Guillaume Duhamel
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -26,6 +26,7 @@
 #include <cstdarg>
 
 #include "types.h"
+#include "mem.h"
 
 struct DebugStatistics
 {
@@ -137,5 +138,56 @@ public:
 #define INFO(...) INFOC(10, __VA_ARGS__)
 
 void IdeasLog(armcpu_t* cpu);
+
+enum EDEBUG_EVENT
+{
+	DEBUG_EVENT_READ=1, //read from arm9 or arm7 bus, including cpu prefetch
+	DEBUG_EVENT_WRITE=2, //write on arm9 or arm7 bus
+	DEBUG_EVENT_EXECUTE=4, //prefetch on arm9 or arm7, triggered after the read event
+	DEBUG_EVENT_ACL_EXCEPTION=8, //acl exception on arm9
+
+};
+
+//information about a debug event will be stuffed into here by the generator
+struct TDebugEventData
+{
+	MMU_ACCESS_TYPE memAccessType;
+	u32 procnum, addr, size, val;
+};
+
+extern TDebugEventData DebugEventData;
+
+//bits in here are set according to what debug handlers are installed?
+//for now it is just a single bit
+extern u32 debugFlag;
+
+FORCEINLINE bool CheckDebugEvent(EDEBUG_EVENT event)
+{
+	//for now, debug events are only handled in dev+ builds
+#ifndef DEVELOPER
+	return false;
+#endif
+
+	if(!debugFlag) return false;
+
+	return true;
+}
+
+void HandleDebugEvent_Read();
+void HandleDebugEvent_Write();
+void HandleDebugEvent_Execute();
+void HandleDebugEvent_ACL_Exception();
+
+inline void HandleDebugEvent(EDEBUG_EVENT event)
+{
+	switch(event)
+	{
+	case DEBUG_EVENT_READ: HandleDebugEvent_Read(); return;
+	case DEBUG_EVENT_WRITE: HandleDebugEvent_Write(); return;
+	case DEBUG_EVENT_EXECUTE: HandleDebugEvent_Execute(); return;
+	case DEBUG_EVENT_ACL_EXCEPTION: HandleDebugEvent_ACL_Exception(); return;
+	}
+}
+
 
 #endif

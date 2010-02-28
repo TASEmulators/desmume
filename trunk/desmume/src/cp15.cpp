@@ -216,7 +216,7 @@ static void armcp15_maskPrecalc(armcp15_t *armcp15)
 	precalc(7) ;
 }
 
-INLINE BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access)
+BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access)
 {
 	int i ;
 	if (!(armcp15->ctrl & 1)) return TRUE ;        /* protection checking is not enabled */

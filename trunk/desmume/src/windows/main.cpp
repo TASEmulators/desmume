@@ -4727,11 +4727,11 @@ DOKEYDOWN:
 			return 0;
 		case IDM_DISASSEMBLER:
 			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
-			if (!ViewDisasm_ARM7->open())
+			if (!ViewDisasm_ARM7->open(false))
 				ViewDisasm_ARM7->unregClass();
 
 			ViewDisasm_ARM9->regClass("DesViewBox9",ViewDisasm_ARM9BoxProc);
-			if (!ViewDisasm_ARM9->open())
+			if (!ViewDisasm_ARM9->open(false))
 				ViewDisasm_ARM9->unregClass();
 			return 0;
 		case IDM_MAP:

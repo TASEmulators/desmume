@@ -1,5 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    Copyright (C) 2006-2009 DeSmuME team
+    Copyright (C) 2006-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -87,9 +87,9 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              u32 adr;
 
              if (win->autoup||win->autogo)
-				 win->curr_ligne = (win->cpu->instruct_adr >> 2) - (win->curr_ligne % nbligne) ;
+				 win->curr_ligne = (win->cpu->instruct_adr >> 2);
              adr = win->curr_ligne*4;
-        
+
              for(i = 0; i < nbligne; ++i)
              {
                   u32 ins = MMU_read32(win->cpu->proc_ID, adr);
@@ -309,6 +309,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 				}
             case WM_CLOSE :
 				{
+					EndDialog(hwnd,0);
 					if(DisView7->autoup)
 					{
 						KillTimer(hwnd, IDT_VIEW_DISASM7);
@@ -321,7 +322,6 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					}
 					DisViewWnd[1] = NULL;
 					//INFO("Close ARM7 disassembler\n");
-					PostQuitMessage(0);
 					return 1;
 				}
             case WM_PAINT:
@@ -380,11 +380,17 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              DisView7->autoup = TRUE;
 							 SetTimer(hwnd, IDT_VIEW_DISASM7, DisView7->autoup_secs*20, (TIMERPROC) NULL);
                              return 1;
-                        case IDC_STEP :					// TODO: draw in DD
+						case IDC_STEP:
                              {
-                                  int ndstep;
-                                  ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
-                                  NDS_exec<TRUE>(ndstep);
+								extern void NDS_debug_step();
+								NDS_debug_step();
+                             }
+                             return 1;
+
+						case IDC_CONTINUE:
+                             {
+								extern void NDS_debug_continue();
+								NDS_debug_continue();
                              }
                              return 1;
                         case IDC_GO :
@@ -553,6 +559,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 				}
             case WM_CLOSE :
 				{
+					EndDialog(hwnd,0);
 					if(DisView9->autoup)
 					{
 						KillTimer(hwnd, IDT_VIEW_DISASM9);
@@ -565,7 +572,6 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					}
 					DisViewWnd[0] = NULL;
 					//INFO("Close ARM9 disassembler\n");
-					PostQuitMessage(0);
 					return 1;
 				}
             case WM_PAINT:
@@ -624,11 +630,16 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              DisView9->autoup = TRUE;
 							 SetTimer(hwnd, IDT_VIEW_DISASM9, DisView9->autoup_secs*20, (TIMERPROC) NULL);
                              return 1;
-                        case IDC_STEP :					// TODO: draw in DD
+						case IDC_STEP:
                              {
-									int ndstep;
-									ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
-									NDS_exec<TRUE>(ndstep);
+								extern void NDS_debug_step();
+								NDS_debug_step();
+                             }
+                             return 1;
+						case IDC_CONTINUE:
+                             {
+								extern void NDS_debug_continue();
+								NDS_debug_continue();
                              }
                              return 1;
                         case IDC_GO :

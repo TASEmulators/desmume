@@ -16,6 +16,7 @@
 #define IDC_AUTO_UPDATE                 108
 #define IDB_OPEN                        108
 #define IDM_MEMORY                      109
+#define IDC_CONTINUE                    109
 #define IDM_DISASSEMBLER                110
 #define IDB_PAUSE                       110
 #define IDD_3DSETTINGS                  111
