@@ -870,9 +870,7 @@ int main(int argc, char ** argv) {
 
     if ( fps_frame_counter == NUM_FRAMES_TO_TIME) {
       char win_title[20];
-      float fps = (float)fps_timing;
-      fps /= NUM_FRAMES_TO_TIME * 1000.f;
-      fps = 1.0f / fps;
+      float fps = NUM_FRAMES_TO_TIME * 1000.f / fps_timing;
 
       fps_frame_counter = 0;
       fps_timing = 0;
