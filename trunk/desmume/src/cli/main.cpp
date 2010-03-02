@@ -799,6 +799,8 @@ int main(int argc, char ** argv) {
   /* Load keyboard and joystick configuration */
   keyfile = desmume_config_read_file(cli_kb_cfg);
   desmume_config_dispose(keyfile);
+  /* Since gtk has a different mapping the keys stop to work with the saved configuration :| */
+  load_default_config(cli_kb_cfg);
 
   if ( !my_config.disable_limiter) {
     /* create the semaphore used for fps limiting */
