@@ -2201,9 +2201,11 @@ void NDS_Reset()
 	std::string rompath = "fat:/" + path.RomName;
 	const u32 kCommandline = 0x027E0000;
 	//const u32 kCommandline = 0x027FFF84;
-	_MMU_write32<ARMCPU_ARM9>(0x027FFF70, 0x5f617267);
-	_MMU_write32<ARMCPU_ARM9>(0x027FFF74, kCommandline); //(commandline starts here)
-	_MMU_write32<ARMCPU_ARM9>(0x027FFF78, rompath.size()+1);
+	
+	// 
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
 	//0x027FFF7C (argc)
 	//0x027FFF80 (argv)
 	for(size_t i=0;i<rompath.size();i++)
