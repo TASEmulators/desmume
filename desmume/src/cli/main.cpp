@@ -359,23 +359,13 @@ static void
 resizeWindow( u16 width, u16 height) {
   int comp_width = 3 * width;
   int comp_height = 2 * height;
-  int use_width = 1;
   GLenum errCode;
 
-  /* Height / width ration */
-  GLfloat ratio;
-
   if ( comp_width > comp_height) {
-    use_width = 0;
+    width = 2*height/3;
   }
- 
-  /* Protect against a divide by zero */
-  if ( height == 0 )
-    height = 1;
-  if ( width == 0)
-    width = 1;
-
-  ratio = ( GLfloat )width / ( GLfloat )height;
+  height = 3*width/2;
+  nds_screen_size_ratio = 256.0 / (double)width;
 
   /* Setup our viewport. */
   glViewport( 0, 0, ( GLint )width, ( GLint )height );
@@ -387,39 +377,7 @@ resizeWindow( u16 width, u16 height) {
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity( );
 
-  {
-    double left;
-    double right;
-    double bottom;
-    double top;
-    double other_dimen;
-
-    if ( use_width) {
-      left = 0.0;
-      right = 256.0;
-
-      nds_screen_size_ratio = 256.0 / (double)width;
-
-      other_dimen = (double)width * 3.0 / 2.0;
-
-      top = 0.0;
-      bottom = 384.0 * ((double)height / other_dimen);
-    }
-    else {
-      top = 0.0;
-      bottom = 384.0;
-
-      nds_screen_size_ratio = 384.0 / (double)height;
-
-      other_dimen = (double)height * 2.0 / 3.0;
-
-      left = 0.0;
-      right = 256.0 * ((double)width / other_dimen);
-    }
-
-    /* get the area (0,0) to (256,384) into the middle of the viewport */
-    gluOrtho2D( left, right, bottom, top);
-  }
+  gluOrtho2D( 0.0, 256.0, 384.0, 0.0);
 
   /* Make sure we're chaning the model view and not the projection */
   glMatrixMode( GL_MODELVIEW );
