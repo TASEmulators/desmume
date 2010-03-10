@@ -578,25 +578,24 @@ void clear_savestates()
     savestates[i].exists = FALSE;
 }
 
-/* Scan for existing savestates and update struct */
+// Scan for existing savestates and update struct
 void scan_savestates()
 {
   struct stat sbuf;
   char filename[MAX_PATH+1];
-  u8 i;
 
   clear_savestates();
 
-  for( i = 1; i <= NB_STATES; i++ )
+  for(int i = 0; i < NB_STATES; i++ )
     {
-    path.getpathnoext(path.STATES, filename);
+     path.getpathnoext(path.STATES, filename);
 	  
 	  if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ >MAX_PATH) return ;
       sprintf(filename+strlen(filename), ".ds%d", i);
       if( stat(filename,&sbuf) == -1 ) continue;
-      savestates[i-1].exists = TRUE;
-      strncpy(savestates[i-1].date, format_time(sbuf.st_mtime),40);
-	  savestates[i-1].date[40-1] = '\0';
+      savestates[i].exists = TRUE;
+      strncpy(savestates[i].date, format_time(sbuf.st_mtime),40);
+	  savestates[i].date[40-1] = '\0';
     }
 
   return ;

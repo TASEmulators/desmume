@@ -55,6 +55,7 @@
 #define IDM_SUBMITBUGREPORT             134
 #define IDM_STATE_LOAD                  135
 #define IDM_STATE_SAVE                  136
+#define IDM_STATE_SAVE_F10              139
 #define IDM_STATE_SAVE_F1               140
 #define IDM_STATE_SAVE_F2               141
 #define IDM_STATE_SAVE_F3               142
@@ -64,7 +65,7 @@
 #define IDM_STATE_SAVE_F7               146
 #define IDM_STATE_SAVE_F8               147
 #define IDM_STATE_SAVE_F9               148
-#define IDM_STATE_SAVE_F10              149
+#define IDM_STATE_LOAD_F10              149
 #define IDM_STATE_LOAD_F1               150
 #define IDM_STATE_LOAD_F2               151
 #define IDM_STATE_LOAD_F3               152
@@ -74,7 +75,6 @@
 #define IDM_STATE_LOAD_F7               156
 #define IDM_STATE_LOAD_F8               157
 #define IDM_STATE_LOAD_F9               158
-#define IDM_STATE_LOAD_F10              159
 #define IDC_COMBO1                      160
 #define IDC_COMBO2                      161
 #define IDC_COMBO3                      162
