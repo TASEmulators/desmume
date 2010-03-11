@@ -2008,7 +2008,7 @@ TEMPLATE static u32 FASTCALL  OP_MOV_ROR_IMM(const u32 i)
 {
 	u32 shift_op;
 	ROR_IMM;
-	OP_MOV(2,4);
+	OP_MOV(1,3);
 }
 
 TEMPLATE static u32 FASTCALL  OP_MOV_ROR_REG(const u32 i)
