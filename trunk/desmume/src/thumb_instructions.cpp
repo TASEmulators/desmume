@@ -59,7 +59,7 @@ TEMPLATE static  u32 FASTCALL OP_LSL_0(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_LSL(const u32 i)
@@ -70,18 +70,18 @@ TEMPLATE static  u32 FASTCALL OP_LSL(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_LSL_REG(const u32 i)
 {
 	u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
 
-	if(!v)
+	if(v == 0)
 	{
 		cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 		cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-		return 3;
+		return 2;
 	}	
 	if(v<32)
 	{
@@ -89,7 +89,7 @@ TEMPLATE static  u32 FASTCALL OP_LSL_REG(const u32 i)
 		cpu->R[REG_NUM(i, 0)] <<= v;
 		cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 		cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-		return 3;
+		return 2;
 	}
 	if(v==32)
 		cpu->CPSR.bits.C = BIT0(cpu->R[REG_NUM(i, 0)]);
@@ -100,7 +100,7 @@ TEMPLATE static  u32 FASTCALL OP_LSL_REG(const u32 i)
 	cpu->CPSR.bits.N = 0;
 	cpu->CPSR.bits.Z = 1;
 
-	return 3;
+	return 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -114,7 +114,7 @@ TEMPLATE static  u32 FASTCALL OP_LSR_0(const u32 i)
 	cpu->CPSR.bits.N = 0;
 	cpu->CPSR.bits.Z = 1;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_LSR(const u32 i)
@@ -125,18 +125,18 @@ TEMPLATE static  u32 FASTCALL OP_LSR(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_LSR_REG(const u32 i)
 {
 	u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
 	
-	if(!v)
+	if(v == 0)
 	{
 		cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 		cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-		return 3;
+		return 2;
 	}	
 	if(v<32)
 	{
@@ -144,7 +144,7 @@ TEMPLATE static  u32 FASTCALL OP_LSR_REG(const u32 i)
 		cpu->R[REG_NUM(i, 0)] >>= v;
 		cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 		cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-		return 3;
+		return 2;
 	}
 	if(v==32)
 		cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 0)]);
@@ -154,7 +154,7 @@ TEMPLATE static  u32 FASTCALL OP_LSR_REG(const u32 i)
 	cpu->CPSR.bits.N = 0;
 	cpu->CPSR.bits.Z = 1;
 	
-	return 3;
+	return 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -164,11 +164,11 @@ TEMPLATE static  u32 FASTCALL OP_LSR_REG(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_ASR_0(const u32 i)
 {
 	cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 3)]);
-	cpu->R[REG_NUM(i, 0)] = BIT31(cpu->R[REG_NUM(i, 3)])*0xFFFFFFFF;
+	cpu->R[REG_NUM(i, 0)] = cpu->CPSR.bits.C * 0xFFFFFFFF;
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_ASR(const u32 i)
@@ -179,18 +179,18 @@ TEMPLATE static  u32 FASTCALL OP_ASR(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_ASR_REG(const u32 i)
 {
 	u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
 	
-	if(!v)
+	if(v == 0)
 	{
 		cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 		cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-		return 3;
+		return 2;
 	}	
 	if(v<32)
 	{
@@ -198,15 +198,15 @@ TEMPLATE static  u32 FASTCALL OP_ASR_REG(const u32 i)
 		cpu->R[REG_NUM(i, 0)] = (u32)(((s32)cpu->R[REG_NUM(i, 0)]) >> v);
 		cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 		cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-		return 3;
+		return 2;
 	}
 	
 	cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 0)]);
-	cpu->R[REG_NUM(i, 0)] = BIT31(cpu->R[REG_NUM(i, 0)])*0xFFFFFFFF;
+	cpu->R[REG_NUM(i, 0)] = cpu->CPSR.bits.C * 0xFFFFFFFF;
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -223,19 +223,20 @@ TEMPLATE static  u32 FASTCALL OP_ADD_REG(const u32 i)
 	cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(a, b, cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.V = SIGNED_OVERFLOW(a, b, cpu->R[REG_NUM(i, 0)]);
 
-	return 3;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_ADD_IMM3(const u32 i)
 {
 	u32 a = cpu->R[REG_NUM(i, 3)];
+
 	cpu->R[REG_NUM(i, 0)] = a + REG_NUM(i, 6);
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(a, REG_NUM(i, 6), cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.V = SIGNED_OVERFLOW(a, REG_NUM(i, 6), cpu->R[REG_NUM(i, 0)]);
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_ADD_IMM8(const u32 i)
@@ -247,7 +248,7 @@ TEMPLATE static  u32 FASTCALL OP_ADD_IMM8(const u32 i)
 	cpu->CPSR.bits.V = SIGNED_OVERFLOW(cpu->R[REG_NUM(i, 8)], (i & 0xFF), tmp);
 	cpu->R[REG_NUM(i, 8)] = tmp;
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_ADD_SPE(const u32 i)
@@ -256,9 +257,12 @@ TEMPLATE static  u32 FASTCALL OP_ADD_SPE(const u32 i)
 	cpu->R[Rd] += cpu->R[REG_POS(i, 3)];
 	
 	if(Rd==15)
+	{
 		cpu->next_instruction = cpu->R[15];
+		return 3;
+	}
 		
-	return 2;
+	return 1;
 }
 
 
@@ -266,14 +270,14 @@ TEMPLATE static  u32 FASTCALL OP_ADD_2PC(const u32 i)
 {
 	cpu->R[REG_NUM(i, 8)] = (cpu->R[15]&0xFFFFFFFC) + ((i&0xFF)<<2);
 			
-	return 5;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_ADD_2SP(const u32 i)
 {
 	cpu->R[REG_NUM(i, 8)] = cpu->R[13] + ((i&0xFF)<<2);
 	
-	return 2;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -290,7 +294,7 @@ TEMPLATE static  u32 FASTCALL OP_SUB_REG(const u32 i)
 	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(a, b, cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(a, b, cpu->R[REG_NUM(i, 0)]);
 
-	return 3;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_SUB_IMM3(const u32 i)
@@ -302,7 +306,7 @@ TEMPLATE static  u32 FASTCALL OP_SUB_IMM3(const u32 i)
 	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(a, REG_NUM(i, 6), cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(a, REG_NUM(i, 6), cpu->R[REG_NUM(i, 0)]);
 
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_SUB_IMM8(const u32 i)
@@ -314,7 +318,7 @@ TEMPLATE static  u32 FASTCALL OP_SUB_IMM8(const u32 i)
 	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 8)], (i & 0xFF), tmp);
 	cpu->R[REG_NUM(i, 8)] = tmp;
 
-	return 2;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -327,7 +331,7 @@ TEMPLATE static  u32 FASTCALL OP_MOV_IMM8(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 8)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 8)] == 0;
 	
-	return 2;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_MOV_SPE(const u32 i)
@@ -336,9 +340,12 @@ TEMPLATE static  u32 FASTCALL OP_MOV_SPE(const u32 i)
 	cpu->R[Rd] = cpu->R[REG_POS(i, 3)];
 	
 	if(Rd==15)
+	{
 		cpu->next_instruction = cpu->R[15];
+		return 3;
+	}
 		
-	return 2;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -354,19 +361,19 @@ TEMPLATE static  u32 FASTCALL OP_CMP(const u32 i)
 	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)], tmp);
 	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)], tmp);
 	
-	return 3;
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_CMP_IMM8(const u32 i)
 {
 	u32 tmp = cpu->R[REG_NUM(i, 8)] - (i & 0xFF);
-	 Status_Reg CPSR = cpu->CPSR;
-	CPSR.bits.N = BIT31(tmp);
-	CPSR.bits.Z = tmp == 0;
-	CPSR.bits.C = !UNSIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 8)], (i & 0xFF), tmp);
-	CPSR.bits.V = SIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 8)], (i & 0xFF), tmp);
-	cpu->CPSR = CPSR;
-	return 2;
+
+	cpu->CPSR.bits.N = BIT31(tmp);
+	cpu->CPSR.bits.Z = tmp == 0;
+	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 8)], (i & 0xFF), tmp);
+	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(cpu->R[REG_NUM(i, 8)], (i & 0xFF), tmp);
+
+	return 1;
 }
 
 TEMPLATE static  u32 FASTCALL OP_CMP_SPE(const u32 i)
@@ -379,7 +386,7 @@ TEMPLATE static  u32 FASTCALL OP_CMP_SPE(const u32 i)
 	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(cpu->R[Rn], cpu->R[REG_POS(i, 3)], tmp);
 	cpu->CPSR.bits.V = SIGNED_UNDERFLOW(cpu->R[Rn], cpu->R[REG_POS(i, 3)], tmp);
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -392,7 +399,7 @@ TEMPLATE static  u32 FASTCALL OP_AND(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -405,7 +412,7 @@ TEMPLATE static  u32 FASTCALL OP_EOR(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -424,6 +431,7 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 	cpu->CPSR.bits.N = BIT31(res);
 	cpu->CPSR.bits.Z = res == 0;
 
+#if 0
 	 //the below UNSIGNED_OVERFLOW calculation is the clever way of doing it
 	 //but just to keep from making a mistake, lets assert that it matches the precise definition of unsigned overflow
 	 static long passcount = 0;
@@ -432,12 +440,12 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 		((((u64)a+(u64)b+cpu->CPSR.bits.C)>>32)&1)
 		== (UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res))
 		);
+#endif
 
 	cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res);
 	cpu->CPSR.bits.V = SIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(tmp, a, res);
-
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -455,6 +463,7 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 	cpu->CPSR.bits.N = BIT31(res);
 	cpu->CPSR.bits.Z = res == 0;
 
+#if 0
 	 //the below UNSIGNED_UNDERFLOW calculation is the clever way of doing it
 	 //but just to keep from making a mistake, lets assert that it matches the precise definition of unsigned overflow
 	 static long passcount = 0;
@@ -463,6 +472,7 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 		((((u64)a-(u64)b-(!cpu->CPSR.bits.C))>>32)&1)
 		== UNSIGNED_UNDERFLOW(a, b, res)
 		);
+#endif
 	
 	 //zero 31-dec-2008 - apply normatt's fixed logic from the arm SBC instruction
 	 //although it seemed a bit odd to me and to whomever wrote this for SBC not to work similar to ADC..
@@ -470,7 +480,7 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 	 cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(a, b, res);
 	 cpu->CPSR.bits.V = SIGNED_UNDERFLOW(a, b, res);
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -485,7 +495,7 @@ TEMPLATE static  u32 FASTCALL OP_ROR_REG(const u32 i)
 	{
 			cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 			cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-			return 3;
+			return 2;
 	}
 	v &= 0x1F;
 	if(v == 0)
@@ -493,14 +503,14 @@ TEMPLATE static  u32 FASTCALL OP_ROR_REG(const u32 i)
 			cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 0)]);
 			cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 			cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
-			return 3;
+			return 2;
 	}
 	cpu->CPSR.bits.C = BIT_N(cpu->R[REG_NUM(i, 0)], v-1);
 	cpu->R[REG_NUM(i, 0)] = ROR(cpu->R[REG_NUM(i, 0)], v);
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -513,7 +523,7 @@ TEMPLATE static  u32 FASTCALL OP_TST(const u32 i)
 	cpu->CPSR.bits.N = BIT31(tmp);
 	cpu->CPSR.bits.Z = tmp == 0;
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -530,7 +540,7 @@ TEMPLATE static  u32 FASTCALL OP_NEG(const u32 i)
 	cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW((u32)0, a, cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.V = SIGNED_UNDERFLOW((u32)0, a, cpu->R[REG_NUM(i, 0)]);
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -548,7 +558,7 @@ TEMPLATE static  u32 FASTCALL OP_CMN(const u32 i)
 	cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)], tmp);
 	cpu->CPSR.bits.V = SIGNED_OVERFLOW(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)], tmp);
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -561,7 +571,7 @@ TEMPLATE static  u32 FASTCALL OP_ORR(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -574,7 +584,7 @@ TEMPLATE static  u32 FASTCALL OP_BIC(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -587,20 +597,36 @@ TEMPLATE static  u32 FASTCALL OP_MVN(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
 //   MUL
 //-----------------------------------------------------------------------------
 
+#define MUL_Mxx_END_THUMB(c) \
+	v >>= 8; \
+	if((v==0)||(v==0xFFFFFF)) \
+		return c+1; \
+	v >>= 8; \
+	if((v==0)||(v==0xFFFF)) \
+		return c+2; \
+	v >>= 8; \
+	if((v==0)||(v==0xFF)) \
+		return c+3; \
+	return c+4; \
+
 TEMPLATE static  u32 FASTCALL OP_MUL_REG(const u32 i)
 {
-	cpu->R[REG_NUM(i, 0)] *= cpu->R[REG_NUM(i, 3)];
+	u32 v = cpu->R[REG_NUM(i, 3)];
+	cpu->R[REG_NUM(i, 0)] *= v;
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
-	return 3;
+	if (PROCNUM == 1)	// ARM4T 1S + mI, m = 3
+		return 4;
+
+	MUL_Mxx_END_THUMB(1);
 }
 
 //-----------------------------------------------------------------------------
@@ -716,7 +742,7 @@ TEMPLATE static  u32 FASTCALL OP_STR_IMM_OFF(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_LDR_IMM_OFF(const u32 i)
 {
 	u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>4)&0x7C);
-	u32 tempValue = READ32(cpu->mem_if->data, adr&0xFFFFFFFC);
+	u32 tempValue = READ32(cpu->mem_if->data, adr);
 	 adr = (adr&3)*8;
 	 tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
 	 cpu->R[REG_NUM(i, 0)] = tempValue;
@@ -736,7 +762,7 @@ TEMPLATE static  u32 FASTCALL OP_STR_REG_OFF(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_LDR_REG_OFF(const u32 i)
 {
 	u32 adr = (cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)]);
-	 u32 tempValue = READ32(cpu->mem_if->data, adr&0xFFFFFFFC);
+	 u32 tempValue = READ32(cpu->mem_if->data, adr);
 
 	 adr = (adr&3)*8;
 	 tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
@@ -864,13 +890,13 @@ TEMPLATE static  u32 FASTCALL OP_POP_PC(const u32 i)
 
 	v = READ32(cpu->mem_if->data, adr);
 	c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr);
-	cpu->R[15] = v & 0xFFFFFFFE;
-	cpu->next_instruction = v & 0xFFFFFFFE;
 	if(PROCNUM==0)
 		cpu->CPSR.bits.T = BIT0(v);
-	adr += 4;
 
-	cpu->R[13] = adr;
+	cpu->R[15] = v & 0xFFFFFFFE;
+	cpu->next_instruction = cpu->R[15];
+	
+	cpu->R[13] = adr + 4;
 	 return MMU_aluMemCycles<PROCNUM>(5, c);
 }
 
@@ -1010,7 +1036,7 @@ TEMPLATE static  u32 FASTCALL OP_B_UNCOND(const u32 i)
 {
 	cpu->R[15] += (SIGNEEXT_IMM11(i)<<1);
 	cpu->next_instruction = cpu->R[15];
-	return 3;
+	return 1;
 }
  
 TEMPLATE static  u32 FASTCALL OP_BLX(const u32 i)
@@ -1033,7 +1059,7 @@ TEMPLATE static  u32 FASTCALL OP_BL_THUMB(const u32 i)
 	cpu->R[15] = (cpu->R[14] + ((i&0x7FF)<<1));
 	cpu->R[14] = cpu->next_instruction | 1;
 	cpu->next_instruction = cpu->R[15];
-	return 3;
+	return 4;
 }
 
 TEMPLATE static  u32 FASTCALL OP_BX_THUMB(const u32 i)
@@ -1067,7 +1093,7 @@ TEMPLATE static  u32 FASTCALL OP_BLX_THUMB(const u32 i)
 	cpu->R[15] = (Rm & 0xFFFFFFFE);
 	cpu->next_instruction = cpu->R[15];
 	
-	return 3;
+	return 4;
 }
 
 //-----------------------------------------------------------------------------
