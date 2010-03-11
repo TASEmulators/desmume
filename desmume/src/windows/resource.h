@@ -366,6 +366,7 @@
 #define IDC_SNDCTRL_CH3NOMIX            1030
 #define IDC_ADDONS_LIST                 1033
 #define IDC_ADDONS_INFO                 1034
+#define IDC_BORDER                      1034
 #define IDC_BBROWSE                     1035
 #define IDC_PATHIMG                     1036
 #define IDC_PATH                        1037
@@ -418,6 +419,10 @@
 #define IDC_CAP1_ACTIVE                 1083
 #define IDC_CAP1_RUNNING                1084
 #define IDC_CHECK9                      1088
+#define IDC_S2X                         1090
+#define IDC_S4X                         1091
+#define IDC_S8X                         1092
+#define IDC_S16X                        1093
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
