@@ -384,7 +384,6 @@ static int shininessInd = 0;
 //these dont need to go into the savestate. they can be regenerated from HW registers
 //from polygonattr:
 static unsigned int cullingMask=0;
-static u8 colorAlpha=0;
 static u32 envMode=0;
 static u32 lightMask=0;
 //other things:
