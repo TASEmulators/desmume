@@ -445,7 +445,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	int					type;
 	ROMReader_struct	*reader;
 	void				*file;
-	u32					size, mask;
+	u32					size;
 	u8					*data;
 	char				*noext;
 	char				buf[MAX_PATH];
@@ -2284,7 +2284,7 @@ buttonstruct<bool> AutoHold;
 
 void ClearAutoHold(void) {
 	
-	for (int i=0; i < ARRAY_SIZE(AutoHold.array); i++) {
+	for (u32 i=0; i < ARRAY_SIZE(AutoHold.array); i++) {
 		AutoHold.array[i]=false;
 	}
 }
