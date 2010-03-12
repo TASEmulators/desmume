@@ -417,6 +417,10 @@ void NDS_SkipNextFrame();
 #define NDS_SkipFrame(s) if(s) NDS_SkipNext2DFrame();
 void NDS_OmitFrameSkip(int force=0);
 
+void NDS_debug_break();
+void NDS_debug_continue();
+void NDS_debug_step();
+
 void execHardware_doAllDma(EDMAMode modeNum);
 
 template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);

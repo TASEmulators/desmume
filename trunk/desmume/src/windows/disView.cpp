@@ -382,14 +382,12 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              return 1;
 						case IDC_STEP:
                              {
-								extern void NDS_debug_step();
 								NDS_debug_step();
                              }
                              return 1;
 
 						case IDC_CONTINUE:
                              {
-								extern void NDS_debug_continue();
 								NDS_debug_continue();
                              }
                              return 1;
@@ -632,13 +630,11 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              return 1;
 						case IDC_STEP:
                              {
-								extern void NDS_debug_step();
 								NDS_debug_step();
                              }
                              return 1;
 						case IDC_CONTINUE:
                              {
-								extern void NDS_debug_continue();
 								NDS_debug_continue();
                              }
                              return 1;
