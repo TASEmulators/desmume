@@ -40,7 +40,7 @@ u32 debugFlag;
 //DEBUG CONFIGURATION
 const bool debug_acl = false;
 
-bool acl_check_access(u32 adr, u32 access) {
+static bool acl_check_access(u32 adr, u32 access) {
 	//tweak the access value with the execution mode.
 	//user code is USR and every other mode is SYS.
 	//this is weird logic, but I didn't want to change..
@@ -78,8 +78,8 @@ void HandleDebugEvent_Write()
 
 void HandleDebugEvent_Execute()
 {
-	extern bool nds_debug_continuing[2];
 	//HACKY BREAKPOINTS!
+	//extern bool nds_debug_continuing[2];
 	//if(!nds_debug_continuing[DebugEventData.procnum]) //dont keep hitting the same breakpoint
 	//{
 	//	if((DebugEventData.addr & 0xFFFFFFF0) == 0x02000000)
