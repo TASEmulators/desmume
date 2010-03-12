@@ -1510,7 +1510,7 @@ u32 MMU_readFromGC()
 
 
 //does some validation on the game's choice of IF value, correcting it if necessary
-void validateIF_arm9()
+static void validateIF_arm9()
 {
 	//according to gbatek, these flags are forced on until the condition is removed.
 	//no proof of this though...
