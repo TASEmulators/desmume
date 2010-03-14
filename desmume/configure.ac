@@ -231,18 +231,12 @@ AM_CONDITIONAL([HAVE_WX], [test "x$wxwidgets" = "xyes"])
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR=""
 if test "x$HAVE_SDL" = "xyes"; then
-  # SDL adds just a cli
   UI_DIR="cli $UI_DIR"
   if test "x$HAVE_GTK" = "xyes"; then
-    # GTK requires SDL
     UI_DIR="gtk $UI_DIR"
   fi
   if test "x$wxwin" = "xyes"; then
-    if test "x$HAVE_LIBAGG" = "xyes"; then
-      UI_DIR="wx $UI_DIR"
-    else
-      AC_MSG_WARN([Antigrain library not found, wxWidgets frontend will be disabled])
-    fi
+    UI_DIR="wx $UI_DIR"
   fi
 
   if test "x$HAVE_LIBGLADE" = "xyes"; then

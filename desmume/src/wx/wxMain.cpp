@@ -285,7 +285,9 @@ public:
 	void closeRom(wxCommandEvent& event) {
 		NDS_FreeROM();
 		execute = false;
+#ifdef HAVE_LIBAGG
 		Hud.resetTransient();
+#endif
 		NDS_Reset();
 	}
 
@@ -483,8 +485,10 @@ bool Desmume::OnInit()
 	DesmumeFrame *frame = new DesmumeFrame(emu_version);
 	frame->NDSInitialize();
 
+#ifdef HAVE_LIBAGG
 	Desmume_InitOnce();
 	aggDraw.hud->attach((u8*)GPU_screen, 256, 384, 1024);//TODO
+#endif
 	NDS_3D_ChangeCore(0);
 
 
