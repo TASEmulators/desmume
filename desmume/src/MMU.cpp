@@ -1047,7 +1047,7 @@ static void execsqrt() {
 }
 
 static void execdiv() {
-	
+
 	s64 num,den;
 	s64 res,mod;
 	u8 mode = MMU_new.div.mode;
@@ -1056,18 +1056,18 @@ static void execdiv() {
 
 	switch(mode)
 	{
-	case 0:
+	case 0:	// 32/32
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = nds_timer + 36;
 		break;
-	case 1:
+	case 1:	// 64/32
 	case 3: //gbatek says this is same as mode 1
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = nds_timer + 68;
 		break;
-	case 2:
+	case 2:	// 64/64
 	default:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
@@ -1959,17 +1959,17 @@ void DmaController::exec()
 				//if(!paused) printf("gxfifo dma ended with %d remaining\n",wordcount); //only print this once
 				if(wordcount>0) {
 					doPause();
-					goto start;
+					break;
 				}
-				else doStop();
-				break;
 			default:
 				doStop();
+				driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
+				return;
 		}
 	}
-	else if(enable)
+	
+	if(enable)
 	{
-start:
 		//analyze startmode (this only gets latched when a dma begins)
 		if(procnum==ARMCPU_ARM9) startmode = (EDMAMode)_startmode;
 		else {
@@ -2325,7 +2325,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				break ; 	 
 			case REG_DISPB_WININ+1: 	 
 				GPU_setWININ1(SubScreen.gpu,val) ; 	 
-				break ; 	 
+				break ; 
 			case REG_DISPB_WINOUT: 	 
 				GPU_setWINOUT(SubScreen.gpu,val) ; 	 
 				break ; 	 
@@ -2546,7 +2546,18 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				MMU_new.div.write16(val);
 				execdiv();
 				return;
-
+#if 0
+			case REG_DIVNUMER:
+			case REG_DIVNUMER+2:
+			case REG_DIVNUMER+4:
+				printf("DIV: 16 write NUMER %08X. PLEASE REPORT! \n", val);
+				break;
+			case REG_DIVDENOM:
+			case REG_DIVDENOM+2:
+			case REG_DIVDENOM+4:
+				printf("DIV: 16 write DENOM %08X. PLEASE REPORT! \n", val);
+				break;
+#endif
 			case REG_SQRTCNT:
 				MMU_new.sqrt.write16(val);
 				execsqrt();
@@ -3252,6 +3263,15 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			}
 
+			case REG_DIVNUMER:
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290, val);
+				execdiv();
+				return;
+			case REG_DIVNUMER+4:
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x294, val);
+				execdiv();
+				return;
+
             case REG_DIVDENOM :
 				{
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298, val);
@@ -3355,7 +3375,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	if (adr >> 24 == 4)
 	{	//Address is an IO register
 
-		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,8,adr); 
+		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,8,adr);
 
 		switch(adr)
 		{
