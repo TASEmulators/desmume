@@ -402,7 +402,7 @@ void PADConfigDialogSimple::OnClose(wxCloseEvent& event)
 void PADConfigDialogSimple::OnCloseClick(wxCommandEvent& event)
 {
 	SaveConfig();
-	Close();
+	Destroy();
 }
 
 void PADConfigDialogSimple::OnShow(wxShowEvent& event)
