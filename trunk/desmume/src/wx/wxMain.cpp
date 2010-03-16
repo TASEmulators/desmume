@@ -199,8 +199,10 @@ public:
 		Refresh(false);
 		event.RequestMore();
 		applyInput();
-		if(execute) 
+		if(execute) { 
 			NDS_exec<false>();
+			SPU_Emulate_user();
+		};
 		osd->update();
 		DrawHUD();
 		osd->clear();
@@ -208,7 +210,13 @@ public:
 	}
 
 	void pause(wxCommandEvent& event){
-		execute ? execute=false : execute=true;
+		if (execute) {
+			execute=false;
+			SPU_Pause(1);
+		} else {
+			execute=true;
+			SPU_Pause(0);
+		}
 	}
 	void reset(wxCommandEvent& event){NDS_Reset();}
 
@@ -466,6 +474,9 @@ void DesmumeFrame::NDSInitialize() {
 				arm7_memio, &arm7_ctrl_iface);
 #else
 	NDS_Init();
+#endif
+#ifndef WIN32
+	SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 #endif
 }
 
