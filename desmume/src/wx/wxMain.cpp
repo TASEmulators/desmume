@@ -336,7 +336,7 @@ public:
 
 		for (int i = 0; i < 10; i++)
 		{
-			mnuSubstates->Append( baseid+i+1, wxString::Format(_T("Slot %d"), i) );
+			mnuSubstates->Append( baseid+i, wxString::Format(_T("Slot %d"), i) );
 		}
 		return mnuSubstates;
 	}
@@ -396,8 +396,8 @@ enum
 	wConfigureControls
 };
 
-void DesmumeFrame::Menu_SaveStates(wxCommandEvent &event){savestate_slot(event.GetId() - wSaveState01 - 1);}
-void DesmumeFrame::Menu_LoadStates(wxCommandEvent &event){loadstate_slot(event.GetId() - wLoadState01 - 1);}
+void DesmumeFrame::Menu_SaveStates(wxCommandEvent &event){savestate_slot(event.GetId() - wSaveState01);}
+void DesmumeFrame::Menu_LoadStates(wxCommandEvent &event){loadstate_slot(event.GetId() - wLoadState01);}
 
 BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 EVT_PAINT(DesmumeFrame::onPaint)
@@ -431,6 +431,9 @@ EVT_MENU(wSubmitABugReport,DesmumeFrame::submitABugReport)
 
 EVT_MENU(wSaveStateAs,DesmumeFrame::saveStateAs)
 EVT_MENU(wLoadStateFrom,DesmumeFrame::loadStateFrom)
+
+EVT_MENU_RANGE(wSaveState01,wSaveState01+9,DesmumeFrame::Menu_SaveStates)
+EVT_MENU_RANGE(wLoadState01,wLoadState01+9,DesmumeFrame::Menu_LoadStates)
 
 EVT_MENU(wCloseRom,DesmumeFrame::closeRom)
 EVT_MENU(wImportBackupMemory,DesmumeFrame::importBackupMemory)
@@ -526,23 +529,16 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	wxMenu *configMenu = new wxMenu;
 	wxMenu *toolsMenu = new wxMenu;
 	wxMenu *helpMenu = new wxMenu;
+	wxMenu *saves(MakeStatesSubMenu(wSaveState01));
+	wxMenu *loads(MakeStatesSubMenu(wLoadState01));
 
 	fileMenu->Append(wxID_OPEN, _T("Load R&om\tAlt-R"));
 	fileMenu->Append(wCloseRom, _T("Close Rom"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wSaveStateAs, _T("Save State As..."));
 	fileMenu->Append(wLoadStateFrom, _T("Load State From..."));
-	{
-		wxMenu* saves(DesmumeFrame::MakeStatesSubMenu(wSaveState01));
-		wxMenu* loads(DesmumeFrame::MakeStatesSubMenu(wLoadState01));
-		fileMenu->AppendSubMenu(saves, _T("Save State"));
-		fileMenu->AppendSubMenu(loads, _T("Load State"));
-#define ConnectMenuRange( id_start, inc, handler ) \
-	Connect( id_start, id_start + inc, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(DesmumeFrame::handler) )
-		//TODO something is wrong here
-//		ConnectMenuRange(wLoadState01+1, 10, Menu_LoadStates);
-//		ConnectMenuRange(wSaveState01+1, 10, Menu_SaveStates);
-	}
+	fileMenu->AppendSubMenu(saves, _T("Save State"));
+	fileMenu->AppendSubMenu(loads, _T("Load State"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wImportBackupMemory, _T("Import Backup Memory..."));
 	fileMenu->Append(wExportBackupMemory, _T("Export Backup Memory..."));
