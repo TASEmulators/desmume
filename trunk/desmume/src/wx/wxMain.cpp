@@ -358,9 +358,6 @@ private:
 
 enum
 {
-	wExit = wxID_EXIT,
-	wAbout = wxID_ABOUT,
-	wRom,
 	wPause,
 	wReset,
 	wFrameCounter,
@@ -405,9 +402,9 @@ void DesmumeFrame::Menu_LoadStates(wxCommandEvent &event){loadstate_slot(event.G
 BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 EVT_PAINT(DesmumeFrame::onPaint)
 EVT_IDLE(DesmumeFrame::onIdle)
-EVT_MENU(wExit, DesmumeFrame::OnQuit)
-EVT_MENU(wRom, DesmumeFrame::LoadRom)
-EVT_MENU(wAbout,DesmumeFrame::OnAbout)
+EVT_MENU(wxID_EXIT, DesmumeFrame::OnQuit)
+EVT_MENU(wxID_OPEN, DesmumeFrame::LoadRom)
+EVT_MENU(wxID_ABOUT,DesmumeFrame::OnAbout)
 EVT_MENU(wPause,DesmumeFrame::pause)
 EVT_MENU(wReset,DesmumeFrame::reset)
 EVT_MENU(wFrameCounter,DesmumeFrame::frameCounter)
@@ -530,7 +527,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	wxMenu *toolsMenu = new wxMenu;
 	wxMenu *helpMenu = new wxMenu;
 
-	fileMenu->Append(wRom, _T("Load R&om\tAlt-R"));
+	fileMenu->Append(wxID_OPEN, _T("Load R&om\tAlt-R"));
 	fileMenu->Append(wCloseRom, _T("Close Rom"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wSaveStateAs, _T("Save State As..."));
@@ -559,7 +556,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wLuaWindow, _T("New Lua Script Window..."));
 	fileMenu->AppendSeparator();
-	fileMenu->Append(wExit, _T("E&xit\tAlt-X"), _T("Quit this program"));
+	fileMenu->Append(wxID_EXIT, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
 	emulationMenu->Append(wPause, _T("&Pause\tAlt-P"), _T("Pause Emulation"));
 	emulationMenu->Append(wReset, _T("&Reset\tAlt-R"), _T("Reset Emulation"));
@@ -596,7 +593,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	helpMenu->Append(wWebsite, _T("&Website"));
 	helpMenu->Append(wForums, _T("&Forums"));
 	helpMenu->Append(wSubmitABugReport, _T("&Submit A Bug Report"));
-	helpMenu->Append(wAbout, _T("&About"), _T("Show about dialog"));
+	helpMenu->Append(wxID_ABOUT);
 
 	wxMenuBar *menuBar = new wxMenuBar();
 	menuBar->Append(fileMenu, _T("&File"));
