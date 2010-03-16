@@ -37,6 +37,9 @@
 #endif
 
 #define SCREEN_SIZE (256*192*3)
+#define GAP_DEFAULT 64
+#define GAP_MAX	90
+static int nds_gap_size;
 static int nds_screen_rotation_angle;
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -235,19 +238,19 @@ loop:
 		switch (nds_screen_rotation_angle) {
 		case 0:
 			dc.DrawBitmap(m_bitmap1, 0, 0, true);
-			dc.DrawBitmap(m_bitmap2, 0, 192, true);
+			dc.DrawBitmap(m_bitmap2, 0, 192+nds_gap_size, true);
 			break;
 		case 90:
 			dc.DrawBitmap(m_bitmap2, 0, 0, true);
-			dc.DrawBitmap(m_bitmap1, 192, 0, true);
+			dc.DrawBitmap(m_bitmap1, 192+nds_gap_size, 0, true);
 			break;
 		case 180:
 			dc.DrawBitmap(m_bitmap2, 0, 0, true);
-			dc.DrawBitmap(m_bitmap1, 0, 192, true);
+			dc.DrawBitmap(m_bitmap1, 0, 192+nds_gap_size, true);
 			break;
 		case 270:
 			dc.DrawBitmap(m_bitmap1, 0, 0, true);
-			dc.DrawBitmap(m_bitmap2, 192, 0, true);
+			dc.DrawBitmap(m_bitmap2, 192+nds_gap_size, 0, true);
 			break;
 		}
 	}
@@ -409,6 +412,7 @@ loop:
 	void Menu_LoadStates(wxCommandEvent &event);
 	void NDSInitialize();
 	void changeRotation(wxCommandEvent &event);
+	void onResize(wxSizeEvent &event);
 
 private:
 #ifdef GDB_STUB
@@ -472,21 +476,46 @@ void DesmumeFrame::Menu_LoadStates(wxCommandEvent &event){loadstate_slot(event.G
 
 void DesmumeFrame::changeRotation(wxCommandEvent &event){
 	int rot = (event.GetId() - wRot0)*90;
+	wxSize sizeMin, sizeMax;
 
 	if (rot == nds_screen_rotation_angle)
 		return;
 
+	SetMinSize(wxSize(-1,-1));
+	SetMaxSize(wxSize(-1,-1));
+
 	if (rot == 90 || rot == 270) {
-		SetClientSize(384,256);
+		SetClientSize(384 + nds_gap_size, 256);
+		sizeMax = sizeMin = ClientToWindowSize(wxSize(384,256));
+		sizeMax.IncBy(GAP_MAX,0);
 	} else {
-		SetClientSize(256,384);
+		SetClientSize(256, 384 + nds_gap_size);
+		sizeMax = sizeMin = ClientToWindowSize(wxSize(256,384));
+		sizeMax.IncBy(0,GAP_MAX);
 	}
+	SetMinSize(sizeMin);
+	SetMaxSize(sizeMax);
 	nds_screen_rotation_angle = rot;
+}
+
+void DesmumeFrame::onResize(wxSizeEvent &event) {
+	int w, h;
+
+	GetClientSize(&w,&h);
+	if (nds_screen_rotation_angle == 90 || nds_screen_rotation_angle == 270) {
+		if (w>=384)
+			nds_gap_size = w-384;
+	} else {
+		if (h>=384)
+			nds_gap_size = h-384;
+	}
+	event.Skip();
 }
 
 BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 EVT_PAINT(DesmumeFrame::onPaint)
 EVT_IDLE(DesmumeFrame::onIdle)
+EVT_SIZE(DesmumeFrame::onResize)
 EVT_MENU(wxID_EXIT, DesmumeFrame::OnQuit)
 EVT_MENU(wxID_OPEN, DesmumeFrame::LoadRom)
 EVT_MENU(wxID_ABOUT,DesmumeFrame::OnAbout)
@@ -699,6 +728,11 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	//	CreateStatusBar(2);
 	//	SetStatusText("Welcome to Desmume!");
 	SetClientSize(256,384);
+	wxSize sizeMin = ClientToWindowSize(wxSize(256,384));
+	wxSize sizeMax = sizeMin;
+	sizeMax.IncBy(0,GAP_MAX);
+	SetMinSize(sizeMin);
+	SetMaxSize(sizeMax);
 }
 
 #ifdef _WIN32
