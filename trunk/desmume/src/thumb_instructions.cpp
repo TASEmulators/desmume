@@ -1034,6 +1034,17 @@ TEMPLATE static  u32 FASTCALL OP_B_COND(const u32 i)
 
 TEMPLATE static  u32 FASTCALL OP_B_UNCOND(const u32 i)
 {
+#ifdef DEVELOPER
+	//nocash message detection
+	const u16 last = _MMU_read16<PROCNUM,MMU_AT_DEBUG>(cpu->instruct_adr-2);
+	const u16 next = _MMU_read16<PROCNUM,MMU_AT_DEBUG>(cpu->instruct_adr+2);
+	static const u16 mov_r12_r12 = 0x46E4;
+	if(last == mov_r12_r12 && next == 0x6464)
+	{
+		NocashMessage(cpu);
+	}
+#endif
+
 	cpu->R[15] += (SIGNEEXT_IMM11(i)<<1);
 	cpu->next_instruction = cpu->R[15];
 	return 1;
