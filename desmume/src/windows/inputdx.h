@@ -107,6 +107,8 @@ struct SJoyState{
     bool ZUp;
     bool ZDown;
     bool Button[128];
+	bool FeedBack;
+	LPDIRECTINPUTEFFECT     pEffect;
 };
 
 extern SJoypad Joypad[16];
@@ -119,6 +121,8 @@ void RunHotkeyConfig();
 void input_acquire();
 void input_process();
 void LoadHotkeyConfig();
+void input_init();
+void input_deinit();
 
 struct SGuitar {
     BOOL Enabled;
