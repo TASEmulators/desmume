@@ -575,7 +575,9 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 	u8* dst = currDst;
 	u16 final;
 
-	bool windowEffect = true;
+	bool windowEffect = blend1; //bomberman land touch dialogbox will fail without setting to blend1
+	
+	//TODO - should we do an alpha==0 -> bail out entirely check here?
 
 	if(WINDOW)
 	{
@@ -605,7 +607,7 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 		}
 		else final = R6G6B6TORGB15(red,green,blue);
 	}
-	else 
+	else
 	{
 		final = R6G6B6TORGB15(red,green,blue);
 		//perform the special effect
