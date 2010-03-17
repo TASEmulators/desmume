@@ -317,10 +317,10 @@ CACHE_ALIGN u8 gfx3d_convertedScreen[256*192*4];
 
 // Matrix stack handling
 CACHE_ALIGN MatrixStack	mtxStack[4] = {
-	MatrixStack(1), // Projection stack
-	MatrixStack(31), // Coordinate stack
-	MatrixStack(31), // Directional stack
-	MatrixStack(1), // Texture stack
+	MatrixStack(1, 0), // Projection stack
+	MatrixStack(31, 1), // Coordinate stack
+	MatrixStack(31, 2), // Directional stack
+	MatrixStack(1, 3), // Texture stack
 };
 
 int _hack_getMatrixStackLevel(int which) { return mtxStack[which].position; }
@@ -785,18 +785,8 @@ static void gfx3d_glMatrixMode(u32 v)
 
 static void gfx3d_glPushMatrix()
 {
-	//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
-
-	if (mtxStack[mymode].position > mtxStack[mymode].size)
-	{
-		MMU_new.gxstat.se = 1;
-		//gxstat |= (1<<15);
-		return;
-	}
-
-	//gxstat &= 0xFFFF00FF;
 
 	MatrixStackPushMatrix(&mtxStack[mymode], mtxCurrent[mymode]);
 
@@ -805,36 +795,30 @@ static void gfx3d_glPushMatrix()
 	if(mymode==2)
 		MatrixStackPushMatrix (&mtxStack[1], mtxCurrent[1]);
 
-	//gxstat |= ((mtxStack[0].position << 13) | (mtxStack[1].position << 8));
+	MMU_new.gxstat.sb = 1; // set busy
 }
 
 static void gfx3d_glPopMatrix(s32 i)
 {
+	// The stack has only one level (at address 0) in projection mode, 
+	// in that mode, the parameter value is ignored, the offset is always +1 in that mode.
+	if (mode == 0) i = 1;
+
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
 	//6 bits, sign extended
 	//this was necessary to fix sims apartment pets
-	i = (i<<26)>>26;
-	
-	if (i > mtxStack[mymode].position)
-	{
-		//was commented out before zero sep modifications
-		//handled in matrix now
-		//MMU_new.gxstat.se = 1;
-	//	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-	//	return;
-	}
-	
+	//i = (i<<26)>>26;
 
-	MatrixCopy(mtxCurrent[mymode], MatrixStackPopMatrix (&mtxStack[mymode], i));
+	MatrixStackPopMatrix((float*)mtxCurrent[mymode], &mtxStack[mymode], i);
 
 	GFX_DELAY(36);
 
 	if (mymode == 2)
-		MatrixCopy(mtxCurrent[1], MatrixStackPopMatrix (&mtxStack[1], i));
+		MatrixStackPopMatrix((float*)mtxCurrent[1], &mtxStack[1], i);
 
-	//gxstat |= ((mtxStack[0].position << 13) | (mtxStack[1].position << 8));
+	MMU_new.gxstat.sb = 1; // set busy
 }
 
 static void gfx3d_glStoreMatrix(u32 v)
@@ -1660,14 +1644,137 @@ unsigned int gfx3d_glGetPosRes(unsigned int index)
 	return (unsigned int)(PTcoords[index] * 4096.0f);
 }
 
+void log3D(u8 cmd, u32 param)
+{
+	INFO("3D command 0x%02X: ", cmd);
+	switch (cmd)
+		{
+			case 0x10:		// MTX_MODE - Set Matrix Mode (W)
+				printf("MTX_MODE(%08X)", param);
+			break;
+			case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
+				printf("MTX_PUSH()\t");
+			break;
+			case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
+				printf("MTX_POP(%08X)", param);
+			break;
+			case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
+				printf("MTX_STORE(%08X)", param);
+			break;
+			case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
+				printf("MTX_RESTORE(%08X)", param);
+			break;
+			case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
+				printf("MTX_IDENTIFY()\t");
+			break;
+			case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+				printf("MTX_LOAD_4x4(%08X)", param);
+			break;
+			case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+				printf("MTX_LOAD_4x3(%08X)", param);
+			break;
+			case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+				printf("MTX_MULT_4x4(%08X)", param);
+			break;
+			case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+				printf("MTX_MULT_4x3(%08X)", param);
+			break;
+			case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+				printf("MTX_MULT_3x3(%08X)", param);
+			break;
+			case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+				printf("MTX_SCALE(%08X)", param);
+			break;
+			case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+				printf("MTX_TRANS(%08X)", param);
+			break;
+			case 0x20:		// COLOR - Directly Set Vertex Color (W)
+				printf("COLOR(%08X)", param);
+			break;
+			case 0x21:		// NORMAL - Set Normal Vector (W)
+				printf("NORMAL(%08X)", param);
+			break;
+			case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
+				printf("TEXCOORD(%08X)", param);
+			break;
+			case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+				printf("VTX_16(%08X)", param);
+			break;
+			case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
+				printf("VTX_10(%08X)", param);
+			break;
+			case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
+				printf("VTX_XY(%08X)", param);
+			break;
+			case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
+				printf("VTX_XZ(%08X)", param);
+			break;
+			case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
+				printf("VTX_YZ(%08X)", param);
+			break;
+			case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
+				printf("VTX_DIFF(%08X)", param);
+			break;
+			case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
+				printf("POLYGON_ATTR(%08X)", param);
+			break;
+			case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
+				printf("TEXIMAGE_PARAM(%08X)", param);
+			break;
+			case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
+				printf("PLTT_BASE(%08X)", param);
+			break;
+			case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
+				printf("DIF_AMB(%08X)", param);
+			break;
+			case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
+				printf("SPE_EMI(%08X)", param);
+			break;
+			case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
+				printf("LIGHT_VECTOR(%08X)", param);
+			break;
+			case 0x33:		// LIGHT_COLOR - Set Light Color (W)
+				printf("LIGHT_COLOR(%08X)", param);
+			break;
+			case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
+				printf("SHININESS(%08X)", param);
+			break;
+			case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
+				printf("BEGIN_VTXS(%08X)", param);
+			break;
+			case 0x41:		// END_VTXS - End of Vertex List (W)
+				printf("END_VTXS()\t");
+			break;
+			case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
+				printf("SWAP_BUFFERS(%08X)", param);
+			break;
+			case 0x60:		// VIEWPORT - Set Viewport (W)
+				printf("VIEWPORT(%08X)", param);
+			break;
+			case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+				printf("BOX_TEST(%08X)", param);
+			break;
+			case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
+				printf("POS_TEST(%08X)", param);
+			break;
+			case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
+				printf("VEC_TEST(%08X)", param);
+			break;
+			default:
+				INFO("!!! Unknown(%08X)", param);
+			break;
+		}
+		printf("\t\t(FIFO size %i)\n", gxFIFO.size);
+}
+
 //#define _3D_LOG_EXEC
 static void gfx3d_execute(u8 cmd, u32 param)
 {
-	//printf("*** gxFIFO: exec 0x%02X, size %03i\n", cmd, gxFIFO.size);
 #ifdef _3D_LOG_EXEC
-	u32 gxstat2 = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	INFO("*** gxFIFO: exec 0x%02X, tail %03i, gxstat 0x%08X (timer %i)\n", cmd, gxFIFO.tail, gxstat2, nds_timer);
+	log3D(cmd, param);
 #endif
+
+	MMU_new.gxstat.sb = 0;	// clear stack busy flag
 	switch (cmd)
 	{
 		case 0x10:		// MTX_MODE - Set Matrix Mode (W)

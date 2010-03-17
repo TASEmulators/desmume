@@ -122,6 +122,21 @@ static INLINE void T1WriteLong(u8* const mem, const u32 addr, const u32 val)
 #endif
 }
 
+static INLINE void T1WriteQuad(u8* const mem, const u32 addr, const u64 val)
+{
+#ifdef WORDS_BIGENDIAN
+	mem[addr + 7] = (val >> 56);
+	mem[addr + 6] = (val >> 48) & 0xFF;
+	mem[addr + 5] = (val >> 40) & 0xFF;
+	mem[addr + 4] = (val >> 32) & 0xFF;
+	mem[addr + 3] = (val >> 24) & 0xFF;
+    mem[addr + 2] = (val >> 16) & 0xFF;
+    mem[addr + 1] = (val >> 8) & 0xFF;
+    mem[addr] = val & 0xFF;
+#else
+	*((u64 *) (mem + addr)) = val;
+#endif
+}
 
 //static INLINE u8 T2ReadByte(u8* const  mem, const u32 addr)
 //{
