@@ -421,7 +421,7 @@ enum EAPStatus
 {
 	APStatus_Disconnected = 0,
 	APStatus_Authenticated,
-	APStatus_Associated,
+	APStatus_Associated
 };
 
 /* wifimac_t: the buildin mac (arm7 addressrange: 0x04800000-0x04FFFFFF )*/

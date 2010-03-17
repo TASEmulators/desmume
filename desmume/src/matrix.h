@@ -37,10 +37,11 @@
 
 struct MatrixStack
 {
-	MatrixStack(int size);
+	MatrixStack(int size, int type);
 	float	*matrix;
 	s32		position;
 	s32		size;
+	u8		type;
 };
 
 void	MatrixInit				(float *matrix);
@@ -60,7 +61,7 @@ void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
 void	MatrixStackSetStackPosition (MatrixStack *stack, int pos);
 void	MatrixStackPushMatrix		(MatrixStack *stack, const float *ptr);
-float*	MatrixStackPopMatrix		(MatrixStack *stack, int size);
+void	MatrixStackPopMatrix		(float *mtxCurr, MatrixStack *stack, int size);
 float*	MatrixStackGetPos			(MatrixStack *stack, int pos);
 float*	MatrixStackGet				(MatrixStack *stack);
 void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const float *ptr);

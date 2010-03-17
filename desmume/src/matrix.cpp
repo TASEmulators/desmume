@@ -211,38 +211,39 @@ void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 }
 
 
-MatrixStack::MatrixStack(int size)
+MatrixStack::MatrixStack(int size, int type)
 {
 	MatrixStackSetMaxSize(this,size);
+	this->type = type;
 }
 
 void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 {
-	//printf("SetPosition: %d by %d",stack->position,pos);
 	stack->position += pos;
 
-	//this wraparound behavior fixed sims apartment pets which was constantly going up to 32
-	s32 newpos = stack->position;
-	stack->position &= (stack->size);
-
-	if(newpos != stack->position)
+	if((stack->position < 0) || (stack->position > stack->size))
 		MMU_new.gxstat.se = 1;
-
-	//printf(" to %d (size %d)\n",stack->position,stack->size);
+	stack->position &= stack->size;
 }
 
 void MatrixStackPushMatrix (MatrixStack *stack, const float *ptr)
 {
-	MatrixCopy (&stack->matrix[stack->position*16], ptr);
-
+	//printf("Push %i pos %i\n", stack->type, stack->position);
+	if ((stack->type == 0) || (stack->type == 3))
+		MatrixCopy (&stack->matrix[0], ptr);
+	else
+		MatrixCopy (&stack->matrix[stack->position*16], ptr);
 	MatrixStackSetStackPosition (stack, 1);
 }
 
-float * MatrixStackPopMatrix (MatrixStack *stack, int size)
+void MatrixStackPopMatrix (float *mtxCurr, MatrixStack *stack, int size)
 {
+	//printf("Pop %i pos %i (change %d)\n", stack->type, stack->position, -size);
 	MatrixStackSetStackPosition(stack, -size);
-
-	return &stack->matrix[stack->position*16];
+	if ((stack->type == 0) || (stack->type == 3))
+		MatrixCopy (mtxCurr, &stack->matrix[0]);
+	else
+		MatrixCopy (mtxCurr, &stack->matrix[stack->position*16]);
 }
 
 float * MatrixStackGetPos (MatrixStack *stack, int pos)

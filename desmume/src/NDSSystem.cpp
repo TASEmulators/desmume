@@ -1172,10 +1172,15 @@ struct TSequenceItem_divider : public TSequenceItem
 	{
 		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[2]++);
 		MMU_new.div.busy = 0;
+#ifdef _WIN64
+		T1WriteQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, MMU.divResult);
+		T1WriteQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, MMU.divMod);
+#else
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, (u32)MMU.divResult);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, (u32)(MMU.divResult >> 32));
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, (u32)MMU.divMod);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, (u32)(MMU.divMod >> 32));
+#endif
 		MMU.divRunning = FALSE;
 	}
 
@@ -1764,6 +1769,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 
 		timer = minarmtime<doarm9,doarm7>(arm9,arm7);
 		nds_timer = nds_timer_base + timer;
+		if (nds_timer >= MMU.gfx3dCycles) MMU_new.gxstat.sb = 0;	// clear stack busy flag
 	}
 
 	return std::make_pair(arm9, arm7);

@@ -719,6 +719,7 @@ bool BackupDevice::load_no_gba(const char *fname)
 
 				if (in_buf) delete [] in_buf;
 				if (out_buf) delete [] out_buf;
+				fclose(fsrc);
 				return true;
 			}
 			if (out_buf) delete [] out_buf;

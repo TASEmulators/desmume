@@ -115,11 +115,12 @@ public:
 struct TGXSTAT : public TRegister_32
 {
 	TGXSTAT() {
-		gxfifo_irq = se = tr = tb = 0;
+		gxfifo_irq = se = tr = tb = sb = 0;
 	}
 	u8 tb; //test busy
 	u8 tr; //test result
 	u8 se; //stack error
+	u8 sb; //stack busy
 	u8 gxfifo_irq; //irq configuration
 
 	virtual u32 read32();

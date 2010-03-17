@@ -1714,8 +1714,7 @@ u32 TGXSTAT::read32()
 	// using in "The Wild West"
 	ret |= ((_hack_getMatrixStackLevel(0) << 13) | (_hack_getMatrixStackLevel(1) << 8)); //matrix stack levels //no proof that these are needed yet
 
-	//todo: stack busy flag (bit14)
-
+	ret |= sb<<14;	//stack busy
 	ret |= se<<15;
 	ret |= (std::min(gxFIFO.size,(u32)255))<<16;
 	if(gxFIFO.size>=255) ret |= BIT(24); //fifo full
@@ -1758,16 +1757,18 @@ void TGXSTAT::write32(const u32 val)
 
 void TGXSTAT::savestate(EMUFILE *f)
 {
-	write32le(0,f); //version
-	write8le(tb,f); write8le(tr,f); write8le(se,f); write8le(gxfifo_irq,f); 
+	write32le(1,f); //version
+	write8le(tb,f); write8le(tr,f); write8le(se,f); write8le(gxfifo_irq,f); write8le(sb,f);
 }
 bool TGXSTAT::loadstate(EMUFILE *f)
 {
 	u32 version;
 	if(read32le(&version,f) != 1) return false;
-	if(version != 0) return false;
+	if(version > 1) return false;
 
 	read8le(&tb,f); read8le(&tr,f); read8le(&se,f); read8le(&gxfifo_irq,f); 
+	if (version >= 1)
+		read8le(&sb,f);
 
 	return true;
 }
@@ -3174,10 +3175,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			}
 
 			case REG_DISPA_BLDY:
-				GPU_setBLDY_EVY(MainScreen.gpu,val) ; 	 
+				GPU_setBLDY_EVY(MainScreen.gpu,val&0xFFFF) ; 	 
 				break ; 	 
 			case REG_DISPB_BLDY: 	 
-				GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
+				GPU_setBLDY_EVY(SubScreen.gpu,val&0xFFFF);
 				break;
 
 			case REG_DISPA_DISPCNT :
