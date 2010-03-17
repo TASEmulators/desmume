@@ -2462,7 +2462,6 @@ int _main()
 	InitCustomKeys(&CustomKeys);
 	Hud.reset();
 
-	void input_init();
 	input_init();
 
 	if (addon_type == NDS_ADDON_GUITARGRIP) Guitar.Enabled = true;
@@ -2727,6 +2726,7 @@ int _main()
 
 
 	//------SHUTDOWN
+	input_deinit();
 
 	KillDisplay();
 
