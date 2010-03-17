@@ -4745,6 +4745,19 @@ DOKEYDOWN:
 			WritePrivateProfileInt("Display","SubGpu",CommonSettings.showGpu.sub?1:0,IniName);
 			return 0;
 
+		case IDM_MOBJ:
+			if(MainScreen.gpu->dispOBJ)
+			{
+				GPU_remove(MainScreen.gpu, 4);
+				MainWindow->checkMenu(IDM_MOBJ, false);
+			}
+			else
+			{
+				GPU_addBack(MainScreen.gpu, 4);
+				MainWindow->checkMenu(IDM_MOBJ, true);
+			}
+			return 0;
+
 		case IDM_MBG0 : 
 			if(MainScreen.gpu->dispBG[0])
 			{
@@ -4791,6 +4804,19 @@ DOKEYDOWN:
 			{
 				GPU_addBack(MainScreen.gpu, 3);
 				MainWindow->checkMenu(IDM_MBG3, true);
+			}
+			return 0;
+
+		case IDM_SOBJ:
+			if(SubScreen.gpu->dispOBJ)
+			{
+				GPU_remove(SubScreen.gpu, 4);
+				MainWindow->checkMenu(IDM_SOBJ, false);
+			}
+			else
+			{
+				GPU_addBack(SubScreen.gpu, 4);
+				MainWindow->checkMenu(IDM_SOBJ, true);
 			}
 			return 0;
 		case IDM_SBG0 : 
