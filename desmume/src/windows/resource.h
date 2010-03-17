@@ -812,6 +812,10 @@
 #define ID_DISPLAYMETHOD_DIRECTDRAWHW   40071
 #define ID_DISPLAYMETHOD_DIRECTDRAWSW   40072
 #define ID_HOTKEYS_TITLE                40073
+#define ID_VIEWLAYERS_SUBOBJ            40074
+#define ID_VIEWLAYERS_MAINOBJ           40075
+#define IDM_MOBJ                        40076
+#define IDM_SOBJ                        40077
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -909,7 +913,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
-#define _APS_NEXT_COMMAND_VALUE         40074
+#define _APS_NEXT_COMMAND_VALUE         40078
 #define _APS_NEXT_CONTROL_VALUE         1026
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
