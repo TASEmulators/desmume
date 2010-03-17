@@ -29,6 +29,8 @@
 #include "thumb_instructions.h"
 #include "cp15.h"
 #include "NDSSystem.h"
+#include "utils/xstring.h"
+#include "movie.h"
 
 #ifdef HAVE_LUA
 #include "lua-engine.h"
@@ -290,7 +292,7 @@ void IdeasLog(armcpu_t* cpu)
 {
 	u32 adr = cpu->R[0];
 	for(;;) {
-		u8 c = MMU_read8(cpu->proc_ID,adr);
+		u8 c = _MMU_read08(cpu->proc_ID, MMU_AT_DEBUG, adr);
 		adr++;
 		if(!c) break;
 		printf("%c",c);
@@ -298,3 +300,50 @@ void IdeasLog(armcpu_t* cpu)
 	//don't emit a newline. that is a pain in the butt.
 }
 
+void NocashMessage(armcpu_t* cpu)
+{
+	u32 adr = cpu->instruct_adr + 6;
+
+	std::string todo;
+	for(;;) {
+		u8 c = _MMU_read08(cpu->proc_ID, MMU_AT_DEBUG, adr);
+		adr++;
+		if(!c) break;
+		todo.push_back(c);
+	}
+
+	//r0,r1,r2,...,r15  show register content (displayed as 32bit Hex number)
+	//sp,lr,pc          alias for r13,r14,r15
+	//scanline          show current scanline number
+	//frame             show total number of frames since coldboot
+	//totalclks         show total number of clock cycles since coldboot
+	//lastclks          show number of cycles since previous lastclks (or zeroclks)
+	//zeroclks          resets the 'lastclks' counter
+
+	//this is very inefficiently coded!
+	char tmp[100];
+	todo = mass_replace(todo,"%sp%","%r13%");
+	todo = mass_replace(todo,"%lr%","%r14%");
+	todo = mass_replace(todo,"%pc%","%r15%");
+	sprintf(tmp,"%08X",cpu->R[0]); todo = mass_replace(todo,"%r0%",tmp);
+	sprintf(tmp,"%08X",cpu->R[1]); todo = mass_replace(todo,"%r1%",tmp);
+	sprintf(tmp,"%08X",cpu->R[2]); todo = mass_replace(todo,"%r2%",tmp);
+	sprintf(tmp,"%08X",cpu->R[3]); todo = mass_replace(todo,"%r3%",tmp);
+	sprintf(tmp,"%08X",cpu->R[4]); todo = mass_replace(todo,"%r4%",tmp);
+	sprintf(tmp,"%08X",cpu->R[5]); todo = mass_replace(todo,"%r5%",tmp);
+	sprintf(tmp,"%08X",cpu->R[6]); todo = mass_replace(todo,"%r6%",tmp);
+	sprintf(tmp,"%08X",cpu->R[7]); todo = mass_replace(todo,"%r7%",tmp);
+	sprintf(tmp,"%08X",cpu->R[8]); todo = mass_replace(todo,"%r8%",tmp);
+	sprintf(tmp,"%08X",cpu->R[9]); todo = mass_replace(todo,"%r9%",tmp);
+	sprintf(tmp,"%08X",cpu->R[10]); todo = mass_replace(todo,"%r10%",tmp);
+	sprintf(tmp,"%08X",cpu->R[11]); todo = mass_replace(todo,"%r11%",tmp);
+	sprintf(tmp,"%08X",cpu->R[12]); todo = mass_replace(todo,"%r12%",tmp);
+	sprintf(tmp,"%08X",cpu->R[13]); todo = mass_replace(todo,"%r13%",tmp);
+	sprintf(tmp,"%08X",cpu->R[14]); todo = mass_replace(todo,"%r14%",tmp);
+	sprintf(tmp,"%08X",cpu->R[15]); todo = mass_replace(todo,"%r15%",tmp);
+	sprintf(tmp,"%d",nds.VCount); todo = mass_replace(todo,"%scanline%",tmp);
+	sprintf(tmp,"%d",currFrameCounter); todo = mass_replace(todo,"%frame%",tmp);
+	sprintf(tmp,"%lld",nds_timer); todo = mass_replace(todo,"%totalclks%",tmp);
+
+	printf("%s",todo.c_str());
+}
