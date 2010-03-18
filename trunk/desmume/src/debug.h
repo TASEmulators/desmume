@@ -24,6 +24,7 @@
 #include <vector>
 #include <iostream>
 #include <cstdarg>
+#include <bitset>
 
 #include "types.h"
 #include "mem.h"
@@ -146,8 +147,26 @@ enum EDEBUG_EVENT
 	DEBUG_EVENT_WRITE=2, //write on arm9 or arm7 bus
 	DEBUG_EVENT_EXECUTE=4, //prefetch on arm9 or arm7, triggered after the read event
 	DEBUG_EVENT_ACL_EXCEPTION=8, //acl exception on arm9
-
 };
+
+enum EDEBUG_NOTIFY
+{
+	DEBUG_NOTIFY_READ_BEYOND_END_OF_CART,
+	DEBUG_NOTIFY_MAX
+};
+
+class DebugNotify
+{
+public:
+	void NextFrame();
+	void ReadBeyondEndOfCart(u32 addr, u32 romsize);
+private:
+	std::bitset<DEBUG_NOTIFY_MAX> pingBits;
+	std::bitset<DEBUG_NOTIFY_MAX> enableBits;
+	bool ping(EDEBUG_NOTIFY which);
+};
+
+extern DebugNotify DEBUG_Notify;
 
 //information about a debug event will be stuffed into here by the generator
 struct TDebugEventData

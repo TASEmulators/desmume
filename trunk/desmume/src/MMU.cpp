@@ -1343,7 +1343,7 @@ u32 MMU_readFromGC()
 
 				if(card.address >= gameInfo.romsize)
 				{
-					INFO("Reading beyond end of cart! ... %08X > %08X\n",card.address, gameInfo.romsize);
+					DEBUG_Notify.ReadBeyondEndOfCart(card.address,gameInfo.romsize);
 				}
 				//but, this is actually handled by the cart rom buffer being oversized and full of 0xFF.
 				//is this a good idea? We think so.
