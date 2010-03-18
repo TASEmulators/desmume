@@ -1911,6 +1911,7 @@ void NDS_exec(s32 nb)
 		lagframecounter = 0;
 	}
 	currFrameCounter++;
+	DEBUG_Notify.NextFrame();
 	if (cheats)
 		cheats->process();
 }

@@ -203,6 +203,7 @@ void DEBUG_reset()
 	debugFlag = 1;
 #endif
 
+	DEBUG_Notify = DebugNotify();
 	DEBUG_statistics = DebugStatistics();
 	printf("DEBUG_reset: %08X\n",&DebugStatistics::print); //force a reference to this function
 }
@@ -346,4 +347,37 @@ void NocashMessage(armcpu_t* cpu)
 	sprintf(tmp,"%lld",nds_timer); todo = mass_replace(todo,"%totalclks%",tmp);
 
 	printf("%s",todo.c_str());
+}
+
+//-------
+DebugNotify DEBUG_Notify;
+
+//enable bits arent being used right now.
+//if you want exhaustive logging, move the print before the early return (or comment the early return)
+
+//the intent of this system is to provide a compact dialog box showing which debug notifies have been
+//triggered in this frame (with a glowing LED!) and which debug notifies have been triggered EVER
+//which can be cleared, like a clip indicator in an audio tool.
+//obviously all this isnt implemented yet.
+
+void DebugNotify::NextFrame()
+{
+#ifdef DEVELOPER
+	pingBits.reset();
+#endif
+}
+
+void DebugNotify::ReadBeyondEndOfCart(u32 addr, u32 romsize)
+{
+#ifdef DEVELOPER
+	if(!ping(DEBUG_NOTIFY_READ_BEYOND_END_OF_CART)) return;
+	INFO("Reading beyond end of cart! ... %08X > %08X\n",addr,romsize);
+#endif
+}
+
+bool DebugNotify::ping(EDEBUG_NOTIFY which)
+{
+	bool wasPinged = pingBits[(int)which];
+	pingBits[(int)which] = true;
+	return !wasPinged;
 }
