@@ -994,34 +994,66 @@ TEMPLATE static u32 getVolumeTab()
      return 1;
 }
 
+
+//TEMPLATE static u32 getCRC16_old(u32 crc, u32 datap, u32 size)
+//{
+//  unsigned int i,j;
+//   
+//  const u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+//  for(i = 0; i < size; i++)
+//  {
+//    crc = crc ^ _MMU_read08<PROCNUM>(datap + i);
+//
+//    for(j = 0; j < 8; j++) {
+//      int do_bit = 0;
+//
+//      if ( crc & 0x1)
+//        do_bit = 1;
+//
+//      crc = crc >> 1;
+//
+//      if ( do_bit) {
+//        crc = crc ^ (val[j] << (7-j));
+//      }
+//    }
+//  }
+//  return crc;
+//}
+
 TEMPLATE static u32 getCRC16()
 {
-  unsigned int i,j;
-  
-  u32 crc = cpu->R[0];
-  u32 datap = cpu->R[1];
-  u32 size = cpu->R[2];
-  
-  const u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
-  for(i = 0; i < size; i++)
-  {
-    crc = crc ^ _MMU_read08<PROCNUM>(datap + i);
+	//gbatek is wrong.
 
-    for(j = 0; j < 8; j++) {
-      int do_bit = 0;
+	//dawn of sorrow uses this to checksum its save data;
+	//if this implementation is wrong, then it won't match what the real bios returns, 
+	//and savefiles created with a bios will be invalid when loaded with non-bios (and vice-versa)
 
-      if ( crc & 0x1)
-        do_bit = 1;
+	//u32 old = getCRC16_old<PROCNUM>(cpu->R[0],cpu->R[1],cpu->R[2]);
 
-      crc = crc >> 1;
+	u16 crc = (u16)cpu->R[0];
+	u32 datap = cpu->R[1];
+	u32 size = cpu->R[2]>>1;
 
-      if ( do_bit) {
-        crc = crc ^ (val[j] << (7-j));
-      }
-    }
-  }
-  cpu->R[0] = crc;
-  return 1;
+	const u16 val[] = { 0x0000,0xCC01,0xD801,0x1400,0xF001,0x3C00,0x2800,0xE401,0xA001,0x6C00,0x7800,0xB401,0x5000,0x9C01,0x8801,0x4400};
+
+	for(u32 i = 0; i < size; i++)
+	{
+		u16 currVal = _MMU_read16<PROCNUM>(datap + i*2);
+
+		for(int j=0;j<4;j++)
+		{
+			u16 tabVal = val[crc&0xF];
+			crc >>= 4;
+			crc ^= tabVal;
+
+			u16 tempVal = currVal >> (4*j);
+			tabVal = val[tempVal&0xF];
+			crc ^= tabVal;
+		}
+	}
+
+	cpu->R[0] = crc;
+	return 1;
 }
 
 TEMPLATE static u32 isDebugger()
