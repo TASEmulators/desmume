@@ -217,7 +217,7 @@ MatrixStack::MatrixStack(int size, int type)
 	this->type = type;
 }
 
-void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
+static void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 {
 	stack->position += pos;
 

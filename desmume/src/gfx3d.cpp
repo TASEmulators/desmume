@@ -878,7 +878,7 @@ static void gfx3d_glLoadIdentity()
 
 static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 {
-	mtxCurrent[mode][ML4x4ind] = (float)v;
+	mtxCurrent[mode][ML4x4ind] = (float)((v<<4)>>4);
 
 	++ML4x4ind;
 	if(ML4x4ind<16) return FALSE;
@@ -897,7 +897,7 @@ static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 {
-	mtxCurrent[mode][ML4x3ind] = (float)v;
+	mtxCurrent[mode][ML4x3ind] = (float)((v<<4)>>4);
 
 	ML4x3ind++;
 	if((ML4x3ind & 0x03) == 3) ML4x3ind++;
@@ -920,7 +920,7 @@ static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 
 static BOOL gfx3d_glMultMatrix4x4(s32 v)
 {
-	mtxTemporal[MM4x4ind] = (float)v;
+	mtxTemporal[MM4x4ind] = (float)((v<<4)>>4);
 
 	MM4x4ind++;
 	if(MM4x4ind<16) return FALSE;
@@ -946,7 +946,7 @@ static BOOL gfx3d_glMultMatrix4x4(s32 v)
 
 static BOOL gfx3d_glMultMatrix4x3(s32 v)
 {
-	mtxTemporal[MM4x3ind] = (float)v;
+	mtxTemporal[MM4x3ind] = (float)((v<<4)>>4);
 
 	MM4x3ind++;
 	if((MM4x3ind & 0x03) == 3) MM4x3ind++;
@@ -978,7 +978,7 @@ static BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 static BOOL gfx3d_glMultMatrix3x3(s32 v)
 {
-	mtxTemporal[MM3x3ind] = (float)v;
+	mtxTemporal[MM3x3ind] = (float)((v<<4)>>4);
 
 
 	MM3x3ind++;
@@ -1624,14 +1624,6 @@ s32 gfx3d_GetDirectionalMatrix (unsigned int index)
 	int _index = (((index / 3) * 4) + (index % 3));
 
 	return (s32)(mtxCurrent[2][_index]*(1<<12));
-}
-
-void gfx3d_ClearStack()
-{
-	MatrixStackSetStackPosition(&mtxStack[0], -5);
-	//MatrixStackSetStackPosition(&mtxStack[1], -55);
-	//MatrixStackSetStackPosition(&mtxStack[2], -55); //?
-	MatrixStackSetStackPosition(&mtxStack[3], -5);
 }
 
 void gfx3d_glAlphaFunc(u32 v)
