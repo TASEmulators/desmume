@@ -358,6 +358,7 @@ public:
 	VERT* verts[MAX_CLIPPED_VERTS];
 
     PolyAttr polyAttr;
+	int polynum;
 
 
 	struct Sampler
@@ -462,11 +463,11 @@ public:
 			dst.g = modulate_table[texColor.g][shader.materialColor.g];
 			dst.b = modulate_table[texColor.b][shader.materialColor.b];
 			dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(shader.materialColor.a)]>>1;
-			//dst.color.components.a = 31;
+			//dst.a = 28;
 			//#ifdef _MSC_VER
 			//if(GetAsyncKeyState(VK_SHIFT)) {
 			//	//debugging tricks
-			//	dst = materialColor;
+			//	dst = shader.materialColor;
 			//	if(GetAsyncKeyState(VK_TAB)) {
 			//		u8 alpha = dst.a;
 			//		dst.color = polynum*8+8;
@@ -612,6 +613,7 @@ public:
 		r = (r * w) + 0.5f;
 		g = (g * w) + 0.5f;
 		b = (b * w) + 0.5f;
+
 
 		//this is a HACK: 
 		//we are being very sloppy with our interpolation precision right now
@@ -927,6 +929,7 @@ public:
 		{
 			if(!RENDERER) _debug_thisPoly = (i==engine->_debug_drawClippedUserPoly);
 			if(!engine->polyVisible[i]) continue;
+			polynum = i;
 
 			GFX3D_Clipper::TClippedPoly &clippedPoly = engine->clippedPolys[i];
 			POLY *poly = clippedPoly.poly;
@@ -1164,25 +1167,25 @@ void SoftRasterizerEngine::updateFogTable()
 #if 0
 	//TODO - this might be a little slow; 
 	//we might need to hash all the variables and only recompute this when something changes
-	const int increment = (0x400 >> gfx3d.fogShift);
+	const int increment = (0x400 >> gfx3d.state.fogShift);
 	for(u32 i=0;i<32768;i++) {
-		if(i<gfx3d.fogOffset) {
-			fogTable[i] = fogDensity[0];
+		if(i<gfx3d.state.fogOffset) {
+			fogTable[i] = fogDensity[0]&127;
 			continue;
 		}
 		for(int j=0;j<32;j++) {
-			u32 value = gfx3d.fogOffset + increment*(j+1);
+			u32 value = gfx3d.state.fogOffset + increment*(j+1);
 			if(i<=value) {
 				if(j==0) {
-					fogTable[i] = fogDensity[0];
+					fogTable[i] = fogDensity[0]&127;
 					goto done;
 				} else {
-					fogTable[i] = ((value-i)*fogDensity[j-1] + (increment-(value-i))*fogDensity[j])/increment;
+					fogTable[i] = ((value-i)*(fogDensity[j-1]&127) + (increment-(value-i))*(fogDensity[j]&127))/increment;
 					goto done;
 				}
 			}
 		}
-		fogTable[i] = fogDensity[31];
+		fogTable[i] = (fogDensity[31]&127);
 		done: ;
 	}
 #else
@@ -1195,16 +1198,16 @@ void SoftRasterizerEngine::updateFogTable()
 	u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	assert(iMin <= iMax);
-	memset(fogTable, fogDensity[0], iMin);
+	memset(fogTable, fogDensity[0]&127, iMin);
 	for(u32 i = iMin; i < iMax; i++) {
 		int num = (i - fogOffset + (increment-1));
 		int j = (num >> incrementDivShift) - 1;
 		u32 value = (num & ~(increment-1)) + fogOffset;
 		u32 diff = value - i;
 		assert(j >= 1 && j < 32);
-		fogTable[i] = ((diff*fogDensity[j-1] + (increment-diff)*fogDensity[j]) >> incrementDivShift);
+		fogTable[i] = ((diff*(fogDensity[j-1]&127) + (increment-diff)*(fogDensity[j]&127)) >> incrementDivShift);
 	}
-	memset(fogTable+iMax, fogDensity[31], 32768-iMax);
+	memset(fogTable+iMax, fogDensity[31]&127, 32768-iMax);
 #endif
 }
 
