@@ -59,7 +59,6 @@ void	MatrixIdentity			(float *matrix);
 void	MatrixTranspose				(float *matrix);
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
-void	MatrixStackSetStackPosition (MatrixStack *stack, int pos);
 void	MatrixStackPushMatrix		(MatrixStack *stack, const float *ptr);
 void	MatrixStackPopMatrix		(float *mtxCurr, MatrixStack *stack, int size);
 float*	MatrixStackGetPos			(MatrixStack *stack, int pos);
