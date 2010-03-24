@@ -37,6 +37,7 @@ CommandLine::CommandLine()
 : is_cflash_configured(false)
 , error(NULL)
 , ctx(g_option_context_new (""))
+, _rigorous_timing(0)
 , _play_movie_file(0)
 , _record_movie_file(0)
 , _cflash_image(0)
@@ -84,6 +85,7 @@ void CommandLine::loadCommonOptions()
 		{ "num-cores", 0, 0, G_OPTION_ARG_INT, &_num_cores, "Override numcores detection and use this many", "NUM_CORES"},
 		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (edge) (default 2)", "SCANLINE_FILTER_A"},
 		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
+		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -115,6 +117,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_gbaslot_rom) gbaslot_rom = _gbaslot_rom;
 
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
+	if(_rigorous_timing) CommonSettings.rigorous_timing = true;
 
 	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }

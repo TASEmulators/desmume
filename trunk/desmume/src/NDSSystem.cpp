@@ -1378,31 +1378,10 @@ static void execHardware_hblank()
 	SPU_Emulate_core();
 	driver->AVI_SoundUpdate(SPU_core->outbuf,spu_core_samples);
 	WAV_WavSoundUpdate(SPU_core->outbuf,spu_core_samples);
-
-	//this logic was formerly at hblank time. it was moved to the beginning of the scanline on a whim
-	if(nds.VCount<192)
-	{
-		//so, we have chosen to do the line drawing at hblank time.
-		//this is the traditional time for it in desmume.
-		//while it may seem more ruthlessly accurate to do it at hstart,
-		//in practice we need to be more forgiving, in case things have overrun the scanline start.
-		//this should be safe since games cannot do anything timing dependent until this next
-		//scanline begins, anyway (as this scanline was in the middle of drawing)
-		//taskSubGpu.execute(renderSubScreen,NULL);
-		GPU_RenderLine(&MainScreen, nds.VCount, frameSkipper.ShouldSkip2D());
-		GPU_RenderLine(&SubScreen, nds.VCount, frameSkipper.ShouldSkip2D());
-		//taskSubGpu.finish();
-
-		//trigger hblank dmas
-		//but notice, we do that just after we finished drawing the line
-		//(values copied by this hdma should not be used until the next scanline)
-		triggerDma(EDMAMode_HBlank);
-	}
 }
 
 static void execHardware_hstart_vblankEnd()
 {
-	nds.VCount = 0;
 	sequencer.nds_vblankEnded = true;
 	sequencer.reschedule = true;
 
@@ -1469,9 +1448,41 @@ static void execHardware_hstart_vcount()
 
 static void execHardware_hstart()
 {
+	//this logic keeps moving around.
+	//now, we try and give the game as much time as possible to finish doing its work for the scanline,
+	//by drawing scanline N at the very, very end of scanline N (here at the beginning of scanline N+1)
+	if(nds.VCount<192)
+	{
+		//taskSubGpu.execute(renderSubScreen,NULL);
+		GPU_RenderLine(&MainScreen, nds.VCount, frameSkipper.ShouldSkip2D());
+		GPU_RenderLine(&SubScreen, nds.VCount, frameSkipper.ShouldSkip2D());
+		//taskSubGpu.finish();
+
+		//trigger hblank dmas
+		//but notice, we do that just after we finished drawing the line
+		//(values copied by this hdma should not be used until the next scanline)
+		triggerDma(EDMAMode_HBlank);
+	}
+
+	if(nds.VCount==192)
+	{
+		//we need to trigger one last hblank dma since 
+		//a. we're sort of lagged behind by one scanline
+		//b. i think that 193 hblanks actually fire (one for the hblank in scanline 262)
+		//this is demonstrated by NSMB splot-parallaxing clouds
+		//for some reason the game will setup two hdma scroll register buffers
+		//to be run consecutively, and unless we do this, the second buffer will be offset by one scanline
+		//causing a glitch in the 0th scanline
+		triggerDma(EDMAMode_HBlank);
+	}
+
 	nds.VCount++;
 
 	if(nds.VCount==263)
+	{
+		nds.VCount=0;
+	}
+	if(nds.VCount==262)
 	{
 		execHardware_hstart_vblankEnd();
 	} else if(nds.VCount==192)
@@ -1505,8 +1516,12 @@ static void execHardware_hstart()
 		triggerDma(EDMAMode_MemDisplay);
 	}
 
+
 	//end of 3d vblank
-	if(nds.VCount==214)
+	//this should be 214, but we are going to be generous for games with tight timing
+	//they shouldnt be changing any textures at 262 but they might accidentally still be at 214
+	//so..
+	if(CommonSettings.rigorous_timing && nds.VCount==214 || !CommonSettings.rigorous_timing && nds.VCount==262)
 	{
 		gfx3d_VBlankEndSignal(frameSkipper.ShouldSkip3D());
 	}
@@ -2151,7 +2166,6 @@ void NDS_Reset()
 
 	nds.wifiCycle = 0;
 	memset(nds.timerCycle, 0, sizeof(u64) * 2 * 4);
-	nds.VCount = 0;
 	nds.old = 0;
 	nds.touchX = nds.touchY = 0;
 	nds.isTouch = 0;
