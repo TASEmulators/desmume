@@ -86,6 +86,7 @@ private:
 	int _bios_swi;
 	int _spu_advanced;
 	int _num_cores;
+	int _rigorous_timing;
 };
 
 #endif

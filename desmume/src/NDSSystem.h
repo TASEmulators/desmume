@@ -525,6 +525,7 @@ extern struct TCommonSettings {
 
 	int num_cores;
 	bool single_core() { return num_cores==1; }
+	bool rigorous_timing;
 	
 	struct _Wifi {
 		int mode;
