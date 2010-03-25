@@ -493,6 +493,7 @@ extern struct TCommonSettings {
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, manualBackupType(0)
 		, spu_advanced(false)
+		, rigorous_timing(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
