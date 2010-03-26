@@ -23,9 +23,7 @@
 
 //todo - everyone will want to support this eventually, i suppose
 #ifdef _MSC_VER
-#ifndef _XBOX
 #include "config.h"
-#endif
 #endif
 
 #ifdef DEVELOPER
@@ -35,13 +33,11 @@
 #endif
 
 #ifdef _MSC_VER
-#ifndef _XBOX
 	#define HAVE_WX
 	#define HAVE_LIBAGG
 	#define ENABLE_SSE
 	#define ENABLE_SSE2
-#endif
-#ifdef DEVELOPER
+	#ifdef DEVELOPER
 		#define HAVE_LUA
 	#endif
 #endif
@@ -63,7 +59,7 @@
 #undef ENABLE_SSE2
 #endif
 
-#if defined(_WIN32) || defined(_XBOX)
+#ifdef _WIN32
 #define strcasecmp(x,y) _stricmp(x,y)
 #define snprintf _snprintf
 #else
@@ -78,13 +74,6 @@
 #define MAX_PATH PATH_MAX
 #endif
 #endif
-
-
-#ifdef _XBOX
-#define MAX_PATH 1024
-#define PATH_MAX 1024
-#endif
-
 
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define ALIGN(X) __declspec(align(X))
