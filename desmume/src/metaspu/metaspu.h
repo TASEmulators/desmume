@@ -29,14 +29,27 @@
 
 #include <algorithm>
 
+#ifdef _XBOX
+#undef min
+#undef max
+#endif
+
 template< typename T >
+#ifdef _XBOX
+FORCEINLINE void Clampify( T& src, T min, T max )
+#else
 static FORCEINLINE void Clampify( T& src, T min, T max )
+#endif
 {
 	src = std::min( std::max( src, min ), max );
 }
 
 template< typename T >
+#ifdef _XBOX
+FORCEINLINE T GetClamped( T src, T min, T max )
+#else
 static FORCEINLINE T GetClamped( T src, T min, T max )
+#endif
 {
 	return std::min( std::max( src, min ), max );
 }
