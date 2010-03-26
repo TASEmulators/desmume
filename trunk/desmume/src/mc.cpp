@@ -30,7 +30,11 @@
 
 //temporary hack until we have better error reporting facilities
 #ifdef _MSC_VER
+#ifdef _XBOX
+#include <xtl.h>
+#else
 #include <windows.h>
+#endif
 #endif
 
 #define FW_CMD_READ             0x3
@@ -350,8 +354,10 @@ void BackupDevice::reset_command()
 			case 0:
 			case 1:
 				printf("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
-				#ifdef _MSC_VER
+				#ifdef   _MSC_VER
+				#ifndef  _XBOX
 				MessageBox(0,"Catastrophic Error Code: Camel;\nyour save type has not been autodetected correctly;\nplease report to developers",0,0);
+				#endif
 				#endif
 				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
 				break;
