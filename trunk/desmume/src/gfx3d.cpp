@@ -495,8 +495,11 @@ void gfx3d_init()
 
 void gfx3d_reset()
 {
+#ifndef _XBOX
 	gfx3d = GFX3D();
-
+#else
+	GFX3D();
+#endif
 	gxf_hardware.reset();
 
 	control = 0;
