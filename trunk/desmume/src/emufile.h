@@ -29,6 +29,11 @@
 #include <string>
 #include <stdarg.h>
 
+#ifdef _XBOX
+#undef min;
+#undef max;
+#endif
+
 class EMUFILE {
 protected:
 	bool failbit;
