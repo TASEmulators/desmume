@@ -26,8 +26,7 @@
 #include "bits.h"
 
 
-
-#ifdef WIN32
+#ifdef _WINDOWS
 	#include <winsock2.h> 	 
 	#include <ws2tcpip.h>
 	#define socket_t    SOCKET 	 
@@ -52,12 +51,11 @@
 
 #define BASEPORT 7000
 
-socket_t wifi_socket = INVALID_SOCKET;
-sockaddr_t sendAddr;
-
 const u8 BroadcastMAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 #ifdef EXPERIMENTAL_WIFI_COMM
+socket_t wifi_socket = INVALID_SOCKET;
+sockaddr_t sendAddr;
 #ifndef WIN32
 #include "pcap/pcap.h"
 #endif

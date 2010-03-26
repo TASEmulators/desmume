@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
-#ifdef _XBOX && WIN32
+#ifdef _MSC_VER
 #include <io.h>
 #define OPEN_MODE _O_RDWR | _O_BINARY
 

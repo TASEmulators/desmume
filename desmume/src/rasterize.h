@@ -25,12 +25,14 @@
 
 extern GPU3DInterface gpu3DRasterize;
 
-union FragmentColor
-{
+union FragmentColor {
 	u32 color;
-	struct
-	{
+	struct {
+#ifdef WORDS_BIGENDIAN
+		u8 a,b,g,r;
+#else
 		u8 r,g,b,a;
+#endif
 	};
 };
 

@@ -1,6 +1,6 @@
 #include <string>
 
-#if defined(WIN32) && !defined(WXPORT)
+#if defined(_WINDOWS) && !defined(WXPORT)
 #include "resource.h"
 #else
 #include <glib.h>
@@ -76,9 +76,12 @@ public:
 
 	void LoadModulePath()
 	{
-#ifdef WIN32
+#ifndef _XBOX
+#if defined(_WINDOWS)
+
 		char *p;
 		ZeroMemory(pathToModule, sizeof(pathToModule));
+
 		GetModuleFileName(NULL, pathToModule, sizeof(pathToModule));
 		p = pathToModule + lstrlen(pathToModule);
 		while (p >= pathToModule && *p != '\\') p--;
@@ -88,6 +91,7 @@ public:
 		g_mkdir_with_parents(cwd, 0755);
 		strncpy(pathToModule, cwd, MAX_PATH);
 		g_free(cwd);
+#endif
 #endif
 	}
 
@@ -104,7 +108,7 @@ public:
 
 	void ReadKey(char *pathToRead, const char *key)
 	{
-#ifdef WIN32
+#ifdef _WINDOWS
 		GetPrivateProfileString(SECTION, key, key, pathToRead, MAX_PATH, IniName);
 		if(strcmp(pathToRead, key) == 0) {
 			//since the variables are all intialized in this file they all use MAX_PATH
@@ -130,7 +134,7 @@ public:
 		ReadKey(pathToSounds, SOUNDKEY);
 		ReadKey(pathToFirmware, FIRMWAREKEY);
 		ReadKey(pathToLua, LUAKEY);
-#ifdef WIN32
+#ifdef _WINDOWS
 		GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 		currentimageformat	= (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
@@ -312,7 +316,7 @@ public:
 
 	enum ImageFormat
 	{
-#if defined(WIN32) && !defined(WXPORT)
+#if defined(_WINDOWS) && !defined(WXPORT)
 		PNG = IDC_PNG,
 		BMP = IDC_BMP
 #else

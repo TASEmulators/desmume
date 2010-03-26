@@ -21,9 +21,29 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
-//todo - everyone will want to support this eventually, i suppose
+//analyze microsoft compilers
 #ifdef _MSC_VER
+	#ifdef _XBOX
+		//#define _XBOX //already defined
+	#else
+		#define _WINDOWS
+		#ifdef _M_X64
+			#define _WIN64
+		#else
+			//#define _WIN32 //already defined
+		#endif
+	#endif
+#endif
+
+//todo - everyone will want to support this eventually, i suppose
+#ifdef _WINDOWS
 #include "config.h"
+#endif
+
+//xbox needs to include this to resemble windows
+#ifdef _XBOX
+	#include <xtl.h>
+	#include <io.h>
 #endif
 
 #ifdef DEVELOPER
@@ -32,7 +52,7 @@
 #define IF_DEVELOPER(X)
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WINDOWS
 	#define HAVE_WX
 	#define HAVE_LIBAGG
 	#define ENABLE_SSE
@@ -59,7 +79,7 @@
 #undef ENABLE_SSE2
 #endif
 
-#ifdef _WIN32
+#ifdef _MSC_VER 
 #define strcasecmp(x,y) _stricmp(x,y)
 #define snprintf _snprintf
 #else
@@ -74,6 +94,13 @@
 #define MAX_PATH PATH_MAX
 #endif
 #endif
+
+
+#ifdef _XBOX
+#define MAX_PATH 1024
+#define PATH_MAX 1024
+#endif
+
 
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define ALIGN(X) __declspec(align(X))
@@ -417,5 +444,12 @@ char (*BLAHBLAHBLAH( UNALIGNED T (&)[N] ))[N];
 #endif
 
 static const char hexValid[23] = {"0123456789ABCDEFabcdef"};
+
+
+template<typename T> inline void reconstruct(T* t) { 
+	t->~T();
+	new(t) T();
+}
+
 
 #endif

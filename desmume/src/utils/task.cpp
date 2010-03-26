@@ -17,12 +17,16 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+#include "types.h"
 #include "task.h"
-
-#ifdef _WIN32
-
-#include <windows.h>
 #include <stdio.h>
+
+#ifdef _MSC_VER
+
+#ifdef _WINDOWS
+#include <windows.h>
+#endif
+
 
 class Task::Impl {
 public:
