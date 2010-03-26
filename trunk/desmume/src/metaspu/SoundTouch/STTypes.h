@@ -190,10 +190,11 @@ namespace soundtouch
             #if _WIN32
                // #define ALLOW_3DNOW     1
             #endif
-
+#ifndef _XBOX
             #if (_WIN32 || __i386__ || __x86_64__)
                 #define ALLOW_SSE       1
             #endif
+#endif
         #endif
 
     #endif  // INTEGER_SAMPLES

@@ -495,11 +495,9 @@ void gfx3d_init()
 
 void gfx3d_reset()
 {
-#ifndef _XBOX
-	gfx3d = GFX3D();
-#else
-	GFX3D();
-#endif
+	//if this doesn't work on the xbox, we need to find out why.
+	reconstruct(&gfx3d);
+	
 	gxf_hardware.reset();
 
 	control = 0;

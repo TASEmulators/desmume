@@ -16,8 +16,9 @@
  */
 
 #pragma once
-
-#ifdef _WIN32
+#ifdef _XBOX
+#include <xtl.h>
+#elif _WIN32
 #include <windows.h>
 #endif
 

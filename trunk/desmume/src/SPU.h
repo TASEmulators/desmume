@@ -36,9 +36,10 @@
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
-static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
-static FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
-static FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
+//who made these static? theyre used in multiple places.
+FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
+FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
+FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
 	assert(multiplier <= 127);
 	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
 }

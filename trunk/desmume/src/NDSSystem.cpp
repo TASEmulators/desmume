@@ -333,7 +333,7 @@ void GameInfo::populate()
 
 	}
 }
-#ifdef WIN32
+#ifdef _WINDOWS
 
 static std::vector<char> buffer;
 static std::vector<char> v;

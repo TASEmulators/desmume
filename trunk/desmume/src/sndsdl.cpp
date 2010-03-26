@@ -26,6 +26,12 @@
 #include "sndsdl.h"
 #include "debug.h"
 
+#ifdef _XBOX
+#include <xtl.h>
+#include <VectorIntrinsics.h>
+#include <process.h>
+#endif
+
 int SNDSDLInit(int buffersize);
 void SNDSDLDeInit();
 void SNDSDLUpdateAudio(s16 *buffer, u32 num_samples);
@@ -54,6 +60,24 @@ static u32 soundbufsize;
 static SDL_AudioSpec audiofmt;
 
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _XBOX
+static volatile bool doterminate;
+static volatile bool terminated;
+
+DWORD WINAPI SNDXBOXThread( LPVOID )
+{
+	for(;;) {
+		if(doterminate) break;
+		{
+			SPU_Emulate_user();
+		}
+		Sleep(10);
+	}
+	terminated = true;
+	return 0;
+}
+#endif
+
 
 static void MixAudio(void *userdata, Uint8 *stream, int len) {
    int i;
@@ -108,6 +132,12 @@ int SNDSDLInit(int buffersize)
 
    SDL_PauseAudio(0);
 
+#ifdef _XBOX
+   	doterminate = false;
+	terminated = false;
+	CreateThread(0,0,SNDXBOXThread,0,0,0);
+#endif
+
    return 0;
 }
 
@@ -115,6 +145,12 @@ int SNDSDLInit(int buffersize)
 
 void SNDSDLDeInit()
 {
+#ifdef _XBOX
+	doterminate = true;
+	while(!terminated) {
+		Sleep(1);
+	}
+#endif
    SDL_CloseAudio();
 
    if (stereodata16)
