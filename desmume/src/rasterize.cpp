@@ -1170,22 +1170,22 @@ void SoftRasterizerEngine::updateFogTable()
 	const int increment = (0x400 >> gfx3d.state.fogShift);
 	for(u32 i=0;i<32768;i++) {
 		if(i<gfx3d.state.fogOffset) {
-			fogTable[i] = fogDensity[0]&127;
+			fogTable[i] = fogDensity[0];
 			continue;
 		}
 		for(int j=0;j<32;j++) {
 			u32 value = gfx3d.state.fogOffset + increment*(j+1);
 			if(i<=value) {
 				if(j==0) {
-					fogTable[i] = fogDensity[0]&127;
+					fogTable[i] = fogDensity[0];
 					goto done;
 				} else {
-					fogTable[i] = ((value-i)*(fogDensity[j-1]&127) + (increment-(value-i))*(fogDensity[j]&127))/increment;
+					fogTable[i] = ((value-i)*(fogDensity[j-1]) + (increment-(value-i))*(fogDensity[j]))/increment;
 					goto done;
 				}
 			}
 		}
-		fogTable[i] = (fogDensity[31]&127);
+		fogTable[i] = (fogDensity[31]);
 		done: ;
 	}
 #else
@@ -1198,16 +1198,16 @@ void SoftRasterizerEngine::updateFogTable()
 	u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	assert(iMin <= iMax);
-	memset(fogTable, fogDensity[0]&127, iMin);
+	memset(fogTable, fogDensity[0], iMin);
 	for(u32 i = iMin; i < iMax; i++) {
 		int num = (i - fogOffset + (increment-1));
 		int j = (num >> incrementDivShift) - 1;
 		u32 value = (num & ~(increment-1)) + fogOffset;
 		u32 diff = value - i;
 		assert(j >= 1 && j < 32);
-		fogTable[i] = ((diff*(fogDensity[j-1]&127) + (increment-diff)*(fogDensity[j]&127)) >> incrementDivShift);
+		fogTable[i] = ((diff*(fogDensity[j-1]) + (increment-diff)*(fogDensity[j])) >> incrementDivShift);
 	}
-	memset(fogTable+iMax, fogDensity[31]&127, 32768-iMax);
+	memset(fogTable+iMax, fogDensity[31], 32768-iMax);
 #endif
 }
 
