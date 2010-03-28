@@ -28,7 +28,7 @@
 	#else
 		#define _WINDOWS
 		#ifdef _M_X64
-			#define _WIN64
+			//#define _WIN64 //already defined in x64 compiler
 		#else
 			//#define _WIN32 //already defined
 		#endif

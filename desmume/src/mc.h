@@ -28,6 +28,7 @@
 #include "types.h"
 #include "emufile.h"
 
+#define MAX_SAVE_TYPES 13
 #define MC_TYPE_AUTODETECT      0x0
 #define MC_TYPE_EEPROM1         0x1
 #define MC_TYPE_EEPROM2         0x2
@@ -43,7 +44,11 @@
 #define MC_SIZE_4MBITS                  0x080000
 #define MC_SIZE_8MBITS                  0x100000
 #define MC_SIZE_16MBITS                 0x200000
+#define MC_SIZE_32MBITS                 0x400000
 #define MC_SIZE_64MBITS                 0x800000
+#define MC_SIZE_128MBITS                0x1000000
+#define MC_SIZE_256MBITS                0x2000000
+#define MC_SIZE_512MBITS                0x4000000
 
 typedef struct
 {
@@ -131,7 +136,7 @@ private:
 	void loadfile();
 	bool _loadfile(const char *fname);
 	void ensure(u32 addr);
-	void flush();
+	
 
 	bool flushPending, lazyFlushPending;
 };
@@ -148,6 +153,8 @@ void fw_reset_com(memory_chip_t *mc);       /* reset communication with mc */
 u8 fw_transfer(memory_chip_t *mc, u8 data);
 
 void backup_setManualBackupType(int type);
+
+extern const char *save_names[];
 
 #endif /*__FW_H__*/
 
