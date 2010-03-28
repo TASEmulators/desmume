@@ -116,6 +116,7 @@ public:
 	//so that we have a better idea earlier on how large they are. but it slows things down
 	//way too much if we flush whenever we read.
 	void lazy_flush();
+	void flush();
 
 public: //SHOULD BE PRIVATE!!!!!!!!
 	std::string filename;
