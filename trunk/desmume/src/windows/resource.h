@@ -80,12 +80,6 @@
 #define IDC_COMBO3                      162
 #define IDC_COMBO4                      163
 #define IDM_CONFIG                      180
-#define IDC_SAVETYPE1                   182
-#define IDC_SAVETYPE2                   183
-#define IDC_SAVETYPE3                   184
-#define IDC_SAVETYPE4                   185
-#define IDC_SAVETYPE5                   186
-#define IDC_SAVETYPE6                   187
 #define IDC_FRAMESKIP0                  191
 #define IDC_FRAMESKIP1                  192
 #define IDC_FRAMESKIP2                  193
@@ -786,7 +780,6 @@
 #define IDM_SCREENSEP_COLORBLACK        40025
 #define IDM_FILE_RECORDUSERSPUWAV       40026
 #define ID_FILE_RECENTROM               40034
-#define IDC_SAVETYPE7                   40037
 #define IDM_DEFSIZE                     40038
 #define IDM_3DCONFIG                    40040
 #define IDM_GBASLOT                     40042
@@ -805,7 +798,6 @@
 #define ID_RAMSEARCH_CAPTIONTEXT        40064
 #define IDM_VIEW3D                      40065
 #define IDM_LOCKDOWN                    40066
-#define IDC_SAVETYPE8                   40067
 #define IDM_EJECTCARD                   40068
 #define IDM_SHOWTOOLBAR                 40069
 #define ID_CONFIG_DISPLAYMETHOD         40070
@@ -907,6 +899,7 @@
 #define IDM_RENDER_HQ2XS                60081
 #define IDM_RENDER_LQ2X                 60082
 #define IDM_RENDER_LQ2XS                60083
+#define IDC_SAVETYPE                    64000
 
 // Next default values for new objects
 // 

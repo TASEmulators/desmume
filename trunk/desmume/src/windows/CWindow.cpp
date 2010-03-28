@@ -578,6 +578,11 @@ bool WINCLASS::setMenu(HMENU menu)
 	return SetMenu(hwnd, hmenu)!=FALSE;
 }
 
+bool WINCLASS::addMenuItem(u32 item, bool byPos, LPCMENUITEMINFO info)
+{
+	return InsertMenuItem(hmenu, item, byPos, info);
+}
+
 DWORD WINCLASS::checkMenu(UINT idd, bool check)
 {
 	return CheckMenuItem(hmenu, idd, MF_BYCOMMAND | (check?MF_CHECKED:MF_UNCHECKED));

@@ -1990,6 +1990,8 @@ joinThread_gdb( void *thread_handle) {
 
 int MenuInit()
 {
+	MENUITEMINFO mm = {0};
+
 	mainMenu = LoadMenu(hAppInst, MAKEINTRESOURCE(MENU_PRINCIPAL)); //Load Menu, and store handle
 	if (!MainWindow->setMenu(mainMenu)) return 0;
 
@@ -2002,6 +2004,23 @@ int MenuInit()
 	HMENU fileMenu = GetSubMenu(mainMenu, 0);
 	DeleteMenu(fileMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
 #endif
+
+	for(int i=0; i<MAX_SAVE_TYPES; i++)
+	{
+		memset(&mm, 0, sizeof(MENUITEMINFO));
+		
+		mm.cbSize = sizeof(MENUITEMINFO);
+		mm.fMask = MIIM_TYPE;
+		mm.fType = MFT_STRING;
+		mm.dwTypeData = (LPSTR)save_names[i];
+
+		MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
+	}
+	memset(&mm, 0, sizeof(MENUITEMINFO));
+	mm.cbSize = sizeof(MENUITEMINFO);
+	mm.fMask = MIIM_TYPE;
+	mm.fType = MFT_SEPARATOR;
+	MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
 
 	return 1;
 }
@@ -3726,10 +3745,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable == true);
 
 			//Save type
-			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7,IDC_SAVETYPE8};
-			for(int i=0;i<8;i++) 
-				MainWindow->checkMenu(savelist[i], false);
-			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], true);
+			for(int i=0;i<MAX_SAVE_TYPES;i++)
+				MainWindow->checkMenu(IDC_SAVETYPE+i, false);
+
+			MainWindow->checkMenu(IDC_SAVETYPE+CommonSettings.manualBackupType, true);
 
 			// recent/active scripts menu
 			PopulateLuaSubmenu();
@@ -4997,15 +5016,6 @@ DOKEYDOWN:
 			WritePrivateProfileInt("Focus", "BackgroundPause", (int)lostFocusPause, IniName);
 			return 0;
 
-		case IDC_SAVETYPE1: backup_setManualBackupType(0); return 0;
-		case IDC_SAVETYPE2: backup_setManualBackupType(1); return 0;   
-		case IDC_SAVETYPE3: backup_setManualBackupType(2); return 0;   
-		case IDC_SAVETYPE4: backup_setManualBackupType(3); return 0;
-		case IDC_SAVETYPE5: backup_setManualBackupType(4); return 0; 
-		case IDC_SAVETYPE6: backup_setManualBackupType(5); return 0; 
-		case IDC_SAVETYPE7: backup_setManualBackupType(6); return 0; 
-		case IDC_SAVETYPE8: backup_setManualBackupType(7); return 0; 
-
 		case ID_DISPLAYMETHOD_DIRECTDRAWHW:
 			{
 				Lock lock (win_backbuffer_sync);
@@ -5259,7 +5269,14 @@ DOKEYDOWN:
 			return 0;
 
 		default:
-			return 0;
+			{
+				u32 id = LOWORD(wParam);
+				if ((id >= IDC_SAVETYPE) && (id < IDC_SAVETYPE+MAX_SAVE_TYPES+1))
+				{
+					backup_setManualBackupType(id-IDC_SAVETYPE);
+				}
+				return 0;
+			}
 		}
 		break;
 

@@ -1079,7 +1079,10 @@ static void execdiv() {
 	{
 		res = ((num < 0) ? 1 : -1);
 		mod = num;
-		MMU_new.div.div0 = 1;
+
+		// the DIV0 flag in DIVCNT is set only if the full 64bit DIV_DENOM value is zero, even in 32bit mode
+		if ((s64)T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298) == 0) 
+			MMU_new.div.div0 = 1;
 	}
 	else
 	{
@@ -1102,6 +1105,8 @@ static void execdiv() {
 	NDS_Reschedule();
 }
 
+// TODO: 
+// NAND flash support (used in Made in Ore/WariWare D.I.Y.)
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
@@ -1138,6 +1143,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		}
 		break;
 	case CardMode_KEY2:
+			INFO("Cartridge: KEY2 mode unsupported.\n");
 		break;
 	}
 
@@ -1166,7 +1172,8 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 				card.transfer_count = 1;
 			}
 			break;
-		// Nand Write?
+		
+		// Nand Write? ---- PROGRAM for INTERNAL DATA MOVE/RANDOM DATA INPUT
 		//case 0x8B:
 		case 0x85:
 			{
@@ -1320,6 +1327,7 @@ u32 MMU_readFromGC()
 		// Nand Status?
 		case 0xD6:
 			//0x80 == busy
+			// Made in Ore/WariWare D.I.Y. need set value to 0x80
 			val = 0x20; //0x20 == ready
 			break;
 
@@ -1344,7 +1352,9 @@ u32 MMU_readFromGC()
 				if(card.address >= gameInfo.romsize)
 				{
 					DEBUG_Notify.ReadBeyondEndOfCart(card.address,gameInfo.romsize);
+					val = 0xFFFFFFFF;
 				}
+				else
 				//but, this is actually handled by the cart rom buffer being oversized and full of 0xFF.
 				//is this a good idea? We think so.
 				val = T1ReadLong(MMU.CART_ROM, card.address & MMU.CART_ROM_MASK);
@@ -3039,7 +3049,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_SQRTCNT: MMU_new.sqrt.write16((u16)val); return;
 			case REG_DIVCNT: MMU_new.div.write16((u16)val); return;
 
-            case REG_POWCNT1: writereg_POWCNT1(32,adr,val); break;
+			case REG_POWCNT1: writereg_POWCNT1(32,adr,val); break;
 
 			//fog table: only write bottom 7 bits
 			case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0C:

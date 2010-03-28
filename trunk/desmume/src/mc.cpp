@@ -29,12 +29,10 @@
 #include "NDSSystem.h"
 
 //temporary hack until we have better error reporting facilities
-#ifdef _MSC_VER
-#ifdef _XBOX
-#include <xtl.h>
-#else
+#ifdef _WINDOWS
 #include <windows.h>
-#endif
+#elif _XBOX
+#include <xtl.h>	// it`s really need?
 #endif
 
 #define FW_CMD_READ             0x3
@@ -71,11 +69,24 @@ static const u8 kUninitializedSaveDataValue = 0xFF;
 
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
-static const u32 saveSizes[] = {512,8*1024,32*1024,64*1024,256*1024,512*1024,1024*1024,0xFFFFFFFF};
+static const u32 saveSizes[] = {512,			// 4k
+								8*1024,			// 64k
+								32*1024,		// 512k
+								64*1024,		// 1Mbit
+								256*1024,		// 2Mbit
+								512*1024,		// 4Mbit
+								1024*1024,		// 8Mbit
+								2048*1024,		// 16Mbit
+								4096*1024,		// 32Mbit
+								8192*1024,		// 64Mbit
+								16384*1024,		// 128Mbit
+								32768*1024,		// 256Mbit
+								65536*1024,		// 512Mbit
+								0xFFFFFFFF};
 static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
 //the lookup table from user save types to save parameters
-static const int save_types[8][2] = {
+static const int save_types[][2] = {
         {MC_TYPE_AUTODETECT,1},
         {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
         {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
@@ -83,8 +94,31 @@ static const int save_types[8][2] = {
         {MC_TYPE_FRAM,MC_SIZE_256KBITS},
         {MC_TYPE_FLASH,MC_SIZE_2MBITS},
 		{MC_TYPE_FLASH,MC_SIZE_4MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_8MBITS}
+		{MC_TYPE_FLASH,MC_SIZE_8MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_16MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_32MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_64MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_128MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_256MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_512MBITS}
 };
+
+const char *save_names[] = {
+		"EEPROM 4kbit",
+		"EEPROM 64kbit",
+		"EEPROM 512kbit",
+		"FRAM 256kbit",
+		"FLASH 2Mbit",
+		"FLASH 4Mbit",
+		"FLASH 8Mbit",
+		"FLASH 16Mbit",
+		"FLASH 32Mbit",
+		"FLASH 64Mbit",
+		"FLASH 128Mbit",
+		"FLASH 256Mbit",
+		"FLASH 512Mbit"
+};
+
 
 void backup_setManualBackupType(int type)
 {
@@ -354,10 +388,8 @@ void BackupDevice::reset_command()
 			case 0:
 			case 1:
 				printf("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
-				#ifdef   _MSC_VER
-				#ifndef  _XBOX
+				#ifdef _WINDOWS
 				MessageBox(0,"Catastrophic Error Code: Camel;\nyour save type has not been autodetected correctly;\nplease report to developers",0,0);
-				#endif
 				#endif
 				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
 				break;
