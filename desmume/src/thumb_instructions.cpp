@@ -1,6 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-	yopyop156@ifrance.com
-	yopyop156.ifrance.com
+	Copyright (C) 2008-2010 DeSmuME team
 
 	Code added on 18/08/2006 by shash
 		- Missing missaligned addresses correction
@@ -20,7 +19,7 @@
 
 	You should have received a copy of the GNU General Public License
 	along with DeSmuME; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 // THUMB core TODO:
@@ -1003,7 +1002,7 @@ TEMPLATE static  u32 FASTCALL OP_SWI_THUMB(const u32 i)
 	}
 	else {
 	   /* we use an irq thats not in the irq tab, as
-	   it was replaced duie to a changed intVector */
+	   it was replaced due to a changed intVector */
 	   Status_Reg tmp = cpu->CPSR;
 	   armcpu_switchMode(cpu, SVC);		  /* enter svc mode */
 	   cpu->R[14] = cpu->next_instruction;		  /* jump to swi Vector */

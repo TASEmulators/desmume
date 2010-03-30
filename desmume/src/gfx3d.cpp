@@ -1559,11 +1559,6 @@ void VIEWPORT::decode(u32 v)
 	height = ((v>>24)+1)-((v>>8)&0xFF);
 }
 
-void gfx3d_glClearColor(u32 v)
-{
-	gfx3d.state.clearColor = v;
-}
-
 void gfx3d_glFogColor(u32 v)
 {
 	gfx3d.state.fogColor = v;
@@ -2012,6 +2007,8 @@ static void gfx3d_doFlush()
 	gfx3d.state.enableFog = BIT7(control);
 	gfx3d.state.enableClearImage = BIT14(control);
 	gfx3d.state.fogShift = (control>>8)&0xF;
+
+	gfx3d.renderState = gfx3d.state;
 
 	int polycount = polylist->count;
 

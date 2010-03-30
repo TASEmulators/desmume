@@ -1,8 +1,6 @@
-/*	Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com 
-
-	Copyright (C) 2008-2009 DeSmuME team
+/*	gfx3d.h
+	Copyright (C) 2006 yopyop
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -367,8 +365,11 @@ struct GFX3D
 		, frameCtrRaw(0) {
 	}
 
+	//currently set values
 	GFX3D_State state;
 
+	//values used for the currently-rendered frame (committed with each flush)
+	GFX3D_State renderState;
 
 	POLYLIST* polylist;
 	VERTLIST* vertlist;
@@ -406,7 +407,6 @@ int _hack_getMatrixStackLevel(int);
 void gfx3d_glFlush(u32 v);
 // end GE commands
 
-void gfx3d_glClearColor(u32 v);
 void gfx3d_glFogColor(u32 v);
 void gfx3d_glFogOffset (u32 v);
 void gfx3d_glClearDepth(u32 v);

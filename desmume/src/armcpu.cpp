@@ -210,6 +210,13 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 	return 0;
 } 
 
+//call this whenever CPSR is changed (other than CNVZQ or T flags); interrupts may need to be unleashed
+void armcpu_t::changeCPSR()
+{
+	//but all it does is give them a chance to unleash by forcing an immediate reschedule
+	NDS_Reschedule();
+}
+
 void armcpu_init(armcpu_t *armcpu, u32 adr)
 {
    u32 i;
@@ -260,7 +267,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 {
-        u32 oldmode = armcpu->CPSR.bits.mode;
+	u32 oldmode = armcpu->CPSR.bits.mode;
 	
 	switch(oldmode)
 	{
@@ -362,6 +369,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 	}
 	
 	armcpu->CPSR.bits.mode = mode & 0x1F;
+	armcpu->changeCPSR();
 	return oldmode;
 }
 
@@ -466,45 +474,44 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 
 	if(armcpu->CPSR.bits.I) return FALSE;
 
-#ifdef GDB_STUB
-	armcpu->irq_flag = 0;
-#endif
+//#ifdef GDB_STUB
+//	armcpu->irq_flag = 0;
+//#endif
       
 	tmp = armcpu->CPSR;
 	armcpu_switchMode(armcpu, IRQ);
 
-#ifdef GDB_STUB
-	armcpu->R[14] = armcpu->next_instruction + 4;
-#else
+//#ifdef GDB_STUB
+//	armcpu->R[14] = armcpu->next_instruction + 4;
+//#else
 	armcpu->R[14] = armcpu->instruct_adr + 4;
-#endif
+//#endif
 	armcpu->SPSR = tmp;
 	armcpu->CPSR.bits.T = 0;
 	armcpu->CPSR.bits.I = 1;
 	armcpu->next_instruction = armcpu->intVector + 0x18;
 	armcpu->waitIRQ = 0;
 
-#ifndef GDB_STUB
+//#ifndef GDB_STUB
 	armcpu->R[15] = armcpu->next_instruction + 8;
 	armcpu_prefetch(armcpu);
-#endif
+//#endif
 
 	return TRUE;
 }
 
-BOOL
-armcpu_flagIrq( armcpu_t *armcpu) {
-  if(armcpu->CPSR.bits.I) return FALSE;
-
-  armcpu->waitIRQ = 0;
-
-#ifdef GDB_STUB
-  armcpu->irq_flag = 1;
-#endif
-
-  return TRUE;
-}
-
+//BOOL
+//armcpu_flagIrq( armcpu_t *armcpu) {
+//  if(armcpu->CPSR.bits.I) return FALSE;
+//
+//  armcpu->waitIRQ = 0;
+//
+//#ifdef GDB_STUB
+//  armcpu->irq_flag = 1;
+//#endif
+//
+//  return TRUE;
+//}
 
 template<int PROCNUM>
 u32 armcpu_exec()

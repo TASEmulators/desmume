@@ -19,8 +19,6 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-//#define NEW_IRQ 1
-
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -2412,6 +2410,11 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				writereg_POWCNT1(8,adr,val);
 				break;
 
+			case eng_3D_CLEAR_COLOR+0: case eng_3D_CLEAR_COLOR+1:
+			case eng_3D_CLEAR_COLOR+2: case eng_3D_CLEAR_COLOR+3:
+				T1WriteByte((u8*)&gfx3d.state.clearColor,adr-eng_3D_CLEAR_COLOR,val); 
+				break;
+
 			case REG_VRAMCNTA:
 			case REG_VRAMCNTB:
 			case REG_VRAMCNTC:
@@ -2545,13 +2548,14 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				gfx3d_glAlphaFunc(val);
 				return;
 			}
-			// Clear background color setup - Parameters:2
+			
 			case eng_3D_CLEAR_COLOR:
+			case eng_3D_CLEAR_COLOR+2:
 			{
-				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x350>>1] = val;
-				gfx3d_glClearColor(val);
-				return;
+				T1WriteWord((u8*)&gfx3d.state.clearColor,adr-eng_3D_CLEAR_COLOR,val);
+				break;
 			}
+
 			// Clear background depth setup - Parameters:2
 			case eng_3D_CLEAR_DEPTH:
 			{
@@ -2803,47 +2807,16 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					u32 new_val = val & 0x01;
 					MMU.reg_IME[ARMCPU_ARM9] = new_val;
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
-#ifndef NEW_IRQ
-					if ( new_val && old_val != new_val) 
-					{
-						// raise an interrupt request to the CPU if needed
-						if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9])
-						{
-							NDS_ARM9.waitIRQ = FALSE;
-						}
-					}
-#endif
-				return;
+					return;
 				}
 			case REG_IE :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF0000) | val;
-#ifndef NEW_IRQ
-				if ( MMU.reg_IME[ARMCPU_ARM9])
-				{
-					// raise an interrupt request to the CPU if needed
-					if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
-					{
-						NDS_ARM9.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
 			case REG_IE + 2 :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF) | (((u32)val)<<16);
-#ifndef NEW_IRQ
-				if ( MMU.reg_IME[ARMCPU_ARM9])
-				{
-					// raise an interrupt request to the CPU if needed
-					if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
-					{
-						NDS_ARM9.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
-				
 			case REG_IF :
 				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~((u32)val)); 
@@ -3108,21 +3081,19 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 
 			// Alpha test reference value - Parameters:1
-			case 0x04000340:
+			case eng_3D_ALPHA_TEST_REF:
 			{
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x340>>2] = val;
 				gfx3d_glAlphaFunc(val);
 				return;
 			}
-			// Clear background color setup - Parameters:2
-			case 0x04000350:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x350>>2] = val;
-				gfx3d_glClearColor(val);
-				return;
-			}
+
+			case eng_3D_CLEAR_COLOR:
+				T1WriteLong((u8*)&gfx3d.state.clearColor,0,val); 
+				break;
+				
 			// Clear background depth setup - Parameters:2
-			case 0x04000354:
+			case eng_3D_CLEAR_DEPTH:
 			{
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x354>>2] = val;
 				gfx3d_glClearDepth(val);
@@ -3249,32 +3220,12 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					u32 new_val = val & 0x01;
 					MMU.reg_IME[ARMCPU_ARM9] = new_val;
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
-#ifndef NEW_IRQ
-					if ( new_val && old_val != new_val) 
-					{
-						// raise an interrupt request to the CPU if needed
-						if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
-						{
-							NDS_ARM9.waitIRQ = FALSE;
-						}
-					}
-#endif
 				}
 				return;
 				
 			case REG_IE :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = val;
-#ifndef NEW_IRQ
-				if ( MMU.reg_IME[ARMCPU_ARM9]) 
-				{
-					// raise an interrupt request to the CPU if needed
-					if ( MMU.reg_IE[ARMCPU_ARM9] & MMU.reg_IF[ARMCPU_ARM9]) 
-					{
-						NDS_ARM9.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
 			
 			case REG_IF :
@@ -3378,10 +3329,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 		return;
 	}
-	if(adr>=0x05000000 && adr<0x06200000)
-	{
-		int zzz=9;
-	}
+
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
@@ -3980,46 +3928,16 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					u32 new_val = val & 1;
 					MMU.reg_IME[ARMCPU_ARM7] = new_val;
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
-#ifndef NEW_IRQ
-					if ( new_val && old_val != new_val) 
-					{
-						/* raise an interrupt request to the CPU if needed */
-						if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7])
-						{
-							NDS_ARM7.waitIRQ = FALSE;
-						}
-					}
-#endif
-				return;
+					return;
 				}
 			case REG_IE :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF0000) | val;
-#ifndef NEW_IRQ
-				if ( MMU.reg_IME[ARMCPU_ARM7]) 
-				{
-					/* raise an interrupt request to the CPU if needed */
-					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
-					{
-						NDS_ARM7.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
 			case REG_IE + 2 :
 				NDS_Reschedule();
 				//emu_halt();
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF) | (((u32)val)<<16);
-#ifndef NEW_IRQ
-				if ( MMU.reg_IME[ARMCPU_ARM7]) 
-				{
-					/* raise an interrupt request to the CPU if needed */
-					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
-					{
-						NDS_ARM7.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
 				
 			case REG_IF :
@@ -4117,32 +4035,12 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				u32 new_val = val & 1;
 				MMU.reg_IME[ARMCPU_ARM7] = new_val;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
-#ifndef NEW_IRQ
-				if ( new_val && old_val != new_val) 
-				{
-					// raise an interrupt request to the CPU if needed
-					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
-					{
-						NDS_ARM7.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
 			}
 				
 			case REG_IE :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM7] = val;
-#ifndef NEW_IRQ
-				if ( MMU.reg_IME[ARMCPU_ARM7])
-				{
-					/* raise an interrupt request to the CPU if needed */
-					if ( MMU.reg_IE[ARMCPU_ARM7] & MMU.reg_IF[ARMCPU_ARM7]) 
-					{
-						NDS_ARM7.waitIRQ = FALSE;
-					}
-				}
-#endif
 				return;
 			
 			case REG_IF :
