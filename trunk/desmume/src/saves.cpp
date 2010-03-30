@@ -248,6 +248,10 @@ SFORMAT SF_MMU[]={
 	{ "FDHD", 4, 1,       &disp_fifo.head},
 	{ "FDTL", 4, 1,       &disp_fifo.tail},
 	{ "FDBF", 4, 0x6000,  disp_fifo.buf},
+
+	{ "PMCN", 1, 1,			&MMU.powerMan_CntReg},
+	{ "PMCW", 4, 1,			&MMU.powerMan_CntRegWritten},
+	{ "PMCR", 1, 4,			&MMU.powerMan_Reg},
 	
 	{ 0 }
 };
