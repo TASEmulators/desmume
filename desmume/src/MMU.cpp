@@ -3825,13 +3825,35 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 								}
 								else
 								{
+									u16 reg = MMU.powerMan_CntReg&0x7F;
+									reg &= 0x7;
+									if(reg==5 || reg==6 || reg==7) reg = 4;
+
+									//(let's start with emulating a DS lite, since it is the more complex case)
 									if(MMU.powerMan_CntReg & 0x80)
 									{
-										val = MMU.powerMan_Reg[MMU.powerMan_CntReg & 0x3];
+										//read
+										val = MMU.powerMan_Reg[reg];
 									}
 									else
 									{
-										MMU.powerMan_Reg[MMU.powerMan_CntReg & 0x3] = (u8)val;
+										//write
+										MMU.powerMan_Reg[reg] = (u8)val;
+											
+										enum PM_Bits //from libnds
+										{
+											PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
+											PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
+											PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
+											PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
+											PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
+										};
+
+										//our totally pathetic register handling, only the one thing we've wanted so far
+										if(MMU.powerMan_Reg[0]&PM_SYSTEM_PWR) {
+											printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
+											emu_halt();
+										}
 									}
 
 									MMU.powerMan_CntRegWritten = FALSE;
@@ -4628,4 +4650,3 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
 //print_memory_profiling( void) {
 //}
 //#endif /* End of PROFILE_MEMORY_ACCESS area */
-
