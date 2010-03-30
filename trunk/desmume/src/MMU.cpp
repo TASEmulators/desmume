@@ -3411,6 +3411,14 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 
 		switch(adr)
 		{
+			case REG_DISPA_DISPSTAT:
+				break;
+			case REG_DISPA_DISPSTAT+1:
+				break;
+			case REG_DISPx_VCOUNT:
+				break;
+			case REG_DISPx_VCOUNT+1:
+				break;
 			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
 			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
 			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
@@ -3469,6 +3477,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		// Address is an IO register
 		switch(adr)
 		{
+			case REG_DISPA_DISPSTAT:
+				break;
+
 			case REG_SQRTCNT: return MMU_new.sqrt.read16();
 			case REG_DIVCNT: return MMU_new.div.read16();
 			case eng_3D_GXSTAT: return MMU_new.gxstat.read(16,adr);
@@ -3562,6 +3573,9 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 		switch(adr)
 		{
+		case REG_DISPA_DISPSTAT:
+			break;
+
 			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
 			case REG_DIVCNT: return MMU_new.div.read16();
 			//I guess we'll do this also

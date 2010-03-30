@@ -1365,6 +1365,37 @@ void Sequencer::init()
 
 static void execHardware_hblank()
 {
+	//this logic keeps moving around.
+	//now, we try and give the game as much time as possible to finish doing its work for the scanline,
+	//by drawing scanline N at the end of drawing time (but before subsequent interrupt or hdma-driven events happen)
+	//don't try to do this at the end of the scanline, because some games (sonic classics) may use hblank IRQ to set
+	//scroll regs for the next scanline
+	if(nds.VCount<192)
+	{
+		//taskSubGpu.execute(renderSubScreen,NULL);
+		GPU_RenderLine(&MainScreen, nds.VCount, frameSkipper.ShouldSkip2D());
+		GPU_RenderLine(&SubScreen, nds.VCount, frameSkipper.ShouldSkip2D());
+		//taskSubGpu.finish();
+
+		//trigger hblank dmas
+		//but notice, we do that just after we finished drawing the line
+		//(values copied by this hdma should not be used until the next scanline)
+		triggerDma(EDMAMode_HBlank);
+	}
+
+	if(nds.VCount==262)
+	{
+		//we need to trigger one last hblank dma since 
+		//a. we're sort of lagged behind by one scanline
+		//b. i think that 193 hblanks actually fire (one for the hblank in scanline 262)
+		//this is demonstrated by NSMB splot-parallaxing clouds
+		//for some reason the game will setup two hdma scroll register buffers
+		//to be run consecutively, and unless we do this, the second buffer will be offset by one scanline
+		//causing a glitch in the 0th scanline
+		triggerDma(EDMAMode_HBlank);
+	}
+
+
 	//turn on hblank status bit
 	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 2);
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
@@ -1448,34 +1479,6 @@ static void execHardware_hstart_vcount()
 
 static void execHardware_hstart()
 {
-	//this logic keeps moving around.
-	//now, we try and give the game as much time as possible to finish doing its work for the scanline,
-	//by drawing scanline N at the very, very end of scanline N (here at the beginning of scanline N+1)
-	if(nds.VCount<192)
-	{
-		//taskSubGpu.execute(renderSubScreen,NULL);
-		GPU_RenderLine(&MainScreen, nds.VCount, frameSkipper.ShouldSkip2D());
-		GPU_RenderLine(&SubScreen, nds.VCount, frameSkipper.ShouldSkip2D());
-		//taskSubGpu.finish();
-
-		//trigger hblank dmas
-		//but notice, we do that just after we finished drawing the line
-		//(values copied by this hdma should not be used until the next scanline)
-		triggerDma(EDMAMode_HBlank);
-	}
-
-	if(nds.VCount==192)
-	{
-		//we need to trigger one last hblank dma since 
-		//a. we're sort of lagged behind by one scanline
-		//b. i think that 193 hblanks actually fire (one for the hblank in scanline 262)
-		//this is demonstrated by NSMB splot-parallaxing clouds
-		//for some reason the game will setup two hdma scroll register buffers
-		//to be run consecutively, and unless we do this, the second buffer will be offset by one scanline
-		//causing a glitch in the 0th scanline
-		triggerDma(EDMAMode_HBlank);
-	}
-
 	nds.VCount++;
 
 	//end of 3d vblank
@@ -1677,7 +1680,7 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-//bool dolog = false;
+//bool dolog = true;
 
 FORCEINLINE void arm9log()
 {
