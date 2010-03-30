@@ -251,7 +251,7 @@ SFORMAT SF_MMU[]={
 
 	{ "PMCN", 1, 1,			&MMU.powerMan_CntReg},
 	{ "PMCW", 4, 1,			&MMU.powerMan_CntRegWritten},
-	{ "PMCR", 1, 4,			&MMU.powerMan_Reg},
+	{ "PMCR", 1, 5,			&MMU.powerMan_Reg},
 	
 	{ 0 }
 };

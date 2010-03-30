@@ -404,7 +404,7 @@ struct MMU_struct
 
 	u8 powerMan_CntReg;
 	BOOL powerMan_CntRegWritten;
-	u8 powerMan_Reg[4];
+	u8 powerMan_Reg[5];
 
 	memory_chip_t fw;
 
