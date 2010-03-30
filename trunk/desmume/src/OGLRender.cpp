@@ -1,6 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -15,8 +16,8 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    along with DeSmuME; if not, write to the 
+	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 //problem - alpha-on-alpha texture rendering might work but the dest alpha buffer isnt tracked correctly
@@ -685,7 +686,7 @@ static void BeginRenderPoly()
 		{
 			lastEnvMode = envMode;
 
-			int _envModes[4] = {0, 1, (2 + gfx3d.state.shading), 0};
+			int _envModes[4] = {0, 1, (2 + gfx3d.renderState.shading), 0};
 			glUniform1i(texBlendLoc, _envModes[envMode]);
 		}
 	}
@@ -723,16 +724,16 @@ static void InstallPolygonAttrib(unsigned long val)
 
 static void Control()
 {
-	if(gfx3d.state.enableTexturing) glEnable (GL_TEXTURE_2D);
+	if(gfx3d.renderState.enableTexturing) glEnable (GL_TEXTURE_2D);
 	else glDisable (GL_TEXTURE_2D);
 
-	if(gfx3d.state.enableAlphaTest)
+	if(gfx3d.renderState.enableAlphaTest)
 		// FIXME: alpha test should pass gfx3d.alphaTestRef==poly->getAlpha
-		glAlphaFunc	(GL_GREATER, gfx3d.state.alphaTestRef/31.f);
+		glAlphaFunc	(GL_GREATER, gfx3d.renderState.alphaTestRef/31.f);
 	else
 		glAlphaFunc	(GL_GREATER, 0);
 
-	if(gfx3d.state.enableAlphaBlending)
+	if(gfx3d.renderState.enableAlphaBlending)
 	{
 		glEnable		(GL_BLEND);
 	}
@@ -820,27 +821,27 @@ static void OGLRender()
 
 	if(hasShaders)
 	{
-		if (gfx3d.state.invalidateToon)
+		if (gfx3d.renderState.invalidateToon)
 		{
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
 
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &gfx3d.state.rgbToonTable[0]);
-			gfx3d.state.invalidateToon = false;
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &gfx3d.renderState.rgbToonTable[0]);
+			gfx3d.renderState.invalidateToon = false;
 		}
 	}
 
 	xglDepthMask(GL_TRUE);
 
 	float clearColor[4] = {
-		((float)(gfx3d.state.clearColor&0x1F))/31.0f,
-		((float)((gfx3d.state.clearColor>>5)&0x1F))/31.0f,
-		((float)((gfx3d.state.clearColor>>10)&0x1F))/31.0f,
-		((float)((gfx3d.state.clearColor>>16)&0x1F))/31.0f,
+		((float)(gfx3d.renderState.clearColor&0x1F))/31.0f,
+		((float)((gfx3d.renderState.clearColor>>5)&0x1F))/31.0f,
+		((float)((gfx3d.renderState.clearColor>>10)&0x1F))/31.0f,
+		((float)((gfx3d.renderState.clearColor>>16)&0x1F))/31.0f,
 	};
 	glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
-	glClearDepth(gfx3d.state.clearDepth);
-	glClearStencil((gfx3d.state.clearColor >> 24) & 0x3F);
+	glClearDepth(gfx3d.renderState.clearDepth);
+	glClearStencil((gfx3d.renderState.clearColor >> 24) & 0x3F);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glMatrixMode(GL_PROJECTION);

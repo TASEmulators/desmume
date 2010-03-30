@@ -2,7 +2,7 @@
 //    licensed under the terms supplied at the end of this file (for the terms are very long!)
 //    Differences from that baseline version are:
 //
-//    Copyright (C) 2009 DeSmuME team
+//    Copyright (C) 2009-2010 DeSmuME team
 //
 //    DeSmuME is free software; you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with DeSmuME; if not, write to the Free Software
-//    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 //*/
 
 #include "hotkey.h"
@@ -200,7 +200,7 @@ void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 void HK_StylusAutoHoldKeyDown(int, bool justPressed) {
 	StylusAutoHoldPressed = !StylusAutoHoldPressed;
 	if (StylusAutoHoldPressed)
-		NDS_setTouchPos(winLastTouch.x, winLastTouch.y);
+		NDS_setTouchPos((u16)winLastTouch.x, (u16)winLastTouch.y);
 	else if (!userTouchesScreen)
 		NDS_releaseTouch();
 }

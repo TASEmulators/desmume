@@ -266,7 +266,7 @@ FORCEINLINE int edge_fx_fl::Step() {
 
 static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & src)
 {
-	if(gfx3d.state.enableAlphaBlending)
+	if(gfx3d.renderState.enableAlphaBlending)
 	{
 		if(src.a == 0 || dst.a == 0)
 		{
@@ -500,7 +500,7 @@ public:
 				}
 				else
 				{
-					if(gfx3d.state.shading == GFX3D_State::HIGHLIGHT)
+					if(gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
 					{
 						dst.r = modulate_table[texColor.r][shader.materialColor.r];
 						dst.g = modulate_table[texColor.g][shader.materialColor.r];
@@ -548,7 +548,7 @@ public:
 		FragmentColor &destFragmentColor = engine->screenColor[adr];
 
 		u32 depth;
-		if(gfx3d.state.wbuffer)
+		if(gfx3d.renderState.wbuffer)
 		{
 			//not sure about this
 			//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
@@ -632,9 +632,9 @@ public:
 		if(shaderOutput.a != 0)
 		{
 			//alpha test (don't have any test cases for this...? is it in the right place...?)
-			if(gfx3d.state.enableAlphaTest)
+			if(gfx3d.renderState.enableAlphaTest)
 			{
-				if(shaderOutput.a < gfx3d.state.alphaTestRef)
+				if(shaderOutput.a < gfx3d.renderState.alphaTestRef)
 					goto rejected_fragment;
 			}
 
@@ -1087,19 +1087,19 @@ void SoftRasterizerEngine::initFramebuffer(const int width, const int height, co
 	Fragment clearFragment;
 	FragmentColor clearFragmentColor;
 	clearFragment.isTranslucentPoly = 0;
-	clearFragmentColor.r = GFX3D_5TO6(gfx3d.state.clearColor&0x1F);
-	clearFragmentColor.g = GFX3D_5TO6((gfx3d.state.clearColor>>5)&0x1F);
-	clearFragmentColor.b = GFX3D_5TO6((gfx3d.state.clearColor>>10)&0x1F);
-	clearFragmentColor.a = ((gfx3d.state.clearColor>>16)&0x1F);
-	clearFragment.polyid.opaque = (gfx3d.state.clearColor>>24)&0x3F;
+	clearFragmentColor.r = GFX3D_5TO6(gfx3d.renderState.clearColor&0x1F);
+	clearFragmentColor.g = GFX3D_5TO6((gfx3d.renderState.clearColor>>5)&0x1F);
+	clearFragmentColor.b = GFX3D_5TO6((gfx3d.renderState.clearColor>>10)&0x1F);
+	clearFragmentColor.a = ((gfx3d.renderState.clearColor>>16)&0x1F);
+	clearFragment.polyid.opaque = (gfx3d.renderState.clearColor>>24)&0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
 	//but in spiderman2 some fires with polyid 0 try to render on top of the background
 	clearFragment.polyid.translucent = kUnsetTranslucentPolyID; 
-	clearFragment.depth = gfx3d.state.clearDepth;
+	clearFragment.depth = gfx3d.renderState.clearDepth;
 	clearFragment.stencil = 0;
 	clearFragment.isTranslucentPoly = 0;
-	clearFragment.fogged = BIT15(gfx3d.state.clearColor);
+	clearFragment.fogged = BIT15(gfx3d.renderState.clearColor);
 	for(int i=0;i<todo;i++)
 		screen[i] = clearFragment;
 
@@ -1151,14 +1151,14 @@ void SoftRasterizerEngine::initFramebuffer(const int width, const int height, co
 
 void SoftRasterizerEngine::updateToonTable()
 {
-	if (!gfx3d.state.invalidateToon) return;
+	if (!gfx3d.renderState.invalidateToon) return;
 	//convert the toon colors
 	for(int i=0;i<32;i++) {
-		toonTable[i].r = (gfx3d.state.rgbToonTable[i] >> 2) & 0x3F;
-		toonTable[i].g = (gfx3d.state.rgbToonTable[i] >> 10) & 0x3F;
-		toonTable[i].b = (gfx3d.state.rgbToonTable[i] >> 18) & 0x3F;
+		toonTable[i].r = (gfx3d.renderState.rgbToonTable[i] >> 2) & 0x3F;
+		toonTable[i].g = (gfx3d.renderState.rgbToonTable[i] >> 10) & 0x3F;
+		toonTable[i].b = (gfx3d.renderState.rgbToonTable[i] >> 18) & 0x3F;
 	}
-	gfx3d.state.invalidateToon = false;
+	gfx3d.renderState.invalidateToon = false;
 }
 
 void SoftRasterizerEngine::updateFogTable()
@@ -1167,14 +1167,14 @@ void SoftRasterizerEngine::updateFogTable()
 #if 0
 	//TODO - this might be a little slow; 
 	//we might need to hash all the variables and only recompute this when something changes
-	const int increment = (0x400 >> gfx3d.state.fogShift);
+	const int increment = (0x400 >> gfx3d.renderState.fogShift);
 	for(u32 i=0;i<32768;i++) {
-		if(i<gfx3d.state.fogOffset) {
+		if(i<gfx3d.renderState.fogOffset) {
 			fogTable[i] = fogDensity[0];
 			continue;
 		}
 		for(int j=0;j<32;j++) {
-			u32 value = gfx3d.state.fogOffset + increment*(j+1);
+			u32 value = gfx3d.renderState.fogOffset + increment*(j+1);
 			if(i<=value) {
 				if(j==0) {
 					fogTable[i] = fogDensity[0];
@@ -1192,9 +1192,9 @@ void SoftRasterizerEngine::updateFogTable()
 	// this should behave exactly the same as the previous loop,
 	// except much faster. (because it's not a 2d loop and isn't so branchy either)
 	// maybe it's fast enough to not need to be cached, now.
-	const int increment = ((1 << 10) >> gfx3d.state.fogShift);
-	const int incrementDivShift = 10 - gfx3d.state.fogShift;
-	u32 fogOffset = min<u32>(max<u32>(gfx3d.state.fogOffset, 0), 32768);
+	const int increment = ((1 << 10) >> gfx3d.renderState.fogShift);
+	const int incrementDivShift = 10 - gfx3d.renderState.fogShift;
+	u32 fogOffset = min<u32>(max<u32>(gfx3d.renderState.fogOffset, 0), 32768);
 	u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	assert(iMin <= iMax);
@@ -1233,7 +1233,7 @@ void SoftRasterizerEngine::framebufferProcess()
 	// - the edges are completely sharp/opaque on the very brief title screen intro,
 	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 	// - the character edges in-level are clearly transparent, and also show well through shield powerups.
-	if(gfx3d.state.enableEdgeMarking && CommonSettings.GFX3D_EdgeMark)
+	if(gfx3d.renderState.enableEdgeMarking && CommonSettings.GFX3D_EdgeMark)
 	{ 
 		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
 		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
@@ -1303,12 +1303,12 @@ void SoftRasterizerEngine::framebufferProcess()
 		}
 	}
 
-	if(gfx3d.state.enableFog && CommonSettings.GFX3D_Fog)
+	if(gfx3d.renderState.enableFog && CommonSettings.GFX3D_Fog)
 	{
-		u32 r = GFX3D_5TO6((gfx3d.state.fogColor)&0x1F);
-		u32 g = GFX3D_5TO6((gfx3d.state.fogColor>>5)&0x1F);
-		u32 b = GFX3D_5TO6((gfx3d.state.fogColor>>10)&0x1F);
-		u32 a = (gfx3d.state.fogColor>>16)&0x1F;
+		u32 r = GFX3D_5TO6((gfx3d.renderState.fogColor)&0x1F);
+		u32 g = GFX3D_5TO6((gfx3d.renderState.fogColor>>5)&0x1F);
+		u32 b = GFX3D_5TO6((gfx3d.renderState.fogColor>>10)&0x1F);
+		u32 a = (gfx3d.renderState.fogColor>>16)&0x1F;
 		for(int i=0;i<256*192;i++)
 		{
 			Fragment &destFragment = screen[i];
@@ -1318,7 +1318,7 @@ void SoftRasterizerEngine::framebufferProcess()
 			assert(fogIndex<32768);
 			u8 fog = fogTable[fogIndex];
 			if(fog==127) fog=128;
-			if(!gfx3d.state.enableFogAlphaOnly)
+			if(!gfx3d.renderState.enableFogAlphaOnly)
 			{
 				destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
 				destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
@@ -1506,10 +1506,10 @@ static void SoftRastRender()
 	mainSoftRasterizer.height = 192;
 
 	//setup fog variables (but only if fog is enabled)
-	if(gfx3d.state.enableFog && CommonSettings.GFX3D_Fog)
+	if(gfx3d.renderState.enableFog && CommonSettings.GFX3D_Fog)
 		mainSoftRasterizer.updateFogTable();
 	
-	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.state.enableClearImage?true:false);
+	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.renderState.enableClearImage?true:false);
 	mainSoftRasterizer.updateToonTable();
 	mainSoftRasterizer.updateFloatColors();
 	mainSoftRasterizer.performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor);

@@ -1,6 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -16,7 +15,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #ifndef ARM_CPU
@@ -148,7 +147,7 @@ struct armcpu_ctrl_iface {
 
 typedef void* armcp_t;
 
-typedef struct armcpu_t
+struct armcpu_t
 {
 	u32 proc_ID;
 	u32 instruction; //4
@@ -158,6 +157,8 @@ typedef struct armcpu_t
 	u32 R[16]; //16
 	Status_Reg CPSR;  //80
 	Status_Reg SPSR;
+
+	void changeCPSR();
 
 	u32 R13_usr, R14_usr;
 	u32 R13_svc, R14_svc;
@@ -197,7 +198,7 @@ typedef struct armcpu_t
   /** the ctrl interface */
   struct armcpu_ctrl_iface ctrl_iface;
 #endif
-} armcpu_t;
+};
 
 #ifdef GDB_STUB
 int armcpu_new( armcpu_t *armcpu, u32 id, struct armcpu_memory_iface *mem_if,
@@ -224,32 +225,25 @@ static INLINE void setIF(int PROCNUM, u32 flag)
 
 	extern void NDS_Reschedule();
 	NDS_Reschedule();
+
+    //generate the interrupt if enabled
+	if ((MMU.reg_IE[PROCNUM] & (flag)) && MMU.reg_IME[PROCNUM])
+	{
+		if(PROCNUM==0)
+			NDS_ARM9.waitIRQ = FALSE;
+		else 
+			NDS_ARM7.waitIRQ = FALSE;
+	}
 }
 
 static INLINE void NDS_makeARM9Int(u32 num)
 {
-        /* flag the interrupt request source */
-       // MMU.reg_IF[0] |= (1<<num);
-		setIF(0, (1<<num));
-
-        /* generate the interrupt if enabled */
-	if ((MMU.reg_IE[0] & (1 << num)) && MMU.reg_IME[0])
-	{
-		NDS_ARM9.waitIRQ = FALSE;
-	}
+	setIF(0, (1<<num));
 }
 
 static INLINE void NDS_makeARM7Int(u32 num)
 {
-        /* flag the interrupt request source */
-	//MMU.reg_IF[1] |= (1<<num);
 	setIF(1, (1<<num));
-
-        /* generate the interrupt if enabled */
-	if ((MMU.reg_IE[1] & (1 << num)) && MMU.reg_IME[1])
-	{
-		NDS_ARM7.waitIRQ = FALSE;
-	}
 }
 
 static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
