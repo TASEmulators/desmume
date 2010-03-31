@@ -59,7 +59,6 @@ Windows:
  bug: fix that sticky pause state when resetting and loading roms
  bug: dont crash when no sound device is available
  bug: change F10 to be save slot 0
- bug: fix background pause menu item
  enh: try not to screensave while using gamepad
  enh: add EPX and EPX1.5X resize filters
  enh: add a japanese translation which will soon be stale like the others
