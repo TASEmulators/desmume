@@ -323,9 +323,10 @@ static const TVramBankInfo vram_bank_info[VRAM_BANKS] = {
 //TODO - in cases where this does some mapping work, we could bypass the logic at the end of the _read* and _write* routines
 //this is a good optimization to consider
 template<int PROCNUM> 
-static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
+static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped, bool& restricted)
 {
 	unmapped = false;
+	restricted = false; //this will track whether 8bit writes are allowed
 
 	//in case the address is entirely outside of the interesting ranges
 	if(addr < 0x06000000) return addr;
@@ -346,6 +347,8 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 		}
 		return LCDC_HACKY_LOCATION + (vram_arm7_map[bank]<<14) + ofs;
 	}
+
+	restricted = true;
 
 	//handle LCD memory mirroring
 	if(addr>=0x068A4000)
@@ -2452,9 +2455,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		return;
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
+	if(restricted) return; //block 8bit vram writes
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
@@ -2908,8 +2912,8 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 	}
 
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -3330,9 +3334,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		return;
 	}
 
-
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -3398,8 +3401,8 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		}
 	}
 
-	bool unmapped;	
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
+	bool unmapped, restricted;	
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return 0;
 
 	return MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]];
@@ -3493,8 +3496,8 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped, restricted);
 	if(unmapped) return 0;
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF
@@ -3612,8 +3615,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
 	
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped, restricted);
 	if(unmapped) return 0;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
@@ -3698,8 +3701,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return;
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -4002,8 +4005,8 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		return;
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -4099,8 +4102,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -4150,8 +4153,8 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return 0;
 
     return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
@@ -4241,8 +4244,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]); 
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return 0;
 
 	/* Returns data from memory */
@@ -4314,8 +4317,8 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]);
 	}
 
-	bool unmapped;
-	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	bool unmapped, restricted;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return 0;
 
 	//Returns data from memory
