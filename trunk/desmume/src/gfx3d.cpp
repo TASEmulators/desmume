@@ -1978,8 +1978,8 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	//also the buttons in the knights in the nightmare frontend depend on this and the perspective division
 	if (poly1.maxy < poly2.maxy) return true;
 	if (poly1.maxy > poly2.maxy) return false;
-	if (poly1.miny > poly2.miny) return true;
-	if (poly1.miny < poly2.miny) return false;
+	if (poly1.miny < poly2.miny) return true;
+	if (poly1.miny > poly2.miny) return false;
 	//notably, the main shop interface in harvest moon will not have a correct RTN button
 	//i think this is due to a math error rounding its position to one pixel too high and it popping behind
 	//the bar that it sits on.
@@ -2031,17 +2031,18 @@ static void gfx3d_doFlush()
 		POLY &poly = polylist->list[i];
 		float verty = vertlist->list[poly.vertIndexes[0]].y;
 		float vertw = vertlist->list[poly.vertIndexes[0]].w;
-		verty = (verty+vertw)/(2*vertw);
+		verty = 1.0f-(verty+vertw)/(2*vertw);
 		poly.miny = poly.maxy = verty;
 
 		for(int j=1; j<poly.type; j++)
 		{
 			verty = vertlist->list[poly.vertIndexes[j]].y;
 			vertw = vertlist->list[poly.vertIndexes[j]].w;
-			verty = (verty+vertw)/(2*vertw);
+			verty = 1.0f-(verty+vertw)/(2*vertw);
 			poly.miny = min(poly.miny, verty);
 			poly.maxy = max(poly.maxy, verty);
 		}
+
 	}
 
 	//we need to sort the poly list with alpha polys last
