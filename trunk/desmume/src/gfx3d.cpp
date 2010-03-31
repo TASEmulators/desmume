@@ -25,6 +25,12 @@
 
 //#define FLUSHMODE_HACK
 
+//---------------
+//TODO TODO TODO TODO
+//make up mind once and for all whether fog, toon, etc. should reside in memory buffers (for easier handling in MMU)
+//if they do, then we need to copy them out in doFlush!!!
+//---------------
+
 #include <algorithm>
 #include <assert.h>
 #include <math.h>
@@ -1944,8 +1950,7 @@ void gfx3d_execute3D()
 void gfx3d_glFlush(u32 v)
 {
 	//printf("-------------FLUSH------------- (vcount=%d\n",nds.VCount);
-	gfx3d.state.sortmode = BIT0(v);
-	gfx3d.state.wbuffer = BIT1(v);
+	gfx3d.state.pendingFlushCommand = v;
 #if 0
 	if (isSwapBuffers)
 	{
@@ -2007,8 +2012,12 @@ static void gfx3d_doFlush()
 	gfx3d.state.enableFog = BIT7(control);
 	gfx3d.state.enableClearImage = BIT14(control);
 	gfx3d.state.fogShift = (control>>8)&0xF;
+	gfx3d.state.sortmode = BIT0(gfx3d.state.activeFlushCommand);
+	gfx3d.state.wbuffer = BIT1(gfx3d.state.activeFlushCommand);
 
 	gfx3d.renderState = gfx3d.state;
+	
+	gfx3d.state.activeFlushCommand = gfx3d.state.pendingFlushCommand;
 
 	int polycount = polylist->count;
 
@@ -2308,6 +2317,8 @@ SFORMAT SF_GFX3D[]={
 	{ "GST3", 4, 32, gfx3d.state.rgbToonTable},
 	{ "GSST", 4, 128, &gfx3d.state.shininessTable[0]},
 	{ "GSSI", 4, 1, &shininessInd},
+	{ "GSAF", 4, 1, &gfx3d.state.activeFlushCommand},
+	{ "GSPF", 4, 1, &gfx3d.state.pendingFlushCommand},
 	//------------------------
 	{ "GTST", 4, 1, &triStripToggle},
 	{ "GTVC", 4, 1, &tempVertInfo.count},
