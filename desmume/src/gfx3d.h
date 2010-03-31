@@ -311,6 +311,8 @@ struct GFX3D_State
 		, fogOffset(0)
 		, fogShift(0)
 		, invalidateToon(true)
+		, activeFlushCommand(0)
+		, pendingFlushCommand(0)
 	{
 		for(u32 i=0;i<ARRAY_SIZE(shininessTable);i++)
 			shininessTable[i] = 0;
@@ -328,6 +330,8 @@ struct GFX3D_State
 
 	BOOL wbuffer, sortmode;
 	u8 alphaTestRef;
+	u32 activeFlushCommand;
+	u32 pendingFlushCommand;
 
 	u32 clearDepth;
 	u32 clearColor;
