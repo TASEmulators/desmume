@@ -2279,7 +2279,7 @@ static void RefreshMicSettings()
 }
 
 #define GPU3D_NULL_SAVED -1
-#define GPU3D_DEFAULT  GPU3D_OPENGL
+#define GPU3D_DEFAULT  GPU3D_SWRAST
 
 DWORD wmTimerRes;
 int _main()
