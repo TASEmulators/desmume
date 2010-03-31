@@ -3446,7 +3446,7 @@ void ScreenshotToClipboard()
 	memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
 	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
 
-	sprintf(str, "FPS: %i/%i | %s", mainLoopData.fps, mainLoopData.fps3d, paused ? "Paused":"Running");
+	sprintf(str, "FPS: %i/%i (%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.arm9load, paused ? "Paused":"Running");
 	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
 
 	sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
