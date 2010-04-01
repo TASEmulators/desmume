@@ -613,7 +613,7 @@ bool Desmume::OnInit()
 		return false;
 	
 
-#ifdef __WIN32__
+#ifdef WIN32
 	extern void OpenConsole();
 	OpenConsole();
 #endif
@@ -639,7 +639,7 @@ bool Desmume::OnInit()
 
 extern void Initialize(void *init);
 
-#ifndef _WIN32
+#ifndef WIN32
 	Initialize(&PADInitialize);
 #endif
 
@@ -750,7 +750,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	ChangeRotation(nds_screen_rotation_angle, false);
 }
 
-#ifdef _WIN32
+#ifdef WIN32
 /*
 * The thread handling functions needed by the GDB stub code.
 */
