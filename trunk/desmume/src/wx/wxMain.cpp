@@ -175,7 +175,6 @@ public:
 		wxFileDialog dialog(this,_T("Load Rom"),wxGetHomeDir(),_T(""),_T("*.nds"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK) {
 			history->AddFileToHistory(dialog.GetPath());
-			NDSInitialize();
 			execute = true;
 			NDS_LoadROM(dialog.GetPath().mb_str(), dialog.GetPath().mb_str());
 		}
@@ -790,7 +789,6 @@ void DesmumeFrame::OnClose(wxCloseEvent &event) {
 }
 
 void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
-	NDSInitialize();
 	execute = true;
 	NDS_LoadROM(history->GetHistoryFile(event.GetId()-wxID_FILE1).mb_str(),NULL);
 }
