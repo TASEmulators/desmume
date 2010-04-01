@@ -1246,14 +1246,6 @@
 			Name="wx"
 			>
 			<File
-				RelativePath=".\IniFile.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\IniFile.h"
-				>
-			</File>
-			<File
 				RelativePath=".\LuaWindow.cpp"
 				>
 			</File>

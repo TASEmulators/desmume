@@ -35,6 +35,7 @@
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
+#include <wx/config.h>
 
 #define SCREEN_SIZE (256*192*3)
 #define GAP_DEFAULT 64
@@ -78,7 +79,6 @@ void CloseLuaContext(int)
 #endif
 
 volatile bool execute = false;
-std::string executableDirectory;
 
 class Desmume: public wxApp
 {
@@ -411,8 +411,12 @@ loop:
 	void Menu_SaveStates(wxCommandEvent &event);
 	void Menu_LoadStates(wxCommandEvent &event);
 	void NDSInitialize();
-	void changeRotation(wxCommandEvent &event);
+	void OnRotation(wxCommandEvent &event);
+	void ChangeRotation(int rot, bool skip);
 	void onResize(wxSizeEvent &event);
+	bool LoadSettings();
+	bool SaveSettings();
+	void OnClose(wxCloseEvent &event);
 
 private:
 #ifdef GDB_STUB
@@ -474,11 +478,14 @@ enum
 void DesmumeFrame::Menu_SaveStates(wxCommandEvent &event){savestate_slot(event.GetId() - wSaveState01);}
 void DesmumeFrame::Menu_LoadStates(wxCommandEvent &event){loadstate_slot(event.GetId() - wLoadState01);}
 
-void DesmumeFrame::changeRotation(wxCommandEvent &event){
-	int rot = (event.GetId() - wRot0)*90;
+void DesmumeFrame::OnRotation(wxCommandEvent &event) {
+	ChangeRotation((event.GetId() - wRot0)*90, true);
+}
+
+void DesmumeFrame::ChangeRotation(int rot, bool skip) {
 	wxSize sizeMin, sizeMax;
 
-	if (rot == nds_screen_rotation_angle)
+	if (skip && rot == nds_screen_rotation_angle)
 		return;
 
 	SetMinSize(wxSize(-1,-1));
@@ -516,6 +523,7 @@ BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 EVT_PAINT(DesmumeFrame::onPaint)
 EVT_IDLE(DesmumeFrame::onIdle)
 EVT_SIZE(DesmumeFrame::onResize)
+EVT_CLOSE(DesmumeFrame::OnClose)
 EVT_MENU(wxID_EXIT, DesmumeFrame::OnQuit)
 EVT_MENU(wxID_OPEN, DesmumeFrame::LoadRom)
 EVT_MENU(wxID_ABOUT,DesmumeFrame::OnAbout)
@@ -553,7 +561,7 @@ EVT_MENU(wCloseRom,DesmumeFrame::closeRom)
 EVT_MENU(wImportBackupMemory,DesmumeFrame::importBackupMemory)
 EVT_MENU(wExportBackupMemory,DesmumeFrame::exportBackupMemory)
 
-EVT_MENU_RANGE(wRot0,wRot270,DesmumeFrame::changeRotation)
+EVT_MENU_RANGE(wRot0,wRot270,DesmumeFrame::OnRotation)
 
 EVT_MENU(wSaveScreenshotAs,DesmumeFrame::saveScreenshotAs)
 EVT_MENU(wQuickScreenshot,DesmumeFrame::quickScreenshot)
@@ -600,6 +608,10 @@ bool Desmume::OnInit()
 	OpenConsole();
 #endif
 
+	SetAppName(_T("desmume"));
+	//comment for devs: or you may use wxConfig instead of wxFileConfig, so it will be wxRegConfig on MSW and wxFileConfig on other platforms
+	wxConfigBase *pConfig = new wxFileConfig();
+	wxConfigBase::Set(pConfig);
 	wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
 	DesmumeFrame *frame = new DesmumeFrame(emu_version);
 	frame->NDSInitialize();
@@ -613,14 +625,6 @@ bool Desmume::OnInit()
 
 	frame->Show(true);
 
-	char *p, *a;
-	std::string b = std::string(wxStandardPaths::Get().GetExecutablePath().mb_str());
-	a = const_cast<char*>(b.c_str());
-	p = a + lstrlen(a);
-	while (p >= a && *p != '\\') p--;
-	if (++p >= a) *p = 0;
-
-	executableDirectory = std::string(a);
 	PADInitialize.padNumber = 1;
 
 extern void Initialize(void *init);
@@ -727,12 +731,9 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 
 	//	CreateStatusBar(2);
 	//	SetStatusText("Welcome to Desmume!");
-	SetClientSize(256,384);
-	wxSize sizeMin = ClientToWindowSize(wxSize(256,384));
-	wxSize sizeMax = sizeMin;
-	sizeMax.IncBy(0,GAP_MAX);
-	SetMinSize(sizeMin);
-	SetMaxSize(sizeMax);
+	LoadSettings();
+	rotateMenu->Check(wRot0+(nds_screen_rotation_angle/90), true);
+	ChangeRotation(nds_screen_rotation_angle, false);
 }
 
 #ifdef _WIN32
@@ -753,3 +754,19 @@ void
 joinThread_gdb( void *thread_handle) {
 }
 #endif
+bool DesmumeFrame::LoadSettings() {
+	wxConfigBase::Get()->Read(_T("/Screen/Gap"),&nds_gap_size,0);
+	wxConfigBase::Get()->Read(_T("/Screen/Rotation"),&nds_screen_rotation_angle,0);
+	return true;
+}
+
+bool DesmumeFrame::SaveSettings() {
+	wxConfigBase::Get()->Write(_T("/Screen/Gap"),nds_gap_size);
+	wxConfigBase::Get()->Write(_T("/Screen/Rotation"),nds_screen_rotation_angle);
+	return true;
+}
+
+void DesmumeFrame::OnClose(wxCloseEvent &event) {
+	SaveSettings();
+	event.Skip();
+}

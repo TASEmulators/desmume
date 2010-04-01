@@ -19,7 +19,6 @@ wxdesmume_SOURCES = \
 	InputCommon/EventHandler.cpp \
 	InputCommon/Configuration.cpp \
 	InputCommon/SDL.cpp \
-	IniFile.cpp \
 	LuaWindow.cpp \
 	StringUtil.cpp \
 	wxMain.cpp
