@@ -36,6 +36,7 @@
 #include "gdbstub.h"
 #endif
 #include <wx/config.h>
+#include <wx/docview.h>
 
 #define SCREEN_SIZE (256*192*3)
 #define GAP_DEFAULT 64
@@ -90,6 +91,9 @@ class DesmumeFrame: public wxFrame
 {
 public:
 	DesmumeFrame(const wxString& title);
+	~DesmumeFrame() {
+		delete history;
+	}
 
 	void OnQuit(wxCommandEvent& WXUNUSED(event)){Close(true);}
 	void OnAbout(wxCommandEvent& WXUNUSED(event))
@@ -170,6 +174,7 @@ public:
 	void LoadRom(wxCommandEvent& event){
 		wxFileDialog dialog(this,_T("Load Rom"),wxGetHomeDir(),_T(""),_T("*.nds"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 		if(dialog.ShowModal() == wxID_OK) {
+			history->AddFileToHistory(dialog.GetPath());
 			NDSInitialize();
 			execute = true;
 			NDS_LoadROM(dialog.GetPath().mb_str(), dialog.GetPath().mb_str());
@@ -417,8 +422,10 @@ loop:
 	bool LoadSettings();
 	bool SaveSettings();
 	void OnClose(wxCloseEvent &event);
+	void OnOpenRecent(wxCommandEvent &event);
 
 private:
+	wxFileHistory* history;
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
 	gdbstub_handle_t arm7_gdb_stub;
@@ -576,6 +583,8 @@ EVT_MENU(wLuaWindow,DesmumeFrame::OnOpenLuaWindow)
 
 EVT_MENU(wConfigureControls,DesmumeFrame::OnOpenControllerConfiguration)
 
+EVT_MENU_RANGE(wxID_FILE1,wxID_FILE9,DesmumeFrame::OnOpenRecent)
+
 END_EVENT_TABLE()
 
 IMPLEMENT_APP(Desmume)
@@ -644,6 +653,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 : wxFrame(NULL, wxID_ANY, title)
 {
 
+	history = new wxFileHistory;
 	wxMenu *fileMenu = new wxMenu;
 	wxMenu *emulationMenu = new wxMenu;
 	wxMenu *viewMenu = new wxMenu;
@@ -652,8 +662,11 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	wxMenu *helpMenu = new wxMenu;
 	wxMenu *saves(MakeStatesSubMenu(wSaveState01));
 	wxMenu *loads(MakeStatesSubMenu(wLoadState01));
+	wxMenu *recentMenu = new wxMenu;
+	history->UseMenu(recentMenu);
 
 	fileMenu->Append(wxID_OPEN, _T("Load R&om\tAlt-R"));
+	fileMenu->AppendSubMenu(recentMenu, _T("Recent files"));
 	fileMenu->Append(wCloseRom, _T("Close Rom"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wSaveStateAs, _T("Save State As..."));
@@ -757,16 +770,26 @@ joinThread_gdb( void *thread_handle) {
 bool DesmumeFrame::LoadSettings() {
 	wxConfigBase::Get()->Read(_T("/Screen/Gap"),&nds_gap_size,0);
 	wxConfigBase::Get()->Read(_T("/Screen/Rotation"),&nds_screen_rotation_angle,0);
+	wxConfigBase::Get()->SetPath(_T("/History"));
+	history->Load(*wxConfigBase::Get());
 	return true;
 }
 
 bool DesmumeFrame::SaveSettings() {
 	wxConfigBase::Get()->Write(_T("/Screen/Gap"),nds_gap_size);
 	wxConfigBase::Get()->Write(_T("/Screen/Rotation"),nds_screen_rotation_angle);
+	wxConfigBase::Get()->SetPath(_T("/History"));
+	history->Save(*wxConfigBase::Get());
 	return true;
 }
 
 void DesmumeFrame::OnClose(wxCloseEvent &event) {
 	SaveSettings();
 	event.Skip();
+}
+
+void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
+	NDSInitialize();
+	execute = true;
+	NDS_LoadROM(history->GetHistoryFile(event.GetId()-wxID_FILE1).mb_str(),NULL);
 }
