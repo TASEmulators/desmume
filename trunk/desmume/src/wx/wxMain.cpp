@@ -358,6 +358,7 @@ loop:
 	void closeRom(wxCommandEvent& event) {
 		NDS_FreeROM();
 		execute = false;
+		SPU_Pause(1);
 #ifdef HAVE_LIBAGG
 		Hud.resetTransient();
 #endif
