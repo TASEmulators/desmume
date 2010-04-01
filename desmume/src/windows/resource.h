@@ -351,6 +351,7 @@
 #define IDC_CAP1_ADD                    1025
 #define IDC_SPU_ADVANCED                1025
 #define IDC_CAP1_CURDAD                 1026
+#define IDC_CHECBOX_ADVANCEDTIMING      1026
 #define IDC_DEFAULT                     1027
 #define IDC_3DCORE                      1028
 #define IDC_SNDCTRL_ENABLE              1028
@@ -907,7 +908,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40078
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -115,6 +115,7 @@ bool bSocketsAvailable = false;
 
 VideoInfo video;
 
+#ifdef HAVE_WX
 #include "wx/wxprec.h"
 #ifdef _M_X64  
 	#ifdef __WXDEBUG__
@@ -150,13 +151,7 @@ public:
 };
 
 IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
-
-void wxTest() {
-	//wxdlg3dViewer *viewer = new wxdlg3dViewer(NULL);
-	//viewer->Show(true);
-    //wxTestModeless *frame = new wxTestModeless(_T("Controls wxWidgets App"), 50, 50);
-    //frame->Show(true);
-}
+#endif //HAVE_WX
 
 #ifndef PUBLIC_RELEASE
 #define DEVELOPER_MENU_ITEMS
@@ -2666,6 +2661,7 @@ int _main()
 
 	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", false, IniName);
 	CommonSettings.EnsataEmulation = GetPrivateProfileBool("Emulation", "EnsataEmulation", false, IniName);
+	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
 	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", false, IniName);
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
 	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
@@ -4721,8 +4717,12 @@ DOKEYDOWN:
 			OpenToolWindow(new CMemView());
 			return 0;
 		case IDM_VIEW3D:
-			driver->VIEW3D_Init();
-			driver->view3d->Launch();
+			#ifdef HAVE_WX
+				driver->VIEW3D_Init();
+				driver->view3d->Launch();
+			#else
+				MessageBox(hwnd, "Sorry to get your hopes up; 3d viewer isn't finished yet.\r\nBut because of all these languages, it is too much trouble to remove from all the menus...", "DeSmuME", MB_OK);
+			#endif
 			return 0;
 		case IDM_SOUND_VIEW:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);
@@ -5427,6 +5427,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 			CheckDlgItem(hDlg,IDC_CHECKBOX_DEBUGGERMODE,CommonSettings.DebugConsole);
 			CheckDlgItem(hDlg,IDC_CHECKBOX_ENSATAEMULATION,CommonSettings.EnsataEmulation);
+			CheckDlgItem(hDlg, IDC_CHECBOX_ADVANCEDTIMING, CommonSettings.advanced_timing);
 			CheckDlgItem(hDlg,IDC_USEEXTBIOS,CommonSettings.UseExtBIOS);
 			CheckDlgItem(hDlg, IDC_BIOSSWIS, CommonSettings.SWIFromBIOS);
 			CheckDlgItem(hDlg, IDC_PATCHSWI3, CommonSettings.PatchSWI3);
@@ -5497,9 +5498,11 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 					CommonSettings.DebugConsole = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
 					CommonSettings.EnsataEmulation = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_ENSATAEMULATION);
+					CommonSettings.advanced_timing = IsDlgCheckboxChecked(hDlg, IDC_CHECBOX_ADVANCEDTIMING);
 
 					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("Emulation", "EnsataEmulation", ((CommonSettings.EnsataEmulation == true) ? 1 : 0), IniName);
+					WritePrivateProfileBool("Emulation", "AdvancedTiming", CommonSettings.advanced_timing, IniName);
 					WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
 					WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
 					WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);

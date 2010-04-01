@@ -53,7 +53,7 @@
 #endif
 
 #ifdef _WINDOWS
-	#define HAVE_WX
+	//#define HAVE_WX //not useful yet....
 	#define HAVE_LIBAGG
 	#define ENABLE_SSE
 	#define ENABLE_SSE2
@@ -111,6 +111,9 @@
 #endif
 
 #define CACHE_ALIGN ALIGN(32)
+
+//use this for example when you want a byte value to be better-aligned
+#define FAST_ALIGN ALIGN(4)
 
 #ifndef FASTCALL
 #ifdef __MINGW32__
