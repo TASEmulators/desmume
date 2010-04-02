@@ -326,7 +326,6 @@ void GameInfo::populate()
 		u8 num = (T1ReadByte((u8*)romdata, header.IconOff) == 1)?6:7;
 		for (int i = 0; i < num; i++)
 		{
-			memset(ROMfullName[i],0,sizeof(ROMfullName[i]));
 			wcstombs(ROMfullName[i], (wchar_t *)(romdata+header.IconOff+0x240+(i*0x100)), 0x100);
 			trim(ROMfullName[i]);
 		}
