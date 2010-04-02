@@ -87,6 +87,7 @@ private:
 	int _spu_advanced;
 	int _num_cores;
 	int _rigorous_timing;
+	int _advanced_timing;
 };
 
 #endif
