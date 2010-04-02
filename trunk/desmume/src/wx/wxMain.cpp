@@ -95,7 +95,13 @@ public:
 		delete history;
 	}
 
-	void OnQuit(wxCommandEvent& WXUNUSED(event)){Close(true);}
+	void OnQuit(wxCommandEvent& WXUNUSED(event))
+	{
+		execute = false;
+		NDS_DeInit();
+		Close(true);
+	}
+
 	void OnAbout(wxCommandEvent& WXUNUSED(event))
 	{
 		wxMessageBox(
