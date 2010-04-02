@@ -1906,8 +1906,6 @@ void EnableDisableKeyFields (int index, HWND hDlg)
 	//EnableWindow(GetDlgItem(hDlg,IDC_UPRIGHT), false);
 	//EnableWindow(GetDlgItem(hDlg,IDC_DWNRIGHT), false);
 	//EnableWindow(GetDlgItem(hDlg,IDC_DWNLEFT), false);
-	EnableWindow(GetDlgItem(hDlg,IDC_DEBUG), false);
-	EnableWindow(GetDlgItem(hDlg,IDC_LID), true);
 }
 
 INT_PTR CALLBACK DlgInputConfig(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
