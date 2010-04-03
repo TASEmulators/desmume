@@ -114,10 +114,11 @@ bool moviemode=false;
 
 struct tm* rtcGetTime(void)
 {
+	struct tm *tm = NULL;
 	if(movieMode == MOVIEMODE_INACTIVE) {
 		time_t	timer;
 		time(&timer);
-		return localtime(&timer);
+		tm = localtime(&timer);
 	}
 	else {
 		//now, you might think it is silly to go through all these conniptions
@@ -140,8 +141,10 @@ struct tm* rtcGetTime(void)
 		t.tm_sec += totalseconds;
 		// then, normalize it
 		timer = gmmktime(&t);
-		return gmtime(&timer);
+		tm = gmtime(&timer);
 	}
+	tm->tm_year = 100 + (tm->tm_year % 100); // 20XX
+	return tm;
 }
 
 static void rtcRecv()

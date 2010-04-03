@@ -164,6 +164,11 @@ void HudStruct::reset()
 	Microphone.xsize=20;
 	Microphone.ysize=10;
 
+	RTCDisplay.x=0;
+	RTCDisplay.y=105;
+	RTCDisplay.xsize=220;
+	RTCDisplay.ysize=10;
+
 	SavestateSlots.x = 8;
 	SavestateSlots.y = 160;
 	SavestateSlots.xsize = 240;
@@ -557,6 +562,13 @@ void DrawHUD()
 		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%03d [%07d]",MicDisplay, Hud.cpuloopIterationCount);
 	}
 	#endif
+
+	if (CommonSettings.hud.ShowRTC) 
+	{
+		struct tm *tm = rtcGetTime();
+		const char *wday[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+		osd->addFixed(Hud.RTCDisplay.x, Hud.RTCDisplay.y, "%04d-%02d-%02d %s %02d:%02d:%02d", 1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday, wday[tm->tm_wday%7], tm->tm_hour, tm->tm_min, tm->tm_sec);
+	}
 
 	DrawStateSlots();
 }

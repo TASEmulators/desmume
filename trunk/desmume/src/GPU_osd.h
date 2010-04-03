@@ -70,6 +70,7 @@ public:
 	HudCoordinates GraphicalInputDisplay;
 	HudCoordinates LagFrameCounter;
 	HudCoordinates Microphone;
+	HudCoordinates RTCDisplay;
 	HudCoordinates Dummy;
 
 	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }

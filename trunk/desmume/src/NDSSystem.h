@@ -572,8 +572,9 @@ extern struct TCommonSettings {
 			, FrameCounterDisplay(false)
 			, ShowLagFrameCounter(false)
 			, ShowMicrophone(false)
+			, ShowRTC(false)
 		{}
-		bool ShowInputDisplay, ShowGraphicalInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone;
+		bool ShowInputDisplay, ShowGraphicalInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone, ShowRTC;
 	} hud;
 
 } CommonSettings;

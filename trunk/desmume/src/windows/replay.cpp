@@ -259,7 +259,7 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
 			time_t timer = FCEUI_MovieGetRTCDefault();
 			struct tm *t = gmtime(&timer);
-			ZeroMemory(&systime, sizeof(systime));
+			ZeroMemory(&systime, sizeof(SYSTEMTIME));
 			systime.wYear = t->tm_year + 1900;
 			systime.wMonth = t->tm_mon + 1;
 			systime.wDay = t->tm_mday;
@@ -270,6 +270,21 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			systime.wMilliseconds = 0;
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDT_VALID, &systime);
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_TIME), GDT_VALID, &systime);
+
+			SYSTEMTIME rtcMin;
+			SYSTEMTIME rtcMax;
+			ZeroMemory(&rtcMin, sizeof(SYSTEMTIME));
+			ZeroMemory(&rtcMax, sizeof(SYSTEMTIME));
+			rtcMin.wYear = 2000;
+			rtcMin.wMonth = 1;
+			rtcMin.wDay = 1;
+			rtcMin.wDayOfWeek = 6;
+			rtcMax.wYear = 2099;
+			rtcMax.wMonth = 12;
+			rtcMax.wDay = 31;
+			rtcMax.wDayOfWeek = 4;
+			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MIN, &rtcMin);
+			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MAX, &rtcMax);
 			return false;
 		}
 
