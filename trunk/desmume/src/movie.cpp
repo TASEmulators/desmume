@@ -228,7 +228,7 @@ void MovieData::installValue(std::string& key, std::string& val)
 		guid = Desmume_Guid::fromString(val);
 	else if(key == "rtcStart") {
 		// sloppy format check and parse
-		char *validFormatStr = "####-##-##T##:##:##Z";
+		const char *validFormatStr = "####-##-##T##:##:##Z";
 		bool validFormat = true;
 		for (int i = 0; validFormatStr[i] != '\0'; i++) {
 			if (validFormatStr[i] != val[i] && 

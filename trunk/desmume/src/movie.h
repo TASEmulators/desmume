@@ -129,7 +129,7 @@ public:
 	int rerecordCount;
 	Desmume_Guid guid;
 
-	s64 rtcStart; // (time_t) it always means gmtime, not localtime.
+	time_t rtcStart; // (time_t) it always means gmtime, not localtime.
 
 	//was the frame data stored in binary?
 	bool binaryFlag;
