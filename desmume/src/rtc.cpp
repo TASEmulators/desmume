@@ -108,7 +108,10 @@ SFORMAT SF_RTC[]={
 
 static const u8 kDefaultCmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
 
-#define toBCD(x) ((x / 10) << 4) | (x % 10);
+static inline u8 toBCD(u8 x)
+{
+	return ((x / 10) << 4) | (x % 10);
+}
 
 bool moviemode=false;
 
