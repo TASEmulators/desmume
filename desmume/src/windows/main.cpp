@@ -2378,6 +2378,7 @@ int _main()
 	CommonSettings.hud.ShowGraphicalInputDisplay = GetPrivateProfileBool("Display","Display Graphical Input", false, IniName);
 	CommonSettings.hud.ShowLagFrameCounter = GetPrivateProfileBool("Display","Display Lag Counter", false, IniName);
 	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", false, IniName);
+	CommonSettings.hud.ShowRTC = GetPrivateProfileBool("Display","Display RTC", false, IniName);
 
 	CommonSettings.micMode = (TCommonSettings::MicMode)GetPrivateProfileInt("MicSettings", "MicMode", (int)TCommonSettings::InternalNoise, IniName);
 	GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
@@ -3690,6 +3691,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_VIEW_DISPLAYGRAPHICALINPUT,CommonSettings.hud.ShowGraphicalInputDisplay);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG,CommonSettings.hud.ShowLagFrameCounter);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE,CommonSettings.hud.ShowMicrophone);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYRTC,CommonSettings.hud.ShowRTC);
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode);
 			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit);
 			
@@ -4976,6 +4978,12 @@ DOKEYDOWN:
 		case ID_VIEW_DISPLAYLAG:
 			CommonSettings.hud.ShowLagFrameCounter ^= true;
 			WritePrivateProfileBool("Display", "Display Lag Counter", CommonSettings.hud.ShowLagFrameCounter, IniName);
+			osd->clear();
+			return 0;
+
+		case ID_VIEW_DISPLAYRTC:
+			CommonSettings.hud.ShowRTC ^= true;
+			WritePrivateProfileBool("Display", "Display RTC", CommonSettings.hud.ShowRTC, IniName);
 			osd->clear();
 			return 0;
 
