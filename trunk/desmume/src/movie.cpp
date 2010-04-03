@@ -22,6 +22,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <assert.h>
 #include <limits.h>
+#include <ctype.h>
+#include <time.h>
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "movie.h"
@@ -166,12 +168,37 @@ void MovieRecord::dump(MovieData* md, EMUFILE* fp, int index)
 	fp->fputc('\n');
 }
 
+time_t FCEUI_MovieGetRTCDefault()
+{
+	time_t timer;
+
+	// compatible with old desmume
+	struct tm t;
+	t.tm_year = 109; // 2009
+	t.tm_mon  = 0;   // 1 (Jan)
+	t.tm_mday = 1;
+	t.tm_wday = 4;
+	t.tm_hour = 12;
+	t.tm_min  = 0;
+	t.tm_sec  = 0;
+	t.tm_isdst= -1;
+	timer = gmmktime(&t);
+
+	// current time
+	//timer = time(NULL);
+	//struct tm *tp = localtime(&timer);
+	//timer = gmmktime(tp);
+
+	return timer;
+}
+
 MovieData::MovieData()
 	: version(MOVIE_VERSION)
 	, emuVersion(EMU_DESMUME_VERSION_NUMERIC())
 	, romChecksum(0)
 	, rerecordCount(0)
 	, binaryFlag(false)
+	, rtcStart(FCEUI_MovieGetRTCDefault())
 {
 }
 
@@ -199,6 +226,30 @@ void MovieData::installValue(std::string& key, std::string& val)
 		romSerial = val;
 	else if(key == "guid")
 		guid = Desmume_Guid::fromString(val);
+	else if(key == "rtcStart") {
+		// sloppy format check and parse
+		char *validFormatStr = "####-##-##T##:##:##Z";
+		bool validFormat = true;
+		for (int i = 0; validFormatStr[i] != '\0'; i++) {
+			if (validFormatStr[i] != val[i] && 
+					!(validFormatStr[i] == '#' && isdigit(val[i]))) {
+				validFormat = false;
+				break;
+			}
+		}
+		if (validFormat) {
+			struct tm t;
+			const char *s = val.data();
+			t.tm_year = atoi(&s[0]) - 1900;
+			t.tm_mon  = atoi(&s[5]) - 1;
+			t.tm_mday = atoi(&s[8]);
+			t.tm_hour = atoi(&s[11]);
+			t.tm_min  = atoi(&s[14]);
+			t.tm_sec  = atoi(&s[17]);
+			t.tm_isdst= -1;
+			rtcStart = gmmktime(&t);
+		}
+	}
 	else if(key == "comment")
 		comments.push_back(mbstowcs(val));
 	else if(key == "binary")
@@ -242,12 +293,17 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 	if(CommonSettings.UseExtBIOS)
 		fp->fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS);
 
+	char timestr[32];
+	struct tm *tm = gmtime(&rtcStart);
+	strftime(timestr, 32, "%Y-%m-%dT%H:%M:%SZ", tm);
+	fp->fprintf("rtcStart %s\n", timestr);
+
 	for(uint32 i=0;i<comments.size();i++)
 		fp->fprintf("comment %s\n", wcstombs(comments[i]).c_str());
 	
 	if(binary)
 		fp->fprintf("binary 1\n");
-		
+
 	if(savestate.size() != 0)
 		fp->fprintf("savestate %s\n", BytesToString(&savestate[0],savestate.size()).c_str());
 	if(sram.size() != 0)
@@ -495,7 +551,6 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	movie_readonly = _read_only;
 	movieMode = MOVIEMODE_PLAY;
 	currRerecordCount = currMovieData.rerecordCount;
-	InitMovieTime();
 	MMU_new.backupDevice.movie_mode();
 	if(currMovieData.sram.size() != 0)
 	{
@@ -564,7 +619,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname)
+void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, time_t rtcstart)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -585,7 +640,8 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	currMovieData.romChecksum = gameInfo.crc;
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
-	
+	currMovieData.rtcStart = rtcstart;
+
 	NDS_Reset();
 
 	//todo ?
@@ -608,7 +664,6 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	movieMode = MOVIEMODE_RECORD;
 	movie_readonly = false;
 	currRerecordCount = 0;
-	InitMovieTime();
 	MMU_new.backupDevice.movie_mode();
 
 	if(currMovieData.sram.size() != 0)

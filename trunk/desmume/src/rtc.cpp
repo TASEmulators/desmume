@@ -28,13 +28,29 @@
 #include "common.h"
 #include "debug.h"
 #include "armcpu.h"
-#include <time.h>
 #include <string.h>
 #include "saves.h"
 #ifdef WIN32
 #include "windows/main.h"
 #endif
 #include "movie.h"
+
+static time_t CalcTimeDifference(void)
+{
+	time_t t1, t2;
+	tm *tm_tmp;
+
+	time(&t1);
+	tm_tmp = gmtime(&t1);
+	t2 = mktime(tm_tmp);
+
+	return (t2 - t1);
+}
+
+time_t gmmktime(struct tm *timeptr)
+{
+	return mktime(timeptr) - CalcTimeDifference();
+}
 
 typedef struct
 {
@@ -94,50 +110,38 @@ static const u8 kDefaultCmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
 
 #define toBCD(x) ((x / 10) << 4) | (x % 10);
 
-struct movietime {
-
-	int sec;
-	int minute;
-	int hour;
-	int monthday;
-	int month;
-	int year;
-	int weekday;
-};
-
-struct movietime movie;
-
 bool moviemode=false;
 
-void InitMovieTime(void)
+struct tm* rtcGetTime(void)
 {
-	movie.year=9;
-	movie.month=1;
-	movie.monthday=1;
-	movie.weekday=4;
-}	
+	if(movieMode == MOVIEMODE_INACTIVE) {
+		time_t	timer;
+		time(&timer);
+		return localtime(&timer);
+	}
+	else {
+		//now, you might think it is silly to go through all these conniptions
+		//when we could just assume that there are 60fps and base the seconds on frameCounter/60
+		//but, we were imagining that one day we might need more precision
 
-static void MovieTime(void) {
+		const u32 arm9rate_unitsperframe = 560190<<1;
+		const u32 arm9rate_unitspersecond = (u32)(arm9rate_unitsperframe * 59.8261);
 
-	//now, you might think it is silly to go through all these conniptions
-	//when we could just assume that there are 60fps and base the seconds on frameCounter/60
-	//but, we were imagining that one day we might need more precision
+		u64 totalcycles = (u64)arm9rate_unitsperframe * currFrameCounter;
+		u64 totalseconds=totalcycles/arm9rate_unitspersecond;
 
-	const u32 arm9rate_unitsperframe = 560190<<1;
-	const u32 arm9rate_unitspersecond = (u32)(arm9rate_unitsperframe * 59.8261);
-	const u64 noon = (u64)arm9rate_unitspersecond * 60 * 60 * 12;
-	           
-	u64 frameCycles = (u64)arm9rate_unitsperframe * currFrameCounter;
-	u64 totalcycles = frameCycles + noon;
-	u64 totalseconds=totalcycles/arm9rate_unitspersecond;
+		time_t timer;
+		struct tm t;
 
-	movie.sec=(int)(totalseconds % 60);
-	movie.minute=(int)(totalseconds/60);
-	movie.hour=movie.minute/60;
-
-	//convert to sane numbers
-	movie.minute=movie.minute % 60;
-	movie.hour=movie.hour % 24;
+		// store start time into structure tm
+		timer = (time_t) currMovieData.rtcStart;
+		memcpy(&t, gmtime(&timer), sizeof(struct tm));
+		// advance it according to the frame counter
+		t.tm_sec += totalseconds;
+		// then, normalize it
+		timer = gmmktime(&t);
+		return gmtime(&timer);
+	}
 }
 
 static void rtcRecv()
@@ -160,67 +164,26 @@ static void rtcRecv()
 		case 2:				// date & time
 			{
 				//INFO("RTC: read date & time\n");
-				time_t	tm;
-				time(&tm);
-				struct tm *tm_local= localtime(&tm);
-				tm_local->tm_year %= 100;
-				tm_local->tm_mon++;
-
-				if(movieMode != MOVIEMODE_INACTIVE) {
-
-					MovieTime();
-					
-					rtc.data[0]=toBCD(movie.year);
-					rtc.data[1]=toBCD(movie.month);
-					rtc.data[2]=toBCD(movie.monthday);
-					rtc.data[3]=(movie.weekday + 7) & 7;
-					if (rtc.data[3] == 7) rtc.data[3] = 6;
-					if (!(rtc.regStatus1 & 0x02)) movie.hour %= 12;
-					rtc.data[4] = ((movie.hour < 12) ? 0x00 : 0x40) | toBCD(movie.hour);		
-					rtc.data[5]=toBCD(movie.minute);
-					rtc.data[6]=toBCD(movie.sec);
-					break;
-				}
-				else {
-
-					rtc.data[0] = toBCD(tm_local->tm_year);
-					rtc.data[1] = toBCD(tm_local->tm_mon);
-					rtc.data[2] = toBCD(tm_local->tm_mday);
-					rtc.data[3] = (tm_local->tm_wday + 7) & 7;
-					if (rtc.data[3] == 7) rtc.data[3] = 6;
-					if (!(rtc.regStatus1 & 0x02)) tm_local->tm_hour %= 12;
-					rtc.data[4] = ((tm_local->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm_local->tm_hour);
-					rtc.data[5] =  toBCD(tm_local->tm_min);
-					rtc.data[6] =  toBCD(tm_local->tm_sec);
-					break;
-				}
+				struct tm *tm = rtcGetTime();
+				rtc.data[0] = toBCD(tm->tm_year % 100);
+				rtc.data[1] = toBCD(tm->tm_mon + 1);
+				rtc.data[2] = toBCD(tm->tm_mday);
+				rtc.data[3] = (tm->tm_wday + 7) & 7;
+				if (rtc.data[3] == 7) rtc.data[3] = 6;
+				if (!(rtc.regStatus1 & 0x02)) tm->tm_hour %= 12;
+				rtc.data[4] = ((tm->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm->tm_hour);
+				rtc.data[5] =  toBCD(tm->tm_min);
+				rtc.data[6] =  toBCD(tm->tm_sec);
 				break;
 			}
 		case 3:				// time
 			{
 				//INFO("RTC: read time\n");
-				time_t	tm;
-				time(&tm);
-				struct tm *tm_local= localtime(&tm);
-
-				if(movieMode != MOVIEMODE_INACTIVE) {
-
-					MovieTime();
-
-					if (!(rtc.regStatus1 & 0x02)) movie.hour %= 12;
-					rtc.data[0] = ((movie.hour < 12) ? 0x00 : 0x40) | toBCD(movie.hour);
-					rtc.data[1] =  toBCD(movie.minute);
-					rtc.data[2] =  toBCD(movie.sec);
-					break;
-				}
-				else {
-
-					if (!(rtc.regStatus1 & 0x02)) tm_local->tm_hour %= 12;
-					rtc.data[0] = ((tm_local->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm_local->tm_hour);
-					rtc.data[1] =  toBCD(tm_local->tm_min);
-					rtc.data[2] =  toBCD(tm_local->tm_sec);
-					break;
-				}
+				struct tm *tm = rtcGetTime();
+				if (!(rtc.regStatus1 & 0x02)) tm->tm_hour %= 12;
+				rtc.data[0] = ((tm->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm->tm_hour);
+				rtc.data[1] =  toBCD(tm->tm_min);
+				rtc.data[2] =  toBCD(tm->tm_sec);
 				break;
 			}
 		case 4:				// freq/alarm 1
