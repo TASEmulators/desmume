@@ -25,11 +25,14 @@
 #ifndef _RTC_H_
 #define _RTC_H_
 #include <stdlib.h>
+#include <time.h>
 #include "types.h"
+
+extern  time_t gmmktime(struct tm *timeptr);
+
+struct tm* rtcGetTime(void);
 
 extern	void rtcInit();
 extern	u16 rtcRead();
 extern	void rtcWrite(u16 val);
-
-void InitMovieTime(void);
 #endif

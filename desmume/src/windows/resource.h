@@ -353,8 +353,10 @@
 #define IDC_CAP1_CURDAD                 1026
 #define IDC_CHECBOX_ADVANCEDTIMING      1026
 #define IDC_DEFAULT                     1027
+#define IDC_DTP_DATE                    1027
 #define IDC_3DCORE                      1028
 #define IDC_SNDCTRL_ENABLE              1028
+#define IDC_DTP_TIME                    1028
 #define IDC_TXT_COMPILED                1029
 #define IDC_SNDCTRL_CH1NOMIX            1029
 #define IDC_TXT_VERSION                 1030
@@ -908,7 +910,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40078
-#define _APS_NEXT_CONTROL_VALUE         1027
+#define _APS_NEXT_CONTROL_VALUE         1029
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

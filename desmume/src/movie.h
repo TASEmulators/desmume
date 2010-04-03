@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <stdlib.h>
+#include <time.h>
 #include "emufile.h"
 
 #include "utils/guid.h"
@@ -128,6 +129,8 @@ public:
 	int rerecordCount;
 	Desmume_Guid guid;
 
+	s64 rtcStart; // (time_t) it always means gmtime, not localtime.
+
 	//was the frame data stored in binary?
 	bool binaryFlag;
 
@@ -192,7 +195,7 @@ extern MovieData currMovieData;		//adelikat: main needs this for frame counter d
 extern bool movie_reset_command;
 
 bool FCEUI_MovieGetInfo(EMUFILE* fp, MOVIE_INFO& info, bool skipFrameCount);
-void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname);
+void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, time_t rtcstart);
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe); // returns NULL on success, errmsg on failure
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
@@ -205,4 +208,5 @@ bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
+time_t FCEUI_MovieGetRTCDefault();
 #endif

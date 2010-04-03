@@ -34,6 +34,7 @@
 
 #include "aggdraw.h"
 #include "movie.h"
+#include "rtc.h"
 #include "NDSSystem.h"
 #include "mic.h"
 #include "saves.h"
