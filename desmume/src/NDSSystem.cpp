@@ -1679,7 +1679,7 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-//bool dolog = true;
+//bool dolog = false;
 
 FORCEINLINE void arm9log()
 {
@@ -2147,8 +2147,8 @@ void NDS_Reset()
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
 		
-		_MMU_write08<ARMCPU_ARM9>(0x04000300, 1);
-		_MMU_write08<ARMCPU_ARM7>(0x04000300, 1);
+		_MMU_write08<ARMCPU_ARM9>(REG_POSTFLG, 1);
+		_MMU_write08<ARMCPU_ARM7>(REG_POSTFLG, 1);
 	}
 	//bitbox 4k demo is so stripped down it relies on default stack values
 	//otherwise the arm7 will crash before making a sound
@@ -2176,12 +2176,9 @@ void NDS_Reset()
 	nds.ensataIpcSyncCounter = 0;
 	SetupMMU(nds.debugConsole);
 
-	_MMU_write16<ARMCPU_ARM9>(0x04000130, 0x3FF);
-	_MMU_write16<ARMCPU_ARM7>(0x04000130, 0x3FF);
-	_MMU_write08<ARMCPU_ARM7>(0x04000136, 0x43);
-
-	//picross polls this value when it boots. firmware sets it.
-	//_MMU_write16<ARMCPU_ARM9>(REG_POWCNT1, 0x20F);
+	_MMU_write16<ARMCPU_ARM9>(REG_KEYINPUT, 0x3FF);
+	_MMU_write16<ARMCPU_ARM7>(REG_KEYINPUT, 0x3FF);
+	_MMU_write08<ARMCPU_ARM7>(REG_EXTKEYIN, 0x43);
 
 	LidClosed = FALSE;
 	countLid = 0;
@@ -2242,6 +2239,9 @@ void NDS_Reset()
 		_MMU_write32<ARMCPU_ARM7>(0x27FFE34, firmware->ARM7bootAddr);
 	}
 
+	// make system think it's booted from card -- EXTREMELY IMPORTANT!!! Thanks to cReDiAr
+	_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
+	_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
 
 	// Save touchscreen calibration info in a structure
 	// so we can easily access it at any time
