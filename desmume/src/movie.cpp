@@ -293,6 +293,35 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 	if(CommonSettings.UseExtBIOS)
 		fp->fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS);
 
+	fp->fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware);
+
+	if(CommonSettings.UseExtFirmware) {
+		fp->fprintf("bootFromFirmware %d\n", CommonSettings.BootFromFirmware);
+	}
+	else {
+		char temp_str[27];
+		int i;
+
+		/* FIXME: harshly only use the lower byte of the UTF-16 character.
+		 * This would cause strange behaviour if the user could set UTF-16 but
+		 * they cannot yet.
+		 */
+		for (i = 0; i < CommonSettings.InternalFirmConf.nickname_len; i++) {
+			temp_str[i] = CommonSettings.InternalFirmConf.nickname[i];
+		}
+		temp_str[i] = '\0';
+		fp->fprintf("firmNickname %s\n", temp_str);
+		for (i = 0; i < CommonSettings.InternalFirmConf.message_len; i++) {
+			temp_str[i] = CommonSettings.InternalFirmConf.message[i];
+		}
+		temp_str[i] = '\0';
+		fp->fprintf("firmMessage %s\n", temp_str);
+		fp->fprintf("firmFavColour %d\n", CommonSettings.InternalFirmConf.fav_colour);
+		fp->fprintf("firmBirthMonth %d\n", CommonSettings.InternalFirmConf.birth_month);
+		fp->fprintf("firmBirthDay %d\n", CommonSettings.InternalFirmConf.birth_day);
+		fp->fprintf("firmLanguage %d\n", CommonSettings.InternalFirmConf.language);
+	}
+
 	char timestr[32];
 	struct tm *tm = gmtime(&rtcStart);
 	strftime(timestr, 32, "%Y-%m-%dT%H:%M:%SZ", tm);

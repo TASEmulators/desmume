@@ -30,6 +30,7 @@
 #include "mem.h"
 #include "wifi.h"
 #include "emufile.h"
+#include "firmware.h"
 
 #include <string>
 
@@ -499,6 +500,7 @@ extern struct TCommonSettings {
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
+		NDS_FillDefaultFirmwareConfigData(&InternalFirmConf);
 
 		wifi.mode = 0;
 		wifi.infraBridgeAdapter = 0;
@@ -519,6 +521,7 @@ extern struct TCommonSettings {
 	bool UseExtFirmware;
 	char Firmware[256];
 	bool BootFromFirmware;
+	struct NDS_fw_config_data InternalFirmConf;
 
 	bool DebugConsole;
 	bool EnsataEmulation;
