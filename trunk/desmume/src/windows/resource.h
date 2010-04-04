@@ -361,7 +361,11 @@
 #define IDC_SNDCTRL_CH1NOMIX            1029
 #define IDC_TXT_VERSION                 1030
 #define IDC_SNDCTRL_CH3NOMIX            1030
+#define IDC_SOUND_CAPTURE_MUTED         1031
+#define IDC_SOUND_ANALYZE_CAP           1032
 #define IDC_ADDONS_LIST                 1033
+#define IDC_BUTTON3                     1033
+#define IDC_SOUND_UNMUTE_ALL            1033
 #define IDC_ADDONS_INFO                 1034
 #define IDC_BORDER                      1034
 #define IDC_BBROWSE                     1035
@@ -911,7 +915,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        121
 #define _APS_NEXT_COMMAND_VALUE         40079
-#define _APS_NEXT_CONTROL_VALUE         1029
+#define _APS_NEXT_CONTROL_VALUE         1033
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
