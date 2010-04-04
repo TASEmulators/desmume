@@ -1036,6 +1036,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 		SPU->sndbuf[1] = 0;
 		SPU->buflength = 1;
 
+		s32 capmix[2] = {0,0};
 		s32 chanout[16];
 		s32 submix[32];
 
@@ -1047,11 +1048,26 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 			if (chan->status == CHANSTAT_PLAY)
 			{
 				SPU->bufpos = 0;
-	
-				bool domix = actuallyMix && !CommonSettings.spu_muteChannels[i];
+
 				bool bypass = false;
 				if(i==1 && SPU->regs.ctl_ch1bypass) bypass=true;
 				if(i==3 && SPU->regs.ctl_ch3bypass) bypass=true;
+
+				bool domix = !CommonSettings.spu_muteChannels[i];
+				bool docapmix = true;
+				if(!domix) {
+					bypass = true;
+					if(CommonSettings.spu_captureMuted)
+					{
+						domix = true;
+						docapmix = true;
+					}
+				}
+				if(!actuallyMix) { 
+					domix = false; 
+					bypass = true;
+				}
+	
 
 				//save our old mix accumulators so we can generate a clean panned sample
 				s32 save[] = {SPU->sndbuf[0],SPU->sndbuf[1]};
@@ -1069,12 +1085,25 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 				SPU->sndbuf[0] = save[0];
 				SPU->sndbuf[1] = save[1];
 
+				//mix sample into our capture mix
+				if(docapmix)
+				{
+					capmix[0] += submix[i*2];
+					capmix[1] += submix[i*2+1];
+				}
+
 				//mix in this sample, unless we were bypassing it
-				if(!bypass)
+				if(bypass)
+				{
+					submix[i*2]=0;
+					submix[i*2+1]=0;
+				}
+				else
 				{
 					SPU->sndbuf[0] += submix[i*2];
 					SPU->sndbuf[1] += submix[i*2+1];
 				}
+
 
 			}
 			else 
@@ -1083,9 +1112,10 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 				submix[i*2] = 0;
 				submix[i*2+1] = 0;
 			}
-		}
+		} //foreach channel
 
 		s32 mixout[2] = {SPU->sndbuf[0],SPU->sndbuf[1]};
+		s32 capmixout[2] = {capmix[0],capmix[1]};
 		s32 sndout[2];
 		s32 capout[2];
 
@@ -1108,13 +1138,13 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 
 		//generate capture output ("capture bugs" from gbatek are not emulated)
 		if(SPU->regs.cap[0].source==0) 
-			capout[0] = mixout[0]; //cap0 = L-mix
+			capout[0] = capmixout[0]; //cap0 = L-mix
 		else if(SPU->regs.cap[0].add)
 			capout[0] = chanout[0] + chanout[1]; //cap0 = ch0+ch1
 		else capout[0] = chanout[0]; //cap0 = ch0
 
 		if(SPU->regs.cap[1].source==0) 
-			capout[1] = mixout[1]; //cap1 = R-mix
+			capout[1] = capmixout[1]; //cap1 = R-mix
 		else if(SPU->regs.cap[1].add)
 			capout[1] = chanout[2] + chanout[3]; //cap1 = ch2+ch3
 		else capout[1] = chanout[2]; //cap1 = ch2
@@ -1144,6 +1174,9 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					if(cap.bits8)
 					{
 						s8 sample8 = sample>>8;
+						static FILE* fCapOut = NULL;
+						if(!fCapOut) fCapOut = fopen("d:\\capout.raw","wb");
+						fwrite(&sample8,1,1,fCapOut);
 						if(skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
 						else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
 						cap.runtime.curdad++;

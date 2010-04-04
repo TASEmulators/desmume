@@ -496,6 +496,7 @@ extern struct TCommonSettings {
 		, spu_advanced(false)
 		, rigorous_timing(false)
 		, advanced_timing(true)
+		, spu_captureMuted(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -557,6 +558,7 @@ extern struct TCommonSettings {
 	int manualBackupType;
 
 	bool spu_muteChannels[16];
+	bool spu_captureMuted;
 	bool spu_advanced;
 
 	struct _ShowGpu {

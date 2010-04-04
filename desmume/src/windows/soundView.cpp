@@ -307,12 +307,16 @@ static void updateMute_toSettings(HWND hDlg, int chan)
 		CommonSettings.spu_muteChannels[chanId+chanOfs()] = IsDlgButtonChecked(hDlg, IDC_SOUND0MUTE+chanId) == BST_CHECKED;
 }
 
+static void updateMute_allFromSettings(HWND hDlg)
+{
+	for(int chanId = 0; chanId < 16; chanId++)
+		CheckDlgItem(hDlg,IDC_SOUND0MUTE+chanId,CommonSettings.spu_muteChannels[chanId]);
+}
+
 static void updateMute_fromSettings(HWND hDlg)
 {
 	for(int chanId = 0; chanId < 8; chanId++)
-			SendDlgItemMessage(hDlg, IDC_SOUND0MUTE+chanId, BM_SETCHECK, 
-				CommonSettings.spu_muteChannels[chanId+chanOfs()] ? TRUE : FALSE,
-				0);
+		CheckDlgItem(hDlg,IDC_SOUND0MUTE+chanId,CommonSettings.spu_muteChannels[chanId+chanOfs()]);
 }
 static void SoundView_SwitchChanOfs(SoundView_DataStruct *data)
 {
@@ -332,6 +336,7 @@ static void SoundView_SwitchChanOfs(SoundView_DataStruct *data)
 	}
 
 	updateMute_fromSettings(hDlg);
+	CheckDlgItem(hDlg,IDC_SOUND_CAPTURE_MUTED,CommonSettings.spu_captureMuted);
 
 	SoundView_Refresh();
 }
@@ -396,6 +401,22 @@ static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 		case IDC_SOUND0MUTE+6:
 		case IDC_SOUND0MUTE+7:
 			updateMute_toSettings(hDlg,LOWORD(wParam)-IDC_SOUND0MUTE);
+			return 1;
+		case IDC_SOUND_CAPTURE_MUTED:
+			CommonSettings.spu_captureMuted = IsDlgButtonChecked(hDlg,IDC_SOUND_CAPTURE_MUTED) != 0;
+			return 1;
+		case IDC_SOUND_UNMUTE_ALL:
+			for(int i=0;i<16;i++) CommonSettings.spu_muteChannels[i] = false;
+			updateMute_allFromSettings(hDlg);
+			return 1;
+		case IDC_SOUND_ANALYZE_CAP:
+			printf("WTF\n");
+			for(int i=0;i<16;i++) CommonSettings.spu_muteChannels[i] = true;
+			CommonSettings.spu_muteChannels[1] = false;
+			CommonSettings.spu_muteChannels[3] = false;
+			CommonSettings.spu_captureMuted = true;
+			updateMute_allFromSettings(hDlg);
+			CheckDlgItem(hDlg,IDC_SOUND_CAPTURE_MUTED,CommonSettings.spu_captureMuted);
 			return 1;
 
 
