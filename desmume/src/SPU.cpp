@@ -1174,9 +1174,9 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					if(cap.bits8)
 					{
 						s8 sample8 = sample>>8;
-						static FILE* fCapOut = NULL;
-						if(!fCapOut) fCapOut = fopen("d:\\capout.raw","wb");
-						fwrite(&sample8,1,1,fCapOut);
+						//static FILE* fCapOut = NULL;
+						//if(!fCapOut) fCapOut = fopen("d:\\capout.raw","wb");
+						//fwrite(&sample8,1,1,fCapOut);
 						if(skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
 						else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
 						cap.runtime.curdad++;
