@@ -2241,7 +2241,7 @@ void NDS_Reset()
 
 	// make system think it's booted from card -- EXTREMELY IMPORTANT!!! Thanks to cReDiAr
 	_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
-	_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
+	_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1);
 
 	// Save touchscreen calibration info in a structure
 	// so we can easily access it at any time
