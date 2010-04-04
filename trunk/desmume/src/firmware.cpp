@@ -823,6 +823,7 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	//Wifi settings CRC16
 	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
 
+	memcpy(&CommonSettings.InternalFirmConf, user_settings, sizeof(struct NDS_fw_config_data));
 	return TRUE ;
 }
 
