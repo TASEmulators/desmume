@@ -19,7 +19,6 @@ wxdesmume_SOURCES = \
 	InputCommon/EventHandler.cpp \
 	InputCommon/Configuration.cpp \
 	InputCommon/SDL.cpp \
-	LuaWindow.cpp \
 	StringUtil.cpp \
 	wxMain.cpp
 wxdesmume_LDADD = ../libdesmume.a \
