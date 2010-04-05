@@ -103,7 +103,20 @@ struct channel_struct
    int loop_index;
    u16 x;
    s16 psgnoise_last;
-} ;
+};
+
+class SPUFifo
+{
+public:
+	SPUFifo();
+	void enqueue(s16 val);
+	s16 dequeue();
+	s16 buffer[16];
+	s32 head,tail,size;
+	void save(EMUFILE* fp);
+	bool load(EMUFILE* fp);
+	void reset();
+};
 
 class SPU_struct
 {
@@ -160,6 +173,7 @@ public:
 			   u32 curdad;
 			   u32 maxdad;
 			   double sampcnt;
+			   SPUFifo fifo;
 		   } runtime;
 	   } cap[2];
    } regs;
