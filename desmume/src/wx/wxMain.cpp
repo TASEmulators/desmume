@@ -63,22 +63,6 @@ GPU3DInterface *core3DList[] = {
 		NULL
 };
 
-/* lua stuff stubs */
-#ifndef WIN32
-void OpenLuaContext(int, void (*)(int, char const*), void (*)(int), void (*)(int, bool))
-{
-}
-void RunLuaScriptFile(int, char const*)
-{
-}
-void StopLuaScript(int)
-{
-}
-void CloseLuaContext(int)
-{
-}
-#endif
-
 volatile bool execute = false;
 
 class Desmume: public wxApp
@@ -399,7 +383,9 @@ loop:
 
 	void OnOpenLuaWindow(wxCommandEvent& WXUNUSED (event))
 	{
+#ifdef WIN32
 		new wxLuaWindow(this, wxDefaultPosition, wxSize(600, 390));
+#endif
 	}
 
 	void OnOpenControllerConfiguration(wxCommandEvent& WXUNUSED (event))
