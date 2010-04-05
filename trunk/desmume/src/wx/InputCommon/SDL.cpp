@@ -125,7 +125,7 @@ bool SearchDevices(std::vector<CONTROLLER_INFO> &_joyinfo, int &_NumPads, int &_
 
 // Read buttons status. Called from GetJoyState().
 // ----------------------
-void ReadButton(CONTROLLER_STATE &_PadState, CONTROLLER_MAPPING _PadMapping, int button, int NumButtons)
+static void ReadButton(CONTROLLER_STATE &_PadState, CONTROLLER_MAPPING _PadMapping, int button, int NumButtons)
 {
 	int ctl_button = _PadMapping.buttons[button];
 	if (ctl_button < NumButtons)
@@ -250,7 +250,7 @@ void GetJoyState(CONTROLLER_STATE &_PadState, CONTROLLER_MAPPING _PadMapping, in
 // ---------------------
 /* Function: We have to avoid very big values to becuse some triggers are -0x8000 in the
    unpressed state (and then go from -0x8000 to 0x8000 as they are fully pressed) */
-bool AvoidValues(int value, bool NoTriggerFilter)
+static bool AvoidValues(int value, bool NoTriggerFilter)
 {
 	// Avoid detecting very small or very big (for triggers) values
 	if(    (value > -0x2000 && value < 0x2000) // Small values
