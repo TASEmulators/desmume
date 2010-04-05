@@ -880,7 +880,7 @@ template<bool MOSAIC> void lineLarge8bpp(GPU * gpu)
 	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
 
 	u32 tmp_map = gpu->BG_bmp_large_ram[num] + lg * YBG;
-	u8* map = MMU_gpu_map(tmp_map);
+	u8* map = (u8 *)MMU_gpu_map(tmp_map);
 
 	u8* pal = MMU.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
 
