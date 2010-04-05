@@ -118,7 +118,7 @@
 #ifndef FASTCALL
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
-#elif defined (__i386__)
+#elif defined (__i386__) && !defined(__clang__)
 #define FASTCALL __attribute__((regparm(3)))
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define FASTCALL
