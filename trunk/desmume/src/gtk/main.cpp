@@ -57,26 +57,6 @@
 #include "gdbstub.h"
 #endif
 
-
-#ifdef HAVE_WX
-#include "wx/wx.h"
-class wxDesmumeApp : public wxApp
-{
-public:
-    //call me each frame or something.
-    //sort of an idle routine
-    static void frameUpdate()
-    {
-        if(!wxTheApp)
-            return;
-        wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
-        self->DeletePendingObjects();
-    }
-};
-
-IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
-#endif
-
 #ifdef HAVE_LIBOSMESA
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -129,9 +109,6 @@ static void LoadStateDialog();
 void Launch();
 void Pause();
 static void Printscreen();
-#ifdef HAVE_WX
-static void View3d();
-#endif
 static void Reset();
 static void Edit_Controls();
 static void Edit_Joystick_Controls();
@@ -261,9 +238,6 @@ static const char *ui_description =
 "    </menu>"
 "    <menu action='ToolsMenu'>"
 "      <menuitem action='ioregs'/>"
-#ifdef HAVE_WX
-"      <menuitem action='view3d'/>"
-#endif
 "    </menu>"
 "    <menu action='HelpMenu'>"
 "      <menuitem action='about'/>"
@@ -319,9 +293,6 @@ static const GtkActionEntry action_entries[] = {
       { "ViewMenu", NULL, "_View" },
 
     { "ToolsMenu", NULL, "_Tools" },
-#ifdef HAVE_WX
-      { "view3d",      NULL,      "View 3d",        NULL,       NULL,   View3d },
-#endif
 
     { "HelpMenu", NULL, "_Help" },
       { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
@@ -980,14 +951,6 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
     Open(g_filename_from_uri(gtk_recent_chooser_get_current_uri(chooser), NULL, NULL));
 
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
-}
-#endif
-
-#ifdef HAVE_WX
-static void View3d()
-{
-    driver->VIEW3D_Init();
-    driver->view3d->Launch();
 }
 #endif
 
@@ -1809,10 +1772,6 @@ gboolean EmuLoop(gpointer data)
         }
     }
 
-#ifdef HAVE_WX
-    wxDesmumeApp::frameUpdate();
-#endif
-
     return TRUE;
 }
 
@@ -2271,10 +2230,6 @@ int main (int argc, char *argv[])
   if ( !fill_configured_features( &my_config, argc, argv)) {
     exit(0);
   }
-
-#ifdef HAVE_WX
-  wxInitialize();
-#endif
 
   return common_gtk_main( &my_config);
 }

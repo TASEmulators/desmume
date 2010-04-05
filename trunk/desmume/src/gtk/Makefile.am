@@ -27,11 +27,6 @@ endif
 if HAVE_LIBOSMESA
 desmume_LDADD += $(OSMESA_LIBS)
 endif
-if HAVE_WX
-AM_CPPFLAGS += -DHAVE_WX=1 $(WX_CPPFLAGS)
-desmume_LDADD += $(WX_LIBS)
-desmume_SOURCES += ../wxdlg/wxdlg3dViewer.cpp
-endif
 
 UPDATE_DESKTOP = \
   appsdir=$(DESTDIR)$(datadir)/applications ; \
