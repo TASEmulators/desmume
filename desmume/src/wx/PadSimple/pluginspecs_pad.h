@@ -5,7 +5,6 @@
 #ifndef _PAD_H_INCLUDED__
 #define _PAD_H_INCLUDED__
 
-#include <wx/isql.h>
 #include "types.h"
 //#include "PluginSpecs.h"
 
@@ -31,6 +30,7 @@
 #define PAD_BUTTON_Y            0x0800
 #define PAD_BUTTON_START        0x1000
 
+typedef void *HWND;
 typedef void (*TLog)(const char* _pMessage);
 
 typedef struct
