@@ -275,6 +275,7 @@ void wxdlg3dViewer::OnCloseWindow( wxCloseEvent& event )
 {
 
     event.Skip();
+    Destroy();
 }
 
 
