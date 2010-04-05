@@ -17,6 +17,7 @@
 #include "render3D.h"
 #include "rasterize.h"
 #include "OGLRender.h"
+#include "firmware.h"
 
 #ifdef WIN32
 #include "snddx.h"
@@ -417,6 +418,7 @@ loop:
 	void OnOpenRecent(wxCommandEvent &event);
 
 private:
+	struct NDS_fw_config_data fw_config;
 	wxFileHistory* history;
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
@@ -584,6 +586,17 @@ IMPLEMENT_APP(Desmume)
 static SPADInitialize PADInitialize;
 
 void DesmumeFrame::NDSInitialize() {
+	NDS_FillDefaultFirmwareConfigData( &fw_config);
+
+#ifdef HAVE_LIBAGG
+	Desmume_InitOnce();
+	aggDraw.hud->attach((u8*)GPU_screen, 256, 384, 1024);//TODO
+#endif
+
+	//TODO
+	addon_type = NDS_ADDON_NONE;
+	addonsChangePak(addon_type);
+
 #ifdef GDB_STUB
 	arm9_memio = &arm9_base_memory_iface;
 	arm7_memio = &arm7_base_memory_iface;
@@ -595,6 +608,8 @@ void DesmumeFrame::NDSInitialize() {
 #ifndef WIN32
 	SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 #endif
+	NDS_3D_ChangeCore(0);
+	NDS_CreateDummyFirmware( &fw_config);
 }
 
 bool Desmume::OnInit()
@@ -617,13 +632,6 @@ bool Desmume::OnInit()
 	DesmumeFrame *frame = new DesmumeFrame(emu_version);
 	frame->NDSInitialize();
 
-#ifdef HAVE_LIBAGG
-	Desmume_InitOnce();
-	aggDraw.hud->attach((u8*)GPU_screen, 256, 384, 1024);//TODO
-#endif
-	NDS_3D_ChangeCore(0);
-
-
 	frame->Show(true);
 
 	PADInitialize.padNumber = 1;
@@ -633,10 +641,6 @@ bool Desmume::OnInit()
 
 	Initialize(&PADInitialize);
 #endif
-
-	//TODO
-	addon_type = NDS_ADDON_NONE;
-	addonsChangePak(addon_type);
 
 	return true;
 }
