@@ -305,14 +305,14 @@ struct GFX3D_State
 		, enableFogAlphaOnly(false)
 		, shading(TOON)
 		, alphaTestRef(0)
+		, activeFlushCommand(0)
+		, pendingFlushCommand(0)
 		, clearDepth(1)
 		, clearColor(0)
 		, fogColor(0)
 		, fogOffset(0)
 		, fogShift(0)
 		, invalidateToon(true)
-		, activeFlushCommand(0)
-		, pendingFlushCommand(0)
 	{
 		for(u32 i=0;i<ARRAY_SIZE(shininessTable);i++)
 			shininessTable[i] = 0;

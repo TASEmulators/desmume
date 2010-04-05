@@ -37,8 +37,6 @@ CommandLine::CommandLine()
 : is_cflash_configured(false)
 , error(NULL)
 , ctx(g_option_context_new (""))
-, _rigorous_timing(0)
-, _advanced_timing(-1)
 , _play_movie_file(0)
 , _record_movie_file(0)
 , _cflash_image(0)
@@ -49,6 +47,8 @@ CommandLine::CommandLine()
 , _bios_swi(0)
 , _spu_advanced(0)
 , _num_cores(-1)
+, _rigorous_timing(0)
+, _advanced_timing(-1)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;

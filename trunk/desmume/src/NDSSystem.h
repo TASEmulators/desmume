@@ -490,13 +490,13 @@ extern struct TCommonSettings {
 		, EnsataEmulation(false)
 		, cheatsDisable(false)
 		, num_cores(1)
+		, rigorous_timing(false)
+		, advanced_timing(true)
 		, micMode(InternalNoise)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, manualBackupType(0)
-		, spu_advanced(false)
-		, rigorous_timing(false)
-		, advanced_timing(true)
 		, spu_captureMuted(false)
+		, spu_advanced(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -595,4 +595,3 @@ void ClearAutoHold(void);
 
 #endif
 
- 	  	 
