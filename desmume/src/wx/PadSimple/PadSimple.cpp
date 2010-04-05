@@ -113,6 +113,7 @@ BOOL APIENTRY aMain(HINSTANCE hinstDLL,	// DLL module handle
 }
 #endif
 
+#if 0
 #if defined(HAVE_WX)
 wxWindow* GetParentedWxWindow(HWND Parent)
 {
@@ -127,7 +128,7 @@ wxWindow* GetParentedWxWindow(HWND Parent)
 	return win;
 }
 #endif
-
+#endif
 
 
 // Input Recording
@@ -227,12 +228,13 @@ bool IsFocus()
 #endif
 }
 
+#ifdef _WIN32
 // Implement circular deadzone
-const float kDeadZone = 0.1f;
 void ScaleStickValues(unsigned char* outx,
 					  unsigned char* outy,
 					  short inx, short iny)
 {
+	const float kDeadZone = 0.1f;
 	float x = ((float)inx + 0.5f) / 32767.5f;
 	float y = ((float)iny + 0.5f) / 32767.5f;
 
@@ -258,12 +260,13 @@ void ScaleStickValues(unsigned char* outx,
 	*outx = 0x80 + ix;
 	*outy = 0x80 + iy;
 }
+#endif
 
 // for same displacement should be sqrt(2)/2 (in theory)
 // 3/4 = 0.75 is a little faster than sqrt(2)/2 = 0.7071...
 // In SMS, 17/20 = 0.85 is perfect; in WW, 7/10 = 0.70 is closer.
 #define DIAGONAL_SCALE 0.70710678
-void EmulateAnalogStick(unsigned char *stickX, unsigned char *stickY, bool buttonUp, bool buttonDown, bool buttonLeft, bool buttonRight, int magnitude) {
+static void EmulateAnalogStick(unsigned char *stickX, unsigned char *stickY, bool buttonUp, bool buttonDown, bool buttonLeft, bool buttonRight, int magnitude) {
 	int mainY = 0;
 	int mainX = 0;
 	if      (buttonUp)
@@ -434,7 +437,7 @@ bool XInput_Read(int XPadPlayer, SPADStatus* _pPADStatus)
 #if (defined(HAVE_X11) && HAVE_X11) || (defined(HAVE_COCOA) && HAVE_COCOA)
 #if defined(HAVE_X11) && HAVE_X11
 // The graphics plugin in the PCSX2 design leaves a lot of the window processing to the pad plugin, weirdly enough.
-void X11_Read(int _numPAD, SPADStatus* _pPADStatus)
+static void X11_Read(int _numPAD, SPADStatus* _pPADStatus)
 {
 	// Do all the stuff we need to do once per frame here
 	if (_numPAD != 0)
@@ -684,6 +687,7 @@ void Initialize(void *init)
 	#endif
 }
 
+#if 0
 void DoState(unsigned char **ptr, int mode)
 {
 #ifdef RERECORDING
@@ -704,7 +708,7 @@ void DoState(unsigned char **ptr, int mode)
 #endif
 }
 
-void Shutdown()
+static void Shutdown()
 {
 	// Save the recording and reset the counter
 #ifdef RERECORDING
@@ -729,7 +733,7 @@ void Shutdown()
 #endif
 	SaveConfig();
 }
-
+#endif
 
 // Set buttons status from wxWidgets in the main application
 void PAD_Input(u16 _Key, u8 _UpDown) {}

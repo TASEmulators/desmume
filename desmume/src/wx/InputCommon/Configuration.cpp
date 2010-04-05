@@ -64,7 +64,7 @@ float Rad2Deg(float Rad)
 
 // Check if the pad is within the dead zone, we assume the range is 0x8000
 // ----------------
-float CoordinatesToRadius(int x, int y)
+static float CoordinatesToRadius(int x, int y)
 {
 	return sqrt(pow((float)x, 2) +  pow((float)y, 2));
 }
@@ -159,7 +159,7 @@ void RadiusAdjustment(int &_x, int &_y, int _pad, std::string SRadius)
 /* Calculate the distance from the outer edges of the box to the outer edges of the circle inside the box
    at any angle from 0 to 360. The returned value is 1 + Distance, for example at most sqrt(2) in the
    corners and at least 1.0 at the horizontal and vertical angles. */
-float Square2CircleDistance(float deg)
+static float Square2CircleDistance(float deg)
 {
 	// See if we have to adjust the angle
 	deg = abs(deg);

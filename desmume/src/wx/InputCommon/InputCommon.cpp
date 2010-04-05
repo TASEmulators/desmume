@@ -1,4 +1,5 @@
 #include "EventHandler.h"
+#include "InputCommon.h"
 
 //EventHandler *eventHandler = NULL;
 

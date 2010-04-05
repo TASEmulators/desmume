@@ -628,9 +628,9 @@ bool Desmume::OnInit()
 
 	PADInitialize.padNumber = 1;
 
-extern void Initialize(void *init);
-
 #ifndef WIN32
+	extern void Initialize(void *init);
+
 	Initialize(&PADInitialize);
 #endif
 
