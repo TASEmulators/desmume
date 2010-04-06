@@ -691,9 +691,6 @@ struct GPU
 
 	//FIFO	fifo;
 
-	BOOL dispBG[4];
-	BOOL dispOBJ;
-
 	u8 bgPrio[5];
 
 	BOOL bg0HasHighestPrio;
