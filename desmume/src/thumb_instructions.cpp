@@ -784,7 +784,10 @@ TEMPLATE static  u32 FASTCALL OP_STR_IMM_OFF(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_LDR_IMM_OFF(const u32 i)
 {
 	u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>4)&0x7C);
-	cpu->R[REG_NUM(i, 0)] = READ32(cpu->mem_if->data, adr);
+	u32 tempValue = READ32(cpu->mem_if->data, adr);
+	adr = (adr&3)*8;
+	tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
+	cpu->R[REG_NUM(i, 0)] = tempValue;
 		
 	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3, adr);
 }
@@ -801,7 +804,10 @@ TEMPLATE static  u32 FASTCALL OP_STR_REG_OFF(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_LDR_REG_OFF(const u32 i)
 {
 	u32 adr = (cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)]);
-	cpu->R[REG_NUM(i, 0)] = READ32(cpu->mem_if->data, adr);
+	u32 tempValue = READ32(cpu->mem_if->data, adr);
+	adr = (adr&3)*8;
+	tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
+	cpu->R[REG_NUM(i, 0)] = tempValue;
 			
 	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3, adr);
 }
