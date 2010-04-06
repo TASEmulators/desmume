@@ -43,6 +43,16 @@
 
 #include "path.h"
 
+//#define LOG_ARM9
+//#define LOG_ARM7
+bool dolog = true;
+//#define LOG_TO_FILE
+//#define LOG_TO_FILE_REGS
+
+//===============================================================
+FILE *fp_dis7 = NULL;
+FILE *fp_dis9 = NULL;
+
 PathInfo path;
 
 TCommonSettings CommonSettings;
@@ -147,6 +157,21 @@ void NDS_DeInit(void) {
 	if (cheatSearch)
 		delete cheatSearch;
 
+#ifdef LOG_ARM7
+	if (fp_dis7 != NULL) 
+	{
+		fclose(fp_dis7);
+		fp_dis7 = NULL;
+	}
+#endif
+
+#ifdef LOG_ARM9
+	if (fp_dis9 != NULL) 
+	{
+		fclose(fp_dis9);
+		fp_dis9 = NULL;
+	}
+#endif
 }
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
@@ -355,8 +380,8 @@ static void loadrom(std::string fname) {
 
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
 {
-	int	type = ROM_NDS;
-	char buf[MAX_PATH];
+	int					type = ROM_NDS;
+	char				buf[MAX_PATH];
 
 	if (filename == NULL)
 		return -1;
@@ -391,7 +416,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (gameInfo.romsize < 352) {
 		return -1;
 	}
-	
+
 
 
 	//decrypt if necessary..
@@ -1677,10 +1702,6 @@ bool nds_loadstate(EMUFILE* is, int size)
 	return temp;
 }
 
-//#define LOG_ARM9
-//#define LOG_ARM7
-//bool dolog = false;
-
 FORCEINLINE void arm9log()
 {
 #ifdef LOG_ARM9
@@ -1692,18 +1713,34 @@ FORCEINLINE void arm9log()
 		else
 			des_arm_instructions_set[INDEX(NDS_ARM9.instruction)](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, dasmbuf);
 
+#ifdef LOG_TO_FILE
+		if (!fp_dis9) return;
+#ifdef LOG_TO_FILE_REGS
+		fprintf(fp_dis9, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+			NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
+			NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15],
+			NDS_ARM9.next_instruction, NDS_ARM9.CPSR.bits.N, NDS_ARM9.CPSR.bits.Z, NDS_ARM9.CPSR.bits.C, NDS_ARM9.CPSR.bits.V);
+#endif
+		fprintf(fp_dis9, "%s %08X\t%08X \t%s\n", NDS_ARM9.CPSR.bits.T?"THUMB":"ARM", NDS_ARM9.instruct_adr, NDS_ARM9.instruction, dasmbuf);
+		/*if (NDS_ARM9.instruction == 0)
+		{
+			dolog = false;
+			INFO("Disassembler is stopped\n");
+		}*/
+#else
 		printf("%05d:%03d %12lld 9:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
 			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM9.instruct_adr,NDS_ARM9.instruction, dasmbuf, 
 			NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
 			NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15]);  
+#endif
 	}
 #endif
 }
 
 FORCEINLINE void arm7log()
 {
-	#ifdef LOG_ARM7
+#ifdef LOG_ARM7
 	if(dolog)
 	{
 		char dasmbuf[4096];
@@ -1711,14 +1748,29 @@ FORCEINLINE void arm7log()
 			des_thumb_instructions_set[((NDS_ARM7.instruction)>>6)&1023](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, dasmbuf);
 		else
 			des_arm_instructions_set[INDEX(NDS_ARM7.instruction)](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, dasmbuf);
-		
+#ifdef LOG_TO_FILE
+		if (!fp_dis7) return;
+#ifdef LOG_TO_FILE_REGS
+		fprintf(fp_dis7, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+			NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
+			NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15],
+			NDS_ARM7.next_instruction, NDS_ARM7.CPSR.bits.N, NDS_ARM7.CPSR.bits.Z, NDS_ARM7.CPSR.bits.C, NDS_ARM7.CPSR.bits.V);
+#endif
+		fprintf(fp_dis7, "%s %08X\t%08X \t%s\n", NDS_ARM7.CPSR.bits.T?"THUMB":"ARM", NDS_ARM7.instruct_adr, NDS_ARM7.instruction, dasmbuf);
+		/*if (NDS_ARM7.instruction == 0)
+		{
+			dolog = false;
+			INFO("Disassembler is stopped\n");
+		}*/
+#else		
 		printf("%05d:%03d %12lld 7:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
 			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM7.instruct_adr,NDS_ARM7.instruction, dasmbuf, 
 			NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
 			NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15]);
+#endif
 	}
-	#endif
+#endif
 }
 
 //these have not been tuned very well yet.
@@ -2000,6 +2052,11 @@ void NDS_Reset()
 
 	MMU_Reset();
 
+	NDS_ARM7.BIOS_loaded = false;
+	NDS_ARM9.BIOS_loaded = false;
+	memset(MMU.ARM7_BIOS, 0, sizeof(MMU.ARM7_BIOS));
+	memset(MMU.ARM9_BIOS, 0, sizeof(MMU.ARM9_BIOS));
+
 	//ARM7 BIOS IRQ HANDLER
 	if(CommonSettings.UseExtBIOS == true)
 		inf = fopen(CommonSettings.ARM7BIOS,"rb");
@@ -2008,33 +2065,39 @@ void NDS_Reset()
 
 	if(inf) 
 	{
-		fread(MMU.ARM7_BIOS,1,16384,inf);
+		if (fread(MMU.ARM7_BIOS,1,16384,inf) == 16384) NDS_ARM7.BIOS_loaded = true;
 		fclose(inf);
 
-		if(CommonSettings.SWIFromBIOS == true) NDS_ARM7.swi_tab = 0;
+		if((CommonSettings.SWIFromBIOS) && (NDS_ARM7.BIOS_loaded)) NDS_ARM7.swi_tab = 0;
 		else NDS_ARM7.swi_tab = ARM7_swi_tab;
 
 		if (CommonSettings.PatchSWI3)
 			_MMU_write16<ARMCPU_ARM7>(0x00002F08, 0x4770);
 
-		INFO("ARM7 BIOS is loaded.\n");
+		INFO("ARM7 BIOS is %s.\n", NDS_ARM7.BIOS_loaded?"loaded":"failed");
 	} 
 	else 
 	{
 		NDS_ARM7.swi_tab = ARM7_swi_tab;
 
-		for (int t = 0; t < 16384; t++)
-			MMU.ARM7_BIOS[t] = 0xFF;
-
-		T1WriteLong(MMU.ARM7_BIOS,0x00, 0xE25EF002);
-		T1WriteLong(MMU.ARM7_BIOS,0x04, 0xEAFFFFFE);
-		T1WriteLong(MMU.ARM7_BIOS,0x18, 0xEA000000);
-		T1WriteLong(MMU.ARM7_BIOS,0x20, 0xE92D500F);
-		T1WriteLong(MMU.ARM7_BIOS,0x24, 0xE3A00301);
-		T1WriteLong(MMU.ARM7_BIOS,0x28, 0xE28FE000);
-		T1WriteLong(MMU.ARM7_BIOS,0x2C, 0xE510F004);
-		T1WriteLong(MMU.ARM7_BIOS,0x30, 0xE8BD500F);
-		T1WriteLong(MMU.ARM7_BIOS,0x34, 0xE25EF004);
+#if 0
+		// TODO
+		T1WriteLong(MMU.ARM7_BIOS, 0x0000, 0xEAFFFFFE);		// loop for Reset !!!
+		T1WriteLong(MMU.ARM7_BIOS, 0x0004, 0xEAFFFFFE);		// loop for Undef instr expection
+		T1WriteLong(MMU.ARM7_BIOS, 0x0008, 0xEA00009C);		// SWI
+		T1WriteLong(MMU.ARM7_BIOS, 0x000C, 0xEAFFFFFE);		// loop for Prefetch Abort
+		T1WriteLong(MMU.ARM7_BIOS, 0x0010, 0xEAFFFFFE);		// loop for Data Abort
+		T1WriteLong(MMU.ARM7_BIOS, 0x0014, 0x00000000);		// Reserved
+		T1WriteLong(MMU.ARM7_BIOS, 0x001C, 0x00000000);		// Fast IRQ
+#endif
+		T1WriteLong(MMU.ARM7_BIOS, 0x0000, 0xE25EF002);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0018, 0xEA000000);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0020, 0xE92D500F);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0024, 0xE3A00301);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0028, 0xE28FE000);
+		T1WriteLong(MMU.ARM7_BIOS, 0x002C, 0xE510F004);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0030, 0xE8BD500F);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0034, 0xE25EF004);
 	}
 
 	//ARM9 BIOS IRQ HANDLER
@@ -2042,43 +2105,62 @@ void NDS_Reset()
 		inf = fopen(CommonSettings.ARM9BIOS,"rb");
 	else
 		inf = NULL;
-	//memcpy(MMU.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
 
 	if(inf) 
 	{
-		fread(MMU.ARM9_BIOS,1,4096,inf);
+		if (fread(MMU.ARM9_BIOS,1,4096,inf) == 4096) NDS_ARM9.BIOS_loaded = true;
 		fclose(inf);
 
-		if(CommonSettings.SWIFromBIOS == true) NDS_ARM9.swi_tab = 0;
+		if((CommonSettings.SWIFromBIOS) && (NDS_ARM9.BIOS_loaded)) NDS_ARM9.swi_tab = 0;
 		else NDS_ARM9.swi_tab = ARM9_swi_tab;
 
 		if (CommonSettings.PatchSWI3)
 			_MMU_write16<ARMCPU_ARM9>(0xFFFF07CC, 0x4770);
 
-		INFO("ARM9 BIOS is loaded.\n");
+		INFO("ARM9 BIOS is %s.\n", NDS_ARM9.BIOS_loaded?"loaded":"failed");
 	} 
 	else 
 	{
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
 
-		for (int t = 0; t < 4096; t++)
-			MMU.ARM9_BIOS[t] = 0xFF;
-
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000095);
-
-		for (int t = 0; t < 156; t++)		// load logo
+		T1WriteLong(MMU.ARM9_BIOS, 0x0000, 0xEAFFFFFE);		// loop for Reset !!!
+		T1WriteLong(MMU.ARM9_BIOS, 0x0004, 0xEAFFFFFE);		// loop for Undef instr expection
+		T1WriteLong(MMU.ARM9_BIOS, 0x0008, 0xEA00009C);		// SWI
+		T1WriteLong(MMU.ARM9_BIOS, 0x000C, 0xEAFFFFFE);		// loop for Prefetch Abort
+		T1WriteLong(MMU.ARM9_BIOS, 0x0010, 0xEAFFFFFE);		// loop for Data Abort
+		T1WriteLong(MMU.ARM9_BIOS, 0x0014, 0x00000000);		// Reserved
+		T1WriteLong(MMU.ARM9_BIOS, 0x0018, 0xEA000095);		// Normal IRQ
+		T1WriteLong(MMU.ARM9_BIOS, 0x001C, 0x00000000);		// Fast IRQ
+		for (int t = 0; t < 156; t++)						// logo
 			MMU.ARM9_BIOS[t + 0x20] = logo_data[t];
-
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0274, 0xE92D500F);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0278, 0xEE190F11);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF027C, 0xE1A00620);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0280, 0xE1A00600);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0284, 0xE2800C40);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0288, 0xE28FE000);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF028C, 0xE510F004);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0290, 0xE8BD500F);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0294, 0xE25EF004);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0274, 0xE92D500F);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0278, 0xEE190F11);
+		T1WriteLong(MMU.ARM9_BIOS, 0x027C, 0xE1A00620);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0280, 0xE1A00600);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0284, 0xE2800C40);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0288, 0xE28FE000);
+		T1WriteLong(MMU.ARM9_BIOS, 0x028C, 0xE510F004);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0290, 0xE8BD500F);
+		T1WriteLong(MMU.ARM9_BIOS, 0x0294, 0xE25EF004);
 	}
+
+#ifdef LOG_ARM7
+	if (fp_dis7 != NULL) 
+	{
+		fclose(fp_dis7);
+		fp_dis7 = NULL;
+	}
+	fp_dis7 = fopen("D:\\desmume_dis7.asm", "w");
+#endif
+
+#ifdef LOG_ARM9
+	if (fp_dis9 != NULL) 
+	{
+		fclose(fp_dis9);
+		fp_dis9 = NULL;
+	}
+	fp_dis9 = fopen("D:\\desmume_dis9.asm", "w");
+#endif
 
 	if (firmware)
 	{
@@ -2087,7 +2169,7 @@ void NDS_Reset()
 	}
 	firmware = new CFIRMWARE();
 	fw_success = firmware->load();
-	if ((CommonSettings.UseExtBIOS == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
+	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && fw_success)
 	{
 		// Copy secure area to memory if needed
 		if ((header->ARM9src >= 0x4000) && (header->ARM9src < 0x8000))
@@ -2220,8 +2302,8 @@ void NDS_Reset()
 	std::string rompath = "fat:/" + path.RomName;
 	const u32 kCommandline = 0x027E0000;
 	//const u32 kCommandline = 0x027FFF84;
-	
-	// 
+
+	//
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
@@ -2654,6 +2736,25 @@ void NDS_suspendProcessingInput(bool suspend)
 void emu_halt() {
 	//printf("halting emu: ARM9 PC=%08X/%08X, ARM7 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr, NDS_ARM7.R[15], NDS_ARM7.instruct_adr);
 	execute = false;
+#ifdef LOG_ARM9
+	if (fp_dis9)
+	{
+		char buf[256] = { 0 };
+		sprintf(buf, "halting emu: ARM9 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr);
+		fwrite(buf, 1, strlen(buf), fp_dis9);
+		INFO("ARM9 halted\n");
+	}
+#endif
+
+#ifdef LOG_ARM7
+	if (fp_dis7)
+	{
+		char buf[256] = { 0 };
+		sprintf(buf, "halting emu: ARM7 PC=%08X/%08X\n", NDS_ARM7.R[15], NDS_ARM7.instruct_adr);
+		fwrite(buf, 1, strlen(buf), fp_dis7);
+		INFO("ARM7 halted\n");
+	}
+#endif
 }
 
 //these templates needed to be instantiated manually

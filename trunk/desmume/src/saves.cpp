@@ -497,10 +497,11 @@ static void cp15_saveone(armcp15_t *cp15, EMUFILE* os)
 static void cp15_savestate(EMUFILE* os)
 {
 	//version
-	write32le(0,os);
+	write32le(1,os);
 
 	cp15_saveone((armcp15_t *)NDS_ARM9.coproc[15],os);
-	cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
+	//ARM7 not have coprocessor
+	//cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
 }
 
 static bool cp15_loadone(armcp15_t *cp15, EMUFILE* is)
@@ -553,10 +554,19 @@ static bool cp15_loadstate(EMUFILE* is, int size)
 	//read version
 	u32 version;
 	if(read32le(&version,is) != 1) return false;
-	if(version != 0) return false;
+	if(version > 1) return false;
 
 	if(!cp15_loadone((armcp15_t *)NDS_ARM9.coproc[15],is)) return false;
-	if(!cp15_loadone((armcp15_t *)NDS_ARM7.coproc[15],is)) return false;
+	
+	if(version == 0)
+	{
+		//ARM7 not have coprocessor
+		u8 *tmp_buf = new u8 [sizeof(armcp15_t)];
+		if (!tmp_buf) return false;
+		if(!cp15_loadone((armcp15_t *)tmp_buf,is)) return false;
+		delete [] tmp_buf;
+		tmp_buf = NULL;
+	}
 
 	return true;
 }
