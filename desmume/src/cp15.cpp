@@ -31,11 +31,12 @@ armcp15_t *armcp15_new(armcpu_t * c)
 	armcp15_t *armcp15 = (armcp15_t*)malloc(sizeof(armcp15_t));
 	if(!armcp15) return NULL;
 	
+
 	armcp15->cpu = c;
 	armcp15->IDCode = 0x41049460;
 	armcp15->cacheType = 0x0F0D2112;
-	armcp15->TCMSize = 0x00140140;
-	armcp15->ctrl = 0x00000000;
+	armcp15->TCMSize = 0x00140180;
+	armcp15->ctrl = 0x00012078;
 	armcp15->DCConfig = 0x0;    
 	armcp15->ICConfig = 0x0;    
 	armcp15->writeBuffCtrl = 0x0;
@@ -56,6 +57,10 @@ armcp15_t *armcp15_new(armcpu_t * c)
 	armcp15->ITCMRegion = 0x0C;
 	armcp15->DTCMRegion = 0x0080000A;
 	armcp15->processID = 0;
+
+	MMU.ARM9_RW_MODE = BIT7(armcp15->ctrl);
+	armcp15->cpu->intVector = 0xFFFF0000 * (BIT13(armcp15->ctrl));
+	armcp15->cpu->LDTBit = !BIT15(armcp15->ctrl); //TBit
 
     /* preset calculated regionmasks */	
 	for (i=0;i<8;i++) {
@@ -291,6 +296,7 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 			if((opcode1==0) && (opcode2==0) && (CRm==0))
 			{
 				*R = armcp15->ctrl;
+				//LOG("CP15: CPtoARM ctrl %08X\n", armcp15->ctrl);
 				return TRUE;
 			}
 			return FALSE;
@@ -315,6 +321,7 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 			if((opcode1==0) && (opcode2==0) && (CRm==0))
 			{
 				*R = armcp15->writeBuffCtrl;
+				//LOG("CP15: CPtoARM writeBuffer ctrl %08X\n", armcp15->writeBuffCtrl);
 				return TRUE;
 			}
 			return FALSE;
@@ -406,33 +413,38 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 	}
 }
 
-
 static u32 CP15wait4IRQ(armcpu_t *cpu)
 {
+#if 1
 	u32 instructAddr = cpu->instruct_adr;
-	/* on the first call, wirq is not set */
+	// on the first call, wirq is not set
 	if(cpu->wirq)
 	{
-		/* check wether an irq was issued */
+		// check wether an irq was issued
 		if(!cpu->waitIRQ)
 		{
 			cpu->waitIRQ = 0;
 			cpu->wirq = 0;
-			return 1;   /* return execution */
+			return 1;   // return execution
 		}
-		/* otherwise, repeat this instruction */
+		// otherwise, repeat this instruction
 		cpu->R[15] = instructAddr;
 		cpu->next_instruction = instructAddr;
 		return 1;
 	}
-	/* first run, set us into waiting state */
+
+	// first run, set us into waiting state
 	cpu->waitIRQ = 1;
 	cpu->wirq = 1;
-	/* and set next instruction to repeat this */
+	// and set next instruction to repeat this
 	cpu->R[15] = instructAddr;
 	cpu->next_instruction = instructAddr;
-	/* CHECKME: IME shouldn't be modified (?) */
-	MMU.reg_IME[0] = 1;
+#else
+	//printf("CP15: IME %X, IE %08X, IF %08X res %08X\n", MMU.reg_IME[0], MMU.reg_IE[0], MMU.reg_IF[0], MMU.reg_IE[0] & MMU.reg_IF[0]);
+	//if ((MMU.reg_IE[0] & MMU.reg_IF[0]) == 0) return 1;
+	cpu->waitIRQ = 1;
+#endif
+	// only SWI set IME to 1
 	return 1;
 }
 
@@ -445,7 +457,9 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 		case 1 :
 		if((opcode1==0) && (opcode2==0) && (CRm==0))
 		{
-			armcp15->ctrl = val;
+
+			//On the NDS bit0,2,7,12..19 are R/W, Bit3..6 are always set, all other bits are always zero.
+			armcp15->ctrl = (val & 0x000FF085) | 0x00000078;
 			MMU.ARM9_RW_MODE = BIT7(val);
 			//zero 31-jan-2010: change from 0x0FFF0000 to 0xFFFF0000 per gbatek
 			armcp15->cpu->intVector = 0xFFFF0000 * (BIT13(val));
@@ -458,6 +472,8 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 			{
 				log::ajouter("outch !!!!!!!");
 			}*/
+
+			//LOG("CP15: ARMtoCP ctrl %08X (val %08X)\n", armcp15->ctrl, val);
 			return TRUE;
 		}
 		return FALSE;
@@ -481,6 +497,7 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 		if((opcode1==0) && (opcode2==0) && (CRm==0))
 		{
 			armcp15->writeBuffCtrl = val;
+			//LOG("CP15: ARMtoCP writeBuffer ctrl %08X\n", armcp15->writeBuffCtrl);
 			return TRUE;
 		}
 		return FALSE;
@@ -572,8 +589,10 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 			switch(opcode2)
 			{
 				case 0 :
-					armcp15->DTCMRegion = val;
-					MMU.DTCMRegion = val & 0x0FFFFFFC0;
+					MMU.DTCMRegion = armcp15->DTCMRegion = val & 0x0FFFF000;
+					//MMU.DTCMRegion = val;
+					//MMU.DTCMRegion = val & 0x0FFFFFFC0;
+					//LOG("CP15: set DTCM %08X (size %i)\n", MMU.DTCMRegion, 512<<(val & 0x00000FFF));
 					/*sprintf(logbuf, "%08X", val);
 					log::ajouter(logbuf);*/
 					return TRUE;

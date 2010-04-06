@@ -3756,7 +3756,7 @@ static char * OP_BL_10(u32 adr, u32 i, char * txt)
 
 }
 
-static char * OP_BL_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_BL_11(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BL #%X", (int)(part + ((i&0x7FF)<<1))&0xFFFFFFFC);
      return txt;
