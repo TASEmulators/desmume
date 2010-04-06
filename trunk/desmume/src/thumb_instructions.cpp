@@ -441,8 +441,6 @@ TEMPLATE static  u32 FASTCALL OP_EOR(const u32 i)
 
 TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 {
-#if 0
-	printf("THUMB%c: ADC\n", PROCNUM?'7':'9');
 	u32 Rd = cpu->R[REG_NUM(i, 0)];
 	u32 Rm = cpu->R[REG_NUM(i, 3)];
 
@@ -451,25 +449,8 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
 
-	// TODO!!!!
 	cpu->CPSR.bits.C = CarryFrom(Rd, Rm + cpu->CPSR.bits.C);
 	cpu->CPSR.bits.V = OverflowFromADD(cpu->R[REG_NUM(i, 0)], Rd, Rm + cpu->CPSR.bits.C);
-	//cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res);
-	//cpu->CPSR.bits.V = SIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(tmp, a, res);
-#else
-	u32 a = cpu->R[REG_NUM(i, 0)];
-	u32 b = cpu->R[REG_NUM(i, 3)];
-	u32 tmp = b + cpu->CPSR.bits.C;
-	u32 res = a + tmp;
-
-	cpu->R[REG_NUM(i, 0)] = res;
-	
-	cpu->CPSR.bits.N = BIT31(res);
-	cpu->CPSR.bits.Z = res == 0;
-
-	cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res);
-	cpu->CPSR.bits.V = SIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(tmp, a, res);
-#endif
 	
 	return 1;
 }
@@ -480,7 +461,6 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 
 TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 {
-#if 0
 	u32 Rd = cpu->R[REG_NUM(i, 0)];
 	u32 Rm = cpu->R[REG_NUM(i, 3)];
 
@@ -489,23 +469,8 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
 
-	// TODO
-#else
-	u32 a = cpu->R[REG_NUM(i, 0)];
-	u32 b = cpu->R[REG_NUM(i, 3)];
-	u32 tmp = a - (!cpu->CPSR.bits.C);
-	u32 res = tmp - b;
-	cpu->R[REG_NUM(i, 0)] = res;
-	
-	cpu->CPSR.bits.N = BIT31(res);
-	cpu->CPSR.bits.Z = res == 0;
-
-	 //zero 31-dec-2008 - apply normatt's fixed logic from the arm SBC instruction
-	 //although it seemed a bit odd to me and to whomever wrote this for SBC not to work similar to ADC..
-	 //but thats how it is.
-	 cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(a, b, res);
-	 cpu->CPSR.bits.V = SIGNED_UNDERFLOW(a, b, res);
-#endif
+	cpu->CPSR.bits.C = !CarryFrom(Rd, Rm - !cpu->CPSR.bits.C);
+	cpu->CPSR.bits.V = OverflowFromSUB(cpu->R[REG_NUM(i, 0)], Rd, Rm - !cpu->CPSR.bits.C);
 	
 	return 1;
 }
@@ -811,7 +776,6 @@ TEMPLATE static  u32 FASTCALL OP_LDR_REG_OFF(const u32 i)
 			
 	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3, adr);
 }
-
 
 TEMPLATE static  u32 FASTCALL OP_STR_SPREL(const u32 i)
 {
