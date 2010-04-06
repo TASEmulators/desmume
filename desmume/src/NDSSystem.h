@@ -508,6 +508,10 @@ extern struct TCommonSettings {
 
 		for(int i=0;i<16;i++)
 			spu_muteChannels[i] = false;
+
+		for(int g=0;g<2;g++)
+			for(int x=0;x<5;x++)
+				dispLayers[g][x]=true;
 	}
 	bool GFX3D_HighResolutionInterpolateColor;
 	bool GFX3D_EdgeMark;
@@ -532,6 +536,8 @@ extern struct TCommonSettings {
 	int num_cores;
 	bool single_core() { return num_cores==1; }
 	bool rigorous_timing;
+
+	bool dispLayers[2][5];
 	
 	FAST_ALIGN bool advanced_timing;
 	

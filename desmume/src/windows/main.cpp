@@ -3556,6 +3556,23 @@ void SaveWindowPos(HWND hwnd)
 }
 
 
+static void TwiddleLayer(UINT ctlid, int core, int layer)
+{
+	GPU* gpu = core==0?MainScreen.gpu:SubScreen.gpu;
+	if(CommonSettings.dispLayers[core][layer])
+	{
+		GPU_remove(gpu,layer);
+		MainWindow->checkMenu(ctlid, false);
+	}
+	else
+	{
+		GPU_addBack(gpu,layer);
+		MainWindow->checkMenu(ctlid, true);
+	}
+
+}
+
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -4766,128 +4783,16 @@ DOKEYDOWN:
 			WritePrivateProfileInt("Display","SubGpu",CommonSettings.showGpu.sub?1:0,IniName);
 			return 0;
 
-		case IDM_MOBJ:
-			if(MainScreen.gpu->dispOBJ)
-			{
-				GPU_remove(MainScreen.gpu, 4);
-				MainWindow->checkMenu(IDM_MOBJ, false);
-			}
-			else
-			{
-				GPU_addBack(MainScreen.gpu, 4);
-				MainWindow->checkMenu(IDM_MOBJ, true);
-			}
-			return 0;
-
-		case IDM_MBG0 : 
-			if(MainScreen.gpu->dispBG[0])
-			{
-				GPU_remove(MainScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_MBG0, false);
-			}
-			else
-			{
-				GPU_addBack(MainScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_MBG0, true);
-			}
-			return 0;
-		case IDM_MBG1 : 
-			if(MainScreen.gpu->dispBG[1])
-			{
-				GPU_remove(MainScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_MBG1, false);
-			}
-			else
-			{
-				GPU_addBack(MainScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_MBG1, true);
-			}
-			return 0;
-		case IDM_MBG2 : 
-			if(MainScreen.gpu->dispBG[2])
-			{
-				GPU_remove(MainScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_MBG2, false);
-			}
-			else
-			{
-				GPU_addBack(MainScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_MBG2, true);
-			}
-			return 0;
-		case IDM_MBG3 : 
-			if(MainScreen.gpu->dispBG[3])
-			{
-				GPU_remove(MainScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_MBG3, false);
-			}
-			else
-			{
-				GPU_addBack(MainScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_MBG3, true);
-			}
-			return 0;
-
-		case IDM_SOBJ:
-			if(SubScreen.gpu->dispOBJ)
-			{
-				GPU_remove(SubScreen.gpu, 4);
-				MainWindow->checkMenu(IDM_SOBJ, false);
-			}
-			else
-			{
-				GPU_addBack(SubScreen.gpu, 4);
-				MainWindow->checkMenu(IDM_SOBJ, true);
-			}
-			return 0;
-		case IDM_SBG0 : 
-			if(SubScreen.gpu->dispBG[0])
-			{
-				GPU_remove(SubScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_SBG0, false);
-			}
-			else
-			{
-				GPU_addBack(SubScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_SBG0, true);
-			}
-			return 0;
-		case IDM_SBG1 : 
-			if(SubScreen.gpu->dispBG[1])
-			{
-				GPU_remove(SubScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_SBG1, false);
-			}
-			else
-			{
-				GPU_addBack(SubScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_SBG1, true);
-			}
-			return 0;
-		case IDM_SBG2 : 
-			if(SubScreen.gpu->dispBG[2])
-			{
-				GPU_remove(SubScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_SBG2, false);
-			}
-			else
-			{
-				GPU_addBack(SubScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_SBG2, true);
-			}
-			return 0;
-		case IDM_SBG3 : 
-			if(SubScreen.gpu->dispBG[3])
-			{
-				GPU_remove(SubScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_SBG3, false);
-			}
-			else
-			{
-				GPU_addBack(SubScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_SBG3, true);
-			}
-			return 0;
+		case IDM_MBG0: TwiddleLayer(IDM_MBG0,0,0); return 0;
+		case IDM_MBG1: TwiddleLayer(IDM_MBG1,0,1); return 0;
+		case IDM_MBG2: TwiddleLayer(IDM_MBG2,0,2); return 0;
+		case IDM_MBG3: TwiddleLayer(IDM_MBG3,0,3); return 0;
+		case IDM_MOBJ: TwiddleLayer(IDM_MOBJ,0,4); return 0;
+		case IDM_SBG0: TwiddleLayer(IDM_SBG0,0,0); return 0;
+		case IDM_SBG1: TwiddleLayer(IDM_SBG1,0,1); return 0;
+		case IDM_SBG2: TwiddleLayer(IDM_SBG2,0,2); return 0;
+		case IDM_SBG3: TwiddleLayer(IDM_SBG3,0,3); return 0;
+		case IDM_SOBJ: TwiddleLayer(IDM_SOBJ,0,4); return 0;
 
 		case IDM_PAUSE:
 			TogglePause();
