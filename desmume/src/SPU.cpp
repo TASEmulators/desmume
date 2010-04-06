@@ -1666,6 +1666,7 @@ bool spu_loadstate(EMUFILE* is, int size)
 
 		//fixup the pointers which we had are supposed to keep cached
 		chan.buf8 = (s8*)&MMU.MMU_MEM[1][(chan.addr>>20)&0xFF][(chan.addr & MMU.MMU_MASK[1][(chan.addr >> 20) & 0xFF])];
+		chan.buf16 = (s16*)chan.buf8;
 	}
 
 	if(version>=2) {
