@@ -2,7 +2,7 @@ SUBDIRS = doc
 include $(top_srcdir)/src/desmume.mk
 
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTKGLEXT_CFLAGS) $(LIBGLADE_CFLAGS) \
-		$(GTHREAD_CFLAGS) $(ALSA_CFLAGS) -DDATADIR=\"$(gladedir)/\" \
+		$(GTHREAD_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) -DDATADIR=\"$(gladedir)/\" \
 		-DLOCALEDIR=\"$(localedir)\"
 AM_LDFLAGS += -rdynamic $(INTLLIBS)
 
