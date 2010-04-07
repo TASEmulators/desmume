@@ -25,6 +25,10 @@
 #include "SPU.h"
 #include "commandline.h"
 #include "NDSSystem.h"
+#include "GPU_osd.h"
+#ifdef FAKE_MIC
+#include "mic.h"
+#endif
 
 u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
@@ -421,13 +425,30 @@ process_joystick_events( u16 *keypad) {
 u16 shift_pressed;
 
 void
-process_ctrls_event( SDL_Event& event, u16 *keypad,
-                      float nds_screen_size_ratio)
+process_ctrls_event( SDL_Event& event,
+                      struct ctrls_event_config *cfg)
 {
   u16 key;
-  if ( !do_process_joystick_events( keypad, &event)) {
+  if ( !do_process_joystick_events( &cfg->keypad, &event)) {
     switch (event.type)
     {
+      case SDL_VIDEORESIZE:
+        cfg->resize_cb( event.resize.w, event.resize.h);
+        break;
+
+      case SDL_ACTIVEEVENT:
+        if (cfg->auto_pause && (event.active.state & SDL_APPINPUTFOCUS )) {
+          if (event.active.gain) {
+            cfg->focused = 1;
+            SPU_Pause(0);
+            osd->addLine("Auto pause disabled\n");
+          } else {
+            cfg->focused = 0;
+            SPU_Pause(1);
+          }
+        }
+        break;
+
       case SDL_KEYDOWN:
         switch(event.key.keysym.sym){
             case SDLK_LSHIFT:
@@ -438,13 +459,36 @@ process_ctrls_event( SDL_Event& event, u16 *keypad,
                 break;
             default:
                 key = lookup_key(event.key.keysym.sym);
-                ADD_KEY( *keypad, key );
+                ADD_KEY( cfg->keypad, key );
                 break;
         }
         break;
 
       case SDL_KEYUP:
         switch(event.key.keysym.sym){
+            case SDLK_ESCAPE:
+                cfg->sdl_quit = 1;
+                break;
+
+#ifdef FAKE_MIC
+            case SDLK_m:
+                cfg->fake_mic = !cfg->fake_mic;
+                Mic_DoNoise(cfg->fake_mic);
+                if (cfg->fake_mic)
+                  osd->addLine("Fake mic enabled\n");
+                else
+                  osd->addLine("Fake mic disabled\n");
+                break;
+#endif
+
+            case SDLK_o:
+                cfg->boost = !cfg->boost;
+                if (cfg->boost)
+                  osd->addLine("Boost mode enabled\n");
+                else
+                  osd->addLine("Boost mode disabled\n");
+                break;
+
             case SDLK_LSHIFT:
                 shift_pressed &= ~1;
                 break;
@@ -476,7 +520,7 @@ process_ctrls_event( SDL_Event& event, u16 *keypad,
                 break;
             default:
                 key = lookup_key(event.key.keysym.sym);
-                RM_KEY( *keypad, key );
+                RM_KEY( cfg->keypad, key );
                 break;
         }
         break;
@@ -491,10 +535,10 @@ process_ctrls_event( SDL_Event& event, u16 *keypad,
         else {
           signed long scaled_x =
             screen_to_touch_range_x( event.button.x,
-                                     nds_screen_size_ratio);
+                                     cfg->nds_screen_size_ratio);
           signed long scaled_y =
             screen_to_touch_range_y( event.button.y,
-                                     nds_screen_size_ratio);
+                                     cfg->nds_screen_size_ratio);
 
           if( scaled_y >= 192)
             set_mouse_coord( scaled_x, scaled_y - 192);
@@ -504,6 +548,10 @@ process_ctrls_event( SDL_Event& event, u16 *keypad,
       case SDL_MOUSEBUTTONUP:
         if(mouse.down) mouse.click = TRUE;
         mouse.down = FALSE;
+        break;
+
+      case SDL_QUIT:
+        cfg->sdl_quit = 1;
         break;
 
       default:
