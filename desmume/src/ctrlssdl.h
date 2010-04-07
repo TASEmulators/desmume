@@ -77,6 +77,17 @@ extern mouse_status mouse;
 void set_mouse_coord(signed long x,signed long y);
 #endif // !GTK_UI
 
+struct ctrls_event_config {
+  unsigned short keypad;
+  float nds_screen_size_ratio;
+  int auto_pause;
+  int focused;
+  int sdl_quit;
+  int boost;
+  int fake_mic;
+  void (*resize_cb)(u16 width, u16 height);
+};
+
 void load_default_config(const u16 kbCfg[]);
 BOOL init_joy( void);
 void uninit_joy( void);
@@ -91,8 +102,8 @@ u16 get_keypad( void);
 u16 lookup_key (u16 keyval);
 u16 lookup_joy_key (u16 keyval);
 void
-process_ctrls_event( SDL_Event& event, u16 *keypad,
-                      float nds_screen_size_ratio);
+process_ctrls_event( SDL_Event& event,
+                      struct ctrls_event_config *cfg);
 
 void
 process_joystick_events( u16 *keypad);
