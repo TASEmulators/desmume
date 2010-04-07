@@ -707,16 +707,26 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	wxMenu *layersMenu = new wxMenu;
 	{
 		layersMenu->AppendCheckItem(wMainGPU, _T("Main GPU"));
-		layersMenu->Append(wMainBG0, _T("Main BG 0"));
-		layersMenu->Append(wMainBG1, _T("Main BG 1"));
-		layersMenu->Append(wMainBG2, _T("Main BG 2"));
-		layersMenu->Append(wMainBG3, _T("Main BG 3"));
+		layersMenu->Check(wMainGPU, true);
+		layersMenu->AppendCheckItem(wMainBG0, _T("Main BG 0"));
+		layersMenu->Check(wMainBG0, true);
+		layersMenu->AppendCheckItem(wMainBG1, _T("Main BG 1"));
+		layersMenu->Check(wMainBG1, true);
+		layersMenu->AppendCheckItem(wMainBG2, _T("Main BG 2"));
+		layersMenu->Check(wMainBG2, true);
+		layersMenu->AppendCheckItem(wMainBG3, _T("Main BG 3"));
+		layersMenu->Check(wMainBG3, true);
 		layersMenu->AppendSeparator();
-		layersMenu->Append(wSubGPU, _T("Sub GPU"));
-		layersMenu->Append(wSubBG0, _T("Sub BG 0"));
-		layersMenu->Append(wSubBG1, _T("Sub BG 1"));
-		layersMenu->Append(wSubBG2, _T("Sub BG 2"));
-		layersMenu->Append(wSubBG3, _T("Sub BG 3"));
+		layersMenu->AppendCheckItem(wSubGPU, _T("Sub GPU"));
+		layersMenu->Check(wSubGPU, true);
+		layersMenu->AppendCheckItem(wSubBG0, _T("Sub BG 0"));
+		layersMenu->Check(wSubBG0, true);
+		layersMenu->AppendCheckItem(wSubBG1, _T("Sub BG 1"));
+		layersMenu->Check(wSubBG1, true);
+		layersMenu->AppendCheckItem(wSubBG2, _T("Sub BG 2"));
+		layersMenu->Check(wSubBG2, true);
+		layersMenu->AppendCheckItem(wSubBG3, _T("Sub BG 3"));
+		layersMenu->Check(wSubBG3, true);
 	}
 
 	configMenu->Append(wConfigureControls, _T("Controls"));
