@@ -302,13 +302,13 @@ loop:
 	}
 
 	void mainG(int n) {
-		if(MainScreen.gpu->dispBG[n])
+		if(CommonSettings.dispLayers[0][n])
 			GPU_remove(MainScreen.gpu, n);
 		else
 			GPU_addBack(MainScreen.gpu, n);	
 	}
 	void subG(int n) {
-		if(SubScreen.gpu->dispBG[n])
+		if(CommonSettings.dispLayers[1][n])
 			GPU_remove(SubScreen.gpu, n);
 		else
 			GPU_addBack(SubScreen.gpu, n);	
