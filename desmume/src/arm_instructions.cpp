@@ -21,7 +21,11 @@
 
 // ARM core TODO:
 // - Check all the LDM/STM opcodes: quirks when Rb included in Rlist; opcodes
-//    operating on user registers (LDMXX2/STMXX2)
+//     operating on user registers (LDMXX2/STMXX2)
+// - Force User mode memory access for LDRx/STRx opcodes with bit24=0 and bit21=1
+//     (has to be done at memory side; once the PU is emulated well enough)
+// - Check LDMxx2/STMxx2 (those opcodes that act on User mode registers instead 
+//     of current ones)
 
 #include "cp15.h"
 #include "debug.h"
@@ -4100,33 +4104,6 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND(const u32 i)
 	
 	cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
 	cpu->R[REG_POS(i,12)] = val;	
-	
-	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
-}
-
-//------------------------------------------------------------
-TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND2(const u32 i)
-{
-	
-	u32 adr = cpu->R[REG_POS(i,16)];
-	u32 val = READ32(cpu->mem_if->data, adr);
-	u32 old;
-	val = ROR(val, 8*(adr&3));
-	
-	if(REG_POS(i,12)==15)
-	{
-		cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
-		cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
-		cpu->next_instruction = cpu->R[15];
-		cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
-		return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(5,adr);
-	}
-	
-	old = armcpu_switchMode(cpu, USR);
-	cpu->R[REG_POS(i,12)] = val;
-	armcpu_switchMode(cpu, old);
-	
-	cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
 	
 	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
