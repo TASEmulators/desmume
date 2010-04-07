@@ -696,12 +696,12 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	}
 	viewMenu->AppendSubMenu(rotateMenu, _T("Rotate"));
 	viewMenu->AppendSeparator();
-	viewMenu->Append(wFrameCounter, _T("&Display Frame Counter"));
-	viewMenu->Append(wFPS, _T("&Display FPS"));
-	viewMenu->Append(wDisplayInput, _T("&Display Input"));
-	viewMenu->Append(wDisplayGraphicalInput, _T("&Display Graphical Input"));
-	viewMenu->Append(wDisplayLagCounter, _T("&Display Lag Counter"));
-	viewMenu->Append(wDisplayMicrophone, _T("&Display Microphone"));
+	viewMenu->AppendCheckItem(wFrameCounter, _T("&Display Frame Counter"));
+	viewMenu->AppendCheckItem(wFPS, _T("&Display FPS"));
+	viewMenu->AppendCheckItem(wDisplayInput, _T("&Display Input"));
+	viewMenu->AppendCheckItem(wDisplayGraphicalInput, _T("&Display Graphical Input"));
+	viewMenu->AppendCheckItem(wDisplayLagCounter, _T("&Display Lag Counter"));
+	viewMenu->AppendCheckItem(wDisplayMicrophone, _T("&Display Microphone"));
 
 	toolsMenu->Append(w3dView, _T("&3d Viewer"));
 	wxMenu *layersMenu = new wxMenu;
