@@ -208,6 +208,26 @@ void DEBUG_reset()
 	printf("DEBUG_reset: %08X\n",&DebugStatistics::print); //force a reference to this function
 }
 
+static void DEBUG_dumpMemory_fill(EMUFILE *fp, u32 size)
+{
+	static std::vector<u8> buf;
+	buf.resize(size);
+	memset(&buf[0],0,size);
+	fp->fwrite(&buf[0],size);
+}
+
+void DEBUG_dumpMemory(EMUFILE* fp)
+{
+	fp->fseek(0x000000,SEEK_SET); fp->fwrite(MMU.MAIN_MEM,0x800000); //arm9 main mem (8192K)
+	fp->fseek(0x900000,SEEK_SET); fp->fwrite(MMU.ARM9_DTCM,0x4000); //arm9 DTCM (16K)
+	fp->fseek(0xA00000,SEEK_SET); fp->fwrite(MMU.ARM9_ITCM,0x8000); //arm9 ITCM (32K)
+	fp->fseek(0xB00000,SEEK_SET); fp->fwrite(MMU.ARM9_LCD,0xA4000); //LCD mem 656K
+	fp->fseek(0xC00000,SEEK_SET); fp->fwrite(MMU.ARM9_VMEM,0x800); //OAM
+	fp->fseek(0xD00000,SEEK_SET); fp->fwrite(MMU.ARM7_ERAM,0x10000); //arm7 WRAM (64K)
+	fp->fseek(0xE00000,SEEK_SET); fp->fwrite(MMU.ARM7_WIRAM,0x10000); //arm7 wifi RAM ?
+	fp->fseek(0xF00000,SEEK_SET); fp->fwrite(MMU.SWIRAM,0x8000); //arm9/arm7 shared WRAM (32KB)
+}
+
 //----------------------------------------------------
 
 std::vector<Logger *> Logger::channels;
