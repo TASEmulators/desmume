@@ -250,15 +250,19 @@ void SPU_Reset(void)
 	int i;
 
 	SPU_core->reset();
-	if(SPU_user) SPU_user->reset();
 
-	if(SNDCore && SPU_user) {
-		SNDCore->DeInit();
-		SNDCore->Init(SPU_user->bufsize*2);
-		SNDCore->SetVolume(volume);
-		//todo - check success?
+	if(SPU_user) {
+		if(SNDCore)
+		{
+			SNDCore->DeInit();
+			SNDCore->Init(SPU_user->bufsize*2);
+			SNDCore->SetVolume(volume);
+		}
+		SPU_user->reset();
 	}
 
+	//zero - 09-apr-2010: this concerns me, regarding savestate synch.
+	//After 0.9.6, lets experiment with removing it and just properly zapping the spu instead
 	// Reset Registers
 	for (i = 0x400; i < 0x51D; i++)
 		T1WriteByte(MMU.ARM7_REG, i, 0);
@@ -274,6 +278,8 @@ void SPU_struct::reset()
 	memset(outbuf,0,bufsize*2*2);
 
 	memset((void *)channels, 0, sizeof(channel_struct) * 16);
+
+	reconstruct(&regs);
 
 	for(int i = 0; i < 16; i++)
 	{
