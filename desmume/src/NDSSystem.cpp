@@ -1998,6 +1998,10 @@ void NDS_Reset()
 		TotalLagFrames = 0;
 	}
 
+	//spu must reset early on, since it will crash due to keeping a pointer into MMU memory for the sample pointers. yuck!
+	SPU_Reset();
+
+
 	MMU_Reset();
 
 	//ARM7 BIOS IRQ HANDLER
@@ -2269,7 +2273,6 @@ void NDS_Reset()
 	Screen_Reset();
 	gfx3d_reset();
 	gpu3D->NDS_3D_Reset();
-	SPU_Reset();
 
 	WIFI_Reset();
 
