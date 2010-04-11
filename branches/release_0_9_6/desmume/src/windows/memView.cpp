@@ -279,6 +279,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			}
 			return 1;
 
+		case IDC_DUMPALL:
 		case IDC_RAWDUMP:
 			{
 				char fileName[256] = "";
@@ -296,16 +297,19 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 				if(GetSaveFileName(&ofn))
 				{
-					FILE *f;
-					u8 memory[0x100];
 
-					MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
-
-					f = fopen(fileName, "ab");
-
-					fwrite(memory, 0x100, 1, f);
-
-					fclose(f);
+					if(LOWORD(wParam) == IDC_RAWDUMP)
+					{
+						EMUFILE_FILE f(fileName,"ab");
+						u8 memory[0x100];
+						MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
+						f.fwrite(memory, 0x100);
+					}
+					else
+					{
+						EMUFILE_FILE f(fileName,"wb");
+						DEBUG_dumpMemory(&f);
+					}
 				}
 			}
 			return 1;
