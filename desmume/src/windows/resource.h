@@ -336,7 +336,6 @@
 #define IDC_SYNCHMODE_SYNCH             1013
 #define IDC_FIRMWAREBROWSE              1014
 #define IDC_VOLUME                      1014
-#define IDC_DUMPALL                     1014
 #define IDC_SYNCHMETHOD_N               1015
 #define IDC_FIRMWAREBOOT                1016
 #define IDC_SYNCHMETHOD_Z               1016

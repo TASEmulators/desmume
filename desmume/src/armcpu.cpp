@@ -230,10 +230,11 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
     armcpu->irq_flag = 0;
 #endif
 
+	if(armcpu->coproc[15]) free(armcpu->coproc[15]);
+	
    for(i = 0; i < 15; ++i)
 	{
 		armcpu->R[i] = 0;
-		if(armcpu->coproc[i]) free(armcpu->coproc[i]);
 		armcpu->coproc[i] = NULL;
    }
 	
@@ -257,9 +258,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 
 	armcpu->next_instruction = adr;
 	
-	// only ARM9 have co-processor
-	if (armcpu->proc_ID==0)
-		armcpu->coproc[15] = (armcp_t*)armcp15_new(armcpu);
+	armcpu->coproc[15] = (armcp_t*)armcp15_new(armcpu);
 
 #ifndef GDB_STUB
 	armcpu_prefetch(armcpu);
@@ -381,10 +380,10 @@ FORCEINLINE static u32 armcpu_prefetch()
 #ifdef GDB_STUB
 	u32 temp_instruction;
 #endif
-	u32 curInstruction = armcpu->next_instruction;
 
 	if(armcpu->CPSR.bits.T == 0)
 	{
+		u32 curInstruction = armcpu->next_instruction;
 #ifdef GDB_STUB
 		temp_instruction =
 			armcpu->mem_if->prefetch32( armcpu->mem_if->data,
@@ -397,8 +396,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		curInstruction &= 0x0FFFFFFC;
-		armcpu->instruction = _MMU_read32<PROCNUM, MMU_AT_CODE>(curInstruction);
+		armcpu->instruction = _MMU_read32<PROCNUM,MMU_AT_CODE>(curInstruction&0xFFFFFFFC);
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
 		armcpu->R[15] = curInstruction + 8;
@@ -407,6 +405,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 		return MMU_codeFetchCycles<PROCNUM,32>(curInstruction);
 	}
 
+	u32 curInstruction = armcpu->next_instruction;
 #ifdef GDB_STUB
 	temp_instruction =
 		armcpu->mem_if->prefetch16( armcpu->mem_if->data,
@@ -419,8 +418,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	curInstruction &= 0x0FFFFFFE;
-	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction);
+	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction&0xFFFFFFFE);
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
 	armcpu->R[15] = curInstruction + 4;
@@ -526,43 +524,6 @@ u32 armcpu_exec()
 
 	//this assert is annoying. but sometimes it is handy.
 	//assert(ARMPROC.instruct_adr!=0x00000000);
-#ifdef DEVELOPER
-	if ((((ARMPROC.instruct_adr & 0x0F000000) == 0x0F000000) && (PROCNUM == 0)) ||
-		(((ARMPROC.instruct_adr & 0x0F000000) == 0x00000000) && (PROCNUM == 1)))
-	{
-		switch (ARMPROC.instruct_adr & 0xFFFF)
-		{
-			case 0x00000000:
-				printf("BIOS%c: Reset!!!\n", PROCNUM?'7':'9');
-				emu_halt();
-				break;
-			case 0x00000004:
-				printf("BIOS%c: Undefined instruction\n", PROCNUM?'7':'9');
-				emu_halt();
-				break;
-			case 0x00000008:
-				//printf("BIOS%c: SWI\n", PROCNUM?'7':'9');
-				break;
-			case 0x0000000C:
-				printf("BIOS%c: Prefetch Abort!!!\n", PROCNUM?'7':'9');
-				emu_halt();
-				break;
-			case 0x00000010:
-				printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
-				emu_halt();
-				break;
-			case 0x00000014:
-				printf("BIOS%c: Reserved!!!\n", PROCNUM?'7':'9');
-				break;
-			case 0x00000018:
-				//printf("BIOS%c: IRQ\n", PROCNUM?'7':'9');
-				break;
-			case 0x0000001C:
-				printf("BIOS%c: Fast IRQ\n", PROCNUM?'7':'9');
-				break;
-		}
-	}
-#endif
 
 #ifdef GDB_STUB
 	if (ARMPROC.stalled) {

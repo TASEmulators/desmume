@@ -302,13 +302,13 @@ loop:
 	}
 
 	void mainG(int n) {
-		if(CommonSettings.dispLayers[0][n])
+		if(MainScreen.gpu->dispBG[n])
 			GPU_remove(MainScreen.gpu, n);
 		else
 			GPU_addBack(MainScreen.gpu, n);	
 	}
 	void subG(int n) {
-		if(CommonSettings.dispLayers[1][n])
+		if(SubScreen.gpu->dispBG[n])
 			GPU_remove(SubScreen.gpu, n);
 		else
 			GPU_addBack(SubScreen.gpu, n);	
@@ -696,37 +696,27 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	}
 	viewMenu->AppendSubMenu(rotateMenu, _T("Rotate"));
 	viewMenu->AppendSeparator();
-	viewMenu->AppendCheckItem(wFrameCounter, _T("&Display Frame Counter"));
-	viewMenu->AppendCheckItem(wFPS, _T("&Display FPS"));
-	viewMenu->AppendCheckItem(wDisplayInput, _T("&Display Input"));
-	viewMenu->AppendCheckItem(wDisplayGraphicalInput, _T("&Display Graphical Input"));
-	viewMenu->AppendCheckItem(wDisplayLagCounter, _T("&Display Lag Counter"));
-	viewMenu->AppendCheckItem(wDisplayMicrophone, _T("&Display Microphone"));
+	viewMenu->Append(wFrameCounter, _T("&Display Frame Counter"));
+	viewMenu->Append(wFPS, _T("&Display FPS"));
+	viewMenu->Append(wDisplayInput, _T("&Display Input"));
+	viewMenu->Append(wDisplayGraphicalInput, _T("&Display Graphical Input"));
+	viewMenu->Append(wDisplayLagCounter, _T("&Display Lag Counter"));
+	viewMenu->Append(wDisplayMicrophone, _T("&Display Microphone"));
 
 	toolsMenu->Append(w3dView, _T("&3d Viewer"));
 	wxMenu *layersMenu = new wxMenu;
 	{
 		layersMenu->AppendCheckItem(wMainGPU, _T("Main GPU"));
-		layersMenu->Check(wMainGPU, true);
-		layersMenu->AppendCheckItem(wMainBG0, _T("Main BG 0"));
-		layersMenu->Check(wMainBG0, true);
-		layersMenu->AppendCheckItem(wMainBG1, _T("Main BG 1"));
-		layersMenu->Check(wMainBG1, true);
-		layersMenu->AppendCheckItem(wMainBG2, _T("Main BG 2"));
-		layersMenu->Check(wMainBG2, true);
-		layersMenu->AppendCheckItem(wMainBG3, _T("Main BG 3"));
-		layersMenu->Check(wMainBG3, true);
+		layersMenu->Append(wMainBG0, _T("Main BG 0"));
+		layersMenu->Append(wMainBG1, _T("Main BG 1"));
+		layersMenu->Append(wMainBG2, _T("Main BG 2"));
+		layersMenu->Append(wMainBG3, _T("Main BG 3"));
 		layersMenu->AppendSeparator();
-		layersMenu->AppendCheckItem(wSubGPU, _T("Sub GPU"));
-		layersMenu->Check(wSubGPU, true);
-		layersMenu->AppendCheckItem(wSubBG0, _T("Sub BG 0"));
-		layersMenu->Check(wSubBG0, true);
-		layersMenu->AppendCheckItem(wSubBG1, _T("Sub BG 1"));
-		layersMenu->Check(wSubBG1, true);
-		layersMenu->AppendCheckItem(wSubBG2, _T("Sub BG 2"));
-		layersMenu->Check(wSubBG2, true);
-		layersMenu->AppendCheckItem(wSubBG3, _T("Sub BG 3"));
-		layersMenu->Check(wSubBG3, true);
+		layersMenu->Append(wSubGPU, _T("Sub GPU"));
+		layersMenu->Append(wSubBG0, _T("Sub BG 0"));
+		layersMenu->Append(wSubBG1, _T("Sub BG 1"));
+		layersMenu->Append(wSubBG2, _T("Sub BG 2"));
+		layersMenu->Append(wSubBG3, _T("Sub BG 3"));
 	}
 
 	configMenu->Append(wConfigureControls, _T("Controls"));

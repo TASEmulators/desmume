@@ -206,6 +206,7 @@ void GPU_Reset(GPU *g, u8 l)
 	g->core = l;
 	g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
 	g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
+	g->dispOBJ = g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
 
 	g->spriteRenderMode = GPU::SPRITE_1D;
 
@@ -246,11 +247,11 @@ static void GPU_resortBGs(GPU *gpu)
 #define OP ^ !
 // if we untick boxes, layers become invisible
 //#define OP &&
-	gpu->LayersEnable[0] = CommonSettings.dispLayers[gpu->core][0] OP(cnt->BG0_Enable/* && !(cnt->BG0_3D && (gpu->core==0))*/);
-	gpu->LayersEnable[1] = CommonSettings.dispLayers[gpu->core][1] OP(cnt->BG1_Enable);
-	gpu->LayersEnable[2] = CommonSettings.dispLayers[gpu->core][2] OP(cnt->BG2_Enable);
-	gpu->LayersEnable[3] = CommonSettings.dispLayers[gpu->core][3] OP(cnt->BG3_Enable);
-	gpu->LayersEnable[4] = CommonSettings.dispLayers[gpu->core][4] OP(cnt->OBJ_Enable);
+	gpu->LayersEnable[0] = gpu->dispBG[0] OP(cnt->BG0_Enable/* && !(cnt->BG0_3D && (gpu->core==0))*/);
+	gpu->LayersEnable[1] = gpu->dispBG[1] OP(cnt->BG1_Enable);
+	gpu->LayersEnable[2] = gpu->dispBG[2] OP(cnt->BG2_Enable);
+	gpu->LayersEnable[3] = gpu->dispBG[3] OP(cnt->BG3_Enable);
+	gpu->LayersEnable[4] = gpu->dispOBJ   OP(cnt->OBJ_Enable);
 
 	// KISS ! lower priority first, if same then lower num
 	for (i=0;i<NB_PRIORITIES;i++) {
@@ -477,12 +478,15 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 
 void GPU_remove(GPU * gpu, u8 num)
 {
-	CommonSettings.dispLayers[gpu->core][num] = false;
+	if (num == 4)	gpu->dispOBJ = 0;
+	else		gpu->dispBG[num] = 0;
 	GPU_resortBGs(gpu);
 }
 void GPU_addBack(GPU * gpu, u8 num)
 {
-	CommonSettings.dispLayers[gpu->core][num] = true;
+	//REG_DISPx_pack_test(gpu);
+	if (num == 4)	gpu->dispOBJ = 1;
+	else		gpu->dispBG[num] = 1;
 	GPU_resortBGs(gpu);
 }
 

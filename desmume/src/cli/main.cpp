@@ -52,6 +52,7 @@
 #include "render3D.h"
 #include "rasterize.h"
 #include "saves.h"
+#include "mic.h"
 #include "firmware.h"
 #include "GPU_osd.h"
 #include "desmume_config.h"
@@ -123,6 +124,10 @@ const u16 cli_kb_cfg[NB_KEYS] =
     SDLK_p,         // DEBUG
     SDLK_o          // BOOST
   };
+
+#ifdef FAKE_MIC
+static BOOL enable_fake_mic;
+#endif
 
 class configured_features : public CommandLine
 {
@@ -454,11 +459,6 @@ opengl_Draw( GLuint *texture, int software_convert) {
 }
 #endif
 
-/* this is a stub for resizeWindow_stub in the case of no gl headers or no opengl 2d */
-static void
-resizeWindow_stub (u16 width, u16 height) {
-}
-
 static void
 Draw( void) {
   SDL_Surface *rawImage;
@@ -474,11 +474,11 @@ Draw( void) {
   return;
 }
 
-static void desmume_cycle(struct ctrls_event_config * cfg)
+static void desmume_cycle(int *sdl_quit, int *boost, struct configured_features * my_config)
 {
+    static unsigned short keypad;
+    static int focused = 1;
     SDL_Event event;
-
-    cfg->nds_screen_size_ratio = nds_screen_size_ratio;
 
     /* Look for queued events and update keypad status */
     /* IMPORTANT: Reenable joystick events iif needed. */
@@ -486,11 +486,68 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
       SDL_JoystickEventState(SDL_ENABLE);
 
     /* There's an event waiting to be processed? */
-    while ( !cfg->sdl_quit &&
-        (SDL_PollEvent(&event) || (!cfg->focused && SDL_WaitEvent(&event))))
+    while ( !*sdl_quit &&
+        (SDL_PollEvent(&event) || (!focused && SDL_WaitEvent(&event))))
       {
-        process_ctrls_event( event, cfg);
-    }
+        process_ctrls_event( event, &keypad, nds_screen_size_ratio);
+
+        switch (event.type)
+        {
+#ifdef INCLUDE_OPENGL_2D
+          case SDL_VIDEORESIZE:
+            resizeWindow( event.resize.w, event.resize.h);
+            break;
+#endif
+          case SDL_ACTIVEEVENT:
+            if (my_config->auto_pause && (event.active.state & SDL_APPINPUTFOCUS ))
+            {
+              if (event.active.gain)
+              {
+                focused = 1;
+                SPU_Pause(0);
+                osd->addLine("Auto pause disabled\n");
+              }
+              else
+              {
+                focused = 0;
+                SPU_Pause(1);
+              }
+            }
+            break;
+
+          case SDL_KEYUP:
+            switch (event.key.keysym.sym)
+            {
+              case SDLK_ESCAPE:
+                *sdl_quit = 1;
+                break;
+#ifdef FAKE_MIC
+              case SDLK_m:
+                enable_fake_mic = !enable_fake_mic;
+                Mic_DoNoise(enable_fake_mic);
+                if (enable_fake_mic)
+                  osd->addLine("Fake mic enabled\n");
+                else
+                  osd->addLine("Fake mic disabled\n");
+                break;
+#endif
+              case SDLK_o:
+                *boost = !(*boost);
+                if (*boost)
+                  osd->addLine("Boost mode enabled\n");
+                else
+                  osd->addLine("Boost mode disabled\n");
+                break;
+              default:
+                break;
+            }
+            break;
+ 
+          case SDL_QUIT:
+            *sdl_quit = 1;
+            break;
+        }
+      }
 
     /* Update mouse position and click */
     if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
@@ -500,14 +557,13 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
         mouse.click = FALSE;
       }
 
-    update_keypad(cfg->keypad);     /* Update keypad */
+    update_keypad(keypad);     /* Update keypad */
     NDS_exec<false>();
     SPU_Emulate_user();
 }
 
 int main(int argc, char ** argv) {
   struct configured_features my_config;
-  struct ctrls_event_config ctrls_cfg;
 #ifdef GDB_STUB
   gdbstub_handle_t arm9_gdb_stub;
   gdbstub_handle_t arm7_gdb_stub;
@@ -520,6 +576,8 @@ int main(int argc, char ** argv) {
   int limiter_frame_counter = 0;
   SDL_sem *fps_limiter_semaphore = NULL;
   SDL_TimerID limiter_timer = NULL;
+  int sdl_quit = 0;
+  int boost = 0;
   int error;
 
   GKeyFile *keyfile;
@@ -757,23 +815,14 @@ int main(int argc, char ** argv) {
   aggDraw.hud->attach(GPU_screen, 256, 384, 512);
 #endif
 
-  ctrls_cfg.boost = 0;
-  ctrls_cfg.sdl_quit = 0;
-  ctrls_cfg.auto_pause = my_config.auto_pause;
-  ctrls_cfg.focused = 1;
-  ctrls_cfg.fake_mic = 0;
-  ctrls_cfg.keypad = 0;
-  ctrls_cfg.resize_cb = &resizeWindow_stub;
-
-  while(!ctrls_cfg.sdl_quit) {
-    desmume_cycle(&ctrls_cfg);
+  while(!sdl_quit) {
+    desmume_cycle(&sdl_quit, &boost, &my_config);
 
     osd->update();
     DrawHUD();
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
       opengl_Draw( screen_texture, my_config.soft_colour_convert);
-      ctrls_cfg.resize_cb = &resizeWindow;
     }
     else
 #endif
@@ -782,10 +831,10 @@ int main(int argc, char ** argv) {
 
     for ( int i = 0; i < my_config.frameskip; i++ ) {
         NDS_SkipNextFrame();
-        desmume_cycle(&ctrls_cfg);
+        desmume_cycle(&sdl_quit, &boost, &my_config);
     }
 
-    if ( !my_config.disable_limiter && !ctrls_cfg.boost) {
+    if ( !my_config.disable_limiter && !boost) {
       limiter_frame_counter += 1 + my_config.frameskip;
       if ( limiter_frame_counter >= my_config.fps_limiter_frame_period) {
         limiter_frame_counter = 0;
