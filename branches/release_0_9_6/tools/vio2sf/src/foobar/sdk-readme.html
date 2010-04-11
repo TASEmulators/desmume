@@ -1,0 +1,372 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+ lang="en" dir="ltr">
+<head>
+  <title>foobar2000 0.9.5 SDK readme</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="generator" content="DokuWiki Release 2007-06-26b" />
+  <link rel="stylesheet" type="text/css" href="sdk-readme.css" />
+</head>
+<body>
+<div class="dokuwiki export">
+<div class="toc">
+<div class="tocheader toctoggle" id="toc__header">Table of Contents</div>
+<div id="toc__inside">
+
+<ul class="toc">
+<li class="level1"><div class="li"><span class="li"><a href="#foobar2000_0.9.5_sdk_readme" class="toc">foobar2000 0.9.5 SDK readme</a></span></div>
+<ul class="toc">
+<li class="level2"><div class="li"><span class="li"><a href="#compatibility" class="toc">Compatibility</a></span></div></li>
+<li class="level2"><div class="li"><span class="li"><a href="#basic_usage" class="toc">Basic usage</a></span></div></li>
+<li class="level2"><div class="li"><span class="li"><a href="#structure_of_a_component" class="toc">Structure of a component</a></span></div>
+<ul class="toc">
+<li class="level3"><div class="li"><span class="li"><a href="#services" class="toc">Services</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#entrypoint_services" class="toc">Entrypoint services</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#service_extensions" class="toc">Service extensions</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#autopointer_template_use" class="toc">Autopointer template use</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#exception_use" class="toc">Exception use</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#storing_configuration" class="toc">Storing configuration</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#use_of_global_callback_services" class="toc">Use of global callback services</a></span></div></li>
+</ul>
+</li>
+<li class="level2"><div class="li"><span class="li"><a href="#service_class_design_guidelines_advanced" class="toc">Service class design guidelines (advanced)</a></span></div>
+<ul class="toc">
+<li class="level3"><div class="li"><span class="li"><a href="#cross-dll_safety" class="toc">Cross-DLL safety</a></span></div></li>
+<li class="level3"><div class="li"><span class="li"><a href="#entrypoint_service_efficiency" class="toc">Entrypoint service efficiency</a></span></div></li></ul>
+</li></ul>
+</li></ul>
+</div>
+</div>
+
+
+
+<h1><a name="foobar2000_0.9.5_sdk_readme" id="foobar2000_0.9.5_sdk_readme">foobar2000 0.9.5 SDK readme</a></h1>
+<div class="level1">
+
+</div>
+<!-- SECTION "foobar2000 0.9.5 SDK readme" [1-47] -->
+<h2><a name="compatibility" id="compatibility">Compatibility</a></h2>
+<div class="level2">
+
+<p>
+ Components built with this <acronym title="Software Development Kit">SDK</acronym> are compatible with foobar2000 0.9.5. They are not compatible with any earlier versions (will fail to load), and not guaranteed to be compatible with any future versions, though upcoming 0.9.X releases will aim to maintain compatibility as far as possible without crippling newly added functionality.
+</p>
+
+</div>
+
+<h4><a name="new_features_provided_by_incremental_updates" id="new_features_provided_by_incremental_updates">New features provided by incremental updates</a></h4>
+<div class="level4">
+
+<p>
+Some of non-critical functionality provided through this <acronym title="Software Development Kit">SDK</acronym> (flagged as such) was introduced in one of incremental 0.9.5.X updates and will not function when used with foobar2000 versions older than specified in the description of specific <acronym title="Application Programming Interface">API</acronym>. For an example: 
+</p>
+<pre class="code c++">try <span class="br0">&#123;</span>
+  <span class="co1">//Attempting to use an API that was introduced in 0.9.5.1:</span>
+  static_api_ptr_t&lt;app_close_blocking_task_manager&gt;<span class="br0">&#40;</span><span class="br0">&#41;</span>-&gt;register_task<span class="br0">&#40;</span>mytask<span class="br0">&#41;</span>;
+<span class="br0">&#125;</span> catch<span class="br0">&#40;</span>exception_service_not_found<span class="br0">&#41;</span> <span class="br0">&#123;</span>
+  <span class="co1">//User's foobar2000 is older than 0.9.5.1.</span>
+  <span class="co1">//Possible responses: ignore and disable affected functionality, complain to user about outdated install, etc.</span>
+<span class="br0">&#125;</span></pre>
+</div>
+<!-- SECTION "Compatibility" [48-1086] -->
+<h2><a name="basic_usage" id="basic_usage">Basic usage</a></h2>
+<div class="level2">
+
+<p>
+ Each component must link against:
+</p>
+<ul>
+<li class="level1"><div class="li"> foobar2000_<acronym title="Software Development Kit">SDK</acronym> project (contains declarations of services and various service-specific helper code)</div>
+</li>
+<li class="level1"><div class="li"> foobar2000_component_client project (contains DLL entrypoint)</div>
+</li>
+<li class="level1"><div class="li"> shared.dll (various helper code, mainly win32 function wrappers taking UTF-8 strings)</div>
+</li>
+<li class="level1"><div class="li"> PFC (non-<acronym title="Operating System">OS</acronym>-specific helper class library)</div>
+</li>
+</ul>
+
+<p>
+Optionally, components can use helper libraries with various non-critical code that is commonly reused across various foobar2000 components:
+</p>
+<ul>
+<li class="level1"><div class="li"> foobar2000_<acronym title="Software Development Kit">SDK</acronym>_helpers - a library of various helper code commonly used by foobar2000 components.</div>
+</li>
+<li class="level1"><div class="li"> foobar2000_ATL_helpers - another library of various helper code commonly used by foobar2000 components; requires WTL. Note that it depends on foobar2000_<acronym title="Software Development Kit">SDK</acronym> and foobar2000_<acronym title="Software Development Kit">SDK</acronym>_helpers projects.</div>
+</li>
+</ul>
+
+<p>
+ Foobar2000_<acronym title="Software Development Kit">SDK</acronym>, foobar2000_component_client and PFC are included in sourcecode form; you can link against them by adding them to your workspace and using dependencies. To link against shared.dll, you must add “shared.lib” to linker input manually.
+</p>
+
+<p>
+Component code should include the following header files:
+</p>
+<ul>
+<li class="level1"><div class="li"> foobar2000.h from <acronym title="Software Development Kit">SDK</acronym> - do not include other headers from the <acronym title="Software Development Kit">SDK</acronym> directory directly, they&#039;re meant to be referenced by foobar2000.h only; it also includes PFC headers and shared.dll helper declaration headers.</div>
+</li>
+<li class="level1"><div class="li"> Optionally: helpers.h from helpers directory (foobar2000_<acronym title="Software Development Kit">SDK</acronym>_helpers project) - a library of various helper code commonly used by foobar2000 components.</div>
+</li>
+<li class="level1"><div class="li"> Optionally: ATLHelpers.h from ATLHelpers directory (foobar2000_ATL_helpers project) - another library of various helper code commonly used by foobar2000 components; requires WTL. Note that ATLHelpers.h already includes <acronym title="Software Development Kit">SDK</acronym>/foobar2000.h and helpers/helpers.h so you can replace your other include lines with a reference to ATLHelpers.h.</div>
+</li>
+</ul>
+
+</div>
+<!-- SECTION "Basic usage" [1087-2914] -->
+<h2><a name="structure_of_a_component" id="structure_of_a_component">Structure of a component</a></h2>
+<div class="level2">
+
+<p>
+ A component is a DLL that implements one or more entrypoint services and interacts with services provided by other components. 
+</p>
+
+</div>
+<!-- SECTION "Structure of a component" [2915-3081] -->
+<h3><a name="services" id="services">Services</a></h3>
+<div class="level3">
+
+<p>
+ A service type is an interface class, deriving directly or indirectly from <code>service_base</code> class. A service type class must not have any data members; it can only provide virtual methods (to be overridden by service implementation), helper non-virtual methods built around virtual methods, static helper methods, and constants / enums. Each service interface class must have a static <code>class_guid</code> member, used for identification when enumerating services or querying for supported functionality. A service type declaration should declare a class with public virtual/helper/static methods, and use <code>FB2K_MAKE_SERVICE_INTERFACE()</code> / <code>FB2K_MAKE_SERVICE_INTERFACE_ENTRYPOINT()</code> macro to implement standard service behaviors for the class; additionally, <code>class_guid</code> needs to be defined outside class declaration (e.g. <code>const GUID someclass::class_guid = {&hellip;.};</code> ). Note that most of components will not declare their own service types, they will only implement existing ones declared in the <acronym title="Software Development Kit">SDK</acronym>.
+</p>
+
+<p>
+A service implementation is a class derived from relevant service type class, implementing virtual methods declared by service type class. Note that service implementation class does not implement virtual methods declared by service_base; those are implemented by service type declaration framework (<code>service_query</code>) or by instantiation framework (<code>service_add_ref</code> / <code>service_release</code>). Service implementation classes are instantiated using <code>service_factory</code> templates in case of entrypoint services (see below), or using <code>service_impl_t</code> template and operator <code>new</code>: ”<code>myserviceptr = new service_impl_t&lt;myservice_impl&gt;(params);</code>”.
+</p>
+
+<p>
+Each service object provides reference counter features and (<code>service_add_ref()</code> and <code>service_release()</code> methods) as well as a method to query for extended functionality (<code>service_query()</code> method). Those methods are implemented by service framework and should be never overridden by service implementations. These methods should also never be called directly - reference counter methods are managed by relevant autopointer templates, <code>service_query_t</code> function template should be used instead of calling <code>service_query</code> directly, to ensure type safety and correct type conversions.
+</p>
+
+</div>
+<!-- SECTION "Services" [3082-5347] -->
+<h3><a name="entrypoint_services" id="entrypoint_services">Entrypoint services</a></h3>
+<div class="level3">
+
+<p>
+ An entrypoint service type is a special case of a service type that can be registered using <code>service_factory</code> templates, and then accessed from any point of service system (excluding DLL startup/shutdown code, such as code inside static object constructors/destructors). An entrypoint service type class must directly derive from <code>service_base</code>.
+</p>
+
+<p>
+Registered entrypoint services can be accessed using:
+</p>
+<ul>
+<li class="level1"><div class="li"> For services types with variable number of implementations registered: <code>service_enum_t&lt;T&gt;</code> template, <code>service_class_helper_t&lt;T&gt;</code> template, etc, e.g. <pre class="code cpp">service_enum_t&lt;someclass&gt; e; service_ptr_t&lt;someclass&gt; ptr; <span class="kw1">while</span><span class="br0">&#40;</span>e.<span class="me1">next</span><span class="br0">&#40;</span>ptr<span class="br0">&#41;</span><span class="br0">&#41;</span> ptr-&gt;dosomething<span class="br0">&#40;</span><span class="br0">&#41;</span>;</pre></div>
+</li>
+<li class="level1"><div class="li"> For services types with single always-present implementation registered - such as core services like <code>playlist_manager</code> - using <code>static_api_ptr_t&lt;T&gt;</code> template, e.g.: <pre class="code cpp">static_api_ptr_t&lt;someclass&gt; api; api-&gt;dosomething<span class="br0">&#40;</span><span class="br0">&#41;</span>; api-&gt;dosomethingelse<span class="br0">&#40;</span><span class="br0">&#41;</span>;</pre></div>
+</li>
+<li class="level1"><div class="li"> Using per-service-type defined static helper functions, e.g. <code>someclass::g_dosomething()</code> - those use relevant service enumeration methods internally.</div>
+</li>
+</ul>
+
+<p>
+ An entrypoint service type must use <code>FB2K_MAKE_SERVICE_INTERFACE_ENTRYPOINT()</code> macro to implement standard entrypoint service behaviors, as opposed to all other service types that use <code>FB2K_MAKE_SERVICE_INTERFACE()</code> macro instead.
+</p>
+
+<p>
+You can register your own entrypoint service implementations using either <code>service_factory_t</code> or <code>service_factory_single_t</code> template - the difference between the two is that the former instantiates the class on demand, while the latter keeps a single static instance and returns references to it when requested; the latter is faster but usable only for things that have no per-instance member data to maintain. Each <code>service_factory_t</code> / <code>service_factory_single_t</code> instance should be a static variable, such as: ”<code>static service_factory_t&lt;myclass&gt; g_myclass_factory;</code>”.
+</p>
+
+<p>
+Certain service types require custom <code>service_factory</code> helper templates to be used instead of standard <code>service_factory_t</code> / <code>service_factory_single_t</code> templates; see documentation of specific service type for exact info about registering.
+</p>
+
+<p>
+A typical entrypoint service implementation looks like this: 
+</p>
+<pre class="code cpp"><span class="kw2">class</span> myservice_impl : <span class="kw2">public</span> myservice <span class="br0">&#123;</span>
+<span class="kw2">public</span>:
+	<span class="kw4">void</span> dosomething<span class="br0">&#40;</span><span class="br0">&#41;</span> <span class="br0">&#123;</span>....<span class="br0">&#125;</span>;
+	<span class="kw4">void</span> dosomethingelse<span class="br0">&#40;</span><span class="kw4">int</span> meh<span class="br0">&#41;</span> <span class="br0">&#123;</span>...<span class="br0">&#125;</span>;
+<span class="br0">&#125;</span>;
+<span class="kw4">static</span> service_factory_single_t&lt;myservice_impl&gt; g_myservice_impl_factory;</pre>
+</div>
+<!-- SECTION "Entrypoint services" [5348-7819] -->
+<h3><a name="service_extensions" id="service_extensions">Service extensions</a></h3>
+<div class="level3">
+
+<p>
+ Additional methods can be added to any service type, by declaring a new service type class deriving from service type class you want to extend. For example: 
+</p>
+<pre class="code cpp"><span class="kw2">class</span> myservice : <span class="kw2">public</span> service_base <span class="br0">&#123;</span> <span class="kw2">public</span>: <span class="kw2">virtual</span> <span class="kw4">void</span> dosomething<span class="br0">&#40;</span><span class="br0">&#41;</span> = <span class="nu0">0</span>; FB2K_MAKE_SERVICE_INTERFACE_ENTRYPOINT<span class="br0">&#40;</span>myservice<span class="br0">&#41;</span>; <span class="br0">&#125;</span>;
+<span class="kw2">class</span> myservice_v2 : <span class="kw2">public</span> myservice <span class="br0">&#123;</span> <span class="kw2">public</span>: <span class="kw2">virtual</span> <span class="kw4">void</span> dosomethingelse<span class="br0">&#40;</span><span class="br0">&#41;</span> = <span class="nu0">0</span>; FB2K_MAKE_SERVICE_INTERFACE<span class="br0">&#40;</span>myservice_v2, myservice<span class="br0">&#41;</span>; <span class="br0">&#125;</span>;</pre>
+<p>
+ In such scenario, to query whether a myservice instance is a <code>myservice_v2</code> and to retrieve <code>myservice_v2</code> pointer, use <code>service_query</code> functionality: 
+</p>
+<pre class="code cpp">service_ptr_t&lt;myservice&gt; ptr;
+<span class="br0">&#40;</span>...<span class="br0">&#41;</span>
+service_ptr_t&lt;myservice_v2&gt; ptr_ex;
+<span class="kw1">if</span> <span class="br0">&#40;</span>ptr-&gt;service_query_t<span class="br0">&#40;</span>ptr_ex<span class="br0">&#41;</span><span class="br0">&#41;</span> <span class="br0">&#123;</span> <span class="coMULTI">/* ptr_ex is a valid pointer to myservice_v2 interface of our myservice instance */</span> <span class="br0">&#40;</span>...<span class="br0">&#41;</span> <span class="br0">&#125;</span>
+<span class="kw1">else</span> <span class="br0">&#123;</span><span class="coMULTI">/* this myservice implementation does not implement myservice_v2 */</span> <span class="br0">&#40;</span>...<span class="br0">&#41;</span> <span class="br0">&#125;</span></pre>
+</div>
+<!-- SECTION "Service extensions" [7820-8759] -->
+<h3><a name="autopointer_template_use" id="autopointer_template_use">Autopointer template use</a></h3>
+<div class="level3">
+
+<p>
+ When performing most kinds of service operations, <code>service_ptr_t&lt;T&gt;</code> template should be used rather than working with service pointers directly; it automatically manages reference counter calls, ensuring that the service object is deleted when it is no longer referenced. Additionally, <code>static_api_ptr_t&lt;T&gt;</code> can be used to automatically acquire/release a pointer to single-implementation entrypoint service, such as one of standard APIs like <code>playlist_manager</code>.
+</p>
+
+</div>
+<!-- SECTION "Autopointer template use" [8760-9264] -->
+<h3><a name="exception_use" id="exception_use">Exception use</a></h3>
+<div class="level3">
+
+<p>
+ Most of <acronym title="Application Programming Interface">API</acronym> functions use C++ exceptions to signal failure conditions. All used exception classes must derive from <code>std::exception</code> (which <code>pfc::exception</code> is typedef&#039;d to); this design allows various instances of code to use single <code>catch()</code> line to get human-readable description of the problem to display.
+</p>
+
+<p>
+Additionally, special subclasses of exceptions are defined for use in specific conditions, such as <code>exception_io</code> for I/O failures. As a result, you must provide an exception handler whenever you invoke any kind of I/O code that may fail, unless in specific case calling context already handles exceptions (e.g. input implementation code - any exceptions should be forwarded to calling context, since exceptions are a part of input <acronym title="Application Programming Interface">API</acronym>).
+</p>
+
+<p>
+Implementations of global callback services such as <code>playlist_callback</code>, <code>playback_callback</code> or <code>library_callback</code> must not throw unhandled exceptions; behaviors in case they do are undefined (app termination is to be expected).
+</p>
+
+</div>
+<!-- SECTION "Exception use" [9265-10282] -->
+<h3><a name="storing_configuration" id="storing_configuration">Storing configuration</a></h3>
+<div class="level3">
+
+<p>
+ In order to create your entries in the configuration file, you must instantiate some objects that derive from <code>cfg_var</code> class. Those can be either predefined classes (<code>cfg_int</code>, <code>cfg_string</code>, etc) or your own classes implementing relevant methods.
+</p>
+
+<p>
+Each <code>cfg_var</code> instance has a GUID assigned, to identify its configuration file entry. The GUID is passed to its constructor (which implementations must take care of, typically by providing a constructor that takes a GUID and forwards it to <code>cfg_var</code> constructor).
+</p>
+
+<p>
+Note that <code>cfg_var</code> objects can only be instantiated statically (either directly as static objects, or as members of other static objects). Additionally, you can create configuration data objects that can be accessed by other components, by implementing <code>config_object</code> service. Some standard configuration variables can be also accessed using <code>config_object</code> interface.
+</p>
+
+</div>
+<!-- SECTION "Storing configuration" [10283-11218] -->
+<h3><a name="use_of_global_callback_services" id="use_of_global_callback_services">Use of global callback services</a></h3>
+<div class="level3">
+
+<p>
+ Multiple service classes presented by the <acronym title="Software Development Kit">SDK</acronym> allow your component to receive notifications about various events:
+</p>
+<ul>
+<li class="level1"><div class="li"> file_operation_callback - tracking file move/copy/delete operations.</div>
+</li>
+<li class="level1"><div class="li"> library_callback - tracking Media Library content changes.</div>
+</li>
+<li class="level1"><div class="li"> metadb_io_callback - tracking tag read / write operations altering cached/displayed media information.</div>
+</li>
+<li class="level1"><div class="li"> play_callback - tracking playback related events.</div>
+</li>
+<li class="level1"><div class="li"> playback_statistics_collector - collecting information about played tracks.</div>
+</li>
+<li class="level1"><div class="li"> playlist_callback, playlist_callback_single - tracking playlist changes (the latter tracks only active playlist changes).</div>
+</li>
+<li class="level1"><div class="li"> playback_queue_callback - tracking playback queue changes.</div>
+</li>
+<li class="level1"><div class="li"> titleformat_config_callback - tracking changes of title formatting configuration.</div>
+</li>
+<li class="level1"><div class="li"> ui_drop_item_callback - filtering items dropped into the UI.</div>
+</li>
+</ul>
+
+<p>
+All of global callbacks operate only within main app thread, allowing easy cooperation with windows <acronym title="Graphical User Interface">GUI</acronym> - for an example, you perform playlist view window repainting directly from your playlist_callback implementation.
+</p>
+
+<p>
+There are restrictions on things that are legal to call from within global callbacks. For an example, you can&#039;t modify playlist from inside a playlist callback, because there are other registered callbacks tracking playlist changes that haven&#039;t been notified about the change being currently processed yet.
+</p>
+
+<p>
+<strong>IMPORTANT</strong>: You must not enter modal message loops from inside global callbacks, as those allow <strong>any</strong> unrelated code (queued messages, user input, etc.) to be executed, without being aware that a global callback is being processed. Certain global <acronym title="Application Programming Interface">API</acronym> methods such as metadb_io::load_info_multi or threaded_process::run_modal enter modal loops when called. In other words, calling tag read/write operations from within one of global callbacks is illegal and will lead to issues. Use main_thread_callback service to avoid this problem and delay execution of problematic code.
+</p>
+
+</div>
+<!-- SECTION "Use of global callback services" [11219-13201] -->
+<h2><a name="service_class_design_guidelines_advanced" id="service_class_design_guidelines_advanced">Service class design guidelines (advanced)</a></h2>
+<div class="level2">
+
+<p>
+ This chapter describes things you should keep on your mind when designing your own service type classes. Since 99% of components will only implement existing service types rather than adding their own cross-DLL-communication protocols, you can probably skip reading this chapter.
+</p>
+
+</div>
+<!-- SECTION "Service class design guidelines (advanced)" [13202-13538] -->
+<h3><a name="cross-dll_safety" id="cross-dll_safety">Cross-DLL safety</a></h3>
+<div class="level3">
+
+<p>
+ It is important that all function parameters used by virtual methods of services are cross-DLL safe (do not depend on compiler-specific or runtime-specific behaviors, so no unexpected behaviors occur when calling code is built with different compiler/runtime than callee). To achieve this, any classes passed around must be either simple objects with no structure that could possibly vary with different compilers/runtimes (i.e. make sure that any memory blocks are freed on the side that allocated them); easiest way to achieve this is to reduce all complex data objects or classes passed around to interfaces with virtual methods, with implementation details hidden from callee. For an example, use <code>pfc::string_base&amp;</code> as parameter to a function that is meant to return variable-length strings.
+</p>
+
+</div>
+<!-- SECTION "Cross-DLL safety" [13539-14366] -->
+<h3><a name="entrypoint_service_efficiency" id="entrypoint_service_efficiency">Entrypoint service efficiency</a></h3>
+<div class="level3">
+
+<p>
+ When designing an entrypoint service interface meant to have multiple different implementations, you should consider making it possible for all its implementations to use <code>service_factory_single_t</code> (i.e. no per-instance member data); by e.g. moving functionality that needs multi-instance operation to a separate service type class that is created on-demand by one of entrypoint service methods. For example: 
+</p>
+<pre class="code cpp"><span class="kw2">class</span> myservice : <span class="kw2">public</span> service_base <span class="br0">&#123;</span>
+<span class="kw2">public</span>:
+	<span class="co1">//this method accesses per-instance member data of the implementation class</span>
+	<span class="kw2">virtual</span> <span class="kw4">void</span> workerfunction<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">void</span> * p_databuffer,t_size p_buffersize<span class="br0">&#41;</span> = <span class="nu0">0</span>;
+	<span class="co1">//this method is used to determine which implementation can be used to process specific data stream.</span>
+	<span class="kw2">virtual</span> <span class="kw4">bool</span> queryfunction<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">char</span> * p_dataformat<span class="br0">&#41;</span> = <span class="nu0">0</span>;
+&nbsp;
+	FB2K_MAKE_SERVICE_INTERFACE_ENTRYPOINT<span class="br0">&#40;</span>myservice<span class="br0">&#41;</span>;
+<span class="br0">&#125;</span>;
+<span class="br0">&#40;</span>...<span class="br0">&#41;</span>
+service_ptr_t&lt;myservice&gt; findservice<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">char</span> * p_dataformat<span class="br0">&#41;</span> <span class="br0">&#123;</span>
+	service_enum_t&lt;myservice&gt; e; service_ptr_t&lt;myservice&gt; ptr;
+	<span class="co1">//BOTTLENECK, this dynamically instantiates the service for each query.</span>
+	<span class="kw1">while</span><span class="br0">&#40;</span>e.<span class="me1">next</span><span class="br0">&#40;</span>ptr<span class="br0">&#41;</span><span class="br0">&#41;</span> <span class="br0">&#123;</span>
+		<span class="kw1">if</span> <span class="br0">&#40;</span>ptr-&gt;queryfunction<span class="br0">&#40;</span>p_dataformat<span class="br0">&#41;</span><span class="br0">&#41;</span> <span class="kw1">return</span> ptr;
+	<span class="br0">&#125;</span>
+	throw exception_io_data<span class="br0">&#40;</span><span class="br0">&#41;</span>;
+<span class="br0">&#125;</span></pre>
+<p>
+.. should be changed to:
+</p>
+<pre class="code cpp"><span class="co1">//no longer an entrypoint service - use myservice::instantiate to get an instance instead.</span>
+<span class="kw2">class</span> myservice_instance : <span class="kw2">public</span> service_base <span class="br0">&#123;</span>
+<span class="kw2">public</span>:
+	<span class="kw2">virtual</span> <span class="kw4">void</span> workerfunction<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">void</span> * p_databuffer,t_size p_buffersize<span class="br0">&#41;</span> = <span class="nu0">0</span>;
+	FB2K_MAKE_SERVICE_INTERFACE<span class="br0">&#40;</span>myservice_instance,service_base<span class="br0">&#41;</span>;
+<span class="br0">&#125;</span>;
+&nbsp;
+<span class="kw2">class</span> myservice : <span class="kw2">public</span> service_base <span class="br0">&#123;</span>
+<span class="kw2">public</span>:
+	<span class="co1">//this method is used to determine which implementation can be used to process specific data stream.</span>
+	<span class="kw2">virtual</span> <span class="kw4">bool</span> queryfunction<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">char</span> * p_dataformat<span class="br0">&#41;</span> = <span class="nu0">0</span>;
+	<span class="kw2">virtual</span> service_ptr_t&lt;myservice_instance&gt; instantiate<span class="br0">&#40;</span><span class="br0">&#41;</span> = <span class="nu0">0</span>;
+	FB2K_MAKE_SERVICE_INTERFACE_ENTRYPOINT<span class="br0">&#40;</span>myservice<span class="br0">&#41;</span>;
+<span class="br0">&#125;</span>;
+&nbsp;
+template&lt;typename t_myservice_instance_impl&gt;
+<span class="kw2">class</span> myservice_impl_t : <span class="kw2">public</span> myservice <span class="br0">&#123;</span>
+<span class="kw2">public</span>:
+	<span class="co1">//implementation of myservice_instance must provide static bool g_queryformatfunction(const char*);</span>
+	<span class="kw4">bool</span> queryfunction<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">char</span> * p_dataformat<span class="br0">&#41;</span> <span class="br0">&#123;</span><span class="kw1">return</span> t_myservice_instance_impl::<span class="me2">g_queryfunction</span><span class="br0">&#40;</span>p_dataformat<span class="br0">&#41;</span>;<span class="br0">&#125;</span>
+	service_ptr_t&lt;myservice_instance&gt; instantiate<span class="br0">&#40;</span><span class="br0">&#41;</span> <span class="br0">&#123;</span><span class="kw1">return</span> <span class="kw3">new</span> service_impl_t&lt;t_myservice_instance_impl&gt;<span class="br0">&#40;</span><span class="br0">&#41;</span>;<span class="br0">&#125;</span>
+<span class="br0">&#125;</span>;
+&nbsp;
+template&lt;typename t_myservice_instance_impl&gt; <span class="kw2">class</span> myservice_factory_t :
+	<span class="kw2">public</span> service_factory_single_t&lt;myservice_impl_t&lt;t_myservice_instance_impl&gt; &gt; <span class="br0">&#123;</span><span class="br0">&#125;</span>;
+<span class="co1">//usage: static myservice_factory_t&lt;myclass&gt; g_myclass_factory;</span>
+&nbsp;
+<span class="br0">&#40;</span>...<span class="br0">&#41;</span>
+&nbsp;
+service_ptr_t&lt;myservice_instance&gt; findservice<span class="br0">&#40;</span><span class="kw4">const</span> <span class="kw4">char</span> * p_dataformat<span class="br0">&#41;</span> <span class="br0">&#123;</span>
+	service_enum_t&lt;myservice&gt; e; service_ptr_t&lt;myservice&gt; ptr;
+	<span class="co1">//no more bottleneck, enumerated service does not perform inefficient operations when requesting an instance.</span>
+	<span class="kw1">while</span><span class="br0">&#40;</span>e.<span class="me1">next</span><span class="br0">&#40;</span>ptr<span class="br0">&#41;</span><span class="br0">&#41;</span> <span class="br0">&#123;</span>
+		<span class="co1">//&quot;inefficient&quot; part is used only once, with implementation that actually supports what we request.</span>
+		<span class="kw1">if</span> <span class="br0">&#40;</span>ptr-&gt;queryfunction<span class="br0">&#40;</span>p_dataformat<span class="br0">&#41;</span><span class="br0">&#41;</span> <span class="kw1">return</span> ptr-&gt;instantiate<span class="br0">&#40;</span><span class="br0">&#41;</span>;
+	<span class="br0">&#125;</span>
+	throw exception_io_data<span class="br0">&#40;</span><span class="br0">&#41;</span>;
+<span class="br0">&#125;</span></pre>
+</div>
+<!-- SECTION "Entrypoint service efficiency" [14367-] --></div>
+</body>
+</html>
