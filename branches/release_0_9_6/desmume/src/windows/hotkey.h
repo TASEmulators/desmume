@@ -68,7 +68,7 @@ struct SCustomKeys
 	SCustomKey Slot[10];
 	SCustomKey QuickSave, QuickLoad, NextSaveSlot, PreviousSaveSlot;
 
-	SCustomKey OpenROM, Reset, Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, Microphone;
+	SCustomKey OpenROM, ReloadROM, Reset, Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, Microphone;
 
 	SCustomKey PlayMovie, RecordMovie, StopMovie, ToggleReadOnly;
 	
