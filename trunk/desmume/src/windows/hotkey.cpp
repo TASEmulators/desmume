@@ -85,7 +85,12 @@ void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
 //======================================================================================
 //=====================================HANDLERS=========================================
 //======================================================================================
-void HK_OpenROM(int, bool justPressed) {OpenFile();}
+void HK_OpenROM(int, bool justPressed) { OpenFile(); }
+void HK_ReloadROM(int, bool justPressed)
+{
+	void OpenRecentROM(int listNum);
+	OpenRecentROM(0);
+}
 void HK_PrintScreen(int param, bool justPressed)
 {
 	char outFilename[MAX_PATH];
@@ -409,10 +414,16 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->OpenROM.handleKeyDown = HK_OpenROM;
 	keys->OpenROM.code = "OpenROM";
 	keys->OpenROM.name = STRW(ID_LABEL_HK1);
-	//keys->OpenROM.name = STRW(ID_LOCALIZED_STRING);
 	keys->OpenROM.page = HOTKEY_PAGE_MAIN;
 	keys->OpenROM.key = 'O';
 	keys->OpenROM.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->ReloadROM.handleKeyDown = HK_ReloadROM;
+	keys->ReloadROM.code = "ReloadROM";
+	keys->ReloadROM.name = STRW(ID_LABEL_HK53);
+	keys->ReloadROM.page = HOTKEY_PAGE_MAIN;
+	keys->ReloadROM.key = 'R';
+	keys->ReloadROM.modifiers = CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK;
 
 	keys->Reset.handleKeyDown = HK_Reset;
 	keys->Reset.code = "Reset";
@@ -496,36 +507,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->PrintScreen.name = STRW(ID_LABEL_HK13);
 	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
 	keys->PrintScreen.key = VK_F12;
-
-	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
-	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
-	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
-	keys->ToggleFrameCounter.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
-
-	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
-	keys->ToggleFPS.code = "ToggleFPSDisplay";
-	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
-	keys->ToggleFPS.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleFPS.key = NULL;
-
-	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
-	keys->ToggleInput.code = "ToggleInputDisplay";
-	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
-	keys->ToggleInput.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleInput.key = VK_OEM_COMMA;
-
-	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
-	keys->ToggleLag.code = "ToggleLagDisplay";
-	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
-	keys->ToggleLag.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleLag.key = NULL;
-
-	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
-	keys->ResetLagCounter.code = "ResetLagCounter";
-	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
-	keys->ResetLagCounter.page = HOTKEY_PAGE_MAIN;
-	keys->ResetLagCounter.key = NULL;
 
 	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
 	keys->ToggleReadOnly.code = "ToggleReadOnly";
@@ -697,6 +678,36 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->DecreaseVolume.name = STRW(ID_LABEL_HK33);
 	keys->DecreaseVolume.page = HOTKEY_PAGE_MOVIE;
 	keys->DecreaseVolume.key = NULL;
+
+	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
+	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
+	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
+	keys->ToggleFrameCounter.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
+
+	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
+	keys->ToggleFPS.code = "ToggleFPSDisplay";
+	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
+	keys->ToggleFPS.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleFPS.key = NULL;
+
+	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
+	keys->ToggleInput.code = "ToggleInputDisplay";
+	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
+	keys->ToggleInput.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleInput.key = VK_OEM_COMMA;
+
+	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
+	keys->ToggleLag.code = "ToggleLagDisplay";
+	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
+	keys->ToggleLag.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleLag.key = NULL;
+
+	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
+	keys->ResetLagCounter.code = "ResetLagCounter";
+	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
+	keys->ResetLagCounter.page = HOTKEY_PAGE_MOVIE;
+	keys->ResetLagCounter.key = NULL;
 
 	//StateSlots Page --------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
