@@ -747,6 +747,7 @@
 #define ID_LABEL_HK50                   4514
 #define ID_LABEL_HK51                   4515
 #define ID_LABEL_HK52                   4516
+#define ID_LABEL_HK53                   4517
 #define IDD_MICROPHONE                  5000
 #define IDM_MICROPHONESETTINGS          5001
 #define IDC_MICSAMPLEBROWSE             5003

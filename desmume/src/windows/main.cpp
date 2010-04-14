@@ -1942,6 +1942,7 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 void OpenRecentROM(int listNum)
 {
 	if (listNum > MAX_RECENT_ROMS) return; //Just in case
+	if (listNum >= RecentRoms.size()) return;
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
 	//LOG("Attempting to load %s\n",filename);
