@@ -3897,13 +3897,16 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 								case 0x20 :
 									val = 0;
 									break;
-								case 0x30 :
-									val = 0;
+								case 0x30: //Z1
+									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
+									if(nds.isTouch) val = 2048;
+									else val = 0;
 									break;
-								case 0x40 :
-									val = 0;
+								case 0x40: //Z2
+									//used for pressure calculation. we dont support pressure calculation so just return something.
+									val = 2048;
 									break;
-								case 0x50 :
+								case 0x50:
 									if(spicnt & 0x800)
 									{
 										if(partie)

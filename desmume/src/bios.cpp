@@ -256,6 +256,7 @@ TEMPLATE u32 intrWaitARM()
 	//if(!noDiscard)
 	//	intrFlag &= cpu->newIrqFlags;
 
+	MMU.reg_IME[PROCNUM] = 1;
 	_MMU_write32<PROCNUM>(0x04000208, 1);			// set IME=1
 
 	if (intrFlag)
