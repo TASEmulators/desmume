@@ -2718,8 +2718,11 @@ int _main()
 		if(OpenCore(cmdline.nds_file.c_str()))
 		{
 			romloaded = TRUE;
-			if(!cmdline.start_paused)
-				NDS_UnPause();
+			if(cmdline.start_paused)
+			{
+				NDS_Pause();
+				cmdline.start_paused = 0;
+			}
 		}
 	}
 
@@ -3133,7 +3136,7 @@ static BOOL OpenCore(const char* filename)
 	{
 		romloaded = TRUE;
 		if(movieMode == MOVIEMODE_INACTIVE)
-		Unpause();
+			Unpause();
 
 		// Update the toolbar
 		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
