@@ -3072,6 +3072,15 @@ void WavEnd()
 	NDS_UnPause();
 }
 
+void UpdateToolWindows()
+{
+	Update_RAM_Search();	//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
+
+	if(SoundView_IsOpened()) SoundView_Refresh();
+	RefreshAllToolWindows();
+	mainLoopData.toolframecount = 0;
+}
+
 //Shows an Open File menu and starts recording an WAV
 void WavRecordTo(int wavmode)
 {
@@ -4179,8 +4188,7 @@ DOKEYDOWN:
 					if ((fileDropped[extIndex+3] >= '0' && fileDropped[extIndex+3] <= '9') || fileDropped[extIndex+3] == '-' || fileDropped[extIndex+3] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
 					{
 						savestate_load(filename);
-													//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
-						Update_RAM_Search();		//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot & State_Load also call these functions
+						UpdateToolWindows();
 					}
 				}
 			}
@@ -4561,8 +4569,7 @@ DOKEYDOWN:
 				}
 
 				savestate_load(SavName);
-											//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
-				Update_RAM_Search();		//Update_RAM_Watch() is also called; hotkey.cpp - HK_StateLoadSlot also calls these functions
+				UpdateToolWindows();
 				NDS_UnPause();
 			}
 			return 0;

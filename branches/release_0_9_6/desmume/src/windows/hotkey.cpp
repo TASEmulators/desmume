@@ -165,8 +165,7 @@ void HK_StateLoadSlot(int num, bool justPressed)
 		loadstate_slot(num);		//Loadstate
 		lastSaveState = num;		//Set last savestate used
 
-									//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
-		Update_RAM_Search();		//Update_RAM_Watch() is also called; main.cpp - case IDM_STATE_LOAD: also calls these functions
+		UpdateToolWindows();
 
 		if(!wasPaused)
 			NDS_UnPause();
