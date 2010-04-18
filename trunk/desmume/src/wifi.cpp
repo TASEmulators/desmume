@@ -1930,8 +1930,10 @@ bool SoftAP_Init()
 	
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *alldevs;
+	int ret;
 
-	if(driver->PCAP_findalldevs(&alldevs, errbuf) == -1)
+	ret = driver->PCAP_findalldevs(&alldevs, errbuf);
+	if (ret == -1 || alldevs == NULL)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to find any network adapter: %s\n", errbuf);
 		return false;
