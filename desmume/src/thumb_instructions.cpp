@@ -38,6 +38,31 @@
 
 #define REG_NUM(i, n) (((i)>>n)&0x7)
 
+// ============================= CPRS flags funcs
+static bool CarryFrom(s32 left, s32 right)
+{
+  u32 res  = (0xFFFFFFFF - (u32)left);
+
+  return ((u32)right > res);
+}
+
+static bool BorrowFrom(s32 left, s32 right)
+{
+  return ((u32)right > (u32)left);
+}
+
+static bool OverflowFromADD(s32 alu_out, s32 left, s32 right)
+{
+    return ((left >= 0 && right >= 0) || (left < 0 && right < 0))
+			&& ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
+}
+
+static bool OverflowFromSUB(s32 alu_out, s32 left, s32 right)
+{
+    return ((left < 0 && right >= 0) || (left >= 0 && right < 0))
+			&& ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
+}
+
 //-----------------------------------------------------------------------------
 //   Undefined instruction
 //-----------------------------------------------------------------------------
