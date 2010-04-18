@@ -925,6 +925,7 @@ public:
 		u32 lastTextureFormat = 0, lastTexturePalette = 0;
 
 		//iterate over polys
+		bool first=true;
 		for(int i=0;i<engine->clippedPolyCounter;i++)
 		{
 			if(!RENDERER) _debug_thisPoly = (i==engine->_debug_drawClippedUserPoly);
@@ -935,7 +936,7 @@ public:
 			POLY *poly = clippedPoly.poly;
 			int type = clippedPoly.type;
 
-			if(i == 0 || lastPolyAttr != poly->polyAttr)
+			if(first || lastPolyAttr != poly->polyAttr)
 			{
 				polyAttr.setup(poly->polyAttr);
 				polyAttr.translucent = poly->isTranslucent();
@@ -943,12 +944,14 @@ public:
 			}
 
 
-			if(i == 0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
+			if(first || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
 			{
 				sampler.setup(poly->texParam);
 				lastTextureFormat = poly->texParam;
 				lastTexturePalette = poly->texPalette;
 			}
+
+			first = false;
 
 			lastTexKey = engine->polyTexKeys[i];
 
