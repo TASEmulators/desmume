@@ -1978,12 +1978,60 @@ void SoftAP_Reset()
 	SoftAP.seqNum = 0;
 }
 
+//I coded this up in a minute. is there a standard way of doing this or another function I can borrow?
+static s32 searchmem(u8* data, u32 len, char* search)
+{
+	s32 i=0;
+	u32 searchLen = strlen(search);
+	if(len==0) return -1;
+	if(searchLen==0) return -1;
+
+	for(;;)
+	{
+		u32 j=0;
+		s32 snap = i;
+		for(;i<len&&j<searchLen;i++,j++)
+		{
+			if(data[i] != search[j]) 
+			{
+				i++;
+				break;
+			}
+		}
+		if(j==searchLen) 
+			return snap;
+		if(i==len)
+			break;
+	}
+	return -1;
+}
+
+static bool validatePacket(u8 *packet, u32 len)
+{
+	//reject DNS requests for nintendo. this is a rather blunt instrument right now.
+	//i suppose it would prevent someone from discussing nintendowifi on clirc!
+	//does someone know how to make an EZ dns parser?
+	if(searchmem(packet,len,"nintendowifi") == -1) return true;
+	else return false;
+}
+
 void SoftAP_SendPacket(u8 *packet, u32 len)
 {
 	u16 frameCtl = *(u16*)&packet[0];
 
 	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
 		len, frameCtl);
+
+	if(!validatePacket(packet,len)) return;
+
+	//use this to log wifi messages easily
+	//static int ctr=0;
+	//char buf[100];
+	//sprintf(buf,"wifi%04d.txt",ctr);
+	//FILE* outf = fopen(buf,"wb");
+	//fwrite(packet,1,len,outf);
+	//fclose(outf);
+	//ctr++;
 
 	switch((frameCtl >> 2) & 0x3)
 	{
