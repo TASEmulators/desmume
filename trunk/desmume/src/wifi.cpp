@@ -73,6 +73,17 @@ SoftAP_t SoftAP;
 
 /*******************************************************************************
 
+	WIFI TODO
+
+	- emulate transmission delays for Beacon and Extra transfers
+	- emulate delays when receiving as well (may need some queuing system)
+	- take transfer rate and preamble into account
+	- figure out RFSTATUS and RFPINS
+
+ *******************************************************************************/
+
+/*******************************************************************************
+
 	Firmware info needed for if no firmware image is available
 	see: http://www.akkit.org/info/dswifi.htm#WifiInit
 
@@ -1482,31 +1493,15 @@ u16 WIFI_read16(u32 address)
 			return wifiMac.pid;
 		case REG_WIFI_AID_HIGH:
 			return wifiMac.aid;
+
+			// RFSTATUS, RFPINS
+			// TODO: figure out how to emulate those correctly
+			// without breaking Nintendo's games
 		case REG_WIFI_RFSTATUS:
-			//WIFI_LOG(3, "Read RF_STATUS: %04X\n", wifiMac.rfStatus);
-			//printf("-------------------- read RFSTATUS at %08X -----------------------------\n", NDS_ARM7.instruct_adr);
 			return 0x0009;
-			//return wifiMac.rfStatus;
 		case REG_WIFI_RFPINS:
-			//WIFI_LOG(3, "Read RF_PINS: %04X\n", wifiMac.rfPins);
-			//emu_halt();
-		//	printf("-------------------- read RFPINS at %08X -----------------------------\n", NDS_ARM7.instruct_adr);
-			//return wifiMac.rfPins;
-			return 0x0004;
-		case 0x210:
-			//printf("read TX reg %04X\n", address);
-			break;
-		/*case 0x1B6:
-			{
-				u16 val = wifiMac.RXNum << 8;
-				wifiMac.RXNum = 0;
-				return val;
-			}*/
-	/*	case 0x94:
-		case 0x98:
-		case 0x1B6:
-		case 0x1C4:*/
-		//	printf("wifi: Read from port %03X\n", address);
+			return 0x00C6;
+
 		case 0x268:
 			return wifiMac.RXTXAddr;
 
@@ -1828,24 +1823,28 @@ void Adhoc_usTrigger()
 // so the RX header length field is indeed header+body
 // Hence the CRC32 has been removed from those templates.
 
-const u8 SoftAP_MACAddr[6] = {0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D};
+// If you wanna change SoftAP's MAC address, change this
+// Warning, don't mistake this for an array, it isn't
+#define SOFTAP_MACADDR 0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D
+
+const u8 SoftAP_MACAddr[6] = {SOFTAP_MACADDR};
 
 const u8 SoftAP_Beacon[] = {
 	/* 802.11 header */
 	0x80, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,					// Receiver
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// Sender
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// BSSID
+	SOFTAP_MACADDR,										// Sender
+	SOFTAP_MACADDR,										// BSSID
 	0x00, 0x00,											// Sequence control
 
 	/* Frame body */
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,		// Timestamp (modified later)
 	0x80, 0x00,											// Beacon interval
-	0x0F, 0x00,											// Capablilty information
+	0x21, 0x00,											// Capablilty information
 	0x01, 0x02, 0x82, 0x84,								// Supported rates
 	0x03, 0x01, 0x06,									// Current channel
-	0x05, 0x04, 0x00, 0x00, 0x00, 0x00,					// TIM
+	0x05, 0x04, 0x02, 0x01, 0x00, 0x00,					// TIM (no idea what the hell it is)
 	0x00, 0x06, 'S', 'o', 'f', 't', 'A', 'P',			// SSID
 };
 
@@ -1854,14 +1853,14 @@ const u8 SoftAP_ProbeResponse[] = {
 	0x50, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
 	0x00, 0x09, 0xBF, 0x12, 0x34, 0x56,					// Receiver
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// Sender
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// BSSID
+	SOFTAP_MACADDR,										// Sender
+	SOFTAP_MACADDR,										// BSSID
 	0x00, 0x00,											// Sequence control
 
 	/* Frame body */
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,		// Timestamp (modified later)
 	0x80, 0x00,											// Beacon interval
-	0x0F, 0x00,											// Capablilty information
+	0x21, 0x00,											// Capablilty information
 	0x01, 0x02, 0x82, 0x84,								// Supported rates
 	0x03, 0x01, 0x06,									// Current channel
 	0x00, 0x06, 'S', 'o', 'f', 't', 'A', 'P',			// SSID
@@ -1873,8 +1872,8 @@ const u8 SoftAP_AuthFrame[] = {
 	0xB0, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
 	0x00, 0x09, 0xBF, 0x12, 0x34, 0x56,					// Receiver
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// Sender
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// BSSID
+	SOFTAP_MACADDR,										// Sender
+	SOFTAP_MACADDR,										// BSSID
 	0x00, 0x00,											// Sequence control
 
 	/* Frame body */
@@ -1888,12 +1887,12 @@ const u8 SoftAP_AssocResponse[] = {
 	0x10, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
 	0x00, 0x09, 0xBF, 0x12, 0x34, 0x56,					// Receiver
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// Sender
-	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// BSSID
+	SOFTAP_MACADDR,										// Sender
+	SOFTAP_MACADDR,										// BSSID
 	0x00, 0x00,											// Sequence control
 
 	/* Frame body */
-	0x0F, 0x00,											// Capability information
+	0x21, 0x00,											// Capability information
 	0x00, 0x00,											// Status
 	0x01, 0xC0,											// Assocation ID
 	0x01, 0x02, 0x82, 0x84,								// Supported rates
@@ -1981,58 +1980,32 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 {
 	u16 frameCtl = *(u16*)&packet[0];
 
-	/*WIFI_LOG(3, */printf("SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
+	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
 		len, frameCtl);
 
 	switch((frameCtl >> 2) & 0x3)
 	{
 	case 0x0:				// Management frame
 		{
+			u32 packetLen;
+
 			switch((frameCtl >> 4) & 0xF)
 			{
 			case 0x4:		// Probe request (WFC)
 				{
-					u32 packetLen = sizeof(SoftAP_ProbeResponse);
-					u32 totalLen = (packetLen + 12);
-
-					// Make the RX header
-					WIFI_MakeRXHeader(SoftAP.curPacket, 0x0010, 20, packetLen, 0, 0);
-
-					// Copy the probe response template
+					packetLen = sizeof(SoftAP_ProbeResponse);
 					memcpy(&SoftAP.curPacket[12], SoftAP_ProbeResponse, packetLen);
-
-					// Add the MAC address
-					memcpy(&SoftAP.curPacket[12 + 4], FW_Mac, 6);
 
 					// Add the timestamp
 					u64 timestamp = SoftAP.usecCounter;
 					*(u64*)&SoftAP.curPacket[12 + 24] = timestamp;
-
-					// Let's prepare to send
-					SoftAP.curPacketSize = totalLen;
-					SoftAP.curPacketPos = 0;
-					SoftAP.curPacketSending = TRUE;
 				}
 				break;
 
 			case 0xB:		// Authentication
 				{
-					u32 packetLen = sizeof(SoftAP_AuthFrame);
-					u32 totalLen = (packetLen + 12);
-
-					// Make the RX header
-					WIFI_MakeRXHeader(SoftAP.curPacket, 0x0010, 20, packetLen, 0, 0);
-
-					// Copy the authentication frame template
+					packetLen = sizeof(SoftAP_AuthFrame);
 					memcpy(&SoftAP.curPacket[12], SoftAP_AuthFrame, packetLen);
-
-					// Add the MAC address
-					memcpy(&SoftAP.curPacket[12 + 4], FW_Mac, 6);
-
-					// Let's prepare to send
-					SoftAP.curPacketSize = totalLen;
-					SoftAP.curPacketPos = 0;
-					SoftAP.curPacketSending = TRUE;
 
 					SoftAP.status = APStatus_Authenticated;
 				}
@@ -2043,22 +2016,8 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 					if (SoftAP.status != APStatus_Authenticated)
 						return;
 
-					u32 packetLen = sizeof(SoftAP_AssocResponse);
-					u32 totalLen = (packetLen + 12);
-
-					// Make the RX header
-					WIFI_MakeRXHeader(SoftAP.curPacket, 0x0010, 20, packetLen, 0, 0);
-
-					// Copy the association response template
+					packetLen = sizeof(SoftAP_AssocResponse);
 					memcpy(&SoftAP.curPacket[12], SoftAP_AssocResponse, packetLen);
-
-					// Add the MAC address
-					memcpy(&SoftAP.curPacket[12 + 4], FW_Mac, 6);
-
-					// Let's prepare to send
-					SoftAP.curPacketSize = totalLen;
-					SoftAP.curPacketPos = 0;
-					SoftAP.curPacketSending = TRUE;
 
 					SoftAP.status = APStatus_Associated;
 					WIFI_LOG(1, "SoftAP connected!\n");
@@ -2067,17 +2026,33 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 
 			case 0xA:		// Disassociation
 				SoftAP.status = APStatus_Authenticated;
-				break;
+				return;
 
 			case 0xC:		// Deauthentication
 				SoftAP.status = APStatus_Disconnected;
 				WIFI_LOG(1, "SoftAP disconnected\n");
-				break;
+				return;
 
 			default:
 				WIFI_LOG(2, "SoftAP: unknown management frame type %04X\n", (frameCtl >> 4) & 0xF);
-				break;
+				return;
 			}
+
+			memcpy(&SoftAP.curPacket[12 + 4], FW_Mac, 6); // Receiver MAC
+
+			*(u16*)&SoftAP.curPacket[12 + 22] = SoftAP.seqNum << 4; // Sequence number
+			SoftAP.seqNum++;
+
+			u16 rxflags = 0x0010;
+			if (WIFI_compareMAC(wifiMac.bss.bytes, &SoftAP.curPacket[12 + 16]))
+				rxflags |= 0x8000;
+
+			WIFI_MakeRXHeader(SoftAP.curPacket, rxflags, 20, packetLen, 0, 0); // make the RX header
+
+			// Let's prepare to send
+			SoftAP.curPacketSize = packetLen + 12;
+			SoftAP.curPacketPos = 0;
+			SoftAP.curPacketSending = TRUE;
 		}
 		break;
 
@@ -2092,8 +2067,8 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 				u32 epacketLen = ((len - 30 - 4) + 14);
 				u8 epacket[2048];
 
-				printf("----- SENDING ETHERNET PACKET: len=%i, ethertype=%04X -----\n",
-					len, *(u16*)&packet[30]);
+				//printf("----- SENDING ETHERNET PACKET: len=%i, ethertype=%04X -----\n",
+				//	len, *(u16*)&packet[30]);
 
 				memcpy(&epacket[0], &packet[16], 6);
 				memcpy(&epacket[6], &packet[10], 6);
@@ -2115,20 +2090,23 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 INLINE void SoftAP_SendBeacon()
 {
 	u32 packetLen = sizeof(SoftAP_Beacon);
-	u32 totalLen = (packetLen + 12);
 
-	// Make the RX header
-	WIFI_MakeRXHeader(SoftAP.curPacket, 0x0011, 20, packetLen, 0, 0);
+	memcpy(&SoftAP.curPacket[12], SoftAP_Beacon, packetLen);	// Copy the beacon template
 
-	// Copy the beacon template
-	memcpy(&SoftAP.curPacket[12], SoftAP_Beacon, packetLen);
+	*(u16*)&SoftAP.curPacket[12 + 22] = SoftAP.seqNum << 4;		// Sequence number
+	SoftAP.seqNum++;
 
-	// Add the timestamp
 	u64 timestamp = SoftAP.usecCounter;
-	*(u64*)&SoftAP.curPacket[12 + 24] = timestamp;
+	*(u64*)&SoftAP.curPacket[12 + 24] = timestamp;				// Timestamp
+
+	u16 rxflags = 0x0010;
+	if (WIFI_compareMAC(wifiMac.bss.bytes, &SoftAP.curPacket[12 + 16]))
+		rxflags |= 0x8000;
+
+	WIFI_MakeRXHeader(SoftAP.curPacket, 0x8011, 20, packetLen, 0, 0);
 
 	// Let's prepare to send
-	SoftAP.curPacketSize = totalLen;
+	SoftAP.curPacketSize = packetLen + 12;
 	SoftAP.curPacketPos = 0;
 	SoftAP.curPacketSending = TRUE;
 }
@@ -2159,19 +2137,25 @@ static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_
 	//	24+ (h->caplen-12), 24 + (h->len-12), data[6], data[7], data[8], data[9], data[10], data[11],
 	//	data[0], data[1], data[2], data[3], data[4], data[5], *(u16*)&data[12]);
 
+	u16 rxflags = 0x0018;
+	if (WIFI_compareMAC(wifiMac.bss.bytes, (u8*)SoftAP_MACAddr))
+		rxflags |= 0x8000;
+
 	// Make a valid 802.11 frame
-	WIFI_MakeRXHeader(wpacket, 0x0018, 20, wpacketLen, 0, 0);
+	WIFI_MakeRXHeader(wpacket, rxflags, 20, wpacketLen, 0, 0);
 	*(u16*)&wpacket[12+0] = 0x0208;
 	*(u16*)&wpacket[12+2] = 0x0000;
 	memcpy(&wpacket[12+4], &data[0], 6);
 	memcpy(&wpacket[12+10], SoftAP_MACAddr, 6);
 	memcpy(&wpacket[12+16], &data[6], 6);
-	*(u16*)&wpacket[12+22] = 0x0000;		// Sequence control. Todo?
+	*(u16*)&wpacket[12+22] = SoftAP.seqNum << 4;
 	*(u16*)&wpacket[12+24] = 0xAAAA;
 	*(u16*)&wpacket[12+26] = 0x0003;
 	*(u16*)&wpacket[12+28] = 0x0000;
 	*(u16*)&wpacket[12+30] = *(u16*)&data[12];
 	memcpy(&wpacket[12+32], &data[14], wpacketLen);
+
+	SoftAP.seqNum++;
 
 	// put it in the RX buffer
 	for (int i = 0; i < (12 + wpacketLen); i += 2)
@@ -2183,7 +2167,7 @@ static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_
 	// Done!
 	wifiMac.RXWriteCursor = ((wifiMac.RXWriteCursor + 1) & (~1));
 	WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
-	wifiMac.RXNum++;
+
 	WIFI_triggerIRQ(WIFI_IRQ_RXEND);
 }
 
@@ -2191,6 +2175,9 @@ void SoftAP_usTrigger()
 {
 	SoftAP.usecCounter++;
 
+	// other packets will have priority over beacons
+	// 'cause they might be only once of them
+	// whereas there will be sooo much beacons
 	if(!SoftAP.curPacketSending)
 	{
 		//if(wifiMac.ioMem[0xD0 >> 1] & 0x0400)
@@ -2199,8 +2186,6 @@ void SoftAP_usTrigger()
 			// Okay for 128 ms then
 			if((SoftAP.usecCounter & 131071) == 0)
 			{
-				//printf("send beacon, store to %04X (readcsr=%04X), size=%x\n", 
-				//	wifiMac.RXHWWriteCursor<<1, wifiMac.RXReadCursor<<1, sizeof(SoftAP_Beacon)+12);
 				SoftAP_SendBeacon();
 			}
 		}
@@ -2211,40 +2196,23 @@ void SoftAP_usTrigger()
 	/* ie ~8 microseconds to transfer a word. */
 	if((SoftAP.curPacketSending) && !(SoftAP.usecCounter & 7))
 	{
-		if(SoftAP.curPacketPos >= 0)
-		{
-			if(SoftAP.curPacketPos == 0)
-			{
-				WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
+		if(SoftAP.curPacketPos == 0)
+			WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 
-				wifiMac.rfStatus = 0x0009;
-				wifiMac.rfPins = 0x0004;
-			}
-			else
-			{
-				wifiMac.rfStatus = 0x0001;
-				wifiMac.rfPins = 0x0084;
-			}
-
-			u16 word = *(u16*)&SoftAP.curPacket[SoftAP.curPacketPos];
-			WIFI_RXPutWord(word);
-		}
+		u16 word = *(u16*)&SoftAP.curPacket[SoftAP.curPacketPos];
+		WIFI_RXPutWord(word);
 
 		SoftAP.curPacketPos += 2;
 		if(SoftAP.curPacketPos >= SoftAP.curPacketSize)
 		{
-			//printf("SoftAP: packet finished sending, size=%i, startaddr=%04X", SoftAP.curPacketSize, WIFI_IOREG(REG_WIFI_RXHWWRITECSR));
 			SoftAP.curPacketSize = 0;
 			SoftAP.curPacketPos = 0;
 			SoftAP.curPacketSending = FALSE;
 
 			wifiMac.RXWriteCursor = ((wifiMac.RXWriteCursor + 1) & (~1));
 			WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
-			//printf(", end=%04X\n", wifiMac.RXWriteCursor);
 
 			WIFI_triggerIRQ(WIFI_IRQ_RXEND);
-
-			SoftAP.seqNum += 0x10;
 		}
 	}
 
