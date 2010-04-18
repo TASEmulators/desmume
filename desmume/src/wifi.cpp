@@ -2155,7 +2155,7 @@ static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_
 	*(u16*)&wpacket[12+26] = 0x0003;
 	*(u16*)&wpacket[12+28] = 0x0000;
 	*(u16*)&wpacket[12+30] = *(u16*)&data[12];
-	memcpy(&wpacket[12+32], &data[14], wpacketLen);
+	memcpy(&wpacket[12+32], &data[14], h->len-14);
 
 	SoftAP.seqNum++;
 
