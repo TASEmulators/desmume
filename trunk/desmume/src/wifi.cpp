@@ -1781,7 +1781,7 @@ void Adhoc_usTrigger()
 						(u8)fromAddr.sa_data[4], (u8)fromAddr.sa_data[5],
 						ntohs(*(u16*)&fromAddr.sa_data[0]));*/
 					WIFI_LOG(2, "Ad-hoc: received a packet of %i bytes, frame control: %04X\n", packetLen, *(u16*)&ptr[0]);
-					WIFI_LOG(2, "Storing packet at %08X.\n", 0x04804000 + (wifiMac.RXHWWriteCursor<<1));
+					//WIFI_LOG(2, "Storing packet at %08X.\n", 0x04804000 + (wifiMac.RXHWWriteCursor<<1));
 
 					//if (((*(u16*)&ptr[0]) != 0x0080) && ((*(u16*)&ptr[0]) != 0x0228))
 					//	printf("received packet, framectl=%04X\n", (*(u16*)&ptr[0]));
