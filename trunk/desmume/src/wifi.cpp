@@ -2149,11 +2149,11 @@ INLINE void SoftAP_SendBeacon()
 	u64 timestamp = SoftAP.usecCounter;
 	*(u64*)&SoftAP.curPacket[12 + 24] = timestamp;				// Timestamp
 
-	u16 rxflags = 0x0010;
+	u16 rxflags = 0x0011;
 	if (WIFI_compareMAC(wifiMac.bss.bytes, &SoftAP.curPacket[12 + 16]))
 		rxflags |= 0x8000;
 
-	WIFI_MakeRXHeader(SoftAP.curPacket, 0x8011, 20, packetLen, 0, 0);
+	WIFI_MakeRXHeader(SoftAP.curPacket, rxflags, 20, packetLen, 0, 0);
 
 	// Let's prepare to send
 	SoftAP.curPacketSize = packetLen + 12;
