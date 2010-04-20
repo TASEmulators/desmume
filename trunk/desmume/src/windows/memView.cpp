@@ -628,6 +628,9 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 			if(((ch >= '0') && (ch <= '9')) || ((ch >= 'A') && (ch <= 'F')) || ((ch >= 'a') && (ch <= 'f')))
 			{
+				if ((wnd->cpu == ARMCPU_ARM7) && ((wnd->selAddress & 0xFFFF0000) == 0x04800000))
+					return DefWindowProc(hCtl, uMsg, wParam, lParam);
+
 				u8 maxSelPart[3] = {2, 4, 8};
 
 				wnd->selNewVal <<= 4;
