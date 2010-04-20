@@ -34,6 +34,7 @@
 	#ifndef WXPORT
 		#include "windriver.h"
 	#endif
+	#define PCAP_DEVICE_NAME description
 #else
 	#include <unistd.h> 	 
 	#include <stdlib.h> 	 
@@ -43,6 +44,7 @@
 	#define socket_t    int 	 
 	#define sockaddr_t  struct sockaddr
 	#define closesocket close
+	#define PCAP_DEVICE_NAME name
 #endif
 
 #ifndef INVALID_SOCKET 	 
@@ -1927,6 +1929,8 @@ static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index)
 	for(int i = 0; i < index; i++)
 		curr = curr->next;
 
+	WIFI_LOG(2, "SoftAP: using %s as device.\n", curr->PCAP_DEVICE_NAME);
+
 	return curr;
 }
 
@@ -1963,7 +1967,7 @@ bool SoftAP_Init()
 	wifi_bridge = driver->PCAP_open(dev->name, PACKET_SIZE, PCAP_OPENFLAG_PROMISCUOUS, 1, errbuf);
 	if(wifi_bridge == NULL)
 	{
-		WIFI_LOG(1, "SoftAP: PCap: failed to open %s: %s\n", (dev->description ? dev->description : "the network adapter"), errbuf);
+		WIFI_LOG(1, "SoftAP: PCap: failed to open %s: %s\n", dev->PCAP_DEVICE_NAME, errbuf);
 		return false;
 	}
 
