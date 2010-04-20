@@ -46,6 +46,7 @@ public:
 	~BaseDriver();
 
 #ifdef EXPERIMENTAL_WIFI_COMM
+#ifdef WINDOWS
 	virtual bool WIFI_SocketsAvailable() { return true; }
 	virtual bool WIFI_PCapAvailable() { return false; }
 
@@ -58,7 +59,33 @@ public:
 	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) { return -1; }
 	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) { return -1; }
 	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) { return -1; }
-#endif
+#else
+	virtual bool WIFI_SocketsAvailable() { return true; }
+	virtual bool WIFI_PCapAvailable() { return true; }
+	virtual bool WIFI_WFCWarning() { return false; }
+
+	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
+		return pcap_findalldevs(alldevs, errbuf); }
+
+	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {
+		pcap_freealldevs(alldevs); }
+
+	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) {
+		return pcap_open_live(source, snaplen, flags, readtimeout, errbuf); }
+
+	virtual void PCAP_close(pcap_t* dev) {
+		pcap_close(dev); }
+
+	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) {
+		return pcap_setnonblock(dev, nonblock, errbuf); }
+
+	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) {
+		return pcap_sendpacket(dev, data, len); }
+
+	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) {
+		return pcap_dispatch(dev, num, callback, userdata); }
+#endif /* WINDOWS */
+#endif /* EXPERIMENTAL_WIFI_COMM */
 
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {}
 	virtual bool AVI_IsRecording() { return FALSE; }
