@@ -264,8 +264,8 @@ AC_ARG_ENABLE(wifi,
 	      [
 		AC_CHECK_LIB(pcap, main,[
 		  AC_DEFINE(EXPERIMENTAL_WIFI_COMM)
-		  LIBS="$LIBS -lpcap"
-		])
+		  LIBS="$LIBS -lpcap"],
+		  [AC_MSG_WARN([pcap library not found, wifi will not work])])
 	      ])
 
 dnl Set compiler library flags per target.
