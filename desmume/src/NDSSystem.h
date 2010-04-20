@@ -503,7 +503,8 @@ extern struct TCommonSettings {
 		strcpy(Firmware, "firmware.bin");
 		NDS_FillDefaultFirmwareConfigData(&InternalFirmConf);
 
-		wifi.mode = 0;
+		/* WIFI mode: adhoc = 0, infrastructure = 1 */
+		wifi.mode = 1;
 		wifi.infraBridgeAdapter = 0;
 
 		for(int i=0;i<16;i++)
