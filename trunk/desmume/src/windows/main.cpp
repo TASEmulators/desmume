@@ -2099,6 +2099,20 @@ class WinDriver : public BaseDriver
 	virtual bool WIFI_SocketsAvailable() { return bSocketsAvailable; }
 	virtual bool WIFI_PCapAvailable() { return bWinPCapAvailable; }
 
+	virtual bool WIFI_WFCWarning()
+	{
+		return MessageBox(NULL,	"You are going to connect to the Nintendo WFC servers.\n"
+								"\n"
+								"Please keep in mind that DeSmuME is not perfect\n"
+								"and connecting to WFC may cause unexpected problems\n"
+								"to the WFC servers, which Nintendo would not appreciate.\n"
+								"\n"
+								"Do you still want to connect?",
+								"DeSmuME - WFC warning",
+								MB_YESNO | MB_DEFBUTTON2 | MB_ICONWARNING
+								) == IDYES;
+	}
+
 	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
 		return _pcap_findalldevs(alldevs, errbuf); }
 
