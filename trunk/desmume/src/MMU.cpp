@@ -3642,7 +3642,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
     }
 
-	if ((adr & 0xFF800000) == 0x04800000)
+	if ((adr & 0xFFFF0000) == 0x04800000)
 	{
 		/* is wifi hardware, dont intermix with regular hardware registers */
 		// 8-bit writes to wifi I/O and RAM are ignored
@@ -3721,7 +3721,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	}
 
 	//wifi mac access
-	if ((adr>=0x04800000)&&(adr<0x05000000))
+	if ((adr & 0xFFFF0000) == 0x04800000)
 	{
 		WIFI_write16(adr,val);
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
@@ -4026,10 +4026,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
-	if ((adr & 0xFF800000) == 0x04800000) 
+	if ((adr & 0xFFFF0000) == 0x04800000)
 	{
-		// access to non regular hw registers
-		// return to not overwrite valid data
 		WIFI_write16(adr, val & 0xFFFF);
 		WIFI_write16(adr+2, val >> 16);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
@@ -4125,7 +4123,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	}
 
 	// wifi mac access 
-	if ((adr>=0x04800000)&&(adr<0x05000000))
+	if ((adr & 0xFFFF0000) == 0x04800000)
 	{
 		if (adr & 1)
 			return (WIFI_read16(adr-1) >> 8) & 0xFF;
@@ -4174,7 +4172,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	}
 
 	//wifi mac access
-	if ((adr>=0x04800000)&&(adr<0x05000000))
+	if ((adr & 0xFFFF0000) == 0x04800000)
 		return WIFI_read16(adr) ;
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
@@ -4267,7 +4265,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	}
 
 	//wifi mac access
-	if ((adr>=0x04800000)&&(adr<0x05000000))
+	if ((adr & 0xFFFF0000) == 0x04800000)
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
