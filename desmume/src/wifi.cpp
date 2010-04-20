@@ -53,6 +53,8 @@
 
 const u8 BroadcastMAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
+bool bWFCUserWarned = false;
+
 #ifdef EXPERIMENTAL_WIFI_COMM
 socket_t wifi_socket = INVALID_SOCKET;
 sockaddr_t sendAddr;
@@ -301,7 +303,7 @@ WifiComInterface* wifiCom;
 // 3: medium logging, for debugging, shows lots of stuff
 // 4: high logging, for debugging, shows almost everything, may slow down
 // 5: highest logging, for debugging, shows everything, may slow down a lot
-#define WIFI_LOGGING_LEVEL 0
+#define WIFI_LOGGING_LEVEL 1
 
 #define WIFI_LOG_USE_LOGC 0
 
@@ -653,6 +655,8 @@ bool WIFI_Init()
 	if(wifiCom)
 		wifiCom->Init();
 
+	bWFCUserWarned = false;
+
 	return true;
 }
 
@@ -679,6 +683,8 @@ void WIFI_Reset()
 	wifiCom = wifiComs[CommonSettings.wifi.mode];
 	if(wifiCom)
 		wifiCom->Reset();
+
+	bWFCUserWarned = false;
 }
 
 
@@ -1898,6 +1904,20 @@ const u8 SoftAP_AssocResponse[] = {
 	0x01, 0x02, 0x82, 0x84,								// Supported rates
 };
 
+// Deauthentication frame - sent if the user chose not to connect to WFC
+const u8 SoftAP_DeauthFrame[] = {
+	/* 802.11 header */
+	0xC0, 0x00,											// Frame control
+	0x00, 0x00,											// Duration ID
+	0x00, 0x09, 0xBF, 0x12, 0x34, 0x56,					// Receiver
+	SOFTAP_MACADDR,										// Sender
+	SOFTAP_MACADDR,										// BSSID
+	0x00, 0x00,											// Sequence control
+
+	/* Frame body */
+	0x01, 0x00,											// Reason code (is "unspecified" ok?)
+};
+
 //todo - make a class to wrap this
 //todo - zeromus - inspect memory leak safety of all this
 static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index)
@@ -1978,41 +1998,69 @@ void SoftAP_Reset()
 	SoftAP.seqNum = 0;
 }
 
-//I coded this up in a minute. is there a standard way of doing this or another function I can borrow?
-static s32 searchmem(u8* data, u32 len, char* search)
+static bool SoftAP_IsDNSRequestToWFC(u16 ethertype, u8* body)
 {
-	s32 i=0;
-	u32 searchLen = strlen(search);
-	if(len==0) return -1;
-	if(searchLen==0) return -1;
-
-	for(;;)
+	// Check the various headers...
+	if (htons(ethertype) != 0x0800) return false;		// EtherType: IP
+	if (body[0] != 0x45) return false;					// Version: 4, header len: 5
+	if (body[9] != 0x11) return false;					// Protocol: UDP
+	if (htons(*(u16*)&body[22]) != 53) return false;	// Dest. port: 53 (DNS)
+	if ((*(u16*)&body[28+2]) & 0x8000) return false;	// must be a query
+	
+	// Analyze each question
+	u16 numquestions = htons(*(u16*)&body[28+4]);
+	u32 curoffset = 28+12;
+	for (u16 curquestion = 0; curquestion < numquestions; curquestion++)
 	{
-		u32 j=0;
-		s32 snap = i;
-		for(;i<len&&j<searchLen;i++,j++)
+		// Assemble the requested domain name
+		u8 bitlength = 0; char domainname[256] = "";
+		while ((bitlength = body[curoffset++]) != 0)
 		{
-			if(data[i] != search[j]) 
-			{
-				i++;
-				break;
-			}
+			strncat(domainname, (const char*)&body[curoffset], bitlength);
+			
+			curoffset += bitlength;
+			if (body[curoffset] != 0)
+				strcat(domainname, ".");
 		}
-		if(j==searchLen) 
-			return snap;
-		if(i==len)
-			break;
+
+		WIFI_LOG(1, "SoftAP: detected DNS request to %s\n", domainname);
+
+		// if the domain name contains nintendowifi.net
+		// it is most likely a WFC server
+		// (note, conntest.nintendowifi.net just contains a dummy HTML page and
+		// is used for connection tests, I think we can let this one slide)
+		if ((strstr(domainname, "nintendowifi.net") != NULL) && 
+			(strcmp(domainname, "conntest.nintendowifi.net") != 0))
+			return true;
+
+		// Skip the type and class - we don't care about that
+		curoffset += 4;
 	}
-	return -1;
+
+	return false;
 }
 
-static bool validatePacket(u8 *packet, u32 len)
+static void SoftAP_Deauthenticate()
 {
-	//reject DNS requests for nintendo. this is a rather blunt instrument right now.
-	//i suppose it would prevent someone from discussing nintendowifi on clirc!
-	//does someone know how to make an EZ dns parser?
-	if(searchmem(packet,len,"nintendowifi") == -1) return true;
-	else return false;
+	u32 packetLen = sizeof(SoftAP_DeauthFrame);
+
+	memcpy(&SoftAP.curPacket[12], SoftAP_DeauthFrame, packetLen);	// Copy the beacon template
+
+	*(u16*)&SoftAP.curPacket[12 + 22] = SoftAP.seqNum << 4;		// Sequence number
+	SoftAP.seqNum++;
+
+	u16 rxflags = 0x0010;
+	if (WIFI_compareMAC(wifiMac.bss.bytes, &SoftAP.curPacket[12 + 16]))
+		rxflags |= 0x8000;
+
+	WIFI_MakeRXHeader(SoftAP.curPacket, rxflags, 20, packetLen, 0, 0);
+
+	// Let's prepare to send
+	SoftAP.curPacketSize = packetLen + 12;
+	SoftAP.curPacketPos = 0;
+	SoftAP.curPacketSending = TRUE;
+
+	SoftAP.status = APStatus_Disconnected;
 }
 
 void SoftAP_SendPacket(u8 *packet, u32 len)
@@ -2022,16 +2070,14 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes. Frame control = %04X\n",
 		len, frameCtl);
 
-	if(!validatePacket(packet,len)) return;
-
 	//use this to log wifi messages easily
-	//static int ctr=0;
-	//char buf[100];
-	//sprintf(buf,"wifi%04d.txt",ctr);
-	//FILE* outf = fopen(buf,"wb");
-	//fwrite(packet,1,len,outf);
-	//fclose(outf);
-	//ctr++;
+	/*static int ctr=0;
+	char buf[100];
+	sprintf(buf,"wifi%04d.txt",ctr);
+	FILE* outf = fopen(buf,"wb");
+	fwrite(packet,1,len,outf);
+	fclose(outf);
+	ctr++;*/
 
 	switch((frameCtl >> 2) & 0x3)
 	{
@@ -2113,6 +2159,22 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 			{
 				if (SoftAP.status != APStatus_Associated)
 					return;
+
+				if (!bWFCUserWarned && SoftAP_IsDNSRequestToWFC(*(u16*)&packet[30], &packet[32]))
+				{
+					// if the user chose not to connect to WFC
+					// disconnect them, and do not send the DNS packet
+					// otherwise just stop bothering them
+					if (driver->WIFI_WFCWarning())
+					{
+						bWFCUserWarned = true;
+					}
+					else
+					{
+						SoftAP_Deauthenticate();
+						return;
+					}
+				}
 
 				u32 epacketLen = ((len - 30 - 4) + 14);
 				u8 epacket[2048];

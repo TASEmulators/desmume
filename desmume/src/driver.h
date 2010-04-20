@@ -49,6 +49,8 @@ public:
 	virtual bool WIFI_SocketsAvailable() { return true; }
 	virtual bool WIFI_PCapAvailable() { return false; }
 
+	virtual bool WIFI_WFCWarning() { return false; }
+
 	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) { return -1; }
 	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {}
 	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) { return NULL; }
