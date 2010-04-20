@@ -391,7 +391,7 @@ void DebugNotify::ReadBeyondEndOfCart(u32 addr, u32 romsize)
 {
 #ifdef DEVELOPER
 	if(!ping(DEBUG_NOTIFY_READ_BEYOND_END_OF_CART)) return;
-	INFO("Reading beyond end of cart! ... %08X > %08X\n",addr,romsize);
+	INFO("Reading beyond end of cart! ... %08X >= %08X\n",addr,romsize);
 #endif
 }
 
