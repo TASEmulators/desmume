@@ -1693,7 +1693,7 @@ static inline void _updateDTools()
 
 /////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
-class GtkDriver : public BaseDriver
+class GtkDriver : public UnixDriver
 {
 public:
     virtual void EMU_DebugIdleUpdate()
