@@ -1509,7 +1509,7 @@ static void execHardware_hstart()
 	//this should be 214, but we are going to be generous for games with tight timing
 	//they shouldnt be changing any textures at 262 but they might accidentally still be at 214
 	//so..
-	if(CommonSettings.rigorous_timing && nds.VCount==214 || !CommonSettings.rigorous_timing && nds.VCount==262)
+	if((CommonSettings.rigorous_timing && nds.VCount==214) || (!CommonSettings.rigorous_timing && nds.VCount==262))
 	{
 		gfx3d_VBlankEndSignal(frameSkipper.ShouldSkip3D());
 	}
