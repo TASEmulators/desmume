@@ -749,22 +749,22 @@ static void WIFI_RXPutWord(u16 val)
 	/* abort when RX data queuing is not enabled */
 	if (!(wifiMac.RXCnt & 0x8000)) return;
 	/* abort when ringbuffer is full */
-	//if (wifiMac.RXReadCursor == wifiMac.RXHWWriteCursor) return;
-	/*if(wifiMac.RXHWWriteCursor >= wifiMac.RXReadCursor) 
+	//if (wifiMac.RXReadCursor == wifiMac.RXWriteCursor) return;
+	/*if(wifiMac.RXWriteCursor >= wifiMac.RXReadCursor) 
 	{
 		printf("WIFI: write cursor (%04X) above READCSR (%04X). Cannot write received packet.\n", 
-			wifiMac.RXHWWriteCursor, wifiMac.RXReadCursor);
+			wifiMac.RXWriteCursor, wifiMac.RXReadCursor);
 		return;
 	}*/
 	/* write the data to cursor position */
 	wifiMac.RAM[wifiMac.RXWriteCursor & 0xFFF] = val;
-//	printf("wifi: written word %04X to circbuf addr %04X\n", val, (wifiMac.RXHWWriteCursor << 1));
+//	printf("wifi: written word %04X to circbuf addr %04X\n", val, (wifiMac.RXWriteCursor << 1));
 	/* move cursor by one */
-	//printf("written one word to %04X (start %04X, end %04X), ", wifiMac.RXHWWriteCursor, wifiMac.RXRangeBegin, wifiMac.RXRangeEnd);
+	//printf("written one word to %04X (start %04X, end %04X), ", wifiMac.RXWriteCursor, wifiMac.RXRangeBegin, wifiMac.RXRangeEnd);
 	wifiMac.RXWriteCursor++;
 	/* wrap around */
-//	wifiMac.RXHWWriteCursor %= (wifiMac.RXRangeEnd - wifiMac.RXRangeBegin) >> 1;
-//	printf("new addr=%04X\n", wifiMac.RXHWWriteCursor);
+//	wifiMac.RXWriteCursor %= (wifiMac.RXRangeEnd - wifiMac.RXRangeBegin) >> 1;
+//	printf("new addr=%04X\n", wifiMac.RXWriteCursor);
 	if(wifiMac.RXWriteCursor >= ((wifiMac.RXRangeEnd & 0x1FFE) >> 1))
 		wifiMac.RXWriteCursor = ((wifiMac.RXRangeBegin & 0x1FFE) >> 1);
 }
@@ -1787,7 +1787,7 @@ void Adhoc_usTrigger()
 						(u8)fromAddr.sa_data[4], (u8)fromAddr.sa_data[5],
 						ntohs(*(u16*)&fromAddr.sa_data[0]));*/
 					WIFI_LOG(2, "Ad-hoc: received a packet of %i bytes, frame control: %04X\n", packetLen, *(u16*)&ptr[0]);
-					//WIFI_LOG(2, "Storing packet at %08X.\n", 0x04804000 + (wifiMac.RXHWWriteCursor<<1));
+					//WIFI_LOG(2, "Storing packet at %08X.\n", 0x04804000 + (wifiMac.RXWriteCursor<<1));
 
 					//if (((*(u16*)&ptr[0]) != 0x0080) && ((*(u16*)&ptr[0]) != 0x0228))
 					//	printf("received packet, framectl=%04X\n", (*(u16*)&ptr[0]));
