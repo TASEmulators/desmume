@@ -46,7 +46,7 @@ public:
 	~BaseDriver();
 
 #ifdef EXPERIMENTAL_WIFI_COMM
-#ifdef WINDOWS
+#ifdef _WINDOWS
 	virtual bool WIFI_SocketsAvailable() { return true; }
 	virtual bool WIFI_PCapAvailable() { return false; }
 

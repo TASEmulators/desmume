@@ -77,10 +77,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86d.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib 7zip.lib comctl32.lib"
+				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86d.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib 7zip.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;agg"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
 				RandomizedBaseAddress="1"
@@ -166,10 +165,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib winpcap\x64\wpcap.lib 7zip-x64.lib"
+				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib 7zip-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;agg"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
 				RandomizedBaseAddress="1"
@@ -259,10 +257,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib 7zip.lib comctl32.lib"
+				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib 7zip.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;agg"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				RandomizedBaseAddress="1"
@@ -354,10 +351,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib winpcap\x64\wpcap.lib 7zip-x64.lib"
+				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib 7zip-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;agg"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				RandomizedBaseAddress="1"
@@ -448,10 +444,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib 7zip.lib comctl32.lib"
+				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib 7zip.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;&quot;glib-2.20.1\lib&quot;;lua\lib;.\7z;.\agg"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				LinkTimeCodeGeneration="0"
@@ -543,10 +538,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib winpcap\x64\wpcap.lib 7zip-x64.lib"
+				AdditionalDependencies="agg-2.5-x64.lib lua-5.1.4-x64.lib glib-2.20.1-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\x64\dxguid.lib shell32.lib comdlg32.lib directx\x64\dxerr8.lib directx\x64\dsound.lib directx\x64\dinput8.lib directx\x64\ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib 7zip-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib;&quot;glib-2.20.1\lib&quot;;lua\lib;.\7z;.\agg"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				LinkTimeCodeGeneration="0"
