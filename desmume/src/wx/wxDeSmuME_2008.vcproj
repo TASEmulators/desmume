@@ -166,10 +166,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib winpcap\x64\wpcap.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
 				RandomizedBaseAddress="1"
@@ -353,10 +352,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib winpcap\x64\wpcap.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				RandomizedBaseAddress="1"
@@ -542,10 +540,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib winpcap\x64\wpcap.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_dev+.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
-				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				LinkTimeCodeGeneration="0"
