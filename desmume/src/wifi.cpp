@@ -2005,11 +2005,11 @@ void SoftAP_Reset()
 static bool SoftAP_IsDNSRequestToWFC(u16 ethertype, u8* body)
 {
 	// Check the various headers...
-	if (htons(ethertype) != 0x0800) return false;		// EtherType: IP
+	if (ntohs(ethertype) != 0x0800) return false;		// EtherType: IP
 	if (body[0] != 0x45) return false;					// Version: 4, header len: 5
 	if (body[9] != 0x11) return false;					// Protocol: UDP
-	if (htons(*(u16*)&body[22]) != 53) return false;	// Dest. port: 53 (DNS)
-	if ((*(u16*)&body[28+2]) & 0x8000) return false;	// must be a query
+	if (ntohs(*(u16*)&body[22]) != 53) return false;	// Dest. port: 53 (DNS)
+	if (htons(ntohs(*(u16*)&body[28+2])) & 0x8000) return false;	// must be a query
 	
 	// Analyze each question
 	u16 numquestions = htons(*(u16*)&body[28+4]);
