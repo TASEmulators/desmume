@@ -101,7 +101,7 @@ class UnixDriver : public BaseDriver
 #ifdef EXPERIMENTAL_WIFI_COMM
 	virtual bool WIFI_SocketsAvailable() { return true; }
 	virtual bool WIFI_PCapAvailable() { return true; }
-	virtual bool WIFI_WFCWarning() { return true; }
+	virtual bool WIFI_WFCWarning() { return false; }
 
 	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
 		return pcap_findalldevs(alldevs, errbuf); }
