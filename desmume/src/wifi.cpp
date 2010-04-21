@@ -2012,7 +2012,7 @@ static bool SoftAP_IsDNSRequestToWFC(u16 ethertype, u8* body)
 	if (htons(ntohs(*(u16*)&body[28+2])) & 0x8000) return false;	// must be a query
 	
 	// Analyze each question
-	u16 numquestions = htons(*(u16*)&body[28+4]);
+	u16 numquestions = ntohs(*(u16*)&body[28+4]);
 	u32 curoffset = 28+12;
 	for (u16 curquestion = 0; curquestion < numquestions; curquestion++)
 	{
