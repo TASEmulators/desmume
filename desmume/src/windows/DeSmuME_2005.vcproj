@@ -1253,6 +1253,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\utils\mkgmtime.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\mkgmtime.h"
+				>
+			</File>
+			<File
 				RelativePath="..\utils\task.cpp"
 				>
 			</File>
@@ -1745,6 +1753,38 @@
 		</File>
 		<File
 			RelativePath="..\GPU_osd.h"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_FRAMEADVANCE.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_OPEN.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_PAUSE.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_PLAY.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_RESET.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_ROTATECCW.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_ROTATECW.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_STOP.bmp"
 			>
 		</File>
 		<File
