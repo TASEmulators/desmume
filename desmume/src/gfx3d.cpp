@@ -1638,7 +1638,9 @@ unsigned int gfx3d_glGetPosRes(unsigned int index)
 	return (unsigned int)(PTcoords[index] * 4096.0f);
 }
 
-void log3D(u8 cmd, u32 param)
+//#define _3D_LOG_EXEC
+#ifdef _3D_LOG_EXEC
+static void log3D(u8 cmd, u32 param)
 {
 	INFO("3D command 0x%02X: ", cmd);
 	switch (cmd)
@@ -1760,8 +1762,8 @@ void log3D(u8 cmd, u32 param)
 		}
 		printf("\t\t(FIFO size %i)\n", gxFIFO.size);
 }
+#endif
 
-//#define _3D_LOG_EXEC
 static void gfx3d_execute(u8 cmd, u32 param)
 {
 #ifdef _3D_LOG_EXEC
