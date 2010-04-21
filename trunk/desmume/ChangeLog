@@ -65,7 +65,7 @@ Graphics:
  bug: fix hblank dma to run also on scanline 262
  bug: fix w/z depth flags for broken GUIs in dual screen 3d games
  bug: fixes to poly sorting
- bug: block 8bt vram writes
+ bug: block 8bit vram writes
  enh: improve accuracy of opengl shaders
  
 Windows:
