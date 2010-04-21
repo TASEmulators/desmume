@@ -271,8 +271,10 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDT_VALID, &systime);
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_TIME), GDT_VALID, &systime);
 
-			SYSTEMTIME rtcMin;
-			SYSTEMTIME rtcMax;
+			union {
+				struct { SYSTEMTIME rtcMin, rtcMax; };
+				SYSTEMTIME rtcMinMax[];
+			};
 			ZeroMemory(&rtcMin, sizeof(SYSTEMTIME));
 			ZeroMemory(&rtcMax, sizeof(SYSTEMTIME));
 			rtcMin.wYear = 2000;
@@ -283,8 +285,8 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			rtcMax.wMonth = 12;
 			rtcMax.wDay = 31;
 			rtcMax.wDayOfWeek = 4;
-			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MIN, &rtcMin);
-			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MAX, &rtcMax);
+			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MIN, &rtcMinMax);
+			DateTime_SetRange(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDTR_MAX, &rtcMinMax);
 			return false;
 		}
 
