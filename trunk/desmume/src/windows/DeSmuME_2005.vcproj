@@ -1311,6 +1311,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\utils\mkgmtime.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\mkgmtime.h"
+				>
+			</File>
+			<File
 				RelativePath="..\utils\task.cpp"
 				>
 			</File>

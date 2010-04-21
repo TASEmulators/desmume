@@ -1,4 +1,5 @@
-/*	Copyright (C) 2008-2009 DeSmuME team
+/*	windows/replay.cpp
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -28,6 +29,7 @@
 #include "movie.h"
 #include "rtc.h"
 #include "utils/xstring.h"
+#include "utils/mkgmtime.h"
 
 bool replayreadonly=1;
 
@@ -273,7 +275,7 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
 			union {
 				struct { SYSTEMTIME rtcMin, rtcMax; };
-				SYSTEMTIME rtcMinMax[];
+				SYSTEMTIME rtcMinMax[2];
 			};
 			ZeroMemory(&rtcMin, sizeof(SYSTEMTIME));
 			ZeroMemory(&rtcMax, sizeof(SYSTEMTIME));
@@ -312,7 +314,7 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 					t.tm_min  = systime.wMinute;
 					t.tm_sec  = systime.wSecond;
 					t.tm_isdst= -1;
-					rtcstart = gmmktime(&t);
+					rtcstart = mkgmtime(&t);
 
 					FCEUI_SaveMovie(fname.c_str(), author, flag, sramfname, rtcstart);
 					EndDialog(hwndDlg, 0);

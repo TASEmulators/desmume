@@ -1,8 +1,5 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
-    Copyright (C) 2006-2008 DeSmuME team
+    Copyright (C) 2006-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -565,9 +562,9 @@ void DrawHUD()
 
 	if (CommonSettings.hud.ShowRTC) 
 	{
-		struct tm *tm = rtcGetTime();
+		struct tm tm = rtcGetTime();
 		const char *wday[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-		osd->addFixed(Hud.RTCDisplay.x, Hud.RTCDisplay.y, "%04d-%02d-%02d %s %02d:%02d:%02d", 1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday, wday[tm->tm_wday%7], tm->tm_hour, tm->tm_min, tm->tm_sec);
+		osd->addFixed(Hud.RTCDisplay.x, Hud.RTCDisplay.y, "%04d-%02d-%02d %s %02d:%02d:%02d", 1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday, wday[tm.tm_wday%7], tm.tm_hour, tm.tm_min, tm.tm_sec);
 	}
 
 	DrawStateSlots();

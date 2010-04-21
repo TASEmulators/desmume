@@ -1,9 +1,6 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
     Copyright 2008 CrazyMax
-	Copyright 2008-2009 DeSmuME team
+	Copyright 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -28,9 +25,7 @@
 #include <time.h>
 #include "types.h"
 
-extern  time_t gmmktime(struct tm *timeptr);
-
-struct tm* rtcGetTime(void);
+struct tm rtcGetTime(void);
 
 extern	void rtcInit();
 extern	u16 rtcRead();
