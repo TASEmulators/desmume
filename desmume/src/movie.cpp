@@ -178,7 +178,7 @@ time_t FCEUI_MovieGetRTCDefault()
 	t.tm_mon  = 0;   // 1 (Jan)
 	t.tm_mday = 1;
 	t.tm_wday = 4;
-	t.tm_hour = 12;
+	t.tm_hour = 0; //12 AM
 	t.tm_min  = 0;
 	t.tm_sec  = 0;
 	t.tm_isdst= -1;
@@ -288,15 +288,16 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 	fp->fprintf("romChecksum %s\n", u32ToHexString(gameInfo.crc).c_str());
 	fp->fprintf("romSerial %s\n", romSerial.c_str());
 	fp->fprintf("guid %s\n", guid.toString().c_str());
-	fp->fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS);
+	fp->fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS?1:0);
+	fp->fprintf("advancedTiming %d\n", CommonSettings.advanced_timing?1:0);
 
 	if(CommonSettings.UseExtBIOS)
-		fp->fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS);
+		fp->fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS?1:0);
 
-	fp->fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware);
+	fp->fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware?1:0);
 
 	if(CommonSettings.UseExtFirmware) {
-		fp->fprintf("bootFromFirmware %d\n", CommonSettings.BootFromFirmware);
+		fp->fprintf("bootFromFirmware %d\n", CommonSettings.BootFromFirmware?1:0);
 	}
 	else {
 		char temp_str[27];
