@@ -2048,7 +2048,9 @@ static void SoftAP_Deauthenticate()
 {
 	u32 packetLen = sizeof(SoftAP_DeauthFrame);
 
-	memcpy(&SoftAP.curPacket[12], SoftAP_DeauthFrame, packetLen);	// Copy the beacon template
+	memcpy(&SoftAP.curPacket[12], SoftAP_DeauthFrame, packetLen);
+
+	memcpy(&SoftAP.curPacket[12 + 4], FW_Mac, 6); // Receiver MAC
 
 	*(u16*)&SoftAP.curPacket[12 + 22] = SoftAP.seqNum << 4;		// Sequence number
 	SoftAP.seqNum++;
