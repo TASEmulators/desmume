@@ -1,4 +1,4 @@
-0.9.5 -> 0.9.6 (r3075-r3458-r3xxx)
+0.9.5 -> 0.9.6 (r3075-r3512)
 
 Users of gtk, cli and gtk-glade frontends please note that now we
 have a common directory in ~/.config/desmume for config file,
@@ -39,9 +39,11 @@ General/Core:
  bug: fix SWI 0x0E crc16 ; some save files using wrong crc may be invalidated
  bug: fix many big endian bugs
  bug: fix CPSR.I idle wakeup
+ bug: fix loadstate crashes, mostly when sound is enabled
  enh: support devkitpro argv
  enh: add gbaslot-rom commandline
  enh: add no$gba debug message
+ enh: add rtc start to dsm header
 
 Graphics:
  bug: fix a mistakenly rendered OBJ window and 3d blend effects
@@ -59,7 +61,8 @@ Windows:
  bug: fix that sticky pause state when resetting and loading roms
  bug: dont crash when no sound device is available
  bug: change F10 to be save slot 0
- enh: try not to screensave while using gamepad
+ bug: fix --start-paused
+  enh: try not to screensave while using gamepad
  enh: add EPX and EPX1.5X resize filters
  enh: add a japanese translation which will soon be stale like the others
  enh: add fancy ctrl+printscreen with emulator info on it
@@ -69,11 +72,14 @@ Windows:
  enh: add ddraw software mode forcer
  enh: improve oam viewer
  enh: default 3d to rasterizer so we dont have to suggest it 1000 times a day
+ enh: add dump-all-memory tool
+ enh: add reload rom menu/hotkey
  
 Linux/OSX:
  bug: fix building for nosse2 systems
  bug: fix --num-cores
  bug: fix occasional touchscreen failures
+ bug: fix crash starting dsm record
  enh: add --nojoy=1 to fix laptops with accelerometers
  enh: add simple auto frameskip mode in the gtk frontend
  enh: add gui for configuring joystick in the gtk frontend
