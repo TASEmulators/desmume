@@ -1,9 +1,6 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
     Copyright 2008 CrazyMax
-	Copyright 2008-2009 DeSmuME team
+	Copyright 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -35,22 +32,8 @@
 #endif
 #include "movie.h"
 
-static time_t CalcTimeDifference(void)
-{
-	time_t t1, t2;
-	tm *tm_tmp;
+#include "utils/mkgmtime.h"
 
-	time(&t1);
-	tm_tmp = gmtime(&t1);
-	t2 = mktime(tm_tmp);
-
-	return (t2 - t1);
-}
-
-time_t gmmktime(struct tm *timeptr)
-{
-	return mktime(timeptr) - CalcTimeDifference();
-}
 
 typedef struct
 {
@@ -115,7 +98,7 @@ static inline u8 toBCD(u8 x)
 
 bool moviemode=false;
 
-struct tm* rtcGetTime(void)
+struct tm rtcGetTime(void)
 {
 	struct tm *tm = NULL;
 	if(movieMode == MOVIEMODE_INACTIVE) {
@@ -143,11 +126,11 @@ struct tm* rtcGetTime(void)
 		// advance it according to the frame counter
 		t.tm_sec += totalseconds;
 		// then, normalize it
-		timer = gmmktime(&t);
+		timer = mkgmtime(&t);
 		tm = gmtime(&timer);
 	}
 	tm->tm_year = 100 + (tm->tm_year % 100); // 20XX
-	return tm;
+	return *tm;
 }
 
 static void rtcRecv()
@@ -170,26 +153,26 @@ static void rtcRecv()
 		case 2:				// date & time
 			{
 				//INFO("RTC: read date & time\n");
-				struct tm *tm = rtcGetTime();
-				rtc.data[0] = toBCD(tm->tm_year % 100);
-				rtc.data[1] = toBCD(tm->tm_mon + 1);
-				rtc.data[2] = toBCD(tm->tm_mday);
-				rtc.data[3] = (tm->tm_wday + 7) & 7;
+				struct tm tm = rtcGetTime();
+				rtc.data[0] = toBCD(tm.tm_year % 100);
+				rtc.data[1] = toBCD(tm.tm_mon + 1);
+				rtc.data[2] = toBCD(tm.tm_mday);
+				rtc.data[3] = (tm.tm_wday + 7) & 7;
 				if (rtc.data[3] == 7) rtc.data[3] = 6;
-				if (!(rtc.regStatus1 & 0x02)) tm->tm_hour %= 12;
-				rtc.data[4] = ((tm->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm->tm_hour);
-				rtc.data[5] =  toBCD(tm->tm_min);
-				rtc.data[6] =  toBCD(tm->tm_sec);
+				if (!(rtc.regStatus1 & 0x02)) tm.tm_hour %= 12;
+				rtc.data[4] = ((tm.tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm.tm_hour);
+				rtc.data[5] =  toBCD(tm.tm_min);
+				rtc.data[6] =  toBCD(tm.tm_sec);
 				break;
 			}
 		case 3:				// time
 			{
 				//INFO("RTC: read time\n");
-				struct tm *tm = rtcGetTime();
-				if (!(rtc.regStatus1 & 0x02)) tm->tm_hour %= 12;
-				rtc.data[0] = ((tm->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm->tm_hour);
-				rtc.data[1] =  toBCD(tm->tm_min);
-				rtc.data[2] =  toBCD(tm->tm_sec);
+				struct tm tm = rtcGetTime();
+				if (!(rtc.regStatus1 & 0x02)) tm.tm_hour %= 12;
+				rtc.data[0] = ((tm.tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm.tm_hour);
+				rtc.data[1] =  toBCD(tm.tm_min);
+				rtc.data[2] =  toBCD(tm.tm_sec);
 				break;
 			}
 		case 4:				// freq/alarm 1

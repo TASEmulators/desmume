@@ -1,22 +1,20 @@
-/* movie.cpp
- *
- * Copyright (C) 2006-2009 DeSmuME team
- *
- * This file is part of DeSmuME
- *
- * DeSmuME is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * DeSmuME is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with DeSmuME; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+/*  Copyright 2008-2010 DeSmuME team
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #define WIN32_LEAN_AND_MEAN
@@ -26,6 +24,7 @@
 #include <time.h>
 #include "utils/guid.h"
 #include "utils/xstring.h"
+#include "utils/mkgmtime.h"
 #include "movie.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
@@ -181,13 +180,12 @@ time_t FCEUI_MovieGetRTCDefault()
 	t.tm_hour = 0; //12 AM
 	t.tm_min  = 0;
 	t.tm_sec  = 0;
-	t.tm_isdst= -1;
-	timer = gmmktime(&t);
+	timer = mkgmtime(&t);
 
 	// current time
 	//timer = time(NULL);
 	//struct tm *tp = localtime(&timer);
-	//timer = gmmktime(tp);
+	//timer = mkgmtime(tp);
 
 	return timer;
 }
@@ -246,8 +244,7 @@ void MovieData::installValue(std::string& key, std::string& val)
 			t.tm_hour = atoi(&s[11]);
 			t.tm_min  = atoi(&s[14]);
 			t.tm_sec  = atoi(&s[17]);
-			t.tm_isdst= -1;
-			rtcStart = gmmktime(&t);
+			rtcStart = mkgmtime(&t);
 		}
 	}
 	else if(key == "comment")
