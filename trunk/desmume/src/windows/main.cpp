@@ -1942,7 +1942,7 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 void OpenRecentROM(int listNum)
 {
 	if (listNum > MAX_RECENT_ROMS) return; //Just in case
-	if (listNum >= RecentRoms.size()) return;
+	if (listNum >= (int)RecentRoms.size()) return;
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
 	//LOG("Attempting to load %s\n",filename);
@@ -3416,7 +3416,7 @@ void FrameAdvance(bool state)
 //   Put screenshot in clipboard
 //-----------------------------------------------------------------------------
 
-void ScreenshotToClipboard()
+void ScreenshotToClipboard(bool extraInfo)
 {
 	const char* nameandver = EMU_DESMUME_NAME_AND_VERSION();
 	bool twolinever = strlen(nameandver) > 32;
@@ -3424,13 +3424,20 @@ void ScreenshotToClipboard()
 	HFONT hFont = CreateFont(14, 8, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FIXED_PITCH, "Lucida Console");
 
+	int exHeight = 0;
+	if(extraInfo)
+	{
+		exHeight = (14 * (twolinever ? 6:5));
+	}
+
 	HDC hScreenDC = GetDC(NULL);
 	HDC hMemDC = CreateCompatibleDC(hScreenDC);
-	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, 256, 384 + (14 * (twolinever ? 6:5)));
+	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, 256, 384 + exHeight);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hMemBitmap);
 	HFONT hOldFont = (HFONT)SelectObject(hMemDC, hFont);
 
-	RECT rc; SetRect(&rc, 0, 0, 256, 384 + (14 * (twolinever ? 6:5)));
+
+	RECT rc; SetRect(&rc, 0, 0, 256, 384 + exHeight);
 
 	BITMAPV4HEADER bmi;
 	memset(&bmi, 0, sizeof(bmi));
@@ -3447,34 +3454,37 @@ void ScreenshotToClipboard()
 	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
 	SetDIBitsToDevice(hMemDC, 0, 0, 256, 384, 0, 0, 0, 384, &GPU_screen[0], (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 	
-	SetBkColor(hMemDC, RGB(255, 255, 255));
-	SetTextColor(hMemDC, RGB(64, 64, 130));
-
-	if (twolinever)
+	if(extraInfo)
 	{
-		int i;
-		for (i = 31; i > 0; i--)
-			if (nameandver[i] == ' ')
-				break;
+		SetBkColor(hMemDC, RGB(255, 255, 255));
+		SetTextColor(hMemDC, RGB(64, 64, 130));
 
-		TextOut(hMemDC, 0, 384 + 14, &nameandver[0], i+1);
-		TextOut(hMemDC, 8, 384 + 14*2, &nameandver[i+1], strlen(nameandver) - (i+1));
+		if (twolinever)
+		{
+			int i;
+			for (i = 31; i > 0; i--)
+				if (nameandver[i] == ' ')
+					break;
+
+			TextOut(hMemDC, 0, 384 + 14, &nameandver[0], i+1);
+			TextOut(hMemDC, 8, 384 + 14*2, &nameandver[i+1], strlen(nameandver) - (i+1));
+		}
+		else
+			TextOut(hMemDC, 0, 384 + 14, nameandver, strlen(nameandver));
+
+		char str[32];
+		memcpy(&str[0], &MMU.CART_ROM[0], 12); str[12] = '\0';
+		int titlelen = strlen(str); 
+		str[titlelen] = ' ';
+		memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
+
+		sprintf(str, "FPS: %i/%i (%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.arm9load, paused ? "Paused":"Running");
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
+
+		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 5:4), str, strlen(str));
 	}
-	else
-		TextOut(hMemDC, 0, 384 + 14, nameandver, strlen(nameandver));
-
-	char str[32];
-	memcpy(&str[0], &MMU.CART_ROM[0], 12); str[12] = '\0';
-	int titlelen = strlen(str); 
-	str[titlelen] = ' ';
-	memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
-	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
-
-	sprintf(str, "FPS: %i/%i (%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.arm9load, paused ? "Paused":"Running");
-	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
-
-	sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
-	TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 5:4), str, strlen(str));
 
 	OpenClipboard(NULL);
 	EmptyClipboard();
@@ -4078,7 +4088,14 @@ DOKEYDOWN:
 		if (wParam == VK_SNAPSHOT) { 
 			if(GetKeyState(VK_CONTROL)&0x8000)
 			{
-				ScreenshotToClipboard();
+				//include extra info
+				ScreenshotToClipboard(true);
+				return 0;
+			}
+			else if(GetKeyState(VK_SHIFT)&0x8000)
+			{
+				//exclude extra info
+				ScreenshotToClipboard(false);
 				return 0;
 			}
 		}
