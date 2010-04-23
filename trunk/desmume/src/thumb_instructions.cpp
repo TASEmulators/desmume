@@ -69,8 +69,8 @@ static bool OverflowFromSUB(s32 alu_out, s32 left, s32 right)
 
 TEMPLATE static  u32 FASTCALL OP_UND_THUMB(const u32 i)
 {
-	INFO("THUMB%c: Undefined instruction: 0x%08X PC=0x%08X. Stopped!!!\n", cpu->proc_ID?'7':'9', cpu->instruction, cpu->instruct_adr);
-	emu_halt();
+	INFO("THUMB%c: Undefined instruction: 0x%08X PC=0x%08X.\n", cpu->proc_ID?'7':'9', cpu->instruction, cpu->instruct_adr);
+	TRAPUNDEF(cpu);
 	return 1;
 }
 

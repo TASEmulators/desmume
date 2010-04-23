@@ -36,6 +36,8 @@
 #include "lua-engine.h"
 #endif
 
+armcpu_t* TDebugEventData::cpu() { return procnum==0?&NDS_ARM9:&NDS_ARM7; }
+
 TDebugEventData DebugEventData;
 u32 debugFlag;
 
@@ -43,25 +45,25 @@ u32 debugFlag;
 const bool debug_acl = false;
 
 static bool acl_check_access(u32 adr, u32 access) {
-	//tweak the access value with the execution mode.
-	//user code is USR and every other mode is SYS.
-	//this is weird logic, but I didn't want to change..
-	access |= 1;
-	if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10) {
-		// is user mode access
-		access ^= 1;
-	}
+
+	//non-user modes get separate access handling, so check that here
+	if(NDS_ARM9.CPSR.bits.mode != USR)
+		access |= 1;
+	
 	if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE) {
 		HandleDebugEvent(DEBUG_EVENT_ACL_EXCEPTION);
 	}
 	return true;
 }
 
-
+void armcpu_exception(armcpu_t *cpu, u32 number);
 void HandleDebugEvent_ACL_Exception()
 {
 	printf("ACL EXCEPTION!\n");
-	emu_halt();
+	if(DebugEventData.memAccessType == MMU_AT_CODE)
+		armcpu_exception(DebugEventData.cpu(),EXCEPTION_PREFETCH_ABORT);
+	else if(DebugEventData.memAccessType == MMU_AT_DATA)
+		armcpu_exception(DebugEventData.cpu(),EXCEPTION_DATA_ABORT);
 }
 
 void HandleDebugEvent_Read()

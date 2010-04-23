@@ -45,7 +45,7 @@
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-bool dolog = true;
+//bool dolog = true;
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 
@@ -2127,25 +2127,67 @@ void NDS_Reset()
 	{
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
 
-		T1WriteLong(MMU.ARM9_BIOS, 0x0000, 0xEAFFFFFE);		// loop for Reset !!!
-		T1WriteLong(MMU.ARM9_BIOS, 0x0004, 0xEAFFFFFE);		// loop for Undef instr expection
-		T1WriteLong(MMU.ARM9_BIOS, 0x0008, 0xEA00009C);		// SWI
-		T1WriteLong(MMU.ARM9_BIOS, 0x000C, 0xEAFFFFFE);		// loop for Prefetch Abort
-		T1WriteLong(MMU.ARM9_BIOS, 0x0010, 0xEAFFFFFE);		// loop for Data Abort
+		//bios chains data abort to fast irq
+
+		//exception vectors:
+		T1WriteLong(MMU.ARM9_BIOS, 0x0000, 0xEAFFFFFE);		// (infinite loop for) Reset !!!
+		//T1WriteLong(MMU.ARM9_BIOS, 0x0004, 0xEAFFFFFE);		// (infinite loop for) Undefined instruction
+		T1WriteLong(MMU.ARM9_BIOS, 0x0004, 0xEA000004);		// Undefined instruction -> Fast IRQ (just guessing)
+		T1WriteLong(MMU.ARM9_BIOS, 0x0008, 0xEA00009C);		// SWI -> ?????
+		T1WriteLong(MMU.ARM9_BIOS, 0x000C, 0xEAFFFFFE);		// (infinite loop for) Prefetch Abort
+		T1WriteLong(MMU.ARM9_BIOS, 0x0010, 0xEA000001);		// Data Abort -> Fast IRQ
 		T1WriteLong(MMU.ARM9_BIOS, 0x0014, 0x00000000);		// Reserved
-		T1WriteLong(MMU.ARM9_BIOS, 0x0018, 0xEA000095);		// Normal IRQ
-		T1WriteLong(MMU.ARM9_BIOS, 0x001C, 0x00000000);		// Fast IRQ
-		for (int t = 0; t < 156; t++)						// logo
+		T1WriteLong(MMU.ARM9_BIOS, 0x0018, 0xEA000095);		// Normal IRQ -> 0x0274
+		T1WriteLong(MMU.ARM9_BIOS, 0x001C, 0xEA00009D);		// Fast IRQ -> 0x0298
+		
+		// logo (do some games fail to boot without this? example?)
+		for (int t = 0; t < 0x9C; t++)
 			MMU.ARM9_BIOS[t + 0x20] = logo_data[t];
-		T1WriteLong(MMU.ARM9_BIOS, 0x0274, 0xE92D500F);
-		T1WriteLong(MMU.ARM9_BIOS, 0x0278, 0xEE190F11);
-		T1WriteLong(MMU.ARM9_BIOS, 0x027C, 0xE1A00620);
-		T1WriteLong(MMU.ARM9_BIOS, 0x0280, 0xE1A00600);
-		T1WriteLong(MMU.ARM9_BIOS, 0x0284, 0xE2800C40);
-		T1WriteLong(MMU.ARM9_BIOS, 0x0288, 0xE28FE000);
-		T1WriteLong(MMU.ARM9_BIOS, 0x028C, 0xE510F004);
-		T1WriteLong(MMU.ARM9_BIOS, 0x0290, 0xE8BD500F);
-		T1WriteLong(MMU.ARM9_BIOS, 0x0294, 0xE25EF004);
+
+		//...0xBC:
+
+		//(now what goes in this gap??)
+
+		//IRQ handler: get dtcm address and jump to a vector in it
+		T1WriteLong(MMU.ARM9_BIOS, 0x0274, 0xE92D500F); //STMDB SP!, {R0-R3,R12,LR} 
+		T1WriteLong(MMU.ARM9_BIOS, 0x0278, 0xEE190F11); //MRC CP15, 0, R0, CR9, CR1, 0
+		T1WriteLong(MMU.ARM9_BIOS, 0x027C, 0xE1A00620); //MOV R0, R0, LSR #C
+		T1WriteLong(MMU.ARM9_BIOS, 0x0280, 0xE1A00600); //MOV R0, R0, LSL #C 
+		T1WriteLong(MMU.ARM9_BIOS, 0x0284, 0xE2800C40); //ADD R0, R0, #4000
+		T1WriteLong(MMU.ARM9_BIOS, 0x0288, 0xE28FE000); //ADD LR, PC, #0   
+		T1WriteLong(MMU.ARM9_BIOS, 0x028C, 0xE510F004); //LDR PC, [R0, -#4] 
+
+		//????
+		T1WriteLong(MMU.ARM9_BIOS, 0x0290, 0xE8BD500F); //LDMIA SP!, {R0-R3,R12,LR}
+		T1WriteLong(MMU.ARM9_BIOS, 0x0294, 0xE25EF004); //SUBS PC, LR, #4
+
+		//-------
+		//FIQ and abort exception handler
+		//TODO - this code is copied from the bios. refactor it
+		//friendly reminder: to calculate an immediate offset: encoded = (desired_address-cur_address-8)
+
+		T1WriteLong(MMU.ARM9_BIOS, 0x0298, 0xE10FD000); //MRS SP, CPSR  
+		T1WriteLong(MMU.ARM9_BIOS, 0x029C, 0xE38DD0C0); //ORR SP, SP, #C0
+		
+		T1WriteLong(MMU.ARM9_BIOS, 0x02A0, 0xE12FF00D); //MSR CPSR_fsxc, SP
+		T1WriteLong(MMU.ARM9_BIOS, 0x02A4, 0xE59FD000 | (0x2D4-0x2A4-8)); //LDR SP, [FFFF02D4]
+		T1WriteLong(MMU.ARM9_BIOS, 0x02A8, 0xE28DD001); //ADD SP, SP, #1   
+		T1WriteLong(MMU.ARM9_BIOS, 0x02AC, 0xE92D5000); //STMDB SP!, {R12,LR}
+		
+		T1WriteLong(MMU.ARM9_BIOS, 0x02B0, 0xE14FE000); //MRS LR, SPSR
+		T1WriteLong(MMU.ARM9_BIOS, 0x02B4, 0xEE11CF10); //MRC CP15, 0, R12, CR1, CR0, 0
+		T1WriteLong(MMU.ARM9_BIOS, 0x02B8, 0xE92D5000); //STMDB SP!, {R12,LR}
+		T1WriteLong(MMU.ARM9_BIOS, 0x02BC, 0xE3CCC001); //BIC R12, R12, #1
+
+		T1WriteLong(MMU.ARM9_BIOS, 0x02C0, 0xEE01CF10); //MCR CP15, 0, R12, CR1, CR0, 0
+		T1WriteLong(MMU.ARM9_BIOS, 0x02C4, 0xE3CDC001); //BIC R12, SP, #1    
+		T1WriteLong(MMU.ARM9_BIOS, 0x02C8, 0xE59CC010); //LDR R12, [R12, #10] 
+		T1WriteLong(MMU.ARM9_BIOS, 0x02CC, 0xE35C0000); //CMP R12, #0  
+
+		T1WriteLong(MMU.ARM9_BIOS, 0x02D0, 0x112FFF3C); //BLXNE R12    
+		T1WriteLong(MMU.ARM9_BIOS, 0x02D4, 0x027FFD9C); //0x027FFD9C  
+		//---------
+
 	}
 
 #ifdef LOG_ARM7
@@ -2247,6 +2289,9 @@ void NDS_Reset()
 	NDS_ARM9.R13_svc = 0x00803FC0;
 	NDS_ARM9.R13_irq = 0x00803FA0;
 	NDS_ARM9.R13_usr = 0x00803EC0;
+	NDS_ARM9.R13_abt = NDS_ARM9.R13_usr; //????? 
+	//I think it is wrong to take gbatek's "SYS" and put it in USR--maybe USR doesnt matter. 
+	//i think SYS is all the misc modes. please verify by setting nonsensical stack values for USR here
 	NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
 	//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
 	//and how theyre named in desmume to match them up correctly. i just guessed.

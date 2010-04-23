@@ -397,7 +397,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		curInstruction &= 0x0FFFFFFC;
+		curInstruction &= 0xFFFFFFFC; //please don't change this to 0x0FFFFFFC -- the NDS will happily run on 0xF******* addresses all day long
 		armcpu->instruction = _MMU_read32<PROCNUM, MMU_AT_CODE>(curInstruction);
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
@@ -419,7 +419,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	curInstruction &= 0x0FFFFFFE;
+	curInstruction &= 0xFFFFFFFE; //please don't change this to 0x0FFFFFFE -- the NDS will happily run on 0xF******* addresses all day long
 	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction);
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
@@ -469,6 +469,37 @@ static BOOL (FASTCALL* test_conditions[])(Status_Reg CPSR)= {
 	(cond<15&&test_conditions[cond](CPSR))
 #endif
 
+//TODO - merge with armcpu_irqException?
+//http://www.ethernut.de/en/documents/arm-exceptions.html
+//http://docs.google.com/viewer?a=v&q=cache:V4ht1YkxprMJ:www.cs.nctu.edu.tw/~wjtsai/EmbeddedSystemDesign/Ch3-1.pdf+arm+exception+handling&hl=en&gl=us&pid=bl&srcid=ADGEEShx9VTHbUhWdDOrTVRzLkcCsVfJiijncNDkkgkrlJkLa7D0LCpO8fQ_hhU3DTcgZh9rcZWWQq4TYhhCovJ625h41M0ZUX3WGasyzWQFxYzDCB-VS6bsUmpoJnRxAc-bdkD0qmsu&sig=AHIEtbR9VHvDOCRmZFQDUVwy53iJDjoSPQ
+void armcpu_exception(armcpu_t *cpu, u32 number)
+{
+	Mode cpumode = USR;
+	switch(number)
+	{
+	case EXCEPTION_RESET: cpumode = SVC; break;
+	case EXCEPTION_UNDEFINED_INSTRUCTION: cpumode = UND; break;
+	case EXCEPTION_SWI: cpumode = SVC; break;
+	case EXCEPTION_PREFETCH_ABORT: cpumode = ABT; break;
+	case EXCEPTION_DATA_ABORT: cpumode = ABT; break;
+	case EXCEPTION_RESERVED_0x14: emu_halt(); break;
+	case EXCEPTION_IRQ: cpumode = IRQ; break;
+	case EXCEPTION_FAST_IRQ: cpumode = FIQ; break;
+	}
+
+	Status_Reg tmp = cpu->CPSR;
+	armcpu_switchMode(cpu, cpumode);				//enter new mode
+	cpu->R[14] = cpu->next_instruction;
+	cpu->SPSR = tmp;							//save old CPSR as new SPSR
+	cpu->CPSR.bits.T = 0;						//handle as ARM32 code
+	cpu->CPSR.bits.I = 1;
+	cpu->changeCPSR();
+	cpu->R[15] = cpu->intVector + number;
+	cpu->next_instruction = cpu->R[15];
+	printf("armcpu_exception!\n");
+	//extern bool dolog;
+	//dolog=true;
+}
 
 BOOL armcpu_irqException(armcpu_t *armcpu)
 {
@@ -502,6 +533,21 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 	return TRUE;
 }
 
+u32 TRAPUNDEF(armcpu_t* cpu)
+{
+	LOG("Undefined instruction: %#08X PC = %#08X \n", cpu->instruction, cpu->instruct_adr);
+	if (((cpu->intVector != 0) ^ (cpu->proc_ID == ARMCPU_ARM9)))
+	{
+		armcpu_exception(&NDS_ARM9,0x04);
+		return 4;
+	}
+	else
+	{
+		emu_halt();
+		return 4;
+	}
+}
+
 //BOOL
 //armcpu_flagIrq( armcpu_t *armcpu) {
 //  if(armcpu->CPSR.bits.I) return FALSE;
@@ -524,6 +570,11 @@ u32 armcpu_exec()
 	u32 cFetch = 0;
 	u32 cExecute = 0;
 
+	if(NDS_ARM9.instruct_adr == 0x0201125C)
+	{
+		int zzz=9;
+	}
+
 	//this assert is annoying. but sometimes it is handy.
 	//assert(ARMPROC.instruct_adr!=0x00000000);
 #ifdef DEVELOPER
@@ -538,18 +589,18 @@ u32 armcpu_exec()
 				break;
 			case 0x00000004:
 				printf("BIOS%c: Undefined instruction\n", PROCNUM?'7':'9');
-				emu_halt();
+				//emu_halt();
 				break;
 			case 0x00000008:
 				//printf("BIOS%c: SWI\n", PROCNUM?'7':'9');
 				break;
 			case 0x0000000C:
 				printf("BIOS%c: Prefetch Abort!!!\n", PROCNUM?'7':'9');
-				emu_halt();
+				//emu_halt();
 				break;
 			case 0x00000010:
-				printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
-				emu_halt();
+				//printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
+				//emu_halt();
 				break;
 			case 0x00000014:
 				printf("BIOS%c: Reserved!!!\n", PROCNUM?'7':'9');

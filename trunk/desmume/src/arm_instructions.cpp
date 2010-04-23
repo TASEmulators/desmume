@@ -261,28 +261,6 @@ TEMPLATE static u32 FASTCALL  OP_UND(const u32 i)
 	return 1;
 }
 
-#define TRAPUNDEF() \
-	LOG("Undefined instruction: %#08X PC = %#08X \n", cpu->instruction, cpu->instruct_adr); \
-	\
-	if (((cpu->intVector != 0) ^ (PROCNUM == ARMCPU_ARM9))) \
-	{ \
-		Status_Reg tmp = cpu->CPSR; \
-		armcpu_switchMode(cpu, UND);					/* enter und mode */ \
-		cpu->R[14] = cpu->R[15] - 4;					/* jump to und Vector */ \
-		cpu->SPSR = tmp;								/* save old CPSR as new SPSR */ \
-		cpu->CPSR.bits.T = 0;							/* handle as ARM32 code */ \
-		cpu->CPSR.bits.I = cpu->SPSR.bits.I;			/* keep int disable flag */ \
-		cpu->changeCPSR(); \
-		cpu->R[15] = cpu->intVector + 0x04; \
-		cpu->next_instruction = cpu->R[15]; \
-		return 4; \
-	} \
-	else \
-	{ \
-		emu_halt(); \
-		return 4; \
-	} \
-
 //-----------------------------------------------------------------------------
 //   AND / ANDS
 //   Timing: OK
@@ -3176,6 +3154,8 @@ TEMPLATE static u32 FASTCALL  OP_BX(const u32 i)
 	u32 tmp = cpu->R[REG_POS(cpu->instruction, 0)];
 
 	cpu->CPSR.bits.T = BIT0(tmp);
+	 //zeromus has a little concern about these. shouldnt they be 0xFFFFFFFC?
+	//can someone refute this or prove it?
 	cpu->R[15] = tmp & 0xFFFFFFFE;
 	cpu->next_instruction = cpu->R[15];
 	return 3;
@@ -3187,6 +3167,8 @@ TEMPLATE static u32 FASTCALL  OP_BLX_REG(const u32 i)
 	
 	cpu->R[14] = cpu->next_instruction;
 	cpu->CPSR.bits.T = BIT0(tmp);
+	//zeromus has a little concern about these. shouldnt they be 0xFFFFFFFC?
+	//can someone refute this or prove it?
 	cpu->R[15] = tmp & 0xFFFFFFFE;
 	cpu->next_instruction = cpu->R[15];
 	return 3;
@@ -6732,37 +6714,37 @@ TEMPLATE static u32 FASTCALL  OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 
 TEMPLATE static u32 FASTCALL  OP_STC_P_IMM_OFF(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_M_IMM_OFF(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_P_PREIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_M_PREIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_P_POSTIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_M_POSTIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_OPTION(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 //-----------------------------------------------------------------------------
@@ -6772,38 +6754,37 @@ TEMPLATE static u32 FASTCALL  OP_STC_OPTION(const u32 i)
 
 TEMPLATE static u32 FASTCALL  OP_LDC_P_IMM_OFF(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_M_IMM_OFF(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_P_PREIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_M_PREIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_P_POSTIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_M_POSTIND(const u32 i)
 {
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_OPTION(const u32 i)
 {
-	TRAPUNDEF();
-	return 2;
+	return TRAPUNDEF(cpu);
 }
 
 //-----------------------------------------------------------------------------
@@ -6813,7 +6794,7 @@ TEMPLATE static u32 FASTCALL  OP_LDC_OPTION(const u32 i)
 TEMPLATE static u32 FASTCALL  OP_MCR(const u32 i)
 {
 	u32 cpnum = REG_POS(i, 8);
-	
+
 	if(!cpu->coproc[cpnum])
 	{
 		emu_halt();
@@ -6911,7 +6892,7 @@ TEMPLATE static u32 FASTCALL OP_BKPT(const u32 i)
 TEMPLATE static u32 FASTCALL  OP_CDP(const u32 i)
 {
 	LOG("Stopped (OP_CDP) \n");
-	TRAPUNDEF();
+	return TRAPUNDEF(cpu);
 }
 
 //-----------------------------------------------------------------------------
