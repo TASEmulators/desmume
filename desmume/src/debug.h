@@ -169,12 +169,14 @@ private:
 };
 
 extern DebugNotify DEBUG_Notify;
+struct armcpu_t;
 
 //information about a debug event will be stuffed into here by the generator
 struct TDebugEventData
 {
 	MMU_ACCESS_TYPE memAccessType;
 	u32 procnum, addr, size, val;
+	armcpu_t* cpu();
 };
 
 extern TDebugEventData DebugEventData;

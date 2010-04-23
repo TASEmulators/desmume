@@ -29,6 +29,15 @@
 #define OPCODE(i)   (((i)>>21)&0xF)
 #define SIGNEBIT(i) BIT_N(i,20)
 
+#define EXCEPTION_RESET 0x00
+#define EXCEPTION_UNDEFINED_INSTRUCTION 0x04
+#define EXCEPTION_SWI 0x08
+#define EXCEPTION_PREFETCH_ABORT 0x0C
+#define EXCEPTION_DATA_ABORT 0x10
+#define EXCEPTION_RESERVED_0x14 0x14
+#define EXCEPTION_IRQ 0x18
+#define EXCEPTION_FAST_IRQ 0x1C
+
 #define INSTRUCTION_INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
 inline u32 ROR(u32 i, u32 j)   { return ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j)))); }
@@ -216,6 +225,8 @@ template<int PROCNUM> u32 armcpu_exec();
 
 BOOL armcpu_irqException(armcpu_t *armcpu);
 BOOL armcpu_flagIrq( armcpu_t *armcpu);
+void armcpu_exception(armcpu_t *cpu, u32 number);
+u32 TRAPUNDEF(armcpu_t* cpu);
 
 extern armcpu_t NDS_ARM7;
 extern armcpu_t NDS_ARM9;
