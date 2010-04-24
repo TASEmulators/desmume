@@ -367,12 +367,17 @@
 #define IDC_ADDONS_LIST                 1033
 #define IDC_BUTTON3                     1033
 #define IDC_SOUND_UNMUTE_ALL            1033
+#define IDC_PIANO_C                     1033
 #define IDC_ADDONS_INFO                 1034
 #define IDC_BORDER                      1034
+#define IDC_PIANO_CS                    1034
 #define IDC_BBROWSE                     1035
+#define IDC_PIANO_D                     1035
 #define IDC_PATHIMG                     1036
+#define IDC_PIANO_DS                    1036
 #define IDC_PATH                        1037
 #define IDC_PATHGAME                    1037
+#define IDC_PIANO_E                     1037
 #define IDC_RFILE                       1038
 #define IDC_RFOLDER                     1039
 #define IDC_BBROWSE2                    1040
@@ -380,13 +385,22 @@
 #define IDC_BRESTART                    1042
 #define IDC_BVIEW                       1043
 #define IDC_BSEARCH                     1044
+#define IDC_PIANO_F                     1044
 #define IDC_RADIO1                      1045
+#define IDC_PIANO_FS                    1045
 #define IDC_RADIO2                      1046
+#define IDC_PIANO_GS                    1046
 #define IDC_RADIO3                      1047
+#define IDC_PIANO_B                     1047
 #define IDC_RADIO4                      1048
+#define IDC_PIANO_A                     1048
 #define IDC_RADIO5                      1049
+#define IDC_PIANO_AS                    1049
 #define IDC_RADIO6                      1050
+#define IDC_PIANO_G                     1050
 #define IDC_RADIO7                      1051
+#define IDC_PIANO_DS3                   1051
+#define IDC_PIANO_HIC                   1051
 #define IDC_RADIO8                      1052
 #define IDC_LIST1                       1056
 #define IDC_BADD_AR                     1057
@@ -759,6 +773,7 @@
 #define IDC_IOREG                       6001
 #define IDD_CHEAT_ADD_XX_CODE           10005
 #define IDD_GBASLOT_GUITARGRIP          10009
+#define IDD_GBASLOT_PIANO               10010
 #define IDM_FILE_STOPAVI                40000
 #define IDM_SCREENSEP_NONE              40000
 #define IDM_FILE_STOPWAV                40001
@@ -915,9 +930,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        121
+#define _APS_NEXT_RESOURCE_VALUE        122
 #define _APS_NEXT_COMMAND_VALUE         40079
-#define _APS_NEXT_CONTROL_VALUE         1033
+#define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

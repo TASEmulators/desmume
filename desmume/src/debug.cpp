@@ -66,6 +66,12 @@ void HandleDebugEvent_ACL_Exception()
 		armcpu_exception(DebugEventData.cpu(),EXCEPTION_DATA_ABORT);
 }
 
+
+static bool CheckRange(u32 adr, u32 min, u32 len)
+{
+	return (adr>=min && adr<min+len);
+}
+
 void HandleDebugEvent_Read()
 {
 	if(!debug_acl) return;

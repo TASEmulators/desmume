@@ -38,6 +38,7 @@ ADDON_CFLASH_MODE	tmp_CFlashMode = ADDON_CFLASH_MODE_RomPath;
 HWND		OKbutton = NULL;
 bool		_OKbutton = false;
 SGuitar		tmp_Guitar;
+SPiano		tmp_Piano;
 bool		needReset = true;
 
 //these are the remembered preset values for directory and filename
@@ -342,14 +343,100 @@ INT_PTR CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 	return FALSE;
 }
 
+INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	int which = 0;
+
+	switch(msg)
+	{
+		case WM_INITDIALOG: 
+		{
+			_OKbutton = TRUE;
+			SendDlgItemMessage(dialog,IDC_PIANO_C,WM_USER+44,tmp_Piano.C,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_CS,WM_USER+44,tmp_Piano.CS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_D,WM_USER+44,tmp_Piano.D,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_DS,WM_USER+44,tmp_Piano.DS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_E,WM_USER+44,tmp_Piano.E,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_F,WM_USER+44,tmp_Piano.F,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_FS,WM_USER+44,tmp_Piano.FS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_G,WM_USER+44,tmp_Piano.G,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_GS,WM_USER+44,tmp_Piano.GS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_A,WM_USER+44,tmp_Piano.A,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_AS,WM_USER+44,tmp_Piano.AS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_B,WM_USER+44,tmp_Piano.B,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_HIC,WM_USER+44,tmp_Piano.HIC,0);
+			if (temp_type != addon_type)
+				needReset = true;
+			else
+				needReset = false;
+
+			return TRUE;
+		}
+
+		case WM_USER+46:
+			SendDlgItemMessage(dialog,IDC_PIANO_C,WM_USER+44,tmp_Piano.C,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_CS,WM_USER+44,tmp_Piano.CS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_D,WM_USER+44,tmp_Piano.D,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_DS,WM_USER+44,tmp_Piano.DS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_E,WM_USER+44,tmp_Piano.E,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_F,WM_USER+44,tmp_Piano.F,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_FS,WM_USER+44,tmp_Piano.FS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_G,WM_USER+44,tmp_Piano.G,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_GS,WM_USER+44,tmp_Piano.GS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_A,WM_USER+44,tmp_Piano.A,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_AS,WM_USER+44,tmp_Piano.AS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_B,WM_USER+44,tmp_Piano.B,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_HIC,WM_USER+44,tmp_Piano.HIC,0);
+		return TRUE;
+
+		case WM_USER+43:
+			//MessageBox(hDlg,"USER+43 CAUGHT","moo",MB_OK);
+			which = GetDlgCtrlID((HWND)lparam);
+			switch(which)
+			{
+			case IDC_PIANO_C: tmp_Piano.C = wparam; break;
+			case IDC_PIANO_CS: tmp_Piano.CS = wparam; break;
+			case IDC_PIANO_D: tmp_Piano.D = wparam; break;
+			case IDC_PIANO_DS: tmp_Piano.DS = wparam; break;
+			case IDC_PIANO_E: tmp_Piano.E = wparam; break;
+			case IDC_PIANO_F: tmp_Piano.F = wparam; break;
+			case IDC_PIANO_FS: tmp_Piano.FS = wparam; break;
+			case IDC_PIANO_G: tmp_Piano.G = wparam; break;
+			case IDC_PIANO_GS: tmp_Piano.GS = wparam; break;
+			case IDC_PIANO_A: tmp_Piano.A = wparam; break;
+			case IDC_PIANO_AS: tmp_Piano.AS = wparam; break;
+			case IDC_PIANO_B: tmp_Piano.B = wparam; break;
+			case IDC_PIANO_HIC: tmp_Piano.HIC = wparam; break;
+
+			}
+
+			SendDlgItemMessage(dialog,IDC_PIANO_C,WM_USER+44,tmp_Piano.C,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_CS,WM_USER+44,tmp_Piano.CS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_D,WM_USER+44,tmp_Piano.D,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_DS,WM_USER+44,tmp_Piano.DS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_E,WM_USER+44,tmp_Piano.E,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_F,WM_USER+44,tmp_Piano.F,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_FS,WM_USER+44,tmp_Piano.FS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_G,WM_USER+44,tmp_Piano.G,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_GS,WM_USER+44,tmp_Piano.GS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_A,WM_USER+44,tmp_Piano.A,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_AS,WM_USER+44,tmp_Piano.AS,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_B,WM_USER+44,tmp_Piano.B,0);
+			SendDlgItemMessage(dialog,IDC_PIANO_HIC,WM_USER+44,tmp_Piano.HIC,0);
+			PostMessage(dialog,WM_NEXTDLGCTL,0,0);
+		return true;
+	}
+	return FALSE;
+}
+
 u32		GBAslot_IDDs[NDS_ADDON_COUNT] = {
 	IDD_GBASLOT_NONE,
 	IDD_GBASLOT_CFLASH,
 	IDD_GBASLOT_RUMBLEPAK,
 	IDD_GBASLOT_GBAGAME,
 	IDD_GBASLOT_GUITARGRIP,
-	// todo
-	IDD_GBASLOT_NONE
+	IDD_GBASLOT_NONE, //expmem
+	IDD_GBASLOT_PIANO
 };
 
 DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
@@ -357,9 +444,9 @@ DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
 	GbaSlotCFlash,
 	GbaSlotRumblePak,
 	GbaSlotGBAgame,
-	//todo
 	GbaSlotGuitarGrip,
-	GbaSlotNone
+	GbaSlotNone,  //expmem
+	GbaSlotPiano
 };
 
 
@@ -450,6 +537,7 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_cflash_path, win32_CFlash_cfgDirectory.c_str());
 	strcpy(tmp_gbagame_filename, GBAgameName);
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
+	memcpy(&tmp_Piano, &Piano, sizeof(Piano));
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
 	needReset = true;
@@ -496,6 +584,27 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileInt("GBAslot.GuitarGrip","red",Guitar.RED,IniName);
 				WritePrivateProfileInt("GBAslot.GuitarGrip","yellow",Guitar.YELLOW,IniName);
 				WritePrivateProfileInt("GBAslot.GuitarGrip","blue",Guitar.BLUE,IniName);
+				if (temp_type != addon_type)
+					needReset = true;
+				else
+					needReset = false;
+				break;
+			case NDS_ADDON_PIANO:
+				memcpy(&Piano, &tmp_Piano, sizeof(tmp_Piano));
+				Piano.Enabled = true;
+				WritePrivateProfileInt("GBAslot.Piano","C",Piano.C,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","CS",Piano.CS,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","D",Piano.D,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","DS",Piano.DS,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","E",Piano.E,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","F",Piano.F,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","FS",Piano.FS,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","G",Piano.G,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","GS",Piano.GS,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","A",Piano.A,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","AS",Piano.AS,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","B",Piano.B,IniName);
+				WritePrivateProfileInt("GBAslot.Piano","HIC",Piano.HIC,IniName);
 				if (temp_type != addon_type)
 					needReset = true;
 				else

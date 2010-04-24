@@ -4,8 +4,11 @@ General/Core:
  bug: return Z1 and Z2 from TSC (fixes some touch logic)
  bug: fix a ton of old, broken cpu opcodes and CP15 logic
  enh: substantial improvements to wifi emulation
+ enh: more realistic exception handling
+ enh: piano controller emulation
  
 Graphics:
+ bug: edge marking colors were wrong
 
 Windows:
 

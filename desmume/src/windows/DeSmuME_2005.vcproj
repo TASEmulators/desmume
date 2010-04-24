@@ -1445,6 +1445,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\addons\piano.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\addons\rumblepak.cpp"
 				>
 			</File>

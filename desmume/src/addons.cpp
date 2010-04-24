@@ -36,6 +36,7 @@ extern ADDONINTERFACE addonRumblePak;
 extern ADDONINTERFACE addonGBAgame;
 extern ADDONINTERFACE addonGuitarGrip;
 extern ADDONINTERFACE addonExpMemory;
+extern ADDONINTERFACE addonPiano;
 //extern ADDONINTERFACE addonExternalMic;
 
 ADDONINTERFACE addonList[NDS_ADDON_COUNT] = {
@@ -44,7 +45,8 @@ ADDONINTERFACE addonList[NDS_ADDON_COUNT] = {
 		addonRumblePak,
 		addonGBAgame,
 		addonGuitarGrip,
-		addonExpMemory
+		addonExpMemory,
+		addonPiano,
 };
 
 ADDONINTERFACE	addon = addonCFlash;		// default none pak

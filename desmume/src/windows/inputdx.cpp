@@ -246,10 +246,11 @@ SJoypad DefaultJoypad[16] = {
 
 SJoypad Joypad[16];
 
+SGuitar Guitar;
 SGuitar DefaultGuitar = { false, 'E', 'R', 'T', 'Y' };
 
-SGuitar Guitar;
-u8	guitarState = 0;
+SPiano Piano;
+SPiano DefaultPiano = { false, 'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M', VK_OEM_COMMA };
 
 bool allowUpAndDown = false;
 
@@ -362,6 +363,15 @@ static void ReadGuitarControl(const char* name, WORD& output)
 	}
 }
 
+static void ReadPianoControl(const char* name, WORD& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("GBAslot.Piano",name,-1,IniName);
+	if(temp != -1) {
+		output = temp;
+	}
+}
+
 void LoadHotkeyConfig()
 {
 	SCustomKey *key = &CustomKeys.key(0);
@@ -398,6 +408,24 @@ static void LoadGuitarConfig()
 	DO(BLUE);
 #undef DO
 }
+
+static void LoadPianoConfig()
+{
+	memcpy(&Piano,&DefaultPiano,sizeof(Piano));
+
+	//Piano.Enabled = true;
+#define DO(X) ReadPianoControl(#X,Piano.X);
+	DO(C); DO(CS);
+	DO(D); DO(DS);
+	DO(E);
+	DO(F); DO(FS);
+	DO(G); DO(GS);
+	DO(A); DO(AS);
+	DO(B);
+	DO(HIC);
+#undef DO
+}
+
 
 static void LoadInputConfig()
 {
@@ -2412,6 +2440,7 @@ void input_init()
 	LoadInputConfig();
 	LoadHotkeyConfig();
 	LoadGuitarConfig();
+	LoadPianoConfig();
 
 	di_init();
 	FeedbackON = input_feedback;
@@ -2508,6 +2537,25 @@ void input_acquire()
 		bool gY=!S9xGetState(Guitar.YELLOW);
 		bool gB=!S9xGetState(Guitar.BLUE);
 		guitarGrip_setKey(gG, gR, gY, gB);
+	}
+
+	//etc. same as above
+	if (Piano.Enabled)
+	{
+		bool c=!S9xGetState(Piano.C);
+		bool cs=!S9xGetState(Piano.CS);
+		bool d=!S9xGetState(Piano.D);
+		bool ds=!S9xGetState(Piano.DS);
+		bool e=!S9xGetState(Piano.E);
+		bool f=!S9xGetState(Piano.F);
+		bool fs=!S9xGetState(Piano.FS);
+		bool g=!S9xGetState(Piano.G);
+		bool gs=!S9xGetState(Piano.GS);
+		bool a=!S9xGetState(Piano.A);
+		bool as=!S9xGetState(Piano.AS);
+		bool b=!S9xGetState(Piano.B);
+		bool hic=!S9xGetState(Piano.HIC);
+		piano_setKey(c,cs,d,ds,e,f,fs,g,gs,a,as,b,hic);
 	}
 }
 

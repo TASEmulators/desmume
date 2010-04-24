@@ -2496,6 +2496,7 @@ int _main()
 	input_init();
 
 	if (addon_type == NDS_ADDON_GUITARGRIP) Guitar.Enabled = true;
+	if (addon_type == NDS_ADDON_PIANO) Piano.Enabled = true;
 
 	LOG("Init NDS\n");
 
@@ -2549,6 +2550,8 @@ int _main()
 	case NDS_ADDON_GUITARGRIP:
 		break;
 	case NDS_ADDON_EXPMEMORY:
+		break;
+	case NDS_ADDON_PIANO:
 		break;
 	default:
 		addon_type = NDS_ADDON_NONE;

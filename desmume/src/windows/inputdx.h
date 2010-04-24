@@ -132,7 +132,13 @@ struct SGuitar {
     WORD BLUE;
 };
 
+struct SPiano {
+    BOOL Enabled;
+    WORD C,CS,D,DS,E,F,FS,G,GS,A,AS,B,HIC;
+};
+
 extern SGuitar Guitar;
+extern SPiano Piano;
 
 #endif
 
