@@ -2006,8 +2006,9 @@ int MenuInit()
 		memset(&mm, 0, sizeof(MENUITEMINFO));
 		
 		mm.cbSize = sizeof(MENUITEMINFO);
-		mm.fMask = MIIM_TYPE;
+		mm.fMask = MIIM_TYPE | MIIM_ID;
 		mm.fType = MFT_STRING;
+		mm.wID = IDC_SAVETYPE+i+1;
 		mm.dwTypeData = (LPSTR)save_names[i];
 
 		MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
