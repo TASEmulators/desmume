@@ -59,8 +59,8 @@ static u8   piano_read08(u32 adr)
 	//0x09FFFFFE:5 = F
 	//0x09FFFFFE:6 = F#
 	//0x09FFFFFE:7 = G
-	//0x09FFFFFE:0 = G#
-	//0x09FFFFFE:1 = A
+	//0x09FFFFFF:0 = G#
+	//0x09FFFFFF:1 = A
 	//0x09FFFFFF:2 = A#
 	//0x09FFFFFF:3 = ?
 	//0x09FFFFFF:4 = ?
