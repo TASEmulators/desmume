@@ -31,7 +31,7 @@
 //temporary hack until we have better error reporting facilities
 #ifdef _WINDOWS
 #include <windows.h>
-#elif _XBOX
+#elif defined(_XBOX)
 #include <xtl.h>	// it`s really need?
 #endif
 
