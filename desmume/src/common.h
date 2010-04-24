@@ -56,7 +56,32 @@ extern const u8	logo_data[156];
 
 #endif
 
-extern u8	reverseBitsInByte(u8 x);
+template<typename T>
+T reverseBits(T x)
+{
+	T h = 0;
+	T i = 0;
+
+	for (i = 0; i < sizeof(T)*8; i++)
+	{
+		h = (h << 1) + (x & 1); 
+		x >>= 1; 
+	}
+
+	return h;
+}
+
+template<typename T>
+char *intToBin(T val)
+{
+	char buf[256] = {0};
+	for (int i = sizeof(T)*8, t = 0;  i > 0; --i, t++)
+	{
+		buf[i-1] = (val & (1<<t))?'1':'0';
+	}
+	return strdup(buf);
+}
+
 extern char *trim(char *s);
 extern char *removeSpecialChars(char *s);
 
