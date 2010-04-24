@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="DeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -990,6 +990,10 @@
 				</File>
 				<File
 					RelativePath="..\addons\none.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\piano.cpp"
 					>
 				</File>
 				<File

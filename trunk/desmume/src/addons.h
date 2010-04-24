@@ -63,6 +63,7 @@ enum {
 	NDS_ADDON_GBAGAME,		// gba game in slot
 	NDS_ADDON_GUITARGRIP,	// Guitar Grip
 	NDS_ADDON_EXPMEMORY,	// Memory Expansion 
+	NDS_ADDON_PIANO,		// Piano
 	//NDS_ADDON_EXTERNALMIC,
 	NDS_ADDON_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };
@@ -89,5 +90,6 @@ extern void addonsReset();							// Reset addon
 extern BOOL addonsChangePak(u8 type);				// change current adddon
 
 extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
+extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
 
 #endif

@@ -570,11 +570,6 @@ u32 armcpu_exec()
 	u32 cFetch = 0;
 	u32 cExecute = 0;
 
-	if(NDS_ARM9.instruct_adr == 0x0201125C)
-	{
-		int zzz=9;
-	}
-
 	//this assert is annoying. but sometimes it is handy.
 	//assert(ARMPROC.instruct_adr!=0x00000000);
 #ifdef DEVELOPER
