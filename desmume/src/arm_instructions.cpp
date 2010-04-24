@@ -1022,7 +1022,7 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_IMM_VAL(const u32 i)
 	} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.V = (v ^ shift_op ^ -1) & (v ^ cpu->R[REG_POS(i, 12)]) != 0;\
+	cpu->CPSR.bits.V = ((v ^ shift_op ^ -1) & (v ^ cpu->R[REG_POS(i, 12)])) != 0;\
 	return a; \
 	}
 
