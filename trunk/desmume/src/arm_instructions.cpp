@@ -1022,7 +1022,7 @@ TEMPLATE static u32 FASTCALL  OP_ADD_S_IMM_VAL(const u32 i)
 	} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.V = ((v ^ shift_op ^ -1) & (v ^ cpu->R[REG_POS(i, 12)])) != 0;\
+	cpu->CPSR.bits.V = BIT31((v ^ shift_op ^ -1) & (v ^ cpu->R[REG_POS(i, 12)]));\
 	return a; \
 	}
 
@@ -1182,7 +1182,7 @@ TEMPLATE static u32 FASTCALL  OP_ADC_S_IMM_VAL(const u32 i)
 	} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.V = ((v ^ shift_op) & (v ^ cpu->R[REG_POS(i, 12)])) != 0; \
+	cpu->CPSR.bits.V = BIT31((v ^ shift_op) & (v ^ cpu->R[REG_POS(i, 12)])); \
 	return a; \
 	}
 
@@ -1342,7 +1342,7 @@ TEMPLATE static u32 FASTCALL  OP_SBC_S_IMM_VAL(const u32 i)
 	} \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	cpu->CPSR.bits.V = ((shift_op ^ shift_op) & (shift_op ^ cpu->R[REG_POS(i, 12)])) != 0; \
+	cpu->CPSR.bits.V = BIT31((shift_op ^ v) & (shift_op ^ cpu->R[REG_POS(i, 12)])); \
 	return a; \
 	}
 
