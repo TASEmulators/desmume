@@ -38,6 +38,7 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include "mkgmtime.h"
 
 #define _SEC_IN_MINUTE 60L
 #define _SEC_IN_HOUR 3600L
