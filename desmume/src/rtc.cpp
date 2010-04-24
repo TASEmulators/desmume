@@ -157,8 +157,17 @@ static void rtcRecv()
 				rtc.data[0] = toBCD(tm.tm_year % 100);
 				rtc.data[1] = toBCD(tm.tm_mon + 1);
 				rtc.data[2] = toBCD(tm.tm_mday);
-				rtc.data[3] = (tm.tm_wday + 7) & 7;
-				if (rtc.data[3] == 7) rtc.data[3] = 6;
+
+				//zero 24-apr-2010 - this is nonsense.
+				//but it is so wrong, someone mustve thought they knew what they were doing, so i am leaving it...
+				//rtc.data[3] = (tm.tm_wday + 6) & 7;
+				//if (rtc.data[3] == 7) rtc.data[3] = 6;
+
+				//do this instead (gbatek seems to say monday=0 but i don't think that is right)
+				//0=sunday is necessary to make animal crossing behave
+				//maybe it means "custom assignment" can be specified by the game
+				rtc.data[3] = tm.tm_wday;
+
 				if (!(rtc.regStatus1 & 0x02)) tm.tm_hour %= 12;
 				rtc.data[4] = ((tm.tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm.tm_hour);
 				rtc.data[5] =  toBCD(tm.tm_min);
