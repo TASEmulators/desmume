@@ -455,7 +455,7 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 	}
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
-	cpu->CPSR.bits.V = (((Rd ^ Rm ^ -1) & (Rd ^ cpu->R[REG_NUM(i, 0)])) != 0);
+	cpu->CPSR.bits.V = BIT31((Rd ^ Rm ^ -1) & (Rd ^ cpu->R[REG_NUM(i, 0)]));
 	
 	return 1;
 }
@@ -481,7 +481,7 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
-	cpu->CPSR.bits.V = ((Rd ^ Rm) & (Rd ^ cpu->R[REG_NUM(i, 0)])) != 0;
+	cpu->CPSR.bits.V = BIT31((Rd ^ Rm) & (Rd ^ cpu->R[REG_NUM(i, 0)]));
 	
 	return 1;
 }
