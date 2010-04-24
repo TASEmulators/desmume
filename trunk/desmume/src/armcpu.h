@@ -24,6 +24,7 @@
 #include "types.h"
 #include "bits.h"
 #include "MMU.h"
+#include "common.h"
 
 #define CODE(i)     (((i)>>25)&0x7)
 #define OPCODE(i)   (((i)>>21)&0xF)
@@ -53,6 +54,31 @@ inline T SIGNED_OVERFLOW(T a,T b,T c) { return BIT31(((a)&(b)&(~c)) | ((~a)&(~(b
 
 template<typename T>
 inline T SIGNED_UNDERFLOW(T a,T b,T c) { return BIT31(((a)&(~(b))&(~c)) | ((~a)&(b)&(c))); }
+
+// ============================= CPRS flags funcs
+inline bool CarryFrom(s32 left, s32 right)
+{
+  u32 res  = (0xFFFFFFFFU - (u32)left);
+
+  return ((u32)right > res);
+}
+
+inline bool BorrowFrom(s32 left, s32 right)
+{
+  return ((u32)right > (u32)left);
+}
+
+inline bool OverflowFromADD(s32 alu_out, s32 left, s32 right)
+{
+    return ((left >= 0 && right >= 0) || (left < 0 && right < 0))
+			&& ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
+}
+
+inline bool OverflowFromSUB(s32 alu_out, s32 left, s32 right)
+{
+    return ((left < 0 && right >= 0) || (left >= 0 && right < 0))
+			&& ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
+}
 
 //zero 15-feb-2009 - these werent getting used and they were getting in my way
 //#define EQ	0x0
@@ -270,6 +296,24 @@ static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
 			NDS_makeARM7Int(num) ;
 			break ;
 	}
+}
+
+
+static INLINE char *decodeIntruction(bool thumb_mode, u32 instr)
+{
+	char txt[20] = {0};
+	u32 tmp = 0;
+	if (thumb_mode == true)
+	{
+		tmp = (instr >> 6);
+		strcpy(txt, intToBin((u16)tmp)+6);
+	}
+	else
+	{
+		tmp = ((instr >> 16) & 0x0FF0) | ((instr >> 4) & 0x0F);
+		strcpy(txt, intToBin((u32)tmp)+20);
+	}
+	return strdup(txt);
 }
 
 #endif

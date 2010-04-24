@@ -38,38 +38,12 @@
 
 #define REG_NUM(i, n) (((i)>>n)&0x7)
 
-// ============================= CPRS flags funcs
-static bool CarryFrom(s32 left, s32 right)
-{
-  u32 res  = (0xFFFFFFFF - (u32)left);
-
-  return ((u32)right > res);
-}
-
-static bool BorrowFrom(s32 left, s32 right)
-{
-  return ((u32)right > (u32)left);
-}
-
-static bool OverflowFromADD(s32 alu_out, s32 left, s32 right)
-{
-    return ((left >= 0 && right >= 0) || (left < 0 && right < 0))
-			&& ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
-}
-
-static bool OverflowFromSUB(s32 alu_out, s32 left, s32 right)
-{
-    return ((left < 0 && right >= 0) || (left >= 0 && right < 0))
-			&& ((left < 0 && alu_out >= 0) || (left >= 0 && alu_out < 0));
-}
-
 //-----------------------------------------------------------------------------
 //   Undefined instruction
 //-----------------------------------------------------------------------------
-
 TEMPLATE static  u32 FASTCALL OP_UND_THUMB(const u32 i)
 {
-	INFO("THUMB%c: Undefined instruction: 0x%08X PC=0x%08X.\n", cpu->proc_ID?'7':'9', cpu->instruction, cpu->instruct_adr);
+	INFO("THUMB%c: Undefined instruction: 0x%08X (%s) PC=0x%08X\n", cpu->proc_ID?'7':'9', cpu->instruction, decodeIntruction(true, cpu->instruction), cpu->instruct_adr);
 	TRAPUNDEF(cpu);
 	return 1;
 }
@@ -469,12 +443,19 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 	u32 Rd = cpu->R[REG_NUM(i, 0)];
 	u32 Rm = cpu->R[REG_NUM(i, 3)];
 
-	cpu->R[REG_NUM(i, 0)] = Rd + Rm + cpu->CPSR.bits.C;
-
+	if (!cpu->CPSR.bits.C)
+	{
+		cpu->R[REG_NUM(i, 0)] = Rd + Rm;
+		cpu->CPSR.bits.C = cpu->R[REG_NUM(i, 0)] < Rm;
+	}
+	else
+	{
+		cpu->R[REG_NUM(i, 0)] = Rd + Rm + 1;
+		cpu->CPSR.bits.C =  cpu->R[REG_NUM(i, 0)] <= Rm;
+	}
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
-	cpu->CPSR.bits.V = OverflowFromADD(cpu->R[REG_NUM(i, 0)], Rd, Rm + cpu->CPSR.bits.C);
-	cpu->CPSR.bits.C = CarryFrom(Rd, Rm + cpu->CPSR.bits.C);
+	cpu->CPSR.bits.V = (Rd ^ Rm ^ -1) & (Rd ^ cpu->R[REG_NUM(i, 0)]) != 0;
 	
 	return 1;
 }
@@ -482,18 +463,25 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG(const u32 i)
 //-----------------------------------------------------------------------------
 //   SBC
 //-----------------------------------------------------------------------------
-
 TEMPLATE static  u32 FASTCALL OP_SBC_REG(const u32 i)
 {
 	u32 Rd = cpu->R[REG_NUM(i, 0)];
 	u32 Rm = cpu->R[REG_NUM(i, 3)];
 
-	cpu->R[REG_NUM(i, 0)] = Rd - Rm - !cpu->CPSR.bits.C;
+	if (!cpu->CPSR.bits.C)
+	{
+		cpu->R[REG_NUM(i, 0)] = Rd - Rm - 1;
+		cpu->CPSR.bits.C = Rd > Rm;
+	}
+	else
+	{
+		cpu->R[REG_NUM(i, 0)] = Rd - Rm;
+		cpu->CPSR.bits.C = Rd >= Rm;
+	}
 
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = (cpu->R[REG_NUM(i, 0)] == 0);
-	cpu->CPSR.bits.V = OverflowFromSUB(cpu->R[REG_NUM(i, 0)], Rd, Rm - !cpu->CPSR.bits.C);
-	cpu->CPSR.bits.C = !BorrowFrom(Rd, Rm - !cpu->CPSR.bits.C);
+	cpu->CPSR.bits.V = ((Rd ^ Rm) & (Rd ^ cpu->R[REG_NUM(i, 0)])) != 0;
 	
 	return 1;
 }
@@ -902,6 +890,13 @@ TEMPLATE static  u32 FASTCALL OP_POP(const u32 i)
 	 return MMU_aluMemCycles<PROCNUM>(2, c);
 }
 
+// In ARMv5 and above, bit[0] of the loaded value
+// determines whether execution continues after this branch in ARM state or in Thumb state, as though the
+// following instruction had been executed:
+// BX (loaded_value)
+// In T variants of ARMv4, bit[0] of the loaded value is ignored and execution continues in Thumb state, as
+// though the following instruction had been executed:
+// MOV PC,(loaded_value)
 TEMPLATE static  u32 FASTCALL OP_POP_PC(const u32 i)
 {
 	u32 adr = cpu->R[13];
