@@ -3464,7 +3464,8 @@ TEMPLATE static u32 FASTCALL  OP_SMLA_B_B(const u32 i)
 
 	cpu->R[REG_POS(i,16)] = tmp + cpu->R[REG_POS(i,12)];
 
-	cpu->CPSR.bits.Q = OverflowFromADD(cpu->R[REG_POS(i,16)], tmp, cpu->R[REG_POS(i,12)]);
+	if (OverflowFromADD(cpu->R[REG_POS(i,16)], tmp, cpu->R[REG_POS(i,12)]))
+		cpu->CPSR.bits.Q = 1;
 	//INFO("SMLABB %08X * %08X + %08X = %08X\n", (s16)cpu->R[REG_POS(i,0)], (s16)cpu->R[REG_POS(i,8)], cpu->R[REG_POS(i,12)], (s32)cpu->R[REG_POS(i,16)]);
 
 	return 2;
