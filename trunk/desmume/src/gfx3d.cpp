@@ -157,13 +157,15 @@ public:
 			//decode a packed command
 decode:
 			//printf("[%05d] gxf: decoding %08X\n",currFrameCounter,val);
-			
+			if (val == 0) return;	// nop
+
 			const u8 commands[] = { val&0xFF, (val>>8)&0xFF, (val>>16)&0xFF, (val>>24)&0xFF };
 			const u8 commandTypes[] = { gfx3d_commandTypes[commands[0]], gfx3d_commandTypes[commands[1]],gfx3d_commandTypes[commands[2]], gfx3d_commandTypes[commands[3]] };
 
 			for(int i=0;i<4;i++) {
 				u8 cmd = commands[i];
 				u8 type = commandTypes[i];
+
 				if(type == INVALID_COMMAND) {
 					commandsPending[i].command = INVALID_COMMAND;
 				} else {
@@ -179,8 +181,12 @@ decode:
 					//these are valid commands with no parameters. they might need special handling
 					//as long as there is a subsequent defined command with parameters, we're safe
 					bool safe = false;
-					for(int j=i+1;j<4;j++) {
-						if(commandTypes[j] != INVALID_COMMAND) {
+					if (i == 3)
+						safe = true;
+					else
+						// start loop from (i+1) always skip last command
+					for(u8 j=i+1;j<4;j++) {
+						if((commandTypes[j] != INVALID_COMMAND)) {
 							safe = true;
 							break;
 						}
