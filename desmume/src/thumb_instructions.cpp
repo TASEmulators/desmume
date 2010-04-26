@@ -403,8 +403,8 @@ TEMPLATE static  u32 FASTCALL OP_CMP_SPE(const u32 i)
 	
 	cpu->CPSR.bits.N = BIT31(tmp);
 	cpu->CPSR.bits.Z = tmp == 0;
-	cpu->CPSR.bits.C = !BorrowFrom(cpu->R[Rn], cpu->R[REG_NUM(i, 3)]);
-	cpu->CPSR.bits.V = OverflowFromSUB(tmp, cpu->R[Rn], cpu->R[REG_NUM(i, 3)]);
+	cpu->CPSR.bits.C = !BorrowFrom(cpu->R[Rn], cpu->R[REG_POS(i, 3)]);
+	cpu->CPSR.bits.V = OverflowFromSUB(tmp, cpu->R[Rn], cpu->R[REG_POS(i, 3)]);
 	
 	return 1;
 }
@@ -555,13 +555,11 @@ TEMPLATE static  u32 FASTCALL OP_NEG(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_CMN(const u32 i)
 {
 	u32 tmp = cpu->R[REG_NUM(i, 0)] + cpu->R[REG_NUM(i, 3)];
-	
-	//emu_halt();
-	//log::ajouter("OP_CMN THUMB");
+
 	cpu->CPSR.bits.N = BIT31(tmp);
 	cpu->CPSR.bits.Z = tmp == 0;
-	cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)], tmp);
-	cpu->CPSR.bits.V = SIGNED_OVERFLOW(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)], tmp);
+	cpu->CPSR.bits.C = CarryFrom(cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)]);
+	cpu->CPSR.bits.V = OverflowFromADD(tmp, cpu->R[REG_NUM(i, 0)], cpu->R[REG_NUM(i, 3)]);
 	
 	return 1;
 }
@@ -1149,9 +1147,9 @@ TEMPLATE static  u32 FASTCALL OP_BLX_THUMB(const u32 i)
 	u32 Rm = cpu->R[REG_POS(i, 3)];
 	
 	cpu->CPSR.bits.T = BIT0(Rm);
-	cpu->R[14] = cpu->next_instruction | 1;
 	//cpu->R[15] = (Rm & (0xFFFFFFFC|(1<<cpu->CPSR.bits.T)));
-	cpu->R[15] = (Rm & (0xFFFFFFFC|(1<<cpu->CPSR.bits.T)));
+	cpu->R[15] = Rm & 0xFFFFFFFE;
+	cpu->R[14] = cpu->next_instruction | 1;
 	cpu->next_instruction = cpu->R[15];
 	
 	return 4;
