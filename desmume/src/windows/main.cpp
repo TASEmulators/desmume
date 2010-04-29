@@ -106,6 +106,102 @@
 #include "aviout.h"
 #include "soundView.h"
 
+//#include <libelf/libelf.h>
+//#include <libelf/gelf.h> 
+//#include <sys/types.h>
+//#include <sys/stat.h>
+//#include <fcntl.h>
+//#include <io.h>
+//void testelf()
+//{
+//	//http://webcache.googleusercontent.com/search?q=cache:XeQF6AILcrkJ:chris.rohlf.googlepages.com/libelf-howto.c+libelf+example&cd=2&hl=en&ct=clnk&gl=us
+//Elf32_Ehdr *elf_header;  /* ELF header */
+//Elf *elf;                       /* Our Elf pointer for libelf */
+//Elf_Scn *scn;                   /* Section Descriptor */
+//Elf_Data *edata;                /* Data Descriptor */
+//GElf_Sym sym;   /* Symbol */
+//GElf_Shdr shdr;                 /* Section Header */ 
+//int fd;   // File Descriptor
+//const char* file = "d:\\devkitPro\\examples\\nds\\hello_world\\hello_world.elf";
+//struct stat elf_stats; // fstat struct 
+//char *base_ptr;  // ptr to our object in memory
+//#define ERR -1 
+//    if((fd = open(file, O_RDWR)) == ERR)
+//        {
+//             printf("couldnt open %s\n", file);
+//             return;
+//        } 
+//        if((fstat(fd, &elf_stats)))
+//        {
+//             printf("could not fstat %s\n", file);
+//                close(fd);
+//             return ;
+//        } 
+//        if((base_ptr = (char *) malloc(elf_stats.st_size)) == NULL)
+//        {
+//             printf("could not malloc\n");
+//                close(fd);
+//             return ;
+//        } 
+//        if((read(fd, base_ptr, elf_stats.st_size)) < elf_stats.st_size)
+//        {
+//             printf("could not read %s\n", file);
+//                free(base_ptr);
+//                close(fd);
+//             return ;
+//        }
+//      /* Check libelf version first */
+//      if(elf_version(EV_CURRENT) == EV_NONE)
+//      {
+//             printf("WARNING Elf Library is out of date!\n");
+//      } 
+//elf_header = (Elf32_Ehdr *) base_ptr; // point elf_header at our object in memory
+//elf = elf_begin(fd, ELF_C_READ, NULL); // Initialize 'elf' pointer to our file descriptor 
+///* Iterate through section headers */
+//while((scn = elf_nextscn(elf, scn)) != 0)
+//{
+//      gelf_getshdr(scn, &shdr); 
+//             // print the section header type
+//                printf("Type: "); 
+//                switch(shdr.sh_type)
+//                {
+//                        case SHT_NULL: printf( "SHT_NULL\t");               break;
+//                        case SHT_PROGBITS: printf( "SHT_PROGBITS");       break;
+//                        case SHT_SYMTAB: printf( "SHT_SYMTAB");           break;
+//                        case SHT_STRTAB: printf( "SHT_STRTAB");           break;
+//                        case SHT_RELA: printf( "SHT_RELA\t");               break;
+//                        case SHT_HASH: printf( "SHT_HASH\t");               break;
+//                        case SHT_DYNAMIC: printf( "SHT_DYNAMIC");         break;
+//                        case SHT_NOTE: printf( "SHT_NOTE\t");               break;
+//                        case SHT_NOBITS: printf( "SHT_NOBITS");           break;
+//                        case SHT_REL: printf( "SHT_REL\t");                 break;
+//                        case SHT_SHLIB: printf( "SHT_SHLIB");             break;
+//                        case SHT_DYNSYM: printf( "SHT_DYNSYM");           break;
+//                        case SHT_INIT_ARRAY: printf( "SHT_INIT_ARRAY");   break;
+//                        case SHT_FINI_ARRAY: printf( "SHT_FINI_ARRAY");   break;
+//                        case SHT_PREINIT_ARRAY: printf( "SHT_PREINIT_ARRAY"); break;
+//                        case SHT_GROUP: printf( "SHT_GROUP");             break;
+//                        case SHT_SYMTAB_SHNDX: printf( "SHT_SYMTAB_SHNDX"); break;
+//                        case SHT_NUM: printf( "SHT_NUM\t");                 break;
+//                        case SHT_LOOS: printf( "SHT_LOOS\t");               break;
+//                        case SHT_GNU_verdef: printf( "SHT_GNU_verdef");   break;
+//                        case SHT_GNU_verneed: printf( "SHT_VERNEED");     break;
+//                        case SHT_GNU_versym: printf( "SHT_GNU_versym");   break;
+//                        default: printf( "(none) ");                      break;
+//                } 
+//             // print the section header flags
+//             printf("\t(");
+//                if(shdr.sh_flags & SHF_WRITE) { printf("W"); }
+//                if(shdr.sh_flags & SHF_ALLOC) { printf("A"); }
+//                if(shdr.sh_flags & SHF_EXECINSTR) { printf("X"); }
+//                if(shdr.sh_flags & SHF_STRINGS) { printf("S"); }
+//             printf(")\t"); 
+//      // the shdr name is in a string table, libelf uses elf_strptr() to find it
+//      // using the e_shstrndx value from the elf_header
+//      printf("%s\n", elf_strptr(elf, elf_header->e_shstrndx, shdr.sh_name));
+//} 
+//}
+
 using namespace std;
 
 #ifdef EXPERIMENTAL_WIFI_COMM
@@ -2817,6 +2913,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
+//	testelf();
+
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
 	{
