@@ -1936,11 +1936,11 @@ void execHardware_interrupts()
 {
 	if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 	{
-//#ifdef GDB_STUB
-//		if ( armcpu_flagIrq( &NDS_ARM9)) 
-//#else
+#ifdef GDB_STUB
+		if ( armcpu_flagIrq( &NDS_ARM9)) 
+#else
 		if ( armcpu_irqException(&NDS_ARM9))
-//#endif
+#endif
 		{
 			//printf("ARM9 interrupt! flags: %08X ; mask: %08X ; result: %08X\n",MMU.reg_IF[0],MMU.reg_IE[0],MMU.reg_IF[0]&MMU.reg_IE[0]);
 			//nds.ARM9Cycle = nds.cycles;
@@ -1949,11 +1949,11 @@ void execHardware_interrupts()
 
 	if((MMU.reg_IF[1]&MMU.reg_IE[1]) && (MMU.reg_IME[1]))
 	{
-//#ifdef GDB_STUB
-//		if ( armcpu_flagIrq( &NDS_ARM7)) 
-//#else
+#ifdef GDB_STUB
+		if ( armcpu_flagIrq( &NDS_ARM7)) 
+#else
 		if ( armcpu_irqException(&NDS_ARM7))
-//#endif
+#endif
 		{
 			//nds.ARM7Cycle = nds.cycles;
 		}
