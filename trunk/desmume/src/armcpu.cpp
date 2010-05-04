@@ -111,14 +111,14 @@ armcpu_t NDS_ARM9;
 static void
 stall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  printf("UNSTALL\n");
+  //printf("UNSTALL\n");
   armcpu->stalled = 1;
 }
                       
 static void
 unstall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  printf("UNSTALL\n");
+  //printf("UNSTALL\n");
   armcpu->stalled = 0;
 }
 
@@ -507,30 +507,47 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 
 	if(armcpu->CPSR.bits.I) return FALSE;
 
-//#ifdef GDB_STUB
-//	armcpu->irq_flag = 0;
-//#endif
+	//TODO - remove GDB specific code
+#ifdef GDB_STUB
+	armcpu->irq_flag = 0;
+#endif
       
 	tmp = armcpu->CPSR;
 	armcpu_switchMode(armcpu, IRQ);
 
-//#ifdef GDB_STUB
-//	armcpu->R[14] = armcpu->next_instruction + 4;
-//#else
+	//TODO - remove GDB specific code
+#ifdef GDB_STUB
+	armcpu->R[14] = armcpu->next_instruction + 4;
+#else
 	armcpu->R[14] = armcpu->instruct_adr + 4;
-//#endif
+#endif
 	armcpu->SPSR = tmp;
 	armcpu->CPSR.bits.T = 0;
 	armcpu->CPSR.bits.I = 1;
 	armcpu->next_instruction = armcpu->intVector + 0x18;
 	armcpu->waitIRQ = 0;
 
-//#ifndef GDB_STUB
+	//TODO - remove GDB specific code
+#ifndef GDB_STUB
 	armcpu->R[15] = armcpu->next_instruction + 8;
 	armcpu_prefetch(armcpu);
-//#endif
+#endif
 
 	return TRUE;
+}
+
+//TODO - remove GDB specific code
+BOOL
+armcpu_flagIrq( armcpu_t *armcpu) {
+  if(armcpu->CPSR.bits.I) return FALSE;
+
+  armcpu->waitIRQ = 0;
+
+#ifdef GDB_STUB
+  armcpu->irq_flag = 1;
+#endif
+
+  return TRUE;
 }
 
 u32 TRAPUNDEF(armcpu_t* cpu)
