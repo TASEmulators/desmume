@@ -2198,11 +2198,26 @@ class WinDriver : public BaseDriver
 
 	virtual bool WIFI_WFCWarning()
 	{
-		return MessageBox(NULL,	"You are going to connect to the Nintendo WFC servers.\n"
+		return MessageBox(NULL,	"You are trying to connect to the Nintendo WFC servers.\n"
 								"\n"
-								"Please keep in mind that DeSmuME is not perfect\n"
-								"and connecting to WFC may cause unexpected problems\n"
-								"to the WFC servers, which Nintendo would not appreciate.\n"
+								"Please don't do this."
+								"\n"
+								"DeSmuME is not perfect yet, and connecting to WFC will cause unexpected problems\n"
+								"for Nintendo, and for DeSmuME, which neither of us want.\n"
+								"\n"
+								"And you don't want that either, right?\n"
+								"\n"
+								"You may get your IP blocked and then you won't even be able to use your real DS.\n"
+								"You may cause DeSmuME to get blocked, which would be a shame since we wouldn't even\n"
+								"be able to work on it any more.\n"
+								"\n"
+								"By the time you read this, it may have already happened due to irresponsible individuals\n"
+								"ignoring this message.\n"
+								"\n"
+								"So please don't do it.\n"
+								"\n"
+								"We aren't going to try to stop you, since someone will just make a hacked build and you\n"
+								"won't get a chance to read this. So please, stop yourself.\n"
 								"\n"
 								"Do you still want to connect?",
 								"DeSmuME - WFC warning",
@@ -2226,7 +2241,7 @@ class WinDriver : public BaseDriver
 		return _pcap_setnonblock(dev, nonblock, errbuf); }
 
 	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) {
-		return _pcap_sendpacket(dev, data, len); }
+		return _pcap_send(dev, data, len); }
 
 	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) {
 		return _pcap_dispatch(dev, num, callback, userdata); }

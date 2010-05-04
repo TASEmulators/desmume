@@ -116,6 +116,204 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="defaultconfig\SubWCRev.bat"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include"
+				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501"
+				StringPooling="true"
+				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
+				StructMemberAlignment="0"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				RuntimeTypeInfo="false"
+				WarningLevel="1"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
+				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
+				GenerateDebugInformation="true"
+				GenerateMapFile="true"
+				EnableCOMDATFolding="0"
+				OptimizeForWindows98="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x86.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release FastBuild|Win32"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="defaultconfig\SubWCRev.bat"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP3"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501;FASTBUILD"
+				StringPooling="true"
+				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
+				StructMemberAlignment="0"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				RuntimeTypeInfo="false"
+				WarningLevel="3"
+				WarnAsError="false"
+				DebugInformationFormat="3"
+				CallingConvention="0"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
+				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
+				GenerateDebugInformation="true"
+				GenerateMapFile="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="0"
+				OptimizeForWindows98="1"
+				LinkTimeCodeGeneration="0"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x86.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)\__bins"
 			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
@@ -188,103 +386,6 @@
 			<Tool
 				Name="VCManifestTool"
 				AdditionalManifestFiles="DeSmuME_x64.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.bat"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include"
-				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501"
-				StringPooling="true"
-				ExceptionHandling="1"
-				BasicRuntimeChecks="0"
-				StructMemberAlignment="0"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="false"
-				EnableEnhancedInstructionSet="2"
-				FloatingPointModel="2"
-				RuntimeTypeInfo="false"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="0"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf-vc8-Win32.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
-				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
-				GenerateDebugInformation="true"
-				GenerateMapFile="true"
-				EnableCOMDATFolding="0"
-				OptimizeForWindows98="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x86.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -384,107 +485,6 @@
 			<Tool
 				Name="VCManifestTool"
 				AdditionalManifestFiles="DeSmuME_x64.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release FastBuild|Win32"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			WholeProgramOptimization="0"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.bat"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/MP3"
-				Optimization="2"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501;FASTBUILD"
-				StringPooling="true"
-				ExceptionHandling="1"
-				BasicRuntimeChecks="0"
-				StructMemberAlignment="0"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="false"
-				EnableEnhancedInstructionSet="2"
-				FloatingPointModel="2"
-				RuntimeTypeInfo="false"
-				WarningLevel="3"
-				WarnAsError="false"
-				DebugInformationFormat="3"
-				CallingConvention="0"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf-vc8-Win32.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
-				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
-				GenerateDebugInformation="true"
-				GenerateMapFile="true"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="0"
-				OptimizeForWindows98="1"
-				LinkTimeCodeGeneration="0"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x86.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -975,16 +975,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat 7z\7z.7z .libs\7z*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\7z.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -995,7 +985,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|x64"
+						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1005,7 +995,17 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release FastBuild|Win32"
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat 7z\7z.7z .libs\7z*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\7z.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1039,16 +1039,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat directx\directx.7z .libs\directx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\directx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -1059,7 +1049,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|x64"
+						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1069,7 +1059,17 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release FastBuild|Win32"
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat directx\directx.7z .libs\directx*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\directx.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1103,16 +1103,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\glib-vc8.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -1123,7 +1113,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|x64"
+						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1133,7 +1123,17 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release FastBuild|Win32"
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\glib-vc8.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1161,7 +1161,27 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*"
+							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\libelf_libdwarf.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\libelf_libdwarf.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release FastBuild|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\libelf_libdwarf.tag"
 						/>
@@ -1177,27 +1197,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1231,16 +1231,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\lua.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -1251,7 +1241,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|x64"
+						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1261,7 +1251,17 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release FastBuild|Win32"
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\lua.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1295,16 +1295,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -1315,7 +1305,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|x64"
+						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1325,7 +1315,17 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release FastBuild|Win32"
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
+							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\wx.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -1426,15 +1426,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release|Win32"
 						>
 						<Tool
@@ -1444,7 +1435,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|x64"
+						Name="Release FastBuild|Win32"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -1453,7 +1444,16 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release FastBuild|Win32"
+						Name="Debug|x64"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -1753,7 +1753,7 @@
 				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|x64"
+				Name="Release FastBuild|Win32"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -1761,7 +1761,7 @@
 				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release FastBuild|Win32"
+				Name="Release|x64"
 				>
 				<Tool
 					Name="VCCLCompilerTool"

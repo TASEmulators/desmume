@@ -18,7 +18,10 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-
+#include "types.h"
+#include <winsock2.h>
+#include <windows.h>
+#include <commdlg.h>
 #include <io.h>
 #include <fstream>
 #include <time.h>
