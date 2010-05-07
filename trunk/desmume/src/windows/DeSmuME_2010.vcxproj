@@ -419,6 +419,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
+    <ClCompile Include="..\addons\piano.cpp" />
     <ClCompile Include="..\aggdraw.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
     <ClCompile Include="..\armcpu.cpp" />
