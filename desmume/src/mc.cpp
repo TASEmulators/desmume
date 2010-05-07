@@ -458,6 +458,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 				ensure(addr+1);
 				if(com == BM_CMD_READLOW)
 				{
+					//printf("READ ADR: %08X\n",addr);
 					val = data[addr];
 					//flushPending = true; //is this a good idea? it may slow stuff down, but it is helpful for debugging
 					lazyFlushPending = true; //lets do this instead
@@ -465,9 +466,13 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 				}
 				else 
 				{
-					data[addr] = val;
-					flushPending = true;
-					//printf("writ: %08X\n",addr);
+					if(write_enable)
+					{
+						//printf("WRITE ADR: %08X\n",addr);
+						data[addr] = val;
+						flushPending = true;
+						//printf("writ: %08X\n",addr);
+					}
 				}
 				addr++;
 
@@ -477,8 +482,8 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 	else if(com == BM_CMD_READSTATUS)
 	{
 		//handle request to read status
-		//LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
-		return (write_enable << 1);
+		LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
+		return (write_enable << 1) | (3<<2);
 	}
 	else
 	{
@@ -488,15 +493,16 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 			case 0: break; //??
 
 			case 8:
+				printf("COMMAND%c: Unverified Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
 				val = 0xAA;
 				break;
-			
+
 			case BM_CMD_WRITEDISABLE:
 				write_enable = FALSE;
 				break;
 							
 			case BM_CMD_READSTATUS:
-				com = BM_CMD_READSTATUS;
+				com = (write_enable << 1) | (3<<2);
 				break;
 
 			case BM_CMD_WRITEENABLE:

@@ -3304,8 +3304,8 @@ LRESULT OpenFile()
 	ofn.hwndOwner = hwnd;
 
 	ofn.lpstrFilter = 
-		"All Usable Files (*.nds, *.ds.gba, *.zip, *.7z, *.rar, *.bz2)\0*.nds;*.ds.gba;*.zip;*.7z;*.rar;*.bz2\0"
-		"NDS ROM file (*.nds)\0*.nds\0"
+		"All Usable Files (*.nds, *.ds.gba, *.srl, *.zip, *.7z, *.rar, *.bz2)\0*.nds;*.ds.gba;*.srl;*.zip;*.7z;*.rar;*.bz2\0"
+		"NDS ROM file (*.nds,*.srl)\0*.nds;*.srl\0"
 		"NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0"
 		"Zipped NDS ROM file (*.zip)\0*.zip\0"
 		"7Zipped NDS ROM file (*.7z)\0*.7z\0"

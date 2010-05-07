@@ -1429,7 +1429,7 @@ u32 MMU_readFromGC()
 		// --- Ninja SD commands end ---------------------------------
 
 		default:
-			INFO("READ CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
+			INFO("READ CARD command: %02X%02X%02X%02X% 02X%02X%02X%02X\t", 
 					card.command[0], card.command[1], card.command[2], card.command[3],
 					card.command[4], card.command[5], card.command[6], card.command[7]);
 			INFO("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
@@ -2398,6 +2398,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_AUXSPIDATA:
 				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM9));
+				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
 
 			case REG_WRAMCNT:	
@@ -2741,6 +2742,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM9));
+				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
 
 			case REG_DISPA_BG0CNT :
@@ -3691,6 +3693,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 			case REG_AUXSPIDATA:
 				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM7));
+				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
 		}
 		MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
@@ -3774,6 +3777,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM7));
+				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 			return;
 
 			case REG_SPICNT :

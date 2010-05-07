@@ -256,7 +256,7 @@ INT_PTR CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 
 							// TODO: add another gba file formats and archs (??wtf??)
 							const char* fileFilter =	"GameBoy Advance ROM (*.gba)\0*.gba\0"
-														"NDS ROM (for nitroFS roms) (*.nds)\0*.nds\0"
+														"NDS ROM (for nitroFS roms) (*.nds,*.srl)\0*.nds;*.srl\0"
 														"Any file (*.*)\0*.*\0";
 							
                             ofn.lpstrFilter = fileFilter;
