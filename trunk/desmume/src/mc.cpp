@@ -502,7 +502,8 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 				break;
 							
 			case BM_CMD_READSTATUS:
-				com = (write_enable << 1) | (3<<2);
+				com = BM_CMD_READSTATUS;
+				val = (write_enable << 1) | (3<<2);
 				break;
 
 			case BM_CMD_WRITEENABLE:
