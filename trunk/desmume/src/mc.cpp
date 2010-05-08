@@ -482,7 +482,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 	else if(com == BM_CMD_READSTATUS)
 	{
 		//handle request to read status
-		LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
+		LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
 		return (write_enable << 1) | (3<<2);
 	}
 	else
