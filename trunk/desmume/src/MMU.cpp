@@ -2803,13 +2803,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				break;
 
 			case REG_IME:
-				{
-					NDS_Reschedule();
-					u32 new_val = val & 0x01;
-					MMU.reg_IME[ARMCPU_ARM9] = new_val;
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
-					return;
-				}
+				NDS_Reschedule();
+				MMU.reg_IME[ARMCPU_ARM9] = val & 0x01;
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
+				return;
 			case REG_IE :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF0000) | val;
@@ -3215,12 +3212,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				break;
 
 			case REG_IME : 
-				{
-					NDS_Reschedule();
-					u32 new_val = val & 0x01;
-					MMU.reg_IME[ARMCPU_ARM9] = new_val;
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
-				}
+				NDS_Reschedule();
+				MMU.reg_IME[ARMCPU_ARM9] = val & 0x01;
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
 				return;
 				
 			case REG_IE :
@@ -3948,13 +3942,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				/* NOTICE: Perhaps we have to use gbatek-like reg names instead of libnds-like ones ...*/
 				
 			case REG_IME : 
-				{
-					NDS_Reschedule();
-					u32 new_val = val & 1;
-					MMU.reg_IME[ARMCPU_ARM7] = new_val;
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
-					return;
-				}
+				NDS_Reschedule();
+				MMU.reg_IME[ARMCPU_ARM7] = val & 0x01;
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
+				return;
 			case REG_IE :
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF0000) | val;
@@ -4052,13 +4043,10 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				break;
 
 			case REG_IME : 
-			{
 				NDS_Reschedule();
-				u32 new_val = val & 1;
-				MMU.reg_IME[ARMCPU_ARM7] = new_val;
+				MMU.reg_IME[ARMCPU_ARM7] = val & 0x01;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
 				return;
-			}
 				
 			case REG_IE :
 				NDS_Reschedule();
