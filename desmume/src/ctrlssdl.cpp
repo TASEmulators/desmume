@@ -181,9 +181,13 @@ void uninit_joy( void)
 u16 lookup_joy_key (u16 keyval) {
   int i;
   u16 Key = 0;
+
   for(i = 0; i < NB_KEYS; i++)
-    if(keyval == joypad_cfg[i]) break;
-  if(i < NB_KEYS) Key = KEYMASK_(i);
+    if(keyval == joypad_cfg[i]) {
+      Key = KEYMASK_(i);
+      break;
+    }
+
   return Key;
 }
 
@@ -191,9 +195,13 @@ u16 lookup_joy_key (u16 keyval) {
 u16 lookup_key (u16 keyval) {
   int i;
   u16 Key = 0;
+
   for(i = 0; i < NB_KEYS; i++)
-    if(keyval == keyboard_cfg[i]) break;
-  if(i < NB_KEYS) Key = KEYMASK_(i);
+    if(keyval == keyboard_cfg[i]) {
+      Key = KEYMASK_(i);
+      break;
+    }
+
   return Key;
 }
 
@@ -272,17 +280,8 @@ u16 get_set_joy_key(int index) {
 }
 
 static signed long
-screen_to_touch_range_x( signed long scr_x, float size_ratio) {
-  signed long touch_x = (signed long)((float)scr_x * size_ratio);
-
-  return touch_x;
-}
-
-static signed long
-screen_to_touch_range_y( signed long scr_y, float size_ratio) {
-  signed long touch_y = (signed long)((float)scr_y * size_ratio);
-
-  return touch_y;
+screen_to_touch_range( signed long scr, float size_ratio) {
+  return (signed long)((float)scr * size_ratio);
 }
 
 /* Set mouse coordinates */
@@ -554,10 +553,10 @@ process_ctrls_event( SDL_Event& event,
           break;
         else {
           signed long scaled_x =
-            screen_to_touch_range_x( event.button.x,
+            screen_to_touch_range( event.button.x,
                                      cfg->nds_screen_size_ratio);
           signed long scaled_y =
-            screen_to_touch_range_y( event.button.y,
+            screen_to_touch_range( event.button.y,
                                      cfg->nds_screen_size_ratio);
 
           if( scaled_y >= 192)
