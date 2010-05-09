@@ -46,7 +46,6 @@ G_MODULE_EXPORT void  on_wKeybConfDlg_response (GtkDialog *dialog, gint arg1, gp
 G_MODULE_EXPORT void  on_button_kb_key_clicked    (GtkButton *button, gpointer user_data);
 
 /* Joystick configuration / Key definition */
-G_MODULE_EXPORT void on_button_joy_axis_clicked (GtkButton *button, gpointer user_data);
 G_MODULE_EXPORT void on_button_joy_key_clicked (GtkButton *button, gpointer user_data);
 
 }

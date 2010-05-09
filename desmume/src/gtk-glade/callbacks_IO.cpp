@@ -386,49 +386,11 @@ static void ask_joy_key(GtkButton*b, int key)
   gtk_widget_hide((GtkWidget*)dlg);
 }
 
-/* Joystick configuration / Key definition */
-static void ask_joy_axis(u8 key, u8 opposite_key)
-{
-  char text[50];
-  char current_button[50], opposite_button[50];
-  GtkWidget * dlg;
-  GtkButton * btn;
-
-  key--; /* remove 1 to get index */
-  opposite_key--;
-
-  snprintf(current_button, 50, "button_joy_%s",key_names[key]);
-  snprintf(opposite_button, 50, "button_joy_%s",key_names[opposite_key]);
-  dlg = (GtkWidget*)glade_xml_get_widget(xml, "wJoyDlg");
-
-  gtk_widget_show(dlg);
-  /* Need to force event processing. Otherwise, popup won't show up. */
-  while ( gtk_events_pending() ) gtk_main_iteration();
-  get_set_joy_axis(key, opposite_key);
-
-  snprintf(text, 50, "%s : %d",key_names[key],joypad_cfg[key]);
-  btn = (GtkButton*)glade_xml_get_widget(xml, current_button);
-  gtk_button_set_label(btn,text);
-
-  snprintf(text, 50, "%s : %d",key_names[opposite_key],joypad_cfg[opposite_key]);
-  btn = (GtkButton*)glade_xml_get_widget(xml, opposite_button);
-  gtk_button_set_label(btn,text);
-
-  gtk_widget_hide((GtkWidget*)dlg);
-}
-
 /* Bind a keyboard key to a keypad key */
 void  on_button_kb_key_clicked    (GtkButton *b, gpointer user_data)
 {
   int key = dyn_CAST( int, user_data );
   ask( b, key );
-}
-
-/* Bind a joystick axis to a keypad directionnal pad */
-void on_button_joy_axis_clicked (GtkButton *b, gpointer user_data)
-{ 
-  int key = dyn_CAST( int, user_data );
-  ask_joy_axis( key, key+1 );
 }
 
 /* Bind a joystick button to a keypad key */
