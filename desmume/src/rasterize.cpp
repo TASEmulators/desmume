@@ -1246,7 +1246,7 @@ void SoftRasterizerEngine::framebufferProcess()
 		for(int i=0;i<8;i++)
 		{
 			u16 col = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x330+i*2);
-			edgeMarkColors[i].color = RGB15TO5555(col,0x1F);
+			edgeMarkColors[i].color = RGB15TO5555(col,gfx3d.state.enableAntialiasing ? 0x0F : 0x1F);
 			edgeMarkColors[i].r = GFX3D_5TO6(edgeMarkColors[i].r);
 			edgeMarkColors[i].g = GFX3D_5TO6(edgeMarkColors[i].g);
 			edgeMarkColors[i].b = GFX3D_5TO6(edgeMarkColors[i].b);
