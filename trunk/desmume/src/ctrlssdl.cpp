@@ -77,29 +77,17 @@ const u16 default_joypad_cfg[NB_KEYS] =
     0xFFFF  // BOOST
   };
 
-const u16 plain_keyboard_cfg[NB_KEYS] =
-{
-    'x',         // A
-    'z',         // B
-    'y',         // select
-    'u',         // start
-    'l',         // Right
-    'j',         // Left
-    'i',         // Up
-    'k',         // Down
-    'w',         // R
-    'q',         // L
-    's',         // X
-    'a',         // Y
-    'p',         // DEBUG
-    'o'          // BOOST
-};
-
 /* Load default joystick and keyboard configurations */
 void load_default_config(const u16 kbCfg[])
 {
   memcpy(keyboard_cfg, kbCfg, sizeof(keyboard_cfg));
   memcpy(joypad_cfg, default_joypad_cfg, sizeof(joypad_cfg));
+}
+
+/* Set all buttons at once */
+static void set_joy_keys(const u16 joyCfg[])
+{
+  memcpy(joypad_cfg, joyCfg, sizeof(joypad_cfg));
 }
 
 /* Initialize joysticks */
@@ -146,18 +134,6 @@ BOOL init_joy( void) {
   }
 
   return joy_init_good;
-}
-
-/* Set all buttons at once */
-void set_joy_keys(const u16 joyCfg[])
-{
-  memcpy(joypad_cfg, joyCfg, sizeof(joypad_cfg));
-}
-
-/* Set all buttons at once */
-void set_kb_keys(const u16 kbCfg[])
-{
-  memcpy(keyboard_cfg, kbCfg, sizeof(keyboard_cfg));
 }
 
 /* Unload joysticks */
@@ -285,7 +261,7 @@ screen_to_touch_range( signed long scr, float size_ratio) {
 }
 
 /* Set mouse coordinates */
-void set_mouse_coord(signed long x,signed long y)
+static void set_mouse_coord(signed long x,signed long y)
 {
   if(x<0) x = 0; else if(x>255) x = 255;
   if(y<0) y = 0; else if(y>192) y = 192;
