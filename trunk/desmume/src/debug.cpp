@@ -56,7 +56,6 @@ static bool acl_check_access(u32 adr, u32 access) {
 	return true;
 }
 
-void armcpu_exception(armcpu_t *cpu, u32 number);
 void HandleDebugEvent_ACL_Exception()
 {
 	printf("ACL EXCEPTION!\n");
