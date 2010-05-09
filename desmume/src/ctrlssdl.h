@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include <pthread.h>
 #include <SDL.h>
 #include "MMU.h"
 
@@ -81,8 +80,6 @@ struct mouse_status
 };
 
 extern mouse_status mouse;
-
-void set_mouse_coord(signed long x,signed long y);
 #endif // !GTK_UI
 
 struct ctrls_event_config {
@@ -99,8 +96,6 @@ struct ctrls_event_config {
 void load_default_config(const u16 kbCfg[]);
 BOOL init_joy( void);
 void uninit_joy( void);
-void set_joy_keys(const u16 joyCfg[]);
-void set_kb_keys(const u16 kbCfg[]);
 u16 get_joy_key(int index);
 u16 get_set_joy_key(int index);
 void update_keypad(u16 keys);
