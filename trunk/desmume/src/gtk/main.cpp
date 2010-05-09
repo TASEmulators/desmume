@@ -1402,19 +1402,7 @@ static void AcceptNewJoyKey(GtkWidget *w, GdkEventFocus *e, struct modify_key_ct
 {
     gchar *YouPressed;
 
-    switch (ctx->key_id) {
-    case KEY_RIGHT:
-    case KEY_LEFT:
-        ctx->mk_key_chosen = get_joy_axis(KEY_LEFT, KEY_RIGHT);
-        break;
-    case KEY_UP:
-    case KEY_DOWN:
-        ctx->mk_key_chosen = get_joy_axis(KEY_UP, KEY_DOWN);
-        break;
-    default:
-        ctx->mk_key_chosen = get_joy_key(ctx->key_id);
-        break;
-    }
+    ctx->mk_key_chosen = get_joy_key(ctx->key_id);
 
     YouPressed = g_strdup_printf("You pressed : %d\nClick OK to keep this key.", ctx->mk_key_chosen);
     gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
@@ -1450,16 +1438,7 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
    
     switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
     case GTK_RESPONSE_OK:
-        switch (ctx.key_id) {
-        case KEY_RIGHT:
-        case KEY_LEFT:
-          Keypad_Temp[KEY_RIGHT-1] = Keypad_Temp[KEY_LEFT-1] = ctx.mk_key_chosen;
-        case KEY_UP:
-        case KEY_DOWN:
-          Keypad_Temp[KEY_UP-1] = Keypad_Temp[KEY_DOWN-1] = ctx.mk_key_chosen;
-        default:
-          Keypad_Temp[Key] = ctx.mk_key_chosen;
-        }
+        Keypad_Temp[Key] = ctx.mk_key_chosen;
         Key_Label = g_strdup_printf("%s (%d)", key_names[Key], Keypad_Temp[Key]);
         gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
         g_free(Key_Label);

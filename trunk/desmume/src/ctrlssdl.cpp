@@ -46,22 +46,35 @@ const char *key_names[NB_KEYS] =
   "Debug", "Boost"
 };
 
+/* Joypad Key Codes -- 4-digit Hexadecimal number
+ * 1st digit: device ID (0 is first joypad, 1 is second, etc.)
+ * 2nd digit: 0 - Axis, 1 - Hat/POV/D-Pad, 2 - Button
+ * 3rd & 4th digit: (depends on input type)
+ *  Negative Axis - 2 * axis index
+ *  Positive Axis - 2 * axis index + 1
+ *  Hat Right - 4 * hat index
+ *  Hat Left - 4 * hat index + 1
+ *  Hat Up - 4 * hat index + 2
+ *  Hat Down - 4 * hat index + 3
+ *  Button - button index
+ */
+ 
 /* Default joypad configuration */
 const u16 default_joypad_cfg[NB_KEYS] =
-  { 1,  // A
-    0,  // B
-    5,  // select
-    8,  // start
-    256, // Right -- Start cheating abit...
-    256, // Left
-    512, // Up
-    512, // Down  -- End of cheating.
-    7,  // R
-    6,  // L
-    4,  // X
-    3,  // Y
-    -1, // DEBUG
-    -1  // BOOST
+  { 0x0201,  // A
+    0x0200,  // B
+    0x0205,  // select
+    0x0208,  // start
+    0x0001, // Right
+    0x0000, // Left
+    0x0002, // Up
+    0x0003, // Down
+    0x0207,  // R
+    0x0206,  // L
+    0x0204,  // X
+    0x0203,  // Y
+    0xFFFF, // DEBUG
+    0xFFFF  // BOOST
   };
 
 const u16 plain_keyboard_cfg[NB_KEYS] =
@@ -184,22 +197,6 @@ u16 lookup_key (u16 keyval) {
   return Key;
 }
 
-/* Empty SDL Events' queue */
-static void clear_events( void)
-{
-  SDL_Event event;
-  /* IMPORTANT: Reenable joystick events iif needed. */
-  if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
-    SDL_JoystickEventState(SDL_ENABLE);
-
-  /* There's an event waiting to be processed? */
-  while (SDL_PollEvent(&event))
-    {
-    }
-
-  return;
-}
-
 /* Get pressed joystick key */
 u16 get_joy_key(int index) {
   BOOL done = FALSE;
@@ -215,9 +212,48 @@ u16 get_joy_key(int index) {
       switch(event.type)
         {
         case SDL_JOYBUTTONDOWN:
-          printf( "Got joykey: %d\n", event.jbutton.button );
-          key = event.jbutton.button;
+          printf( "Device: %d; Button: %d\n", event.jbutton.which, event.jbutton.button );
+          key = ((event.jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event.jbutton.button & 255);
           done = TRUE;
+          break;
+        case SDL_JOYAXISMOTION:
+          /* Dead zone of 50% */
+          if( (abs(event.jaxis.value) >> 14) != 0 )
+            {
+              key = ((event.jaxis.which & 15) << 12) | JOY_AXIS << 8 | ((event.jaxis.axis & 127) << 1);
+              if (event.jaxis.value > 0) {
+                printf( "Device: %d; Axis: %d (+)\n", event.jaxis.which, event.jaxis.axis );
+                key |= 1;
+              }
+              else
+                printf( "Device: %d; Axis: %d (-)\n", event.jaxis.which, event.jaxis.axis );
+              done = TRUE;
+            }
+          break;
+        case SDL_JOYHATMOTION:
+          /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
+          /* JOY_HAT_* are sequential integers, rather than a bitmask */
+          if (event.jhat.value != SDL_HAT_CENTERED) {
+            key = ((event.jhat.which & 15) << 12) | JOY_HAT << 8 | ((event.jhat.hat & 63) << 2);
+            /* Can't just use a switch here because SDL_HAT_* make up a bitmask. We only want one of these when assigning keys. */
+            if ((event.jhat.value & SDL_HAT_UP) != 0) {
+              key |= JOY_HAT_UP;
+              printf( "Device: %d; Hat: %d (Up)\n", event.jhat.which, event.jhat.hat );
+            }
+            else if ((event.jhat.value & SDL_HAT_RIGHT) != 0) {
+              key |= JOY_HAT_RIGHT;
+              printf( "Device: %d; Hat: %d (Right)\n", event.jhat.which, event.jhat.hat );
+            }
+            else if ((event.jhat.value & SDL_HAT_DOWN) != 0) {
+              key |= JOY_HAT_DOWN;
+              printf( "Device: %d; Hat: %d (Down)\n", event.jhat.which, event.jhat.hat );
+            }
+            else if ((event.jhat.value & SDL_HAT_LEFT) != 0) {
+              key |= JOY_HAT_LEFT;
+              printf( "Device: %d; Hat: %d (Left)\n", event.jhat.which, event.jhat.hat );
+            }
+            done = TRUE;
+          }
           break;
         }
     }
@@ -233,61 +269,6 @@ u16 get_set_joy_key(int index) {
   joypad_cfg[index] = get_joy_key(index);
 
   return joypad_cfg[index];
-}
-
-/* Reset corresponding key and its twin axis key */
-static u16 get_joy_axis_twin(u16 key)
-{
-  switch(key)
-    {
-    case KEYMASK_( KEY_RIGHT-1 ):
-      return KEYMASK_( KEY_LEFT-1 );
-    case KEYMASK_( KEY_UP-1 ):
-      return KEYMASK_( KEY_DOWN-1 );
-    default:
-      return 0;
-    }
-}
-
-/* Get a new joystick axis */
-u16 get_joy_axis(int index, int index_o) {
-  BOOL done = FALSE;
-  SDL_Event event;
-  u16 key = joypad_cfg[index];
-
-  /* Clear events */
-  clear_events();
-  /* Enable joystick events if needed */
-  if( SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE )
-    SDL_JoystickEventState(SDL_ENABLE);
-
-  while(SDL_WaitEvent(&event) && !done)
-    {
-      switch(event.type)
-        {
-        case SDL_JOYAXISMOTION:
-          /* Discriminate small movements */
-          if( (event.jaxis.value >> 5) != 0 )
-            {
-              key = JOY_AXIS_(event.jaxis.axis);
-              done = TRUE;
-            }
-          break;
-        }
-    }
-  if( SDL_JoystickEventState(SDL_QUERY) == SDL_ENABLE )
-    SDL_JoystickEventState(SDL_IGNORE);
-
-  return key;
-}
-
-/* Get and set a new joystick axis */
-void get_set_joy_axis(int index, int index_o) {
-  u16 key = get_joy_axis(index, index_o);
-
-  /* Update configuration */
-  joypad_cfg[index]   = key;
-  joypad_cfg[index_o] = joypad_cfg[index];
 }
 
 static signed long
@@ -355,45 +336,84 @@ u16 get_keypad( void)
 static int
 do_process_joystick_events( u16 *keypad, SDL_Event *event) {
   int processed = 1;
+  u16 key_code;
   u16 key;
+  u16 key_o;
+  u16 key_u;
+  u16 key_r;
+  u16 key_d;
+  u16 key_l;
 
   switch ( event->type)
     {
       /* Joystick axis motion 
          Note: button constants have a 1bit offset. */
     case SDL_JOYAXISMOTION:
-      key = lookup_joy_key( JOY_AXIS_(event->jaxis.axis) );
-      if( key == 0 ) break;           /* Not an axis of interest? */
+      key_code = ((event->jaxis.which & 15) << 12) | JOY_AXIS << 8 | ((event->jaxis.axis & 127) << 1);
+      if( (abs(event->jaxis.value) >> 14) != 0 )
+        {
+          if (event->jaxis.value > 0)
+            key_code |= 1;
+          key = lookup_joy_key( key_code );
+          key_o = lookup_joy_key( key_code ^ 1 );
+          if (key != 0)
+            ADD_KEY( *keypad, key );
+          if (key_o != 0)
+            RM_KEY( *keypad, key_o );
+        }
+      else
+        {
+          // Axis is zeroed
+          key = lookup_joy_key( key_code );
+          key_o = lookup_joy_key( key_code ^ 1 );
+          if (key != 0)
+            RM_KEY( *keypad, key );
+          if (key_o != 0)
+            RM_KEY( *keypad, key_o );
+        }
+      break;
 
-      /* Axis is back to initial position */
-      if( event->jaxis.value == 0 )
-        RM_KEY( *keypad, key | get_joy_axis_twin(key) );
-      /* Key should have been down but its currently set to up? */
-      else if( (event->jaxis.value > 0) && 
-               (key == KEYMASK_( KEY_UP-1 )) )
-        key = KEYMASK_( KEY_DOWN-1 );
-      /* Key should have been left but its currently set to right? */
-      else if( (event->jaxis.value < 0) && 
-               (key == KEYMASK_( KEY_RIGHT-1 )) )
-        key = KEYMASK_( KEY_LEFT-1 );
-              
-      /* Remove some sensitivity before checking if different than zero... 
-         Fixes some badly behaving joypads [like one of mine]. */
-      if( (event->jaxis.value >> 5) != 0 )
-        ADD_KEY( *keypad, key );
+    case SDL_JOYHATMOTION:
+      /* Diagonal positions will be treated as two separate keys being activated, rather than a single diagonal key. */
+      /* JOY_HAT_* are sequential integers, rather than a bitmask */
+      key_code = ((event->jhat.which & 15) << 12) | JOY_HAT << 8 | ((event->jhat.hat & 63) << 2);
+      key_u = lookup_joy_key( key_code | JOY_HAT_UP );
+      key_r = lookup_joy_key( key_code | JOY_HAT_RIGHT );
+      key_d = lookup_joy_key( key_code | JOY_HAT_DOWN );
+      key_l = lookup_joy_key( key_code | JOY_HAT_LEFT );
+      if ((key_u != 0) && ((event->jhat.value & SDL_HAT_UP) != 0))
+        ADD_KEY( *keypad, key_u );
+      else if (key_u != 0)
+        RM_KEY( *keypad, key_u );
+      if ((key_r != 0) && ((event->jhat.value & SDL_HAT_RIGHT) != 0))
+        ADD_KEY( *keypad, key_r );
+      else if (key_r != 0)
+        RM_KEY( *keypad, key_r );
+      if ((key_d != 0) && ((event->jhat.value & SDL_HAT_DOWN) != 0))
+        ADD_KEY( *keypad, key_d );
+      else if (key_d != 0)
+        RM_KEY( *keypad, key_d );
+      if ((key_l != 0) && ((event->jhat.value & SDL_HAT_LEFT) != 0))
+        ADD_KEY( *keypad, key_l );
+      else if (key_l != 0)
+        RM_KEY( *keypad, key_l );
       break;
 
       /* Joystick button pressed */
       /* FIXME: Add support for BOOST */
     case SDL_JOYBUTTONDOWN:
-      key = lookup_joy_key( event->jbutton.button );
-      ADD_KEY( *keypad, key );
+      key_code = ((event->jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
+      key = lookup_joy_key( key_code );
+      if (key != 0)
+        ADD_KEY( *keypad, key );
       break;
 
       /* Joystick button released */
     case SDL_JOYBUTTONUP:
-      key = lookup_joy_key(event->jbutton.button);
-      RM_KEY( *keypad, key );
+      key_code = ((event->jbutton.which & 15) << 12) | JOY_BUTTON << 8 | (event->jbutton.button & 255);
+      key = lookup_joy_key( key_code );
+      if (key != 0)
+        RM_KEY( *keypad, key );
       break;
 
     default:
