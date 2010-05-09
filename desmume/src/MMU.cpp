@@ -2805,7 +2805,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_IME:
 				{
 					NDS_Reschedule();
-					u32 old_val = MMU.reg_IME[ARMCPU_ARM9];
 					u32 new_val = val & 0x01;
 					MMU.reg_IME[ARMCPU_ARM9] = new_val;
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
@@ -3218,7 +3217,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_IME : 
 				{
 					NDS_Reschedule();
-			        u32 old_val = MMU.reg_IME[ARMCPU_ARM9];
 					u32 new_val = val & 0x01;
 					MMU.reg_IME[ARMCPU_ARM9] = new_val;
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
@@ -3952,7 +3950,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_IME : 
 				{
 					NDS_Reschedule();
-					u32 old_val = MMU.reg_IME[ARMCPU_ARM7];
 					u32 new_val = val & 1;
 					MMU.reg_IME[ARMCPU_ARM7] = new_val;
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
@@ -4057,7 +4054,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			case REG_IME : 
 			{
 				NDS_Reschedule();
-				u32 old_val = MMU.reg_IME[ARMCPU_ARM7];
 				u32 new_val = val & 1;
 				MMU.reg_IME[ARMCPU_ARM7] = new_val;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
