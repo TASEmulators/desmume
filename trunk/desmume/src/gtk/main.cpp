@@ -123,7 +123,7 @@ static void ToggleAudio (GtkToggleAction *action);
 static void ToggleMicNoise (GtkToggleAction *action);
 #endif
 static void ToggleGap (GtkToggleAction *action);
-static void SetRotation (GtkAction *action);
+static void SetRotation(GtkAction *action, GtkRadioAction *current);
 static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
@@ -285,10 +285,6 @@ static const GtkActionEntry action_entries[] = {
       { "editctrls",  NULL,        "_Edit controls",NULL,    NULL,   Edit_Controls },
       { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
       { "RotationMenu", NULL, "_Rotation" },
-        { "rotate_0",   "gtk-orientation-portrait",          "_0",  NULL, NULL, G_CALLBACK(SetRotation) },
-        { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, G_CALLBACK(SetRotation) },
-        { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, G_CALLBACK(SetRotation) },
-        { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, G_CALLBACK(SetRotation) },
       { "InterpolationMenu", NULL, "_Interpolation" },
       { "ViewMenu", NULL, "_View" },
 
@@ -312,6 +308,13 @@ static const GtkToggleActionEntry toggle_entries[] = {
 static const GtkRadioActionEntry interpolation_entries[] = {
     { "interp_nearest", NULL, "_Nearest", NULL, NULL, 0},
     { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, 1},
+};
+
+static const GtkRadioActionEntry rotation_entries[] = {
+    { "rotate_0",   "gtk-orientation-portrait",          "_0",  NULL, NULL, 0 },
+    { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, 90 },
+    { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, 180 },
+    { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, 270 },
 };
 
 enum frameskip_enum {
@@ -996,12 +999,9 @@ static void ToggleGap(GtkToggleAction* action)
     UpdateDrawingAreaAspect();
 }
 
-static void SetRotation(GtkAction* action)
+static void SetRotation(GtkAction *action, GtkRadioAction *current)
 {
-    const gchar *angle;
-
-    angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
-    nds_screen_rotation_angle = atoi(angle);
+    nds_screen_rotation_angle = gtk_radio_action_get_current_value(current);
     UpdateDrawingAreaAspect();
 }
 
@@ -2041,6 +2041,8 @@ common_gtk_main( struct configured_features *my_config)
             1, G_CALLBACK(Modify_Interpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
             0, G_CALLBACK(Modify_Frameskip), NULL);
+    gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
+            0, G_CALLBACK(SetRotation), NULL);
     {
         GList * list = gtk_action_group_list_actions(action_group);
         g_list_foreach(list, dui_set_accel_group, accel_group);
