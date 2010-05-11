@@ -218,9 +218,9 @@ static u8 getSaveTypeGBA(const u8 *data, const u32 size)
 {
 	u8	*dat = (u8 *)data;
 	
-	for (u32 i = 0; i < (size / 4); i++)
+	for (u32 i = 0; i < size; i++)
 	{
-		u32	tmp = T1ReadLong(dat, i);
+		u32	tmp = T1ReadLong(dat, 0);
 
 		if (tmp == 0x52504545)
 		{
@@ -258,7 +258,7 @@ static u8 getSaveTypeGBA(const u8 *data, const u32 size)
 		{
 			return 5;
 		}
-		dat += 4;
+		dat++;
 	}
 
 	return 0xFF;		// NONE
@@ -391,7 +391,7 @@ static void GBAgame_write32(u32 adr, u32 val)
 static u8   GBAgame_read08(u32 adr)
 { 
 	//INFO("GBAgame: read08 at 0x%08X value 0x%02X\n", adr, (u8)T1ReadByte(GBArom, (adr - 0x08000000)));
-	
+
 	if (adr < 0x0A000000)
 		return (u8)T1ReadByte(GBArom, (adr - 0x08000000));
 
