@@ -122,6 +122,7 @@ static void ToggleAudio (GtkToggleAction *action);
 #ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action);
 #endif
+static void ToggleSwapScreens(GtkToggleAction *action);
 static void ToggleGap (GtkToggleAction *action);
 static void SetRotation(GtkAction *action, GtkRadioAction *current);
 static void SetOrientation(GtkAction *action, GtkRadioAction *current);
@@ -227,6 +228,8 @@ static const char *ui_description =
 "      <menu action='OrientationMenu'>"
 "        <menuitem action='orient_vertical'/>"
 "        <menuitem action='orient_horizontal'/>"
+"        <separator/>"
+"        <menuitem action='orient_swapscreens'/>"
 "      </menu>"
 "      <menu action='InterpolationMenu'>"
 "        <menuitem action='interp_nearest'/>"
@@ -308,7 +311,8 @@ static const GtkToggleActionEntry toggle_entries[] = {
     { "gap", NULL, "_Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
     { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
     { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
-    { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE}
+    { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE},
+    { "orient_swapscreens", NULL, "S_wap screens", NULL, NULL, G_CALLBACK(ToggleSwapScreens), FALSE}
 };
 
 static const GtkRadioActionEntry interpolation_entries[] = {
@@ -571,6 +575,7 @@ struct nds_screen_t {
     gint touch_y;
     gint touch_width;
     gint touch_height;
+    gboolean swap;
 };
 
 struct nds_screen_t nds_screen;
@@ -1034,6 +1039,10 @@ static void SetOrientation(GtkAction *action, GtkRadioAction *current)
     UpdateDrawingAreaAspect();
 }
 
+static void ToggleSwapScreens(GtkToggleAction *action) {
+    nds_screen.swap = gtk_toggle_action_get_active(action);
+}
+
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
 {
     return TRUE;
@@ -1059,6 +1068,9 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
                 col = i - 256;
                 row = j + 192;
             }
+            if (nds_screen.swap)
+                 row = (row + 192) % 384;
+
             gpu_pixel = *((u16 *) & GPU_screen[(col + row * 256) << 1]);
 
             if (rot == 0 || rot == 180)
@@ -1140,8 +1152,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     primaryPixbufOffsetX = 0;
     primaryPixbufOffsetY = 0;
 
-    if ((nds_screen.orientation == ORIENT_VERTICAL && (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 180))
-            || (nds_screen.orientation == ORIENT_HORIZONTAL && (nds_screen.rotation_angle == 180 || nds_screen.rotation_angle == 270))) {
+    if ((nds_screen.swap) ^
+            ((nds_screen.orientation == ORIENT_VERTICAL && (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 180)) ||
+            (nds_screen.orientation == ORIENT_HORIZONTAL && (nds_screen.rotation_angle == 180 || nds_screen.rotation_angle == 270)))) {
         nds_screen.touch_x = primaryOffsetX;
         nds_screen.touch_y = primaryOffsetY;
     } else {
