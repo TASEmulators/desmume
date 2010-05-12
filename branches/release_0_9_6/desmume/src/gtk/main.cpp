@@ -1560,11 +1560,11 @@ static void Printscreen()
     u8 *rgb;
     static int seq = 0;
 
-    rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
+    rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
     if (!rgb)
         return;
 
-    gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
+    gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
     screenshot = gdk_pixbuf_new_from_data(rgb,
                           GDK_COLORSPACE_RGB,
                           FALSE,
