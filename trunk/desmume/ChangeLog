@@ -13,6 +13,8 @@ Graphics:
 Windows:
 
 Linux/OSX:
+ enh: Add horizontal screen layout and swap screen ability to gtk frontend (noodlebox)
+ enh: Big improvement to joystick support, support complex configurations and multiple devices (noodlebox)
 
 0.9.5 -> 0.9.6 (r3075-r3493)
 
