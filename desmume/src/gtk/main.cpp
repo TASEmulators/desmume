@@ -1594,7 +1594,7 @@ static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
 static void Printscreen()
 {
     GdkPixbuf *screenshot;
-    gchar *filename;
+    gchar *filename, *filen;
     GError *error = NULL;
     u8 *rgb;
     static int seq = 0;
@@ -1623,7 +1623,13 @@ static void Printscreen()
                           NULL,
                           NULL);
 
-    filename = g_strdup_printf("./desmume-screenshot-%d.png", seq);
+    filen = g_strdup_printf("desmume-screenshot-%d.png", seq);
+#if GLIB_CHECK_VERSION(2,14,0)
+    filename = g_build_filename(g_get_user_special_dir(G_USER_DIRECTORY_PICTURES), filen, NULL);
+#else
+    filename = g_build_filename("./", filen, NULL);
+#endif
+
     gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
     if (error) {
         g_error_free (error);
@@ -1635,6 +1641,7 @@ static void Printscreen()
     free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
+    g_free(filen);
 }
 
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
