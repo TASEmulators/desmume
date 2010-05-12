@@ -1192,7 +1192,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
-static inline void rotoscaled_touchpos(gint x, gint y)
+static gboolean rotoscaled_touchpos(gint x, gint y, gboolean start)
 {
     u16 EmuX, EmuY;
     gint X, Y;
@@ -1214,14 +1214,15 @@ static inline void rotoscaled_touchpos(gint x, gint y)
     }
 
     LOG("X=%d, Y=%d\n",x,y);
-    // FIXME: should ignore events only when STARTING touched-position 
-    //        was outside touchscreen - desmume window does not have physical band
-    //        to limit movement of stylus
-    if ( Y >= 0 ) {
+
+    if (!start || (X >= 0 && Y >= 0 && X < 256 && Y < 192)) {
         EmuX = CLAMP(X, 0, 255);
         EmuY = CLAMP(Y, 0, 191);
         NDS_setTouchPos(EmuX, EmuY);
+        return TRUE;
     }
+
+    return FALSE;
 }
 
 static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
@@ -1239,7 +1240,7 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
         }
 
         if(state & GDK_BUTTON1_MASK)
-            rotoscaled_touchpos(x,y);
+            rotoscaled_touchpos(x, y, FALSE);
     }
 
     return TRUE;
@@ -1261,12 +1262,11 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
         return TRUE;
 
     if (e->button == 1) {
-        click = TRUE;
-
         gdk_window_get_pointer(w->window, &x, &y, &state);
 
         if(state & GDK_BUTTON1_MASK)
-            rotoscaled_touchpos(x, y);
+            if (rotoscaled_touchpos(x, y, TRUE))
+                click = TRUE;
     }
 
     return TRUE;
