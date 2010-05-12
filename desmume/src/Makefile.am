@@ -8,7 +8,7 @@ SUBDIRS = . gdbstub $(UI_DIR)
 else
 SUBDIRS = . $(UI_DIR)
 endif
-DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade
+DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade wx
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
 	armcpu.cpp armcpu.h \
