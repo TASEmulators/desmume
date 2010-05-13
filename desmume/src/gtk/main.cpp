@@ -567,7 +567,6 @@ GtkActionGroup * action_group;
 GtkUIManager *ui_manager;
 
 struct nds_screen_t {
-    float size_ratio;
     guint gap_size;
     gint rotation_angle;
     guint orientation;
@@ -1129,7 +1128,6 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     vratio = (float)(daH - gapH) / (float)imgH;
     hratio = MIN(hratio, vratio);
     vratio = hratio;
-    nds_screen.size_ratio = 1 / hratio;
 
     primaryOffsetX = (daW-(int)(hratio*(float)imgW)-gapW)/2;
     primaryOffsetY = (daH-(int)(vratio*(float)imgH)-gapH)/2;
@@ -2090,7 +2088,6 @@ common_gtk_main( struct configured_features *my_config)
 
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
-    nds_screen.size_ratio = 1.0f;
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
