@@ -563,8 +563,8 @@ GdkInterpType Interpolation = GDK_INTERP_BILINEAR;
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
-GtkActionGroup * action_group;
-GtkUIManager *ui_manager;
+static GtkActionGroup * action_group;
+static GtkUIManager *ui_manager;
 
 struct nds_screen_t {
     guint gap_size;
