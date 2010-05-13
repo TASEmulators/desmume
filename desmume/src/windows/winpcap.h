@@ -62,8 +62,13 @@ static void LoadWinPCap()
 	LOADSYMBOL(pcap_open_live);
 	LOADSYMBOL(pcap_close);
 	LOADSYMBOL(pcap_setnonblock);
-	LOADSYMBOL(pcap_send);
 	LOADSYMBOL(pcap_dispatch);
+
+	_pcap_send = (T_pcap_send)GetProcAddress(wpcap, "pcap_send");
+	if (_pcap_send == NULL)
+		_pcap_send = (T_pcap_send)GetProcAddress(wpcap, "pcap_sendpacket");
+	if (_pcap_send == NULL)
+		return;
 
 	bWinPCapAvailable = true;
 }
