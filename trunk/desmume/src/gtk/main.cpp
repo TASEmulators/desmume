@@ -1012,11 +1012,19 @@ static void UpdateDrawingAreaAspect()
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
         W = screen_size[nds_screen.orientation].width;
-        H = screen_size[nds_screen.orientation].height + nds_screen.gap_size;
+        H = screen_size[nds_screen.orientation].height;
     } else {
         W = screen_size[nds_screen.orientation].height;
-        H = screen_size[nds_screen.orientation].width + nds_screen.gap_size;
+        H = screen_size[nds_screen.orientation].width;
     }
+
+    if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) ^
+       (nds_screen.orientation == ORIENT_HORIZONTAL)) {
+        H += nds_screen.gap_size;
+    } else {
+        W += nds_screen.gap_size;
+    }
+
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
 }
 
