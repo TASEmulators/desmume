@@ -978,21 +978,44 @@ TEMPLATE static u32 setHaltCR()
 }
 
 TEMPLATE static u32 getSineTab()
-{ 
-     cpu->R[0] = getsinetbl[cpu->R[0]];
-     return 1;
+{
+	//ds returns garbage according to gbatek, but we must protect ourselves
+	if(cpu->R[0] >= ARRAY_SIZE(getsinetbl))
+	{
+		printf("Invalid SWI getSineTab: %08X\n",cpu->R[0]);
+		return 1;
+	}
+
+
+	cpu->R[0] = getsinetbl[cpu->R[0]];
+	return 1;
 }
 
 TEMPLATE static u32 getPitchTab()
 { 
-     cpu->R[0] = getpitchtbl[cpu->R[0]];
-     return 1;
+	//ds returns garbage according to gbatek, but we must protect ourselves
+	if(cpu->R[0] >= ARRAY_SIZE(getpitchtbl))
+	{
+		printf("Invalid SWI getPitchTab: %08X\n",cpu->R[0]);
+		return 1;
+	}
+
+	cpu->R[0] = getpitchtbl[cpu->R[0]];
+	return 1;
 }
 
 TEMPLATE static u32 getVolumeTab()
 { 
-     cpu->R[0] = getvoltbl[cpu->R[0]];
-     return 1;
+	//ds returns garbage according to gbatek, but we must protect ourselves
+	if(cpu->R[0] >= ARRAY_SIZE(getvoltbl))
+	{
+		printf("Invalid SWI getVolumeTab: %08X\n",cpu->R[0]);
+		return 1;
+	}
+
+
+    cpu->R[0] = getvoltbl[cpu->R[0]];
+    return 1;
 }
 
 

@@ -16,6 +16,9 @@
 
 #include <fcntl.h>
 
+#include "types.h"
+#include "NDSSystem.h"
+
 #ifdef WIN32
 #include <winsock2.h>
 #else
@@ -41,7 +44,7 @@
 #define UNUSED_PARM( parm) parm
 #endif
 
-#if 0
+#if 1
 #define DEBUG_LOG( fmt, ...) fprintf(stdout, fmt, ##__VA_ARGS__)
 #else
 #define DEBUG_LOG( fmt, ...)
@@ -174,6 +177,7 @@ break_execution( void *data, UNUSED_PARM(uint32_t addr), UNUSED_PARM(int thunmb)
 
   /* stall the processor */
   stub->cpu_ctrl->stall( stub->cpu_ctrl->data);
+  NDS_debug_break();
 
   /* remove the post execution function */
   stub->cpu_ctrl->remove_post_ex_fn( stub->cpu_ctrl->data);
@@ -202,6 +206,8 @@ step_instruction_watch( void *data, uint32_t addr, UNUSED_PARM(int thunmb)) {
     /* indicate the halt */
     stub->stop_type = STOP_STEP_BREAK;
     indicateCPUStop_gdb( stub);
+
+	NDS_debug_break();
   }
 }
 
@@ -551,6 +557,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     send_reply = 0;
     /* remove the cpu stall */
     stub->cpu_ctrl->unstall( stub->cpu_ctrl->data);
+	NDS_debug_continue();
     break;
 
   case 's': {
@@ -566,7 +573,6 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
                                         step_instruction_watch,
                                         stub);
 
-
     stub->emu_stub_state = gdb_stub_state::RUNNING_EMU_GDB_STATE;
     stub->ctl_stub_state = gdb_stub_state::START_RUN_GDB_STATE;
     stub->main_stop_flag = 0;
@@ -574,6 +580,8 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
 
     /* remove the cpu stall */
     stub->cpu_ctrl->unstall( stub->cpu_ctrl->data);
+	//NDS_debug_step();
+	NDS_debug_continue();
     break;
   }
 
@@ -984,6 +992,8 @@ check_breaks_gdb( struct gdb_stub_state *gdb_state,
 
         /* stall the processor */
         gdb_state->cpu_ctrl->stall( gdb_state->cpu_ctrl->data);
+		NDS_debug_break();
+
 
         /* indicate the break to the GDB stub thread */
         gdb_state->stop_type = stop_type;
@@ -1247,39 +1257,26 @@ WINAPI listenerThread_gdb( void *data) {
  * The memory interface
  *
  */
-static uint32_t FASTCALL
-gdb_prefetch32( void *data, uint32_t adr) {
+static uint32_t FASTCALL gdb_prefetch32( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
-  uint32_t value = 0;
   int breakpoint;
 
   breakpoint = check_breaks_gdb( stub, stub->instr_breakpoints, adr, 4,
                                  STOP_BREAKPOINT);
 
-  if ( !breakpoint) {
-    /* pass down to the real memory interace */
-    value = stub->real_cpu_memio->prefetch32( stub->real_cpu_memio->data,
-                                              adr);
-  }
-
-  return value;
+    //return stub->real_cpu_memio->prefetch32( stub->real_cpu_memio->data, adr);
+  return 0;
 }
-static uint16_t FASTCALL
-gdb_prefetch16( void *data, uint32_t adr) {
+
+static uint16_t FASTCALL gdb_prefetch16( void *data, uint32_t adr) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
-  uint16_t value = 0;
   int breakpoint;
 
   breakpoint = check_breaks_gdb( stub, stub->instr_breakpoints, adr, 2,
                                  STOP_BREAKPOINT);
 
-  if ( !breakpoint) {
-    /* pass down to the real memory interace */
-    value = stub->real_cpu_memio->prefetch16( stub->real_cpu_memio->data,
-                                              adr);
-  }
-
-  return value;
+    //return stub->real_cpu_memio->prefetch16( stub->real_cpu_memio->data, adr);
+  return 0;
 }
 
 /** read 8 bit data value */

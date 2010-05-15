@@ -254,8 +254,7 @@
 
 TEMPLATE static u32 FASTCALL  OP_UND(const u32 i)
 {
-	INFO("ARM%c: Undefined instruction: 0x%08X (%s) PC=0x%08X. Stopped!!!\n", PROCNUM?'7':'9', cpu->instruction, decodeIntruction(false, cpu->instruction), cpu->instruct_adr);
-	emu_halt();
+	TRAPUNDEF(cpu);
 	return 1;
 }
 
