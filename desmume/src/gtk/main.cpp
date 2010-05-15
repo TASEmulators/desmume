@@ -228,6 +228,7 @@ static const char *ui_description =
 "      <menu action='OrientationMenu'>"
 "        <menuitem action='orient_vertical'/>"
 "        <menuitem action='orient_horizontal'/>"
+"        <menuitem action='orient_single'/>"
 "        <separator/>"
 "        <menuitem action='orient_swapscreens'/>"
 "      </menu>"
@@ -332,12 +333,14 @@ static const GtkRadioActionEntry rotation_entries[] = {
 enum orientation_enum {
     ORIENT_VERTICAL = 0,
     ORIENT_HORIZONTAL = 1,
+    ORIENT_SINGLE = 2,
     ORIENT_N
 };
 
 static const GtkRadioActionEntry orientation_entries[] = {
     { "orient_vertical",   NULL, "_Vertical",   NULL, NULL, ORIENT_VERTICAL },
     { "orient_horizontal", NULL, "_Horizontal", NULL, NULL, ORIENT_HORIZONTAL },
+    { "orient_single",     NULL, "_Single screen", NULL, NULL, ORIENT_SINGLE },
 };
 
 struct screen_size_t {
@@ -345,7 +348,11 @@ struct screen_size_t {
    gint height;
 };
 
-const struct screen_size_t screen_size[ORIENT_N] = {{256, 384}, {512, 192}};
+const struct screen_size_t screen_size[ORIENT_N] = {
+    {256, 384},
+    {512, 192},
+    {256, 192}
+};
 
 enum frameskip_enum {
     FRAMESKIP_0 = 0,
@@ -1018,11 +1025,13 @@ static void UpdateDrawingAreaAspect()
         H = screen_size[nds_screen.orientation].width;
     }
 
-    if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) ^
-       (nds_screen.orientation == ORIENT_HORIZONTAL)) {
-        H += nds_screen.gap_size;
-    } else {
-        W += nds_screen.gap_size;
+    if (nds_screen.orientation != ORIENT_SINGLE) {
+        if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) ^
+        (nds_screen.orientation == ORIENT_HORIZONTAL)) {
+            H += nds_screen.gap_size;
+        } else {
+            W += nds_screen.gap_size;
+        }
     }
 
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
@@ -1101,7 +1110,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     GdkPixbuf *resizedPixbuf, *drawPixbuf;
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
 
-    gfloat vratio, hratio;
+    gfloat vratio, hratio, nscreen_ratio;
     gint daW, daH, imgW, imgH, 
             primaryOffsetX, primaryOffsetY, secondaryOffsetX, secondaryOffsetY,
             primaryPixbufOffsetX, primaryPixbufOffsetY, secondaryPixbufOffsetX, secondaryPixbufOffsetY,
@@ -1123,8 +1132,11 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         imgH = screen_size[nds_screen.orientation].width;
         imgW = screen_size[nds_screen.orientation].height;
     }
-    
-    if (gap_vertical) {
+
+    if (nds_screen.orientation == ORIENT_SINGLE) {
+        gapH = 0;
+        gapW = 0;
+    } else if (gap_vertical) {
         gapH = nds_screen.gap_size;
         gapW = 0;
     } else {
@@ -1140,15 +1152,16 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     primaryOffsetX = (daW-(int)(hratio*(float)imgW)-gapW)/2;
     primaryOffsetY = (daH-(int)(vratio*(float)imgH)-gapH)/2;
 
+    nscreen_ratio = nds_screen.orientation == ORIENT_SINGLE ? 1 : 0.5;
     if (gap_vertical) {
         screenW = (int)(hratio*(float)imgW);
-        screenH = (int)(vratio*(float)imgH*0.5);
+        screenH = (int)(vratio*(float)imgH*nscreen_ratio);
         secondaryOffsetX = primaryOffsetX;
         secondaryOffsetY = primaryOffsetY + screenH + gapH;
         secondaryPixbufOffsetX = 0;
         secondaryPixbufOffsetY = screenH;
     } else {
-        screenW = (int)(hratio*(float)imgW*0.5);
+        screenW = (int)(hratio*(float)imgW*nscreen_ratio);
         screenH = (int)(vratio*(float)imgH);
         secondaryOffsetX = primaryOffsetX + screenW + gapW;
         secondaryOffsetY = primaryOffsetY;
@@ -1163,9 +1176,12 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
             (nds_screen.orientation == ORIENT_HORIZONTAL && (nds_screen.rotation_angle == 180 || nds_screen.rotation_angle == 270)))) {
         nds_screen.touch_x = primaryOffsetX;
         nds_screen.touch_y = primaryOffsetY;
-    } else {
+    } else if (nds_screen.orientation != ORIENT_SINGLE) {
         nds_screen.touch_x = secondaryOffsetX;
         nds_screen.touch_y = secondaryOffsetY;
+    } else {
+        nds_screen.touch_x = -1;
+        nds_screen.touch_y = -1;
     }
     nds_screen.touch_width = screenW;
     nds_screen.touch_height = screenH;
@@ -1186,8 +1202,10 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, primaryPixbufOffsetX, primaryPixbufOffsetY, primaryOffsetX, primaryOffsetY, screenW, screenH,
             GDK_RGB_DITHER_NONE, 0,0);
 
-    gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, secondaryPixbufOffsetX, secondaryPixbufOffsetY, secondaryOffsetX, secondaryOffsetY, screenW, screenH,
+    if (nds_screen.orientation != ORIENT_SINGLE) {
+        gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, secondaryPixbufOffsetX, secondaryPixbufOffsetY, secondaryOffsetX, secondaryOffsetY, screenW, screenH,
             GDK_RGB_DITHER_NONE, 0,0);
+    }
 
     drawPixbuf = NULL;
     if ((hratio != 1.0) || (vratio != 1.0))
@@ -1202,6 +1220,10 @@ static gboolean rotoscaled_touchpos(gint x, gint y, gboolean start)
 {
     u16 EmuX, EmuY;
     gint X, Y;
+
+    if (nds_screen.touch_x == -1 || nds_screen.touch_y == -1) {
+        return FALSE;
+    }
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
         X = (x - nds_screen.touch_x) * 256 / nds_screen.touch_width;
