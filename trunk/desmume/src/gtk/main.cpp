@@ -1111,10 +1111,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
 
     gfloat vratio, hratio, nscreen_ratio;
-    gint daW, daH, imgW, imgH, 
-            primaryOffsetX, primaryOffsetY, secondaryOffsetX, secondaryOffsetY,
-            primaryPixbufOffsetX, primaryPixbufOffsetY, secondaryPixbufOffsetX, secondaryPixbufOffsetY,
-            screenW, screenH, gapW, gapH;
+    gint daW, daH, imgW, imgH, screenW, screenH, gapW, gapH;
+    gint primaryOffsetX, primaryOffsetY, secondaryOffsetX, secondaryOffsetY;
+    gint secondaryPixbufOffsetX, secondaryPixbufOffsetY;
     const gboolean gap_vertical = ((nds_screen.orientation == ORIENT_VERTICAL) ^ (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 270));
   
 #if GTK_CHECK_VERSION(2,14,0)
@@ -1168,8 +1167,6 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         secondaryPixbufOffsetX = screenW;
         secondaryPixbufOffsetY = 0;
     }
-    primaryPixbufOffsetX = 0;
-    primaryPixbufOffsetY = 0;
 
     if ((nds_screen.swap) ^
             ((nds_screen.orientation == ORIENT_VERTICAL && (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 180)) ||
@@ -1199,7 +1196,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         drawPixbuf = resizedPixbuf;
     }
 
-    gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, primaryPixbufOffsetX, primaryPixbufOffsetY, primaryOffsetX, primaryOffsetY, screenW, screenH,
+    gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, 0, 0, primaryOffsetX, primaryOffsetY, screenW, screenH,
             GDK_RGB_DITHER_NONE, 0,0);
 
     if (nds_screen.orientation != ORIENT_SINGLE) {
