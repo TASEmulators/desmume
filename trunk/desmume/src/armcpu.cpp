@@ -111,14 +111,14 @@ armcpu_t NDS_ARM9;
 static void
 stall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  //printf("UNSTALL\n");
+  printf("UNSTALL\n");
   armcpu->stalled = 1;
 }
                       
 static void
 unstall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  //printf("UNSTALL\n");
+  printf("UNSTALL\n");
   armcpu->stalled = 0;
 }
 
@@ -141,23 +141,20 @@ remove_post_exec_fn( void *instance) {
 #endif
 
 #ifdef GDB_STUB
-static u32
-read_cpu_reg( void *instance, u32 reg_num) {
-  armcpu_t *armcpu = (armcpu_t *)instance;
-  u32 reg_value = 0;
+static u32 read_cpu_reg( void *instance, u32 reg_num)
+{
+	armcpu_t *armcpu = (armcpu_t *)instance;
 
-  if ( reg_num <= 14) {
-    reg_value = armcpu->R[reg_num];
-  }
-  else if ( reg_num == 15) {
-    reg_value = armcpu->next_instruction;
-  }
-  else if ( reg_num == 16) {
-    /* CPSR */
-    reg_value = armcpu->CPSR.val;
-  }
-
-  return reg_value;
+	if ( reg_num <= 14) {
+	  return armcpu->R[reg_num];
+	}
+	else if ( reg_num == 15) {
+	  return armcpu->instruct_adr;
+	}
+	else if ( reg_num == 16) {
+	  //CPSR
+	  return armcpu->CPSR.val;
+	}
 }
 
 static void
@@ -226,9 +223,9 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	armcpu->waitIRQ = FALSE;
 	armcpu->wirq = FALSE;
 
-#ifdef GDB_STUB
-    armcpu->irq_flag = 0;
-#endif
+//#ifdef GDB_STUB
+//    armcpu->irq_flag = 0;
+//#endif
 
    for(i = 0; i < 15; ++i)
 	{
@@ -248,12 +245,12 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	
 	armcpu->SPSR_svc.val = armcpu->SPSR_abt.val = armcpu->SPSR_und.val = armcpu->SPSR_irq.val = armcpu->SPSR_fiq.val = 0;
 
-#ifdef GDB_STUB
-    armcpu->instruct_adr = adr;
-	armcpu->R[15] = adr + 8;
-#else
-	armcpu->R[15] = adr;
-#endif
+//#ifdef GDB_STUB
+//    armcpu->instruct_adr = adr;
+//	armcpu->R[15] = adr + 8;
+//#else
+	//armcpu->R[15] = adr;
+//#endif
 
 	armcpu->next_instruction = adr;
 	
@@ -261,9 +258,9 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	if (armcpu->proc_ID==0)
 		armcpu->coproc[15] = (armcp_t*)armcp15_new(armcpu);
 
-#ifndef GDB_STUB
+//#ifndef GDB_STUB
 	armcpu_prefetch(armcpu);
-#endif
+//#endif
 }
 
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
@@ -378,53 +375,53 @@ template<u32 PROCNUM>
 FORCEINLINE static u32 armcpu_prefetch()
 {
 	armcpu_t* const armcpu = &ARMPROC;
-#ifdef GDB_STUB
-	u32 temp_instruction;
-#endif
+//#ifdef GDB_STUB
+//	u32 temp_instruction;
+//#endif
 	u32 curInstruction = armcpu->next_instruction;
 
 	if(armcpu->CPSR.bits.T == 0)
 	{
-#ifdef GDB_STUB
-		temp_instruction =
-			armcpu->mem_if->prefetch32( armcpu->mem_if->data,
-			armcpu->next_instruction);
-
-		if ( !armcpu->stalled) {
-			armcpu->instruction = temp_instruction;
-			armcpu->instruct_adr = armcpu->next_instruction;
-			armcpu->next_instruction += 4;
-			armcpu->R[15] = armcpu->next_instruction + 4;
-		}
-#else
+//#ifdef GDB_STUB
+//		temp_instruction =
+//			armcpu->mem_if->prefetch32( armcpu->mem_if->data,
+//			armcpu->next_instruction);
+//
+//		if ( !armcpu->stalled) {
+//			armcpu->instruction = temp_instruction;
+//			armcpu->instruct_adr = armcpu->next_instruction;
+//			armcpu->next_instruction += 4;
+//			armcpu->R[15] = armcpu->next_instruction + 4;
+//		}
+//#else
 		curInstruction &= 0xFFFFFFFC; //please don't change this to 0x0FFFFFFC -- the NDS will happily run on 0xF******* addresses all day long
 		armcpu->instruction = _MMU_read32<PROCNUM, MMU_AT_CODE>(curInstruction);
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
 		armcpu->R[15] = curInstruction + 8;
-#endif
+//#endif
 
 		return MMU_codeFetchCycles<PROCNUM,32>(curInstruction);
 	}
 
-#ifdef GDB_STUB
-	temp_instruction =
-		armcpu->mem_if->prefetch16( armcpu->mem_if->data,
-		armcpu->next_instruction);
-
-	if ( !armcpu->stalled) {
-		armcpu->instruction = temp_instruction;
-		armcpu->instruct_adr = armcpu->next_instruction;
-		armcpu->next_instruction = armcpu->next_instruction + 2;
-		armcpu->R[15] = armcpu->next_instruction + 2;
-	}
-#else
+//#ifdef GDB_STUB
+//	temp_instruction =
+//		armcpu->mem_if->prefetch16( armcpu->mem_if->data,
+//		armcpu->next_instruction);
+//
+//	if ( !armcpu->stalled) {
+//		armcpu->instruction = temp_instruction;
+//		armcpu->instruct_adr = armcpu->next_instruction;
+//		armcpu->next_instruction = armcpu->next_instruction + 2;
+//		armcpu->R[15] = armcpu->next_instruction + 2;
+//	}
+//#else
 	curInstruction &= 0xFFFFFFFE; //please don't change this to 0x0FFFFFFE -- the NDS will happily run on 0xF******* addresses all day long
 	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction);
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
 	armcpu->R[15] = curInstruction + 4;
-#endif
+//#endif
 
 	if(PROCNUM==0)
 	{
@@ -499,6 +496,9 @@ void armcpu_exception(armcpu_t *cpu, u32 number)
 	printf("armcpu_exception!\n");
 	//extern bool dolog;
 	//dolog=true;
+
+	//HOW DOES THIS WORTK WITHOUT A PREFETCH, LIKE IRQ BELOW?
+	//I REALLY WISH WE DIDNT PREFETCH BEFORE EXECUTING
 }
 
 BOOL armcpu_irqException(armcpu_t *armcpu)
@@ -508,47 +508,45 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 	if(armcpu->CPSR.bits.I) return FALSE;
 
 	//TODO - remove GDB specific code
-#ifdef GDB_STUB
-	armcpu->irq_flag = 0;
-#endif
+//#ifdef GDB_STUB
+//	armcpu->irq_flag = 0;
+//#endif
       
 	tmp = armcpu->CPSR;
 	armcpu_switchMode(armcpu, IRQ);
 
 	//TODO - remove GDB specific code
-#ifdef GDB_STUB
-	armcpu->R[14] = armcpu->next_instruction + 4;
-#else
+//#ifdef GDB_STUB
+//	armcpu->R[14] = armcpu->next_instruction + 4;
+//#else
 	armcpu->R[14] = armcpu->instruct_adr + 4;
-#endif
+//#endif
 	armcpu->SPSR = tmp;
 	armcpu->CPSR.bits.T = 0;
 	armcpu->CPSR.bits.I = 1;
 	armcpu->next_instruction = armcpu->intVector + 0x18;
 	armcpu->waitIRQ = 0;
 
-	//TODO - remove GDB specific code
-#ifndef GDB_STUB
-	armcpu->R[15] = armcpu->next_instruction + 8;
+	//must retain invariant of having next instruction to be executed prefetched
+	//(yucky)
 	armcpu_prefetch(armcpu);
-#endif
 
 	return TRUE;
 }
 
 //TODO - remove GDB specific code
-BOOL
-armcpu_flagIrq( armcpu_t *armcpu) {
-  if(armcpu->CPSR.bits.I) return FALSE;
-
-  armcpu->waitIRQ = 0;
-
-#ifdef GDB_STUB
-  armcpu->irq_flag = 1;
-#endif
-
-  return TRUE;
-}
+//BOOL
+//armcpu_flagIrq( armcpu_t *armcpu) {
+//  if(armcpu->CPSR.bits.I) return FALSE;
+//
+//  armcpu->waitIRQ = 0;
+//
+//#ifdef GDB_STUB
+//  armcpu->irq_flag = 1;
+//#endif
+//
+//  return TRUE;
+//}
 
 u32 TRAPUNDEF(armcpu_t* cpu)
 {
@@ -589,60 +587,64 @@ u32 armcpu_exec()
 
 	//this assert is annoying. but sometimes it is handy.
 	//assert(ARMPROC.instruct_adr!=0x00000000);
-#ifdef DEVELOPER
-	if ((((ARMPROC.instruct_adr & 0x0F000000) == 0x0F000000) && (PROCNUM == 0)) ||
-		(((ARMPROC.instruct_adr & 0x0F000000) == 0x00000000) && (PROCNUM == 1)))
-	{
-		switch (ARMPROC.instruct_adr & 0xFFFF)
-		{
-			case 0x00000000:
-				printf("BIOS%c: Reset!!!\n", PROCNUM?'7':'9');
-				emu_halt();
-				break;
-			case 0x00000004:
-				printf("BIOS%c: Undefined instruction\n", PROCNUM?'7':'9');
-				//emu_halt();
-				break;
-			case 0x00000008:
-				//printf("BIOS%c: SWI\n", PROCNUM?'7':'9');
-				break;
-			case 0x0000000C:
-				printf("BIOS%c: Prefetch Abort!!!\n", PROCNUM?'7':'9');
-				//emu_halt();
-				break;
-			case 0x00000010:
-				//printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
-				//emu_halt();
-				break;
-			case 0x00000014:
-				printf("BIOS%c: Reserved!!!\n", PROCNUM?'7':'9');
-				break;
-			case 0x00000018:
-				//printf("BIOS%c: IRQ\n", PROCNUM?'7':'9');
-				break;
-			case 0x0000001C:
-				printf("BIOS%c: Fast IRQ\n", PROCNUM?'7':'9');
-				break;
-		}
-	}
-#endif
+//#ifdef DEVELOPER
+//	if ((((ARMPROC.instruct_adr & 0x0F000000) == 0x0F000000) && (PROCNUM == 0)) ||
+//		(((ARMPROC.instruct_adr & 0x0F000000) == 0x00000000) && (PROCNUM == 1)))
+//	{
+//		switch (ARMPROC.instruct_adr & 0xFFFF)
+//		{
+//			case 0x00000000:
+//				printf("BIOS%c: Reset!!!\n", PROCNUM?'7':'9');
+//				emu_halt();
+//				break;
+//			case 0x00000004:
+//				printf("BIOS%c: Undefined instruction\n", PROCNUM?'7':'9');
+//				//emu_halt();
+//				break;
+//			case 0x00000008:
+//				//printf("BIOS%c: SWI\n", PROCNUM?'7':'9');
+//				break;
+//			case 0x0000000C:
+//				printf("BIOS%c: Prefetch Abort!!!\n", PROCNUM?'7':'9');
+//				//emu_halt();
+//				break;
+//			case 0x00000010:
+//				//printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
+//				//emu_halt();
+//				break;
+//			case 0x00000014:
+//				printf("BIOS%c: Reserved!!!\n", PROCNUM?'7':'9');
+//				break;
+//			case 0x00000018:
+//				//printf("BIOS%c: IRQ\n", PROCNUM?'7':'9');
+//				break;
+//			case 0x0000001C:
+//				printf("BIOS%c: Fast IRQ\n", PROCNUM?'7':'9');
+//				break;
+//		}
+//	}
+//#endif
+//
+//#ifdef GDB_STUB
+//	if (ARMPROC.stalled) {
+//		return STALLED_CYCLE_COUNT;
+//	}
+//
+//	/* check for interrupts */
+//	if (ARMPROC.irq_flag) {
+//		armcpu_irqException(&ARMPROC);
+//	}
+//
+//	cFetch = armcpu_prefetch(&ARMPROC);
+//
+//	if (ARMPROC.stalled) {
+//		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
+//	}
+//#endif
 
-#ifdef GDB_STUB
-	if (ARMPROC.stalled) {
-		return STALLED_CYCLE_COUNT;
-	}
+	//cFetch = armcpu_prefetch(&ARMPROC);
 
-	/* check for interrupts */
-	if (ARMPROC.irq_flag) {
-		armcpu_irqException(&ARMPROC);
-	}
-
-	cFetch = armcpu_prefetch(&ARMPROC);
-
-	if (ARMPROC.stalled) {
-		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
-	}
-#endif
+	//printf("%d: %08X\n",PROCNUM,ARMPROC.instruct_adr);
 
 	if(ARMPROC.CPSR.bits.T == 0)
 	{
@@ -674,9 +676,9 @@ u32 armcpu_exec()
 			/* call the external post execute function */
 			ARMPROC.post_ex_fn(ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 0);
 		}
-#else
-		cFetch = armcpu_prefetch<PROCNUM>();
+		ARMPROC.mem_if->prefetch32( ARMPROC.mem_if->data, ARMPROC.next_instruction);
 #endif
+		cFetch = armcpu_prefetch<PROCNUM>();
 		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
 	}
 
@@ -702,9 +704,9 @@ u32 armcpu_exec()
 		/* call the external post execute function */
 		ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 1);
 	}
-#else
-	cFetch = armcpu_prefetch<PROCNUM>();
+	ARMPROC.mem_if->prefetch32( ARMPROC.mem_if->data, ARMPROC.next_instruction);
 #endif
+	cFetch = armcpu_prefetch<PROCNUM>();
 	return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
 }
 

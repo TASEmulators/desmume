@@ -1895,7 +1895,7 @@ void NDS_exec(s32 nb)
 			//trap the debug-stalled condition
 			#ifdef DEVELOPER
 				singleStep = false;
-				//(gbd stub doesnt yet know how to trigger these immediately by calling reschedule)
+				//(gdb stub doesnt yet know how to trigger these immediately by calling reschedule)
 				while((NDS_ARM9.stalled || NDS_ARM7.stalled) && execute)
 				{
 					driver->EMU_DebugIdleUpdate();
@@ -1989,11 +1989,11 @@ void execHardware_interrupts()
 	if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 	{
 		//TODO - remove GDB specific code
-#ifdef GDB_STUB
-		if ( armcpu_flagIrq( &NDS_ARM9)) 
-#else
+//#ifdef GDB_STUB
+//		if ( armcpu_flagIrq( &NDS_ARM9)) 
+//#else
 		if ( armcpu_irqException(&NDS_ARM9))
-#endif
+//#endif
 		{
 			//printf("ARM9 interrupt! flags: %08X ; mask: %08X ; result: %08X\n",MMU.reg_IF[0],MMU.reg_IE[0],MMU.reg_IF[0]&MMU.reg_IE[0]);
 			//nds.ARM9Cycle = nds.cycles;
@@ -2002,11 +2002,11 @@ void execHardware_interrupts()
 //TODO - remove GDB specific code
 	if((MMU.reg_IF[1]&MMU.reg_IE[1]) && (MMU.reg_IME[1]))
 	{
-#ifdef GDB_STUB
-		if ( armcpu_flagIrq( &NDS_ARM7)) 
-#else
+//#ifdef GDB_STUB
+//		if ( armcpu_flagIrq( &NDS_ARM7)) 
+//#else
 		if ( armcpu_irqException(&NDS_ARM7))
-#endif
+//#endif
 		{
 			//nds.ARM7Cycle = nds.cycles;
 		}
