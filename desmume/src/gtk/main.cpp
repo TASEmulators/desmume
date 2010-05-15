@@ -1207,9 +1207,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
             GDK_RGB_DITHER_NONE, 0,0);
     }
 
-    drawPixbuf = NULL;
-    if ((hratio != 1.0) || (vratio != 1.0))
-        g_object_unref(resizedPixbuf);
+    g_object_unref(drawPixbuf);
 
     return TRUE;
 }
