@@ -40,6 +40,11 @@
 #include "config.h"
 #endif
 
+//enforce a constraint: gdb stub requires developer
+#if defined(GDB_STUB) && !defined(DEVELOPER)
+#define DEVELOPER
+#endif
+
 //xbox needs to include this to resemble windows
 #ifdef _XBOX
 	#include <xtl.h>
