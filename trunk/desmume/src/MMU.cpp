@@ -4106,6 +4106,9 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	{
 		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
 		//if (prot) INFO("MMU7 read 08 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
+		
+		//How accurate is this? our R[15] may not be exactly what the hardware uses (may use something less by up to 0x08)
+		//This may be inaccurate at the very edge cases.
 		if (NDS_ARM7.R[15] > 0x3FFF)
 			return 0xFF;
 	}

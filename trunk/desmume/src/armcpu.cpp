@@ -395,10 +395,12 @@ FORCEINLINE static u32 armcpu_prefetch()
 //		}
 //#else
 		curInstruction &= 0xFFFFFFFC; //please don't change this to 0x0FFFFFFC -- the NDS will happily run on 0xF******* addresses all day long
-		armcpu->instruction = _MMU_read32<PROCNUM, MMU_AT_CODE>(curInstruction);
+		//please note that we must setup R[15] before reading the instruction since there is a protection
+		//which prevents PC > 0x3FFF from reading the bios region
 		armcpu->instruct_adr = curInstruction;
 		armcpu->next_instruction = curInstruction + 4;
 		armcpu->R[15] = curInstruction + 8;
+		armcpu->instruction = _MMU_read32<PROCNUM, MMU_AT_CODE>(curInstruction);
 //#endif
 
 		return MMU_codeFetchCycles<PROCNUM,32>(curInstruction);
@@ -417,10 +419,12 @@ FORCEINLINE static u32 armcpu_prefetch()
 //	}
 //#else
 	curInstruction &= 0xFFFFFFFE; //please don't change this to 0x0FFFFFFE -- the NDS will happily run on 0xF******* addresses all day long
-	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction);
+	//please note that we must setup R[15] before reading the instruction since there is a protection
+	//which prevents PC > 0x3FFF from reading the bios region
 	armcpu->instruct_adr = curInstruction;
 	armcpu->next_instruction = curInstruction + 2;
 	armcpu->R[15] = curInstruction + 4;
+	armcpu->instruction = _MMU_read16<PROCNUM, MMU_AT_CODE>(curInstruction);
 //#endif
 
 	if(PROCNUM==0)
