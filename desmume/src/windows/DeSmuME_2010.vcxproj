@@ -152,6 +152,9 @@
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\Microsoft DirectX SDK %28February 2010%29\Lib\x86;C:\Program Files\Microsoft DirectX SDK %28February 2010%29\Lib;$(LibraryPath)</LibraryPath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Template|x64'">C:\Program Files\Microsoft DirectX SDK %28February 2010%29\Include;$(IncludePath)</IncludePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Template|x64'">C:\Program Files\Microsoft DirectX SDK %28February 2010%29\Lib\x86;C:\Program Files\Microsoft DirectX SDK %28February 2010%29\Lib;$(LibraryPath)</LibraryPath>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)_x64_release</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(ProjectName)_x64_dev+</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)_x64_debug</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
@@ -308,9 +311,10 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua-vc8-x64.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;winpcap\x64\wpcap.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua-vc8-x64.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_debug.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
@@ -352,9 +356,10 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua-vc8-x64.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;winpcap\x64\wpcap.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua-vc8-x64.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_release.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
@@ -397,9 +402,10 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua-vc8-x64.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;winpcap\x64\wpcap.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua-vc8-x64.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_dev+.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
