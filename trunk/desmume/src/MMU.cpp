@@ -443,13 +443,6 @@ static inline u8* MMU_vram_physical(const int page)
 }
 
 //todo - templateize
-//note: it doesnt seem right to me to map LCDC whenever a bank is allocated to BG/OBJ but thats how it is
-//(in FF4, when entering a town from worldmap, the subscreen tiles are via LCDC while mapped to sub BG)
-//UPDATED: i had to take them out in order to fix tetris DS music mode.
-//since then, other issues fixed FF4's problems, so they are staying out for now
-//as further, almost definitive proof that these should remain unmapped,
-//making them mapped permit's spiderman2's legal screens / intro FMV to render garbage
-//on top of the studio logo if you interrupt it by pressing enter. 
 static inline void MMU_VRAMmapRefreshBank(const int bank)
 {
 	int block = bank;
@@ -476,7 +469,6 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //AOBJ
@@ -484,7 +476,6 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				switch(ofs) {
 				case 0:
 				case 1:
-					//MMU_vram_lcdc(bank);
 					MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+ofs*8);
 					break;
 				default:
@@ -512,7 +503,6 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //arm7
@@ -534,7 +524,6 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //BGB or BOBJ
-				//MMU_vram_lcdc(bank);
 				if(bank == VRAM_BANK_C)  {
 					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 					MMU_vram_arm9(bank,VRAM_PAGE_BBG); //BBG
@@ -558,11 +547,9 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG);
 				break;
 			case 2: //AOBJ
-				//MMU_vram_lcdc(bank);
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ);
 				break;
@@ -599,13 +586,11 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring (required by spyro eternal night)
 				break;
 			case 2: //AOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
 				break;
@@ -649,7 +634,6 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //BBG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG + 4); //unexpected mirroring
 				break;
@@ -675,13 +659,11 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //BBG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+2);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+3); //unexpected mirroring
 				break;
 			case 2: //BOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
-				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
 				break;
 			case 3: //B OBJ extended palette
@@ -757,11 +739,25 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x240 + block, VRAMBankCnt);
 
 	//refresh all bank settings
-	for(int i=0;i<VRAM_BANKS;i++)
-		MMU_VRAMmapRefreshBank(i);
+	//these are enumerated so that we can tune the order they get applied
+	//in order to emulate prioritization rules for memory regions
+	//with multiple banks mapped.
+	//We're probably still not mapping things 100% correctly, but this helped us get closer:
+	//goblet of fire "care of magical creatures" maps I and D to BOBJ (the I is an accident)
+	//and requires A to override it.
+	//This may create other bugs....
+	MMU_VRAMmapRefreshBank(VRAM_BANK_I);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_H);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_G);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_F);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_E);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_D);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_C);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_A);
 
-	//printf(vramConfiguration.describe().c_str());
-	//printf("vram remapped at vcount=%d\n",nds.VCount);
+	printf(vramConfiguration.describe().c_str());
+	printf("vram remapped at vcount=%d\n",nds.VCount);
 
 	//if texInfo changed, trigger notifications
 	if(memcmp(&oldTexInfo,&MMU.texInfo,sizeof(MMU_struct::TextureInfo)))
