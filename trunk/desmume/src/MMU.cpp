@@ -756,8 +756,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_A);
 
-	printf(vramConfiguration.describe().c_str());
-	printf("vram remapped at vcount=%d\n",nds.VCount);
+	//printf(vramConfiguration.describe().c_str());
+	//printf("vram remapped at vcount=%d\n",nds.VCount);
 
 	//if texInfo changed, trigger notifications
 	if(memcmp(&oldTexInfo,&MMU.texInfo,sizeof(MMU_struct::TextureInfo)))
