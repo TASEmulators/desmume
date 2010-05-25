@@ -6,20 +6,24 @@ Applicationsdir = $(datadir)/applications
 Applications_DATA = wxdesmume.desktop
 pixmapdir = $(datadir)/pixmaps
 pixmap_DATA = DeSmuME.xpm
-EXTRA_DIST = wxdesmume.desktop
+EXTRA_DIST = wxdesmume.desktop DeSmuME.xpm
 bin_PROGRAMS = wxdesmume
 wxdesmume_SOURCES = \
 	../sndsdl.cpp \
 	../driver.h ../driver.cpp \
 	../wxdlg/wxdlg3dViewer.h ../wxdlg/wxdlg3dViewer.cpp \
-	PadSimple/PadSimple.cpp PadSimple/GUI/ConfigDlg.cpp \
-	InputCommon/X11InputBase.cpp \
-	InputCommon/XInput.cpp \
-	InputCommon/InputCommon.cpp \
-	InputCommon/EventHandler.cpp \
+	PadSimple/pluginspecs_pad.h \
+	PadSimple/PadSimple.h PadSimple/PadSimple.cpp \
+	PadSimple/GUI/ConfigDlg.h PadSimple/GUI/ConfigDlg.cpp \
+	InputCommon/X11InputBase.h InputCommon/X11InputBase.cpp \
+	InputCommon/XInput.h InputCommon/XInput.cpp \
+	InputCommon/InputCommon.h InputCommon/InputCommon.cpp \
+	InputCommon/Event.hpp \
+	InputCommon/EventHandler.h InputCommon/EventHandler.cpp \
 	InputCommon/Configuration.cpp \
-	InputCommon/SDL.cpp \
-	StringUtil.cpp \
+	InputCommon/SDL.h InputCommon/SDL.cpp \
+	LuaWindow.h \
+	StringUtil.h StringUtil.cpp \
 	wxMain.cpp
 wxdesmume_LDADD = ../libdesmume.a \
 	$(SDL_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(WX_LIBS)
