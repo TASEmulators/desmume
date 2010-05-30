@@ -741,8 +741,8 @@ INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 len, u8 maxR
 
 	*(u16*)&buf[8] = len;
 
-	buf[10] = maxRSSI;
-	buf[11] = minRSSI;
+	buf[10] = 253;//maxRSSI;
+	buf[11] = 255;//minRSSI;
 }
 
 #ifdef EXPERIMENTAL_WIFI_COMM
@@ -1324,7 +1324,7 @@ void WIFI_write16(u32 address, u16 val)
 			wifiMac.aid = val & 0x07FF;
 			break;
 		case 0xD0:
-			//printf("wifi: rxfilter=%04X\n", val);
+		//	printf("wifi: rxfilter=%04X\n", val);
 			break;
 		case 0x0E0:
 		//	printf("wifi: rxfilter2=%04X\n", val);
@@ -2027,8 +2027,6 @@ static bool SoftAP_IsDNSRequestToWFC(u16 ethertype, u8* body)
 				strcat(domainname, ".");
 		}
 
-		WIFI_LOG(1, "SoftAP: detected DNS request to %s\n", domainname);
-
 		// if the domain name contains nintendowifi.net
 		// it is most likely a WFC server
 		// (note, conntest.nintendowifi.net just contains a dummy HTML page and
@@ -2166,20 +2164,10 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 				if (SoftAP.status != APStatus_Associated)
 					return;
 
-				if (!bWFCUserWarned && SoftAP_IsDNSRequestToWFC(*(u16*)&packet[30], &packet[32]))
+				if (SoftAP_IsDNSRequestToWFC(*(u16*)&packet[30], &packet[32]))
 				{
-					// if the user chose not to connect to WFC
-					// disconnect them, and do not send the DNS packet
-					// otherwise just stop bothering them
-					if (driver->WIFI_WFCWarning())
-					{
-						bWFCUserWarned = true;
-					}
-					else
-					{
-						SoftAP_Deauthenticate();
-						return;
-					}
+					SoftAP_Deauthenticate();
+					return;
 				}
 
 				u32 epacketLen = ((len - 30 - 4) + 14);
@@ -2245,6 +2233,11 @@ static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_
 	if (WIFI_compareMAC(&data[6], wifiMac.mac.bytes))
 		return;
 
+	if (SoftAP.curPacketSending)
+	{
+		printf("crap we're gonna nuke a packet at %i/%i (%04X) (%04X)\n", SoftAP.curPacketPos, SoftAP.curPacketSize, *(u16*)&SoftAP.curPacket[12], wifiMac.RXWriteCursor<<1);
+	}
+
 	// The packet was for us. Let's process it then.
 	WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 
@@ -2296,7 +2289,7 @@ void SoftAP_usTrigger()
 	// other packets will have priority over beacons
 	// 'cause they might be only once of them
 	// whereas there will be sooo much beacons
-	if(!SoftAP.curPacketSending)
+	if(!SoftAP.curPacketSending) // && SoftAP.status != APStatus_Associated)
 	{
 		//if(wifiMac.ioMem[0xD0 >> 1] & 0x0400)
 		{
