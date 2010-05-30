@@ -2241,7 +2241,7 @@ class WinDriver : public BaseDriver
 		return _pcap_setnonblock(dev, nonblock, errbuf); }
 
 	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) {
-		return _pcap_send(dev, data, len); }
+		return _pcap_sendpacket(dev, data, len); }
 
 	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) {
 		return _pcap_dispatch(dev, num, callback, userdata); }
@@ -2863,7 +2863,6 @@ int _main()
 	}
 
 	MainWindow->Show(SW_NORMAL);
-
 
 	//DEBUG TEST HACK
 	//driver->VIEW3D_Init();

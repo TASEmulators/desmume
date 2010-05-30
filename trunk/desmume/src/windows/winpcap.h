@@ -34,7 +34,7 @@ typedef void (__cdecl *T_pcap_freealldevs)(pcap_if_t* alldevs);
 typedef pcap_t* (__cdecl *T_pcap_open_live)(const char* source, int snaplen, int flags, int readtimeout, char* errbuf);
 typedef void (__cdecl *T_pcap_close)(pcap_t* dev);
 typedef int (__cdecl *T_pcap_setnonblock)(pcap_t* dev, int nonblock, char* errbuf);
-typedef int (__cdecl *T_pcap_send)(pcap_t* dev, const u_char* data, int len);
+typedef int (__cdecl *T_pcap_sendpacket)(pcap_t* dev, const u_char* data, int len);
 typedef int (__cdecl *T_pcap_dispatch)(pcap_t* dev, int num, pcap_handler callback, u_char* userdata);
 
 T_pcap_findalldevs _pcap_findalldevs = NULL;
@@ -42,7 +42,7 @@ T_pcap_freealldevs _pcap_freealldevs = NULL;
 T_pcap_open_live _pcap_open_live = NULL;
 T_pcap_close _pcap_close = NULL;
 T_pcap_setnonblock _pcap_setnonblock = NULL;
-T_pcap_send _pcap_send = NULL;
+T_pcap_sendpacket _pcap_sendpacket = NULL;
 T_pcap_dispatch _pcap_dispatch = NULL;
 
 
@@ -62,7 +62,7 @@ static void LoadWinPCap()
 	LOADSYMBOL(pcap_open_live);
 	LOADSYMBOL(pcap_close);
 	LOADSYMBOL(pcap_setnonblock);
-	LOADSYMBOL(pcap_send);
+	LOADSYMBOL(pcap_sendpacket);
 	LOADSYMBOL(pcap_dispatch);
 
 	bWinPCapAvailable = true;
