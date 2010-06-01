@@ -218,8 +218,8 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 5X*/	DUP16(0x000007FF),
 		/* 6X*/	DUP16(0x00FFFFFF),
 		/* 7X*/	DUP16(0x000007FF),
-		/* 8X*/	DUP16(ROM_MASK),
-		/* 9X*/	DUP16(ROM_MASK),
+		/* 8X*/	DUP16(0x00000003),
+		/* 9X*/	DUP16(0x00000003),
 		/* AX*/	DUP16(0x0000FFFF),
 		/* BX*/	DUP16(0x00000003),
 		/* CX*/	DUP16(0x00000003),
@@ -239,8 +239,8 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 5X*/	DUP16(0x00000003),
 		/* 6X*/	DUP16(0x00FFFFFF),
 		/* 7X*/	DUP16(0x00000003),
-		/* 8X*/	DUP16(ROM_MASK),
-		/* 9X*/	DUP16(ROM_MASK),
+		/* 8X*/	DUP16(0x00000003),
+		/* 9X*/	DUP16(0x00000003),
 		/* AX*/	DUP16(0x0000FFFF),
 		/* BX*/	DUP16(0x00000003),
 		/* CX*/	DUP16(0x00000003),
@@ -836,13 +836,6 @@ void MMU_Init(void) {
 	MMU.CART_ROM = MMU.UNUSED_RAM;
 	MMU.CART_ROM_MASK = 3;
 
-	//zero 01-jun-2010 - this makes no sense at all. delete me later
-	//for(i = 0x80; i<0xA0; ++i)
-	//{
-	//	MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
-	//	MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
-	//}
-
 	//MMU.DTCMRegion = 0x027C0000;
 	//even though apps may change dtcm immediately upon startup, this is the correct hardware starting value:
 	MMU.DTCMRegion = 0x08000000;
@@ -986,36 +979,17 @@ void MMU_Reset()
 
 void MMU_setRom(u8 * rom, u32 mask)
 {
-	unsigned int i;
 	MMU.CART_ROM = rom;
 	MMU.CART_ROM_MASK = mask;
-	
-	for(i = 0x80; i<0xA0; ++i)
-	{
-		MMU_struct::MMU_MEM[0][i] = rom;
-		MMU_struct::MMU_MEM[1][i] = rom;
-		MMU_struct::MMU_MASK[0][i] = mask;
-		MMU_struct::MMU_MASK[1][i] = mask;
-	}
 	rom_mask = mask;
 }
 
 void MMU_unsetRom()
 {
-	unsigned int i;
 	MMU.CART_ROM=MMU.UNUSED_RAM;
 	MMU.CART_ROM_MASK = 3;
-	
-	for(i = 0x80; i<0xA0; ++i)
-	{
-		MMU_struct::MMU_MEM[0][i] = MMU.UNUSED_RAM;
-		MMU_struct::MMU_MEM[1][i] = MMU.UNUSED_RAM;
-		MMU_struct::MMU_MASK[0][i] = ROM_MASK;
-		MMU_struct::MMU_MASK[1][i] = ROM_MASK;
-	}
 	rom_mask = ROM_MASK;
 }
-char txt[80];	
 
 static void execsqrt() {
 	u32 ret;
