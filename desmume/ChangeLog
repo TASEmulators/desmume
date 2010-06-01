@@ -1,14 +1,16 @@
-0.9.6 -> 0.9.7 (r3493-r3xxx)
+0.9.6 -> 0.9.7 (r3493-r3654-r3xxx)
 
 General/Core:
  bug: return Z1 and Z2 from TSC (fixes some touch logic)
  bug: fix a ton of old, broken cpu opcodes and CP15 logic
+ bug: gba slot save type detection improved
  enh: substantial improvements to wifi emulation
  enh: more realistic exception handling
  enh: piano controller emulation
  
 Graphics:
  bug: edge marking colors were wrong
+ bug: handle some "invalid" vram configurations correctly
 
 Windows:
 
@@ -81,7 +83,7 @@ Windows:
  bug: dont crash when no sound device is available
  bug: change F10 to be save slot 0
  bug: fix --start-paused
-  enh: try not to screensave while using gamepad
+ enh: try not to screensave while using gamepad
  enh: add EPX and EPX1.5X resize filters
  enh: add a japanese translation which will soon be stale like the others
  enh: add fancy ctrl+printscreen with emulator info on it

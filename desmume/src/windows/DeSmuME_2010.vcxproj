@@ -580,10 +580,6 @@
     <ClInclude Include="..\rtc.h" />
     <ClInclude Include="..\saves.h" />
     <ClInclude Include="..\shaders.h" />
-    <ClInclude Include="..\softrender.h" />
-    <ClInclude Include="..\softrender_config.h" />
-    <ClInclude Include="..\softrender_desmumefont.h" />
-    <ClInclude Include="..\softrender_v3sysfont.h" />
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\thumb_instructions.h" />
@@ -624,6 +620,9 @@
     <ClInclude Include="colorctrl.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
+    <ClInclude Include="filter\hq2x.h" />
+    <ClInclude Include="filter\interp.h" />
+    <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="gbaslot_config.h" />
     <ClInclude Include="hotkey.h" />

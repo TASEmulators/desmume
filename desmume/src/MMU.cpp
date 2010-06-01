@@ -829,8 +829,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 
 
 void MMU_Init(void) {
-	int i;
-
 	LOG("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
@@ -838,13 +836,16 @@ void MMU_Init(void) {
 	MMU.CART_ROM = MMU.UNUSED_RAM;
 	MMU.CART_ROM_MASK = 3;
 
-    for(i = 0x80; i<0xA0; ++i)
-    {
-		MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
-		MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
-    }
+	//zero 01-jun-2010 - this makes no sense at all. delete me later
+	//for(i = 0x80; i<0xA0; ++i)
+	//{
+	//	MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
+	//	MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
+	//}
 
-	MMU.DTCMRegion = 0x027C0000;
+	//MMU.DTCMRegion = 0x027C0000;
+	//even though apps may change dtcm immediately upon startup, this is the correct hardware starting value:
+	MMU.DTCMRegion = 0x08000000;
 	MMU.ITCMRegion = 0x00000000;
 
 	IPC_FIFOinit(ARMCPU_ARM9);

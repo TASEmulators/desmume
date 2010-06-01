@@ -83,53 +83,34 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	u32				icontitleOffset;
 	wchar_t			*utf16text;
 	u32				val;
-        
+
+       
 	hdc = BeginPaint(hDlg, &ps);
 
-	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
+	const RomBanner& banner = gameInfo.getRomBanner();
 
-	if(icontitleOffset >= 0x8000)
-	{
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x240 + (0x100 * win_fw_config.language));
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), text);
+	sprintf(text, "%ws", banner.titles[win_fw_config.language]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), text);
 
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x240);
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), text);
+	sprintf(text, "%ws", banner.titles[0]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), text);
 
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x340);
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), text);
+	sprintf(text, "%ws", banner.titles[1]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), text);
 
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x440);
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), text);
+	sprintf(text, "%ws", banner.titles[2]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), text);
 
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x540);
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), text);
+	sprintf(text, "%ws", banner.titles[3]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), text);
 
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x640);
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), text);
+	sprintf(text, "%ws", banner.titles[4]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), text);
 
-		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x740);
-		sprintf(text, "%ws", utf16text);
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), text);
-	}
-	else
-	{
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), "\nNo title\n");
-
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), "None");
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), "None");
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), "None");
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), "None");
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), "None");
-		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), "None");
-	}
-
+	sprintf(text, "%ws", banner.titles[5]);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), text);
+	
+	//TODO - pull this from the header, not straight out of the rom (yuck!)
 
 	memcpy(text, MMU.CART_ROM, 12);
 	text[12] = '\0';
@@ -197,7 +178,7 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	sprintf(text, "%i bytes", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATSIZE), text);
 
-
+	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
 	sprintf(text, "0x%08X", icontitleOffset);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ICONTITLEOFS), text);
 
@@ -278,9 +259,9 @@ LRESULT GInfo_IconBoxPaint(HWND hCtl, WPARAM wParam, LPARAM lParam)
 	bmph.bV4Width			 = 32;
 	bmph.bV4Height			 = -32;
 
-	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
+	const RomBanner& banner = gameInfo.getRomBanner();
 
-	if(icontitleOffset >= 0x8000)
+	if(gameInfo.hasRomBanner())
 	{
 		for(y = 0; y < 32; y++)
 		{
@@ -291,14 +272,14 @@ LRESULT GInfo_IconBoxPaint(HWND hCtl, WPARAM wParam, LPARAM lParam)
 				int tiley = (y % 8);
 				int mapoffset = ((tilenum * 64) + (tiley * 8) + tilex);
 
-				u8 val = T1ReadByte(MMU.CART_ROM, (icontitleOffset + 0x20 + (mapoffset>>1)));
+				u8 val = banner.bitmap[(mapoffset>>1)];
 
 				if(mapoffset & 1)
 					val = ((val >> 4) & 0xF);
 				else
 					val = (val & 0xF);
 
-				icon[(y * 32) + x] = T1ReadWord(MMU.CART_ROM, (icontitleOffset + 0x220 + (val<<1)));
+				icon[(y * 32) + x] = banner.palette[val];
 			}
 		}
 
