@@ -27,6 +27,7 @@
 #include "mem.h"
 #include "MMU.h"
 #include "debug.h"
+#include "utils/xstring.h"
 
 CHEATS *cheats = NULL;
 CHEATSEARCH *cheatSearch = NULL;
@@ -543,7 +544,9 @@ BOOL CHEATS::save()
 	if (flist)
 	{
 		fprintf(flist, "; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		strcpy(buf, gameInfo.ROMfullName[0]);
+		std::wstring wtemp = (std::wstring)gameInfo.getRomBanner().titles[1];
+		std::string temp = wcstombs(wtemp);
+		strcpy(buf, temp.c_str());
 		trim(buf);
 		removeSpecialChars(buf);
 		fprintf(flist, "Name=%s\n", buf);

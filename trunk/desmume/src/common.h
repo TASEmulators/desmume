@@ -83,7 +83,7 @@ char *intToBin(T val)
 	return strdup(buf);
 }
 
-extern char *trim(char *s);
+extern char *trim(char *s, int len=-1);
 extern char *removeSpecialChars(char *s);
 
 #endif

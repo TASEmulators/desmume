@@ -288,6 +288,40 @@ static u32 ones32(u32 x)
 }
 #endif
 
+RomBanner::RomBanner(bool defaultInit)
+{
+	if(!defaultInit) return;
+	version = 1; //Version  (0001h)
+	crc16 = 0; //CRC16 across entries 020h..83Fh
+	memset(reserved,0,sizeof(reserved));
+	memset(bitmap,0,sizeof(bitmap));
+	memset(palette,0,sizeof(palette));
+	memset(titles,0,sizeof(titles));
+	for(int i=0;i<NUM_TITLES;i++)
+		wcscpy(titles[i],L"None");
+	memset(end0xFF,0,sizeof(end0xFF));
+	u16 palette[0x10]; //Icon Palette (16 colors, 16bit, range 0000h-7FFFh) (Color 0 is transparent, so the 1st palette entry is ignored)
+}
+
+bool GameInfo::hasRomBanner()
+{
+	if(header.IconOff + sizeof(RomBanner) > romsize)
+		return false;
+	else return true;
+}
+
+const RomBanner& GameInfo::getRomBanner()
+{
+	//we may not have a valid banner. return a default one
+	if(!hasRomBanner())
+	{
+		static RomBanner defaultBanner(true);
+		return defaultBanner;
+	}
+	
+	return *(RomBanner*)(romdata+header.IconOff);
+}
+
 void GameInfo::populate()
 {
 	const char *regions[] = {	"JPFSEDIRKH",
@@ -310,16 +344,17 @@ void GameInfo::populate()
 
 	memset(ROMserial, 0, sizeof(ROMserial));
 	memset(ROMname, 0, sizeof(ROMname));
-	memset(ROMfullName, 0, sizeof(ROMfullName));
 
 	if (
-		// ??? in all Homebrews game title have is 2E0000EA
-		//(
+		//Option 1. - look for this instruction in the game title
+		//(did this ever work?)
 		//(header->gameTile[0] == 0x2E) && 
 		//(header->gameTile[1] == 0x00) && 
 		//(header->gameTile[2] == 0x00) && 
 		//(header->gameTile[3] == 0xEA)
 		//) &&
+		//option 2. - look for gamecode #### (default for ndstool)
+		//or an invalid gamecode
 		(
 			((header.gameCode[0] == 0x23) && 
 			(header.gameCode[1] == 0x23) && 
@@ -332,6 +367,7 @@ void GameInfo::populate()
 			header.makerCode == 0x0
 		)
 	{
+		//we can't really make a serial for a homebrew game that hasnt set a game code
 		strcpy(ROMserial, "Homebrew");
 	}
 	else
@@ -344,18 +380,24 @@ void GameInfo::populate()
 			strcat(ROMserial, regions[region]);
 		else
 			strcat(ROMserial, "Unknown");
-		memset(ROMname, 0, sizeof(ROMname));
-		memcpy(ROMname, header.gameTile, 12);
-		trim(ROMname);
-
-		u8 num = (T1ReadByte((u8*)romdata, header.IconOff) == 1)?6:7;
-		for (int i = 0; i < num; i++)
-		{
-			wcstombs(ROMfullName[i], (wchar_t *)(romdata+header.IconOff+0x240+(i*0x100)), 0x100);
-			trim(ROMfullName[i]);
-		}
-
 	}
+
+	//rom name is probably set even in homebrew
+	memset(ROMname, 0, sizeof(ROMname));
+	memcpy(ROMname, header.gameTile, 12);
+	trim(ROMname,20);
+
+		/*if(header.IconOff < romsize)
+		{
+			u8 num = (T1ReadByte((u8*)romdata, header.IconOff) == 1)?6:7;
+			for (int i = 0; i < num; i++)
+			{
+				wcstombs(ROMfullName[i], (wchar_t *)(romdata+header.IconOff+0x240+(i*0x100)), 0x100);
+				trim(ROMfullName[i]);
+			}
+		}*/
+
+	
 }
 #ifdef _WINDOWS
 

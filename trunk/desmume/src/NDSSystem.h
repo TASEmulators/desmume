@@ -271,6 +271,31 @@ void NDS_DeInit(void);
 BOOL NDS_SetROM(u8 * rom, u32 mask);
 NDS_header * NDS_getROMHeader(void);
 
+struct RomBanner
+{
+	RomBanner(bool defaultInit);
+	u16 version; //Version  (0001h)
+	u16 crc16; //CRC16 across entries 020h..83Fh
+	u8 reserved[0x1C]; //Reserved (zero-filled)
+	u8 bitmap[0x200]; //Icon Bitmap  (32x32 pix) (4x4 tiles, each 4x8 bytes, 4bit depth)
+	u16 palette[0x10]; //Icon Palette (16 colors, 16bit, range 0000h-7FFFh) (Color 0 is transparent, so the 1st palette entry is ignored)
+	enum { NUM_TITLES = 6 };
+	union {
+		struct {
+			wchar_t title_jp[0x80]; //Title 0 Japanese (128 characters, 16bit Unicode)
+			wchar_t title_en[0x80]; //Title 1 English  ("")
+			wchar_t title_fr[0x80]; //Title 2 French   ("")
+			wchar_t title_de[0x80]; //Title 3 German   ("")
+			wchar_t title_it[0x80]; //Title 4 Italian  ("")
+			wchar_t title_es[0x80]; //Title 5 Spanish  ("")
+		};
+		wchar_t titles[NUM_TITLES][0x80];
+	};
+	u8 end0xFF[0x1C0]; 
+  //840h  ?    (Maybe newer/chinese firmware do also support chinese title?)
+  //840h  -    End of Icon/Title structure (next 1C0h bytes usually FFh-filled)
+};
+
 struct GameInfo
 {
 	GameInfo()
@@ -312,12 +337,14 @@ struct GameInfo
 	NDS_header header;
 	char ROMserial[20];
 	char ROMname[20];
-	char ROMfullName[7][0x100];
+	//char ROMfullName[7][0x100];
 	void populate();
 	char* romdata;
 	u32 romsize;
 	u32 allocatedSize;
 	u32 mask;
+	const RomBanner& getRomBanner();
+	bool hasRomBanner();
 };
 
 typedef struct TSCalInfo
