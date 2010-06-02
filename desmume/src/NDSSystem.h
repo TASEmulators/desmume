@@ -98,6 +98,7 @@ struct NDS_header
        u8       cardSize;
        u8       cardInfo[8];
        u8       flags;
+	   u8		romversion;
        
        u32      ARM9src;
        u32      ARM9exe;
