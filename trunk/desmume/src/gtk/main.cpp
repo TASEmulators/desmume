@@ -997,9 +997,28 @@ static void OpenNdsDialog()
 #ifdef HAVE_RECENT_FILES
 static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 {
-    Open(g_filename_from_uri(gtk_recent_chooser_get_current_uri(chooser), NULL, NULL));
+    GtkRecentManager *recent_manager = gtk_recent_manager_get_default();
+    gchar *uri, *romname;
+    int ret;
 
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+    uri = gtk_recent_chooser_get_current_uri(chooser);
+    romname = g_filename_from_uri(uri, NULL, NULL);
+    ret = Open(romname);
+    if (ret > 0) {
+        gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+    } else {
+        gtk_recent_manager_remove_item(recent_manager, uri, NULL);
+        GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                GTK_DIALOG_MODAL,
+                GTK_MESSAGE_ERROR,
+                GTK_BUTTONS_OK,
+                "Unable to load :\n%s", uri);
+        gtk_dialog_run(GTK_DIALOG(pDialog));
+        gtk_widget_destroy(pDialog);
+    }
+
+    g_free(uri);
+    g_free(romname);
 }
 #endif
 
