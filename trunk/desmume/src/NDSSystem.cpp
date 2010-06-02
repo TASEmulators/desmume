@@ -194,6 +194,7 @@ NDS_header * NDS_getROMHeader(void)
 	header->cardSize = MMU.CART_ROM[20];
 	memcpy(header->cardInfo, MMU.CART_ROM + 21, 8);
 	header->flags = MMU.CART_ROM[29];
+	header->romversion = MMU.CART_ROM[30];
 	header->ARM9src = T1ReadLong(MMU.CART_ROM, 32);
 	header->ARM9exe = T1ReadLong(MMU.CART_ROM, 36);
 	header->ARM9cpy = T1ReadLong(MMU.CART_ROM, 40);
