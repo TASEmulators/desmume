@@ -38,32 +38,36 @@
 struct MatrixStack
 {
 	MatrixStack(int size, int type);
-	float	*matrix;
+	s32		*matrix;
 	s32		position;
 	s32		size;
 	u8		type;
 };
 
 void	MatrixInit				(float *matrix);
+void	MatrixInit				(s32 *matrix);
 
 //In order to conditionally use these asm optimized functions in visual studio
 //without having to make new build types to exclude the assembly files.
 //a bit sloppy, but there aint much to it
 
 float	MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
+s32	MatrixGetMultipliedIndex	(int index, s32 *matrix, s32 *rightMatrix);
 void	MatrixSet				(float *matrix, int x, int y, float value);
 void	MatrixCopy				(float * matrixDST, const float * matrixSRC);
+void	MatrixCopy				(s32 * matrixDST, const s32 * matrixSRC);
 int		MatrixCompare				(const float * matrixDST, const float * matrixSRC);
 void	MatrixIdentity			(float *matrix);
+void	MatrixIdentity			(s32 *matrix);
 
 void	MatrixTranspose				(float *matrix);
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
-void	MatrixStackPushMatrix		(MatrixStack *stack, const float *ptr);
-void	MatrixStackPopMatrix		(float *mtxCurr, MatrixStack *stack, int size);
-float*	MatrixStackGetPos			(MatrixStack *stack, int pos);
-float*	MatrixStackGet				(MatrixStack *stack);
-void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const float *ptr);
+void	MatrixStackPushMatrix		(MatrixStack *stack, const s32 *ptr);
+void	MatrixStackPopMatrix		(s32 *mtxCurr, MatrixStack *stack, int size);
+s32*	MatrixStackGetPos			(MatrixStack *stack, int pos);
+s32*	MatrixStackGet				(MatrixStack *stack);
+void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const s32 *ptr);
 
 void Vector2Copy(float *dst, const float *src);
 void Vector2Add(float *dst, const float *src);
@@ -330,5 +334,12 @@ static FORCEINLINE void memset_u8(void* dst, u8 val)
 
 #endif //switched SSE functions
 
+void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr);
 
+void MatrixMultVec4x4_M2(const s32 *matrix, s32 *vecPtr);
+
+void MatrixMultiply(s32* matrix, const s32* rightMatrix);
+void MatrixScale(s32 *matrix, const s32 *ptr);
+void MatrixTranslate(s32 *matrix, const s32 *ptr);
 #endif
+

@@ -39,6 +39,19 @@ void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 	vecPtr[3] = x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15];
 }
 
+void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr)
+{
+	s64 x = vecPtr[0];
+	s64 y = vecPtr[1];
+	s64 z = vecPtr[2];
+	s64 w = vecPtr[3];
+
+	vecPtr[0] = (s32)((x * matrix[0] + y * matrix[4] + z * matrix[ 8] + w * matrix[12])>>12);
+	vecPtr[1] = (s32)((x * matrix[1] + y * matrix[5] + z * matrix[ 9] + w * matrix[13])>>12);
+	vecPtr[2] = (s32)((x * matrix[2] + y * matrix[6] + z * matrix[10] + w * matrix[14])>>12);
+	vecPtr[3] = (s32)((x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15])>>12);
+}
+
 
 //-------------------------
 //switched SSE functions: implementations for no SSE
@@ -116,6 +129,12 @@ void MatrixScale (float *matrix, const float *ptr)
 #endif //switched c/asm functions
 //-----------------------------------------
 
+void MatrixInit  (s32 *matrix)
+{
+	memset (matrix, 0, sizeof(float)*16);
+	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
+}
+
 void MatrixInit  (float *matrix)
 {
 	memset (matrix, 0, sizeof(float)*16);
@@ -135,6 +154,13 @@ void MatrixTranspose(float *matrix)
 #undef swap
 }
 
+void	MatrixIdentity			(s32 *matrix)
+{
+	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0;
+	matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0;
+	matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0;
+	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
+}
 void MatrixIdentity	(float *matrix)
 {
 	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0.0f;
@@ -151,12 +177,43 @@ float MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
 			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
 }
 
+s32 MatrixGetMultipliedIndex (int index, s32 *matrix, s32 *rightMatrix)
+{
+	int iMod = index%4, iDiv = (index>>2)<<2;
+
+	s64 temp = ((s64)matrix[iMod  ]*rightMatrix[iDiv  ])+((s64)matrix[iMod+ 4]*rightMatrix[iDiv+1])+
+			((s64)matrix[iMod+8]*rightMatrix[iDiv+2])+((s64)matrix[iMod+12]*rightMatrix[iDiv+3]);
+
+	return (s32)(temp>>12);
+}
+
 void MatrixSet (float *matrix, int x, int y, float value)	// TODO
 {
 	matrix [x+(y<<2)] = value;
 }
 
 void MatrixCopy (float* matrixDST, const float* matrixSRC)
+{
+	matrixDST[0] = matrixSRC[0];
+	matrixDST[1] = matrixSRC[1];
+	matrixDST[2] = matrixSRC[2];
+	matrixDST[3] = matrixSRC[3];
+	matrixDST[4] = matrixSRC[4];
+	matrixDST[5] = matrixSRC[5];
+	matrixDST[6] = matrixSRC[6];
+	matrixDST[7] = matrixSRC[7];
+	matrixDST[8] = matrixSRC[8];
+	matrixDST[9] = matrixSRC[9];
+	matrixDST[10] = matrixSRC[10];
+	matrixDST[11] = matrixSRC[11];
+	matrixDST[12] = matrixSRC[12];
+	matrixDST[13] = matrixSRC[13];
+	matrixDST[14] = matrixSRC[14];
+	matrixDST[15] = matrixSRC[15];
+
+}
+
+void MatrixCopy (s32* matrixDST, const s32* matrixSRC)
 {
 	matrixDST[0] = matrixSRC[0];
 	matrixDST[1] = matrixSRC[1];
@@ -200,7 +257,7 @@ void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 	if (stack->matrix != NULL) {
 		free (stack->matrix);
 	}
-	stack->matrix = (float*) malloc (stack->size*16*sizeof(float));
+	stack->matrix = new s32[stack->size*16*sizeof(s32)];
 
 	for (i = 0; i < stack->size; i++)
 	{
@@ -226,7 +283,7 @@ static void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 	stack->position &= stack->size;
 }
 
-void MatrixStackPushMatrix (MatrixStack *stack, const float *ptr)
+void MatrixStackPushMatrix (MatrixStack *stack, const s32 *ptr)
 {
 	//printf("Push %i pos %i\n", stack->type, stack->position);
 	if ((stack->type == 0) || (stack->type == 3))
@@ -236,7 +293,7 @@ void MatrixStackPushMatrix (MatrixStack *stack, const float *ptr)
 	MatrixStackSetStackPosition (stack, 1);
 }
 
-void MatrixStackPopMatrix (float *mtxCurr, MatrixStack *stack, int size)
+void MatrixStackPopMatrix (s32 *mtxCurr, MatrixStack *stack, int size)
 {
 	//printf("Pop %i pos %i (change %d)\n", stack->type, stack->position, -size);
 	MatrixStackSetStackPosition(stack, -size);
@@ -246,18 +303,18 @@ void MatrixStackPopMatrix (float *mtxCurr, MatrixStack *stack, int size)
 		MatrixCopy (mtxCurr, &stack->matrix[stack->position*16]);
 }
 
-float * MatrixStackGetPos (MatrixStack *stack, int pos)
+s32 * MatrixStackGetPos (MatrixStack *stack, int pos)
 {
 	assert(pos<31);
 	return &stack->matrix[pos*16];
 }
 
-float * MatrixStackGet (MatrixStack *stack)
+s32 * MatrixStackGet (MatrixStack *stack)
 {
 	return &stack->matrix[stack->position*16];
 }
 
-void MatrixStackLoadMatrix (MatrixStack *stack, int pos, const float *ptr)
+void MatrixStackLoadMatrix (MatrixStack *stack, int pos, const s32 *ptr)
 {
 	assert(pos<31);
 	MatrixCopy (&stack->matrix[pos*16], ptr);
@@ -355,3 +412,54 @@ void Vector4Copy(float *dst, const float *src)
 }
 
 
+void MatrixMultiply (s32 *matrix, const s32 *rightMatrix)
+{
+	s64 tmpMatrix[16];
+
+	tmpMatrix[0]  = (matrix[0]*(s64)rightMatrix[0])+(matrix[4]*(s64)rightMatrix[1])+(matrix[8]*(s64)rightMatrix[2])+(matrix[12]*(s64)rightMatrix[3]);
+	tmpMatrix[1]  = (matrix[1]*(s64)rightMatrix[0])+(matrix[5]*(s64)rightMatrix[1])+(matrix[9]*(s64)rightMatrix[2])+(matrix[13]*(s64)rightMatrix[3]);
+	tmpMatrix[2]  = (matrix[2]*(s64)rightMatrix[0])+(matrix[6]*(s64)rightMatrix[1])+(matrix[10]*(s64)rightMatrix[2])+(matrix[14]*(s64)rightMatrix[3]);
+	tmpMatrix[3]  = (matrix[3]*(s64)rightMatrix[0])+(matrix[7]*(s64)rightMatrix[1])+(matrix[11]*(s64)rightMatrix[2])+(matrix[15]*(s64)rightMatrix[3]);
+
+	tmpMatrix[4]  = (matrix[0]*(s64)rightMatrix[4])+(matrix[4]*(s64)rightMatrix[5])+(matrix[8]*(s64)rightMatrix[6])+(matrix[12]*(s64)rightMatrix[7]);
+	tmpMatrix[5]  = (matrix[1]*(s64)rightMatrix[4])+(matrix[5]*(s64)rightMatrix[5])+(matrix[9]*(s64)rightMatrix[6])+(matrix[13]*(s64)rightMatrix[7]);
+	tmpMatrix[6]  = (matrix[2]*(s64)rightMatrix[4])+(matrix[6]*(s64)rightMatrix[5])+(matrix[10]*(s64)rightMatrix[6])+(matrix[14]*(s64)rightMatrix[7]);
+	tmpMatrix[7]  = (matrix[3]*(s64)rightMatrix[4])+(matrix[7]*(s64)rightMatrix[5])+(matrix[11]*(s64)rightMatrix[6])+(matrix[15]*(s64)rightMatrix[7]);
+
+	tmpMatrix[8]  = (matrix[0]*(s64)rightMatrix[8])+(matrix[4]*(s64)rightMatrix[9])+(matrix[8]*(s64)rightMatrix[10])+(matrix[12]*(s64)rightMatrix[11]);
+	tmpMatrix[9]  = (matrix[1]*(s64)rightMatrix[8])+(matrix[5]*(s64)rightMatrix[9])+(matrix[9]*(s64)rightMatrix[10])+(matrix[13]*(s64)rightMatrix[11]);
+	tmpMatrix[10] = (matrix[2]*(s64)rightMatrix[8])+(matrix[6]*(s64)rightMatrix[9])+(matrix[10]*(s64)rightMatrix[10])+(matrix[14]*(s64)rightMatrix[11]);
+	tmpMatrix[11] = (matrix[3]*(s64)rightMatrix[8])+(matrix[7]*(s64)rightMatrix[9])+(matrix[11]*(s64)rightMatrix[10])+(matrix[15]*(s64)rightMatrix[11]);
+
+	tmpMatrix[12] = (matrix[0]*(s64)rightMatrix[12])+(matrix[4]*(s64)rightMatrix[13])+(matrix[8]*(s64)rightMatrix[14])+(matrix[12]*(s64)rightMatrix[15]);
+	tmpMatrix[13] = (matrix[1]*(s64)rightMatrix[12])+(matrix[5]*(s64)rightMatrix[13])+(matrix[9]*(s64)rightMatrix[14])+(matrix[13]*(s64)rightMatrix[15]);
+	tmpMatrix[14] = (matrix[2]*(s64)rightMatrix[12])+(matrix[6]*(s64)rightMatrix[13])+(matrix[10]*(s64)rightMatrix[14])+(matrix[14]*(s64)rightMatrix[15]);
+	tmpMatrix[15] = (matrix[3]*(s64)rightMatrix[12])+(matrix[7]*(s64)rightMatrix[13])+(matrix[11]*(s64)rightMatrix[14])+(matrix[15]*(s64)rightMatrix[15]);
+
+	for(int i=0;i<16;i++)
+		matrix[i] = (s32)(tmpMatrix[i]>>12);
+}
+
+void MatrixScale(s32 *matrix, const s32 *ptr)
+{
+	for(int i=0;i<12;i++)
+		matrix[i]  = (s32)(((s64)matrix[i]*ptr[i>>2])>>12);
+}
+
+void MatrixTranslate(s32 *matrix, const s32 *ptr)
+{
+	for(int i=0;i<4;i++)
+	{
+		s64 temp = ((s64)matrix[i+12])<<12;
+		temp += (s64)matrix[i]*ptr[0];
+		temp += (s64)matrix[i+4]*ptr[1];
+		temp += (s64)matrix[i+8]*ptr[2];
+		matrix[i+12] = (s32)(temp>>12);
+	}
+}
+
+void MatrixMultVec4x4_M2(const s32 *matrix, s32 *vecPtr)
+{
+	MatrixMultVec4x4(matrix+16,vecPtr);
+	MatrixMultVec4x4(matrix,vecPtr);
+}
