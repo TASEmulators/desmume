@@ -438,7 +438,7 @@ public:
 };
 
 static void
-init_configured_features( struct configured_features *config)
+init_configured_features( class configured_features *config)
 {
   config->engine_3d = 1;
 
@@ -453,7 +453,7 @@ init_configured_features( struct configured_features *config)
 }
 
 static int
-fill_configured_features( struct configured_features *config,
+fill_configured_features( class configured_features *config,
                           int argc, char ** argv)
 {
   GOptionEntry options[] = {
@@ -2006,7 +2006,7 @@ static gboolean timeout_exit_cb(gpointer data)
 
 
 static int
-common_gtk_main( struct configured_features *my_config)
+common_gtk_main( class configured_features *my_config)
 {
     driver = new GtkDriver();
 

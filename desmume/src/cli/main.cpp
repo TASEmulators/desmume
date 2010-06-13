@@ -143,7 +143,7 @@ public:
 };
 
 static void
-init_config( struct configured_features *config) {
+init_config( class configured_features *config) {
 
   config->auto_pause = 0;
   config->frameskip = 0;
@@ -163,7 +163,7 @@ init_config( struct configured_features *config) {
 
 
 static int
-fill_config( struct configured_features *config,
+fill_config( class configured_features *config,
              int argc, char ** argv) {
   GOptionEntry options[] = {
     { "auto-pause", 0, 0, G_OPTION_ARG_NONE, &config->auto_pause, "Pause emulation if focus is lost", NULL},
@@ -506,7 +506,7 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
 }
 
 int main(int argc, char ** argv) {
-  struct configured_features my_config;
+  class configured_features my_config;
   struct ctrls_event_config ctrls_cfg;
 #ifdef GDB_STUB
   gdbstub_handle_t arm9_gdb_stub;
