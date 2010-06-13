@@ -1376,7 +1376,7 @@ static void gfx3d_glViewPort(u32 v)
 
 static BOOL gfx3d_glBoxTest(u32 v)
 {
-	printf("boxtest\n");
+	//printf("boxtest\n");
 	MMU_new.gxstat.tr = 0;		// clear boxtest bit
 	MMU_new.gxstat.tb = 1;		// busy
 
@@ -1510,7 +1510,7 @@ static BOOL gfx3d_glBoxTest(u32 v)
 
 static BOOL gfx3d_glPosTest(u32 v)
 {
-	printf("postest\n");
+	//printf("postest\n");
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 
 	//printf("POSTEST\n");
@@ -1539,7 +1539,7 @@ static BOOL gfx3d_glPosTest(u32 v)
 
 static void gfx3d_glVecTest(u32 v)
 {
-	printf("vectest\n");
+	//printf("vectest\n");
 	GFX_DELAY(5);
 
 	//this is tested by phoenix wright in its evidence inspector modelviewer
