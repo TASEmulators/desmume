@@ -271,7 +271,7 @@ static void list_files(const char *filepath)
 	{
 		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
 		add_file(fname, &entry, fileLevel);
-		CFLASHLOG("cflash added %s\n",fname);
+		printf("cflash added %s\n",fname);
 
 		if (numFiles==MAXFILES-1) break;
 
@@ -309,6 +309,7 @@ static BOOL cflash_build_fat()
 	maxLevel  = -1;
 
 	files = (DIR_ENT *) malloc(MAXFILES*sizeof(DIR_ENT));
+	memset(files,0,MAXFILES*sizeof(DIR_ENT));
 	if (files == NULL) return FALSE;
 	fileLink = (FILE_INFO *) malloc(MAXFILES*sizeof(FILE_INFO));
 	if (fileLink == NULL)
@@ -738,7 +739,7 @@ static unsigned int cflash_read(unsigned int address)
 					cluster2 = (((currLBA/512) - filesysData) / SECPERCLUS) + 2;
 
 					// Reading from the MBR 
-					if (currLBA < 512)
+					if (currLBA < 512 && currLBA >= 0)
 					{
 						p = (unsigned char*)&MBR;
 						ret_value = T1ReadWord(p, currLBA);
