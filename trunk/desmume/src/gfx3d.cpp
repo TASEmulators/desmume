@@ -337,8 +337,8 @@ CACHE_ALIGN MatrixStack	mtxStack[4] = {
 
 int _hack_getMatrixStackLevel(int which) { return mtxStack[which].position; }
 
-static CACHE_ALIGN float		mtxCurrent [4][16];
-static CACHE_ALIGN float		mtxTemporal[16];
+static CACHE_ALIGN s32		mtxCurrent [4][16];
+static CACHE_ALIGN s32		mtxTemporal[16];
 static u32 mode = 0;
 
 // Indexes for matrix loading/multiplication
@@ -349,21 +349,21 @@ static u8 MM4x3ind = 0;
 static u8 MM3x3ind = 0;
 
 // Data for vertex submission
-static CACHE_ALIGN u16		u16coord[4] = {0, 0, 0, 0};
+static CACHE_ALIGN s16		s16coord[4] = {0, 0, 0, 0};
 static char		coordind = 0;
 static u32 vtxFormat = 0;
 static BOOL inBegin = FALSE;
 
 // Data for basic transforms
-static CACHE_ALIGN float	trans[4] = {0.0, 0.0, 0.0, 0.0};
+static CACHE_ALIGN s32	trans[4] = {0, 0, 0, 0};
 static int		transind = 0;
-static CACHE_ALIGN float	scale[4] = {0.0, 0.0, 0.0, 0.0};
+static CACHE_ALIGN s32	scale[4] = {0, 0, 0, 0};
 static int		scaleind = 0;
 static u32 viewport = 0;
 
 //various other registers
-static float _t=0, _s=0;
-static float last_t, last_s;
+static s32 _t=0, _s=0;
+static s32 last_t, last_s;
 static u32 clCmd = 0;
 static u32 clInd = 0;
 
@@ -527,7 +527,7 @@ void gfx3d_reset()
 	texturePalette = 0;
 	polyAttrPending = 0;
 	mode = 0;
-	u16coord[0] = u16coord[1] = u16coord[2] = u16coord[3] = 0;
+	s16coord[0] = s16coord[1] = s16coord[2] = s16coord[3] = 0;
 	coordind = 0;
 	vtxFormat = 0;
 	memset(trans, 0, sizeof(trans));
@@ -592,22 +592,25 @@ void gfx3d_reset()
 //Submit a vertex to the GE
 static void SetVertex()
 {
-	float coord[3] = {
-			float16table[u16coord[0]],
-			float16table[u16coord[1]],
-			float16table[u16coord[2]]
+	s32 coord[3] = {
+		s16coord[0],
+		s16coord[1],
+		s16coord[2]
 	};
 
-	ALIGN(16) float coordTransformed[4] = { coord[0], coord[1], coord[2], 1.f };
+	ALIGN(16) s32 coordTransformed[4] = { coord[0], coord[1], coord[2], (1<<12) };
 
 	if (texCoordinateTransform == 3)
 	{
+		//UNTESTED since fixed point conversion, and almost certainly wrong.
 		last_s =((coord[0]*mtxCurrent[3][0] +
 					coord[1]*mtxCurrent[3][4] +
 					coord[2]*mtxCurrent[3][8]) + _s * 16.0f) / 16.0f;
 		last_t =((coord[0]*mtxCurrent[3][1] +
 					coord[1]*mtxCurrent[3][5] +
 					coord[2]*mtxCurrent[3][9]) + _t * 16.0f) / 16.0f;
+		last_s /= 4096.0f;
+		last_t /= 4096.0f;
 	}
 
 	
@@ -623,6 +626,10 @@ static void SetVertex()
 	//(we could lazy cache the concatenated clip matrix and only generate it
 	//when we need to)
 	MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
+
+	//printf("%f %f %f\n",s16coord[0]/4096.0f,s16coord[1]/4096.0f,s16coord[2]/4096.0f);
+	//printf("x %f %f %f %f\n",mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f);
+	//printf(" = %f %f %f %f\n",coordTransformed[0]/4096.0f,coordTransformed[1]/4096.0f,coordTransformed[2]/4096.0f,coordTransformed[3]/4096.0f);
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
@@ -653,12 +660,12 @@ static void SetVertex()
 	//	//MatrixPrint(mtxCurrent[1]);
 	//}
 
-	vert.texcoord[0] = last_s;
-	vert.texcoord[1] = last_t;
-	vert.coord[0] = coordTransformed[0];
-	vert.coord[1] = coordTransformed[1];
-	vert.coord[2] = coordTransformed[2];
-	vert.coord[3] = coordTransformed[3];
+	vert.texcoord[0] = last_s/16.0f;
+	vert.texcoord[1] = last_t/16.0f;
+	vert.coord[0] = coordTransformed[0]/4096.0f;
+	vert.coord[1] = coordTransformed[1]/4096.0f;
+	vert.coord[2] = coordTransformed[2]/4096.0f;
+	vert.coord[3] = coordTransformed[3]/4096.0f;
 	vert.color[0] = GFX3D_5TO6(colorRGB[0]);
 	vert.color[1] = GFX3D_5TO6(colorRGB[1]);
 	vert.color[2] = GFX3D_5TO6(colorRGB[2]);
@@ -778,7 +785,8 @@ static void gfx3d_glLightDirection_cache(int index)
 	cacheLightDirection[index][3] = 0;
 
 	/* Multiply the vector by the directional matrix */
-	MatrixMultVec3x3(mtxCurrent[2], cacheLightDirection[index]);
+	CACHE_ALIGN float temp[16] = {mtxCurrent[2][0]/4096.0f,mtxCurrent[2][1]/4096.0f,mtxCurrent[2][2]/4096.0f,mtxCurrent[2][3]/4096.0f,mtxCurrent[2][4]/4096.0f,mtxCurrent[2][5]/4096.0f,mtxCurrent[2][6]/4096.0f,mtxCurrent[2][7]/4096.0f,mtxCurrent[2][8]/4096.0f,mtxCurrent[2][9]/4096.0f,mtxCurrent[2][10]/4096.0f,mtxCurrent[2][11]/4096.0f,mtxCurrent[2][12]/4096.0f,mtxCurrent[2][13]/4096.0f,mtxCurrent[2][14]/4096.0f,mtxCurrent[2][15]/4096.0f};
+	MatrixMultVec3x3(temp, cacheLightDirection[index]);
 
 	/* Calculate the half vector */
 	float lineOfSight[4] = {0.0f, 0.0f, -1.0f, 0.0f};
@@ -824,12 +832,12 @@ static void gfx3d_glPopMatrix(s32 i)
 	//this was necessary to fix sims apartment pets
 	//i = (i<<26)>>26;
 
-	MatrixStackPopMatrix((float*)mtxCurrent[mymode], &mtxStack[mymode], i);
+	MatrixStackPopMatrix(mtxCurrent[mymode], &mtxStack[mymode], i);
 
 	GFX_DELAY(36);
 
 	if (mymode == 2)
-		MatrixStackPopMatrix((float*)mtxCurrent[1], &mtxStack[1], i);
+		MatrixStackPopMatrix(mtxCurrent[1], &mtxStack[1], i);
 
 	MMU_new.gxstat.sb = 1; // set busy
 }
@@ -891,7 +899,7 @@ static void gfx3d_glLoadIdentity()
 
 static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 {
-	mtxCurrent[mode][ML4x4ind] = (float)((v<<4)>>4);
+	mtxCurrent[mode][ML4x4ind] = v;
 
 	++ML4x4ind;
 	if(ML4x4ind<16) return FALSE;
@@ -899,7 +907,7 @@ static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 	GFX_DELAY(19);
 
-	vector_fix2float<4>(mtxCurrent[mode], 4096.f);
+	//vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	if (mode == 2)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
@@ -910,18 +918,18 @@ static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 {
-	mtxCurrent[mode][ML4x3ind] = (float)((v<<4)>>4);
+	mtxCurrent[mode][ML4x3ind] = v;
 
 	ML4x3ind++;
 	if((ML4x3ind & 0x03) == 3) ML4x3ind++;
 	if(ML4x3ind<16) return FALSE;
 	ML4x3ind = 0;
 
-	vector_fix2float<4>(mtxCurrent[mode], 4096.f);
+	//vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	//fill in the unusued matrix values
-	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0.f;
-	mtxCurrent[mode][15] = 1.f;
+	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0;
+	mtxCurrent[mode][15] = (1<<12);
 
 	GFX_DELAY(30);
 
@@ -933,7 +941,7 @@ static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 
 static BOOL gfx3d_glMultMatrix4x4(s32 v)
 {
-	mtxTemporal[MM4x4ind] = (float)((v<<4)>>4);
+	mtxTemporal[MM4x4ind] = v;
 
 	MM4x4ind++;
 	if(MM4x4ind<16) return FALSE;
@@ -941,7 +949,7 @@ static BOOL gfx3d_glMultMatrix4x4(s32 v)
 
 	GFX_DELAY(35);
 
-	vector_fix2float<4>(mtxTemporal, 4096.f);
+	//vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
@@ -959,7 +967,7 @@ static BOOL gfx3d_glMultMatrix4x4(s32 v)
 
 static BOOL gfx3d_glMultMatrix4x3(s32 v)
 {
-	mtxTemporal[MM4x3ind] = (float)((v<<4)>>4);
+	mtxTemporal[MM4x3ind] = v;
 
 	MM4x3ind++;
 	if((MM4x3ind & 0x03) == 3) MM4x3ind++;
@@ -968,11 +976,11 @@ static BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 	GFX_DELAY(31);
 
-	vector_fix2float<4>(mtxTemporal, 4096.f);
+	//vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
-	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0.f;
-	mtxTemporal[15] = 1.f;
+	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
+	mtxTemporal[15] = 1<<12;
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
@@ -991,7 +999,7 @@ static BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 static BOOL gfx3d_glMultMatrix3x3(s32 v)
 {
-	mtxTemporal[MM3x3ind] = (float)((v<<4)>>4);
+	mtxTemporal[MM3x3ind] = v;
 
 
 	MM3x3ind++;
@@ -1001,11 +1009,11 @@ static BOOL gfx3d_glMultMatrix3x3(s32 v)
 
 	GFX_DELAY(28);
 
-	vector_fix2float<3>(mtxTemporal, 4096.f);
+	//vector_fix2float<3>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
-	mtxTemporal[15] = 1;
+	mtxTemporal[15] = 1<<12;
 	mtxTemporal[12] = mtxTemporal[13] = mtxTemporal[14] = 0;
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
@@ -1026,7 +1034,7 @@ static BOOL gfx3d_glMultMatrix3x3(s32 v)
 
 static BOOL gfx3d_glScale(s32 v)
 {
-	scale[scaleind] = fix2float(v);
+	scale[scaleind] = v;
 
 	++scaleind;
 
@@ -1048,7 +1056,7 @@ static BOOL gfx3d_glScale(s32 v)
 
 static BOOL gfx3d_glTranslate(s32 v)
 {
-	trans[transind] = fix2float(v);
+	trans[transind] = v;
 
 	++transind;
 
@@ -1078,24 +1086,25 @@ static void gfx3d_glColor3b(u32 v)
 	GFX_DELAY(1);
 }
 
-static void gfx3d_glNormal(u32 v)
+static void gfx3d_glNormal(s32 v)
 {
-	int i,c;
-	ALIGN(16) float normal[4] = { normalTable[v&1023],
-						normalTable[(v>>10)&1023],
-						normalTable[(v>>20)&1023],
-						1};
+	s16 nx = ((v<<22)>>22)<<3;
+	s16 ny = ((v<<12)>>22)<<3;
+	s16 nz = ((v<<2)>>22)<<3;
 
 	if (texCoordinateTransform == 2)
 	{
-		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
-					 normal[2] *mtxCurrent[3][8]) + (_s*16.0f)) / 16.0f;
-		last_t =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
-					 normal[2] *mtxCurrent[3][9]) + (_t*16.0f)) / 16.0f;
+		//SM64 highlight rendered star in main menu tests this
+		last_s = (s32)(((s64)nx * mtxCurrent[3][0] + (s64)ny * mtxCurrent[3][4] + (s64)nz * mtxCurrent[3][8] + (_s<<24))>>24);
+		last_t = (s32)(((s64)nx * mtxCurrent[3][1] + (s64)ny * mtxCurrent[3][5] + (s64)nz * mtxCurrent[3][9] + (_t<<24))>>24);
 	}
 
+	CACHE_ALIGN float normal[4] =  { nx/4096.0f, ny/4096.0f, nz/4096.0f, 1.0f };
+
+
 	//use the current normal transform matrix
-	MatrixMultVec3x3 (mtxCurrent[2], normal);
+	CACHE_ALIGN float temp[16] = {mtxCurrent[2][0]/4096.0f,mtxCurrent[2][1]/4096.0f,mtxCurrent[2][2]/4096.0f,mtxCurrent[2][3]/4096.0f,mtxCurrent[2][4]/4096.0f,mtxCurrent[2][5]/4096.0f,mtxCurrent[2][6]/4096.0f,mtxCurrent[2][7]/4096.0f,mtxCurrent[2][8]/4096.0f,mtxCurrent[2][9]/4096.0f,mtxCurrent[2][10]/4096.0f,mtxCurrent[2][11]/4096.0f,mtxCurrent[2][12]/4096.0f,mtxCurrent[2][13]/4096.0f,mtxCurrent[2][14]/4096.0f,mtxCurrent[2][15]/4096.0f};
+	MatrixMultVec3x3 (temp, normal);
 
 	//apply lighting model
 	{
@@ -1121,7 +1130,7 @@ static void gfx3d_glNormal(u32 v)
 
 		int vertexColor[3] = { emission[0], emission[1], emission[2] };
 
-		for(i=0; i<4; i++)
+		for(int i=0; i<4; i++)
 		{
 			if(!((lightMask>>i)&1)) continue;
 
@@ -1154,7 +1163,7 @@ static void gfx3d_glNormal(u32 v)
 				shininessLevel = gfx3d.state.shininessTable[shininessIndex];
 			}
 
-			for(c = 0; c < 3; c++)
+			for(int c = 0; c < 3; c++)
 			{
 				vertexColor[c] += (int)(((specular[c] * _lightColor[c] * shininessLevel)
 					+ (diffuse[c] * _lightColor[c] * diffuseLevel)
@@ -1162,7 +1171,7 @@ static void gfx3d_glNormal(u32 v)
 			}
 		}
 
-		for(c=0;c<3;c++)
+		for(int c=0;c<3;c++)
 			colorRGB[c] = std::min(31,vertexColor[c]);
 	}
 
@@ -1173,22 +1182,18 @@ static void gfx3d_glNormal(u32 v)
 	GFX_DELAY_M2((lightMask>>3) & 0x01);
 }
 
-static void gfx3d_glTexCoord(u32 val)
+static void gfx3d_glTexCoord(s32 val)
 {
-	_t = (s16)(val>>16);
-	_s = (s16)(val&0xFFFF);
-
-	_s /= 16.0f;
-	_t /= 16.0f;
+	_s = ((val<<16)>>16);
+	_t = (val>>16);
 
 	if (texCoordinateTransform == 1)
 	{
-		last_s =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
-				0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
-		last_t =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
-				0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
+		//dragon quest 4 overworld will test this
+		last_s = (s32)(((s64)(_s<<12) * mtxCurrent[3][0] + (s64)(_t<<12) * mtxCurrent[3][4] + ((s64)mtxCurrent[3][8]<<12) + ((s64)mtxCurrent[3][12]<<12))>>24);
+		last_t = (s32)(((s64)(_s<<12) * mtxCurrent[3][1] + (s64)(_t<<12) * mtxCurrent[3][5] + ((s64)mtxCurrent[3][9]<<12) + ((s64)mtxCurrent[3][13]<<12))>>24);
 	}
-	else
+	else if(texCoordinateTransform == 0)
 	{
 		last_s=_s;
 		last_t=_t;
@@ -1196,21 +1201,18 @@ static void gfx3d_glTexCoord(u32 val)
 	GFX_DELAY(1);
 }
 
-static BOOL gfx3d_glVertex16b(unsigned int v)
+static BOOL gfx3d_glVertex16b(s32 v)
 {
 	if(coordind==0)
 	{
-		//coord[0]		= float16table[v&0xFFFF];
-		//coord[1]		= float16table[v>>16];
-		u16coord[0] = v&0xFFFF;
-		u16coord[1] = (v>>16)&0xFFFF;
+		s16coord[0] = (v<<16)>>16;
+		s16coord[1] = (v>>16)&0xFFFF;
 
 		++coordind;
 		return FALSE;
 	}
 
-	//coord[2]	  = float16table[v&0xFFFF];
-	u16coord[2] = v&0xFFFF;
+	s16coord[2] = (v<<16)>>16;
 
 	coordind = 0;
 	SetVertex ();
@@ -1219,40 +1221,37 @@ static BOOL gfx3d_glVertex16b(unsigned int v)
 	return TRUE;
 }
 
-static void gfx3d_glVertex10b(u32 v)
+static void gfx3d_glVertex10b(s32 v)
 {
-	//coord[0]		= float10Table[v&1023];
-	//coord[1]		= float10Table[(v>>10)&1023];
-	//coord[2]		= float10Table[(v>>20)&1023];
-	u16coord[0] = (v&1023)<<6;
-	u16coord[1] = ((v>>10)&1023)<<6;
-	u16coord[2] = ((v>>20)&1023)<<6;
+	//TODO TODO TODO - contemplate the sign extension - shift in zeroes or ones? zeroes is certainly more normal..
+	s16coord[0] = ((v<<22)>>22)<<6;
+	s16coord[1] = ((v<<12)>>22)<<6;
+	s16coord[2] = ((v<<2)>>22)<<6;
 
 	GFX_DELAY(8);
 	SetVertex ();
 }
 
-static void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
+template<int ONE, int TWO>
+static void gfx3d_glVertex3_cord(s32 v)
 {
-	//coord[one]		= float16table[v&0xffff];
-	//coord[two]		= float16table[v>>16];
-	u16coord[one]		= v&0xffff;
-	u16coord[two]		= (v>>16)&0xFFFF;
+	s16coord[ONE]		= (v<<16)>>16;
+	s16coord[TWO]		= (v>>16);
 
 	SetVertex ();
 
 	GFX_DELAY(8);
 }
 
-static void gfx3d_glVertex_rel(u32 v)
+static void gfx3d_glVertex_rel(s32 v)
 {
-	//coord[0]		+= float10RelTable[v&1023];
-	//coord[1]		+= float10RelTable[(v>>10)&1023];
-	//coord[2]		+= float10RelTable[(v>>20)&1023];
+	s16 x = ((v<<22)>>22);
+	s16 y = ((v<<12)>>22);
+	s16 z = ((v<<2)>>22);
 
-	u16coord[0] += (u16)(((s16)((v&1023)<<6))>>6);
-	u16coord[1] += (u16)(((s16)(((v>>10)&1023)<<6))>>6);
-	u16coord[2] += (u16)(((s16)(((v>>20)&1023)<<6))>>6);
+	s16coord[0] += x;
+	s16coord[1] += y;
+	s16coord[2] += z;
 
 
 	SetVertex ();
@@ -1377,6 +1376,7 @@ static void gfx3d_glViewPort(u32 v)
 
 static BOOL gfx3d_glBoxTest(u32 v)
 {
+	printf("boxtest\n");
 	MMU_new.gxstat.tr = 0;		// clear boxtest bit
 	MMU_new.gxstat.tb = 1;		// busy
 
@@ -1473,11 +1473,10 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	for(int i=0;i<8;i++) {
 		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
 
-		//yuck.. cant use the sse2 accelerated ones because vert.coords is not cache aligned or something
-		//i dunno
-		
-		_NOSSE_MatrixMultVec4x4(mtxCurrent[1],verts[i].coord);
-		_NOSSE_MatrixMultVec4x4(mtxCurrent[0],verts[i].coord);
+		CACHE_ALIGN float temp1[16] = {mtxCurrent[1][0]/4096.0f,mtxCurrent[1][1]/4096.0f,mtxCurrent[1][2]/4096.0f,mtxCurrent[1][3]/4096.0f,mtxCurrent[1][4]/4096.0f,mtxCurrent[1][5]/4096.0f,mtxCurrent[1][6]/4096.0f,mtxCurrent[1][7]/4096.0f,mtxCurrent[1][8]/4096.0f,mtxCurrent[1][9]/4096.0f,mtxCurrent[1][10]/4096.0f,mtxCurrent[1][11]/4096.0f,mtxCurrent[1][12]/4096.0f,mtxCurrent[1][13]/4096.0f,mtxCurrent[1][14]/4096.0f,mtxCurrent[1][15]/4096.0f};
+		CACHE_ALIGN float temp0[16] = {mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f,mtxCurrent[0][4]/4096.0f,mtxCurrent[0][5]/4096.0f,mtxCurrent[0][6]/4096.0f,mtxCurrent[0][7]/4096.0f,mtxCurrent[0][8]/4096.0f,mtxCurrent[0][9]/4096.0f,mtxCurrent[0][10]/4096.0f,mtxCurrent[0][11]/4096.0f,mtxCurrent[0][12]/4096.0f,mtxCurrent[0][13]/4096.0f,mtxCurrent[0][14]/4096.0f,mtxCurrent[0][15]/4096.0f};
+		_NOSSE_MatrixMultVec4x4(temp1,verts[i].coord);
+		_NOSSE_MatrixMultVec4x4(temp0,verts[i].coord);
 	}
 
 	//clip each poly
@@ -1511,6 +1510,7 @@ static BOOL gfx3d_glBoxTest(u32 v)
 
 static BOOL gfx3d_glPosTest(u32 v)
 {
+	printf("postest\n");
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 
 	//printf("POSTEST\n");
@@ -1524,8 +1524,11 @@ static BOOL gfx3d_glPosTest(u32 v)
 	
 	PTcoords[3] = 1.0f;
 
-	MatrixMultVec4x4(mtxCurrent[1], PTcoords);
-	MatrixMultVec4x4(mtxCurrent[0], PTcoords);
+	CACHE_ALIGN float temp1[16] = {mtxCurrent[1][0]/4096.0f,mtxCurrent[1][1]/4096.0f,mtxCurrent[1][2]/4096.0f,mtxCurrent[1][3]/4096.0f,mtxCurrent[1][4]/4096.0f,mtxCurrent[1][5]/4096.0f,mtxCurrent[1][6]/4096.0f,mtxCurrent[1][7]/4096.0f,mtxCurrent[1][8]/4096.0f,mtxCurrent[1][9]/4096.0f,mtxCurrent[1][10]/4096.0f,mtxCurrent[1][11]/4096.0f,mtxCurrent[1][12]/4096.0f,mtxCurrent[1][13]/4096.0f,mtxCurrent[1][14]/4096.0f,mtxCurrent[1][15]/4096.0f};
+	CACHE_ALIGN float temp0[16] = {mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f,mtxCurrent[0][4]/4096.0f,mtxCurrent[0][5]/4096.0f,mtxCurrent[0][6]/4096.0f,mtxCurrent[0][7]/4096.0f,mtxCurrent[0][8]/4096.0f,mtxCurrent[0][9]/4096.0f,mtxCurrent[0][10]/4096.0f,mtxCurrent[0][11]/4096.0f,mtxCurrent[0][12]/4096.0f,mtxCurrent[0][13]/4096.0f,mtxCurrent[0][14]/4096.0f,mtxCurrent[0][15]/4096.0f};
+
+	MatrixMultVec4x4(temp1, PTcoords);
+	MatrixMultVec4x4(temp0, PTcoords);
 
 	MMU_new.gxstat.tb = 0;
 
@@ -1536,6 +1539,7 @@ static BOOL gfx3d_glPosTest(u32 v)
 
 static void gfx3d_glVecTest(u32 v)
 {
+	printf("vectest\n");
 	GFX_DELAY(5);
 
 	//this is tested by phoenix wright in its evidence inspector modelviewer
@@ -1547,7 +1551,8 @@ static void gfx3d_glVecTest(u32 v)
 						normalTable[(v>>20)&1023],
 						0};
 
-	MatrixMultVec4x4(mtxCurrent[2], normal);
+	CACHE_ALIGN float temp[16] = {mtxCurrent[2][0]/4096.0f,mtxCurrent[2][1]/4096.0f,mtxCurrent[2][2]/4096.0f,mtxCurrent[2][3]/4096.0f,mtxCurrent[2][4]/4096.0f,mtxCurrent[2][5]/4096.0f,mtxCurrent[2][6]/4096.0f,mtxCurrent[2][7]/4096.0f,mtxCurrent[2][8]/4096.0f,mtxCurrent[2][9]/4096.0f,mtxCurrent[2][10]/4096.0f,mtxCurrent[2][11]/4096.0f,mtxCurrent[2][12]/4096.0f,mtxCurrent[2][13]/4096.0f,mtxCurrent[2][14]/4096.0f,mtxCurrent[2][15]/4096.0f};
+	MatrixMultVec4x4(temp, normal);
 
 	s16 x = (s16)(normal[0]*4096);
 	s16 y = (s16)(normal[1]*4096);
@@ -1620,9 +1625,9 @@ void gfx3d_UpdateToonTable(u8 offset, u32 val)
 
 s32 gfx3d_GetClipMatrix (unsigned int index)
 {
-	float val = MatrixGetMultipliedIndex (index, mtxCurrent[0], mtxCurrent[1]);
+	s32 val = MatrixGetMultipliedIndex (index, mtxCurrent[0], mtxCurrent[1]);
 
-	val *= (1<<12);
+	//val *= (1<<12);
 
 	return (s32)val;
 }
@@ -1631,7 +1636,8 @@ s32 gfx3d_GetDirectionalMatrix (unsigned int index)
 {
 	int _index = (((index / 3) * 4) + (index % 3));
 
-	return (s32)(mtxCurrent[2][_index]*(1<<12));
+	//return (s32)(mtxCurrent[2][_index]*(1<<12));
+	return mtxCurrent[2][_index];
 }
 
 void gfx3d_glAlphaFunc(u32 v)
@@ -1834,13 +1840,13 @@ static void gfx3d_execute(u8 cmd, u32 param)
 			gfx3d_glVertex10b(param);
 		break;
 		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
-			gfx3d_glVertex3_cord(0, 1, param);
+			gfx3d_glVertex3_cord<0,1>(param);
 		break;
 		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
-			gfx3d_glVertex3_cord(0, 2, param);
+			gfx3d_glVertex3_cord<0,2>(param);
 		break;
 		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
-			gfx3d_glVertex3_cord(1, 2, param);
+			gfx3d_glVertex3_cord<1,2>(param);
 		break;
 		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
 			gfx3d_glVertex_rel(param);
@@ -2205,13 +2211,13 @@ void gfx3d_Control(u32 v)
 //other misc stuff
 void gfx3d_glGetMatrix(unsigned int m_mode, int index, float* dest)
 {
-	if(index == -1)
-	{
-		MatrixCopy(dest, mtxCurrent[m_mode]);
-		return;
-	}
+	//if(index == -1)
+	//{
+	//	MatrixCopy(dest, mtxCurrent[m_mode]);
+	//	return;
+	//}
 
-	MatrixCopy(dest, MatrixStackGetPos(&mtxStack[m_mode], index));
+	//MatrixCopy(dest, MatrixStackGetPos(&mtxStack[m_mode], index));
 }
 
 void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest)
@@ -2267,7 +2273,7 @@ SFORMAT SF_GFX3D[]={
 	{ "MM4I", 1, 1, &MM4x4ind},
 	{ "MM3I", 1, 1, &MM4x3ind},
 	{ "MMxI", 1, 1, &MM3x3ind},
-	{ "GSCO", 4, 1, u16coord},
+	{ "GSCO", 4, 1, s16coord},
 	{ "GCOI", 1, 1, &coordind},
 	{ "GVFM", 4, 1, &vtxFormat},
 	{ "GTRN", 4, 4, trans},
