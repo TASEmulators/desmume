@@ -301,7 +301,6 @@ RomBanner::RomBanner(bool defaultInit)
 	for(int i=0;i<NUM_TITLES;i++)
 		wcscpy(titles[i],L"None");
 	memset(end0xFF,0,sizeof(end0xFF));
-	u16 palette[0x10]; //Icon Palette (16 colors, 16bit, range 0000h-7FFFh) (Color 0 is transparent, so the 1st palette entry is ignored)
 }
 
 bool GameInfo::hasRomBanner()
