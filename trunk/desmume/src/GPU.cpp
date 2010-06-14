@@ -673,10 +673,6 @@ static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u
 			return;
 	}
 
-	//this inspects the layer beneath the sprite to see if the current blend flags make it a candidate for blending
-	const int bg_under = gpu->bgPixels[x];
-	const bool allowBlend = (bg_under != 4) && gpu->blend2[bg_under];
-
 	const bool sourceEffectSelected = gpu->blend1;
 
 	//note that the fadein and fadeout is done here before blending, 
@@ -685,14 +681,20 @@ static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u
 	if(windowEffect && sourceEffectSelected)
 		switch(FUNC) 
 		{
-		case Increase: if(!allowBlend) color = gpu->currentFadeInColors[color&0x7FFF]; break;
-		case Decrease: if(!allowBlend) color = gpu->currentFadeOutColors[color&0x7FFF]; break;
+			//zero 13-jun-2010 : if(allowBlend) was removed from these;
+			//it should be possible to increase/decrease and also blend
+			//(the effect would be increase, but the obj properties permit blending and the target layers are configured correctly)
+		case Increase: color = gpu->currentFadeInColors[color&0x7FFF]; break;
+		case Decrease: color = gpu->currentFadeOutColors[color&0x7FFF]; break;
 
 		//only when blend color effect is selected, ordinarily opaque sprites are blended with the color effect params
 		case Blend: forceBlendingForNormal = true; break;
 		case None: break;
 		}
 
+	//this inspects the layer beneath the sprite to see if the current blend flags make it a candidate for blending
+	const int bg_under = gpu->bgPixels[x];
+	const bool allowBlend = (bg_under != 4) && gpu->blend2[bg_under];
 
 	if(allowBlend)
 	{
