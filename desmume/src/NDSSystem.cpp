@@ -79,6 +79,11 @@ int TotalLagFrames;
 
 TSCalInfo TSCal;
 
+namespace DLDI
+{
+	bool tryPatch(void* data, size_t size);
+}
+
 void Desmume_InitOnce()
 {
 	static bool initOnce = false;
@@ -459,7 +464,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		return -1;
 	}
 
-
+	//try auto-patching DLDI. should be benign if there is no DLDI or if it fails
+	DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
