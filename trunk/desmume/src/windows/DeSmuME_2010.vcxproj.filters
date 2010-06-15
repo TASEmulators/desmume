@@ -381,6 +381,9 @@
     <ClCompile Include="..\addons\piano.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\utils\dlditool.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -498,18 +501,6 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\shaders.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\softrender.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\softrender_config.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\softrender_desmumefont.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\softrender_v3sysfont.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\SPU.h">
@@ -719,6 +710,9 @@
     <ClInclude Include="..\utils\mkgmtime.h">
       <Filter>Core\utils</Filter>
     </ClInclude>
+    <ClInclude Include="filter\hq2x.h" />
+    <ClInclude Include="filter\interp.h" />
+    <ClInclude Include="filter\lq2x.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\instruction_tabdef.inc">
