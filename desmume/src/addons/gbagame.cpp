@@ -22,6 +22,7 @@
 #include "../mem.h"
 #include <string.h>
 #include "../MMU.h"
+#include "path.h"
 
 //SRAM is going to be stored just above the rom.
 //that is convenient for us, since it mirrors the nds memory map
@@ -291,6 +292,12 @@ static void GBAgame_reset(void)
 
 	if (!strlen(GBAgameName)) return;
 	FILE *fgame = 0;
+
+	//perk: if the gbagame name is "self" this is a special indicator that we should mount the main rom that we're running as the gba game
+	if(!stricmp(GBAgameName,"self"))
+	{
+		strcpy(GBAgameName,path.path.c_str());
+	}
 
 	fgame = fopen(GBAgameName,"rb");
 	if (!fgame) return;
