@@ -294,7 +294,7 @@ static void GBAgame_reset(void)
 	FILE *fgame = 0;
 
 	//perk: if the gbagame name is "self" this is a special indicator that we should mount the main rom that we're running as the gba game
-	if(!stricmp(GBAgameName,"self"))
+	if(!strcasecmp(GBAgameName,"self"))
 	{
 		strcpy(GBAgameName,path.path.c_str());
 	}
