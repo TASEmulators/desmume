@@ -554,11 +554,10 @@ void GBAslotDialog(HWND hwnd)
 				break;
 			case NDS_ADDON_CFLASH:
 				//save current values for win32 configuration
-				//(no tmp for mode, a little weird but thats just how it evolved)
-				win32_CFlash_cfgMode = CFlash_Mode;
+				win32_CFlash_cfgMode = tmp_CFlashMode;
 				win32_CFlash_cfgDirectory = tmp_cflash_path;
 				win32_CFlash_cfgFileName = tmp_cflash_filename;
-				WritePrivateProfileInt("GBAslot.CFlash","fileMode",CFlash_Mode,IniName);
+				WritePrivateProfileInt("GBAslot.CFlash","fileMode",tmp_CFlashMode,IniName);
 				WritePrivateProfileString("GBAslot.CFlash","path",tmp_cflash_path,IniName);
 				WritePrivateProfileString("GBAslot.CFlash","filename",tmp_cflash_filename,IniName);
 
