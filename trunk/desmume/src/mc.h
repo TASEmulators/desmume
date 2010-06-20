@@ -134,6 +134,19 @@ private:
 		DETECTING = 0, RUNNING = 1
 	} state;
 
+	enum MOTION_INIT_STATE
+	{
+		MOTION_INIT_STATE_IDLE, MOTION_INIT_STATE_RECEIVED_4, MOTION_INIT_STATE_RECEIVED_4_B,
+		MOTION_INIT_STATE_FE, MOTION_INIT_STATE_FD, MOTION_INIT_STATE_FB
+	};
+	enum MOTION_FLAG
+	{
+		MOTION_FLAG_NONE=0,
+		MOTION_FLAG_ENABLED=1,
+		MOTION_FLAG_SENSORMODE=2
+	};
+	u8 motionInitState, motionFlag;
+
 	void loadfile();
 	bool _loadfile(const char *fname);
 	void ensure(u32 addr);
