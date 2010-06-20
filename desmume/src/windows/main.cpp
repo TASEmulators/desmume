@@ -2406,7 +2406,7 @@ static void RefreshMicSettings()
 DWORD wmTimerRes;
 int _main()
 {
-	//7zup initialization
+	//7zip initialization
 	InitDecoder();
 
 #ifdef HAVE_WX
@@ -2456,6 +2456,8 @@ int _main()
 	char text[80];
 
 	GetINIPath();
+
+	path.ReadPathSettings();
 
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 
@@ -3943,7 +3945,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_CREATE:
 		{
-			path.ReadPathSettings();
 			pausedByMinimize = FALSE;
 			UpdateScreenRects();
 

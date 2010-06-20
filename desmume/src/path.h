@@ -1,4 +1,9 @@
 #include <string>
+#include <direct.h>
+
+#ifdef _MSC_VER
+#define mkdir _mkdir
+#endif
 
 #if defined(_WINDOWS) && !defined(WXPORT)
 #include "resource.h"
@@ -7,6 +12,78 @@
 #endif
 #include "time.h"
 #include "utils/xstring.h"
+
+//-----------------------------------
+//This is taken from mono Path.cs
+static const char InvalidPathChars[] = {
+	'\x22', '\x3C', '\x3E', '\x7C', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07',
+	'\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E', '\x0F', '\x10', '\x11', '\x12', 
+	'\x13', '\x14', '\x15', '\x16', '\x17', '\x18', '\x19', '\x1A', '\x1B', '\x1C', '\x1D', 
+	'\x1E', '\x1F'
+};
+
+//but it is sort of windows-specific. Does it work in linux? Maybe we'll have to make it smarter
+static const char VolumeSeparatorChar = ':';
+static const char DirectorySeparatorChar = '\\';
+static const char AltDirectorySeparatorChar = '/';
+static bool dirEqualsVolume = (DirectorySeparatorChar == VolumeSeparatorChar);
+
+class Path
+{
+public:
+	static bool IsPathRooted (const std::string& path)
+	{
+		if (path.size() == 0)
+			return false;
+
+		
+		if (path.find_first_of(InvalidPathChars) != -1)
+		{
+			//yuck.
+			//throw new ArgumentException ("Illegal characters in path.");
+		}
+
+		char c = path [0];
+		return (c == DirectorySeparatorChar 	||
+			c == AltDirectorySeparatorChar 	||
+			(!dirEqualsVolume && path.size() > 1 && path [1] == VolumeSeparatorChar));
+	}
+};
+//-----------------------------------
+static void FCEUD_MakePathDirs(const char *fname)
+{
+	char path[MAX_PATH];
+	const char* div = fname;
+
+	do
+	{
+		const char* fptr = strchr(div, '\\');
+
+		if(!fptr)
+		{
+			fptr = strchr(div, '/');
+		}
+
+		if(!fptr)
+		{
+			break;
+		}
+
+		int off = fptr - fname;
+		strncpy(path, fname, off);
+		path[off] = '\0';
+		mkdir(path);
+
+		div = fptr + 1;
+		
+		while(div[0] == '\\' || div[0] == '/')
+		{
+			div++;
+		}
+
+	} while(1);
+}
+//------------------------------
 
 class PathInfo
 {
@@ -103,7 +180,12 @@ public:
 
 	void GetDefaultPath(char *pathToDefault, const char *key, int maxCount)
 	{
+#ifdef _WINDOWS
+		std::string temp = (std::string)".\\" + pathToDefault;
+		strncpy(pathToDefault, temp.c_str(), maxCount);
+#else
 		strncpy(pathToDefault, pathToModule, maxCount);
+#endif
 	}
 
 	void ReadKey(char *pathToRead, const char *key)
@@ -184,16 +266,25 @@ public:
 
 		if(action == GET)
 		{
-			strncpy(buffer, pathToCopy, MAX_PATH);
-			int len = strlen(buffer)-1;
+			std::string temp = pathToCopy;
+			int len = (int)temp.size()-1;
 #ifdef WIN32
-			if(buffer[len] != '\\') 
-				strcat(buffer, "\\");
+			if(temp[len] != '\\') 
+				temp += "\\";
 #else
-			if(buffer[len] != '/') 
-				strcat(buffer, "/");
+			if(temp[len] != '/') 
+				temp += "/";
 #endif
+	
+			if(!Path::IsPathRooted(temp))
+			{
+				temp = (std::string)pathToModule + temp;
+			}
 
+			strncpy(buffer, temp.c_str(), MAX_PATH);
+			#ifdef _WINDOWS
+			FCEUD_MakePathDirs(buffer);
+			#endif
 		}
 		else if(action == SET)
 		{
@@ -366,3 +457,4 @@ public:
 };
 
 extern PathInfo path;
+
