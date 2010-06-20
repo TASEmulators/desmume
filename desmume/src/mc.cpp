@@ -271,7 +271,8 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 
 bool BackupDevice::save_state(EMUFILE* os)
 {
-	u32 version = 1;
+	u32 version = 2;
+	//v0
 	write32le(version,os);
 	write32le(write_enable,os);
 	write32le(com,os);
@@ -280,7 +281,11 @@ bool BackupDevice::save_state(EMUFILE* os)
 	write32le((u32)state,os);
 	writebuffer(data,os);
 	writebuffer(data_autodetect,os);
+	//v1
 	write32le(addr,os);
+	//v2
+	write8le(motionInitState,os);
+	write8le(motionFlag,os);
 	return true;
 }
 
@@ -288,7 +293,8 @@ bool BackupDevice::load_state(EMUFILE* is)
 {
 	u32 version;
 	if(read32le(&version,is)!=1) return false;
-	if(version==0 || version==1) {
+	if(version>=0)
+	{
 		readbool(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
@@ -298,9 +304,15 @@ bool BackupDevice::load_state(EMUFILE* is)
 		state = (STATE)temp;
 		readbuffer(data,is);
 		readbuffer(data_autodetect,is);
-		if(version==1)
-			read32le(&addr,is);
 	}
+	if(version>=1)
+		read32le(&addr,is);
+	if(version>=2)
+	{
+		read8le(&motionInitState,is);
+		read8le(&motionFlag,is);
+	}
+
 	return true;
 }
 
@@ -336,7 +348,8 @@ void BackupDevice::reset()
 	data.resize(0);
 	write_enable = FALSE;
 	data_autodetect.resize(0);
-
+	motionInitState = MOTION_INIT_STATE_IDLE;
+	motionFlag = MOTION_FLAG_NONE;
 	state = DETECTING;
 	addr_size = 0;
 	loadfile();
@@ -361,6 +374,7 @@ void BackupDevice::close_rom()
 
 void BackupDevice::reset_command()
 {
+	//printf("MC RESET\n");
 	//for a performance hack, save files are only flushed after each reset command
 	//(hopefully, after each page)
 	if(flushPending)
@@ -424,6 +438,23 @@ void BackupDevice::reset_command()
 }
 u8 BackupDevice::data_command(u8 val, int cpu)
 {
+	//printf("MC CMD: %02X\n",val);
+
+	//motion: some guessing here... hope it doesn't break anything
+	if(com == BM_CMD_READLOW && motionInitState == MOTION_INIT_STATE_RECEIVED_4_B && val == 0)
+	{
+		motionInitState = MOTION_INIT_STATE_IDLE;
+		motionFlag |= MOTION_FLAG_ENABLED;
+		//return 0x04; //return 0x04 to enable motion!!!!!
+		return 0; //but we return 0 to disable it! since we don't emulate it anyway
+	}
+
+	//if the game firmly believes we have motion support, then ignore all motion commands, since theyre not emulated.
+	if(motionFlag & MOTION_FLAG_SENSORMODE)
+	{
+		return 0;
+	}
+
 	if(com == BM_CMD_READLOW || com == BM_CMD_WRITELOW)
 	{
 		//handle data or address
@@ -492,12 +523,45 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 		{
 			case 0: break; //??
 
+			case 0xFE:
+				if(motionInitState == MOTION_INIT_STATE_IDLE) { motionInitState = MOTION_INIT_STATE_FE; return 0; }
+				break;
+			case 0xFD:
+				if(motionInitState == MOTION_INIT_STATE_FE) { motionInitState = MOTION_INIT_STATE_FD; return 0; }
+				break;
+			case 0xFB:
+				if(motionInitState == MOTION_INIT_STATE_FD) { motionInitState = MOTION_INIT_STATE_FB; return 0; }
+				break;
+			case 0xF8:
+				//enable sensor mode
+				if(motionInitState == MOTION_INIT_STATE_FD) 
+				{
+					motionInitState = MOTION_INIT_STATE_IDLE;
+					motionFlag |= MOTION_FLAG_SENSORMODE;
+					return 0;
+				}
+				break;
+			case 0xF9:
+				//disable sensor mode
+				if(motionInitState == MOTION_INIT_STATE_FD) 
+				{
+					motionInitState = MOTION_INIT_STATE_IDLE;
+					motionFlag &= ~MOTION_FLAG_SENSORMODE;
+					return 0;
+				}
+				break;
+
 			case 8:
 				printf("COMMAND%c: Unverified Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
 				val = 0xAA;
 				break;
 
 			case BM_CMD_WRITEDISABLE:
+				switch(motionInitState)
+				{
+				case MOTION_INIT_STATE_IDLE: motionInitState = MOTION_INIT_STATE_RECEIVED_4; break;
+				case MOTION_INIT_STATE_RECEIVED_4: motionInitState = MOTION_INIT_STATE_RECEIVED_4_B; break;
+				}
 				write_enable = FALSE;
 				break;
 							
@@ -538,7 +602,10 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 			default:
 				printf("COMMAND%c: Unhandled Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
 				break;
-		}
+		} //switch(val)
+
+		//motion control state machine broke, return to ground
+		motionInitState = MOTION_INIT_STATE_IDLE;
 	}
 	return val;
 }
