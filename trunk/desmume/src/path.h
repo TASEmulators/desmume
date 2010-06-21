@@ -269,11 +269,17 @@ public:
 			std::string temp = pathToCopy;
 			int len = (int)temp.size()-1;
 #ifdef WIN32
-			if(temp[len] != '\\') 
-				temp += "\\";
+			if(len == -1)
+				temp = ".\\";
+			else
+				if(temp[len] != '\\') 
+					temp += "\\";
 #else
-			if(temp[len] != '/') 
-				temp += "/";
+			if(len == -1)
+				temp = "./";
+			else 
+				if(temp[len] != '/') 
+					temp += "/";
 #endif
 	
 			if(!Path::IsPathRooted(temp))
