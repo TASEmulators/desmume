@@ -1,15 +1,20 @@
 #include <string>
-#include <direct.h>
 
 #ifdef _MSC_VER
 #define mkdir _mkdir
 #endif
 
-#if defined(_WINDOWS) && !defined(WXPORT)
+#if defined(_WINDOWS)
+#include <direct.h>
+#if !defined(WXPORT)
 #include "resource.h"
 #else
 #include <glib.h>
-#endif
+#endif /* !WXPORT */
+#else
+#include <glib.h>
+#endif /* _WINDOWS */
+
 #include "time.h"
 #include "utils/xstring.h"
 
@@ -50,6 +55,7 @@ public:
 	}
 };
 //-----------------------------------
+#if defined(_WINDOWS)
 static void FCEUD_MakePathDirs(const char *fname)
 {
 	char path[MAX_PATH];
@@ -83,6 +89,7 @@ static void FCEUD_MakePathDirs(const char *fname)
 
 	} while(1);
 }
+#endif
 //------------------------------
 
 class PathInfo
