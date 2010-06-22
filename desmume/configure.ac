@@ -67,8 +67,13 @@ else
 fi
 
 dnl - Check for the OpenGL includes
-AC_CHECK_HEADERS([GL/gl.h])
-AC_CHECK_HEADERS([GL/glu.h])
+AC_CHECK_HEADERS([GL/gl.h],
+		 [AC_CHECK_HEADERS([GL/glu.h], [have_gl_h=yes], [have_gl_h=no])],
+		 [have_gl_h=no])
+if test "have_gl_h" = "no" ; then
+	AC_MSG_WARN([Building without GL support because of missing headers.])
+fi
+AM_CONDITIONAL([HAVE_GL], [test "${have_gl_h}" = "yes"])
 
 dnl - if --enable-osmesa is used, check for it
 AC_ARG_ENABLE([osmesa],
