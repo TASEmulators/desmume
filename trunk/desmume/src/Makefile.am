@@ -28,7 +28,7 @@ libdesmume_a_SOURCES = \
 	wifi.cpp wifi.h \
 	mic.h \
 	MMU.cpp MMU.h MMU_timing.h NDSSystem.cpp NDSSystem.h registers.h \
-	OGLRender.cpp OGLRender.h \
+	OGLRender.h \
 	ROMReader.cpp ROMReader.h \
 	render3D.cpp render3D.h \
 	rtc.cpp rtc.h \
@@ -55,6 +55,10 @@ libdesmume_a_SOURCES = \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
 	version.cpp version.h \
 	desmume_config.cpp desmume_config.h
+
+if HAVE_GL
+libdesmume_a_SOURCES += OGLRender.cpp
+endif
 
 if HAVE_OPENAL
 libdesmume_a_SOURCES += mic_openal.cpp
