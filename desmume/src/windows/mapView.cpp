@@ -207,6 +207,8 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 			memset(MapView, 0, sizeof(MapView));
 			MapView->clear = true;
 			MapView->autoup_secs = 1;
+			MapView->map = 0;
+			MapView->lcd = 0;
 			SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 				UDM_SETRANGE, 0, MAKELONG(99, 1));
 			SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
