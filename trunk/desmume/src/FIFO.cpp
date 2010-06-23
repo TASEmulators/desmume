@@ -75,7 +75,7 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	setIF(proc_remote, ((cnt_l & 0x0400)<<8));		// IRQ18: recv not empty
+	setIF(proc_remote, ((cnt_r & 0x0400)<<8));		// IRQ18: recv not empty
 }
 
 u32 IPC_FIFOrecv(u8 proc)
@@ -109,14 +109,14 @@ u32 IPC_FIFOrecv(u8 proc)
 
 	if ( ipc_fifo[proc_remote].size == 0 )		// FIFO empty
 	{
-		cnt_l |= 0x0100;
+		cnt_l |= 0x0101;
 		cnt_r |= 0x0001;
 	}
 
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	setIF(proc_remote, ((cnt_l & 0x0004)<<15));		// IRQ17: send empty
+	setIF(proc_remote, ((cnt_r & 0x0004)<<15));		// IRQ17: send empty
 
 	return (val);
 }
@@ -133,7 +133,7 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
 		T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0x8407) | 0x100);
 		//MMU.reg_IF[proc^1] |= ((val & 0x0004) << 15);
-		setIF(proc^1, ((val & 0x0004)<<15));
+		setIF(proc^1, ((cnt_r & 0x0004)<<15));
 		return;
 	}
 
