@@ -79,7 +79,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32-debug.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32-debug.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28d.lib wxmsw28d_core.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
 				DelayLoadDLLs=""
@@ -170,7 +170,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28d-x64.lib wxmsw28d_core-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
 				GenerateDebugInformation="true"
@@ -263,7 +263,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28.lib wxmsw28_core.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
 				DelayLoadDLLs=""
@@ -358,7 +358,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib wxbase28-x64.lib wxmsw28_core-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
 				GenerateDebugInformation="true"
@@ -452,7 +452,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28.lib wxmsw28_core.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_dev+.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
 				DelayLoadDLLs=""
@@ -548,7 +548,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-x64.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib wxbase28-x64.lib wxmsw28_core-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_dev+.exe"
 				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
 				GenerateDebugInformation="true"
