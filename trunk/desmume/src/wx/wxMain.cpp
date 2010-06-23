@@ -625,7 +625,6 @@ bool Desmume::OnInit()
 #endif
 
 	SetAppName(_T("desmume"));
-	//comment for devs: or you may use wxConfig instead of wxFileConfig, so it will be wxRegConfig on MSW and wxFileConfig on other platforms
 	wxConfigBase *pConfig = new wxFileConfig();
 	wxConfigBase::Set(pConfig);
 	wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
