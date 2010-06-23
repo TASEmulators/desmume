@@ -1,10 +1,3 @@
-#ifdef WIN32
-#pragma comment(lib,"wxmsw28_core.lib")
-#pragma comment(lib,"wxbase28.lib")
-#else
-#define lstrlen(a) strlen((a))
-#endif
-
 #include "NDSSystem.h"
 #include "GPU_osd.h"
 #include <wx/wxprec.h>
@@ -18,6 +11,28 @@
 #include "rasterize.h"
 #include "OGLRender.h"
 #include "firmware.h"
+
+#ifdef WIN32
+#ifdef _M_X64  
+	#ifndef NDEBUG
+		#pragma comment(lib,"wxmsw28d_core-x64.lib")
+		#pragma comment(lib,"wxbase28d-x64.lib")
+	#else
+		#pragma comment(lib,"wxmsw28_core-x64.lib")
+		#pragma comment(lib,"wxbase28-x64.lib")
+	#endif
+#else
+	#ifndef NDEBUG
+		#pragma comment(lib,"wxmsw28d_core.lib")
+		#pragma comment(lib,"wxbase28d.lib")
+	#else
+		#pragma comment(lib,"wxmsw28_core.lib")
+		#pragma comment(lib,"wxbase28.lib")
+	#endif
+#endif
+#else
+#define lstrlen(a) strlen((a))
+#endif
 
 #ifdef WIN32
 #include "snddx.h"
