@@ -394,7 +394,7 @@
 // See also wxUSE_CONFIG_NATIVE below.
 //
 // Recommended setting: 1
-#define wxUSE_CONFIG        0 //zero 10-dec-2009 (might want this though)
+#define wxUSE_CONFIG        1 // Luigi__ - setting this to 0 breaks Windows WX, duh
 
 // If wxUSE_CONFIG is 1, you may choose to use either the native config
 // classes under Windows (using .INI files under Win16 and the registry under
