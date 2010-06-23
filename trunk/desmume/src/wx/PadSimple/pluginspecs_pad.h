@@ -30,7 +30,9 @@
 #define PAD_BUTTON_Y            0x0800
 #define PAD_BUTTON_START        0x1000
 
+#ifndef WIN32 // todo- find better fixoring for that
 typedef void *HWND;
+#endif
 typedef void (*TLog)(const char* _pMessage);
 
 typedef struct
