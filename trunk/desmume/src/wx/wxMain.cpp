@@ -860,6 +860,12 @@ void DesmumeFrame::OnClose(wxCloseEvent &event) {
 }
 
 void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
-	execute = true;
-	NDS_LoadROM(history->GetHistoryFile(event.GetId()-wxID_FILE1).mb_str(),NULL);
+	int ret;
+	size_t id = event.GetId()-wxID_FILE1;
+
+	ret = NDS_LoadROM(history->GetHistoryFile(id).mb_str(), history->GetHistoryFile(id).mb_str());
+	if (ret > 0)
+		execute = true;
+	else
+		history->RemoveFileFromHistory(id);
 }
