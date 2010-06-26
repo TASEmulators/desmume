@@ -1190,6 +1190,8 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 	{
 		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[5+procnum*4+chan]++);
 
+		//if (nds.freezeBus) return;
+
 		//printf("exec from TSequenceItem_DMA: %d %d\n",procnum,chan);
 		controller->exec();
 //		//give gxfifo dmas a chance to re-trigger
@@ -1847,7 +1849,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	{
 		if(doarm9 && (!doarm7 || arm9 <= timer))
 		{
-			if(!NDS_ARM9.waitIRQ)
+			if(!NDS_ARM9.waitIRQ&&!nds.freezeBus)
 			{
 				arm9log();
 				arm9 += armcpu_exec<ARMCPU_ARM9>();
@@ -1860,11 +1862,12 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				s32 temp = arm9;
 				arm9 = min(s32next, arm9 + kIrqWait);
 				nds.idleCycles += arm9-temp;
+				if (gxFIFO.size < 255) nds.freezeBus = FALSE;
 			}
 		}
 		if(doarm7 && (!doarm9 || arm7 <= timer))
 		{
-			if(!NDS_ARM7.waitIRQ)
+			if(!NDS_ARM7.waitIRQ&&!nds.freezeBus)
 			{
 				arm7log();
 				arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
@@ -2080,6 +2083,7 @@ void NDS_Reset()
 
 	nds.sleeping = FALSE;
 	nds.cardEjected = FALSE;
+	nds.freezeBus = FALSE;
 	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1;
 	nds.power2.speakers = 1;
 	nds.power2.wifi = 0;

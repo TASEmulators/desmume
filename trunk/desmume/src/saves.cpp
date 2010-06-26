@@ -172,6 +172,7 @@ SFORMAT SF_NDS[]={
 	{ "_ENH", 4, 1, &nds.ensataHandshake},
 	{ "_ENI", 4, 1, &nds.ensataIpcSyncCounter},
 	{ "_SLP", 4, 1, &nds.sleeping},
+	{ "_FBS", 4, 1, &nds.freezeBus},
 	{ "_CEJ", 4, 1, &nds.cardEjected},
 	{ "_P00", 1, 1, &nds.power1.lcd},
 	{ "_P01", 1, 1, &nds.power1.gpuMain},

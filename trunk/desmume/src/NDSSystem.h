@@ -180,6 +180,7 @@ struct NDSSystem
 
 	BOOL sleeping;
 	BOOL cardEjected;
+	BOOL freezeBus;
 
 	//this is not essential NDS runtime state.
 	//it was perhaps a mistake to put it here.
