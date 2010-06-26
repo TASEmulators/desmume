@@ -103,6 +103,7 @@ inline u32 RGB15TO6665(u16 col, u8 alpha5)
 
 //produce a 15bpp color from individual 5bit components
 #define R5G5B5TORGB15(r,g,b) ((r)|((g)<<5)|((b)<<10))
+#define RGB15TO32_NOALPHA(col) ( color_15bit_to_24bit[col&0x7FFF] )
 
 //produce a 16bpp color from individual 5bit components
 #define R6G6B6TORGB15(r,g,b) ((r>>1)|((g&0x3E)<<4)|((b&0x3E)<<9))
@@ -317,8 +318,8 @@ struct GFX3D_State
 		for(u32 i=0;i<ARRAY_SIZE(shininessTable);i++)
 			shininessTable[i] = 0;
 
-		for(u32 i=0;i<ARRAY_SIZE(rgbToonTable);i++)
-			rgbToonTable[i] = 0;
+		for(u32 i=0;i<ARRAY_SIZE(u16ToonTable);i++)
+			u16ToonTable[i] = 0;
 	}
 
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
@@ -345,7 +346,7 @@ struct GFX3D_State
 	u32 fogShift;
 
 	bool invalidateToon;
-	u32 rgbToonTable[32];
+	u16 u16ToonTable[32];
 	float shininessTable[128];
 };
 
