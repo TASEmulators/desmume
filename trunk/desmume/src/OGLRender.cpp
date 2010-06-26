@@ -821,13 +821,21 @@ static void OGLRender()
 
 	if(hasShaders)
 	{
+		//NOTE: this toon invalidation logic is hopelessly buggy.
+		//it may sometimes fail. it would be better to always recreate this data.
+		//but, that may be slow. since the cost of uploading that texture is huge in opengl (relative to rasterizer).
+		//someone please study it.
+		//here is a suggestion: it may make sense to memcmp the toon tables and upload only when it actually changes
 		if (gfx3d.renderState.invalidateToon)
 		{
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
 
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &gfx3d.renderState.rgbToonTable[0]);
-			gfx3d.renderState.invalidateToon = false;
+			u32 rgbToonTable[32];
+			for(int i=0;i<32;i++)
+				rgbToonTable[i] = RGB15TO32_NOALPHA(gfx3d.renderState.u16ToonTable[i]);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rgbToonTable[0]);
+			gfx3d.state.invalidateToon = false;
 		}
 	}
 
