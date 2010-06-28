@@ -36,6 +36,13 @@ union FragmentColor {
 	};
 };
 
+inline FragmentColor MakeFragmentColor(u8 r, u8 g,u8 b,u8 a)
+{
+	FragmentColor ret;
+	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
+	return ret;
+}
+
 struct Fragment
 {
 	u32 depth;
