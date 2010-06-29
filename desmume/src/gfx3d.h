@@ -362,7 +362,7 @@ struct Viewer3d_State
 	INDEXLIST indexlist;
 };
 
-extern Viewer3d_State viewer3d_state;
+extern Viewer3d_State* viewer3d_state;
 
 struct GFX3D
 {

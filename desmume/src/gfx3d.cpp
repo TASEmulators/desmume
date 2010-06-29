@@ -267,7 +267,7 @@ using std::max;
 using std::min;
 
 GFX3D gfx3d;
-Viewer3d_State viewer3d_state;
+Viewer3d_State* viewer3d_state = NULL;
 static GFX3D_Clipper boxtestClipper;
 
 //tables that are provided to anyone
@@ -509,6 +509,8 @@ void gfx3d_reset()
 {
 	//if this doesn't work on the xbox, we need to find out why.
 	reconstruct(&gfx3d);
+	delete viewer3d_state;
+	viewer3d_state = new Viewer3d_State();
 	
 	gxf_hardware.reset();
 
@@ -2090,11 +2092,11 @@ static void gfx3d_doFlush()
 
 	if(driver->view3d->IsRunning())
 	{
-		viewer3d_state.frameNumber = currFrameCounter;
-		viewer3d_state.state = gfx3d.state;
-		viewer3d_state.polylist = *gfx3d.polylist;
-		viewer3d_state.vertlist = *gfx3d.vertlist;
-		viewer3d_state.indexlist = gfx3d.indexlist;
+		viewer3d_state->frameNumber = currFrameCounter;
+		viewer3d_state->state = gfx3d.state;
+		viewer3d_state->polylist = *gfx3d.polylist;
+		viewer3d_state->vertlist = *gfx3d.vertlist;
+		viewer3d_state->indexlist = gfx3d.indexlist;
 		driver->view3d->NewFrame();
 	}
 

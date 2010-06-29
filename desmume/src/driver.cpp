@@ -55,14 +55,14 @@ public:
 
 	void NewFrame()
 	{
-		listPolys->SetItemCount(viewer3d_state.polylist.count);
-		labelFrameCounter->SetLabel(wxString::Format(wxT("Frame: %d"),viewer3d_state.frameNumber));
-		labelUserPolycount->SetLabel(wxString::Format(wxT("User Polys: %d"),viewer3d_state.polylist.count));
-		labelFinalPolycount->SetLabel(wxString::Format(wxT("Final Polys: %d"),viewer3d_state.polylist.count));
+		listPolys->SetItemCount(viewer3d_state->polylist.count);
+		labelFrameCounter->SetLabel(wxString::Format(wxT("Frame: %d"),viewer3d_state->frameNumber));
+		labelUserPolycount->SetLabel(wxString::Format(wxT("User Polys: %d"),viewer3d_state->polylist.count));
+		labelFinalPolycount->SetLabel(wxString::Format(wxT("Final Polys: %d"),viewer3d_state->polylist.count));
 		//tree->DeleteAllItems();
 		//tree->Freeze();
 		//wxTreeItemId root = tree->AddRoot("");
-		//for(int i=0;i<viewer3d_state.polylist.count;i++)
+		//for(int i=0;i<viewer3d_state->polylist.count;i++)
 		//{
 		//	tree->AppendItem(root,"hai kirin");
 		//}
@@ -84,9 +84,9 @@ public:
 	{
 		//------------
 		//do the 3d work..
-		engine.polylist = &viewer3d_state.polylist;
-		engine.vertlist = &viewer3d_state.vertlist;
-		engine.indexlist = &viewer3d_state.indexlist;
+		engine.polylist = &viewer3d_state->polylist;
+		engine.vertlist = &viewer3d_state->vertlist;
+		engine.indexlist = &viewer3d_state->indexlist;
 		engine.screen = _screen;
 		engine.screenColor = _screenColor;
 		engine.width = kViewportWidth;
@@ -137,9 +137,9 @@ public:
 
 		int selection = GetSelectedListviewItem(listPolys);
 		if(selection < 0) return;
-		if(selection>=viewer3d_state.polylist.count) return;
+		if(selection>=viewer3d_state->polylist.count) return;
 
-		POLY& poly = viewer3d_state.polylist.list[selection];
+		POLY& poly = viewer3d_state->polylist.list[selection];
 
 		TexCacheItem* texkey = TexCache_SetTexture(TexFormat_32bpp,poly.texParam,poly.texPalette);
 		const u32 w = texkey->sizeX;
