@@ -23,7 +23,7 @@ using std::max;
 class MemSpan
 {
 public:
-	static const int MAXSIZE = 8;
+	static const int MAXSIZE = 17; //max size for textures: 1024*1024*2 bytes / 128*1024 banks + 1 for wraparound
 
 	MemSpan() 
 		: numItems(0), size(0)
