@@ -128,7 +128,7 @@ BOOL BrowseForPath(char *pathToBrowse)
 
 	bi.hwndOwner = MainWindow->getHWnd();
 	bi.lpszTitle = "Choose a Folder";
-	bi.ulFlags = BIF_NONEWFOLDERBUTTON;
+	bi.ulFlags = BIF_NONEWFOLDERBUTTON | BIF_USENEWUI;
 
 	/*wanted to add a callback function for the folder initialization but it crashes everytime i do
 	bi.lpfn = (BFFCALLBACK)InitialFolder;
