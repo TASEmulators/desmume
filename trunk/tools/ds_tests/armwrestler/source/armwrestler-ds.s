@@ -16,6 +16,7 @@
 .equ BAD_Rd,	0x10
 .equ BAD_Rn,	0x20
 
+.global main
 
 main:
 
@@ -2621,7 +2622,7 @@ jumptable: 	.word Test0,Test1,Test2,Test3
 	   	.word Test8,Test9,Menu,TestTmb,TestTmb,TestTmb
 	   	
 .global font
-font:		.incbin "font8x8.pat"
+font:		.incbin "../data/font8x8.pat"
 
 szADC:		.asciz "ADC"
 szADD:		.asciz "ADD"
