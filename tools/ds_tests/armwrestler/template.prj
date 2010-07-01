@@ -1,0 +1,32 @@
+[Project ID]
+Signature=UE Proj: v.1
+[Project Information]
+Filter=*.*
+Project Directory=C:\projects\devkitPro\test\nds_template\arm9\
+Use Relative Directory=1
+Relative to Project File=1
+Project Wordfile=
+Project Tagfile=
+Create Tagfile=0
+Include Sub Directories=0
+[Files]
+0=include\
+1=Makefile
+2=source\
+[Group]
+0=
+[Open Files]
+Open File0=C:\projects\devkitPro\examples\nds\templates\arm9\source\main.c
+Active File Display Mode=3
+Open File Pos0=751
+Open File Line0=0
+Active File Index=0
+Open File Window Pos0=2,3,-1,-1,-4,-23,0,0,918,359
+Open File1=C:\projects\devkitPro\examples\nds\templates\arm9\build\arm9.map
+Open File Pos1=9864
+Open File Line1=15129
+Open File Window Pos1=0,1,-1,-1,-4,-23,22,22,944,385
+Open File2=
+[File View]
+Current Select=Project Files\source\main.c
+Scroll Position=0
