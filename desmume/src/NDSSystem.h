@@ -510,6 +510,7 @@ extern struct TCommonSettings {
 		: GFX3D_HighResolutionInterpolateColor(true)
 		, GFX3D_EdgeMark(true)
 		, GFX3D_Fog(true)
+		, GFX3D_Texture(true)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
 		, PatchSWI3(false)
@@ -546,6 +547,7 @@ extern struct TCommonSettings {
 	bool GFX3D_HighResolutionInterpolateColor;
 	bool GFX3D_EdgeMark;
 	bool GFX3D_Fog;
+	bool GFX3D_Texture;
 
 	bool UseExtBIOS;
 	char ARM9BIOS[256];

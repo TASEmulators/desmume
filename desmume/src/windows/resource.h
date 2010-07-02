@@ -692,6 +692,8 @@
 #define ID_LABEL_HK2                    4466
 #define IDC_GI_USEDROMSIZE              4467
 #define ID_LABEL_HK3                    4467
+#define IDC_3DSETTINGS_FOG2             4467
+#define IDC_3DSETTINGS_TEXTURE          4467
 #define ID_LABEL_HK4                    4468
 #define IDC_GI_ICON                     4469
 #define ID_LABEL_HK5                    4469

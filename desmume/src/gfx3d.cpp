@@ -1613,6 +1613,7 @@ void gfx3d_UpdateToonTable(u8 offset, u16 val)
 {
 	gfx3d.state.invalidateToon = true;
 	gfx3d.state.u16ToonTable[offset] = val;
+	//printf("toon %d set to %04X\n",offset,val);
 }
 
 void gfx3d_UpdateToonTable(u8 offset, u32 val)
@@ -1621,6 +1622,8 @@ void gfx3d_UpdateToonTable(u8 offset, u32 val)
 	gfx3d.state.invalidateToon = true;
 	gfx3d.state.u16ToonTable[offset] = val & 0xFFFF;
 	gfx3d.state.u16ToonTable[offset+1] = val >> 16;
+	//printf("toon %d set to %04X\n",offset,gfx3d.state.u16ToonTable[offset]);
+	//printf("toon %d set to %04X\n",offset+1,gfx3d.state.u16ToonTable[offset+1]);
 }
 
 s32 gfx3d_GetClipMatrix (unsigned int index)
@@ -2030,6 +2033,9 @@ static void gfx3d_doFlush()
 	gfx3d.state.wbuffer = BIT1(gfx3d.state.activeFlushCommand);
 
 	gfx3d.renderState = gfx3d.state;
+
+	if(!CommonSettings.GFX3D_Texture)
+		gfx3d.renderState.enableTexturing = false;
 	
 	gfx3d.state.activeFlushCommand = gfx3d.state.pendingFlushCommand;
 
