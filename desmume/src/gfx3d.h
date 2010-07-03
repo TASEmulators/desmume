@@ -350,7 +350,7 @@ struct GFX3D_State
 
 	bool invalidateToon;
 	u16 u16ToonTable[32];
-	float shininessTable[128];
+	u8 shininessTable[128];
 };
 
 struct Viewer3d_State

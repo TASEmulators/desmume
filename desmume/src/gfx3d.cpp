@@ -385,7 +385,7 @@ u32 control = 0;
 
 //light state:
 static u32 lightColor[4] = {0,0,0,0};
-static u32 lightDirection[4] = {0,0,0,0};
+static s32 lightDirection[4] = {0,0,0,0};
 //material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
 //used for indexing the shininess table during parameters to shininess command
@@ -400,8 +400,8 @@ static u32 envMode=0;
 static u32 lightMask=0;
 //other things:
 static int texCoordinateTransform = 0;
-static CACHE_ALIGN float cacheLightDirection[4][4];
-static CACHE_ALIGN float cacheHalfVector[4][4];
+static CACHE_ALIGN s32 cacheLightDirection[4][4];
+static CACHE_ALIGN s32 cacheHalfVector[4][4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
@@ -587,7 +587,24 @@ void gfx3d_reset()
 //=================================================================================
 //=================================================================================
 
-#define vec3dot(a, b)		(((a[0]) * (b[0])) + ((a[1]) * (b[1])) + ((a[2]) * (b[2])))
+inline float vec3dot(float* a, float* b) {
+	return (((a[0]) * (b[0])) + ((a[1]) * (b[1])) + ((a[2]) * (b[2])));
+}
+
+inline s32 mul_fixed32(s32 a, s32 b)
+{
+	s64 temp = ((s64)a)*((s64)b);
+	return (s32)(temp>>12);
+}
+
+inline s32 vec3dot_fixed32(s32* a, s32* b) {
+	const s64 va[] = {a[0],a[1],a[2]};
+	const s64 vb[] = {b[0],b[1],b[2]};
+	s64 dot = va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2];
+	return (s32)(dot>>12);
+}
+
+
 #define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[ii] = tempVertInfo.map[nn];
 //Submit a vertex to the GE
 static void SetVertex()
@@ -776,25 +793,45 @@ static void gfx3d_glTexImage_cache()
 
 static void gfx3d_glLightDirection_cache(int index)
 {
-	u32 v = lightDirection[index];
+	s32 v = lightDirection[index];
 
-	// Convert format into floating point value
-	cacheLightDirection[index][0] = normalTable[v&1023];
-	cacheLightDirection[index][1] = normalTable[(v>>10)&1023];
-	cacheLightDirection[index][2] = normalTable[(v>>20)&1023];
+	s16 x = ((v<<22)>>22)<<3;
+	s16 y = ((v<<12)>>22)<<3;
+	s16 z = ((v<<2)>>22)<<3;
+
+	cacheLightDirection[index][0] = x;
+	cacheLightDirection[index][1] = y;
+	cacheLightDirection[index][2] = z;
 	cacheLightDirection[index][3] = 0;
 
-	/* Multiply the vector by the directional matrix */
-	CACHE_ALIGN float temp[16] = {mtxCurrent[2][0]/4096.0f,mtxCurrent[2][1]/4096.0f,mtxCurrent[2][2]/4096.0f,mtxCurrent[2][3]/4096.0f,mtxCurrent[2][4]/4096.0f,mtxCurrent[2][5]/4096.0f,mtxCurrent[2][6]/4096.0f,mtxCurrent[2][7]/4096.0f,mtxCurrent[2][8]/4096.0f,mtxCurrent[2][9]/4096.0f,mtxCurrent[2][10]/4096.0f,mtxCurrent[2][11]/4096.0f,mtxCurrent[2][12]/4096.0f,mtxCurrent[2][13]/4096.0f,mtxCurrent[2][14]/4096.0f,mtxCurrent[2][15]/4096.0f};
-	MatrixMultVec3x3(temp, cacheLightDirection[index]);
+	//Multiply the vector by the directional matrix
+	MatrixMultVec3x3_fixed(mtxCurrent[2], cacheLightDirection[index]);
 
-	/* Calculate the half vector */
-	float lineOfSight[4] = {0.0f, 0.0f, -1.0f, 0.0f};
+	//Calculate the half angle vector
+	s32 lineOfSight[4] = {0, 0, (-1)<<12, 0};
 	for(int i = 0; i < 4; i++)
 	{
-		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]) / 2.0f);
+		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]));
+	}
+
+	//normalize the half angle vector
+	//can't believe the hardware really does this... but yet it seems...
+	s32 halfLength = ((s32)(sqrt((double)vec3dot_fixed32(cacheHalfVector[index],cacheHalfVector[index]))))<<6;
+
+	if(halfLength!=0)
+	{
+		halfLength = abs(halfLength);
+		halfLength >>= 6;
+		for(int i = 0; i < 4; i++)
+		{
+			s32 temp = cacheHalfVector[index][i];
+			temp <<= 6;
+			temp /= halfLength;
+			cacheHalfVector[index][i] = temp;
+		}
 	}
 }
+
 
 //===============================================================================
 static void gfx3d_glMatrixMode(u32 v)
@@ -1099,80 +1136,85 @@ static void gfx3d_glNormal(s32 v)
 		last_t = (s32)(((s64)nx * mtxCurrent[3][1] + (s64)ny * mtxCurrent[3][5] + (s64)nz * mtxCurrent[3][9] + (_t<<24))>>24);
 	}
 
-	CACHE_ALIGN float normal[4] =  { nx/4096.0f, ny/4096.0f, nz/4096.0f, 1.0f };
+	CACHE_ALIGN s32 normal[4] =  { nx,ny,nz,(1<<12) };
 
-
-	//use the current normal transform matrix
-	CACHE_ALIGN float temp[16] = {mtxCurrent[2][0]/4096.0f,mtxCurrent[2][1]/4096.0f,mtxCurrent[2][2]/4096.0f,mtxCurrent[2][3]/4096.0f,mtxCurrent[2][4]/4096.0f,mtxCurrent[2][5]/4096.0f,mtxCurrent[2][6]/4096.0f,mtxCurrent[2][7]/4096.0f,mtxCurrent[2][8]/4096.0f,mtxCurrent[2][9]/4096.0f,mtxCurrent[2][10]/4096.0f,mtxCurrent[2][11]/4096.0f,mtxCurrent[2][12]/4096.0f,mtxCurrent[2][13]/4096.0f,mtxCurrent[2][14]/4096.0f,mtxCurrent[2][15]/4096.0f};
-	MatrixMultVec3x3 (temp, normal);
+	MatrixMultVec3x3_fixed(mtxCurrent[2],normal);
 
 	//apply lighting model
+	u8 diffuse[3] = {
+		(dsDiffuse)&0x1F,
+		(dsDiffuse>>5)&0x1F,
+		(dsDiffuse>>10)&0x1F };
+
+	u8 ambient[3] = {
+		(dsAmbient)&0x1F,
+		(dsAmbient>>5)&0x1F,
+		(dsAmbient>>10)&0x1F };
+
+	u8 emission[3] = {
+		(dsEmission)&0x1F,
+		(dsEmission>>5)&0x1F,
+		(dsEmission>>10)&0x1F };
+
+	u8 specular[3] = {
+		(dsSpecular)&0x1F,
+		(dsSpecular>>5)&0x1F,
+		(dsSpecular>>10)&0x1F };
+
+	int vertexColor[3] = { emission[0], emission[1], emission[2] };
+
+	for(int i=0; i<4; i++)
 	{
-		u8 diffuse[3] = {
-			(dsDiffuse)&0x1F,
-			(dsDiffuse>>5)&0x1F,
-			(dsDiffuse>>10)&0x1F };
+		if(!((lightMask>>i)&1)) continue;
 
-		u8 ambient[3] = {
-			(dsAmbient)&0x1F,
-			(dsAmbient>>5)&0x1F,
-			(dsAmbient>>10)&0x1F };
+		u8 _lightColor[3] = {
+			(lightColor[i])&0x1F,
+			(lightColor[i]>>5)&0x1F,
+			(lightColor[i]>>10)&0x1F };
 
-		u8 emission[3] = {
-			(dsEmission)&0x1F,
-			(dsEmission>>5)&0x1F,
-			(dsEmission>>10)&0x1F };
+		//This formula is the one used by the DS
+		//Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters
+		s32 fixed_diffuse = std::max(0,-vec3dot_fixed32(cacheLightDirection[i],normal));
+		
+		//todo - this could be cached in this form
+		s32 fixedTempNegativeHalf[] = {-cacheHalfVector[i][0],-cacheHalfVector[i][1],-cacheHalfVector[i][2],-cacheHalfVector[i][3]};
+		s32 dot = vec3dot_fixed32(fixedTempNegativeHalf, normal);
 
-		u8 specular[3] = {
-			(dsSpecular)&0x1F,
-			(dsSpecular>>5)&0x1F,
-			(dsSpecular>>10)&0x1F };
-
-		int vertexColor[3] = { emission[0], emission[1], emission[2] };
-
-		for(int i=0; i<4; i++)
+		s32 fixedshininess = 0;
+		if(dot>0) //prevent shininess on opposite side
 		{
-			if(!((lightMask>>i)&1)) continue;
-
-			u8 _lightColor[3] = {
-				(lightColor[i])&0x1F,
-				(lightColor[i]>>5)&0x1F,
-				(lightColor[i]>>10)&0x1F };
-
-			/* This formula is the one used by the DS */
-			/* Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters */
-
-			float diffuseLevel = std::max(0.0f, -vec3dot(cacheLightDirection[i], normal));
-			float shininessLevel = pow(std::max(0.0f, vec3dot(-cacheHalfVector[i], normal)), 2);
-
-			if(dsSpecular & 0x8000)
-			{
-				int shininessIndex = (int)(shininessLevel * 128);
-				if(shininessIndex >= (int)ARRAY_SIZE(gfx3d.state.shininessTable)) {
-					//we can't print this right now, because when a game triggers this it triggers it _A_LOT_
-					//so wait until we have per-frame diagnostics.
-					//this was tested using Princess Debut (US) after proceeding through the intro and getting the tiara.
-					//After much research, I determined that this was caused by the game feeding in a totally jacked matrix
-					//to mult4x4 from 0x02129B80 (after feeding two other valid matrices)
-					//the game seems to internally index these as: ?, 0x37, 0x2B <-- error
-					//but, man... this is seriously messed up. there must be something going wrong.
-					//maybe it has something to do with what looks like a mirror room effect that is going on during this time?
-					//PROGINFO("ERROR: shininess table out of bounds.\n  maybe an emulator error; maybe a non-unit normal; setting to 0\n");
-					shininessIndex = 0;
-				}
-				shininessLevel = gfx3d.state.shininessTable[shininessIndex];
-			}
-
-			for(int c = 0; c < 3; c++)
-			{
-				vertexColor[c] += (int)(((specular[c] * _lightColor[c] * shininessLevel)
-					+ (diffuse[c] * _lightColor[c] * diffuseLevel)
-					+ (ambient[c] * _lightColor[c])) / 31.0f);
-			}
+			//we have cos(a). it seems that we need cos(2a). trig identity is a fast way to get it.
+			//cos^2(a)=(1/2)(1+cos(2a))
+			//2*cos^2(a)-1=cos(2a)
+			fixedshininess = 2*mul_fixed32(dot,dot)-4096;
+			//gbatek is almost right but not quite!
 		}
 
-		for(int c=0;c<3;c++)
-			colorRGB[c] = std::min(31,vertexColor[c]);
+		//this seems to need to be saturated, or else the table will overflow.
+		//even without a table, failure to saturate is bad news
+		fixedshininess = std::min(fixedshininess,4095);
+		fixedshininess = std::max(fixedshininess,0);
+		
+		if(dsSpecular & 0x8000)
+		{
+			//shininess is 20.12 fixed point, so >>5 gives us .7 which is 128 entries
+			//the entries are 8bits each so <<4 gives us .12 again, compatible with the lighting formulas below
+			//(according to other normal nds procedures, we might should fill the bottom bits with 1 or 0 according to rules...)
+			fixedshininess = gfx3d.state.shininessTable[fixedshininess>>5]<<4;
+		}
+
+		for(int c = 0; c < 3; c++)
+		{
+			s32 specComp = ((specular[c] * _lightColor[c] * fixedshininess)>>17);  //5 bits for color*color and 12 bits for the shininess
+			s32 diffComp = ((diffuse[c] * _lightColor[c] * fixed_diffuse)>>17); //5bits for the color*color and 12 its for the diffuse
+			s32 ambComp = ((ambient[c] * _lightColor[c])>>5); //5bits for color*color
+			vertexColor[c] += specComp + diffComp + ambComp;
+		}
+	}
+
+	for(int c=0;c<3;c++)
+	{
+		colorRGB[c] = std::min(31,vertexColor[c]);
 	}
 
 	GFX_DELAY(9);
@@ -1322,7 +1364,7 @@ static void gfx3d_glLightDirection (u32 v)
 {
 	int index = v>>30;
 
-	lightDirection[index] = v;
+	lightDirection[index] = (s32)(v&0x3FFFFFFF);
 	gfx3d_glLightDirection_cache(index);
 	GFX_DELAY(6);
 }
@@ -1336,10 +1378,10 @@ static void gfx3d_glLightColor (u32 v)
 
 static BOOL gfx3d_glShininess (u32 val)
 {
-	gfx3d.state.shininessTable[shininessInd++] = ((val & 0xFF) / 256.0f);
-	gfx3d.state.shininessTable[shininessInd++] = (((val >> 8) & 0xFF) / 256.0f);
-	gfx3d.state.shininessTable[shininessInd++] = (((val >> 16) & 0xFF) / 256.0f);
-	gfx3d.state.shininessTable[shininessInd++] = (((val >> 24) & 0xFF) / 256.0f);
+	gfx3d.state.shininessTable[shininessInd++] = ((val & 0xFF));
+	gfx3d.state.shininessTable[shininessInd++] = (((val >> 8) & 0xFF));
+	gfx3d.state.shininessTable[shininessInd++] = (((val >> 16) & 0xFF));
+	gfx3d.state.shininessTable[shininessInd++] = (((val >> 24) & 0xFF));
 
 	if (shininessInd < 128) return FALSE;
 	shininessInd = 0;
@@ -2336,7 +2378,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GSFC", 4, 4, &gfx3d.state.fogColor},
 	{ "GSFO", 4, 1, &gfx3d.state.fogOffset},
 	{ "GST4", 2, 32, gfx3d.state.u16ToonTable},
-	{ "GSST", 4, 128, &gfx3d.state.shininessTable[0]},
+	{ "GSSU", 1, 128, &gfx3d.state.shininessTable[0]},
 	{ "GSSI", 4, 1, &shininessInd},
 	{ "GSAF", 4, 1, &gfx3d.state.activeFlushCommand},
 	{ "GSPF", 4, 1, &gfx3d.state.pendingFlushCommand},

@@ -52,6 +52,16 @@ void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr)
 	vecPtr[3] = (s32)((x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15])>>12);
 }
 
+void MatrixMultVec3x3_fixed(const s32 *matrix, s32 *vecPtr)
+{
+	s64 x = vecPtr[0];
+	s64 y = vecPtr[1];
+	s64 z = vecPtr[2];
+
+	vecPtr[0] = (s32)((x * matrix[0] + y * matrix[4] + z * matrix[ 8])>>12);
+	vecPtr[1] = (s32)((x * matrix[1] + y * matrix[5] + z * matrix[ 9])>>12);
+	vecPtr[2] = (s32)((x * matrix[2] + y * matrix[6] + z * matrix[10])>>12);
+}
 
 //-------------------------
 //switched SSE functions: implementations for no SSE
