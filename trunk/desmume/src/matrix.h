@@ -223,7 +223,7 @@ FORCEINLINE void MatrixMultVec4x4_M2(const float *matrix, float *vecPtr)
 	MatrixMultVec4x4(matrix,vecPtr);
 }
 
-
+void MatrixMultVec3x3_fixed(const s32 *matrix, s32 *vecPtr);
 FORCEINLINE void MatrixMultVec3x3(const float * matrix, float * vecPtr)
 {
 	const __m128 vec = _mm_load_ps(vecPtr);
