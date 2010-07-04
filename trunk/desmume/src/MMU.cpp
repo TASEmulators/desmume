@@ -1074,7 +1074,7 @@ static void execdiv() {
 }
 
 // TODO: 
-// NAND flash support (used in Made in Ore/WariWare D.I.Y.)
+// NAND flash support (used in Made in Ore/WarioWare D.I.Y.)
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
@@ -1146,7 +1146,9 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		case 0x85:
 			{
 				card.address = 0;
-				card.transfer_count = 0x80;
+				//card.transfer_count = 0x80;
+				// needs for WarioWare D.I.Y - ingame saves don't work but game don't freeze in main menu
+				card.transfer_count = 0;
 			}
 			break;
 
@@ -3657,8 +3659,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 				switch(val)
 				{
 					case 0xC0: NDS_Sleep(); break;
-					// TODO: its break firmware booting? but BIG speedup with ext. SWI
-					//case 0x80: NDS_ARM7.waitIRQ = 1; break;
+					case 0x80: armcpu_Wait4IRQ(&NDS_ARM7); break;
 					default: break;
 				}
 				break;

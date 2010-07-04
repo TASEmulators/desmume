@@ -253,6 +253,7 @@ BOOL armcpu_irqException(armcpu_t *armcpu);
 BOOL armcpu_flagIrq( armcpu_t *armcpu);
 void armcpu_exception(armcpu_t *cpu, u32 number);
 u32 TRAPUNDEF(armcpu_t* cpu);
+u32 armcpu_Wait4IRQ(armcpu_t *cpu);
 
 extern armcpu_t NDS_ARM7;
 extern armcpu_t NDS_ARM9;
