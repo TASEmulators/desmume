@@ -1049,7 +1049,7 @@ static void execdiv() {
 		mod = num;
 
 		// the DIV0 flag in DIVCNT is set only if the full 64bit DIV_DENOM value is zero, even in 32bit mode
-		if ((s64)T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298) == 0) 
+		if ((u64)T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298) == 0) 
 			MMU_new.div.div0 = 1;
 	}
 	else
@@ -2204,9 +2204,16 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		switch(adr)
 		{
 			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
-			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
-			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
-			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
+			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT1 WRITE\n"); return;
+			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 WRITE\n"); return;
+			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 WRITE\n"); return;
+			
+#if 0
+			case REG_DIVCNT: printf("ERROR 8bit DIVCNT WRITE\n"); return;
+			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 WRITE\n"); return;
+			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 WRITE\n"); return;
+			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT3 WRITE\n"); return;
+#endif
 
 			//fog table: only write bottom 7 bits
 			case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x01: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x03: 
@@ -3334,14 +3341,24 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 				break;
 			case REG_DISPx_VCOUNT+1:
 				break;
+#if 0
 			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
-			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
-			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
-			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
+			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT1 READ\n"); return 0;//(MMU_new.sqrt.read16() & 0xFF00)>>8;
+#else
+			case REG_SQRTCNT: return (MMU_new.sqrt.read16() & 0xFF);
+			case REG_SQRTCNT+1: return ((MMU_new.sqrt.read16()>>8) & 0xFF);
+#endif
+			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 READ\n"); return 0;
+			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 READ\n"); return 0;
+#if 0
 			case REG_DIVCNT: printf("ERROR 8bit DIVCNT READ\n"); return 0;
-			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT READ\n"); return 0;
-			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT READ\n"); return 0;
-			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT READ\n"); return 0;
+			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 READ\n"); return 0;
+#else
+			case REG_DIVCNT: return (MMU_new.div.read16() & 0xFF);
+			case REG_DIVCNT+1: return ((MMU_new.div.read16()>>8) & 0xFF);
+#endif
+			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 READ\n"); return 0;
+			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT3 READ\n"); return 0;
 
 			//fog table: write only
 			case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x01: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x03: 
