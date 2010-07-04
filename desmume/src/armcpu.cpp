@@ -371,6 +371,35 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 	return oldmode;
 }
 
+u32 armcpu_Wait4IRQ(armcpu_t *cpu)
+{
+	u32 instructAddr = cpu->instruct_adr;
+	// on the first call, wirq is not set
+	if(cpu->wirq)
+	{
+		// check wether an irq was issued
+		if(!cpu->waitIRQ)
+		{
+			cpu->waitIRQ = 0;
+			cpu->wirq = 0;
+			return 1;   // return execution
+		}
+		// otherwise, repeat this instruction
+		cpu->R[15] = instructAddr;
+		cpu->next_instruction = instructAddr;
+		return 1;
+	}
+
+	// first run, set us into waiting state
+	cpu->waitIRQ = 1;
+	cpu->wirq = 1;
+	// and set next instruction to repeat this
+	cpu->R[15] = instructAddr;
+	cpu->next_instruction = instructAddr;
+	// only SWI set IME to 1
+	return 1;
+}
+
 template<u32 PROCNUM>
 FORCEINLINE static u32 armcpu_prefetch()
 {
@@ -554,7 +583,8 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 
 u32 TRAPUNDEF(armcpu_t* cpu)
 {
-	LOG("Undefined instruction: %#08X PC = %#08X \n", cpu->instruction, cpu->instruct_adr);
+	INFO("ARM%c: Undefined instruction: 0x%08X (%s) PC=0x%08X\n", cpu->proc_ID?'7':'9', cpu->instruction, decodeIntruction(false, cpu->instruction), cpu->instruct_adr);
+
 	if (((cpu->intVector != 0) ^ (cpu->proc_ID == ARMCPU_ARM9)))
 	{
 		armcpu_exception(&NDS_ARM9,0x04);
@@ -592,59 +622,60 @@ u32 armcpu_exec()
 	//this assert is annoying. but sometimes it is handy.
 	//assert(ARMPROC.instruct_adr!=0x00000000);
 //#ifdef DEVELOPER
-//	if ((((ARMPROC.instruct_adr & 0x0F000000) == 0x0F000000) && (PROCNUM == 0)) ||
-//		(((ARMPROC.instruct_adr & 0x0F000000) == 0x00000000) && (PROCNUM == 1)))
-//	{
-//		switch (ARMPROC.instruct_adr & 0xFFFF)
-//		{
-//			case 0x00000000:
-//				printf("BIOS%c: Reset!!!\n", PROCNUM?'7':'9');
-//				emu_halt();
-//				break;
-//			case 0x00000004:
-//				printf("BIOS%c: Undefined instruction\n", PROCNUM?'7':'9');
-//				//emu_halt();
-//				break;
-//			case 0x00000008:
-//				//printf("BIOS%c: SWI\n", PROCNUM?'7':'9');
-//				break;
-//			case 0x0000000C:
-//				printf("BIOS%c: Prefetch Abort!!!\n", PROCNUM?'7':'9');
-//				//emu_halt();
-//				break;
-//			case 0x00000010:
-//				//printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
-//				//emu_halt();
-//				break;
-//			case 0x00000014:
-//				printf("BIOS%c: Reserved!!!\n", PROCNUM?'7':'9');
-//				break;
-//			case 0x00000018:
-//				//printf("BIOS%c: IRQ\n", PROCNUM?'7':'9');
-//				break;
-//			case 0x0000001C:
-//				printf("BIOS%c: Fast IRQ\n", PROCNUM?'7':'9');
-//				break;
-//		}
-//	}
-//#endif
-//
-//#ifdef GDB_STUB
-//	if (ARMPROC.stalled) {
-//		return STALLED_CYCLE_COUNT;
-//	}
-//
-//	/* check for interrupts */
-//	if (ARMPROC.irq_flag) {
-//		armcpu_irqException(&ARMPROC);
-//	}
-//
-//	cFetch = armcpu_prefetch(&ARMPROC);
-//
-//	if (ARMPROC.stalled) {
-//		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
-//	}
-//#endif
+#if 0
+	if ((((ARMPROC.instruct_adr & 0x0F000000) == 0x0F000000) && (PROCNUM == 0)) ||
+		(((ARMPROC.instruct_adr & 0x0F000000) == 0x00000000) && (PROCNUM == 1)))
+	{
+		switch (ARMPROC.instruct_adr & 0xFFFF)
+		{
+			case 0x00000000:
+				printf("BIOS%c: Reset!!!\n", PROCNUM?'7':'9');
+				emu_halt();
+				break;
+			case 0x00000004:
+				printf("BIOS%c: Undefined instruction\n", PROCNUM?'7':'9');
+				//emu_halt();
+				break;
+			case 0x00000008:
+				//printf("BIOS%c: SWI\n", PROCNUM?'7':'9');
+				break;
+			case 0x0000000C:
+				printf("BIOS%c: Prefetch Abort!!!\n", PROCNUM?'7':'9');
+				//emu_halt();
+				break;
+			case 0x00000010:
+				//printf("BIOS%c: Data Abort!!!\n", PROCNUM?'7':'9');
+				//emu_halt();
+				break;
+			case 0x00000014:
+				printf("BIOS%c: Reserved!!!\n", PROCNUM?'7':'9');
+				break;
+			case 0x00000018:
+				//printf("BIOS%c: IRQ\n", PROCNUM?'7':'9');
+				break;
+			case 0x0000001C:
+				printf("BIOS%c: Fast IRQ\n", PROCNUM?'7':'9');
+				break;
+		}
+	}
+#endif
+
+#ifdef GDB_STUB
+	if (ARMPROC.stalled) {
+		return STALLED_CYCLE_COUNT;
+	}
+
+	/* check for interrupts */
+	if (ARMPROC.irq_flag) {
+		armcpu_irqException(&ARMPROC);
+	}
+
+	cFetch = armcpu_prefetch(&ARMPROC);
+
+	if (ARMPROC.stalled) {
+		return MMU_fetchExecuteCycles<PROCNUM>(cExecute, cFetch);
+	}
+#endif
 
 	//cFetch = armcpu_prefetch(&ARMPROC);
 
