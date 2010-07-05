@@ -898,7 +898,7 @@ bool mov_loadstate(EMUFILE* fp, int size)
 //	}
 
 	MovieData tempMovieData = MovieData();
-	int curr = fp->ftell();
+	//int curr = fp->ftell();
 	if(!LoadFM2(tempMovieData, fp, size, false)) {
 		
 	//	is->seekg((uint32)curr+size);
