@@ -464,9 +464,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		return -1;
 	}
 
-	//try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
-
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
 
@@ -507,6 +504,10 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	INFO("\nROM crc: %08X\n", gameInfo.crc);
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
 	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
+
+	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
+	if(!memcmp(gameInfo.header.gameCode,"####",4))
+		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	return 1;
 }
