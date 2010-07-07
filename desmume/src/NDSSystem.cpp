@@ -40,6 +40,7 @@
 #include "readwrite.h"
 #include "debug.h"
 #include "firmware.h"
+#include "version.h"
 
 #include "path.h"
 
@@ -108,6 +109,9 @@ int NDS_Init( void) {
 	memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
 	MMU_Init();
 	nds.VCount = 0;
+
+	//got to print this somewhere..
+	printf(EMU_DESMUME_NAME_AND_VERSION());
 
 	if (Screen_Init(GFXCORE_DUMMY) != 0)
 		return -1;
