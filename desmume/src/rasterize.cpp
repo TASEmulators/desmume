@@ -482,13 +482,16 @@ public:
 			//#endif
 			break;
 		case 1: //decal
-			u = shader.invu*shader.w;
-			v = shader.invv*shader.w;
-			texColor = sample(u,v);
-			dst.r = decal_table[texColor.a][texColor.r][shader.materialColor.r];
-			dst.g = decal_table[texColor.a][texColor.g][shader.materialColor.g];
-			dst.b = decal_table[texColor.a][texColor.b][shader.materialColor.b];
-			dst.a = shader.materialColor.a;
+			if(sampler.enabled)
+			{
+				u = shader.invu*shader.w;
+				v = shader.invv*shader.w;
+				texColor = sample(u,v);
+				dst.r = decal_table[texColor.a][texColor.r][shader.materialColor.r];
+				dst.g = decal_table[texColor.a][texColor.g][shader.materialColor.g];
+				dst.b = decal_table[texColor.a][texColor.b][shader.materialColor.b];
+				dst.a = shader.materialColor.a;
+			} else dst = shader.materialColor;
 			break;
 		case 2: //toon/highlight shading
 			{
