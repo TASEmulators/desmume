@@ -16,10 +16,6 @@
 #define lstrlen(a) strlen((a))
 #endif
 
-#ifdef WIN32
-#include "snddx.h"
-#endif
-
 #include <wx/stdpaths.h>
 
 #include "LuaWindow.h"
@@ -45,11 +41,7 @@ static bool Touch = false;
 
 SoundInterface_struct *SNDCoreList[] = {
         &SNDDummy,
-#ifdef WIN32
-//        &SNDDIRECTX,
-#else
         &SNDSDL,
-#endif
         NULL
 };
 
@@ -671,9 +663,7 @@ void DesmumeFrame::NDSInitialize() {
 #else
 	NDS_Init();
 #endif
-#ifndef WIN32
 	SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-#endif
 	NDS_3D_ChangeCore(0);
 	NDS_CreateDummyFirmware( &fw_config);
 }
