@@ -5465,9 +5465,10 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
 					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_TEXTURE);
 					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
-					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor?1:0, IniName);
-					WritePrivateProfileInt("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark?1:0, IniName);
-					WritePrivateProfileInt("3D", "EnableFog", CommonSettings.GFX3D_Fog?1:0, IniName);
+					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
+					WritePrivateProfileBool("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark, IniName);
+					WritePrivateProfileBool("3D", "EnableFog", CommonSettings.GFX3D_Fog, IniName);
+					WritePrivateProfileBool("3D", "EnableTexture", CommonSettings.GFX3D_Texture, IniName);
 					//CommonSettings.gfx3d_flushMode = (IsDlgButtonChecked(hw,IDC_ALTERNATEFLUSH) == BST_CHECKED)?1:0;
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
