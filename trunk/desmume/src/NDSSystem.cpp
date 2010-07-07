@@ -111,7 +111,7 @@ int NDS_Init( void) {
 	nds.VCount = 0;
 
 	//got to print this somewhere..
-	printf(EMU_DESMUME_NAME_AND_VERSION());
+	printf("%s\n", EMU_DESMUME_NAME_AND_VERSION());
 
 	if (Screen_Init(GFXCORE_DUMMY) != 0)
 		return -1;
