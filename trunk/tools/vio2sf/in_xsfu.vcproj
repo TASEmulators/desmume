@@ -48,6 +48,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="src/aosdk,src/aosdk/zlib,src"
@@ -141,6 +142,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="0"
 				AdditionalIncludeDirectories="src/aosdk,src/aosdk/zlib,src"
 				PreprocessorDefinitions="ENABLE_UNICODE_PLUGIN=1;LSB_FIRST;WIN32;_DEBUG;_WINDOWS;_USRDLL;IN_XSF_EXPORTS"

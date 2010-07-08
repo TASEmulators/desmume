@@ -4,6 +4,7 @@
 	Version="9.00"
 	Name="foo_xsf8"
 	ProjectGUID="{02361C60-7E8A-4002-890A-E2B0AC2C91D8}"
+	RootNamespace="foo_xsf8"
 	TargetFrameworkVersion="0"
 	>
 	<Platforms>
@@ -363,5 +364,11 @@
 			RelativePath="src\pversion.h"
 			>
 		</File>
+		<File
+			RelativePath=".\src\xsfc\xsfui.rh"
+			>
+		</File>
 	</Files>
+	<Globals>
+	</Globals>
 </VisualStudioProject>

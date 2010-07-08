@@ -48,9 +48,10 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="src/vio2sf/desmume,src/vio2sf/zlib,."
+				AdditionalIncludeDirectories="src/vio2sf/desmume;src/vio2sf/zlib;.;src/xsfc"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;LSB_FIRST;WIN32;NDEBUG;_WINDOWS;_USRDLL;AOSSFDRV_EXPORTS;XSFDRIVER_EXTENDPARAM1NAME;"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -105,7 +106,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp5\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp2\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\kbmed\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\fb8&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\fb9\components"
+				CommandLine="copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp5\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\winamp2\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\kbmed\plugins&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\fb8&#x0D;&#x0A;copy /y $(OutDir)\vio2sf.bin OUTPUT\fb9\components&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -141,8 +142,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="0"
-				AdditionalIncludeDirectories="src/vio2sf/desmume,src/vio2sf/zlib,."
+				AdditionalIncludeDirectories="src/vio2sf/desmume;src/vio2sf/zlib;.;src/xsfc"
 				PreprocessorDefinitions="LSB_FIRST;WIN32;_DEBUG;_WINDOWS;_USRDLL;AOSSFDRV_EXPORTS;_CRT_SECURE_NO_WARNINGS;XSFDRIVER_EXTENDPARAM1NAME"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -709,6 +711,14 @@
 				</File>
 				<File
 					RelativePath="src\vio2sf\desmume\registers.h"
+					>
+				</File>
+				<File
+					RelativePath=".\src\vio2sf\desmume\soundView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\src\vio2sf\desmume\soundView.h"
 					>
 				</File>
 				<File

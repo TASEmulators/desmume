@@ -11,6 +11,12 @@ void winamp_config_add_prefs(HWND hwndWinamp);
 void winamp_config_remove_prefs(HWND hwndWinamp);
 void winamp_config_dialog(HWND hwndWinamp, HWND hwndParent);
 
+void addInstrument(unsigned long addr, int type);
+BOOL isInstrumentMuted(unsigned long addr);
+unsigned long getInstrumentVolume(unsigned long addr);
+void openSoundView(void* callback);
+
+
 #ifdef __cplusplus
 }
 #endif

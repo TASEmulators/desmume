@@ -57,12 +57,47 @@ static void PASCAL XSFSetExtendParam(DWORD dwId, LPCWSTR lpPtr)
 }
 #endif
 
+TYPE_EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT		addInstrument=0;
+TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED	isInstrumentMuted=0;
+TYPE_EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME getInstrumentVolume=0;
+TYPE_EXTEND_PARAM_IMMEDIATE_OPENSOUNDVIEW openSoundView=0;
+
+int SoundView_DlgOpen(HINSTANCE hAppIndst);
+void SoundView_DlgClose();
+
+void doOpenSoundView(void* hinst)
+{
+	SoundView_DlgOpen(hinst);
+}
+
+void killSoundView(void* hinst)
+{
+	SoundView_DlgClose();
+}
+
+typedef void (*TOpenSoundView)(void* hinst);
+typedef struct CallbackSet
+{
+	TOpenSoundView doOpenSoundView;
+	TOpenSoundView killSoundView;
+};
+struct CallbackSet soundViewCallbacks = { &doOpenSoundView, &killSoundView };
+
+
+
 static void PASCAL XSFSetExtendParamImmediate(DWORD dwId, LPVOID lpPtr)
 {
 	switch(dwId)
 	{
 	case EXTEND_PARAM_IMMEDIATE_INTERPOLATION:
 		dwInterpolation = *(unsigned long*)lpPtr;
+		break;
+
+	case EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT:			addInstrument =			(TYPE_EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT)			lpPtr; break;
+	case EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED:		isInstrumentMuted =		(TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED)		lpPtr; break;
+	case EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME:	getInstrumentVolume =	(TYPE_EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME)	lpPtr; break;
+	case EXTEND_PARAM_IMMEDIATE_OPENSOUNDVIEW:			openSoundView =	(TYPE_EXTEND_PARAM_IMMEDIATE_OPENSOUNDVIEW)	lpPtr; 
+		openSoundView(&soundViewCallbacks);
 		break;
 	}
 }
@@ -108,5 +143,3 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	}
 	return TRUE;
 }
-
-
