@@ -25,6 +25,7 @@
 #include "NDSSystem.h"
 #include "MMU.h"
 //#include "cflash.h"
+#include "spu_exports.h"
 
 //#include "ROMReader.h"
 

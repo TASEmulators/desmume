@@ -267,6 +267,12 @@ public:
 			Free();
 			return false;
 		}
+
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT,				addInstrument);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED,			isInstrumentMuted);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME,		getInstrumentVolume);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_OPENSOUNDVIEW,		openSoundView);
+		
 		return true;
 	}
 
@@ -333,7 +339,7 @@ public:
 		}
 		if (lpif->dwInterfaceVersion >= 4)
 		{
-			lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_INTERPOLATION,&dwInterpolation);
+			lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_INTERPOLATION, &dwInterpolation);
 		}
 		while (pos < bufsize)
 		{
@@ -900,7 +906,7 @@ public:
 };
 
 class WinampPlugin
-{
+{	
 protected:
 	static XSFDriver xsfdrv;
 	static HMODULE m_hDLL;
@@ -1018,7 +1024,7 @@ protected:
 						int request2 = ::InterlockedExchange((LPLONG)&m_lRequest, 0);
 						if (request2 & (1 << REQUEST_STOP))
 						{
-							request1 |= (1 << REQUEST_STOP);
+			 				request1 |= (1 << REQUEST_STOP);
 							break;
 						}
 					}
@@ -1026,6 +1032,8 @@ protected:
 				} while (mod.outMod->IsPlaying());
 			}
 
+			void killSoundView();
+			killSoundView();
 			xsfdrv.Free();
 			
 			if (!(request1 & (1 << REQUEST_STOP)))
@@ -1115,6 +1123,14 @@ protected:
 			{
 				xsfdrv.seek_kil = 1;
 				Request(REQUEST_STOP);
+
+				MSG msg;
+				while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
+					if( GetMessage( &msg, 0,  0, 0)>0 ) {
+						TranslateMessage(&msg);
+						DispatchMessage(&msg);
+					}
+
 			} while (::WaitForSingleObject(m_hThread, 20) == WAIT_TIMEOUT);
 			::CloseHandle(m_hThread);
 			m_hThread = NULL;
@@ -1962,3 +1978,4 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	}
 	return TRUE;
 }
+

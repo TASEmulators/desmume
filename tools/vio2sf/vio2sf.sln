@@ -111,4 +111,7 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		AMDCaProjectFile = D:\svn\desmume\trunk\tools\vio2sf\CodeAnalyst\vio2sf.caw
+	EndGlobalSection
 EndGlobal
