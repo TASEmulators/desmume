@@ -21,6 +21,7 @@
 #include "LuaWindow.h"
 #include "PadSimple/GUI/ConfigDlg.h"
 #include "PadSimple/pluginspecs_pad.h"
+#include "wxcontrolsconfigdialog.h"
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
@@ -305,14 +306,17 @@ loop:
 	void onIdle(wxIdleEvent &event){
 		Refresh(false);
 		event.RequestMore();
-		applyInput();
-		if(execute) { 
+		if (execute)
+		{
+			applyInput();
 			NDS_exec<false>();
 			SPU_Emulate_user();
-		};
-		osd->update();
-		DrawHUD();
-		osd->clear();
+			osd->update();
+			DrawHUD();
+			osd->clear();
+		}
+		else
+			wxMilliSleep(250);
 		// wxMicroSleep(16.7*1000);
 	}
 
@@ -443,9 +447,10 @@ loop:
 
 	void OnOpenControllerConfiguration(wxCommandEvent& WXUNUSED (event))
 	{
-#ifndef _MSC_VER
-		new PADConfigDialogSimple(this);
-#endif
+//#ifndef _MSC_VER
+	//	new PADConfigDialogSimple(this);
+		(new wxControlsConfigDialog(this))->ShowModal();
+//#endif
 	}
 
 	wxMenu* MakeStatesSubMenu( int baseid ) const
@@ -703,7 +708,6 @@ bool Desmume::OnInit()
 DesmumeFrame::DesmumeFrame(const wxString& title)
 : wxFrame(NULL, wxID_ANY, title)
 {
-
 	history = new wxFileHistory;
 	wxMenu *fileMenu = new wxMenu;
 	wxMenu *emulationMenu = new wxMenu;
