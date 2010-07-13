@@ -125,6 +125,13 @@
 #define GAMEDEVICE_VNEG "V Down"
 #define GAMEDEVICE_BUTTON "Button %d"
 
+#define GAMEDEVICE_XROTPOS "X Rot Up"
+#define GAMEDEVICE_XROTNEG "X Rot Down"
+#define GAMEDEVICE_YROTPOS "Y Rot Up"
+#define GAMEDEVICE_YROTNEG "Y Rot Down"
+#define GAMEDEVICE_ZROTPOS "Z Rot Up"
+#define GAMEDEVICE_ZROTNEG "Z Rot Down"
+
 // gaming general
 #define GAMEDEVICE_DISABLED "Disabled"
 
@@ -697,7 +704,11 @@ void S9xUpdateJoyState()
 				{
 					CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
 					CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[C].Up,Joystick[C].Down);
-			
+					CheckAxis_game(JoyStatus.lZ,-10000,10000,Joystick[C].ZDown,Joystick[C].ZUp);
+					CheckAxis_game(JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
+					CheckAxis_game(JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
+					CheckAxis_game(JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
+
 					 switch (JoyStatus.rgdwPOV[0])
 					{
 				 case JOY_POVBACKWARD:
@@ -772,6 +783,10 @@ void di_poll_scan()
 				{
 					CheckAxis(C,0,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
 					CheckAxis(C,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
+					CheckAxis(C,41,JoyStatus.lZ,-10000,10000,Joystick[C].ZDown,Joystick[C].ZUp);
+					CheckAxis(C,53,JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
+					CheckAxis(C,55,JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
+					CheckAxis(C,57,JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
 			
 					 switch (JoyStatus.rgdwPOV[0])
 					{
@@ -948,6 +963,14 @@ void TranslateKey(WORD keyz,char *out)
 		case 46: strcat(out,GAMEDEVICE_UNEG); break;
 		case 47: strcat(out,GAMEDEVICE_VPOS); break;
 		case 48: strcat(out,GAMEDEVICE_VNEG); break;
+		
+		case 53: strcat(out,GAMEDEVICE_XROTPOS); break;
+		case 54: strcat(out,GAMEDEVICE_XROTNEG); break;
+		case 55: strcat(out,GAMEDEVICE_YROTPOS); break;
+		case 56: strcat(out,GAMEDEVICE_YROTNEG); break;
+		case 57: strcat(out,GAMEDEVICE_ZROTPOS); break;
+		case 58: strcat(out,GAMEDEVICE_ZROTNEG); break;
+
 		default:
 			if ((keyz & 0xff) > 40)
             {
@@ -2202,6 +2225,12 @@ bool S9xGetState (WORD KeyIdent)
             case 46:return !Joystick [j].UDown;
             case 47:return !Joystick [j].VUp;
             case 48:return !Joystick [j].VDown;
+			case 53: return !Joystick[j].XRotMin;
+			case 54: return !Joystick[j].XRotMax;
+			case 55: return !Joystick[j].YRotMin;
+			case 56: return !Joystick[j].YRotMax;
+			case 57: return !Joystick[j].ZRotMin;
+			case 58: return !Joystick[j].ZRotMax;
 
             default:
                 if ((KeyIdent & 0xff) > 40)

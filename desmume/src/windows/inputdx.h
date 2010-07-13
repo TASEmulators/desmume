@@ -90,6 +90,14 @@ struct SJoyState{
     bool Right;
     bool Up;
     bool Down;
+    
+	bool XRotMax;
+    bool XRotMin;
+    bool YRotMax;
+    bool YRotMin;
+    bool ZRotMax;
+    bool ZRotMin;
+
     bool PovLeft;
     bool PovRight;
     bool PovUp;
