@@ -1,4 +1,4 @@
-/*  Copyright 2009 DeSmuME team
+/*  Copyright 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -967,17 +967,15 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 void CheatsListDialog(HWND hwnd)
 {
-	if (!cheats->push()) return;
-	memset(&tempCheat, 0, sizeof(tempCheat));
+	CHEATS save = *cheats;
+	tempCheat = CHEATS_LIST();
 	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_LIST), hwnd, (DLGPROC) CheatsListBox_Proc);
 	if (res)
 	{
-		cheats->save();
-		cheats->stackClear();
 	}
 	else
 	{
-		cheats->pop();
+		*cheats = save;
 	}
 }
 
