@@ -1,8 +1,4 @@
-/*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
-	Copyright 2009 DeSmuME team
+/*  Copyright 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -34,10 +30,7 @@ CHEATSEARCH *cheatSearch = NULL;
 
 void CHEATS::clear()
 {
-	memset(list, 0, sizeof(list));
-	for (int i = 0; i < MAX_CHEAT_LIST; i++)
-		list[i].type = 0xFF;
-	num = 0;
+	list.resize(0);
 	currentGet = 0;
 }
 
@@ -54,7 +47,8 @@ void CHEATS::init(char *path)
 
 BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 {
-	if (num == MAX_CHEAT_LIST) return FALSE;
+	size_t num = list.size();
+	list.push_back(CHEATS_LIST());
 	list[num].code[0][0] = address & 0x00FFFFFF;
 	list[num].code[0][1] = val;
 	list[num].num = 1;
@@ -62,13 +56,12 @@ BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 	list[num].size = size;
 	strcpy(list[num].description, description);
 	list[num].enabled = enabled;
-	num++;
 	return TRUE;
 }
 
 BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
 {
-	if (pos > num) return FALSE;
+	if (pos >= list.size()) return FALSE;
 	list[pos].code[0][0] = address & 0x00FFFFFF;
 	list[pos].code[0][1] = val;
 	list[pos].num = 1;
@@ -79,7 +72,7 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 	return TRUE;
 }
 
-void CHEATS::ARparser(CHEATS_LIST list)
+void CHEATS::ARparser(CHEATS_LIST& list)
 {
 	u8	type = 0;
 	u8	subtype = 0;
@@ -432,7 +425,8 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 
 BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 {
-	if (num == MAX_CHEAT_LIST) return FALSE;
+	//if (num == MAX_CHEAT_LIST) return FALSE;
+	size_t num = list.size();
 
 	if (!XXcodePreParser(&list[num], code)) return FALSE;
 	
@@ -440,13 +434,12 @@ BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 	
 	strcpy(list[num].description, description);
 	list[num].enabled = enabled;
-	num++;
 	return TRUE;
 }
 
 BOOL CHEATS::update_AR(char *code, char *description, BOOL enabled, u32 pos)
 {
-	if (pos > num) return FALSE;
+	if (pos >= list.size()) return FALSE;
 
 	if (code != NULL)
 	{
@@ -461,7 +454,8 @@ BOOL CHEATS::update_AR(char *code, char *description, BOOL enabled, u32 pos)
 
 BOOL CHEATS::add_CB(char *code, char *description, BOOL enabled)
 {
-	if (num == MAX_CHEAT_LIST) return FALSE;
+	//if (num == MAX_CHEAT_LIST) return FALSE;
+	size_t num = list.size();
 
 	if (!XXcodePreParser(&list[num], code)) return FALSE;
 	
@@ -469,13 +463,12 @@ BOOL CHEATS::add_CB(char *code, char *description, BOOL enabled)
 	
 	strcpy(list[num].description, description);
 	list[num].enabled = enabled;
-	num++;
 	return TRUE;
 }
 
 BOOL CHEATS::update_CB(char *code, char *description, BOOL enabled, u32 pos)
 {
-	if (pos > num) return FALSE;
+	if (pos >= list.size()) return FALSE;
 
 	if (code != NULL)
 	{
@@ -489,15 +482,11 @@ BOOL CHEATS::update_CB(char *code, char *description, BOOL enabled, u32 pos)
 
 BOOL CHEATS::remove(u32 pos)
 {
-	if (pos > num) return FALSE;
-	if (num == 0) return FALSE;
+	if (pos >= list.size()) return FALSE;
+	if (list.size() == 0) return FALSE;
 
-	for (int i = pos; i < num; i++)
-		memcpy(&list[i], &list[i+1], sizeof(CHEATS_LIST));
+	list.erase(list.begin()+pos);
 
-	memset(&list[num], 0, sizeof(CHEATS_LIST));
-
-	num--;
 	return TRUE;
 }
 
@@ -509,13 +498,14 @@ void CHEATS::getListReset()
 
 BOOL CHEATS::getList(CHEATS_LIST *cheat)
 {
-	if (currentGet > num) 
+	if (currentGet >= list.size()) 
 	{
 		currentGet = 0;
 		return FALSE;
 	}
-	memcpy(cheat, &list[currentGet++], sizeof(CHEATS_LIST));
-	if (currentGet > num) 
+	//memcpy(cheat, &list[currentGet++], sizeof(CHEATS_LIST));
+	*cheat = list[currentGet++];
+	if (currentGet >= list.size()) 
 	{
 		currentGet = 0;
 		return FALSE;
@@ -525,14 +515,14 @@ BOOL CHEATS::getList(CHEATS_LIST *cheat)
 
 BOOL CHEATS::get(CHEATS_LIST *cheat, u32 pos)
 {
-	if (pos > num) return FALSE;
-	memcpy(cheat, &list[pos], sizeof(CHEATS_LIST));
+	if (pos >= list.size()) return FALSE;
+	*cheat = list[pos];
 	return TRUE;
 }
 
 u32	CHEATS::getSize()
 {
-	return num;
+	return list.size();
 }
 
 BOOL CHEATS::save()
@@ -552,7 +542,7 @@ BOOL CHEATS::save()
 		fprintf(flist, "Name=%s\n", buf);
 		fprintf(flist, "Serial=%s\n", gameInfo.ROMserial);
 		fputs("\n; cheats list\n", flist);
-		for (int i = 0;  i < num; i++)
+		for (size_t i = 0;  i < list.size(); i++)
 		{
 			if (list[i].num == 0) continue;
 			memset(buf, 0, sizeof(buf));
@@ -612,7 +602,6 @@ BOOL CHEATS::load()
 	FILE			*flist = fopen((char *)filename, "r");
 	char			buf[sizeof(list[0].code) * 2 + 200] = { 0 };
 	u32				last = 0;
-	CHEATS_LIST		tmp_cht = { 0 };
 	char			tmp_code[sizeof(list[0].code) * 2] = { 0 };
 	u32				line = 0;
 
@@ -623,6 +612,7 @@ BOOL CHEATS::load()
 		last = 0; line = 0;
 		while (!feof(flist))
 		{
+			CHEATS_LIST		tmp_cht;
 			line++;				// only for debug
 			memset(buf, 0, sizeof(buf));
 			if (fgets(buf, sizeof(buf), flist) == NULL) {
@@ -687,49 +677,49 @@ BOOL CHEATS::load()
 				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][1]);
 			}
 
-			memcpy(&list[last], &tmp_cht, sizeof(tmp_cht));
+			list.push_back(tmp_cht);
 			last++;
 		}
 
 		fclose(flist);
-		num = last;
-		INFO("Added %i cheat codes\n", num);
+		INFO("Added %i cheat codes\n", list.size());
 		return TRUE;
 	}
 	return FALSE;
 }
 
-BOOL CHEATS::push()
-{
-	if (stack) return FALSE;
-	stack = new u8 [sizeof(list)];
-	memcpy(stack, list, sizeof(list));
-	numStack = num;
-	return TRUE;
-}
-
-BOOL CHEATS::pop()
-{
-	if (!stack) return FALSE;
-	memcpy(list, stack, sizeof(list));
-	num = numStack;
-	delete [] stack;
-	stack = NULL;
-	return TRUE;
-}
-
-void CHEATS::stackClear()
-{
-	if (!stack) return;
-	delete [] stack;
-	stack = NULL;
-}
+//BOOL CHEATS::push()
+//{
+//	if (stack) return FALSE;
+//	stack = new u8 [sizeof(list)];
+//	memcpy(stack, list, sizeof(list));
+//	numStack = num;
+//	return TRUE;
+//}
+//
+//BOOL CHEATS::pop()
+//{
+//	if (!stack) return FALSE;
+//	memcpy(list, stack, sizeof(list));
+//	num = numStack;
+//	delete [] stack;
+//	stack = NULL;
+//	return TRUE;
+//}
+//
+//void CHEATS::stackClear()
+//{
+//	if (!stack) return;
+//	delete [] stack;
+//	stack = NULL;
+//}
 
 void CHEATS::process()
 {
 	if (CommonSettings.cheatsDisable) return;
-	if (!num) return;
-	for (int i = 0; i < num; i++)
+	if (!list.size() == 0) return;
+	size_t num = list.size();
+	for (size_t i = 0; i < num; i++)
 	{
 		if (!list[i].enabled) continue;
 

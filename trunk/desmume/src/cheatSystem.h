@@ -1,8 +1,4 @@
-/*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
-
-	Copyright 2009 DeSmuME team
+/*  Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -23,14 +19,20 @@
 
 #include <string.h>
 #include "common.h"
+#include <vector>
 
 #define CHEAT_VERSION_MAJOR		2
 #define CHEAT_VERSION_MINOR		0
 #define MAX_CHEAT_LIST			100
 #define	MAX_XX_CODE				255
 
-typedef struct
+struct CHEATS_LIST
 {
+	CHEATS_LIST()
+	{
+		memset(this,0,sizeof(*this));
+		type = 0xFF;
+	}
 	u8		type;				// 0 - internal cheat system
 								// 1 - Action Replay
 								// 2 - Codebreakers
@@ -39,14 +41,12 @@ typedef struct
 	char	description[75];
 	int		num;
 	u8		size;
-
-} CHEATS_LIST;
+};
 
 class CHEATS
 {
 private:
-	CHEATS_LIST			list[MAX_CHEAT_LIST];
-	u16					num;
+	std::vector<CHEATS_LIST> list;
 	u8					filename[MAX_PATH];
 	u32					currentGet;
 
@@ -54,15 +54,16 @@ private:
 	u16					numStack;
 	
 	void	clear();
-	void	ARparser(CHEATS_LIST cheat);
+	void	ARparser(CHEATS_LIST& cheat);
 	BOOL	XXcodePreParser(CHEATS_LIST *cheat, char *code);
 	char	*clearCode(char *s);
 
 public:
-	CHEATS():
-				 num(0), currentGet(0), stack(0), numStack(0)
+	CHEATS()
+		: currentGet(0)
+		, stack(0)
+		, numStack(0)
 	{
-		memset(list, 0, sizeof(list)); 
 		memset(filename, 0, sizeof(filename));
 	}
 	~CHEATS() {}
@@ -81,9 +82,9 @@ public:
 	u32		getSize();
 	BOOL	save();
 	BOOL	load();
-	BOOL	push();
-	BOOL	pop();
-	void	stackClear();
+	//BOOL	push();
+	//BOOL	pop();
+	//void	stackClear();
 	void	process();
 	void	getXXcodeString(CHEATS_LIST cheat, char *res_buf);
 };
