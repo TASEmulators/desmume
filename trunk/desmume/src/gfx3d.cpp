@@ -2266,6 +2266,12 @@ void gfx3d_glGetMatrix(unsigned int m_mode, int index, float* dest)
 	//}
 
 	//MatrixCopy(dest, MatrixStackGetPos(&mtxStack[m_mode], index));
+	s32* src;
+	if(index==-1)
+		src = mtxCurrent[m_mode];
+	else src=MatrixStackGetPos(&mtxStack[m_mode],index);
+	for(int i=0;i<16;i++)
+		dest[i] = src[i]/4096.0f;
 }
 
 void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest)
