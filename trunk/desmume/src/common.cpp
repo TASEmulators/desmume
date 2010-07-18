@@ -59,7 +59,7 @@ char *removeSpecialChars(char *s)
 
 	for (u32 i = 0; i < strlen(s); i++)
 	{
-		if (isspace(s[i]) && (s[i] != 0x20))
+		if (isspace((u8)s[i]) && (s[i] != 0x20))
 			*buf = 0x20;
 		else
 			*buf = s[i];
