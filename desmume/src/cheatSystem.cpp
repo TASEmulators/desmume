@@ -425,7 +425,10 @@ BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 	//if (num == MAX_CHEAT_LIST) return FALSE;
 	size_t num = list.size();
 
-	if (!XXcodePreParser(&list[num], code)) return FALSE;
+	CHEATS_LIST temp;
+	if (!XXcodePreParser(&temp, code)) return FALSE;
+
+	list.push_back(temp);
 	
 	list[num].type = 1;
 	
