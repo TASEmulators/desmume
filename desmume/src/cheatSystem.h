@@ -50,9 +50,6 @@ private:
 	u8					filename[MAX_PATH];
 	u32					currentGet;
 
-	u8					*stack;
-	u16					numStack;
-	
 	void	clear();
 	void	ARparser(CHEATS_LIST& cheat);
 	BOOL	XXcodePreParser(CHEATS_LIST *cheat, char *code);
@@ -61,8 +58,6 @@ private:
 public:
 	CHEATS()
 		: currentGet(0)
-		, stack(0)
-		, numStack(0)
 	{
 		memset(filename, 0, sizeof(filename));
 	}
@@ -82,9 +77,6 @@ public:
 	u32		getSize();
 	BOOL	save();
 	BOOL	load();
-	//BOOL	push();
-	//BOOL	pop();
-	//void	stackClear();
 	void	process();
 	void	getXXcodeString(CHEATS_LIST cheat, char *res_buf);
 };
