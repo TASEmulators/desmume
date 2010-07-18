@@ -12,6 +12,7 @@ wxdesmume_SOURCES = \
 	../sndsdl.cpp \
 	../driver.h ../driver.cpp \
 	../wxdlg/wxdlg3dViewer.h ../wxdlg/wxdlg3dViewer.cpp \
+	../wxdlg/wxcontrolsconfigdialog.h ../wxdlg/wxcontrolsconfigdialog.cpp \
 	PadSimple/pluginspecs_pad.h \
 	PadSimple/PadSimple.h PadSimple/PadSimple.cpp \
 	PadSimple/GUI/ConfigDlg.h PadSimple/GUI/ConfigDlg.cpp \

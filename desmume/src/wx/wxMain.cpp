@@ -21,7 +21,7 @@
 #include "LuaWindow.h"
 #include "PadSimple/GUI/ConfigDlg.h"
 #include "PadSimple/pluginspecs_pad.h"
-#include "wxcontrolsconfigdialog.h"
+#include "wxdlg/wxcontrolsconfigdialog.h"
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
