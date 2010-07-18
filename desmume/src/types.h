@@ -86,6 +86,7 @@
 
 #ifdef _MSC_VER 
 #define strcasecmp(x,y) _stricmp(x,y)
+#define strncasecmp(x, y, l) strnicmp(x, y, l)
 #define snprintf _snprintf
 #else
 #define WINAPI

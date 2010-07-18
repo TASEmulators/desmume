@@ -621,8 +621,8 @@ BOOL CHEATS::load()
 			}
 			trim(buf);
 			if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
-			if(!strnicmp(buf,"name=",5)) continue;
-			if(!strnicmp(buf,"serial=",7)) continue;
+			if(!strncasecmp(buf,"name=",5)) continue;
+			if(!strncasecmp(buf,"serial=",7)) continue;
 
 			memset(&tmp_cht, 0, sizeof(tmp_cht));
 			if ((buf[0] == 'D') && (buf[1] == 'S'))		// internal
