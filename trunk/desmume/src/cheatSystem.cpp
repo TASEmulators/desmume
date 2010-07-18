@@ -39,9 +39,6 @@ void CHEATS::init(char *path)
 	clear();
 	strcpy((char *)filename, path);
 
-	if (stack) delete [] stack;
-	stack = NULL;
-
 	load();
 }
 
@@ -505,7 +502,7 @@ BOOL CHEATS::getList(CHEATS_LIST *cheat)
 	}
 	//memcpy(cheat, &list[currentGet++], sizeof(CHEATS_LIST));
 	*cheat = list[currentGet++];
-	if (currentGet >= list.size()) 
+	if (currentGet > list.size()) 
 	{
 		currentGet = 0;
 		return FALSE;
@@ -621,6 +618,8 @@ BOOL CHEATS::load()
 			}
 			trim(buf);
 			if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
+			if(!strnicmp(buf,"name=",5)) continue;
+			if(!strnicmp(buf,"serial=",7)) continue;
 
 			memset(&tmp_cht, 0, sizeof(tmp_cht));
 			if ((buf[0] == 'D') && (buf[1] == 'S'))		// internal
@@ -649,7 +648,7 @@ BOOL CHEATS::load()
 				continue;
 			}
 
-			tmp_cht.enabled = (buf[3] == '0')?false:true;
+			tmp_cht.enabled = (buf[3] == '0')?FALSE:TRUE;
 			u32 descr_pos = (u32)(std::max<s32>(strchr((char*)buf, ';') - buf, 0));
 			if (descr_pos != 0)
 				strcpy(tmp_cht.description, (buf + descr_pos + 1));
@@ -688,36 +687,10 @@ BOOL CHEATS::load()
 	return FALSE;
 }
 
-//BOOL CHEATS::push()
-//{
-//	if (stack) return FALSE;
-//	stack = new u8 [sizeof(list)];
-//	memcpy(stack, list, sizeof(list));
-//	numStack = num;
-//	return TRUE;
-//}
-//
-//BOOL CHEATS::pop()
-//{
-//	if (!stack) return FALSE;
-//	memcpy(list, stack, sizeof(list));
-//	num = numStack;
-//	delete [] stack;
-//	stack = NULL;
-//	return TRUE;
-//}
-//
-//void CHEATS::stackClear()
-//{
-//	if (!stack) return;
-//	delete [] stack;
-//	stack = NULL;
-//}
-
 void CHEATS::process()
 {
 	if (CommonSettings.cheatsDisable) return;
-	if (!list.size() == 0) return;
+	if (list.size() == 0) return;
 	size_t num = list.size();
 	for (size_t i = 0; i < num; i++)
 	{
