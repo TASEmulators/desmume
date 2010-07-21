@@ -3020,6 +3020,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				DISP_FIFOsend(val);
 				return;
 			}
+
+			case REG_GCDATAIN:
+				slot1_device.write32(REG_GCDATAIN,val);
+				return;
 		}
 
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
@@ -3792,6 +3796,10 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			
 			case REG_GCROMCTRL :
 				MMU_writeToGCControl<ARMCPU_ARM7>(val);
+				return;
+
+			case REG_GCDATAIN:
+				slot1_device.write32(REG_GCDATAIN,val);
 				return;
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
