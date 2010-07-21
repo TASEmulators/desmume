@@ -1521,6 +1521,18 @@
 				RelativePath="..\addons\rumblepak.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\addons\slot1_none.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1_r4.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1_retail.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="metaspu"

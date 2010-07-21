@@ -48,6 +48,7 @@ public:
 	std::string cflash_image;
 	std::string cflash_path;
 	std::string gbaslot_rom;
+	std::string slot1;
 #ifndef _MSC_VER
 	int disable_sound;
 	int disable_limiter;
@@ -88,6 +89,7 @@ private:
 	int _num_cores;
 	int _rigorous_timing;
 	int _advanced_timing;
+	char* _slot1;
 };
 
 #endif

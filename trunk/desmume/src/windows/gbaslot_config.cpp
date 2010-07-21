@@ -618,7 +618,7 @@ void GBAslotDialog(HWND hwnd)
 			Guitar.Enabled = false;
 		WritePrivateProfileInt("GBAslot","type",temp_type,IniName);
 
-		addon_type = temp_type;
+		addon_type = (NDS_ADDON_TYPE)temp_type;
 		addonsChangePak(addon_type);
 		if (romloaded && needReset)
 			NDS_Reset();

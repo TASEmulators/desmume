@@ -29,6 +29,7 @@
 #include "movie.h"
 #include "addons.h"
 #include "NDSSystem.h"
+#include "utils/xstring.h"
 
 int scanline_filter_a = 2, scanline_filter_b = 4;
 int _commandline_linux_nojoy = 0;
@@ -49,6 +50,7 @@ CommandLine::CommandLine()
 , _num_cores(-1)
 , _rigorous_timing(0)
 , _advanced_timing(-1)
+, _slot1(NULL)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
@@ -88,6 +90,7 @@ void CommandLine::loadCommonOptions()
 		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
 		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
 		{ "advanced-timing", 0, 0, G_OPTION_ARG_INT, &_advanced_timing, "Use advanced BUS-level timing (default 1)", "ADVANCED_TIMING"},
+		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -112,6 +115,8 @@ bool CommandLine::parse(int argc,char **argv)
 		return false;
 	}
 
+	if(_slot1) slot1 = _slot1;
+	if(slot1.size() != 0) str_lcase((char*)&slot1[0]);
 	if(_play_movie_file) play_movie_file = _play_movie_file;
 	if(_record_movie_file) record_movie_file = _record_movie_file;
 	if(_cflash_image) cflash_image = _cflash_image;
@@ -138,6 +143,14 @@ bool CommandLine::parse(int argc,char **argv)
 
 bool CommandLine::validate()
 {
+	if(slot1 != "")
+	{
+		if(slot1 != "r4" && slot1 != "retail" && slot1 != "none") {
+			g_printerr("Invalid slot1 device specified.\n");
+			return false;
+		}
+	}
+
 	if (load_slot < 0 || load_slot > 10) {
 		g_printerr("I only know how to load from slots 1-10, 0 means 'do not load savegame' and is default\n");
 		return false;
@@ -207,6 +220,11 @@ void CommandLine::process_addonCommands()
         CFlash_Path = cflash_path;
 		is_cflash_configured = true;
     }
+
+	if(slot1 == "retail")
+		slot1Change(NDS_SLOT1_RETAIL);
+	else if(slot1 == "r4")
+		slot1Change(NDS_SLOT1_R4);
 
 }
 
