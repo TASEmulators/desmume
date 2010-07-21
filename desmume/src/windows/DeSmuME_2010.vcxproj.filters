@@ -384,6 +384,15 @@
     <ClCompile Include="..\utils\dlditool.cpp">
       <Filter>Core\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\addons\slot1_none.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_r4.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">

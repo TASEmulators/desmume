@@ -2461,7 +2461,7 @@ int _main()
 
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 
-	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
+	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
 	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
 	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
 	win32_CFlash_cfgFileName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
@@ -2552,6 +2552,7 @@ int _main()
 		cmdline.errorHelp(__argv[0]);
 		return 1;
 	}
+	cmdline.validate();
 
 	Desmume_InitOnce();
 

@@ -858,6 +858,7 @@ void MMU_Init(void) {
 	//MMU.bupmem.fp = NULL;
 	rtcInit();
 	addonsInit();
+	slot1Init();
 	if(Mic_Init() == FALSE)
 		INFO("Microphone init failed.\n");
 	else
@@ -873,6 +874,7 @@ void MMU_DeInit(void) {
 	//	fclose(MMU.bupmem.fp);
 	//mc_free(&MMU.bupmem);
 	addonsClose();
+	slot1Close();
 	Mic_DeInit();
 }
 
@@ -950,6 +952,7 @@ void MMU_Reset()
 	rtcInit();
 	partie = 1;
 	addonsReset();
+	slot1Close();
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
 
@@ -1078,7 +1081,10 @@ static void execdiv() {
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
-	nds_dscard& card = MMU.dscard[PROCNUM];
+	const int TEST_PROCNUM = 0; //PROCNUM
+	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
+
+	memcpy(&card.command[0], &MMU.MMU_MEM[TEST_PROCNUM][0x40][0x1A8], 8);
 
 	if(!(val & 0x80000000))
 	{
@@ -1086,11 +1092,17 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		card.transfer_count = 0;
 
 		val &= 0x7F7FFFFF;
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+		T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 		return;
 	}
 
-	memcpy(&card.command[0], &MMU.MMU_MEM[PROCNUM][0x40][0x1A8], 8);
+	u32 shift = (val>>24&7); 
+	if(shift == 7)
+		card.transfer_count = 1;
+	else if(shift == 0)
+		card.transfer_count = 0;
+	else
+		card.transfer_count = (0x100<<shift)/4;
 
 	switch (card.mode)
 	{
@@ -1106,7 +1118,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 			card.transfer_count = 0;
 
 			val &= 0x7F7FFFFF;
-			T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+			T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 			return;
 		}
 		break;
@@ -1115,156 +1127,35 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		break;
 	}
 
-    switch(card.command[0])
+	switch(card.command[0])
 	{
-		// Dummy
-		case 0x9F:
-			{
-				card.address = 0;
-				card.transfer_count = 0x800;
-			}
-			break;
+	case 0x9F: //Dummy
+		card.address = 0;
+		card.transfer_count = 0x800;
+		break;
 
-		// Nand Init
-		case 0x94:
-			{
-				card.address = 0;
-				card.transfer_count = 0x80;
-			}
-			break;
+	case 0x90: //Get ROM chip ID
+		break;
 
-		// Nand Error?
-		case 0xD6:
-			{
-				card.address = 0;
-				card.transfer_count = 1;
-			}
-			break;
-		
-		// Nand Write? ---- PROGRAM for INTERNAL DATA MOVE/RANDOM DATA INPUT
-		//case 0x8B:
-		case 0x85:
-			{
-				card.address = 0;
-				//card.transfer_count = 0x80;
-				// needs for WarioWare D.I.Y - ingame saves don't work but game don't freeze in main menu
-				card.transfer_count = 0;
-			}
-			break;
-
-		// Data read
-		case 0x00:
-		case 0xB7:
-			{
-				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-				card.transfer_count = 0x80;
-			}
-			break;
-
-		// Get ROM chip ID
-		case 0x90:
-		case 0xB8:
-			{
-				card.address = 0;
-				card.transfer_count = 1;
-			}
-			break;
-
-		// Switch to KEY1 mode
-		case 0x3C:
-			{
-				card.address = 0;
-				card.transfer_count = 0;
-				card.mode = CardMode_KEY1;
-			}
-			break;
-
-
-		// --- Ninja SD commands -------------------------------------
-
-		// NJSD init/reset
-		case 0x20:
-			{
-				card.address = 0;
-				card.transfer_count = 0;
-			}
-			break;
-
-		// NJSD_sendCLK()
-		case 0xE0:
-			{
-				card.address = 0;
-				card.transfer_count = 0;
-				NDS_makeInt(PROCNUM, 20);
-			}
-			break;
-
-		// NJSD_sendCMDN() / NJSD_sendCMDR()
-		case 0xF0:
-		case 0xF1:
-			switch (card.command[2])
-			{
-			// GO_IDLE_STATE
-			case 0x40:
-				card.address = 0;
-				card.transfer_count = 0;
-				NDS_makeInt(PROCNUM, 20);
-				break;
-
-			case 0x42:  // ALL_SEND_CID
-			case 0x43:  // SEND_RELATIVE_ADDR
-			case 0x47:  // SELECT_CARD
-			case 0x49:  // SEND_CSD
-			case 0x4D:
-			case 0x77:  // APP_CMD
-			case 0x69:  // SD_APP_OP_COND
-				card.address = 0;
-				card.transfer_count = 6;
-				NDS_makeInt(PROCNUM, 20);
-				break;
-
-			// SET_BLOCKLEN
-			case 0x50:
-				card.address = 0;
-				card.transfer_count = 6;
-				card.blocklen = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-				NDS_makeInt(PROCNUM, 20);
-				break;
-
-			// READ_SINGLE_BLOCK
-			case 0x51:
-				card.address = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-				card.transfer_count = (card.blocklen + 3) >> 2;
-				NDS_makeInt(PROCNUM, 20);
-				break;
-			}
-			break;
-
-		// --- Ninja SD commands end ---------------------------------
-
-
-		default:
-			{
-				INFO("WRITE CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
-					card.command[0], card.command[1], card.command[2], card.command[3],
-					card.command[4], card.command[5], card.command[6], card.command[7]);
-				INFO("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
-
-				card.address = 0;
-				card.transfer_count = 0;
-			}
-			break;
+	case 0x3C: //Switch to KEY1 mode
+		card.mode = CardMode_KEY1;
+		break;
+	
+	default:
+		//fall through to the special slot1 handler
+		slot1_device.write32(REG_GCROMCTRL,val);
+		break;
 	}
 
 	if(card.transfer_count == 0)
 	{
 		val &= 0x7F7FFFFF;
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+		T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 		return;
 	}
 	
     val |= 0x00800000;
-    T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+    T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 						
 	// Launch DMA if start flag was set to "DS Cart"
 	//printf("triggering card dma\n");
@@ -1276,7 +1167,9 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 template<int PROCNUM>
 u32 MMU_readFromGC()
 {
-	nds_dscard& card = MMU.dscard[PROCNUM];
+	const int TEST_PROCNUM = 0; //PROCNUM
+
+	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
 	u32 val = 0;
 
 	if(card.transfer_count == 0)
@@ -1284,130 +1177,16 @@ u32 MMU_readFromGC()
 
 	switch(card.command[0])
 	{
-		// Dummy
-		case 0x9F:
+		case 0x9F: //Dummy
+			return 0xFFFFFFFF;
+	
+		case 0x3C: //Switch to KEY1 mode
 			val = 0xFFFFFFFF;
 			break;
-
-		// Nand Init?
-		case 0x94:
-			val = 0; //Unsure what to return here so return 0 for now
-			break;
-
-		// Nand Status?
-		case 0xD6:
-			//0x80 == busy
-			// Made in Ore/WariWare D.I.Y. need set value to 0x80
-			val = 0x20; //0x20 == ready
-			break;
-
-		//case 0x8B:
-		case 0x85:
-			val = 0; //Unsure what to return here so return 0 for now
-			break;
-
-		// Data read
-		case 0x00:
-		case 0xB7:
-			{
-				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
-				if((card.command[0] == 0xB7) && (card.address < 0x8000))
-				{
-					INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
-						card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
-
-					card.address = (0x8000 + (card.address&0x1FF));
-				}
-
-				if(card.address >= gameInfo.romsize)
-				{
-					DEBUG_Notify.ReadBeyondEndOfCart(card.address,gameInfo.romsize);
-					val = 0xFFFFFFFF;
-				}
-				else
-				//but, this is actually handled by the cart rom buffer being oversized and full of 0xFF.
-				//is this a good idea? We think so.
-				val = T1ReadLong(MMU.CART_ROM, card.address & MMU.CART_ROM_MASK);
-			}
-			break;
-
-		// Get ROM chip ID
-		case 0x90:
-		case 0xB8:
-			{
-				// Note: the BIOS stores the chip ID in main memory
-				// Most games continuously compare the chip ID with
-				// the value in memory, probably to know if the card
-				// was removed.
-				// As DeSmuME boots directly from the game, the chip
-				// ID in main mem is zero and this value needs to be
-				// zero too.
-
-				//staff of kings verifies this (it also uses the arm7 IRQ 20)
-				if(nds.cardEjected)
-					val = 0xFFFFFFFF;
-				else val = 0x00000000;
-			}
-			break;
-
-		// Switch to KEY1 mode
-		case 0x3C:
-			val = 0xFFFFFFFF;
-			break;
-
-		// --- Ninja SD commands -------------------------------------
-
-		// NJSD_sendCMDN() / NJSD_sendCMDR()
-		case 0xF0:
-		case 0xF1:
-			switch (card.command[2])
-			{
-			// ALL_SEND_CID
-			case 0x42:
-				if (card.transfer_count == 2) val = 0x44534A4E;
-				else val = 0x00000000;
-
-			// SEND_RELATIVE_ADDR
-			case 0x43:
-			case 0x47:
-			case 0x49:
-			case 0x50:
-				val = 0x00000000;
-				break;
-
-			case 0x4D:
-				if (card.transfer_count == 2) val = 0x09000000;
-				else val = 0x00000000;
-				break;
-
-			// APP_CMD
-			case 0x77:
-				if (card.transfer_count == 2) val = 0x00000037;
-				else val = 0x00000000;
-				break;
-
-			// SD_APP_OP_COND
-			case 0x69:
-				if (card.transfer_count == 2) val = 0x00008000;
-				else val = 0x00000000;
-				break;
-
-			// READ_SINGLE_BLOCK
-			case 0x51:
-				val = 0x00000000;
-				break;
-			}
-			break;
-
-		// --- Ninja SD commands end ---------------------------------
 
 		default:
-			INFO("READ CARD command: %02X%02X%02X%02X% 02X%02X%02X%02X\t", 
-					card.command[0], card.command[1], card.command[2], card.command[3],
-					card.command[4], card.command[5], card.command[6], card.command[7]);
-			INFO("FROM: %08X\n", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
+			val = slot1_device.read32(REG_GCDATAIN);
 			break;
-
 	}
 
 	card.address += 4;	// increment address
@@ -1417,76 +1196,16 @@ u32 MMU_readFromGC()
 		return val;	// return data
 
 	// transfer is done
-	T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, 
-		T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4) & 0x7F7FFFFF);
+	T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, 
+		T1ReadLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4) & 0x7F7FFFFF);
 
 	// if needed, throw irq for the end of transfer
 	if(MMU.AUX_SPI_CNT & 0x4000)
-		NDS_makeInt(PROCNUM, 19);
+		NDS_makeInt(TEST_PROCNUM, 19);
 
 	return val;
 }
 
-
-//INLINE void check_access(u32 adr, u32 access) {
-//	/* every other mode: sys */
-//	access |= 1;
-//	if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10) {
-//		/* is user mode access */
-//		access ^= 1 ;
-//	}
-//	if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE) {
-//		execute = FALSE ;
-//	}
-//}
-//INLINE void check_access_write(u32 adr) {
-//	u32 access = CP15_ACCESS_WRITE;
-//	check_access(adr, access)
-//}
-//
-//u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access)
-//{
-//	/* on arm9 we need to check the MPU regions */
-//	if (proc == ARMCPU_ARM9)
-//		check_access(u32 adr, u32 access);
-//	return MMU_read8(proc,adr);
-//}
-//u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access)
-//{
-//	/* on arm9 we need to check the MPU regions */
-//	if (proc == ARMCPU_ARM9)
-//		check_access(u32 adr, u32 access);
-//	return MMU_read16(proc,adr);
-//}
-//u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access)
-//{
-//	/* on arm9 we need to check the MPU regions */
-//	if (proc == ARMCPU_ARM9)
-//		check_access(u32 adr, u32 access);
-//	return MMU_read32(proc,adr);
-//}
-//
-//void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val)
-//{
-//	/* check MPU region on ARM9 */
-//	if (proc == ARMCPU_ARM9)
-//		check_access_write(adr);
-//	MMU_write8(proc,adr,val);
-//}
-//void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val)
-//{
-//	/* check MPU region on ARM9 */
-//	if (proc == ARMCPU_ARM9)
-//		check_access_write(adr);
-//	MMU_write16(proc,adr,val) ;
-//}
-//void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
-//{
-//	/* check MPU region on ARM9 */
-//	if (proc == ARMCPU_ARM9)
-//		check_access_write(adr);
-//	MMU_write32(proc,adr,val) ;
-//}
 
 
 //does some validation on the game's choice of IF value, correcting it if necessary

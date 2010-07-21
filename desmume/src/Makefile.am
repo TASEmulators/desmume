@@ -49,7 +49,7 @@ libdesmume_a_SOURCES = \
 	utils/task.cpp utils/task.h \
 	utils/dlditool.cpp \
 	addons.cpp addons.h \
-	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp addons/piano.cpp fs.h \
+	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp addons/piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp fs.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
