@@ -67,27 +67,87 @@ static void write32_GCROMCTRL(u32 val)
 			break;
 		case 0xB9:
 		case 0xBA:
-		case 0xBB:
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
 			fseek(img,card.address,SEEK_SET);
 			break;
-		case 0xBC:
+		case 0xBB:
 			write_enabled = 1;
 			write_count = 0x80;
+		case 0xBC:
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
 			fseek(img,card.address,SEEK_SET);
-			write_count = 0x80;
 			break;
 	}
+}
+
+static void write32_GCDATAIN(u32 val)
+{
+	nds_dscard& card = MMU.dscard[0];
+	//bool log=false;
+
+	memcpy(&card.command[0], &MMU.MMU_MEM[0][0x40][0x1A8], 8);
+
+	//last_write_count = write_count;
+	if(card.command[4])
+	{
+		// transfer is done
+		T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4,val & 0x7F7FFFFF);
+
+		// if needed, throw irq for the end of transfer
+		if(MMU.AUX_SPI_CNT & 0x4000)
+			NDS_makeInt(0, 19);
+
+		return;
+	}
+
+	switch(card.command[0])
+	{
+		case 0xBB:
+		{
+			if(write_count && write_enabled)
+			{
+				fwrite(&val, 1, 4, img);
+				fflush(img);
+				write_count--;
+			}
+			break;
+		}
+		default:
+			break;
+	}
+
+	if(write_count==0)
+	{
+		write_enabled = 0;
+
+		// transfer is done
+		T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4,val & 0x7F7FFFFF);
+
+		// if needed, throw irq for the end of transfer
+		if(MMU.AUX_SPI_CNT & 0x4000)
+			NDS_makeInt(0, 19);
+	}
+
+	/*if(log)
+	{
+		INFO("WRITE CARD command: %02X%02X%02X%02X%02X%02X%02X%02X\t", 
+						card.command[0], card.command[1], card.command[2], card.command[3],
+						card.command[4], card.command[5], card.command[6], card.command[7]);
+		INFO("FROM: %08X\t", NDS_ARM9.instruct_adr);
+		INFO("VAL: %08X\n", val);
+	}*/
 }
 
 static void write32(u32 adr, u32 val)
 {
 	switch(adr)
 	{
-	case REG_GCROMCTRL:
-		write32_GCROMCTRL(val);
-		break;
+		case REG_GCROMCTRL:
+			write32_GCROMCTRL(val);
+			break;
+		case REG_GCDATAIN:
+			write32_GCDATAIN(val);
+			break;
 	}
 }
 
@@ -119,14 +179,7 @@ static u32 read32_GCDATAIN()
 			val = 0x1F4;
 			break;
 		case 0xB9:
-			{
-				/*if (addr == old_addr)
-					val = 0;
-				else
-					val = 0x1F4;
-				old_addr = addr;*/
-				val = (rand() % 100) ? 0x1F4 : 0;
-			}
+			val = (rand() % 100) ? 0x1F4 : 0;
 			break;
 		case 0xBB:
 		case 0xBC:
@@ -140,7 +193,14 @@ static u32 read32_GCDATAIN()
 
 		default:
 			val = 0;
-	} //switch(card.command[0])
+	}
+
+	/*INFO("READ CARD command: %02X%02X%02X%02X% 02X%02X%02X%02X RET: %08X  ", 
+						card.command[0], card.command[1], card.command[2], card.command[3],
+						card.command[4], card.command[5], card.command[6], card.command[7],
+						val);
+	INFO("FROM: %08X  LR: %08X\n", NDS_ARM9.instruct_adr, NDS_ARM9.R[14]);*/
+
 
 	return val;
 } //read32_GCDATAIN
