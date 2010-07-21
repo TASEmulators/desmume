@@ -19,7 +19,7 @@
 
 #include "../addons.h"
 #include "../registers.h"
-#include "../mmu.h"
+#include "../MMU.h"
 #include "../NDSSystem.h"
 
 static void info(char *info) { strcpy(info, "Slot1 Retail card emulation"); }

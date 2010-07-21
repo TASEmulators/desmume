@@ -19,7 +19,7 @@
 
 #include "../addons.h"
 #include "../registers.h"
-#include "../mmu.h"
+#include "../MMU.h"
 #include "../NDSSystem.h"
 #include <time.h>
 
