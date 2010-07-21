@@ -26,7 +26,6 @@
 static FILE *img = NULL;
 static u32 write_count = 0;
 static u32 write_enabled = 0;
-static int old_addr = 0;
 static void init_r4_flash()
 {
 	srand(time(NULL));
