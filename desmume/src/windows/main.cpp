@@ -6062,7 +6062,7 @@ void ResetGame()
 	if(movieMode != MOVIEMODE_PLAY)
 	{
 		NDS_Reset();
-		if(movieMode == MOVIEMODE_INACTIVE)
+		if(movieMode == MOVIEMODE_INACTIVE && !emu_paused)
 			Unpause();
 	}
 }
