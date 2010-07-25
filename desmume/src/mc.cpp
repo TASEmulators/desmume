@@ -339,18 +339,23 @@ void BackupDevice::movie_mode()
 	reset();
 }
 
-void BackupDevice::reset()
+void BackupDevice::reset_hardware()
 {
+	write_enable = FALSE;
 	com = 0;
 	addr = addr_counter = 0;
-	flushPending = false;
-	lazyFlushPending = false;
-	data.resize(0);
-	write_enable = FALSE;
-	data_autodetect.resize(0);
 	motionInitState = MOTION_INIT_STATE_IDLE;
 	motionFlag = MOTION_FLAG_NONE;
 	state = DETECTING;
+	flushPending = false;
+	lazyFlushPending = false;
+}
+
+void BackupDevice::reset()
+{
+	reset_hardware();
+	data.resize(0);
+	data_autodetect.resize(0);
 	addr_size = 0;
 	loadfile();
 
