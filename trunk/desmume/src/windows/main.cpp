@@ -3779,7 +3779,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
 			DesEnableMenuItem(mainMenu, IDM_EJECTCARD,         romloaded && movieMode == MOVIEMODE_INACTIVE);
-			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded && movieMode != MOVIEMODE_PLAY);
+			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded && !(movieMode == MOVIEMODE_PLAY && movie_readonly));
 			DesEnableMenuItem(mainMenu, IDM_CLOSEROM,          romloaded);
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
 			DesEnableMenuItem(mainMenu, IDM_CHEATS_LIST,       romloaded);
@@ -6059,7 +6059,7 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 
 void ResetGame()
 {
-	if(movieMode != MOVIEMODE_PLAY)
+	if(!(movieMode == MOVIEMODE_PLAY && movie_readonly))
 	{
 		NDS_Reset();
 		if(movieMode == MOVIEMODE_INACTIVE && !emu_paused)
