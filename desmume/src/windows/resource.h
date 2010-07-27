@@ -41,6 +41,7 @@
 #define IDB_ROTATECW                    120
 #define IDM_MBG1                        121
 #define IDM_MBG2                        122
+#define IDD_CHEAT_EXPORT                122
 #define IDM_MBG3                        123
 #define IDM_SBG0                        124
 #define IDM_SBG1                        125
@@ -378,7 +379,9 @@
 #define IDC_PATH                        1037
 #define IDC_PATHGAME                    1037
 #define IDC_PIANO_E                     1037
+#define IDC_LIST_CHEATS                 1037
 #define IDC_RFILE                       1038
+#define IDC_EXPORT                      1038
 #define IDC_RFOLDER                     1039
 #define IDC_BBROWSE2                    1040
 #define IDC_PATHDESMUME                 1041
@@ -932,9 +935,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        122
+#define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40079
-#define _APS_NEXT_CONTROL_VALUE         1037
+#define _APS_NEXT_CONTROL_VALUE         1039
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

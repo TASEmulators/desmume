@@ -420,6 +420,14 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 	return TRUE;
 }
 
+BOOL CHEATS::add_AR_Direct(CHEATS_LIST cheat)
+{
+	size_t num = list.size();
+	list.push_back(cheat);
+	list[num].type = 1;
+	return TRUE;
+}
+
 BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 {
 	//if (num == MAX_CHEAT_LIST) return FALSE;
@@ -1027,4 +1035,184 @@ BOOL CHEATSEARCH::getList(u32 *address, u32 *curVal)
 void CHEATSEARCH::getListReset()
 {
 	lastRecord = 0;
+}
+
+// ========================================================================= Export
+bool CHEATSEXPORT::load(char *path)
+{
+	fp = fopen(path, "rb");
+	if (!fp)
+	{
+		printf("Error open database\n");
+		return false;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	fsize = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	if (!search())
+	{
+		printf("ERROR: cheat in database not founded\n");
+		return false;
+	}
+	
+	if (!getCodes())
+	{
+		printf("ERROR: export cheats failed\n");
+		return false;
+	}
+
+	return true;
+}
+void CHEATSEXPORT::close()
+{
+	if (fp)
+		fclose(fp);
+	if (cheats)
+	{
+		delete [] cheats;
+		cheats = NULL;
+	}
+}
+
+// TODO: decrypting database
+bool CHEATSEXPORT::search()
+{
+	if (!fp) return false;
+
+	u32 pos = 0x0100;
+	FAT_R4	fat_empty = {0};
+
+	memset(&fat, 0, sizeof(FAT_R4));
+
+	fseek(fp, pos, SEEK_SET);
+	while (pos < fsize)
+	{
+		fread(&fat, sizeof(FAT_R4), 1, fp);
+		if (memcmp(&fat, &fat_empty, sizeof(FAT_R4)) == 0) break;
+		if (memcmp(gameInfo.header.gameCode, &fat.serial[0], 4) == 0)
+		{
+			FAT_R4	fat_tmp = {0};
+			fread(&fat_tmp, sizeof(FAT_R4), 1, fp);
+			if (memcmp(&fat_tmp, &fat_empty, sizeof(FAT_R4)) == 0)
+			{
+				// TODO
+				dataSize = 0;
+			}
+			else
+			{
+				dataSize = (fat_tmp.addr - fat.addr);
+			}
+			char buf[5] = {0};
+			memcpy(&buf, &fat.serial[0], 4);
+			printf("Founded %s CRC %08X at 0x%08X (size %i)\n", buf, fat.CRC, fat.addr, dataSize);
+			return true;
+		}
+		pos += sizeof(FAT_R4);
+	}
+
+	memset(&fat, 0, sizeof(FAT_R4));
+	return false;
+}
+
+bool CHEATSEXPORT::getCodes()
+{
+	if (!fp) return false;
+
+	u32	pos = 0;
+	u32	pos_cht = 0;
+
+	u8 *data = new u8 [dataSize+8];
+	if (!data) return false;
+	memset(data, 0, dataSize+8);
+	
+	fseek(fp, fat.addr, SEEK_SET);
+
+	if (fread(data, 1, dataSize, fp) != dataSize)
+	{
+		delete [] data;
+		data = NULL;
+		return false;
+	}
+
+	u8 *title = data;
+	u32 *cmd = (u32 *)(((u32 )title + strlen((char*)title) + 4) & 0xFFFFFFFC);
+	numCheats = (*cmd) & (~0xF0000000);
+	cmd += 9;
+	cheats = new CHEATS_LIST[numCheats];
+	memset(cheats, 0, sizeof(CHEATS_LIST) * numCheats);
+
+	while (pos < numCheats)
+	{
+		u32 folderNum = 1;
+		u8	*folderName = NULL;
+		u8	*folderNote = NULL;
+		if ((*cmd & 0xF0000000) == 0x10000000)	// Folder
+		{
+			folderNum = (*cmd  & 0x00FFFFFF);
+			folderName = (u8*)((u32)cmd + 4);
+			folderNote = (u8*)((u32)folderName + strlen((char*)folderName) + 1);
+			pos++;
+			numCheats--;
+			cmd = (u32 *)(((u32)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & 0xFFFFFFFC);
+		}
+
+		for (int i = 0; i < folderNum; i++)		// in folder
+		{
+			u8 *cheatName = (u8 *)((u32)cmd + 4);
+			u8 *cheatNote = (u8 *)((u32)cheatName + strlen((char*)cheatName) + 1);
+			u32 *cheatData = (u32 *)(((u32)cheatNote + strlen((char*)cheatNote) + 1 + 3) & 0xFFFFFFFC);
+			u32 cheatDataLen = *cheatData++;
+
+			if (cheatDataLen)
+			{
+				char buf[2048];
+				memset(buf, 0, 2048);
+
+				cheats[pos_cht].num = cheatDataLen/2;
+				cheats[pos_cht].type = 1;
+
+				if ( folderName && *folderName )
+				{
+					sprintf(cheats[pos_cht].description, "%s: ", folderName);
+				}
+				strcat(cheats[pos_cht].description, (char*)cheatName);
+				
+				if ( cheatNote && *cheatNote )
+				{
+					strcat(cheats[pos_cht].description, "| ");
+					strcat(cheats[pos_cht].description, (char*)cheatNote);
+				}
+
+				for(u32 j = 0, t = 0; j < (cheatDataLen/2); j++, t+=2 )
+				{
+					cheats[pos_cht].code[j][0] = (u32)*(cheatData+t);
+					//printf("%i: %08X ", j, cheats[pos_cht].code[j][0]);
+					cheats[pos_cht].code[j][1] = (u32)*(cheatData+t+1);
+					//printf("%08X\n", cheats[pos_cht].code[j][1]);
+					
+				}
+			}
+			pos++; pos_cht++;
+			cmd = (u32 *)((u32)cmd + ((*cmd + 1)*4));
+		}
+		
+	};
+
+	delete [] data;
+
+	//for (int i = 0; i < numCheats; i++)
+	//	printf("%i: %s\n", i, cheats[i].description);
+	
+	return true;
+}
+
+CHEATS_LIST *CHEATSEXPORT::getCheats()
+{
+	return cheats;
+}
+u32 CHEATSEXPORT::getCheatsNum()
+{
+	return numCheats;
 }
