@@ -90,6 +90,7 @@ public:
 	//commands from mmu
 	void reset_command();
 	u8 data_command(u8,int);
+	std::vector<u8> data;
 
 	//this info was saved before the last reset (used for savestate compatibility)
 	struct SavedInfo
@@ -129,7 +130,7 @@ private:
 	u32 addr_size, addr_counter;
 	u32 addr;
 
-	std::vector<u8> data;
+	
 	std::vector<u8> data_autodetect;
 	enum STATE {
 		DETECTING = 0, RUNNING = 1
