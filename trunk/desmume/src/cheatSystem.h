@@ -38,7 +38,7 @@ struct CHEATS_LIST
 								// 2 - Codebreakers
 	BOOL	enabled;
 	u32		code[MAX_XX_CODE][2];
-	char	description[75];
+	char	description[255];
 	int		num;
 	u8		size;
 };
@@ -68,6 +68,7 @@ public:
 	BOOL	update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos);
 	BOOL	add_AR(char *code, char *description, BOOL enabled);
 	BOOL	update_AR(char *code, char *description, BOOL enabled, u32 pos);
+	BOOL	add_AR_Direct(CHEATS_LIST cheat);
 	BOOL	add_CB(char *code, char *description, BOOL enabled);
 	BOOL	update_CB(char *code, char *description, BOOL enabled, u32 pos);
 	BOOL	remove(u32 pos);
@@ -105,6 +106,53 @@ public:
 	u32 getAmount();
 	BOOL getList(u32 *address, u32 *curVal);
 	void getListReset();
+};
+
+enum CHEATS_DB_TYPE
+{
+	CHEATS_DB_R4 = 0
+};
+
+#pragma pack(push)
+#pragma pack(1)
+	struct FAT_R4
+	{
+		u8	serial[4];
+		u32	CRC;
+		u64 addr;
+	};
+#pragma pack(pop)
+
+class CHEATSEXPORT
+{
+private:
+	CHEATS_DB_TYPE		type;
+	FILE				*fp;
+	u32					fsize;
+	u32					dataSize;
+	FAT_R4				fat;
+	bool				search();
+	bool				getCodes();
+
+	u32					numCheats;
+	CHEATS_LIST			*cheats;
+
+public:
+	CHEATSEXPORT() :
+			fp(NULL),
+			fsize(0),
+			dataSize(0),
+			type(CHEATS_DB_R4),
+			numCheats(0),
+			cheats(0)
+	{}
+	~CHEATSEXPORT()
+	{}
+
+	bool			load(char *path);
+	void			close();
+	CHEATS_LIST		*getCheats();
+	u32				getCheatsNum();
 };
 
 extern CHEATS *cheats;

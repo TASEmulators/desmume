@@ -50,6 +50,7 @@ static	u8		cheatXXaction = 0;
 static	HWND	searchWnd = NULL;
 static	HWND	searchListView = NULL;
 static	HWND	cheatListView = NULL;
+static	HWND	exportListView = NULL;
 static	LONG_PTR	oldEditProc = NULL;
 static	LONG_PTR	oldEditProcHEX = NULL;
 
@@ -75,6 +76,10 @@ u32 searchRange[4][2] = {
 							{ 0, 16777215 },
 							{ 0, 4294967295 }
 						};
+
+//========================================= Export
+static CHEATSEXPORT	*cheatsExport = NULL;
+void CheatsExportDialog(HWND hwnd);
 
 LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -958,6 +963,10 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 				}
 				return TRUE;
+
+				case IDC_EXPORT:
+					CheatsExportDialog(dialog);
+				return TRUE;
 			}
 			break;
 		}
@@ -1371,4 +1380,108 @@ void CheatAddVerify(HWND dialog,char* addre, char* valu,u8 size)
 	}
 	else
 		EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+}
+
+
+// ============================================================= Export
+INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	switch (msg)
+	{
+		case WM_INITDIALOG:
+		{
+			LV_COLUMN lvColumn;
+			exportListView = GetDlgItem(dialog, IDC_LIST_CHEATS);
+			ListView_SetExtendedListViewStyle(exportListView, LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES);
+			
+			memset(&lvColumn,0,sizeof(LV_COLUMN));
+			lvColumn.mask=LVCF_FMT|LVCF_TEXT|LVCF_WIDTH;
+			lvColumn.fmt=LVCFMT_LEFT;
+			lvColumn.cx=1000;
+			lvColumn.pszText="Cheats";
+			ListView_InsertColumn(exportListView, 0, &lvColumn);
+
+			LVITEM lvi;
+			memset(&lvi,0,sizeof(LVITEM));
+			lvi.mask = LVIF_TEXT|LVIF_STATE;
+			lvi.iItem = INT_MAX;
+
+			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)FALSE,0);
+			for (int i = 0; i < cheatsExport->getCheatsNum(); i++)
+			{
+				CHEATS_LIST *tmp = (CHEATS_LIST*)cheatsExport->getCheats();
+				lvi.pszText= tmp[i].description;
+				SendMessage(exportListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
+			}
+			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)TRUE,0);
+			ListView_SetItemState(exportListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+			SetFocus(exportListView);
+			break;
+		}
+		case WM_COMMAND:
+		{
+			switch (LOWORD(wparam))
+			{
+				case IDOK:
+					{
+						u32 count = ListView_GetSelectedCount(exportListView);
+						if (count > 0)
+						{
+							u32 prev = ListView_GetNextItem(exportListView, -1, LVIS_SELECTED);
+							for (int i = 0; i < count; i++)
+							{
+								CHEATS_LIST *tmp = (CHEATS_LIST*)cheatsExport->getCheats();
+								cheats->add_AR_Direct(tmp[prev]);
+
+								LVITEM lvi;
+
+								memset(&lvi,0,sizeof(LVITEM));
+								lvi.mask = LVIF_TEXT|LVIF_STATE;
+								lvi.iItem = INT_MAX;
+								lvi.pszText= " ";
+								u32 row = ListView_InsertItem(cheatListView, &lvi);
+								ListView_SetItemText(cheatListView, row, 1, "Action");
+								ListView_SetItemText(cheatListView, row, 2, "Replay");
+								ListView_SetItemText(cheatListView, row, 3, tmp[prev].description);
+
+								prev = ListView_GetNextItem(exportListView, prev, LVIS_SELECTED);
+							}
+							EndDialog(dialog, TRUE);
+						}
+					}
+					break;
+
+				case IDCANCEL:
+					EndDialog(dialog, FALSE);
+					break;
+			}
+			break;
+		}
+	}
+	return FALSE;
+}
+
+void CheatsExportDialog(HWND hwnd)
+{
+	cheatsExport = new CHEATSEXPORT();
+	if (!cheatsExport) return;
+	
+	// TODO: select file
+	if (cheatsExport->load("USRCHEAT.DAT"))
+	{
+		if (cheatsExport->getCheatsNum() > 0)
+		{
+			DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_EXPORT), hwnd, (DLGPROC) CheatsExportProc);
+		}
+		else
+		{
+			MessageBox(hwnd, "Cheats for this game in database not founded.", "DeSmuME", MB_OK | MB_ICONERROR);
+		}
+	}
+	else
+		MessageBox(hwnd, "Error loading cheat database.", "DeSmuME", MB_OK | MB_ICONERROR);
+
+	cheatsExport->close();
+	delete cheatsExport;
+	cheatsExport = NULL;
 }
