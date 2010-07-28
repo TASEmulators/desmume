@@ -1924,6 +1924,17 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if (adr >> 24 == 4)
 	{
+		
+		// TODO: add pal reg
+		if (nds.power1.gpuMain == 0)
+			if ((adr >= 0x04000008) && (adr<=0x0400005F)) return;
+		if (nds.power1.gpuSub == 0)
+			if ((adr >= 0x04001008) && (adr<=0x0400105F)) return;
+		if (nds.power1.gfx3d_geometry == 0)
+			if ((adr >= 0x04000400) && (adr<=0x040006FF)) return;
+		if (nds.power1.gfx3d_render == 0)
+			if ((adr >= 0x04000320) && (adr<=0x040003FF)) return;
+
 		if(MMU_new.is_dma(adr)) { 
 			MMU_new.write_dma(ARMCPU_ARM9,8,adr,val); 
 			return;
@@ -2188,6 +2199,16 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if((adr >> 24) == 4)
 	{
+		// TODO: add pal reg
+		if (nds.power1.gpuMain == 0)
+			if ((adr >= 0x04000008) && (adr<=0x0400005F)) return;
+		if (nds.power1.gpuSub == 0)
+			if ((adr >= 0x04001008) && (adr<=0x0400105F)) return;
+		if (nds.power1.gfx3d_geometry == 0)
+			if ((adr >= 0x04000400) && (adr<=0x040006FF)) return;
+		if (nds.power1.gfx3d_render == 0)
+			if ((adr >= 0x04000320) && (adr<=0x040003FF)) return;
+
 		if(MMU_new.is_dma(adr)) { 
 			if(val==0x02e9) {
 				int zzz=9;
@@ -2654,6 +2675,15 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if((adr>>24)==4)
 	{
+		// TODO: add pal reg
+		if (nds.power1.gpuMain == 0)
+			if ((adr >= 0x04000008) && (adr<=0x0400005F)) return;
+		if (nds.power1.gpuSub == 0)
+			if ((adr >= 0x04001008) && (adr<=0x0400105F)) return;
+		if (nds.power1.gfx3d_geometry == 0)
+			if ((adr >= 0x04000400) && (adr<=0x040006FF)) return;
+		if (nds.power1.gfx3d_render == 0)
+			if ((adr >= 0x04000320) && (adr<=0x040003FF)) return;
 
 		// MightyMax: no need to do several ifs, when only one can happen
 		// switch/case instead
