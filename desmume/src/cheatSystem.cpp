@@ -25,6 +25,10 @@
 #include "debug.h"
 #include "utils/xstring.h"
 
+#ifndef _MSC_VER
+#include <stdint.h>
+#endif
+
 CHEATS *cheats = NULL;
 CHEATSEARCH *cheatSearch = NULL;
 
@@ -1137,7 +1141,7 @@ bool CHEATSEXPORT::getCodes()
 	}
 
 	u8 *title = data;
-	u32 *cmd = (u32 *)(((u32 )title + strlen((char*)title) + 4) & 0xFFFFFFFC);
+	u32 *cmd = (u32 *)(((intptr_t)title + strlen((char*)title) + 4) & 0xFFFFFFFC);
 	numCheats = (*cmd) & (~0xF0000000);
 	cmd += 9;
 	cheats = new CHEATS_LIST[numCheats];
@@ -1151,18 +1155,18 @@ bool CHEATSEXPORT::getCodes()
 		if ((*cmd & 0xF0000000) == 0x10000000)	// Folder
 		{
 			folderNum = (*cmd  & 0x00FFFFFF);
-			folderName = (u8*)((u32)cmd + 4);
-			folderNote = (u8*)((u32)folderName + strlen((char*)folderName) + 1);
+			folderName = (u8*)((intptr_t)cmd + 4);
+			folderNote = (u8*)((intptr_t)folderName + strlen((char*)folderName) + 1);
 			pos++;
 			numCheats--;
-			cmd = (u32 *)(((u32)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & 0xFFFFFFFC);
+			cmd = (u32 *)(((intptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & 0xFFFFFFFC);
 		}
 
 		for (int i = 0; i < folderNum; i++)		// in folder
 		{
-			u8 *cheatName = (u8 *)((u32)cmd + 4);
-			u8 *cheatNote = (u8 *)((u32)cheatName + strlen((char*)cheatName) + 1);
-			u32 *cheatData = (u32 *)(((u32)cheatNote + strlen((char*)cheatNote) + 1 + 3) & 0xFFFFFFFC);
+			u8 *cheatName = (u8 *)((intptr_t)cmd + 4);
+			u8 *cheatNote = (u8 *)((intptr_t)cheatName + strlen((char*)cheatName) + 1);
+			u32 *cheatData = (u32 *)(((intptr_t)cheatNote + strlen((char*)cheatNote) + 1 + 3) & 0xFFFFFFFC);
 			u32 cheatDataLen = *cheatData++;
 
 			if (cheatDataLen)
@@ -1195,7 +1199,7 @@ bool CHEATSEXPORT::getCodes()
 				}
 			}
 			pos++; pos_cht++;
-			cmd = (u32 *)((u32)cmd + ((*cmd + 1)*4));
+			cmd = (u32 *)((intptr_t)cmd + ((*cmd + 1)*4));
 		}
 		
 	};
