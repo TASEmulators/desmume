@@ -82,6 +82,7 @@ public:
 
 	void reset();
 	void close_rom();
+	void reset_hardware();
 
 	bool save_state(EMUFILE* os);
 	bool load_state(EMUFILE* is);
@@ -120,13 +121,13 @@ public:
 
 public: //SHOULD BE PRIVATE!!!!!!!!
 	std::string filename;
+	bool isMovieMode;
 
 private:
 	bool write_enable;	//is write enabled?
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
 	u32 addr;
-	bool isMovieMode;
 
 	std::vector<u8> data;
 	std::vector<u8> data_autodetect;
