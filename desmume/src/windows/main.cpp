@@ -4951,11 +4951,11 @@ DOKEYDOWN:
 		case IDM_MBG2: TwiddleLayer(IDM_MBG2,0,2); return 0;
 		case IDM_MBG3: TwiddleLayer(IDM_MBG3,0,3); return 0;
 		case IDM_MOBJ: TwiddleLayer(IDM_MOBJ,0,4); return 0;
-		case IDM_SBG0: TwiddleLayer(IDM_SBG0,0,0); return 0;
-		case IDM_SBG1: TwiddleLayer(IDM_SBG1,0,1); return 0;
-		case IDM_SBG2: TwiddleLayer(IDM_SBG2,0,2); return 0;
-		case IDM_SBG3: TwiddleLayer(IDM_SBG3,0,3); return 0;
-		case IDM_SOBJ: TwiddleLayer(IDM_SOBJ,0,4); return 0;
+		case IDM_SBG0: TwiddleLayer(IDM_SBG0,1,0); return 0;
+		case IDM_SBG1: TwiddleLayer(IDM_SBG1,1,1); return 0;
+		case IDM_SBG2: TwiddleLayer(IDM_SBG2,1,2); return 0;
+		case IDM_SBG3: TwiddleLayer(IDM_SBG3,1,3); return 0;
+		case IDM_SOBJ: TwiddleLayer(IDM_SOBJ,1,4); return 0;
 
 		case IDM_PAUSE:
 			TogglePause();
