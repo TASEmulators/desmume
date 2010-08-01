@@ -1128,6 +1128,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 {
     GdkPixbuf *resizedPixbuf, *drawPixbuf;
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
+    cairo_t *cr;
 
     gfloat vratio, hratio, nscreen_ratio;
     gint daW, daH, imgW, imgH, screenW, screenH, gapW, gapH;
@@ -1215,15 +1216,15 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         drawPixbuf = resizedPixbuf;
     }
 
-    gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, 0, 0, primaryOffsetX, primaryOffsetY, screenW, screenH,
-            GDK_RGB_DITHER_NONE, 0,0);
+    cr = gdk_cairo_create(widget->window);
+    gdk_cairo_set_source_pixbuf(cr, drawPixbuf, 0, 0);
 
     if (nds_screen.orientation != ORIENT_SINGLE) {
-        gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, secondaryPixbufOffsetX, secondaryPixbufOffsetY, secondaryOffsetX, secondaryOffsetY, screenW, screenH,
-            GDK_RGB_DITHER_NONE, 0,0);
+        gdk_cairo_set_source_pixbuf(cr, drawPixbuf, primaryOffsetX, primaryOffsetY);
     }
 
-    g_object_unref(drawPixbuf);
+    cairo_paint(cr);
+    cairo_destroy(cr);
 
     return TRUE;
 }
