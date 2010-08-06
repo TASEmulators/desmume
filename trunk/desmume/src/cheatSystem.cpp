@@ -1094,9 +1094,10 @@ bool CHEATSEXPORT::search()
 	if (!fp) return false;
 
 	u32 pos = 0x0100;
-	FAT_R4	fat_empty = {0};
+	FAT_R4	fat_empty;
 
 	memset(&fat, 0, sizeof(FAT_R4));
+	memset(&fat_empty, 0, sizeof(FAT_R4));
 
 	fseek(fp, pos, SEEK_SET);
 	while (pos < fsize)
@@ -1105,7 +1106,9 @@ bool CHEATSEXPORT::search()
 		if (memcmp(&fat, &fat_empty, sizeof(FAT_R4)) == 0) break;
 		if (memcmp(gameInfo.header.gameCode, &fat.serial[0], 4) == 0)
 		{
-			FAT_R4	fat_tmp = {0};
+			FAT_R4	fat_tmp;
+
+			memset(&fat_tmp, 0, sizeof(FAT_R4));
 			fread(&fat_tmp, sizeof(FAT_R4), 1, fp);
 			if (memcmp(&fat_tmp, &fat_empty, sizeof(FAT_R4)) == 0)
 			{
@@ -1118,7 +1121,7 @@ bool CHEATSEXPORT::search()
 			}
 			char buf[5] = {0};
 			memcpy(&buf, &fat.serial[0], 4);
-			printf("Founded %s CRC %08X at 0x%08X (size %i)\n", buf, fat.CRC, fat.addr, dataSize);
+			printf("Found %s CRC %08X at 0x%08llX (size %i)\n", buf, fat.CRC, fat.addr, dataSize);
 			return true;
 		}
 		pos += sizeof(FAT_R4);
