@@ -1,5 +1,4 @@
-/*  Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009 DeSmuME team
+/*  Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -75,46 +74,4 @@ BOOL addonsChangePak(NDS_ADDON_TYPE type)
 	addon = addonList[type];
 	addon_type = type;
 	return addon.init();
-}
-
-//--------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------
-
-extern ADDONINTERFACE slot1None;
-extern ADDONINTERFACE slot1Retail;
-extern ADDONINTERFACE slot1R4;
-
-ADDONINTERFACE slot1List[NDS_SLOT1_COUNT] = {
-		slot1None,
-		slot1Retail,
-		slot1R4
-};
-
-ADDONINTERFACE	slot1_device = slot1Retail; //default for frontends that dont even configure this
-u8				slot1_device_type = NDS_SLOT1_RETAIL;
-
-BOOL slot1Init()
-{
-	return slot1_device.init();
-}
-
-void slot1Close()
-{
-	slot1_device.close();
-}
-
-void slot1Reset()
-{
-	slot1_device.reset();
-}
-
-BOOL slot1Change(NDS_SLOT1_TYPE changeToType)
-{
-	printf("slot1Change to: %d\n", changeToType);
-	if (changeToType > NDS_SLOT1_COUNT || changeToType < 0) return FALSE;
-	slot1_device.close();
-	slot1_device_type = changeToType;
-	slot1_device = slot1List[slot1_device_type];
-	return slot1_device.init();
 }

@@ -903,6 +903,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\slot1.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\slot1.h"
+				>
+			</File>
+			<File
 				RelativePath="..\softrender.h"
 				>
 			</File>

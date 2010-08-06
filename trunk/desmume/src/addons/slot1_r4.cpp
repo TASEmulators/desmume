@@ -17,7 +17,7 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include "../addons.h"
+#include "../slot1.h"
 #include "../registers.h"
 #include "../MMU.h"
 #include "../NDSSystem.h"
@@ -53,8 +53,8 @@ static void reset() {}
 static void close() {}
 
 
-static void write08(u32 adr, u8 val) {}
-static void write16(u32 adr, u16 val) {}
+static void write08(u8 PROCNUM, u32 adr, u8 val) {}
+static void write16(u8 PROCNUM, u32 adr, u16 val) {}
 
 static void write32_GCROMCTRL(u32 val)
 {
@@ -137,7 +137,7 @@ static void write32_GCDATAIN(u32 val)
 	}*/
 }
 
-static void write32(u32 adr, u32 val)
+static void write32(u8 PROCNUM, u32 adr, u32 val)
 {
 	switch(adr)
 	{
@@ -150,11 +150,11 @@ static void write32(u32 adr, u32 val)
 	}
 }
 
-static u8 read08(u32 adr)
+static u8 read08(u8 PROCNUM, u32 adr)
 {
 	return 0xFF;
 }
-static u16 read16(u32 adr)
+static u16 read16(u8 PROCNUM, u32 adr)
 {
 	return 0xFFFF;
 }
@@ -205,7 +205,7 @@ static u32 read32_GCDATAIN()
 } //read32_GCDATAIN
 
 
-static u32 read32(u32 adr)
+static u32 read32(u8 PROCNUM, u32 adr)
 {
 	switch(adr)
 	{
@@ -216,7 +216,7 @@ static u32 read32(u32 adr)
 	}
 }
 
-ADDONINTERFACE slot1R4 = {
+SLOT1INTERFACE slot1R4 = {
 	"Slot1R4",
 	init,
 	reset,

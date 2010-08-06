@@ -144,6 +144,9 @@
     <ClCompile Include="..\saves.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="..\slot1.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
     <ClCompile Include="..\SPU.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -510,6 +513,9 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\shaders.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\slot1.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\SPU.h">
