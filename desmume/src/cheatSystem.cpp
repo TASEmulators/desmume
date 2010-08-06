@@ -150,6 +150,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x03:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
 				if ( lo > val )
 				{
@@ -162,6 +163,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x04:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
 				if ( lo < val )
 				{
@@ -174,6 +176,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x05:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
 				if ( lo == val )
 				{
@@ -186,6 +189,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x06:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
 				if ( lo != val )
 				{
@@ -198,6 +202,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x07:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
 				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & val) )
 				{
@@ -210,6 +215,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x08:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
 				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & val) )
 				{
@@ -222,6 +228,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x09:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
 				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & val) )
 				{
@@ -234,6 +241,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 			case 0x0A:
+				if (hi == 0) hi = offset;	// V1.54+
 				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
 				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & val) )
 				{
