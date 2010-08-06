@@ -36,6 +36,7 @@
 #include "rtc.h"
 #include "mc.h"
 #include "addons.h"
+#include "slot1.h"
 #include "mic.h"
 #include "movie.h"
 #include "readwrite.h"
@@ -1088,7 +1089,7 @@ static void execdiv() {
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
-	const int TEST_PROCNUM = 0; //PROCNUM
+	const int TEST_PROCNUM = PROCNUM;
 	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
 
 	memcpy(&card.command[0], &MMU.MMU_MEM[TEST_PROCNUM][0x40][0x1A8], 8);
@@ -1102,7 +1103,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 		return;
 	}
-
+	
 	u32 shift = (val>>24&7); 
 	if(shift == 7)
 		card.transfer_count = 1;
@@ -1141,8 +1142,8 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		card.transfer_count = 0x800;
 		break;
 
-	case 0x90: //Get ROM chip ID
-		break;
+	//case 0x90: //Get ROM chip ID
+	//	break;
 
 	case 0x3C: //Switch to KEY1 mode
 		card.mode = CardMode_KEY1;
@@ -1150,7 +1151,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	
 	default:
 		//fall through to the special slot1 handler
-		slot1_device.write32(REG_GCROMCTRL,val);
+		slot1_device.write32(TEST_PROCNUM, REG_GCROMCTRL,val);
 		break;
 	}
 
@@ -1174,7 +1175,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 template<int PROCNUM>
 u32 MMU_readFromGC()
 {
-	const int TEST_PROCNUM = 0; //PROCNUM
+	const int TEST_PROCNUM = PROCNUM;
 
 	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
 	u32 val = 0;
@@ -1185,14 +1186,15 @@ u32 MMU_readFromGC()
 	switch(card.command[0])
 	{
 		case 0x9F: //Dummy
-			return 0xFFFFFFFF;
+			val = 0xFFFFFFFF;
+			break;
 	
 		case 0x3C: //Switch to KEY1 mode
 			val = 0xFFFFFFFF;
 			break;
 
 		default:
-			val = slot1_device.read32(REG_GCDATAIN);
+			val = slot1_device.read32(TEST_PROCNUM, REG_GCDATAIN);
 			break;
 	}
 
@@ -3059,7 +3061,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			}
 
 			case REG_GCDATAIN:
-				slot1_device.write32(REG_GCDATAIN,val);
+				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN,val);
 				return;
 		}
 
@@ -3836,7 +3838,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 
 			case REG_GCDATAIN:
-				slot1_device.write32(REG_GCDATAIN,val);
+				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN,val);
 				return;
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
