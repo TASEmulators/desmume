@@ -17,7 +17,7 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include "../addons.h"
+#include "../slot1.h"
 #include "../registers.h"
 #include "../MMU.h"
 #include "../NDSSystem.h"
@@ -32,12 +32,12 @@ static void reset() {}
 static void close() {}
 
 
-static void write08(u32 adr, u8 val) {}
-static void write16(u32 adr, u16 val) {}
+static void write08(u8 PROCNUM, u32 adr, u8 val) {}
+static void write16(u8 PROCNUM, u32 adr, u16 val) {}
 
-static void write32_GCROMCTRL(u32 val)
+static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 {
-	nds_dscard& card = MMU.dscard[0];
+	nds_dscard& card = MMU.dscard[PROCNUM];
 
 	switch(card.command[0])
 	{
@@ -46,34 +46,41 @@ static void write32_GCROMCTRL(u32 val)
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
 			card.transfer_count = 0x80;
 			break;
+
+		case 0xB8:	// Chip ID
+			card.address = 0;
+			card.transfer_count = 1;
+			break;
+
 		default:
 			card.address = 0;
+			card.transfer_count = 0;
 			break;
 	}
 }
 
-static void write32(u32 adr, u32 val)
+static void write32(u8 PROCNUM, u32 adr, u32 val)
 {
 	switch(adr)
 	{
 	case REG_GCROMCTRL:
-		write32_GCROMCTRL(val);
+		write32_GCROMCTRL(PROCNUM, val);
 		break;
 	}
 }
 
-static u8 read08(u32 adr)
+static u8 read08(u8 PROCNUM, u32 adr)
 {
 	return 0xFF;
 }
-static u16 read16(u32 adr)
+static u16 read16(u8 PROCNUM, u32 adr)
 {
 	return 0xFFFF;
 }
 
-static u32 read32_GCDATAIN()
+static u32 read32_GCDATAIN(u8 PROCNUM)
 {
-	nds_dscard& card = MMU.dscard[0];
+	nds_dscard& card = MMU.dscard[PROCNUM];
 
 	switch(card.command[0])
 	{
@@ -118,10 +125,8 @@ static u32 read32_GCDATAIN()
 					DEBUG_Notify.ReadBeyondEndOfCart(card.address,gameInfo.romsize);
 					return 0xFFFFFFFF;
 				}
-				else
 				//but, this is actually handled by the cart rom buffer being oversized and full of 0xFF.
 				//is this a good idea? We think so.
-
 				return T1ReadLong(MMU.CART_ROM, card.address & MMU.CART_ROM_MASK);
 			}
 			break;
@@ -130,19 +135,19 @@ static u32 read32_GCDATAIN()
 	} //switch(card.command[0])
 } //read32_GCDATAIN
 
-static u32 read32(u32 adr)
+static u32 read32(u8 PROCNUM, u32 adr)
 {
 	switch(adr)
 	{
 	case REG_GCDATAIN:
-		return read32_GCDATAIN();
+		return read32_GCDATAIN(PROCNUM);
 	default:
 		return 0;
 	}
 }
 
 
-ADDONINTERFACE slot1Retail = {
+SLOT1INTERFACE slot1Retail = {
 	"Slot1Retail",
 	init,
 	reset,

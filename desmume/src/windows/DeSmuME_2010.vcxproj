@@ -465,6 +465,7 @@
     <ClCompile Include="..\ROMReader.cpp" />
     <ClCompile Include="..\rtc.cpp" />
     <ClCompile Include="..\saves.cpp" />
+    <ClCompile Include="..\slot1.cpp" />
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
@@ -585,6 +586,7 @@
     <ClInclude Include="..\rtc.h" />
     <ClInclude Include="..\saves.h" />
     <ClInclude Include="..\shaders.h" />
+    <ClInclude Include="..\slot1.h" />
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\thumb_instructions.h" />

@@ -1,5 +1,4 @@
-/*  Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -92,21 +91,5 @@ extern BOOL addonsChangePak(NDS_ADDON_TYPE type);				// change current adddon
 
 extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
 extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
-
-extern ADDONINTERFACE slot1_device;						// current slot1 device
-
-enum NDS_SLOT1_TYPE
-{
-	NDS_SLOT1_NONE,
-	NDS_SLOT1_RETAIL,
-	NDS_SLOT1_R4,
-	NDS_SLOT1_COUNT		// use for counter addons - MUST TO BE LAST!!!
-};
-
-BOOL slot1Init();
-void slot1Close();
-void slot1Reset();
-BOOL slot1Change(NDS_SLOT1_TYPE type);				// change current adddon
-
 
 #endif //__ADDONS_H__

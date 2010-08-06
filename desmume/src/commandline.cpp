@@ -28,6 +28,7 @@
 #include "types.h"
 #include "movie.h"
 #include "addons.h"
+#include "slot1.h"
 #include "NDSSystem.h"
 #include "utils/xstring.h"
 

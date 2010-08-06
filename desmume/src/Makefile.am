@@ -33,6 +33,7 @@ libdesmume_a_SOURCES = \
 	render3D.cpp render3D.h \
 	rtc.cpp rtc.h \
 	saves.cpp saves.h \
+	slot1.cpp slot1.h \
 	SPU.cpp SPU.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
