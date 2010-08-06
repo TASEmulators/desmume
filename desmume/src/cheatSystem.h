@@ -115,12 +115,12 @@ enum CHEATS_DB_TYPE
 
 #pragma pack(push)
 #pragma pack(1)
-	struct FAT_R4
+	typedef struct FAT_R4
 	{
 		u8	serial[4];
 		u32	CRC;
 		u64 addr;
-	};
+	} FAT_R4;
 #pragma pack(pop)
 
 class CHEATSEXPORT
