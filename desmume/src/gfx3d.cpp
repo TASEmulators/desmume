@@ -619,18 +619,17 @@ static void SetVertex()
 
 	if (texCoordinateTransform == 3)
 	{
-		//UNTESTED since fixed point conversion, and almost certainly wrong.
-		last_s =((coord[0]*mtxCurrent[3][0] +
-					coord[1]*mtxCurrent[3][4] +
-					coord[2]*mtxCurrent[3][8]) + _s * 16.0f) / 16.0f;
-		last_t =((coord[0]*mtxCurrent[3][1] +
-					coord[1]*mtxCurrent[3][5] +
-					coord[2]*mtxCurrent[3][9]) + _t * 16.0f) / 16.0f;
-		last_s /= 4096.0f;
-		last_t /= 4096.0f;
+		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
+		last_s = (s32)(((s64)s16coord[0] * mtxCurrent[3][0] + 
+								(s64)s16coord[1] * mtxCurrent[3][4] + 
+								(s64)s16coord[2] * mtxCurrent[3][8] + 
+								(((s64)(_s))<<24))>>24);
+		last_t = (s32)(((s64)s16coord[0] * mtxCurrent[3][1] + 
+								(s64)s16coord[1] * mtxCurrent[3][5] + 
+								(s64)s16coord[2] * mtxCurrent[3][9] + 
+								(((s64)(_t))<<24))>>24);
 	}
 
-	
 	//refuse to do anything if we have too many verts or polys
 	polygonListCompleted = 0;
 	if(vertlist->count >= VERTLIST_SIZE) 
@@ -889,7 +888,7 @@ static void gfx3d_glStoreMatrix(u32 v)
 	if(mymode==0 || mymode==3)
 		v = 0;
 
-	if (v > 31) return;
+	if (v >= 31) return;
 
 	MatrixStackLoadMatrix (&mtxStack[mymode], v, mtxCurrent[mymode]);
 
@@ -909,7 +908,7 @@ static void gfx3d_glRestoreMatrix(u32 v)
 	if(mymode==0 || mymode==3)
 		v = 0;
 
-	if (v > 31) return;
+	if (v >= 31) return;
 
 	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v));
 
