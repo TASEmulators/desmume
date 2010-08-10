@@ -1991,6 +1991,38 @@
 				</File>
 			</Filter>
 		</Filter>
+		<File
+			RelativePath=".\bitmaps\IDB_FRAMEADVANCE.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_OPEN.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_PAUSE.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_PLAY.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_RESET.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_ROTATECCW.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_ROTATECW.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\IDB_STOP.bmp"
+			>
+		</File>
 	</Files>
 	<Globals>
 		<Global
