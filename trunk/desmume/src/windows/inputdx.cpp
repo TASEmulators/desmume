@@ -2444,6 +2444,8 @@ void S9xWinScanJoypads ()
 ////#endif
 //}
 
+#include "directx/xinput.h"
+
 void input_feedback(BOOL enable)
 {
 	
@@ -2458,6 +2460,30 @@ void input_feedback(BOOL enable)
 			JoystickF[C].pEffect->Start(2, 0);
 		else
 			JoystickF[C].pEffect->Stop();
+	}
+	
+	//use xinput if it is available!!
+	//but try lazy initializing xinput so that the dll is not required
+	{
+		static DWORD ( WINAPI *_XInputSetState)(DWORD,XINPUT_VIBRATION*) = NULL;
+		static bool xinput_tried = false;
+		if(!xinput_tried)
+		{
+			xinput_tried = true;
+			HMODULE lib = LoadLibrary("xinput1_3.dll");
+			if(lib)
+			{
+				_XInputSetState = (DWORD (WINAPI *)(DWORD,XINPUT_VIBRATION*))GetProcAddress(lib,"XInputSetState");
+			}
+		}
+		if(_XInputSetState)
+		{
+			XINPUT_VIBRATION vib;
+			vib.wLeftMotorSpeed = enable?65535:0;
+			vib.wRightMotorSpeed = enable?65535:0;
+			for(int i=0;i<4;i++)
+				_XInputSetState(0,&vib);
+		}
 	}
 }
 

@@ -1,5 +1,4 @@
-/*  Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009 DeSmuME team
+/*  Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -38,20 +37,18 @@ static u8   guitarGrip_read08(u32 adr)
 {
 	//INFO("GuitarGrip: read 08 at 0x%08X\n", adr);
 	if (adr == 0x0A000000) return (~guitarKeyStatus);
-	return (0xFF);
+	else if(adr&1) return 0xFF;
+	else return 0xF9;
 }
 static u16  guitarGrip_read16(u32 adr)
 {
 	//INFO("GuitarGrip: read 16 at 0x%08X\n", adr);
-	if (adr == 0x080000BE) return (0xF9FF);
-	if (adr == 0x0801FFFE) return (0xF9FF);
-
-	return (0xFFFF);
+	return 0xF9FF;
 }
 static u32  guitarGrip_read32(u32 adr)
 {
 	//INFO("GuitarGrip: read 32 at 0x%08X\n", adr);
-	return (0xFFFFFFFF);
+	return (0xF9FFF9FF);
 }
 static void guitarGrip_info(char *info) { strcpy(info, "Guitar Grip for Guitar Hero games"); }
 
