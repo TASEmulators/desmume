@@ -660,7 +660,7 @@ u32 armcpu_exec()
 	}
 #endif
 
-#ifdef GDB_STUB
+#if 0 //#ifdef GDB_STUB
 	if (ARMPROC.stalled) {
 		return STALLED_CYCLE_COUNT;
 	}
