@@ -161,14 +161,14 @@ void HK_StateLoadSlot(int num, bool justPressed)
 	if (romloaded && justPressed)
 	{
 		BOOL wasPaused = paused;
-		NDS_Pause();
+		Pause();
 		loadstate_slot(num);		//Loadstate
 		lastSaveState = num;		//Set last savestate used
 
 		UpdateToolWindows();
 
 		if(!wasPaused)
-			NDS_UnPause();
+			Unpause();
 		else
 			Display();
 

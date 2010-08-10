@@ -174,6 +174,7 @@ HMENU mainMenu = NULL; //Holds handle to the main DeSmuME menu
 CToolBar* MainWindowToolbar;
 
 DWORD hKeyInputTimer;
+bool start_paused;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
@@ -1915,7 +1916,7 @@ void LoadSaveStateInfo()
 static BOOL LoadROM(const char * filename, const char * logicalName)
 {
 	ResetSaveStateTimes();
-	NDS_Pause();
+	Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
 	if (NDS_LoadROM(filename, logicalName) > 0)
@@ -2425,6 +2426,7 @@ int _main()
 		cmdline.errorHelp(__argv[0]);
 		return 1;
 	}
+	start_paused = cmdline.start_paused;
 
 	Desmume_InitOnce();
 
@@ -2719,11 +2721,6 @@ int _main()
 		if(OpenCore(cmdline.nds_file.c_str()))
 		{
 			romloaded = TRUE;
-			if(cmdline.start_paused)
-			{
-				NDS_Pause();
-				cmdline.start_paused = 0;
-			}
 		}
 	}
 
@@ -3146,7 +3143,11 @@ static BOOL OpenCore(const char* filename)
 	{
 		romloaded = TRUE;
 		if(movieMode == MOVIEMODE_INACTIVE)
-			Unpause();
+		{
+			if(!start_paused)
+				Unpause();
+			start_paused = 0;
+		}
 
 		// Update the toolbar
 		MainWindowToolbar->EnableButton(IDM_PAUSE, true);
