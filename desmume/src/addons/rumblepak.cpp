@@ -1,5 +1,4 @@
-/*  Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009 DeSmuME team
+/*  Copyright (C) 2009-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -65,20 +64,18 @@ static void RumblePak_write32(u32 adr, u32 val)
 
 static u8   RumblePak_read08(u32 adr)
 {
-	return (0xFF);
+	if(adr&1) return 0xFF;
+	else return 0xFD;
 }
 
 static u16  RumblePak_read16(u32 adr)
 {
-	u16 val = ( (adr & 0x1FFFF) >> 1 ) & 0xFFFD;
-	if (adr == 0x0801FFFE) val = 0x005D;	// hack!!! anybody have docs for RumblePak?
-
-	return ((u16)val); 
+	return 0xFFFD;
 }
 
 static u32  RumblePak_read32(u32 adr)
 {
-	return (0xFFFFFFFF);
+	return 0xFFFDFFFD;
 }
 
 static void RumblePak_info(char *info)

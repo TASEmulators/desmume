@@ -46,7 +46,7 @@ static void piano_write32(u32 adr, u32 val)
 extern int currFrameCounter;
 static u8   piano_read08(u32 adr)
 {
-	//INFO("piano: read 08 at 0x%08X\n", adr);
+	//printf("piano: read 08 at 0x%08X\n", adr);
 
 	//the actual keyboard output
 
@@ -75,22 +75,18 @@ static u8   piano_read08(u32 adr)
 	if(adr == 0x09FFFFFE) return ~(pianoKeyStatus&0xFF);
 	if(adr == 0x09FFFFFF) return ~((pianoKeyStatus>>8)&0xFF);
 
-	return (0xFF);
+	if(adr&1) return 0x07;
+	else return 0x00;
 }
 static u16  piano_read16(u32 adr)
 {
-	//LOG("piano: read 16 at 0x%08X\n", adr);
-
-	//sufficient for the device to be identified
-	if(adr == 0x080000BE) return (0x07FF);
-	if(adr == 0x0801FFFE) return (0x07FF);
-
-	return (0xFFFF);
+	//printf("piano: read 16 at 0x%08X\n", adr);
+	return 0x07FF;
 }
 static u32  piano_read32(u32 adr)
 {
-	//LOG("piano: read 32 at 0x%08X\n", adr);
-	return (0xFFFFFFFF);
+	//printf("piano: read 32 at 0x%08X\n", adr);
+	return 0x07FF07FF;
 }
 static void piano_info(char *info) { strcpy(info, "Piano for EasyPiano"); }
 
