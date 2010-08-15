@@ -275,14 +275,23 @@ LuaMemHookType MatchHookTypeToCPU(lua_State* L, LuaMemHookType hookType)
 
 DEFINE_LUA_FUNCTION(memory_registerwrite, "address,[size=1,][cpuname=\"main\",]func")
 {
+#ifndef HAVE_LUA
+	luaL_error(L, "memory.registerwrite failed: function is not available in this build.");
+#endif
 	return memory_registerHook(L, MatchHookTypeToCPU(L,LUAMEMHOOK_WRITE), 1);
 }
 DEFINE_LUA_FUNCTION(memory_registerread, "address,[size=1,][cpuname=\"main\",]func")
 {
+#ifndef HAVE_LUA
+	luaL_error(L, "memory.registerread failed: function is not available in this build.");
+#endif
 	return memory_registerHook(L, MatchHookTypeToCPU(L,LUAMEMHOOK_READ), 1);
 }
 DEFINE_LUA_FUNCTION(memory_registerexec, "address,[size=2,][cpuname=\"main\",]func")
 {
+#ifndef HAVE_LUA
+	luaL_error(L, "memory.registerexec failed: function is not available in this build.");
+#endif
 	return memory_registerHook(L, MatchHookTypeToCPU(L,LUAMEMHOOK_EXEC), 2);
 }
 
