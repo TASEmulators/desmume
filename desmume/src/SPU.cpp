@@ -512,18 +512,18 @@ u8 SPU_struct::ReadByte(u32 addr)
 			}
 			case 0x2: return thischan.pan;
 			case 0x3: return thischan.waveduty|(thischan.repeat<<3)|(thischan.format<<5)|((thischan.status == CHANSTAT_PLAY)?0x80:0);
-			case 0x4: return GETBYTE(0,thischan.addr);
-			case 0x5: return GETBYTE(1,thischan.addr);
-			case 0x6: return GETBYTE(2,thischan.addr);
-			case 0x7: return GETBYTE(3,thischan.addr);
+			case 0x4: return 0; //return GETBYTE(0,thischan.addr); //not readable
+			case 0x5: return 0; //return GETBYTE(1,thischan.addr); //not readable
+			case 0x6: return 0; //return GETBYTE(2,thischan.addr); //not readable
+			case 0x7: return 0; //return GETBYTE(3,thischan.addr); //not readable
 			case 0x8: return GETBYTE(0,thischan.timer);
 			case 0x9: return GETBYTE(1,thischan.timer);
 			case 0xA: return GETBYTE(0,thischan.loopstart);
 			case 0xB: return GETBYTE(1,thischan.loopstart);
-			case 0xC: return GETBYTE(0,thischan.length);
-			case 0xD: return GETBYTE(1,thischan.length);
-			case 0xE: return GETBYTE(2,thischan.length);
-			case 0xF: return GETBYTE(3,thischan.length);
+			case 0xC: return 0; //return GETBYTE(0,thischan.length); //not readable
+			case 0xD: return 0; //return GETBYTE(1,thischan.length); //not readable
+			case 0xE: return 0; //return GETBYTE(2,thischan.length); //not readable
+			case 0xF: return 0; //return GETBYTE(3,thischan.length); //not readable
 			default: return 0; //impossible
 		} //switch on individual channel regs
 		} //default case
@@ -697,7 +697,7 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 			case 0x4: SETBYTE(0,thischan.addr,val); break;
 			case 0x5: SETBYTE(1,thischan.addr,val); break;
 			case 0x6: SETBYTE(2,thischan.addr,val); break;
-			case 0x7: SETBYTE(3,thischan.addr,val); break;
+			case 0x7: SETBYTE(3,thischan.addr,val&0x7); break; //only 27 bits of this register are used
 			case 0x8: 
 				SETBYTE(0,thischan.timer,val); 
 				adjust_channel_timer(&thischan);
@@ -710,8 +710,8 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 			case 0xB: SETBYTE(1,thischan.loopstart,val); break;
 			case 0xC: SETBYTE(0,thischan.length,val); break;
 			case 0xD: SETBYTE(1,thischan.length,val); break;
-			case 0xE: SETBYTE(2,thischan.length,val); break;
-			case 0xF: SETBYTE(3,thischan.length,val); break;
+			case 0xE: SETBYTE(2,thischan.length,val & 0x3F); break; //only 22 bits of this register are used
+			case 0xF: SETBYTE(3,thischan.length,0); break;
 		} //switch on individual channel regs
 		} //default case
 	} //switch on address
