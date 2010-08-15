@@ -45,13 +45,16 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 		return NULL;
 
 	tmp = opendir(path);
-	if (!tmp)
+	if (!tmp) {
+		free(dir);
 		return NULL;
+	}
 	dir->dir = tmp;
 
 	e = readdir(tmp);
 	if (!e) {
 		closedir(tmp);
+		free(dir);
 		return NULL;
 	}
 	strcpy(entry->cFileName, e->d_name);
