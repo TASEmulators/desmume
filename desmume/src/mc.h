@@ -82,6 +82,7 @@ public:
 
 	void reset();
 	void close_rom();
+	void forceManualBackupType();
 	void reset_hardware();
 
 	bool save_state(EMUFILE* os);
@@ -169,6 +170,7 @@ void fw_reset_com(memory_chip_t *mc);       /* reset communication with mc */
 u8 fw_transfer(memory_chip_t *mc, u8 data);
 
 void backup_setManualBackupType(int type);
+void backup_forceManualBackupType();
 
 extern const char *save_names[];
 

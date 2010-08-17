@@ -35,6 +35,10 @@ void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable);
 std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault);
 void CheckDlgItem(HWND hDlg, int id, bool checked);
 bool IsDlgCheckboxChecked(HWND hDlg, int id);
+HMENU GetSubMenuByIdOfFirstChild(HMENU menu, UINT child);
+HMENU GetSubMenuById(HMENU menu, UINT id); //untested
+int GetSubMenuIndexByHMENU(HMENU menu, HMENU sub);
+
 
 //returns the specified resource string ID as a std::wstring
 std::wstring STRW(UINT id);

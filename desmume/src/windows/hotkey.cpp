@@ -91,6 +91,36 @@ void HK_ReloadROM(int, bool justPressed)
 	void OpenRecentROM(int listNum);
 	OpenRecentROM(0);
 }
+void HK_QuickScreenShot(int param, bool justPressed)
+{
+	char buffer[MAX_PATH];
+	ZeroMemory(buffer, sizeof(buffer));
+	path.getpath(path.SCREENSHOTS, buffer);
+
+	char file[MAX_PATH];
+	ZeroMemory(file, sizeof(file));
+	path.formatname(file);
+
+	strcat(buffer, file);
+	if( strlen(buffer) > (MAX_PATH - 4))
+		buffer[MAX_PATH - 4] = '\0';
+
+	switch(path.imageformat())
+	{
+	case path.PNG:
+		{		
+			strcat(buffer, ".png");
+			NDS_WritePNG(buffer);
+		}
+		break;
+	case path.BMP:
+		{
+			strcat(buffer, ".bmp");
+			NDS_WriteBMP(buffer);
+		}
+		break;
+	}
+}
 void HK_PrintScreen(int param, bool justPressed)
 {
 	char outFilename[MAX_PATH];
@@ -506,6 +536,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->PrintScreen.name = STRW(ID_LABEL_HK13);
 	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
 	keys->PrintScreen.key = VK_F12;
+
+	keys->QuickPrintScreen.handleKeyDown = HK_QuickScreenShot;
+	keys->QuickPrintScreen.code = "QuickScreenshot";
+	keys->QuickPrintScreen.name = STRW(ID_LABEL_HK13b);
+	keys->QuickPrintScreen.page = HOTKEY_PAGE_MAIN;
+	keys->QuickPrintScreen.key = VK_F12;
+	keys->QuickPrintScreen.modifiers = CUSTKEY_CTRL_MASK;
 
 	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
 	keys->ToggleReadOnly.code = "ToggleReadOnly";

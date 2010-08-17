@@ -78,6 +78,7 @@ struct SCustomKeys
 
 	SCustomKey ToggleRasterizer;
 	SCustomKey PrintScreen;	//Screenshot
+	SCustomKey QuickPrintScreen;
 
 	SCustomKey RecordWAV, RecordAVI;
 
@@ -112,6 +113,7 @@ int GetModifiers(int key);
 
 //HOTKEY HANDLERS
 void HK_PrintScreen(int, bool);
+void HK_QuickScreenShot(int, bool);
 void HK_StateSaveSlot(int, bool);
 void HK_StateLoadSlot(int, bool);
 void HK_StateSetSlot(int, bool);

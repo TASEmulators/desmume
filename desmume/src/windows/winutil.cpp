@@ -115,3 +115,38 @@ void CheckDlgItem(HWND hDlg, int id, bool checked)
 	CheckDlgButton(hDlg, id, checked ? BST_CHECKED : BST_UNCHECKED);
 }
 
+HMENU GetSubMenuByIdOfFirstChild(HMENU menu, UINT child)
+{
+	int count = GetMenuItemCount(menu);
+	for(int i=0;i<count;i++)
+	{
+		HMENU sub = GetSubMenu(menu,i);
+		MENUITEMINFO moo;
+		moo.cbSize = sizeof(moo);
+		moo.fMask = MIIM_ID;
+		GetMenuItemInfo(sub,0,TRUE,&moo);
+		if(moo.wID == child)
+			return sub;
+	}
+	return (HMENU)0;
+}
+
+HMENU GetSubMenuById(HMENU menu, UINT id)
+{
+	MENUITEMINFO moo;
+	moo.cbSize = sizeof(moo);
+	moo.fMask = MIIM_SUBMENU;
+	GetMenuItemInfo(menu,id,FALSE,&moo);
+	return moo.hSubMenu;
+}
+
+int GetSubMenuIndexByHMENU(HMENU menu, HMENU sub)
+{
+	int count = GetMenuItemCount(menu);
+	for(int i=0;i<count;i++)
+	{
+		HMENU trial = GetSubMenu(menu,i);
+		if(sub == trial) return i;
+	}
+	return -1;
+}
