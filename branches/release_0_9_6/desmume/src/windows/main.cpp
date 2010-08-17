@@ -1996,12 +1996,17 @@ int MenuInit()
 
 	ResetSaveStateTimes();
 
+	HMENU configMenu = GetSubMenuByIdOfFirstChild(mainMenu,IDM_3DCONFIG);
+	HMENU advancedMenu = GetSubMenuByIdOfFirstChild(configMenu,ID_ADVANCED);
+	DeleteMenu(advancedMenu,ID_ADVANCED,MF_BYCOMMAND);
+
 #ifndef DEVELOPER_MENU_ITEMS
 	// menu items that are only useful for desmume developers (maybe)
 	HMENU fileMenu = GetSubMenu(mainMenu, 0);
 	DeleteMenu(fileMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
 #endif
 
+#ifdef DEVELOPER
 	for(int i=0; i<MAX_SAVE_TYPES; i++)
 	{
 		memset(&mm, 0, sizeof(MENUITEMINFO));
@@ -2019,6 +2024,9 @@ int MenuInit()
 	mm.fMask = MIIM_TYPE;
 	mm.fType = MFT_SEPARATOR;
 	MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
+#else
+	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
+#endif
 
 	return 1;
 }
@@ -4373,35 +4381,7 @@ DOKEYDOWN:
 			HK_PrintScreen(0, true);
 			return 0;
 		case IDM_QUICK_PRINTSCREEN:
-			{
-				char buffer[MAX_PATH];
-				ZeroMemory(buffer, sizeof(buffer));
-				path.getpath(path.SCREENSHOTS, buffer);
-
-				char file[MAX_PATH];
-				ZeroMemory(file, sizeof(file));
-				path.formatname(file);
-		
-				strcat(buffer, file);
-				if( strlen(buffer) > (MAX_PATH - 4))
-					buffer[MAX_PATH - 4] = '\0';
-
-				switch(path.imageformat())
-				{
-					case path.PNG:
-						{		
-							strcat(buffer, ".png");
-							NDS_WritePNG(buffer);
-						}
-						break;
-					case path.BMP:
-						{
-							strcat(buffer, ".bmp");
-							NDS_WriteBMP(buffer);
-						}
-						break;
-				}
-			}
+			HK_QuickScreenShot(0, true);
 			return 0;
 		case IDM_FILE_RECORDAVI:
 			if (AVI_IsRecording())
@@ -5195,6 +5175,8 @@ DOKEYDOWN:
 				if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
 			}
 			return 0;
+
+		case IDC_SAVETYPE_FORCE: backup_forceManualBackupType(); return 0; 
 
 		default:
 			{
@@ -6002,6 +5984,7 @@ void UpdateHotkeyAssignments()
 {
 	UpdateHotkeyAssignment(CustomKeys.OpenROM, IDM_OPEN);
 	UpdateHotkeyAssignment(CustomKeys.PrintScreen, IDM_PRINTSCREEN);
+	UpdateHotkeyAssignment(CustomKeys.QuickPrintScreen, IDM_QUICK_PRINTSCREEN);
 	UpdateHotkeyAssignment(CustomKeys.RecordAVI, IDM_FILE_RECORDAVI);
 	UpdateHotkeyAssignment(CustomKeys.Pause, IDM_PAUSE);
 	UpdateHotkeyAssignment(CustomKeys.Reset, IDM_RESET);
