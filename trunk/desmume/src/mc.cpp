@@ -119,6 +119,12 @@ const char *save_names[] = {
 		"FLASH 512Mbit"
 };
 
+//forces the currently selected backup type to be current
+//(can possibly be used to repair poorly chosen save types discovered late in gameplay i.e. pokemon gamers)
+void backup_forceManualBackupType()
+{
+	MMU_new.backupDevice.forceManualBackupType();
+}
 
 void backup_setManualBackupType(int type)
 {
@@ -1147,4 +1153,10 @@ bool BackupDevice::load_movie(EMUFILE* is) {
 	//none of the other fields are used right now
 
 	return true;
+}
+
+void BackupDevice::forceManualBackupType()
+{
+	addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType][1]);
+	state = RUNNING;
 }
