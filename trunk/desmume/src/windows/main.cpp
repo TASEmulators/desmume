@@ -822,6 +822,7 @@ const u32 DWS_ALWAYSONTOP = 1;
 const u32 DWS_LOCKDOWN = 2;
 const u32 DWS_FULLSCREEN = 4;
 const u32 DWS_DDRAW_SW = 8;
+const u32 DWS_VSYNC = 16;
 
 static u32 currWindowStyle = DWS_NORMAL;
 static void SetStyle(u32 dws)
@@ -2522,6 +2523,8 @@ int _main()
 	if(GetPrivateProfileBool("Video","Window Always On Top", false, IniName)) style |= DWS_ALWAYSONTOP;
 	if(GetPrivateProfileBool("Video","Window Lockdown", false, IniName)) style |= DWS_LOCKDOWN;
 	
+	if(GetPrivateProfileBool("Video","VSync", false, IniName))
+		style |= DWS_VSYNC;
 	int dispMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
 	if(dispMethod == DISPMETHOD_DDRAW_SW)
 		style |= DWS_DDRAW_SW;
@@ -3951,6 +3954,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_VSYNC, (GetStyle()&DWS_VSYNC)!=0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_SW)==0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
 
@@ -5105,6 +5109,11 @@ DOKEYDOWN:
 			lostFocusPause = !lostFocusPause;
 			WritePrivateProfileInt("Focus", "BackgroundPause", (int)lostFocusPause, IniName);
 			return 0;
+
+		case ID_DISPLAYMETHOD_VSYNC:
+			SetStyle(GetStyle()^DWS_VSYNC);
+			WritePrivateProfileInt("Video","VSync", (GetStyle()&DWS_VSYNC)?1:0, IniName);
+			break;
 
 		case ID_DISPLAYMETHOD_DIRECTDRAWHW:
 			{
@@ -6395,6 +6404,20 @@ bool DDRAW::blt(LPRECT dst, LPRECT src)
 	if (!handle) return true;
 	if (!surface.primary) return false;
 	if (!surface.back) return false;
+
+	if(GetStyle()&DWS_VSYNC)
+	{
+		//this seems to block the whole process. this destroys the display thread and will easily block the emulator to 30fps.
+		//IDirectDraw7_WaitForVerticalBlank(handle,DDWAITVB_BLOCKBEGIN,0);
+		
+		for(;;)
+		{
+			BOOL vblank;
+			IDirectDraw7_GetVerticalBlankStatus(handle,&vblank);
+			if(vblank) break;
+			//must be a greedy loop since vblank is small relative to 1msec minimum Sleep() resolution.
+		}
+	}
 
 	HRESULT res = surface.primary->Blt(dst, surface.back, src, DDBLT_WAIT, 0);
 	if (FAILED(res))
