@@ -1924,6 +1924,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		return;
 	}
 
+	//block 8bit writes to OAM and palette memory
+	if((adr&0x0F000000)==0x07000000) return;
+	if((adr&0x0F000000)==0x05000000) return;
+
 	if (adr >> 24 == 4)
 	{
 		
