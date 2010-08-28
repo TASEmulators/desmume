@@ -311,13 +311,6 @@ struct PolyAttr
 
 	bool isVisible(bool backfacing) 
 	{
-		//this was added after adding multi-bit stencil buffer
-		//it seems that we also need to prevent drawing back faces of shadow polys for rendering
-		u32 mode = (val>>4)&0x3;
-		if(mode==3 && polyid !=0) return !backfacing;
-		//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
-		//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
-
 		switch((val>>6)&3) {
 			case 0: return false;
 			case 1: return backfacing;
@@ -571,20 +564,12 @@ public:
 		{
 			if(polyAttr.polyid == 0)
 			{
-				//that's right! stencil buffers, despite reports to the contrary, must be more than 1 bit
-				//this is necessary to make these cases work all at once.
-				//1. sm64 (standing near signs and blocks)
-				//2. mariokart (no glitches in shadow shape in kart selector)
-				//3. mariokart (no junk beneath platform in kart selector / no shadow beneath grate floor in bowser stage)
-				//(specifically, the shadows in mario kart are complicated concave shapes)
-				destFragment.stencil++;
 				goto rejected_fragment;
 			}
 			else
 			{
-				if(destFragment.stencil)
+				if(destFragment.stencil==0)
 				{
-					destFragment.stencil--;
 					goto rejected_fragment;
 				}	
 
@@ -661,9 +646,22 @@ public:
 
 		}
 
+		//shadow cases: (need multi-bit stencil buffer to cope with all of these, especially the mariokart compelx shadows)
+		//1. sm64 (standing near signs and blocks)
+		//2. mariokart (no glitches in shadow shape in kart selector)
+		//3. mariokart (no junk beneath platform in kart selector / no shadow beneath grate floor in bowser stage)
+		//(specifically, the shadows in mario kart are complicated concave shapes)
+
+		goto done;
 		depth_fail:
+		if(shader.mode == 3 && polyAttr.polyid == 0)
+			destFragment.stencil++;
 		rejected_fragment:
+		done:
 		;
+
+		if(shader.mode == 3 && polyAttr.polyid != 0 && destFragment.stencil)
+			destFragment.stencil--;
 	}
 
 	//draws a single scanline
