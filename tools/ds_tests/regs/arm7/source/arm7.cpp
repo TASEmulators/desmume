@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------
 
-default ARM7 core
+once upon a time, this was: default ARM7 core
 
 Copyright (C) 2005
 Michael Noland (joat)
@@ -30,6 +30,8 @@ distribution.
 #include <maxmod7.h>
 #include "../../regstest.h"
 
+arm7comm_t *arm7comm;
+
 //---------------------------------------------------------------------------------
 void VcountHandler() {
 	//---------------------------------------------------------------------------------
@@ -42,21 +44,22 @@ void VblankHandler(void) {
 	Wifi_Update();
 }
 
-void pokeMessage(char* msg)
+void pokeMessage(const char* msg)
 {
-	char* cp = msg;
+	const char* cp = msg;
 	int i=0;
 	while(*cp)
 		arm7comm->message[i++] = *cp++;
 	arm7comm->message[i] = 0;
 }
 
-void fail(char* msg, u32 offender=0)
+void fail(const char* msg, u32 offender=0)
 {
 	arm7comm->code = 1;
 	arm7comm->offender = offender;
 	pokeMessage(msg);
 
+	fifoSendValue32(FIFO_USER_01,0);
 	while (1) swiWaitForVBlank();
 }
 
@@ -86,10 +89,11 @@ int main() {
 
 	irqEnable( IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);   
 
-	
-	while (arm7comm->code != 0xDEADBEEF) 
-		swiWaitForVBlank();
+	//find out where the arm9 wants us to stash our info
+	while(!fifoCheckAddress(FIFO_USER_01)) swiWaitForVBlank();
+	arm7comm = (arm7comm_t*)fifoGetAddress(FIFO_USER_01);
 
+	
 	//spu source reg should only be 27bit
 	//but it is not readable so what does it matter
 	for(int i=0;i<16;i++)
@@ -111,6 +115,7 @@ int main() {
 
 	
 	arm7comm->code = 2;
+	fifoSendValue32(FIFO_USER_01,0);
 	while (1) swiWaitForVBlank();
 }
 

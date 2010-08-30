@@ -5,4 +5,4 @@ typedef struct _arm7comm_t
 	char message[1024];
 } arm7comm_t;
 
-#define arm7comm ( (arm7comm_t*)0x02200000 )
+//#define arm7comm ( (arm7comm_t*)0x02200000 )

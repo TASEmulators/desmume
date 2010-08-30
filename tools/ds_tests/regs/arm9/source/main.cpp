@@ -30,16 +30,22 @@ void _myassert(const char *fileName, int lineNumber, const char* conditionString
 	for(;;) swiWaitForVBlank();
 }
 
+arm7comm_t arm7comm;
+
 int main(void) {
 	consoleDemoInit();
 
-	arm7comm->code = 0xDEADBEEF;
+	//tell the arm7 where to store its stuff
+	//(the arm7 needs to know a location in main memory (shared) to store its results)
+	//(it could store its results in shared arm7 memory but we chose to do it this way since)
+	//(I couldn't figure out how to specify storage there for a global in arm7.cpp. any suggestions?)
+	fifoSendAddress(FIFO_USER_01,&arm7comm);
 
 	//fog table entries should not be readable. they should return 0
 	for(int i=0;i<32;i++)
 	{
 		GFX_FOG_TABLE[i] = 0xFF;
-		iprintf("%02X\n",GFX_FOG_TABLE[i]);
+		//iprintf("%02X\n",GFX_FOG_TABLE[i]);
 		myassert(GFX_FOG_TABLE[i] == 0x00,"test whether fog table entries are non-readable");
 	}
 
@@ -77,19 +83,20 @@ int main(void) {
 	//-------------------
 	iprintf("waiting for arm7 test to finish!\n");
 
-	//wait for arm7 test to finish
-	for(;;) {
-		if(arm7comm->code != 0xDEADBEEF) break;
+	for(;;)
+	{
+		if(fifoCheckValue32(FIFO_USER_01))
+			break;
 		swiWaitForVBlank();
 	}
 
-	iprintf("arm7 finish code: %d\n",arm7comm->code);
+	iprintf("arm7 finish code: %d\n",arm7comm.code);
 
-	if(arm7comm->code == 1)
+	if(arm7comm.code == 1)
 	{
 		iprintf("arm7 test failed!\n");
-		iprintf("%s\n",arm7comm->message);
-		iprintf("offending val: 0x%08X\n",arm7comm->offender);
+		iprintf("%s\n",arm7comm.message);
+		iprintf("offending val: 0x%08X\n",arm7comm.offender);
 	}
 	else
 	{
