@@ -90,6 +90,7 @@ int main(void) {
 		swiWaitForVBlank();
 	}
 
+	iprintf("firmwareID: %08X\n",arm7comm.firmwareId);
 	iprintf("arm7 finish code: %d\n",arm7comm.code);
 
 	if(arm7comm.code == 1)

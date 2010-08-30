@@ -1,6 +1,6 @@
 /*  Copyright (C) 2006 thoduv
     Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -50,24 +50,24 @@
 #define MC_SIZE_256MBITS                0x2000000
 #define MC_SIZE_512MBITS                0x4000000
 
-typedef struct
+struct memory_chip_t
 {
-	u8 com;	/* persistent command actually handled */
-        u32 addr;        /* current address for reading/writing */
-        u8 addr_shift;   /* shift for address (since addresses are transfered by 3 bytes units) */
-        u8 addr_size;    /* size of addr when writing/reading */
-	
-	BOOL write_enable;	/* is write enabled ? */
-	
-        u8 *data;       /* memory data */
-        u32 size;       /* memory size */
-	BOOL writeable_buffer;	/* is "data" writeable ? */
-        int type; /* type of Memory */
-        char *filename;
-        FILE *fp;
-        u8 autodetectbuf[32768];
-        int autodetectsize;
-} memory_chip_t;
+	u8 com;	//persistent command actually handled
+	u32 addr;        //current address for reading/writing
+	u8 addr_shift;   //shift for address (since addresses are transfered by 3 bytes units)
+	u8 addr_size;    //size of addr when writing/reading
+
+	BOOL write_enable;	//is write enabled ?
+
+	u8 *data;       //memory data
+	u32 size;       //memory size
+	BOOL writeable_buffer;	//is "data" writeable ?
+	int type; //type of Memory
+	char *filename;
+	FILE *fp;
+	u8 autodetectbuf[32768];
+	int autodetectsize;
+};
 
 //the new backup system by zeromus
 class BackupDevice

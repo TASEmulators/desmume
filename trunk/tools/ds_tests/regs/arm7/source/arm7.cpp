@@ -29,6 +29,7 @@ distribution.
 #include <dswifi7.h>
 #include <maxmod7.h>
 #include "../../regstest.h"
+#include <nds/arm7/serial.h>
 
 arm7comm_t *arm7comm;
 
@@ -43,6 +44,45 @@ void VblankHandler(void) {
 //---------------------------------------------------------------------------------
 	Wifi_Update();
 }
+
+//modified from: http://www.bottledlight.com/ds/index.php/Main/Firmware
+#define FW_READ_ID     0x9F
+#define FW_READ        0x03
+#define FW_READ_STATUS 0x05
+u32 getFirmwareType()
+{
+	u32 result;
+
+	// Get ID
+	while (REG_SPICNT & SPI_BUSY);
+	REG_SPICNT = SPI_ENABLE | SPI_CONTINUOUS | SPI_DEVICE_FIRMWARE;
+	REG_SPIDATA = FW_READ_ID;
+	while (REG_SPICNT & SPI_BUSY);
+
+	result = 0;
+	for (int i = 0; i < 3; i++) {
+		REG_SPIDATA = 0;
+		while (REG_SPICNT & SPI_BUSY);
+		result = (REG_SPIDATA & 0xFF) | (result<<8);
+	}
+
+	// Get status
+	//zeromus note: this is broken. not only does it put the byte in a different spot than the docs said it does,
+	//it is coded otherwise glitchily and just returns bytes of the 3-Byte flash ID 
+	//(desmume shows five reads during the ID command; apparently this code fails to reset correctly)
+	while (REG_SPICNT & SPI_BUSY);
+	REG_SPICNT = SPI_ENABLE | SPI_CONTINUOUS | SPI_DEVICE_FIRMWARE;
+	REG_SPIDATA = FW_READ_STATUS;
+	while (REG_SPICNT & SPI_BUSY);
+
+	REG_SPIDATA = 0;
+	while (REG_SPICNT & SPI_BUSY);
+	result = ((REG_SPIDATA & 0xFF) << 24) | result;
+
+	return result;
+}
+
+
 
 void pokeMessage(const char* msg)
 {
@@ -113,7 +153,7 @@ int main() {
 		if(*reg != 0x00000000) fail("spu length reg is not readable!",*reg);
 	}
 
-	
+	arm7comm->firmwareId = getFirmwareType();
 	arm7comm->code = 2;
 	fifoSendValue32(FIFO_USER_01,0);
 	while (1) swiWaitForVBlank();

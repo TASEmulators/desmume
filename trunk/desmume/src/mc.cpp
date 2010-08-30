@@ -1,6 +1,6 @@
 /*  Copyright (C) 2006 thoduv
     Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -35,21 +35,22 @@
 #include <xtl.h>	// it`s really need?
 #endif
 
-#define FW_CMD_READ             0x3
-#define FW_CMD_WRITEDISABLE     0x4
-#define FW_CMD_READSTATUS       0x5
-#define FW_CMD_WRITEENABLE      0x6
-#define FW_CMD_PAGEWRITE        0xA
+#define FW_CMD_READ             0x03
+#define FW_CMD_WRITEDISABLE     0x04
+#define FW_CMD_READSTATUS       0x05
+#define FW_CMD_WRITEENABLE      0x06
+#define FW_CMD_PAGEWRITE        0x0A
+#define FW_CMD_READ_ID			0x9F
 
 #define BM_CMD_AUTODETECT       0xFF
-#define BM_CMD_WRITESTATUS      0x1
-#define BM_CMD_WRITELOW         0x2
-#define BM_CMD_READLOW          0x3
-#define BM_CMD_WRITEDISABLE     0x4
-#define BM_CMD_READSTATUS       0x5
-#define BM_CMD_WRITEENABLE      0x6
-#define BM_CMD_WRITEHIGH        0xA
-#define BM_CMD_READHIGH         0xB
+#define BM_CMD_WRITESTATUS      0x01
+#define BM_CMD_WRITELOW         0x02
+#define BM_CMD_READLOW          0x03
+#define BM_CMD_WRITEDISABLE     0x04
+#define BM_CMD_READSTATUS       0x05
+#define BM_CMD_WRITEENABLE      0x06
+#define BM_CMD_WRITEHIGH        0x0A
+#define BM_CMD_READHIGH         0x0B
 
 /* FLASH*/
 #define COMM_PAGE_WRITE		0x0A
@@ -228,31 +229,57 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 			
 		}
 	}
+	else if(mc->com == FW_CMD_READ_ID)
+	{
+		switch(mc->addr)
+		{
+		//here is an ID string measured from an old ds fat: 62 16 00 (0x62=sanyo)
+		//but we chose to use an ST from martin's ds fat string so programs might have a clue as to the firmware size:
+		//20 40 12
+		case 0: 
+			data = 0x20;
+			mc->addr=1; 
+			break;
+		case 1: 
+			data = 0x40; //according to gbatek this is the device ID for the flash on someone's ds fat
+			mc->addr=2; 
+			break;
+		case 2: 
+			data = 0x12;
+			mc->addr = 0; 
+			break;
+		}
+	}
 	else if(mc->com == FW_CMD_READSTATUS)
 	{
 		return (mc->write_enable ? 0x02 : 0x00);
 	}
-	else	/* finally, check if it's a new command */
+	else	//finally, check if it's a new command
 	{
 		switch(data)
 		{
-			case 0: break;	/* nothing */
+			case 0: break;	//nothing
+
+			case FW_CMD_READ_ID:
+				mc->addr = 0;
+				mc->com = FW_CMD_READ_ID;
+				break;
 			
-			case FW_CMD_READ:    /* read command */
+			case FW_CMD_READ:    //read command
 				mc->addr = 0;
 				mc->addr_shift = 3;
 				mc->com = FW_CMD_READ;
 				break;
 				
-			case FW_CMD_WRITEENABLE:     /* enable writing */
+			case FW_CMD_WRITEENABLE:     //enable writing
 				if(mc->writeable_buffer) { mc->write_enable = TRUE; }
 				break;
 				
-			case FW_CMD_WRITEDISABLE:    /* disable writing */
+			case FW_CMD_WRITEDISABLE:    //disable writing
 				mc->write_enable = FALSE;
 				break;
 				
-			case FW_CMD_PAGEWRITE:       /* write command */
+			case FW_CMD_PAGEWRITE:       //write command
 				if(mc->write_enable)
 				{
 					mc->addr = 0;
@@ -262,7 +289,7 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 				else { data = 0; }
 				break;
 			
-			case FW_CMD_READSTATUS:  /* status register command */
+			case FW_CMD_READSTATUS:  //status register command
 				mc->com = FW_CMD_READSTATUS;
 				break;
 				
