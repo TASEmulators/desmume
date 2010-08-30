@@ -1407,7 +1407,7 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 			lvi.iItem = INT_MAX;
 
 			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)FALSE,0);
-			for (int i = 0; i < cheatsExport->getCheatsNum(); i++)
+			for (u32 i = 0; i < cheatsExport->getCheatsNum(); i++)
 			{
 				CHEATS_LIST *tmp = (CHEATS_LIST*)cheatsExport->getCheats();
 				lvi.pszText= tmp[i].description;
@@ -1428,7 +1428,7 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 						if (count > 0)
 						{
 							u32 prev = ListView_GetNextItem(exportListView, -1, LVIS_SELECTED);
-							for (int i = 0; i < count; i++)
+							for (u32 i = 0; i < count; i++)
 							{
 								CHEATS_LIST *tmp = (CHEATS_LIST*)cheatsExport->getCheats();
 								cheats->add_AR_Direct(tmp[prev]);

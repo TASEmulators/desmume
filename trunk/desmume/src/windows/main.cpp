@@ -4380,13 +4380,16 @@ DOKEYDOWN:
 			//-------------------------------------------------------
 			else if (!(fileDropped.find(".ds") == string::npos))
 			{
-				size_t extIndex = fileDropped.find(".ds");
-				if (extIndex <= fileDropped.length()-4)	//Check to see it is both at the end (file extension) and there is on more character
+				if(romloaded)
 				{
-					if ((fileDropped[extIndex+3] >= '0' && fileDropped[extIndex+3] <= '9') || fileDropped[extIndex+3] == '-' || fileDropped[extIndex+3] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
+					size_t extIndex = fileDropped.find(".ds");
+					if (extIndex <= fileDropped.length()-4)	//Check to see it is both at the end (file extension) and there is on more character
 					{
-						savestate_load(filename);
-						UpdateToolWindows();
+						if ((fileDropped[extIndex+3] >= '0' && fileDropped[extIndex+3] <= '9') || fileDropped[extIndex+3] == '-' || fileDropped[extIndex+3] == 't')	//If last character is 0-9 (making .ds0 - .ds9) or .dst
+						{
+							savestate_load(filename);
+							UpdateToolWindows();
+						}
 					}
 				}
 			}
