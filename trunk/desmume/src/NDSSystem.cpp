@@ -1522,10 +1522,12 @@ static void execHardware_hstart_vblankStart()
 	triggerDma(EDMAMode_VBlank);
 
 	//tracking for arm9 load average
-	nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
+	nds.runCycleCollector[0][nds.idleFrameCounter] = 1120380-nds.idleCycles[0];
+	nds.runCycleCollector[1][nds.idleFrameCounter] = 1120380-nds.idleCycles[1];
 	nds.idleFrameCounter++;
 	nds.idleFrameCounter &= 15;
-	nds.idleCycles = 0;
+	nds.idleCycles[0] = 0;
+	nds.idleCycles[1] = 0;
 }
 
 static void execHardware_hstart_vcount()
@@ -1866,7 +1868,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			{
 				s32 temp = arm9;
 				arm9 = min(s32next, arm9 + kIrqWait);
-				nds.idleCycles += arm9-temp;
+				nds.idleCycles[0] += arm9-temp;
 				if (gxFIFO.size < 255) nds.freezeBus = FALSE;
 			}
 		}
@@ -1882,7 +1884,9 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			}
 			else
 			{
+				s32 temp = arm7;
 				arm7 = min(s32next, arm7 + kIrqWait);
+				nds.idleCycles[1] += arm7-temp;
 				if(arm7 == s32next)
 				{
 					nds_timer = nds_timer_base + minarmtime<doarm9,false>(arm9,arm7);
@@ -2014,9 +2018,17 @@ void NDS_exec(s32 nb)
 #endif
 
 			//if we were waiting for an irq, don't wait too long:
-			//let's re-analyze it after this hardware event
-			if(NDS_ARM9.waitIRQ) nds_arm9_timer = nds_timer;
-			if(NDS_ARM7.waitIRQ) nds_arm7_timer = nds_timer;
+			//let's re-analyze it after this hardware event (this rolls back a big burst of irq waiting which may have been interrupted by a resynch)
+			if(NDS_ARM9.waitIRQ)
+			{
+				nds.idleCycles[0] -= (s32)(nds_arm9_timer-nds_timer);
+				nds_arm9_timer = nds_timer;
+			}
+			if(NDS_ARM7.waitIRQ)
+			{
+				nds.idleCycles[1] -= (s32)(nds_arm7_timer-nds_timer);
+				nds_arm7_timer = nds_timer;
+			}
 		}
 	}
 
