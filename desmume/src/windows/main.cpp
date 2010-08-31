@@ -1829,11 +1829,27 @@ static void StepRunLoop_User()
 	if(nds.idleFrameCounter==0 || oneSecond) 
 	{
 		//calculate a 16 frame arm9 load average
-		int load = 0;
-		for(int i=0;i<16;i++)
-			load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
-		load = std::min(100,std::max(0,(int)(load*100/1120380)));
-		Hud.arm9load = load;
+		for(int cpu=0;cpu<2;cpu++)
+		{
+			int load = 0;
+			//printf("%d: ",cpu);
+			for(int i=0;i<16;i++)
+			{
+				//blend together a few frames to keep low-framerate games from having a jittering load average
+				//(they will tend to work 100% for a frame and then sleep for a while)
+				//4 frames should handle even the slowest of games
+				s32 sample = 
+					nds.runCycleCollector[cpu][(i+0+nds.idleFrameCounter)&15]
+				+	nds.runCycleCollector[cpu][(i+1+nds.idleFrameCounter)&15]
+				+	nds.runCycleCollector[cpu][(i+2+nds.idleFrameCounter)&15]
+				+	nds.runCycleCollector[cpu][(i+3+nds.idleFrameCounter)&15];
+				sample /= 4;
+				load = load/8 + sample*7/8;
+			}
+			//printf("\n");
+			load = std::min(100,std::max(0,(int)(load*100/1120380)));
+			Hud.cpuload[cpu] = load;
+		}
 	}
 
 	Hud.cpuloopIterationCount = nds.cpuloopIterationCount;
@@ -3644,7 +3660,7 @@ void ScreenshotToClipboard(bool extraInfo)
 		memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
 
-		sprintf(str, "FPS: %i/%i (%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.arm9load, paused ? "Paused":"Running");
+		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
 
 		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);

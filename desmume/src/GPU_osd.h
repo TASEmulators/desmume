@@ -58,7 +58,7 @@ public:
 	{
 		fps = 0;
 		fps3d = 0;
-		arm9load = 0;
+		cpuload[0] = cpuload[1] = 0;
 		cpuloopIterationCount = 0;
 		clicked = false;
 	}
@@ -76,7 +76,7 @@ public:
 	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
 	void reset();
 
-	int fps, fps3d, arm9load, cpuloopIterationCount;
+	int fps, fps3d, cpuload[2], cpuloopIterationCount;
 	bool clicked;
 };
 

@@ -528,7 +528,7 @@ void DrawHUD()
 
 	if (CommonSettings.hud.FpsDisplay) 
 	{
-		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d (%02d%%)%s", Hud.fps, Hud.fps3d, Hud.arm9load, driver->EMU_IsEmulationPaused() ? " (paused)" : "");
+		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d (%02d%%/%02d%%)%s", Hud.fps, Hud.fps3d, Hud.cpuload[0], Hud.cpuload[1], driver->EMU_IsEmulationPaused() ? " (paused)" : "");
 	}
 
 	if (CommonSettings.hud.FrameCounterDisplay) 
