@@ -53,7 +53,7 @@ CommandLine::CommandLine()
 , _advanced_timing(-1)
 , _slot1(NULL)
 {
-	load_slot = 0;
+	load_slot = -1;
 	arm9_gdb_port = arm7_gdb_port = 0;
 	start_paused = FALSE;
 #ifndef _MSC_VER
@@ -152,8 +152,8 @@ bool CommandLine::validate()
 		}
 	}
 
-	if (load_slot < 0 || load_slot > 10) {
-		g_printerr("I only know how to load from slots 1-10, 0 means 'do not load savegame' and is default\n");
+	if (load_slot < -1 || load_slot > 10) {
+		g_printerr("I only know how to load from slots 0-10; -1 means 'do not load savegame' and is default\n");
 		return false;
 	}
 
@@ -162,7 +162,7 @@ bool CommandLine::validate()
 		return false;
 	}
 
-	if(record_movie_file != "" && load_slot != 0) {
+	if(record_movie_file != "" && load_slot != -1) {
 		g_printerr("Cannot both record a movie and load a savestate.\n");
 		return false;
 	}
