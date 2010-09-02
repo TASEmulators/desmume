@@ -2918,9 +2918,11 @@ int _main()
 
 	cmdline.process_movieCommands();
 	
-	if(cmdline.load_slot != 0)
+	if(cmdline.load_slot != -1)
 	{
-		HK_StateLoadSlot(cmdline.load_slot, true);
+		int load = cmdline.load_slot;
+		if(load==10) load=0;
+		HK_StateLoadSlot(load, true);
 	}
 
 	MainWindow->Show(SW_NORMAL);

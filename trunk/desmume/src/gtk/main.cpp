@@ -2268,7 +2268,10 @@ common_gtk_main( class configured_features *my_config)
         if(Open( my_config->nds_file.c_str()) >= 0) {
             my_config->process_movieCommands();
 
-            if(my_config->load_slot){
+            if(my_config->load_slot != -1){
+				int todo = my_config->load_slot;
+				if(todo == 10)
+					todo = 0;
               loadstate_slot(my_config->load_slot);
             }
 
