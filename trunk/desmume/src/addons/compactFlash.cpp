@@ -396,10 +396,10 @@ static BOOL cflash_build_fat()
 
 	list_files(sFlashPath.c_str(), build_ListCallback);
 
-	FILE* outf = fopen("d:\\test.ima","wb");
-	EMUFILE_MEMORY* memf = (EMUFILE_MEMORY*)file;
-	fwrite(memf->buf(),1,memf->size(),outf);
-	fclose(outf);
+	//FILE* outf = fopen("d:\\test.ima","wb");
+	//EMUFILE_MEMORY* memf = (EMUFILE_MEMORY*)file;
+	//fwrite(memf->buf(),1,memf->size(),outf);
+	//fclose(outf);
 
 	
 
