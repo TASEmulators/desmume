@@ -357,18 +357,21 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 		std::string path = currPath + std::string(1,FS_SEPARATOR) + fname;
 
 		FILE* inf = fopen(path.c_str(),"rb");
-		fseek(inf,0,SEEK_END);
-		long len = ftell(inf);
-		fseek(inf,0,SEEK_SET);
-		u8 *buf = new u8[len];
-		fread(buf,1,len,inf);
-		fclose(inf);
+		if(inf)
+		{
+			fseek(inf,0,SEEK_END);
+			long len = ftell(inf);
+			fseek(inf,0,SEEK_SET);
+			u8 *buf = new u8[len];
+			fread(buf,1,len,inf);
+			fclose(inf);
 
-		EmuFatFile f;
-		f.open(&currFatFile,fname,EO_RDWR | EO_CREAT);
-		f.write(buf,len);
-		f.close();
-		delete[] buf;
+			EmuFatFile f;
+			f.open(&currFatFile,fname,EO_RDWR | EO_CREAT);
+			f.write(buf,len);
+			f.close();
+			delete[] buf;
+		}
 	}
 		
 }
