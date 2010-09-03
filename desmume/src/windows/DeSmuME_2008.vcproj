@@ -228,6 +228,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="2"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
@@ -708,6 +709,18 @@
 			</File>
 			<File
 				RelativePath="..\driver.h"
+				>
+			</File>
+			<File
+				RelativePath="..\emufat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\emufat.h"
+				>
+			</File>
+			<File
+				RelativePath="..\emufat_types.h"
 				>
 			</File>
 			<File

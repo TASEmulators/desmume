@@ -1,4 +1,4 @@
- /* Copyright (C) 2009 DeSmuME team
+ /* Copyright (C) 2009-2010 DeSmuME team
  *
  * This file is part of DeSmuME
  *
@@ -17,17 +17,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+//don't use emufile for files bigger than 2GB! you have been warned! some day this will be fixed.
+
 #ifndef EMUFILE_H
 #define EMUFILE_H
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "types.h"
 #include <vector>
 #include <algorithm>
 #include <string>
 #include <stdarg.h>
+
+#include "types.h"
+
+#ifdef _MSC_VER
+#include <io.h>
+#endif
 
 #ifdef _XBOX
 #undef min;
@@ -43,11 +50,16 @@ public:
 		: failbit(false)
 	{}
 
+
+	//takes control of the provided EMUFILE and returns a new EMUFILE which is guranteed to be in memory
+	static EMUFILE* memwrap(EMUFILE* fp);
+
 	virtual ~EMUFILE() {}
 	
 	static bool readAllBytes(std::vector<u8>* buf, const std::string& fname);
 
-	bool fail() { return failbit; }
+	bool fail(bool unset=false) { bool ret = failbit; if(unset) unfail(); return ret; }
+	void unfail() { failbit=false; }
 
 	bool eof() { return size()==ftell(); }
 
@@ -78,6 +90,8 @@ public:
 
 	virtual int ftell() = 0;
 	virtual int size() = 0;
+
+	virtual void truncate(s32 length) = 0;
 };
 
 //todo - handle read-only specially?
@@ -94,12 +108,27 @@ protected:
 
 public:
 
-	EMUFILE_MEMORY(std::vector<u8> *underlying) : vec(underlying), ownvec(false), pos(0), len(underlying->size()) { }
-	EMUFILE_MEMORY(u32 preallocate) : vec(new std::vector<u8>()), ownvec(true), pos(0), len(0) { vec->reserve(preallocate); }
+	EMUFILE_MEMORY(std::vector<u8> *underlying) : vec(underlying), ownvec(false), pos(0), len((s32)underlying->size()) { }
+	EMUFILE_MEMORY(u32 preallocate) : vec(new std::vector<u8>()), ownvec(true), pos(0), len(0) { 
+		vec->resize(preallocate);
+		len = preallocate;
+	}
 	EMUFILE_MEMORY() : vec(new std::vector<u8>()), ownvec(true), pos(0), len(0) { vec->reserve(1024); }
+	EMUFILE_MEMORY(void* buf, s32 size) : vec(new std::vector<u8>()), ownvec(true), pos(0), len(size) { 
+		vec->resize(size);
+		if(size != 0)
+			memcpy(&vec[0],buf,size);
+	}
 
 	~EMUFILE_MEMORY() {
 		if(ownvec) delete vec;
+	}
+
+	virtual void truncate(s32 length)
+	{
+		vec->resize(length);
+		len = length;
+		if(pos>length) pos=length;
 	}
 
 	u8* buf() { return &(*vec)[0]; }
@@ -124,9 +153,19 @@ public:
 
 	virtual int fgetc() {
 		u8 temp;
-		if(_fread(&temp,1) != 1)
-			return EOF;
-		else return temp;
+
+		//need an optimized codepath
+		//if(_fread(&temp,1) != 1)
+		//	return EOF;
+		//else return temp;
+		u32 remain = len-pos;
+		if(remain<1) {
+			failbit = true;
+			return -1;
+		}
+		temp = buf()[pos];
+		pos++;
+		return temp;
 	}
 	virtual int fputc(int c) {
 		u8 temp = (u8)c;
@@ -151,9 +190,9 @@ public:
 	//they handle the return values correctly
 
 	virtual void fwrite(const void *ptr, size_t bytes){
-		reserve(pos+bytes);
+		reserve(pos+(s32)bytes);
 		memcpy(buf()+pos,ptr,bytes);
-		pos += bytes;
+		pos += (s32)bytes;
 		len = std::max(pos,len);
 	}
 
@@ -180,6 +219,11 @@ public:
 		return pos;
 	}
 
+	void trim()
+	{
+		vec->resize(len);
+	}
+
 	virtual int size() { return (int)len; }
 };
 
@@ -187,14 +231,18 @@ class EMUFILE_FILE : public EMUFILE {
 protected:
 	FILE* fp;
 
-public:
-
-	EMUFILE_FILE(const char* fname, const char* mode)
+private:
+	void open(const char* fname, const char* mode)
 	{
 		fp = fopen(fname,mode);
 		if(!fp)
 			failbit = true;
-	};
+	}
+
+public:
+
+	EMUFILE_FILE(const std::string& fname, const char* mode) { open(fname.c_str(),mode); }
+	EMUFILE_FILE(const char* fname, const char* mode) { open(fname,mode); }
 
 	virtual ~EMUFILE_FILE() {
 		if(NULL != fp)
@@ -203,6 +251,17 @@ public:
 
 	virtual FILE *get_fp() {
 		return fp; 
+	}
+
+	bool is_open() { return fp != NULL; }
+
+	virtual void truncate(s32 length)
+	{
+		#ifdef _MSC_VER
+			_chsize(_fileno(fp),length);
+		#else
+			ftruncate(fileno(fp),length);
+		#endif
 	}
 
 	virtual int fprintf(const char *format, ...) {

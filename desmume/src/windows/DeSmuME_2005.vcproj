@@ -1843,6 +1843,18 @@
 			>
 		</File>
 		<File
+			RelativePath="..\emufat.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\emufat.h"
+			>
+		</File>
+		<File
+			RelativePath="..\emufat_types.h"
+			>
+		</File>
+		<File
 			RelativePath="..\emufile.cpp"
 			>
 		</File>
