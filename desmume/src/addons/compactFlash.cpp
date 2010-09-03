@@ -647,8 +647,9 @@ static BOOL cflash_init()
 		file = new EMUFILE_FILE(sFlashPath.c_str(),"rb+");
 		if(file->fail())
 		{
-			CFLASHLOG("Failed to open file %s\n", sFlashPath.c_str());
+			INFO("Failed to open file %s\n", sFlashPath.c_str());
 			delete file;
+			file = NULL;
 		}
 	}
 
