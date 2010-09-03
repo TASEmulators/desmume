@@ -747,7 +747,7 @@ int main(int argc, char ** argv) {
     }
   }
 
-  if(my_config.load_slot){
+  if(my_config.load_slot != -1){
     loadstate_slot(my_config.load_slot);
   }
 
