@@ -445,6 +445,7 @@
     <ClCompile Include="..\debug.cpp" />
     <ClCompile Include="..\Disassembler.cpp" />
     <ClCompile Include="..\driver.cpp" />
+    <ClCompile Include="..\emufat.cpp" />
     <ClCompile Include="..\emufile.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
     <ClCompile Include="..\firmware.cpp" />
@@ -559,6 +560,8 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
+    <ClInclude Include="..\emufat.h" />
+    <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\FIFO.h" />
