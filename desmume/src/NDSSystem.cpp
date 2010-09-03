@@ -486,6 +486,18 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	MMU_unsetRom();
 	NDS_SetROM((u8*)gameInfo.romdata, gameInfo.mask);
+
+	gameInfo.populate();
+	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
+	INFO("\nROM crc: %08X\n", gameInfo.crc);
+	INFO("ROM serial: %s\n", gameInfo.ROMserial);
+	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
+	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
+
+	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
+	if(!memcmp(gameInfo.header.gameCode,"####",4))
+		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
+
 	NDS_Reset();
 
 	memset(buf, 0, MAX_PATH);
@@ -502,17 +514,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheats->init(buf);
-
-	gameInfo.populate();
-	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
-	INFO("\nROM crc: %08X\n", gameInfo.crc);
-	INFO("ROM serial: %s\n", gameInfo.ROMserial);
-	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
-	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
-
-	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(!memcmp(gameInfo.header.gameCode,"####",4))
-		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	return 1;
 }
@@ -601,6 +602,18 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		cheatSearch->close();
 	MMU_unsetRom();
 	NDS_SetROM(data, gameInfo.mask);
+
+	gameInfo.populate();
+	gameInfo.crc = crc32(0,data,size);
+	INFO("\nROM crc: %08X\n", gameInfo.crc);
+	INFO("ROM serial: %s\n", gameInfo.ROMserial);
+	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
+	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
+
+	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
+	if(!memcmp(gameInfo.header.gameCode,"####",4))
+		DLDI::tryPatch((void*)data, gameInfo.mask + 1);
+
 	NDS_Reset();
 
 	free(noext);
@@ -619,17 +632,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheats->init(buf);
-
-	gameInfo.populate();
-	gameInfo.crc = crc32(0,data,size);
-	INFO("\nROM crc: %08X\n", gameInfo.crc);
-	INFO("ROM serial: %s\n", gameInfo.ROMserial);
-	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
-	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
-
-	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(!memcmp(gameInfo.header.gameCode,"####",4))
-		DLDI::tryPatch((void*)data, gameInfo.mask + 1);
 
 	return ret;
 }
