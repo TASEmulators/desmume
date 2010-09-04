@@ -1,22 +1,29 @@
-//Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright 2009-2010 DeSmuME team
+
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 //based on Arduino SdFat Library ( http://code.google.com/p/sdfatlib/ )
-/* 
- * Copyright (C) 2009 by William Greiman
- *
- * This file is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This file is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdFat Library.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+//Copyright (C) 2009 by William Greiman
+
+//based on mkdosfs - utility to create FAT/MS-DOS filesystems
+//Copyright (C) 1991 Linus Torvalds <torvalds@klaava.helsinki.fi>
+//Copyright (C) 1992-1993 Remy Card <card@masi.ibp.fr>
+//Copyright (C) 1993-1994 David Hudson <dave@humbug.demon.co.uk>
+//Copyright (C) 1998 H. Peter Anvin <hpa@zytor.com>
+//Copyright (C) 1998-2005 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+
 
 #ifndef EMUFAT_H
 #define EMUFAT_H
@@ -24,6 +31,10 @@
 #include "emufat_types.h"
 #include "emufile.h"
 #include <stdio.h>
+
+#define BOOTCODE_SIZE		448
+#define BOOTCODE_FAT32_SIZE	420
+
 
 // use the gnu style oflag in open()
 /** open() oflag for reading */
@@ -129,16 +140,29 @@ struct __PACKED TMasterBootRecord {
 	u8 mbrSig1;
 };
 
-//BIOS parameter block
-//The BIOS parameter block describes the physical layout of a FAT volume.
-struct __PACKED TBiosParmBlock {
+struct __PACKED msdos_volume_info {
+  u8 drive_number;	/* BIOS drive number */
+  u8 RESERVED;	/* Unused */
+  u8 ext_boot_sign;	/* 0x29 if fields below exist (DOS 3.3+) */
+  u32 volume_id;	/* Volume ID number */
+  u8 volume_label[11];/* Volume label */
+  u8 fs_type[8];	/* Typically FAT12 or FAT16 */
+};
+
+//Boot sector for a FAT16 or FAT32 volume.
+struct __PACKED TFat32BootSector {
+	//X86 jmp to boot program
+	u8  jmpToBootCode[3];
+	//informational only - don't depend on it
+	u8     oemName[8];
+
 	//Count of bytes per sector. This value may take on only the
 	//following values: 512, 1024, 2048 or 4096
 	u16 bytesPerSector;
 	//Number of sectors per allocation unit. This value must be a
 	//power of 2 that is greater than 0. The legal values are
 	//1, 2, 4, 8, 16, 32, 64, and 128.
-	u8  sectorsPerCluster;
+	u8  sectorsPerCluster; //cluster_size
 	//Number of sectors before the first FAT.
 	//This value must not be zero.
 	u16 reservedSectorCount;
@@ -151,7 +175,7 @@ struct __PACKED TBiosParmBlock {
 	//value should always specify a count that when multiplied by 32
 	//results in a multiple of bytesPerSector.  FAT16 volumes should
 	//use the value 512.
-	u16 rootDirEntryCount;
+	u16 rootDirEntryCount; //dir_entries
 	//This field is the old 16-bit total count of sectors on the volume.
 	//This count includes the count of all sectors in all four regions
 	//of the volume. This field can be 0; if it is 0, then totalSectors32
@@ -182,61 +206,56 @@ struct __PACKED TBiosParmBlock {
 	//of the volume.  This field can be 0; if it is 0, then
 	//totalSectors16 must be non-zero.
 	u32 totalSectors32;
-	//Count of sectors occupied by one FAT on FAT32 volumes.
-	u32 sectorsPerFat32;
-	//This field is only defined for FAT32 media and does not exist on
-	//FAT12 and FAT16 media.
-	//Bits 0-3 -- Zero-based number of active FAT.
-	//            Only valid if mirroring is disabled.
-	//Bits 4-6 -- Reserved.
-	//Bit 7	-- 0 means the FAT is mirrored at runtime into all FATs.
-	//       -- 1 means only one FAT is active; it is the one referenced in bits 0-3.
-	//Bits 8-15 	-- Reserved.
-	u16 fat32Flags;
-	//FAT32 version. High byte is major revision number.
-	//Low byte is minor revision number. Only 0.0 define.
-	u16 fat32Version;
-	//Cluster number of the first cluster of the root directory for FAT32.
-	//This usually 2 but not required to be 2.
-	u32 fat32RootCluster;
-	//Sector number of FSINFO structure in the reserved area of the
-	//FAT32 volume. Usually 1.
-	u16 fat32FSInfo;
-	//If non-zero, indicates the sector number in the reserved area
-	//of the volume of a copy of the boot record. Usually 6.
-	//No value other than 6 is recommended.
-	u16 fat32BackBootBlock;
-	//Reserved for future expansion. Code that formats FAT32 volumes
-	//should always set all of the bytes of this field to 0.
-	u8  fat32Reserved[12];
-};
 
-//Boot sector for a FAT16 or FAT32 volume.
-struct __PACKED TFat32BootSector {
-	//X86 jmp to boot program
-	u8  jmpToBootCode[3];
-	//informational only - don't depend on it
-	u8     oemName[8];
-	//BIOS Parameter Block
-	TBiosParmBlock    bpb;
-	//for int0x13 use value 0X80 for hard drive 
-	u8 driveNumber;
-	//used by Windows NT - should be zero for FAT 
-	u8  reserved1;
-	//0X29 if next three fields are valid 
-	u8  bootSignature;
-	//usually generated by combining date and time 
-	u32 volumeSerialNumber;
-	//should match volume label in root dir 
-	u8     volumeLabel[11];
-	//informational only - don't depend on it 
-	u8     fileSystemType[8];
-	//X86 boot code 
-	u8  bootCode[420];
-	//must be 0X55 
-	u8  bootSectorSig0;
-	//must be 0XAA 
-	u8  bootSectorSig1;
+	union {
+		struct __PACKED {
+			msdos_volume_info vi;
+			u8 boot_code[BOOTCODE_SIZE];
+		} oldfat;
+
+		struct __PACKED
+		{
+			//Count of sectors occupied by one FAT on FAT32 volumes.
+			u32 sectorsPerFat32; //fat32_length;	/* sectors/FAT */
+
+			//This field is only defined for FAT32 media and does not exist on
+			//FAT12 and FAT16 media.
+			//Bits 0-3 -- Zero-based number of active FAT.
+			//            Only valid if mirroring is disabled.
+			//Bits 4-6 -- Reserved.
+			//Bit 7	-- 0 means the FAT is mirrored at runtime into all FATs.
+			//       -- 1 means only one FAT is active; it is the one referenced in bits 0-3.
+			//Bits 8-15 	-- Reserved.
+			u16 fat32Flags;//	flags;		/* bit 8: fat mirroring, low 4: active fat */
+
+			//FAT32 version. High byte is major revision number.
+			//Low byte is minor revision number. Only 0.0 define.
+			u16 fat32Version;//version[2];	/* major, minor filesystem version */
+
+			//Cluster number of the first cluster of the root directory for FAT32.
+			//This usually 2 but not required to be 2.
+			u32 fat32RootCluster; //root_cluster;	/* first cluster in root directory */
+
+			//Sector number of FSINFO structure in the reserved area of the
+			//FAT32 volume. Usually 1.
+			u16 fat32FSInfo;//	info_sector;	/* filesystem info sector */
+
+			//If non-zero, indicates the sector number in the reserved area
+			//of the volume of a copy of the boot record. Usually 6.
+			//No value other than 6 is recommended.
+			u16 fat32BackBootBlock; //backup_boot;	/* backup boot sector */
+
+			//Reserved for future expansion. Code that formats FAT32 volumes
+			//should always set all of the bytes of this field to 0.
+			u8 fat32Reserved[12]; //reserved2[6];	/* Unused */
+			
+			msdos_volume_info vi;
+
+			u8 boot_code[BOOTCODE_FAT32_SIZE];
+		} fat32;
+	};
+
+	u8 boot_sign[2];
 };
 
 #include "PACKED_END.h"
@@ -586,6 +605,7 @@ public:
   bool init(EmuFat* dev, u8 part);
 
   bool format(u32 sectors);
+  bool formatNew(u32 sectors);
 
   // inline functions that return volume info
   //The volume's cluster size in blocks.
@@ -687,6 +707,7 @@ private:
   void cacheSetDirty() {cache_.cacheDirty_ |= CACHE_FOR_WRITE;}
   u8 cacheZeroBlock(u32 blockNumber);
   u8 cacheFlush();
+  void cacheReset();
 
   //IO functions:
   u8 readBlock(u32 block, u8* dst);

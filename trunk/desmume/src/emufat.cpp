@@ -1,36 +1,74 @@
-//Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright 2009-2010 DeSmuME team
+
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 //based on Arduino SdFat Library ( http://code.google.com/p/sdfatlib/ )
-/* 
- * Copyright (C) 2009 by William Greiman
- *
- * This file is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This file is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdFat Library.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
+//Copyright (C) 2009 by William Greiman
+
+//based on mkdosfs - utility to create FAT/MS-DOS filesystems
+//Copyright (C) 1991 Linus Torvalds <torvalds@klaava.helsinki.fi>
+//Copyright (C) 1992-1993 Remy Card <card@masi.ibp.fr>
+//Copyright (C) 1993-1994 David Hudson <dave@humbug.demon.co.uk>
+//Copyright (C) 1998 H. Peter Anvin <hpa@zytor.com>
+//Copyright (C) 1998-2005 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 
 #include "emufat.h"
 
-static const u8 mkdosfs_bootcode[420] =
+#define LE16(x) (x)
+#define LE32(x) (x)
+
+
+#define MAX_CLUST_12	((1 << 12) - 16)
+#define MAX_CLUST_16	((1 << 16) - 16)
+#define MIN_CLUST_32    65529
+/* M$ says the high 4 bits of a FAT32 FAT entry are reserved and don't belong
+* to the cluster number. So the max. cluster# is based on 2^28 */
+#define MAX_CLUST_32	((1 << 28) - 16)
+#define FAT12_THRESHOLD	4085
+#define MSDOS_EXT_SIGN 0x29	/* extended boot sector signature */
+#define MSDOS_FAT12_SIGN "FAT12   "	/* FAT12 filesystem signature */
+#define MSDOS_FAT16_SIGN "FAT16   "	/* FAT16 filesystem signature */
+#define MSDOS_FAT32_SIGN "FAT32   "	/* FAT32 filesystem signature */
+static const int sector_size = 512;
+#define BLOCK_SIZE   512
+#define HARD_SECTOR_SIZE   512
+#define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
+#define FAT_EOF      (0x0ffffff8)
+#define BOOT_SIGN 0xAA55	/* Boot sector magic number */
+
+struct __PACKED  fat32_fsinfo {
+	u32		reserved1;	/* Nothing as far as I can tell */
+	u32		signature;	/* 0x61417272L */
+	u32		free_clusters;	/* Free cluster count.  -1 if unknown */
+	u32		next_cluster;	/* Most recently allocated cluster.
+								* Unused under Linux. */
+	u32		reserved2[4];
+};
+
+//see mkdosfs for the disassembly
+static const u8 mkdosfs_bootcode_fat32[420] =
 {
-    0xFE, 0x54, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x6E, 0x6F, 0x74, 0x20, 0x61, 0x20, 0x62, 
-    0x6F, 0x6F, 0x74, 0x61, 0x62, 0x6C, 0x65, 0x20, 0x64, 0x69, 0x73, 0x6B, 0x2E, 0x20, 0x20, 0x50, 
-    0x6C, 0x65, 0x61, 0x73, 0x65, 0x20, 0x69, 0x6E, 0x73, 0x65, 0x72, 0x74, 0x20, 0x61, 0x20, 0x62, 
-    0x6F, 0x6F, 0x74, 0x61, 0x62, 0x6C, 0x65, 0x20, 0x66, 0x6C, 0x6F, 0x70, 0x70, 0x79, 0x20, 0x61, 
-    0x6E, 0x64, 0x0D, 0x0A, 0x70, 0x72, 0x65, 0x73, 0x73, 0x20, 0x61, 0x6E, 0x79, 0x20, 0x6B, 0x65, 
-    0x79, 0x20, 0x74, 0x6F, 0x20, 0x74, 0x72, 0x79, 0x20, 0x61, 0x67, 0x61, 0x69, 0x6E, 0x20, 0x2E, 
-    0x2E, 0x2E, 0x20, 0x0D, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    0x0E, 0x1F, 0xBE, 0x77, 0x7C, 0xAC, 0x22, 0xC0, 0x74, 0x0B, 0x56, 0xB4, 0x0E, 0xBB, 0x07, 0x00, 
+    0xCD, 0x10, 0x5E, 0xEB, 0xF0, 0x32, 0xE4, 0xCD, 0x16, 0xCD, 0x19, 0xEB, 0xFE, 0x54, 0x68, 0x69, 
+    0x73, 0x20, 0x69, 0x73, 0x20, 0x6E, 0x6F, 0x74, 0x20, 0x61, 0x20, 0x62, 0x6F, 0x6F, 0x74, 0x61, 
+    0x62, 0x6C, 0x65, 0x20, 0x64, 0x69, 0x73, 0x6B, 0x2E, 0x20, 0x20, 0x50, 0x6C, 0x65, 0x61, 0x73, 
+    0x65, 0x20, 0x69, 0x6E, 0x73, 0x65, 0x72, 0x74, 0x20, 0x61, 0x20, 0x62, 0x6F, 0x6F, 0x74, 0x61, 
+    0x62, 0x6C, 0x65, 0x20, 0x66, 0x6C, 0x6F, 0x70, 0x70, 0x79, 0x20, 0x61, 0x6E, 0x64, 0x0D, 0x0A, 
+    0x70, 0x72, 0x65, 0x73, 0x73, 0x20, 0x61, 0x6E, 0x79, 0x20, 0x6B, 0x65, 0x79, 0x20, 0x74, 0x6F, 
+    0x20, 0x74, 0x72, 0x79, 0x20, 0x61, 0x67, 0x61, 0x69, 0x6E, 0x20, 0x2E, 0x2E, 0x2E, 0x20, 0x0D, 
+    0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -80,7 +118,6 @@ EmuFat::~EmuFat()
 		delete m_pFile;
 }
 
-
 u8 EmuFat::cacheRawBlock(u32 blockNumber, u8 action)
 {
   if (cache_.cacheBlockNumber_ != blockNumber) {
@@ -103,6 +140,11 @@ u8 EmuFat::cacheZeroBlock(u32 blockNumber)
   cache_.cacheBlockNumber_ = blockNumber;
   cacheSetDirty();
   return true;
+}
+
+void EmuFat::cacheReset()
+{
+	reconstruct(&cache_);
 }
 
 u8 EmuFat::cacheFlush() {
@@ -165,74 +207,437 @@ void EmuFat::truncate(u32 size)
 
 //-------------------------------------------------------------------------------------
 
+inline int cdiv (int a, int b)
+{
+  return (a + b - 1) / b;
+}
+
+bool calculateClusterSize(TFat32BootSector* bsp, u32 avail_sectors, u32& cluster_count, u32& fat_length, 	int size_fat_by_user, int &size_fat)
+{
+	TFat32BootSector &bs = *bsp;
+	const u32 fatdata = avail_sectors;
+	int maxclustsize = bsp->sectorsPerCluster;
+
+		u32 fatlength12, fatlength16, fatlength32;
+		u32 maxclust12, maxclust16, maxclust32;
+		u32 clust12, clust16, clust32;
+do {
+				printf( "Trying with %d sectors/cluster:\n", bs.sectorsPerCluster );
+
+			/* The factor 2 below avoids cut-off errors for nr_fats == 1.
+			* The "nr_fats*3" is for the reserved first two FAT entries */
+			clust12 = 2*((u64) fatdata *sector_size + bs.fatCount*3) /
+				(2*(int) bs.sectorsPerCluster * sector_size + bs.fatCount*3);
+			fatlength12 = cdiv (((clust12+2) * 3 + 1) >> 1, sector_size);
+			/* Need to recalculate number of clusters, since the unused parts of the
+			* FATS and data area together could make up space for an additional,
+			* not really present cluster. */
+			clust12 = (fatdata - bs.fatCount*fatlength12)/bs.sectorsPerCluster;
+			maxclust12 = (fatlength12 * 2 * sector_size) / 3;
+			if (maxclust12 > MAX_CLUST_12)
+				maxclust12 = MAX_CLUST_12;
+				printf( "FAT12: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
+				clust12, fatlength12, maxclust12, MAX_CLUST_12 );
+			if (clust12 > maxclust12-2) {
+				clust12 = 0;
+					printf( "FAT12: too much clusters\n" );
+			}
+
+			clust16 = ((u64) fatdata *sector_size + bs.fatCount*4) /
+				((int) bs.sectorsPerCluster * sector_size + bs.fatCount*2);
+			fatlength16 = cdiv ((clust16+2) * 2, sector_size);
+			/* Need to recalculate number of clusters, since the unused parts of the
+			* FATS and data area together could make up space for an additional,
+			* not really present cluster. */
+			clust16 = (fatdata - bs.fatCount*fatlength16)/bs.sectorsPerCluster;
+			maxclust16 = (fatlength16 * sector_size) / 2;
+			if (maxclust16 > MAX_CLUST_16)
+				maxclust16 = MAX_CLUST_16;
+			printf( "FAT16: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
+				clust16, fatlength16, maxclust16, MAX_CLUST_16 );
+			if (clust16 > maxclust16-2) {
+				printf( "FAT16: too much clusters\n" );
+				clust16 = 0;
+			}
+			/* The < 4078 avoids that the filesystem will be misdetected as having a
+			* 12 bit FAT. */
+			if (clust16 < FAT12_THRESHOLD && !(size_fat_by_user && size_fat == 16)) {
+				printf( clust16 < FAT12_THRESHOLD ?
+					"FAT16: would be misdetected as FAT12\n" :
+				"FAT16: too much clusters\n" );
+				clust16 = 0;
+			}
+
+			clust32 = ((u64) fatdata *sector_size + bs.fatCount*8) /
+				((int) bs.sectorsPerCluster * sector_size + bs.fatCount*4);
+			fatlength32 = cdiv ((clust32+2) * 4, sector_size);
+			/* Need to recalculate number of clusters, since the unused parts of the
+			* FATS and data area together could make up space for an additional,
+			* not really present cluster. */
+			clust32 = (fatdata - bs.fatCount*fatlength32)/bs.sectorsPerCluster;
+			maxclust32 = (fatlength32 * sector_size) / 4;
+			if (maxclust32 > MAX_CLUST_32)
+				maxclust32 = MAX_CLUST_32;
+			if (clust32 && clust32 < MIN_CLUST_32 && !(size_fat_by_user && size_fat == 32)) {
+				clust32 = 0;
+					printf( "FAT32: not enough clusters (%d)\n", MIN_CLUST_32);
+			}
+				printf( "FAT32: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
+				clust32, fatlength32, maxclust32, MAX_CLUST_32 );
+			if (clust32 > maxclust32) {
+				clust32 = 0;
+					printf( "FAT32: too much clusters\n" );
+			}
+
+			if ((clust12 && (size_fat == 0 || size_fat == 12)) ||
+				(clust16 && (size_fat == 0 || size_fat == 16)) ||
+				(clust32 && size_fat == 32))
+				break;
+
+			bs.sectorsPerCluster <<= 1;
+		} while (bs.sectorsPerCluster && bs.sectorsPerCluster <= maxclustsize);
+
+
+	/* Use the optimal FAT size if not specified;
+	* FAT32 is (not yet) choosen automatically */
+	if (!size_fat) {
+		size_fat = (clust16 > clust12) ? 16 : 12;
+		printf( "Choosing %d bits for FAT\n", size_fat );
+	}
+
+	switch (size_fat) {
+		case 12:
+			cluster_count = clust12;
+			fat_length = fatlength12;
+			bs.sectorsPerFat16 = LE16(fatlength12);
+			break;
+		case 16:
+	if (clust16 < FAT12_THRESHOLD) {
+		if (size_fat_by_user) {
+			printf("WARNING: Not enough clusters for a "
+				"16 bit FAT! The filesystem will be\n"
+				"misinterpreted as having a 12 bit FAT without "
+				"mount option \"fat=16\".\n" );
+			return false;
+		}
+		else {
+			printf("This filesystem has an unfortunate size. "
+				"A 12 bit FAT cannot provide\n"
+				"enough clusters, but a 16 bit FAT takes up a little "
+				"bit more space so that\n"
+				"the total number of clusters becomes less than the "
+				"threshold value for\n"
+				"distinction between 12 and 16 bit FATs.\n" );
+			return false;
+		}
+	}
+	cluster_count = clust16;
+	fat_length = fatlength16;
+	bs.sectorsPerFat16 = LE16(fatlength16);
+	break;
+
+case 32:
+	if (clust32 < MIN_CLUST_32)
+		printf("WARNING: Not enough clusters for a 32 bit FAT!\n");
+	cluster_count = clust32;
+	fat_length = fatlength32;
+	bs.sectorsPerFat16 = LE16(0);
+	bs.fat32.sectorsPerFat32 = LE32(fatlength32);
+	break;
+
+	}
+
+	return true;
+}
+
+static void mark_FAT_cluster (int size_fat, u8* fat, int cluster, unsigned int value)
+{
+	switch( size_fat ) {
+case 12:
+	value &= 0x0fff;
+	if (((cluster * 3) & 0x1) == 0)
+	{
+		fat[3 * cluster / 2] = (unsigned char) (value & 0x00ff);
+		fat[(3 * cluster / 2) + 1] = (unsigned char) ((fat[(3 * cluster / 2) + 1] & 0x00f0)
+			| ((value & 0x0f00) >> 8));
+	}
+	else
+	{
+		fat[3 * cluster / 2] = (unsigned char) ((fat[3 * cluster / 2] & 0x000f) | ((value & 0x000f) << 4));
+		fat[(3 * cluster / 2) + 1] = (unsigned char) ((value & 0x0ff0) >> 4);
+	}
+	break;
+
+case 16:
+	value &= 0xffff;
+	fat[2 * cluster] = (unsigned char) (value & 0x00ff);
+	fat[(2 * cluster) + 1] = (unsigned char) (value >> 8);
+	break;
+
+case 32:
+	value &= 0xfffffff;
+	fat[4 * cluster] =       (unsigned char)  (value & 0x000000ff);
+	fat[(4 * cluster) + 1] = (unsigned char) ((value & 0x0000ff00) >> 8);
+	fat[(4 * cluster) + 2] = (unsigned char) ((value & 0x00ff0000) >> 16);
+	fat[(4 * cluster) + 3] = (unsigned char) ((value & 0xff000000) >> 24);
+	break;
+	}
+}
+
+//use 36M as minimum fat32 size (or else mkdosfs complains)
+//this function assumes fat32. it could be redone to be intelligent by making another pass through mkdosfs and analyzing it again
+//but we onnly targeted fat32 our first time through
+bool EmuFatVolume::formatNew(u32 sectors)
+{
+	u32 volumeStartBlock = 0;
+	TFat32BootSector bsrec;
+	memset(&bsrec,0,sizeof(TFat32BootSector));
+	TFat32BootSector *bs = &bsrec;
+
+	//perform same analysis (we guess) as mkdosfs
+
+	//"fake values"
+	bs->sectorsPerTrack = 32;
+	bs->headCount = 64;
+	//def_hd_params:
+	bs->mediaType = 0xF8;
+	bs->rootDirEntryCount = LE16(512); //Default to 512 entries - N.B. this is overwritten later
+	static const u32 BLOCK_SIZE_BITS = 9;
+	const u32 sz_mb = (sectors+(1<<(20-BLOCK_SIZE_BITS))-1) >> (20-BLOCK_SIZE_BITS);
+	bs->sectorsPerCluster = 
+		sz_mb > 16*1024 ? 32 :
+		sz_mb >  8*1024 ? 16 :
+		sz_mb >     260 ?  8 :
+		1;
+	//(fat16 and fat12 would start at 4 sectors per cluster)
+
+	 memcpy (bs->oemName, "mkdosfs", 8);
+	 bs->rootDirEntryCount = 0; //Under FAT32, the root dir is in a cluster chain, and this is signalled by bs.dir_entries being 0
+	 bs->fat32.vi.volume_id = 0; //not generating a volume id.. just use 0 for determinism's sake
+	memcpy(bs->fat32.vi.volume_label,"           ",11);
+	bs->jmpToBootCode[0] = 0xEB;
+	bs->jmpToBootCode[1] = 0x58; //this value is only for fat32 //Patch in the correct offset to the boot code
+	bs->jmpToBootCode[2] = 0x90;
+	
+	memcpy(bs->fat32.boot_code,mkdosfs_bootcode_fat32,420);
+	bs->boot_sign[0] = 0x55;
+	bs->boot_sign[1] = 0xAA;
+
+	bs->reservedSectorCount = LE16(32);
+	bs->fatCount = 2;
+	bs->hiddenSectors = LE32(0);
+
+    u32 fatdata = sectors - cdiv (bs->rootDirEntryCount * 32, 512) - bs->reservedSectorCount;
+
+	u32 cluster_count;
+	u32 fat_length;
+	int size_fat = 32;
+	if(!calculateClusterSize(bs, fatdata, cluster_count, fat_length, 1, size_fat))
+		return false;
+	//TODO - this function whacks values we set earlier. gross. either mkdosfs is sloppy or i dont understand it.
+	//anyway, whack that dup code
+	switch(size_fat)
+	{
+	case 12: memcpy(bs->oldfat.vi.fs_type, MSDOS_FAT12_SIGN, 8); break;
+	case 16: memcpy(bs->oldfat.vi.fs_type, MSDOS_FAT16_SIGN, 8); break;
+	case 32: memcpy(bs->fat32.vi.fs_type, MSDOS_FAT32_SIGN, 8); break;
+	}
+
+	bs->bytesPerSector = 512;
+
+	//set up additional FAT32 fields
+	bs->fat32.fat32Flags = LE16(0);
+	bs->fat32.fat32Version = LE16(0);
+	bs->fat32.fat32RootCluster = LE32(2);
+	bs->fat32.fat32FSInfo = LE16(1);
+	u32 backup_boot = (bs->reservedSectorCount>= 7) ? 6 : (bs->reservedSectorCount >= 2) ? bs->reservedSectorCount-1 : 0;
+	printf( "Using sector %d as backup boot sector (0 = none)\n",backup_boot );
+	bs->fat32.fat32BackBootBlock = LE16(backup_boot);
+	memset(bs->fat32.fat32Reserved,0,sizeof(bs->fat32.fat32Reserved));
+
+	if(sectors>= 65536) {
+		bs->totalSectors16 = LE16(0);
+		bs->totalSectors32 = LE32(sectors);
+	} else {
+		bs->totalSectors16 = LE16(sectors);
+		bs->totalSectors32 = LE32(0);
+	}
+
+	if (!cluster_count)
+	{
+		//if (sectors_per_cluster)	/* If yes, die if we'd spec'd sectors per cluster */
+		//	die ("Too many clusters for file system - try more sectors per cluster");
+		//else
+			printf("Attempting to create a too large file system");
+			return false;
+	}
+
+	u32 start_data_sector = (bs->reservedSectorCount + bs->fatCount * fat_length) * (sector_size/512);
+	u32 start_data_block = (start_data_sector + SECTORS_PER_BLOCK - 1) / SECTORS_PER_BLOCK;
+
+	if (sectors < start_data_block + 32)	/* Arbitrary undersize file system! */
+	{
+		printf("Too few blocks for viable file system");
+		return false;
+	}
+
+	bs->fat32.vi.ext_boot_sign = MSDOS_EXT_SIGN;
+
+	//Make the file allocation tables!
+	u8* fat = new u8[fat_length * sector_size];
+	memset( fat, 0, fat_length * sector_size );
+	mark_FAT_cluster (size_fat, fat, 0, 0xffffffff);	/* Initial fat entries */
+	mark_FAT_cluster (size_fat, fat, 1, 0xffffffff);
+	fat[0] = bs->mediaType;	/* Put media type in first byte! */
+	if (size_fat == 32) {
+		/* Mark cluster 2 as EOF (used for root dir) */
+		mark_FAT_cluster (size_fat, fat, 2, FAT_EOF);
+	}
+
+	u32 size_root_dir = (size_fat == 32) ? bs->sectorsPerCluster*sector_size :
+		bs->rootDirEntryCount * sizeof (TDirectoryEntry);
+	//u8* root_dir = new u8[size_root_dir];
+	//memset(root_dir, 0, size_root_dir);
+	u32 size_root_dir_in_sectors = size_root_dir/512;
+
+
+	u8* info_sector = NULL;
+	if (size_fat == 32) {
+		/* For FAT32, create an info sector */
+		fat32_fsinfo *info;
+
+		info_sector = new u8[sector_size];
+		memset(info_sector, 0, sector_size);
+		/* fsinfo structure is at offset 0x1e0 in info sector by observation */
+		info = (fat32_fsinfo *)(info_sector + 0x1e0);
+
+		/* Info sector magic */
+		info_sector[0] = 'R';
+		info_sector[1] = 'R';
+		info_sector[2] = 'a';
+		info_sector[3] = 'A';
+
+		/* Magic for fsinfo structure */
+		info->signature = LE32(0x61417272);
+		/* We've allocated cluster 2 for the root dir. */
+		info->free_clusters = LE32(cluster_count - 1);
+		info->next_cluster = LE32(2);
+
+		/* Info sector also must have boot sign */
+		*(u16 *)(info_sector + 0x1fe) = LE16(BOOT_SIGN);
+	}
+
+	//-------------
+
+	//write_tables()
+	u8* blank_sector = new u8[512];
+	memset(blank_sector,0,512);
+	
+	dev_->cacheReset();
+	dev_->truncate(0);
+	dev_->truncate(sectors*512);
+	/* clear all reserved sectors */
+	for(int i=0;i<bs->reservedSectorCount;i++)
+		dev_->writeBlock(0,blank_sector);
+	/* seek back to sector 0 and write the boot sector */
+	dev_->writeBlock(0,(const u8*)bs);
+	/* on FAT32, write the info sector and backup boot sector */
+	if (size_fat == 32)
+	{
+		dev_->writeBlock(bs->fat32.fat32FSInfo,info_sector);
+		if(bs->fat32.fat32BackBootBlock)
+			dev_->writeBlock(bs->fat32.fat32BackBootBlock,(const u8*)bs);
+	}
+	/* seek to start of FATS and write them all */
+	int ctr=bs->reservedSectorCount;
+	for (int i=0;i<bs->fatCount;i++)
+		for(int j=0;j<fat_length;j++,ctr++)
+			dev_->writeBlock(ctr,fat+j*sector_size);
+
+	/* Write the root directory directly after the last FAT. This is the root
+	* dir area on FAT12/16, and the first cluster on FAT32. */
+	for(int i=0;i<size_root_dir_in_sectors;i++)
+		dev_->writeBlock(ctr,blank_sector);
+
+	delete[] blank_sector;
+	delete[] info_sector;
+	delete[] fat;
+
+	return init(dev_,0);
+
+	//return true;
+}
+
 //well, there are a lot of ways to format a disk. this is just a simple one.
 //it would be nice if someone who understood fat better could modify the root
 //directory setup to use reasonable code instead of magic arrays
 bool EmuFatVolume::format(u32 sectors)
 {
-	u32 volumeStartBlock = 0;
-	dev_->truncate(0);
-	dev_->truncate(sectors*512);
-	if (!dev_->cacheRawBlock(volumeStartBlock, EmuFat::CACHE_FOR_WRITE)) return false;
-	memset(&dev_->cache_.cacheBuffer_,0,sizeof(dev_->cache_.cacheBuffer_));
-	TFat32BootSector* bs = &dev_->cache_.cacheBuffer_.fbs;
-	TBiosParmBlock* bpb = &bs->bpb;
+	//u32 volumeStartBlock = 0;
+	//dev_->truncate(0);
+	//dev_->truncate(sectors*512);
+	//if (!dev_->cacheRawBlock(volumeStartBlock, EmuFat::CACHE_FOR_WRITE)) return false;
+	//memset(&dev_->cache_.cacheBuffer_,0,sizeof(dev_->cache_.cacheBuffer_));
+	//TFat32BootSector* bs = &dev_->cache_.cacheBuffer_.fbs;
+	//TBiosParmBlock* bpb = &bs->bpb;
 
-	bs->jmpToBootCode[0] = 0xEB;
-	bs->jmpToBootCode[1] = 0x3C;
-	bs->jmpToBootCode[2] = 0x90;
-	memcpy(bs->oemName,"mkdosfs",8);
-	bs->driveNumber = 0;
-	bs->reserved1 = 0;
-	bs->bootSignature = 0x29;
-	bs->volumeSerialNumber = 0;
-	memcpy(bs->volumeLabel,"           ",11);
-	memcpy(bs->fileSystemType,"FAT16   ",8);
-	memcpy(bs->bootCode,mkdosfs_bootcode,420);
-	bs->bootSectorSig0 = 0x55;
-	bs->bootSectorSig1 = 0xAA;
+	//bs->jmpToBootCode[0] = 0xEB;
+	//bs->jmpToBootCode[1] = 0x3C;
+	//bs->jmpToBootCode[2] = 0x90;
+	//memcpy(bs->oemName,"mkdosfs",8);
+	//bs->driveNumber = 0;
+	//bs->reserved1 = 0;
+	//bs->bootSignature = 0x29;
+	//bs->volumeSerialNumber = 0;
+	//memcpy(bs->volumeLabel,"           ",11);
+	//memcpy(bs->fileSystemType,"FAT16   ",8);
+	//memcpy(bs->bootCode,mkdosfs_bootcode,420);
+	//bs->bootSectorSig0 = 0x55;
+	//bs->bootSectorSig1 = 0xAA;
 
-	bpb->bytesPerSector = 512;
-	bpb->sectorsPerCluster = 4;
-	bpb->reservedSectorCount = 1;
-	bpb->fatCount = 2;
-	bpb->rootDirEntryCount = 512;
-	bpb->totalSectors16 = 0;
-	bpb->mediaType = 0xF8;
-	bpb->sectorsPerFat16 = 32;
-	bpb->sectorsPerTrack = 32;
-	bpb->headCount = 64;
-	bpb->hiddenSectors = 0;
-	bpb->totalSectors32 = sectors;
-	bpb->fat32Flags = 0xbe0d;
-	bpb->fat32Version = 0x20Fd;
-	bpb->fat32RootCluster = 0x20202020;
-	bpb->fat32FSInfo = 0x2020;
-	bpb->fat32BackBootBlock = 0x2020;
+	//bpb->bytesPerSector = 512;
+	//bpb->sectorsPerCluster = 4;
+	//bpb->reservedSectorCount = 1;
+	//bpb->fatCount = 2;
+	//bpb->rootDirEntryCount = 512;
+	//bpb->totalSectors16 = 0;
+	//bpb->mediaType = 0xF8;
+	//bpb->sectorsPerFat16 = 32;
+	//bpb->sectorsPerTrack = 32;
+	//bpb->headCount = 64;
+	//bpb->hiddenSectors = 0;
+	//bpb->totalSectors32 = sectors;
+	//bpb->fat32Flags = 0xbe0d;
+	//bpb->fat32Version = 0x20Fd;
+	//bpb->fat32RootCluster = 0x20202020;
+	//bpb->fat32FSInfo = 0x2020;
+	//bpb->fat32BackBootBlock = 0x2020;
 
-	if(!dev_->cacheFlush())
-		return false;
+	//if(!dev_->cacheFlush())
+	//	return false;
 
-	if (!dev_->cacheRawBlock(1, EmuFat::CACHE_FOR_WRITE)) return false;
+	//if (!dev_->cacheRawBlock(1, EmuFat::CACHE_FOR_WRITE)) return false;
 
-	static const u8 rootEntry[8] =
-	{
-		0xF8, 0xFF, 0xFF, 0xFF, 
-	} ;
+	//static const u8 rootEntry[8] =
+	//{
+	//	0xF8, 0xFF, 0xFF, 0xFF, 
+	//} ;
 
-	memcpy(dev_->cache_.cacheBuffer_.data,rootEntry,4);
+	//memcpy(dev_->cache_.cacheBuffer_.data,rootEntry,4);
 
-	if(!dev_->cacheFlush())
-		return false;
+	//if(!dev_->cacheFlush())
+	//	return false;
 
-	if (!dev_->cacheRawBlock(33, EmuFat::CACHE_FOR_WRITE)) return false;
+	//if (!dev_->cacheRawBlock(33, EmuFat::CACHE_FOR_WRITE)) return false;
 
-	memcpy(dev_->cache_.cacheBuffer_.data,rootEntry,4);
+	//memcpy(dev_->cache_.cacheBuffer_.data,rootEntry,4);
 
-	if(!dev_->cacheFlush())
-		return false;
+	//if(!dev_->cacheFlush())
+	//	return false;
 
-	return init(dev_,0);
+	//return init(dev_,0);
+
+	return false;
 }
 
 bool EmuFatVolume::init(EmuFat* dev, u8 part) {
@@ -253,16 +658,16 @@ bool EmuFatVolume::init(EmuFat* dev, u8 part) {
     volumeStartBlock = p->firstSector;
   }
   if (!dev->cacheRawBlock(volumeStartBlock, EmuFat::CACHE_FOR_READ)) return false;
-  TBiosParmBlock* bpb = &dev->cache_.cacheBuffer_.fbs.bpb;
-  if (bpb->bytesPerSector != 512 ||
-    bpb->fatCount == 0 ||
-    bpb->reservedSectorCount == 0 ||
-    bpb->sectorsPerCluster == 0) {
+  TFat32BootSector* bs = &dev->cache_.cacheBuffer_.fbs;
+  if (bs->bytesPerSector != 512 ||
+    bs->fatCount == 0 ||
+    bs->reservedSectorCount == 0 ||
+    bs->sectorsPerCluster == 0) {
        // not valid FAT volume
       return false;
   }
-  fatCount_ = bpb->fatCount;
-  blocksPerCluster_ = bpb->sectorsPerCluster;
+  fatCount_ = bs->fatCount;
+  blocksPerCluster_ = bs->sectorsPerCluster;
 
   // determine shift that is same as multiply by blocksPerCluster_
   clusterSizeShift_ = 0;
@@ -270,23 +675,23 @@ bool EmuFatVolume::init(EmuFat* dev, u8 part) {
     // error if not power of 2
     if (clusterSizeShift_++ > 7) return false;
   }
-  blocksPerFat_ = bpb->sectorsPerFat16 ?
-                    bpb->sectorsPerFat16 : bpb->sectorsPerFat32;
+  blocksPerFat_ = bs->sectorsPerFat16 ?
+                    bs->sectorsPerFat16 : bs->fat32.sectorsPerFat32;
 
-  fatStartBlock_ = volumeStartBlock + bpb->reservedSectorCount;
+  fatStartBlock_ = volumeStartBlock + bs->reservedSectorCount;
 
   // count for FAT16 zero for FAT32
-  rootDirEntryCount_ = bpb->rootDirEntryCount;
+  rootDirEntryCount_ = bs->rootDirEntryCount;
 
   // directory start for FAT16 dataStart for FAT32
-  rootDirStart_ = fatStartBlock_ + bpb->fatCount * blocksPerFat_;
+  rootDirStart_ = fatStartBlock_ + bs->fatCount * blocksPerFat_;
 
   // data start for FAT16 and FAT32
-  dataStartBlock_ = rootDirStart_ + ((32 * bpb->rootDirEntryCount + 511)/512);
+  dataStartBlock_ = rootDirStart_ + ((32 * bs->rootDirEntryCount + 511)/512);
 
   // total blocks for FAT16 or FAT32
-  u32 totalBlocks = bpb->totalSectors16 ?
-                           bpb->totalSectors16 : bpb->totalSectors32;
+  u32 totalBlocks = bs->totalSectors16 ?
+                           bs->totalSectors16 : bs->totalSectors32;
   // total data blocks
   clusterCount_ = totalBlocks - (dataStartBlock_ - volumeStartBlock);
 
@@ -299,7 +704,7 @@ bool EmuFatVolume::init(EmuFat* dev, u8 part) {
   } else if (clusterCount_ < 65525) {
     fatType_ = 16;
   } else {
-    rootDirStart_ = bpb->fat32RootCluster;
+    rootDirStart_ = bs->fat32.fat32RootCluster;
     fatType_ = 32;
   }
   return true;
