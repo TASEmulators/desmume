@@ -566,9 +566,11 @@ private:
   // sync of directory entry required
   static const u8 F_FILE_DIR_DIRTY = 0x80;
 // make sure F_OFLAG is ok
-#if ((F_UNUSED | F_FILE_UNBUFFERED_READ | F_FILE_DIR_DIRTY) & F_OFLAG)
-#error flags_ bits conflict
-#endif  // flags_ bits
+
+  void ctassert()
+  {
+	  CTASSERT(!((F_UNUSED | F_FILE_UNBUFFERED_READ | F_FILE_DIR_DIRTY) & F_OFLAG));
+  }
 
   // private data
   u8   flags_;         // See above for definition of flags_ bits
