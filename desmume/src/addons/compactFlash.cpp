@@ -327,6 +327,9 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 {
 	char* fname = (strlen(fs->cAlternateFileName)>0) ? fs->cAlternateFileName : fs->cFileName;
 
+	//we use cFileName always because it is a LFN and we are making sure that we always make a fat32 image
+	fname = fs->cFileName;
+
 	if(arg == EListCallbackArg_Pop) 
 	{
 		currFatFile = fatStack.top();
@@ -384,15 +387,22 @@ static BOOL cflash_build_fat()
 	currPath = sFlashPath;
 	list_files(sFlashPath.c_str(), count_ListCallback);
 
+	dataSectors += 8; //a few for reserved sectors, etc.
+
 	dataSectors += 16*1024*1024/512; //add 16MB worth of write space. this is probably enough for anyone, but maybe it should be configurable.
 	//we could always suggest to users to add a big file to their directory to overwrite (that would cause the image to get padded)
+
+	//this seems to be the minimum size that will turn into a solid fat32
+	if(dataSectors<36*1024*1024/512)
+		dataSectors = 36*1024*1024/512;
 	
 	delete file;
-	file = new EMUFILE_MEMORY(dataSectors*512+1);
+	file = new EMUFILE_MEMORY(dataSectors*512);
+	//file = new EMUFILE_FILE("c:\\temp.ima","rb+");
 	EmuFat fat(file);
 	EmuFatVolume vol;
 	u8 ok = vol.init(&fat);
-	vol.format(dataSectors);
+	vol.formatNew(dataSectors);
 
 	reconstruct(&currFatFile);
 	currFatFile.openRoot(&vol);
@@ -772,11 +782,6 @@ static unsigned int cflash_read(unsigned int address)
 {
 	unsigned int ret_value = 0;
 	size_t elems_read = 0;
-#if 0 /* used by next if 0 block */
-#define BUFFERED_BLOCK_SIZE 512
-	static u8 block_buffer[BUFFERED_BLOCK_SIZE];
-	static s32 buffered_start_index = -1;
-#endif
 
 	switch (address)
 	{

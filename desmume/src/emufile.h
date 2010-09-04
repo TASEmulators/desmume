@@ -176,15 +176,7 @@ public:
 		return 0;
 	}
 
-	virtual size_t _fread(const void *ptr, size_t bytes){
-		u32 remain = len-pos;
-		u32 todo = std::min<u32>(remain,(u32)bytes);
-		memcpy((void*)ptr,buf()+pos,todo);
-		pos += todo;
-		if(todo<bytes)
-			failbit = true;
-		return todo;
-	}
+	virtual size_t _fread(const void *ptr, size_t bytes);
 
 	//removing these return values for now so we can find any code that might be using them and make sure
 	//they handle the return values correctly
@@ -230,6 +222,8 @@ public:
 class EMUFILE_FILE : public EMUFILE { 
 protected:
 	FILE* fp;
+	std::string fname;
+	char mode[16];
 
 private:
 	void open(const char* fname, const char* mode)
@@ -237,6 +231,8 @@ private:
 		fp = fopen(fname,mode);
 		if(!fp)
 			failbit = true;
+		this->fname = fname;
+		strcpy(this->mode,mode);
 	}
 
 public:
@@ -255,14 +251,7 @@ public:
 
 	bool is_open() { return fp != NULL; }
 
-	virtual void truncate(s32 length)
-	{
-		#ifdef _MSC_VER
-			_chsize(_fileno(fp),length);
-		#else
-			ftruncate(fileno(fp),length);
-		#endif
-	}
+	virtual void truncate(s32 length);
 
 	virtual int fprintf(const char *format, ...) {
 		va_list argptr;
