@@ -280,7 +280,7 @@ static void list_files(const char *filepath, ListCallback list_callback)
 		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
 		//add_file(fname, &entry, fileLevel);
 		list_callback(&entry,EListCallbackArg_Item);
-		printf("cflash added %s\n",fname);
+		printf("cflash added %s\n",entry.cFileName);
 
 		if (numFiles==MAXFILES-1) break;
 
