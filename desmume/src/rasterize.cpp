@@ -546,10 +546,23 @@ public:
 
 		if(polyAttr.decalMode)
 		{
-			if(depth != destFragment.depth)
+			if ( CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack > 0)
 			{
-				goto depth_fail;
+				if(depth<destFragment.depth - CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack
+					|| depth>destFragment.depth + CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack) 
+				{
+					goto depth_fail;
+				}
+
 			}
+			else
+			{
+				if(depth != destFragment.depth)
+				{
+					goto depth_fail;
+				}
+			}
+
 		}
 		else
 		{
