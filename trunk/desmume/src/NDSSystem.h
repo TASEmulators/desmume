@@ -511,6 +511,7 @@ extern struct TCommonSettings {
 		, GFX3D_EdgeMark(true)
 		, GFX3D_Fog(true)
 		, GFX3D_Texture(true)
+		, GFX3D_Zelda_Shadow_Depth_Hack(0)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
 		, PatchSWI3(false)
@@ -548,6 +549,7 @@ extern struct TCommonSettings {
 	bool GFX3D_EdgeMark;
 	bool GFX3D_Fog;
 	bool GFX3D_Texture;
+	int  GFX3D_Zelda_Shadow_Depth_Hack;
 
 	bool UseExtBIOS;
 	char ARM9BIOS[256];

@@ -779,6 +779,12 @@
 #define IDC_USENOISE                    5010
 #define IDC_CPU                         6000
 #define IDC_IOREG                       6001
+
+//ZELDA SHADOW HACK
+#define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK		9000
+#define IDC_ZELDA_SHADOW_DEPTH_HACK			9001
+
+
 #define IDD_CHEAT_ADD_XX_CODE           10005
 #define IDD_GBASLOT_GUITARGRIP          10009
 #define IDD_GBASLOT_PIANO               10010

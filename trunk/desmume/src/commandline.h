@@ -40,6 +40,7 @@ class CommandLine
 public:
 	//actual options: these may move to another sturct
 	int load_slot;
+	int depth_threshold;
 	std::string nds_file;
 	std::string play_movie_file;
 	std::string record_movie_file;

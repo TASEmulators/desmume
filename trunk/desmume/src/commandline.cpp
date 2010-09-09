@@ -52,10 +52,12 @@ CommandLine::CommandLine()
 , _rigorous_timing(0)
 , _advanced_timing(-1)
 , _slot1(NULL)
+, depth_threshold(-1)
+, load_slot(-1)
+, arm9_gdb_port(0)
+, arm7_gdb_port(0)
+, start_paused(FALSE)
 {
-	load_slot = -1;
-	arm9_gdb_port = arm7_gdb_port = 0;
-	start_paused = FALSE;
 #ifndef _MSC_VER
 	disable_sound = 0;
 	disable_limiter = 0;
@@ -92,6 +94,7 @@ void CommandLine::loadCommonOptions()
 		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
 		{ "advanced-timing", 0, 0, G_OPTION_ARG_INT, &_advanced_timing, "Use advanced BUS-level timing (default 1)", "ADVANCED_TIMING"},
 		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
+		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -127,6 +130,8 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
 	if(_rigorous_timing) CommonSettings.rigorous_timing = true;
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
+	if(depth_threshold != -1)
+		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
 
 	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
