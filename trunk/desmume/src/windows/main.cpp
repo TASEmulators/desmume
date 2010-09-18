@@ -3863,6 +3863,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, ID_RAM_WATCH,          romloaded);
 			DesEnableMenuItem(mainMenu, ID_RAM_SEARCH,         romloaded);
 
+			DesEnableMenuItem(mainMenu, IDC_BACKGROUNDINPUT,   !lostFocusPause);
+
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
 			{
@@ -5132,7 +5134,9 @@ DOKEYDOWN:
 
 		case IDC_BACKGROUNDPAUSE:
 			lostFocusPause = !lostFocusPause;
+			allowBackgroundInput &= !lostFocusPause;
 			WritePrivateProfileInt("Focus", "BackgroundPause", (int)lostFocusPause, IniName);
+			WritePrivateProfileInt("Controls", "AllowBackgroundInput", (int)allowBackgroundInput, IniName);
 			return 0;
 
 		case IDC_BACKGROUNDINPUT:
