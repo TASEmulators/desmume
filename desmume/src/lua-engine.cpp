@@ -3664,10 +3664,10 @@ DEFINE_LUA_FUNCTION(input_getcurrentinputstatus, "")
 #if defined(_WIN32) && !defined(WXPORT)
 	// keyboard and mouse button status
 	{
-		int BackgroundInput = 0;//TODO
+		extern bool allowBackgroundInput;
 
 		unsigned char keys [256];
-		if(!BackgroundInput)
+		if(!allowBackgroundInput)
 		{
 			if(GetKeyboardState(keys))
 			{
