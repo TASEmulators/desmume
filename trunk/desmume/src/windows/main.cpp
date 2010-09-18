@@ -406,6 +406,7 @@ extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
 static bool lastPauseFromLostFocus = false;
 static bool FrameLimit = true;
+extern bool allowBackgroundInput;
 
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
@@ -3979,6 +3980,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
+			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
 
 			MainWindow->checkMenu(IDM_CHEATS_DISABLE, CommonSettings.cheatsDisable == true);
 
@@ -5131,6 +5133,11 @@ DOKEYDOWN:
 		case IDC_BACKGROUNDPAUSE:
 			lostFocusPause = !lostFocusPause;
 			WritePrivateProfileInt("Focus", "BackgroundPause", (int)lostFocusPause, IniName);
+			return 0;
+
+		case IDC_BACKGROUNDINPUT:
+			allowBackgroundInput = !allowBackgroundInput;
+			WritePrivateProfileInt("Controls", "AllowBackgroundInput", (int)allowBackgroundInput, IniName);
 			return 0;
 
 		case ID_DISPLAYMETHOD_VSYNC:
