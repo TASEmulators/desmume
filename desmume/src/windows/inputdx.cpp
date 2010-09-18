@@ -252,6 +252,7 @@ SGuitar Guitar;
 u8	guitarState = 0;
 
 bool allowUpAndDown = false;
+bool allowBackgroundInput = false;
 
 extern volatile bool paused;
 
@@ -415,6 +416,7 @@ static void LoadInputConfig()
 #undef DO
 
 	allowUpAndDown = GetPrivateProfileInt("Controls","AllowUpAndDown",0,IniName) != 0;
+	allowBackgroundInput = GetPrivateProfileInt("Controls","AllowBackgroundInput",0,IniName) != 0;
 }
 
 static void WriteControl(char* name, WORD val)
@@ -2142,8 +2144,7 @@ bool S9xGetState (WORD KeyIdent)
 	if(KeyIdent == 0 || KeyIdent == 0xFF || KeyIdent == VK_ESCAPE) // if it's the 'disabled' key, it's never pressed
 		return true;
 
-	//TODO - option for background game keys
-	if(MainWindow->getHWnd() != GetForegroundWindow())
+	if(!allowBackgroundInput && MainWindow->getHWnd() != GetForegroundWindow())
 		return true;
 
     if (KeyIdent & 0x8000) // if it's a joystick 'key':
