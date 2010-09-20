@@ -169,7 +169,7 @@
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;HAVE_LUA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -208,7 +208,7 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;HAVE_LUA;NOMINMAX;RELEASE;NDEBUG;EXPERIMENTAL_WIFI_COMM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;EXPERIMENTAL_WIFI_COMM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -254,7 +254,7 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;HAVE_LUA;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -303,7 +303,7 @@
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;HAVE_LUA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -346,7 +346,7 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;HAVE_LUA;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -392,7 +392,7 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;HAVE_LUA;NOMINMAX;RELEASE;NDEBUG;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
