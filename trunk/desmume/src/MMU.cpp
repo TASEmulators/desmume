@@ -919,7 +919,7 @@ void MMU_Reset()
 	
 	memset(MMU.reg_IME,       0, sizeof(u32) * 2);
 	memset(MMU.reg_IE,        0, sizeof(u32) * 2);
-	memset(MMU.reg_IF,        0, sizeof(u32) * 2);
+	memset(MMU.reg_IF_bits,   0, sizeof(u32) * 2);
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 
@@ -1220,17 +1220,96 @@ u32 MMU_readFromGC()
 //does some validation on the game's choice of IF value, correcting it if necessary
 static void validateIF_arm9()
 {
-	//according to gbatek, these flags are forced on until the condition is removed.
-	//no proof of this though...
-	if(MMU_new.gxstat.gxfifo_irq == 1)
-		if(gxFIFO.size <= 127) 
-			MMU.reg_IF[ARMCPU_ARM9] |= (1<<21);
-		else MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
-	else if(MMU_new.gxstat.gxfifo_irq == 2)
-		if(gxFIFO.size == 0) 
-			MMU.reg_IF[ARMCPU_ARM9] |= (1<<21);
-		else  MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
-	else if(MMU_new.gxstat.gxfifo_irq == 0) MMU.reg_IF[ARMCPU_ARM9] &= ~(1<<21);
+}
+
+template<int PROCNUM> static void REG_IF_WriteByte(u32 addr, u8 val)
+{
+	//the following bits are generated from logic and should not be affected here
+	//Bit 17    IPC Send FIFO Empty
+	//Bit 18    IPC Recv FIFO Not Empty
+	//Bit 21    NDS9 only: Geometry Command FIFO
+	//arm9: IF &= ~0x00260000;
+	//arm7: IF &= ~0x00060000;
+	if(addr==2)
+		if(PROCNUM==ARMCPU_ARM9)
+			val &= ~0x26;
+		else
+			val &= ~0x06;
+	
+	MMU.reg_IF_bits[PROCNUM] &= (~(((u32)val)<<(addr<<3)));
+	NDS_Reschedule();
+}
+
+template<int PROCNUM> static void REG_IF_WriteWord(u32 addr,u16 val)
+{
+	REG_IF_WriteByte<PROCNUM>(addr,val&0xFF);
+	REG_IF_WriteByte<PROCNUM>(addr+1,(val>>8)&0xFF);
+}
+
+template<int PROCNUM> static void REG_IF_WriteLong(u32 val)
+{
+	REG_IF_WriteByte<PROCNUM>(0,val&0xFF);
+	REG_IF_WriteByte<PROCNUM>(1,(val>>8)&0xFF);
+	REG_IF_WriteByte<PROCNUM>(2,(val>>16)&0xFF);
+	REG_IF_WriteByte<PROCNUM>(3,(val>>24)&0xFF);
+}
+
+template<int PROCNUM>
+u32 MMU_struct::gen_IF()
+{
+	//TODO - analyze setIF behaviour in GXF_FIFO_handleEvents
+
+	u32 IF = reg_IF_bits[PROCNUM];
+
+	if(PROCNUM==ARMCPU_ARM9)
+	{
+		//according to gbatek, these flags are forced on until the condition is removed.
+		//no proof of this though...
+		switch(MMU_new.gxstat.gxfifo_irq)
+		{
+		case 0: //never
+			break;
+		case 1: //less than half full
+			if(gxFIFO.size <= 127) 
+				IF |= (1<<21);
+			break;
+		case 2: //empty
+			if(gxFIFO.size == 0) 
+				IF |= (1<<21);
+			break;
+		case 3: //reserved/unknown
+			break;
+		}
+	}
+
+	//generate IPC IF states from the ipc registers
+	u16 ipc = T1ReadWord(MMU.MMU_MEM[PROCNUM][0x40], 0x184);
+	if(ipc&0x8000)
+	{
+		if(ipc&0x0004) if(ipc&0x0001) 
+			IF |= (1<<17); //IPC Send FIFO Empty
+		if(ipc&0x0400) if(!(ipc&0x0100))
+			IF |= (1<<18); //IPC Recv FIFO Not Empty
+	}
+
+	//4000184h - NDS9/NDS7 - IPCFIFOCNT - IPC Fifo Control Register (R/W)
+	//
+	//  Bit   Dir  Expl.
+	//  0     R    Send Fifo Empty Status      (0=Not Empty, 1=Empty)
+	//  1     R    Send Fifo Full Status       (0=Not Full, 1=Full)
+	//  2     R/W  Send Fifo Empty IRQ         (0=Disable, 1=Enable)
+	//  3     W    Send Fifo Clear             (0=Nothing, 1=Flush Send Fifo)
+	//  4-7   -    Not used
+	//  8     R    Receive Fifo Empty          (0=Not Empty, 1=Empty)
+	//  9     R    Receive Fifo Full           (0=Not Full, 1=Full)
+	//  10    R/W  Receive Fifo Not Empty IRQ  (0=Disable, 1=Enable)
+	//  11-13 -    Not used
+	//  14    R/W  Error, Read Empty/Send Full (0=No Error, 1=Error/Acknowledge)
+	//  15    R/W  Enable Send/Receive Fifo    (0=Disable, 1=Enable)
+	//  16-31 -    Not used
+
+
+	return IF;
 }
 
 static u32 readreg_POWCNT1(const int size, const u32 adr) { 
@@ -2549,14 +2628,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF) | (((u32)val)<<16);
 				return;
 			case REG_IF :
-				NDS_Reschedule();
-				MMU.reg_IF[ARMCPU_ARM9] &= (~((u32)val)); 
-				validateIF_arm9();
+				REG_IF_WriteWord<ARMCPU_ARM9>(0,val);
 				return;
 			case REG_IF + 2 :
-				NDS_Reschedule();
-				MMU.reg_IF[ARMCPU_ARM9] &= (~(((u32)val)<<16));
-				validateIF_arm9();
+				REG_IF_WriteWord<ARMCPU_ARM9>(2,val);
 				return;
 
             case REG_IPCSYNC :
@@ -2968,9 +3043,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			
 			case REG_IF :
-				NDS_Reschedule();
-				MMU.reg_IF[ARMCPU_ARM9] &= (~val); 
-				validateIF_arm9();
+				REG_IF_WriteLong<ARMCPU_ARM9>(val);
 				return;
 
             case REG_TM0CNTL:
@@ -3101,6 +3174,11 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 
 		switch(adr)
 		{
+			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
+			case REG_IF+1: return (MMU.gen_IF<ARMCPU_ARM9>()>>8);
+			case REG_IF+2: return (MMU.gen_IF<ARMCPU_ARM9>()>>16);
+			case REG_IF+3: return (MMU.gen_IF<ARMCPU_ARM9>()>>24);
+
 			case REG_DISPA_DISPSTAT:
 				break;
 			case REG_DISPA_DISPSTAT+1:
@@ -3210,10 +3288,8 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_IE + 2 :
 				return (u16)(MMU.reg_IE[ARMCPU_ARM9]>>16);
 				
-			case REG_IF :
-				return (u16)MMU.reg_IF[ARMCPU_ARM9];
-			case REG_IF + 2 :
-				return (u16)(MMU.reg_IF[ARMCPU_ARM9]>>16);
+			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
+			case REG_IF+2: return MMU.gen_IF<ARMCPU_ARM9>()>>16;
 
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
@@ -3342,8 +3418,9 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 				return MMU.reg_IME[ARMCPU_ARM9];
 			case REG_IE :
 				return MMU.reg_IE[ARMCPU_ARM9];
-			case REG_IF :
-				return MMU.reg_IF[ARMCPU_ARM9];
+			
+			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
+
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM9);
 			case REG_TM0CNTL :
@@ -3714,23 +3791,20 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF) | (((u32)val)<<16);
 				return;
 				
-			case REG_IF :
-				NDS_Reschedule();
-				//emu_halt();
-				MMU.reg_IF[ARMCPU_ARM7] &= (~((u32)val)); 
+			case REG_IF:
+				REG_IF_WriteWord<ARMCPU_ARM7>(0,val);
 				return;
-			case REG_IF + 2 :
-				NDS_Reschedule();
-				//emu_halt();
-				MMU.reg_IF[ARMCPU_ARM7] &= (~(((u32)val)<<16));
+			
+			case REG_IF+2:
+				REG_IF_WriteWord<ARMCPU_ARM7>(2,val);
 				return;
 				
             case REG_IPCSYNC :
-					MMU_IPCSync(ARMCPU_ARM7, val);
+				MMU_IPCSync(ARMCPU_ARM7, val);
 				return;
 
 			case REG_IPCFIFOCNT :
-					IPC_FIFOcnt(ARMCPU_ARM7, val);
+				IPC_FIFOcnt(ARMCPU_ARM7, val);
 				return;
             case REG_TM0CNTL :
             case REG_TM1CNTL :
@@ -3812,8 +3886,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 			
 			case REG_IF :
-				NDS_Reschedule();
-				MMU.reg_IF[ARMCPU_ARM7] &= (~val); 
+				REG_IF_WriteLong<ARMCPU_ARM7>(val);
 				return;
 
             case REG_TM0CNTL:
@@ -3962,10 +4035,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_IE + 2 :
 				return (u16)(MMU.reg_IE[ARMCPU_ARM7]>>16);
 				
-			case REG_IF :
-				return (u16)MMU.reg_IF[ARMCPU_ARM7];
-			case REG_IF + 2 :
-				return (u16)(MMU.reg_IF[ARMCPU_ARM7]>>16);
+			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
+			case REG_IF+2: return MMU.gen_IF<ARMCPU_ARM7>()>>16;
 
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
@@ -4043,8 +4114,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				return MMU.reg_IME[ARMCPU_ARM7];
 			case REG_IE :
 				return MMU.reg_IE[ARMCPU_ARM7];
-			case REG_IF :
-				return MMU.reg_IF[ARMCPU_ARM7];
+			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM7);
             case REG_TM0CNTL :

@@ -46,7 +46,7 @@
 
 //#define LOG_ARM9
 //#define LOG_ARM7
-//bool dolog = true;
+//bool dolog = false;
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 
@@ -1769,6 +1769,7 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 FORCEINLINE void arm9log()
 {
+	//if(currFrameCounter>19) dolog=true;
 #ifdef LOG_ARM9
 	if(dolog)
 	{
@@ -1951,7 +1952,7 @@ void NDS_exec(s32 nb)
 		//speculative code: if ANY irq happens, wake up the arm7.
 		//I think the arm7 program analyzes the system and may decide not to wake up
 		//if it is dissatisfied with the conditions
-		if((MMU.reg_IE[1] & MMU.reg_IF[1]))
+		if((MMU.reg_IE[1] & MMU.gen_IF<1>()))
 		{
 			nds.sleeping = FALSE;
 		}
@@ -2062,7 +2063,7 @@ void NDS_exec(s32 nb)
 
 void execHardware_interrupts()
 {
-	if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
+	if((MMU.reg_IME[0]) && (MMU.gen_IF<0>()&MMU.reg_IE[0]))
 	{
 		//TODO - remove GDB specific code
 //#ifdef GDB_STUB
@@ -2076,7 +2077,7 @@ void execHardware_interrupts()
 		}
 	}
 //TODO - remove GDB specific code
-	if((MMU.reg_IF[1]&MMU.reg_IE[1]) && (MMU.reg_IME[1]))
+	if((MMU.reg_IME[1]) && (MMU.gen_IF<1>()&MMU.reg_IE[1]))
 	{
 //#ifdef GDB_STUB
 //		if ( armcpu_flagIrq( &NDS_ARM7)) 

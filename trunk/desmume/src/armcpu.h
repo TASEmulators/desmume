@@ -261,19 +261,23 @@ extern armcpu_t NDS_ARM9;
 
 static INLINE void setIF(int PROCNUM, u32 flag)
 {
-	MMU.reg_IF[PROCNUM] |= flag;
+	//don't set generated bits!!!
+	assert(!(flag&0x00260000));
+
+	MMU.reg_IF_bits[PROCNUM] |= flag;
 
 	extern void NDS_Reschedule();
 	NDS_Reschedule();
 
+	//TODO SEP - was this necessary???
     //generate the interrupt if enabled
-	if ((MMU.reg_IE[PROCNUM] & (flag)) && MMU.reg_IME[PROCNUM])
-	{
-		if(PROCNUM==0)
-			NDS_ARM9.waitIRQ = FALSE;
-		else 
-			NDS_ARM7.waitIRQ = FALSE;
-	}
+	//if ((MMU.reg_IE[PROCNUM] & (flag)) && MMU.reg_IME[PROCNUM])
+	//{
+	//	if(PROCNUM==0)
+	//		NDS_ARM9.waitIRQ = FALSE;
+	//	else 
+	//		NDS_ARM7.waitIRQ = FALSE;
+	//}
 }
 
 static INLINE void NDS_makeARM9Int(u32 num)

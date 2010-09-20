@@ -384,7 +384,11 @@ struct MMU_struct
 
 	u32 reg_IME[2];
 	u32 reg_IE[2];
-	u32 reg_IF[2];
+	
+	//these are the user-controlled IF bits. some IF bits are generated as necessary from hardware conditions
+	u32 reg_IF_bits[2];
+
+	template<int PROCNUM> u32 gen_IF();
 
 	BOOL divRunning;
 	s64 divResult;

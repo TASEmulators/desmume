@@ -202,7 +202,7 @@ SFORMAT SF_MMU[]={
 	{ "MTRL", 2, 8,       MMU.timerReload},
 	{ "MIME", 4, 2,       MMU.reg_IME},
 	{ "MIE_", 4, 2,       MMU.reg_IE},
-	{ "MIF_", 4, 2,       MMU.reg_IF},
+	{ "MIF_", 4, 2,       MMU.reg_IF_bits},
 
 	{ "MGXC", 8, 1,       &MMU.gfx3dCycles},
 	
@@ -448,6 +448,10 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 
 	ok &= MMU_new.sqrt.loadstate(is,version);
 	ok &= MMU_new.div.loadstate(is,version);
+
+	//to prevent old savestates from confusing IF bits, mask out ones which had been stored but should have been generated
+	MMU.reg_IF_bits[0] &= ~0x00260000;
+	MMU.reg_IF_bits[1] &= ~0x00060000;
 
 	return ok;
 }
