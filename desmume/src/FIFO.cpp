@@ -75,7 +75,7 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	setIF(proc_remote, ((cnt_r & 0x0400)<<8));		// IRQ18: recv not empty
+	NDS_Reschedule();
 }
 
 u32 IPC_FIFOrecv(u8 proc)
@@ -116,37 +116,55 @@ u32 IPC_FIFOrecv(u8 proc)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	setIF(proc_remote, ((cnt_r & 0x0004)<<15));		// IRQ17: send empty
+	NDS_Reschedule();
 
 	return (val);
 }
+
+#define IPCFIFOCNT_SENDEMPTY 0x0001
+#define IPCFIFOCNT_SENDFULL 0x0002
+#define IPCFIFOCNT_SENDIRQEN 0x0004
+#define IPCFIFOCNT_SENDCLEAR 0x0008
+#define IPCFIFOCNT_RECVEMPTY 0x0100
+#define IPCFIFOCNT_RECVFULL 0x0200
+#define IPCFIFOCNT_RECVIRQEN 0x0400
+#define IPCFIFOCNT_FIFOERROR 0x4000
+#define IPCFIFOCNT_FIFOENABLE 0x8000
+#define IPCFIFOCNT_WRITEABLE (IPCFIFOCNT_SENDIRQEN | IPCFIFOCNT_RECVIRQEN | IPCFIFOCNT_FIFOENABLE)
 
 void IPC_FIFOcnt(u8 proc, u16 val)
 {
 	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 
-	//LOG("IPC%s FIFO context 0x%X (local 0x%04X, remote 0x%04X)\n", proc?"7":"9", val, cnt_l, cnt_r);
-	if (val & 0x4008)
+	if (val & IPCFIFOCNT_FIFOERROR)
 	{
-		ipc_fifo[proc].head = 0; ipc_fifo[proc].tail = 0; ipc_fifo[proc].size = 0;
-		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-		T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0x8407) | 0x100);
-		//MMU.reg_IF[proc^1] |= ((val & 0x0004) << 15);
-		setIF(proc^1, ((cnt_r & 0x0004)<<15));
-		return;
+		//at least SPP uses this, maybe every retail game
+		cnt_l &= ~IPCFIFOCNT_FIFOERROR;
 	}
 
-	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val);
+	if (val & IPCFIFOCNT_SENDCLEAR)
+	{
+		ipc_fifo[proc].head = 0; ipc_fifo[proc].tail = 0; ipc_fifo[proc].size = 0;
+
+		cnt_l |= IPCFIFOCNT_SENDEMPTY;
+		cnt_l &= ~IPCFIFOCNT_SENDFULL;
+		cnt_r |= IPCFIFOCNT_RECVEMPTY;
+		cnt_r &= ~IPCFIFOCNT_RECVFULL;
+	}
+
+	cnt_l &= ~IPCFIFOCNT_WRITEABLE;
+	cnt_l |= val & IPCFIFOCNT_WRITEABLE;
+
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
+	T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
+
+	NDS_Reschedule();
 }
 
 // ========================================================= GFX FIFO
 GFX_PIPE	gxPIPE;
 GFX_FIFO	gxFIFO;
-
-
-
-
 
 void GFX_PIPEclear()
 {
