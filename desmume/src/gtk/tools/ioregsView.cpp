@@ -156,14 +156,14 @@ static void crea_REG_IF(int c)
 static void updt_REG_IF(int c)
 {
 	int i;
-	for(i = 0; i < 24; i++) { INTERRUPT_SKIP(c); gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(Widgets_REG_IF[c][i]), (MMU.reg_IF[c] & (1<<i)) ? 1 : 0); }
+	for(i = 0; i < 24; i++) { INTERRUPT_SKIP(c); gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(Widgets_REG_IF[c][i]), ((c==0?MMU.gen_IF<0>():MMU.gen_IF<1>()) & (1<<i)) ? 1 : 0); }
 }
 static void dest_REG_IF(int c)
 {
 	int i;
 	for(i = 0; i < 24; i++) { INTERRUPT_SKIP(c); gtk_widget_destroy(Widgets_REG_IF[c][i]); }
 }
-static u32 val_REG_IF(int c) { return MMU.reg_IF[c]; }
+static u32 val_REG_IF(int c) { return (c==0?MMU.gen_IF<0>():MMU.gen_IF<1>()); }
 
 /////////////////////////////// REG_IPCFIFOCNT ///////////////////////////////
 static const char *fifocnt_strings[] =
