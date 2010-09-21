@@ -441,5 +441,37 @@ template<typename T> inline void reconstruct(T* t) {
 	new(t) T();
 }
 
+//-------------fixed point speedup macros
+
+#ifdef _WIN32
+#include <intrin.h>
+#endif
+
+FORCEINLINE s64 fx32_mul(const s32 a, const s32 b)
+{
+#ifdef _WIN32
+	return __emul(a,b);
+#else
+	return a*b;
+#endif
+}
+
+FORCEINLINE s32 fx32_shiftdown(const s64 a)
+{
+#ifdef _WIN32
+	return (s32)__ll_rshift(a,12);
+#else
+	return (s32)(a>>12);
+#endif
+}
+
+FORCEINLINE s64 fx32_shiftup(const s32 a)
+{
+#ifdef _WIN32
+	return (s32)__ll_lshift(a,12);
+#else
+	return (s32)(a<<12);
+#endif
+}
 
 #endif

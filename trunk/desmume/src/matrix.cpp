@@ -41,26 +41,26 @@ void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 
 void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr)
 {
-	s64 x = vecPtr[0];
-	s64 y = vecPtr[1];
-	s64 z = vecPtr[2];
-	s64 w = vecPtr[3];
+	const s32 x = vecPtr[0];
+	const s32 y = vecPtr[1];
+	const s32 z = vecPtr[2];
+	const s32 w = vecPtr[3];
 
-	vecPtr[0] = (s32)((x * matrix[0] + y * matrix[4] + z * matrix[ 8] + w * matrix[12])>>12);
-	vecPtr[1] = (s32)((x * matrix[1] + y * matrix[5] + z * matrix[ 9] + w * matrix[13])>>12);
-	vecPtr[2] = (s32)((x * matrix[2] + y * matrix[6] + z * matrix[10] + w * matrix[14])>>12);
-	vecPtr[3] = (s32)((x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15])>>12);
+	vecPtr[0] = fx32_shiftdown(fx32_mul(x,matrix[0]) + fx32_mul(y,matrix[4]) + fx32_mul(z,matrix [8]) + fx32_mul(w,matrix[12]));
+	vecPtr[1] = fx32_shiftdown(fx32_mul(x,matrix[1]) + fx32_mul(y,matrix[5]) + fx32_mul(z,matrix[ 9]) + fx32_mul(w,matrix[13]));
+	vecPtr[2] = fx32_shiftdown(fx32_mul(x,matrix[2]) + fx32_mul(y,matrix[6]) + fx32_mul(z,matrix[10]) + fx32_mul(w,matrix[14]));
+	vecPtr[3] = fx32_shiftdown(fx32_mul(x,matrix[3]) + fx32_mul(y,matrix[7]) + fx32_mul(z,matrix[11]) + fx32_mul(w,matrix[15]));
 }
 
 void MatrixMultVec3x3_fixed(const s32 *matrix, s32 *vecPtr)
 {
-	s64 x = vecPtr[0];
-	s64 y = vecPtr[1];
-	s64 z = vecPtr[2];
+	const s32 x = vecPtr[0];
+	const s32 y = vecPtr[1];
+	const s32 z = vecPtr[2];
 
-	vecPtr[0] = (s32)((x * matrix[0] + y * matrix[4] + z * matrix[ 8])>>12);
-	vecPtr[1] = (s32)((x * matrix[1] + y * matrix[5] + z * matrix[ 9])>>12);
-	vecPtr[2] = (s32)((x * matrix[2] + y * matrix[6] + z * matrix[10])>>12);
+	vecPtr[0] = fx32_shiftdown(fx32_mul(x,matrix[0]) + fx32_mul(y,matrix[4]) + fx32_mul(z,matrix[8]));
+	vecPtr[1] = fx32_shiftdown(fx32_mul(x,matrix[1]) + fx32_mul(y,matrix[5]) + fx32_mul(z,matrix[9]));
+	vecPtr[2] = fx32_shiftdown(fx32_mul(x,matrix[2]) + fx32_mul(y,matrix[6]) + fx32_mul(z,matrix[10]));
 }
 
 //-------------------------
@@ -225,23 +225,7 @@ void MatrixCopy (float* matrixDST, const float* matrixSRC)
 
 void MatrixCopy (s32* matrixDST, const s32* matrixSRC)
 {
-	matrixDST[0] = matrixSRC[0];
-	matrixDST[1] = matrixSRC[1];
-	matrixDST[2] = matrixSRC[2];
-	matrixDST[3] = matrixSRC[3];
-	matrixDST[4] = matrixSRC[4];
-	matrixDST[5] = matrixSRC[5];
-	matrixDST[6] = matrixSRC[6];
-	matrixDST[7] = matrixSRC[7];
-	matrixDST[8] = matrixSRC[8];
-	matrixDST[9] = matrixSRC[9];
-	matrixDST[10] = matrixSRC[10];
-	matrixDST[11] = matrixSRC[11];
-	matrixDST[12] = matrixSRC[12];
-	matrixDST[13] = matrixSRC[13];
-	matrixDST[14] = matrixSRC[14];
-	matrixDST[15] = matrixSRC[15];
-
+	memcpy(matrixDST,matrixSRC,sizeof(s32)*16);
 }
 
 int MatrixCompare (const float* matrixDST, const float* matrixSRC)
@@ -424,48 +408,49 @@ void Vector4Copy(float *dst, const float *src)
 
 void MatrixMultiply (s32 *matrix, const s32 *rightMatrix)
 {
-	s64 tmpMatrix[16];
+	s32 tmpMatrix[16];
 
-	tmpMatrix[0]  = (matrix[0]*(s64)rightMatrix[0])+(matrix[4]*(s64)rightMatrix[1])+(matrix[8]*(s64)rightMatrix[2])+(matrix[12]*(s64)rightMatrix[3]);
-	tmpMatrix[1]  = (matrix[1]*(s64)rightMatrix[0])+(matrix[5]*(s64)rightMatrix[1])+(matrix[9]*(s64)rightMatrix[2])+(matrix[13]*(s64)rightMatrix[3]);
-	tmpMatrix[2]  = (matrix[2]*(s64)rightMatrix[0])+(matrix[6]*(s64)rightMatrix[1])+(matrix[10]*(s64)rightMatrix[2])+(matrix[14]*(s64)rightMatrix[3]);
-	tmpMatrix[3]  = (matrix[3]*(s64)rightMatrix[0])+(matrix[7]*(s64)rightMatrix[1])+(matrix[11]*(s64)rightMatrix[2])+(matrix[15]*(s64)rightMatrix[3]);
+	tmpMatrix[0]  = fx32_shiftdown(fx32_mul(matrix[0],rightMatrix[0])+fx32_mul(matrix[4],rightMatrix[1])+fx32_mul(matrix[8],rightMatrix[2])+fx32_mul(matrix[12],rightMatrix[3]));
+	tmpMatrix[1]  = fx32_shiftdown(fx32_mul(matrix[1],rightMatrix[0])+fx32_mul(matrix[5],rightMatrix[1])+fx32_mul(matrix[9],rightMatrix[2])+fx32_mul(matrix[13],rightMatrix[3]));
+	tmpMatrix[2]  = fx32_shiftdown(fx32_mul(matrix[2],rightMatrix[0])+fx32_mul(matrix[6],rightMatrix[1])+fx32_mul(matrix[10],rightMatrix[2])+fx32_mul(matrix[14],rightMatrix[3]));
+	tmpMatrix[3]  = fx32_shiftdown(fx32_mul(matrix[3],rightMatrix[0])+fx32_mul(matrix[7],rightMatrix[1])+fx32_mul(matrix[11],rightMatrix[2])+fx32_mul(matrix[15],rightMatrix[3]));
 
-	tmpMatrix[4]  = (matrix[0]*(s64)rightMatrix[4])+(matrix[4]*(s64)rightMatrix[5])+(matrix[8]*(s64)rightMatrix[6])+(matrix[12]*(s64)rightMatrix[7]);
-	tmpMatrix[5]  = (matrix[1]*(s64)rightMatrix[4])+(matrix[5]*(s64)rightMatrix[5])+(matrix[9]*(s64)rightMatrix[6])+(matrix[13]*(s64)rightMatrix[7]);
-	tmpMatrix[6]  = (matrix[2]*(s64)rightMatrix[4])+(matrix[6]*(s64)rightMatrix[5])+(matrix[10]*(s64)rightMatrix[6])+(matrix[14]*(s64)rightMatrix[7]);
-	tmpMatrix[7]  = (matrix[3]*(s64)rightMatrix[4])+(matrix[7]*(s64)rightMatrix[5])+(matrix[11]*(s64)rightMatrix[6])+(matrix[15]*(s64)rightMatrix[7]);
+	tmpMatrix[4]  = fx32_shiftdown(fx32_mul(matrix[0],rightMatrix[4])+fx32_mul(matrix[4],rightMatrix[5])+fx32_mul(matrix[8],rightMatrix[6])+fx32_mul(matrix[12],rightMatrix[7]));
+	tmpMatrix[5]  = fx32_shiftdown(fx32_mul(matrix[1],rightMatrix[4])+fx32_mul(matrix[5],rightMatrix[5])+fx32_mul(matrix[9],rightMatrix[6])+fx32_mul(matrix[13],rightMatrix[7]));
+	tmpMatrix[6]  = fx32_shiftdown(fx32_mul(matrix[2],rightMatrix[4])+fx32_mul(matrix[6],rightMatrix[5])+fx32_mul(matrix[10],rightMatrix[6])+fx32_mul(matrix[14],rightMatrix[7]));
+	tmpMatrix[7]  = fx32_shiftdown(fx32_mul(matrix[3],rightMatrix[4])+fx32_mul(matrix[7],rightMatrix[5])+fx32_mul(matrix[11],rightMatrix[6])+fx32_mul(matrix[15],rightMatrix[7]));
 
-	tmpMatrix[8]  = (matrix[0]*(s64)rightMatrix[8])+(matrix[4]*(s64)rightMatrix[9])+(matrix[8]*(s64)rightMatrix[10])+(matrix[12]*(s64)rightMatrix[11]);
-	tmpMatrix[9]  = (matrix[1]*(s64)rightMatrix[8])+(matrix[5]*(s64)rightMatrix[9])+(matrix[9]*(s64)rightMatrix[10])+(matrix[13]*(s64)rightMatrix[11]);
-	tmpMatrix[10] = (matrix[2]*(s64)rightMatrix[8])+(matrix[6]*(s64)rightMatrix[9])+(matrix[10]*(s64)rightMatrix[10])+(matrix[14]*(s64)rightMatrix[11]);
-	tmpMatrix[11] = (matrix[3]*(s64)rightMatrix[8])+(matrix[7]*(s64)rightMatrix[9])+(matrix[11]*(s64)rightMatrix[10])+(matrix[15]*(s64)rightMatrix[11]);
+	tmpMatrix[8]  = fx32_shiftdown(fx32_mul(matrix[0],rightMatrix[8])+fx32_mul(matrix[4],rightMatrix[9])+fx32_mul(matrix[8],rightMatrix[10])+fx32_mul(matrix[12],rightMatrix[11]));
+	tmpMatrix[9]  = fx32_shiftdown(fx32_mul(matrix[1],rightMatrix[8])+fx32_mul(matrix[5],rightMatrix[9])+fx32_mul(matrix[9],rightMatrix[10])+fx32_mul(matrix[13],rightMatrix[11]));
+	tmpMatrix[10] = fx32_shiftdown(fx32_mul(matrix[2],rightMatrix[8])+fx32_mul(matrix[6],rightMatrix[9])+fx32_mul(matrix[10],rightMatrix[10])+fx32_mul(matrix[14],rightMatrix[11]));
+	tmpMatrix[11] = fx32_shiftdown(fx32_mul(matrix[3],rightMatrix[8])+fx32_mul(matrix[7],rightMatrix[9])+fx32_mul(matrix[11],rightMatrix[10])+fx32_mul(matrix[15],rightMatrix[11]));
 
-	tmpMatrix[12] = (matrix[0]*(s64)rightMatrix[12])+(matrix[4]*(s64)rightMatrix[13])+(matrix[8]*(s64)rightMatrix[14])+(matrix[12]*(s64)rightMatrix[15]);
-	tmpMatrix[13] = (matrix[1]*(s64)rightMatrix[12])+(matrix[5]*(s64)rightMatrix[13])+(matrix[9]*(s64)rightMatrix[14])+(matrix[13]*(s64)rightMatrix[15]);
-	tmpMatrix[14] = (matrix[2]*(s64)rightMatrix[12])+(matrix[6]*(s64)rightMatrix[13])+(matrix[10]*(s64)rightMatrix[14])+(matrix[14]*(s64)rightMatrix[15]);
-	tmpMatrix[15] = (matrix[3]*(s64)rightMatrix[12])+(matrix[7]*(s64)rightMatrix[13])+(matrix[11]*(s64)rightMatrix[14])+(matrix[15]*(s64)rightMatrix[15]);
+	tmpMatrix[12] = fx32_shiftdown(fx32_mul(matrix[0],rightMatrix[12])+fx32_mul(matrix[4],rightMatrix[13])+fx32_mul(matrix[8],rightMatrix[14])+fx32_mul(matrix[12],rightMatrix[15]));
+	tmpMatrix[13] = fx32_shiftdown(fx32_mul(matrix[1],rightMatrix[12])+fx32_mul(matrix[5],rightMatrix[13])+fx32_mul(matrix[9],rightMatrix[14])+fx32_mul(matrix[13],rightMatrix[15]));
+	tmpMatrix[14] = fx32_shiftdown(fx32_mul(matrix[2],rightMatrix[12])+fx32_mul(matrix[6],rightMatrix[13])+fx32_mul(matrix[10],rightMatrix[14])+fx32_mul(matrix[14],rightMatrix[15]));
+	tmpMatrix[15] = fx32_shiftdown(fx32_mul(matrix[3],rightMatrix[12])+fx32_mul(matrix[7],rightMatrix[13])+fx32_mul(matrix[11],rightMatrix[14])+fx32_mul(matrix[15],rightMatrix[15]));
 
-	for(int i=0;i<16;i++)
-		matrix[i] = (s32)(tmpMatrix[i]>>12);
+	memcpy(matrix,tmpMatrix,sizeof(s32)*16);
 }
 
 void MatrixScale(s32 *matrix, const s32 *ptr)
 {
-	for(int i=0;i<12;i++)
-		matrix[i]  = (s32)(((s64)matrix[i]*ptr[i>>2])>>12);
+	//zero 21-sep-2010 - verified unrolling seems faster on my cpu
+	MACRODO_N(12,
+		matrix[X] = fx32_shiftdown(fx32_mul(matrix[X],ptr[X>>2]))
+		);
 }
 
 void MatrixTranslate(s32 *matrix, const s32 *ptr)
 {
-	for(int i=0;i<4;i++)
+	MACRODO_N(4,
 	{
-		s64 temp = ((s64)matrix[i+12])<<12;
-		temp += (s64)matrix[i]*ptr[0];
-		temp += (s64)matrix[i+4]*ptr[1];
-		temp += (s64)matrix[i+8]*ptr[2];
-		matrix[i+12] = (s32)(temp>>12);
-	}
+		s64 temp = fx32_shiftup(matrix[X+12]);
+		temp += fx32_mul(matrix[X+0],ptr[0]);
+		temp += fx32_mul(matrix[X+4],ptr[1]);
+		temp += fx32_mul(matrix[X+8],ptr[2]);
+		matrix[X+12] = fx32_shiftdown(temp);
+	});
 }
 
 void MatrixMultVec4x4_M2(const s32 *matrix, s32 *vecPtr)
