@@ -165,25 +165,16 @@ void GFX_FIFOclear()
 
 static void GXF_FIFO_handleEvents()
 {
-	if(gxFIFO.size <= 127)
-	{
-		//TODO - should this always happen, over and over, until the dma is disabled?
-		//or only when we change to this state?
-		if(MMU_new.gxstat.gxfifo_irq == 1) 
-			setIF(0, (1<<21)); //the half gxfifo irq
+	bool low = gxFIFO.size <= 127;
+	bool lowchange = MMU_new.gxstat.fifo_low ^ low;
+	MMU_new.gxstat.fifo_low = low;
+	if(low) triggerDma(EDMAMode_GXFifo);
 
-		//might need to trigger a gxfifo dma
-		triggerDma(EDMAMode_GXFifo);
-	}
+	bool empty = gxFIFO.size == 0;
+	bool emptychange = MMU_new.gxstat.fifo_empty ^ empty;
+	MMU_new.gxstat.fifo_empty = empty;
 
-
-
-	if(gxFIFO.size == 0) {
-		//we just went to empty
-		if(MMU_new.gxstat.gxfifo_irq == 2) 
-			setIF(0, (1<<21)); //the empty gxfifo irq
-	}
-
+	if(emptychange||lowchange) NDS_Reschedule();
 }
 
 void GFX_FIFOsend(u8 cmd, u32 param)

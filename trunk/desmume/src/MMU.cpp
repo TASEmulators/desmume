@@ -1267,11 +1267,11 @@ u32 MMU_struct::gen_IF()
 		case 0: //never
 			break;
 		case 1: //less than half full
-			if(gxFIFO.size <= 127) 
+			if(MMU_new.gxstat.fifo_low) 
 				IF |= IRQ_MASK_ARM9_GXFIFO;
 			break;
 		case 2: //empty
-			if(gxFIFO.size == 0) 
+			if(MMU_new.gxstat.fifo_empty) 
 				IF |= IRQ_MASK_ARM9_GXFIFO;
 			break;
 		case 3: //reserved/unknown
