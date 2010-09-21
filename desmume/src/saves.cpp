@@ -453,6 +453,9 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	MMU.reg_IF_bits[0] &= ~0x00260000;
 	MMU.reg_IF_bits[1] &= ~0x00060000;
 
+	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
+	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
+
 	return ok;
 }
 
