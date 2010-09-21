@@ -586,17 +586,13 @@ inline float vec3dot(float* a, float* b) {
 	return (((a[0]) * (b[0])) + ((a[1]) * (b[1])) + ((a[2]) * (b[2])));
 }
 
-inline s32 mul_fixed32(s32 a, s32 b)
+FORCEINLINE s32 mul_fixed32(s32 a, s32 b)
 {
-	s64 temp = ((s64)a)*((s64)b);
-	return (s32)(temp>>12);
+	return fx32_shiftdown(fx32_mul(a,b));
 }
 
-inline s32 vec3dot_fixed32(s32* a, s32* b) {
-	const s64 va[] = {a[0],a[1],a[2]};
-	const s64 vb[] = {b[0],b[1],b[2]};
-	s64 dot = va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2];
-	return (s32)(dot>>12);
+FORCEINLINE s32 vec3dot_fixed32(const s32* a, const s32* b) {
+	return fx32_shiftdown(fx32_mul(a[0],b[0]) + fx32_mul(a[1],b[1]) + fx32_mul(a[2],b[2]));
 }
 
 
