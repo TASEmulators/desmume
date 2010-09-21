@@ -670,10 +670,8 @@ void * TDStretch::operator new(size_t s)
 TDStretch * TDStretch::newInstance()
 {
     uint uExtensions = 0;
-#ifndef _XBOX
 #if !defined(_MSC_VER) || !defined(__x86_64__)
     uExtensions = detectCPUextensions();
-#endif
 #endif
     // Check if MMX/SSE/3DNow! instruction set extensions supported by CPU
 

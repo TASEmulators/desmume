@@ -1,21 +1,18 @@
 /*  Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef TYPES_HPP
@@ -23,15 +20,11 @@
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
-	#ifdef _XBOX
-		//#define _XBOX //already defined
+	#define _WINDOWS
+	#ifdef _M_X64
+		//#define _WIN64 //already defined in x64 compiler
 	#else
-		#define _WINDOWS
-		#ifdef _M_X64
-			//#define _WIN64 //already defined in x64 compiler
-		#else
-			//#define _WIN32 //already defined
-		#endif
+		//#define _WIN32 //already defined
 	#endif
 #endif
 
@@ -43,12 +36,6 @@
 //enforce a constraint: gdb stub requires developer
 #if defined(GDB_STUB) && !defined(DEVELOPER)
 #define DEVELOPER
-#endif
-
-//xbox needs to include this to resemble windows
-#ifdef _XBOX
-	#include <xtl.h>
-	#include <io.h>
 #endif
 
 #ifdef DEVELOPER
@@ -99,12 +86,6 @@
 #else
 #define MAX_PATH PATH_MAX
 #endif
-#endif
-
-
-#ifdef _XBOX
-#define MAX_PATH 1024
-#define PATH_MAX 1024
 #endif
 
 
