@@ -869,3 +869,9 @@ void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
 	fw_config->touch_cal[1].screen_x = 0xe0 + 1;
 	fw_config->touch_cal[1].screen_y = 0x80 + 1;
 }
+
+void NDS_PatchFirmwareMAC()
+{
+	memcpy((MMU.fw.data + 0x36), FW_Mac, sizeof(FW_Mac));
+	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
+}

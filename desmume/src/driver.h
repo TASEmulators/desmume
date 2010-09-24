@@ -49,6 +49,8 @@ public:
 	virtual bool WIFI_SocketsAvailable() { return true; }
 	virtual bool WIFI_PCapAvailable() { return false; }
 
+	virtual void WIFI_GetUniqueMAC(u8* mac) {}
+
 	virtual bool WIFI_WFCWarning() { return false; }
 
 	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) { return -1; }
