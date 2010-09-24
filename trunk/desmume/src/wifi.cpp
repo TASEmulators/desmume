@@ -1631,9 +1631,8 @@ typedef struct _Adhoc_FrameHeader
 
 bool Adhoc_Init()
 {
+	BOOL opt_true = TRUE;
 	int res;
-
-	Adhoc.usecCounter = 0;
 
 	if (!driver->WIFI_SocketsAvailable())
 	{
@@ -1650,6 +1649,10 @@ bool Adhoc_Init()
 		return false;
 	}
 
+	// Enable the socket to be bound to an address/port that is already in use
+	// This enables us to communicate with another DeSmuME instance running on the same computer.
+	res = setsockopt(wifi_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt_true, sizeof(BOOL));
+
 	// Bind the socket to any address on port 7000
 	sockaddr_t saddr;
 	saddr.sa_family = AF_INET;
@@ -1665,8 +1668,7 @@ bool Adhoc_Init()
 
 	// Enable broadcast mode
 	// Not doing so results in failure when sendto'ing to broadcast address
-	BOOL opt = TRUE;
-	res = setsockopt(wifi_socket, SOL_SOCKET, SO_BROADCAST, (const char*)&opt, sizeof(BOOL));
+	res = setsockopt(wifi_socket, SOL_SOCKET, SO_BROADCAST, (const char*)&opt_true, sizeof(BOOL));
 	if (res < 0)
 	{
 		WIFI_LOG(1, "Ad-hoc: failed to enable broadcast mode.\n");
@@ -1678,6 +1680,8 @@ bool Adhoc_Init()
 	sendAddr.sa_family = AF_INET;
 	*(u32*)&sendAddr.sa_data[2] = htonl(INADDR_BROADCAST); 
 	*(u16*)&sendAddr.sa_data[0] = htons(BASEPORT);
+
+	Adhoc_Reset();
 
 	WIFI_LOG(1, "Ad-hoc: initialization successful.\n");
 
@@ -1693,6 +1697,12 @@ void Adhoc_DeInit()
 void Adhoc_Reset()
 {
 	Adhoc.usecCounter = 0;
+
+	driver->WIFI_GetUniqueMAC(FW_Mac);
+	NDS_PatchFirmwareMAC();
+
+	printf("WIFI: ADHOC: MAC = %02X:%02X:%02X:%02X:%02X:%02X\n",
+		FW_Mac[0], FW_Mac[1], FW_Mac[2], FW_Mac[3], FW_Mac[4], FW_Mac[5]);
 }
 
 void Adhoc_SendPacket(u8* packet, u32 len)

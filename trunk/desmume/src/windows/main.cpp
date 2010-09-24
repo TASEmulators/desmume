@@ -2256,6 +2256,35 @@ class WinDriver : public BaseDriver
 	virtual bool WIFI_SocketsAvailable() { return bSocketsAvailable; }
 	virtual bool WIFI_PCapAvailable() { return bWinPCapAvailable; }
 
+	virtual void WIFI_GetUniqueMAC(u8* mac)
+	{
+		if (mac == NULL) return;
+
+		char hostname[256];
+		if (gethostname(hostname, 256) != 0)
+			strncpy(hostname, "127.0.0.1", 256);
+
+		hostent* he = gethostbyname(hostname);
+		unsigned long ipaddr;
+		if (he == NULL)
+			ipaddr = 0x0100007F; // 127.0.0.1
+		else
+			ipaddr = *(unsigned long*)he->h_addr_list[0];
+
+		unsigned long pid = GetCurrentProcessId();
+
+		unsigned long hash = pid;
+		while ((hash & 0xFF000000) == 0)
+			hash <<= 1;
+		hash >>= 1;
+		hash += ipaddr >> 8;
+		hash &= 0x00FFFFFF;
+
+		mac[3] = hash >> 16;
+		mac[4] = (hash >> 8) & 0xFF;
+		mac[5] = hash & 0xFF;
+	}
+
 	virtual bool WIFI_WFCWarning()
 	{
 		return MessageBox(NULL,	"You are trying to connect to the Nintendo WFC servers.\n"
