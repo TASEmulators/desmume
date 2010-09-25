@@ -120,14 +120,20 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 					card.address = (0x8000 + (card.address&0x1FF));
 				}
 
-				if(card.address >= gameInfo.romsize)
+				//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
+				//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
+				//but there is no test case yet
+				u32 address = card.address & (gameInfo.mask);
+
+				//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
+				//we need to protect ourselves by returning 0xFF for things still out of range
+				if(address >= gameInfo.romsize)
 				{
-					DEBUG_Notify.ReadBeyondEndOfCart(card.address,gameInfo.romsize);
+					DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
 					return 0xFFFFFFFF;
 				}
-				//but, this is actually handled by the cart rom buffer being oversized and full of 0xFF.
-				//is this a good idea? We think so.
-				return T1ReadLong(MMU.CART_ROM, card.address & MMU.CART_ROM_MASK);
+
+				return T1ReadLong(MMU.CART_ROM, address);
 			}
 			break;
 		default:
