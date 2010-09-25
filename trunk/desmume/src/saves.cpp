@@ -191,7 +191,6 @@ SFORMAT SF_MMU[]={
 	{ "M7RG", 1, sizeof(MMU.ARM7_REG), MMU.ARM7_REG},
 	{ "M7WI", 1, sizeof(MMU.ARM7_WIRAM), MMU.ARM7_WIRAM},
 	{ "MSWI", 1, sizeof(MMU.SWIRAM), MMU.SWIRAM},
-	{ "MCRA", 1, sizeof(MMU.CART_RAM), MMU.CART_RAM},
 	{ "M9RW", 1, 1,       &MMU.ARM9_RW_MODE},
 	{ "MDTC", 4, 1,       &MMU.DTCMRegion},
 	{ "MITC", 4, 1,       &MMU.ITCMRegion},
@@ -680,64 +679,6 @@ void loadstate_slot(int num)
    }
 }
 
-u8 sram_read (u32 address) {
-	address = address - SRAM_ADDRESS;
-
-	if ( address > SRAM_SIZE )
-		return 0;
-
-	return MMU.CART_RAM[address];
-
-}
-
-void sram_write (u32 address, u8 value) {
-
-	address = address - SRAM_ADDRESS;
-
-	if ( address < SRAM_SIZE )
-		MMU.CART_RAM[address] = value;
-
-}
-
-int sram_load (const char *file_name) {
-
-	FILE *file;
-	size_t elems_read;
-
-	file = fopen ( file_name, "rb" );
-	if( file == NULL )
-		return 0;
-
-	elems_read = fread ( MMU.CART_RAM, SRAM_SIZE, 1, file );
-
-	fclose ( file );
-
-	osd->setLineColor(255, 255, 255);
-	osd->addLine("Loaded SRAM");
-
-	return 1;
-
-}
-
-int sram_save (const char *file_name) {
-
-	FILE *file;
-	size_t elems_written;
-
-	file = fopen ( file_name, "wb" );
-	if( file == NULL )
-		return 0;
-
-	elems_written = fwrite ( MMU.CART_RAM, SRAM_SIZE, 1, file );
-
-	fclose ( file );
-
-	osd->setLineColor(255, 255, 255);
-	osd->addLine("Saved SRAM");
-
-	return 1;
-
-}
 
 // note: guessSF is so we don't have to do a linear search through the SFORMAT array every time
 // in the (most common) case that we already know where the next entry is.

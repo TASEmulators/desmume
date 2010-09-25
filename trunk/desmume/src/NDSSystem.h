@@ -330,7 +330,7 @@ struct GameInfo
 
 		//now, we actually need to over-allocate, because bytes from anywhere protected by that mask
 		//could be read from the rom
-		allocatedSize = mask+1;
+		allocatedSize = mask+4;
 
 		romdata = new char[allocatedSize];
 		romsize = size;

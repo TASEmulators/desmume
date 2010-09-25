@@ -82,8 +82,6 @@ u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 u32 _MMU_MAIN_MEM_MASK16 = 0x3FFFFF & ~1;
 u32 _MMU_MAIN_MEM_MASK32 = 0x3FFFFF & ~3;
 
-#define ROM_MASK 3
-
 //#define	_MMU_DEBUG
 
 #ifdef _MMU_DEBUG
@@ -174,7 +172,7 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 7X*/	DUP16(MMU.ARM9_OAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
-		/* AX*/	DUP16(MMU.CART_RAM),
+		/* AX*/	DUP16(NULL),
 		/* BX*/	DUP16(MMU.UNUSED_RAM),
 		/* CX*/	DUP16(MMU.UNUSED_RAM),
 		/* DX*/	DUP16(MMU.UNUSED_RAM),
@@ -195,7 +193,7 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 7X*/	DUP16(MMU.UNUSED_RAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
-		/* AX*/	DUP16(MMU.CART_RAM),
+		/* AX*/	DUP16(NULL),
 		/* BX*/	DUP16(MMU.UNUSED_RAM),
 		/* CX*/	DUP16(MMU.UNUSED_RAM),
 		/* DX*/	DUP16(MMU.UNUSED_RAM),
@@ -832,7 +830,6 @@ void MMU_Init(void) {
 	memset(&MMU, 0, sizeof(MMU_struct));
 
 	MMU.CART_ROM = MMU.UNUSED_RAM;
-	MMU.CART_ROM_MASK = 3;
 
 	//MMU.DTCMRegion = 0x027C0000;
 	//even though apps may change dtcm immediately upon startup, this is the correct hardware starting value:
@@ -875,10 +872,6 @@ void MMU_DeInit(void) {
 	slot1Close();
 	Mic_DeInit();
 }
-
-//Card rom & ram
-
-u32 rom_mask = 0;
 
 void MMU_Reset()
 {
@@ -988,15 +981,11 @@ void MMU_Reset()
 void MMU_setRom(u8 * rom, u32 mask)
 {
 	MMU.CART_ROM = rom;
-	MMU.CART_ROM_MASK = mask;
-	rom_mask = mask;
 }
 
 void MMU_unsetRom()
 {
 	MMU.CART_ROM=MMU.UNUSED_RAM;
-	MMU.CART_ROM_MASK = 3;
-	rom_mask = ROM_MASK;
 }
 
 static void execsqrt() {
