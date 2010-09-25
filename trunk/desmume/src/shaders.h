@@ -35,8 +35,14 @@ const char *fragmentShader = {"\
 		else \n\
 			if(texBlending == 1) \n\
 			{ \n\
-				flagColor.rgb = gl_Color.rgb * (1.0-texColor.a) + texColor.rgb * texColor.a;\n\
-				flagColor.a = texColor.a;\n\
+				if (texColor.a == 0.0 || hasTexture == 0) \n\
+					flagColor.rgb = gl_Color.rgb;\n\
+				else \n\
+					if (texColor.a == 1.0) \n\
+						flagColor.rgb = texColor.rgb;\n\
+					else \n\
+					flagColor.rgb = texColor.rgb * (1.0-texColor.a) + gl_Color.rgb * texColor.a;\n\
+				flagColor.a = gl_Color.a; \n\
 			} \n\
 			else \n\
 				if(texBlending == 2) \n\
