@@ -67,6 +67,10 @@ struct memory_chip_t
 	FILE *fp;
 	u8 autodetectbuf[32768];
 	int autodetectsize;
+	
+	// needs only for firmware
+	bool isFirmware;
+	char userfile[260];
 };
 
 //the new backup system by zeromus

@@ -19,6 +19,7 @@
 
 #include "firmware.h"
 #include "NDSSystem.h"
+#include "path.h"
 
 #define DWNUM(i) ((i) >> 2)
 
@@ -564,6 +565,41 @@ bool CFIRMWARE::load()
 		INFO("   * ARM7 boot code RAM address: 0x%08X\n", ARM7bootAddr);
 		INFO("   * ARM7 unpacked size:         0x%08X (%i) bytes\n", size7, size7);
 	}
+
+	PathInfo path;
+	path.init(CommonSettings.Firmware);
+	path.getpathnoext(path.FIRMWARE, &MMU.fw.userfile[0]);
+	strcat(MMU.fw.userfile, ".dfc");		// DeSmuME Firmware Config
+
+	fp = fopen(MMU.fw.userfile, "rb");
+	if (fp)
+	{
+		char buf[0x300];
+		memset(buf, 0, 0x300);
+		if (fread(buf, 1, 0x100, fp) == 0x100)
+		{
+			printf("- loaded from %s:\n", MMU.fw.userfile);
+			memcpy(&data[0x3FE00], &buf[0], 0x100);
+			memcpy(&data[0x3FF00], &buf[0], 0x100);
+			printf("   * User settings\n");
+			memset(buf, 0, 0x100);
+			if (fread(buf, 1, 0x1D6, fp) == 0x1D6)
+			{
+				memcpy(&data[0x002A], &buf[0], 0x1D6);
+				printf("   * WiFi settings\n");
+
+				memset(buf, 0, 0x1D6);
+				if (fread(buf, 1, 0x300, fp) == 0x300)
+				{
+					memcpy(&data[0x3FA00], &buf[0], 0x300);
+					printf("   * WiFi AP settings\n");
+				}
+			}
+			
+		}
+		fclose(fp);
+	}
+	printf("\n");
 
 	// TODO: add 512Kb support
 	memcpy(MMU.fw.data, data, 256*1024);

@@ -269,15 +269,15 @@ static INLINE void setIF(int PROCNUM, u32 flag)
 	extern void NDS_Reschedule();
 	NDS_Reschedule();
 
-	//TODO SEP - was this necessary???
+	//TODO SEP - was this necessary??? - CrazyMax 2010/09/25: needs for boot firmware
     //generate the interrupt if enabled
-	//if ((MMU.reg_IE[PROCNUM] & (flag)) && MMU.reg_IME[PROCNUM])
-	//{
-	//	if(PROCNUM==0)
-	//		NDS_ARM9.waitIRQ = FALSE;
-	//	else 
-	//		NDS_ARM7.waitIRQ = FALSE;
-	//}
+	if ((MMU.reg_IE[PROCNUM] & (flag)) && MMU.reg_IME[PROCNUM])
+	{
+		if(PROCNUM==0)
+			NDS_ARM9.waitIRQ = FALSE;
+		else 
+			NDS_ARM7.waitIRQ = FALSE;
+	}
 }
 
 static INLINE void NDS_makeARM9Int(u32 num)

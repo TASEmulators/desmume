@@ -846,6 +846,7 @@ void MMU_Init(void) {
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
 	MMU.fw.fp = NULL;
+	MMU.fw.isFirmware = true;
 
 	// Init Backup Memory device, this should really be done when the rom is loaded
 	//mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
