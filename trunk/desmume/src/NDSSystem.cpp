@@ -1,21 +1,18 @@
 /*	Copyright (C) 2006 yopyop
 	Copyright (C) 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <string.h>
@@ -942,7 +939,7 @@ void NDS_ToggleCardEject()
 	if(!nds.cardEjected)
 	{
 		//staff of kings will test this (it also uses the arm9 0xB8 poll)
-		NDS_makeInt(1, 20);
+		NDS_makeIrq(ARMCPU_ARM7, IRQ_BIT_GC_IREQ_MC);
 	}
 	nds.cardEjected ^= TRUE;
 }
@@ -1171,8 +1168,7 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 				MMU.timer[procnum][i] = MMU.timerReload[procnum][i];
 				if(T1ReadWord(regs, 0x102 + i*4) & 0x40) 
 				{
-					if(procnum==0) NDS_makeARM9Int(3 + i);
-					else NDS_makeARM7Int(3 + i);
+					NDS_makeIrq(procnum, IRQ_BIT_TIMER_0 + i);
 				}
 			}
 			else
@@ -1488,8 +1484,8 @@ static void execHardware_hblank()
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
 
 	//fire hblank interrupts if necessary
-	NDS_ARM9HBlankInt();
-	NDS_ARM7HBlankInt();
+	if(T1ReadWord(MMU.ARM9_REG, 4) & 0x10) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_HBLANK);
+	if(T1ReadWord(MMU.ARM7_REG, 4) & 0x10) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_LCD_HBLANK);
 
 	//emulation housekeeping. for some reason we always do this at hblank,
 	//even though it sounds more reasonable to do it at hstart
@@ -1520,8 +1516,8 @@ static void execHardware_hstart_vblankStart()
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
 
 	//fire vblank interrupts if necessary
-	NDS_ARM9VBlankInt();
-	NDS_ARM7VBlankInt();
+	if(T1ReadWord(MMU.ARM9_REG, 4) & 0x8) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VBLANK);
+	if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_LCD_VBLANK);
 
 	//some emulation housekeeping
 	gfx3d_VBlankSignal();
@@ -1547,7 +1543,7 @@ static void execHardware_hstart_vcount()
 		//arm9 vmatch
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM9_REG, 4) & 32) {
-			NDS_makeARM9Int(2);
+			NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VMATCH);
 		}
 	}
 	else
@@ -1560,7 +1556,7 @@ static void execHardware_hstart_vcount()
 		//arm7 vmatch
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
-			NDS_makeARM7Int(2);
+			NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VMATCH);
 	}
 	else
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
@@ -1947,8 +1943,6 @@ void NDS_exec(s32 nb)
 
 	if(nds.sleeping)
 	{
-		gpu_UpdateRender();
-
 		//speculative code: if ANY irq happens, wake up the arm7.
 		//I think the arm7 program analyzes the system and may decide not to wake up
 		//if it is dissatisfied with the conditions
@@ -2061,33 +2055,25 @@ void NDS_exec(s32 nb)
 		cheats->process();
 }
 
+template<int PROCNUM> static void execHardware_interrupts_core()
+{
+	u32 IF = MMU.gen_IF<PROCNUM>();
+	u32 IE = MMU.reg_IE[PROCNUM];
+	u32 masked = IF & IE;
+	if(ARMPROC.halt_IE_and_IF && masked)
+	{
+		ARMPROC.halt_IE_and_IF = FALSE;
+		ARMPROC.waitIRQ = FALSE;
+	}
+
+	if(masked && MMU.reg_IME[PROCNUM] && !ARMPROC.CPSR.bits.I)
+		armcpu_irqException(&ARMPROC);
+}
+
 void execHardware_interrupts()
 {
-	if((MMU.reg_IME[0]) && (MMU.gen_IF<0>()&MMU.reg_IE[0]))
-	{
-		//TODO - remove GDB specific code
-//#ifdef GDB_STUB
-//		if ( armcpu_flagIrq( &NDS_ARM9)) 
-//#else
-		if ( armcpu_irqException(&NDS_ARM9))
-//#endif
-		{
-			//printf("ARM9 interrupt! flags: %08X ; mask: %08X ; result: %08X\n",MMU.reg_IF[0],MMU.reg_IE[0],MMU.reg_IF[0]&MMU.reg_IE[0]);
-			//nds.ARM9Cycle = nds.cycles;
-		}
-	}
-//TODO - remove GDB specific code
-	if((MMU.reg_IME[1]) && (MMU.gen_IF<1>()&MMU.reg_IE[1]))
-	{
-//#ifdef GDB_STUB
-//		if ( armcpu_flagIrq( &NDS_ARM7)) 
-//#else
-		if ( armcpu_irqException(&NDS_ARM7))
-//#endif
-		{
-			//nds.ARM7Cycle = nds.cycles;
-		}
-	}
+	execHardware_interrupts_core<ARMCPU_ARM9>();
+	execHardware_interrupts_core<ARMCPU_ARM7>();
 }
 
 static void resetUserInput();
@@ -2741,11 +2727,11 @@ static void NDS_applyFinalInput()
 		u16 k_cnt_selected = (k_cnt & 0x3F);
 		if (k_cnt&(1<<15))	// AND
 		{
-			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeARM9Int(12);
+			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_KEYPAD);
 		}
 		else				// OR
 		{
-			if (~pad & k_cnt_selected) NDS_makeARM9Int(12);
+			if (~pad & k_cnt_selected) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_KEYPAD);
 		}
 	}
 
@@ -2756,11 +2742,11 @@ static void NDS_applyFinalInput()
 		u16 k_cnt_selected = (k_cnt & 0x3F);
 		if (k_cnt&(1<<15))	// AND
 		{
-			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeARM7Int(12);
+			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_KEYPAD);
 		}
 		else				// OR
 		{
-			if (~pad & k_cnt_selected) NDS_makeARM7Int(12);
+			if (~pad & k_cnt_selected) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_KEYPAD);
 		}
 	}
 
@@ -2789,7 +2775,7 @@ static void NDS_applyFinalInput()
 		if (!LidClosed)
 		{
 		//	SPU_Pause(FALSE);
-			NDS_makeARM7Int(22);
+			NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_ARM7_FOLD);
 
 		}
 		//else

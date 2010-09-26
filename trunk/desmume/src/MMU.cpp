@@ -1197,7 +1197,7 @@ u32 MMU_readFromGC()
 
 	// if needed, throw irq for the end of transfer
 	if(MMU.AUX_SPI_CNT & 0x4000)
-		NDS_makeInt(TEST_PROCNUM, 19);
+		NDS_makeIrq(TEST_PROCNUM, IRQ_BIT_GC_TRANSFER_COMPLETE);
 
 	return val;
 }
@@ -1244,8 +1244,6 @@ template<int PROCNUM> static void REG_IF_WriteLong(u32 val)
 template<int PROCNUM>
 u32 MMU_struct::gen_IF()
 {
-	//TODO - analyze setIF behaviour in GXF_FIFO_handleEvents
-
 	u32 IF = reg_IF_bits[PROCNUM];
 
 	if(PROCNUM==ARMCPU_ARM9)
@@ -1904,8 +1902,7 @@ void DmaController::doStop()
 	running = FALSE;
 	if(!repeatMode) enable = FALSE;
 	if(irq) {
-		if(procnum==0) NDS_makeARM9Int(8+chan);
-		else NDS_makeARM7Int(8+chan);
+		NDS_makeIrq(procnum,IRQ_BIT_DMA_0+chan);
 	}
 }
 

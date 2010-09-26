@@ -241,30 +241,23 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 
 void GFX_FIFOcnt(u32 val)
 {
-	//zeromus: i dont like any of this.
-
 	////INFO("gxFIFO: write cnt 0x%08X (prev 0x%08X) FIFO size %03i PIPE size %03i\n", val, gxstat, gxFIFO.size, gxPIPE.size);
 
-	//if (val & (1<<29))		// clear? (only in homebrew?)
-	//{
-	//	GFX_PIPEclear();
-	//	GFX_FIFOclear();
-	//	return;
-	//}
+	if (val & (1<<29))		// clear? (only in homebrew?)
+	{
+		GFX_PIPEclear();
+		GFX_FIFOclear();
+		return;
+	}
 
+	//zeromus says: what happened to clear stack?
 	//if (val & (1<<15))		// projection stack pointer reset
 	//{
 	//	gfx3d_ClearStack();
 	//	val &= 0xFFFF5FFF;		// clear reset (bit15) & stack level (bit13)
 	//}
 
-	//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, val);
-
-	//if (gxFIFO.size == 0)		// empty
-	//{
-	//	if (val & 0x80000000)	// IRQ: empty
-	//		setIF(0, (1<<21));
-	//}
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, val);
 }
 
 // ========================================================= DISP FIFO

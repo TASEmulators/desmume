@@ -1977,23 +1977,6 @@ void gfx3d_execute3D()
 		} else break;
 	}
 
-
-	//i thought it might be right to move these here, but it didnt help.
-	//maybe its a good idea for later.
-
-	//if(gxFIFO.size <= 127)
-	//{
-	//	if(gxstat.gxfifo_irq == 1) 
-	//		setIF(0, (1<<21)); //the half gxfifo irq
-	//
-	//	//might need to trigger a gxfifo dma
-	//	triggerDma(EDMAMode_GXFifo);
-	//}
-
-	//if(gxFIFO.size == 0) {
-	//	if(gxstat.gxfifo_irq == 2) 
-	//	setIF(0, (1<<21)); //the empty gxfifo irq
-	//}
 }
 
 void gfx3d_glFlush(u32 v)

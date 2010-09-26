@@ -1,21 +1,18 @@
 /*  Copyright (C) 2006 yopyop
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
@@ -211,6 +208,8 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 void armcpu_t::changeCPSR()
 {
 	//but all it does is give them a chance to unleash by forcing an immediate reschedule
+	//TODO - we could actually set CPSR through here and look for a change in the I bit
+	//that would be a little optimization as well as a safety measure if we prevented setting CPSR directly
 	NDS_Reschedule();
 }
 
@@ -221,7 +220,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
 	armcpu->waitIRQ = FALSE;
-	armcpu->wirq = FALSE;
+	armcpu->halt_IE_and_IF = FALSE;
 
 //#ifdef GDB_STUB
 //    armcpu->irq_flag = 0;
@@ -373,30 +372,8 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 
 u32 armcpu_Wait4IRQ(armcpu_t *cpu)
 {
-	u32 instructAddr = cpu->instruct_adr;
-	// on the first call, wirq is not set
-	if(cpu->wirq)
-	{
-		// check wether an irq was issued
-		if(!cpu->waitIRQ)
-		{
-			cpu->waitIRQ = 0;
-			cpu->wirq = 0;
-			return 1;   // return execution
-		}
-		// otherwise, repeat this instruction
-		cpu->R[15] = instructAddr;
-		cpu->next_instruction = instructAddr;
-		return 1;
-	}
-
-	// first run, set us into waiting state
-	cpu->waitIRQ = 1;
-	cpu->wirq = 1;
-	// and set next instruction to repeat this
-	cpu->R[15] = instructAddr;
-	cpu->next_instruction = instructAddr;
-	// only SWI set IME to 1
+	cpu->waitIRQ = TRUE;
+	cpu->halt_IE_and_IF = TRUE;
 	return 1;
 }
 
@@ -537,8 +514,6 @@ void armcpu_exception(armcpu_t *cpu, u32 number)
 BOOL armcpu_irqException(armcpu_t *armcpu)
 {
     Status_Reg tmp;
-
-	if(armcpu->CPSR.bits.I) return FALSE;
 
 	//TODO - remove GDB specific code
 //#ifdef GDB_STUB
