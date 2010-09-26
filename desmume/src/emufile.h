@@ -43,8 +43,8 @@ public:
 	{}
 
 
-	//takes control of the provided EMUFILE and returns a new EMUFILE which is guranteed to be in memory
-	static EMUFILE* memwrap(EMUFILE* fp);
+	//returns a new EMUFILE which is guranteed to be in memory. the EMUFILE you call this on may be deleted. use the returned EMUFILE in its place
+	virtual EMUFILE* memwrap() = 0;
 
 	virtual ~EMUFILE() {}
 	
@@ -115,6 +115,8 @@ public:
 	~EMUFILE_MEMORY() {
 		if(ownvec) delete vec;
 	}
+
+	virtual EMUFILE* memwrap();
 
 	virtual void truncate(s32 length)
 	{
@@ -240,6 +242,8 @@ public:
 	virtual FILE *get_fp() {
 		return fp; 
 	}
+
+	virtual EMUFILE* memwrap();
 
 	bool is_open() { return fp != NULL; }
 
