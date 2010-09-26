@@ -1,21 +1,18 @@
 /*  Copyright (C) 2006 yopyop
     Copyright (C) 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef NDSSYSTEM_H
@@ -457,43 +454,6 @@ template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;
 
-static INLINE void NDS_ARM9HBlankInt(void)
-{
-    if(T1ReadWord(MMU.ARM9_REG, 4) & 0x10)
-    {
-         //MMU.reg_IF[0] |= 2;// & (MMU.reg_IME[0] << 1);// (MMU.reg_IE[0] & (1<<1));
-		setIF(0, 2);
-    }
-}
-
-static INLINE void NDS_ARM7HBlankInt(void)
-{
-    if(T1ReadWord(MMU.ARM7_REG, 4) & 0x10)
-    {
-        // MMU.reg_IF[1] |= 2;// & (MMU.reg_IME[1] << 1);// (MMU.reg_IE[1] & (1<<1));
-		setIF(1, 2);
-    }
-}
-
-static INLINE void NDS_ARM9VBlankInt(void)
-{
-    if(T1ReadWord(MMU.ARM9_REG, 4) & 0x8)
-    {
-        // MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
-		setIF(0, 1);
-              //emu_halt();
-              /*logcount++;*/
-    }
-}
-
-static INLINE void NDS_ARM7VBlankInt(void)
-{
-    if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8)
-        // MMU.reg_IF[1] |= 1;// & (MMU.reg_IME[1]);// (MMU.reg_IE[1] & 1);
-		setIF(1, 1);
-         //emu_halt();
-}
-
 static INLINE void NDS_swapScreen(void)
 {
    u16 tmp = MainScreen.offset;
@@ -502,8 +462,6 @@ static INLINE void NDS_swapScreen(void)
 }
 
 int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
-
-
 
 extern struct TCommonSettings {
 	TCommonSettings() 

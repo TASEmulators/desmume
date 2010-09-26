@@ -1,22 +1,18 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+	Copyright (C) 2008-2010 DeSmuME team
+	
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This file is part of DeSmuME
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "cp15.h"
@@ -213,27 +209,9 @@ TEMPLATE static u32 WaitByLoop()
 
 TEMPLATE static u32 wait4IRQ()
 {
-     //execute= FALSE;
-     u32 instructAddr = cpu->instruct_adr;
-     if(cpu->wirq)
-     {
-          if(!cpu->waitIRQ)
-          {
-               cpu->waitIRQ = 0;
-               cpu->wirq = 0;
-               //cpu->switchMode(oldmode[cpu->proc_ID]);
-               return 1;
-          }
-          cpu->R[15] = instructAddr;
-          cpu->next_instruction = instructAddr;
-          return 1;
-     }
-     cpu->waitIRQ = 1;
-     cpu->wirq = 1;
-     cpu->R[15] = instructAddr;
-     cpu->next_instruction = instructAddr;
-     //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
-     return 1;
+   	cpu->waitIRQ = TRUE;
+	cpu->halt_IE_and_IF = TRUE;
+	return 1;
 }
 
 TEMPLATE u32 intrWaitARM()
@@ -256,8 +234,8 @@ TEMPLATE u32 intrWaitARM()
 	//if(!noDiscard)
 	//	intrFlag &= cpu->newIrqFlags;
 
-	MMU.reg_IME[PROCNUM] = 1;
-	_MMU_write32<PROCNUM>(0x04000208, 1);			// set IME=1
+	//set IME=1
+	_MMU_write32<PROCNUM>(0x04000208, 1);			
 
 	if (intrFlag)
 	{
@@ -269,8 +247,8 @@ TEMPLATE u32 intrWaitARM()
 	u32 instructAddr = cpu->instruct_adr;
 	cpu->R[15] = instructAddr;
 	cpu->next_instruction = instructAddr;
-	cpu->waitIRQ = 1;
-	cpu->wirq = 1;
+	cpu->waitIRQ = TRUE;
+	cpu->halt_IE_and_IF = TRUE;
 	
 	return 1;
 }

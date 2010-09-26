@@ -1,21 +1,18 @@
 /*  Copyright (C) 2006 yopyop
 	Copyright (C) 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef ARM_CPU
@@ -208,7 +205,7 @@ struct armcpu_t
 	u32 intVector;
 	u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5
 	BOOL waitIRQ;
-	BOOL wirq;
+	BOOL halt_IE_and_IF; //the cpu is halted, waiting for IE&IF to signal something
 
 	BOOL BIOS_loaded;
 
@@ -268,41 +265,12 @@ static INLINE void setIF(int PROCNUM, u32 flag)
 
 	extern void NDS_Reschedule();
 	NDS_Reschedule();
-
-	//TODO SEP - was this necessary??? - CrazyMax 2010/09/25: needs for boot firmware
-    //generate the interrupt if enabled
-	if ((MMU.reg_IE[PROCNUM] & (flag)) && MMU.reg_IME[PROCNUM])
-	{
-		if(PROCNUM==0)
-			NDS_ARM9.waitIRQ = FALSE;
-		else 
-			NDS_ARM7.waitIRQ = FALSE;
-	}
 }
 
-static INLINE void NDS_makeARM9Int(u32 num)
+static INLINE void NDS_makeIrq(int PROCNUM, u32 num)
 {
-	setIF(0, (1<<num));
+	setIF(PROCNUM,1<<num);
 }
-
-static INLINE void NDS_makeARM7Int(u32 num)
-{
-	setIF(1, (1<<num));
-}
-
-static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
-{
-	switch (proc_ID)
-	{
-		case 0:
-			NDS_makeARM9Int(num) ;
-			break ;
-		case 1:
-			NDS_makeARM7Int(num) ;
-			break ;
-	}
-}
-
 
 static INLINE char *decodeIntruction(bool thumb_mode, u32 instr)
 {

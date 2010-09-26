@@ -94,7 +94,7 @@ static void write32_GCDATAIN(u32 val)
 
 		// if needed, throw irq for the end of transfer
 		if(MMU.AUX_SPI_CNT & 0x4000)
-			NDS_makeInt(0, 19);
+			NDS_makeIrq(ARMCPU_ARM9, IRQ_BIT_GC_TRANSFER_COMPLETE);
 
 		return;
 	}
@@ -124,7 +124,7 @@ static void write32_GCDATAIN(u32 val)
 
 		// if needed, throw irq for the end of transfer
 		if(MMU.AUX_SPI_CNT & 0x4000)
-			NDS_makeInt(0, 19);
+			NDS_makeIrq(ARMCPU_ARM9, IRQ_BIT_GC_TRANSFER_COMPLETE);
 	}
 
 	/*if(log)
