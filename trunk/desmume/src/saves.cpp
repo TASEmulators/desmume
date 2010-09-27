@@ -247,6 +247,8 @@ SFORMAT SF_MMU[]={
 	{ "PMCN", 1, 1,			&MMU.powerMan_CntReg},
 	{ "PMCW", 4, 1,			&MMU.powerMan_CntRegWritten},
 	{ "PMCR", 1, 5,			&MMU.powerMan_Reg},
+
+	{ "MR3D", 4, 1,		&MMU.reg_DISP3DCNT_bits},
 	
 	{ 0 }
 };
@@ -259,7 +261,7 @@ SFORMAT SF_MOVIE[]={
 
 static void mmu_savestate(EMUFILE* os)
 {
-	u32 version = 4;
+	u32 version = 5;
 	write32le(version,os);
 	
 	//version 2:
@@ -449,6 +451,9 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
+
+	if(version < 5)
+		MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
 
 	return ok;
 }
