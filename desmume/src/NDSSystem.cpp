@@ -1556,7 +1556,7 @@ static void execHardware_hstart_vcount()
 		//arm7 vmatch
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
-			NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VMATCH);
+			NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_LCD_VMATCH);
 	}
 	else
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
@@ -1765,7 +1765,6 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 FORCEINLINE void arm9log()
 {
-	//if(currFrameCounter>19) dolog=true;
 #ifdef LOG_ARM9
 	if(dolog)
 	{
@@ -2067,7 +2066,10 @@ template<int PROCNUM> static void execHardware_interrupts_core()
 	}
 
 	if(masked && MMU.reg_IME[PROCNUM] && !ARMPROC.CPSR.bits.I)
+	{
+		printf("Executing IRQ on procnum %d with IF = %08X and IE = %08X\n",PROCNUM,IF,IE);
 		armcpu_irqException(&ARMPROC);
+	}
 }
 
 void execHardware_interrupts()
