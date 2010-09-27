@@ -1280,6 +1280,63 @@ u32 MMU_struct::gen_IF()
 	return IF;
 }
 
+static void writereg_DISP3DCNT(const int size, const u32 adr, const u32 val)
+{
+	//UGH. rewrite this shite to use individual values and reconstruct the return value instead of packing things in this !@#)ing register
+	
+	//nanostray2 cutscene will test this vs old desmumes by using some kind of 32bit access for setting up this reg for cutscenes
+	switch(size)
+	{
+	case 8:
+		switch(adr)
+		{
+		case REG_DISPA_DISP3DCNT: 
+			MMU.reg_DISP3DCNT_bits &= 0xFFFFFF00;
+			MMU.reg_DISP3DCNT_bits |= val;
+			gfx3d_Control(MMU.reg_DISP3DCNT_bits);
+			break;
+		case REG_DISPA_DISP3DCNT+1:
+			{
+				u32 myval = (val & ~0x30) | (~val & ((MMU.reg_DISP3DCNT_bits>>8) & 0x30)); // bits 12,13 are ack bits
+				myval &= 0x7F; //top bit isnt connected
+				MMU.reg_DISP3DCNT_bits = MMU.reg_DISP3DCNT_bits&0xFFFF00FF;
+				MMU.reg_DISP3DCNT_bits |= (myval<<8);
+				gfx3d_Control(MMU.reg_DISP3DCNT_bits);
+			}
+			break;
+		}
+		break;
+	case 16:
+	case 32:
+		writereg_DISP3DCNT(8,adr,val&0xFF);
+		writereg_DISP3DCNT(8,adr+1,(val>>8)&0xFF);
+		break;
+	}
+}
+
+static u32 readreg_DISP3DCNT(const int size, const u32 adr)
+{
+	//UGH. rewrite this shite to use individual values and reconstruct the return value instead of packing things in this !@#)ing register
+	switch(size)
+	{
+	case 8:
+		switch(adr)
+		{
+		case REG_DISPA_DISP3DCNT: 
+			return MMU.reg_DISP3DCNT_bits & 0xFF;
+		case REG_DISPA_DISP3DCNT+1:
+			return ((MMU.reg_DISP3DCNT_bits)>>8)& 0xFF;
+		}
+		break;
+	case 16:
+	case 32:
+		return readreg_DISP3DCNT(8,adr)|(readreg_DISP3DCNT(8,adr+1)<<8);
+	}
+	assert(false);
+	return 0;
+}
+
+
 static u32 readreg_POWCNT1(const int size, const u32 adr) { 
 	switch(size)
 	{
@@ -2024,22 +2081,6 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					printf("%c",val);
 				break;
 
-			case REG_DISPA_DISP3DCNT:
-			{
-				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
-				disp3dcnt = (disp3dcnt&0xFF00) | val;
-				gfx3d_Control(disp3dcnt);
-				break;
-			}
-			case REG_DISPA_DISP3DCNT+1:
-			{
-				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
-				val = (val & ~0x30) | (~val & ((disp3dcnt>>8) & 0x30)); // bits 12,13 are ack bits
-				disp3dcnt = (disp3dcnt&0x00FF) | (val<<8);
-				gfx3d_Control(disp3dcnt);
-				break;
-			}
-
 			case eng_3D_GXSTAT:
 				MMU_new.gxstat.write(8,adr,val);
 				break;
@@ -2175,9 +2216,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val);
 				break;
 
-            case REG_POWCNT1:
-				writereg_POWCNT1(8,adr,val);
-				break;
+            case REG_POWCNT1: writereg_POWCNT1(8,adr,val); break;
+			
+			case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(8,adr,val); return;
+			case REG_DISPA_DISP3DCNT+1: writereg_DISP3DCNT(8,adr,val); return;
 
 			case REG_IF: REG_IF_WriteByte<ARMCPU_ARM9>(0,val); break;
 			case REG_IF+1: REG_IF_WriteByte<ARMCPU_ARM9>(1,val); break;
@@ -2317,14 +2359,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		case REG_DISPB_BG3YL: SubScreen.gpu->setAffineStartWord(3,1,val,0); break;
 		case REG_DISPB_BG3YH: SubScreen.gpu->setAffineStartWord(3,1,val,1); break;
 
-			case REG_DISPA_DISP3DCNT:
-			{
-				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
-				val = (val & ~0x3000) | (~val & (disp3dcnt & 0x3000)); // bits 12,13 are ack bits
-				disp3dcnt = val;
-				gfx3d_Control(val);
-				break;
-			}
+		case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(16,adr,val); return;
 
 			// Alpha test reference value - Parameters:1
 			case eng_3D_ALPHA_TEST_REF:
@@ -3103,6 +3138,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			}
 
+			case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(32,adr,val); return;
+
 			case REG_GCDATAIN:
 				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN,val);
 				return;
@@ -3191,6 +3228,11 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 
 			case eng_3D_GXSTAT:
 				return MMU_new.gxstat.read(8,adr);
+
+			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(8,adr);
+			case REG_DISPA_DISP3DCNT+1: return readreg_DISP3DCNT(8,adr);
+			case REG_DISPA_DISP3DCNT+2: return readreg_DISP3DCNT(8,adr);
+			case REG_DISPA_DISP3DCNT+3: return readreg_DISP3DCNT(8,adr);
 		}
 	}
 
@@ -3269,6 +3311,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
             case REG_POWCNT1: 
 			case REG_POWCNT1+2:
 				return readreg_POWCNT1(16,adr);
+
+			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(16,adr);
+			case REG_DISPA_DISP3DCNT+2: return readreg_DISP3DCNT(16,adr);
 
 			case 0x04000130:
 			case 0x04000136:
@@ -3398,11 +3443,9 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 					return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2] | (val<<16);
 				}	
      
-			case REG_GCDATAIN:
-				return MMU_readFromGC<ARMCPU_ARM9>();
-
-            case REG_POWCNT1: 
-				return readreg_POWCNT1(32,adr);
+			case REG_GCDATAIN: return MMU_readFromGC<ARMCPU_ARM9>();
+            case REG_POWCNT1: return readreg_POWCNT1(32,adr);
+			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(32,adr);
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}

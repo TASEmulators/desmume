@@ -390,6 +390,8 @@ struct MMU_struct
 	//these are the user-controlled IF bits. some IF bits are generated as necessary from hardware conditions
 	u32 reg_IF_bits[2];
 
+	u32 reg_DISP3DCNT_bits;
+
 	template<int PROCNUM> u32 gen_IF();
 
 	BOOL divRunning;
