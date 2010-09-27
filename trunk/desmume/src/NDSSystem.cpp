@@ -2067,7 +2067,7 @@ template<int PROCNUM> static void execHardware_interrupts_core()
 
 	if(masked && MMU.reg_IME[PROCNUM] && !ARMPROC.CPSR.bits.I)
 	{
-		printf("Executing IRQ on procnum %d with IF = %08X and IE = %08X\n",PROCNUM,IF,IE);
+		//printf("Executing IRQ on procnum %d with IF = %08X and IE = %08X\n",PROCNUM,IF,IE);
 		armcpu_irqException(&ARMPROC);
 	}
 }
