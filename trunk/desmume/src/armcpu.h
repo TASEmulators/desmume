@@ -206,6 +206,7 @@ struct armcpu_t
 	u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5
 	BOOL waitIRQ;
 	BOOL halt_IE_and_IF; //the cpu is halted, waiting for IE&IF to signal something
+	u8 intrWaitARM_state;
 
 	BOOL BIOS_loaded;
 
