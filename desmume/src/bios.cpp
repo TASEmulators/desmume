@@ -216,40 +216,58 @@ TEMPLATE static u32 wait4IRQ()
 
 TEMPLATE u32 intrWaitARM()
 {
-	u32 intrFlagAdr = 0;
-	u32 intr = 0;
-	u32 intrFlag = 0;
+	//TODO - account for differences between arm7 and arm9 (according to gbatek, the "bug doesn't work")
 
-	//BOOL noDiscard = ((cpu->R[0] == 0) && (PROCNUM == ARMCPU_ARM7));
-
-	if(PROCNUM == ARMCPU_ARM7)
-		intrFlagAdr = 0x380FFF8;
-	else
-		intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
-
-	intr = _MMU_read32<PROCNUM>(intrFlagAdr);
-	intrFlag = (cpu->R[1] & intr);
-
-	//INFO("ARM%c: wait for IRQ r0=0x%02X, r1=0x%08X - 0x%08X (flag 0x%08X)\n", PROCNUM?'7':'9', cpu->R[0], cpu->R[1], intr, intrFlag);
-	//if(!noDiscard)
-	//	intrFlag &= cpu->newIrqFlags;
+	const u32 intrFlagAdr = (PROCNUM == ARMCPU_ARM7)
+		? 0x380FFF8
+		: (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
 
 	//set IME=1
-	_MMU_write32<PROCNUM>(0x04000208, 1);			
+	//without this, no irq handlers can happen (even though IF&IE waits can happily happen)
+	//and so no bits in the OS irq flag variable can get set by the handlers
+	_MMU_write32<PROCNUM>(0x04000208, 1); 
 
-	if (intrFlag)
+	//analyze the OS irq flag variable
+	u32 intr = _MMU_read32<PROCNUM>(intrFlagAdr);
+	u32 intrFlag = (cpu->R[1] & intr);
+
+	//if the user requested us to discard flags, then clear the flag(s) we're going to be waiting on.
+	//(be sure to only do this only on the first run through. use a little state machine to control that)
+	if(cpu->intrWaitARM_state==0 && cpu->R[0]==1)
 	{
 		intr ^= intrFlag;
-		//if (intr)
-			_MMU_write32<PROCNUM>(intrFlagAdr, intr);
-		return wait4IRQ<PROCNUM>();
+		_MMU_write32<PROCNUM>(intrFlagAdr, intr);
+
+		//we want to make sure we wait at least once below
+		intrFlag = 0;
 	}
+
+	cpu->intrWaitARM_state = 1;
+
+	//now, if the condition is satisfied (and it won't be the first time through, no matter what, due to cares taken above)
+	if(intrFlag)
+	{
+		//write back the OS irq flags with the ones we were waiting for cleared
+		intr ^= intrFlag;
+		_MMU_write32<PROCNUM>(intrFlagAdr, intr);
+
+		//wait for an irq one last time. this is allegedly a bug.
+		cpu->waitIRQ = TRUE;
+		cpu->halt_IE_and_IF = TRUE;
+		
+		cpu->intrWaitARM_state = 0;
+		return 1;
+	}
+
+	//the condition wasn't satisfied. this means that we need to halt, wait for some enabled interrupt,
+	//and then ensure that we return to this opcode again to check the condition again
+	cpu->waitIRQ = TRUE;
+	cpu->halt_IE_and_IF = TRUE;
+
+	//(rewire PC to jump back to this opcode)
 	u32 instructAddr = cpu->instruct_adr;
 	cpu->R[15] = instructAddr;
 	cpu->next_instruction = instructAddr;
-	cpu->waitIRQ = TRUE;
-	cpu->halt_IE_and_IF = TRUE;
-	
 	return 1;
 }
 

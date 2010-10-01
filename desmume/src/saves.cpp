@@ -94,6 +94,7 @@ SFORMAT SF_ARM7[]={
 	{ "7LDT", 1, 1, &NDS_ARM7.LDTBit },
 	{ "7Wai", 4, 1, &NDS_ARM7.waitIRQ },
 	{ "7hef", 4, 1, &NDS_ARM7.halt_IE_and_IF },
+	{ "7iws", 1, 1, &NDS_ARM7.intrWaitARM_state },
 	{ 0 }
 };
 
@@ -130,6 +131,7 @@ SFORMAT SF_ARM9[]={
 	{ "9LDT", 1, 1, &NDS_ARM9.LDTBit},
 	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
 	{ "9hef", 4, 1, &NDS_ARM9.halt_IE_and_IF },
+	{ "9iws", 1, 1, &NDS_ARM7.intrWaitARM_state },
 	{ 0 }
 };
 
