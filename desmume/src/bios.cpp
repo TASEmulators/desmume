@@ -251,10 +251,6 @@ TEMPLATE u32 intrWaitARM()
 		intr ^= intrFlag;
 		_MMU_write32<PROCNUM>(intrFlagAdr, intr);
 
-		//wait for an irq one last time. this is allegedly a bug.
-		cpu->waitIRQ = TRUE;
-		cpu->halt_IE_and_IF = TRUE;
-		
 		cpu->intrWaitARM_state = 0;
 		return 1;
 	}
