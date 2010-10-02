@@ -1832,7 +1832,13 @@ void DmaController::doCopy()
 	//generate a copy count depending on various copy mode's behavior
 	u32 todo = wordcount;
 	if(todo == 0) todo = 0x200000; //according to gbatek.. //TODO - this should not work this way for arm7 according to gbatek
-	if(startmode == EDMAMode_MemDisplay) todo = 128; //this is a hack. maybe an alright one though. it should be 4 words at a time. this is a whole scanline
+	if(startmode == EDMAMode_MemDisplay) 
+	{
+		todo = 128; //this is a hack. maybe an alright one though. it should be 4 words at a time. this is a whole scanline
+	
+		//apparently this dma turns off after it finishes a frame
+		if(nds.VCount==191) enable = 0;
+	}
 	if(startmode == EDMAMode_Card) todo *= 0x80;
 	if(startmode == EDMAMode_GXFifo) todo = std::min(todo,(u32)112);
 
