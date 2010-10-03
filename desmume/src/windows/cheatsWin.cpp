@@ -218,7 +218,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				else
 				{
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT2), "0");
-					CheckDlgButton(dialog, IDC_RADIO1, BST_CHECKED);
+					CheckRadioButton(dialog, IDC_RADIO1, IDC_RADIO4, IDC_RADIO1);
 				}
 
 				memset(editBuf, 0, sizeof(editBuf));
@@ -233,7 +233,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 12);
 				
 				CheckDlgButton(dialog, IDC_CHECK1, BST_CHECKED);
-				CheckDlgButton(dialog, searchSizeIDDs[searchAddSize], BST_CHECKED);
+				CheckRadioButton(dialog, searchSizeIDDs[0], searchSizeIDDs[ARRAY_SIZE(searchSizeIDDs) - 1], searchSizeIDDs[searchAddSize]);
 
 				if(searchAddMode == 2)
 				{
@@ -403,7 +403,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 12);
 
 				CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);
-				CheckDlgButton(dialog, searchSizeIDDs[tempCheat.size], BST_CHECKED);
+				CheckRadioButton(dialog, searchSizeIDDs[0], searchSizeIDDs[ARRAY_SIZE(searchSizeIDDs) - 1], searchSizeIDDs[tempCheat.size]);
 				SetWindowText(GetDlgItem(dialog, IDOK), "Update");
 			}
 		return TRUE;
@@ -674,14 +674,15 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 			cheatListView = GetDlgItem(dialog, IDC_LIST1);
 
-			ListView_SetExtendedListViewStyle(cheatListView, LVS_EX_FULLROWSELECT | LVS_EX_TWOCLICKACTIVATE);
+			//ListView_SetExtendedListViewStyle(GetDlgItem(hDlg, IDC_CHEAT_LIST), LVS_EX_FULLROWSELECT|LVS_EX_CHECKBOXES);
+			ListView_SetExtendedListViewStyle(cheatListView, LVS_EX_FULLROWSELECT | LVS_EX_TWOCLICKACTIVATE | LVS_EX_CHECKBOXES);
 			
 			memset(&lvColumn,0,sizeof(LV_COLUMN));
 			lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
 
 			lvColumn.fmt=LVCFMT_CENTER;
 			lvColumn.cx=20;
-			lvColumn.pszText="X";
+			lvColumn.pszText="";
 			ListView_InsertColumn(cheatListView, 0, &lvColumn);
 
 			lvColumn.fmt=LVCFMT_LEFT;
@@ -706,15 +707,13 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			while (cheats->getList(&tempCheat))
 			{
 				char buf[256];
-				if (tempCheat.enabled)
-					lvi.pszText= "X";
-				else
-					lvi.pszText= "";
+				lvi.pszText= "";
 				switch (tempCheat.type)
 				{
 					case 0:					// Internal
 					{
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						ListView_SetCheckState(cheatListView, row, tempCheat.enabled);
 						wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
 						ListView_SetItemText(cheatListView, row, 1, buf);
 						ltoa(tempCheat.code[0][1], buf, 10);
@@ -726,6 +725,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					case 1:					// Action Replay
 					{
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						ListView_SetCheckState(cheatListView, row, tempCheat.enabled);
 						ListView_SetItemText(cheatListView, row, 1, "Action");
 						ListView_SetItemText(cheatListView, row, 2, "Replay");
 						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
@@ -735,6 +735,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					case 2:					// Codebreaker
 					{
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						ListView_SetCheckState(cheatListView, row, tempCheat.enabled);
 						ListView_SetItemText(cheatListView, row, 1, "Code");
 						ListView_SetItemText(cheatListView, row, 2, "breaker");
 						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
@@ -743,6 +744,8 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 				}
 			}
 			SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)TRUE,0);
+
+			EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 
 			ListView_SetItemState(searchListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
 			SetFocus(searchListView);
@@ -753,46 +756,49 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			if (wparam == IDC_LIST1)
 			{
 				LPNMHDR tmp_msg = (LPNMHDR)lparam;
-				if ( tmp_msg->code == LVN_ITEMACTIVATE )
+				switch (tmp_msg->code)
 				{
-					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
-					cheats->get(&tempCheat, cheatEditPos);
-					tempCheat.enabled = !tempCheat.enabled;
-					switch (tempCheat.type)
+					case LVN_ITEMCHANGED:
 					{
-						case 0:		// internal
-							cheats->update(tempCheat.size, tempCheat.code[0][0], tempCheat.code[0][1], tempCheat.description, tempCheat.enabled, cheatEditPos);
-						break;
+						NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)lparam;
+						if((pNMListView->uOldState ^ pNMListView->uNewState) & LVIS_SELECTED) // on selection changed
+						{
+							int selCount = ListView_GetSelectedCount(cheatListView);
+							EnableWindow(GetDlgItem(dialog, IDC_BEDIT), (selCount == 1) ? TRUE : FALSE);
+							EnableWindow(GetDlgItem(dialog, IDC_BREMOVE), (selCount >= 1) ? TRUE : FALSE);
+						}
 
-						case 1:		// Action Replay
-							cheats->update_AR(NULL, NULL, tempCheat.enabled, cheatEditPos);
-						break;
+						UINT oldStateImage = pNMListView->uOldState & LVIS_STATEIMAGEMASK;
+						UINT newStateImage = pNMListView->uNewState & LVIS_STATEIMAGEMASK;
+						if(oldStateImage != newStateImage &&
+							(oldStateImage == INDEXTOSTATEIMAGEMASK(1) || oldStateImage == INDEXTOSTATEIMAGEMASK(2)) &&
+							(newStateImage == INDEXTOSTATEIMAGEMASK(1) || newStateImage == INDEXTOSTATEIMAGEMASK(2))) // on checked changed
+						{
+							bool checked = (newStateImage == INDEXTOSTATEIMAGEMASK(2));
+							cheatEditPos = pNMListView->iItem;
+							cheats->get(&tempCheat, cheatEditPos);
+							if ((bool)tempCheat.enabled != checked)
+							{
+								tempCheat.enabled = checked;
+								switch (tempCheat.type)
+								{
+									case 0:		// internal
+										cheats->update(tempCheat.size, tempCheat.code[0][0], tempCheat.code[0][1], tempCheat.description, tempCheat.enabled, cheatEditPos);
+									break;
 
-						case 2:		// Codebreaker
-							cheats->update_CB(NULL, NULL, tempCheat.enabled, cheatEditPos);
-						break;
+									case 1:		// Action Replay
+										cheats->update_AR(NULL, NULL, tempCheat.enabled, cheatEditPos);
+									break;
+
+									case 2:		// Codebreaker
+										cheats->update_CB(NULL, NULL, tempCheat.enabled, cheatEditPos);
+									break;
+								}
+								EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+							}
+						}
 					}
-
-
-					if (tempCheat.enabled)
-						ListView_SetItemText(cheatListView, cheatEditPos, 0, "X")
-					else
-						ListView_SetItemText(cheatListView, cheatEditPos, 0, "");
-					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
-				}
-
-				if ( tmp_msg->code == NM_CLICK )
-				{
-					if (ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED) != -1)
-					{
-						EnableWindow(GetDlgItem(dialog, IDC_BEDIT), TRUE);
-						EnableWindow(GetDlgItem(dialog, IDC_BREMOVE), TRUE);
-					}
-					else
-					{
-						EnableWindow(GetDlgItem(dialog, IDC_BEDIT), FALSE);
-						EnableWindow(GetDlgItem(dialog, IDC_BREMOVE), FALSE);
-					}
+					break;
 				}
 
 				return TRUE;
@@ -830,16 +836,13 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						lvi.mask = LVIF_TEXT|LVIF_STATE;
 						lvi.iItem = INT_MAX;
 
-						if (searchAddFreeze)
-							lvi.pszText= "X";
-						else
-							lvi.pszText= " ";
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
 						wsprintf(buf, "0x02%06X", searchAddAddress);
 						ListView_SetItemText(cheatListView, row, 1, buf);
 						ltoa(searchAddValue, buf, 10);
 						ListView_SetItemText(cheatListView, row, 2, buf);
 						ListView_SetItemText(cheatListView, row, 3, editBuf[2]);
+						ListView_SetCheckState(cheatListView, row, searchAddFreeze);
 
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
@@ -869,10 +872,6 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						lvi.mask = LVIF_TEXT|LVIF_STATE;
 						lvi.iItem = INT_MAX;
 
-						if (tempCheat.enabled)
-							lvi.pszText= "X";
-						else
-							lvi.pszText= " ";
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
 						if (cheatXXtype == 0)
 						{
@@ -885,6 +884,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 							ListView_SetItemText(cheatListView, row, 2, "breaker");
 						}
 						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+						ListView_SetCheckState(cheatListView, row, tempCheat.enabled);
 
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
@@ -905,8 +905,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 							{
 								char buf[256];
 								cheats->get(&tempCheat, cheatEditPos);
-								if (tempCheat.enabled)
-									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
+								ListView_SetCheckState(cheatListView, cheatEditPos, tempCheat.enabled);
 								wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
 								ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
 								ltoa(tempCheat.code[0][1], buf, 10);
@@ -927,8 +926,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 							if (DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
 							{
 								cheats->get(&tempCheat, cheatEditPos);
-								if (tempCheat.enabled)
-									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
+								ListView_SetCheckState(cheatListView, cheatEditPos, tempCheat.enabled);
 
 								if (cheatXXtype == 0)
 								{
@@ -951,16 +949,19 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 				case IDC_BREMOVE:
 				{
-					int tmp_pos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
-					if (tmp_pos != -1)
+					while(true)
 					{
+						int tmp_pos = ListView_GetNextItem(cheatListView, -1, LVNI_ALL | LVNI_SELECTED);
+						if (tmp_pos == -1)
+						{
+							break;
+						}
 						if (cheats->remove(tmp_pos))
 						{
 							ListView_DeleteItem(cheatListView, tmp_pos);
-							EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 						}
 					}
-
+					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 				}
 				return TRUE;
 
@@ -1087,8 +1088,8 @@ INT_PTR CALLBACK CheatsSearchCompWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 				EnableWindow(hBView, FALSE);
 			EnableWindow(hBSearch, TRUE);
 
-			CheckDlgButton(dialog, searchCompIDDs[searchComp], BST_CHECKED);
-			
+			CheckRadioButton(dialog, searchCompIDDs[0], searchCompIDDs[ARRAY_SIZE(searchCompIDDs) - 1], searchCompIDDs[searchComp]);
+
 			char buf[256];
 			ltoa(searchNumberResults, buf, 10);
 			SetWindowText(GetDlgItem(dialog, IDC_SNUMBER), buf);
@@ -1212,9 +1213,9 @@ INT_PTR CALLBACK CheatsSearchMainWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 	{
 		case WM_INITDIALOG: 
 		{
-			CheckDlgButton(dialog, searchSizeIDDs[searchSize], BST_CHECKED);
-			CheckDlgButton(dialog, searchSignIDDs[searchSign], BST_CHECKED);
-			CheckDlgButton(dialog, searchTypeIDDs[searchType], BST_CHECKED);
+			CheckRadioButton(dialog, searchSizeIDDs[0], searchSizeIDDs[ARRAY_SIZE(searchSizeIDDs) - 1], searchSizeIDDs[searchSize]);
+			CheckRadioButton(dialog, searchSignIDDs[0], searchSignIDDs[ARRAY_SIZE(searchSignIDDs) - 1], searchSignIDDs[searchSign]);
+			CheckRadioButton(dialog, searchTypeIDDs[0], searchTypeIDDs[ARRAY_SIZE(searchTypeIDDs) - 1], searchTypeIDDs[searchType]);
 			for (int i = 0; i < 4; i++)
 				SetWindowText(GetDlgItem(dialog, searchRangeIDDs[i]), searchRangeText[searchSign][i]);
 			EnableWindow(hBRestart, FALSE);
