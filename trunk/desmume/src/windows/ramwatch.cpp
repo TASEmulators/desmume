@@ -38,6 +38,8 @@ int WatchCount=0;
 bool QuickSaveWatches();
 bool ResetWatches();
 
+void RefreshWatchListSelectedCountControlStatus(HWND hDlg);
+
 unsigned int GetCurrentValue(AddressWatcher& watch)
 {
 	char buf[4];
@@ -547,8 +549,10 @@ bool Load_Watches(bool clear, const char* filename)
 	}
 	
 	fclose(WatchFile);
-	if (RamWatchHWnd)
+	if (RamWatchHWnd) {
 		ListView_SetItemCount(GetDlgItem(RamWatchHWnd,IDC_WATCHLIST),WatchCount);
+		RefreshWatchListSelectedCountControlStatus(RamWatchHWnd);
+	}
 	RWfileChanged=false;
 	return true;
 }
@@ -608,8 +612,10 @@ bool ResetWatches()
 		rswatches[WatchCount].comment = NULL;
 	}
 	WatchCount++;
-	if (RamWatchHWnd)
+	if (RamWatchHWnd) {
 		ListView_SetItemCount(GetDlgItem(RamWatchHWnd,IDC_WATCHLIST),WatchCount);
+		RefreshWatchListSelectedCountControlStatus(RamWatchHWnd);
+	}
 	RWfileChanged = false;
 	currentWatch[0] = NULL;
 	return true;
@@ -785,6 +791,38 @@ void init_list_box(HWND Box, const char* Strs[], int numColumns, int *columnWidt
 	ListView_SetExtendedListViewStyle(Box, LVS_EX_FULLROWSELECT);
 }
 
+void RamWatchEnableCommand(HWND hDlg, HMENU hMenu, UINT uIDEnableItem, bool enable)
+{
+	EnableWindow(GetDlgItem(hDlg, uIDEnableItem), (enable?TRUE:FALSE));
+	if (hMenu != NULL) {
+		if (uIDEnableItem == ID_WATCHES_UPDOWN) {
+			EnableMenuItem(hMenu, IDC_C_WATCH_UP, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
+			EnableMenuItem(hMenu, IDC_C_WATCH_DOWN, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
+		}
+		else
+			EnableMenuItem(hMenu, uIDEnableItem, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
+	}
+}
+
+void RefreshWatchListSelectedCountControlStatus(HWND hDlg)
+{
+	static int prevSelCount=-1;
+	int selCount = ListView_GetSelectedCount(GetDlgItem(hDlg,IDC_WATCHLIST));
+	if(selCount != prevSelCount)
+	{
+		if(selCount < 2 || prevSelCount < 2)
+		{
+			RamWatchEnableCommand(hDlg, ramwatchmenu, IDC_C_WATCH_EDIT, selCount == 1);
+			RamWatchEnableCommand(hDlg, ramwatchmenu, IDC_C_WATCH_REMOVE, selCount >= 1);
+			RamWatchEnableCommand(hDlg, ramwatchmenu, IDC_C_WATCH, selCount == 1);
+			RamWatchEnableCommand(hDlg, ramwatchmenu, IDC_C_WATCH_DUPLICATE, selCount == 1);
+			RamWatchEnableCommand(hDlg, ramwatchmenu, IDC_C_ADDCHEAT, selCount == 1);
+			RamWatchEnableCommand(hDlg, ramwatchmenu, ID_WATCHES_UPDOWN, selCount == 1);
+		}
+		prevSelCount = selCount;
+	}
+}
+
 LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	RECT r;
@@ -865,6 +903,7 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			Update_RAM_Watch();
 			DragAcceptFiles(hDlg, TRUE);
 
+			RefreshWatchListSelectedCountControlStatus(hDlg);
 			return true;
 			break;
 		}
@@ -898,6 +937,17 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					LPNMHDR lP = (LPNMHDR) lParam;
 					switch (lP->code)
 					{
+						case LVN_ITEMCHANGED: // selection changed event
+						{
+							NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)lP;
+							if(pNMListView->uNewState & LVIS_FOCUSED ||
+								(pNMListView->uNewState ^ pNMListView->uOldState) & LVIS_SELECTED)
+							{
+								// disable buttons that we don't have the right number of selected items for
+								RefreshWatchListSelectedCountControlStatus(hDlg);
+							}
+						}	break;
+
 						case LVN_GETDISPINFO:
 						{
 							LV_DISPINFO *Item = (LV_DISPINFO *)lParam;
@@ -966,15 +1016,19 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					ResetWatches();
 					return true;
 				case IDC_C_WATCH_REMOVE:
-					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST));
-					if(watchIndex != -1)
+				{
+					HWND watchListControl = GetDlgItem(hDlg, IDC_WATCHLIST);
+					watchIndex = ListView_GetNextItem(watchListControl, -1, LVNI_ALL | LVNI_SELECTED);
+					while (watchIndex >= 0)
 					{
 						RemoveWatch(watchIndex);
-						ListView_SetItemCount(GetDlgItem(hDlg,IDC_WATCHLIST),WatchCount);	
-						RWfileChanged=true;
-						SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
+						ListView_DeleteItem(watchListControl, watchIndex);
+						watchIndex = ListView_GetNextItem(watchListControl, -1, LVNI_ALL | LVNI_SELECTED);
 					}
+					RWfileChanged=true;
+					SetFocus(GetDlgItem(hDlg,IDC_WATCHLIST));
 					return true;
+				}
 				case IDC_C_WATCH_EDIT:
 					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST));
 					if(watchIndex != -1)
