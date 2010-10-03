@@ -761,7 +761,8 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					case LVN_ITEMCHANGED:
 					{
 						NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)lparam;
-						if((pNMListView->uOldState ^ pNMListView->uNewState) & LVIS_SELECTED) // on selection changed
+						if(pNMListView->uNewState & LVIS_FOCUSED ||
+							(pNMListView->uOldState ^ pNMListView->uNewState) & LVIS_SELECTED) // on selection changed
 						{
 							int selCount = ListView_GetSelectedCount(cheatListView);
 							EnableWindow(GetDlgItem(dialog, IDC_BEDIT), (selCount == 1) ? TRUE : FALSE);
@@ -1005,8 +1006,7 @@ void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const cha
 		//
 		//char buf[256];
 		//cheats->get(&tempCheat, cheatEditPos);
-		//if (tempCheat.enabled)
-		//	ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
+		//ListView_SetCheckState(cheatListView, cheatEditPos, 0, tempCheat.enabled);
 		//wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
 		//ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
 		//ltoa(tempCheat.code[0][1], buf, 10);
