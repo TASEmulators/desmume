@@ -2162,15 +2162,15 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 {
 	//this macro takes advantage of the fact that there are only two possible values for capx
-	#define CAPCOPY(SRC,DST) \
+	#define CAPCOPY(SRC,DST,SETALPHABIT) \
 	switch(gpu->dispCapCnt.capx) { \
 		case DISPCAPCNT::_128: \
 			for (int i = 0; i < 128; i++)  \
-				HostWriteWord(DST, i << 1, HostReadWord(SRC, i << 1) | (1<<15)); \
+				HostWriteWord(DST, i << 1, HostReadWord(SRC, i << 1) | (SETALPHABIT?(1<<15):0)); \
 			break; \
 		case DISPCAPCNT::_256: \
 			for (int i = 0; i < 256; i++)  \
-				HostWriteWord(DST, i << 1, HostReadWord(SRC, i << 1) | (1<<15)); \
+				HostWriteWord(DST, i << 1, HostReadWord(SRC, i << 1) | (SETALPHABIT?(1<<15):0)); \
 			break; \
 			default: assert(false); \
 		}
@@ -2231,7 +2231,7 @@ template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 
 									u8 *src;
 									src = (u8*)(gpu->tempScanline);
-									CAPCOPY(src,cap_dst);
+									CAPCOPY(src,cap_dst,true);
 								}
 							break;
 							case 1:			// Capture 3D
@@ -2239,7 +2239,7 @@ template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 									//INFO("Capture 3D\n");
 									u16* colorLine;
 									gfx3d_GetLineData15bpp(l, &colorLine);
-									CAPCOPY(((u8*)colorLine),cap_dst);
+									CAPCOPY(((u8*)colorLine),cap_dst,false);
 								}
 							break;
 						}
@@ -2252,7 +2252,7 @@ template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 						{
 							case 0:	
 								//Capture VRAM
-								CAPCOPY(cap_src,cap_dst);
+								CAPCOPY(cap_src,cap_dst,true);
 								break;
 							case 1:
 								//capture dispfifo
