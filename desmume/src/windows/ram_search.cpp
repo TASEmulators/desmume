@@ -1097,7 +1097,7 @@ void signal_new_size ()
 			int addr = CALL_WITH_T_SIZE_TYPES(GetHardwareAddressFromItemIndex, rs_last_type_size,rs_t=='s',rs_last_no_misalign, watchIndex);
 			if(!selHardwareAddrs.empty() && addr == selHardwareAddrs.back().End())
 				selHardwareAddrs.back().size += size;
-			else
+			else if (!(noMisalign && oldSize < newSize && addr % newSize != 0))
 				selHardwareAddrs.push_back(AddrRange(addr,size));
 		}
 	}
@@ -1127,15 +1127,11 @@ void signal_new_size ()
 			if(selRangeTop == -1)
 				continue;
 
-			// select the entire range at once without deselecting the other ranges
-			// looks hacky but it works, and the only documentation I found on how to do this was blatantly false and equally hacky anyway
-			POINT pos;
-			ListView_EnsureVisible(lv, selRangeTop, 0);
-			ListView_GetItemPosition(lv, selRangeTop, &pos);
-			SendMessage(lv, WM_LBUTTONDOWN, MK_LBUTTON|MK_CONTROL, MAKELONG(pos.x,pos.y));
-			ListView_EnsureVisible(lv, selRangeBottom, 0);
-			ListView_GetItemPosition(lv, selRangeBottom, &pos);
-			SendMessage(lv, WM_LBUTTONDOWN, MK_LBUTTON|MK_CONTROL|MK_SHIFT, MAKELONG(pos.x,pos.y));
+			// select the entire range
+			for (unsigned int j = selRangeTop; j <= selRangeBottom; j++)
+			{
+				ListView_SetItemState(lv, j, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+			}
 		}
 
 		// restore previous scroll position
@@ -1155,6 +1151,7 @@ void signal_new_size ()
 		ListView_Update(lv, -1);
 	}
 	InvalidateRect(lv, NULL, TRUE);
+	//SetFocus(lv);
 }
 
 
