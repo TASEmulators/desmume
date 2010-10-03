@@ -1049,8 +1049,8 @@ void RefreshRamListSelectedCountControlStatus(HWND hDlg)
 	{
 		if(selCount < 2 || prevSelCount < 2)
 		{
-			EnableWindow(GetDlgItem(hDlg, IDC_C_WATCH), (selCount == 1 && WatchCount < MAX_WATCH_COUNT) ? TRUE : FALSE);
-			EnableWindow(GetDlgItem(hDlg, IDC_C_ADDCHEAT), (selCount == 1) ? TRUE : FALSE);
+			EnableWindow(GetDlgItem(hDlg, IDC_C_WATCH), (selCount >= 1 && WatchCount < MAX_WATCH_COUNT) ? TRUE : FALSE);
+			EnableWindow(GetDlgItem(hDlg, IDC_C_ADDCHEAT), (selCount >= 1) ? TRUE : FALSE);
 			EnableWindow(GetDlgItem(hDlg, IDC_C_ELIMINATE), (selCount >= 1) ? TRUE : FALSE);
 		}
 		prevSelCount = selCount;
@@ -1485,7 +1485,8 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case LVN_ITEMCHANGED: // selection changed event
 				{
 					NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)lP;
-					if(pNMListView->uNewState & LVIS_FOCUSED)
+					if(pNMListView->uNewState & LVIS_FOCUSED ||
+						(pNMListView->uNewState ^ pNMListView->uOldState) & LVIS_SELECTED)
 					{
 						// disable buttons that we don't have the right number of selected items for
 						RefreshRamListSelectedCountControlStatus(hDlg);
@@ -1688,13 +1689,15 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				}	{rv = true; break;}
 				case IDC_C_ADDCHEAT:
 				{
-					int cheatItemIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_RAMLIST));
-					if(cheatItemIndex >= 0)
+					HWND ramListControl = GetDlgItem(hDlg,IDC_RAMLIST);
+					int cheatItemIndex = ListView_GetNextItem(ramListControl, -1, LVNI_SELECTED);
+					while (cheatItemIndex >= 0)
 					{
 						u32 address = CALL_WITH_T_SIZE_TYPES(GetHardwareAddressFromItemIndex, rs_type_size,rs_t=='s',noMisalign, cheatItemIndex);
 						u8 size = (rs_type_size=='b') ? 1 : (rs_type_size=='w' ? 2 : 4);
 						u32 value = CALL_WITH_T_SIZE_TYPES(GetCurValueFromItemIndex, rs_type_size,rs_t=='s',noMisalign, cheatItemIndex);
 						CheatsAddDialog(hDlg, address, value, size);
+						cheatItemIndex = ListView_GetNextItem(ramListControl, cheatItemIndex, LVNI_SELECTED);
 					}
 					{rv = true; break;}
 				}
@@ -1781,8 +1784,12 @@ invalid_field:
 				}
 				case IDC_C_WATCH:
 				{
-					int watchItemIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_RAMLIST));
-					if(watchItemIndex >= 0)
+					HWND ramListControl = GetDlgItem(hDlg,IDC_RAMLIST);
+					int selCount = ListView_GetSelectedCount(ramListControl);
+
+					bool inserted = false;
+					int watchItemIndex = ListView_GetNextItem(ramListControl, -1, LVNI_SELECTED);
+					while (watchItemIndex >= 0)
 					{
 						AddressWatcher tempWatch;
 						tempWatch.Address = CALL_WITH_T_SIZE_TYPES(GetHardwareAddressFromItemIndex, rs_type_size,rs_t=='s',noMisalign, watchItemIndex);
@@ -1791,14 +1798,17 @@ invalid_field:
 						tempWatch.WrongEndian = 0; //Replace when I get little endian working
 						tempWatch.comment = NULL;
 
-						bool inserted = InsertWatch(tempWatch, hDlg);
-						//ListView_Update(GetDlgItem(hDlg,IDC_RAMLIST), -1);
+						if (selCount == 1)
+							inserted |= InsertWatch(tempWatch, hDlg);
+						else
+							inserted |= InsertWatch(tempWatch, "");
 
-						// bring up the ram watch window if it's not already showing so the user knows where the watch went
-						if(inserted && !RamWatchHWnd)
-							SendMessage(MainWindow->getHWnd(), WM_COMMAND, ID_RAM_WATCH, 0);
-						SetForegroundWindow(RamSearchHWnd);
+						watchItemIndex = ListView_GetNextItem(ramListControl, watchItemIndex, LVNI_SELECTED);
 					}
+					// bring up the ram watch window if it's not already showing so the user knows where the watch went
+					if(inserted && !RamWatchHWnd)
+						SendMessage(MainWindow->getHWnd(), WM_COMMAND, ID_RAM_WATCH, 0);
+					SetForegroundWindow(RamSearchHWnd);
 					{rv = true; break;}
 				}
 
