@@ -1059,6 +1059,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\utils\datetime.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\datetime.h"
+					>
+				</File>
+				<File
 					RelativePath="..\utils\dlditool.cpp"
 					>
 				</File>
@@ -1076,14 +1084,6 @@
 				</File>
 				<File
 					RelativePath="..\utils\md5.h"
-					>
-				</File>
-				<File
-					RelativePath="..\utils\mkgmtime.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\utils\mkgmtime.h"
 					>
 				</File>
 				<File

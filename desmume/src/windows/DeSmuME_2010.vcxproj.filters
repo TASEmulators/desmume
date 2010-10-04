@@ -378,9 +378,6 @@
     <ClCompile Include="tileView.cpp">
       <Filter>Windows\tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\utils\mkgmtime.cpp">
-      <Filter>Core\utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\addons\piano.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
@@ -398,6 +395,9 @@
     </ClCompile>
     <ClCompile Include="..\emufat.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\datetime.cpp">
+      <Filter>Core\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -725,9 +725,6 @@
     <ClInclude Include="tileView.h">
       <Filter>Windows\tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\mkgmtime.h">
-      <Filter>Core\utils</Filter>
-    </ClInclude>
     <ClInclude Include="filter\hq2x.h" />
     <ClInclude Include="filter\interp.h" />
     <ClInclude Include="filter\lq2x.h" />
@@ -735,6 +732,9 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\emufat_types.h" />
+    <ClInclude Include="..\utils\datetime.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\instruction_tabdef.inc">

@@ -1,22 +1,19 @@
-/*  Copyright (C) 2006 yopyop
+/*  Copyright 2006 yopyop
     Copyright 2008 CrazyMax
 	Copyright 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // TODO: interrupt handler
@@ -31,8 +28,6 @@
 #include "windows/main.h"
 #endif
 #include "movie.h"
-
-#include "utils/mkgmtime.h"
 
 
 typedef struct
@@ -98,13 +93,11 @@ static inline u8 toBCD(u8 x)
 
 bool moviemode=false;
 
-struct tm rtcGetTime(void)
+DateTime rtcGetTime(void)
 {
-	struct tm *tm = NULL;
+	DateTime tm;
 	if(movieMode == MOVIEMODE_INACTIVE) {
-		time_t	timer;
-		time(&timer);
-		tm = localtime(&timer);
+		return DateTime::get_Now();
 	}
 	else {
 		//now, you might think it is silly to go through all these conniptions
@@ -117,20 +110,9 @@ struct tm rtcGetTime(void)
 		u64 totalcycles = (u64)arm9rate_unitsperframe * currFrameCounter;
 		u64 totalseconds=totalcycles/arm9rate_unitspersecond;
 
-		time_t timer;
-		struct tm t;
-
-		// store start time into structure tm
-		timer = (time_t) currMovieData.rtcStart;
-		memcpy(&t, gmtime(&timer), sizeof(struct tm));
-		// advance it according to the frame counter
-		t.tm_sec += totalseconds;
-		// then, normalize it
-		timer = mkgmtime(&t);
-		tm = gmtime(&timer);
+		DateTime timer = currMovieData.rtcStart;
+		return timer.AddSeconds(totalseconds);
 	}
-	tm->tm_year = 100 + (tm->tm_year % 100); // 20XX
-	return *tm;
 }
 
 static void rtcRecv()
@@ -153,10 +135,10 @@ static void rtcRecv()
 		case 2:				// date & time
 			{
 				//INFO("RTC: read date & time\n");
-				struct tm tm = rtcGetTime();
-				rtc.data[0] = toBCD(tm.tm_year % 100);
-				rtc.data[1] = toBCD(tm.tm_mon + 1);
-				rtc.data[2] = toBCD(tm.tm_mday);
+				DateTime tm = rtcGetTime();
+				rtc.data[0] = toBCD(tm.get_Year() % 100);
+				rtc.data[1] = toBCD(tm.get_Month());
+				rtc.data[2] = toBCD(tm.get_Day());
 
 				//zero 24-apr-2010 - this is nonsense.
 				//but it is so wrong, someone mustve thought they knew what they were doing, so i am leaving it...
@@ -166,22 +148,24 @@ static void rtcRecv()
 				//do this instead (gbatek seems to say monday=0 but i don't think that is right)
 				//0=sunday is necessary to make animal crossing behave
 				//maybe it means "custom assignment" can be specified by the game
-				rtc.data[3] = tm.tm_wday;
+				rtc.data[3] = tm.get_DayOfWeek();
 
-				if (!(rtc.regStatus1 & 0x02)) tm.tm_hour %= 12;
-				rtc.data[4] = ((tm.tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm.tm_hour);
-				rtc.data[5] =  toBCD(tm.tm_min);
-				rtc.data[6] =  toBCD(tm.tm_sec);
+				int hour = tm.get_Hour(); 
+				if (!(rtc.regStatus1 & 0x02)) hour %= 12;
+				rtc.data[4] = ((hour < 12) ? 0x00 : 0x40) | toBCD(hour);
+				rtc.data[5] =  toBCD(tm.get_Minute());
+				rtc.data[6] =  toBCD(tm.get_Second());
 				break;
 			}
 		case 3:				// time
 			{
 				//INFO("RTC: read time\n");
-				struct tm tm = rtcGetTime();
-				if (!(rtc.regStatus1 & 0x02)) tm.tm_hour %= 12;
-				rtc.data[0] = ((tm.tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm.tm_hour);
-				rtc.data[1] =  toBCD(tm.tm_min);
-				rtc.data[2] =  toBCD(tm.tm_sec);
+				DateTime tm = rtcGetTime();
+				int hour = tm.get_Hour(); 
+				if (!(rtc.regStatus1 & 0x02)) hour %= 12;
+				rtc.data[0] = ((hour < 12) ? 0x00 : 0x40) | toBCD(hour);
+				rtc.data[1] =  toBCD(tm.get_Minute());
+				rtc.data[2] =  toBCD(tm.get_Second());
 				break;
 			}
 		case 4:				// freq/alarm 1

@@ -470,8 +470,8 @@
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
+    <ClCompile Include="..\utils\datetime.cpp" />
     <ClCompile Include="..\utils\dlditool.cpp" />
-    <ClCompile Include="..\utils\mkgmtime.cpp" />
     <ClCompile Include="..\version.cpp" />
     <ClCompile Include="..\wifi.cpp" />
     <ClCompile Include="..\addons\compactFlash.cpp" />
@@ -594,7 +594,7 @@
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\thumb_instructions.h" />
     <ClInclude Include="..\types.h" />
-    <ClInclude Include="..\utils\mkgmtime.h" />
+    <ClInclude Include="..\utils\datetime.h" />
     <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />
     <ClInclude Include="..\utils\xstring.h" />

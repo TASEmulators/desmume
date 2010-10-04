@@ -1,21 +1,17 @@
-/*	windows/replay.cpp
-	Copyright (C) 2008-2010 DeSmuME team
+/*	Copyright (C) 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "types.h"
@@ -32,7 +28,6 @@
 #include "movie.h"
 #include "rtc.h"
 #include "utils/xstring.h"
-#include "utils/mkgmtime.h"
 
 bool replayreadonly=1;
 
@@ -262,17 +257,16 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 			CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, ((flag == 1) ? BST_CHECKED : BST_UNCHECKED));
 			SetFocus(GetDlgItem(hwndDlg, IDC_EDIT_FILENAME));
 
-			time_t timer = FCEUI_MovieGetRTCDefault();
-			struct tm *t = gmtime(&timer);
+			DateTime t = FCEUI_MovieGetRTCDefault();
 			ZeroMemory(&systime, sizeof(SYSTEMTIME));
-			systime.wYear = t->tm_year + 1900;
-			systime.wMonth = t->tm_mon + 1;
-			systime.wDay = t->tm_mday;
-			systime.wDayOfWeek = t->tm_wday;
-			systime.wHour = t->tm_hour;
-			systime.wMinute = t->tm_min;
-			systime.wSecond = t->tm_sec;
-			systime.wMilliseconds = 0;
+			systime.wYear = t.get_Year();
+			systime.wMonth = t.get_Month();
+			systime.wDay = t.get_Day();
+			systime.wDayOfWeek = t.get_DayOfWeek();
+			systime.wHour = t.get_Hour();
+			systime.wMinute = t.get_Minute();
+			systime.wSecond = t.get_Second();
+			systime.wMilliseconds = t.get_Millisecond();
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_DATE), GDT_VALID, &systime);
 			DateTime_SetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_TIME), GDT_VALID, &systime);
 
@@ -304,20 +298,18 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 				std::string sramfname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_SRAMFILENAME);
 				if (fname.length())
 				{
-					time_t rtcstart;
 					struct tm t;
 
 					DateTime_GetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_DATE), &systime);
-					t.tm_year = systime.wYear - 1900;
-					t.tm_mon  = systime.wMonth - 1;
+					t.tm_year = systime.wYear;
+					t.tm_mon  = systime.wMonth;
 					t.tm_mday = systime.wDay;
 					t.tm_wday = systime.wDayOfWeek;
 					DateTime_GetSystemtime(GetDlgItem(hwndDlg, IDC_DTP_TIME), &systime);
 					t.tm_hour = systime.wHour;
 					t.tm_min  = systime.wMinute;
 					t.tm_sec  = systime.wSecond;
-					t.tm_isdst= -1;
-					rtcstart = mkgmtime(&t);
+					DateTime rtcstart(t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec);
 
 					FCEUI_SaveMovie(fname.c_str(), author, flag, sramfname, rtcstart);
 					EndDialog(hwndDlg, 0);

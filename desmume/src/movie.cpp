@@ -1,20 +1,17 @@
 /*  Copyright 2008-2010 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #define WIN32_LEAN_AND_MEAN
@@ -24,7 +21,7 @@
 #include <time.h>
 #include "utils/guid.h"
 #include "utils/xstring.h"
-#include "utils/mkgmtime.h"
+#include "utils/datetime.h"
 #include "movie.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
@@ -167,27 +164,10 @@ void MovieRecord::dump(MovieData* md, EMUFILE* fp, int index)
 	fp->fputc('\n');
 }
 
-time_t FCEUI_MovieGetRTCDefault()
+DateTime FCEUI_MovieGetRTCDefault()
 {
-	time_t timer;
-
 	// compatible with old desmume
-	struct tm t;
-	t.tm_year = 109; // 2009
-	t.tm_mon  = 0;   // 1 (Jan)
-	t.tm_mday = 1;
-	t.tm_wday = 4;
-	t.tm_hour = 0; //12 AM
-	t.tm_min  = 0;
-	t.tm_sec  = 0;
-	timer = mkgmtime(&t);
-
-	// current time
-	//timer = time(NULL);
-	//struct tm *tp = localtime(&timer);
-	//timer = mkgmtime(tp);
-
-	return timer;
+	return DateTime(2009,1,1,0,0,0);
 }
 
 MovieData::MovieData()
@@ -238,14 +218,17 @@ void MovieData::installValue(std::string& key, std::string& val)
 		if (validFormat) {
 			struct tm t;
 			const char *s = val.data();
-			t.tm_year = atoi(&s[0]) - 1900;
-			t.tm_mon  = atoi(&s[5]) - 1;
-			t.tm_mday = atoi(&s[8]);
-			t.tm_hour = atoi(&s[11]);
-			t.tm_min  = atoi(&s[14]);
-			t.tm_sec  = atoi(&s[17]);
-			rtcStart = mkgmtime(&t);
+			int year = atoi(&s[0]);
+			int mon = atoi(&s[5]);
+			int day = atoi(&s[8]);
+			int hour = atoi(&s[11]);
+			int min = atoi(&s[14]);
+			int sec = atoi(&s[17]);
+			rtcStart = DateTime(year,mon,day,hour,min,sec);
 		}
+	}
+	else if(key == "rtcStartNew") {
+		DateTime::TryParse(val.c_str(),rtcStart);
 	}
 	else if(key == "comment")
 		comments.push_back(mbstowcs(val));
@@ -320,10 +303,7 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 		fp->fprintf("firmLanguage %d\n", CommonSettings.InternalFirmConf.language);
 	}
 
-	char timestr[32];
-	struct tm *tm = gmtime(&rtcStart);
-	strftime(timestr, 32, "%Y-%m-%dT%H:%M:%SZ", tm);
-	fp->fprintf("rtcStart %s\n", timestr);
+	fp->fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
 
 	for(uint32 i=0;i<comments.size();i++)
 		fp->fprintf("comment %s\n", wcstombs(comments[i]).c_str());
@@ -646,7 +626,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, time_t rtcstart)
+void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, const DateTime &rtcstart)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
