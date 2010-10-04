@@ -42,7 +42,7 @@ libdesmume_a_SOURCES = \
 	shaders.h \
 	movie.cpp movie.h \
 	PACKED.h PACKED_END.h \
-	utils/mkgmtime.cpp utils/mkgmtime.h \
+	utils/datetime.cpp utils/datetime.h \
 	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
 	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \

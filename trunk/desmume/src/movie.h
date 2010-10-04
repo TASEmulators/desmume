@@ -1,3 +1,19 @@
+/*  Copyright 2008-2010 DeSmuME team
+
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
+
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef __MOVIE_H_
 #define __MOVIE_H_
 
@@ -8,6 +24,7 @@
 #include <time.h>
 #include "emufile.h"
 
+#include "utils/datetime.h"
 #include "utils/guid.h"
 #include "utils/md5.h"
 
@@ -129,7 +146,7 @@ public:
 	int rerecordCount;
 	Desmume_Guid guid;
 
-	time_t rtcStart; // (time_t) it always means gmtime, not localtime.
+	DateTime rtcStart;
 
 	//was the frame data stored in binary?
 	bool binaryFlag;
@@ -195,7 +212,7 @@ extern MovieData currMovieData;		//adelikat: main needs this for frame counter d
 extern bool movie_reset_command;
 
 bool FCEUI_MovieGetInfo(EMUFILE* fp, MOVIE_INFO& info, bool skipFrameCount);
-void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, time_t rtcstart);
+void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, const DateTime &rtcstart);
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe); // returns NULL on success, errmsg on failure
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
@@ -208,5 +225,5 @@ bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
-time_t FCEUI_MovieGetRTCDefault();
+DateTime FCEUI_MovieGetRTCDefault();
 #endif
