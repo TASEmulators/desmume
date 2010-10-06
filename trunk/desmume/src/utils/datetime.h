@@ -83,11 +83,12 @@
 
 #include <math.h>
 #include <time.h>
+#include <string.h>
+#include <stdio.h>
 
 #include <string>
-#include <string.h>
 
-#include "types.h"
+#include "../types.h"
 
 enum DayOfWeek {
 	DayOfWeek_Sunday=0,
