@@ -75,6 +75,8 @@ int LagFrameFlag;
 int lastLag;
 int TotalLagFrames;
 
+TSCalInfo TSCal;
+
 namespace DLDI
 {
 	bool tryPatch(void* data, size_t size);
@@ -125,6 +127,20 @@ int NDS_Init( void) {
 		return -1;
 
 	WIFI_Init() ;
+
+	// Init calibration info
+	TSCal.adc.x1 = 0x0200;
+	TSCal.adc.y1 = 0x0200;
+	TSCal.scr.x1 = 0x20 + 1; // calibration screen coords are 1-based,
+	TSCal.scr.y1 = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
+	TSCal.adc.x2 = 0x0E00;
+	TSCal.adc.y2 = 0x0800;
+	TSCal.scr.x2 = 0xE0 + 1;
+	TSCal.scr.y2 = 0x80 + 1;
+	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
+	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
+	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
+	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
 
 	cheats = new CHEATS();
 	cheatSearch = new CHEATSEARCH();
@@ -2428,6 +2444,22 @@ void NDS_Reset()
 	_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
 	_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1);
 
+	// Save touchscreen calibration info in a structure
+	// so we can easily access it at any time
+	TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x58);
+	TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5A);
+	TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5C);
+	TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5D);
+	TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5E);
+	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60);
+	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
+	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
+
+	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
+	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
+	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
+	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
+
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
 
@@ -2479,15 +2511,20 @@ void ClearAutoHold(void) {
 	}
 }
 
+
 INLINE u16 NDS_getADCTouchPosX(u16 scrX)
 {
-	int rv = (scrX - TSC_scr_x1 + 1) * (TSC_adc_x2 - TSC_adc_x1) / (TSC_scr_x2 - TSC_scr_x1) + TSC_adc_x1;
+	// this is a little iffy,
+	// we're basically adjusting the ADC results to
+	// compensate for how they will be interpreted.
+	// the actual system doesn't do this transformation.
+	int rv = (scrX - TSCal.scr.x1 + 1) * TSCal.adc.width / TSCal.scr.width + TSCal.adc.x1;
 	rv = min(0xFFF, max(0, rv));
 	return (u16)rv;
 }
 INLINE u16 NDS_getADCTouchPosY(u16 scrY)
 {
-	int rv = (scrY - TSC_scr_y1 + 1) * (TSC_adc_y2 - TSC_adc_y1) / (TSC_scr_y2 - TSC_scr_y1) + TSC_adc_y1;
+	int rv = (scrY - TSCal.scr.y1 + 1) * TSCal.adc.height / TSCal.scr.height + TSCal.adc.y1;
 	rv = min(0xFFF, max(0, rv));
 	return (u16)rv;
 }
@@ -2812,6 +2849,7 @@ void NDS_suspendProcessingInput(bool suspend)
 		validToProcessInput = false;
 	}
 }
+
 
 void emu_halt() {
 	//printf("halting emu: ARM9 PC=%08X/%08X, ARM7 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr, NDS_ARM7.R[15], NDS_ARM7.instruct_adr);

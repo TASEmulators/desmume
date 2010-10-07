@@ -1,19 +1,21 @@
-/*	Copyright (C) 2009-2010 DeSmuME Team
+/*	Copyright (C) 2009 DeSmuME Team
 
-	This file is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 2 of the License, or
-	(at your option) any later version.
+    This file is part of DeSmuME
 
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-	You should have received a copy of the GNU General Public License
-	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-
 
 #include "firmware.h"
 #include "NDSSystem.h"
@@ -893,14 +895,15 @@ void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
 	fw_config->language = 1;
 
 	/* default touchscreen calibration */
-	fw_config->touch_cal[0].adc_x = TSC_adc_x1;
-	fw_config->touch_cal[0].adc_y = TSC_adc_y1;
-	fw_config->touch_cal[0].screen_x = TSC_scr_x1;
-	fw_config->touch_cal[0].screen_y = TSC_scr_y1;
-	fw_config->touch_cal[1].adc_x = TSC_adc_x2;
-	fw_config->touch_cal[1].adc_y = TSC_adc_y2;
-	fw_config->touch_cal[1].screen_x = TSC_scr_x2;
-	fw_config->touch_cal[1].screen_y = TSC_scr_y2;
+	fw_config->touch_cal[0].adc_x = 0x200;
+	fw_config->touch_cal[0].adc_y = 0x200;
+	fw_config->touch_cal[0].screen_x = 0x20 + 1; // calibration screen coords are 1-based,
+	fw_config->touch_cal[0].screen_y = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
+
+	fw_config->touch_cal[1].adc_x = 0xe00;
+	fw_config->touch_cal[1].adc_y = 0x800;
+	fw_config->touch_cal[1].screen_x = 0xe0 + 1;
+	fw_config->touch_cal[1].screen_y = 0x80 + 1;
 }
 
 void NDS_PatchFirmwareMAC()
