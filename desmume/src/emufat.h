@@ -24,6 +24,8 @@
 //Copyright (C) 1998 H. Peter Anvin <hpa@zytor.com>
 //Copyright (C) 1998-2005 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 
+//based on libfat
+//Copyright (c) 2006 Michael "Chishm" Chisholm
 
 #ifndef EMUFAT_H
 #define EMUFAT_H

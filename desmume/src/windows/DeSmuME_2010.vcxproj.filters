@@ -46,6 +46,9 @@
     <Filter Include="Windows\libs">
       <UniqueIdentifier>{42b6ff9b-c9ff-4006-b2f7-f3e3268b8c31}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\utils\libfat">
+      <UniqueIdentifier>{c751e37c-54da-44e2-9be8-0399cb02467a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp">
@@ -399,6 +402,39 @@
     <ClCompile Include="..\utils\datetime.cpp">
       <Filter>Core\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\utils\libfat\partition.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\cache.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\directory.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\disc.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\fatdir.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\fatfile.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\file_allocation_table.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\filetime.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\libfat.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\libfat_public_api.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\lock.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -734,6 +770,57 @@
     <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\utils\datetime.h">
       <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\ndstypes.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\partition.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\bit_ops.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\cache.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\common.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\directory.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\disc.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\disc_io.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\fat.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\fatdir.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\fatfile.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\file_allocation_table.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\filetime.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\libfat_pc.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\libfat_public_api.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\lock.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\mem_allocate.h">
+      <Filter>Core\utils\libfat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

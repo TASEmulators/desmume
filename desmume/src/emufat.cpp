@@ -25,6 +25,11 @@
 //Copyright (C) 1998-2005 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 
 #include "emufat.h"
+#include <ctype.h>
+#include <wchar.h>
+#include <wctype.h>
+#include <string.h>
+
 
 #define LE16(x) (x)
 #define LE32(x) (x)
@@ -114,6 +119,7 @@ EmuFat::EmuFat(EMUFILE* fileNotToDelete)
 
 EmuFat::~EmuFat()
 {
+	cacheFlush();
 	if(m_owns)
 		delete m_pFile;
 }

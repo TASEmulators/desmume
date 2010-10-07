@@ -28,6 +28,9 @@
 #include <stdlib.h>
 
 #include "../emufat.h"
+
+#include "../utils/libfat/libfat_public_api.h"
+
 #include <stack>
 
 #include <fcntl.h>
@@ -320,9 +323,9 @@ void count_ListCallback(FsEntry* fs, EListCallbackArg arg)
 }
 
 static std::string currPath;
-static EmuFatFile currFatFile;
-static std::stack<EmuFatFile> fatStack;
 static std::stack<std::string> pathStack;
+static std::stack<std::string> virtPathStack;
+static std::string currVirtPath;
 void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 {
 	char* fname = (strlen(fs->cAlternateFileName)>0) ? fs->cAlternateFileName : fs->cFileName;
@@ -332,10 +335,10 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 
 	if(arg == EListCallbackArg_Pop) 
 	{
-		currFatFile = fatStack.top();
-		fatStack.pop();
 		currPath = pathStack.top();
 		pathStack.pop();
+		currVirtPath = virtPathStack.top();
+		virtPathStack.pop();
 		return;
 	}
 	
@@ -345,12 +348,13 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 		if(!strcmp(fname,"..")) return;
 
 		pathStack.push(currPath);
-		fatStack.push(currFatFile);
+		virtPathStack.push(currVirtPath);
 
-		EmuFatFile newDir;
-		newDir.makeDir(&currFatFile,fname);
-		newDir.sync();
-		currFatFile = newDir;
+		currVirtPath = currVirtPath + "/" + fname;
+		bool ok = LIBFAT::MkDir(currVirtPath.c_str());
+
+		if(!ok)
+			printf("ERROR adding dir %s via libfat\n",currVirtPath.c_str());
 
 		currPath = currPath + std::string(1,FS_SEPARATOR) + fname;
 		return;
@@ -369,10 +373,10 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 			fread(buf,1,len,inf);
 			fclose(inf);
 
-			EmuFatFile f;
-			f.open(&currFatFile,fname,EO_RDWR | EO_CREAT);
-			f.write(buf,len);
-			f.close();
+			std::string path = currVirtPath + "/" + fname;
+			bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
+			if(!ok) 
+				printf("ERROR adding file %s via libfat\n",path.c_str());
 			delete[] buf;
 		}
 	}
@@ -385,6 +389,7 @@ static BOOL cflash_build_fat()
 {
 	dataSectors = 0;
 	currPath = sFlashPath;
+	currVirtPath = "";
 	list_files(sFlashPath.c_str(), count_ListCallback);
 
 	dataSectors += 8; //a few for reserved sectors, etc.
@@ -399,15 +404,25 @@ static BOOL cflash_build_fat()
 	delete file;
 	file = new EMUFILE_MEMORY(dataSectors*512);
 	//file = new EMUFILE_FILE("c:\\temp.ima","rb+");
-	EmuFat fat(file);
-	EmuFatVolume vol;
-	u8 ok = vol.init(&fat);
-	vol.formatNew(dataSectors);
+	
+	//format the disk
+	{
+		EmuFat fat(file);
+		EmuFatVolume vol;
+		u8 ok = vol.init(&fat);
+		vol.formatNew(dataSectors);
 
-	reconstruct(&currFatFile);
-	currFatFile.openRoot(&vol);
+		//ensure we are working in memory, just in case we were testing with a disk file.
+		//libfat will need to go straight to memory (for now; we could easily change it to work with the disk)
+		file = file->memwrap();
+	}
+	EMUFILE_MEMORY* memf = (EMUFILE_MEMORY*)file;
 
+	//setup libfat and write all the files through it
+	LIBFAT::Init(memf->buf(),memf->size());
 	list_files(sFlashPath.c_str(), build_ListCallback);
+	LIBFAT::Shutdown();
+
 
 	//FILE* outf = fopen("d:\\test.ima","wb");
 	//EMUFILE_MEMORY* memf = (EMUFILE_MEMORY*)file;
