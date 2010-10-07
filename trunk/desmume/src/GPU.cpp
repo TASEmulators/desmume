@@ -196,6 +196,12 @@ void GPU_Reset(GPU *g, u8 l)
 {
 	memset(g, 0, sizeof(GPU));
 
+	//important for emulator stability for this to initialize, since we have to setup a table based on it
+	g->BLDALPHA_EVA = 0;
+	g->BLDALPHA_EVB = 0;
+	//make sure we have our blend table setup even if the game blends without setting the blend variables
+	g->updateBLDALPHA();
+
 	g->setFinalColorBck_funcNum = 0;
 	g->setFinalColor3d_funcNum = 0;
 	g->setFinalColorSpr_funcNum = 0;
