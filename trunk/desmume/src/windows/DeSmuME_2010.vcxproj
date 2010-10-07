@@ -621,7 +621,6 @@
     <ClInclude Include="..\utils\libfat\libfat_public_api.h" />
     <ClInclude Include="..\utils\libfat\lock.h" />
     <ClInclude Include="..\utils\libfat\mem_allocate.h" />
-    <ClInclude Include="..\utils\libfat\ndstypes.h" />
     <ClInclude Include="..\utils\libfat\partition.h" />
     <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />

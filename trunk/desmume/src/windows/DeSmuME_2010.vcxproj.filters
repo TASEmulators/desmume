@@ -771,9 +771,6 @@
     <ClInclude Include="..\utils\datetime.h">
       <Filter>Core\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\ndstypes.h">
-      <Filter>Core\utils\libfat</Filter>
-    </ClInclude>
     <ClInclude Include="..\utils\libfat\partition.h">
       <Filter>Core\utils\libfat</Filter>
     </ClInclude>
