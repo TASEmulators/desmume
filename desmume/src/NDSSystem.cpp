@@ -1459,7 +1459,10 @@ static void execHardware_hblank()
 		//for some reason the game will setup two hdma scroll register buffers
 		//to be run consecutively, and unless we do this, the second buffer will be offset by one scanline
 		//causing a glitch in the 0th scanline
-		triggerDma(EDMAMode_HBlank);
+		//triggerDma(EDMAMode_HBlank);
+
+		//BUT! this was removed in order to make glitches in megaman zero collection (mmz 4 1st level) work.
+		//and, it seems that it is no longer necessary in nsmb. perhaps something else fixed it
 	}
 
 
