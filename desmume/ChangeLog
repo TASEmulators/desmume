@@ -1,22 +1,51 @@
-0.9.6 -> 0.9.7 (r3493-r3654-r3xxx)
+0.9.6 -> 0.9.7 (r3493-r3654-r3812)
 
 General/Core:
- bug: return Z1 and Z2 from TSC (fixes some touch logic)
  bug: fix a ton of old, broken cpu opcodes and CP15 logic
+ bug: return Z1 and Z2 from TSC (fixes some touch logic)
  bug: gba slot save type detection improved
- enh: substantial improvements to wifi emulation
+ bug: handle unusual rom headers more correctly
+ bug: dont confuse motion pack commands with save memory commands
+ bug: make cheat system a little less flaky and add AR 1.54 support
+ bug: fix nondeterministic backup memory behaviour while rerecording
+ bug: correct emulation of register accesses of wrong size and during powerdown
+ bug: rewrite --cflash-path emulation
+ bug: rewrite IPC/GX FIFO, IRQ flag generation, and wait-for-IRQ logics
+ bug: rewrite RTC calendar handling; now supports years > 2038
+ enh: auto-DLDI patching for homebrew
+ enh: --gbaslot=self mounts self.nds in slot2
  enh: more realistic exception handling
  enh: piano controller emulation
+ enh: modular slot-1 system for exact emulation of homebrew cards
  
 Graphics:
  bug: edge marking colors were wrong
  bug: handle some "invalid" vram configurations correctly
-
+ bug: convert half of geometry engine to fixed point
+ bug: fix sprite blend+fadein/fadeout
+ bug: improve rasterizer shadows
+ bug: fix main memory display DMA
+ bug: fix some raster fx timing bugs
+ enh: add a hack for improving some non-stencil shadows
+ 
 Windows:
+ bug: misc fixes and improvements to gpu viewer tools
+ bug: sub screen layer display toggling fixed
+ bug: fixes and improvements to ram watch, ram search, cheats list
+ bug: fix start-paused commandline
+ bug: fix memory leaks when sound disabled
+ bug: improve load average calculators and add arm7 load average
+ enh: background input support
+ enh: add vsync option
+ enh: support more knobs on joysticks
+ enh: import cheats from R4 database
+ enh: add xinput rumble for 360 pads
 
 Linux/OSX:
+ bug: crash less in recent roms list
  enh: Add horizontal screen layout and swap screen ability to gtk frontend (noodlebox)
  enh: Big improvement to joystick support, support complex configurations and multiple devices (noodlebox)
+ 
 
 0.9.5 -> 0.9.6 (r3075-r3493)
 
