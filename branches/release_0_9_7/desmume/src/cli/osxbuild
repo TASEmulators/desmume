@@ -1,0 +1,11 @@
+#!/bin/sh
+
+rm desmume-cli.app.zip
+rm -rf desmume-cli.app
+mkdir desmume-cli.app
+mkdir desmume-cli.app/MacOS
+cp desmume-cli desmume-cli.app/MacOS
+cp Info.plist desmume-cli.app
+../gtk/dylibbundler -cd -d desmume-cli.app/libs -b -x desmume-cli.app/MacOS/desmume-cli
+./fixups
+zip -r desmume-cli.app.zip desmume-cli.app

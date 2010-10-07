@@ -1,0 +1,263 @@
+# French translation for the desmume windows UI.
+# Copyright (C) 2007 The DeSmuME Team.
+# Luigi__, 2007.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-07-17 01:38-0400\n"
+"PO-Revision-Date: 2009-04-03 23:53+0100\n"
+"Last-Translator: Luigi__\n"
+"Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: File menu
+#, c-format
+msgid "File"
+msgstr "Fichier"
+
+msgid "Open ROM..."
+msgstr "Ouvrir une ROM..."
+
+msgid "Recent ROM"
+msgstr "ROMs récentes"
+
+msgid "None"
+msgstr "Aucune"
+
+msgid "Clear"
+msgstr "Vider"
+
+msgid "ROM info"
+msgstr "Info ROM"
+
+msgid "Save state as..."
+msgstr "Save state as..."
+
+msgid "Load state as..."
+msgstr "Load state as..."
+
+msgid "Save state"
+msgstr "Save state"
+
+msgid "Load state"
+msgstr "Load state"
+
+msgid "Import backup memory"
+msgstr "Importer une sauvegarde"
+
+msgid "Save screenshot as..."
+msgstr "Capture d'écran..."
+
+msgid "Quick screenshot"
+msgstr "Capture d'écran rapide"
+
+msgid "Record AVI"
+msgstr "Record AVI"
+
+msgid "Stop AVI"
+msgstr "Stop AVI"
+
+msgid "Quit"
+msgstr "Quitter"
+
+#: Emulation menu
+msgid "Emulation"
+msgstr "Emulation"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Reset"
+msgstr "Reset"
+
+msgid "Shut up"
+msgstr "Shut up"
+
+msgid "GBA slot"
+msgstr "Slot GBA"
+
+msgid "Cheats"
+msgstr "Codes de triche"
+
+msgid "List"
+msgstr "Liste"
+
+msgid "Search"
+msgstr "Recherche"
+
+#: View menu
+msgid "View"
+msgstr "Affichage"
+
+msgid "Rotation"
+msgstr "Rotation"
+
+msgid "Window size"
+msgstr "Taille fenêtre"
+
+msgid "Screen separation"
+msgstr "Séparation écrans"
+
+msgid "None\t(0 px)"
+msgstr "Aucune\t(0 px)"
+
+msgid "Narrow border\t(5 px)"
+msgstr "Bordure fine\t(5 px)"
+
+msgid "DS\t(64 px)"
+msgstr "DS\t(64 px)"
+
+msgid "Force maintain ratio"
+msgstr "Conserver le ratio"
+
+msgid "Default size"
+msgstr "Taille par défaut"
+
+msgid "Display frame counter"
+msgstr "Afficher compteur d'images"
+
+msgid "Display FPS"
+msgstr "Afficher FPS"
+
+msgid "Display input"
+msgstr "Afficher input"
+
+msgid "Display lag counter"
+msgstr "Afficher compteur de lag"
+
+#: Config menu
+msgid "Config"
+msgstr "Config"
+
+msgid "Save type"
+msgstr "Type sauvegarde"
+
+msgid "Autodetect"
+msgstr "Autodétection"
+
+msgid "EEPROM 4kbit"
+msgstr "EEPROM 4kbit"
+
+msgid "EEPROM 64kbit"
+msgstr "EEPROM 64kbit"
+
+msgid "EEPROM 512kbit"
+msgstr "EEPROM 512kbit"
+
+msgid "FRAM 256kbit"
+msgstr "FRAM 256kbit"
+
+msgid "FLASH 2mbit"
+msgstr "FLASH 2mbit"
+
+msgid "FLASH 4mbit"
+msgstr "FLASH 4mbit"
+
+msgid "3D settings"
+msgstr "Config. 3D"
+
+msgid "Control config"
+msgstr "Config. contrôles"
+
+msgid "Hotkey config"
+msgstr "Config. hotkeys"
+
+msgid "Sound settings"
+msgstr "Config. son"
+
+msgid "Wifi settings"
+msgstr "Config. wifi"
+
+msgid "Firmware settings"
+msgstr "Config. firmware"
+
+msgid "Emulation settings"
+msgstr "Config émulation"
+
+msgid "Frameskip"
+msgstr "Frameskip"
+
+msgid "Limit framerate"
+msgstr "Limiter framerate"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "Language"
+msgstr "Langage"
+
+#: Tools menu
+msgid "Disassembler"
+msgstr "Désassembleur"
+
+msgid "View memory"
+msgstr "Visualiser la mémoire"
+
+msgid "View registers"
+msgstr "Visualiser les registres"
+
+msgid "View palettes"
+msgstr "Visualiser les palettes"
+
+msgid "View tiles"
+msgstr "Visualiser les tiles"
+
+msgid "View maps"
+msgstr "Visualiser les maps"
+
+msgid "View OAMs"
+msgstr "Visualiser les OAMs"
+
+msgid "View matrices"
+msgstr "Visualiser les matrices"
+
+msgid "View lights"
+msgstr "Visualiser les lights"
+
+msgid "View layers"
+msgstr "Voir couches"
+
+msgid "Main BG 0"
+msgstr "Main BG 0"
+
+msgid "Main BG 1"
+msgstr "Main BG 1"
+
+msgid "Main BG 2"
+msgstr "Main BG 2"
+
+msgid "Main BG 3"
+msgstr "Main BG 3"
+
+msgid "Sub BG 0"
+msgstr "Sub BG 0"
+
+msgid "Sub BG 1"
+msgstr "Sub BG 1"
+
+msgid "Sub BG 2"
+msgstr "Sub BG 2"
+
+msgid "Sub BG 3"
+msgstr "Sub BG 3"
+
+#: Help menu
+msgid "Help"
+msgstr "?"
+
+msgid "Website"
+msgstr "Site web"
+
+msgid "Forums"
+msgstr "Forums"
+
+msgid "Submit a bug report"
+msgstr "Soumettre un report de bug"
+
+msgid "About"
+msgstr "A propos"
+
