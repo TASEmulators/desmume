@@ -2480,14 +2480,12 @@ INLINE u16 NDS_getADCTouchPosX(u16 scrX)
 {
 	int rv = (scrX - TSC_scr_x1 + 1) * (TSC_adc_x2 - TSC_adc_x1) / (TSC_scr_x2 - TSC_scr_x1) + TSC_adc_x1;
 	rv = min(0xFFF, max(0, rv));
-	printf("x: %d\n",rv);
 	return (u16)rv;
 }
 INLINE u16 NDS_getADCTouchPosY(u16 scrY)
 {
 	int rv = (scrY - TSC_scr_y1 + 1) * (TSC_adc_y2 - TSC_adc_y1) / (TSC_scr_y2 - TSC_scr_y1) + TSC_adc_y1;
 	rv = min(0xFFF, max(0, rv));
-	printf("y: %d\n",rv);
 	return (u16)rv;
 }
 
