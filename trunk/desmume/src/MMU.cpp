@@ -3192,10 +3192,8 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 				break;
 			case REG_DISPA_DISPSTAT+1:
 				break;
-			case REG_DISPx_VCOUNT:
-				break;
-			case REG_DISPx_VCOUNT+1:
-				break;
+			case REG_DISPx_VCOUNT: return nds.VCount & 0xFF;
+			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8) & 0xFF;
 #if 0
 			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
 			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT1 READ\n"); return 0;//(MMU_new.sqrt.read16() & 0xFF00)>>8;
@@ -3281,8 +3279,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				{
 					nds.ensataHandshake = ENSATA_HANDSHAKE_ack;
 					return 270;
-				}
-				break;
+				} else return nds.VCount;
 
 			// ============================================= 3D
 			case eng_3D_RAM_COUNT:
@@ -3366,8 +3363,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 		switch(adr)
 		{
-		case REG_DISPA_DISPSTAT:
-			break;
+			case REG_DISPA_DISPSTAT:
+				break;
+
+			case REG_DISPx_VCOUNT: return nds.VCount;
 
 			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
 			case REG_DIVCNT: return MMU_new.div.read16();
@@ -3992,6 +3991,9 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 			case REG_IF+1: return (MMU.gen_IF<ARMCPU_ARM7>()>>8);
 			case REG_IF+2: return (MMU.gen_IF<ARMCPU_ARM7>()>>16);
 			case REG_IF+3: return (MMU.gen_IF<ARMCPU_ARM7>()>>24);
+
+			case REG_DISPx_VCOUNT: return nds.VCount&0xFF;
+			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8)&0xFF;
 		}
 
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
@@ -4038,22 +4040,20 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 		switch(adr)
 		{
 			case REG_POWCNT2:
-				{
-					u16 ret = 0;
-					ret |= nds.power2.speakers?BIT(0):0;
-					ret |= nds.power2.wifi?BIT(1):0;
-					return ret;
-				}
+			{
+				u16 ret = 0;
+				ret |= nds.power2.speakers?BIT(0):0;
+				ret |= nds.power2.wifi?BIT(1):0;
+				return ret;
+			}
 
-			case REG_RTC:
-				return rtcRead();
-
-			case REG_IME :
-				return (u16)MMU.reg_IME[ARMCPU_ARM7];
+			case REG_DISPx_VCOUNT: return nds.VCount;
+			case REG_RTC: return rtcRead();
+			case REG_IME: return (u16)MMU.reg_IME[ARMCPU_ARM7];
 				
-			case REG_IE :
+			case REG_IE:
 				return (u16)MMU.reg_IE[ARMCPU_ARM7];
-			case REG_IE + 2 :
+			case REG_IE + 2:
 				return (u16)(MMU.reg_IE[ARMCPU_ARM7]>>16);
 				
 			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
@@ -4128,8 +4128,8 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		
 		switch(adr)
 		{
-			case REG_RTC:
-				return (u32)rtcRead();
+			case REG_RTC: return (u32)rtcRead();
+			case REG_DISPx_VCOUNT: return nds.VCount;
 
 			case REG_IME : 
 				return MMU.reg_IME[ARMCPU_ARM7];
