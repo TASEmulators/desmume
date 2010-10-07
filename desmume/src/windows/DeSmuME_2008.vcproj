@@ -1234,10 +1234,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\utils\libfat\ndstypes.h"
-						>
-					</File>
-					<File
 						RelativePath="..\utils\libfat\partition.cpp"
 						>
 					</File>
