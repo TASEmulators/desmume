@@ -346,27 +346,27 @@ struct GameInfo
 	bool hasRomBanner();
 };
 
+typedef struct TSCalInfo
+{
+	struct adc
+	{
+		u16 x1, x2;
+		u16 y1, y2;
+		u16 width;
+		u16 height;
+	} adc;
+
+	struct scr
+	{
+		u8 x1, x2;
+		u8 y1, y2;
+		u16 width;
+		u16 height;
+	} scr;
+
+} TSCalInfo;
+
 extern GameInfo gameInfo;
-
-//default touchscreen calibration
-//we need some way to convert screen coordinates from the emulator to TSC coordinates
-//so we are going to assume a normal set of calibration parameters and do the reverse transformation.
-//the game will then do the normal transformation via the user's calibration parameters to get back to screen coordinates.
-//all this conversion could in principle be lossy, but we judge that it is not.
-//
-//the more historical way for desmume to do this is to attempt to use the calibration parameters in the firmware.
-//is it possible that this causes the reverse and forward transformation to roundtrip lossless without affecting the values?
-//maybe. but we really don't care about users who (mis)calibrate their firmware. we could even override the firmware calibration values
-//by patching it to prevent this.
-
-static const int TSC_adc_x1 = 0x200;
-static const int TSC_adc_y1 = 0x200;
-static const int TSC_scr_x1 = 0x20 + 1; // calibration screen coords are 1-based,
-static const int TSC_scr_y1 = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
-static const int TSC_adc_x2 = 0xe00;
-static const int TSC_adc_y2 = 0x800;
-static const int TSC_scr_x2 = 0xe0 + 1;
-static const int TSC_scr_y2 = 0x80 + 1;
 
 
 struct UserButtons : buttonstruct<bool>
