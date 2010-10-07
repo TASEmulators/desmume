@@ -49,6 +49,34 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	utils/task.cpp utils/task.h \
 	utils/dlditool.cpp \
+	utils/libfat/bit_ops.h \
+	utils/libfat/cache.cpp \
+	utils/libfat/cache.h \
+	utils/libfat/common.h \
+	utils/libfat/directory.cpp \
+	utils/libfat/directory.h \
+	utils/libfat/disc.cpp \
+	utils/libfat/disc.h \
+	utils/libfat/disc_io.h \
+	utils/libfat/fat.h \
+	utils/libfat/fatdir.cpp \
+	utils/libfat/fatdir.h \
+	utils/libfat/fatfile.cpp \
+	utils/libfat/fatfile.h \
+	utils/libfat/filetime.cpp \
+	utils/libfat/filetime.h \
+	utils/libfat/file_allocation_table.cpp \
+	utils/libfat/file_allocation_table.h \
+	utils/libfat/libfat.cpp \
+	utils/libfat/libfat_pc.h \
+	utils/libfat/libfat_public_api.cpp \
+	utils/libfat/libfat_public_api.h \
+	utils/libfat/lock.cpp \
+	utils/libfat/lock.h \
+	utils/libfat/mem_allocate.h \
+	utils/libfat/ndstypes.h \
+	utils/libfat/partition.cpp \
+	utils/libfat/partition.h \
 	addons.cpp addons.h \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp addons/piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp fs.h \
 	cheatSystem.cpp cheatSystem.h \
