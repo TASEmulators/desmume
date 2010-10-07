@@ -74,7 +74,6 @@ libdesmume_a_SOURCES = \
 	utils/libfat/lock.cpp \
 	utils/libfat/lock.h \
 	utils/libfat/mem_allocate.h \
-	utils/libfat/ndstypes.h \
 	utils/libfat/partition.cpp \
 	utils/libfat/partition.h \
 	addons.cpp addons.h \
