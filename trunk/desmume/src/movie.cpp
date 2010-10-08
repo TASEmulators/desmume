@@ -42,6 +42,10 @@ bool autoMovieBackup = true;
 
 #define MOVIE_VERSION 1
 
+#ifdef WIN32
+#include ".\windows\main.h"
+#endif
+
 //----movie engine main state
 
 EMOVIEMODE movieMode = MOVIEMODE_INACTIVE;
@@ -892,23 +896,54 @@ bool mov_loadstate(EMUFILE* fp, int size)
 		return false;
 	}
 
-	//complex TAS logic for when a savestate is loaded:
 	//----------------
-	//if we are playing or recording and toggled read-only:
-	//  then, the movie we are playing must match the guid of the one stored in the savestate or else error.
-	//  the savestate is assumed to be in the same timeline as the current movie.
-	//  if the current movie is not long enough to get to the savestate's frame#, then it is an error. 
-	//  the movie contained in the savestate will be discarded.
-	//  the emulator will be put into play mode.
-	//if we are playing or recording and toggled read+write
-	//  then, the movie we are playing must match the guid of the one stored in the savestate or else error.
-	//  the movie contained in the savestate will be loaded into memory
-	//  the frames in the movie after the savestate frame will be discarded
-	//  the in-memory movie will have its rerecord count incremented
-	//  the in-memory movie will be dumped to disk as fcm.
-	//  the emulator will be put into record mode.
-	//if we are doing neither:
-	//  then, we must discard this movie and just load the savestate
+	//complex TAS logic for loadstate
+	//fully conforms to the savestate logic documented in the Laws of TAS
+	//http://tasvideos.org/LawsOfTAS/OnSavestates.html
+	//----------------
+		
+	/*
+	Playback or Recording + Read-only
+
+    * Check that GUID of movie and savestate-movie must match or else error
+          o on error: a message informing that the savestate doesn't belong to this movie. This is a GUID mismatch error. Give user a choice to load it anyway.
+                + failstate: if use declines, loadstate attempt canceled, movie can resume as if not attempted if user has backup savstates enabled else stop movie
+    * Check that movie and savestate-movie are in same timeline. If not then this is a wrong timeline error.
+          o on error: a message informing that the savestate doesn't belong to this movie
+                + failstate: loadstate attempt canceled, movie can resume as if not attempted if user has backup savestates enabled else stop movie
+    * Check that savestate-movie is not greater than movie. If not then this is a future event error and is not allowed in read-only
+          o on error: message informing that the savestate is from a frame after the last frame of the movie
+                + failstate - loadstate attempt cancelled, movie can resume if user has backup savesattes enabled, else stop movie
+    * Check that savestate framcount <= savestate movie length. If not this is a post-movie savestate
+          o on post-movie: See post-movie event section. 
+    * All error checks have passed, state will be loaded
+    * Movie contained in the savestate will be discarded
+    * Movie is now in Playback mode 
+
+	Playback, Recording + Read+write
+
+    * Check that GUID of movie and savestate-movie must match or else error
+          o on error: a message informing that the savestate doesn't belong to this movie. This is a GUID mismatch error. Give user a choice to load it anyway.
+                + failstate: if use declines, loadstate attempt canceled, movie can resume as if not attempted (stop movie if resume fails)canceled, movie can resume if backup savestates enabled else stopmovie
+    * Check that savestate framcount <= savestate movie length. If not this is a post-movie savestate
+          o on post-movie: See post-movie event section. 
+    * savestate passed all error checks and will now be loaded in its entirety and replace movie (note: there will be no truncation yet)
+    * current framecount will be set to savestate framecount
+    * on the next frame of input, movie will be truncated to framecount
+          o (note: savestate-movie can be a future event of the movie timeline, or a completely new timeline and it is still allowed) 
+    * Rerecord count of movie will be incremented
+    * Movie is now in record mode 
+
+	Post-movie savestate event
+
+    * Whan a savestate is loaded and is determined that the savestate-movie length is less than the savestate framecount then it is a post-movie savestate. These occur when a savestate was made during Movie Finished mode. 
+	* If read+write, the entire savestate movie will be loaded and replace current movie.
+    * If read-only, the savestate movie will be discarded
+    * Mode will be switched to Move Finished
+    * Savestate will be loaded
+    * Current framecount changes to savestate framecount
+    * User will have control of input as if Movie inactive mode 
+	*/
 
 
 	if(movieMode != MOVIEMODE_INACTIVE)
@@ -918,11 +953,10 @@ bool mov_loadstate(EMUFILE* fp, int size)
 		{
 			//mbg 8/18/08 - this code  can be used to turn the error message into an OK/CANCEL
 			#ifdef WIN32
-				//std::string msg = "There is a mismatch between savestate's movie and current movie.\ncurrent: " + currMovieData.guid.toString() + "\nsavestate: " + tempMovieData.guid.toString() + "\n\nThis means that you have loaded a savestate belonging to a different movie than the one you are playing now.\n\nContinue loading this savestate anyway?";
-				//extern HWND pwindow;
-				//int result = MessageBox(pwindow,msg.c_str(),"Error loading savestate",MB_OKCANCEL);
-				//if(result == IDCANCEL)
-				//	return false;
+				std::string msg = "There is a mismatch between savestate's movie and current movie.\ncurrent: " + currMovieData.guid.toString() + "\nsavestate: " + tempMovieData.guid.toString() + "\n\nThis means that you have loaded a savestate belonging to a different movie than the one you are playing now.\n\nContinue loading this savestate anyway?";
+				int result = MessageBox(MainWindow->getHWnd(),msg.c_str(),"Error loading savestate",MB_OKCANCEL);
+				if(result == IDCANCEL)
+					return false;
 			#else
 				FCEU_PrintError("Mismatch between savestate's movie and current movie.\ncurrent: %s\nsavestate: %s\n",currMovieData.guid.toString().c_str(),tempMovieData.guid.toString().c_str());
 				return false;
@@ -996,11 +1030,6 @@ bool mov_loadstate(EMUFILE* fp, int size)
 	
 	load_successful = true;
 	freshMovie = false;
-
-	//// Maximus: Show the last input combination entered from the
-	//// movie within the state
-	//if(current!=0) // <- mz: only if playing or recording a movie
-	//	memcpy(&cur_input_display, joop, 4);
 
 	return true;
 }
