@@ -96,6 +96,27 @@ void MovieRecord::clear()
 }
 
 
+bool MovieRecord::Compare(MovieRecord& compareRec)
+{
+	//Check pad
+	if (this->pad != compareRec.pad) 
+		return false;
+
+	//Check Stylus
+	if (this->touch.padding != compareRec.touch.padding) return false;
+	if (this->touch.touch != compareRec.touch.touch) return false;
+	if (this->touch.x != compareRec.touch.x) return false;
+	if (this->touch.y != compareRec.touch.y) return false;
+
+	//Check comamnds
+	//if new commands are ever recordable, they need to be added here if we go with this method
+	if(this->command_reset() != compareRec.command_reset()) return false;
+	if(this->command_microphone() != compareRec.command_microphone()) return false;
+	if(this->command_lid() != compareRec.command_lid()) return false;
+	
+	return true;
+}
+
 const char MovieRecord::mnemonics[13] = {'R','L','D','U','T','S','B','A','Y','X','W','E','G'};
 void MovieRecord::dumpPad(EMUFILE* fp, u16 pad)
 {
@@ -846,6 +867,32 @@ void mov_savestate(EMUFILE* fp)
 	}
 }
 
+
+bool CheckTimelines(MovieData& stateMovie, MovieData& currMovie, int& errorFr)
+{
+	bool isInTimeline = true;
+	int length;
+
+	//First check, make sure we are checking is for a post-movie savestate, we just want to adjust the length for now, we will handle this situation later in another function
+	if (currFrameCounter <= stateMovie.getNumRecords())
+		length = currFrameCounter;							//Note: currFrameCounter corresponds to the framecounter in the savestate
+	else if (currFrameCounter > currMovie.getNumRecords())  //Now that we know the length of the records of the savestate we plan to load, let's match the length against the movie
+		length = currMovie.getNumRecords();				    //If length < currMovie records then this is a "future" event from the current movie, againt we will handle this situation later, we just want to find the right number of frames to compare
+	else
+		length = stateMovie.getNumRecords();
+
+	for (int x = 0; x < length; x++)
+	{
+		if (!stateMovie.records[x].Compare(currMovie.records[x]))
+		{
+			isInTimeline = false;
+			errorFr = x;
+			break;
+		}
+	}
+
+	return isInTimeline;
+}
 
 
 static bool load_successful;
