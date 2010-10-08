@@ -109,6 +109,7 @@ public:
 		return (pad & mask(bit))!=0;
 	}
 
+	bool Compare(MovieRecord& compareRec);
 	void clear();
 	
 	void parse(MovieData* md, EMUFILE* fp);
