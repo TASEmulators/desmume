@@ -21,6 +21,7 @@
 
 #include "hotkey.h"
 #include "main.h"
+#include "CheatsWin.h"
 #include "NDSSystem.h"
 #include "saves.h"
 #include "inputdx.h"
@@ -90,6 +91,11 @@ void HK_ReloadROM(int, bool justPressed)
 {
 	void OpenRecentROM(int listNum);
 	OpenRecentROM(0);
+}
+void HK_SearchCheats(int, bool justPressed) 
+{ 
+	if (romloaded)
+		CheatsSearchDialog(MainWindow->getHWnd()); 
 }
 void HK_QuickScreenShot(int param, bool justPressed)
 {
@@ -702,6 +708,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
 	keys->LCDsSwap.page = HOTKEY_PAGE_MOVIE;
 	keys->LCDsSwap.key = VK_NEXT;
+
+	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
+	keys->SearchCheats.code = "SearchCheats";
+	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
+	keys->SearchCheats.page = HOTKEY_PAGE_MOVIE;
+	keys->SearchCheats.key = 'S';
+	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
 
 	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
 	keys->IncreaseVolume.code = "IncreaseVolume";
