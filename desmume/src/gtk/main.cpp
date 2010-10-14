@@ -1222,6 +1222,8 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     if (nds_screen.orientation != ORIENT_SINGLE) {
         gdk_cairo_set_source_pixbuf(cr, drawPixbuf, primaryOffsetX, primaryOffsetY);
     }
+    
+    g_object_unref(drawPixbuf); //drawPixbuf was never unref'd, so its ref count stayed above 0 and it was never freed
 
     cairo_paint(cr);
     cairo_destroy(cr);
