@@ -215,8 +215,6 @@ void armcpu_t::changeCPSR()
 
 void armcpu_init(armcpu_t *armcpu, u32 adr)
 {
-   u32 i;
-
 	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
 	armcpu->waitIRQ = FALSE;
@@ -227,12 +225,12 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 //    armcpu->irq_flag = 0;
 //#endif
 
-   for(i = 0; i < 15; ++i)
+	for(int i = 0; i < 16; ++i)
 	{
 		armcpu->R[i] = 0;
 		if(armcpu->coproc[i]) free(armcpu->coproc[i]);
 		armcpu->coproc[i] = NULL;
-   }
+	}
 	
 	armcpu->CPSR.val = armcpu->SPSR.val = SYS;
 	
