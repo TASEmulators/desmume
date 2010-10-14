@@ -13,7 +13,7 @@ General/Core:
  bug: rewrite IPC/GX FIFO, IRQ flag generation, and wait-for-IRQ logics
  bug: rewrite RTC calendar handling; now supports years > 2038
  enh: auto-DLDI patching for homebrew
- enh: --gbaslot=self mounts self.nds in slot2
+ enh: --gbaslot-rom=self mounts self.nds in slot2
  enh: more realistic exception handling
  enh: piano controller emulation
  enh: modular slot-1 system for exact emulation of homebrew cards
