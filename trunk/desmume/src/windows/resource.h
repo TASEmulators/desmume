@@ -248,6 +248,7 @@
 #define IDC_2_BYTES                     958
 #define IDC_4_BYTES                     959
 #define IDC_WATCHLIST                   960
+#define IDC_HEX2                        960
 #define IDC_C_WATCH_EDIT                961
 #define IDC_C_WATCH_REMOVE              962
 #define IDC_C_WATCH                     963
@@ -386,7 +387,6 @@
 #define IDC_RFILE                       1038
 #define IDC_EXPORT                      1038
 #define IDC_RFOLDER                     1039
-#define IDC_STATIC2                     1039
 #define IDC_2012                        1039
 #define IDC_BBROWSE2                    1040
 #define IDC_PATHDESMUME                 1041

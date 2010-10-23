@@ -683,6 +683,9 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case 'h':
 					SendDlgItemMessage(hDlg, IDC_HEX, BM_SETCHECK, BST_CHECKED, 0);
 					break;
+				case 'f':
+					SendDlgItemMessage(hDlg, IDC_2012, BM_SETCHECK, BST_CHECKED, 0);
+					break;
 				default:
 					t = 0;
 					break;
@@ -702,6 +705,9 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					return true;
 				case IDC_HEX:
 					t='h';
+					return true;
+				case IDC_2012:
+					t='f';
 					return true;
 				case IDC_1_BYTE:
 					s = 'b';
@@ -967,13 +973,18 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 									int t = rswatches[iNum].Type;
 									int size = rswatches[iNum].Size;
 									const char* formatString = ((t=='s') ? "%d" : (t=='u') ? "%u" : (size=='d' ? "%08X" : size=='w' ? "%04X" : "%02X"));
-									switch (size)
+									if(t=='f')
 									{
-										case 'b':
-										default: sprintf(num, formatString, t=='s' ? (char)(i&0xff) : (unsigned char)(i&0xff)); break;
-										case 'w': sprintf(num, formatString, t=='s' ? (short)(i&0xffff) : (unsigned short)(i&0xffff)); break;
-										case 'd': sprintf(num, formatString, t=='s' ? (long)(i&0xffffffff) : (unsigned long)(i&0xffffffff)); break;
+										sprintf(num,"%f",i/4096.0f);
 									}
+									else
+										switch (size)
+										{
+											case 'b':
+											default: sprintf(num, formatString, t=='s' ? (char)(i&0xff) : (unsigned char)(i&0xff)); break;
+											case 'w': sprintf(num, formatString, t=='s' ? (short)(i&0xffff) : (unsigned short)(i&0xffff)); break;
+											case 'd': sprintf(num, formatString, t=='s' ? (long)(i&0xffffffff) : (unsigned long)(i&0xffffffff)); break;
+										}
 
 									Item->item.pszText = num;
 								}	return true;
