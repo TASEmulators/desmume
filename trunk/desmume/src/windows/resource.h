@@ -386,6 +386,8 @@
 #define IDC_RFILE                       1038
 #define IDC_EXPORT                      1038
 #define IDC_RFOLDER                     1039
+#define IDC_STATIC2                     1039
+#define IDC_2012                        1039
 #define IDC_BBROWSE2                    1040
 #define IDC_PATHDESMUME                 1041
 #define IDC_BRESTART                    1042
@@ -770,8 +772,8 @@
 #define ID_LABEL_HK51                   4515
 #define ID_LABEL_HK52                   4516
 #define ID_LABEL_HK53                   4517
-#define ID_LABEL_HK54                   4519
 #define ID_LABEL_HK13b                  4518
+#define ID_LABEL_HK54                   4519
 #define IDD_MICROPHONE                  5000
 #define IDM_MICROPHONESETTINGS          5001
 #define IDC_MICSAMPLEBROWSE             5003
@@ -781,12 +783,8 @@
 #define IDC_USENOISE                    5010
 #define IDC_CPU                         6000
 #define IDC_IOREG                       6001
-
-//ZELDA SHADOW HACK
-#define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK		9000
-#define IDC_ZELDA_SHADOW_DEPTH_HACK			9001
-
-
+#define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK 9000
+#define IDC_ZELDA_SHADOW_DEPTH_HACK     9001
 #define IDD_CHEAT_ADD_XX_CODE           10005
 #define IDD_GBASLOT_GUITARGRIP          10009
 #define IDD_GBASLOT_PIANO               10010
@@ -954,7 +952,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40085
-#define _APS_NEXT_CONTROL_VALUE         1039
+#define _APS_NEXT_CONTROL_VALUE         1040
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
