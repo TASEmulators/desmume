@@ -1223,6 +1223,8 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         gdk_cairo_set_source_pixbuf(cr, drawPixbuf, primaryOffsetX, primaryOffsetY);
     }
 
+    g_object_unref(drawPixbuf);
+
     cairo_paint(cr);
     cairo_destroy(cr);
 
