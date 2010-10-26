@@ -147,8 +147,9 @@ enum EDEBUG_EVENT
 {
 	DEBUG_EVENT_READ=1, //read from arm9 or arm7 bus, including cpu prefetch
 	DEBUG_EVENT_WRITE=2, //write on arm9 or arm7 bus
-	DEBUG_EVENT_EXECUTE=4, //prefetch on arm9 or arm7, triggered after the read event
-	DEBUG_EVENT_ACL_EXCEPTION=8, //acl exception on arm9
+	DEBUG_EVENT_EXECUTE=3, //prefetch on arm9 or arm7, triggered after the read event
+	DEBUG_EVENT_ACL_EXCEPTION=4, //acl exception on arm9
+	DEBUG_EVENT_CACHE_MISS=5, //cache miss on arm9
 };
 
 enum EDEBUG_NOTIFY
@@ -201,6 +202,7 @@ void HandleDebugEvent_Read();
 void HandleDebugEvent_Write();
 void HandleDebugEvent_Execute();
 void HandleDebugEvent_ACL_Exception();
+void HandleDebugEvent_CacheMiss();
 
 inline void HandleDebugEvent(EDEBUG_EVENT event)
 {
@@ -210,6 +212,7 @@ inline void HandleDebugEvent(EDEBUG_EVENT event)
 	case DEBUG_EVENT_WRITE: HandleDebugEvent_Write(); return;
 	case DEBUG_EVENT_EXECUTE: HandleDebugEvent_Execute(); return;
 	case DEBUG_EVENT_ACL_EXCEPTION: HandleDebugEvent_ACL_Exception(); return;
+	case DEBUG_EVENT_CACHE_MISS: HandleDebugEvent_CacheMiss(); return;
 	}
 }
 
