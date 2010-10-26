@@ -2128,6 +2128,18 @@ void
 joinThread_gdb( void *thread_handle) {
 }
 
+bool DemandLua()
+{
+	HMODULE mod = LoadLibrary("lua51.dll");
+	if(!mod)
+	{
+		MessageBox(NULL, "lua51.dll was not found. Please get it into your PATH or in the same directory as desmume.exe", "DeSmuME", MB_OK | MB_ICONERROR);
+		return false;
+	}
+	FreeLibrary(mod);
+	return true;
+}
+
 
 int MenuInit()
 {
