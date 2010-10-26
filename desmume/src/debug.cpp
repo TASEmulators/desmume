@@ -43,6 +43,7 @@ u32 debugFlag;
 
 //DEBUG CONFIGURATION
 const bool debug_acl = false;
+const bool debug_cacheMiss = false;
 
 static bool acl_check_access(u32 adr, u32 access) {
 
@@ -100,6 +101,16 @@ void HandleDebugEvent_Execute()
 	if(!debug_acl) return;
 	if(DebugEventData.procnum != ARMCPU_ARM9) return; //acl only valid on arm9
 	acl_check_access(DebugEventData.addr,CP15_ACCESS_EXECUTE);
+}
+
+void HandleDebugEvent_CacheMiss()
+{
+	if(!debug_cacheMiss) return;
+	extern int currFrameCounter;
+	if(currFrameCounter<200) return;
+	static FILE* outf = NULL;
+	if(!outf) outf = fopen("c:\\miss.txt","wb");
+	fprintf(outf,"%05d,%08X,%d\n",currFrameCounter,DebugEventData.addr,DebugEventData.size);
 }
 
 //------------------------------------------------
