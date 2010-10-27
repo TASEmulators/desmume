@@ -656,18 +656,17 @@ ssize_t _FAT_write_r (struct _reent *r, intptr_t fd, const char *ptr, size_t len
 	_FAT_lock(&partition->lock);
 
 	// Only write up to the maximum file size, taking into account wrap-around of ints
-	// <zeromus> first `len` here was changed from `remain` which was a bug due to being used before being defined.
-	// this was a blind stab in the dark, I didnt think about it much. need to update this file when it is fixed in libnds trunk
 	if (len + file->filesize > FILE_MAX_SIZE || len + file->filesize < file->filesize) {
 		len = FILE_MAX_SIZE - file->filesize;
 	}
-	remain = len;
 
 	// Short circuit cases where len is 0 (or less)
 	if (len <= 0) {
 		_FAT_unlock(&partition->lock);
 		return 0;
 	}
+
+	remain = len;
 
 	// Get a new cluster for the start of the file if required
 	if (file->startCluster == CLUSTER_FREE) {

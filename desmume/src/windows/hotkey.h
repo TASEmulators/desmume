@@ -94,6 +94,7 @@ struct SCustomKeys
 	SCustomKey StylusAutoHold;
 	SCustomKey LCDsMode;
 	SCustomKey LCDsSwap;
+	SCustomKey SearchCheats;
 	SCustomKey IncreaseVolume;
 	SCustomKey DecreaseVolume;
 	SCustomKey LastItem; // dummy, must be last
