@@ -435,6 +435,9 @@
     <ClCompile Include="..\utils\libfat\lock.cpp">
       <Filter>Core\utils\libfat</Filter>
     </ClCompile>
+    <ClCompile Include="..\path.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">

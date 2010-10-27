@@ -23,7 +23,7 @@ libdesmume_a_SOURCES = \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
 	GPU_osd.h \
 	mem.h mc.cpp mc.h \
-	path.h \
+	path.cpp path.h \
 	readwrite.cpp readwrite.h \
 	wifi.cpp wifi.h \
 	mic.h \

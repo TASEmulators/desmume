@@ -859,6 +859,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\path.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\path.h"
 				>
 			</File>

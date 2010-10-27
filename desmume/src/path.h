@@ -21,7 +21,11 @@
 #endif
 
 #if defined(_WINDOWS)
+#include <winsock2.h>
+#include <windows.h>
 #include <direct.h>
+#include "winutil.h"
+#include "common.h"
 #if !defined(WXPORT)
 #include "resource.h"
 #else
@@ -33,6 +37,10 @@
 
 #include "time.h"
 #include "utils/xstring.h"
+
+#ifdef _WINDOWS
+void FCEUD_MakePathDirs(const char *fname);
+#endif
 
 //-----------------------------------
 //This is taken from mono Path.cs
@@ -70,43 +78,6 @@ public:
 			(!dirEqualsVolume && path.size() > 1 && path [1] == VolumeSeparatorChar));
 	}
 };
-//-----------------------------------
-#if defined(_WINDOWS)
-static void FCEUD_MakePathDirs(const char *fname)
-{
-	char path[MAX_PATH];
-	const char* div = fname;
-
-	do
-	{
-		const char* fptr = strchr(div, '\\');
-
-		if(!fptr)
-		{
-			fptr = strchr(div, '/');
-		}
-
-		if(!fptr)
-		{
-			break;
-		}
-
-		int off = fptr - fname;
-		strncpy(path, fname, off);
-		path[off] = '\0';
-		mkdir(path);
-
-		div = fptr + 1;
-		
-		while(div[0] == '\\' || div[0] == '/')
-		{
-			div++;
-		}
-
-	} while(1);
-}
-#endif
-//------------------------------
 
 class PathInfo
 {
