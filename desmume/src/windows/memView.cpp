@@ -390,6 +390,8 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 		{
 		case 0:
 			{
+				SetDlgItemText(wnd->hWnd,IDC_2012,"");
+
 				curx += (fontsize.cx * 2);
 				for(i = 0; i < 16; i++)
 				{
@@ -422,6 +424,8 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 
 		case 1:
 			{
+				SetDlgItemText(wnd->hWnd,IDC_2012,"");
+
 				curx += (fontsize.cx * 6);
 				for(i = 0; i < 16; i += 2)
 				{
@@ -456,6 +460,12 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 
 		case 2:
 			{
+				u8 smallbuf[4];
+				MMU_DumpMemBlock(wnd->cpu, wnd->selAddress, 4, smallbuf);
+				char textbuf[32];
+				sprintf(textbuf,"%f",((s32)T1ReadLong(smallbuf,0))/4096.0f);
+				SetDlgItemText(wnd->hWnd,IDC_2012,textbuf);
+
 				curx += (fontsize.cx * 8);
 				for(i = 0; i < 16; i += 4)
 				{
@@ -604,7 +614,6 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 						col = ((x - (fontsize.cx * 8)) / (fontsize.cx * (8+1)) * 4);
 
 						wnd->sel = TRUE;
-						
 					}
 					break;
 				}
@@ -612,6 +621,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 				wnd->selAddress = (wnd->address + (line << 4) + col);
 				wnd->selPart = 0;
 				wnd->selNewVal = 0x00000000;
+
 			}
 
 			SelectObject(hdc, font);
