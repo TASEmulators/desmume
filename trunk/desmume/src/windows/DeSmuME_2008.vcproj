@@ -139,6 +139,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
@@ -169,7 +170,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-x64.lib lua51.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
-				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
+				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\x64"
 				DelayLoadDLLs="lua51.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -324,6 +325,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="2"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
@@ -357,7 +359,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-x64.lib lua51.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
-				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
+				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\x64"
 				DelayLoadDLLs="lua51.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -418,6 +420,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="3"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
@@ -513,6 +516,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/MP"
 				Optimization="2"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
@@ -546,7 +550,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-x64.lib lua51.lib glib-vc8-x64.lib 7z-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_dev+.exe"
-				AdditionalLibraryDirectories=".\zlib123;agg;.libs"
+				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\x64"
 				DelayLoadDLLs="lua51.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -2001,7 +2005,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -2011,7 +2015,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -2021,7 +2025,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -2031,7 +2035,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -2041,8 +2045,17 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
+							Outputs=".libs\lua.tag"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Dev+|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 							Outputs=".libs\lua.tag"
 						/>
 					</FileConfiguration>
