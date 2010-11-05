@@ -420,11 +420,11 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 	count = (strlen(tmp_buf) / 16);
 	for (int i=0; i < count; i++)
 	{
-		char buf[8] = {0};
-		strncpy(buf, tmp_buf+(i*16), 8);
-		sscanf_s(buf, "%x", &list->code[i][0]);
-		strncpy(buf, tmp_buf+(i*16) + 8, 8);
-		sscanf_s(buf, "%x", &list->code[i][1]);
+		char buf[9] = {0};
+		memcpy(buf, tmp_buf+(i*16), 8);
+		sscanf(buf, "%x", &list->code[i][0]);
+		memcpy(buf, tmp_buf+(i*16) + 8, 8);
+		sscanf(buf, "%x", &list->code[i][1]);
 	}
 	
 	list->num = count;
