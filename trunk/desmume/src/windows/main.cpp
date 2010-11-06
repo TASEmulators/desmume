@@ -4050,6 +4050,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
+			CallRegisteredLuaFunctions(LUACALL_ONINITMENU);
+
 			return 0;
 		}
 
@@ -4615,6 +4617,12 @@ DOKEYDOWN:
 				return 0;
 			}
 
+			if(wParam >= IDC_LUAMENU_RESERVE_START &&
+			   wParam <= IDC_LUAMENU_RESERVE_END)
+			{
+				CallRegisteredLuaMenuHandlers(wParam);
+				return 0;
+			}
 		}
 		switch(LOWORD(wParam))
 		{

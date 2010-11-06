@@ -13,9 +13,10 @@
 #include "saves.h"
 #include "emufile.h"
 #if defined(WIN32) && !defined(WXPORT)
+#include <windows.h>
 #include "main.h"
-#include "windows.h"
 #include "video.h"
+#include "resource.h"
 #endif
 #ifdef WIN32
 #include <direct.h>
@@ -60,6 +61,27 @@ struct LuaGUIData
 	int xMin, yMin, xMax, yMax;
 };
 
+struct LuaSubMenuData
+{
+	PlatformMenu menu;
+	PlatformMenu subMenu;
+	PlatformMenuItem menuItem;
+	LuaSubMenuData(PlatformMenu _menu, PlatformMenu _subMenu, PlatformMenuItem _menuItem)
+	{
+		menu = _menu;
+		subMenu = _subMenu;
+		menuItem = _menuItem;
+	}
+};
+
+struct LuaMenuData
+{
+	std::vector<LuaSubMenuData> subMenuData;
+	std::map<PlatformMenuItem, PlatformMenu> menuItemMap;
+};
+
+static const char* menuCallbackIDString = "menuhandlers";
+
 struct LuaContextInfo {
 	lua_State* L; // the Lua state
 	bool started; // script has been started and hasn't yet been terminated, although it may not be currently running
@@ -88,6 +110,7 @@ struct LuaContextInfo {
 	LuaSaveData newDefaultData; // data about the default state of persisted global variables, which we save on script exit so we can detect when the default value has changed to make it easier to reset persisted variables
 	unsigned int numMemHooks; // number of registered memory functions (1 per hooked byte)
 	LuaGUIData guiData;
+	LuaMenuData menuData;
 	// callbacks into the lua window... these don't need to exist per context the way I'm using them, but whatever
 	void(*print)(int uid, const char* str);
 	void(*onstart)(int uid);
@@ -143,6 +166,7 @@ static const char* luaCallIDStrings [] =
 	"CALL_BEFORESAVE",
 	"CALL_AFTERLOAD",
 	"CALL_ONSTART",
+	"CALL_ONINITMENU",
 
 	"CALL_HOTKEY_1",
 	"CALL_HOTKEY_2",
@@ -3406,6 +3430,332 @@ DEFINE_LUA_FUNCTION(emu_reset, "")
 	return 0;
 }
 
+static bool IsLuaMenuItem(PlatformMenuItem menuItem)
+{
+#if defined(WIN32) && !defined(WXPORT)
+	return (menuItem >= IDC_LUAMENU_RESERVE_START && menuItem <= IDC_LUAMENU_RESERVE_END);
+#else
+	return false;
+#endif
+}
+
+static bool SearchFreeMenuItem(PlatformMenu menu, PlatformMenuItem& menuItem)
+{
+#if defined(WIN32) && !defined(WXPORT)
+	for (UINT menuItemId = IDC_LUAMENU_RESERVE_START; menuItemId <= IDC_LUAMENU_RESERVE_END; menuItemId++)
+	{
+		MENUITEMINFO mii;
+		ZeroMemory(&mii, sizeof(MENUITEMINFO));
+		mii.cbSize = sizeof(MENUITEMINFO);
+		mii.fMask = MIIM_ID;
+		if (!GetMenuItemInfo(menu, menuItemId, FALSE, &mii) &&
+			GetLastError() == ERROR_MENU_ITEM_NOT_FOUND)
+		{
+			menuItem = menuItemId;
+			return true;
+		}
+	}
+	return false;
+#else
+	return false;
+#endif
+}
+
+static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const char* menuName)
+{
+#if defined(WIN32) && !defined(WXPORT)
+	LuaContextInfo& info = GetCurrentInfo();
+	MENUITEMINFO mii;
+
+	// search existing submenu
+	for (int index = 0; index < GetMenuItemCount(menu); index++)
+	{
+		ZeroMemory(&mii, sizeof(MENUITEMINFO));
+		mii.cbSize = sizeof(MENUITEMINFO);
+		mii.fMask = MIIM_ID | MIIM_SUBMENU | MIIM_STRING;
+		const UINT bufferSize = 128;
+		TCHAR menuItemText[bufferSize];
+		mii.dwTypeData = menuItemText;
+		mii.cch = bufferSize;
+		GetMenuItemInfo(menu, index, TRUE, &mii);
+
+		// if exists, return it
+		if (mii.hSubMenu != NULL && lstrcmp(menuName, mii.dwTypeData) == 0)
+		{
+			if (IsLuaMenuItem(mii.wID))
+			{
+				info.menuData.subMenuData.push_back(LuaSubMenuData(menu, mii.hSubMenu, mii.wID));
+			}
+			return mii.hSubMenu;
+		}
+	}
+
+	// add new submenu
+	UINT subMenuId;
+	if (!SearchFreeMenuItem(topMenu, subMenuId))
+	{
+		return NULL;
+	}
+	ZeroMemory(&mii, sizeof(MENUITEMINFO));
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_TYPE | MIIM_ID | MIIM_SUBMENU;
+	mii.fType = MFT_STRING;
+	mii.fState = MFS_ENABLED;
+	mii.wID = subMenuId;
+	mii.hSubMenu = CreatePopupMenu();
+	mii.dwTypeData = (char*) menuName;
+	if (!InsertMenuItem(menu, (UINT)-1, TRUE, &mii))
+	{
+		if (mii.hSubMenu != NULL)
+		{
+			DestroyMenu(mii.hSubMenu);
+		}
+		return NULL;
+	}
+	info.menuData.subMenuData.push_back(LuaSubMenuData(menu, mii.hSubMenu, subMenuId));
+	return mii.hSubMenu;
+#else
+	return 0;
+#endif
+}
+
+bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
+{
+#if defined(WIN32) && !defined(WXPORT)
+	LuaContextInfo& info = GetCurrentInfo();
+	lua_State* L = info.L;
+	luaL_checktype(L, -1, LUA_TTABLE);
+	luaL_checkstack(L, 6, "");
+
+	// for index = 1, #menuEntries
+	unsigned int count = lua_objlen(L, -1);
+	for (unsigned int index = 1; index <= count; index++)
+	{
+		// switch(type(menuEntries[index]))
+		lua_rawgeti(L, -1, index);
+		if (lua_isnil(L, -1))
+		{
+			UINT menuItem;
+			if (!SearchFreeMenuItem(topMenu, menuItem))
+			{
+				luaL_error(L, "too many menu items");
+				return false;
+			}
+
+			MENUITEMINFO mii;
+			ZeroMemory(&mii, sizeof(MENUITEMINFO));
+			mii.cbSize = sizeof(MENUITEMINFO);
+			mii.fMask = MIIM_ID | MIIM_FTYPE;
+			mii.wID = menuItem;
+			mii.fType = MFT_SEPARATOR;
+			if (!InsertMenuItem(menu, menuItem, FALSE, &mii))
+			{
+				luaL_error(L, "menu item addition failed");
+				return false;
+			}
+			info.menuData.menuItemMap.insert(map<PlatformMenuItem, PlatformMenu>::value_type(menuItem, menu));
+			lua_pop(L, 1);
+		}
+		else if (lua_istable(L, -1))
+		{
+			lua_rawgeti(L, -1, 1);
+			const char* menuName = luaL_checkstring(L, -1);
+			lua_insert(L, -2);
+
+			lua_rawgeti(L, -1, 2);
+			if (lua_isfunction(L, -1))
+			{
+				UINT menuItem;
+				if (!SearchFreeMenuItem(topMenu, menuItem))
+				{
+					luaL_error(L, "too many menu items");
+					return false;
+				}
+
+				MENUITEMINFO mii;
+				ZeroMemory(&mii, sizeof(MENUITEMINFO));
+				mii.cbSize = sizeof(MENUITEMINFO);
+				mii.fMask = MIIM_ID | MIIM_STRING;
+				mii.wID = menuItem;
+				mii.dwTypeData = (char*) menuName;
+				if (!InsertMenuItem(menu, menuItem, FALSE, &mii))
+				{
+					luaL_error(L, "menu item addition failed");
+					return false;
+				}
+				info.menuData.menuItemMap.insert(map<PlatformMenuItem, PlatformMenu>::value_type(menuItem, menu));
+
+				lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
+				lua_insert(L, -2);
+				lua_rawseti(L, -2, menuItem);
+
+				lua_pop(L, 3);
+			}
+			else if (lua_istable(L, -1))
+			{
+				HMENU subMenu = AddSubMenu(topMenu, menu, menuName);
+				if (subMenu == NULL)
+				{
+					luaL_error(L, "menu item addition failed");
+					return false;
+				}
+				if (!AddMenuEntries(topMenu, subMenu))
+				{
+					return false;
+				}
+				lua_pop(L, 3);
+			}
+			else
+			{
+				luaL_typerror(L, -1, "function or table");
+				return false;
+			}
+		}
+		else
+		{
+			luaL_typerror(L, -1, "nil or table");
+			return false;
+		}
+	}
+	return true;
+#else
+	return false;
+#endif
+}
+
+DEFINE_LUA_FUNCTION(emu_addmenu, "menuName, menuEntries")
+{
+#if defined(WIN32) && !defined(WXPORT)
+	int nargs = lua_gettop(L);
+	if (nargs > 1 && !lua_isnil(L, 1))
+	{
+		const char* menuName = luaL_checkstring(L, 1);
+		luaL_checktype(L, 2, LUA_TTABLE);
+		lua_settop(L, 2); // drop redundant args
+
+		HMENU menu = mainMenu;
+		HMENU subMenu = AddSubMenu(menu, menu, menuName);
+		if (subMenu != NULL)
+		{
+			AddMenuEntries(menu, subMenu);
+			DrawMenuBar(MainWindow->getHWnd());
+		}
+		else
+		{
+			luaL_error(L, "menu item addition failed");
+		}
+	}
+	else
+	{
+		//HMENU menu = NULL; // TODO: set popup (right-click) menu
+		//int index = (nargs > 1) ? 2 : 1;
+		//luaL_checktype(L, index, LUA_TTABLE);
+		//lua_settop(L, index); // drop redundant args
+		//AddMenuEntries(menu, menu);
+	}
+#endif
+	return 0;
+}
+
+DEFINE_LUA_FUNCTION(emu_setmenuiteminfo, "menuItem, infoTable")
+{
+	luaL_checktype(L, 1, LUA_TFUNCTION);
+	luaL_checktype(L, 2, LUA_TTABLE);
+#if defined(WIN32) && !defined(WXPORT)
+	LuaContextInfo& info = GetCurrentInfo();
+	map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+	while(it != info.menuData.menuItemMap.end())
+	{
+		HMENU menu = (*it).second;
+		UINT menuItem = (*it).first;
+		lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
+		lua_rawgeti(L, -1, menuItem);
+		if (lua_rawequal(L, 1, -1) != 0)
+		{
+			MENUITEMINFO mii;
+			ZeroMemory(&mii, sizeof(MENUITEMINFO));
+			mii.cbSize = sizeof(MENUITEMINFO);
+			mii.fMask = MIIM_STATE | MIIM_STRING;
+			GetMenuItemInfo(menu, menuItem, FALSE, &mii);
+
+			mii.fMask = 0;
+
+			lua_getfield(L, 2, "enabled");
+			if (lua_isboolean(L, -1))
+			{
+				mii.fMask |= MIIM_STATE;
+				if (lua_toboolean(L, -1) != 0)
+				{
+					mii.fState &= ~MFS_DISABLED;
+				}
+				else
+				{
+					mii.fState |= MFS_DISABLED;
+				}
+			}
+			else if (!lua_isnil(L, -1))
+			{
+				luaL_where(L, 0);
+				luaL_error(L, "%s bad argument \"enabled\" (boolean expected, got %s)",
+					luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+			}
+			lua_pop(L, 1);
+
+			lua_getfield(L, 2, "checked");
+			if (lua_isboolean(L, -1))
+			{
+				mii.fMask |= MIIM_STATE;
+				if (lua_toboolean(L, -1) != 0)
+				{
+					mii.fState |= MFS_CHECKED;
+				}
+				else
+				{
+					mii.fState &= ~MFS_CHECKED;
+				}
+			}
+			else if (!lua_isnil(L, -1))
+			{
+				luaL_where(L, 0);
+				luaL_error(L, "%s bad argument \"checked\" (boolean expected, got %s)",
+					luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+			}
+			lua_pop(L, 1);
+
+			lua_getfield(L, 2, "name");
+			if (lua_isstring(L, -1))
+			{
+				mii.fMask |= MIIM_STRING;
+				mii.dwTypeData = (LPSTR) lua_tostring(L, -1);
+			}
+			else if (!lua_isnil(L, -1))
+			{
+				luaL_where(L, 0);
+				luaL_error(L, "%s bad argument \"name\" (string expected, got %s)",
+					luaL_optstring(L, -1, ""), luaL_typename(L, -2));
+			}
+			SetMenuItemInfo(menu, menuItem, FALSE, &mii);
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 1);
+		it++;
+	}
+#endif
+	return 0;
+}
+
+DEFINE_LUA_FUNCTION(emu_registermenustart, "func")
+{
+	if (!lua_isnil(L,1))
+		luaL_checktype(L, 1, LUA_TFUNCTION);
+	lua_settop(L,1);
+	lua_getfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
+	lua_insert(L,1);
+	lua_setfield(L, LUA_REGISTRYINDEX, luaCallIDStrings[LUACALL_ONINITMENU]);
+	StopScriptIfFinished(luaStateToUIDMap[L->l_G->mainthread]);
+	return 1;
+}
+
 // TODO
 /*
 DEFINE_LUA_FUNCTION(emu_loadrom, "filename")
@@ -4152,6 +4502,9 @@ static const struct luaL_reg emulib [] =
 	{"openscript", emu_openscript},
 //	{"loadrom", emu_loadrom},
 	{"reset", emu_reset},
+	{"addmenu", emu_addmenu},
+	{"setmenuiteminfo", emu_setmenuiteminfo},
+	{"registermenustart", emu_registermenustart},
 	// alternative names
 //	{"openrom", emu_loadrom},
 	{NULL, NULL}
@@ -4539,6 +4892,10 @@ void registerLibs(lua_State* L)
 		lua_setfield(L, LUA_REGISTRYINDEX, luaMemHookTypeStrings[i]);
 	}
 
+	// push an array for menu handlers
+	lua_newtable(L);
+	lua_setfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
+
 	// register type
 	luaL_newmetatable(L, "EMUFILE_MEMORY*");
 	lua_pushcfunction(L, gcEMUFILE_MEMORY);
@@ -4699,7 +5056,7 @@ void StopScriptIfFinished(int uid, bool justReturned)
 	// because it may have registered a function that it expects to keep getting called
 	// so check if it has any registered functions and stop the script only if it doesn't
 
-	bool keepAlive = (info.numMemHooks != 0);
+	bool keepAlive = (info.numMemHooks != 0 || !info.menuData.menuItemMap.empty());
 	for(int calltype = 0; calltype < LUACALL_COUNT && !keepAlive; calltype++)
 	{
 		lua_State* L = info.L;
@@ -4943,6 +5300,43 @@ void StopLuaScript(int uid)
 			info.numMemHooks = 0;
 			for(int i = 0; i < LUAMEMHOOK_COUNT; i++)
 				CalculateMemHookRegions((LuaMemHookType)i);
+
+#if defined(WIN32) && !defined(WXPORT)
+			// remove items
+			map<PlatformMenuItem, PlatformMenu>::iterator it = info.menuData.menuItemMap.begin();
+			while(it != info.menuData.menuItemMap.end())
+			{
+				HMENU menu = (*it).second;
+				UINT menuItem = (*it).first;
+				DeleteMenu(menu, menuItem, MF_BYCOMMAND);
+				it++;
+			}
+			info.menuData.menuItemMap.clear();
+
+			// remove submenus
+			vector<LuaSubMenuData>::reverse_iterator rit = info.menuData.subMenuData.rbegin();
+			while(rit != info.menuData.subMenuData.rend())
+			{
+				HMENU menu = (*rit).menu;
+				UINT menuItem = (*rit).menuItem;
+
+				MENUITEMINFO mii;
+				ZeroMemory(&mii, sizeof(MENUITEMINFO));
+				mii.cbSize = sizeof(MENUITEMINFO);
+				mii.fMask = MIIM_SUBMENU;
+				GetMenuItemInfo(menu, menuItem, FALSE, &mii);
+				HMENU subMenu = mii.hSubMenu;
+
+				// delete if it's empty
+				if (GetMenuItemCount(subMenu) == 0)
+				{
+					DeleteMenu(menu, menuItem, MF_BYCOMMAND);
+				}
+				rit++;
+			}
+			info.menuData.subMenuData.clear();
+			DrawMenuBar(MainWindow->getHWnd());
+#endif
 		}
 		RefreshScriptStartedStatus();
 	}
@@ -5047,6 +5441,50 @@ void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, unsigned 
 				if(!info.crashed)
 					lua_settop(L, top);
 			}
+		}
+		++iter;
+	}
+}
+
+
+void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem)
+{
+	std::map<int, LuaContextInfo*>::iterator iter = luaContextInfo.begin();
+	std::map<int, LuaContextInfo*>::iterator end = luaContextInfo.end();
+	while(iter != end)
+	{
+		LuaContextInfo& info = *iter->second;
+		lua_State* L = info.L;
+		if(L && !info.panic)
+		{
+#ifdef USE_INFO_STACK
+			infoStack.insert(infoStack.begin(), &info);
+			struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
+#endif
+			int top = lua_gettop(L);
+			lua_getfield(L, LUA_REGISTRYINDEX, menuCallbackIDString);
+			lua_rawgeti(L, -1, menuItem);
+			if (lua_isfunction(L, -1))
+			{
+				bool wasRunning = info.running;
+				info.running = true;
+				RefreshScriptSpeedStatus();
+				int errorcode = lua_pcall(L, 0, 0, 0);
+				info.running = wasRunning;
+				RefreshScriptSpeedStatus();
+				if (errorcode)
+				{
+					int uid = iter->first;
+					HandleCallbackError(L,info,uid,true);
+				}
+				break;
+			}
+			else
+			{
+				lua_pop(L,1);
+			}
+			if(!info.crashed)
+				lua_settop(L, top);
 		}
 		++iter;
 	}

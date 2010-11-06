@@ -3,6 +3,12 @@
 
 #include "types.h"
 
+#if defined(WIN32) && !defined(WXPORT)
+#include <winsock2.h>
+#include <windows.h>
+#include "resource.h"
+#endif
+
 void OpenLuaContext(int uid, void(*print)(int uid, const char* str) = 0, void(*onstart)(int uid) = 0, void(*onstop)(int uid, bool statusOK) = 0);
 void RunLuaScriptFile(int uid, const char* filename);
 void StopLuaScript(int uid);
@@ -19,6 +25,7 @@ enum LuaCallID
 	LUACALL_BEFORESAVE,
 	LUACALL_AFTERLOAD,
 	LUACALL_ONSTART,
+	LUACALL_ONINITMENU,
 
 	LUACALL_SCRIPT_HOTKEY_1,
 	LUACALL_SCRIPT_HOTKEY_2,
@@ -85,6 +92,18 @@ private:
 };
 void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData);
 void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& saveData);
+
+#if defined(WIN32) && !defined(WXPORT)
+typedef HMENU PlatformMenu;    // hMenu
+typedef UINT PlatformMenuItem; // menuId
+#define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
+#else
+// TODO: define appropriate types for menu
+typedef void* PlatformMenu;
+typedef u32 PlatformMenuItem;
+#define MAX_MENU_COUNT 0
+#endif
+void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem);
 
 void StopAllLuaScripts();
 void RestartAllLuaScripts();
