@@ -22,6 +22,7 @@ void AviEnd();
 void WavRecordTo(int wavmode);
 void WavEnd();
 void UpdateToolWindows();
+bool DemandLua();
 
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
