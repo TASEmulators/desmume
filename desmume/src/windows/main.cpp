@@ -1985,6 +1985,18 @@ void
 joinThread_gdb( void *thread_handle) {
 }
 
+bool DemandLua()
+{
+	HMODULE mod = LoadLibrary("lua51.dll");
+	if(!mod)
+	{
+		MessageBox(NULL, "lua51.dll was not found. Please get it into your PATH or in the same directory as desmume.exe", "DeSmuME", MB_OK | MB_ICONERROR);
+		return false;
+	}
+	FreeLibrary(mod);
+	return true;
+}
+
 
 int MenuInit()
 {
@@ -3812,6 +3824,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
+			CallRegisteredLuaFunctions(LUACALL_ONINITMENU);
+
 			return 0;
 		}
 
@@ -4368,6 +4382,12 @@ DOKEYDOWN:
 				return 0;
 			}
 
+			if(wParam >= IDC_LUAMENU_RESERVE_START &&
+			   wParam <= IDC_LUAMENU_RESERVE_END)
+			{
+				CallRegisteredLuaMenuHandlers(wParam);
+				return 0;
+			}
 		}
 		switch(LOWORD(wParam))
 		{
