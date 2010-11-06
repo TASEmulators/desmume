@@ -897,7 +897,9 @@
 #define IDC_LUASCRIPT_RESERVE_END       58099
 #define IDD_LUARECENT_RESERVE_START     58100
 #define IDD_LUARECENT_RESERVE_END       58199
-#define IDC_FRAMEADVANCE                58200
+#define IDC_LUAMENU_RESERVE_START       58200
+#define IDC_LUAMENU_RESERVE_END         58399
+#define IDC_FRAMEADVANCE                58400
 #define IDC_LABEL_HK1                   60001
 #define IDC_LABEL_HK2                   60002
 #define IDC_LABEL_HK3                   60003

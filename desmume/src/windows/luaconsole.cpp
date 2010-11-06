@@ -631,13 +631,14 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					char LogicalName[1024], PhysicalName[1024];
 					bool exists = ObtainFile(Str_Tmp, LogicalName, PhysicalName, "luarun", s_nonLuaExtensions, sizeof(s_nonLuaExtensions)/sizeof(*s_nonLuaExtensions));
 					Update_Recent_Script(LogicalName, info.subservient);
-					RunLuaScriptFile((int)hDlg, PhysicalName);
+					if(DemandLua())
+						RunLuaScriptFile((int)hDlg, PhysicalName);
 				}	break;
 				case IDC_BUTTON_LUASTOP:
 				{
 					PrintToWindowConsole((int)hDlg, "user clicked stop button\r\n");
 					SetActiveWindow(MainWindow->getHWnd());
-					StopLuaScript((int)hDlg);
+					if(DemandLua()) StopLuaScript((int)hDlg);
 				}	break;
 				case IDC_NOTIFY_SUBSERVIENT:
 				{
