@@ -1,17 +1,23 @@
- /* Copyright (C) 2009-2010 DeSmuME team
+/* 
+Copyright (C) 2009-2010 DeSmuME team
 
-	This file is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 2 of the License, or
-	(at your option) any later version.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
 
-	You should have received a copy of the GNU General Public License
-	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 */
 
 //don't use emufile for files bigger than 2GB! you have been warned! some day this will be fixed.
@@ -27,7 +33,7 @@
 #include <string>
 #include <stdarg.h>
 
-#include "types.h"
+#include "emufile_types.h"
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -78,6 +84,31 @@ public:
 
 	virtual void fwrite(const void *ptr, size_t bytes) = 0;
 
+	void write64le(u64* val);
+	void write64le(u64 val);
+	size_t read64le(u64* val);
+	u64 read64le();
+	void write32le(u32* val);
+	void write32le(s32* val) { write32le((u32*)val); }
+	void write32le(u32 val);
+	size_t read32le(u32* val);
+	size_t read32le(s32* val);
+	u32 read32le();
+	void write16le(u16* val);
+	void write16le(s16* val) { write16le((u16*)val); }
+	void write16le(u16 val);
+	size_t read16le(s16* Bufo);
+	size_t read16le(u16* val);
+	u16 read16le();
+	void write8le(u8* val);
+	void write8le(u8 val);
+	size_t read8le(u8* val);
+	u8 read8le();
+	void writedouble(double* val);
+	void writedouble(double val);
+	double readdouble();
+	size_t readdouble(double* val);
+
 	virtual int fseek(int offset, int origin) = 0;
 
 	virtual int ftell() = 0;
@@ -125,7 +156,10 @@ public:
 		if(pos>length) pos=length;
 	}
 
-	u8* buf() { return &(*vec)[0]; }
+	u8* buf() { 
+		if(size()==0) reserve(1);
+		return &(*vec)[0];
+	}
 
 	std::vector<u8>* get_vec() { return vec; };
 
