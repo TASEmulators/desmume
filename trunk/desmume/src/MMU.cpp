@@ -3720,13 +3720,43 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						return;
 						
 						case 2 :
-							//printf("%08X\n",MMU.SPI_CMD);
-							switch(MMU.SPI_CMD & 0x70)
+							printf("%08X\n",MMU.SPI_CMD);
+							switch(MMU.SPI_CMD&0xFC)
 							{
-								case 0x00 :
-									val = 0;
+								case TSC_MEASURE_TEMP1:
+									if(spicnt & 0x800)
+									{
+										if(partie)
+										{
+											val = ((716<<3)&0x7FF);
+											partie = 0;
+											break;
+										}
+										val = (716>>5);
+										partie = 1;
+										break;
+									}
+									val = ((716<<3)&0x7FF);
+									partie = 1;
 									break;
-								case 0x10 :
+								case TSC_MEASURE_TEMP2:
+									if(spicnt & 0x800)
+									{
+										if(partie)
+										{
+											val = ((865<<3)&0x7FF);
+											partie = 0;
+											break;
+										}
+										val = (865>>5);
+										partie = 1;
+										break;
+									}
+									val = ((865<<3)&0x7FF);
+									partie = 1;
+									break;
+
+								case TSC_MEASURE_Y:
 									//emu_halt();
 									if(MMU.SPI_CNT&(1<<11))
 									{
@@ -3741,22 +3771,19 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 										partie = 1;
 										break;
 									}
-								val = ((nds.touchY<<3)&0x7FF);
-								partie = 1;
-								break;
-								case 0x20 :
-									val = 0;
+									val = ((nds.touchY<<3)&0x7FF);
+									partie = 1;
 									break;
-								case 0x30: //Z1
+								case TSC_MEASURE_Z1: //Z1
 									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
 									if(nds.isTouch) val = 2048;
 									else val = 0;
 									break;
-								case 0x40: //Z2
+								case TSC_MEASURE_Z2: //Z2
 									//used for pressure calculation. we dont support pressure calculation so just return something.
 									val = 2048;
 									break;
-								case 0x50:
+								case TSC_MEASURE_X:
 									if(spicnt & 0x800)
 									{
 										if(partie)
@@ -3772,14 +3799,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									val = ((nds.touchX<<3)&0x7FF);
 									partie = 1;
 									break;
-								case 0x60 :
+								case TSC_MEASURE_AUX:
 									if(!(val & 0x80))
 										val = (Mic_ReadSample() & 0xFF);
 									else
 										val = 0;
-									break;
-								case 0x70 :
-									val = 0;
 									break;
 						}
 						break;
