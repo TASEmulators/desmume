@@ -60,6 +60,7 @@ int SPU_currentCoreNum = SNDCORE_DUMMY;
 static int volume = 100;
 
 
+static int buffersize = 0;
 static ESynchMode synchmode = ESynchMode_DualSynchAsynch;
 static ESynchMethod synchmethod = ESynchMethod_N;
 
@@ -125,7 +126,9 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 {
 	int i;
 
-	delete SPU_user; SPU_user = 0;
+	::buffersize = buffersize;
+
+	delete SPU_user; SPU_user = NULL;
 
 	// Make sure the old core is freed
 	if (SNDCore)
@@ -163,10 +166,9 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 		return -1;
 	}
 
-	//enable the user spu
-	SPU_user = new SPU_struct(buffersize);
-
 	SNDCore->SetVolume(volume);
+
+	SPU_SetSynchMode(synchmode,synchmethod);
 
 	return 0;
 }
@@ -218,6 +220,15 @@ void SPU_Pause(int pause)
 		SNDCore->UnMuteAudio();
 }
 
+void SPU_CloneUser()
+{
+	if(SPU_user) {
+		memcpy(SPU_user->channels,SPU_core->channels,sizeof(SPU_core->channels));
+		SPU_user->regs = SPU_core->regs;
+	}
+}
+
+
 void SPU_SetSynchMode(int mode, int method)
 {
 	synchmode = (ESynchMode)mode;
@@ -228,6 +239,15 @@ void SPU_SetSynchMode(int mode, int method)
 		//grr does this need to be locked? spu might need a lock method
 		  // or maybe not, maybe the platform-specific code that calls this function can deal with it.
 		synchronizer = metaspu_construct(synchmethod);
+	}
+
+	delete SPU_user;
+	SPU_user = NULL;
+		
+	if(synchmode == ESynchMode_DualSynchAsynch)
+	{
+		SPU_user = new SPU_struct(buffersize);
+		SPU_CloneUser();
 	}
 }
 
@@ -759,7 +779,8 @@ void SPU_WriteLong(u32 addr, u32 val)
 	addr &= 0xFFF;
 
 	SPU_core->WriteLong(addr,val);
-	if(SPU_user) SPU_user->WriteLong(addr,val);
+	if(SPU_user) 
+		SPU_user->WriteLong(addr,val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1360,15 +1381,12 @@ void SPU_Emulate_core()
 	bool mix = driver->AVI_IsRecording() || driver->WAV_IsRecording() || synchronize;
 
 	SPU_MixAudio(mix,SPU_core,spu_core_samples);
-	if(synchronize && SPU_user)
+	if(synchronize && SPU_currentCoreNum != SNDCORE_DUMMY)
 		synchronizer->enqueue_samples(SPU_core->outbuf, spu_core_samples);
 }
 
 void SPU_Emulate_user(bool mix)
 {
-	if(!SPU_user)
-		return;
-
 	u32 audiosize;
 
 	// Check to see how much free space there is
@@ -1378,17 +1396,27 @@ void SPU_Emulate_user(bool mix)
 	if (audiosize > 0)
 	{
 		//printf("mix %i samples\n", audiosize);
-		if (audiosize > SPU_user->bufsize)
-			audiosize = SPU_user->bufsize;
+		if (audiosize > buffersize)
+			audiosize = buffersize;
 
+		s16* outbuf;
 		int samplesOutput;
 		if(synchmode == ESynchMode_Synchronous)
-			samplesOutput = synchronizer->output_samples(SPU_user->outbuf, audiosize);
-		else
+		{
+			static std::vector<s16> tempbuf;
+			if(tempbuf.size() < audiosize*2) tempbuf.resize(audiosize*2);
+			outbuf = &tempbuf[0];
+			samplesOutput = synchronizer->output_samples(outbuf, audiosize);
+		}
+		else if(SPU_user != NULL)
+		{
+			outbuf = SPU_user->outbuf;
 			samplesOutput = (SPU_MixAudio(mix,SPU_user,audiosize), audiosize);
+		}
+		else return;
 
-		SNDCore->UpdateAudio(SPU_user->outbuf, samplesOutput);
-		WAV_WavSoundUpdate(SPU_user->outbuf, samplesOutput, WAVMODE_USER);
+		SNDCore->UpdateAudio(outbuf, samplesOutput);
+		WAV_WavSoundUpdate(outbuf, samplesOutput, WAVMODE_USER);
 	}
 }
 
@@ -1721,12 +1749,8 @@ bool spu_loadstate(EMUFILE* is, int size)
 		spu->regs.masteren = BIT15(T1ReadWord(MMU.ARM7_REG, 0x500));
 	}
 
-
 	//copy the core spu (the more accurate) to the user spu
-	if(SPU_user) {
-		memcpy(SPU_user->channels,SPU_core->channels,sizeof(SPU_core->channels));
-		SPU_user->regs = SPU_core->regs;
-	}
+	SPU_CloneUser();
 
 	return true;
 }
