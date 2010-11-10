@@ -7,6 +7,7 @@
 #include "../debug.h"
 #include "../console.h"
 #include "throttle.h"
+#include "GPU_osd.h"
 
 int FastForward=0;
 static u64 tmethod,tfreq,afsfreq;
@@ -16,9 +17,11 @@ static float desiredspf = 65536.0f / core_desiredfps;
 static int desiredFpsScalerIndex = 2;
 static u64 desiredFpsScalers [] = {
 	1024,
-	512,
+	512, // 200%
+	448, // 175%
+	384, // 150%
+	320, // 125%
 	256, // 100%
-	//224,
 	192,
 	128, // 50%
 	96,
@@ -36,6 +39,7 @@ void IncreaseSpeed(void) {
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
 	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling increased to: %f\n",desiredFpsScaler/256.0);
+	osd->addLine("Target FPS up to %2.04f",desiredFpsScaler/256.0);
 }
 
 void DecreaseSpeed(void) {
@@ -46,6 +50,7 @@ void DecreaseSpeed(void) {
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
 	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling decreased to: %f\n",desiredFpsScaler/256.0);
+	osd->addLine("Target FPS down to %2.04f",desiredFpsScaler/256.0);
 }
 
 static u64 GetCurTime(void)
