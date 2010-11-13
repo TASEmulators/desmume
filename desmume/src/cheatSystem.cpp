@@ -401,23 +401,29 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 	int		count = 0;
 	u16		t = 0;
 	char	tmp_buf[sizeof(list->code)];
-
 	memset(tmp_buf, 0, sizeof(tmp_buf));
+
+	size_t code_len = strlen(code);
 	// remove wrong chars
-	for (unsigned int i=0; i < strlen(code); i++)
+	for (size_t i=0; i < code_len; i++)
 	{
-		if (strchr(hexValid, code[i]))
+		char c = code[i];
+		//apparently 100% of pokemon codes were typed with the letter O in place of zero in some places
+		//so let's try to adjust for that here
+		static const char *AR_Valid = "Oo0123456789ABCDEFabcdef";
+		if (strchr(AR_Valid, c))
 		{
-				tmp_buf[t] = code[i];
-				t++;
+			if(c=='o' || c=='O') c='0';
+			tmp_buf[t++] = c;
 		}
 	}
 
-	if ((strlen(tmp_buf) % 8) != 0) return FALSE;			// error
-	if ((strlen(tmp_buf) % 16) != 0) return FALSE;			// error
+	size_t len = strlen(tmp_buf);
+	if ((len % 8) != 0) return FALSE;			// error
+	if ((len % 16) != 0) return FALSE;			// error
 
 	// TODO: syntax check
-	count = (strlen(tmp_buf) / 16);
+	count = (len / 16);
 	for (int i=0; i < count; i++)
 	{
 		char buf[9] = {0};
