@@ -3719,9 +3719,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, (u8)val));
 						return;
 						
-						case 2 :
-							//printf("%08X\n",MMU.SPI_CMD);
-							switch(MMU.SPI_CMD&0xFC)
+						case 2:
+						{
+							int channel = (MMU.SPI_CMD&0x70)>>4;
+							//printf("%08X\n",channel);
+							switch(channel)
 							{
 								case TSC_MEASURE_TEMP1:
 									if(spicnt & 0x800)
@@ -3805,8 +3807,9 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									else
 										val = 0;
 									break;
+							}
+							break;
 						}
-						break;
 						
 						case 3 :
 						/* NOTICE: Device 3 of SPI is reserved (unused and unusable) */
