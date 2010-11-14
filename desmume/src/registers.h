@@ -406,13 +406,13 @@
 #define IRQ_MASK_ARM7_SPI (1<<23)
 #define IRQ_MASK_ARM7_WIFI (1<<24)
 
-#define TSC_MEASURE_TEMP1    0x84
-#define TSC_MEASURE_Y        0x90
-#define TSC_MEASURE_BATTERY  0xA4
-#define TSC_MEASURE_Z1       0xB4
-#define TSC_MEASURE_Z2       0xC4
-#define TSC_MEASURE_X        0xD0
-#define TSC_MEASURE_AUX      0xE4
-#define TSC_MEASURE_TEMP2    0xF4
+#define TSC_MEASURE_TEMP1    0
+#define TSC_MEASURE_Y        1
+#define TSC_MEASURE_BATTERY  2
+#define TSC_MEASURE_Z1       3
+#define TSC_MEASURE_Z2       4
+#define TSC_MEASURE_X        5
+#define TSC_MEASURE_AUX      6
+#define TSC_MEASURE_TEMP2    7
 
 #endif
