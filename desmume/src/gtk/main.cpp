@@ -66,6 +66,9 @@
 
 #include "DeSmuME.xpm"
 
+#undef GPOINTER_TO_INT
+#define GPOINTER_TO_INT(p) ((gint)  (glong) (p))
+
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
 #if GTK_CHECK_VERSION(2,10,0)
