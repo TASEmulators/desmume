@@ -27,6 +27,9 @@
 #include "main.h"
 #include "desmume.h"
 
+#undef GPOINTER_TO_INT
+#define GPOINTER_TO_INT(p) ((gint)  (glong) (p))
+
 enum {
     COLUMN_ENABLED,
     COLUMN_SIZE,
