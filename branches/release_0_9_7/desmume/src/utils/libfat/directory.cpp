@@ -33,7 +33,6 @@
 #include <wctype.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <malloc.h>
 
 #include "directory.h"
 #include "common.h"
@@ -41,6 +40,15 @@
 #include "file_allocation_table.h"
 #include "bit_ops.h"
 #include "filetime.h"
+
+#ifdef __APPLE__
+//apple doesn't provide strnlen. how unkind
+static size_t strnlen(const char *s, size_t n)
+{
+	const char *p = (const char *)memchr(s, 0, n);
+	return(p ? p-s : n);
+}
+#endif
 
 // Directory entry codes
 #define DIR_ENTRY_LAST 0x00
