@@ -31,7 +31,7 @@
 #ifndef _MEM_ALLOCATE_H
 #define _MEM_ALLOCATE_H
 
-#include <malloc.h>
+#include <stdlib.h>
 
 static inline void* _FAT_mem_allocate (size_t size) {
 	return malloc (size);

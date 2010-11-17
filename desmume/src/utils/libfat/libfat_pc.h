@@ -63,7 +63,11 @@ struct _reent {
 	intptr_t _errno;
 };
 
+#ifdef __APPLE__
+typedef __darwin_mode_t mode_t;
+#else
 typedef uint32_t mode_t;
+#endif
 
 struct DIR_ITER {
 	void* dirStruct;
