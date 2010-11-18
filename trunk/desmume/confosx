@@ -1,0 +1,1 @@
+./configure CFLAGS="-arch i386" CXXFLAGS="-arch i386"
