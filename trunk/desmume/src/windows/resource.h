@@ -43,7 +43,6 @@
 #define IDM_MBG2                        122
 #define IDD_CHEAT_EXPORT                122
 #define IDM_MBG3                        123
-#define IDD_FONTSETTINGS                123
 #define IDM_SBG0                        124
 #define IDM_SBG1                        125
 #define IDM_SBG2                        126
@@ -390,7 +389,6 @@
 #define IDC_RFOLDER                     1039
 #define IDC_2012                        1039
 #define IDC_BBROWSE2                    1040
-#define IDC_FONTCOMBO                   1040
 #define IDC_PATHDESMUME                 1041
 #define IDC_BRESTART                    1042
 #define IDC_BVIEW                       1043
@@ -952,6 +950,8 @@
 #define IDM_RENDER_LQ2X                 60082
 #define IDM_RENDER_LQ2XS                60083
 #define IDC_SAVETYPE                    64000
+#define IDD_FONTSETTINGS                68000
+#define IDC_FONTCOMBO                   68001
 
 // Next default values for new objects
 // 
