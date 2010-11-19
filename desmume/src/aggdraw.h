@@ -662,5 +662,11 @@ extern AggDraw_Desmume aggDraw;
 
 void Agg_init();
 
-
+struct font_type
+{
+	const agg::int8u* font;
+	const char* name;
+};
+extern font_type fonts_list[];
+extern int font_Nums;
 #endif

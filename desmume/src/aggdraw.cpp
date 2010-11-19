@@ -62,6 +62,45 @@
 typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
 static TAgg_Font_Table font_table;
 
+font_type fonts_list[] =
+{
+	{ agg::gse4x6, "gse4x6" },
+	{ agg::gse4x8, "gse4x8" },
+	{ agg::gse5x7, "gse5x7" },
+	{ agg::gse5x9, "gse5x9" },
+	{ agg::gse6x9, "gse6x9" },
+	{ agg::gse6x12, "gse6x12" },
+	{ agg::gse7x11, "gse7x11" },
+	{ agg::gse7x11_bold, "gse7x11_bold" },
+	{ agg::gse7x15, "gse7x15" },
+	{ agg::gse7x15_bold, "gse7x15_bold" },
+	{ agg::gse8x16, "gse8x16" },
+	{ agg::gse8x16_bold, "gse8x16_bold" },
+	{ agg::mcs11_prop, "mcs11_prop" },
+	{ agg::mcs11_prop_condensed, "mcs11_prop_condensed" },
+	{ agg::mcs12_prop, "mcs12_prop" },
+	{ agg::mcs13_prop, "mcs13_prop" },
+	{ agg::mcs5x10_mono, "mcs5x10_mono" },
+	{ agg::mcs5x11_mono, "mcs5x11_mono" },
+	{ agg::mcs6x10_mono, "mcs6x10_mono" },
+	{ agg::mcs6x11_mono, "mcs6x11_mono" },
+	{ agg::mcs7x12_mono_high, "mcs7x12_mono_high" },
+	{ agg::mcs7x12_mono_low, "mcs7x12_mono_low" },
+	{ agg::verdana12, "verdana12" },
+	{ agg::verdana12_bold, "verdana12_bold" },
+	{ agg::verdana13, "verdana13" },
+	{ agg::verdana13_bold, "verdana13_bold" },
+	{ agg::verdana14, "verdana14" },
+	{ agg::verdana14_bold, "verdana14_bold" },
+	{ agg::verdana16, "verdana16" },
+	{ agg::verdana16_bold, "verdana16_bold" },
+	{ agg::verdana17, "verdana17" },
+	{ agg::verdana17_bold, "verdana17_bold" },
+	{ agg::verdana18, "verdana18" },
+	{ agg::verdana18_bold, "verdana18_bold" },
+};
+int font_Nums = ARRAY_SIZE(fonts_list);
+
 const agg::int8u* AggDrawTarget::lookupFont(const std::string& name)
 { 
 	TAgg_Font_Table::iterator it(font_table.find(name));
@@ -71,51 +110,8 @@ const agg::int8u* AggDrawTarget::lookupFont(const std::string& name)
 
 static void Agg_init_fonts()
 {
-	struct font_type
-	{
-		const agg::int8u* font;
-		const char* name;
-	}
-	fonts[] =
-	{
-		{ agg::gse4x6, "gse4x6" },
-		{ agg::gse4x8, "gse4x8" },
-		{ agg::gse5x7, "gse5x7" },
-		{ agg::gse5x9, "gse5x9" },
-		{ agg::gse6x9, "gse6x9" },
-		{ agg::gse6x12, "gse6x12" },
-		{ agg::gse7x11, "gse7x11" },
-		{ agg::gse7x11_bold, "gse7x11_bold" },
-		{ agg::gse7x15, "gse7x15" },
-		{ agg::gse7x15_bold, "gse7x15_bold" },
-		{ agg::gse8x16, "gse8x16" },
-		{ agg::gse8x16_bold, "gse8x16_bold" },
-		{ agg::mcs11_prop, "mcs11_prop" },
-		{ agg::mcs11_prop_condensed, "mcs11_prop_condensed" },
-		{ agg::mcs12_prop, "mcs12_prop" },
-		{ agg::mcs13_prop, "mcs13_prop" },
-		{ agg::mcs5x10_mono, "mcs5x10_mono" },
-		{ agg::mcs5x11_mono, "mcs5x11_mono" },
-		{ agg::mcs6x10_mono, "mcs6x10_mono" },
-		{ agg::mcs6x11_mono, "mcs6x11_mono" },
-		{ agg::mcs7x12_mono_high, "mcs7x12_mono_high" },
-		{ agg::mcs7x12_mono_low, "mcs7x12_mono_low" },
-		{ agg::verdana12, "verdana12" },
-		{ agg::verdana12_bold, "verdana12_bold" },
-		{ agg::verdana13, "verdana13" },
-		{ agg::verdana13_bold, "verdana13_bold" },
-		{ agg::verdana14, "verdana14" },
-		{ agg::verdana14_bold, "verdana14_bold" },
-		{ agg::verdana16, "verdana16" },
-		{ agg::verdana16_bold, "verdana16_bold" },
-		{ agg::verdana17, "verdana17" },
-		{ agg::verdana17_bold, "verdana17_bold" },
-		{ agg::verdana18, "verdana18" },
-		{ agg::verdana18_bold, "verdana18_bold" },
-	};
-
-	for(u32 i=0;i<ARRAY_SIZE(fonts);i++)
-		font_table[fonts[i].name] = fonts[i].font;
+	for(u32 i=0;i<font_Nums;i++)
+		font_table[fonts_list[i].name] = fonts_list[i].font;
 }
 
 AggDraw_Desmume aggDraw;
