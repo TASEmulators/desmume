@@ -43,6 +43,7 @@
 #define IDM_MBG2                        122
 #define IDD_CHEAT_EXPORT                122
 #define IDM_MBG3                        123
+#define IDD_FONTSETTINGS                123
 #define IDM_SBG0                        124
 #define IDM_SBG1                        125
 #define IDM_SBG2                        126
@@ -389,6 +390,7 @@
 #define IDC_RFOLDER                     1039
 #define IDC_2012                        1039
 #define IDC_BBROWSE2                    1040
+#define IDC_FONTCOMBO                   1040
 #define IDC_PATHDESMUME                 1041
 #define IDC_BRESTART                    1042
 #define IDC_BVIEW                       1043
@@ -853,6 +855,9 @@
 #define ID_SAVETYPE_FORCEASCURRENT      40082
 #define IDC_SAVETYPE_FORCE              40083
 #define ID_DISPLAYMETHOD_VSYNC          40084
+#define ID_TOOLS_SETFONT                40085
+#define ID_CONFIG_SETFONT               40086
+#define IDD_FONTCONFIG                  40087
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -952,9 +957,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        123
-#define _APS_NEXT_COMMAND_VALUE         40085
-#define _APS_NEXT_CONTROL_VALUE         1040
+#define _APS_NEXT_RESOURCE_VALUE        125
+#define _APS_NEXT_COMMAND_VALUE         40088
+#define _APS_NEXT_CONTROL_VALUE         1041
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

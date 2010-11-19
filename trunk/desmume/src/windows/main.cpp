@@ -234,6 +234,7 @@
 
 using namespace std;
 
+
 #ifdef EXPERIMENTAL_WIFI_COMM
 bool bSocketsAvailable = false;
 #include "winpcap.h"
@@ -498,6 +499,8 @@ struct NDS_fw_config_data win_fw_config;
 	Color::Fuchsia
 };*/
 
+
+LRESULT CALLBACK HUDFontSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -2658,6 +2661,7 @@ int _main()
 	start_paused = cmdline.start_paused!=0;
 
 	Desmume_InitOnce();
+	aggDraw.hud->setFont(fonts_list[GetPrivateProfileInt("Display","HUD Font", font_Nums-1, IniName)].name);
 
 	//in case this isnt actually a singlecore system, but the user requested it
 	//then restrict ourselves to one core
@@ -5235,6 +5239,22 @@ DOKEYDOWN:
 				if(tpaused) NDS_UnPause();
 			}
 			return 0;
+
+		case IDD_FONTCONFIG:
+			{
+				bool tpaused = false;
+				if(execute)
+				{
+					tpaused = true;
+					NDS_Pause();
+				}
+
+				DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_FONTSETTINGS), hwnd, (DLGPROC)HUDFontSettingsDlgProc);
+
+				if(tpaused) NDS_UnPause();
+			}
+			return 0;
+
 		case IDC_FRAMESKIPAUTO:
 			{
 				char text[80];
@@ -5537,7 +5557,38 @@ void Change3DCoreWithFallbackAndSave(int newCore, int fallbackCore)
 	int gpu3dSaveValue = ((cur3DCore != GPU3D_NULL) ? cur3DCore : GPU3D_NULL_SAVED);
 	WritePrivateProfileInt("3D", "Renderer", gpu3dSaveValue, IniName);
 }
+LRESULT CALLBACK HUDFontSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
+{
+	switch(msg)
+	{
+		case WM_INITDIALOG:
+		{
+			for(int i=0;i<font_Nums;i++) ComboBox_AddString(GetDlgItem(hw, IDC_FONTCOMBO), fonts_list[i].name);
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_FONTCOMBO),GetPrivateProfileInt("Display","HUD Font", font_Nums-1, IniName));
+		}
+		return TRUE;
 
+		case WM_COMMAND:
+		{
+			switch(LOWORD(wp))
+			{
+			case IDOK:
+				{
+					int i = ComboBox_GetCurSel(GetDlgItem(hw, IDC_FONTCOMBO));
+					aggDraw.hud->setFont(fonts_list[i].name);
+					WritePrivateProfileInt("Display","HUD Font", i, IniName);
+				}
+			case IDCANCEL:
+				{
+					EndDialog(hw, TRUE);
+				}
+				return TRUE;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 {
 	switch(msg)
