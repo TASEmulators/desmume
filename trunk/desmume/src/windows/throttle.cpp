@@ -14,7 +14,7 @@ static u64 tmethod,tfreq,afsfreq;
 static const u64 core_desiredfps = 3920763; //59.8261
 static u64 desiredfps = core_desiredfps;
 static float desiredspf = 65536.0f / core_desiredfps;
-static int desiredFpsScalerIndex = 2;
+static int desiredFpsScalerIndex = GetPrivateProfileInt("Video","FPS Scaler Index", 5, IniName);
 static u64 desiredFpsScalers [] = {
 	1024,
 	512, // 200%
@@ -40,6 +40,7 @@ void IncreaseSpeed(void) {
 	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling increased to: %f\n",desiredFpsScaler/256.0);
 	osd->addLine("Target FPS up to %2.04f",desiredFpsScaler/256.0);
+	WritePrivateProfileInt("Video","FPS Scaler Index", desiredFpsScalerIndex, IniName);
 }
 
 void DecreaseSpeed(void) {
@@ -51,6 +52,7 @@ void DecreaseSpeed(void) {
 	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling decreased to: %f\n",desiredFpsScaler/256.0);
 	osd->addLine("Target FPS down to %2.04f",desiredFpsScaler/256.0);
+	WritePrivateProfileInt("Video","FPS Scaler Index", desiredFpsScalerIndex, IniName);
 }
 
 static u64 GetCurTime(void)
