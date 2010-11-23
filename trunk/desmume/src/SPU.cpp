@@ -1391,6 +1391,7 @@ void SPU_Emulate_user(bool mix)
 
 	// Check to see how much free space there is
 	// If there is some, fill up the buffer
+	if(!SNDCore) return;
 	audiosize = SNDCore->GetAudioSpace();
 
 	if (audiosize > 0)
