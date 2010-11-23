@@ -309,7 +309,7 @@ static void list_files(const char *filepath, ListCallback list_callback)
 	//}
 }
 
-static u32 dataSectors = 0;
+static u64 dataSectors = 0;
 void count_ListCallback(FsEntry* fs, EListCallbackArg arg)
 {
 	if(arg == EListCallbackArg_Pop) return;
@@ -400,9 +400,24 @@ static BOOL cflash_build_fat()
 	//this seems to be the minimum size that will turn into a solid fat32
 	if(dataSectors<36*1024*1024/512)
 		dataSectors = 36*1024*1024/512;
+
+	if(dataSectors>=(0x80000000>>9))
+	{
+		printf("error allocating memory for fat (%d KBytes)\n",(dataSectors*512)/1024);
+		printf("total fat sizes > 2GB are never going to work\n");
+	}
 	
 	delete file;
-	file = new EMUFILE_MEMORY(dataSectors*512);
+	try 
+	{
+		file = new EMUFILE_MEMORY(dataSectors*512);
+	}
+	catch(std::bad_alloc)
+	{
+		printf("error allocating memory for fat (%d KBytes)\n",(dataSectors*512)/1024);
+		printf("(out of memory)\n");
+		return FALSE;
+	}
 	//file = new EMUFILE_FILE("c:\\temp.ima","rb+");
 	
 	//format the disk
