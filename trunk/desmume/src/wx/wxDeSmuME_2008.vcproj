@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="wxDeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -79,10 +79,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32-debug.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28d.lib wxmsw28d_core.lib sdl-vc8-Win32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28d.lib wxmsw28d_core.lib sdl-vc8-Win32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
-				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
-				DelayLoadDLLs=""
+				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs;.libs\win32"
+				DelayLoadDLLs="lua51.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
 				RandomizedBaseAddress="1"
@@ -172,10 +172,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28.lib wxmsw28_core.lib sdl-vc8-Win32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28.lib wxmsw28_core.lib sdl-vc8-Win32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
-				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
-				DelayLoadDLLs=""
+				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs;.libs\win32"
+				DelayLoadDLLs="lua51.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				RandomizedBaseAddress="1"
@@ -266,10 +266,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua-vc8-Win32.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28.lib wxmsw28_core.lib sdl-vc8-Win32.lib"
+				AdditionalDependencies="Rpcrt4.lib directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-Win32.lib 7z-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib comctl32.lib wxbase28.lib wxmsw28_core.lib sdl-vc8-Win32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_dev+.exe"
-				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs"
-				DelayLoadDLLs=""
+				AdditionalLibraryDirectories="..\windows\zlib123;..\windows\agg;.libs;.libs\win32"
+				DelayLoadDLLs="lua51.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				LinkTimeCodeGeneration="0"
@@ -718,6 +718,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\emufat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\emufat.h"
+				>
+			</File>
+			<File
 				RelativePath="..\emufile.cpp"
 				>
 			</File>
@@ -846,6 +854,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\path.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\path.h"
 				>
 			</File>
@@ -903,6 +915,14 @@
 			</File>
 			<File
 				RelativePath="..\shaders.h"
+				>
+			</File>
+			<File
+				RelativePath="..\slot1.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\slot1.h"
 				>
 			</File>
 			<File
@@ -1004,6 +1024,18 @@
 					RelativePath="..\addons\rumblepak.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\addons\slot1_none.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot1_r4.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot1_retail.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="gdbstub"
@@ -1029,6 +1061,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\utils\datetime.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\datetime.h"
+					>
+				</File>
+				<File
 					RelativePath="..\utils\dlditool.cpp"
 					>
 				</File>
@@ -1046,14 +1086,6 @@
 				</File>
 				<File
 					RelativePath="..\utils\md5.h"
-					>
-				</File>
-				<File
-					RelativePath="..\utils\mkgmtime.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\utils\mkgmtime.h"
 					>
 				</File>
 				<File
@@ -1097,6 +1129,118 @@
 					</File>
 					<File
 						RelativePath="..\utils\decrypt\header.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="libfat"
+					>
+					<File
+						RelativePath="..\utils\libfat\bit_ops.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\cache.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\cache.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\common.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\directory.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\directory.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\disc.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\disc.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\disc_io.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\fat.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\fatdir.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\fatdir.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\fatfile.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\fatfile.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\file_allocation_table.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\file_allocation_table.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\filetime.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\filetime.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\libfat.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\libfat_pc.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\libfat_public_api.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\libfat_public_api.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\lock.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\lock.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\mem_allocate.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\partition.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\libfat\partition.h"
 						>
 					</File>
 				</Filter>
@@ -1572,7 +1716,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="un7z_and_touch.bat ..\windows\lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+						CommandLine="un7z_and_touch.bat ..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 						AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 						Outputs=".libs\lua.tag"
 					/>
@@ -1582,7 +1726,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="un7z_and_touch.bat ..\windows\lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+						CommandLine="un7z_and_touch.bat ..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 						AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 						Outputs=".libs\lua.tag"
 					/>
@@ -1592,7 +1736,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="un7z_and_touch.bat ..\windows\lua\lua.7z .libs\lua*&#x0D;&#x0A;"
+						CommandLine="un7z_and_touch.bat ..\windows\lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
 						AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 						Outputs=".libs\lua.tag"
 					/>
