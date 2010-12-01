@@ -448,8 +448,8 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	ok &= MMU_new.div.loadstate(is,version);
 
 	//to prevent old savestates from confusing IF bits, mask out ones which had been stored but should have been generated
-	MMU.reg_IF_bits[0] &= ~0x00260000;
-	MMU.reg_IF_bits[1] &= ~0x00060000;
+	MMU.reg_IF_bits[0] &= ~0x00200000;
+	MMU.reg_IF_bits[1] &= ~0x00000000;
 
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
