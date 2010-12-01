@@ -26,8 +26,7 @@
 #include "gfx3d.h"
 
 // ========================================================= IPC FIFO
-IPC_FIFO ipc_fifo[2];		// 0 - ARM9
-							// 1 - ARM7
+IPC_FIFO ipc_fifo[2];
 
 void IPC_FIFOinit(u8 proc)
 {
@@ -69,6 +68,9 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
+	if(cnt_r&IPCFIFOCNT_RECVIRQEN)
+		NDS_makeIrq(proc_remote, IRQ_BIT_IPCFIFO_RECVNONEMPTY);
+
 	NDS_Reschedule();
 }
 
@@ -99,12 +101,14 @@ u32 IPC_FIFOrecv(u8 proc)
 	
 	//LOG("IPC%s recv FIFO 0x%08X size %03i (l 0x%X, tail %02i) (r 0x%X, tail %02i)\n", 
 	//	proc?"7":"9", val, ipc_fifo[proc].size, cnt_l, ipc_fifo[proc].tail, cnt_r, ipc_fifo[proc^1].tail);
-	
 
 	if ( ipc_fifo[proc_remote].size == 0 )		// FIFO empty
 	{
-		cnt_l |= 0x0101;
+		cnt_l |= 0x0100;
 		cnt_r |= 0x0001;
+
+		if(cnt_r&IPCFIFOCNT_SENDIRQEN)
+			NDS_makeIrq(proc_remote, IRQ_BIT_IPCFIFO_SENDEMPTY);
 	}
 
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
@@ -117,6 +121,7 @@ u32 IPC_FIFOrecv(u8 proc)
 
 void IPC_FIFOcnt(u8 proc, u16 val)
 {
+	u8	proc_remote = proc ^ 1;
 	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 
@@ -131,13 +136,23 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 		ipc_fifo[proc].head = 0; ipc_fifo[proc].tail = 0; ipc_fifo[proc].size = 0;
 
 		cnt_l |= IPCFIFOCNT_SENDEMPTY;
-		cnt_l &= ~IPCFIFOCNT_SENDFULL;
 		cnt_r |= IPCFIFOCNT_RECVEMPTY;
+		
+		cnt_l &= ~IPCFIFOCNT_SENDFULL;
 		cnt_r &= ~IPCFIFOCNT_RECVFULL;
-	}
 
+	}
 	cnt_l &= ~IPCFIFOCNT_WRITEABLE;
 	cnt_l |= val & IPCFIFOCNT_WRITEABLE;
+
+	//IPCFIFOCNT_SENDIRQEN may have been set (and/or the fifo may have been cleared) so we may need to trigger this irq
+	//(this approach is used by libnds fifo system on occasion in fifoInternalSend, and began happening frequently for value32 with r4326)
+	if(cnt_l&IPCFIFOCNT_SENDIRQEN) if(cnt_l & IPCFIFOCNT_SENDEMPTY)
+		NDS_makeIrq(proc, IRQ_BIT_IPCFIFO_SENDEMPTY);
+
+	//IPCFIFOCNT_RECVIRQEN may have been set so we may need to trigger this irq
+	if(cnt_l&IPCFIFOCNT_RECVIRQEN) if(!(cnt_l & IPCFIFOCNT_RECVEMPTY))
+		NDS_makeIrq(proc, IRQ_BIT_IPCFIFO_RECVNONEMPTY);
 
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);

@@ -1212,16 +1212,19 @@ static void validateIF_arm9()
 template<int PROCNUM> static void REG_IF_WriteByte(u32 addr, u8 val)
 {
 	//the following bits are generated from logic and should not be affected here
-	//Bit 17    IPC Send FIFO Empty
-	//Bit 18    IPC Recv FIFO Not Empty
 	//Bit 21    NDS9 only: Geometry Command FIFO
-	//arm9: IF &= ~0x00260000;
-	//arm7: IF &= ~0x00060000;
+	//arm9: IF &= ~0x00200000;
+	//arm7: IF &= ~0x00000000;
+	//UPDATE IN setIF() ALSO!!!!!!!!!!!!!!!!
+	//UPDATE IN mmu_loadstate ALSO!!!!!!!!!!!!
 	if(addr==2)
 		if(PROCNUM==ARMCPU_ARM9)
-			val &= ~0x26;
+			val &= ~0x20;
 		else
-			val &= ~0x06;
+			val &= ~0x00;
+
+	//ZERO 01-dec-2010 : I am no longer sure this approach is correct.. it proved to be wrong for IPC fifo.......
+	//it seems as if IF bits should always be cached (only the user can clear them)
 	
 	MMU.reg_IF_bits[PROCNUM] &= (~(((u32)val)<<(addr<<3)));
 	NDS_Reschedule();
@@ -1265,16 +1268,6 @@ u32 MMU_struct::gen_IF()
 		case 3: //reserved/unknown
 			break;
 		}
-	}
-
-	//generate IPC IF states from the ipc registers
-	u16 ipc = T1ReadWord(MMU.MMU_MEM[PROCNUM][0x40], 0x184);
-	if(ipc&IPCFIFOCNT_FIFOENABLE)
-	{
-		if(ipc&IPCFIFOCNT_SENDIRQEN) if(ipc&IPCFIFOCNT_SENDEMPTY) 
-			IF |= IRQ_MASK_IPCFIFO_SENDEMPTY;
-		if(ipc&IPCFIFOCNT_RECVIRQEN) if(!(ipc&IPCFIFOCNT_RECVEMPTY))
-			IF |= IRQ_MASK_IPCFIFO_RECVNONEMPTY;
 	}
 
 	return IF;
@@ -1435,6 +1428,10 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 
 	if ((sync_l & 0x2000) && (sync_r & 0x4000))
 		setIF(proc^1, ( 1 << 16 ));
+
+
+
+	NDS_Reschedule();
 }
 
 static INLINE u16 read_timer(int proc, int timerIndex)
@@ -2643,13 +2640,13 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_IF: REG_IF_WriteWord<ARMCPU_ARM9>(0,val); return;
 			case REG_IF+2: REG_IF_WriteWord<ARMCPU_ARM9>(2,val); return;
 
-            case REG_IPCSYNC :
-					MMU_IPCSync(ARMCPU_ARM9, val);
+            case REG_IPCSYNC:
+				MMU_IPCSync(ARMCPU_ARM9, val);
+				return;
+			case REG_IPCFIFOCNT:
+				IPC_FIFOcnt(ARMCPU_ARM9, val);
 				return;
 
-			case REG_IPCFIFOCNT :
-					IPC_FIFOcnt(ARMCPU_ARM9, val);
-				return;
             case REG_TM0CNTL :
             case REG_TM1CNTL :
             case REG_TM2CNTL :
@@ -3094,17 +3091,18 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			}
 			case REG_SQRTPARAM+4 :
-			{
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2BC, val);
 				execsqrt();
 				return;
-			}
-			case REG_IPCSYNC :
-					MMU_IPCSync(ARMCPU_ARM9, val);
+			
+			case REG_IPCSYNC:
+				MMU_IPCSync(ARMCPU_ARM9, val);
 				return;
-
-			case REG_IPCFIFOSEND :
-					IPC_FIFOsend(ARMCPU_ARM9, val);
+			case REG_IPCFIFOCNT:
+				IPC_FIFOcnt(ARMCPU_ARM9, val);
+				return;
+			case REG_IPCFIFOSEND:
+				IPC_FIFOsend(ARMCPU_ARM9, val);
 				return;
 
            
@@ -3840,13 +3838,13 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_IF: REG_IF_WriteWord<ARMCPU_ARM7>(0,val); return;
 			case REG_IF+2: REG_IF_WriteWord<ARMCPU_ARM7>(2,val); return;
 				
-            case REG_IPCSYNC :
+            case REG_IPCSYNC:
 				MMU_IPCSync(ARMCPU_ARM7, val);
 				return;
-
-			case REG_IPCFIFOCNT :
+			case REG_IPCFIFOCNT:
 				IPC_FIFOcnt(ARMCPU_ARM7, val);
 				return;
+
             case REG_TM0CNTL :
             case REG_TM1CNTL :
             case REG_TM2CNTL :
@@ -3941,12 +3939,14 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			}
 
 
-			case REG_IPCSYNC :
-					MMU_IPCSync(ARMCPU_ARM7, val);
+			case REG_IPCSYNC:
+				MMU_IPCSync(ARMCPU_ARM7, val);
 				return;
-
-			case REG_IPCFIFOSEND :
-					IPC_FIFOsend(ARMCPU_ARM7, val);
+			case REG_IPCFIFOCNT:
+				IPC_FIFOcnt(ARMCPU_ARM7, val);
+				return;
+			case REG_IPCFIFOSEND:
+				IPC_FIFOsend(ARMCPU_ARM7, val);
 				return;
 			
 			case REG_GCROMCTRL :
