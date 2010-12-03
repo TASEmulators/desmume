@@ -157,9 +157,11 @@ private:
 	void loadfile();
 	bool _loadfile(const char *fname);
 	void ensure(u32 addr);
-	
 
 	bool flushPending, lazyFlushPending;
+
+private:
+	void resize(u32 size);
 };
 
 #define NDS_FW_SIZE_V1 (256 * 1024)		/* size of fw memory on nds v1 */
