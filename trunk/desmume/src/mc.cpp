@@ -408,7 +408,7 @@ void BackupDevice::reset_hardware()
 void BackupDevice::reset()
 {
 	reset_hardware();
-	data.resize(0);
+	resize(0);
 	data_autodetect.resize(0);
 	addr_size = 0;
 	loadfile();
@@ -420,7 +420,7 @@ void BackupDevice::reset()
 		int savetype = save_types[CommonSettings.manualBackupType][0];
 		int savesize = save_types[CommonSettings.manualBackupType][1];
 		ensure((u32)savesize); //expand properly if necessary
-		data.resize(savesize); //truncate if necessary
+		resize(savesize); //truncate if necessary
 		addr_size = addr_size_for_old_save_type(savetype);
 		flush();
 	}
@@ -675,12 +675,17 @@ void BackupDevice::ensure(u32 addr)
 	u32 size = data.size();
 	if(size<addr)
 	{
-		data.resize(addr);
-		for(u32 i=size;i<addr;i++)
-			data[i] = kUninitializedSaveDataValue;
+		resize(addr);
 	}
 }
 
+void BackupDevice::resize(u32 size)
+{
+	size_t old_size = data.size();
+	data.resize(size);
+	for(u32 i=old_size;i<size;i++)
+		data[i] = kUninitializedSaveDataValue;
+}
 
 u32 BackupDevice::addr_size_for_old_save_size(int bupmem_size)
 {
@@ -723,8 +728,8 @@ u32 BackupDevice::addr_size_for_old_save_type(int bupmem_type)
 void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 {
 	state = RUNNING;
-	this->addr_size = addr_size;
-	this->data.resize(datasize);
+	addr_size = addr_size;
+	resize(datasize);
 	memcpy(&this->data[0],data,datasize);
 
 	//dump back out as a dsv, just to keep things sane
@@ -880,7 +885,7 @@ bool BackupDevice::load_no_gba(const char *fname)
 				size = no_gba_fillLeft(size);
 				//printf("--- new size after fill %i byte(s)\n", size);
 				raw_applyUserSettings(size);
-				data.resize(size);
+				resize(size);
 				for (u32 tt = 0; tt < size; tt++)
 					data[tt] = out_buf[tt];
 
@@ -995,7 +1000,7 @@ void BackupDevice::loadfile()
 		read32le(&info.mem_size,inf);
 
 		//establish the save data
-		data.resize(info.size);
+		resize(info.size);
 		inf->fseek(0, SEEK_SET);
 		if(info.size>0)
 			inf->fread(&data[0],info.size); //read all the raw data we have
@@ -1092,7 +1097,7 @@ void BackupDevice::raw_applyUserSettings(u32& size)
 	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT)
 	{
 		addr_size = addr_size_for_old_save_size(size);
-		data.resize(size);
+		resize(size);
 	}
 	else
 	{
@@ -1100,7 +1105,7 @@ void BackupDevice::raw_applyUserSettings(u32& size)
 		int savesize = save_types[CommonSettings.manualBackupType][1];
 		addr_size = addr_size_for_old_save_type(savetype);
 		if((u32)savesize<size) size = savesize;
-		data.resize(savesize);
+		resize(savesize);
 	}
 
 	state = RUNNING;
@@ -1191,7 +1196,7 @@ bool BackupDevice::load_movie(EMUFILE* is) {
 	is->fread((char*)&info.mem_size,4);
 
 	//establish the save data
-	data.resize(info.size);
+	resize(info.size);
 	is->fseek(0, SEEK_SET);
 	if(info.size>0)
 		is->fread((char*)&data[0],info.size);
