@@ -192,6 +192,8 @@ TEMPLATE static u32 bios_nop()
 
 TEMPLATE static u32 WaitByLoop()
 {
+	u32 elapsed;
+	
 	//printf("%lld waitbyloop\n",nds_timer);
 	//INFO("ARM%c: SWI 0x03 (WaitByLoop)\n", PROCNUM?'7':'9');
 	if (PROCNUM == ARMCPU_ARM9)
@@ -199,12 +201,14 @@ TEMPLATE static u32 WaitByLoop()
 		armcp15_t *cp = (armcp15_t*)(cpu->coproc[15]);
 
 		if (cp->ctrl & ((1<<16)|(1<<18)))		// DTCM or ITCM is on (cache)
-			return cpu->R[0] * 2;
+			elapsed = cpu->R[0] * 2;
 		else
-			return cpu->R[0] * 8;
+			elapsed = cpu->R[0] * 8;
 	}
-    
-	return cpu->R[0] * 4;
+	else
+		elapsed = cpu->R[0] * 4;
+	cpu->R[0] = 0;
+	return elapsed;
 }
 
 TEMPLATE static u32 wait4IRQ()

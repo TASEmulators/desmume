@@ -422,6 +422,18 @@ void HK_ToggleRasterizer(int, bool justPressed) {
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 }
 
+void HK_IncreasePressure(int, bool justPressed) {
+	CommonSettings.StylusPressure += 10;
+	if(CommonSettings.StylusPressure<0) CommonSettings.StylusPressure = 0;
+	osd->addLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
+}
+void HK_DecreasePressure(int, bool justPressed) {
+	CommonSettings.StylusPressure -= 10;
+	if(CommonSettings.StylusPressure<0) CommonSettings.StylusPressure = 0;
+	osd->addLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
+}
+
+
 //======================================================================================
 //=====================================DEFINITIONS======================================
 //======================================================================================
@@ -504,6 +516,20 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->DecreaseSpeed.name = STRW(ID_LABEL_HK8);
 	keys->DecreaseSpeed.page = HOTKEY_PAGE_MAIN;
 	keys->DecreaseSpeed.key = VK_OEM_MINUS;
+
+	keys->IncreasePressure.handleKeyDown = HK_IncreasePressure;
+	keys->IncreasePressure.code = "IncreasePressure";
+	keys->IncreasePressure.name = STRW(ID_LABEL_HK55);
+	keys->IncreasePressure.page = HOTKEY_PAGE_MAIN;
+	keys->IncreasePressure.key = VK_OEM_PLUS;
+	keys->DecreasePressure.modifiers = CUSTKEY_SHIFT_MASK;
+
+	keys->DecreasePressure.handleKeyDown = HK_DecreasePressure;
+	keys->DecreasePressure.code = "DecreasePressure";
+	keys->DecreasePressure.name = STRW(ID_LABEL_HK56);
+	keys->DecreasePressure.page = HOTKEY_PAGE_MAIN;
+	keys->DecreasePressure.key = VK_OEM_MINUS;
+	keys->DecreasePressure.modifiers = CUSTKEY_SHIFT_MASK;
 	
 	keys->Microphone.handleKeyDown = HK_MicrophoneKeyDown;
 	keys->Microphone.handleKeyUp = HK_MicrophoneKeyUp;

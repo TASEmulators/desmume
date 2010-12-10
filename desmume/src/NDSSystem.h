@@ -486,6 +486,7 @@ extern struct TCommonSettings {
 		, manualBackupType(0)
 		, spu_captureMuted(false)
 		, spu_advanced(false)
+		, StylusPressure(50)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -528,6 +529,8 @@ extern struct TCommonSettings {
 	int num_cores;
 	bool single_core() { return num_cores==1; }
 	bool rigorous_timing;
+
+	int StylusPressure;
 
 	bool dispLayers[2][5];
 	
