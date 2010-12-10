@@ -3176,7 +3176,6 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 
 	if (adr >> 24 == 4)
 	{	//Address is an IO register
-
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,8,adr);
 
 		switch(adr)
@@ -3552,6 +3551,42 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 }
 
+static void CalculateTouchPressure(int pressurePercent, u16 &z1, u16& z2)
+{
+	bool touch = nds.isTouch!=0;
+	if(!touch)
+	{
+		z1 = z2 = 0;
+		return;
+	}
+	int y = nds.touchY/16;
+	int x = nds.touchX/16;
+	float u = (x/256.0f);
+	float v = (y/192.0f);	
+
+	//these coefficients 
+
+	float fPressurePercent = pressurePercent/100.0f;
+	//z1 goes up as pressure goes up
+	{
+		float b0 = (96-80)*fPressurePercent + 80;
+		float b1 = (970-864)*fPressurePercent + 864;
+		float b2 = (192-136)*fPressurePercent + 136;
+		float b3 = (1560-1100)*fPressurePercent + 1100;
+		z1 = (u16)(int)(b0 + (b1-b0)*u + (b2-b0)*v + (b3-b2-b1+b0)*u*v);
+	}
+	
+	//z2 goes down as pressure goes up
+	{
+		float b0=(1976-2300)*fPressurePercent + 2300;
+		float b1=(2360-2600)*fPressurePercent + 2600;
+		float b2=(3840-3900)*fPressurePercent + 3900;
+		float b3=(3912-3950)*fPressurePercent + 3950;
+		z2 = (u16)(int)(b0 + (b1-b0)*u + (b2-b0)*v + (b3-b2-b1+b0)*u*v);
+	}
+
+}
+
 //================================================= MMU ARM7 write 16
 void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
@@ -3776,12 +3811,47 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									break;
 								case TSC_MEASURE_Z1: //Z1
 									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
-									if(nds.isTouch) val = 2048;
-									else val = 0;
+									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
+									{
+										u16 scratch;
+										CalculateTouchPressure(CommonSettings.StylusPressure,val,scratch);
+									}
+									if(spicnt & 0x800)
+									{
+										if(partie)
+										{
+											val = ((val<<3)&0x7FF);
+											partie = 0;
+											break;
+										}
+										val = (val>>5);
+										partie = 1;
+										break;
+									}
+									val = ((val<<3)&0x7FF);
+									partie = 1;
 									break;
 								case TSC_MEASURE_Z2: //Z2
-									//used for pressure calculation. we dont support pressure calculation so just return something.
-									val = 2048;
+									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
+									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
+									{
+										u16 scratch;
+										CalculateTouchPressure(CommonSettings.StylusPressure,scratch,val);
+									}
+									if(spicnt & 0x800)
+									{
+										if(partie)
+										{
+											val = ((val<<3)&0x7FF);
+											partie = 0;
+											break;
+										}
+										val = (val>>5);
+										partie = 1;
+										break;
+									}
+									val = ((val<<3)&0x7FF);
+									partie = 1;
 									break;
 								case TSC_MEASURE_X:
 									if(spicnt & 0x800)
