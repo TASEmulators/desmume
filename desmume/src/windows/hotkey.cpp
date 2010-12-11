@@ -424,7 +424,7 @@ void HK_ToggleRasterizer(int, bool justPressed) {
 
 void HK_IncreasePressure(int, bool justPressed) {
 	CommonSettings.StylusPressure += 10;
-	if(CommonSettings.StylusPressure<0) CommonSettings.StylusPressure = 0;
+	if(CommonSettings.StylusPressure>100) CommonSettings.StylusPressure = 100;
 	osd->addLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
 }
 void HK_DecreasePressure(int, bool justPressed) {
