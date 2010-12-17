@@ -452,6 +452,7 @@
 #define IDC_EDIT1                       1102
 #define IDC_EDIT2                       1103
 #define IDC_EDIT3                       1104
+#define IDC_WINDOW5X					1105
 #define IDC_EDIT_AUTHOR                 1180
 #define IDD_MATRIX_VIEWER               1200
 #define IDM_MATRIX_VIEWER               1200
