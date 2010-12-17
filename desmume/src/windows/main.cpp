@@ -5409,6 +5409,11 @@ DOKEYDOWN:
 			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
+		case IDC_WINDOW5X:
+			windowSize=5;
+			ScaleScreen(windowSize, true);
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+			break;
 
 		case IDC_FORCERATIO:
 			if (ForceRatio) {
