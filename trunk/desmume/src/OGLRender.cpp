@@ -30,6 +30,8 @@
 #include "OGLRender.h"
 #include "debug.h"
 
+CACHE_ALIGN float material_8bit_to_float[255] = {0};
+
 bool (*oglrender_init)() = 0;
 bool (*oglrender_beginOpenGL)() = 0;
 void (*oglrender_endOpenGL)() = 0;
@@ -399,6 +401,9 @@ static char OGLInit(void)
 
 	if(!BEGINGL())
 		return 0;
+
+	for (u8 i = 0; i < 255; i++)
+		material_8bit_to_float[i] = (float)(i<<2)/255.f;
 
 	expandFreeTextures();
 
@@ -879,40 +884,6 @@ static void OGLRender()
 				BeginRenderPoly();
 			}
 			
-			//since we havent got the whole pipeline working yet, lets use opengl for the projection
-		/*	if(lastProjIndex != poly->projIndex) {
-				glMatrixMode(GL_PROJECTION);
-				glLoadMatrixf(gfx3d.projlist->projMatrix[poly->projIndex]);
-				lastProjIndex = poly->projIndex;
-			}*/
-
-		/*	glBegin(type==3?GL_TRIANGLES:GL_QUADS);
-			for(int j=0;j<type;j++) {
-				VERT* vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-				u8 color[4] = {
-					material_5bit_to_8bit[vert->color[0]],
-					material_5bit_to_8bit[vert->color[1]],
-					material_5bit_to_8bit[vert->color[2]],
-					material_5bit_to_8bit[vert->color[3]]
-				};
-				
-				//float tempCoord[4];
-				//Vector4Copy(tempCoord, vert->coord);
-				//we havent got the whole pipeline working yet, so we cant do this
-				////convert from ds device coords to opengl
-				//tempCoord[0] *= 2;
-				//tempCoord[1] *= 2;
-				//tempCoord[0] -= 1;
-				//tempCoord[1] -= 1;
-
-				//todo - edge flag?
-				glTexCoord2fv(vert->texcoord);
-				glColor4ubv((GLubyte*)color);
-				//glVertex4fv(tempCoord);
-				glVertex4fv(vert->coord);
-			}
-			glEnd();*/
-		
 			if(lastViewport != poly->viewport)
 			{
 				VIEWPORT viewport;
@@ -921,50 +892,24 @@ static void OGLRender()
 				lastViewport = poly->viewport;
 			}
 
-			glBegin(GL_TRIANGLES);
-
-			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
 			float alpha = poly->getAlpha()/31.0f;
 			if(wireframe) alpha = 1.0;
-			float color0[4] = {
-					(vert0->color[0]<<2)/255.0f,
-					(vert0->color[1]<<2)/255.0f,
-					(vert0->color[2]<<2)/255.0f,
-					alpha
-				};
 
-			//this draws things as a fan to prepare for the day when the clipping is done in gfx3d
-			//and funny shaped polys find their way into here.
-			//of course it could really be drawn as a fan, i suppose.. i dont remember why we did it this way
-			for(int j = 1; j < (type-1); j++)
+			if (type == 4) 
+				glBegin(GL_QUADS);
+			else
+				glBegin(GL_TRIANGLES);
+
+			for(int j = 0; j < type; j++)
 			{
-				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
+				VERT *vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				
-				float color1[4] = {
-					(vert1->color[0]<<2)/255.0f,
-					(vert1->color[1]<<2)/255.0f,
-					(vert1->color[2]<<2)/255.0f,
-					alpha
-				};
-				float color2[4] = {
-					(vert2->color[0]<<2)/255.0f,
-					(vert2->color[1]<<2)/255.0f,
-					(vert2->color[2]<<2)/255.0f,
-					alpha
-				};
-
-				glTexCoord2fv(vert0->texcoord);
-				glColor4fv((GLfloat*)color0);
-				glVertex4fv(vert0->coord);
-
-				glTexCoord2fv(vert1->texcoord);
-				glColor4fv((GLfloat*)color1);
-				glVertex4fv(vert1->coord);
-
-				glTexCoord2fv(vert2->texcoord);
-				glColor4fv((GLfloat*)color2);
-				glVertex4fv(vert2->coord);
+				glTexCoord2fv(vert->texcoord);
+				glColor4f(material_8bit_to_float[vert->color[0]], 
+							material_8bit_to_float[vert->color[1]], 
+							material_8bit_to_float[vert->color[2]],
+							alpha);
+				glVertex4fv(vert->coord);
 			}
 
 			glEnd();
