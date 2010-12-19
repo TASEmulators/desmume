@@ -2120,9 +2120,7 @@ void NDS_Reset()
 		TotalLagFrames = 0;
 	}
 
-	//spu must reset early on, since it will crash due to keeping a pointer into MMU memory for the sample pointers. yuck!
-	SPU_Reset();
-
+	SPU_DeInit();
 
 	MMU_Reset();
 
@@ -2476,6 +2474,8 @@ void NDS_Reset()
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 
 	initSchedule();
+
+	SPU_ReInit();
 }
 
 static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {

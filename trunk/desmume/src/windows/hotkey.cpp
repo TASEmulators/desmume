@@ -197,9 +197,6 @@ void HK_StateLoadSlot(int num, bool justPressed)
 {
 	if (romloaded && justPressed)
 	{
-		//keep the spu from running while we do the loadstate (or else it may trample on spu structures in the midst of getting twiddled)
-		Lock lock;
-
 		BOOL wasPaused = paused;
 		Pause();
 		loadstate_slot(num);		//Loadstate
