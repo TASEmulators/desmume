@@ -439,6 +439,7 @@ bool XInput_Read(int XPadPlayer, SPADStatus* _pPADStatus)
 // The graphics plugin in the PCSX2 design leaves a lot of the window processing to the pad plugin, weirdly enough.
 static void X11_Read(int _numPAD, SPADStatus* _pPADStatus)
 {
+#ifndef __APPLE__
 	// Do all the stuff we need to do once per frame here
 	if (_numPAD != 0)
 		return;
@@ -495,6 +496,7 @@ static void X11_Read(int _numPAD, SPADStatus* _pPADStatus)
 			break;
 		}
 	}
+#endif // __APPLE__
 #elif defined(HAVE_COCOA) && HAVE_COCOA
 void cocoa_Read(int _numPAD, SPADStatus* _pPADStatus)
 {

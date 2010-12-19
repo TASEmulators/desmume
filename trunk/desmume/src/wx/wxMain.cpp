@@ -48,7 +48,7 @@ SoundInterface_struct *SNDCoreList[] = {
 
 GPU3DInterface *core3DList[] = {
         &gpu3DRasterize,
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
         &gpu3Dgl,
 #endif
         &gpu3DNull,
