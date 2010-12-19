@@ -40,6 +40,7 @@
 #include "path.h"
 #include "video.h"
 #include "winutil.h"
+#include "windriver.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -196,6 +197,9 @@ void HK_StateLoadSlot(int num, bool justPressed)
 {
 	if (romloaded && justPressed)
 	{
+		//keep the spu from running while we do the loadstate (or else it may trample on spu structures in the midst of getting twiddled)
+		Lock lock;
+
 		BOOL wasPaused = paused;
 		Pause();
 		loadstate_slot(num);		//Loadstate
