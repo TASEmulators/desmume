@@ -2,9 +2,12 @@
 #include "NDSSystem.h"
 #include <wx/wxprec.h>
 #include <wx/app.h>
+#include <wx/menu.h>
 #include "movie.h"
 #include <wx/docview.h>
 #include <wx/config.h>
+
+#include "../gdbstub.h"
 static int nds_screen_rotation_angle;
 static wxFileConfig *desmumeConfig;
 enum
