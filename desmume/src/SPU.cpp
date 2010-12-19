@@ -64,6 +64,7 @@ static int buffersize = 0;
 static ESynchMode synchmode = ESynchMode_DualSynchAsynch;
 static ESynchMethod synchmethod = ESynchMethod_N;
 
+static int SNDCoreId=-1;
 static SoundInterface_struct *SNDCore=NULL;
 extern SoundInterface_struct *SNDCoreList[];
 
@@ -151,6 +152,8 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 		}
 	}
 
+	SNDCoreId = coreid;
+
 	//If the user picked the dummy core, disable the user spu
 	if(SNDCore == &SNDDummy)
 		return 0;
@@ -176,6 +179,11 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 SoundInterface_struct *SPU_SoundCore()
 {
 	return SNDCore;
+}
+
+void SPU_ReInit()
+{
+	SPU_Init(SNDCoreId, buffersize);
 }
 
 //static double cos_lut[256];
