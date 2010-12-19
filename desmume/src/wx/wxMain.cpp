@@ -516,7 +516,7 @@ void DesmumeFrame::setHUDFont(wxCommandEvent &event)
 	wxArrayString fontchoices;
 	for(int i = 0; i < font_Nums;i++)
 	{
-		fontchoices.Add(_T(fonts_list[i].name));
+		fontchoices.Add(fonts_list[i].name);
 	}
 
 	wxSingleChoiceDialog fontDialog(this,
