@@ -1,6 +1,7 @@
 
 #include "NDSSystem.h"
 #include <wx/wxprec.h>
+#include <wx/app.h>
 #include "movie.h"
 #include <wx/docview.h>
 #include <wx/config.h>
