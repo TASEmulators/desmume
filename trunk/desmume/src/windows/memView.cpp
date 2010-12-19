@@ -29,6 +29,7 @@
 #include <windowsx.h>
 #include <commctrl.h>
 #include "memView.h"
+#include "winutil.h"
 
 using namespace std;
 
@@ -430,6 +431,13 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 				for(i = 0; i < 16; i += 2)
 				{
 					u16 val = T1ReadWord(memory, ((line << 4) + i));
+					if(IsDlgCheckboxChecked(wnd->hWnd,IDC_BIG_ENDIAN))
+					{
+						char swp[2];
+						swp[0] = (val>>8)&0xFF;
+						swp[1] = val&0xFF;
+						val = *(u16*)swp;
+					}
 					if(wnd->sel && (wnd->selAddress == (addr + i)))
 					{
 						SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
@@ -470,6 +478,15 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 				for(i = 0; i < 16; i += 4)
 				{
 					u32 val = T1ReadLong(memory, ((line << 4) + i));
+					if(IsDlgCheckboxChecked(wnd->hWnd,IDC_BIG_ENDIAN))
+					{
+						char swp[4];
+						swp[0] = (val>>24)&0xFF;
+						swp[1] = (val>>16)&0xFF;
+						swp[2] = (val>>8)&0xFF;
+						swp[3] = val&0xFF;
+						val = *(u32*)swp;
+					}
 					if(wnd->sel && (wnd->selAddress == (addr + i)))
 					{
 						SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
