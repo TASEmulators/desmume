@@ -71,8 +71,9 @@ bool Desmume::OnInit()
 	OpenConsole();
 #endif
 
-	SetAppName(_T("desmume"));
-	wxConfigBase *pConfig = new wxFileConfig(wxEmptyString,wxEmptyString,_T("desmume.ini"),wxEmptyString,wxCONFIG_USE_RELATIVE_PATH);
+	SetAppName(_T("desmume")); 
+	wxString iniFileName = wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + "\\desmume.ini";
+	wxConfigBase *pConfig = new wxFileConfig(wxEmptyString,wxEmptyString,iniFileName,wxEmptyString,wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH);
 	wxConfigBase::Set(pConfig);
 	wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
 	DesmumeFrame *frame = new DesmumeFrame(emu_version);
