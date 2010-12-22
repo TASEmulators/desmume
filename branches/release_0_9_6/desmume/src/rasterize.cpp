@@ -223,17 +223,31 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 	Y = Ceil28_4((fixed28_4)verts[Top]->y);
 	int YEnd = Ceil28_4((fixed28_4)verts[Bottom]->y);
 	Height = YEnd - Y;
+	X = Ceil28_4((fixed28_4)verts[Top]->x);
+	int XEnd = Ceil28_4((fixed28_4)verts[Bottom]->x);
+	int Width = XEnd - X; // can be negative
 
-	if(Height)
+	// even if Height == 0, give some info for horizontal line poly
+	if(Height != 0 || Width != 0)
 	{
 		long dN = long(verts[Bottom]->y - verts[Top]->y);
 		long dM = long(verts[Bottom]->x - verts[Top]->x);
-	
-		long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
-		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm,failure);
-		FloorDivMod(dM*16,dN*16,XStep,Numerator,failure);
-		Denominator = dN*16;
-	
+		if (dN != 0)
+		{
+			long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
+			FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm,failure);
+			FloorDivMod(dM*16,dN*16,XStep,Numerator,failure);
+			Denominator = dN*16;
+		}
+		else
+		{
+			XStep = Width;
+			Numerator = 0;
+			ErrorTerm = 0;
+			Denominator = 1;
+			failure = false;
+		}
+
 		float YPrestep = Fixed28_4ToFloat((fixed28_4)(Y*16 - verts[Top]->y));
 		float XPrestep = Fixed28_4ToFloat((fixed28_4)(X*16 - verts[Top]->x));
 
@@ -296,6 +310,7 @@ static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & sr
 	}
 }
 
+// TODO: wire-frame
 struct PolyAttr
 {
 	u32 val;
@@ -681,6 +696,22 @@ public:
 		int XStart = pLeft->X;
 		int width = pRight->X - XStart;
 
+		// workaround for vertical/slant line poly
+		// it seems to cause another issue though
+		//if (width == 0)
+		//{
+		//	int leftWidth = pLeft->XStep;
+		//	if (pLeft->ErrorTerm + pLeft->Numerator >= pLeft->Denominator)
+		//		leftWidth++;
+		//	int rightWidth = pRight->XStep;
+		//	if (pRight->ErrorTerm + pRight->Numerator >= pRight->Denominator)
+		//		rightWidth++;
+		//	width = max(1, min(abs(leftWidth), abs(rightWidth)));
+		//
+		//	if (XStart + width > 256)
+		//		width = max(0, 256 - XStart);
+		//}
+
 		//these are the starting values, taken from the left edge
 		float invw = pLeft->invw.curr;
 		float u = pLeft->u.curr;
@@ -752,6 +783,15 @@ public:
 		bool first=true;
 		static int runctr=0;
 		runctr++;
+
+		//HACK: special handling for horizontal line poly
+		//Instead of line, this will cause other notable issue.
+		//if (left->Height == 0 && right->Height == 0)
+		//{
+		//	bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
+		//	if(draw) drawscanline(left,right);
+		//}
+
 		while(Height--) {
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
 			if(draw) drawscanline(left,right);
