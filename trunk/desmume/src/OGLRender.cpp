@@ -818,9 +818,8 @@ static void GL_ReadFramebuffer()
 }
 
 // "Workaround" for line poly
-static bool isLinePoly(int listIndex)
+static bool isLinePoly(POLY *poly)
 {
-	POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[listIndex]];
 	int type = poly->type;
 	VERT *vert1, *vert2;
 
@@ -952,9 +951,8 @@ static void OGLRender()
 
 			float alpha = poly->getAlpha()/31.0f;
 			if(wireframe) alpha = 1.0;
-			bool linePoly = isLinePoly(i);
 
-			if (linePoly)
+			if (isLinePoly(poly))
 				glBegin(GL_LINE_LOOP);
 			else if (type == 4)
 				glBegin(GL_QUADS);
