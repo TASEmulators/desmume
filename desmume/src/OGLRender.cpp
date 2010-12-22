@@ -814,9 +814,8 @@ static void GL_ReadFramebuffer()
 
 
 // "Workaround" for line poly
-static bool isLinePoly(int listIndex)
+static bool isLinePoly(POLY *poly)
 {
-	POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[listIndex]];
 	int type = poly->type;
 	VERT *vert1, *vert2;
 
@@ -972,7 +971,7 @@ static void OGLRender()
 				lastViewport = poly->viewport;
 			}
 
-			if (isLinePoly(i))
+			if (isLinePoly(poly))
 				glBegin(GL_LINE_LOOP);
 			else
 				glBegin(GL_TRIANGLES);
