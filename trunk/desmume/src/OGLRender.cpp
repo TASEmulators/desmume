@@ -817,63 +817,6 @@ static void GL_ReadFramebuffer()
 #endif
 }
 
-// "Workaround" for line poly
-static bool isLinePoly(POLY *poly)
-{
-	int type = poly->type;
-	VERT *vert1, *vert2;
-
-	if (type <= 2)
-		return true;
-	else if (type > 4)
-		return false;
-
-	// Method 1:
-	// Castlevania Portrait of Ruin - trajectory of ricochet
-	bool duplicatedVert[4] = { false, false, false, false };
-	for(int i = 0; i < type - 1; i++)
-	{
-		vert1 = &gfx3d.vertlist->list[poly->vertIndexes[i]];
-		for(int j = i + 1; j < type; j++)
-		{
-			vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-			if (vert1->x == vert2->x && vert1->y == vert2->y)
-			{
-				duplicatedVert[j] = true;
-			}
-		}
-	}
-	int vertCount = type;
-	for(int i = 0; i < type; i++)
-	{
-		if (duplicatedVert[i])
-			vertCount--;
-	}
-	if (vertCount <= 2)
-		return true;
-
-	// Method 2:
-	// Castlevania Portrait of Ruin - warp stone
-	bool horizontalLine = true;
-	bool verticalLine = true;
-	vert1 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
-	for(int i = 1; i < type && (horizontalLine || verticalLine); i++)
-	{
-		vert2 = &gfx3d.vertlist->list[poly->vertIndexes[i]];
-		if (vert1->coord[0] != vert2->coord[0])
-		{
-			verticalLine = false;
-		}
-		if (vert1->coord[1] != vert2->coord[1])
-		{
-			horizontalLine = false;
-		}
-	}
-	if (horizontalLine || verticalLine)
-		return true;
-
-	return false;
-}
 
 static void OGLRender()
 {
@@ -952,7 +895,7 @@ static void OGLRender()
 			float alpha = poly->getAlpha()/31.0f;
 			if(wireframe) alpha = 1.0;
 
-			if (isLinePoly(poly))
+			if (gfx3d_IsLinePoly(poly))
 				glBegin(GL_LINE_LOOP);
 			else if (type == 4)
 				glBegin(GL_QUADS);
