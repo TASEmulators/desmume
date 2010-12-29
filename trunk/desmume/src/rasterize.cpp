@@ -245,6 +245,7 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 			Numerator = 0;
 			ErrorTerm = 0;
 			Denominator = 1;
+			dN = 1;
 		}
 	
 		float YPrestep = Fixed28_4ToFloat((fixed28_4)(Y*16 - verts[Top]->y));
