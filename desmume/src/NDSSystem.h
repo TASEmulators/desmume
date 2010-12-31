@@ -28,6 +28,7 @@
 #include "wifi.h"
 #include "emufile.h"
 #include "firmware.h"
+#include "types.h"
 
 #include <string>
 
