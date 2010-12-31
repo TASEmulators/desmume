@@ -2556,8 +2556,6 @@ int _main()
 
 	char text[80];
 
-	GetINIPath();
-
 	path.ReadPathSettings();
 
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
@@ -3051,7 +3049,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	g_thread_init (NULL);
 	hAppInst=hThisInstance;
-	OpenConsole();			// Init debug console
+
+	GetINIPath();
+
+  #if !defined(PUBLIC_RELEASE) || defined(DEVELOPER)
+  static const bool defaultConsoleEnable = true;
+  #else
+  static const bool defaultConsoleEnable = false;
+  #endif
+  
+  if(GetPrivateProfileBool("Display", "Show Console", defaultConsoleEnable, IniName))
+	  OpenConsole();			// Init debug console
 
 	int ret = _main();
 
