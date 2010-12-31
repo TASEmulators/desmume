@@ -13,6 +13,9 @@
 #include "rasterize.h"
 #include "OGLRender.h"
 #include "firmware.h"
+#ifdef HAVE_LIBAGG
+#include "aggdraw.h"
+#endif
 
 #ifndef WIN32
 #define lstrlen(a) strlen((a))
@@ -512,6 +515,7 @@ void DesmumeFrame::displayMicrophone(wxCommandEvent& event)
 	CommonSettings.hud.ShowMicrophone ^= true;
 	osd->clear();
 }
+#ifdef HAVE_LIBAGG
 void DesmumeFrame::setHUDFont(wxCommandEvent &event)
 {
 	wxArrayString fontchoices;
@@ -531,6 +535,7 @@ void DesmumeFrame::setHUDFont(wxCommandEvent &event)
 	}
 	
 }
+#endif
 void DesmumeFrame::mainG(int n) 
 {
 	if(CommonSettings.dispLayers[0][n])
@@ -676,7 +681,9 @@ BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 	EVT_MENU(wDisplayGraphicalInput,DesmumeFrame::displayGraphicalInput)
 	EVT_MENU(wDisplayLagCounter,DesmumeFrame::displayLagCounter)
 	EVT_MENU(wDisplayMicrophone,DesmumeFrame::displayMicrophone)
+#ifdef HAVE_LIBAGG
 	EVT_MENU(wSetHUDFont,DesmumeFrame::setHUDFont)
+#endif
 
 	EVT_MENU(wMainGPU,DesmumeFrame::mainGPU)
 	EVT_MENU(wMainBG0,DesmumeFrame::mainBG0)
