@@ -68,7 +68,7 @@ fi
 
 dnl - Check for the OpenGL includes
 AC_CHECK_HEADERS([GL/gl.h],
-		 [AC_CHECK_HEADERS([GL/glu.h], [have_gl_h=yes], [have_gl_h=no])],
+		 [AC_CHECK_HEADERS([GL/glu.h], [have_gl_h=yes LIBS="$LIBS -lGLU"], [have_gl_h=no])],
 		 [have_gl_h=no])
 if test "have_gl_h" = "no" ; then
 	AC_MSG_WARN([Building without GL support because of missing headers.])
@@ -271,9 +271,6 @@ AC_ARG_ENABLE(wifi,
 
 dnl Set compiler library flags per target.
 case $target in
-  *linux* | *bsd*)
-    LIBS="$LIBS -lGLU"
-    ;;
   *mingw*)
     LIBS="$LIBS -ldxguid -ldxerr8 -ldsound -lopengl32 -lws2_32 -mwindows"
     UI_DIR="windows"
