@@ -91,7 +91,7 @@
 
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define ALIGN(X) __declspec(align(X))
-#elif __GNUC__
+#elif defined(__GNUC__)
 #define ALIGN(X) __attribute__ ((aligned (X)))
 #else
 #define ALIGN(X)
