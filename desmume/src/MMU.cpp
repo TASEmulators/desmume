@@ -3234,6 +3234,10 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case REG_DISPA_DISP3DCNT+1: return readreg_DISP3DCNT(8,adr);
 			case REG_DISPA_DISP3DCNT+2: return readreg_DISP3DCNT(8,adr);
 			case REG_DISPA_DISP3DCNT+3: return readreg_DISP3DCNT(8,adr);
+
+			case REG_KEYINPUT:
+				LagFrameFlag=0;
+				break;
 		}
 	}
 
@@ -3315,9 +3319,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(16,adr);
 			case REG_DISPA_DISP3DCNT+2: return readreg_DISP3DCNT(16,adr);
 
-			case 0x04000130:
-			case 0x04000136:
-				//not sure whether these should trigger from byte reads
+			case REG_KEYINPUT:
 				LagFrameFlag=0;
 				break;
 
@@ -3446,8 +3448,12 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 				}	
      
 			case REG_GCDATAIN: return MMU_readFromGC<ARMCPU_ARM9>();
-            case REG_POWCNT1: return readreg_POWCNT1(32,adr);
+      case REG_POWCNT1: return readreg_POWCNT1(32,adr);
 			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(32,adr);
+
+			case REG_KEYINPUT:
+				LagFrameFlag=0;
+				break;
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
 	}
