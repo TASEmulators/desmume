@@ -97,6 +97,17 @@ static bool isTranslucent;
 
 static u32 textureFormat=0, texturePalette=0;
 
+// ClearImage/Rear-plane (FBO)
+GLenum	oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
+GLuint	oglClearImageBuffers[2] = {0};		// 0 - image, 1 - depth
+bool	oglFBOdisabled = false;
+u32		*oglClearImageColor = NULL;
+float	*oglClearImageDepth = NULL;
+u16		*oglClearImageColorTemp = NULL;
+u16		*oglClearImageDepthTemp = NULL;
+u32		oglClearImageScrollOld = 0;
+#define fix2float24(v)    (((float)((s32)(v))) / (float)(1<<24))
+
 //------------------------------------------------------------
 
 #define OGLEXT(x,y) x y = 0;
@@ -130,6 +141,15 @@ OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
+// FBO
+OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
+OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
+OGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC,glRenderbufferStorageEXT);
+OGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC,glFramebufferRenderbufferEXT);
+OGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC,glFramebufferTexture2DEXT);
+OGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC,glCheckFramebufferStatusEXT);
+OGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC,glDeleteFramebuffersEXT);
+OGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT);
 #endif
 
 #if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
@@ -346,6 +366,12 @@ static void OGLReset()
 
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
+
+	memset(oglClearImageColor, 0, 256*192);
+	memset(oglClearImageDepth, 0, 256*192);
+	memset(oglClearImageColorTemp, 0, 256*192*2);
+	memset(oglClearImageDepthTemp, 0, 256*192*2);
+	oglClearImageScrollOld = 0;
 }
 
 //static class OGLTexCacheUser : public ITexCacheUser
@@ -439,6 +465,15 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
+	// FBO
+	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
+	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
+	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC,glRenderbufferStorageEXT);
+	INITOGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC,glFramebufferRenderbufferEXT);
+	INITOGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC,glFramebufferTexture2DEXT);
+	INITOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC,glCheckFramebufferStatusEXT);
+	INITOGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC,glDeleteFramebuffersEXT);
+	INITOGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT);
 #ifdef HAVE_LIBOSMESA
 	glBlendFuncSeparateEXT = NULL;
 #else
@@ -487,6 +522,60 @@ static char OGLInit(void)
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
 	}
 
+	// ClearImage/Rear-plane
+	glGenTextures (2, &oglClearImageTextureID[0]);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+	// FBO
+	oglFBOdisabled = false;
+	glGenFramebuffersEXT(2, &oglClearImageBuffers[0]);
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers[0]);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, oglClearImageTextureID[0], 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers[1]);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, oglClearImageTextureID[1], 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)==GL_FRAMEBUFFER_COMPLETE_EXT)
+		INFO("Successfully created OpenGL Framebuffer object (FBO)\n");
+	else
+	{
+		INFO("Failed to created OpenGL Framebuffer object (FBO): ClearImage disabled\n");
+		oglFBOdisabled = true;
+	}
+
+	oglClearImageColor = new u32[256*192];
+	oglClearImageColorTemp = new u16[256*192];
+	oglClearImageDepth = new float[256*192];
+	oglClearImageDepthTemp = new u16[256*192];
+	memset(oglClearImageColor, 0, 256*192);
+	memset(oglClearImageDepth, 0, 256*192);
+	memset(oglClearImageColorTemp, 0, 256*192);
+	memset(oglClearImageDepthTemp, 0, 256*192);
+	oglClearImageScrollOld = 0;
+
+	glActiveTexture(GL_TEXTURE0);
+
 	OGLReset();
 
 	ENDGL();
@@ -524,6 +613,35 @@ static void OGLClose()
 	}
 	//glDeleteTextures(MAX_TEXTURE, &oglTempTextureID[0]);
 	glDeleteTextures(1, &oglToonTableTextureID);
+
+	// FBO
+	glDeleteTextures(2, &oglClearImageTextureID[0]);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glDeleteFramebuffersEXT(2, &oglClearImageBuffers[0]);
+
+	if (oglClearImageColor)
+	{
+		delete [] oglClearImageColor;
+		oglClearImageColor = NULL;
+	}
+
+	if (oglClearImageDepth)
+	{
+		delete [] oglClearImageDepth;
+		oglClearImageDepth = NULL;
+	}
+
+	if (oglClearImageColorTemp)
+	{
+		delete [] oglClearImageColorTemp;
+		oglClearImageColorTemp = NULL;
+	}
+
+	if (oglClearImageDepthTemp)
+	{
+		delete [] oglClearImageDepthTemp;
+		oglClearImageDepthTemp = NULL;
+	}
 
 	ENDGL();
 }
@@ -817,6 +935,75 @@ static void GL_ReadFramebuffer()
 #endif
 }
 
+// TODO: optimize
+// Tested:	Sonic Chronicles Dark Brotherhood
+//			The Chronicles of Narnia - The Lion, The Witch and The Wardrobe
+//			Harry Potter and the Order of the Phoenix
+static void oglClearImageFBO()
+{
+	//printf("enableClearImage\n");
+	u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
+	u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
+	u16 scroll = T1ReadWord(MMU.ARM9_REG,0x356); //CLRIMAGE_OFFSET
+
+	if ((oglClearImageScrollOld != scroll)||
+		(memcmp(clearImage, oglClearImageColorTemp, 256*192*2) != 0) ||
+			(memcmp(clearDepth, oglClearImageDepthTemp, 256*192*2) != 0))
+	{
+		oglClearImageScrollOld = scroll;
+		memcpy(oglClearImageColorTemp, clearImage, 256*192*2);
+		memcpy(oglClearImageDepthTemp, clearDepth, 256*192*2);
+		
+		u16 xscroll = scroll&0xFF;
+		u16 yscroll = (scroll>>8)&0xFF;
+
+		u32 dd = 256*192-256;
+		for(int iy=0;iy<192;iy++) 
+		{
+			int y = ((iy + yscroll)&255)<<8;
+			for(int ix=0;ix<256;ix++)
+			{
+				int x = (ix + xscroll)&255;
+				int adr = y + x;
+				
+				u16 col = clearImage[adr];
+				oglClearImageColor[dd] = RGB15TO32(col,255*(col>>15));
+				
+				u32 depth = clearDepth[adr] & 0x7FFF;
+				if (depth == 0x7FFF)
+					oglClearImageDepth[dd] = 1.f;
+				else
+					oglClearImageDepth[dd] = fix2float24(gfx3d_extendDepth_15_to_24(depth));
+				dd++;
+			}
+			dd-=256*2;
+		}
+
+		// color
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0,  GL_RGBA, GL_UNSIGNED_BYTE, &oglClearImageColor[0]);
+
+		// depth
+		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, &oglClearImageDepth[0]);
+
+		glActiveTexture(GL_TEXTURE0);
+	}
+	
+	// color
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, oglClearImageBuffers[0]);
+	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+	glBlitFramebufferEXT(0,0,256,192,0,0,256,192,GL_COLOR_BUFFER_BIT,GL_LINEAR);
+
+	// depth
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, oglClearImageBuffers[1]);
+	glBlitFramebufferEXT(0,0,256,192,0,0,256,192,GL_DEPTH_BUFFER_BIT,GL_LINEAR);
+
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+
+}
 
 static void OGLRender()
 {
@@ -846,16 +1033,28 @@ static void OGLRender()
 
 	xglDepthMask(GL_TRUE);
 
-	float clearColor[4] = {
-		((float)(gfx3d.renderState.clearColor&0x1F))/31.0f,
-		((float)((gfx3d.renderState.clearColor>>5)&0x1F))/31.0f,
-		((float)((gfx3d.renderState.clearColor>>10)&0x1F))/31.0f,
-		((float)((gfx3d.renderState.clearColor>>16)&0x1F))/31.0f,
-	};
-	glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
-	glClearDepth(gfx3d.renderState.clearDepth);
 	glClearStencil((gfx3d.renderState.clearColor >> 24) & 0x3F);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	u32 clearFlag = GL_STENCIL_BUFFER_BIT;
+
+	if (!oglFBOdisabled && gfx3d.renderState.enableClearImage)
+			oglClearImageFBO();
+	else
+	{
+		float clearColor[4] = {
+			((float)(gfx3d.renderState.clearColor&0x1F))/31.0f,
+			((float)((gfx3d.renderState.clearColor>>5)&0x1F))/31.0f,
+			((float)((gfx3d.renderState.clearColor>>10)&0x1F))/31.0f,
+			((float)((gfx3d.renderState.clearColor>>16)&0x1F))/31.0f,
+		};
+		glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
+		if (gfx3d.renderState.clearDepth == 0x00FFFFFF)
+			glClearDepth(1.0f);
+		else
+			glClearDepth(fix2float24(gfx3d.renderState.clearDepth));
+		clearFlag |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
+	}
+	
+	glClear(clearFlag);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
