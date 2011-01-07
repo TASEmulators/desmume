@@ -897,7 +897,15 @@ public:
 		}
 		
 		while(verts[0]->y == verts[1]->y && verts[0]->x > verts[1]->x)
+		{
 			rot_verts<type>();
+			// hack for VC++ 2010 (bug in compiler optimization?)
+			// freeze on 3D
+			// TODO: study it
+			#if _MSC_VER == 1600
+				Sleep(0); // nop
+			#endif
+		}
 		
 	}
 
