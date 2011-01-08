@@ -3209,7 +3209,7 @@ TEMPLATE static u32 FASTCALL  OP_BX(const u32 i)
 
 	if (REG_POS(i, 0) == 15)
 	{
-		printf("ARM%c: BX using PC as operand\n", PROCNUM?'7':'9');
+		//printf("ARM%c: BX using PC as operand\n", PROCNUM?'7':'9');
 		//emu_halt();
 	}
 	cpu->CPSR.bits.T = BIT0(tmp);
