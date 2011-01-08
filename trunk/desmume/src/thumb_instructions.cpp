@@ -1135,7 +1135,7 @@ TEMPLATE static  u32 FASTCALL OP_BX_THUMB(const u32 i)
 	//----- the instruction are UNPREDICTABLE (because the value read for R15 has bits[1:0]==0b10).
 	if (Rm == 15)
 	{
-		printf("THUMB%c: BX using PC as operand\n", PROCNUM?'7':'9');
+		//printf("THUMB%c: BX using PC as operand\n", PROCNUM?'7':'9');
 		//emu_halt();
 	}
 	cpu->CPSR.bits.T = BIT0(Rm);
