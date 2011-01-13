@@ -2713,6 +2713,13 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				DISP_FIFOsend(val);
 				return;
 			}
+
+			case REG_GCROMCTRL :
+				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF0000) | val);
+				return;
+			case REG_GCROMCTRL+2 :
+				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
+				return;
 		}
 
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val); 
@@ -3936,7 +3943,13 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				write_timer(ARMCPU_ARM7, timerIndex, val);
 				return;
 			}
-
+			
+			case REG_GCROMCTRL :
+				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF0000) | val);
+				return;
+			case REG_GCROMCTRL+2 :
+				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
+				return;
 		}
 
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
