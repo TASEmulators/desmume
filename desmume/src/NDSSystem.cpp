@@ -38,6 +38,7 @@
 #include "debug.h"
 #include "firmware.h"
 #include "version.h"
+#include "slot1.h"
 
 #include "path.h"
 
@@ -1866,6 +1867,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			if(!NDS_ARM9.waitIRQ&&!nds.freezeBus)
 			{
 				arm9log();
+				debug();
 				arm9 += armcpu_exec<ARMCPU_ARM9>();
 				#ifdef DEVELOPER
 					nds_debug_continuing[0] = false;
@@ -2468,6 +2470,7 @@ void NDS_Reset()
 	Screen_Reset();
 	gfx3d_reset();
 	gpu3D->NDS_3D_Reset();
+	slot1Reset();
 
 	WIFI_Reset();
 
