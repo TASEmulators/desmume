@@ -1,4 +1,4 @@
-/*  Copyright (C) 2010 DeSmuME team
+/*  Copyright (C) 2010-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -17,12 +17,20 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include "slot1.h"
 #include <string>
+
+#include "types.h"
+#include "slot1.h"
+
+#include "emufile.h"
+#include "utils/vfat.h"
 
 extern SLOT1INTERFACE slot1None;
 extern SLOT1INTERFACE slot1Retail;
 extern SLOT1INTERFACE slot1R4;
+
+static EMUFILE* fatImage = NULL;
+static std::string fatDir;
 
 SLOT1INTERFACE slot1List[NDS_SLOT1_COUNT] = {
 		slot1None,
@@ -30,17 +38,36 @@ SLOT1INTERFACE slot1List[NDS_SLOT1_COUNT] = {
 		slot1R4
 };
 
-SLOT1INTERFACE	slot1_device = slot1Retail;			//default for frontends that dont even configure this
-u8				slot1_device_type = NDS_SLOT1_RETAIL;
+SLOT1INTERFACE slot1_device = slot1Retail; //default for frontends that dont even configure this
+u8 slot1_device_type = NDS_SLOT1_RETAIL;
+
+static void scanDir()
+{
+	if(fatDir == "") return;
+	
+	delete fatImage;
+	fatImage = NULL;
+
+	VFAT vfat;
+	if(vfat.build(fatDir.c_str(),16))
+	{
+		fatImage = vfat.detach();
+	}
+}
 
 BOOL slot1Init()
 {
+	scanDir();
 	return slot1_device.init();
 }
 
 void slot1Close()
 {
 	slot1_device.close();
+	
+	//be careful to do this second, maybe the device will write something more
+	delete fatImage;
+	fatImage = NULL;
 }
 
 void slot1Reset()
@@ -56,4 +83,14 @@ BOOL slot1Change(NDS_SLOT1_TYPE changeToType)
 	slot1_device_type = changeToType;
 	slot1_device = slot1List[slot1_device_type];
 	return slot1_device.init();
+}
+
+void slot1SetFatDir(const std::string& dir)
+{
+	fatDir = dir;
+}
+
+EMUFILE* slot1GetFatImage()
+{
+	return fatImage;
 }

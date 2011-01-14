@@ -649,6 +649,12 @@ bool tryPatch(void* data, size_t size)
 		return false;
 	}
 
+	if(memcmp(&pAH[DO_friendlyName],"Default (No interface)",22))
+	{
+		printf("Would have been a candidate for auto-patch DLDI, but there was already a patch installed.");
+		return false;
+	}
+
 	//----should be able to patch OK-----
 
 	addr_t memOffset;			// Offset of DLDI after the file is loaded into memory

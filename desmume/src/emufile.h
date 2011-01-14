@@ -113,6 +113,7 @@ public:
 
 	virtual int ftell() = 0;
 	virtual int size() = 0;
+	virtual void fflush() = 0;
 
 	virtual void truncate(s32 length) = 0;
 };
@@ -244,6 +245,8 @@ public:
 		return pos;
 	}
 
+	virtual void fflush() {}
+
 	void trim()
 	{
 		vec->resize(len);
@@ -319,7 +322,7 @@ public:
 			failbit = true;
 	}
 
-	virtual int fseek(int offset, int origin){ 
+	virtual int fseek(int offset, int origin) { 
 		return ::fseek(fp, offset, origin);
 	}
 
@@ -333,6 +336,10 @@ public:
 		int len = ftell();
 		fseek(oldpos,SEEK_SET);
 		return len;
+	}
+
+	virtual void fflush() {
+		::fflush(fp);
 	}
 
 };

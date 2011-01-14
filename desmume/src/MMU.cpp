@@ -944,7 +944,7 @@ void MMU_Reset()
 	rtcInit();
 	partie = 1;
 	addonsReset();
-	slot1Close();
+	slot1Reset();
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
 

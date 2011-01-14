@@ -454,7 +454,7 @@
 				StructMemberAlignment="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="false"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				RuntimeTypeInfo="false"
 				WarningLevel="3"
@@ -1232,7 +1232,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -1242,7 +1242,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -1252,7 +1252,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -1262,7 +1262,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -1272,7 +1272,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -1282,7 +1282,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag"
+							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
 						/>
@@ -1378,6 +1378,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\utils\emufat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\emufat.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\emufat_types.h"
+				>
+			</File>
+			<File
 				RelativePath="..\utils\guid.cpp"
 				>
 			</File>
@@ -1403,6 +1415,14 @@
 			</File>
 			<File
 				RelativePath="..\utils\valuearray.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\vfat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\vfat.h"
 				>
 			</File>
 			<File
@@ -1612,10 +1632,6 @@
 			Name="addons"
 			>
 			<File
-				RelativePath="..\addons\compactFlash.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\addons\expMemory.cpp"
 				>
 			</File>
@@ -1649,6 +1665,10 @@
 			</File>
 			<File
 				RelativePath="..\addons\slot1_retail.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot2_mpcf.cpp"
 				>
 			</File>
 		</Filter>
@@ -1958,18 +1978,6 @@
 		</File>
 		<File
 			RelativePath="..\driver.h"
-			>
-		</File>
-		<File
-			RelativePath="..\emufat.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\emufat.h"
-			>
-		</File>
-		<File
-			RelativePath="..\emufat_types.h"
 			>
 		</File>
 		<File

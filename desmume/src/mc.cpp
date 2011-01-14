@@ -484,6 +484,7 @@ void BackupDevice::reset_command()
 			default:
 				//the archaic case: write the address and then some modulo-4 number of bytes
 				//why modulo 4? who knows.
+				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				addr_size = autodetect_size & 3;
 				break;
 			}

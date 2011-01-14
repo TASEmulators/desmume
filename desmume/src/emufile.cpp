@@ -61,7 +61,7 @@ size_t EMUFILE_MEMORY::_fread(const void *ptr, size_t bytes){
 
 void EMUFILE_FILE::truncate(s32 length)
 {
-	fflush(fp);
+	::fflush(fp);
 	#ifdef _MSC_VER
 		_chsize(_fileno(fp),length);
 	#else

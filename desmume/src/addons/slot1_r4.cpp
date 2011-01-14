@@ -1,4 +1,4 @@
-/*  Copyright (C) 2010 DeSmuME team
+/*  Copyright (C) 2010-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -17,13 +17,15 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+#include <time.h>
+
 #include "../slot1.h"
 #include "../registers.h"
 #include "../MMU.h"
 #include "../NDSSystem.h"
-#include <time.h>
+#include "../emufile.h"
 
-static FILE *img = NULL;
+static EMUFILE *img = NULL;
 static u32 write_count = 0;
 static u32 write_enabled = 0;
 static void init_r4_flash()
@@ -31,11 +33,11 @@ static void init_r4_flash()
 	srand(time(NULL));
 
 	if (!img)
-		img = fopen("DLDI_R4DS.img", "r+b");
+		img = slot1GetFatImage();
 
 	if(!img)
 	{
-		INFO("DLDI_R4DS.img not found\n");
+		INFO("slot1 fat not successfully mounted\n");
 	}
 }
 
@@ -48,9 +50,13 @@ static BOOL init()
 	return TRUE;
 }
 
-static void reset() {}
+static void reset() {
+	init_r4_flash();
+}
 
-static void close() {}
+static void close() {
+	img = NULL;
+}
 
 
 static void write08(u8 PROCNUM, u32 adr, u8 val) {}
@@ -67,14 +73,14 @@ static void write32_GCROMCTRL(u32 val)
 		case 0xB9:
 		case 0xBA:
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-			fseek(img,card.address,SEEK_SET);
+			img->fseek(card.address,SEEK_SET);
 			break;
 		case 0xBB:
 			write_enabled = 1;
 			write_count = 0x80;
 		case 0xBC:
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-			fseek(img,card.address,SEEK_SET);
+			img->fseek(card.address,SEEK_SET);
 			break;
 	}
 }
@@ -105,8 +111,8 @@ static void write32_GCDATAIN(u32 val)
 		{
 			if(write_count && write_enabled)
 			{
-				fwrite(&val, 1, 4, img);
-				fflush(img);
+				img->fwrite(&val, 4);
+				img->fflush();
 				write_count--;
 			}
 			break;
@@ -186,7 +192,7 @@ static u32 read32_GCDATAIN()
 			break;
 		case 0xBA:
 			//INFO("Read from sd at sector %08X at adr %08X ",card.address/512,ftell(img));
-			fread(&val, 1, 4, img);
+			img->fread(&val, 4);
 			//INFO("val %08X\n",val);
 			break;
 

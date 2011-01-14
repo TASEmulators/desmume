@@ -1,6 +1,4 @@
-/*  commandline.cpp
-
-    Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -52,6 +50,7 @@ CommandLine::CommandLine()
 , _rigorous_timing(0)
 , _advanced_timing(-1)
 , _slot1(NULL)
+, _slot1_fat_dir(NULL)
 , depth_threshold(-1)
 , load_slot(-1)
 , arm9_gdb_port(0)
@@ -94,6 +93,7 @@ void CommandLine::loadCommonOptions()
 		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
 		{ "advanced-timing", 0, 0, G_OPTION_ARG_INT, &_advanced_timing, "Use advanced BUS-level timing (default 1)", "ADVANCED_TIMING"},
 		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
+		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
@@ -119,6 +119,7 @@ bool CommandLine::parse(int argc,char **argv)
 		return false;
 	}
 
+	if(_slot1_fat_dir) slot1_fat_dir = _slot1_fat_dir;
 	if(_slot1) slot1 = _slot1;
 	if(slot1.size() != 0) str_lcase((char*)&slot1[0]);
 	if(_play_movie_file) play_movie_file = _play_movie_file;
@@ -227,10 +228,12 @@ void CommandLine::process_addonCommands()
 		is_cflash_configured = true;
     }
 
+	if(slot1_fat_dir != "")
+		slot1SetFatDir(slot1_fat_dir);
+
 	if(slot1 == "retail")
 		slot1Change(NDS_SLOT1_RETAIL);
 	else if(slot1 == "r4")
 		slot1Change(NDS_SLOT1_R4);
-
 }
 

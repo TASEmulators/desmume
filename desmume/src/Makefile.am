@@ -19,8 +19,9 @@ libdesmume_a_SOURCES = \
 	common.cpp common.h \
 	debug.cpp debug.h \
 	Disassembler.cpp Disassembler.h \
-	emufat.h emufat.cpp emufat_types.h emufile.h emufile.cpp emufile_types.h fat.h FIFO.cpp FIFO.h \
+	emufile.h emufile.cpp emufile_types.h fat.h FIFO.cpp FIFO.h \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
+	fs.h \
 	GPU_osd.h \
 	mem.h mc.cpp mc.h \
 	path.cpp path.h \
@@ -44,10 +45,12 @@ libdesmume_a_SOURCES = \
 	PACKED.h PACKED_END.h \
 	utils/datetime.cpp utils/datetime.h \
 	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
+	utils/emufat.cpp utils/emufat.h utils/emufat_types.h \
 	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	utils/task.cpp utils/task.h \
+	utils/vfat.h utils/vfat.cpp \
 	utils/dlditool.cpp \
 	utils/libfat/bit_ops.h \
 	utils/libfat/cache.cpp \
@@ -77,7 +80,7 @@ libdesmume_a_SOURCES = \
 	utils/libfat/partition.cpp \
 	utils/libfat/partition.h \
 	addons.cpp addons.h \
-	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp addons/piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp fs.h \
+	addons/slot2_mpcf.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp addons/expMemory.cpp addons/piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
