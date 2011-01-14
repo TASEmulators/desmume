@@ -117,7 +117,7 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
                     ofn.lStructSize = sizeof(ofn);
                     ofn.hwndOwner = dialog;
 
-					const char *fileFilter = "Compact Flash image (*.img)\0*.img\0Any file (*.*)\0*.*\0";
+					const char *fileFilter = "FAT image (*.img)\0*.img\0Any file (*.*)\0*.*\0";
 					
                     ofn.lpstrFilter = fileFilter;
                     ofn.nFilterIndex = 1;
@@ -144,7 +144,7 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					bp.hwndOwner=dialog;
 					bp.pidlRoot=NULL;
 					bp.pszDisplayName=NULL;
-					bp.lpszTitle="Select directory for Compact Flash";
+					bp.lpszTitle="Select directory for FAT image building";
 					bp.ulFlags=BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
 					bp.lpfn=NULL;
 	

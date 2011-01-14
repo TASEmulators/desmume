@@ -432,6 +432,7 @@
     <ClCompile Include="..\addons\slot1_none.cpp" />
     <ClCompile Include="..\addons\slot1_r4.cpp" />
     <ClCompile Include="..\addons\slot1_retail.cpp" />
+    <ClCompile Include="..\addons\slot2_mpcf.cpp" />
     <ClCompile Include="..\aggdraw.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
     <ClCompile Include="..\armcpu.cpp" />
@@ -447,7 +448,6 @@
     <ClCompile Include="..\debug.cpp" />
     <ClCompile Include="..\Disassembler.cpp" />
     <ClCompile Include="..\driver.cpp" />
-    <ClCompile Include="..\emufat.cpp" />
     <ClCompile Include="..\emufile.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
     <ClCompile Include="..\firmware.cpp" />
@@ -475,6 +475,7 @@
     <ClCompile Include="..\thumb_instructions.cpp" />
     <ClCompile Include="..\utils\datetime.cpp" />
     <ClCompile Include="..\utils\dlditool.cpp" />
+    <ClCompile Include="..\utils\emufat.cpp" />
     <ClCompile Include="..\utils\libfat\cache.cpp" />
     <ClCompile Include="..\utils\libfat\directory.cpp" />
     <ClCompile Include="..\utils\libfat\disc.cpp" />
@@ -486,9 +487,9 @@
     <ClCompile Include="..\utils\libfat\libfat_public_api.cpp" />
     <ClCompile Include="..\utils\libfat\lock.cpp" />
     <ClCompile Include="..\utils\libfat\partition.cpp" />
+    <ClCompile Include="..\utils\vfat.cpp" />
     <ClCompile Include="..\version.cpp" />
     <ClCompile Include="..\wifi.cpp" />
-    <ClCompile Include="..\addons\compactFlash.cpp" />
     <ClCompile Include="..\addons\expMemory.cpp" />
     <ClCompile Include="..\addons\gbagame.cpp" />
     <ClCompile Include="..\addons\guitarGrip.cpp" />
@@ -574,7 +575,6 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
-    <ClInclude Include="..\emufat.h" />
     <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\fat.h" />
@@ -609,6 +609,8 @@
     <ClInclude Include="..\thumb_instructions.h" />
     <ClInclude Include="..\types.h" />
     <ClInclude Include="..\utils\datetime.h" />
+    <ClInclude Include="..\utils\emufat.h" />
+    <ClInclude Include="..\utils\emufat_types.h" />
     <ClInclude Include="..\utils\libfat\bit_ops.h" />
     <ClInclude Include="..\utils\libfat\cache.h" />
     <ClInclude Include="..\utils\libfat\common.h" />
@@ -625,6 +627,7 @@
     <ClInclude Include="..\utils\libfat\lock.h" />
     <ClInclude Include="..\utils\libfat\mem_allocate.h" />
     <ClInclude Include="..\utils\libfat\partition.h" />
+    <ClInclude Include="..\utils\vfat.h" />
     <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />
     <ClInclude Include="..\utils\xstring.h" />

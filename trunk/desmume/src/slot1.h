@@ -20,9 +20,12 @@
 #ifndef __SLOT1_H__
 #define __SLOT1_H__
 
+#include <string>
 #include "common.h"
 #include "types.h"
 #include "debug.h"
+
+class EMUFILE;
 
 struct SLOT1INTERFACE
 {
@@ -65,10 +68,11 @@ enum NDS_SLOT1_TYPE
 	NDS_SLOT1_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };
 
-extern BOOL slot1Init();
-extern void slot1Close();
-extern void slot1Reset();
-extern BOOL slot1Change(NDS_SLOT1_TYPE type);				// change current adddon
-
+BOOL slot1Init();
+void slot1Close();
+void slot1Reset();
+BOOL slot1Change(NDS_SLOT1_TYPE type);				// change current adddon
+void slot1SetFatDir(const std::string& dir);
+EMUFILE* slot1GetFatImage();
 
 #endif //__ADDONS_H__

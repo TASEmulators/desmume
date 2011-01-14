@@ -1,6 +1,4 @@
-/*  commandline.h
-
-    Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -50,6 +48,7 @@ public:
 	std::string cflash_path;
 	std::string gbaslot_rom;
 	std::string slot1;
+	std::string slot1_fat_dir;
 #ifndef _MSC_VER
 	int disable_sound;
 	int disable_limiter;
@@ -91,6 +90,7 @@ private:
 	int _rigorous_timing;
 	int _advanced_timing;
 	char* _slot1;
+	char *_slot1_fat_dir;
 };
 
 #endif
