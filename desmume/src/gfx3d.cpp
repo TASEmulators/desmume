@@ -2823,7 +2823,7 @@ bool gfx3d_IsLinePoly(POLY *poly)
 		for(int j = i + 1; j < type; j++)
 		{
 			vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-			if (vert1->x == vert2->x && vert1->y == vert2->y)
+			if (vert1->x == vert2->x && vert1->y == vert2->y && vert1->z == vert2->z)
 			{
 				duplicatedVert[j] = true;
 			}
@@ -2854,6 +2854,11 @@ bool gfx3d_IsLinePoly(POLY *poly)
 		{
 			horizontalLine = false;
 		}
+
+		//the Z is different, and this method isn't even meant to catch that
+		if (vert1->coord[2] != vert2->coord[2])
+			return false;
+
 	}
 	if (horizontalLine || verticalLine)
 		return true;
