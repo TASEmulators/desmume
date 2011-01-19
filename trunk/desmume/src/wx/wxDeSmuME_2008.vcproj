@@ -718,14 +718,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\emufat.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\emufat.h"
-				>
-			</File>
-			<File
 				RelativePath="..\emufile.cpp"
 				>
 			</File>
@@ -997,10 +989,6 @@
 				Name="addons"
 				>
 				<File
-					RelativePath="..\addons\compactFlash.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\addons\expMemory.cpp"
 					>
 				</File>
@@ -1034,6 +1022,10 @@
 				</File>
 				<File
 					RelativePath="..\addons\slot1_retail.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot2_mpcf.cpp"
 					>
 				</File>
 			</Filter>
@@ -1073,6 +1065,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\utils\emufat.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\emufat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\emufat_types.h"
+					>
+				</File>
+				<File
 					RelativePath="..\utils\guid.cpp"
 					>
 				</File>
@@ -1098,6 +1102,14 @@
 				</File>
 				<File
 					RelativePath="..\utils\valuearray.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\vfat.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\vfat.h"
 					>
 				</File>
 				<File
