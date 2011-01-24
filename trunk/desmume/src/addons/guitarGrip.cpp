@@ -30,22 +30,22 @@ static void guitarGrip_reset(void)
 }
 static void guitarGrip_close(void) {}
 static void guitarGrip_config(void) {}
-static void guitarGrip_write08(u32 adr, u8 val) {}
-static void guitarGrip_write16(u32 adr, u16 val) {}
-static void guitarGrip_write32(u32 adr, u32 val) {}
-static u8   guitarGrip_read08(u32 adr)
+static void guitarGrip_write08(u32 procnum, u32 adr, u8 val) {}
+static void guitarGrip_write16(u32 procnum, u32 adr, u16 val) {}
+static void guitarGrip_write32(u32 procnum, u32 adr, u32 val) {}
+static u8   guitarGrip_read08(u32 procnum, u32 adr)
 {
 	//INFO("GuitarGrip: read 08 at 0x%08X\n", adr);
 	if (adr == 0x0A000000) return (~guitarKeyStatus);
 	else if(adr&1) return 0xFF;
 	else return 0xF9;
 }
-static u16  guitarGrip_read16(u32 adr)
+static u16  guitarGrip_read16(u32 procnum, u32 adr)
 {
 	//INFO("GuitarGrip: read 16 at 0x%08X\n", adr);
 	return 0xF9FF;
 }
-static u32  guitarGrip_read32(u32 adr)
+static u32  guitarGrip_read32(u32 procnum, u32 adr)
 {
 	//INFO("GuitarGrip: read 32 at 0x%08X\n", adr);
 	return (0xF9FFF9FF);

@@ -292,32 +292,32 @@ static void config(void)
 {
 }
 
-static void write08(u32 adr, u8 val)
+static void write08(u32 procnum, u32 adr, u8 val)
 {
 	cflash_write(adr, val);
 }
 
-static void write16(u32 adr, u16 val)
+static void write16(u32 procnum, u32 adr, u16 val)
 {
 	cflash_write(adr, val);
 }
 
-static void write32(u32 adr, u32 val)
+static void write32(u32 procnum, u32 adr, u32 val)
 {
 	cflash_write(adr, val);
 }
 
-static u8 read08(u32 adr)
+static u8 read08(u32 procnum, u32 adr)
 {
 	return (cflash_read(adr));
 }
 
-static u16 read16(u32 adr)
+static u16 read16(u32 procnum, u32 adr)
 {
 	return (cflash_read(adr));
 }
 
-static u32 read32(u32 adr)
+static u32 read32(u32 procnum, u32 adr)
 {
 	return (cflash_read(adr));
 }

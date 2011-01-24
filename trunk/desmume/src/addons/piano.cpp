@@ -31,20 +31,20 @@ static void piano_reset(void)
 
 static void piano_close(void) {}
 static void piano_config(void) {}
-static void piano_write08(u32 adr, u8 val)
+static void piano_write08(u32 procnum, u32 adr, u8 val)
 {
 	//INFO("piano: write 08 at 0x%08X = %02X\n", adr, val);
 }
-static void piano_write16(u32 adr, u16 val)
+static void piano_write16(u32 procnum, u32 adr, u16 val)
 {
 	//INFO("piano: write 16 at 0x%08X = %04X\n", adr, val);
 }
-static void piano_write32(u32 adr, u32 val)
+static void piano_write32(u32 procnum, u32 adr, u32 val)
 {
 	//INFO("piano: write 32 at 0x%08X = %08X\n", adr, val);
 }
 extern int currFrameCounter;
-static u8   piano_read08(u32 adr)
+static u8   piano_read08(u32 procnum, u32 adr)
 {
 	//printf("piano: read 08 at 0x%08X\n", adr);
 
@@ -78,12 +78,12 @@ static u8   piano_read08(u32 adr)
 	if(adr&1) return 0x07;
 	else return 0x00;
 }
-static u16  piano_read16(u32 adr)
+static u16  piano_read16(u32 procnum, u32 adr)
 {
 	//printf("piano: read 16 at 0x%08X\n", adr);
 	return 0x07FF;
 }
-static u32  piano_read32(u32 adr)
+static u32  piano_read32(u32 procnum, u32 adr)
 {
 	//printf("piano: read 32 at 0x%08X\n", adr);
 	return 0x07FF07FF;

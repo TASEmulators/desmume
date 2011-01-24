@@ -168,6 +168,8 @@ struct NDSSystem
 	u16 touchY;
 	BOOL isTouch;
 	u16 pad;
+	
+	u16 paddle;
 
 	u8 *FW_ARM9BootCode;
 	u8 *FW_ARM7BootCode;
@@ -594,6 +596,8 @@ extern int lastLag, TotalLagFrames;
 void MovieSRAM();
 
 void ClearAutoHold(void);
+
+bool ValidateSlot2Access(u32 procnum, u32 demandSRAMSpeed, u32 demand1stROMSpeed, u32 demand2ndROMSpeed, int clockbits);
 
 #endif
 

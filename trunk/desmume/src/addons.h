@@ -42,14 +42,14 @@ struct ADDONINTERFACE
 	void (*config)(void);
 
 	//called when the emulator write to addon
-	void (*write08)(u32 adr, u8 val);
-	void (*write16)(u32 adr, u16 val);
-	void (*write32)(u32 adr, u32 val);
+	void (*write08)(u32 procnum, u32 adr, u8 val);
+	void (*write16)(u32 procnum, u32 adr, u16 val);
+	void (*write32)(u32 procnum, u32 adr, u32 val);
 
 	//called when the emulator read from addon
-	u8  (*read08)(u32 adr);
-	u16 (*read16)(u32 adr);
-	u32 (*read32)(u32 adr);
+	u8  (*read08)(u32 procnum, u32 adr);
+	u16 (*read16)(u32 procnum, u32 adr);
+	u32 (*read32)(u32 procnum, u32 adr);
 	
 	//called when the user get info about addon pak (description)
 	void (*info)(char *info);
@@ -64,6 +64,7 @@ enum NDS_ADDON_TYPE
 	NDS_ADDON_GUITARGRIP,	// Guitar Grip
 	NDS_ADDON_EXPMEMORY,	// Memory Expansion 
 	NDS_ADDON_PIANO,		// Piano
+  NDS_ADDON_PADDLE,
 	//NDS_ADDON_EXTERNALMIC,
 	NDS_ADDON_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };

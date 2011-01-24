@@ -217,6 +217,19 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 	return FALSE;
 }
 
+INT_PTR CALLBACK GbaSlotPaddle(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	switch(msg)
+	{
+		case WM_INITDIALOG: 
+		{
+			_OKbutton = TRUE;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 INT_PTR CALLBACK GbaSlotRumblePak(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
@@ -436,7 +449,8 @@ u32		GBAslot_IDDs[NDS_ADDON_COUNT] = {
 	IDD_GBASLOT_GBAGAME,
 	IDD_GBASLOT_GUITARGRIP,
 	IDD_GBASLOT_NONE, //expmem
-	IDD_GBASLOT_PIANO
+	IDD_GBASLOT_PIANO,
+  IDD_GBASLOT_NONE, //padd;e
 };
 
 DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
@@ -446,7 +460,8 @@ DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
 	GbaSlotGBAgame,
 	GbaSlotGuitarGrip,
 	GbaSlotNone,  //expmem
-	GbaSlotPiano
+	GbaSlotPiano,
+  GbaSlotPaddle
 };
 
 
@@ -566,6 +581,12 @@ void GBAslotDialog(HWND hwnd)
 				needReset = true;
 				break;
 			case NDS_ADDON_RUMBLEPAK:
+				if (temp_type != addon_type)
+					needReset = true;
+				else
+					needReset = false;
+				break;
+			case NDS_ADDON_PADDLE:
 				if (temp_type != addon_type)
 					needReset = true;
 				else

@@ -433,6 +433,7 @@
     <ClCompile Include="..\addons\slot1_r4.cpp" />
     <ClCompile Include="..\addons\slot1_retail.cpp" />
     <ClCompile Include="..\addons\slot2_mpcf.cpp" />
+    <ClCompile Include="..\addons\slot2_paddle.cpp" />
     <ClCompile Include="..\aggdraw.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
     <ClCompile Include="..\armcpu.cpp" />
