@@ -2773,6 +2773,8 @@ int _main()
 		break;
 	case NDS_ADDON_PIANO:
 		break;
+	case NDS_ADDON_PADDLE:
+		break;
 	default:
 		addon_type = NDS_ADDON_NONE;
 		break;

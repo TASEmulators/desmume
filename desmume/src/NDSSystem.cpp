@@ -2371,6 +2371,7 @@ void NDS_Reset()
 	nds.old = 0;
 	nds.touchX = nds.touchY = 0;
 	nds.isTouch = 0;
+	nds.paddle = 0;
 	nds.debugConsole = CommonSettings.DebugConsole;
 	nds.ensataEmulation = CommonSettings.EnsataEmulation;
 	nds.ensataHandshake = ENSATA_HANDSHAKE_none;
@@ -2826,6 +2827,12 @@ static void NDS_applyFinalInput()
 		((input.buttons.W ? 1 : 0) << 2)|
 		((input.buttons.E ? 1 : 0) << 1);
 
+	//these values are arbitrarily chosen to make arkanoid paddle control act similarly to its dpad controls
+	if(input.buttons.R)
+		nds.paddle += 5;
+	else if(input.buttons.L)
+		nds.paddle -= 5;
+
 	// TODO: low power IRQ
 }
 
@@ -2876,6 +2883,35 @@ void emu_halt() {
 		INFO("ARM7 halted\n");
 	}
 #endif
+}
+
+//returns true if exmemcnt specifies satisfactory parameters for the device, which calls this function
+bool ValidateSlot2Access(u32 procnum, u32 demandSRAMSpeed, u32 demand1stROMSpeed, u32 demand2ndROMSpeed, int clockbits)
+{
+	static const u32 _sramSpeeds[] = {10,8,6,18};
+	static const u32 _rom1Speeds[] = {10,8,6,18};
+	static const u32 _rom2Speeds[] = {6,4};
+	u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[procnum][0x40], 0x204);
+	u16 exmemcnt9 = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+	u32 arm7access = (exmemcnt9 & EXMEMCNT_MASK_SLOT2_ARM7);
+	u32 sramSpeed = _sramSpeeds[(exmemcnt & EXMEMCNT_MASK_SLOT2_SRAM_TIME)];
+	u32 romSpeed1 = _rom1Speeds[(exmemcnt & EXMEMCNT_MASK_SLOT2_ROM_1ST_TIME)>>2];
+	u32 romSpeed2 = _rom2Speeds[(exmemcnt & EXMEMCNT_MASK_SLOT2_ROM_2ND_TIME)>>4];
+	u32 curclockbits = (exmemcnt & EXMEMCNT_MASK_SLOT2_CLOCKRATE)>>5;
+	
+	if(procnum==ARMCPU_ARM9 && arm7access) return false;
+	if(procnum==ARMCPU_ARM7 && !arm7access) return false;
+
+	//what we're interested in here is whether the rom/ram are too low -> too fast. then accesses won't have enough time to work.
+	//i'm not sure if this gives us enough flexibility, but it is good enough for now.
+	//should make the arguments to this function bitmasks later if we need better.
+	if(sramSpeed < demandSRAMSpeed) return false;
+	if(romSpeed1 < demand1stROMSpeed) return false;
+	if(romSpeed2 < demand2ndROMSpeed) return false;
+
+	if(clockbits != -1 && clockbits != (int)curclockbits) return false;
+
+	return true;
 }
 
 //these templates needed to be instantiated manually

@@ -367,7 +367,7 @@ static void GBAgame_close(void)
 
 static void GBAgame_config(void) {}
 
-static void GBAgame_write08(u32 adr, u8 val)
+static void GBAgame_write08(u32 procnum, u32 adr, u8 val)
 {
 	//INFO("GBAgame: write08 at 0x%08X val=0x%02X\n", adr, val);
 	if ( (adr >= 0x0A000000) && (adr < 0x0A010000) )
@@ -385,17 +385,17 @@ static void GBAgame_write08(u32 adr, u8 val)
 		//return (u8)T1ReadByte(saveData, (adr - 0x0A000000));
 	}
 }
-static void GBAgame_write16(u32 adr, u16 val)
+static void GBAgame_write16(u32 procnum, u32 adr, u16 val)
 {
 	//INFO("GBAgame: write16 at 0x%08X val=0x%04X\n", adr, val); 
 }
 
-static void GBAgame_write32(u32 adr, u32 val)
+static void GBAgame_write32(u32 procnum, u32 adr, u32 val)
 {
 	//INFO("GBAgame: write32 at 0x%08X val=0x%08X\n", adr, val);
 }
 
-static u8   GBAgame_read08(u32 adr)
+static u8   GBAgame_read08(u32 procnum, u32 adr)
 { 
 	//INFO("GBAgame: read08 at 0x%08X value 0x%02X\n", adr, (u8)T1ReadByte(GBArom, (adr - 0x08000000)));
 
@@ -423,7 +423,7 @@ static u8   GBAgame_read08(u32 adr)
 	return 0xFF;
 }
 
-static u16  GBAgame_read16(u32 adr)
+static u16  GBAgame_read16(u32 procnum, u32 adr)
 { 
 	//INFO("GBAgame: read16 at 0x%08X value 0x%04X\n", adr, (u16)T1ReadWord(GBArom, (adr - 0x08000000)));
 	
@@ -438,7 +438,7 @@ static u16  GBAgame_read16(u32 adr)
 	return 0xFFFF;
 }
 
-static u32  GBAgame_read32(u32 adr)
+static u32  GBAgame_read32(u32 procnum, u32 adr)
 { 
 	//INFO("GBAgame: read32 at 0x%08X value 0x%08X\n", adr, (u32)T1ReadLong(GBArom, (adr - 0x08000000)));
 

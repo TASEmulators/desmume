@@ -39,11 +39,11 @@ static void RumblePak_close(void) {}
 
 static void RumblePak_config(void) {}
 
-static void RumblePak_write08(u32 adr, u8 val)
+static void RumblePak_write08(u32 procnum, u32 adr, u8 val)
 {
 }
 
-static void RumblePak_write16(u32 adr, u16 val)
+static void RumblePak_write16(u32 procnum, u32 adr, u16 val)
 {
 	if (!FeedbackON) return;
 
@@ -58,22 +58,22 @@ static void RumblePak_write16(u32 adr, u16 val)
 		FeedbackON(val);
 }
 
-static void RumblePak_write32(u32 adr, u32 val)
+static void RumblePak_write32(u32 procnum, u32 adr, u32 val)
 {
 }
 
-static u8   RumblePak_read08(u32 adr)
+static u8   RumblePak_read08(u32 procnum, u32 adr)
 {
 	if(adr&1) return 0xFF;
 	else return 0xFD;
 }
 
-static u16  RumblePak_read16(u32 adr)
+static u16  RumblePak_read16(u32 procnum, u32 adr)
 {
 	return 0xFFFD;
 }
 
-static u32  RumblePak_read32(u32 adr)
+static u32  RumblePak_read32(u32 procnum, u32 adr)
 {
 	return 0xFFFDFFFD;
 }

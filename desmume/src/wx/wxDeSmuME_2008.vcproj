@@ -1028,6 +1028,10 @@
 					RelativePath="..\addons\slot2_mpcf.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\addons\slot2_paddle.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="gdbstub"

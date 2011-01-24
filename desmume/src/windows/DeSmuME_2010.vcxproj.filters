@@ -441,6 +441,9 @@
     <ClCompile Include="..\utils\emufat.cpp">
       <Filter>Core\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\addons\slot2_paddle.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">

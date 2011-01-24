@@ -51,7 +51,7 @@ static void ExpMemory_close(void)
 	}
 }
 static void ExpMemory_config(void) {}
-static void ExpMemory_write08(u32 adr, u8 val) 
+static void ExpMemory_write08(u32 procnum, u32 adr, u8 val) 
 {
 	if (adr >= 0x09000000)
 	{
@@ -61,7 +61,7 @@ static void ExpMemory_write08(u32 adr, u8 val)
 	}
 	EXPINFO("ExpMemory: write 08 at 0x%08X = 0x%02X\n", adr, val);
 }
-static void ExpMemory_write16(u32 adr, u16 val) 
+static void ExpMemory_write16(u32 procnum, u32 adr, u16 val) 
 {
 	if (adr >= 0x09000000)
 	{
@@ -71,7 +71,7 @@ static void ExpMemory_write16(u32 adr, u16 val)
 	}
 	EXPINFO("ExpMemory: write 16 at 0x%08X = 0x%04X\n", adr, val);
 }
-static void ExpMemory_write32(u32 adr, u32 val) 
+static void ExpMemory_write32(u32 procnum, u32 adr, u32 val) 
 {
 	
 	if (adr >= 0x09000000)
@@ -90,7 +90,7 @@ static u8 header_0x00B0[] =
   0xFF, 0xFF, 0xFF, 0x7F
 };
 
-static u8 ExpMemory_read08(u32 adr)
+static u8 ExpMemory_read08(u32 procnum, u32 adr)
 {
 	EXPINFO("ExpMemory: read 08 at 0x%08X\n", adr);
 	
@@ -106,7 +106,7 @@ static u8 ExpMemory_read08(u32 adr)
 
 	return 0xFF;
 }
-static u16 ExpMemory_read16(u32 adr)
+static u16 ExpMemory_read16(u32 procnum, u32 adr)
 {
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadWord(header_0x00B0,adr-0x080000B0);
@@ -124,7 +124,7 @@ static u16 ExpMemory_read16(u32 adr)
 	EXPINFO("ExpMemory: read 16 at 0x%08X\n", adr);
 	return 0xFFFF;
 }
-static u32 ExpMemory_read32(u32 adr)
+static u32 ExpMemory_read32(u32 procnum, u32 adr)
 {
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadLong(header_0x00B0,adr-0x080000B0);

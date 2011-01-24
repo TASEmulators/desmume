@@ -2026,7 +2026,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
-		addon.write08(adr, val);
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
+		{} //prohibited
+		else addon.write08(ARMCPU_ARM9, adr, val);
 		return;
 	}
 
@@ -2295,7 +2298,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
-		addon.write16(adr, val);
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
+		{} //prohibited
+		else addon.write16(ARMCPU_ARM9, adr, val);
 		return;
 	}
 
@@ -2750,7 +2756,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
-		addon.write32(adr, val);
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
+		{} //prohibited
+		else addon.write32(ARMCPU_ARM9, adr, val);
 		return;
 	}
 
@@ -3179,7 +3188,12 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return addon.read08(adr);
+	{
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
+			return 0; //prohibited
+		else return addon.read08(ARMCPU_ARM9, adr);
+	}
 
 	if (adr >> 24 == 4)
 	{	//Address is an IO register
@@ -3266,7 +3280,12 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return addon.read16(adr);
+	{
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
+			return 0; //prohibited
+		else return addon.read16(ARMCPU_ARM9, adr);
+	}
 
 	if (adr >> 24 == 4)
 	{
@@ -3360,7 +3379,12 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return addon.read32(adr);
+	{
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
+		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
+			return 0; //prohibited
+		else return addon.read32(ARMCPU_ARM9, adr);
+	}
 
 	// Address is an IO register
 	if((adr >> 24) == 4)
@@ -3486,7 +3510,10 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
-		addon.write08(adr, val);
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
+		{} //prohibited
+		else addon.write08(ARMCPU_ARM7,adr, val);
 		return;
 	}
 
@@ -3611,7 +3638,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
-		addon.write16(adr, val);
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
+		{} //prohibited
+		else addon.write16(ARMCPU_ARM7,adr, val);
 		return;
 	}
 
@@ -3974,7 +4004,10 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
-		addon.write32(adr, val);
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
+		{} //prohibited
+		else addon.write32(ARMCPU_ARM7,adr, val);
 		return;
 	}
 
@@ -4086,7 +4119,12 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	}
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return addon.read08(adr);
+	{
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
+			return 0; //prohibited
+		else return addon.read08(ARMCPU_ARM7,adr);
+	}
 
     if ((adr>=0x04000400)&&(adr<0x04000520))
     {
@@ -4141,7 +4179,12 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 		return WIFI_read16(adr) ;
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return addon.read16(adr);
+	{
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
+			return 0; //prohibited
+		else return addon.read16(ARMCPU_ARM7,adr);
+	}
 
     if ((adr>=0x04000400)&&(adr<0x04000520))
     {
@@ -4230,7 +4273,12 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return addon.read32(adr);
+	{
+		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
+			return 0; //prohibited
+		else return addon.read32(ARMCPU_ARM7,adr);
+	}
 
     if ((adr>=0x04000400)&&(adr<0x04000520))
     {
