@@ -2841,8 +2841,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x40005A:
 			case 0x40005B:
 			case 0x40005C:		// Individual Commands
-				//if (gxFIFO.size > 254)
-				//	nds.freezeBus = TRUE;
+				if (gxFIFO.size > 254)
+					nds.freezeBus = TRUE;
 
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommand(adr, val);
