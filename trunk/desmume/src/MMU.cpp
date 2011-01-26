@@ -2184,17 +2184,17 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				break;
 
 			case REG_DISPA_BLDALPHA: 	 
-				MainScreen.gpu->setBLDALPHA_EVB(val);
+				MainScreen.gpu->setBLDALPHA_EVA(val);
 				break;
 			case REG_DISPA_BLDALPHA+1:
-				MainScreen.gpu->setBLDALPHA_EVA(val);
+				MainScreen.gpu->setBLDALPHA_EVB(val);
 				break;
 
 			case REG_DISPB_BLDALPHA:
-				SubScreen.gpu->setBLDALPHA_EVB(val);
+				SubScreen.gpu->setBLDALPHA_EVA(val);
 				break;
 			case REG_DISPB_BLDALPHA+1:
-				SubScreen.gpu->setBLDALPHA_EVA(val);
+				SubScreen.gpu->setBLDALPHA_EVB(val);
 				break;
 
 			case REG_DISPA_BLDY: 	 
@@ -2841,8 +2841,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x40005A:
 			case 0x40005B:
 			case 0x40005C:		// Individual Commands
-				if (gxFIFO.size > 254)
-					nds.freezeBus = TRUE;
+				//if (gxFIFO.size > 254)
+				//	nds.freezeBus = TRUE;
 
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommand(adr, val);
