@@ -23,4 +23,5 @@
 
 extern BOOL CALLBACK AboutBox_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
 
+
 #endif
