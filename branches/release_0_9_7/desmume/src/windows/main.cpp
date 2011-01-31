@@ -3047,7 +3047,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	g_thread_init (NULL);
 	hAppInst=hThisInstance;
-	OpenConsole();			// Init debug console
+	//OpenConsole();			// Init debug console
 
 	int ret = _main();
 
