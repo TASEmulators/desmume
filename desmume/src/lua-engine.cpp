@@ -1755,7 +1755,7 @@ DEFINE_LUA_FUNCTION(memory_readword, "address")
 	int address = luaL_checkinteger(L,1);
 	unsigned short value = (unsigned short)(_MMU_read16<ARMCPU_ARM9>(address) & 0xFFFF);
 	lua_settop(L,0);
-	lua_pushinteger(L, value);
+	lua_pushnumber(L, value); // can't use pushinteger in this case (out of range)
 	return 1;
 }
 DEFINE_LUA_FUNCTION(memory_readwordsigned, "address")
