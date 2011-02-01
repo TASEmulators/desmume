@@ -44,7 +44,7 @@ static void piano_write32(u32 procnum, u32 adr, u32 val)
 	//INFO("piano: write 32 at 0x%08X = %08X\n", adr, val);
 }
 extern int currFrameCounter;
-static u8   piano_read08(u32 procnum, u32 adr)
+static u8 piano_read08(u32 procnum, u32 adr)
 {
 	//printf("piano: read 08 at 0x%08X\n", adr);
 
@@ -72,18 +72,22 @@ static u8   piano_read08(u32 procnum, u32 adr)
 
 	//LOG("PIANO: %04X\n",pianoKeyStatus);
 
-	if(adr == 0x09FFFFFE) return ~(pianoKeyStatus&0xFF);
-	if(adr == 0x09FFFFFF) return ~((pianoKeyStatus>>8)&0xFF);
+	if(adr == 0x09FFFFFE) return (~(pianoKeyStatus&0xFF));
+	if(adr == 0x09FFFFFF) return (~((pianoKeyStatus>>8)&0xFF))&~(0x18);
 
 	if(adr&1) return 0x07;
 	else return 0x00;
 }
-static u16  piano_read16(u32 procnum, u32 adr)
+static u16 piano_read16(u32 procnum, u32 adr)
 {
 	//printf("piano: read 16 at 0x%08X\n", adr);
-	return 0x07FF;
+	if(adr != 0x09FFFFFE)
+		return 0x07FF;
+	u16 ret = piano_read08(procnum,0x09FFFFFE)|(piano_read08(procnum,0x09FFFFFF)<<8);
+	//return ( (PIANO_PAK & 0x1800 ) == 0 );
+	return ret;
 }
-static u32  piano_read32(u32 procnum, u32 adr)
+static u32 piano_read32(u32 procnum, u32 adr)
 {
 	//printf("piano: read 32 at 0x%08X\n", adr);
 	return 0x07FF07FF;
