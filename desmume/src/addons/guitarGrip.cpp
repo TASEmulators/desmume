@@ -37,8 +37,8 @@ static u8   guitarGrip_read08(u32 procnum, u32 adr)
 {
 	//INFO("GuitarGrip: read 08 at 0x%08X\n", adr);
 	if (adr == 0x0A000000) return (~guitarKeyStatus);
-	else if(adr&1) return 0xFF;
-	else return 0xF9;
+	else if(adr&1) return 0xF9;
+	else return 0xFF;
 }
 static u16  guitarGrip_read16(u32 procnum, u32 adr)
 {
