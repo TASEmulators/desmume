@@ -1,4 +1,34 @@
-0.9.6 -> 0.9.7 (r3493-r3654-r3812)
+0.9.7 -> X (r3812-r3918-r????)
+
+General/Core:
+ bug: fix more IPC FIFO errors
+ bug: import more save files correctly
+ bug: don't autopatch already-patched roms
+ enh: vfat support for slot-1 devices
+ enh: emulate temperature register
+ enh: add paddle emulation
+
+Graphics:
+ bug: fix occasional crash from uninitialized blending table
+ bug: fix some 2d alpha blending cases resulting in white screens
+ bug: fix VRAM_I B_OBJ mirroring and fix sprites rendering across the end of vram
+ enh: better support for line segment "polys" by detection and special rendering logic
+ enh: opengl: support quad primitives
+ enh: opengl: support rear-plane/ClearImage emulation (fixes many graphics)
+ 
+Windows:
+ bug: fix a long-standing loadstate crash
+ bug: fix lag frame accounting
+ enh: preliminary support for varying stylus pressure
+ enh: add [Display] Show Console=1 to ini file
+ enh: more graceful cheat parsing and add some hotkeys
+ enh: add 5x window size
+ enh: add big endian and 20.12 toggle to memview and ramwatch
+ enh: improve FPS throttle feedback and granularity
+ enh: add lua menu API
+ enh: hud font switching
+
+0.9.6 -> 0.9.7 (r3493-r3812)
 
 General/Core:
  bug: fix a ton of old, broken cpu opcodes and CP15 logic

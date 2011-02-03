@@ -1,7 +1,7 @@
 /*  AboutBox.cpp
 
     Copyright (C) 2008-2009 shash
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -15,9 +15,8 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -35,16 +34,13 @@ const char	*team[] = {
 	"------------",
 	"Guillaume Duhamel",
 	"Normmatt",
-	"Bernat Muñoz (shash)",
 	"Riccardo Magliocchetti",
 	"Max Tabachenko (CrazyMax)",
 	"zeromus",
 	"Luigi__",
 	"adelikat",
-	"matusz",
 	"pa__",
 	"gocha",
-	"nitsuja",
 	"",
 	"Contributors",
 	"------------",
@@ -62,16 +58,18 @@ const char	*team[] = {
 	"Pascal Giard (evilynux)",
 	"Ben Jaques (masscat)",
 	"Jeff Bland",
+	"Bernat Muñoz (shash)",
+	"matusz",
+	"nitsuja",
+	"dormito",
+	"WinterMute",
 	"",
 	"Honorary Nagmasters",
-	"(Thanks to our super testers for this release!)",
+	"(Thanks to our super testers!)",
 	"------------",
 	"nash679",
 	"pokefan999",
 	"dottorleo",
-	"",
-	"average time from bug checkin to bugreport:",
-	"23 seconds",
 };
 
 const int TEAM = ARRAY_SIZE(team);

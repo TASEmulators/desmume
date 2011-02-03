@@ -1,6 +1,6 @@
 /*	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2010 DeSmuME team
+	Copyright (C) 2007-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -661,6 +661,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			case 2: //BOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
 				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
+				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ+1); //FF3 end scene (lens flare sprite) needs this as it renders a sprite off the end of the 16KB and back around
 				break;
 			case 3: //B OBJ extended palette
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJEXTPAL;
