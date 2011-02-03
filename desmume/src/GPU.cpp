@@ -1,7 +1,7 @@
 /*  Copyright (C) 2006 yopyop
     Copyright (C) 2006-2007 Theo Berkau
     Copyright (C) 2007 shash
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1291,13 +1291,13 @@ template<bool MOSAIC> void lineExtRot(GPU * gpu)
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-INLINE void render_sprite_BMP (GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u16 * src, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, 
-							   u8 prio, int lg, int sprX, int x, int xdir, u8 alpha) 
+INLINE void render_sprite_BMP (GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u32 srcadr, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha) 
 {
 	int i; u16 color;
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
-		color = LE_TO_LOCAL_16(src[x]);
+		u16* src = (u16*)MMU_gpu_map(srcadr+(x<<1));
+		color = LE_TO_LOCAL_16(*src);
 
 		// alpha bit = invisible
 		if ((color&0x8000)&&(prio<prioTab[sprX]))
@@ -1311,8 +1311,7 @@ INLINE void render_sprite_BMP (GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u16 * s
 	}
 }
 
-INLINE void render_sprite_256 (	GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u8 * src, u16 * pal, 
-								u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
+INLINE void render_sprite_256(GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u32 srcadr, u16 * pal, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
 {
 	int i; 
 	u8 palette_entry; 
@@ -1320,7 +1319,9 @@ INLINE void render_sprite_256 (	GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u8 * s
 
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
-		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
+		u32 adr = srcadr + (x&0x7) + ((x&0xFFF8)<<3);
+		u8* src = (u8 *)MMU_gpu_map(adr);
+		palette_entry = *src;
 		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
@@ -1335,8 +1336,7 @@ INLINE void render_sprite_256 (	GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u8 * s
 	}
 }
 
-INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
-								u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
+INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u32 srcadr, u16 * pal, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
 {
 	int i; 
 	u8 palette, palette_entry;
@@ -1345,7 +1345,11 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
 		x1 = x>>1;
-		palette = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+		
+		u32 adr = srcadr + (x1&0x3) + ((x1&0xFFFC)<<3);
+		u8* src = (u8 *)MMU_gpu_map(adr);//
+		palette = *src;
+
 		if (x & 1) palette_entry = palette >> 4;
 		else       palette_entry = palette & 0xF;
 		color = LE_TO_LOCAL_16(pal[palette_entry]);
@@ -1441,15 +1445,15 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 
 //TODO - refactor this so there isnt as much duped code between rotozoomed and non-rotozoomed versions
 
-static u8* bmp_sprite_address(GPU* gpu, _OAM_ * spriteInfo, size sprSize, s32 y)
+static u32 bmp_sprite_address(GPU* gpu, _OAM_ * spriteInfo, size sprSize, s32 y)
 {
-	u8* src;
+	u32 src;
 	if (spriteInfo->Mode == 3) //sprite is in BMP format
 	{
 		if (gpu->dispCnt().OBJ_BMP_mapping)
 		{
 			//tested by buffy sacrifice damage blood splatters in corner
-			src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBMPBoundary) + (y*sprSize.x*2));
+			src = gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBMPBoundary) + (y*sprSize.x*2);
 		}
 		else
 		{
@@ -1458,10 +1462,10 @@ static u8* bmp_sprite_address(GPU* gpu, _OAM_ * spriteInfo, size sprSize, s32 y)
 
 			if (gpu->dispCnt().OBJ_BMP_2D_dim)
 				//256*256, verified by heroes of mana FMV intro
-				src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
+				src = gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
 			else 
 				//128*512, verified by harry potter and the order of the phoenix conversation portraits
-				src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1));
+				src = gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1);
 		}
 	}
 
@@ -1515,6 +1519,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 		s32 sprX, sprY, x, y, lg;
 		int xdir;
 		u8 prio, * src;
+		u32 srcadr;
 		u16 j;
 
 		// Check if sprite is disabled before everything
@@ -1646,7 +1651,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			// Rotozoomed direct color
 			else if(spriteInfo->Mode == 3)
 			{
-				src = bmp_sprite_address(this,spriteInfo,sprSize,0);
+				srcadr = bmp_sprite_address(this,spriteInfo,sprSize,0);
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1661,13 +1666,15 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 					{
 						if(dispCnt->OBJ_BMP_2D_dim)
 							//tested by knights in the nightmare
-							offset = (bmp_sprite_address(this,spriteInfo,sprSize,auxY)-src)/2+auxX;
+							offset = (bmp_sprite_address(this,spriteInfo,sprSize,auxY)-srcadr)/2+auxX;
 						else //tested by lego indiana jones (somehow?)
 							//tested by buffy sacrifice damage blood splatters in corner
 							offset = auxX + (auxY*sprSize.x);
 
 
-						colour = T1ReadWord (src, offset<<1);
+						u16* mem = (u16*)MMU_gpu_map(srcadr + (offset<<1));
+						
+						colour = T1ReadWord(mem,0);
 
 						if((colour&0x8000) && (prio<prioTab[sprX]))
 						{
@@ -1774,48 +1781,48 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 			if (spriteInfo->Mode == 3)              //sprite is in BMP format
 			{
-				src = bmp_sprite_address(this,spriteInfo,sprSize, y);
+				srcadr = bmp_sprite_address(this,spriteInfo,sprSize, y);
 
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if(spriteInfo->PaletteIndex == 0)
 					continue;
 				
-				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
+				render_sprite_BMP (gpu, i, l, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 				continue;
 			}
 				
-			if(spriteInfo->Depth)                   /* 256 colors */
+			if(spriteInfo->Depth) //256 colors
 			{
 				if(MODE == SPRITE_2D)
-					src = (u8 *)MMU_gpu_map(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
+					srcadr = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 				else
-					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+					srcadr = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 				
 				if (dispCnt->ExOBJPalette_Enable)
 					pal = (u16*)(MMU.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
 				else
 					pal = (u16*)(MMU.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
-				render_sprite_256 (gpu, i, l, dst, src, pal, 
-					dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+				render_sprite_256(gpu, i, l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 
 				continue;
 			}
+
 			// 16 colors 
 			if(MODE == SPRITE_2D)
 			{
-				src = (u8 *)MMU_gpu_map(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
+				srcadr = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
 			}
 			else
 			{
-				src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+				srcadr = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 			}
 				
 			pal = (u16*)(MMU.ARM9_VMEM + 0x200 + gpu->core * 0x400);
 			
 			pal += (spriteInfo->PaletteIndex<<4);
 			
-			render_sprite_16 (gpu, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+			render_sprite_16 (gpu, l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 		}
 	}
 
