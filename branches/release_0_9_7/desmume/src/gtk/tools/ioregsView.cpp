@@ -25,6 +25,9 @@
 
 #include "../MMU.h"
 
+#undef GPOINTER_TO_INT
+#define GPOINTER_TO_INT(p) ((gint)  (glong) (p))
+
 #define SHORTNAME "ioregs"
 #define TOOL_NAME "IO regs view"
 
