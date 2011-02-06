@@ -523,7 +523,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->IncreasePressure.name = STRW(ID_LABEL_HK55);
 	keys->IncreasePressure.page = HOTKEY_PAGE_MAIN;
 	keys->IncreasePressure.key = VK_OEM_PLUS;
-	keys->DecreasePressure.modifiers = CUSTKEY_SHIFT_MASK;
+	keys->IncreasePressure.modifiers = CUSTKEY_SHIFT_MASK;
 
 	keys->DecreasePressure.handleKeyDown = HK_DecreasePressure;
 	keys->DecreasePressure.code = "DecreasePressure";
