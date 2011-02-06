@@ -223,16 +223,30 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 	Y = Ceil28_4((fixed28_4)verts[Top]->y);
 	int YEnd = Ceil28_4((fixed28_4)verts[Bottom]->y);
 	Height = YEnd - Y;
+	X = Ceil28_4((fixed28_4)verts[Top]->x);
+	int XEnd = Ceil28_4((fixed28_4)verts[Bottom]->x);
+	int Width = XEnd - X; // can be negative
 
-	if(Height)
+	// even if Height == 0, give some info for horizontal line poly
+	if(Height != 0 || Width != 0)
 	{
 		long dN = long(verts[Bottom]->y - verts[Top]->y);
 		long dM = long(verts[Bottom]->x - verts[Top]->x);
-	
-		long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
-		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm,failure);
-		FloorDivMod(dM*16,dN*16,XStep,Numerator,failure);
-		Denominator = dN*16;
+		if (dN != 0)
+		{
+			long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
+			FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm,failure);
+			FloorDivMod(dM*16,dN*16,XStep,Numerator,failure);
+			Denominator = dN*16;
+		}
+		else
+		{
+			XStep = Width;
+			Numerator = 0;
+			ErrorTerm = 0;
+			Denominator = 1;
+			dN = 1;
+		}
 	
 		float YPrestep = Fixed28_4ToFloat((fixed28_4)(Y*16 - verts[Top]->y));
 		float XPrestep = Fixed28_4ToFloat((fixed28_4)(X*16 - verts[Top]->x));
@@ -296,6 +310,7 @@ static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & sr
 	}
 }
 
+// TODO: wire-frame
 struct PolyAttr
 {
 	u32 val;
@@ -687,10 +702,22 @@ public:
 	}
 
 	//draws a single scanline
-	FORCEINLINE void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
+	FORCEINLINE void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
 	{
 		int XStart = pLeft->X;
 		int width = pRight->X - XStart;
+
+		// HACK: workaround for vertical/slant line poly
+		if (lineHack && width == 0)
+		{
+			int leftWidth = pLeft->XStep;
+			if (pLeft->ErrorTerm + pLeft->Numerator >= pLeft->Denominator)
+				leftWidth++;
+			int rightWidth = pRight->XStep;
+			if (pRight->ErrorTerm + pRight->Numerator >= pRight->Denominator)
+				rightWidth++;
+			width = max(1, max(abs(leftWidth), abs(rightWidth)));
+		}
 
 		//these are the starting values, taken from the left edge
 		float invw = pLeft->invw.curr;
@@ -730,15 +757,18 @@ public:
 
 		while(width-- > 0)
 		{
-			if(RENDERER && (x<0 || x>255)) {
+			bool outOfRange = false;
+			if(RENDERER && (x<0 || x>255))
+				outOfRange = true;
+			if(!RENDERER && (x<0 || x>=engine->width))
+				outOfRange = true;
+			if(!lineHack && outOfRange)
+			{
 				printf("rasterizer rendering at x=%d! oops!\n",x);
 				return;
 			}
-			if(!RENDERER && (x<0 || x>=engine->width)) {
-				printf("rasterizer rendering at x=%d! oops!\n",x);
-				return;
-			}
-			pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
+			if(!outOfRange)
+				pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
 			adr++;
 			x++;
 
@@ -754,7 +784,7 @@ public:
 
 	//runs several scanlines, until an edge is finished
 	template<bool SLI>
-	void runscanlines(edge_fx_fl *left, edge_fx_fl *right,bool horizontal)
+	void runscanlines(edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
 	{
 		//oh lord, hack city for edge drawing
 
@@ -763,13 +793,21 @@ public:
 		bool first=true;
 		static int runctr=0;
 		runctr++;
+
+		//HACK: special handling for horizontal line poly
+		if (lineHack && left->Height == 0 && right->Height == 0)
+		{
+			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
+			if(draw) drawscanline(left,right,lineHack);
+		}
+
 		while(Height--) {
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline(left,right);
+			if(draw) drawscanline(left,right,lineHack);
 			const int xl = left->X;
 			const int xr = right->X;
 			const int y = left->Y;
-			left->Step(); 
+			left->Step();
 			right->Step();
 
 			if(!RENDERER && _debug_thisPoly)
@@ -868,7 +906,7 @@ public:
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 	//Maybe it is like crow's algorithm
 	template<bool SLI>
-	void shape_engine(int type, bool backwards)
+	void shape_engine(int type, bool backwards, bool lineHack)
 	{
 		bool failure = false;
 
@@ -906,7 +944,7 @@ public:
 				return;
 
 			bool horizontal = left.Y == right.Y;
-			runscanlines<SLI>(&left,&right,horizontal);
+			runscanlines<SLI>(&left,&right,horizontal, lineHack);
 
 			//if we ran out of an edge, step to the next one
 			if(right.Height == 0) {
@@ -976,7 +1014,7 @@ public:
 
 			polyAttr.backfacing = engine->polyBackfacing[i];
 
-			shape_engine<SLI>(type,!polyAttr.backfacing);
+			shape_engine<SLI>(type,!polyAttr.backfacing, gfx3d_IsLinePoly(poly));
 		}
 	}
 
