@@ -434,6 +434,7 @@
 #define IDC_CAP0_ACTIVE                 1078
 #define IDC_CHECK10                     1079
 #define IDC_CAP0_RUNNING                1079
+#define IDC_BIG_ENDIAN                  1079
 #define IDC_CHECK6                      1080
 #define IDC_CAP1_SRC                    1080
 #define IDC_CAP1_ONESHOT                1081
@@ -452,6 +453,7 @@
 #define IDC_EDIT1                       1102
 #define IDC_EDIT2                       1103
 #define IDC_EDIT3                       1104
+#define IDC_WINDOW5X                    1105
 #define IDC_EDIT_AUTHOR                 1180
 #define IDD_MATRIX_VIEWER               1200
 #define IDM_MATRIX_VIEWER               1200
@@ -690,6 +692,8 @@
 #define MENU_PRINCIPAL                  2012
 #define RAMWATCH_MENU                   2013
 #define RECENTROMS                      2014
+#define IDD_FONTSETTINGS                2464
+#define IDC_FONTCOMBO                   2465
 #define IDC_GI_FATOFS                   4464
 #define IDC_INTERPOLATECOLOR            4464
 #define IDC_GI_FATSIZE                  4465
