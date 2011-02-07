@@ -1407,8 +1407,12 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 // that tells us where the first pixel of a screenline starts in the sprite,
 // and how a step to the right in a screenline translates within the sprite
 
-	if ((l<sprY)||(l>=sprY+sprSize.y) ||	/* sprite lines outside of screen */
-		(sprX==256)||(sprX+sprSize.x<=0))	/* sprite pixels outside of line */
+	//this wasn't really tested by anything. very unlikely to get triggered
+	y = (l - sprY)&255;                        /* get the y line within sprite coords */
+	if(y >= sprSize.y)
+		return FALSE;
+
+	if((sprX==256)||(sprX+sprSize.x<=0))	/* sprite pixels outside of line */
 		return FALSE;				/* not to be drawn */
 
 	// sprite portion out of the screen (LEFT)
@@ -1421,8 +1425,6 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 	// sprite portion out of the screen (RIGHT)
 	if (sprX+sprSize.x >= 256)
 		lg = 256 - sprX;
-
-	y = l - sprY;                           /* get the y line within sprite coords */
 
 	// switch TOP<-->BOTTOM
 	if (spriteInfo->VFlip)
@@ -1558,14 +1560,17 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				lg <<= 1;
 			}
 
-			// Check if sprite enabled
-			if ((l   <sprY) || (l >= sprY+fieldY) ||
-				(sprX==256) || (sprX+fieldX<=0))
+			//check if the sprite is visible y-wise. unfortunately our logic for x and y is different due to our scanline based rendering
+			//tested thoroughly by many large sprites in Super Robot Wars K which wrap around the screen
+			y = (l - sprY)&255;
+			if(y >= fieldY)
+				continue;
+
+			//check if sprite is visible x-wise.
+			if((sprX==256) || (sprX+fieldX<=0))
 				continue;
 
 			cost += sprSize.x*2 + 10;
-
-			y = l - sprY;
 
 			// Get which four parameter block is assigned to this sprite
 			blockparameter = (spriteInfo->RotScalIndex + (spriteInfo->HFlip<< 3) + (spriteInfo->VFlip << 4))*4;
@@ -1749,7 +1754,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				continue;
 			}
 		}
-		else
+		else //NOT rotozoomed
 		{
 			u16 * pal;
 	
