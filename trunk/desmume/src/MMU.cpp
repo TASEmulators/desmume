@@ -2085,7 +2085,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			//ensata putchar port
 			case 0x04FFF000:
 				if(nds.ensataEmulation)
+				{
 					printf("%c",val);
+					fflush(stdout);
+				}
 				break;
 
 			case eng_3D_GXSTAT:
