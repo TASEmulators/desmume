@@ -428,7 +428,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
-    <ClCompile Include="..\addons\piano.cpp" />
+    <ClCompile Include="..\addons\slot2_piano.cpp" />
     <ClCompile Include="..\addons\slot1_none.cpp" />
     <ClCompile Include="..\addons\slot1_r4.cpp" />
     <ClCompile Include="..\addons\slot1_retail.cpp" />
@@ -491,11 +491,11 @@
     <ClCompile Include="..\utils\vfat.cpp" />
     <ClCompile Include="..\version.cpp" />
     <ClCompile Include="..\wifi.cpp" />
-    <ClCompile Include="..\addons\expMemory.cpp" />
-    <ClCompile Include="..\addons\gbagame.cpp" />
-    <ClCompile Include="..\addons\guitarGrip.cpp" />
-    <ClCompile Include="..\addons\none.cpp" />
-    <ClCompile Include="..\addons\rumblepak.cpp" />
+    <ClCompile Include="..\addons\slot2_expMemory.cpp" />
+    <ClCompile Include="..\addons\slot2_gbagame.cpp" />
+    <ClCompile Include="..\addons\slot2_guitarGrip.cpp" />
+    <ClCompile Include="..\addons\slot2_none.cpp" />
+    <ClCompile Include="..\addons\slot2_rumblepak.cpp" />
     <ClCompile Include="..\gdbstub\gdbstub.cpp" />
     <ClCompile Include="..\utils\ConvertUTF.c" />
     <ClCompile Include="..\utils\guid.cpp" />
