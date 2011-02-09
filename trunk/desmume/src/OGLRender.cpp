@@ -99,7 +99,8 @@ static u32 textureFormat=0, texturePalette=0;
 
 // ClearImage/Rear-plane (FBO)
 GLenum	oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
-GLuint	oglClearImageBuffers[2] = {0};		// 0 - image, 1 - depth
+GLuint	oglClearImageBuffers = 0;
+GLuint	oglClearImageRender[1] = {0};
 bool	oglFBOdisabled = false;
 u32		*oglClearImageColor = NULL;
 float	*oglClearImageDepth = NULL;
@@ -144,7 +145,6 @@ OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
 // FBO
 OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
 OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
-OGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC,glRenderbufferStorageEXT);
 OGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC,glFramebufferRenderbufferEXT);
 OGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC,glFramebufferTexture2DEXT);
 OGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC,glCheckFramebufferStatusEXT);
@@ -280,8 +280,8 @@ GLuint vertexShaderID;
 GLuint fragmentShaderID;
 GLuint shaderProgram;
 
-static GLuint hasTexLoc;
-static GLuint texBlendLoc;
+static GLint hasTexLoc;
+static GLint texBlendLoc;
 static bool hasTexture = false;
 
 static TexCacheItem* currTexture = NULL;
@@ -356,7 +356,7 @@ static void OGLReset()
 		glUniform1i(hasTexLoc, 0);
 		hasTexture = false;
 		glUniform1i(texBlendLoc, 0);
-		
+
 	}
 
 	TexCache_Reset();
@@ -367,10 +367,10 @@ static void OGLReset()
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 
-	memset(oglClearImageColor, 0, 256*192);
-	memset(oglClearImageDepth, 0, 256*192);
-	memset(oglClearImageColorTemp, 0, 256*192*2);
-	memset(oglClearImageDepthTemp, 0, 256*192*2);
+	memset(oglClearImageColor, 0, 256*192*sizeof(u32));
+	memset(oglClearImageDepth, 0, 256*192*sizeof(float));
+	memset(oglClearImageColorTemp, 0, 256*192*sizeof(u16));
+	memset(oglClearImageDepthTemp, 0, 256*192*sizeof(u16));
 	oglClearImageScrollOld = 0;
 }
 
@@ -418,7 +418,7 @@ static void expandFreeTextures()
 
 static char OGLInit(void)
 {
-	GLuint loc = 0;
+	GLint loc = 0;
 
 	if(!oglrender_init)
 		return 0;
@@ -468,7 +468,6 @@ static char OGLInit(void)
 	// FBO
 	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
 	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
-	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEEXTPROC,glRenderbufferStorageEXT);
 	INITOGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC,glFramebufferRenderbufferEXT);
 	INITOGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC,glFramebufferTexture2DEXT);
 	INITOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC,glCheckFramebufferStatusEXT);
@@ -540,22 +539,19 @@ static char OGLInit(void)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 	// FBO
 	oglFBOdisabled = false;
-	glGenFramebuffersEXT(2, &oglClearImageBuffers[0]);
+	glGenFramebuffersEXT(1, &oglClearImageBuffers);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers[0]);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, oglClearImageTextureID[0], 0);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers[1]);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
+	//glDrawBuffer(GL_NONE);
+	//glReadBuffer(GL_NONE);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, oglClearImageTextureID[1], 0);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-
+	
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)==GL_FRAMEBUFFER_COMPLETE_EXT)
 		INFO("Successfully created OpenGL Framebuffer object (FBO)\n");
 	else
@@ -564,15 +560,12 @@ static char OGLInit(void)
 		oglFBOdisabled = true;
 	}
 
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
 	oglClearImageColor = new u32[256*192];
 	oglClearImageColorTemp = new u16[256*192];
 	oglClearImageDepth = new float[256*192];
 	oglClearImageDepthTemp = new u16[256*192];
-	memset(oglClearImageColor, 0, 256*192);
-	memset(oglClearImageDepth, 0, 256*192);
-	memset(oglClearImageColorTemp, 0, 256*192);
-	memset(oglClearImageDepthTemp, 0, 256*192);
-	oglClearImageScrollOld = 0;
 
 	glActiveTexture(GL_TEXTURE0);
 
@@ -617,7 +610,7 @@ static void OGLClose()
 	// FBO
 	glDeleteTextures(2, &oglClearImageTextureID[0]);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	glDeleteFramebuffersEXT(2, &oglClearImageBuffers[0]);
+	glDeleteFramebuffersEXT(1, &oglClearImageBuffers);
 
 	if (oglClearImageColor)
 	{
@@ -969,7 +962,8 @@ static void oglClearImageFBO()
 				u16 col = clearImage[adr];
 				oglClearImageColor[dd] = RGB15TO32(col,255*(col>>15));
 				
-				u32 depth = clearDepth[adr] & 0x7FFF;
+				u16 depth = clearDepth[adr] & 0x7FFF;
+
 				if (depth == 0x7FFF)
 					oglClearImageDepth[dd] = 1.f;
 				else
@@ -986,19 +980,16 @@ static void oglClearImageFBO()
 
 		// depth
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, &oglClearImageDepth[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, &oglClearImageDepth[0]);
 
 		glActiveTexture(GL_TEXTURE0);
 	}
 	
-	// color
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, oglClearImageBuffers[0]);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
-	glBlitFramebufferEXT(0,0,256,192,0,0,256,192,GL_COLOR_BUFFER_BIT,GL_LINEAR);
 
-	// depth
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, oglClearImageBuffers[1]);
-	glBlitFramebufferEXT(0,0,256,192,0,0,256,192,GL_DEPTH_BUFFER_BIT,GL_LINEAR);
+	// color & depth
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, oglClearImageBuffers);
+	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+	glBlitFramebufferEXT(0,0,256,192,0,0,256,192,GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT,GL_LINEAR);
 
 	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, 0);
 	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
@@ -1094,15 +1085,26 @@ static void OGLRender()
 			float alpha = poly->getAlpha()/31.0f;
 			if(wireframe) alpha = 1.0;
 
+
+#ifdef _NEW_VTX
+			GLenum dd[] = {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUAD_STRIP, 
+							GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
+			glBegin(dd[type]);
+
+			for(int j = 0; j < poly->vertCount; j++)
+			{
+#else
 			if (gfx3d_IsLinePoly(poly))
 				glBegin(GL_LINE_LOOP);
 			else if (type == 4)
 				glBegin(GL_QUADS);
 			else
 				glBegin(GL_TRIANGLES);
-
+			
+			
 			for(int j = 0; j < type; j++)
 			{
+#endif
 				VERT *vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				
 				glTexCoord2fv(vert->texcoord);
