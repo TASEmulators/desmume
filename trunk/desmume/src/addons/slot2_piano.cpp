@@ -1,20 +1,17 @@
-/*  Copyright (C) 2010 DeSmuME team
+/*  Copyright (C) 2010-2011 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "../addons.h"
@@ -75,14 +72,14 @@ static u8 piano_read08(u32 procnum, u32 adr)
 	if(adr == 0x09FFFFFE) return (~(pianoKeyStatus&0xFF));
 	if(adr == 0x09FFFFFF) return (~((pianoKeyStatus>>8)&0xFF))&~(0x18);
 
-	if(adr&1) return 0x07;
-	else return 0x00;
+	if(adr&1) return 0xE7;
+	else return 0xFF;
 }
 static u16 piano_read16(u32 procnum, u32 adr)
 {
 	//printf("piano: read 16 at 0x%08X\n", adr);
 	if(adr != 0x09FFFFFE)
-		return 0x07FF;
+		return 0xE7FF;
 	u16 ret = piano_read08(procnum,0x09FFFFFE)|(piano_read08(procnum,0x09FFFFFF)<<8);
 	//return ( (PIANO_PAK & 0x1800 ) == 0 );
 	return ret;
@@ -90,7 +87,7 @@ static u16 piano_read16(u32 procnum, u32 adr)
 static u32 piano_read32(u32 procnum, u32 adr)
 {
 	//printf("piano: read 32 at 0x%08X\n", adr);
-	return 0x07FF07FF;
+	return 0xE7FFE7FF;
 }
 static void piano_info(char *info) { strcpy(info, "Piano for EasyPiano"); }
 

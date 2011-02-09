@@ -378,7 +378,7 @@
     <ClCompile Include="tileView.cpp">
       <Filter>Windows\tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\piano.cpp">
+    <ClCompile Include="..\addons\slot2_piano.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
     <ClCompile Include="..\utils\dlditool.cpp">
