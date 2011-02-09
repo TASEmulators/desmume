@@ -994,19 +994,19 @@
 				Name="addons"
 				>
 				<File
-					RelativePath="..\addons\expMemory.cpp"
+					RelativePath="..\addons\slot2_expMemory.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\addons\gbagame.cpp"
+					RelativePath="..\addons\slot2_gbagame.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\addons\guitarGrip.cpp"
+					RelativePath="..\addons\slot2_guitarGrip.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\addons\none.cpp"
+					RelativePath="..\addons\slot2_none.cpp"
 					>
 				</File>
 				<File
@@ -1014,7 +1014,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\addons\rumblepak.cpp"
+					RelativePath="..\addons\slot2_rumblepak.cpp"
 					>
 				</File>
 				<File

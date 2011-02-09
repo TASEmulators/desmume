@@ -165,19 +165,19 @@
     <ClCompile Include="..\wifi.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\expMemory.cpp">
+    <ClCompile Include="..\addons\slot2_expMemory.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\gbagame.cpp">
+    <ClCompile Include="..\addons\slot2_gbagame.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\guitarGrip.cpp">
+    <ClCompile Include="..\addons\slot2_guitarGrip.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\none.cpp">
+    <ClCompile Include="..\addons\slot2_none.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\rumblepak.cpp">
+    <ClCompile Include="..\addons\slot2_rumblepak.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
     <ClCompile Include="..\gdbstub\gdbstub.cpp">
