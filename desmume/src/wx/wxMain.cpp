@@ -75,7 +75,7 @@ bool Desmume::OnInit()
 #endif
 
 	SetAppName(_T("desmume")); 
-	wxString iniFileName = wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + _T("\\desmume.ini");
+	wxString iniFileName = wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + _T("/desmume.ini");
 	wxConfigBase *pConfig = new wxFileConfig(wxEmptyString,wxEmptyString,iniFileName,wxEmptyString,wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH);
 	wxConfigBase::Set(pConfig);
 	wxString emu_version(EMU_DESMUME_NAME_AND_VERSION(), wxConvUTF8);
@@ -468,9 +468,6 @@ void DesmumeFrame::onIdle(wxIdleEvent &event)
 		DrawHUD();
 		osd->clear();
 	}
-	else
-		wxMilliSleep(250);
-	// wxMicroSleep(16.7*1000);
 }
 
 void DesmumeFrame::pause(wxCommandEvent& event)
