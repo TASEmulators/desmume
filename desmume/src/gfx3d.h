@@ -139,12 +139,8 @@ void gfx3d_reset();
 
 struct POLY {
 	int type; //tri or quad
-#ifdef _NEW_VTX
-	u16 vertIndexes[2048];
-	u16 vertCount;
-#else
+	u8 vtxFormat;
 	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
-#endif
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
 	u32 viewport;
 	float miny, maxy;
@@ -196,21 +192,10 @@ struct POLY {
 	}
 };
 
-#ifdef _NEW_VTX
-#define POLYLIST_SIZE 2048
-#else
 #define POLYLIST_SIZE 100000
-#endif
 struct POLYLIST {
 	POLY list[POLYLIST_SIZE];
 	int count;
-#ifdef _NEW_VTX
-	void resetVertCounts()
-	{
-		for (u16 i=0; i < POLYLIST_SIZE; i++)
-			list[i].vertCount = 0;
-	}
-#endif
 };
 
 struct VERT {

@@ -439,9 +439,6 @@ static void twiddleLists() {
 	vertlist = &vertlists[listTwiddle];
 	polylist->count = 0;
 	vertlist->count = 0;
-#ifdef _NEW_VTX
-	polylist->resetVertCounts();
-#endif
 }
 
 static BOOL flushPending = FALSE;
@@ -549,9 +546,7 @@ void gfx3d_reset()
 	memset(gxPIPE.cmd, 0, sizeof(gxPIPE.cmd));
 	memset(gxPIPE.param, 0, sizeof(gxPIPE.param));
 	memset(colorRGB, 0, sizeof(colorRGB));
-#ifndef _NEW_VTX
 	memset(&tempVertInfo, 0, sizeof(tempVertInfo));
-#endif
 
 	MatrixInit (mtxCurrent[0]);
 	MatrixInit (mtxCurrent[1]);
@@ -611,114 +606,6 @@ FORCEINLINE s32 vec3dot_fixed32(const s32* a, const s32* b) {
 	return fx32_shiftdown(fx32_mul(a[0],b[0]) + fx32_mul(a[1],b[1]) + fx32_mul(a[2],b[2]));
 }
 
-#ifdef _NEW_VTX
-#define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[polylist->list[polylist->count].vertCount+ii] = vertIndex+nn;
-static void SetVertex()
-{
-	s32 coord[3] = {
-		s16coord[0],
-		s16coord[1],
-		s16coord[2]
-	};
-
-	ALIGN(16) s32 coordTransformed[4] = { coord[0], coord[1], coord[2], (1<<12) };
-
-	if (texCoordinateTransform == 3)
-	{
-		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
-		last_s = (s32)(((s64)s16coord[0] * mtxCurrent[3][0] + 
-								(s64)s16coord[1] * mtxCurrent[3][4] + 
-								(s64)s16coord[2] * mtxCurrent[3][8] + 
-								(((s64)(_s))<<24))>>24);
-		last_t = (s32)(((s64)s16coord[0] * mtxCurrent[3][1] + 
-								(s64)s16coord[1] * mtxCurrent[3][5] + 
-								(s64)s16coord[2] * mtxCurrent[3][9] + 
-								(((s64)(_t))<<24))>>24);
-	}
-
-	//refuse to do anything if we have too many verts or polys
-	polygonListCompleted = 0;
-	if(vertlist->count >= VERTLIST_SIZE) 
-	{
-		printf("!!! VERTEX overflow\n");
-			return;
-	}
-	if(polylist->count >= POLYLIST_SIZE) 
-	{
-		printf("!!! POLYGON overflow\n");
-			return;
-	}
-	
-	//TODO - think about keeping the clip matrix concatenated,
-	//so that we only have to multiply one matrix here
-	//(we could lazy cache the concatenated clip matrix and only generate it
-	//when we need to)
-	MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
-
-	//printf("%f %f %f\n",s16coord[0]/4096.0f,s16coord[1]/4096.0f,s16coord[2]/4096.0f);
-	//printf("x %f %f %f %f\n",mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f);
-	//printf(" = %f %f %f %f\n",coordTransformed[0]/4096.0f,coordTransformed[1]/4096.0f,coordTransformed[2]/4096.0f,coordTransformed[3]/4096.0f);
-
-	//TODO - culling should be done here.
-	//TODO - viewport transform?
-
-	//record the vertex
-	int vertIndex = vertlist->count;
-	if(vertIndex<0) {
-		printf("wtf\n");
-	}
-	VERT &vert = vertlist->list[vertIndex];
-
-	//printf("%f %f %f\n",coordTransformed[0],coordTransformed[1],coordTransformed[2]);
-	//if(coordTransformed[1] > 20) 
-	//	coordTransformed[1] = 20;
-
-	//printf("y-> %f\n",coord[1]);
-
-	//if(mtxCurrent[1][14]>15) {
-	//	printf("ACK!\n");
-	//	printf("----> modelview 1 state for that ack:\n");
-	//	//MatrixPrint(mtxCurrent[1]);
-	//}
-
-	vert.texcoord[0] = last_s/16.0f;
-	vert.texcoord[1] = last_t/16.0f;
-	vert.coord[0] = coordTransformed[0]/4096.0f;
-	vert.coord[1] = coordTransformed[1]/4096.0f;
-	vert.coord[2] = coordTransformed[2]/4096.0f;
-	vert.coord[3] = coordTransformed[3]/4096.0f;
-	vert.color[0] = GFX3D_5TO6(colorRGB[0]);
-	vert.color[1] = GFX3D_5TO6(colorRGB[1]);
-	vert.color[2] = GFX3D_5TO6(colorRGB[2]); 
-
-	//possibly complete a polygon
-	{
-		switch(vtxFormat) {
-			case 0: //GL_TRIANGLES
-			case 2: //GL_TRIANGLE_STRIP
-				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,2);
-				vertlist->count+=3;
-				break;
-			case 1: //GL_QUADS
-			case 3: //GL_QUAD_STRIP
-				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,2);
-				SUBMITVERTEX(3,3);
-				vertlist->count+=4;
-				break;
-			default: 
-				printf("!!! Error VTX format (%i)\n", vtxFormat);
-				return;
-		}
-
-		polylist->list[polylist->count].vertCount++;
-		polylist->list[polylist->count].type = vtxFormat;
-	}
-}
-#else
 #define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[ii] = tempVertInfo.map[nn];
 //Submit a vertex to the GE
 static void SetVertex()
@@ -858,9 +745,9 @@ static void SetVertex()
 					break;
 				polygonListCompleted = 1;
 				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);
-				SUBMITVERTEX(2,3);
-				SUBMITVERTEX(3,2);
+				SUBMITVERTEX(1,1);	// TODO:
+				SUBMITVERTEX(2,3);	// OpenGL Quad_Strip must be	: 3,3
+				SUBMITVERTEX(3,2);	//								: 2,2
 				polylist->list[polylist->count].type = 4;
 				tempVertInfo.map[0] = vertlist->count+2-continuation;
 				tempVertInfo.map[1] = vertlist->count+3-continuation;
@@ -877,7 +764,29 @@ static void SetVertex()
 		if(polygonListCompleted == 1)
 		{
 			POLY &poly = polylist->list[polylist->count];
-
+			
+			poly.vtxFormat = vtxFormat;
+			if (poly.type == 4)
+			{	// Line stream polygon detect
+				// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
+				u8 duplicatedVerts = 0;
+				for (int i = 0; i < (poly.type-1); i++)
+				{
+					VERT &vert1 = vertlist->list[poly.vertIndexes[i]];
+					for (int t = (i+1); t < poly.type; t++)
+					{
+						VERT &vert2 = vertlist->list[poly.vertIndexes[t]];
+						if ((vert1.x == vert2.x) && (vert1.y == vert2.y))
+							duplicatedVerts++;
+					}
+				}
+				if (duplicatedVerts == 2)
+				{
+					//printf("Line stream polygon detected\n");
+					poly.vtxFormat = vtxFormat + 4;
+				}
+			}
+			
 			poly.polyAttr = polyAttr;
 			poly.texParam = textureFormat;
 			poly.texPalette = texturePalette;
@@ -886,7 +795,6 @@ static void SetVertex()
 		}
 	}
 }
-#endif
 
 static void gfx3d_glPolygonAttrib_cache()
 {
@@ -1508,10 +1416,8 @@ static void gfx3d_glBegin(u32 v)
 	inBegin = TRUE;
 	vtxFormat = v&0x03;
 	triStripToggle = 0;
-#ifndef _NEW_VTX
 	tempVertInfo.count = 0;
 	tempVertInfo.first = true;
-#endif
 	polyAttr = polyAttrPending;
 	gfx3d_glPolygonAttrib_cache();
 	GFX_DELAY(1);
@@ -1519,30 +1425,8 @@ static void gfx3d_glBegin(u32 v)
 
 static void gfx3d_glEnd(void)
 {
-#ifdef _NEW_VTX
-	if (inBegin)
-	{
-		POLY &poly = polylist->list[polylist->count];
-		//printf("Poly %i: vert count %i\n", polylist->list[polylist->count].type, polylist->list[polylist->count].vertCount);
-		// TODO: line segments detect
-		u8 type = polylist->list[polylist->count].type;
-		if (gfx3d_IsLinePoly(&poly))
-		{
-			printf("Poly %i: vert count %i - line detected\n", polylist->list[polylist->count].type, polylist->list[polylist->count].vertCount);
-			poly.type += 4;
-		}
-		
-		poly.polyAttr = polyAttr;
-		poly.texParam = textureFormat;
-		poly.texPalette = texturePalette;
-		poly.viewport = viewport;
-		polylist->count++;
-	}
-#else
 	tempVertInfo.count = 0;
-#endif
 	inBegin = FALSE;
-
 	GFX_DELAY(1);
 }
 
@@ -2206,8 +2090,8 @@ static void gfx3d_doFlush()
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max((u32)polycount, max_polys);
 	max_verts = max((u32)vertlist->count, max_verts);
-	osd->addFixed(10, 320, "%i/%i", polycount, vertlist->count);		// current
-	osd->addFixed(10, 335, "%i/%i", max_polys, max_verts);		// max
+	osd->addFixed(180, 20, "%i/%i", polycount, vertlist->count);		// current
+	osd->addFixed(180, 35, "%i/%i", max_polys, max_verts);		// max
 #endif
 
 	//find the min and max y values for each poly.
@@ -2517,11 +2401,9 @@ SFORMAT SF_GFX3D[]={
 	{ "GSPF", 4, 1, &gfx3d.state.pendingFlushCommand},
 	//------------------------
 	{ "GTST", 4, 1, &triStripToggle},
-#ifndef _NEW_VTX
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-#endif
 	{ "G3CX", 1, 4*256*192, gfx3d_convertedScreen},
 	{ 0 }
 };
@@ -2960,10 +2842,6 @@ void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 // "Workaround" for line poly
 bool gfx3d_IsLinePoly(POLY *poly)
 {
-#ifdef _NEW_VTX
-	// TODO:
-	return false;
-#else
 	int type = poly->type;
 	VERT *vert1, *vert2;
 
@@ -3025,5 +2903,4 @@ bool gfx3d_IsLinePoly(POLY *poly)
 		return true;
 
 	return false;
-#endif
 }

@@ -727,13 +727,15 @@ static void BeginRenderPoly()
 	xglDepthFunc (depthFuncMode);
 
 	// Cull face
-	if (cullingMask != 0xC0)
+	if (cullingMask == 0x03)
 	{
-		xglEnable(GL_CULL_FACE);
-		glCullFace(map3d_cull[cullingMask>>6]);
+		xglDisable(GL_CULL_FACE);
 	}
 	else
-		xglDisable(GL_CULL_FACE);
+	{
+		xglEnable(GL_CULL_FACE);
+		glCullFace(map3d_cull[cullingMask]);
+	}
 
 	if (!wireframe)
 	{
@@ -825,7 +827,7 @@ static void InstallPolygonAttrib(unsigned long val)
 	depthFuncMode = depthFunc[BIT14(val)];
 
 	// back face culling
-	cullingMask = (val&0xC0);
+	cullingMask = (val >> 6) & 0x03;
 
 	alpha31 = ((val>>16)&0x1F)==31;
 	
@@ -1085,26 +1087,13 @@ static void OGLRender()
 			float alpha = poly->getAlpha()/31.0f;
 			if(wireframe) alpha = 1.0;
 
-
-#ifdef _NEW_VTX
-			GLenum dd[] = {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUAD_STRIP, 
+			GLenum frm[] = {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUADS,	//TODO: GL_QUAD_STRIP
 							GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
-			glBegin(dd[type]);
 
-			for(int j = 0; j < poly->vertCount; j++)
-			{
-#else
-			if (gfx3d_IsLinePoly(poly))
-				glBegin(GL_LINE_LOOP);
-			else if (type == 4)
-				glBegin(GL_QUADS);
-			else
-				glBegin(GL_TRIANGLES);
-			
-			
+			glBegin(frm[poly->vtxFormat]);
+
 			for(int j = 0; j < type; j++)
 			{
-#endif
 				VERT *vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				
 				glTexCoord2fv(vert->texcoord);

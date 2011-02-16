@@ -1015,18 +1015,10 @@ public:
 			//hmm... shader gets setup every time because it depends on sampler which may have just changed
 			setupShader(poly->polyAttr);
 
-#ifdef _NEW_VTX
-			// TODO: CrazyMax (9 Feb 2011): zeromus check it, please
-			for(int j=0;j<poly->vertCount;j++)
-				this->verts[j] = &clippedPoly.clipVerts[j];
-			for(int j=poly->vertCount;j<MAX_CLIPPED_VERTS;j++)
-				this->verts[j] = NULL;
-#else
 			for(int j=0;j<type;j++)
 				this->verts[j] = &clippedPoly.clipVerts[j];
 			for(int j=type;j<MAX_CLIPPED_VERTS;j++)
 				this->verts[j] = NULL;
-#endif
 
 			polyAttr.backfacing = engine->polyBackfacing[i];
 
