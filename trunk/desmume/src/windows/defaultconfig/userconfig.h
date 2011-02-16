@@ -16,6 +16,4 @@
 //#define EXPERIMENTAL_WIFI_COMM //enables experimental wifi communication features which do not actually work yet
 //basic wifi register emulation is still enabled, to at least make it seem like the wifi is working in an empty universe
 
-//#define _NEW_VTX // enables new 3D polygon definitions (experimental)
-
 #endif //_USERCONFIG_H
