@@ -52,6 +52,7 @@ CommandLine::CommandLine()
 , _slot1(NULL)
 , _slot1_fat_dir(NULL)
 , depth_threshold(-1)
+, debug_console(-1)
 , load_slot(-1)
 , arm9_gdb_port(0)
 , arm7_gdb_port(0)
@@ -95,6 +96,7 @@ void CommandLine::loadCommonOptions()
 		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
 		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
+		{ "debug-console", 0, 0, G_OPTION_ARG_INT, &debug_console, "Behave as 8MB debug console (default 0)", "DEBUGCONSOLE"},
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -133,6 +135,8 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
 	if(depth_threshold != -1)
 		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
+	if(debug_console != -1)
+		CommonSettings.DebugConsole = true;
 
 	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
