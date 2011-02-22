@@ -1,4 +1,5 @@
-/*	Copyright (C) 2006 yopyop
+/*
+	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
 	Copyright (C) 2007-2011 DeSmuME team
 
@@ -1070,6 +1071,114 @@ static void execdiv() {
 	MMU.divMod = mod;
 	MMU.divRunning = TRUE;
 	NDS_Reschedule();
+}
+
+DSI_TSC::DSI_TSC()
+	: state(0)
+	, selection(0)
+{
+	for(int i=0;i<ARRAY_SIZE(registers);i++)
+		registers[i] = 0x00;
+}
+
+void DSI_TSC::reset_command()
+{
+	state = 0;
+	readcount = 0;
+}
+
+u16 DSI_TSC::write16(u16 val)
+{
+	switch(state)
+	{
+	case 0:
+		selection = val;
+		state = 1;
+		return read16();
+	case 1:
+		{
+		u16 regsel = selection>>1;
+		if(selection&1)
+		{
+			//read
+		}
+		else
+		{
+			//write
+			registers[regsel] = val;
+		}
+		state = 2;
+		return read16();
+		}
+	case 2:
+		{
+		//continuing...
+		readcount++;
+		return read16();
+		}
+		break;
+	}
+	return 0;
+}
+
+u16 DSI_TSC::read16()
+{
+	u16 regsel = selection>>1;
+	switch(regsel)
+	{
+	case 1:
+		{
+			u16 temp;
+			if(registers[0] != 252) return 0xFF;
+			if(readcount<10) temp = nds.touchX;
+			else temp = nds.touchY;
+			if(readcount&1) return temp&0xFF;
+			else return (temp>>8)&0xFF;
+		}
+	case 9:
+		if(registers[0] == 3)
+		{
+			if(nds.isTouch) 
+				return 0;
+		}
+		break;
+	case 14:
+		if(registers[0] == 3)
+		{
+			if(nds.isTouch) 
+				return 0;
+		}
+		break;
+	}
+	return 0xFF;
+}
+
+bool DSI_TSC::save_state(EMUFILE* os)
+{
+	u32 version = 0;
+	write32le(version,os);
+
+	write16le(selection,os);
+	write32le(state,os);
+	write32le(readcount,os);
+	for(int i=0;i<ARRAY_SIZE(registers);i++)
+		write8le(registers[i],os);
+
+	return true;
+}
+
+bool DSI_TSC::load_state(EMUFILE* is)
+{
+	u32 version;
+	read32le(&version,is);
+
+	read16le(&selection,is);
+	read32le(&state,is);
+	read32le(&readcount,is);
+	for(int i=0;i<ARRAY_SIZE(registers);i++)
+		read8le(&registers[i],is);
+
+	return true;
 }
 
 // TODO: 
@@ -3397,6 +3506,13 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 		switch(adr)
 		{
+			case REG_DSIMODE:
+				if(!CommonSettings.DSI) break;
+				return 1;
+			case 0x04004008:
+				if(!CommonSettings.DSI) break;
+				return 0x8000;
+
 			case REG_DISPA_DISPSTAT:
 				break;
 
@@ -3729,6 +3845,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					  fw_reset_com(&MMU.fw);
 					}
 					MMU.SPI_CNT = val;
+
+					//new code:
+					if(!BIT11(MMU.SPI_CNT))
+							MMU_new.dsi_tsc.reset_command();
 					
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
 				}
@@ -3801,6 +3921,12 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						
 						case 2:
 						{
+							if(CommonSettings.DSI)
+							{
+								val = MMU_new.dsi_tsc.write16(val);
+								break;
+							}
+
 							int channel = (MMU.SPI_CMD&0x70)>>4;
 							//printf("%08X\n",channel);
 							switch(channel)

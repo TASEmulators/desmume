@@ -1,5 +1,6 @@
-/*  Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2010 DeSmuME team
+/*
+	Copyright (C) 2006 Theo Berkau
+	Copyright (C) 2006-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -346,6 +347,9 @@
 #define eng_3D_VEC_RESULT      0x04000630
 #define eng_3D_CLIPMTX_RESULT  0x04000640
 #define eng_3D_VECMTX_RESULT   0x04000680
+
+//DSI
+#define REG_DSIMODE 0x04004000
 
 #define IPCFIFOCNT_SENDEMPTY 0x0001
 #define IPCFIFOCNT_SENDFULL 0x0002

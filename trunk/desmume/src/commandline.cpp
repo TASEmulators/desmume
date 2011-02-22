@@ -1,20 +1,18 @@
-/*  Copyright (C) 2009-2011 DeSmuME team
+/*
+	Copyright (C) 2009-2011 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 //windows note: make sure this file gets compiled with _cdecl
@@ -53,6 +51,7 @@ CommandLine::CommandLine()
 , _slot1_fat_dir(NULL)
 , depth_threshold(-1)
 , debug_console(-1)
+, dsi_mode(-1)
 , load_slot(-1)
 , arm9_gdb_port(0)
 , arm7_gdb_port(0)
@@ -97,6 +96,7 @@ void CommandLine::loadCommonOptions()
 		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 		{ "debug-console", 0, 0, G_OPTION_ARG_INT, &debug_console, "Behave as 8MB debug console (default 0)", "DEBUGCONSOLE"},
+		{ "dsi-mode", 0, 0, G_OPTION_ARG_INT, &dsi_mode, "Behave as a DSi", "DSIMODE"},
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -136,7 +136,9 @@ bool CommandLine::parse(int argc,char **argv)
 	if(depth_threshold != -1)
 		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
 	if(debug_console != -1)
-		CommonSettings.DebugConsole = true;
+		CommonSettings.DebugConsole = (debug_console==1);
+	if(dsi_mode != -1)
+		CommonSettings.DSI = (dsi_mode==1);
 
 	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
