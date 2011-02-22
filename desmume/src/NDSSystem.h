@@ -490,6 +490,7 @@ extern struct TCommonSettings {
 		, spu_captureMuted(false)
 		, spu_advanced(false)
 		, StylusPressure(50)
+		, DSI(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -524,6 +525,7 @@ extern struct TCommonSettings {
 	bool BootFromFirmware;
 	struct NDS_fw_config_data InternalFirmConf;
 
+	bool DSI;
 	bool DebugConsole;
 	bool EnsataEmulation;
 	

@@ -1,22 +1,20 @@
-/*	Copyright (C) 2006 yopyop
+/*
+	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2010 DeSmuME team
+	Copyright (C) 2007-2011 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef MMU_H
@@ -419,6 +417,26 @@ struct MMU_struct
 	nds_dscard dscard[2];
 };
 
+
+//everything in here is derived from libnds behaviours. no hardware tests yet
+class DSI_TSC
+{
+public:
+	DSI_TSC();
+	void reset_command();
+	u16 write16(u16 val);
+	bool save_state(EMUFILE* os);
+	bool load_state(EMUFILE* is);
+
+private:
+	u16 read16();
+	u16 selection;
+	s32 state;
+	s32 readcount;
+	u8 registers[0x80];
+};
+
+
 //this contains things which can't be memzeroed because they are smarter classes
 struct MMU_struct_new
 {
@@ -428,6 +446,7 @@ struct MMU_struct_new
 	TGXSTAT gxstat;
 	SqrtController sqrt;
 	DivController div;
+	DSI_TSC dsi_tsc;
 
 	void write_dma(const int proc, const int size, const u32 adr, const u32 val);
 	u32 read_dma(const int proc, const int size, const u32 adr);

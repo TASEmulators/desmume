@@ -1,7 +1,8 @@
-/*  Copyright (C) 2006 Normmatt
-    Copyright (C) 2006 Theo Berkau
-    Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2010 DeSmuME team
+/*
+	Copyright (C) 2006 Normmatt
+	Copyright (C) 2006 Theo Berkau
+	Copyright (C) 2007 Pascal Giard
+	Copyright (C) 2008-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -264,7 +265,7 @@ SFORMAT SF_MOVIE[]={
 
 static void mmu_savestate(EMUFILE* os)
 {
-	u32 version = 5;
+	u32 version = 6;
 	write32le(version,os);
 	
 	//version 2:
@@ -286,6 +287,9 @@ static void mmu_savestate(EMUFILE* os)
 	//version 4:
 	MMU_new.sqrt.savestate(os);
 	MMU_new.div.savestate(os);
+
+	//version 6:
+	MMU_new.dsi_tsc.save_state(os);
 }
 
 SFORMAT SF_WIFI[]={
@@ -455,8 +459,13 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
 
-	if(version < 5)
-		MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
+	if(version < 4) return ok;
+		
+	MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
+
+	if(version < 6) return ok;
+
+	MMU_new.dsi_tsc.load_state(is);
 
 	return ok;
 }
