@@ -1140,6 +1140,7 @@ u16 DSI_TSC::read16()
 		{
 			if(nds.isTouch) 
 				return 0;
+			else return 0x40;
 		}
 		break;
 	case 14:
@@ -1147,6 +1148,7 @@ u16 DSI_TSC::read16()
 		{
 			if(nds.isTouch) 
 				return 0;
+			else return 2;
 		}
 		break;
 	}
