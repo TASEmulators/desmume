@@ -766,27 +766,26 @@ static void SetVertex()
 			POLY &poly = polylist->list[polylist->count];
 			
 			poly.vtxFormat = vtxFormat;
-			if (poly.type == 4)
-			{	// Line stream polygon detect
-				// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
-				u8 duplicatedVerts = 0;
-				for (int i = 0; i < (poly.type-1); i++)
-				{
-					VERT &vert1 = vertlist->list[poly.vertIndexes[i]];
-					for (int t = (i+1); t < poly.type; t++)
-					{
-						VERT &vert2 = vertlist->list[poly.vertIndexes[t]];
-						if ((vert1.x == vert2.x) && (vert1.y == vert2.y))
-							duplicatedVerts++;
-					}
-				}
-				if (duplicatedVerts == 2)
-				{
-					//printf("Line stream polygon detected\n");
-					poly.vtxFormat = vtxFormat + 4;
-				}
+
+			// Line segment detect
+			// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
+			bool duplicated = false;
+			VERT &vert0 = vertlist->list[poly.vertIndexes[0]];
+			VERT &vert1 = vertlist->list[poly.vertIndexes[1]];
+			VERT &vert2 = vertlist->list[poly.vertIndexes[2]];
+			if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
+			else
+				if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
+				else
+					if ( (vert0.y == vert1.y) && (vert1.y == vert2.y) ) duplicated = true;
+					else
+						if ( (vert0.x == vert1.x) && (vert1.x == vert2.x) ) duplicated = true;
+			if (duplicated)
+			{
+				//printf("Line Segmet detected (poly type %i, mode %i)\n", poly.type, poly.vtxFormat);
+				poly.vtxFormat = vtxFormat + 4;
 			}
-			
+
 			poly.polyAttr = polyAttr;
 			poly.texParam = textureFormat;
 			poly.texPalette = texturePalette;
