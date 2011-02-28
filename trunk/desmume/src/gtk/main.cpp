@@ -1423,7 +1423,7 @@ static void AcceptNewInputKey(GtkWidget *w, GdkEventKey *e, struct modify_key_ct
 
     ctx->mk_key_chosen = e->keyval;
     YouPressed = g_strdup_printf("You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
-    gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
+    gtk_label_set_text(GTK_LABEL(ctx->label), YouPressed);
     g_free(YouPressed);
 }
 
@@ -1516,7 +1516,7 @@ static void AcceptNewJoyKey(GtkWidget *w, GdkEventFocus *e, struct modify_key_ct
     ctx->mk_key_chosen = get_joy_key(ctx->key_id);
 
     YouPressed = g_strdup_printf("You pressed : %d\nClick OK to keep this key.", ctx->mk_key_chosen);
-    gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
+    gtk_label_set_text(GTK_LABEL(ctx->label), YouPressed);
     g_free(YouPressed);
 }
 
