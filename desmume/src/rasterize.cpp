@@ -902,7 +902,7 @@ public:
 			// hack for VC++ 2010 (bug in compiler optimization?)
 			// freeze on 3D
 			// TODO: study it
-			#if _MSC_VER == 1600
+			#if defined(_MSC_VER) && _MSC_VER == 1600
 				Sleep(0); // nop
 			#endif
 		}
