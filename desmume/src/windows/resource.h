@@ -862,6 +862,12 @@
 #define ID_TOOLS_SETFONT                40085
 #define ID_CONFIG_SETFONT               40086
 #define IDD_FONTCONFIG                  40087
+#define ID_MAGNIFICATIONFILTER_HQ4X     40088
+#define IDM_RENDER_HQ4X                 40089
+#define ID_40090                        40090
+#define ID_MAGNIFICATIONFILTER_HQ4X40091 40091
+#define ID_FILTRI_HQ4X                  40092
+#define ID_40093                        40093
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -962,7 +968,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
-#define _APS_NEXT_COMMAND_VALUE         40088
+#define _APS_NEXT_COMMAND_VALUE         40094
 #define _APS_NEXT_CONTROL_VALUE         1041
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

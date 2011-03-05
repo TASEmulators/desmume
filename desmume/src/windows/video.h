@@ -17,8 +17,8 @@ public:
 	int currentfilter;
 
 	u8* srcBuffer;
-	CACHE_ALIGN u32 buffer[4*256*192*2];
-	CACHE_ALIGN u32 filteredbuffer[4*256*192*2];
+	CACHE_ALIGN u32 buffer[16*256*192*2];
+	CACHE_ALIGN u32 filteredbuffer[16*256*192*2];
 
 	enum {
 		NONE,
@@ -38,6 +38,7 @@ public:
         EPXPLUS,
         EPX1POINT5,
         EPXPLUS1POINT5,
+    HQ4X,
 
 		NUM_FILTERS,
 	};
@@ -68,6 +69,10 @@ public:
 				width = 256*3/2;
 				height = 384*3/2;
 				break;
+      case HQ4X:
+				width = 256*4;
+				height = 384*4;
+        break;
 			default:
 				width = 256*2;
 				height = 384*2;
@@ -109,6 +114,9 @@ public:
 				break;
 			case HQ2X:
 				RenderHQ2X(src, dst);
+				break;
+			case HQ4X:
+				RenderHQ4X(src, dst);
 				break;
 			case HQ2XS:
 				RenderHQ2XS(src, dst);

@@ -528,6 +528,7 @@
     <ClCompile Include="colorctrl.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
+    <ClCompile Include="filter\hq4x.cpp" />
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="hotkey.cpp" />
@@ -665,6 +666,7 @@
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
     <ClInclude Include="filter\hq2x.h" />
+    <ClInclude Include="filter\hq4x.h" />
     <ClInclude Include="filter\interp.h" />
     <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
@@ -814,6 +816,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\wx.tag;%(Outputs)</Outputs>
     </CustomBuild>
+    <None Include="filter\hq4x.dat" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />

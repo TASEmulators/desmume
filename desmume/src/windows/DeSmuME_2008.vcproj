@@ -994,30 +994,6 @@
 				Name="addons"
 				>
 				<File
-					RelativePath="..\addons\slot2_expMemory.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\addons\slot2_gbagame.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\addons\slot2_guitarGrip.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\addons\slot2_none.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\addons\slot2_piano.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\addons\slot2_rumblepak.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\addons\slot1_none.cpp"
 					>
 				</File>
@@ -1030,11 +1006,35 @@
 					>
 				</File>
 				<File
+					RelativePath="..\addons\slot2_expMemory.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot2_gbagame.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot2_guitarGrip.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\addons\slot2_mpcf.cpp"
 					>
 				</File>
 				<File
+					RelativePath="..\addons\slot2_none.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\addons\slot2_paddle.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot2_piano.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot2_rumblepak.cpp"
 					>
 				</File>
 			</Filter>
@@ -1603,6 +1603,18 @@
 				</File>
 				<File
 					RelativePath=".\filter\hq2x.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\hq4x.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\hq4x.dat"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\hq4x.h"
 					>
 				</File>
 				<File
