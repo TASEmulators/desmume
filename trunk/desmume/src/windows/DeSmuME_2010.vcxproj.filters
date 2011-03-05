@@ -444,6 +444,9 @@
     <ClCompile Include="..\addons\slot2_paddle.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
+    <ClCompile Include="filter\hq4x.cpp">
+      <Filter>Windows\filters</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -834,6 +837,9 @@
     <ClInclude Include="..\utils\emufat_types.h">
       <Filter>Core\utils</Filter>
     </ClInclude>
+    <ClInclude Include="filter\hq4x.h">
+      <Filter>Windows\filters</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\instruction_tabdef.inc">
@@ -847,6 +853,9 @@
     </None>
     <None Include="DeSmuME.ico">
       <Filter>Windows\resources</Filter>
+    </None>
+    <None Include="filter\hq4x.dat">
+      <Filter>Windows\filters</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

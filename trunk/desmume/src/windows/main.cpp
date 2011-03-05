@@ -1,19 +1,19 @@
-/*  main.cpp
-	Copyright 2006 Theo Berkau
-    Copyright (C) 2006-2010 DeSmuME team
+/*
+Copyright 2006 Theo Berkau
+Copyright (C) 2006-2011 DeSmuME team
 
-	This file is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 2 of the License, or
-	(at your option) any later version.
+This file is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
 
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+This file is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // icon gradient: #f6f6fb to #8080c0
@@ -2593,8 +2593,10 @@ int _main()
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	if(WndX < -10000) WndX = CW_USEDEFAULT; // fix for missing window problem
 	if(WndY < -10000) WndY = CW_USEDEFAULT; // (happens if you close desmume while it's minimized)
-	video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
-	video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
+  video.width = 256;
+  video.height = 384;
+	//video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
+	//video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
 	video.layout_old = video.layout = GetPrivateProfileInt("Video", "LCDsLayout", 0, IniName);
 	if (video.layout > 2)
 	{
@@ -2677,8 +2679,18 @@ int _main()
 	}
 
 	//disable wacky stylus stuff
-	GlobalAddAtom("MicrosoftTabletPenServiceProperty");
-	SetProp(MainWindow->getHWnd(),"MicrosoftTabletPenServiceProperty",(HANDLE)1);
+	GlobalAddAtom(MICROSOFT_TABLETPENSERVICE_PROPERTY);
+	SetProp(MainWindow->getHWnd(),MICROSOFT_TABLETPENSERVICE_PROPERTY,(HANDLE)(
+		TABLET_DISABLE_PRESSANDHOLD |
+			TABLET_DISABLE_PENTAPFEEDBACK |
+			TABLET_DISABLE_PENBARRELFEEDBACK |
+			TABLET_DISABLE_TOUCHUIFORCEON |
+			TABLET_DISABLE_TOUCHUIFORCEOFF |
+			TABLET_DISABLE_TOUCHSWITCH |
+			TABLET_DISABLE_FLICKS |
+			TABLET_DISABLE_SMOOTHSCROLLING |
+			TABLET_DISABLE_FLICKFALLBACKKEYS
+			));
 
 	gpu_SetRotateScreen(video.rotation);
 
@@ -2914,7 +2926,7 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
-	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
+  video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
 
 	/* Read the firmware settings from the init file */
@@ -4013,6 +4025,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_LQ2X, video.currentfilter == video.LQ2X );
 			MainWindow->checkMenu(IDM_RENDER_LQ2XS, video.currentfilter == video.LQ2XS );
 			MainWindow->checkMenu(IDM_RENDER_HQ2X, video.currentfilter == video.HQ2X );
+      MainWindow->checkMenu(IDM_RENDER_HQ4X, video.currentfilter == video.HQ4X );
 			MainWindow->checkMenu(IDM_RENDER_HQ2XS, video.currentfilter == video.HQ2XS );
 			MainWindow->checkMenu(IDM_RENDER_2XSAI, video.currentfilter == video._2XSAI );
 			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, video.currentfilter == video.SUPER2XSAI );
@@ -4516,16 +4529,6 @@ DOKEYDOWN:
 			NDS_UnPause();
 		}
 		return 0;
-	case WM_TABLET_QUERYSYSTEMGESTURESTATUS:
-		return TABLET_DISABLE_PRESSANDHOLD |
-			TABLET_DISABLE_PENTAPFEEDBACK |
-			TABLET_DISABLE_PENBARRELFEEDBACK |
-			TABLET_DISABLE_TOUCHUIFORCEON |
-			TABLET_DISABLE_TOUCHUIFORCEOFF |
-			TABLET_DISABLE_TOUCHSWITCH |
-			TABLET_DISABLE_FLICKS |
-			TABLET_DISABLE_SMOOTHSCROLLING |
-			TABLET_DISABLE_FLICKFALLBACKKEYS;
 
 	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
@@ -4705,6 +4708,13 @@ DOKEYDOWN:
 			{
 				Lock lock (win_backbuffer_sync);
 				video.setfilter(video.HQ2X);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_HQ4X:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video.HQ4X);
 				FilterUpdate(hwnd);
 			}
 			break;
@@ -6507,8 +6517,8 @@ bool DDRAW::createSurfaces(HWND hwnd)
 	else
 		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;
 
-	surfDescBack.dwWidth         = 384 * 2;
-	surfDescBack.dwHeight        = 384 * 2;
+	surfDescBack.dwWidth         = 384 * 4;
+	surfDescBack.dwHeight        = 384 * 4;
 
 	if (FAILED(handle->CreateSurface(&surfDescBack, &surface.back, NULL))) return false;
 	if (FAILED(handle->CreateClipper(0, &clip, NULL))) return false;
