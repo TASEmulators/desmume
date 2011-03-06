@@ -1656,6 +1656,10 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			// Rotozoomed direct color
 			else if(spriteInfo->Mode == 3)
 			{
+				//transparent (i think, dont bother to render?) if alpha is 0
+				if(spriteInfo->PaletteIndex == 0)
+					continue;
+
 				srcadr = bmp_sprite_address(this,spriteInfo,sprSize,0);
 
 				for(j = 0; j < lg; ++j, ++sprX)
