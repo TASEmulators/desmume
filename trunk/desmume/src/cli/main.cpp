@@ -494,7 +494,6 @@ int main(int argc, char ** argv) {
   u32 fps_timing = 0;
   u32 fps_frame_counter = 0;
   u32 fps_previous_time = 0;
-  u32 fps_temp_time;
 #endif
 
 #ifdef INCLUDE_OPENGL_2D
@@ -730,8 +729,13 @@ int main(int argc, char ** argv) {
         desmume_cycle(&ctrls_cfg);
     }
 
+#ifdef DISPLAY_FPS
+    int now = SDL_GetTicks();
+#endif
     if ( !my_config.disable_limiter && !ctrls_cfg.boost) {
+#ifndef DISPLAY_FPS
       int now = SDL_GetTicks();
+#endif
       int delay =  (limiter_tick0 + limiter_frame_counter*1000/FPS_LIMITER_FPS) - now;
       if (delay > 0) {
         SDL_Delay(delay);
@@ -745,9 +749,8 @@ int main(int argc, char ** argv) {
 
 #ifdef DISPLAY_FPS
     fps_frame_counter += 1;
-    fps_temp_time = SDL_GetTicks();
-    fps_timing += fps_temp_time - fps_previous_time;
-    fps_previous_time = fps_temp_time;
+    fps_timing += now - fps_previous_time;
+    fps_previous_time = now;
 
     if ( fps_frame_counter == NUM_FRAMES_TO_TIME) {
       char win_title[20];
