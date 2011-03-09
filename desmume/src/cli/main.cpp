@@ -71,8 +71,7 @@ static float nds_screen_size_ratio = 1.0f;
 #define NUM_FRAMES_TO_TIME 60
 #endif
 
-
-#define FPS_LIMITER_FRAME_PERIOD 8
+#define FPS_LIMITER_FPS 60
 
 static SDL_Surface * surface;
 
@@ -129,7 +128,6 @@ class configured_features : public CommandLine
 public:
   int auto_pause;
   int frameskip;
-  int fps_limiter_frame_period;
 
   int engine_3d;
   int savetype;
@@ -147,7 +145,6 @@ init_config( class configured_features *config) {
 
   config->auto_pause = 0;
   config->frameskip = 0;
-  config->fps_limiter_frame_period = FPS_LIMITER_FRAME_PERIOD;
 
   config->engine_3d = 1;
   config->savetype = 0;
@@ -168,7 +165,6 @@ fill_config( class configured_features *config,
   GOptionEntry options[] = {
     { "auto-pause", 0, 0, G_OPTION_ARG_NONE, &config->auto_pause, "Pause emulation if focus is lost", NULL},
     { "frameskip", 0, 0, G_OPTION_ARG_INT, &config->frameskip, "Set frameskip", "FRAMESKIP"},
-    { "limiter-period", 0, 0, G_OPTION_ARG_INT, &config->fps_limiter_frame_period, "Set frame period of the fps limiter", "LIMITER"},
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t\t\t  1 = internal rasterizer (default)\n"
@@ -225,11 +221,6 @@ fill_config( class configured_features *config,
     goto error;
   }
 
-  if (config->fps_limiter_frame_period < 0 || config->fps_limiter_frame_period > 30) {
-    g_printerr("FPS limiter period must be >= 0 and <= 30.\n");
-    goto error;
-  }
-
   if (config->nds_file == "") {
     g_printerr("Need to specify file to load.\n");
     goto error;
@@ -274,30 +265,6 @@ joinThread_gdb( void *thread_handle) {
   SDL_WaitThread( (SDL_Thread*)thread_handle, &ignore);
 }
 #endif
-
-
-
-/** 
- * A SDL timer callback function. Signals the supplied SDL semaphore
- * if its value is small.
- * 
- * @param interval The interval since the last call (in ms)
- * @param param The pointer to the semaphore.
- * 
- * @return The interval to the next call (required by SDL)
- */
-static Uint32
-fps_limiter_fn( Uint32 interval, void *param) {
-  SDL_sem *sdl_semaphore = (SDL_sem *)param;
-
-  /* signal the semaphore if it is getting low */
-  if ( SDL_SemValue( sdl_semaphore) < 4) {
-    SDL_SemPost( sdl_semaphore);
-  }
-
-  return interval;
-}
-
 
 #ifdef INCLUDE_OPENGL_2D
 /* initialization openGL function */
@@ -518,8 +485,7 @@ int main(int argc, char ** argv) {
 #endif
 
   int limiter_frame_counter = 0;
-  SDL_sem *fps_limiter_semaphore = NULL;
-  SDL_TimerID limiter_timer = NULL;
+  int limiter_tick0 = 0;
   int error;
 
   GKeyFile *keyfile;
@@ -726,27 +692,6 @@ int main(int argc, char ** argv) {
   /* Since gtk has a different mapping the keys stop to work with the saved configuration :| */
   load_default_config(cli_kb_cfg);
 
-  if ( !my_config.disable_limiter) {
-    /* create the semaphore used for fps limiting */
-    fps_limiter_semaphore = SDL_CreateSemaphore( 1);
-
-    /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
-    if ( fps_limiter_semaphore != NULL) {
-      limiter_timer = SDL_AddTimer( 16 * my_config.fps_limiter_frame_period,
-                                  fps_limiter_fn, fps_limiter_semaphore);
-    }
-
-    if ( limiter_timer == NULL) {
-      fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
-               SDL_GetError());
-      if ( fps_limiter_semaphore != NULL) {
-        SDL_DestroySemaphore( fps_limiter_semaphore);
-        fps_limiter_semaphore = NULL;
-      }
-      return 1;
-    }
-  }
-
   if(my_config.load_slot != -1){
     loadstate_slot(my_config.load_slot);
   }
@@ -786,14 +731,17 @@ int main(int argc, char ** argv) {
     }
 
     if ( !my_config.disable_limiter && !ctrls_cfg.boost) {
-      limiter_frame_counter += 1 + my_config.frameskip;
-      if ( limiter_frame_counter >= my_config.fps_limiter_frame_period) {
+      int now = SDL_GetTicks();
+      int delay =  (limiter_tick0 + limiter_frame_counter*1000/FPS_LIMITER_FPS) - now;
+      if (delay > 0) {
+        SDL_Delay(delay);
+      } else if (delay < -500) { // reset if we fall too far behind don't want to run super fast until we catch up
+        limiter_tick0 = now;
         limiter_frame_counter = 0;
-
-        /* wait for the timer to expire */
-        SDL_SemWait( fps_limiter_semaphore);
       }
     }
+    // always count frames, we'll mess up if the limiter gets turned on later otherwise
+    limiter_frame_counter += 1 + my_config.frameskip;
 
 #ifdef DISPLAY_FPS
     fps_frame_counter += 1;
@@ -817,12 +765,6 @@ int main(int argc, char ** argv) {
 
   /* Unload joystick */
   uninit_joy();
-
-  if ( !my_config.disable_limiter) {
-    /* tidy up the FPS limiter timer and semaphore */
-    SDL_RemoveTimer( limiter_timer);
-    SDL_DestroySemaphore( fps_limiter_semaphore);
-  }
 
   SDL_Quit();
   NDS_DeInit();
