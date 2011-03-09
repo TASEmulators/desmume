@@ -3,9 +3,9 @@ dnl --- Release version is second argument to AC_INIT
 
 AC_INIT(desmume, [svn])
 
-dnl -- find target architecture for some os specific libraries
-AC_CANONICAL_TARGET
-case $target in
+dnl -- find host architecture for some os specific libraries
+AC_CANONICAL_HOST
+case $host in
   *linux*) desmume_arch=linux;;
   *mingw*) desmume_arch=windows;;
   *darwin*) desmume_arch=linux;;
@@ -269,8 +269,8 @@ AC_ARG_ENABLE(wifi,
 		  [AC_MSG_WARN([pcap library not found, wifi will not work])])
 	      ])
 
-dnl Set compiler library flags per target.
-case $target in
+dnl Set compiler library flags per host architecture
+case $host in
   *mingw*)
     LIBS="$LIBS -ldxguid -ldxerr8 -ldsound -lopengl32 -lws2_32 -mwindows"
     UI_DIR="windows"
