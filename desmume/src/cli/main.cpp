@@ -490,6 +490,8 @@ int main(int argc, char ** argv) {
 
   GKeyFile *keyfile;
 
+  int now;
+
 #ifdef DISPLAY_FPS
   u32 fps_timing = 0;
   u32 fps_frame_counter = 0;
@@ -730,11 +732,11 @@ int main(int argc, char ** argv) {
     }
 
 #ifdef DISPLAY_FPS
-    int now = SDL_GetTicks();
+    now = SDL_GetTicks();
 #endif
     if ( !my_config.disable_limiter && !ctrls_cfg.boost) {
 #ifndef DISPLAY_FPS
-      int now = SDL_GetTicks();
+      now = SDL_GetTicks();
 #endif
       int delay =  (limiter_tick0 + limiter_frame_counter*1000/FPS_LIMITER_FPS) - now;
       if (delay > 0) {
