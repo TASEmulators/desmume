@@ -23,6 +23,10 @@
 #ifndef CTRLSSDL_H
 #define CTRLSSDL_H
 
+#ifdef HAVE_GL_GL_H
+#include <GL/gl.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -90,7 +94,12 @@ struct ctrls_event_config {
   int sdl_quit;
   int boost;
   int fake_mic;
-  void (*resize_cb)(u16 width, u16 height);
+  GLuint *screen_texture;
+#ifdef HAVE_GL_GL_H
+  void (*resize_cb)(u16 width, u16 height, GLuint *screen_texture);
+#else
+  void (*resize_cb)(u16 width, u16 height, void *screen_texture);
+#endif
 };
 
 void load_default_config(const u16 kbCfg[]);

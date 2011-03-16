@@ -318,10 +318,18 @@ initGL( GLuint *screen_texture) {
 }
 
 static void
-resizeWindow( u16 width, u16 height) {
+resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
+
   int comp_width = 3 * width;
   int comp_height = 2 * height;
   GLenum errCode;
+
+  surface = SDL_SetVideoMode(width, height, 32, sdl_videoFlags);
+  initGL(screen_texture);
+
+#ifdef HAVE_LIBAGG
+  Hud.reset();
+#endif
 
   if ( comp_width > comp_height) {
     width = 2*height/3;
@@ -353,9 +361,6 @@ resizeWindow( u16 width, u16 height) {
     errString = gluErrorString(errCode);
     fprintf( stderr, "GL resize failed: %s\n", errString);
   }
-
-  surface = SDL_SetVideoMode( width, height, 32,
-                              sdl_videoFlags );
 }
 
 
@@ -422,9 +427,15 @@ opengl_Draw( GLuint *texture, int software_convert) {
 #endif
 
 /* this is a stub for resizeWindow_stub in the case of no gl headers or no opengl 2d */
+#ifdef INCLUDE_OPENGL_2D
 static void
-resizeWindow_stub (u16 width, u16 height) {
+resizeWindow_stub (u16 width, u16 height, GLuint *screen_texture) {
 }
+#else
+static void
+resizeWindow_stub (u16 width, u16 height, void *screen_texture) {
+}
+#endif
 
 static void
 Draw( void) {
@@ -681,7 +692,7 @@ int main(int argc, char ** argv) {
 
   /* set the initial window size */
   if ( my_config.opengl_2d) {
-    resizeWindow( 256, 192*2);
+    resizeWindow( 256, 192*2, screen_texture);
   }
 #endif
 
@@ -709,6 +720,11 @@ int main(int argc, char ** argv) {
   ctrls_cfg.focused = 1;
   ctrls_cfg.fake_mic = 0;
   ctrls_cfg.keypad = 0;
+#ifdef INCLUDE_OPENGL_2D
+  ctrls_cfg.screen_texture = screen_texture;
+#else
+  ctrls_cfg.screen_texture = NULL;
+#endif
   ctrls_cfg.resize_cb = &resizeWindow_stub;
 
   while(!ctrls_cfg.sdl_quit) {

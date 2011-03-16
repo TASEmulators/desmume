@@ -428,7 +428,7 @@ process_ctrls_event( SDL_Event& event,
     switch (event.type)
     {
       case SDL_VIDEORESIZE:
-        cfg->resize_cb( event.resize.w, event.resize.h);
+        cfg->resize_cb( event.resize.w, event.resize.h, cfg->screen_texture);
         break;
 
       case SDL_ACTIVEEVENT:
