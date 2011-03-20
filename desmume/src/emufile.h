@@ -141,7 +141,7 @@ public:
 	EMUFILE_MEMORY(void* buf, s32 size) : vec(new std::vector<u8>()), ownvec(true), pos(0), len(size) { 
 		vec->resize(size);
 		if(size != 0)
-			memcpy(&vec[0],buf,size);
+			memcpy(&vec->front(),buf,size);
 	}
 
 	~EMUFILE_MEMORY() {
