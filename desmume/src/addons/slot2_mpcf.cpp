@@ -64,7 +64,7 @@ static u32 fileStartLBA,fileEndLBA;
 static std::string sFlashPath;
 static BOOL cflashDeviceEnabled = FALSE;
 
-static EMUFILE* file;
+static EMUFILE* file = NULL;
 
 // ===========================
 BOOL	inited;
@@ -259,16 +259,9 @@ static void cflash_write(unsigned int address,unsigned int data)
 static void cflash_close( void) 
 {
 	if (!inited) return;
-	if (!CFlash_IsUsingPath())
-	{
-		delete file;
-		file = NULL;
-	}
-	else
-	{
-		int i;
-		cflashDeviceEnabled = FALSE;
-	}
+  if(file) delete file;
+	cflashDeviceEnabled = FALSE;
+  file = NULL;
 	inited = FALSE;
 }
 
