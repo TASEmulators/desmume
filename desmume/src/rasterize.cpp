@@ -261,6 +261,11 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 		for(int i=0;i<3;i++)
 			color[i].initialize(verts[Top]->fcolor[i],verts[Bottom]->fcolor[i],dx,dy,XStep,XPrestep,YPrestep);
 	}
+	else
+	{
+		memset(this, 0, sizeof(*this));
+		this->verts = verts;
+	}
 }
 
 FORCEINLINE int edge_fx_fl::Step() {
@@ -755,20 +760,37 @@ public:
 
 		int x = XStart;
 
-		while(width-- > 0)
+		if(x<0)
 		{
-			bool outOfRange = false;
-			if(RENDERER && (x<0 || x>255))
-				outOfRange = true;
-			if(!RENDERER && (x<0 || x>=engine->width))
-				outOfRange = true;
-			if(!lineHack && outOfRange)
+			if(RENDERER && !lineHack)
 			{
 				printf("rasterizer rendering at x=%d! oops!\n",x);
 				return;
 			}
-			if(!outOfRange)
-				pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
+			invw += dinvw_dx * -x;
+			u += du_dx * -x;
+			v += dv_dx * -x;
+			z += dz_dx * -x;
+			color[0] += dc_dx[0] * -x;
+			color[1] += dc_dx[1] * -x;
+			color[2] += dc_dx[2] * -x;
+			adr += -x;
+			width -= -x;
+			x = 0;
+		}
+		if(x+width > (RENDERER?256:engine->width))
+		{
+			if(RENDERER && !lineHack)
+			{
+				printf("rasterizer rendering at x=%d! oops!\n",x+width-1);
+				return;
+			}
+			width = (RENDERER?256:engine->width)-x;
+		}
+
+		while(width-- > 0)
+		{
+			pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
 			adr++;
 			x++;
 
