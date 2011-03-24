@@ -156,147 +156,81 @@ void* Task::Impl::finish()
 
 #else
 
-//just a stub impl that doesnt actually do any threading.
-//somebody needs to update the pthread implementation below
-class Task::Impl {
-public:
-	Impl() {}
-	~Impl() {}
-
-	void start(bool spinlock) {}
-	void shutdown() {}
-
-	void* ret;
-	void execute(const TWork &work, void* param) { ret = work(param); }
-	
-	void* finish() { return ret; }
-};
-
-
-/*
 #include <pthread.h>
+#include <semaphore.h>
 
 class Task::Impl {
 public:
 	Impl();
+	~Impl() {}
 
-	//execute some work
+	void start(bool spinlock);
 	void execute(const TWork &work, void* param);
-
-	//wait for the work to complete
 	void* finish();
-
-	pthread_t thread;
-	static void* s_taskProc(void *ptr);
-	void taskProc();
-	void start();
 	void shutdown();
 
-	//the work function that shall be executed
+	pthread_t thread;
+	sem_t in, out;
 	TWork work;
-	void* param;
-
-	bool initialized;
-
-	struct WaitEvent
-	{
-		WaitEvent() 
-			: condition(PTHREAD_COND_INITIALIZER)
-			, mutex(PTHREAD_MUTEX_INITIALIZER)
-			, value(false)
-		{}
-		pthread_mutex_t mutex;
-		pthread_cond_t condition;
-		bool value;
-
-		//waits for the WaitEvent to be set
-		void waitAndClear()
-		{ 
-			lock();
-			if(!value)
-				pthread_cond_wait( &condition, &mutex );
-			value = false;
-			unlock();
-		}
-
-		//sets the WaitEvent
-		void signal()
-		{
-			lock();
-			if(!value) {
-				value = true;
-				pthread_cond_signal( &condition );
-			}
-			unlock();
-		}
-
-		//locks the condition's mutex
-		void lock() { pthread_mutex_lock(&mutex); }
-		
-		//unlocks the condition's mutex
-		void unlock() { pthread_mutex_unlock( &mutex ); }
-
-	} incomingWork, workDone;
-
+	void *param, *ret;
+	bool bStarted, bKill;
 };
 
-Task::Impl::Impl()
-	: work(NULL)
-	, initialized(false)
+void *taskProc(void *arg)
 {
-}
-
-void* Task::Impl::s_taskProc(void *ptr)
-{
-	//just past the buck to the instance method
-	((Task::Impl*)ptr)->taskProc();
-	return 0;
-}
-
-void Task::Impl::taskProc()
-{
-	for(;;) {
-		//wait for a chunk of work
-		incomingWork.waitAndClear();
-		//execute the work
-		param = work(param);
-		//signal completion
-		workDone.signal();
+	Task::Impl *ctx = (Task::Impl *)arg;
+	while(1) {
+		while(sem_wait(&ctx->in) == -1)
+			;
+		if(ctx->bKill)
+			break;
+		ctx->ret = ctx->work(ctx->param);
+		sem_post(&ctx->out);
 	}
+	return NULL;
 }
 
-void Task::Impl::start()
+Task::Impl::Impl()
 {
-	pthread_create( &thread, NULL, Task::Impl::s_taskProc, (void*)this );     
-	initialized = true;
-}
-void Task::Impl::shutdown()
-{
-	if(!initialized)
-		return;
-	// pthread_join or something, NYI, this code is all disabled anyway at the time of this writing
-	initialized = false;
+	work = NULL;
+	param = NULL;
+	ret = NULL;
+	bKill = false;
+	bStarted = false;
 }
 
-void Task::Impl::execute(const TWork &work, void* param) 
+void Task::Impl::start(bool spinlock)
 {
-	//initialization is deferred to the first execute to give win32 time to startup
-	if(!initialized) init();
-	//setup the work
+	sem_init(&in, 0, 0);
+	sem_init(&out, 0, 0);
+	pthread_create(&thread, NULL, &taskProc, this);
+	bStarted = 1;
+}
+
+void Task::Impl::execute(const TWork &work, void* param)
+{
 	this->work = work;
 	this->param = param;
-	//signal it to start
-	incomingWork.signal();
+	sem_post(&in);
 }
 
-void* Task::Impl::finish()
+void *Task::Impl::finish()
 {
-	//just wait for the work to be done
-	workDone.waitAndClear();
-	return param;
+	while(sem_wait(&out) == -1)
+		;
+	return ret;
 }
-*/
 
+void Task::Impl::shutdown()
+{
+	if(!bStarted)
+		return;
+	bKill = 1;
+	sem_post(&in);
+	pthread_join(thread, NULL);
+	sem_destroy(&in);
+	sem_destroy(&out);
+}
 #endif
 
 void Task::start(bool spinlock) { impl->start(spinlock); }
