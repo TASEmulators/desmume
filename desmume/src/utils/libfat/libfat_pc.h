@@ -65,8 +65,10 @@ struct _reent {
 
 #ifdef __APPLE__
 typedef __darwin_mode_t mode_t;
-#else
+#elif defined(_MSC_VER)
 typedef uint32_t mode_t;
+#else
+#include <sys/types.h>
 #endif
 
 struct DIR_ITER {
