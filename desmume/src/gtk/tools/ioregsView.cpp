@@ -31,6 +31,12 @@
 #define SHORTNAME "ioregs"
 #define TOOL_NAME "IO regs view"
 
+#if !GTK_CHECK_VERSION(2,24,0)
+#define gtk_combo_box_text_new gtk_combo_box_new_text
+#define gtk_combo_box_text_append_text gtk_combo_box_append_text
+#define GTK_COMBO_BOX_TEXT GTK_COMBO_BOX
+#endif
+
 BOOL CPUS [2] = {TRUE, TRUE};
 
 static GtkWidget *mWin[2];
@@ -69,10 +75,10 @@ static reg_t *current_reg[2] = {NULL, NULL};
 	char _bit_combo_buf[64]; \
 	snprintf(_bit_combo_buf, ARRAY_SIZE(_bit_combo_buf), "Bits %s: %s", n,s); \
 	GtkWidget *__combo_lbl_tmp = gtk_label_new(_bit_combo_buf); \
-	GtkWidget *__combo_tmp = gtk_combo_box_new_text(); \
+	GtkWidget *__combo_tmp = gtk_combo_box_text_new(); \
 	
 #define BIT_COMBO_ADD(w, s) { \
-	gtk_combo_box_append_text(GTK_COMBO_BOX(__combo_tmp), s); }
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(__combo_tmp), s); }
 	
 #define BIT_COMBO_GET(w) (GTK_WIDGET(g_list_first(gtk_container_get_children(GTK_CONTAINER(_wl_[w])))->data))
 	
@@ -450,14 +456,14 @@ static void open(int ID)
 		mVbox0[c] = gtk_vbox_new(FALSE, 0);
 		gtk_container_add(GTK_CONTAINER(mWin[c]), mVbox0[c]);
 
-		mIoRegCombo[c] = gtk_combo_box_new_text();
+		mIoRegCombo[c] = gtk_combo_box_text_new();
 		mRegInfos[c] = gtk_label_new("");
 
 		for(i = 0; i < GET_REG_LIST_SIZE(c); i++)
 		{
 			gchar *reg_name_buffer;
 			reg_name_buffer = g_strdup_printf("0x%08X : %s (%s)", GET_REG_LIST(c)[i].adress, GET_REG_LIST(c)[i].name, bits_strings[GET_REG_LIST(c)[i].size]);
-			gtk_combo_box_append_text(GTK_COMBO_BOX(mIoRegCombo[c]), reg_name_buffer);
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mIoRegCombo[c]), reg_name_buffer);
 			g_free(reg_name_buffer);
 		}
 
