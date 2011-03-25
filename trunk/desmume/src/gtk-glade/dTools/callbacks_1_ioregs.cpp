@@ -66,7 +66,7 @@ static void wtools_1_update () {
 static u32 mem[NBR_IO_REGS];
 
 static void update_regs_fast(){
-	char text[10];
+	char text[11];
 	int i; u32 w, m;
 	for( i = 0; i < NBR_IO_REGS; i++ )
 	{	
