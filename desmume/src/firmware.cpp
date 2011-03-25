@@ -571,6 +571,7 @@ bool CFIRMWARE::load()
 	path.getpathnoext(path.FIRMWARE, &MMU.fw.userfile[0]);
 	strcat(MMU.fw.userfile, ".dfc");		// DeSmuME Firmware Config
 
+	fclose(fp);
 	fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
 	{
