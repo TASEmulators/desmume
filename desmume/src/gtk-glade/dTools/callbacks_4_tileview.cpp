@@ -174,7 +174,7 @@ static void refresh() {
 	if (pal) {
 		pal += palnum*16;
 		for (tile_n=0; tile_n<1024; tile_n++) {
-			for (index=0; index<64; index++) {
+			for (index=0; index<64-1; index++) {
 				if (index & 1) continue;
 				palette_16[index]  =pal[*index16 & 15];
 				palette_16[index+1]=pal[*index16 >> 4];
