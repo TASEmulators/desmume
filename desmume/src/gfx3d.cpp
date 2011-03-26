@@ -71,31 +71,29 @@ But since we're not sure how we'll eventually want this, I am leaving it sort of
 in this function: */
 static void gfx3d_doFlush();
 
-#define INVALID_COMMAND 0xFF
-#define UNDEFINED_COMMAND 0xCC
+#define GFX_NOARG_COMMAND 0x00
+#define GFX_INVALID_COMMAND 0xFF
+#define GFX_UNDEFINED_COMMAND 0xCC
 static const u8 gfx3d_commandTypes[] = {
-	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, //invalid commands; no parameters
-	0x01,0x00,0x01,0x01,0x01,0x00,0x10,0x0C, 0x10,0x0C,0x09,0x03,0x03,0xCC,0xCC,0xCC, //matrix commands
-	0x01,0x01,0x01,0x02,0x01,0x01,0x01,0x01, 0x01,0x01,0x01,0x01,0xCC,0xCC,0xCC,0xCC, //vertex and per-vertex material commands
-	0x01,0x01,0x01,0x01,0x20,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //lighting engine material commands
-	0x01,0x00,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //begin and end
-	0x01,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //swapbuffers
-	0x01,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //viewport
-	0x03,0x02,0x01,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //tests
+	/* 00 */ 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, //invalid commands; no parameters
+	/* 10 */ 0x01,0x00,0x01,0x01,0x01,0x00,0x10,0x0C, 0x10,0x0C,0x09,0x03,0x03,0xCC,0xCC,0xCC, //matrix commands
+	/* 20 */ 0x01,0x01,0x01,0x02,0x01,0x01,0x01,0x01, 0x01,0x01,0x01,0x01,0xCC,0xCC,0xCC,0xCC, //vertex and per-vertex material commands
+	/* 30 */ 0x01,0x01,0x01,0x01,0x20,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //lighting engine material commands
+	/* 40 */ 0x01,0x00,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //begin and end
+	/* 50 */ 0x01,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //swapbuffers
+	/* 60 */ 0x01,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //viewport
+	/* 70 */ 0x03,0x02,0x01,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, //tests
 	//0x80:
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
-	0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC
+	/* 80 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* 90 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* A0 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* B0 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* C0 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* D0 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* E0 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,
+	/* F0 */ 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC, 0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0xCC
 };
 
-
-//todo: it would be nice to make some kind of state machine that more closely models the hardware
-//but this is servicable for now
 class GXF_Hardware
 {
 public:
@@ -109,106 +107,72 @@ public:
 		for(int i=0;i<4;i++) {
 			commandsPending[i].command = 0;
 			commandsPending[i].countdown = 0;
+		size = 0;
 		}
 	}
-	//todo - things in here other than the very first thing involving GFX3D_NOP_NOARG_HACK I am not too sure about.
-	void receive(u32 val) {
-		bool hack = false;
-		if(size()>0 && val != 0 && 
-			(front().command == 0x15 || front().command == 0x11 || front().command == 0x41
-			|| front().command == GFX3D_NOP_NOARG_HACK  //nintendogs dalmatian sends these I think.
-			))
+
+	void receive(u32 val) 
+	{
+		if (size > 0)
 		{
-			//apparently a zero is swallowed in this case but if another value is sent 
-			//processing will continue
-			if(front().command == GFX3D_NOP_NOARG_HACK) { }
-			else
+			GFX_FIFOsend(front().command, val);
+			front().countdown--;
+			if (front().countdown == 0) 
 			{
-				//printf("gxf: sending hack %02X: (dummy=0)\n", front().command);
-				GFX_FIFOsend(front().command,0);
-			}
-			hack = true;
-			goto hackTrigger;
-		}
-		if(countdown>0) {
-			//received a parameter
-			//printf("gxf: sending %02X: %08X\n", front().command,val);
-			//if(commandsPending.front() == GFX3D_NOP_NOARG_HACK)
-			//{}
-			//else 
-				GFX_FIFOsend(front().command,val);
-			hackTrigger:
-			countdown--;
-			while(countdown==0) {
+				size--; 
+				if (size == 0) return;
 				dequeue();
-			trigger:
-				//dont set hack to false if you jumped from below! it needs to be true for when you jump down from above.
-				//oh my what a mess.
-				if(size()==0) break;
-				countdown = front().countdown;
-				if(!countdown) {
-					if(front().command != INVALID_COMMAND 
-						&& front().command != GFX3D_NOP_NOARG_HACK //g.i. joe sends these in the form of 0xFF commands 
-						){
-						//printf("[%06d]gxf: sending %02X: (dummy=0)\n", currFrameCounter,front().command);
-						GFX_FIFOsend(front().command,0);
-					}
+
+				while (gfx3d_commandTypes[front().command] == GFX_NOARG_COMMAND)
+				{
+					GFX_FIFOsend(front().command, 0);
+					if (size == 0) break;
+					size--; dequeue();
 				}
 			}
-			if(hack) goto decode;
-		} else {
-			//decode a packed command
-decode:
-			//printf("[%05d] gxf: decoding %08X\n",currFrameCounter,val);
+		}
+		else
+		{
 			if (val == 0) return;	// nop
 
 			const u8 commands[] = { val&0xFF, (val>>8)&0xFF, (val>>16)&0xFF, (val>>24)&0xFF };
-			const u8 commandTypes[] = { gfx3d_commandTypes[commands[0]], gfx3d_commandTypes[commands[1]],gfx3d_commandTypes[commands[2]], gfx3d_commandTypes[commands[3]] };
-
-			for(int i=0;i<4;i++) {
-				u8 cmd = commands[i];
-				u8 type = commandTypes[i];
-
-				if(type == INVALID_COMMAND) {
-					commandsPending[i].command = INVALID_COMMAND;
-				} else {
-					if(type == UNDEFINED_COMMAND) 
-					{
-						commandsPending[i].command = GFX3D_NOP_NOARG_HACK;  //enqueue a single undefined command we know how to handle
-					}
-					else commandsPending[i].command = cmd;
-				}
-				if(type == UNDEFINED_COMMAND
-					//|| type == 0x00 //DON'T DO THIS: galactik football will break if you do (ingame character portraits etc.) as well as nintendogs dalmatian
-					) {
-					//these are valid commands with no parameters. they might need special handling
-					//as long as there is a subsequent defined command with parameters, we're safe
-					bool safe = false;
-					if (i == 3)
-						safe = true;
-					else
-						// start loop from (i+1) always skip last command
-					for(u8 j=i+1;j<4;j++) {
-						if((commandTypes[j] != INVALID_COMMAND)) {
-							safe = true;
-							break;
-						}
-					}
-					if(safe) {
-						commandsPending[i].countdown = 0;
-					} else {
-						//we need to receive a dummy parameter in this case
-						commandsPending[i].countdown = 1;
-					}
-				} else if(type != INVALID_COMMAND) {
-					commandsPending[i].countdown = type;
-				} else commandsPending[i].countdown = 0;
-			}
+			const u8 commandTypes[] = { gfx3d_commandTypes[commands[0]], gfx3d_commandTypes[commands[1]], gfx3d_commandTypes[commands[2]], gfx3d_commandTypes[commands[3]] };
 
 			commandCursor = 0;
-			countdown = front().countdown;
-			if(countdown==0) 
-				goto trigger;
+			size = 0;
+
+			// A “command without parameters” is one of the four following commands:
+			// - PushMatrix
+			// - LoadIdentity
+			// - End
+			// - Commands undefined within the region between 0x10 and 0xFF
+
+			for (u8 i = 0; i < 4; i++)
+			{
+				if (commandTypes[i] == GFX_INVALID_COMMAND)
+				{
+					//printf("gfx3D: invalid command (%02X)\n", commands[i]);
+					continue;
+				}
+
+				if (commandTypes[i] == GFX_UNDEFINED_COMMAND)
+				{
+					//printf("gfx3D: undefined command (%02X)\n", commands[i]);
+					continue;
+				}
+				commandsPending[size].command = commands[i];
+				commandsPending[size].countdown = commandTypes[i];
+				//printf("%i: CMD %02X size %i\n", i, commands[i], commandsPending[size].countdown);
+				if ((commandsPending[size].countdown == 0) && (size == 0)) // cmd 0x11, 0x15, 0x41 - no params
+				{
+					GFX_FIFOsend(commands[i], 0);
+
+					while ((i < 4) && commands[i+1] != 0 && gfx3d_commandTypes[commands[i+1]] == GFX_NOARG_COMMAND)
+						GFX_FIFOsend(commands[++i], 0);
+				}
+				else
+					size++;
+			}
 		}
 	}
 
@@ -222,17 +186,17 @@ decode:
 private:
 	void dequeue() { commandCursor++; }
 	CommandItem& front() { return commandsPending[commandCursor]; }
-	u32 size() { return 4-commandCursor; }
+	u32 size;
 public:
 
 	void savestate(EMUFILE *f)
 	{
 		//TODO - next time we invalidate savestates, simplify this format.
-		write32le(0,f); //version
-		write32le(size(),f);
-		for(u32 i=commandCursor;i<4;i++) write8le(commandsPending[i].command,f);
-		write32le(0,f);
-		for(u32 i=commandCursor;i<4;i++) write8le(commandsPending[i].countdown,f);
+		write32le(1,f); //version
+		write32le(size,f);
+		write32le(commandCursor,f);
+		for(u32 i=0;i<4;i++) write8le(commandsPending[i].command,f);
+		for(u32 i=0;i<4;i++) write8le(commandsPending[i].countdown,f);
 		write8le(countdown,f);
 	}
 	
@@ -240,16 +204,25 @@ public:
 	{
 		u32 version;
 		if(read32le(&version,f) != 1) return false;
-		if(version != 0) return false;
+		if(version > 1) return false;
 
-		u32 tempsize;
-		read32le(&tempsize,f);
-		commandCursor = 4-tempsize;
-		for(u32 i=0;i<commandCursor;i++) commandsPending[i].command = 0;
-		for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i].command,f);
-		read32le(&tempsize,f);
-		for(u32 i=0;i<commandCursor;i++) commandsPending[i].countdown = 0;
-		for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i].countdown,f);
+		if (version == 0)
+		{
+			read32le(&size,f);
+			commandCursor = 4-size;
+			for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i-commandCursor].command,f);
+			read32le(&size,f);
+			size = 4-commandCursor;
+			for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i-commandCursor].countdown,f);
+		}
+		else
+		if (version == 1)
+		{
+			read32le(&size,f);
+			read32le(&commandCursor,f);
+			for(u32 i=0;i<4;i++) read8le(&commandsPending[i].command,f);
+			for(u32 i=0;i<4;i++) read8le(&commandsPending[i].countdown,f);
+		}
 
 		read8le(&countdown,f);
 
