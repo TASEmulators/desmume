@@ -498,6 +498,7 @@ void gfx3d_reset()
 	flushPending = FALSE;
 	memset(polylists, 0, sizeof(polylists));
 	memset(vertlists, 0, sizeof(vertlists));
+	gfx3d.state.invalidateToon = true;
 	listTwiddle = 1;
 	twiddleLists();
 	gfx3d.polylist = polylist;
@@ -742,21 +743,24 @@ static void SetVertex()
 
 			// Line segment detect
 			// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
-			bool duplicated = false;
-			VERT &vert0 = vertlist->list[poly.vertIndexes[0]];
-			VERT &vert1 = vertlist->list[poly.vertIndexes[1]];
-			VERT &vert2 = vertlist->list[poly.vertIndexes[2]];
-			if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
-			else
-				if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
-				else
-					if ( (vert0.y == vert1.y) && (vert1.y == vert2.y) ) duplicated = true;
-					else
-						if ( (vert0.x == vert1.x) && (vert1.x == vert2.x) ) duplicated = true;
-			if (duplicated)
+			if (textureFormat & (7 << 26) == 0)	// no texture
 			{
-				//printf("Line Segmet detected (poly type %i, mode %i)\n", poly.type, poly.vtxFormat);
-				poly.vtxFormat = vtxFormat + 4;
+				bool duplicated = false;
+				VERT &vert0 = vertlist->list[poly.vertIndexes[0]];
+				VERT &vert1 = vertlist->list[poly.vertIndexes[1]];
+				VERT &vert2 = vertlist->list[poly.vertIndexes[2]];
+				if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
+				else
+					if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
+					else
+						if ( (vert0.y == vert1.y) && (vert1.y == vert2.y) ) duplicated = true;
+						else
+							if ( (vert0.x == vert1.x) && (vert1.x == vert2.x) ) duplicated = true;
+				if (duplicated)
+				{
+					//printf("Line Segmet detected (poly type %i, mode %i, texparam %08X)\n", poly.type, poly.vtxFormat, textureFormat);
+					poly.vtxFormat = vtxFormat + 4;
+				}
 			}
 
 			poly.polyAttr = polyAttr;
