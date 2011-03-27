@@ -519,6 +519,13 @@ static char OGLInit(void)
 		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
+
+		// Restore Toon table
+		u32 rgbToonTable[32];
+		for(int i=0;i<32;i++)
+			rgbToonTable[i] = RGB15TO32_NOALPHA(gfx3d.renderState.u16ToonTable[i]);
+		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rgbToonTable[0]);
+		gfx3d.state.invalidateToon = false;
 	}
 
 	// ClearImage/Rear-plane
