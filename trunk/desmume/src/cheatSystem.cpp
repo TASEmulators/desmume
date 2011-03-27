@@ -1,4 +1,4 @@
-/*  Copyright 2009-2010 DeSmuME team
+/*  Copyright 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -400,7 +400,7 @@ BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
 {
 	int		count = 0;
 	u16		t = 0;
-	char	tmp_buf[sizeof(list->code)];
+	char	tmp_buf[sizeof(list->code) * 2 + 1];
 	memset(tmp_buf, 0, sizeof(tmp_buf));
 
 	size_t code_len = strlen(code);
