@@ -743,7 +743,7 @@ static void SetVertex()
 
 			// Line segment detect
 			// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
-			if (textureFormat & (7 << 26) == 0)	// no texture
+			if (!(textureFormat & (7 << 26)))	// no texture
 			{
 				bool duplicated = false;
 				VERT &vert0 = vertlist->list[poly.vertIndexes[0]];
