@@ -23,6 +23,7 @@
 #include "resource.h"
 #include "../debug.h"
 #include "../utils/xstring.h"
+#include "../path.h"
 
 static	u8		searchType = 0;
 static	u8		searchSize = 0;
@@ -816,7 +817,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						EndDialog(dialog, TRUE);
 					}
 					else
-						MessageBox(dialog, "Can't save cheats to file","Error",MB_OK);
+						MessageBox(dialog, "Can't save cheats to file.\nCheck your path (Menu->Config->Path Settings->\"Cheats\")","Error",MB_OK);
 				return TRUE;
 				case IDCANCEL:
 					EndDialog(dialog, FALSE);
@@ -1467,8 +1468,13 @@ void CheatsExportDialog(HWND hwnd)
 	cheatsExport = new CHEATSEXPORT();
 	if (!cheatsExport) return;
 	
+	char buf[MAX_PATH] = {0};
+	PathInfo path;
+	path.init("USRCHEAT.DAT");
+	path.getpathnoext(path.MODULE, &buf[0]);
+	strcat(buf, ".DAT");
 	// TODO: select file
-	if (cheatsExport->load("USRCHEAT.DAT"))
+	if (cheatsExport->load(buf))
 	{
 		if (cheatsExport->getCheatsNum() > 0)
 		{
