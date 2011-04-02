@@ -2818,6 +2818,8 @@ void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 // "Workaround" for line poly
 bool gfx3d_IsLinePoly(POLY *poly)
 {
+	if(!CommonSettings.GFX3D_LineHack) return false;
+
 	int type = poly->type;
 	VERT *vert1, *vert2;
 

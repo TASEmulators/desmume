@@ -709,6 +709,7 @@
 #define ID_LABEL_HK4                    4468
 #define IDC_GI_ICON                     4469
 #define ID_LABEL_HK5                    4469
+#define IDC_3DSETTINGS_LINEHACK         4469
 #define IDC_GI_TITLE                    4470
 #define ID_LABEL_HK6                    4470
 #define IDC_GI_TITLEEN                  4471
@@ -791,6 +792,7 @@
 #define IDC_IOREG                       6001
 #define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK 9000
 #define IDC_ZELDA_SHADOW_DEPTH_HACK     9001
+#define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2 9003
 #define IDD_CHEAT_ADD_XX_CODE           10005
 #define IDD_GBASLOT_GUITARGRIP          10009
 #define IDD_GBASLOT_PIANO               10010

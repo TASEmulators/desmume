@@ -2884,7 +2884,7 @@ int _main()
 	CommonSettings.GFX3D_EdgeMark = GetPrivateProfileBool("3D", "EnableEdgeMark", 1, IniName);
 	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
 	CommonSettings.GFX3D_Texture = GetPrivateProfileBool("3D", "EnableTexture", 1, IniName);
-	//CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
+	CommonSettings.GFX3D_LineHack = GetPrivateProfileBool("3D", "EnableLineHack", 1, IniName);
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
 #ifdef BETA_VERSION
@@ -5626,6 +5626,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_3DSETTINGS_EDGEMARK,CommonSettings.GFX3D_EdgeMark);
 			CheckDlgButton(hw,IDC_3DSETTINGS_FOG,CommonSettings.GFX3D_Fog);
 			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE,CommonSettings.GFX3D_Texture);
+			CheckDlgButton(hw,IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
 			SetDlgItemInt (hw,IDC_ZELDA_SHADOW_DEPTH_HACK,CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack,FALSE);
 			//CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
 
@@ -5647,6 +5648,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_EdgeMark = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_EDGEMARK);
 					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
 					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_TEXTURE);
+					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_LINEHACK);
 					CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack  = GetDlgItemInt(hw,IDC_ZELDA_SHADOW_DEPTH_HACK,NULL,FALSE);
 
 					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
@@ -5655,7 +5657,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileBool("3D", "EnableFog", CommonSettings.GFX3D_Fog, IniName);
 					WritePrivateProfileBool("3D", "EnableTexture", CommonSettings.GFX3D_Texture, IniName);
 					WritePrivateProfileInt ("3D", "ZeldaShadowDepthHack", CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack, IniName);
-					//CommonSettings.gfx3d_flushMode = (IsDlgButtonChecked(hw,IDC_ALTERNATEFLUSH) == BST_CHECKED)?1:0;
+					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
 			case IDCANCEL:
