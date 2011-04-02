@@ -817,7 +817,7 @@ public:
 		runctr++;
 
 		//HACK: special handling for horizontal line poly
-		if (lineHack && left->Height == 0 && right->Height == 0)
+		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<192 && left->Y>=0)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
 			if(draw) drawscanline(left,right,lineHack);
