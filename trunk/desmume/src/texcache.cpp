@@ -302,6 +302,8 @@ public:
 			//the texture matches params, but isnt suspected invalid. accept it.
 			if (!curr->suspectedInvalid) return curr;
 
+			//we suspect the texture may be invalid. we need to do a byte-for-byte comparison to re-establish that it is valid:
+
 			//when the palettes dont match:
 			//note that we are considering 4x4 textures to have a palette size of 0.
 			//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
@@ -321,6 +323,7 @@ public:
 			//REMINDER to make it primary/newest when we have smarter code
 			//list_remove(curr);
 			//list_push_front(curr);
+			curr->suspectedInvalid = false;
 			return curr;
 
 		REJECT:
