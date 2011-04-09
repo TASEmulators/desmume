@@ -120,7 +120,7 @@ dnl - Check for GTK and/or libglade
 FOUND_GLIB=no
 HAVE_ALSA=no
 GLIB_VER=2.8
-GTK_VER=2.6
+GTK_VER=2.10
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
   if test ! "x$HAVE_PKG" = "x" ; then
