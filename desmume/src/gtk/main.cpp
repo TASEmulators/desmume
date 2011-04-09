@@ -74,10 +74,6 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-#if GTK_CHECK_VERSION(2,10,0)
-#define HAVE_RECENT_FILES 1
-#endif
-
 #if GTK_CHECK_VERSION(2,14,0)
 #define HAVE_TIMEOUT 1
 #endif
@@ -142,9 +138,7 @@ static const char *ui_description =
 "  <menubar name='MainMenu'>"
 "    <menu action='FileMenu'>"
 "      <menuitem action='open'/>"
-#ifdef HAVE_RECENT_FILES
 "      <menu action='RecentMenu'/>"
-#endif
 "      <separator/>"
 "      <menuitem action='savestateto'/>"
 "      <menuitem action='loadstatefrom'/>"
@@ -277,9 +271,7 @@ static const char *ui_description =
 static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
-#ifdef HAVE_RECENT_FILES
       { "RecentMenu", NULL, "Open _recent" },
-#endif
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
       { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
@@ -998,7 +990,6 @@ static void OpenNdsDialog()
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         } else {
-#ifdef HAVE_RECENT_FILES
             GtkRecentData recentData;
             gchar *uri;
             memset(&recentData, 0, sizeof(GtkRecentData));
@@ -1014,7 +1005,6 @@ static void OpenNdsDialog()
             g_free(uri);
             g_free(recentData.app_name);
             g_free(recentData.app_exec);
-#endif
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
         }
 
@@ -1026,7 +1016,6 @@ static void OpenNdsDialog()
     gtk_widget_destroy(pFileSelection);
 }
 
-#ifdef HAVE_RECENT_FILES
 static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 {
     GtkRecentManager *recent_manager = gtk_recent_manager_get_default();
@@ -1052,7 +1041,6 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
     g_free(uri);
     g_free(romname);
 }
-#endif
 
 static void Reset()
 {
@@ -2249,7 +2237,6 @@ common_gtk_main( class configured_features *my_config)
     pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
     gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
 
-#ifdef HAVE_RECENT_FILES
     {
         GtkWidget * recentMenu = gtk_ui_manager_get_widget (ui_manager, "/MainMenu/FileMenu/RecentMenu");
         GtkWidget * recentFiles = gtk_recent_chooser_menu_new();
@@ -2259,7 +2246,6 @@ common_gtk_main( class configured_features *my_config)
         gtk_menu_item_set_submenu(GTK_MENU_ITEM(recentMenu), recentFiles);
         g_signal_connect(G_OBJECT(recentFiles), "item-activated", G_CALLBACK(OpenRecent), NULL);
     }
-#endif
 
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
