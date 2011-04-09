@@ -18,12 +18,18 @@
 //#include "Global.h"
 #include <math.h>
 #include "types.h"
-#include "SoundTouch/SoundTouch.h"
 #include "SndOut.h"
 //#include "SoundTouch/WavFile.h"
 
-#include "win32/Dialogs.h"
+#ifdef HAVE_LIBSOUNDTOUCH
+#include <SoundTouch.h>
+#else
+#include "SoundTouch/SoundTouch.h"
+#endif
 
+#ifdef _WINDOWS
+#include "win32/Dialogs.h"
+#endif
 
 
 static soundtouch::SoundTouch* pSoundTouch = NULL;
@@ -313,7 +319,9 @@ void SndBuffer::soundtouchInit()
 	pSoundTouch->setSetting( SETTING_USE_QUICKSEEK, 0 );
 	pSoundTouch->setSetting( SETTING_USE_AA_FILTER, 0 );
 
+#ifdef _WINDOWS
 	SoundtouchCfg::ApplySettings( *pSoundTouch );
+#endif
 
 	pSoundTouch->setTempo(1);
 

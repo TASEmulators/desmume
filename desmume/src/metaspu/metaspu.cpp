@@ -24,8 +24,7 @@
 #include <assert.h>
 
 //for pcsx2 method
-//(havent bothered to get it compiling in gcc yet)
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(HAVE_LIBSOUNDTOUCH)
 #include "SndOut.h"
 #endif
 
@@ -466,7 +465,7 @@ private:
 }; //NitsujaSynchronizer
 
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(HAVE_LIBSOUNDTOUCH)
 class PCSX2Synchronizer : public ISynchronizingAudioBuffer
 {
 public:
@@ -513,9 +512,9 @@ ISynchronizingAudioBuffer* metaspu_construct(ESynchMethod method)
 	{
 	case ESynchMethod_N: return new NitsujaSynchronizer();
 	case ESynchMethod_Z: return new ZeromusSynchronizer();
-	#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(HAVE_LIBSOUNDTOUCH)
 	case ESynchMethod_P: return new PCSX2Synchronizer();
-	#endif
+#endif
 	default: return NULL;
 	}
 }

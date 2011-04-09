@@ -83,7 +83,7 @@ static const int SndOutVolumeShift = 0;
 ////static const int SampleRate = 48000;
 //static const int SampleRate = 44100;
 //edit - nitsuja: make it use the global sample rate define
-#include "..\SPU.h"
+#include "../SPU.h"
 static const int SampleRate = DESMUME_SAMPLE_RATE;
 
 extern int FindOutputModuleById( const wchar_t* omodid );
