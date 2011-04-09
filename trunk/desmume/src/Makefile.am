@@ -1,6 +1,6 @@
 include $(top_srcdir)/src/desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp
 if HAVE_GDB_STUB
@@ -99,6 +99,10 @@ libdesmume_a_SOURCES += mic_alsa.cpp
 else
 libdesmume_a_SOURCES += mic.cpp
 endif
+endif
+
+if HAVE_LIBSOUNDTOUCH
+libdesmume_a_SOURCES += metaspu/SndOut.cpp metaspu/SndOut.h metaspu/Timestretcher.cpp
 endif
 
 if HAVE_LIBAGG
