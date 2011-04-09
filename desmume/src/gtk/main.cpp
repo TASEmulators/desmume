@@ -191,6 +191,14 @@ static const char *ui_description =
 #ifdef FAKE_MIC
 "      <menuitem action='micnoise'/>"
 #endif
+"      <menu action='SPUModeMenu'>"
+"        <menuitem action='SPUModeDualASync'/>"
+"        <menuitem action='SPUModeSyncN'/>"
+"        <menuitem action='SPUModeSyncZ'/>"
+#ifdef HAVE_LIBSOUNDTOUCH
+"        <menuitem action='SPUModeSyncP'/>"
+#endif
+"      </menu>"
 "      <menu action='FrameskipMenu'>"
 "        <menuitem action='frameskipA'/>"
 "        <menuitem action='frameskip0'/>"
@@ -289,6 +297,7 @@ static const GtkActionEntry action_entries[] = {
       { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
       { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
+      { "SPUModeMenu", NULL, "_SPU Mode" },
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "LayersMenu", NULL, "_Layers" },
       { "CheatMenu", NULL, "_Cheat" },
@@ -358,6 +367,22 @@ const struct screen_size_t screen_size[ORIENT_N] = {
     {256, 384},
     {512, 192},
     {256, 192}
+};
+
+enum spumode_enum {
+    SPUMODE_DUALASYNC = 0,
+    SPUMODE_SYNCN = 1,
+    SPUMODE_SYNCZ = 2,
+    SPUMODE_SYNCP = 3
+};
+
+static const GtkRadioActionEntry spumode_entries[] = {
+    { "SPUModeSyncN", NULL, "Sychronous (N)", NULL, NULL, SPUMODE_SYNCN},
+    { "SPUModeSyncZ", NULL, "Sychronous (Z)", NULL, NULL, SPUMODE_SYNCZ},
+#ifdef HAVE_LIBSOUNDTOUCH
+    { "SPUModeSyncP", NULL, "Sychronous (P)", NULL, NULL, SPUMODE_SYNCP},
+#endif
+    { "SPUModeDualASync", NULL, "Dual Asynchronous", NULL, NULL, SPUMODE_DUALASYNC}
 };
 
 enum frameskip_enum {
@@ -569,6 +594,7 @@ joinThread_gdb( void *thread_handle) {
 
 /************************ GTK *******************************/
 
+uint SPUMode = SPUMODE_DUALASYNC;
 uint Frameskip = 0;
 bool autoframeskip = false;
 GdkInterpType Interpolation = GDK_INTERP_BILINEAR;
@@ -1754,6 +1780,28 @@ static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
     Interpolation = (i == 0 ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR);
 }
 
+static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
+{
+    const uint mode = gtk_radio_action_get_current_value(current);
+
+    switch (mode) {
+    case SPUMODE_SYNCN:
+    case SPUMODE_SYNCZ:
+#ifdef HAVE_LIBSOUNDTOUCH
+    case SPUMODE_SYNCP:
+#endif
+        SPUMode = mode;
+        SPU_SetSynchMode(1, mode-1);
+        break;
+
+    case SPUMODE_DUALASYNC:
+    default:
+        SPUMode = SPUMODE_DUALASYNC;
+        SPU_SetSynchMode(0, 0);
+        break;
+    }
+}
+
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
     Frameskip = gtk_radio_action_get_current_value(current) ;
@@ -2169,6 +2217,8 @@ common_gtk_main( class configured_features *my_config)
             my_config->savetype, G_CALLBACK(changesavetype), NULL);
     gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
             1, G_CALLBACK(Modify_Interpolation), NULL);
+    gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
+            0, G_CALLBACK(Modify_SPUMode), NULL);
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
             0, G_CALLBACK(Modify_Frameskip), NULL);
     gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
