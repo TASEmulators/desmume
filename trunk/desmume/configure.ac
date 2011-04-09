@@ -93,6 +93,11 @@ if test "x$osmesa" = "xyes" ; then
 fi
 AM_CONDITIONAL([HAVE_LIBOSMESA], [test "${useosmesa}" = "yes"])
 
+dnl - make the usage of libagg for HUD rendering configurable
+AC_ARG_ENABLE([hud],
+              [AC_HELP_STRING([--enable-hud], [Enable HUD rendering, requires libagg])],
+              [libagg=yes])
+
 dnl - hack to help zero build gtk frontend macos x package
 AC_ARG_ENABLE(macosxhack,
 	      [AC_HELP_STRING(--enable-macosxhack, hack to build MacOSX package)],
@@ -174,9 +179,7 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
       AC_SUBST(ALSA_LIBS)
     fi
 
-    PKG_CHECK_MODULES(LIBAGG, libagg >= 2.5.0, HAVE_LIBAGG=yes, HAVE_LIBAGG=no)
-    AC_SUBST(LIBAGG_CFLAGS)
-    AC_SUBST(LIBAGG_LIBS)
+    PKG_CHECK_MODULES(LIBAGG, libagg >= 2.5.0, FOUND_LIBAGG=yes, FOUND_LIBAGG=no)
 
     PKG_CHECK_MODULES(LIBSOUNDTOUCH, soundtouch >= 1.5.0, HAVE_LIBSOUNDTOUCH=yes, HAVE_LIBSOUNDTOUCH=no)
     AC_SUBST(LIBSOUNDTOUCH_CFLAGS)
@@ -200,10 +203,15 @@ if test "x$HAVE_ALSA" = "xno"; then
 fi
 
 AM_CONDITIONAL([HAVE_LIBAGG], [test "${HAVE_LIBAGG}" = "yes"])
-if test "x$HAVE_LIBAGG" = "xyes"; then
-   AC_DEFINE([HAVE_LIBAGG])
-else
-   AC_MSG_WARN([Antigrain library not found, HUD will be disabled])
+
+if test "x$libagg" = "xyes" ; then
+   if test "x$FOUND_LIBAGG" = "xyes" ; then
+       AC_SUBST(LIBAGG_CFLAGS)
+       AC_SUBST(LIBAGG_LIBS)
+       AC_DEFINE([HAVE_LIBAGG])
+   else
+       AC_MSG_WARN([HUD rendering enabled, but libagg not found])
+   fi
 fi
 
 AM_CONDITIONAL([HAVE_LIBSOUNDTOUCH], [test "${HAVE_LIBSOUNDTOUCH}" = "yes"])
