@@ -178,6 +178,10 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     AC_SUBST(LIBAGG_CFLAGS)
     AC_SUBST(LIBAGG_LIBS)
 
+    PKG_CHECK_MODULES(LIBSOUNDTOUCH, soundtouch >= 1.5.0, HAVE_LIBSOUNDTOUCH=yes, HAVE_LIBSOUNDTOUCH=no)
+    AC_SUBST(LIBSOUNDTOUCH_CFLAGS)
+    AC_SUBST(LIBSOUNDTOUCH_LIBS)
+
     AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
   fi
 ],[
@@ -200,6 +204,13 @@ if test "x$HAVE_LIBAGG" = "xyes"; then
    AC_DEFINE([HAVE_LIBAGG])
 else
    AC_MSG_WARN([Antigrain library not found, HUD will be disabled])
+fi
+
+AM_CONDITIONAL([HAVE_LIBSOUNDTOUCH], [test "${HAVE_LIBSOUNDTOUCH}" = "yes"])
+if test "x$HAVE_LIBSOUNDTOUCH" = "xyes"; then
+   AC_DEFINE([HAVE_LIBSOUNDTOUCH])
+else
+   AC_MSG_WARN([SoundTouch library not found, pcsx2 resampler will be disabled])
 fi
 
 if test "x$FOUND_GLIB" = "xno"; then
