@@ -20,16 +20,8 @@
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
-	#define _WINDOWS
-	#ifdef _M_X64
-		//#define _WIN64 //already defined in x64 compiler
-	#else
-		//#define _WIN32 //already defined
-	#endif
-#endif
-
+#define _WINDOWS
 //todo - everyone will want to support this eventually, i suppose
-#ifdef _WINDOWS
 #include "config.h"
 #endif
 
