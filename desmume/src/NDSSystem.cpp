@@ -2642,17 +2642,6 @@ void NDS_setTouchPos(u16 x, u16 y)
 		rawUserInput.touch.touchX &= 0x0FF0;
 		rawUserInput.touch.touchY &= 0x0FF0;
 	}
-
-#ifndef WIN32
-	// FIXME: this code should be deleted from here,
-	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
-	// (see the function called "StepRunLoop_Core" in src/windows/main.cpp),
-	// but I'm leaving this here for now since I can't test those other platforms myself.
-	nds.touchX = rawUserInput.touch.touchX;
-	nds.touchY = rawUserInput.touch.touchY;
-	nds.isTouch = 1;
-	MMU.ARM7_REG[0x136] &= 0xBF;
-#endif
 }
 void NDS_releaseTouch(void)
 { 
@@ -2660,17 +2649,6 @@ void NDS_releaseTouch(void)
 	rawUserInput.touch.touchX = 0;
 	rawUserInput.touch.touchY = 0;
 	rawUserInput.touch.isTouch = false;
-
-#ifndef WIN32
-	// FIXME: this code should be deleted from here,
-	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
-	// (see the function called "StepRunLoop_Core" in src/windows/main.cpp),
-	// but I'm leaving this here for now since I can't test those other platforms myself.
-	nds.touchX = 0;
-	nds.touchY = 0;
-	nds.isTouch = 0;
-	MMU.ARM7_REG[0x136] |= 0x40;
-#endif
 }
 void NDS_setMic(bool pressed)
 {
