@@ -31,7 +31,7 @@
 #else
 #include <glib.h>
 #endif /* !WXPORT */
-#else
+#elif !defined(DESMUME_COCOA)
 #include <glib.h>
 #endif /* _WINDOWS */
 
@@ -156,6 +156,15 @@ public:
 		p = pathToModule + lstrlen(pathToModule);
 		while (p >= pathToModule && *p != '\\') p--;
 		if (++p >= pathToModule) *p = 0;
+#elif defined(DESMUME_COCOA)
+		std::string pathStr = path;
+
+		//Truncate the path from filename
+		int x = pathStr.find_last_of("/\\");
+		if (x > 0)
+			pathStr = pathStr.substr(0, x);
+
+		strncpy(pathToModule, pathStr.c_str(), MAX_PATH);
 #else
 		char *cwd = g_build_filename(g_get_user_config_dir(), "desmume", NULL);
 		g_mkdir_with_parents(cwd, 0755);
