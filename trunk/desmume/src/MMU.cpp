@@ -1759,7 +1759,7 @@ bool DmaController::loadstate(EMUFILE* f)
 	read8le(&temp,f); sar = (EDMASourceUpdate)temp;
 	read8le(&temp,f); dar = (EDMADestinationUpdate)temp;
 	read32le(&saddr,f); read32le(&daddr,f);
-	read32le(&check,f); read32le(&running,f); read32le(&paused,f); read32le(&triggered,f); 
+	read32le(&dmaCheck,f); read32le(&running,f); read32le(&paused,f); read32le(&triggered,f); 
 	read64le(&nextEvent,f);
 
 	if(version==1)
@@ -1782,7 +1782,7 @@ void DmaController::savestate(EMUFILE *f)
 	write8le(sar,f); 
 	write8le(dar,f); 
 	write32le(saddr,f); write32le(daddr,f);
-	write32le(check,f); write32le(running,f); write32le(paused,f); write32le(triggered,f); 
+	write32le(dmaCheck,f); write32le(running,f); write32le(paused,f); write32le(triggered,f); 
 	write64le(nextEvent,f);
 	write32le(saddr_user,f);
 	write32le(daddr_user,f);
@@ -1870,7 +1870,7 @@ if(_startmode==0 && wordcount==1) {
 
 void DmaController::exec()
 {
-	check = FALSE;
+	dmaCheck = FALSE;
 	
 	if(running)
 	{
@@ -2056,7 +2056,7 @@ void DmaController::tryTrigger(EDMAMode mode)
 
 void DmaController::doSchedule()
 {
-	check = TRUE;
+	dmaCheck = TRUE;
 	nextEvent = nds_timer;
 	NDS_RescheduleDMA();
 }
