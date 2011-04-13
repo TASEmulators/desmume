@@ -1184,11 +1184,11 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 
 	FORCEINLINE bool isTriggered()
 	{
-		return (controller->check && nds_timer>= controller->nextEvent);
+		return (controller->dmaCheck && nds_timer>= controller->nextEvent);
 	}
 
 	FORCEINLINE bool isEnabled() { 
-		return controller->check?TRUE:FALSE;
+		return controller->dmaCheck?TRUE:FALSE;
 	}
 
 	FORCEINLINE u64 next()

@@ -202,7 +202,7 @@ public:
 	u32 saddr_user, daddr_user;
 	
 	//indicates whether the dma needs to be checked for triggering
-	BOOL check;
+	BOOL dmaCheck;
 
 	//indicates whether the dma right now is logically running
 	//(though for now we copy all the data when it triggers)
@@ -237,7 +237,7 @@ public:
 		//by inspecting dma3 saddr when it boots
 		saddr(0), daddr(0),
 		saddr_user(0), daddr_user(0),
-		check(FALSE),
+		dmaCheck(FALSE),
 		running(FALSE),
 		paused(FALSE),
 		triggered(FALSE),
