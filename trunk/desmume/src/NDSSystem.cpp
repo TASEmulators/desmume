@@ -493,10 +493,27 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(!memcmp(gameInfo.header.gameCode,"####",4))
+  bool isHomebrew = !memcmp(gameInfo.header.gameCode,"####",4);
+	if(isHomebrew)
 		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	NDS_Reset();
+
+  //put garbage in vram for homebrew games, to help mimic the situation where libnds does not clear out junk
+  //which the card's launcher may or may not have left behind
+  if(isHomebrew)
+  {
+    u32 w=100000,x=99,y=117,z=19382173;
+    for(int i=0;i<sizeof(MMU.ARM9_LCD);i++)
+    {
+      u32 t= (x^(x<<11)); 
+      x=y;
+      y=z; 
+      z=w;
+      t = (w= (w^(w>>19))^(t^(t>>8)));
+      MMU.ARM9_LCD[i] = t;
+    }
+  }
 
 	memset(buf, 0, MAX_PATH);
 
