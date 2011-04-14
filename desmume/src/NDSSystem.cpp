@@ -512,6 +512,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
       z=w;
       t = (w= (w^(w>>19))^(t^(t>>8)));
       MMU.ARM9_LCD[i] = t;
+      if(i<sizeof(MMU.ARM9_VMEM))
+        MMU.ARM9_VMEM[i] = t;
     }
   }
 
