@@ -755,11 +755,11 @@ int main(int argc, char ** argv) {
       now = SDL_GetTicks();
 #endif
       int delay =  (limiter_tick0 + limiter_frame_counter*1000/FPS_LIMITER_FPS) - now;
-      if (delay > 0) {
-        SDL_Delay(delay);
-      } else if (delay < -500) { // reset if we fall too far behind don't want to run super fast until we catch up
+      if (delay < -500 || delay > 100) { // reset if we fall too far behind don't want to run super fast until we catch up
         limiter_tick0 = now;
         limiter_frame_counter = 0;
+      } else if (delay > 0) {
+        SDL_Delay(delay);
       }
     }
     // always count frames, we'll mess up if the limiter gets turned on later otherwise
