@@ -25,11 +25,13 @@
  */
 
 @class VideoOutputWindow;
+@class CocoaDSController;
 
 @interface InputHandler : NSResponder
 {
 @private
 	VideoOutputWindow *my_ds;
+	CocoaDSController *dsController;
 }
 //preferences
 + (NSView*)createPreferencesView:(float)width;
