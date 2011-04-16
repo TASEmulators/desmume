@@ -12,7 +12,7 @@
 #include <cstdio>
 
 #include "../types.h"
-#include "emufile.h"
+#include "../emufile.h"
 
 
 //definitions for str_strip() flags
