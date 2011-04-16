@@ -166,12 +166,14 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 	my_ds = nds;
 	[my_ds retain];
 	
+	dsController = [nds getDSController];
+	[dsController retain];
+	
 	return self;
 }
 
 - (void)dealloc
 {
-	[my_ds release];
 	[super dealloc];
 }
 
@@ -182,18 +184,18 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
 	NSString *chars = [event characters];
 	
-	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[my_ds pressA];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[my_ds pressB];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[my_ds pressSelect];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[my_ds pressStart];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[my_ds pressRight];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[my_ds pressLeft];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[my_ds pressUp];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[my_ds pressDown];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[my_ds pressR];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[my_ds pressL];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[my_ds pressX];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[my_ds pressY];
+	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[dsController pressA];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[dsController pressB];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[dsController pressSelect];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[dsController pressStart];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[dsController pressRight];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[dsController pressLeft];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[dsController pressUp];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[dsController pressDown];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[dsController pressR];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[dsController pressL];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[dsController pressX];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[dsController pressY];
 }
 
 - (void)keyUp:(NSEvent*)event
@@ -201,24 +203,28 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
 	NSString *chars = [event characters];
 	
-	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[my_ds liftA];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[my_ds liftB];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[my_ds liftSelect];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[my_ds liftStart];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[my_ds liftRight];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[my_ds liftLeft];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[my_ds liftUp];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[my_ds liftDown];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[my_ds liftR];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[my_ds liftL];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[my_ds liftX];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[my_ds liftY];
+	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[dsController liftA];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[dsController liftB];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[dsController liftSelect];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[dsController liftStart];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[dsController liftRight];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[dsController liftLeft];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[dsController liftUp];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[dsController liftDown];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[dsController liftR];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[dsController liftL];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[dsController liftX];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[dsController liftY];
 }
 
 - (void)mouseDown:(NSEvent*)event
 {
 	NSPoint temp = [my_ds windowPointToDSCoords:[event locationInWindow]];
-	if(temp.x >= 0 && temp.y>=0)[my_ds touch:temp];
+	
+	if(temp.x >= 0 && temp.y>=0)
+	{
+		[dsController touch:temp];
+	}
 }
 
 - (void)mouseDragged:(NSEvent*)event
@@ -228,7 +234,7 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 
 - (void)mouseUp:(NSEvent*)event
 {
-	[my_ds releaseTouch];
+	[dsController releaseTouch];
 }
 
 @end

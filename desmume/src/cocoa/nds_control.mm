@@ -20,6 +20,7 @@
 #import "nds_control.h"
 #import "preferences.h"
 #import "screen_state.h"
+#import "main_window.h"
 
 #ifdef DESMUME_COCOA
 #import "sndOSX.h"
@@ -31,7 +32,6 @@
 #endif
 
 //DeSmuME general includes
-#define OBJ_C
 #include "../NDSSystem.h"
 #include "../saves.h"
 #include "../render3D.h"
@@ -50,7 +50,7 @@ bool timer_based;
 #define DS_MICROSECONDS_PER_FRAME (1.0 / 59.8) * 1000000.0
 
 //accessed from other files
-volatile desmume_BOOL execute = true;
+volatile bool execute = true;
 
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
@@ -61,6 +61,13 @@ GPU3DInterface *core3DList[] = {
 NULL
 };
 
+enum
+{
+	CORE3DLIST_NULL = 0,
+	CORE3DLIST_RASTERIZE,
+	CORE3DLIST_OPENGL
+};
+
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 #ifdef DESMUME_COCOA
@@ -69,15 +76,27 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
-struct NDS_fw_config_data firmware;
+struct NDS_fw_config_data macDS_firmware;
 
 bool opengl_init()
 {
 	return true;
 }
 
+@implementation CocoaDSStateBuffer
+
+- (id) init
+{
+	frame_skip = -1; //default to auto frame skip
+	speed_limit = 100; //default to max speed = normal speed
+	
+	return self;
+}
+
+@end
+
 @implementation NintendoDS
-- (id)init;
+- (id)init
 {
 	//
 	self = [super init];
@@ -87,6 +106,7 @@ bool opengl_init()
 	error_object = nil;
 	frame_skip = -1; //default to auto frame skip
 	speed_limit = 100; //default to max speed = normal speed
+	calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)speed_limit / 100.0));
 	gui_thread = [NSThread currentThread];
 	current_file = nil;
 	flash_file = nil;
@@ -161,8 +181,8 @@ bool opengl_init()
 #endif
 
 	//use default firmware
-	NDS_FillDefaultFirmwareConfigData(&firmware);
-	NDS_CreateDummyFirmware(&firmware);
+	NDS_FillDefaultFirmwareConfigData(&macDS_firmware);
+	NDS_CreateDummyFirmware(&macDS_firmware);
 
   /*
    * Activate the GDB stubs
@@ -256,7 +276,7 @@ bool opengl_init()
 		[context makeCurrentContext];
 
 		oglrender_init = &opengl_init;
-		NDS_3D_SetDriver(1);
+		NDS_3D_SetDriver(CORE3DLIST_RASTERIZE);
 		if(!gpu3D->NDS_3D_Init())
 			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
 	}
@@ -290,8 +310,11 @@ bool opengl_init()
 	if(timer_based)
 	{
 		video_update_lock = [[NSLock alloc] init];
-		[NSTimer scheduledTimerWithTimeInterval:1.0f/60.0f target:self selector:@selector(videoUpdateTimerHelper) userInfo:nil repeats:YES];
+		[NSTimer scheduledTimerWithTimeInterval:DS_SECONDS_PER_FRAME target:self selector:@selector(videoUpdateTimerHelper) userInfo:nil repeats:YES];
 	}
+	
+	dsStateBuffer = [[CocoaDSStateBuffer alloc] init];
+	dsController = [[CocoaDSController alloc] init];
 
 	return self;
 }
@@ -324,7 +347,10 @@ bool opengl_init()
 	//end the other thread
 	finish = true;
 	while(!finished){}
-
+	
+	[dsStateBuffer release];
+	[dsController release];
+	
 	[display_object release];
 	[error_object release];
 	[context release];
@@ -350,18 +376,23 @@ bool opengl_init()
 	[super dealloc];
 }
 
+- (CocoaDSController*) getDSController
+{
+	return dsController;
+}
+
 - (void)setPlayerName:(NSString*)player_name
 {
 	//first we convert to UTF-16 which the DS uses to store the nickname
 	NSData *string_chars = [player_name dataUsingEncoding:NSUnicodeStringEncoding];
 
 	//copy the bytes
-	firmware.nickname_len = MIN([string_chars length],MAX_FW_NICKNAME_LENGTH);
-	[string_chars getBytes:firmware.nickname length:firmware.nickname_len];
-	firmware.nickname[firmware.nickname_len / 2] = 0;
+	macDS_firmware.nickname_len = MIN([string_chars length],MAX_FW_NICKNAME_LENGTH);
+	[string_chars getBytes:macDS_firmware.nickname length:macDS_firmware.nickname_len];
+	macDS_firmware.nickname[macDS_firmware.nickname_len / 2] = 0;
 
 	//set the firmware
-	//NDS_CreateDummyFirmware(&firmware);
+	//NDS_CreateDummyFirmware(&macDS_firmware);
 }
 
 - (BOOL)loadROM:(NSString*)filename
@@ -604,8 +635,14 @@ bool opengl_init()
 
 - (void)setFrameSkip:(int)frameskip
 {
-	if(frameskip < 0)frame_skip = -1;
-	else frame_skip = frameskip;
+	dsStateBuffer->frame_skip = frameskip;
+	
+	if(frameskip < 0)
+	{
+		dsStateBuffer->frame_skip = -1;
+	}
+	
+	doesConfigNeedUpdate = true;
 }
 
 - (int)frameSkip
@@ -615,10 +652,14 @@ bool opengl_init()
 
 - (void)setSpeedLimit:(int)speedLimit
 {
-	if(speedLimit < 0)return;
-	if(speedLimit > 1000)return;
+	if(speedLimit < 0 || speedLimit > 1000)
+	{
+		return;
+	}
 
-	speed_limit = speedLimit;
+	dsStateBuffer->speed_limit = speedLimit;
+	
+	doesConfigNeedUpdate = true;
 }
 
 - (int)speedLimit
@@ -639,602 +680,152 @@ bool opengl_init()
 	return CommonSettings.manualBackupType;
 }
 
-
-- (void)touch:(NSPoint)point
-{
-	NDS_setTouchPos((unsigned short)point.x, (unsigned short)point.y);
-}
-
-- (void)releaseTouch
-{
-	NDS_releaseTouch();
-}
-
-- (void)pressStart
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFF7;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFF7;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xF7FF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xF7FF;
-#endif
-}
-
-- (void)liftStart
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0008;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0008;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0800;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0800;
-#endif
-}
-
-- (BOOL)start
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0008) == 0)
-#else
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0800) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressSelect
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFB;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFB;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFBFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFBFF;
-#endif
-}
-
-- (void)liftSelect
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0004;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0004;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0400;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0400;
-#endif
-}
-
-- (BOOL)select
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0004) == 0)
-#else
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0400) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressLeft
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFDF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFDF;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xDFFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xDFFF;
-#endif
-}
-
-- (void)liftLeft
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0020;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0020;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x2000;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x2000;
-#endif
-}
-
-- (BOOL)left
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0020) == 0)
-#else
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x2000) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressRight
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFEF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFEF;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xEFFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xEFFF;
-#endif
-}
-
-- (void)liftRight
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0010;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0010;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x1000;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x1000;
-#endif
-}
-
-- (BOOL)right
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16*)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0010) == 0)
-#else
-	if((((u16*)ARM9Mem.ARM9_REG)[0x130>>1] & 0x1000) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressUp
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFBF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFBF;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xBFFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xBFFF;
-#endif
-}
-
-- (void)liftUp
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0040;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0040;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x4000;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x4000;
-#endif
-}
-
-- (BOOL)up
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0040) == 0)
-#else
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x4000) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressDown
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFF7F;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFF7F;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0x7FFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0x7FFF;
-#endif
-}
-
-- (void)liftDown
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0080;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0080;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x8000;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x8000;
-#endif
-}
-
-- (BOOL)down
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0080) == 0)
-#else
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x8000) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressA
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFE;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFE;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFEFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFEFF;
-#endif
-}
-
-- (void)liftA
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0001;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0001;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0100;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0100;
-#endif
-}
-
-- (BOOL)A
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0001) == 0)
-#else
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0100) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressB
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFD;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFD;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFDFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFDFF;
-#endif
-}
-
-- (void)liftB
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0002;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0002;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0200;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0200;
-#endif
-}
-
-- (BOOL)B
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0002) == 0)
-#else
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0200) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressX
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFE;
-#else
-	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFEFF;
-#endif
-}
-
-- (void)liftX
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0001;
-#else
-	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0100;
-#endif
-}
-
-- (BOOL)X
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0001) == 0)
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0001) == 0)
-#else
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0100) == 0)
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0100) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressY
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFD;
-#else
-	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFDFF;
-#endif
-}
-
-- (void)liftY
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0002;
-#else
-	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0200;
-#endif
-}
-
-- (BOOL)Y
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0002) == 0)
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0002) == 0)
-#else
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0200) == 0)
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0200) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressL
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFDFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFDFF;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFD;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFD;
-#endif
-}
-
-- (void)liftL
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0200;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0200;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0002;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0002;
-#endif
-}
-
-- (BOOL)L
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0200) == 0)
-#else
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0002) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
-- (void)pressR
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFEFF;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFEFF;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFE;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFE;
-#endif
-}
-
-- (void)liftR
-{
-#ifndef __BIG_ENDIAN__
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0100;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0100;
-#else
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0001;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0001;
-#endif
-}
-
-- (BOOL)R
-{
-#ifndef __BIG_ENDIAN__
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0100) == 0)
-#else
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0001) == 0)
-#endif
-		return YES;
-	return NO;
-}
-
 - (BOOL)saveState:(NSString*)file
 {
 	[execution_lock lock];
-
+	
 	BOOL result = NO;
 	if(savestate_save([file cStringUsingEncoding:NSUTF8StringEncoding]))
 		result = YES;
-
+	
 	[execution_lock unlock];
-
+	
 	return result;
 }
 
 - (BOOL)loadState:(NSString*)file
 {
 	[execution_lock lock];
-
+	
 	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
 	[prev_context retain];
 	[context makeCurrentContext];
-
+	
 	BOOL result = NO;
 	if(savestate_load([file cStringUsingEncoding:NSUTF8StringEncoding]))
 		result = YES;
-
+	
 	[execution_lock unlock];
-
+	
 	if(prev_context != nil)
 	{
 		[prev_context makeCurrentContext];
 		[prev_context release];
 	} else
 		[NSOpenGLContext clearCurrentContext];
-
+	
 	return result;
 }
 
-- (BOOL)saveStateToSlot:(int)slot
+- (BOOL) isSubScreenLayerDisplayed:(int)i
 {
-	if(slot >= MAX_SLOTS)return NO;
-	if(slot < 0)return NO;
-
-	[execution_lock lock];
-
-	BOOL result = NO;
-
-	savestate_slot(slot + 1);//no execption handling?
-	result = YES;
-
-	[execution_lock unlock];
-
-	return result;
-}
-
-- (BOOL)loadStateFromSlot:(int)slot
-{
-	if(slot >= MAX_SLOTS)return NO;
-	if(slot < 0)return NO;
-
-	BOOL result = NO;
-	[execution_lock lock];
-
-	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
-	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
-	[prev_context retain];
-	[context makeCurrentContext];
-
-	loadstate_slot(slot + 1); //no exection handling?
-	result = YES;
-
-	[execution_lock unlock];
-
-	if(prev_context != nil)
+	GPU *theGPU = SubScreen.gpu;
+	BOOL isLayerDisplayed = NO;
+	
+	// Check bounds on the layer index.
+	if(i < 0 || i > 4)
 	{
-		[prev_context makeCurrentContext];
-		[prev_context release];
-	} else
-		[NSOpenGLContext clearCurrentContext];
-
-	return result;
+		return isLayerDisplayed;
+	}
+	
+	// Check if theGPU exists.
+	if(theGPU == nil)
+	{
+		return isLayerDisplayed;
+	}
+	
+	// CommonSettings.dispLayers is returned as a bool, so we convert
+	// to BOOL here.
+	if (CommonSettings.dispLayers[theGPU->core][i])
+	{
+		isLayerDisplayed = YES;
+	}
+	
+	return isLayerDisplayed;
 }
 
-- (BOOL)saveStateExists:(int)slot
+- (BOOL) isMainScreenLayerDisplayed:(int)i
 {
-	scan_savestates();
-	if(savestates[slot].exists)
-		return YES;
-	return NO;
+	GPU *theGPU = MainScreen.gpu;
+	BOOL isLayerDisplayed = NO;
+	
+	// Check bounds on the layer index.
+	if(i < 0 || i > 4)
+	{
+		return isLayerDisplayed;
+	}
+	
+	// Check if theGPU exists.
+	if(theGPU == nil)
+	{
+		return isLayerDisplayed;
+	}
+	
+	// CommonSettings.dispLayers is returned as a bool, so we convert
+	// to BOOL here.
+	if (CommonSettings.dispLayers[theGPU->core][i])
+	{
+		isLayerDisplayed = YES;
+	}
+	
+	return isLayerDisplayed;
 }
 
-- (void)toggleTopBackground0
+- (void) toggleSubScreenLayer:(int)i
 {
-	if(SubScreen.gpu->dispBG[0])
-		GPU_remove(SubScreen.gpu, 0);
+	GPU *theGPU = SubScreen.gpu;
+	BOOL isLayerDisplayed;
+	
+	// Check bounds on the layer index.
+	if(i < 0 || i > 4)
+	{
+		return;
+	}
+	
+	// Check if theGPU exists.
+	if(theGPU == nil)
+	{
+		return;	
+	}
+	
+	isLayerDisplayed = [self isSubScreenLayerDisplayed:i];
+	if(isLayerDisplayed == YES)
+	{
+		GPU_remove(theGPU, i);
+	}
 	else
-		GPU_addBack(SubScreen.gpu, 0);
+	{
+		GPU_addBack(theGPU, i);
+	}
 }
 
-- (BOOL)showingTopBackground0
+- (void) toggleMainScreenLayer:(int)i
 {
-	return SubScreen.gpu->dispBG[0];
-}
-
-- (void)toggleTopBackground1
-{
-	if(SubScreen.gpu->dispBG[1])
-		GPU_remove(SubScreen.gpu, 1);
+	GPU *theGPU = MainScreen.gpu;
+	BOOL isLayerDisplayed;
+	
+	// Check bounds on the layer index.
+	if(i < 0 || i > 4)
+	{
+		return;
+	}
+	
+	// Check if theGPU exists.
+	if(theGPU == nil)
+	{
+		return;	
+	}
+	
+	isLayerDisplayed = [self isMainScreenLayerDisplayed:i];
+	if(isLayerDisplayed == YES)
+	{
+		GPU_remove(theGPU, i);
+	}
 	else
-		GPU_addBack(SubScreen.gpu, 1);
-}
-
-- (BOOL)showingTopBackground1
-{
-	return SubScreen.gpu->dispBG[1];
-}
-
-- (void)toggleTopBackground2
-{
-	if(SubScreen.gpu->dispBG[2])
-		GPU_remove(SubScreen.gpu, 2);
-	else
-		GPU_addBack(SubScreen.gpu, 2);
-}
-
-- (BOOL)showingTopBackground2
-{
-	return SubScreen.gpu->dispBG[2];
-}
-
-- (void)toggleTopBackground3
-{
-	if(SubScreen.gpu->dispBG[3])
-		GPU_remove(SubScreen.gpu, 3);
-	else
-		GPU_addBack(SubScreen.gpu, 3);
-}
-
-- (BOOL)showingTopBackground3
-{
-	return SubScreen.gpu->dispBG[3];
-}
-
-- (void)toggleSubBackground0
-{
-	if(MainScreen.gpu->dispBG[0])
-		GPU_remove(MainScreen.gpu, 0);
-	else
-		GPU_addBack(MainScreen.gpu, 0);
-}
-
-- (BOOL)showingSubBackground0
-{
-	return MainScreen.gpu->dispBG[0];
-}
-
-- (void)toggleSubBackground1
-{
-	if(MainScreen.gpu->dispBG[1])
-		GPU_remove(MainScreen.gpu, 1);
-	else
-		GPU_addBack(MainScreen.gpu, 1);
-}
-
-- (BOOL)showingSubBackground1
-{
-	return MainScreen.gpu->dispBG[1];
-}
-
-- (void)toggleSubBackground2
-{
-	if(MainScreen.gpu->dispBG[2])
-		GPU_remove(MainScreen.gpu, 2);
-	else
-		GPU_addBack(MainScreen.gpu, 2);
-}
-
-- (BOOL)showingSubBackground2
-{
-	return MainScreen.gpu->dispBG[2];
-}
-
-- (void)toggleSubBackground3
-{
-	if(MainScreen.gpu->dispBG[3])
-		GPU_remove(MainScreen.gpu, 3);
-	else
-		GPU_addBack(MainScreen.gpu, 3);
-}
-
-- (BOOL)showingSubBackground3
-{
-	return MainScreen.gpu->dispBG[3];
+	{
+		GPU_addBack(theGPU, i);
+	}
 }
 
 - (BOOL)hasSound
@@ -1333,114 +924,217 @@ bool opengl_init()
 - (void)run:(NSOpenGLContext*)gl_context
 {
 	NSAutoreleasePool *autorelease = [[NSAutoreleasePool alloc] init];
-
+	
+	NSDate *loopStartDate;
+	NSDate *emulation_start_date;
+	NSDate *frame_start_date;
+	
+	NSTimeInterval timeBudget;
+	NSTimeInterval timePad;
+	
 #ifdef HAVE_OPENGL
 	[gl_context retain];
 	[gl_context makeCurrentContext];
 	CGLLockContext((CGLContextObj)[gl_context CGLContextObj]);
 #endif
-
-	NSDate *frame_start_date, *frame_end_date, *ideal_frame_end_date;
-
-	int frames_to_skip = 0;
-
+	
 	//program main loop
 	while(!finish)
 	{
-		if(!run)paused = true;
-
+		if(!run)
+		{
+			paused = true;
+		}
+		
 		//run the emulator
 		while(run && execute) //run controls when the emulator runs, execute prevents it from continuing execution if there are errors
 		{
-
-			paused = false;
-
-			int speed_limit_this_frame = speed_limit; //dont let speed limit change midframe
-			if(speed_limit_this_frame)ideal_frame_end_date = [NSDate dateWithTimeIntervalSinceNow: DS_SECONDS_PER_FRAME / ((float)speed_limit_this_frame / 100.0)];
-
-			frame_start_date = [NSDate dateWithTimeIntervalSinceNow:0];
-
-			[execution_lock lock];
-
-			NDS_exec<false>();
-
-			[sound_lock lock];
-			int x;
-			for(x = 0; x <= frames_to_skip; x++)
+		/*
+			Get the start time for the loop. This will be needed when it comes
+			time to determine the total time spent, and then calculating what
+			timePad should be.
+		 */
+			loopStartDate = [NSDate date];
+			
+		/*
+			Some controls may affect how the loop runs.
+		 
+			Instead of checking and modifying the NDS config every time through
+			the loop, only change the config on an as-needed basis.
+		 */
+			if(doesConfigNeedUpdate == true)
 			{
-				SPU_Emulate_user();
-				SPU_Emulate_core();
+				[self updateConfig];
+				doesConfigNeedUpdate = false;
 			}
-			[sound_lock unlock];
-
-			[execution_lock unlock];
-
-			frame_end_date = [NSDate dateWithTimeIntervalSinceNow:0];
-
-			//speed limit
-			if(speed_limit_this_frame)
-				[NSThread sleepUntilDate:ideal_frame_end_date];
-
-			if(frames_to_skip > 0)
-				frames_to_skip--;
-
+			
+			// Force paused state.
+			paused = false;
+			
+		/*
+			Set up our time budget, which is equal to calcTimeBudget, which
+			is the relationship between DS_SECONDS_PER_FRAME and speed_limit.
+			timeBudget represents how much time we have to spend doing the
+			various functions of making a new frame.
+		 
+			The major parts we spend our time on is:
+				- Emulation
+				- Drawing the frame
+				- Pad time
+		 
+			The priorities for spending time are the same as the order listed
+			above.
+		 
+			timePad represents any excess time that can be released back
+			to the OS.
+		 */
+			timeBudget = calcTimeBudget;
+			timePad = timeBudget;
+			
+		/*
+			Set up the inputs for the emulator.
+			
+			The time taken up by this step should be insignificant, so we
+			won't bother calculating this in the time budget.
+		 */
+			[dsController setupAllDSInputs];
+			NDS_beginProcessingInput();
+		/*
+			Shouldn't need to do any special processing steps in between.
+			We'll just jump directly to ending the input processing.
+		 */
+			NDS_endProcessingInput();
+			
+			emulation_start_date = [NSDate date];
+			[self emulateDS];
+			
+		/*
+			Subtract the emulation time from our time budget.
+			
+			For some reason, [NSDate timeIntervalSinceNow] returns a
+			negative interval if the receiver is an earlier date than now.
+			So to subtract from timeBudget, we add the interval.
+		 
+			Go figure.
+		 */
+			timeBudget += [emulation_start_date timeIntervalSinceNow];
+			
+		/*
+			If we have time left in our time budget, draw the frame.
+			
+			But if we don't have time left in our time budget, then we need
+			to make a decision on whether to simply drop the frame, or just
+			draw the frame.
+		 
+			Currently, the decision is to just draw everything because
+			frame drawing time is very negligible. Dropping a whole bunch of
+			frames will NOT yield any significant speed increase.
+		 */
+			if(timeBudget > 0)
+			{
+				frame_start_date = [NSDate date];
+				[self drawFrame];
+				
+				// Subtract the drawing time from our time budget.
+				timeBudget += [frame_start_date timeIntervalSinceNow];
+			}
 			else
 			{
-				if(frame_skip < 0)
-				{ //automatic
-
-					//i don't know if theres a standard strategy, but here we calculate how much
-					//longer the frame took than it should have, then set it to skip that many frames.
-					frames_to_skip = [frame_end_date timeIntervalSinceDate:frame_start_date] / (float)DS_SECONDS_PER_FRAME;
-					if(frames_to_skip > 10)frames_to_skip = 10;
-
-				} else
-				{
-
-					frames_to_skip = frame_skip;
-
-				}
-
-				//update the screen
-				ScreenState *new_screen_data = [[ScreenState alloc] initWithColorData:GPU_screen];
-
-				if(timer_based)
-				{ //for tiger compatibility
-					[video_update_lock lock];
-					[current_screen release];
-					current_screen = new_screen_data;
-					[video_update_lock unlock];
-				} else
-				{ //for leopard and later
-
-					//this will generate a warning when compiling on tiger or earlier, but it should
-					//be ok since the purpose of the if statement is to check if this will work
-					[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
-					[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
-				}
+				// Don't even bother calculating timeBudget. We've already
+				// gone over at this point.
+				[self drawFrame];
 			}
-
-			//execute is set to false sometimes by the emulation core
-			//when there is an error, if this happens notify the other thread that emulation has stopped.
-			if(!execute)
-				if(!timer_based) //wont display an error on tiger or earlier
-					[error_object performSelector:error_func onThread:gui_thread withObject:nil waitUntilDone:YES];
-
+			
+			// If there is any time left in the loop, go ahead and pad it.
+			timePad += [loopStartDate timeIntervalSinceNow];
+			if(timePad > 0)
+			{
+				[self padTime:timePad];
+			}
 		}
-
+		
 		//when emulation is paused, return CPU time to the OS
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
 	}
-
+	
 #ifdef HAVE_OPENGL
 	CGLUnlockContext((CGLContextObj)[gl_context CGLContextObj]);
 	[gl_context release];
 #endif
-
+	
 	[autorelease release];
-
+	
 	paused = true;
 	finished = true;
+}
+
+- (void) emulateDS
+{
+	[execution_lock lock];
+	
+	NDS_exec<false>();
+	
+	[sound_lock lock];
+	
+	SPU_Emulate_user();
+	
+	[sound_lock unlock];
+	
+	[execution_lock unlock];
+}
+
+- (void) drawFrame
+{
+	ScreenState *new_screen_data = [[ScreenState alloc] initWithColorData:GPU_screen];
+	
+	if(timer_based)
+	{ //for tiger compatibility
+		[video_update_lock lock];
+		[current_screen release];
+		current_screen = new_screen_data;
+		[video_update_lock unlock];
+	}
+	else
+	{ //for leopard and later
+		
+		//this will generate a warning when compiling on tiger or earlier, but it should
+		//be ok since the purpose of the if statement is to check if this will work
+		[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
+		[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
+	}
+}
+
+- (void) padTime:(NSTimeInterval)timePad
+{
+#if (MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4) // Code for Mac OS X 10.4 and earlier
+	
+	[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:timePad]];
+	
+#else // Code for Mac OS X 10.5 and later
+	
+	[NSThread sleepForTimeInterval:timePad];
+	
+#endif
+}
+
+- (void) updateConfig
+{
+	// Update the Nintendo DS config
+	frame_skip = dsStateBuffer->frame_skip;
+	speed_limit = dsStateBuffer->speed_limit;
+	
+	if(speed_limit <= 0)
+	{
+		calcTimeBudget = 0;
+	}
+	else if(speed_limit > 0 && speed_limit < 1000)
+	{
+		calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)speed_limit / 100.0));
+	}
+	else
+	{
+		calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)1000.0 / 100.0));
+	}
 }
 
 @end
