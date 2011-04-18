@@ -47,10 +47,10 @@ AC_CHECK_LIB(zzip, zzip_open, [
 	LIBS="-lzzip $LIBS"
 	AC_DEFINE([HAVE_LIBZZIP])
 	AC_MSG_CHECKING([[whether zzip use void * as second parameter]])
-	AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <zzip/lib.h>]], [[
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <zzip/lib.h>]], [[
 		void * v;
-		zzip_read(NULL, v, 0);]]),
-        	AC_MSG_RESULT(yes),
+		zzip_read(NULL, v, 0);]])],
+		AC_MSG_RESULT(yes),
 		AC_DEFINE([ZZIP_OLD_READ])
 		AC_MSG_RESULT(no))
 ])
