@@ -1,6 +1,6 @@
 include $(top_srcdir)/src/desmume.mk
 
-AM_CPPFLAGS += -DHAVE_WX=1 -DHAVE_X11=1 $(WX_CPPFLAGS) $(SDL_CFLAGS) $(LIBAGG_CFLAGS)
+AM_CPPFLAGS += -DHAVE_WX=1 -DHAVE_X11=1 $(WX_CPPFLAGS) $(SDL_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 Applicationsdir = $(datadir)/applications
 Applications_DATA = wxdesmume.desktop
@@ -27,7 +27,7 @@ wxdesmume_SOURCES = \
 	StringUtil.h StringUtil.cpp \
 	wxMain.cpp
 wxdesmume_LDADD = ../libdesmume.a \
-	$(SDL_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(WX_LIBS) -lX11
+	$(SDL_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(WX_LIBS) $(LIBSOUNDTOUCH_LIBS) -lX11
 if HAVE_GDB_STUB
 wxdesmume_LDADD += ../gdbstub/libgdbstub.a
 endif
