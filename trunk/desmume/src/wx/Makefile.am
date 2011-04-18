@@ -27,7 +27,7 @@ wxdesmume_SOURCES = \
 	StringUtil.h StringUtil.cpp \
 	wxMain.cpp
 wxdesmume_LDADD = ../libdesmume.a \
-	$(SDL_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(WX_LIBS)
+	$(SDL_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(WX_LIBS) -lX11
 if HAVE_GDB_STUB
 wxdesmume_LDADD += ../gdbstub/libgdbstub.a
 endif
