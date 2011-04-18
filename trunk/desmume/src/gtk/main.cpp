@@ -369,10 +369,10 @@ enum spumode_enum {
 };
 
 static const GtkRadioActionEntry spumode_entries[] = {
-    { "SPUModeSyncN", NULL, "Sychronous (N)", NULL, NULL, SPUMODE_SYNCN},
-    { "SPUModeSyncZ", NULL, "Sychronous (Z)", NULL, NULL, SPUMODE_SYNCZ},
+    { "SPUModeSyncN", NULL, "Synchronous (N)", NULL, NULL, SPUMODE_SYNCN},
+    { "SPUModeSyncZ", NULL, "Synchronous (Z)", NULL, NULL, SPUMODE_SYNCZ},
 #ifdef HAVE_LIBSOUNDTOUCH
-    { "SPUModeSyncP", NULL, "Sychronous (P)", NULL, NULL, SPUMODE_SYNCP},
+    { "SPUModeSyncP", NULL, "Synchronous (P)", NULL, NULL, SPUMODE_SYNCP},
 #endif
     { "SPUModeDualASync", NULL, "Dual Asynchronous", NULL, NULL, SPUMODE_DUALASYNC}
 };
