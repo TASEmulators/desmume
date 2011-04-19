@@ -22,7 +22,7 @@
 #include "../mem.h"
 #include <string.h>
 #include "../MMU.h"
-#include "path.h"
+#include "../path.h"
 
 //SRAM is going to be stored just above the rom.
 //that is convenient for us, since it mirrors the nds memory map
