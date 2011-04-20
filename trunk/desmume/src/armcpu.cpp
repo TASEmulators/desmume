@@ -561,7 +561,7 @@ u32 TRAPUNDEF(armcpu_t* cpu)
 
 	if (((cpu->intVector != 0) ^ (cpu->proc_ID == ARMCPU_ARM9)))
 	{
-		armcpu_exception(&NDS_ARM9,0x04);
+		armcpu_exception(&NDS_ARM9,EXCEPTION_UNDEFINED_INSTRUCTION);
 		return 4;
 	}
 	else
