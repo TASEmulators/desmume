@@ -95,16 +95,15 @@ void EMUFILE::write64le(u64 val)
 {
 #ifdef LOCAL_BE
 	u8 s[8];
-	s[0]=(u8)b;
-	s[1]=(u8)(b>>8);
-	s[2]=(u8)(b>>16);
-	s[3]=(u8)(b>>24);
-	s[4]=(u8)(b>>32);
-	s[5]=(u8)(b>>40);
-	s[6]=(u8)(b>>48);
-	s[7]=(u8)(b>>56);
+	s[0]=(u8)val;
+	s[1]=(u8)(val>>8);
+	s[2]=(u8)(val>>16);
+	s[3]=(u8)(val>>24);
+	s[4]=(u8)(val>>32);
+	s[5]=(u8)(val>>40);
+	s[6]=(u8)(val>>48);
+	s[7]=(u8)(val>>56);
 	fwrite((char*)&s,8);
-	return 8;
 #else
 	fwrite(&val,8);
 #endif
