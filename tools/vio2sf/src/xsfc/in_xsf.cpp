@@ -268,10 +268,12 @@ public:
 			return false;
 		}
 
-		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT,				addInstrument);
-		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED,			isInstrumentMuted);
-		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME,		getInstrumentVolume);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT,					addInstrument);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED,				isInstrumentMuted);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME,			getInstrumentVolume);
+		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTSELECTIONACTIVE,	isInstrumentSelectionActive);
 		lpif->SetExtendParamImmediate(EXTEND_PARAM_IMMEDIATE_OPENSOUNDVIEW,		openSoundView);
+
 		
 		return true;
 	}
@@ -1024,7 +1026,7 @@ protected:
 						int request2 = ::InterlockedExchange((LPLONG)&m_lRequest, 0);
 						if (request2 & (1 << REQUEST_STOP))
 						{
-			 				request1 |= (1 << REQUEST_STOP);
+							request1 |= (1 << REQUEST_STOP);
 							break;
 						}
 					}
@@ -1123,13 +1125,14 @@ protected:
 			{
 				xsfdrv.seek_kil = 1;
 				Request(REQUEST_STOP);
-
+				
 				MSG msg;
 				while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
 					if( GetMessage( &msg, 0,  0, 0)>0 ) {
 						TranslateMessage(&msg);
 						DispatchMessage(&msg);
 					}
+
 
 			} while (::WaitForSingleObject(m_hThread, 20) == WAIT_TIMEOUT);
 			::CloseHandle(m_hThread);

@@ -14,8 +14,8 @@ void winamp_config_dialog(HWND hwndWinamp, HWND hwndParent);
 void addInstrument(unsigned long addr, int type);
 BOOL isInstrumentMuted(unsigned long addr);
 unsigned long getInstrumentVolume(unsigned long addr);
+BOOL isInstrumentSelectionActive();
 void openSoundView(void* callback);
-
 
 #ifdef __cplusplus
 }

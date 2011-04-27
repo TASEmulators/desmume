@@ -104,6 +104,12 @@ extern "C" int SoundView_DlgOpen(HINSTANCE hAppInst)
 {
 	HWND hDlg;
 
+	if(SoundView_Data != NULL)
+	{
+		SetWindowPos(SoundView_Data->hDlg,HWND_TOP,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE);
+		return 0;
+	}
+
 	SoundView_Data = new SoundView_DataStruct();
 	if(SoundView_Data == NULL)
 		return 0;

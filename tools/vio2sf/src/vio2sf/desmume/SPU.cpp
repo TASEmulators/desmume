@@ -48,9 +48,6 @@
 #include "NDSSystem.h"
 #include "matrix.h"
 
-
-
-
 //===================CONFIGURATION========================
 #include "src/xsfc/drvimpl.h"
 extern "C" unsigned long dwInterpolation;
@@ -204,6 +201,7 @@ extern "C" void SPU_Reset(void)
 
 static long tot_samples;
 static long update_trunc;
+
 
 extern "C" int SPU_Init(int coreid, int buffersize)
 {
@@ -546,16 +544,18 @@ static FORCEINLINE s32 Interpolate(SPUInterpolationMode INTERPOLATE_MODE, s32 a,
 typedef void			(*TYPE_EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT)(unsigned long addr, int type);
 typedef BOOL			(*TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED)(unsigned long addr);
 typedef unsigned long	(*TYPE_EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME)(unsigned long addr);
+typedef BOOL			(*TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTSELECTIONACTIVE)();
 double round(double r) 
 {
     return (r > 0.0) ? floor(r + 0.5) : ceil(r - 0.5);
 }
 
-extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT		addInstrument;
-extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED	isInstrumentMuted;
-extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME	getInstrumentVolume;
+extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_ADDINSTRUMENT				addInstrument;
+extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTMUTED			isInstrumentMuted;
+extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_GETINSTRUMENTVOLUME			getInstrumentVolume;
+extern "C" TYPE_EXTEND_PARAM_IMMEDIATE_ISINSTRUMENTSELECTIONACTIVE	isInstrumentSelectionActive;
 
-static FORCEINLINE void Fetch8BitData(SPUInterpolationMode INTERPOLATE_MODE, channel_struct *chan, s32 *data, bool INSTRUMENT_EDIT)
+static FORCEINLINE void Fetch8BitData(SPUInterpolationMode INTERPOLATE_MODE, channel_struct *chan, s32 *data)
 {
 	u32 loc = sputrunc(chan->sampcnt);
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
@@ -570,8 +570,7 @@ static FORCEINLINE void Fetch8BitData(SPUInterpolationMode INTERPOLATE_MODE, cha
 	else
 		*data = (s32)chan->buf8[loc] << 8;
 
-	//if (addInstrument && isInstrumentMuted && getInstrumentVolume) 
-	if(INSTRUMENT_EDIT)
+	if (isInstrumentSelectionActive && isInstrumentSelectionActive() && addInstrument && isInstrumentMuted && getInstrumentVolume) 
 	{
 		addInstrument(chan->addr, 0);
 		if (isInstrumentMuted(chan->addr)) *data = 0;
@@ -579,7 +578,7 @@ static FORCEINLINE void Fetch8BitData(SPUInterpolationMode INTERPOLATE_MODE, cha
 	}
 }
 
-static FORCEINLINE void Fetch16BitData(SPUInterpolationMode INTERPOLATE_MODE, const channel_struct * const chan, s32 *data, bool INSTRUMENT_EDIT)
+static FORCEINLINE void Fetch16BitData(SPUInterpolationMode INTERPOLATE_MODE, const channel_struct * const chan, s32 *data)
 {
 	const s16* const buf16 = chan->buf16;
 	const int shift = 1;
@@ -597,8 +596,7 @@ static FORCEINLINE void Fetch16BitData(SPUInterpolationMode INTERPOLATE_MODE, co
 	else
 		*data = (s32)buf16[sputrunc(chan->sampcnt)];
 
-	if(INSTRUMENT_EDIT)
-	//if (addInstrument && isInstrumentMuted && getInstrumentVolume) 
+	if (isInstrumentSelectionActive && isInstrumentSelectionActive() && addInstrument && isInstrumentMuted && getInstrumentVolume) 
 	{
 		addInstrument(chan->addr, 1);
 		if (isInstrumentMuted(chan->addr)) *data = 0;
@@ -606,7 +604,7 @@ static FORCEINLINE void Fetch16BitData(SPUInterpolationMode INTERPOLATE_MODE, co
 	}
 }
 
-static FORCEINLINE void FetchADPCMData(SPUInterpolationMode INTERPOLATE_MODE, channel_struct * const chan, s32 * const data, bool INSTRUMENT_EDIT)
+static FORCEINLINE void FetchADPCMData(SPUInterpolationMode INTERPOLATE_MODE, channel_struct * const chan, s32 * const data)
 {
 	// No sense decoding, just return the last sample
 	if (chan->lastsampcnt != sputrunc(chan->sampcnt)){
@@ -638,8 +636,7 @@ static FORCEINLINE void FetchADPCMData(SPUInterpolationMode INTERPOLATE_MODE, ch
 	else
 		*data = (s32)chan->pcm16b;
 
-	if(INSTRUMENT_EDIT)
-	//if (addInstrument && isInstrumentMuted && getInstrumentVolume) 
+	if (isInstrumentSelectionActive && isInstrumentSelectionActive() && addInstrument && isInstrumentMuted && getInstrumentVolume) 
 	{
 		addInstrument(chan->addr, 2);
 		if (isInstrumentMuted(chan->addr)) *data = 0;
@@ -647,7 +644,7 @@ static FORCEINLINE void FetchADPCMData(SPUInterpolationMode INTERPOLATE_MODE, ch
 	}
 }
 
-static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data, bool INSTRUMENT_EDIT)
+static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 {
 	if(chan->num < 8)
 	{
@@ -685,8 +682,7 @@ static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data, bool INSTR
 		*data = (s32)chan->psgnoise_last;
 	}
 
-	if(INSTRUMENT_EDIT)
-	//if (addInstrument && isInstrumentMuted && getInstrumentVolume) 
+	if (isInstrumentSelectionActive && isInstrumentSelectionActive() && addInstrument && isInstrumentMuted && getInstrumentVolume) 
 	{
 		addInstrument(0, 3);
 		if (isInstrumentMuted(0)) *data = 0;
@@ -789,7 +785,7 @@ FORCEINLINE static void SPU_Mix(int CHANNELS, SPU_struct* SPU, channel_struct *c
 	}
 }
 
-FORCEINLINE static void ____SPU_ChanUpdate(int CHANNELS, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, SPU_struct* const SPU, channel_struct* const chan, bool INSTRUMENT_EDIT)
+FORCEINLINE static void ____SPU_ChanUpdate(int CHANNELS, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, SPU_struct* const SPU, channel_struct* const chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -798,10 +794,10 @@ FORCEINLINE static void ____SPU_ChanUpdate(int CHANNELS, int FORMAT, SPUInterpol
 			s32 data;
 			switch(FORMAT)
 			{
-				case 0: Fetch8BitData(INTERPOLATE_MODE, chan, &data, INSTRUMENT_EDIT); break;
-				case 1: Fetch16BitData(INTERPOLATE_MODE, chan, &data, INSTRUMENT_EDIT); break;
-				case 2: FetchADPCMData(INTERPOLATE_MODE, chan, &data, INSTRUMENT_EDIT); break;
-				case 3: FetchPSGData(chan, &data, INSTRUMENT_EDIT); break;
+				case 0: Fetch8BitData(INTERPOLATE_MODE, chan, &data); break;
+				case 1: Fetch16BitData(INTERPOLATE_MODE, chan, &data); break;
+				case 2: FetchADPCMData(INTERPOLATE_MODE, chan, &data); break;
+				case 3: FetchPSGData(chan, &data); break;
 			}
 			SPU_Mix(CHANNELS, SPU, chan, data);
 		}
@@ -814,26 +810,26 @@ FORCEINLINE static void ____SPU_ChanUpdate(int CHANNELS, int FORMAT, SPUInterpol
 	}
 }
 
-FORCEINLINE static void ___SPU_ChanUpdate(int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan, bool INSTRUMENT_EDIT)
+FORCEINLINE static void ___SPU_ChanUpdate(int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
 	if(!actuallyMix)
-		____SPU_ChanUpdate(-1,FORMAT,INTERPOLATE_MODE,SPU,chan,INSTRUMENT_EDIT);
+		____SPU_ChanUpdate(-1,FORMAT,INTERPOLATE_MODE,SPU,chan);
 	else if (chan->pan == 0)
-		____SPU_ChanUpdate(0,FORMAT,INTERPOLATE_MODE,SPU,chan,INSTRUMENT_EDIT);
+		____SPU_ChanUpdate(0,FORMAT,INTERPOLATE_MODE,SPU,chan);
 	else if (chan->pan == 127)
-		____SPU_ChanUpdate(2,FORMAT,INTERPOLATE_MODE,SPU,chan,INSTRUMENT_EDIT);
+		____SPU_ChanUpdate(2,FORMAT,INTERPOLATE_MODE,SPU,chan);
 	else
-		____SPU_ChanUpdate(1,FORMAT,INTERPOLATE_MODE,SPU,chan,INSTRUMENT_EDIT);
+		____SPU_ChanUpdate(1,FORMAT,INTERPOLATE_MODE,SPU,chan);
 }
 
-FORCEINLINE static void __SPU_ChanUpdate(SPUInterpolationMode INTERPOLATE_MODE, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan, bool INSTRUMENT_EDIT)
+FORCEINLINE static void __SPU_ChanUpdate(SPUInterpolationMode INTERPOLATE_MODE, const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
-	___SPU_ChanUpdate(chan->format,INTERPOLATE_MODE,actuallyMix, SPU, chan, INSTRUMENT_EDIT);
+	___SPU_ChanUpdate(chan->format,INTERPOLATE_MODE,actuallyMix, SPU, chan);
 }
 
-FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan, bool INSTRUMENT_EDIT)
+FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
-	__SPU_ChanUpdate(spuInterpolationMode(),actuallyMix, SPU, chan,INSTRUMENT_EDIT);
+	__SPU_ChanUpdate(spuInterpolationMode(),actuallyMix, SPU, chan);
 }
 
 
@@ -870,9 +866,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 		SPU->buflength = length;
 
 		// Mix audio
-		if (addInstrument && isInstrumentMuted && getInstrumentVolume) 
-			_SPU_ChanUpdate(!isChannelMuted(i) && actuallyMix, SPU, chan, true);
-		else _SPU_ChanUpdate(!isChannelMuted(i) && actuallyMix, SPU, chan, false);
+		_SPU_ChanUpdate(!isChannelMuted(i) && actuallyMix, SPU, chan);
 	}
 
 	// convert from 32-bit->16-bit
