@@ -189,6 +189,11 @@ unsigned long GetDlgItemHex(HWND wnd, UINT wndMsg)
 HWND dlgInstrumentSelection=0;
 HWND dlgMixerInstrument[50];
 
+BOOL isInstrumentSelectionActive()
+{
+	return (dlgInstrumentSelection != 0);
+}
+
 class Instrument
 {
 public:
@@ -558,6 +563,7 @@ BOOL CALLBACK dlgProcInstrumentSelection(HWND dlg, UINT message, WPARAM wParam, 
 	}
 	return FALSE;
 }
+
 static BOOL CALLBACK DialogProcPref(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static bool initialized = false;
@@ -567,7 +573,7 @@ static BOOL CALLBACK DialogProcPref(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		switch (GET_WM_COMMAND_ID(wParam, lParam))
 		{
 		case IDC_BUTTON_VIEWSPU:
-				if(soundViewCallbacks.doOpenSoundView) soundViewCallbacks.doOpenSoundView(hDLL);
+			if(soundViewCallbacks.doOpenSoundView) soundViewCallbacks.doOpenSoundView(hDLL);
 			break;
 			
 		case IDC_BUTTON_INSTRUMENTSELECTION:
@@ -587,6 +593,7 @@ static BOOL CALLBACK DialogProcPref(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				}
 			}
 			break;
+
 		case IDC_COMBO_INTERPOLATION:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE)
 			{
