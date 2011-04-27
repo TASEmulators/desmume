@@ -1,25 +1,24 @@
-/*  
-	Copyright (C) 2007 Hicoder
+/*
+	Copyright (C) 2009-2011 Hicoder, DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include "common.h"
 #include <windowsx.h>
+#include <shlwapi.h>
 #include <shlobj.h>
 #include <commctrl.h>
 #include <time.h>
@@ -32,6 +31,75 @@
 	case (message): return (SetDlgMsgResult(hDlg, uMsg,							\
 	HANDLE_##message( (hwnd), (wParam), (lParam), (fn) ) ) )
 
+BOOL associate;
+#define ASSOCIATEKEY "Associate"
+
+void DoAssociations()
+{
+	string fileTypes[3] = { ".nds", ".ds.gba", ".srl" };
+	string program = "Desmume.Emulator";
+	string classes = "Software\\Classes";
+	string defaultIcon = "DefaultIcon";
+	string openVerb = "shell\\open\\command";
+	string iconIndex = ", 96";
+	string argument = " \"%1\"";
+
+	HKEY user = NULL;
+	if(RegOpenKeyEx(HKEY_CURRENT_USER, classes.c_str(),0, KEY_ALL_ACCESS, &user) == ERROR_SUCCESS)
+	{
+		if(associate)
+		{
+			HKEY icon, shell, registered;
+			if(RegCreateKeyEx(user, program.c_str(), 0, 0, 0, KEY_ALL_ACCESS, NULL, &registered, 0) == ERROR_SUCCESS)
+			{
+				string module;				
+				char buf[MAX_PATH];
+				GetModuleFileName(NULL, buf, MAX_PATH);
+				module.append(buf);
+
+				if(RegCreateKeyEx(registered, defaultIcon.c_str(), 0, 0, 0, KEY_ALL_ACCESS, 0, &icon, 0) == ERROR_SUCCESS)
+				{
+					string iconPath = "\"";
+					iconPath.append(module);
+					iconPath.append("\"");
+					iconPath.append(iconIndex);
+					RegSetValueEx(icon, NULL, 0,REG_SZ, (const BYTE*)iconPath.c_str(), iconPath.size() + 1);
+					RegCloseKey(icon);
+				}
+
+				if(RegCreateKeyEx(registered, openVerb.c_str(), 0, 0, 0, KEY_ALL_ACCESS, NULL, &shell, 0) == ERROR_SUCCESS)
+				{
+					string openPath = "\"";
+					openPath.append(module);
+					openPath.append("\"");
+					openPath.append(argument);
+					RegSetValueEx(shell, NULL, 0,REG_SZ, (const BYTE*)openPath.c_str(), openPath.size() + 1);
+					RegCloseKey(shell);
+				}
+				RegCloseKey(registered);
+			}
+
+			for(int i = 0; i < ARRAY_SIZE(fileTypes); i++)
+			{
+				HKEY tmp;
+				if(RegCreateKeyEx(user, fileTypes[i].c_str(), 0, 0, 0, KEY_ALL_ACCESS, NULL, &tmp, 0) == ERROR_SUCCESS)
+				{
+					RegSetValueEx(tmp, NULL, 0,REG_SZ, (const BYTE*)program.c_str(), ARRAY_SIZE(program) + 1);
+				}
+				RegCloseKey(tmp);
+			}
+		}
+		else
+		{
+			SHDeleteKeyA(user, program.c_str());
+			for(int i = 0; i < ARRAY_SIZE(fileTypes); i++)
+				RegDeleteKey(user, fileTypes[i].c_str());
+		}
+	}
+
+	if(user != NULL)
+		RegCloseKey(user);
+}
 
 void WritePathSettings()
 {
@@ -48,6 +116,7 @@ void WritePathSettings()
 	WritePrivateProfileString(SECTION, FORMATKEY, path.screenshotFormat, IniName);
 
 	WritePrivateProfileInt(SECTION, LASTVISITKEY, path.savelastromvisit, IniName);
+	WritePrivateProfileInt(SECTION, ASSOCIATEKEY, associate, IniName);
 //	WritePrivateProfileInt(SECTION, DEFAULTFORMATKEY, defaultFormat, IniName);
 //	WritePrivateProfileInt(SECTION, NEEDSSAVINGKEY, needsSaving, IniName);
 }
@@ -67,7 +136,10 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	ComboBox_SetCurSel(hwnd, 0);*/
 //	PathSettings_OnSelChange(hDlg, NULL);
 
+	associate = GetPrivateProfileInt(SECTION, ASSOCIATEKEY, 0, IniName);
+
 	CheckDlgButton(hDlg, IDC_USELASTVISIT, (path.savelastromvisit) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hDlg, IDC_ASSOCIATE, (associate) ? BST_CHECKED : BST_UNCHECKED);
 	CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, (int)path.imageformat());
 
 // IDC_FORMATEDIT setup
@@ -240,7 +312,7 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 			GetDlgItemText(hDlg, IDC_AVIPATHEDIT, path.pathToAviFiles, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats, MAX_PATH);
 			GetDlgItemText(hDlg, IDC_LUAPATHEDIT, path.pathToLua, MAX_PATH);
-
+			DoAssociations();
 			WritePathSettings();
 			EndDialog(hDlg, 0);
 			break;
@@ -248,8 +320,13 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 			path.ReadPathSettings();
 			EndDialog(hDlg, 0);
 			break;
+		case IDC_ASSOCIATE:
+			associate = !associate;
+			break;
 	}
 }
+
+
 
 LRESULT CALLBACK PathSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
