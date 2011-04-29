@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -24,6 +24,7 @@
 //due to zeromus not having any idea how to set dest alpha blending in opengl.
 //so, it doesnt composite to 2d correctly.
 //(re: new super mario brothers renders the stormclouds at the beginning)
+//!!! fixed on rev.3996
 
 #include <queue>
 
@@ -107,7 +108,6 @@ float	*oglClearImageDepth = NULL;
 u16		*oglClearImageColorTemp = NULL;
 u16		*oglClearImageDepthTemp = NULL;
 u32		oglClearImageScrollOld = 0;
-#define fix2float24(v)    (((float)((s32)(v))) / (float)(1<<24))
 
 //------------------------------------------------------------
 
@@ -138,7 +138,8 @@ OGLEXT(PFNGLDELETEPROGRAMPROC,glDeleteProgram)
 OGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 OGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
-OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
+OGLEXT(PFNGLBLENDFUNCSEPARATEPROC,glBlendFuncSeparate)
+OGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC,glBlendEquationSeparate)
 OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
@@ -474,9 +475,10 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC,glDeleteFramebuffersEXT);
 	INITOGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT);
 #ifdef HAVE_LIBOSMESA
-	glBlendFuncSeparateEXT = NULL;
+	glBlendFuncSeparate = NULL;
 #else
-	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
+	INITOGLEXT(PFNGLBLENDFUNCSEPARATEPROC,glBlendFuncSeparate)
+	INITOGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC,glBlendEquationSeparate)
 #endif
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
@@ -505,10 +507,17 @@ static char OGLInit(void)
 	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
-	if(glBlendFuncSeparateEXT != NULL)
+	if(glBlendFuncSeparate != NULL)
 	{
-		glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
-	//	glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		if (glBlendEquationSeparate != NULL)
+		{
+			// test: new super mario brothers renders the stormclouds at the beginning 
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+			glBlendEquationSeparate( GL_FUNC_ADD, GL_MAX );
+		}
+		else
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+		
 	}
 
 	if(hasShaders)
@@ -819,7 +828,7 @@ static void BeginRenderPoly()
 	xglDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 }
 
-static void InstallPolygonAttrib(unsigned long val)
+static void InstallPolygonAttrib(u32 val)
 {
 	// Light enable/disable
 	lightMask = (val&0xF);
@@ -973,10 +982,7 @@ static void oglClearImageFBO()
 				
 				u16 depth = clearDepth[adr] & 0x7FFF;
 
-				if (depth == 0x7FFF)
-					oglClearImageDepth[dd] = 1.f;
-				else
-					oglClearImageDepth[dd] = fix2float24(gfx3d_extendDepth_15_to_24(depth));
+				oglClearImageDepth[dd] = (float)gfx3d_extendDepth_15_to_24(depth) / (float)0x00FFFFFF;
 				dd++;
 			}
 			dd-=256*2;
@@ -1007,6 +1013,8 @@ static void oglClearImageFBO()
 
 static void OGLRender()
 {
+	float alpha = 1.0f;
+
 	if(!BEGINGL()) return;
 
 	Control();
@@ -1047,10 +1055,7 @@ static void OGLRender()
 			((float)((gfx3d.renderState.clearColor>>16)&0x1F))/31.0f,
 		};
 		glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
-		if (gfx3d.renderState.clearDepth == 0x00FFFFFF)
-			glClearDepth(1.0f);
-		else
-			glClearDepth(fix2float24(gfx3d.renderState.clearDepth));
+		glClearDepth((float)gfx3d.renderState.clearDepth / (float)0x00FFFFFF);
 		clearFlag |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
 	}
 	
@@ -1076,7 +1081,7 @@ static void OGLRender()
 			if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
 			{
 				isTranslucent = poly->isTranslucent();
-				InstallPolygonAttrib(lastPolyAttr=poly->polyAttr);
+				InstallPolygonAttrib(poly->polyAttr);
 				lastTextureFormat = textureFormat = poly->texParam;
 				lastTexturePalette = texturePalette = poly->texPalette;
 				lastPolyAttr = poly->polyAttr;
@@ -1091,8 +1096,9 @@ static void OGLRender()
 				lastViewport = poly->viewport;
 			}
 
-			float alpha = poly->getAlpha()/31.0f;
-			if(wireframe) alpha = 1.0;
+			if(wireframe || !isTranslucent) alpha = 1.0f;
+			else 
+				alpha = poly->getAlpha()/31.0f;
 
 			GLenum frm[] = {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUADS,	//TODO: GL_QUAD_STRIP
 							GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
