@@ -88,10 +88,12 @@ NSMenuItem *topBG0_item = nil;
 NSMenuItem *topBG1_item = nil;
 NSMenuItem *topBG2_item = nil;
 NSMenuItem *topBG3_item = nil;
+NSMenuItem *topOBJ_item = nil;
 NSMenuItem *subBG0_item = nil;
 NSMenuItem *subBG1_item = nil;
 NSMenuItem *subBG2_item = nil;
 NSMenuItem *subBG3_item = nil;
+NSMenuItem *subOBJ_item = nil;
 NSMenuItem *screenshot_to_file_item = nil;
 
 @implementation VideoOutputWindow
@@ -232,6 +234,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 	NSResponder *temp = [window nextResponder];
 	[window setNextResponder:input];
 	[input setNextResponder:temp];
+	
+	pathLoadedRom = nil;
 
 	return self;
 }
@@ -244,6 +248,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[status_view release];
 	[status_bar_text release];
 	[input release];
+	[pathLoadedRom release];
 
 	[super dealloc];
 }
@@ -275,6 +280,9 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 		//update the rom info window, if needed
 		[ROMInfo changeDS:self];
+		
+		pathLoadedRom = filename;
+		[pathLoadedRom retain];
 	}
 
 	//reset menu items
@@ -283,7 +291,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		int i;
 		for(i = 0; i < MAX_SLOTS; i++)
 			if([saveSlot_item[i] target] == self)
-				if([self saveStateExists:i] == YES)
+				if([self saveStateExistsInSlot:i] == YES)
 					[saveSlot_item[i] setState:NSOnState];
 				else
 					[saveSlot_item[i] setState:NSOffState];
@@ -301,12 +309,12 @@ NSMenuItem *screenshot_to_file_item = nil;
 - (void)execute
 {
 	[super execute];
-
+	
 	if([pause_item target] == self)
 		[pause_item setState:NSOffState];
 	if([execute_item target] == self)
 		[execute_item setState:NSOnState];
-
+	
  	[self setStatusText:NSLocalizedString(@"Emulation Executing", nil)];
 }
 
@@ -343,7 +351,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 - (void)setFrameSkip:(int)frameskip
 {
 	[super setFrameSkip:frameskip];
-	frameskip = [super frameSkip];
+	frameskip = dsStateBuffer->frame_skip;
 
 	if([frame_skip_auto_item target] == self)
 	if(frameskip < 0)
@@ -385,7 +393,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[super setSpeedLimit:speedLimit];
 
 	//Set the correct menu states
-	speedLimit = [super speedLimit];
+	speedLimit = dsStateBuffer->speed_limit;
+	
 	int standard_size = 0;
 
 	if([speed_limit_25_item target] == self)
@@ -511,23 +520,65 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (BOOL)saveStateToSlot:(int)slot
 {
-	if([super saveStateToSlot:slot] == YES)
+	BOOL result = NO;
+	int i = slot;
+	
+	NSString *savePath = GetPathUserAppSupport(@"States");
+	if (savePath == nil)
 	{
-		if([saveSlot_item[slot] target] == self);
-			[saveSlot_item[slot] setState:NSOnState];
+		// Throw an error message here...
+		return result;
+	}
+	
+	result = CreateAppDirectory(@"States");
+	if (result == NO)
+	{
+		// Should throw an error message here...
+		return result;
+	}
+	
+	NSString *fileName = [self getSaveSlotFileName:slot];
+	if (fileName == nil)
+	{
+		return result;
+	}
+	
+	NSString *fullFilePath = [[savePath stringByAppendingString:@"/"] stringByAppendingString:fileName];
+	result = [self saveState:fullFilePath];
+	if(result)
+	{
+		if([saveSlot_item[i] target] == self);
+		{
+			[saveSlot_item[i] setState:NSOnState];
+		}
 
-		//if([clear_all_saves_item target] == self);
-		//[clear_all_saves_item setEnabled:YES];
-
-		return YES;
+		result = YES;
 	}
 
-	return NO;
+	return result;
 }
 
 - (BOOL)loadStateFromSlot:(int)slot
 {
-	return [super loadStateFromSlot:slot];
+	BOOL result = NO;
+	
+	NSString *savePath = GetPathUserAppSupport(@"States");
+	if (savePath == nil)
+	{
+		// Should throw an error message here...
+		return result;
+	}
+	
+	NSString *fileName = [self getSaveSlotFileName:slot];
+	if (fileName == nil)
+	{
+		return result;
+	}
+	
+	NSString *fullFilePath = [[savePath stringByAppendingString:@"/"] stringByAppendingString:fileName];
+	result = [self loadState:fullFilePath];
+	
+	return result;
 }
 
 - (BOOL)saveStateAs
@@ -666,60 +717,103 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (NSPoint)windowPointToDSCoords:(NSPoint)location
 {
-	if(video_output_view == nil)return NSMakePoint(-1, -1);
-
-	NSSize temp = [[window contentView] frame].size;
+	CGFloat rotation;
+	NSSize temp;
+	float statusBarHeight;
+	
+	if(video_output_view == nil)
+	{
+		return NSMakePoint(-1, -1);
+	}
+	
+	rotation = [video_output_view boundsRotation];
+	statusBarHeight = [self statusBarHeight];
+	
+	temp = [[window contentView] frame].size;
 	CGFloat x_size = temp.width - WINDOW_BORDER_PADDING*2;
-	CGFloat y_size = temp.height - [self statusBarHeight];
+	CGFloat y_size = temp.height - statusBarHeight;
 
 	//If the click was to the left or under the opengl view, exit
-	if((location.x < WINDOW_BORDER_PADDING) || (location.y < [self statusBarHeight]))
+	if((location.x < WINDOW_BORDER_PADDING) || (location.y < statusBarHeight))
+	{
 		return NSMakePoint(-1, -1);
+	}
 
 	location.x -= WINDOW_BORDER_PADDING;
-	location.y -= [self statusBarHeight];
+	location.y -= statusBarHeight;
 
 	//If the click was top or right of the view...
-	if(location.x >= x_size)return NSMakePoint(-1, -1);
-	if(location.y >= y_size)return NSMakePoint(-1, -1);
-
-	if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
+	if(location.x >= x_size)
 	{
-		if([video_output_view boundsRotation] == -180)
+		return NSMakePoint(-1, -1);
+	}
+	if(location.y >= y_size)
+	{
+		return NSMakePoint(-1, -1);
+	}
+	
+	if(rotation == 0)
+	{
+		if(location.y >= y_size / 2)
 		{
-			if(location.y < y_size / 2)return NSMakePoint(-1, -1);
-			location.x = x_size - location.x;
-			location.y = y_size - location.y;
-		} else
-			if(location.y >= y_size / 2)return NSMakePoint(-1, -1);
-
+			return NSMakePoint(-1, -1);
+		}
+		
 		//scale the coordinates
 		location.x *= ((float)DS_SCREEN_WIDTH) / ((float)x_size);
 		location.y *= ((float)DS_SCREEN_HEIGHT_COMBINED) / ((float)y_size);
-
+		
 		//invert the y
 		location.y = DS_SCREEN_HEIGHT - location.y - 1;
-
-	} else
+	}
+	else if(rotation = -90)
 	{
-
-		if([video_output_view boundsRotation] == -270)
+		if(location.x >= x_size / 2)
 		{
-			if(location.x < x_size / 2)return NSMakePoint(-1, -1);
-			location.x = x_size - location.x;
-
-		} else
-		{
-			if(location.x >= x_size / 2)return NSMakePoint(-1, -1);
-			location.y = y_size - location.y;
+			return NSMakePoint(-1, -1);
 		}
-
+		location.y = y_size - location.y;
+		
 		location.x *= ((float)DS_SCREEN_HEIGHT_COMBINED) / ((float)x_size);
 		location.y *= ((float)DS_SCREEN_WIDTH) / ((float)y_size);
-
+		
 		//invert the y
 		location.x = DS_SCREEN_HEIGHT - location.x - 1;
-
+		
+		float temp = location.x;
+		location.x = location.y;
+		location.y = temp;
+	}
+	else if(rotation = -180)
+	{
+		if(location.y < y_size / 2)
+		{
+			return NSMakePoint(-1, -1);
+		}
+		location.x = x_size - location.x;
+		location.y = y_size - location.y;
+		
+		//scale the coordinates
+		location.x *= ((float)DS_SCREEN_WIDTH) / ((float)x_size);
+		location.y *= ((float)DS_SCREEN_HEIGHT_COMBINED) / ((float)y_size);
+		
+		//invert the y
+		location.y = DS_SCREEN_HEIGHT - location.y - 1;
+	}
+	else if(rotation = -270)
+	{
+		if(location.x < x_size / 2)
+		{
+			return NSMakePoint(-1, -1);
+		}
+		location.x = x_size - location.x;
+		
+		location.x *= ((float)DS_SCREEN_HEIGHT_COMBINED) / ((float)x_size);
+		location.y *= ((float)DS_SCREEN_WIDTH) / ((float)y_size);
+		
+		//invert the y
+		location.x = DS_SCREEN_HEIGHT - location.x - 1;
+		
 		float temp = location.x;
 		location.x = location.y;
 		location.y = temp;
@@ -874,10 +968,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleTopBackground0
 {
-	[super toggleTopBackground0];
+	[self toggleSubScreenLayer:0];
 
 	if([topBG0_item target] == self)
-	if([super showingTopBackground0] == NO)
+	if([self isSubScreenLayerDisplayed:0] == NO)
 		[topBG0_item setState:NSOffState];
 	else
 		[topBG0_item setState:NSOnState];
@@ -885,10 +979,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleTopBackground1
 {
-	[super toggleTopBackground1];
+	[self toggleSubScreenLayer:1];
 
 	if([topBG1_item target] == self)
-	if([super showingTopBackground1] == NO)
+	if([self isSubScreenLayerDisplayed:1] == NO)
 		[topBG1_item setState:NSOffState];
 	else
 		[topBG1_item setState:NSOnState];
@@ -896,10 +990,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleTopBackground2
 {
-	[super toggleTopBackground2];
+	[self toggleSubScreenLayer:2];
 
 	if([topBG2_item target] == self)
-	if([super showingTopBackground2] == NO)
+	if([self isSubScreenLayerDisplayed:2] == NO)
 		[topBG2_item setState:NSOffState];
 	else
 		[topBG2_item setState:NSOnState];
@@ -907,21 +1001,32 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleTopBackground3
 {
-	[super toggleTopBackground3];
+	[self toggleSubScreenLayer:3];
 
 	if([topBG3_item target] == self)
-	if([super showingTopBackground3] == NO)
+	if([self isSubScreenLayerDisplayed:3] == NO)
 		[topBG3_item setState:NSOffState];
 	else
 		[topBG3_item setState:NSOnState];
 }
 
+- (void)toggleTopObject
+{
+	[self toggleSubScreenLayer:4];
+	
+	if([topOBJ_item target] == self)
+	if([self isSubScreenLayerDisplayed:4] == NO)
+		[topOBJ_item setState:NSOffState];
+	else
+		[topOBJ_item setState:NSOnState];
+}
+
 - (void)toggleSubBackground0
 {
-	[super toggleSubBackground0];
+	[self toggleMainScreenLayer:0];
 
 	if([subBG0_item target] == self)
-	if([super showingSubBackground0] == NO)
+	if([self isMainScreenLayerDisplayed:0] == NO)
 		[subBG0_item setState:NSOffState];
 	else
 		[subBG0_item setState:NSOnState];
@@ -929,10 +1034,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleSubBackground1
 {
-	[super toggleSubBackground1];
+	[self toggleMainScreenLayer:1];
 
 	if([subBG1_item target] == self)
-	if([super showingSubBackground1] == NO)
+	if([self isMainScreenLayerDisplayed:1] == NO)
 		[subBG1_item setState:NSOffState];
 	else
 		[subBG1_item setState:NSOnState];
@@ -940,10 +1045,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleSubBackground2
 {
-	[super toggleSubBackground2];
+	[self toggleMainScreenLayer:2];
 
 	if([subBG2_item target] == self)
-	if([super showingSubBackground2] == NO)
+	if([self isMainScreenLayerDisplayed:2] == NO)
 		[subBG2_item setState:NSOffState];
 	else
 		[subBG2_item setState:NSOnState];
@@ -951,13 +1056,24 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)toggleSubBackground3
 {
-	[super toggleSubBackground3];
+	[self toggleMainScreenLayer:3];
 
 	if([subBG3_item target] == self)
-	if([super showingSubBackground3] == NO)
+	if([self isMainScreenLayerDisplayed:3] == NO)
 		[subBG3_item setState:NSOffState];
 	else
 		[subBG3_item setState:NSOnState];
+}
+
+- (void)toggleSubObject
+{
+	[self toggleMainScreenLayer:4];
+	
+	if([subOBJ_item target] == self)
+	if([self isMainScreenLayerDisplayed:4] == NO)
+		[subOBJ_item setState:NSOffState];
+	else
+		[subOBJ_item setState:NSOnState];
 }
 
 - (void)saveScreenshot
@@ -1145,7 +1261,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[saveSlot_item[i] setTarget:self];
 		[loadSlot_item[i] setTarget:self];
 
-		if([self saveStateExists:i] == YES)
+		if([self saveStateExistsInSlot:i] == YES)
 		{
 			[saveSlot_item[i] setState:NSOnState];
 		} else
@@ -1211,10 +1327,12 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[topBG1_item setTarget:self];
 	[topBG2_item setTarget:self];
 	[topBG3_item setTarget:self];
+	[topOBJ_item setTarget:self];
 	[subBG0_item setTarget:self];
 	[subBG1_item setTarget:self];
 	[subBG2_item setTarget:self];
 	[subBG3_item setTarget:self];
+	[subOBJ_item setTarget:self];
 	[screenshot_to_file_item setTarget:self];
 
 	//set checks for view window based on the options of this window
@@ -1222,38 +1340,56 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[constrain_item setState:keep_proportions?NSOnState:NSOffState];
 	[min_size_item setState:no_smaller_than_ds?NSOnState:NSOffState];
 	[toggle_status_bar_item setState:(status_view!=nil)?NSOnState:NSOffState];
-	if([self showingTopBackground0])
+	
+	if([self isSubScreenLayerDisplayed:0] == YES)
 		[topBG0_item setState:NSOnState];
 	else
 		[topBG0_item setState:NSOffState];
-	if([self showingTopBackground1])
+	
+	if([self isSubScreenLayerDisplayed:1] == YES)
 		[topBG1_item setState:NSOnState];
 	else
 		[topBG1_item setState:NSOffState];
-	if([self showingTopBackground2])
+	
+	if([self isSubScreenLayerDisplayed:2] == YES)
 		[topBG2_item setState:NSOnState];
 	else
 		[topBG2_item setState:NSOffState];
-	if([self showingTopBackground3])
+	
+	if([self isSubScreenLayerDisplayed:3] == YES)
 		[topBG3_item setState:NSOnState];
 	else
 		[topBG3_item setState:NSOffState];
-	if([self showingSubBackground0])
+	
+	if([self isSubScreenLayerDisplayed:4] == YES)
+		[topOBJ_item setState:NSOnState];
+	else
+		[topOBJ_item setState:NSOffState];
+	
+	if([self isMainScreenLayerDisplayed:0] == YES)
 		[subBG0_item setState:NSOnState];
 	else
 		[subBG0_item setState:NSOffState];
-	if([self showingSubBackground1])
+	
+	if([self isMainScreenLayerDisplayed:1] == YES)
 		[subBG1_item setState:NSOnState];
 	else
 		[subBG1_item setState:NSOffState];
-	if([self showingSubBackground2])
+	
+	if([self isMainScreenLayerDisplayed:2] == YES)
 		[subBG2_item setState:NSOnState];
 	else
 		[subBG2_item setState:NSOffState];
-	if([self showingSubBackground3])
+	
+	if([self isMainScreenLayerDisplayed:3] == YES)
 		[subBG3_item setState:NSOnState];
 	else
 		[subBG3_item setState:NSOffState];
+	
+	if([self isMainScreenLayerDisplayed:4] == YES)
+		[subOBJ_item setState:NSOnState];
+	else
+		[subOBJ_item setState:NSOffState];
 
 	[self setRotation:[self rotation]];
 
@@ -1315,7 +1451,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	else
 		for(i = 0; i < MAX_SLOTS; i++)
 			if(item == loadSlot_item[i])
-				if([self saveStateExists:i]==NO)return NO;
+				if([self saveStateExistsInSlot:i] == NO)return NO;
 
 	if(video_output_view == nil)
 	{
@@ -1338,6 +1474,35 @@ NSMenuItem *screenshot_to_file_item = nil;
 	}
 
 	return YES;
+}
+
+- (BOOL)saveStateExistsInSlot:(int)slot
+{
+	BOOL exists = false;
+	
+	NSString *searchPath = GetPathUserAppSupport(@"States");
+	NSString *searchFileName = [self getSaveSlotFileName:slot];
+	
+	if (searchPath == nil || searchFileName == nil)
+	{
+		return exists;
+	}
+	
+	NSFileManager *fileManager = [[NSFileManager alloc] init];
+	NSString *searchFullPath = [[searchPath stringByAppendingString:@"/"] stringByAppendingString:searchFileName];
+	
+	exists = [fileManager isReadableFileAtPath:searchFullPath];
+	
+	[fileManager release];
+	
+	return exists;
+}
+
+- (NSString*) getSaveSlotFileName:(unsigned int)slotNumber
+{
+	NSString *fileExtension = [NSString stringWithFormat:@".ds%d", slotNumber];
+	
+	return [[[pathLoadedRom lastPathComponent] stringByDeletingPathExtension] stringByAppendingString:fileExtension];
 }
 
 @end

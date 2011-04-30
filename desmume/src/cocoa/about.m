@@ -19,6 +19,20 @@
 
 #import "globals.h"
 
+#define STRING_DESMUME_WEBSITE "http://www.desmume.org"
+#define STRING_DESMUME_FORUM_SITE "http://forums.desmume.org/index.php"
+#define STRING_DESMUME_BUG_SITE "http://sourceforge.net/tracker/?group_id=164579&atid=832291"
+
+#define STRING_FILENAME_README "README"
+#define STRING_FILENAME_COPYING "COPYING"
+#define STRING_FILENAME_AUTHORS "AUTHORS"
+#define STRING_FILENAME_CHANGELOG "ChangeLog"
+
+#define STRING_TABLABEL_README "Read Me"
+#define STRING_TABLABEL_LICENSE "License"
+#define STRING_TABLABEL_AUTHORS "Authors"
+#define STRING_TABLABEL_CHANGELOG "Change Log"
+
 const CGFloat inner_padding = 3;
 const CGFloat outer_padding = 3;
 const CGFloat tab_view_height = 240;
@@ -36,6 +50,8 @@ NSTextField *about_website;
 }
 - (void)windowDidResize:(NSNotification*)notification;
 - (void)windowWillClose:(NSNotification*)notification;
+
++ (void) readTextFile:(NSString *)dataPath label:(NSString *)labelName tab:(NSTabView *)tabView;
 @end
 
 @implementation AboutDelegate
@@ -77,23 +93,52 @@ NSTextField *about_website;
 	//end our modal session if the about window closses
 	[NSApp stopModal];
 }
+
++ (void) readTextFile:(NSString *)dataPath label:(NSString *)labelName tab:(NSTabView *)tabView
+{
+	NSRect rect;
+	rect.origin.x = rect.origin.y = 0;
+	
+	NSTabViewItem *tab_view_item = [[NSTabViewItem alloc] initWithIdentifier:nil];
+	[tab_view_item setLabel:labelName];
+	[tabView addTabViewItem:tab_view_item];
+	
+	NSScrollView *scroll_view = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,0,0)];
+	[scroll_view setDrawsBackground:NO];
+	[scroll_view setHasVerticalScroller:YES];
+	[scroll_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
+	[tab_view_item setView:scroll_view];
+	
+	rect.size = [[scroll_view contentView] frame].size;
+	NSTextView *text_view = [[NSTextView alloc] initWithFrame:rect];
+	[text_view insertText:[NSString stringWithContentsOfFile:dataPath encoding:NSASCIIStringEncoding error:NULL]];
+	[text_view setDrawsBackground:NO];
+	[text_view setEditable:NO];
+	[text_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
+	[scroll_view setDocumentView:text_view];
+	[text_view release];
+	
+	[scroll_view release];
+	
+	[tab_view_item release];
+}
 @end
 
 @implementation NSApplication (helpmenu)
 
 - (void)launchWebsite
 {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://desmume.sourceforge.net"]];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@STRING_DESMUME_WEBSITE]];
 }
 
 - (void)launchForums
 {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://forums.desmume.org/index.php"]];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@STRING_DESMUME_FORUM_SITE]];
 }
 
 - (void)bugReport
 {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291"]];
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@STRING_DESMUME_BUG_SITE]];
 }
 
 @end
@@ -201,7 +246,7 @@ NSTextField *about_website;
 
 	//
 	about_website = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 8 + tab_view_height + inner_padding, width, 17)];
-	[about_website setStringValue:@"http://www.desmume.org"];//fixme linkize
+	[about_website setStringValue:@STRING_DESMUME_WEBSITE];//fixme linkize
 	[about_website setEditable:NO];
 	[about_website setDrawsBackground:NO];
 	[about_website setBordered:NO];
@@ -221,126 +266,33 @@ NSTextField *about_website;
 	NSTabView *tab_view = [[NSTabView alloc] initWithFrame:NSMakeRect(outer_padding, outer_padding, window_width - outer_padding*2, tab_view_height)];
 	[tab_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
 	[[about_window contentView] addSubview:tab_view];
-
-	NSRect rect;
-	rect.origin.x = rect.origin.y = 0;
-
-	//fixme if one of the files we read from is missing the entire panel doesn't show
-
-	NSTabViewItem *tab_view_item;
-	NSScrollView *scroll_view;
-	NSTextView *text_view;
 	
 	//README
-	NSString *datapath = [main_bundle pathForResource:@"README" ofType:@""];
+	NSString *datapath = [main_bundle pathForResource:@STRING_FILENAME_README ofType:@""];
 	if(datapath != nil)
 	{
-		tab_view_item = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[tab_view_item setLabel:NSLocalizedString(@"Readme", nil)];
-		[tab_view addTabViewItem:tab_view_item];
-
-		scroll_view = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,0,0)];
-		[scroll_view setDrawsBackground:NO];
-		[scroll_view setHasVerticalScroller:YES];
-		[scroll_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[tab_view_item setView:scroll_view];
-
-		rect.size = [[scroll_view contentView] frame].size;
-		text_view = [[NSTextView alloc] initWithFrame:rect];
-		[text_view insertText:[NSString stringWithContentsOfFile:datapath]];
-		[text_view setDrawsBackground:NO];
-		[text_view setEditable:NO];
-		[text_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[scroll_view setDocumentView:text_view];
-		[text_view release];
-
-		[scroll_view release];
-
-		[tab_view_item release];
+		[AboutDelegate readTextFile:datapath label:NSLocalizedString(@STRING_TABLABEL_README, nil) tab:tab_view];
 	}
 
 	//LICENSE
-	datapath = [main_bundle pathForResource:@"COPYING" ofType:@""];
+	datapath = [main_bundle pathForResource:@STRING_FILENAME_COPYING ofType:@""];
 	if(datapath != nil)
 	{
-		tab_view_item = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[tab_view_item setLabel:NSLocalizedString(@"License", nil)];
-		[tab_view addTabViewItem:tab_view_item];
-
-		scroll_view = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,0,0)];
-		[scroll_view setDrawsBackground:NO];
-		[scroll_view setHasVerticalScroller:YES];
-		[scroll_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[tab_view_item setView:scroll_view];
-
-		rect.size = [[scroll_view contentView] frame].size;
-		text_view = [[NSTextView alloc] initWithFrame:rect];
-		[text_view insertText:[NSString stringWithContentsOfFile:datapath]];
-		[text_view setDrawsBackground:NO];
-		[text_view setEditable:NO];
-		[text_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[scroll_view setDocumentView:text_view];
-		[text_view release];
-
-		[scroll_view release];
-
-		[tab_view_item release];
+		[AboutDelegate readTextFile:datapath label:NSLocalizedString(@STRING_TABLABEL_LICENSE, nil) tab:tab_view];
 	}
 
 	//AUTHORS
-	datapath = [main_bundle pathForResource:@"AUTHORS" ofType:@""];
+	datapath = [main_bundle pathForResource:@STRING_FILENAME_AUTHORS ofType:@""];
 	if(datapath != nil)
 	{
-		tab_view_item = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[tab_view_item setLabel:NSLocalizedString(@"Authors", nil)];
-		[tab_view addTabViewItem:tab_view_item];
-
-		scroll_view = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,0,0)];
-		[scroll_view setDrawsBackground:NO];
-		[scroll_view setHasVerticalScroller:YES];
-		[scroll_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[tab_view_item setView:scroll_view];
-
-		rect.size = [[scroll_view contentView] frame].size;
-		text_view = [[NSTextView alloc] initWithFrame:rect];
-		[text_view insertText:[NSString stringWithContentsOfFile:datapath]];
-		[text_view setDrawsBackground:NO];
-		[text_view setEditable:NO];
-		[text_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[scroll_view setDocumentView:text_view];
-		[text_view release];
-
-		[scroll_view release];
-
-		[tab_view_item release];
+		[AboutDelegate readTextFile:datapath label:NSLocalizedString(@STRING_TABLABEL_AUTHORS, nil) tab:tab_view];
 	}
 
 	//CHANGE LOG
-	datapath = [main_bundle pathForResource:@"ChangeLog" ofType:@""];
+	datapath = [main_bundle pathForResource:@STRING_FILENAME_CHANGELOG ofType:@""];
 	if(datapath != nil)
 	{
-		tab_view_item = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[tab_view_item setLabel:NSLocalizedString(@"Change Log", nil)];
-		[tab_view addTabViewItem:tab_view_item];
-
-		scroll_view = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,0,0)];
-		[scroll_view setDrawsBackground:NO];
-		[scroll_view setHasVerticalScroller:YES];
-		[scroll_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[tab_view_item setView:scroll_view];
-
-		rect.size = [[scroll_view contentView] frame].size;
-		text_view = [[NSTextView alloc] initWithFrame:rect];
-		[text_view insertText:[NSString stringWithContentsOfFile:datapath]];
-		[text_view setDrawsBackground:NO];
-		[text_view setEditable:NO];
-		[text_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-		[scroll_view setDocumentView:text_view];
-		[text_view release];
-
-		[scroll_view release];
-
-		[tab_view_item release];
+		[AboutDelegate readTextFile:datapath label:NSLocalizedString(@STRING_TABLABEL_CHANGELOG, nil) tab:tab_view];
 	}
 
 	//
@@ -348,9 +300,9 @@ NSTextField *about_website;
 	content_min_width = [tab_view minimumSize].width;
 	
 	[tab_view release];
-
+	
 	//show the window
-	rect = [about_window frame];
+	NSRect rect = [about_window frame];
 	if(rect.size.width < content_min_width + outer_padding*2)
 		rect.size.width = content_min_width + outer_padding*2;
 	[about_window setFrame:rect display:NO];

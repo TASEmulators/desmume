@@ -56,10 +56,12 @@ extern NSMenuItem *topBG0_item;
 extern NSMenuItem *topBG1_item;
 extern NSMenuItem *topBG2_item;
 extern NSMenuItem *topBG3_item;
+extern NSMenuItem *topOBJ_item;
 extern NSMenuItem *subBG0_item;
 extern NSMenuItem *subBG1_item;
 extern NSMenuItem *subBG2_item;
 extern NSMenuItem *subBG3_item;
+extern NSMenuItem *subOBJ_item;
 
 extern NSMenuItem *screenshot_to_file_item;
 extern NSMenuItem *screenshot_to_window_item;
@@ -235,7 +237,8 @@ void CreateMenu(AppDelegate *delegate)
 		[emulation_menu addItem:[NSMenuItem separatorItem]];
 
 		//Frake skip menu
-		
+		// Disabling frame skipping for now since it doesn't yield any significant speed improvements. -rogerman 03/28/2011
+		/*
 		temp = [emulation_menu addItemWithTitle:NSLocalizedString(@"Frame Skip", nil) action:nil keyEquivalent:@""];
 		
 		NSMenu *frame_skip_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Frame Skip", nil)];
@@ -256,7 +259,7 @@ void CreateMenu(AppDelegate *delegate)
 
 			[frame_skip_menu release];
 		}
-
+		 */
 		//Speed limit menu
 		
 		temp = [emulation_menu addItemWithTitle:NSLocalizedString(@"Speed Limit", nil) action:nil keyEquivalent:@""];
@@ -366,6 +369,7 @@ void CreateMenu(AppDelegate *delegate)
 			topBG1_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG1", nil) action:@selector(toggleTopBackground1) keyEquivalent:@""];
 			topBG2_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG2", nil) action:@selector(toggleTopBackground2) keyEquivalent:@""];
 			topBG3_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG3", nil) action:@selector(toggleTopBackground3) keyEquivalent:@""];
+			topOBJ_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top OBJ", nil) action:@selector(toggleTopObject) keyEquivalent:@""];
 
 			[layer_menu addItem:[NSMenuItem separatorItem]];
 
@@ -373,6 +377,7 @@ void CreateMenu(AppDelegate *delegate)
 			subBG1_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG1", nil) action:@selector(toggleSubBackground1) keyEquivalent:@""];
 			subBG2_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG2", nil) action:@selector(toggleSubBackground2) keyEquivalent:@""];
 			subBG3_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG3", nil) action:@selector(toggleSubBackground3) keyEquivalent:@""];
+			subOBJ_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub OBJ", nil) action:@selector(toggleSubObject) keyEquivalent:@""];
 
 			[layer_menu release];
 		}
@@ -496,6 +501,7 @@ int main(int argc, char *argv[])
 
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
+	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 
 	[panel setTitle:NSLocalizedString(@"Open ROM...", nil)];
@@ -545,12 +551,20 @@ int main(int argc, char *argv[])
 - (void)application:(NSApplication*)sender openFiles:(NSArray*)filenames
 {
 	//verify everything
-	if(sender != NSApp)goto fail;
-	if(!filenames)goto fail;
-	if([filenames count] == 0)goto fail;
+	if(sender != NSApp ||
+	   filenames == nil ||
+	   [filenames count] == 0)
+	{
+		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+		return;
+	}
+	
 	NSString *filename = [filenames lastObject];
-	if(!filename)goto fail;
-	if([filename length] == 0)goto fail;
+	if(!filename || [filename length] == 0)
+	{
+		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+		return;
+	}
 
 	if([main_window loadROM:filename])
 	{
@@ -558,9 +572,6 @@ int main(int argc, char *argv[])
 		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
 		return;
 	}
-
-fail:
-	[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification

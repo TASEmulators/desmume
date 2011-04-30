@@ -44,6 +44,8 @@
 
 	bool no_smaller_than_ds;
 	bool keep_proportions;
+	
+	NSString *pathLoadedRom;
 }
 
 //initialization
@@ -102,15 +104,20 @@
 - (void)toggleTopBackground1;
 - (void)toggleTopBackground2;
 - (void)toggleTopBackground3;
+- (void)toggleTopObject;
 - (void)toggleSubBackground0;
 - (void)toggleSubBackground1;
 - (void)toggleSubBackground2;
 - (void)toggleSubBackground3;
+- (void)toggleSubObject;
 
 //screenshots
 - (void)saveScreenshot;
 
 //delegate
 - (void)windowDidBecomeMain:(NSNotification*)notification;
+
+- (BOOL)saveStateExistsInSlot:(int)slot;
+- (NSString*) getSaveSlotFileName:(unsigned int)slotNumber;
 
 @end

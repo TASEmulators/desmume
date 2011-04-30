@@ -29,9 +29,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 
 //desmume includes
-#define OBJ_C
 #include "sndOSX.h"
-#undef BOOL
 
 //globals
 AudioUnit output_unit = NULL; //pointer to our audio device

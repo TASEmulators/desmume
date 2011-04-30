@@ -18,6 +18,7 @@
 */
 
 #import "globals.h"
+#import "cocoa_input.h"
 
 @class ScreenState;
 
@@ -28,6 +29,17 @@
 
 #define MAX_SLOTS 10
 #define MAX_FRAME_SKIP 10
+
+@interface CocoaDSStateBuffer : NSObject
+{
+	@public
+	int frame_skip;
+	int speed_limit;
+}
+
+- (id) init;
+
+@end
 
 //This class is a compelte objective-c wrapper for
 //the core emulation features, other objective-c code inherit
@@ -65,6 +77,11 @@
 
 	NSString *current_file;
 	NSString *flash_file;
+	
+	bool doesConfigNeedUpdate;
+	NSTimeInterval calcTimeBudget;
+	
+	CocoaDSController *dsController;
   
 #ifdef GDB_STUB
   NSInteger arm9_gdb_port;
@@ -74,6 +91,9 @@
 #endif
 
 	unsigned char gpu_buff[256 * 256 * 5]; //this is where the 3D rendering of the NDS is stored
+	
+	@public
+	CocoaDSStateBuffer *dsStateBuffer;
 }
 
 //Instanciating, setup, and deconstruction
@@ -81,6 +101,9 @@
 - (void)setVideoUpdateCallback:(SEL)callback withObject:(id)object; //this callback should take one ScreenState(below) parameter
 - (void)setErrorCallback:(SEL)callback withObject:(id)object;
 - (void)dealloc;
+
+// Data accessors
+- (CocoaDSController*) getDSController;
 
 //Firmware control
 - (void)setPlayerName:(NSString*)player_name;
@@ -116,73 +139,19 @@
 - (int)speedLimit;
 - (void)setSaveType:(int)savetype; // see save_types in src/mmu.h
 - (int)saveType; // default is 0, which is autodetect
-
-//touch screen
-- (void)touch:(NSPoint)point;
-- (void)releaseTouch;
-
-//button input
-- (void)pressStart;
-- (void)liftStart;
-- (BOOL)start;
-- (void)pressSelect;
-- (void)liftSelect;
-- (BOOL)select;
-- (void)pressLeft;
-- (void)liftLeft;
-- (BOOL)left;
-- (void)pressRight;
-- (void)liftRight;
-- (BOOL)right;
-- (void)pressUp;
-- (void)liftUp;
-- (BOOL)up;
-- (void)pressDown;
-- (void)liftDown;
-- (BOOL)down;
-- (void)pressA;
-- (void)liftA;
-- (BOOL)A;
-- (void)pressB;
-- (void)liftB;
-- (BOOL)B;
-- (void)pressX;
-- (void)liftX;
-- (BOOL)X;
-- (void)pressY;
-- (void)liftY;
-- (BOOL)Y;
-- (void)pressL;
-- (void)liftL;
-- (BOOL)L;
-- (void)pressR;
-- (void)liftR;
-- (BOOL)R;
+- (void) updateConfig;
+- (void) emulateDS;
+- (void) drawFrame;
+- (void) padTime:(NSTimeInterval)timePad;
 
 //save states
 - (BOOL)saveState:(NSString*)file;
 - (BOOL)loadState:(NSString*)file;
-- (BOOL)saveStateToSlot:(int)slot; //0 to MAX_SLOTS-1, anything else is ignored
-- (BOOL)loadStateFromSlot:(int)slot;
-- (BOOL)saveStateExists:(int)slot;
 
-//layers
-- (void)toggleTopBackground0;
-- (BOOL)showingTopBackground0;
-- (void)toggleTopBackground1;
-- (BOOL)showingTopBackground1;
-- (void)toggleTopBackground2;
-- (BOOL)showingTopBackground2;
-- (void)toggleTopBackground3;
-- (BOOL)showingTopBackground3;
-- (void)toggleSubBackground0;
-- (BOOL)showingSubBackground0;
-- (void)toggleSubBackground1;
-- (BOOL)showingSubBackground1;
-- (void)toggleSubBackground2;
-- (BOOL)showingSubBackground2;
-- (void)toggleSubBackground3;
-- (BOOL)showingSubBackground3;
+- (BOOL) isSubScreenLayerDisplayed:(int)i;
+- (BOOL) isMainScreenLayerDisplayed:(int)i;
+- (void) toggleMainScreenLayer:(int)i;
+- (void) toggleSubScreenLayer:(int)i;
 
 //Sound
 - (BOOL)hasSound;
