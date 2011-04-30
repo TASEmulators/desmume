@@ -58,3 +58,110 @@ NSString* openDialog(NSArray *file_types)
 	return NULL;
 }
 
+BOOL CreateAppDirectory(NSString *directoryName)
+{
+	BOOL result = NO;
+	BOOL isDir = YES;
+	
+	NSString *tempPath = nil;
+	NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
+	NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	
+	NSArray *savePaths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+	if ([savePaths count] > 0)
+	{
+		tempPath = [savePaths objectAtIndex:0];
+	}
+	else
+	{
+		return result;
+	}
+	
+	NSFileManager *fileManager = [[NSFileManager alloc] init];
+	
+	/*
+	 Mac OS X v10.4 only
+	 
+	 Code for creating new directories based on NSString paths.
+	 */
+	tempPath = [[tempPath stringByAppendingString:@"/"] stringByAppendingString:appName];
+	result = [fileManager createDirectoryAtPath:tempPath attributes:nil];
+	if (result == NO)
+	{
+		if([fileManager fileExistsAtPath:tempPath isDirectory:&isDir] == NO)
+		{
+			[fileManager release];
+			return result;
+		}
+	}
+	
+	tempPath = [[tempPath stringByAppendingString:@"/"] stringByAppendingString:appVersion];
+	result = [fileManager createDirectoryAtPath:tempPath attributes:nil];
+	if (result == NO)
+	{
+		if([fileManager fileExistsAtPath:tempPath isDirectory:&isDir] == NO)
+		{
+			[fileManager release];
+			return result;
+		}
+	}
+	
+	if (directoryName != nil)
+	{
+		tempPath = [[tempPath stringByAppendingString:@"/"] stringByAppendingString:directoryName];
+		result = [fileManager createDirectoryAtPath:tempPath attributes:nil];
+		if (result == NO)
+		{
+			if([fileManager fileExistsAtPath:tempPath isDirectory:&isDir] == NO)
+			{
+				[fileManager release];
+				return result;
+			}
+		}
+	}
+	
+	/*
+	 In Mac OS X v10.4, having the File Manager create new directories where they already exist
+	 returns NO. Note that this behavior is not per Apple's own documentation. Therefore, we manually
+	 set result=YES at the end to make sure the function returns the right result.
+	 */
+	result = YES;
+	
+	/*
+	 Mac OS X v10.5 and later
+	 
+	 Yes, it's that simple...
+	 */
+	//result = [fileManager createDirectoryAtPath:savePath createIntermediates:YES attributes:nil error:NULL];
+	
+	[fileManager release];
+	return result;
+}
+
+NSString* GetPathUserAppSupport(NSString *directoryName)
+{
+	NSString *userAppSupportPath = nil;
+	NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
+	NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	
+	NSArray *savePaths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+	if ([savePaths count] > 0)
+	{
+		userAppSupportPath = [savePaths objectAtIndex:0];
+	}
+	else
+	{
+		return userAppSupportPath;
+	}
+	
+	if (directoryName == nil)
+	{
+		userAppSupportPath = [[[[userAppSupportPath stringByAppendingString:@"/"] stringByAppendingString:appName] stringByAppendingString:@"/"] stringByAppendingString:appVersion];
+	}
+	else
+	{
+		userAppSupportPath = [[[[[[userAppSupportPath stringByAppendingString:@"/"] stringByAppendingString:appName] stringByAppendingString:@"/"] stringByAppendingString:appVersion] stringByAppendingString:@"/"] stringByAppendingString:directoryName];
+	}
+	
+	return userAppSupportPath;
+}
