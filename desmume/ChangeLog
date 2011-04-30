@@ -28,6 +28,15 @@ Windows:
  enh: add lua menu API
  enh: hud font switching
 
+Cocoa:
+ enh: Big update to cocoa frontend (rogerman)
+
+Cli:
+  enh: better fps limiting (Thomas Jones)
+
+Gtk:
+  enh: add SPU mode selection (Tobias Jakobi)
+
 0.9.6 -> 0.9.7 (r3493-r3812)
 
 General/Core:
