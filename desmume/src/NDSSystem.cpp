@@ -1183,11 +1183,11 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 
 	FORCEINLINE bool isTriggered()
 	{
-		return (controller->check && nds_timer>= controller->nextEvent);
+		return (controller->dmaCheck && nds_timer>= controller->nextEvent);
 	}
 
 	FORCEINLINE bool isEnabled() { 
-		return controller->check?TRUE:FALSE;
+		return controller->dmaCheck?TRUE:FALSE;
 	}
 
 	FORCEINLINE u64 next()
@@ -2640,6 +2640,7 @@ void NDS_setTouchPos(u16 x, u16 y)
 	}
 
 #ifndef WIN32
+#ifndef DESMUME_COCOA
 	// FIXME: this code should be deleted from here,
 	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
 	// (see the function called "StepRunLoop_Core" in src/windows/main.cpp),
@@ -2648,6 +2649,7 @@ void NDS_setTouchPos(u16 x, u16 y)
 	nds.touchY = rawUserInput.touch.touchY;
 	nds.isTouch = 1;
 	MMU.ARM7_REG[0x136] &= 0xBF;
+#endif
 #endif
 }
 void NDS_releaseTouch(void)
@@ -2658,6 +2660,7 @@ void NDS_releaseTouch(void)
 	rawUserInput.touch.isTouch = false;
 
 #ifndef WIN32
+#ifndef DESMUME_COCOA
 	// FIXME: this code should be deleted from here,
 	// other platforms should call NDS_beginProcessingInput,NDS_endProcessingInput once per frame instead
 	// (see the function called "StepRunLoop_Core" in src/windows/main.cpp),
@@ -2666,6 +2669,7 @@ void NDS_releaseTouch(void)
 	nds.touchY = 0;
 	nds.isTouch = 0;
 	MMU.ARM7_REG[0x136] |= 0x40;
+#endif
 #endif
 }
 void NDS_setMic(bool pressed)
