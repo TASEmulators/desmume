@@ -36,8 +36,19 @@ void OpenConsole()
 	SMALL_RECT srect = {0};
 	char buf[256] = {0};
 
-	//dont do anything if we're already attached
+	//dont do anything if we're already analyzed
 	if (hConsole) return;
+
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD fileType = GetFileType(hConsole);
+	//is FILE_TYPE_UNKNOWN (0) with no redirect
+	//is FILE_TYPE_DISK (1) for redirect to file
+	//is FILE_TYPE_PIPE (3) for pipe
+	//i think it is FILE_TYPE_CHAR (2) for console
+
+	//stdout is already connected to something. keep using it and dont let the console interfere
+	bool shouldRedirectStdout = fileType == FILE_TYPE_UNKNOWN;
+
 
 	//attach to an existing console (if we can; this is circuitous because AttachConsole wasnt added until XP)
 	//remember to abstract this late bound function notion if we end up having to do this anywhere else
@@ -61,8 +72,6 @@ void OpenConsole()
 		if (!AllocConsole()) return;
 	}
 
-	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
 	if (hConsole == INVALID_HANDLE_VALUE) return;
 	//redirect stdio
 	long lStdHandle = (long)hConsole;
@@ -70,14 +79,12 @@ void OpenConsole()
 	if(hConHandle == -1)
 		return; //this fails from a visual studio command prompt
 	
-#if 1
-	FILE *fp = _fdopen( hConHandle, "w" );
-#else
-	FILE *fp = fopen( "c:\\desmume.log", "w" );
-#endif
-	*stdout = *fp;
-	//and stderr
-	*stderr = *fp;
+
+	if(shouldRedirectStdout)
+	{
+		freopen("CONOUT$", "w", stdout);
+		freopen("CONOUT$", "w", stderr);
+	}
 
 	sprintf(buf,"%s OUTPUT", EMU_DESMUME_NAME_AND_VERSION());
 	SetConsoleTitle(TEXT(buf));
