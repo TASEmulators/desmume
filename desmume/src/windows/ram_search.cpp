@@ -230,7 +230,7 @@ void CalculateItemIndices(int itemSize)
 }
 
 template<typename stepType, typename compareType, int swapXOR>
-void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr)
+void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr, bool updateNumChanges)
 {
 	if(s_prevValuesNeedUpdate)
 		memcpy(buffers->s_prevValues + region.virtualIndex, buffers->s_curValues + region.virtualIndex, region.size + sizeof(compareType) - sizeof(stepType));
@@ -249,6 +249,7 @@ void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr
 			{
 				buffers->s_curValues[i] = sourceAddr[i^swapXOR]; // update value
 				//if(s_numChanges[i] != 0xFFFF)
+				if(updateNumChanges)
 					buffers->s_numChanges[i]++; // increase change count
 			}
 		}
@@ -288,6 +289,7 @@ void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr
 					if(nextValidChange[m] <= i) // if we didn't already increase the change count for this entry
 					{
 						//if(s_numChanges[i-k] != 0xFFFF)
+						if(updateNumChanges)
 							buffers->s_numChanges[i-k]++; // increase the change count for this entry
 						nextValidChange[m] = i-k+sizeof(compareType); // and remember not to increase it again
 					}
@@ -298,7 +300,7 @@ void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr
 }
 
 template<typename stepType, typename compareType>
-void UpdateRegionsT()
+void UpdateRegionsT(bool updateNumChanges)
 {
 	for(MemoryList::iterator iter = s_activeMemoryRegions.begin(); iter != s_activeMemoryRegions.end();)
 	{
@@ -307,9 +309,9 @@ void UpdateRegionsT()
 		const MemoryRegion* nextRegion = (iter == s_activeMemoryRegions.end()) ? NULL : &*iter;
 
 		//if(region.byteSwapped)
-		//	UpdateRegionT<stepType, compareType, 1>(region, nextRegion);
+		//	UpdateRegionT<stepType, compareType, 1>(region, nextRegion, updateNumChanges);
 		//else
-			UpdateRegionT<stepType, compareType, 0>(region, nextRegion);
+			UpdateRegionT<stepType, compareType, 0>(region, nextRegion, updateNumChanges);
 	}
 
 	s_prevValuesNeedUpdate = false;
@@ -1039,9 +1041,9 @@ void reset_address_info ()
 	CompactAddrs();
 }
 
-void signal_new_frame ()
+void signal_new_frame (bool updateNumChanges)
 {
-	CALL_WITH_T_SIZE_TYPES(UpdateRegionsT, rs_type_size,rs_t=='s',noMisalign);
+	CALL_WITH_T_SIZE_TYPES(UpdateRegionsT, rs_type_size,rs_t=='s',noMisalign,updateNumChanges);
 }
 
 
@@ -1115,6 +1117,12 @@ void signal_new_size ()
 
 	rs_last_type_size = rs_type_size;
 	rs_last_no_misalign = noMisalign;
+
+	if(newSize > oldSize)
+	{
+		// update hidden bytes
+		signal_new_frame(false);
+	}
 
 	if(numberOfItemsChanged)
 	{
