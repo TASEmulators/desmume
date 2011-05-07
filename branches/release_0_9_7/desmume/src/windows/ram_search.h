@@ -35,7 +35,7 @@ unsigned int GetRamValue(unsigned int Addr,char Size);
 void prune(char Search, char Operater, char Type, int Value, int OperatorParameter);
 void CompactAddrs();
 void reset_address_info();
-void signal_new_frame();
+void signal_new_frame(bool updateNumChanges = true);
 void signal_new_size();
 void UpdateRamSearchTitleBar(int percent = 0);
 void Update_RAM_Search();
