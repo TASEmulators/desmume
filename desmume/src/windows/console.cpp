@@ -73,12 +73,6 @@ void OpenConsole()
 	}
 
 	if (hConsole == INVALID_HANDLE_VALUE) return;
-	//redirect stdio
-	long lStdHandle = (long)hConsole;
-	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-	if(hConHandle == -1)
-		return; //this fails from a visual studio command prompt
-	
 
 	if(shouldRedirectStdout)
 	{
