@@ -1986,6 +1986,7 @@ void NDS_Pause(bool showMsg)
 		while (!paused) {}
 		if (showMsg) INFO("Emulation paused\n");
 
+		SetWindowText(MainWindow->getHWnd(), "Paused");
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
 	}
 }
@@ -2000,6 +2001,7 @@ void NDS_UnPause(bool showMsg)
 		SPU_Pause(0);
 		if (showMsg) INFO("Emulation unpaused\n");
 
+		SetWindowText(MainWindow->getHWnd(), (char*)EMU_DESMUME_NAME_AND_VERSION());
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 	}
 }
