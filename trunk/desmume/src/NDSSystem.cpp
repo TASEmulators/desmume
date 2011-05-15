@@ -621,7 +621,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	bool isHomebrew = !memcmp(gameInfo.header.gameCode,"####",4);
 	if(isHomebrew)
-		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.mask + 1);
+		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	NDS_Reset();
 
