@@ -583,14 +583,14 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		return -1;
 	}
 
-	gameInfo.resize(size);
-
 	// Make sure old ROM is freed first(at least this way we won't be eating
 	// up a ton of ram before the old ROM is freed)
 	if(MMU.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
+	gameInfo.resize(size);
 	ret = reader->Read(file, gameInfo.romdata, size);
+	gameInfo.fillGap();
 	reader->DeInit(file);
 
 	//decrypt if necessary..
