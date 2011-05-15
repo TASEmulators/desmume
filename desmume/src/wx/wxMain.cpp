@@ -65,6 +65,24 @@ static int nds_gap_size;
 static SPADInitialize PADInitialize;
 static bool Touch = false;
 
+#if defined(WIN32) || defined(HAVE_LIBSOUNDTOUCH)
+#define HAVE_SPUMODE_SYNCP
+#endif
+
+enum audiodriver_enum {
+	AUDIODRIVER_SDL = 0,
+	AUDIODRIVER_DISABLE
+};
+
+enum spumode_enum {
+	SPUMODE_DUALASYNC = 0,
+	SPUMODE_SYNCN,
+	SPUMODE_SYNCZ,
+#ifdef HAVE_SPUMODE_SYNCP
+	SPUMODE_SYNCP
+#endif
+};
+
 SoundInterface_struct *SNDCoreList[] = {
         &SNDDummy,
         &SNDSDL,
@@ -157,6 +175,8 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 	wxMenu *loads(MakeStatesSubMenu(wLoadState01));
 	wxMenu *layersMenu = new wxMenu;
 	wxMenu *rotateMenu = new wxMenu;
+	wxMenu *audiodriverMenu = new wxMenu;
+	wxMenu *spumodeMenu = new wxMenu;
 	
 	LoadSettings();
 
@@ -192,6 +212,17 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 
 	emulationMenu->Append(wPause, _T("&Pause\tAlt-P"), _T("Pause Emulation"));
 	emulationMenu->Append(wReset, _T("&Reset\tAlt-R"), _T("Reset Emulation"));
+	emulationMenu->AppendSeparator();
+	emulationMenu->AppendSubMenu(audiodriverMenu, _T("&Audio Driver"));
+	audiodriverMenu->AppendRadioItem(wAUDIODRIVER_SDL, _T("&SDL"));
+	audiodriverMenu->AppendRadioItem(wAUDIODRIVER_DISABLE, _T("&Disable Sound"));
+	emulationMenu->AppendSubMenu(spumodeMenu, _T("&SPU Mode"));
+	spumodeMenu->AppendRadioItem(wSPUMODE_DUALASYNC, _T("&Dual Asynchronous"));
+	spumodeMenu->AppendRadioItem(wSPUMODE_SYNCN, _T("Synchronous (&N)"));
+	spumodeMenu->AppendRadioItem(wSPUMODE_SYNCZ, _T("Synchronous (&Z)"));
+#ifdef HAVE_SPUMODE_SYNCP
+	spumodeMenu->AppendRadioItem(wSPUMODE_SYNCP, _T("Synchronous (&P)"));
+#endif
 	
 	configMenu->Append(wConfigureControls, _T("Controls"));
 
@@ -690,8 +721,16 @@ BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 	EVT_MENU(wxID_EXIT, DesmumeFrame::OnQuit)
 	EVT_MENU(wxID_OPEN, DesmumeFrame::LoadRom)
 	EVT_MENU(wxID_ABOUT,DesmumeFrame::OnAbout)
+
 	EVT_MENU(wPause,DesmumeFrame::pause)
 	EVT_MENU(wReset,DesmumeFrame::reset)
+
+	EVT_MENU_RANGE(wAUDIODRIVER_SDL,wAUDIODRIVER_DISABLE,DesmumeFrame::Modify_AudioDriver)
+	EVT_MENU_RANGE(wSPUMODE_DUALASYNC,wSPUMODE_SYNCZ,DesmumeFrame::Modify_SPUMode)
+#ifdef HAVE_SPUMODE_SYNCP
+	EVT_MENU(wSPUMODE_SYNCP,DesmumeFrame::Modify_SPUMode)
+#endif
+
 	EVT_MENU(wFrameCounter,DesmumeFrame::frameCounter)
 	EVT_MENU(wFPS,DesmumeFrame::FPS)
 	EVT_MENU(wDisplayInput,DesmumeFrame::displayInput)
@@ -748,7 +787,6 @@ END_EVENT_TABLE()
 
 IMPLEMENT_APP(Desmume)
 
-
 #ifdef WIN32
 /*
 * The thread handling functions needed by the GDB stub code.
@@ -799,7 +837,6 @@ void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
 		history->RemoveFileFromHistory(id);
 }
 
-
 void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
 {
 	wxMenu *recentMenu = new wxMenu;
@@ -832,9 +869,23 @@ void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
 }
 void DesmumeFrame::loademulationMenu(wxMenu *emulationMenu)
 {
+	wxMenu *audiodriverMenu = new wxMenu;
+	wxMenu *spumodeMenu = new wxMenu;
 	emulationMenu->Append(wPause, _T("&Pause\tAlt-P"), _T("Pause Emulation"));
 	emulationMenu->Append(wReset, _T("&Reset\tAlt-R"), _T("Reset Emulation"));
+	emulationMenu->AppendSeparator();
+	emulationMenu->AppendSubMenu(audiodriverMenu, _T("&Audio Driver"));
+	audiodriverMenu->AppendRadioItem(wAUDIODRIVER_SDL, _T("&SDL"));
+	audiodriverMenu->AppendRadioItem(wAUDIODRIVER_DISABLE, _T("&Disable Sound"));
+	emulationMenu->AppendSubMenu(spumodeMenu, _T("&SPU Mode"));
+	spumodeMenu->AppendRadioItem(wSPUMODE_DUALASYNC, _T("&Dual Asynchronous"));
+	spumodeMenu->AppendRadioItem(wSPUMODE_SYNCN, _T("Synchronous (&N)"));
+	spumodeMenu->AppendRadioItem(wSPUMODE_SYNCZ, _T("Synchronous (&Z)"));
+#ifdef HAVE_SPUMODE_SYNCP
+	spumodeMenu->AppendRadioItem(wSPUMODE_SYNCP, _T("Synchronous (&P)"));
+#endif
 }
+
 void DesmumeFrame::loadrotateMenu(wxMenu *rotateMenu)
 {
 	rotateMenu->AppendRadioItem(wRot0, _T("0"));
@@ -843,6 +894,7 @@ void DesmumeFrame::loadrotateMenu(wxMenu *rotateMenu)
 	rotateMenu->AppendRadioItem(wRot270, _T("270"));
 	rotateMenu->Check(wRot0+(nds_screen_rotation_angle/90), true);
 }
+
 void DesmumeFrame::loadviewMenu(wxMenu *viewMenu)
 {
 	wxMenu *rotateMenu = new wxMenu;
@@ -927,4 +979,46 @@ void DesmumeFrame::loadmenuBar(wxMenuBar *menuBar)
 	loadhelpMenu(helpMenu);
 	loadviewMenu(viewMenu);
 	
+}
+
+void DesmumeFrame::Modify_AudioDriver(wxCommandEvent &event)
+{
+	const int selection = event.GetId() - wAUDIODRIVER_SDL;
+
+	switch (selection) {
+	case AUDIODRIVER_DISABLE:
+		SPU_ChangeSoundCore(0, 0);
+		osd->addLine("Audio disabled\n");
+		break;
+	default:
+	case AUDIODRIVER_SDL:
+		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+		osd->addLine("Audio enabled (SDL driver)\n");
+		break;
+	}
+}
+
+void DesmumeFrame::Modify_SPUMode(wxCommandEvent &event)
+{
+	const int selection = event.GetId() - wSPUMODE_DUALASYNC;
+	uint syncMode, syncMethod;
+
+	switch (selection) {
+	case SPUMODE_SYNCN:
+	case SPUMODE_SYNCZ:
+#ifdef HAVE_SPUMODE_SYNCP
+	case SPUMODE_SYNCP:
+#endif
+		syncMode = 1;
+		syncMethod = selection - 1;
+		break;
+
+	// Default to DualASync mode on invalid selection
+	default:
+	case SPUMODE_DUALASYNC:
+		syncMode = 0;
+		syncMethod = 0;
+		break;
+	}
+	SPU_SetSynchMode(syncMode, syncMethod);
 }
