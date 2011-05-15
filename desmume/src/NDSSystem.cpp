@@ -469,7 +469,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
-
 #ifndef WORDS_BIGENDIAN
 	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
 
@@ -551,6 +550,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	noext = strdup(filename);
 	reader = ROMReaderInit(&noext);
+	free(noext);
 	
 	if(logicalFilename) path.init(logicalFilename);
 	else path.init(filename);
@@ -566,7 +566,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (!file)
 	{
 		reader->DeInit(file);
-		free(noext);
 		return -1;
 	}
 
@@ -581,7 +580,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	//check that size is at least the size of the header
 	if (size < 352) {
 		reader->DeInit(file);
-		free(noext);
 		return -1;
 	}
 
@@ -598,7 +596,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
 #ifndef WORDS_BIGENDIAN
-	bool okRom = DecryptSecureArea((u8 *)gameInfo.romdata, gameInfo.romsize);
+	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
 
 	if(!okRom) {
 		printf("Specified file is not a valid rom\n");
@@ -606,9 +604,10 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	}
 #endif
 
-
 	if (cheatSearch)
 		cheatSearch->close();
+	FCEUI_StopMovie();
+
 	MMU_unsetRom();
 	NDS_SetROM((u8*)gameInfo.romdata, gameInfo.mask);
 
@@ -620,12 +619,11 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(!memcmp(gameInfo.header.gameCode,"####",4))
+	bool isHomebrew = !memcmp(gameInfo.header.gameCode,"####",4);
+	if(isHomebrew)
 		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.mask + 1);
 
 	NDS_Reset();
-
-	free(noext);
 
 	memset(buf, 0, MAX_PATH);
 
