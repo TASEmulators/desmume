@@ -428,14 +428,10 @@ static void loadrom(std::string fname) {
 	fclose(inf);
 }
 
-int NDS_LoadROM(const char *filename, const char *logicalFilename)
+static int rom_init_path(const char *filename, const char *logicalFilename)
 {
-	int					type = ROM_NDS;
-	char				buf[MAX_PATH];
+	int	type = ROM_NDS;
 
-	if (filename == NULL)
-		return -1;
-	
 	path.init(logicalFilename);
 
 	if ( path.isdsgba(path.path)) {
@@ -466,6 +462,83 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (gameInfo.romsize < 352) {
 		return -1;
 	}
+
+	return 1;
+}
+#else
+static int rom_init_path(const char *filename, const char *logicalFilename)
+{
+	int			ret;
+	int			type;
+	ROMReader_struct	*reader;
+	void			*file;
+	u32			size;
+	char			*noext;
+
+	noext = strdup(filename);
+	reader = ROMReaderInit(&noext);
+	free(noext);
+	
+	if (logicalFilename)
+		path.init(logicalFilename);
+	else
+		path.init(filename);
+
+	if (!strcasecmp(path.extension().c_str(), "zip"))
+		type = ROM_NDS;
+	else if (!strcasecmp(path.extension().c_str(), "nds"))
+		type = ROM_NDS;
+	else if (path.isdsgba(path.path))
+		type = ROM_DSGBA;
+	else
+		type = ROM_NDS;
+
+	file = reader->Init(filename);
+	if (!file)
+	{
+		reader->DeInit(file);
+		return -1;
+	}
+
+	size = reader->Size(file);
+
+	if(type == ROM_DSGBA)
+	{
+		reader->Seek(file, DSGBA_LOADER_SIZE, SEEK_SET);
+		size -= DSGBA_LOADER_SIZE;
+	}
+
+	//check that size is at least the size of the header
+	if (size < 352) {
+		reader->DeInit(file);
+		return -1;
+	}
+
+	// Make sure old ROM is freed first(at least this way we won't be eating
+	// up a ton of ram before the old ROM is freed)
+	if(MMU.CART_ROM != MMU.UNUSED_RAM)
+		NDS_FreeROM();
+
+	gameInfo.resize(size);
+	ret = reader->Read(file, gameInfo.romdata, size);
+	gameInfo.fillGap();
+	reader->DeInit(file);
+
+	return ret;
+}
+#endif
+
+int NDS_LoadROM(const char *filename, const char *logicalFilename)
+{
+	int	ret;
+	char	buf[MAX_PATH];
+
+	if (filename == NULL)
+		return -1;
+
+	ret = rom_init_path(filename, logicalFilename);
+	if (ret < 1)
+		return ret;
 
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
@@ -532,117 +605,9 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheats->init(buf);
 
-	return 1;
-}
-#else
-int NDS_LoadROM(const char *filename, const char *logicalFilename)
-{
-	int					ret;
-	int					type;
-	ROMReader_struct	*reader;
-	void				*file;
-	u32					size;
-	char				*noext;
-	char				buf[MAX_PATH];
-
-	if (filename == NULL)
-		return -1;
-
-	noext = strdup(filename);
-	reader = ROMReaderInit(&noext);
-	free(noext);
-	
-	if(logicalFilename) path.init(logicalFilename);
-	else path.init(filename);
-	if(!strcasecmp(path.extension().c_str(), "zip"))		type = ROM_NDS;
-	else if ( !strcasecmp(path.extension().c_str(), "nds"))
-		type = ROM_NDS;
-	else if ( path.isdsgba(path.path))
-		type = ROM_DSGBA;
-	else
-		type = ROM_NDS;
-
-	file = reader->Init(filename);
-	if (!file)
-	{
-		reader->DeInit(file);
-		return -1;
-	}
-
-	size = reader->Size(file);
-
-	if(type == ROM_DSGBA)
-	{
-		reader->Seek(file, DSGBA_LOADER_SIZE, SEEK_SET);
-		size -= DSGBA_LOADER_SIZE;
-	}
-
-	//check that size is at least the size of the header
-	if (size < 352) {
-		reader->DeInit(file);
-		return -1;
-	}
-
-	// Make sure old ROM is freed first(at least this way we won't be eating
-	// up a ton of ram before the old ROM is freed)
-	if(MMU.CART_ROM != MMU.UNUSED_RAM)
-		NDS_FreeROM();
-
-	gameInfo.resize(size);
-	ret = reader->Read(file, gameInfo.romdata, size);
-	gameInfo.fillGap();
-	reader->DeInit(file);
-
-	//decrypt if necessary..
-	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
-#ifndef WORDS_BIGENDIAN
-	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
-
-	if(!okRom) {
-		printf("Specified file is not a valid rom\n");
-		return -1;
-	}
-#endif
-
-	if (cheatSearch)
-		cheatSearch->close();
-	FCEUI_StopMovie();
-
-	MMU_unsetRom();
-	NDS_SetROM((u8*)gameInfo.romdata, gameInfo.mask);
-
-	gameInfo.populate();
-	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
-	INFO("\nROM crc: %08X\n", gameInfo.crc);
-	INFO("ROM serial: %s\n", gameInfo.ROMserial);
-	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
-	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
-
-	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	bool isHomebrew = !memcmp(gameInfo.header.gameCode,"####",4);
-	if(isHomebrew)
-		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
-
-	NDS_Reset();
-
-	memset(buf, 0, MAX_PATH);
-
-	path.getpathnoext(path.BATTERY, buf);
-	
-	strcat(buf, ".dsv");							// DeSmuME memory card	:)
-
-	MMU_new.backupDevice.load_rom(buf);
-
-	memset(buf, 0, MAX_PATH);
-
-	path.getpathnoext(path.CHEATS, buf);
-	
-	strcat(buf, ".dct");							// DeSmuME cheat		:)
-	cheats->init(buf);
-
 	return ret;
 }
-#endif
+
 void NDS_FreeROM(void)
 {
 	FCEUI_StopMovie();
