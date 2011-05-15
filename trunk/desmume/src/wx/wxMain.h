@@ -51,6 +51,14 @@ enum
 	wRot90,
 	wRot180,
 	wRot270,
+	wAUDIODRIVER_SDL,
+	wAUDIODRIVER_DISABLE,
+	wSPUMODE_DUALASYNC,
+	wSPUMODE_SYNCN,
+	wSPUMODE_SYNCZ,
+#ifdef HAVE_LIBSOUNDTOUCH
+	wSPUMODE_SYNCP,
+#endif
 	/* stupid enums: these two should be the at the end */
 	wLoadState01,
 	wSaveState01 = wLoadState01+20
@@ -88,7 +96,7 @@ public:
 	void onPaint(wxPaintEvent &event);
 	void onIdle(wxIdleEvent &event);
 	void pause(wxCommandEvent& event);
-	void reset(wxCommandEvent& event){NDS_Reset();}
+	void reset(wxCommandEvent& event){NDS_Reset();};
 	void frameCounter(wxCommandEvent& event);
 	void FPS(wxCommandEvent& event);
 	void displayInput(wxCommandEvent& event);
@@ -152,6 +160,8 @@ public:
 	bool SaveSettings();
 	void OnClose(wxCloseEvent &event);
 	void OnOpenRecent(wxCommandEvent &event);
+	void Modify_AudioDriver(wxCommandEvent& event);
+	void Modify_SPUMode(wxCommandEvent& event);
 
 private:
 	void loadfileMenu(wxMenu *fileMenu);
@@ -163,6 +173,7 @@ private:
 	void loadviewMenu(wxMenu *viewMenu);
 	void loadrotateMenu(wxMenu *rotateMenu);
 	void loademulationMenu(wxMenu *emulationMenu);
+
 	struct NDS_fw_config_data fw_config;
 	wxFileHistory* history;
 #ifdef GDB_STUB
