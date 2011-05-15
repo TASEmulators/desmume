@@ -1,4 +1,4 @@
-/* main.cpp - this file is part of DeSmuME
+/* wxMain.cpp - this file is part of DeSmuME
  *
  * Copyright (C) 2003-2009 Dolphin Project
  * Copyright (C) 2009-2011 DeSmuME Team
@@ -102,10 +102,8 @@ volatile bool execute = false;
 
 bool Desmume::OnInit()
 {
-
 	if ( !wxApp::OnInit() )
 		return false;
-	
 
 #ifdef WIN32
 	extern void OpenConsole();
@@ -293,6 +291,7 @@ void DesmumeFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 	NDS_DeInit();
 	Close(true);
 }
+
 void DesmumeFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
 	wxMessageBox(
@@ -377,6 +376,7 @@ void DesmumeFrame::LoadRom(wxCommandEvent& event)
 		NDS_LoadROM(dialog.GetPath().mb_str(), dialog.GetPath().mb_str());
 	}
 }
+
 bool DesmumeFrame::DetransformTouchCoords(int& X, int& Y)
 {
 	int dtX, dtY;
@@ -406,6 +406,7 @@ bool DesmumeFrame::DetransformTouchCoords(int& X, int& Y)
 		return true;
 	}
 }
+
 void DesmumeFrame::OnTouchEvent(wxMouseEvent& evt)
 {
 	wxPoint pt = evt.GetPosition();
@@ -426,6 +427,7 @@ void DesmumeFrame::OnTouchEvent(wxMouseEvent& evt)
 		NDS_setTouchPos((u16)pt.x, (u16)pt.y);
 	}
 }
+
 void DesmumeFrame::gpu_screen_to_rgb(u8 *rgb1, u8 *rgb2)
 {
 	u16 gpu_pixel;
@@ -467,6 +469,7 @@ loop:
 		goto loop;
 	}
 }
+
 void DesmumeFrame::onPaint(wxPaintEvent &event)
 {
 	u8 rgb1[SCREEN_SIZE], rgb2[SCREEN_SIZE];
@@ -504,8 +507,6 @@ void DesmumeFrame::onPaint(wxPaintEvent &event)
 	}
 }
 
-
-
 void DesmumeFrame::onIdle(wxIdleEvent &event)
 {
 	Refresh(false);
@@ -531,11 +532,13 @@ void DesmumeFrame::pause(wxCommandEvent& event)
 		SPU_Pause(0);
 	}
 }
+
 void DesmumeFrame::frameCounter(wxCommandEvent& event)
 {
 	CommonSettings.hud.FrameCounterDisplay ^= true;
 	osd->clear();
 }
+
 void DesmumeFrame::FPS(wxCommandEvent& event)
 {
 	CommonSettings.hud.FpsDisplay ^= true;
@@ -553,16 +556,19 @@ void DesmumeFrame::displayGraphicalInput(wxCommandEvent& event)
 	CommonSettings.hud.ShowGraphicalInputDisplay ^= true;
 	osd->clear();
 }
+
 void DesmumeFrame::displayLagCounter(wxCommandEvent& event)
 {
 	CommonSettings.hud.ShowLagFrameCounter ^= true;
 	osd->clear();
 }
+
 void DesmumeFrame::displayMicrophone(wxCommandEvent& event)
 {
 	CommonSettings.hud.ShowMicrophone ^= true;
 	osd->clear();
 }
+
 #ifdef HAVE_LIBAGG
 void DesmumeFrame::setHUDFont(wxCommandEvent &event)
 {
@@ -584,6 +590,7 @@ void DesmumeFrame::setHUDFont(wxCommandEvent &event)
 	
 }
 #endif
+
 void DesmumeFrame::mainG(int n) 
 {
 	if(CommonSettings.dispLayers[0][n])
@@ -591,6 +598,7 @@ void DesmumeFrame::mainG(int n)
 	else
 		GPU_addBack(MainScreen.gpu, n);	
 }
+
 void DesmumeFrame::subG(int n) 
 {
 	if(CommonSettings.dispLayers[1][n])
@@ -598,23 +606,27 @@ void DesmumeFrame::subG(int n)
 	else
 		GPU_addBack(SubScreen.gpu, n);	
 }
+
 void DesmumeFrame::_3dView(wxCommandEvent& event) 
 {
 	driver->VIEW3D_Init();
 	driver->view3d->Launch();
 }
+
 void DesmumeFrame::saveStateAs(wxCommandEvent& event) 
 {
 	wxFileDialog dialog(this,_T("Save State As"),wxGetHomeDir(),_T(""),_T("*.dst"),wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
 	if(dialog.ShowModal() == wxID_OK)
 		savestate_save (dialog.GetPath().mb_str());
 }
+
 void DesmumeFrame::loadStateFrom(wxCommandEvent& event) 
 {
 	wxFileDialog dialog(this,_T("Load State From"),wxGetHomeDir(),_T(""),_T("*.dst"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 	if(dialog.ShowModal() == wxID_OK)
 		savestate_load (dialog.GetPath().mb_str());
 }
+
 void DesmumeFrame::closeRom(wxCommandEvent& event) 
 {
 	NDS_FreeROM();
@@ -625,6 +637,7 @@ void DesmumeFrame::closeRom(wxCommandEvent& event)
 #endif
 	NDS_Reset();
 }
+
 void DesmumeFrame::importBackupMemory(wxCommandEvent& event)
 {
 	wxFileDialog dialog(this,_T("Import Backup Memory"),wxGetHomeDir(),_T(""),_T("*.duc, *.sav"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
@@ -632,6 +645,7 @@ void DesmumeFrame::importBackupMemory(wxCommandEvent& event)
 		if (!NDS_ImportSave(dialog.GetPath().mb_str()))
 			wxMessageBox(wxString::Format(_T("Save was not successfully imported")),_T("Error"),wxOK | wxICON_ERROR,this);
 }
+
 void DesmumeFrame::exportBackupMemory(wxCommandEvent& event)
 {
 	wxFileDialog dialog(this,_T("Export Backup Memory"),wxGetHomeDir(),_T(""),_T("*.duc, *.sav"),wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
@@ -639,22 +653,26 @@ void DesmumeFrame::exportBackupMemory(wxCommandEvent& event)
 		if (!NDS_ExportSave(dialog.GetPath().mb_str()))
 			wxMessageBox(wxString::Format(_T("Save was not successfully exported")),_T("Error"),wxOK | wxICON_ERROR,this);
 }
+
 void DesmumeFrame::saveScreenshotAs(wxCommandEvent& event) 
 {
 	wxFileDialog dialog(this,_T("Save Screenshot As"),wxGetHomeDir(),_T(""),_T("*.png"),wxFD_SAVE, wxDefaultPosition, wxDefaultSize);
 	if(dialog.ShowModal() == wxID_OK)
 		NDS_WritePNG(dialog.GetPath().mb_str());
 }
+
 void DesmumeFrame::quickScreenshot(wxCommandEvent& event)
 {
 		NDS_WritePNG(wxStandardPaths::Get().GetExecutablePath().mb_str());//TODO GetExecutablePath is wrong
 }
+
 void DesmumeFrame::OnOpenLuaWindow(wxCommandEvent& WXUNUSED (event))
 {
 #ifdef WIN32
 	new wxLuaWindow(this, wxDefaultPosition, wxSize(600, 390));
 #endif
 }
+
 void DesmumeFrame::OnOpenControllerConfiguration(wxCommandEvent& WXUNUSED (event))
 {
 //#ifndef _MSC_VER
@@ -864,9 +882,10 @@ void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
 	fileMenu->Append(wLuaWindow, _T("New Lua Script Window..."));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wxID_EXIT, _T("E&xit\tAlt-X"), _T("Quit this program"));
-	
-//	history->UseMenu(recentMenu);
+
+	//history->UseMenu(recentMenu);
 }
+
 void DesmumeFrame::loademulationMenu(wxMenu *emulationMenu)
 {
 	wxMenu *audiodriverMenu = new wxMenu;
@@ -907,8 +926,10 @@ void DesmumeFrame::loadviewMenu(wxMenu *viewMenu)
 	viewMenu->AppendCheckItem(wDisplayGraphicalInput, _T("&Display Graphical Input"));
 	viewMenu->AppendCheckItem(wDisplayLagCounter, _T("&Display Lag Counter"));
 	viewMenu->AppendCheckItem(wDisplayMicrophone, _T("&Display Microphone"));
+
 	loadrotateMenu(rotateMenu);
 }
+
 void DesmumeFrame::loadtoolsMenu(wxMenu *toolsMenu)
 {
 	wxMenu *layersMenu = new wxMenu;
@@ -944,10 +965,12 @@ void DesmumeFrame::loadlayersMenu(wxMenu *layersMenu)
 	layersMenu->AppendCheckItem(wSubBG3, _T("Sub BG 3"));
 	layersMenu->Check(wSubBG3, true);
 }
+
 void DesmumeFrame::loadconfigMenu(wxMenu *configMenu)
 {
 	configMenu->Append(wConfigureControls, _T("Controls"));
 }
+
 void DesmumeFrame::loadhelpMenu(wxMenu *helpMenu)
 {
 	helpMenu->Append(wWebsite, _T("&Website"));
