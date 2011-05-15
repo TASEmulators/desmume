@@ -524,6 +524,9 @@ void DesmumeFrame::onIdle(wxIdleEvent &event)
 
 void DesmumeFrame::pause(wxCommandEvent& event)
 {
+	if (gameInfo.romdata == NULL)
+		return;
+
 	if (execute) {
 		execute=false;
 		SPU_Pause(1);
