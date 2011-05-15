@@ -543,7 +543,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	ROMReader_struct	*reader;
 	void				*file;
 	u32					size;
-	u8					*data;
 	char				*noext;
 	char				buf[MAX_PATH];
 
@@ -593,21 +592,13 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if(MMU.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
-	data = new u8[gameInfo.mask + 1];
-	if (!data)
-	{
-		reader->DeInit(file);
-		free(noext);
-		return -1;
-	}
-
-	ret = reader->Read(file, data, size);
+	ret = reader->Read(file, gameInfo.romdata, size);
 	reader->DeInit(file);
 
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
 #ifndef WORDS_BIGENDIAN
-	bool okRom = DecryptSecureArea(data,size);
+	bool okRom = DecryptSecureArea((u8 *)gameInfo.romdata, gameInfo.romsize);
 
 	if(!okRom) {
 		printf("Specified file is not a valid rom\n");
@@ -619,10 +610,10 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (cheatSearch)
 		cheatSearch->close();
 	MMU_unsetRom();
-	NDS_SetROM(data, gameInfo.mask);
+	NDS_SetROM((u8*)gameInfo.romdata, gameInfo.mask);
 
 	gameInfo.populate();
-	gameInfo.crc = crc32(0,data,size);
+	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
 	INFO("\nROM crc: %08X\n", gameInfo.crc);
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
 	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
@@ -630,7 +621,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(!memcmp(gameInfo.header.gameCode,"####",4))
-		DLDI::tryPatch((void*)data, gameInfo.mask + 1);
+		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.mask + 1);
 
 	NDS_Reset();
 
