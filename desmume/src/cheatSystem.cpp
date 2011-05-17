@@ -134,24 +134,24 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				else
 				{
 					addr = hi + offset;
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], lo);
+					_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
 				}
 			}
 			break;
 
 			case 0x01:
 				addr = hi + offset;
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], lo & 0x0000FFFF);
+				_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo & 0x0000FFFF);
 			break;
 
 			case 0x02:
 				addr = hi + offset;
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], lo & 0x000000FF);
+				_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo & 0x000000FF);
 			break;
 
 			case 0x03:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo > val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -164,7 +164,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x04:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo < val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -177,7 +177,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x05:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo == val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -190,7 +190,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x06:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo != val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -203,7 +203,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x07:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
+				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -216,7 +216,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x08:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
+				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -229,7 +229,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x09:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -242,7 +242,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x0A:
 				if (hi == 0) hi = offset;	// V1.54+
-				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
+				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -255,7 +255,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x0B:
 				addr = hi + offset;
-				offset = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]);
+				offset = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 			break;
 
 			case 0x0C:
@@ -331,35 +331,35 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 					case 0x6:
 						addr = lo + offset;
-						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], datareg);
+						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,datareg);
 						offset += 4;
 					break;
 
 					case 0x7:
 						addr = lo + offset;
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], datareg & 0x0000FFFF);
+						_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,datareg & 0x0000FFFF);
 						offset += 2;
 					break;
 
 					case 0x8:
 						addr = lo + offset;
-						T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], datareg & 0x000000FF);
+						_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,datareg & 0x000000FF);
 						offset += 1;
 					break;
 
 					case 0x9:
 						addr = lo + offset;
-						datareg = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]);
+						datareg = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 					break;
 
 					case 0xA:
 						addr = lo + offset;
-						datareg = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]) & 0x0000FFFF;
+						datareg = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 					break;
 
 					case 0xB:
 						addr = lo + offset;
-						datareg = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]) & 0x000000FF;
+						datareg = _MMU_read08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 					break;
 
 					case 0xC:
@@ -376,8 +376,8 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 				for (u32 t = 0; t < lo; t++)
 				{
-					u8	tmp = T1ReadByte(tmp_code, t);
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], tmp);
+					u8 tmp = tmp_code[t];
+					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,tmp);
 					addr++;
 				}
 				i += (lo / 8);
@@ -387,8 +387,8 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			case 0xF:
 				for (u32 t = 0; t < lo; t++)
 				{
-					u8 tmp = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][(offset+t)>>20], (offset+t) & MMU.MMU_MASK[ARMCPU_ARM9][(offset+t)>>20]);
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][(hi+t)>>20], (hi+t) & MMU.MMU_MASK[ARMCPU_ARM9][(hi+t)>>20], tmp);
+					u8 tmp = _MMU_read08<ARMCPU_ARM9,MMU_AT_DEBUG>(offset+t);
+					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(hi+t,tmp);
 				}
 			break;
 			//default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
@@ -728,22 +728,32 @@ void CHEATS::process()
 		switch (list[i].type)
 		{
 			case 0:		// internal list system
+			{
 				//INFO("list at 0x02|%06X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
+				u32 addr = list[i].code[0][0] | 0x02000000;
+				u32 val = list[i].code[0][1];
 				switch (list[i].size)
 				{
-					case 0: T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], list[i].code[0][1]); break;
-					case 1: T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], list[i].code[0][1]); break;
-					case 2:
-						{
-							u32 tmp = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0]);
-							tmp &= 0xFF000000;
-							tmp |= (list[i].code[0][1] & 0x00FFFFFF);
-							T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], tmp); 
-							break;
-						}
-					case 3: T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], list[i].code[0][0], list[i].code[0][1]); break;
+				case 0: 
+					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
+					break;
+				case 1: 
+					_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
+					break;
+				case 2:
+					{
+						u32 tmp = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
+						tmp &= 0xFF000000;
+						tmp |= (val & 0x00FFFFFF);
+						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,tmp);
+						break;
+					}
+				case 3: 
+					_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,val);
+					break;
 				}
-			break;
+				break;
+			} //end case 0 internal list system
 
 			case 1:		// Action Replay
 				ARparser(list[i]);
