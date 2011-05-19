@@ -389,12 +389,16 @@
 #define IDC_EXPORT                      1038
 #define IDC_RFOLDER                     1039
 #define IDC_2012                        1039
+#define IDC_EXPORT2                     1039
 #define IDC_BBROWSE2                    1040
 #define IDC_PATHDESMUME                 1041
+#define IDC_CDATE                       1041
 #define IDC_BRESTART                    1042
 #define IDC_BVIEW                       1043
+#define IDC_R4TYPE1                     1043
 #define IDC_BSEARCH                     1044
 #define IDC_PIANO_F                     1044
+#define IDC_R4TYPE2                     1044
 #define IDC_RADIO1                      1045
 #define IDC_PIANO_FS                    1045
 #define IDC_RADIO2                      1046
@@ -405,6 +409,7 @@
 #define IDC_PIANO_A                     1048
 #define IDC_RADIO5                      1049
 #define IDC_PIANO_AS                    1049
+#define IDC_AR_CODE                     1049
 #define IDC_RADIO6                      1050
 #define IDC_PIANO_G                     1050
 #define IDC_RADIO7                      1051
@@ -972,7 +977,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40094
-#define _APS_NEXT_CONTROL_VALUE         1041
+#define _APS_NEXT_CONTROL_VALUE         1050
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

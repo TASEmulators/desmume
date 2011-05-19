@@ -1,4 +1,4 @@
-/*  Copyright 2009-2011 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -127,11 +127,11 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					//manual hook
 				}
 				else
-				if ((hi==0x0000AA99) && (lo==0))
+				if ((hi==0x0000AA99) && (lo==0))	// 0000AA99 00000000   parameter bytes 9..10 for above code (padded with 00s)
 				{
 					//parameter bytes 9..10 for above code (padded with 00s)
 				}
-				else
+				else	// 0XXXXXXX YYYYYYYY   word[XXXXXXX+offset] = YYYYYYYY
 				{
 					addr = hi + offset;
 					_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
@@ -139,17 +139,17 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			}
 			break;
 
-			case 0x01:
+			case 0x01:	// 1XXXXXXX 0000YYYY   half[XXXXXXX+offset] = YYYY
 				addr = hi + offset;
-				_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo & 0x0000FFFF);
+				_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
 			break;
 
-			case 0x02:
+			case 0x02:	// 2XXXXXXX 000000YY   byte[XXXXXXX+offset] = YY
 				addr = hi + offset;
-				_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo & 0x000000FF);
+				_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
 			break;
 
-			case 0x03:
+			case 0x03:	// 3XXXXXXX YYYYYYYY   IF YYYYYYYY > word[XXXXXXX]   ;unsigned
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo > val )
@@ -162,7 +162,11 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x04:
+			case 0x04:	// 4XXXXXXX YYYYYYYY   IF YYYYYYYY < word[XXXXXXX]   ;unsigned
+				if ((hi == 0x04332211) && (lo == 88776655))	//44332211 88776655   parameter bytes 1..8 for above code  (example)
+				{
+					break;
+				}
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo < val )
@@ -175,7 +179,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x05:
+			case 0x05:	// 5XXXXXXX YYYYYYYY   IF YYYYYYYY = word[XXXXXXX]
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo == val )
@@ -188,7 +192,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x06:
+			case 0x06:	// 6XXXXXXX YYYYYYYY   IF YYYYYYYY <> word[XXXXXXX]
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( lo != val )
@@ -201,7 +205,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x07:
+			case 0x07:	// 7XXXXXXX ZZZZYYYY   IF YYYY > ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & val) )
@@ -214,7 +218,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x08:
+			case 0x08:	// 8XXXXXXX ZZZZYYYY   IF YYYY < ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & val) )
@@ -227,7 +231,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x09:
+			case 0x09:	// 9XXXXXXX ZZZZYYYY   IF YYYY = ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & val) )
@@ -240,7 +244,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x0A:
+			case 0x0A:	// AXXXXXXX ZZZZYYYY   IF YYYY <> ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
 				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & val) )
@@ -253,15 +257,15 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 			break;
 
-			case 0x0B:
+			case 0x0B:	// BXXXXXXX 00000000   offset = word[XXXXXXX+offset]
 				addr = hi + offset;
-				offset = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
+				offset = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);;
 			break;
 
 			case 0x0C:
 				switch (subtype)
 				{
-					case 0x0:
+					case 0x0:	// C0000000 YYYYYYYY   FOR loopcount=0 to YYYYYYYY  ;execute Y+1 times
 						if (loopcount < (lo+1))
 							loop_flag = 1;
 						else
@@ -270,10 +274,11 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 						loopbackline = i;
 					break;
 
-					case 0x4:
+					case 0x4:	// C4000000 00000000   offset = address of the C4000000 code ; V1.54
+						printf("AR: untested code C4\n");
 					break;
 
-					case 0x5:
+					case 0x5:	// C5000000 XXXXYYYY   counter=counter+1, IF (counter AND YYYY) = XXXX ; V1.54
 						counter++;
 						if ( (counter & (lo & 0xFFFF)) == ((lo >> 8) & 0xFFFF) )
 						{
@@ -285,8 +290,8 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 						}
 					break;
 
-					case 0x6:
-						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][lo>>20], lo & MMU.MMU_MASK[ARMCPU_ARM9][lo>>20], offset);
+					case 0x6:	// C6000000 XXXXXXXX   [XXXXXXXX]=offset ; V1.54
+						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(lo, offset);
 					break;
 				}
 			break;
@@ -295,15 +300,15 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			{
 				switch (subtype)
 				{
-					case 0x0:
+					case 0x0:	// D0000000 00000000   ENDIF
 					break;
 
-					case 0x1:
+					case 0x1:	// D1000000 00000000   NEXT loopcount
 						if (loop_flag)
 							i = (loopbackline-1);
 					break;
 
-					case 0x2:
+					case 0x2:	// D2000000 00000000   NEXT loopcount, and then FLUSH everything
 						if (loop_flag)
 							i = (loopbackline-1);
 						else
@@ -317,81 +322,81 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 						}
 					break;
 
-					case 0x3:
+					case 0x3:	// D3000000 XXXXXXXX   offset = XXXXXXXX
 						offset = lo;
 					break;
 
-					case 0x4:
+					case 0x4:	// D4000000 XXXXXXXX   datareg = datareg + XXXXXXXX
 						datareg += lo;
 					break;
 
-					case 0x5:
+					case 0x5:	// D5000000 XXXXXXXX   datareg = XXXXXXXX
 						datareg = lo;
 					break;
 
-					case 0x6:
+					case 0x6:	// D6000000 XXXXXXXX   word[XXXXXXXX+offset]=datareg, offset=offset+4
 						addr = lo + offset;
-						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,datareg);
+						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, datareg);
 						offset += 4;
 					break;
 
-					case 0x7:
+					case 0x7:	// D7000000 XXXXXXXX   half[XXXXXXXX+offset]=datareg, offset=offset+2
 						addr = lo + offset;
-						_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,datareg & 0x0000FFFF);
+						_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, datareg);
 						offset += 2;
 					break;
 
-					case 0x8:
+					case 0x8:	// D8000000 XXXXXXXX   byte[XXXXXXXX+offset]=datareg, offset=offset+1
 						addr = lo + offset;
-						_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,datareg & 0x000000FF);
+						_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, datareg);
 						offset += 1;
 					break;
 
-					case 0x9:
+					case 0x9:	// D9000000 XXXXXXXX   datareg = word[XXXXXXXX+offset]
 						addr = lo + offset;
 						datareg = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 					break;
 
-					case 0xA:
+					case 0xA:	// DA000000 XXXXXXXX   datareg = half[XXXXXXXX+offset]
 						addr = lo + offset;
 						datareg = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 					break;
 
-					case 0xB:
+					case 0xB:	// DB000000 XXXXXXXX   datareg = byte[XXXXXXXX+offset] ;bugged on pre-v1.54
 						addr = lo + offset;
 						datareg = _MMU_read08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
 					break;
 
-					case 0xC:
+					case 0xC:	// DC000000 XXXXXXXX   offset = offset + XXXXXXXX
 						offset += lo;
 					break;
 				}
 			}
 			break;
 
-			case 0xE:
+			case 0xE:		// EXXXXXXX YYYYYYYY   Copy YYYYYYYY parameter bytes to [XXXXXXXX+offset...]
 			{
 				u8	*tmp_code = (u8*)(list.code[i+1]);
 				u32 addr = hi+offset;
 
 				for (u32 t = 0; t < lo; t++)
 				{
-					u8 tmp = tmp_code[t];
-					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr,tmp);
+					u8	tmp = tmp_code[t];
+					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, tmp);
 					addr++;
 				}
 				i += (lo / 8);
 			}
 			break;
 
-			case 0xF:
+			case 0xF:		// FXXXXXXX YYYYYYYY   Copy YYYYYYYY bytes from [offset..] to [XXXXXXX...]
 				for (u32 t = 0; t < lo; t++)
 				{
 					u8 tmp = _MMU_read08<ARMCPU_ARM9,MMU_AT_DEBUG>(offset+t);
-					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(hi+t,tmp);
+					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(hi+t, tmp);
 				}
 			break;
-			//default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
+			default: PROGINFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
 		}
 	}
 }
@@ -727,7 +732,7 @@ void CHEATS::process()
 
 		switch (list[i].type)
 		{
-			case 0:		// internal list system
+			case 0:		// internal cheat system
 			{
 				//INFO("list at 0x02|%06X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
 				u32 addr = list[i].code[0][0] | 0x02000000;
@@ -753,7 +758,7 @@ void CHEATS::process()
 					break;
 				}
 				break;
-			} //end case 0 internal list system
+			} //end case 0 internal cheat system
 
 			case 1:		// Action Replay
 				ARparser(list[i]);
@@ -1066,13 +1071,80 @@ void CHEATSEARCH::getListReset()
 }
 
 // ========================================================================= Export
+void CHEATSEXPORT::R4decrypt(u8 *buf, u32 len, u32 n)
+{
+	size_t r = 0;
+	while (r < len)
+	{
+		size_t i ;
+		u16 key = n ^ 0x484A;
+		for (i = 0 ; i < 512 && i < len - r ; i ++)
+		{
+			u8 _xor = 0;
+			if (key & 0x4000) _xor |= 0x80;
+			if (key & 0x1000) _xor |= 0x40;
+			if (key & 0x0800) _xor |= 0x20;
+			if (key & 0x0200) _xor |= 0x10;
+			if (key & 0x0080) _xor |= 0x08;
+			if (key & 0x0040) _xor |= 0x04;
+			if (key & 0x0002) _xor |= 0x02;
+			if (key & 0x0001) _xor |= 0x01;
+
+			u32 k = ((buf[i] << 8) ^ key) << 16;
+			u32 x = k;
+			for (u8 j = 1; j < 32; j ++)
+				x ^= k >> j;
+			key = 0x0000;
+			if (BIT_N(x, 23)) key |= 0x8000;
+			if (BIT_N(k, 22)) key |= 0x4000;
+			if (BIT_N(k, 21)) key |= 0x2000;
+			if (BIT_N(k, 20)) key |= 0x1000;
+			if (BIT_N(k, 19)) key |= 0x0800;
+			if (BIT_N(k, 18)) key |= 0x0400;
+			if (BIT_N(k, 17) != BIT_N(x, 31)) key |= 0x0200;
+			if (BIT_N(k, 16) != BIT_N(x, 30)) key |= 0x0100;
+			if (BIT_N(k, 30) != BIT_N(k, 29)) key |= 0x0080;
+			if (BIT_N(k, 29) != BIT_N(k, 28)) key |= 0x0040;
+			if (BIT_N(k, 28) != BIT_N(k, 27)) key |= 0x0020;
+			if (BIT_N(k, 27) != BIT_N(k, 26)) key |= 0x0010;
+			if (BIT_N(k, 26) != BIT_N(k, 25)) key |= 0x0008;
+			if (BIT_N(k, 25) != BIT_N(k, 24)) key |= 0x0004;
+			if (BIT_N(k, 25) != BIT_N(x, 26)) key |= 0x0002;
+			if (BIT_N(k, 24) != BIT_N(x, 25)) key |= 0x0001;
+			buf[i] ^= _xor;
+		}
+
+		buf+= 512;
+		r  += 512;
+		n  += 1;
+	}
+}
+
 bool CHEATSEXPORT::load(char *path)
 {
+	error = 0;
+
 	fp = fopen(path, "rb");
 	if (!fp)
 	{
 		printf("Error open database\n");
+		error = 1;
 		return false;
+	}
+
+	char *headerID = "R4 CheatCode";
+	char buf[255] = {0};
+	fread(buf, 1, strlen(headerID), fp);
+	if (strncmp(buf, headerID, strlen(headerID)) != 0)
+	{
+		// check encrypted
+		R4decrypt((u8 *)buf, strlen(headerID), 0);
+		if (strcmp(buf, headerID) != 0)
+		{
+			error = 2;
+			return false;
+		}
+		encrypted = true;
 	}
 
 	fseek(fp, 0, SEEK_END);
@@ -1081,13 +1153,15 @@ bool CHEATSEXPORT::load(char *path)
 
 	if (!search())
 	{
-		printf("ERROR: cheat in database not founded\n");
+		printf("ERROR: cheat in database not found\n");
+		error = 3;
 		return false;
 	}
 	
 	if (!getCodes())
 	{
 		printf("ERROR: export cheats failed\n");
+		error = 4;
 		return false;
 	}
 
@@ -1104,43 +1178,71 @@ void CHEATSEXPORT::close()
 	}
 }
 
-// TODO: decrypting database
 bool CHEATSEXPORT::search()
 {
 	if (!fp) return false;
 
-	u32 pos = 0x0100;
-	FAT_R4	fat_empty;
+	u32		pos = 0x0100;
+	FAT_R4	fat_tmp = {0};
+	u8		buf[512] = {0};
 
-	memset(&fat, 0, sizeof(FAT_R4));
-	memset(&fat_empty, 0, sizeof(FAT_R4));
-
-	fseek(fp, pos, SEEK_SET);
-	while (pos < fsize)
+	CRC = 0;
+	encOffset = 0;
+	u32 t = 0;
+	memset(date, 0, sizeof(date));
+	if (encrypted)
 	{
-		fread(&fat, sizeof(FAT_R4), 1, fp);
-		if (memcmp(&fat, &fat_empty, sizeof(FAT_R4)) == 0) break;
+		fseek(fp, 0, SEEK_SET);
+		fread(&buf[0], 1, 512, fp);
+		R4decrypt((u8 *)&buf[0], 512, 0);
+		memcpy(&date[0], &buf[0x10], 16);
+	}
+	else
+	{
+		fseek(fp, 0x10, SEEK_SET);
+		fread(&date, 16, 1, fp);
+		fseek(fp, pos, SEEK_SET);
+		fread(&fat_tmp, sizeof(fat), 1, fp);
+	}
+
+	while (1)
+	{
+		if (encrypted)
+		{
+			memcpy(&fat, &buf[pos % 512], sizeof(fat));
+			pos += sizeof(fat);
+			if ((pos>>9) > t)
+			{
+				t++;
+				fread(&buf[0], 1, 512, fp);
+				R4decrypt((u8 *)&buf[0], 512, t);
+			}
+			memcpy(&fat_tmp, &buf[pos % 512], sizeof(fat_tmp));	// next
+		}
+		else
+		{
+			memcpy(&fat, &fat_tmp, sizeof(fat));
+			fread(&fat_tmp, sizeof(fat_tmp), 1, fp);
+			
+		}
+		//printf("serial: %s, offset %08X\n", fat.serial, fat.addr);
 		if (memcmp(gameInfo.header.gameCode, &fat.serial[0], 4) == 0)
 		{
-			FAT_R4	fat_tmp;
-
-			memset(&fat_tmp, 0, sizeof(FAT_R4));
-			fread(&fat_tmp, sizeof(FAT_R4), 1, fp);
-			if (memcmp(&fat_tmp, &fat_empty, sizeof(FAT_R4)) == 0)
+			dataSize = fat_tmp.addr?(fat_tmp.addr - fat.addr):0;
+			if (encrypted)
 			{
-				// TODO
-				dataSize = 0;
+				encOffset = fat.addr % 512;
+				dataSize += encOffset;
 			}
-			else
-			{
-				dataSize = (fat_tmp.addr - fat.addr);
-			}
+			if (!dataSize) return false;
+			CRC = fat.CRC;
 			char buf[5] = {0};
 			memcpy(&buf, &fat.serial[0], 4);
-			printf("Found %s CRC %08X at 0x%08llX (size %i)\n", buf, fat.CRC, fat.addr, dataSize);
+			printf("Cheats: found %s CRC %08X at 0x%08llX, size %i byte(s)\n", buf, fat.CRC, fat.addr, dataSize - encOffset);
 			return true;
 		}
-		pos += sizeof(FAT_R4);
+
+		if (fat.addr == 0) break;
 	}
 
 	memset(&fat, 0, sizeof(FAT_R4));
@@ -1158,7 +1260,7 @@ bool CHEATSEXPORT::getCodes()
 	if (!data) return false;
 	memset(data, 0, dataSize+8);
 	
-	fseek(fp, fat.addr, SEEK_SET);
+	fseek(fp, fat.addr - encOffset, SEEK_SET);
 
 	if (fread(data, 1, dataSize, fp) != dataSize)
 	{
@@ -1167,8 +1269,11 @@ bool CHEATSEXPORT::getCodes()
 		return false;
 	}
 
-	u8 *title = data;
-	u32 *cmd = (u32 *)(((intptr_t)title + strlen((char*)title) + 4) & 0xFFFFFFFC);
+	if (encrypted)
+		R4decrypt(data, dataSize, fat.addr >> 9);
+
+	gametitle = data + encOffset;
+	u32 *cmd = (u32 *)(((intptr_t)gametitle + strlen((char*)gametitle) + 4) & 0xFFFFFFFC);
 	numCheats = (*cmd) & (~0xF0000000);
 	cmd += 9;
 	cheats = new CHEATS_LIST[numCheats];

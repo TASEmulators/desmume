@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -37,6 +37,10 @@ struct CHEATS_LIST
 								// 1 - Action Replay
 								// 2 - Codebreakers
 	BOOL	enabled;
+	// TODO
+	u8		freezeType;			// 0 - normal freeze
+								// 1 - can decrease
+								// 2 - can increase
 	u32		code[MAX_XX_CODE][2];
 	char	description[255];
 	int		num;
@@ -115,44 +119,63 @@ enum CHEATS_DB_TYPE
 
 #pragma pack(push)
 #pragma pack(1)
-	typedef struct FAT_R4
-	{
-		u8	serial[4];
-		u32	CRC;
-		u64 addr;
-	} FAT_R4;
+typedef struct FAT_R4
+{
+	u8	serial[4];
+	u32	CRC;
+	u64 addr;
+} FAT_R4;
 #pragma pack(pop)
 
 class CHEATSEXPORT
 {
 private:
 	CHEATS_DB_TYPE		type;
+	bool				encrypted;
 	FILE				*fp;
 	u32					fsize;
 	u32					dataSize;
+	u32					encOffset;
 	FAT_R4				fat;
 	bool				search();
 	bool				getCodes();
+	void				R4decrypt(u8 *buf, u32 len, u32 n);
 
 	u32					numCheats;
 	CHEATS_LIST			*cheats;
+
+	u8					error;		//	0 - no errors
+									//	1 - open failed/file not found
+									//	2 - file format is wrong (no valid header ID)
+									//	3 - cheat not found in database
+									//	4 - export error from database
 
 public:
 	CHEATSEXPORT() :
 			fp(NULL),
 			fsize(0),
 			dataSize(0),
+			encOffset(0),
 			type(CHEATS_DB_R4),
+			encrypted(false),
 			numCheats(0),
-			cheats(0)
-	{}
+			cheats(0),
+			CRC(0),
+			error(0)
+	{
+		memset(date, 0, sizeof(date));
+	}
 	~CHEATSEXPORT()
 	{}
 
+	u8				*gametitle;
+	u8				date[17];
+	u32				CRC;
 	bool			load(char *path);
 	void			close();
 	CHEATS_LIST		*getCheats();
 	u32				getCheatsNum();
+	u8				getErrorCode() { return error; }
 };
 
 extern CHEATS *cheats;
