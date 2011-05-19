@@ -95,6 +95,7 @@ public:
 	#define SCREENSHOTKEY	"Screenshots"
 	#define AVIKEY			"AviFiles"
 	#define CHEATKEY		"Cheats"
+	#define R4FORMATKEY		"R4format"
 	#define SOUNDKEY		"SoundSamples"
 	#define FIRMWAREKEY		"Firmware"
 	#define FORMATKEY		"format"
@@ -221,6 +222,7 @@ public:
 		GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 		currentimageformat	= (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
+		r4Format = (R4Format)GetPrivateProfileInt(SECTION, R4FORMATKEY, R4_CHEAT_DAT, IniName);
 #endif
 	/*
 		needsSaving		= GetPrivateProfileInt(SECTION, NEEDSSAVINGKEY, TRUE, IniName);
@@ -411,6 +413,18 @@ public:
 		}
 		strncpy(output, file.c_str(), MAX_PATH);
 	}
+
+	enum R4Format
+	{
+#if defined(_WINDOWS) && !defined(WXPORT)
+		R4_CHEAT_DAT = IDC_R4TYPE1,
+		R4_USRCHEAT_DAT = IDC_R4TYPE2
+#else
+		R4_CHEAT_DAT,
+		R4_USRCHEAT_DAT
+#endif
+	};
+	R4Format r4Format;
 
 	enum ImageFormat
 	{

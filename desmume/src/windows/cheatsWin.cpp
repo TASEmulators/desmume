@@ -1,4 +1,4 @@
-/*  Copyright 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -24,7 +24,13 @@
 #include "../debug.h"
 #include "../utils/xstring.h"
 #include "../path.h"
+#include "../NDSSystem.h"
+#include "../version.h"
 
+extern u8	CheatsR4Type = 0;
+
+static const char *HEX_Valid = "Oo0123456789ABCDEFabcdef";
+static const char *DEC_Valid = "Oo0123456789";
 static	u8		searchType = 0;
 static	u8		searchSize = 0;
 static	u8		searchSign = 0;
@@ -80,7 +86,16 @@ u32 searchRange[4][2] = {
 
 //========================================= Export
 static CHEATSEXPORT	*cheatsExport = NULL;
-void CheatsExportDialog(HWND hwnd);
+bool CheatsExportDialog(HWND hwnd);
+
+void generateAR(HWND dialog, u32 addr, u32 val, u8 size)
+{
+	// Action Replay code generate
+	if (size > 3) size = 3;
+	char buf[17] = {0};
+	sprintf(buf, "%X%07X %08X", 3-size, addr | 0x02000000, val);
+	SetWindowText(GetDlgItem(dialog, IDC_AR_CODE), buf);
+}
 
 LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -88,21 +103,6 @@ LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 	{
 		switch (wParam)
 		{
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				break;
-			case 'o':
-			case 'O':
-				wParam = '0';
-				break;
 			case '-':
 				{
 					u32 pos = 0;
@@ -120,6 +120,11 @@ LONG_PTR CALLBACK EditValueProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				cheatAddPasteCheck = true;
 				break;
 			default:
+				if (strchr(DEC_Valid, wParam))
+				{
+					if(wParam=='o' || wParam=='O') wParam='0';
+					break;
+				}
 				wParam = 0;
 				break;
 		}
@@ -135,35 +140,6 @@ LONG_PTR CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 	{
 		switch (wParam)
 		{
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-			case 'A':
-			case 'B':
-			case 'C':
-			case 'D':
-			case 'E':
-			case 'F':
-				break;
-			case 'a':
-			case 'b':
-			case 'c':
-			case 'd':
-			case 'e':
-			case 'f':
-				wParam -= 32;
-				break;
-			case 'o':
-			case 'O':
-				wParam = '0';
-				break;
 			case VK_BACK:
 			case 0x3: // ^C
 			case 0x18: // ^X
@@ -173,6 +149,11 @@ LONG_PTR CALLBACK EditValueHEXProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 				cheatAddPasteCheck = true;
 				break;
 			default:
+				if (strchr(HEX_Valid, wParam))
+				{
+					if(wParam=='o' || wParam=='O') wParam='0';
+					break;
+				}
 				wParam = 0;
 				break;
 		}
@@ -190,6 +171,8 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 	{
 		case WM_INITDIALOG:
 			{	
+				memset(editBuf, 0, sizeof(editBuf));
+				memset(&tempCheat, 0, sizeof(tempCheat));
 				saveOldEditProc = oldEditProc;
 				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 11, 0);
@@ -241,6 +224,8 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 					SetFocus(GetDlgItem(dialog, IDC_EDIT2));
 					SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETSEL, 0, -1);
 				}
+
+				CheatAddVerify(dialog,editBuf[0],editBuf[1],searchAddSize);
 			}
 		return searchAddMode != 2;
 
@@ -380,6 +365,8 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 	{
 		case WM_INITDIALOG:
 			{	
+				memset(editBuf, 0, sizeof(editBuf));
+				memset(&tempCheat, 0, sizeof(tempCheat));
 				saveOldEditProc = oldEditProc;
 				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 10, 0);
@@ -406,6 +393,8 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);
 				CheckRadioButton(dialog, searchSizeIDDs[0], searchSizeIDDs[ARRAY_SIZE(searchSizeIDDs) - 1], searchSizeIDDs[tempCheat.size]);
 				SetWindowText(GetDlgItem(dialog, IDOK), "Update");
+
+				generateAR(dialog, tempCheat.code[0][0], tempCheat.code[0][1], searchSizeIDDs[tempCheat.size]);
 			}
 		return TRUE;
 
@@ -519,12 +508,14 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 	{
 		case WM_INITDIALOG:
 		{
+			memset(editBuf, 0, sizeof(editBuf));
 			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_FMTLINES, (WPARAM)TRUE, (LPARAM)0);
 
 			if (cheatXXtype == 0)
 			{
 				if (cheatXXaction == 0)		// add
 				{
+					memset(&tempCheat, 0, sizeof(tempCheat));
 					SetWindowText(dialog, "Add Action Replay code");
 					tempCheat.enabled = TRUE;
 				}
@@ -537,6 +528,7 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			{
 				if (cheatXXaction == 0)		// add
 				{
+					memset(&tempCheat, 0, sizeof(tempCheat));
 					SetWindowText(dialog, "Add Codebreaker code");
 					tempCheat.enabled = TRUE;
 				}
@@ -669,23 +661,23 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 	{
 		case WM_INITDIALOG: 
 		{
+			// TODO: Codebreaker
+			ShowWindow(GetDlgItem(dialog, IDC_BADD_CB), SW_HIDE);// hide button
+
 			LV_COLUMN lvColumn;
 			u32 address = 0;
 			u32 val = 0;
 
 			cheatListView = GetDlgItem(dialog, IDC_LIST1);
 
-			//ListView_SetExtendedListViewStyle(GetDlgItem(hDlg, IDC_CHEAT_LIST), LVS_EX_FULLROWSELECT|LVS_EX_CHECKBOXES);
 			ListView_SetExtendedListViewStyle(cheatListView, LVS_EX_FULLROWSELECT | LVS_EX_TWOCLICKACTIVATE | LVS_EX_CHECKBOXES);
 			
 			memset(&lvColumn,0,sizeof(LV_COLUMN));
 			lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
-
 			lvColumn.fmt=LVCFMT_CENTER;
 			lvColumn.cx=20;
 			lvColumn.pszText="";
 			ListView_InsertColumn(cheatListView, 0, &lvColumn);
-
 			lvColumn.fmt=LVCFMT_LEFT;
 			lvColumn.cx=84;
 			lvColumn.pszText="Address";
@@ -748,8 +740,8 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 			EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 
-			ListView_SetItemState(searchListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
-			SetFocus(searchListView);
+			ListView_SetItemState(cheatListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+			SetFocus(cheatListView);
 			return TRUE;
 		}
 
@@ -759,6 +751,10 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 				LPNMHDR tmp_msg = (LPNMHDR)lparam;
 				switch (tmp_msg->code)
 				{
+					case LVN_ITEMACTIVATE:
+						SendMessage(dialog, WM_COMMAND, IDC_BEDIT, 0);
+					break;
+
 					case LVN_ITEMCHANGED:
 					{
 						NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)lparam;
@@ -813,9 +809,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			{
 				case IDOK:
 					if (cheats->save())
-					{
 						EndDialog(dialog, TRUE);
-					}
 					else
 						MessageBox(dialog, "Can't save cheats to file.\nCheck your path (Menu->Config->Path Settings->\"Cheats\")","Error",MB_OK);
 				return TRUE;
@@ -845,7 +839,6 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						ListView_SetItemText(cheatListView, row, 2, buf);
 						ListView_SetItemText(cheatListView, row, 3, editBuf[2]);
 						ListView_SetCheckState(cheatListView, row, searchAddFreeze);
-
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
 				}
@@ -854,14 +847,10 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 				case IDC_BADD_AR:
 				{
 					if (LOWORD(wparam) == IDC_BADD_AR)
-					{
 						cheatXXtype = 0;
-					}
 					else
 						if (LOWORD(wparam) == IDC_BADD_CB)
-						{
 							cheatXXtype = 1;
-						}
 						else
 							return TRUE;
 					cheatXXaction = 0;				// 0 = add
@@ -899,7 +888,6 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					if (cheatEditPos > cheats->getSize()) return TRUE;
 
 					cheats->get(&tempCheat, cheatEditPos);
-
 					switch (tempCheat.type)
 					{
 						case 0:				// internal
@@ -955,20 +943,18 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					{
 						int tmp_pos = ListView_GetNextItem(cheatListView, -1, LVNI_ALL | LVNI_SELECTED);
 						if (tmp_pos == -1)
-						{
 							break;
-						}
+
 						if (cheats->remove(tmp_pos))
-						{
 							ListView_DeleteItem(cheatListView, tmp_pos);
-						}
 					}
 					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 				}
 				return TRUE;
 
 				case IDC_EXPORT:
-					CheatsExportDialog(dialog);
+					if (CheatsExportDialog(dialog))
+						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 				return TRUE;
 			}
 			break;
@@ -1039,7 +1025,7 @@ INT_PTR CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM
 			ltoa(searchNumberResults, buf, 10);
 			SetWindowText(GetDlgItem(dialog, IDC_SNUMBER), buf);
 			SetFocus(GetDlgItem(dialog, IDC_EVALUE));
-			break;
+			return TRUE;
 		}
 
 		case WM_COMMAND:
@@ -1382,6 +1368,8 @@ void CheatAddVerify(HWND dialog,char* addre, char* valu,u8 size)
 	}
 	else
 		EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+
+	generateAR(dialog, fix, fix2, size);
 }
 
 
@@ -1392,9 +1380,18 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 	{
 		case WM_INITDIALOG:
 		{
+			SetWindowText(GetDlgItem(dialog, IDC_CDATE), (LPCSTR)cheatsExport->date);
+			if ((char*)cheatsExport->gametitle != "")
+			{
+				char buf[512] = {0};
+				GetWindowText(dialog, &buf[0], sizeof(buf));
+				strcat(buf, ": ");
+				strcat(buf, (char*)cheatsExport->gametitle);
+				SetWindowText(dialog, (LPCSTR)buf);
+			}
 			LV_COLUMN lvColumn;
 			exportListView = GetDlgItem(dialog, IDC_LIST_CHEATS);
-			ListView_SetExtendedListViewStyle(exportListView, LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES);
+			ListView_SetExtendedListViewStyle(exportListView, LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_CHECKBOXES);
 			
 			memset(&lvColumn,0,sizeof(LV_COLUMN));
 			lvColumn.mask=LVCF_FMT|LVCF_TEXT|LVCF_WIDTH;
@@ -1415,6 +1412,10 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				lvi.pszText= tmp[i].description;
 				SendMessage(exportListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 			}
+			if (gameInfo.crc != cheatsExport->CRC)
+			{
+				//MessageBox(dialog, "WARNING!\n Checksums not matching.",EMU_DESMUME_NAME_AND_VERSION(), MB_OK);// | MB_ICON_ERROR);
+			}
 			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)TRUE,0);
 			ListView_SetItemState(exportListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
 			SetFocus(exportListView);
@@ -1426,14 +1427,15 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 			{
 				case IDOK:
 					{
-						u32 count = ListView_GetSelectedCount(exportListView);
+						u32 count = ListView_GetItemCount(exportListView);
 						if (count > 0)
 						{
-							u32 prev = ListView_GetNextItem(exportListView, -1, LVIS_SELECTED);
+							bool done = false;
+							CHEATS_LIST *tmp = (CHEATS_LIST*)cheatsExport->getCheats();
 							for (u32 i = 0; i < count; i++)
 							{
-								CHEATS_LIST *tmp = (CHEATS_LIST*)cheatsExport->getCheats();
-								cheats->add_AR_Direct(tmp[prev]);
+								if (!ListView_GetCheckState(exportListView, i)) continue;
+								cheats->add_AR_Direct(tmp[i]);
 
 								LVITEM lvi;
 
@@ -1444,11 +1446,10 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 								u32 row = ListView_InsertItem(cheatListView, &lvi);
 								ListView_SetItemText(cheatListView, row, 1, "Action");
 								ListView_SetItemText(cheatListView, row, 2, "Replay");
-								ListView_SetItemText(cheatListView, row, 3, tmp[prev].description);
-
-								prev = ListView_GetNextItem(exportListView, prev, LVIS_SELECTED);
+								ListView_SetItemText(cheatListView, row, 3, tmp[i].description);
+								done = true;
 							}
-							EndDialog(dialog, TRUE);
+							if (done) EndDialog(dialog, TRUE);
 						}
 					}
 					break;
@@ -1463,32 +1464,50 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 	return FALSE;
 }
 
-void CheatsExportDialog(HWND hwnd)
+bool CheatsExportDialog(HWND hwnd)
 {
+	bool res = false;
 	cheatsExport = new CHEATSEXPORT();
-	if (!cheatsExport) return;
+	if (!cheatsExport) return false;
 	
 	char buf[MAX_PATH] = {0};
-	PathInfo path;
-	path.init("USRCHEAT.DAT");
-	path.getpathnoext(path.MODULE, &buf[0]);
-	strcat(buf, ".DAT");
-	// TODO: select file
+	strcpy(buf, path.getpath(path.CHEATS).c_str());
+	if (path.r4Format == path.R4_CHEAT_DAT)
+		strcat(buf,"cheat.dat");
+	else
+		if (path.r4Format == path.R4_USRCHEAT_DAT)
+			strcat(buf,"usrcheat.dat");
+		else return false;
 	if (cheatsExport->load(buf))
 	{
 		if (cheatsExport->getCheatsNum() > 0)
-		{
-			DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_EXPORT), hwnd, (DLGPROC) CheatsExportProc);
-		}
+			res = DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_CHEAT_EXPORT), hwnd, (DLGPROC) CheatsExportProc);
 		else
-		{
 			MessageBox(hwnd, "Cheats for this game in database not founded.", "DeSmuME", MB_OK | MB_ICONERROR);
-		}
 	}
 	else
-		MessageBox(hwnd, "Error loading cheat database.", "DeSmuME", MB_OK | MB_ICONERROR);
+	{
+		char buf2[512] = {0};
+		if (cheatsExport->getErrorCode() == 1)
+			sprintf(buf2, "Error loading cheats database. File not found\n\"%s\"\nCheck your path (Menu->Config->Path Settings->\"Cheats\")\n\nYou can download it from http://cheats.gbatemp.net/", buf);
+		else
+			if (cheatsExport->getErrorCode() == 2)
+				sprintf(buf2, "File \"%s\" is not R4 cheats database.\nWrong file format!", buf);
+			else
+				if (cheatsExport->getErrorCode() == 3)
+					sprintf(buf2, "Serial \"%s\" not found in database.", gameInfo.ROMserial);
+				else
+					if (cheatsExport->getErrorCode() == 4)
+						sprintf(buf2, "Error export from database");
+					else
+						sprintf(buf2, "Unknown error!!!");
+		MessageBox(hwnd, buf2, "DeSmuME", MB_OK | MB_ICONERROR);				
+	}
 
 	cheatsExport->close();
 	delete cheatsExport;
 	cheatsExport = NULL;
+
+	return res;
 }
+
