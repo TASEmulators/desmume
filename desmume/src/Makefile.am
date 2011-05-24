@@ -19,7 +19,7 @@ libdesmume_a_SOURCES = \
 	common.cpp common.h \
 	debug.cpp debug.h \
 	Disassembler.cpp Disassembler.h \
-	emufile.h emufile.cpp emufile_types.h fat.h FIFO.cpp FIFO.h \
+	emufile.h emufile.cpp emufile_types.h FIFO.cpp FIFO.h \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
 	fs.h \
 	GPU_osd.h \
