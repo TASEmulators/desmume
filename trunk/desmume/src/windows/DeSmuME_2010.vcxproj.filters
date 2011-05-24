@@ -315,6 +315,9 @@
     <ClCompile Include="snddx.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
+    <ClCompile Include="slot1_config.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
     <ClCompile Include="throttle.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
@@ -391,6 +394,9 @@
       <Filter>Core\addons</Filter>
     </ClCompile>
     <ClCompile Include="..\addons\slot1_retail.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_nand.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
     <ClCompile Include="..\utils\datetime.cpp">
@@ -717,6 +723,9 @@
       <Filter>Windows</Filter>
     </ClInclude>
     <ClInclude Include="snddx.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="slot1_config.h">
       <Filter>Windows</Filter>
     </ClInclude>
     <ClInclude Include="throttle.h">

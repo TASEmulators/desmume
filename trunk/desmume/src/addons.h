@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 

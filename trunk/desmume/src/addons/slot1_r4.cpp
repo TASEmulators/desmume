@@ -223,7 +223,7 @@ static u32 read32(u8 PROCNUM, u32 adr)
 }
 
 SLOT1INTERFACE slot1R4 = {
-	"Slot1R4",
+	"R4",
 	init,
 	reset,
 	close,

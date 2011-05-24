@@ -1,4 +1,4 @@
-/*  Copyright (C) 2010 DeSmuME team
+/*  Copyright (C) 2010-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -48,7 +48,7 @@ static u32 slot1_read32(u8 PROCNUM, u32 adr)
 
 
 SLOT1INTERFACE slot1None = {
-	"Slot1None",
+	"None",
 	slot1_init,
 	slot1_reset,
 	slot1_close,

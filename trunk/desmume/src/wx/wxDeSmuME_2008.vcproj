@@ -1025,6 +1025,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\addons\slot1_retail_nand.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\addons\slot2_mpcf.cpp"
 					>
 				</File>

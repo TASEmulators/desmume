@@ -109,6 +109,7 @@ void WritePathSettings()
 	WritePrivateProfileString(SECTION, SCREENSHOTKEY, path.pathToScreenshots, IniName);
 	WritePrivateProfileString(SECTION, AVIKEY, path.pathToAviFiles, IniName);
 	WritePrivateProfileString(SECTION, CHEATKEY, path.pathToCheats, IniName);
+	WritePrivateProfileInt(SECTION, R4FORMATKEY, path.r4Format, IniName);
 	WritePrivateProfileString(SECTION, SOUNDKEY, path.pathToSounds, IniName);
 	WritePrivateProfileString(SECTION, FIRMWAREKEY, path.pathToFirmware, IniName);
 	WritePrivateProfileString(SECTION, LUAKEY, path.pathToLua, IniName);
@@ -141,6 +142,7 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	CheckDlgButton(hDlg, IDC_USELASTVISIT, (path.savelastromvisit) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_ASSOCIATE, (associate) ? BST_CHECKED : BST_UNCHECKED);
 	CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, (int)path.imageformat());
+	CheckRadioButton(hDlg, IDC_R4TYPE1, IDC_R4TYPE2, (int)path.r4Format);
 
 // IDC_FORMATEDIT setup
 	SetDlgItemText(hDlg, IDC_FORMATEDIT, path.screenshotFormat);
@@ -258,6 +260,15 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 					SetDlgItemText(hDlg, IDC_CHEATPATHEDIT, path.pathToCheats);
 			}
 			break;
+		case IDC_R4TYPE1:
+				CheckRadioButton(hDlg, IDC_R4TYPE1, IDC_R4TYPE2, IDC_R4TYPE1);
+				path.r4Format = path.R4_CHEAT_DAT;
+			break;
+		case IDC_R4TYPE2:
+				CheckRadioButton(hDlg, IDC_R4TYPE1, IDC_R4TYPE2, IDC_R4TYPE2);
+				path.r4Format = path.R4_USRCHEAT_DAT;
+			break;
+
 		case IDC_BROWSELUA:
 			{
 				if(BrowseForPath(path.pathToLua))

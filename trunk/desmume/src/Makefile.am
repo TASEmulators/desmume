@@ -79,7 +79,7 @@ libdesmume_a_SOURCES = \
 	utils/libfat/partition.cpp \
 	utils/libfat/partition.h \
 	addons.cpp addons.h \
-	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp \
+	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp addons/slot1_retail_nand.cpp \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
