@@ -44,6 +44,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "../NDSSystem.h"
 #include "../debug.h"
 #include "../saves.h"
+#include "../slot1.h"
 #include "../addons.h"
 #include "../GPU_osd.h"
 #include "../OGLRender.h"
@@ -91,6 +92,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "mapview.h"
 #include "matrixview.h"
 #include "lightview.h"
+#include "slot1_config.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
 #include "memView.h"
@@ -2562,12 +2564,6 @@ int _main()
 
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 
-	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
-	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
-	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
-	win32_CFlash_cfgFileName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
-	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
-
 	WIN_InstallCFlash();
 
 	ColorCtrl_Register();
@@ -2747,8 +2743,30 @@ int _main()
 	ViewMatrices = new TOOLSCLASS(hAppInst, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
 	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
 
+	// Slot 1 / Slot 2 (GBA slot)
+	slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL, IniName);
+	cmdline.slot1_fat_dir = GetPrivateProfileStdString("Slot1", "fat_path", "");
+
+	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
+	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
+	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
+	win32_CFlash_cfgFileName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
+	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
 
 	cmdline.process_addonCommands();
+
+	switch (slot1_device_type)
+	{
+		case NDS_SLOT1_NONE:
+		case NDS_SLOT1_RETAIL:
+		case NDS_SLOT1_R4:
+		case NDS_SLOT1_RETAIL_NAND:
+			break;
+		default:
+			slot1_device_type = NDS_SLOT1_RETAIL;
+			break;
+	}
+
 	if(cmdline.is_cflash_configured)
 	{
 	    addon_type = NDS_ADDON_CFLASH;
@@ -2793,6 +2811,8 @@ int _main()
 		addon_type = NDS_ADDON_NONE;
 		break;
 	}
+
+	slot1Change((NDS_SLOT1_TYPE)slot1_device_type);
 	addonsChangePak(addon_type);
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
@@ -5076,6 +5096,10 @@ DOKEYDOWN:
 
 		case IDM_PAUSE:
 			TogglePause();
+			return 0;
+
+		case IDM_SLOT1:
+			slot1Dialog(hwnd);
 			return 0;
 
 		case IDM_GBASLOT:

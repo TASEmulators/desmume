@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -70,10 +70,10 @@ void addonsReset()
 
 BOOL addonsChangePak(NDS_ADDON_TYPE type)
 {
-	printf("addonsChangePak\n");
 	if (type > NDS_ADDON_COUNT) return FALSE;
 	addon.close();
 	addon = addonList[type];
 	addon_type = type;
+	printf("Slot 2: %s\n", addon.name);
 	return addon.init();
 }

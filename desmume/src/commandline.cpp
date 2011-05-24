@@ -241,5 +241,7 @@ void CommandLine::process_addonCommands()
 		slot1Change(NDS_SLOT1_RETAIL);
 	else if(slot1 == "r4")
 		slot1Change(NDS_SLOT1_R4);
+		else if(slot1 == "retailNAND")
+			slot1Change(NDS_SLOT1_RETAIL_NAND);
 }
 

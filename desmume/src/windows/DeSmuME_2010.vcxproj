@@ -432,6 +432,7 @@
     <ClCompile Include="..\addons\slot1_none.cpp" />
     <ClCompile Include="..\addons\slot1_r4.cpp" />
     <ClCompile Include="..\addons\slot1_retail.cpp" />
+    <ClCompile Include="..\addons\slot1_retail_nand.cpp" />
     <ClCompile Include="..\addons\slot2_mpcf.cpp" />
     <ClCompile Include="..\addons\slot2_paddle.cpp" />
     <ClCompile Include="..\aggdraw.cpp" />
@@ -542,6 +543,7 @@
     <ClCompile Include="recentroms.cpp" />
     <ClCompile Include="replay.cpp" />
     <ClCompile Include="snddx.cpp" />
+    <ClCompile Include="slot1_config.cpp" />
     <ClCompile Include="throttle.cpp" />
     <ClCompile Include="winutil.cpp" />
     <ClCompile Include="filter\2xsai.cpp" />
@@ -680,6 +682,7 @@
     <ClInclude Include="replay.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="snddx.h" />
+    <ClInclude Include="slot1_config.h" />
     <ClInclude Include="throttle.h" />
     <ClInclude Include="winpcap.h" />
     <ClInclude Include="winutil.h" />

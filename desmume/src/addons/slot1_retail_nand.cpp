@@ -1,4 +1,4 @@
-/*  Copyright (C) 2010-2011 DeSmuME team
+/*  Copyright (C) 2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -22,7 +22,7 @@
 #include "../MMU.h"
 #include "../NDSSystem.h"
 
-static void info(char *info) { strcpy(info, "Slot1 Retail card emulation"); }
+static void info(char *info) { strcpy(info, "Slot1 Retail NAND card emulation"); }
 static void config(void) {}
 
 static BOOL init() { return (TRUE); }
@@ -50,6 +50,25 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 		case 0xB8:	// Chip ID
 			card.address = 0;
 			card.transfer_count = 1;
+			break;
+
+		// Nand Init
+		case 0x94:
+			card.address = 0;
+			card.transfer_count = 0x80;
+			break;
+
+		// Nand Error?
+		case 0xD6:
+			card.address = 0;
+			card.transfer_count = 1;
+			break;
+		
+		// Nand Write? ---- PROGRAM for INTERNAL DATA MOVE/RANDOM DATA INPUT
+		//case 0x8B:
+		case 0x85:
+			card.address = 0;
+			card.transfer_count = 0x80;
 			break;
 
 		default:
@@ -136,6 +155,17 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 				return T1ReadLong(MMU.CART_ROM, address);
 			}
 			break;
+
+		// Nand Init?
+		case 0x94:
+			return 0; //Unsure what to return here so return 0 for now
+
+		// Nand Status?
+		case 0xD6:
+			//0x80 == busy
+			// Made in Ore/WariWare D.I.Y. need set value to 0x80
+			return 0x80; //0x20 == ready
+
 		default:
 			return 0;
 	} //switch(card.command[0])
@@ -153,8 +183,8 @@ static u32 read32(u8 PROCNUM, u32 adr)
 }
 
 
-SLOT1INTERFACE slot1Retail = {
-	"Retail",
+SLOT1INTERFACE slot1Retail_NAND = {
+	"Retail with NAND Flash",
 	init,
 	reset,
 	close,
@@ -168,118 +198,5 @@ SLOT1INTERFACE slot1Retail = {
 	info
 };
 
-
-
-	//		///writetoGCControl:
-	//// --- Ninja SD commands -------------------------------------
-
-	//	// NJSD init/reset
-	//	case 0x20:
-	//		{
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//		}
-	//		break;
-
-	//	// NJSD_sendCLK()
-	//	case 0xE0:
-	//		{
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//			NDS_makeInt(PROCNUM, 20);
-	//		}
-	//		break;
-
-	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
-	//	case 0xF0:
-	//	case 0xF1:
-	//		switch (card.command[2])
-	//		{
-	//		// GO_IDLE_STATE
-	//		case 0x40:
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		case 0x42:  // ALL_SEND_CID
-	//		case 0x43:  // SEND_RELATIVE_ADDR
-	//		case 0x47:  // SELECT_CARD
-	//		case 0x49:  // SEND_CSD
-	//		case 0x4D:
-	//		case 0x77:  // APP_CMD
-	//		case 0x69:  // SD_APP_OP_COND
-	//			card.address = 0;
-	//			card.transfer_count = 6;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		// SET_BLOCKLEN
-	//		case 0x50:
-	//			card.address = 0;
-	//			card.transfer_count = 6;
-	//			card.blocklen = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		// READ_SINGLE_BLOCK
-	//		case 0x51:
-	//			card.address = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-	//			card.transfer_count = (card.blocklen + 3) >> 2;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-	//		}
-	//		break;
-
-	//	// --- Ninja SD commands end ---------------------------------
-
-
-
-	//		//GCDATAIN:
-	//	// --- Ninja SD commands -------------------------------------
-
-	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
-	//	case 0xF0:
-	//	case 0xF1:
-	//		switch (card.command[2])
-	//		{
-	//		// ALL_SEND_CID
-	//		case 0x42:
-	//			if (card.transfer_count == 2) val = 0x44534A4E;
-	//			else val = 0x00000000;
-
-	//		// SEND_RELATIVE_ADDR
-	//		case 0x43:
-	//		case 0x47:
-	//		case 0x49:
-	//		case 0x50:
-	//			val = 0x00000000;
-	//			break;
-
-	//		case 0x4D:
-	//			if (card.transfer_count == 2) val = 0x09000000;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// APP_CMD
-	//		case 0x77:
-	//			if (card.transfer_count == 2) val = 0x00000037;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// SD_APP_OP_COND
-	//		case 0x69:
-	//			if (card.transfer_count == 2) val = 0x00008000;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// READ_SINGLE_BLOCK
-	//		case 0x51:
-	//			val = 0x00000000;
-	//			break;
-	//		}
-	//		break;
-
-	//	// --- Ninja SD commands end ---------------------------------
 
 

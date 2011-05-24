@@ -1,4 +1,4 @@
-/*  Copyright (C) 2010 DeSmuME team
+/*  Copyright (C) 2010-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -58,21 +58,24 @@ struct SLOT1INTERFACE
 	void (*info)(char *info);
 }; 
 
-extern SLOT1INTERFACE slot1_device;						// current slot1 device
-
 enum NDS_SLOT1_TYPE
 {
 	NDS_SLOT1_NONE,
 	NDS_SLOT1_RETAIL,
 	NDS_SLOT1_R4,
+	NDS_SLOT1_RETAIL_NAND,		// used in Made in Ore/WarioWare D.I.Y.
 	NDS_SLOT1_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };
+
+extern SLOT1INTERFACE slot1_device;						// current slot1 device
+extern SLOT1INTERFACE slot1List[NDS_SLOT1_COUNT];
+extern u8 slot1_device_type;
 
 BOOL slot1Init();
 void slot1Close();
 void slot1Reset();
 BOOL slot1Change(NDS_SLOT1_TYPE type);				// change current adddon
 void slot1SetFatDir(const std::string& dir);
+std::string slot1GetFatDir();
 EMUFILE* slot1GetFatImage();
-
-#endif //__ADDONS_H__
+#endif //__SLOT1_H__

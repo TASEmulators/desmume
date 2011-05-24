@@ -802,6 +802,8 @@
 #define IDD_CHEAT_ADD_XX_CODE           10005
 #define IDD_GBASLOT_GUITARGRIP          10009
 #define IDD_GBASLOT_PIANO               10010
+#define IDD_SLOT1_NONE                  10011
+#define IDD_SLOT1_R4                    10012
 #define IDM_FILE_STOPAVI                40000
 #define IDM_SCREENSEP_NONE              40000
 #define IDM_FILE_STOPWAV                40001
@@ -876,6 +878,7 @@
 #define ID_MAGNIFICATIONFILTER_HQ4X40091 40091
 #define ID_FILTRI_HQ4X                  40092
 #define ID_40093                        40093
+#define IDM_SLOT1                       40097
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -976,8 +979,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
-#define _APS_NEXT_COMMAND_VALUE         40094
-#define _APS_NEXT_CONTROL_VALUE         1050
+#define _APS_NEXT_COMMAND_VALUE         40102
+#define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -106,14 +106,5 @@ void CloseConsole() {
 
 void printlog(const char *fmt, ...)
 {
-	va_list list;
-	char msg[512];
-	DWORD tmp;
-
-	memset(msg,0,512);
-
-	va_start(list,fmt);
-		_vsnprintf(msg,511,fmt,list);
-	va_end(list);
-	WriteConsole(hConsole,msg, (DWORD)strlen(msg), &tmp, 0);
+	printf(fmt);
 }

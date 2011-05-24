@@ -923,22 +923,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\softrender.h"
-				>
-			</File>
-			<File
-				RelativePath="..\softrender_config.h"
-				>
-			</File>
-			<File
-				RelativePath="..\softrender_desmumefont.h"
-				>
-			</File>
-			<File
-				RelativePath="..\softrender_v3sysfont.h"
-				>
-			</File>
-			<File
 				RelativePath="..\SPU.cpp"
 				>
 			</File>
@@ -1003,6 +987,10 @@
 				</File>
 				<File
 					RelativePath="..\addons\slot1_retail.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot1_retail_nand.cpp"
 					>
 				</File>
 				<File
@@ -1552,6 +1540,14 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\slot1_config.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\slot1_config.h"
 				>
 			</File>
 			<File
