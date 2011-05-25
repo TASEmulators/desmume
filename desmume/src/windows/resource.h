@@ -100,6 +100,7 @@
 #define IDC_LANG_CHINESE_SIMPLIFIED     213
 #define IDC_LANGITALIAN                 214
 #define IDC_LANGJAPANESE                215
+#define IDC_LANGSPANISH                 216
 #define IDM_MGPU                        219
 #define IDM_SGPU                        220
 #define IDC_FRAMESKIPAUTO               221
