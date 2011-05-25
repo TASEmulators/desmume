@@ -2236,6 +2236,11 @@ void SetLanguage(int langid)
 		setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 		break;
+	case LANGUAGE_SPANISH:
+		currLanguageMenuItem = IDC_LANGSPANISH;
+		setLanguage(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
+		break;
 
 	default:
 		break;
@@ -3964,7 +3969,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Updated Checked menu items
 
 			//language choices
-			for(UINT i = IDC_LANGENGLISH; i < IDC_LANGJAPANESE+1; i++)
+			for(UINT i = IDC_LANGENGLISH; i < IDC_LANGSPANISH+1; i++)
 				MainWindow->checkMenu(i, i == currLanguageMenuItem);
 
 			//emulation menu
@@ -5349,6 +5354,9 @@ DOKEYDOWN:
 			return 0;
 		case IDC_LANGJAPANESE:
 			ChangeLanguage(LANGUAGE_JAPANESE);
+			return 0;
+		case IDC_LANGSPANISH:
+			ChangeLanguage(LANGUAGE_SPANISH);
 			return 0;
 
 		case IDC_FRAMELIMIT:
