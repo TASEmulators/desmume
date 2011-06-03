@@ -37,6 +37,8 @@
 #include "aggdraw.h"
 #endif
 
+#include "DeSmuME.xpm"
+
 #ifndef WIN32
 #define lstrlen(a) strlen((a))
 #endif
@@ -710,6 +712,7 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 
 	LoadSettings();
 
+	SetIcon(wxIcon(wxT("DeSmuME.xpm")));
 	loadmenuBar(menuBar);
 
 	ChangeRotation(nds_screen_rotation_angle, false);
