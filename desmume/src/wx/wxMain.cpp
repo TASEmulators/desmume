@@ -712,7 +712,8 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 
 	LoadSettings();
 
-	SetIcon(wxIcon(wxT("DeSmuME.xpm")));
+	SetIcon(wxICON(DeSmuME));
+
 	loadmenuBar(menuBar);
 
 	ChangeRotation(nds_screen_rotation_angle, false);
