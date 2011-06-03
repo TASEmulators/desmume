@@ -1274,7 +1274,7 @@ bool CHEATSEXPORT::getCodes()
 
 	gametitle = data + encOffset;
 	u32 *cmd = (u32 *)(((intptr_t)gametitle + strlen((char*)gametitle) + 4) & 0xFFFFFFFC);
-	numCheats = (*cmd) & (~0xF0000000);
+	numCheats = cmd[0] & 0x0FFFFFFF;
 	cmd += 9;
 	cheats = new CHEATS_LIST[numCheats];
 	memset(cheats, 0, sizeof(CHEATS_LIST) * numCheats);
@@ -1290,7 +1290,6 @@ bool CHEATSEXPORT::getCodes()
 			folderName = (u8*)((intptr_t)cmd + 4);
 			folderNote = (u8*)((intptr_t)folderName + strlen((char*)folderName) + 1);
 			pos++;
-			numCheats--;
 			cmd = (u32 *)(((intptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & 0xFFFFFFFC);
 		}
 
@@ -1329,8 +1328,10 @@ bool CHEATSEXPORT::getCodes()
 					//printf("%08X\n", cheats[pos_cht].code[j][1]);
 					
 				}
+				pos_cht++;
 			}
-			pos++; pos_cht++;
+
+			pos++;
 			cmd = (u32 *)((intptr_t)cmd + ((*cmd + 1)*4));
 		}
 		
@@ -1338,6 +1339,7 @@ bool CHEATSEXPORT::getCodes()
 
 	delete [] data;
 
+	numCheats = pos_cht;
 	//for (int i = 0; i < numCheats; i++)
 	//	printf("%i: %s\n", i, cheats[i].description);
 	
