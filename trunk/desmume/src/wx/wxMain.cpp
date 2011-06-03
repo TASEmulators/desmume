@@ -58,6 +58,8 @@
 #include <wx/config.h>
 #include <wx/docview.h>
 
+/*************** VARS ******************/
+
 #define SCREEN_SIZE (256*192*3)
 #define GAP_DEFAULT 64
 #define GAP_MAX	90
@@ -100,6 +102,8 @@ GPU3DInterface *core3DList[] = {
 
 volatile bool execute = false;
 
+/*************** wx OnInit ******************/
+
 bool Desmume::OnInit()
 {
 	if ( !wxApp::OnInit() )
@@ -131,6 +135,7 @@ bool Desmume::OnInit()
 	return true;
 }
 
+/*************** DesmumeFrame class functions for functionality/events ******************/
 
 void DesmumeFrame::NDSInitialize() {
 	NDS_FillDefaultFirmwareConfigData( &fw_config);
@@ -155,20 +160,6 @@ void DesmumeFrame::NDSInitialize() {
 	SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 	NDS_3D_ChangeCore(0);
 	NDS_CreateDummyFirmware( &fw_config);
-}
-
-DesmumeFrame::DesmumeFrame(const wxString& title)
-: wxFrame(NULL, wxID_ANY, title)
-{
-	history = new wxFileHistory;
-	wxMenuBar *menuBar = new wxMenuBar();
-	
-	LoadSettings();
-
-	loadmenuBar(menuBar);
-
-	ChangeRotation(nds_screen_rotation_angle, false);
-	SetMenuBar(menuBar);
 }
 
 void DesmumeFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -614,86 +605,6 @@ void DesmumeFrame::onResize(wxSizeEvent &event) {
 	event.Skip();
 }
 
-BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
-
-	EVT_PAINT(DesmumeFrame::onPaint)
-	EVT_IDLE(DesmumeFrame::onIdle)
-	EVT_SIZE(DesmumeFrame::onResize)
-	EVT_LEFT_DOWN(DesmumeFrame::OnTouchEvent)
-	EVT_LEFT_UP(DesmumeFrame::OnTouchEvent)
-	EVT_LEFT_DCLICK(DesmumeFrame::OnTouchEvent)
-	EVT_MOTION(DesmumeFrame::OnTouchEvent)
-	EVT_CLOSE(DesmumeFrame::OnClose)
-
-	EVT_MENU(wxID_EXIT, DesmumeFrame::OnQuit)
-	EVT_MENU(wxID_OPEN, DesmumeFrame::LoadRom)
-	EVT_MENU(wxID_ABOUT,DesmumeFrame::OnAbout)
-
-	EVT_MENU(wPause,DesmumeFrame::pause)
-	EVT_MENU(wReset,DesmumeFrame::reset)
-
-	EVT_MENU_RANGE(wAUDIODRIVER_SDL,wAUDIODRIVER_DISABLE,DesmumeFrame::Modify_AudioDriver)
-	EVT_MENU_RANGE(wSPUMODE_DUALASYNC,wSPUMODE_SYNCZ,DesmumeFrame::Modify_SPUMode)
-#ifdef HAVE_SPUMODE_SYNCP
-	EVT_MENU(wSPUMODE_SYNCP,DesmumeFrame::Modify_SPUMode)
-#endif
-
-	EVT_MENU(wFrameCounter,DesmumeFrame::frameCounter)
-	EVT_MENU(wFPS,DesmumeFrame::FPS)
-	EVT_MENU(wDisplayInput,DesmumeFrame::displayInput)
-	EVT_MENU(wDisplayGraphicalInput,DesmumeFrame::displayGraphicalInput)
-	EVT_MENU(wDisplayLagCounter,DesmumeFrame::displayLagCounter)
-	EVT_MENU(wDisplayMicrophone,DesmumeFrame::displayMicrophone)
-#ifdef HAVE_LIBAGG
-	EVT_MENU(wSetHUDFont,DesmumeFrame::setHUDFont)
-#endif
-
-	EVT_MENU(wMainGPU,DesmumeFrame::mainGPU)
-	EVT_MENU(wMainBG0,DesmumeFrame::mainBG0)
-	EVT_MENU(wMainBG1,DesmumeFrame::mainBG1)
-	EVT_MENU(wMainBG2,DesmumeFrame::mainBG2)
-	EVT_MENU(wMainBG3,DesmumeFrame::mainBG3)
-	EVT_MENU(wSubGPU,DesmumeFrame::subGPU)
-	EVT_MENU(wSubBG0,DesmumeFrame::subBG0)
-	EVT_MENU(wSubBG1,DesmumeFrame::subBG1)
-	EVT_MENU(wSubBG2,DesmumeFrame::subBG2)
-	EVT_MENU(wSubBG3,DesmumeFrame::subBG3)
-
-	EVT_MENU(wWebsite,DesmumeFrame::website)
-	EVT_MENU(wForums,DesmumeFrame::forums)
-	EVT_MENU(wSubmitABugReport,DesmumeFrame::submitABugReport)
-
-	EVT_MENU(wSaveStateAs,DesmumeFrame::saveStateAs)
-	EVT_MENU(wLoadStateFrom,DesmumeFrame::loadStateFrom)
-
-	EVT_MENU_RANGE(wSaveState01,wSaveState01+9,DesmumeFrame::Menu_SaveStates)
-	EVT_MENU_RANGE(wLoadState01,wLoadState01+9,DesmumeFrame::Menu_LoadStates)
-
-	EVT_MENU(wCloseRom,DesmumeFrame::closeRom)
-	EVT_MENU(wImportBackupMemory,DesmumeFrame::importBackupMemory)
-	EVT_MENU(wExportBackupMemory,DesmumeFrame::exportBackupMemory)
-
-	EVT_MENU_RANGE(wRot0,wRot270,DesmumeFrame::OnRotation)
-
-	EVT_MENU(wSaveScreenshotAs,DesmumeFrame::saveScreenshotAs)
-	EVT_MENU(wQuickScreenshot,DesmumeFrame::quickScreenshot)
-
-	EVT_MENU(wPlayMovie,DesmumeFrame::playMovie)
-	EVT_MENU(wStopMovie,DesmumeFrame::stopMovie)
-	EVT_MENU(wRecordMovie,DesmumeFrame::recordMovie)
-
-	EVT_MENU(w3dView,DesmumeFrame::_3dView)
-
-	EVT_MENU(wLuaWindow,DesmumeFrame::OnOpenLuaWindow)
-
-	EVT_MENU(wConfigureControls,DesmumeFrame::OnOpenControllerConfiguration)
-
-	EVT_MENU_RANGE(wxID_FILE1,wxID_FILE9,DesmumeFrame::OnOpenRecent)
-
-END_EVENT_TABLE()
-
-IMPLEMENT_APP(Desmume)
-
 #ifdef WIN32
 /*
 * The thread handling functions needed by the GDB stub code.
@@ -742,6 +653,64 @@ void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
 		execute = true;
 	else
 		history->RemoveFileFromHistory(id);
+}
+
+void DesmumeFrame::Modify_AudioDriver(wxCommandEvent &event)
+{
+	const int selection = event.GetId() - wAUDIODRIVER_SDL;
+
+	switch (selection) {
+	case AUDIODRIVER_DISABLE:
+		SPU_ChangeSoundCore(0, 0);
+		osd->addLine("Audio disabled\n");
+		break;
+	default:
+	case AUDIODRIVER_SDL:
+		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+		osd->addLine("Audio enabled (SDL driver)\n");
+		break;
+	}
+}
+
+void DesmumeFrame::Modify_SPUMode(wxCommandEvent &event)
+{
+	const int selection = event.GetId() - wSPUMODE_DUALASYNC;
+	uint syncMode, syncMethod;
+
+	switch (selection) {
+	case SPUMODE_SYNCN:
+	case SPUMODE_SYNCZ:
+#ifdef HAVE_SPUMODE_SYNCP
+	case SPUMODE_SYNCP:
+#endif
+		syncMode = 1;
+		syncMethod = selection - 1;
+		break;
+
+	// Default to DualASync mode on invalid selection
+	default:
+	case SPUMODE_DUALASYNC:
+		syncMode = 0;
+		syncMethod = 0;
+		break;
+	}
+	SPU_SetSynchMode(syncMode, syncMethod);
+}
+
+/*************** DesmumeFrame class "loadmenu" functions and the frame ******************/
+
+DesmumeFrame::DesmumeFrame(const wxString& title)
+: wxFrame(NULL, wxID_ANY, title)
+{
+	history = new wxFileHistory;
+	wxMenuBar *menuBar = new wxMenuBar();
+
+	LoadSettings();
+
+	loadmenuBar(menuBar);
+
+	ChangeRotation(nds_screen_rotation_angle, false);
+	SetMenuBar(menuBar);
 }
 
 void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
@@ -893,44 +862,84 @@ void DesmumeFrame::loadmenuBar(wxMenuBar *menuBar)
 	
 }
 
-void DesmumeFrame::Modify_AudioDriver(wxCommandEvent &event)
-{
-	const int selection = event.GetId() - wAUDIODRIVER_SDL;
+/*************** wx Event Table ******************/
 
-	switch (selection) {
-	case AUDIODRIVER_DISABLE:
-		SPU_ChangeSoundCore(0, 0);
-		osd->addLine("Audio disabled\n");
-		break;
-	default:
-	case AUDIODRIVER_SDL:
-		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-		osd->addLine("Audio enabled (SDL driver)\n");
-		break;
-	}
-}
+BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 
-void DesmumeFrame::Modify_SPUMode(wxCommandEvent &event)
-{
-	const int selection = event.GetId() - wSPUMODE_DUALASYNC;
-	uint syncMode, syncMethod;
+	EVT_PAINT(DesmumeFrame::onPaint)
+	EVT_IDLE(DesmumeFrame::onIdle)
+	EVT_SIZE(DesmumeFrame::onResize)
+	EVT_LEFT_DOWN(DesmumeFrame::OnTouchEvent)
+	EVT_LEFT_UP(DesmumeFrame::OnTouchEvent)
+	EVT_LEFT_DCLICK(DesmumeFrame::OnTouchEvent)
+	EVT_MOTION(DesmumeFrame::OnTouchEvent)
+	EVT_CLOSE(DesmumeFrame::OnClose)
 
-	switch (selection) {
-	case SPUMODE_SYNCN:
-	case SPUMODE_SYNCZ:
+	EVT_MENU(wxID_EXIT, DesmumeFrame::OnQuit)
+	EVT_MENU(wxID_OPEN, DesmumeFrame::LoadRom)
+	EVT_MENU(wxID_ABOUT,DesmumeFrame::OnAbout)
+
+	EVT_MENU(wPause,DesmumeFrame::pause)
+	EVT_MENU(wReset,DesmumeFrame::reset)
+
+	EVT_MENU_RANGE(wAUDIODRIVER_SDL,wAUDIODRIVER_DISABLE,DesmumeFrame::Modify_AudioDriver)
+	EVT_MENU_RANGE(wSPUMODE_DUALASYNC,wSPUMODE_SYNCZ,DesmumeFrame::Modify_SPUMode)
 #ifdef HAVE_SPUMODE_SYNCP
-	case SPUMODE_SYNCP:
+	EVT_MENU(wSPUMODE_SYNCP,DesmumeFrame::Modify_SPUMode)
 #endif
-		syncMode = 1;
-		syncMethod = selection - 1;
-		break;
 
-	// Default to DualASync mode on invalid selection
-	default:
-	case SPUMODE_DUALASYNC:
-		syncMode = 0;
-		syncMethod = 0;
-		break;
-	}
-	SPU_SetSynchMode(syncMode, syncMethod);
-}
+	EVT_MENU(wFrameCounter,DesmumeFrame::frameCounter)
+	EVT_MENU(wFPS,DesmumeFrame::FPS)
+	EVT_MENU(wDisplayInput,DesmumeFrame::displayInput)
+	EVT_MENU(wDisplayGraphicalInput,DesmumeFrame::displayGraphicalInput)
+	EVT_MENU(wDisplayLagCounter,DesmumeFrame::displayLagCounter)
+	EVT_MENU(wDisplayMicrophone,DesmumeFrame::displayMicrophone)
+#ifdef HAVE_LIBAGG
+	EVT_MENU(wSetHUDFont,DesmumeFrame::setHUDFont)
+#endif
+
+	EVT_MENU(wMainGPU,DesmumeFrame::mainGPU)
+	EVT_MENU(wMainBG0,DesmumeFrame::mainBG0)
+	EVT_MENU(wMainBG1,DesmumeFrame::mainBG1)
+	EVT_MENU(wMainBG2,DesmumeFrame::mainBG2)
+	EVT_MENU(wMainBG3,DesmumeFrame::mainBG3)
+	EVT_MENU(wSubGPU,DesmumeFrame::subGPU)
+	EVT_MENU(wSubBG0,DesmumeFrame::subBG0)
+	EVT_MENU(wSubBG1,DesmumeFrame::subBG1)
+	EVT_MENU(wSubBG2,DesmumeFrame::subBG2)
+	EVT_MENU(wSubBG3,DesmumeFrame::subBG3)
+
+	EVT_MENU(wWebsite,DesmumeFrame::website)
+	EVT_MENU(wForums,DesmumeFrame::forums)
+	EVT_MENU(wSubmitABugReport,DesmumeFrame::submitABugReport)
+
+	EVT_MENU(wSaveStateAs,DesmumeFrame::saveStateAs)
+	EVT_MENU(wLoadStateFrom,DesmumeFrame::loadStateFrom)
+
+	EVT_MENU_RANGE(wSaveState01,wSaveState01+9,DesmumeFrame::Menu_SaveStates)
+	EVT_MENU_RANGE(wLoadState01,wLoadState01+9,DesmumeFrame::Menu_LoadStates)
+
+	EVT_MENU(wCloseRom,DesmumeFrame::closeRom)
+	EVT_MENU(wImportBackupMemory,DesmumeFrame::importBackupMemory)
+	EVT_MENU(wExportBackupMemory,DesmumeFrame::exportBackupMemory)
+
+	EVT_MENU_RANGE(wRot0,wRot270,DesmumeFrame::OnRotation)
+
+	EVT_MENU(wSaveScreenshotAs,DesmumeFrame::saveScreenshotAs)
+	EVT_MENU(wQuickScreenshot,DesmumeFrame::quickScreenshot)
+
+	EVT_MENU(wPlayMovie,DesmumeFrame::playMovie)
+	EVT_MENU(wStopMovie,DesmumeFrame::stopMovie)
+	EVT_MENU(wRecordMovie,DesmumeFrame::recordMovie)
+
+	EVT_MENU(w3dView,DesmumeFrame::_3dView)
+
+	EVT_MENU(wLuaWindow,DesmumeFrame::OnOpenLuaWindow)
+
+	EVT_MENU(wConfigureControls,DesmumeFrame::OnOpenControllerConfiguration)
+
+	EVT_MENU_RANGE(wxID_FILE1,wxID_FILE9,DesmumeFrame::OnOpenRecent)
+
+END_EVENT_TABLE()
+
+IMPLEMENT_APP(Desmume)
