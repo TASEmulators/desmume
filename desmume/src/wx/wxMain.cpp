@@ -716,8 +716,9 @@ DesmumeFrame::DesmumeFrame(const wxString& title)
 
 	loadmenuBar(menuBar);
 
-	ChangeRotation(nds_screen_rotation_angle, false);
 	SetMenuBar(menuBar);
+
+	ChangeRotation(nds_screen_rotation_angle, false);
 }
 
 void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
