@@ -249,6 +249,9 @@ void DesmumeFrame::applyInput()
 
 void DesmumeFrame::LoadRom(wxCommandEvent& event)
 {
+	execute = false;
+	SPU_Pause(1);
+
 	wxFileDialog dialog(this,_T("Load Rom"),wxGetHomeDir(),_T(""),_T("*.nds"),wxFD_OPEN, wxDefaultPosition, wxDefaultSize);
 	if(dialog.ShowModal() == wxID_OK) {
 		history->AddFileToHistory(dialog.GetPath());
@@ -651,6 +654,9 @@ void DesmumeFrame::OnClose(wxCloseEvent &event) {
 void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
 	int ret;
 	size_t id = event.GetId()-wxID_FILE1;
+
+	execute = false;
+	SPU_Pause(1);
 
 	ret = NDS_LoadROM(history->GetHistoryFile(id).mb_str(), history->GetHistoryFile(id).mb_str());
 	if (ret > 0) {
