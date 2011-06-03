@@ -748,7 +748,9 @@ void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wxID_EXIT, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
-	//history->UseMenu(recentMenu);
+	history->UseMenu(recentMenu);
+	history->AddFilesToMenu();
+
 }
 
 void DesmumeFrame::loademulationMenu(wxMenu *emulationMenu)
