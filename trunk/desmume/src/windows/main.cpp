@@ -2569,8 +2569,6 @@ int _main()
 
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 
-	WIN_InstallCFlash();
-
 	ColorCtrl_Register();
 	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
 	{
@@ -2759,7 +2757,8 @@ int _main()
 	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
 
 	cmdline.process_addonCommands();
-
+	WIN_InstallCFlash();
+	
 	switch (slot1_device_type)
 	{
 		case NDS_SLOT1_NONE:
