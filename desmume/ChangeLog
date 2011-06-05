@@ -37,6 +37,11 @@ Cli:
 Gtk:
   enh: add SPU mode selection (Tobias Jakobi)
 
+Wx:
+  enh: add SPU mode selection (Tobias Jakobi)
+  bug: some small fixes here and there (Jan Bücken)
+  enh: lot of code cleanup (Jan Bücken)
+
 0.9.6 -> 0.9.7 (r3493-r3812)
 
 General/Core:
