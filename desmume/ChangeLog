@@ -38,7 +38,6 @@ Gtk:
   enh: add SPU mode selection (Tobias Jakobi)
 
 Wx:
-  enh: add SPU mode selection (Tobias Jakobi)
   bug: some small fixes here and there (Jan Bücken)
   enh: lot of code cleanup (Jan Bücken)
 
