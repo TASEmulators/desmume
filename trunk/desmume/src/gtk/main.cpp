@@ -1022,6 +1022,9 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
     gchar *uri, *romname;
     int ret;
 
+    if (desmume_running())
+        Pause();
+
     uri = gtk_recent_chooser_get_current_uri(chooser);
     romname = g_filename_from_uri(uri, NULL, NULL);
     ret = Open(romname);
