@@ -1048,9 +1048,7 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 static void Reset()
 {
     NDS_Reset();
-    desmume_resume();
-
-    UpdateStatusBar("Running ...");
+    Launch();
 }
 
 
