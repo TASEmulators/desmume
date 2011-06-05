@@ -14,6 +14,7 @@ enum
 {
 	wPause = 1,
 	wReset,
+	wClearHistory,
 	wFrameCounter,
 	wFPS,
 	wDisplayInput,
@@ -160,6 +161,7 @@ public:
 	bool SaveSettings();
 	void OnClose(wxCloseEvent &event);
 	void OnOpenRecent(wxCommandEvent &event);
+	void ClearHistory(wxCommandEvent &event);
 	void Modify_AudioDriver(wxCommandEvent& event);
 	void Modify_SPUMode(wxCommandEvent& event);
 
