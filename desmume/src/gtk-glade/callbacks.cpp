@@ -22,6 +22,8 @@
 
 #include "callbacks.h"
 
+#define SAVESTATE_SLOT(x) ((x) < 10 ? (x) : 0)
+
 /* globals */
 int Frameskip = 0;
 gboolean ScreenRightForce=FALSE;
@@ -62,7 +64,7 @@ static void update_savestate_menu(const char * cb_name, u8 num)
 
   snprintf( cb, 39, "%s%d", cb_name, num);
   w = glade_xml_get_widget(xml, cb);
-  set_menuitem_label( w, savestates[num-1].date );
+  set_menuitem_label( w, savestates[SAVESTATE_SLOT(num)].date );
 }
 
 static void update_savestates_menu()
@@ -71,7 +73,7 @@ static void update_savestates_menu()
 
   for( i = 1; i <= NB_STATES; i++ )
     {
-      if( savestates[i-1].exists == TRUE )
+      if( savestates[SAVESTATE_SLOT(i)].exists == TRUE )
         {
           update_savestate_menu("loadstate", i);
           update_savestate_menu("savestate", i);
@@ -87,7 +89,7 @@ static void update_savestates_menu()
 static void update_savestate(u8 num)
 {
   desmume_pause();
-  savestate_slot(num);
+  savestate_slot(SAVESTATE_SLOT(num));
   update_savestate_menu("savestate", num);
   update_savestate_menu("loadstate", num);
   desmume_resume();
@@ -256,7 +258,7 @@ void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) { Pri
 /* MENU SAVES ***** ***** ***** ***** */
 void on_loadstateXX_activate (GtkMenuItem *m, gpointer d) {
 	int slot = dyn_CAST(int,d);
-	loadstate_slot(slot);
+	loadstate_slot(SAVESTATE_SLOT(slot));
 }
 void on_savestateXX_activate (GtkMenuItem *m, gpointer d) {
 	int slot = dyn_CAST(int,d);
