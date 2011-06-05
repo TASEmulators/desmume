@@ -1154,7 +1154,6 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     gfloat vratio, hratio, nscreen_ratio;
     gint daW, daH, imgW, imgH, screenW, screenH, gapW, gapH;
     gint primaryOffsetX, primaryOffsetY, secondaryOffsetX, secondaryOffsetY;
-    gint secondaryPixbufOffsetX, secondaryPixbufOffsetY;
     const gboolean gap_vertical = ((nds_screen.orientation == ORIENT_VERTICAL) ^ (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 270));
   
 #if GTK_CHECK_VERSION(2,14,0)
@@ -1198,15 +1197,11 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         screenH = (int)(vratio*(float)imgH*nscreen_ratio);
         secondaryOffsetX = primaryOffsetX;
         secondaryOffsetY = primaryOffsetY + screenH + gapH;
-        secondaryPixbufOffsetX = 0;
-        secondaryPixbufOffsetY = screenH;
     } else {
         screenW = (int)(hratio*(float)imgW*nscreen_ratio);
         screenH = (int)(vratio*(float)imgH);
         secondaryOffsetX = primaryOffsetX + screenW + gapW;
         secondaryOffsetY = primaryOffsetY;
-        secondaryPixbufOffsetX = screenW;
-        secondaryPixbufOffsetY = 0;
     }
 
     if ((nds_screen.swap) ^
@@ -2062,7 +2057,6 @@ common_gtk_main( class configured_features *my_config)
     GtkWidget *pVBox;
     GtkWidget *pMenuBar;
     GtkWidget *pToolBar;
-    gint pStatusBar_Ctx;
 
 #ifdef GDB_STUB
     gdbstub_handle_t arm9_gdb_stub;
@@ -2272,7 +2266,6 @@ common_gtk_main( class configured_features *my_config)
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
-    pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
     UpdateStatusBar("Desmume");
     gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
 
