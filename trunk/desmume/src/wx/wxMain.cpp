@@ -666,6 +666,13 @@ void DesmumeFrame::OnOpenRecent(wxCommandEvent &event) {
 		history->RemoveFileFromHistory(id);
 }
 
+void DesmumeFrame::ClearHistory(wxCommandEvent &event) {
+	while (history->GetCount()) {
+		history->RemoveFileFromHistory(0);
+	}
+}
+
+
 void DesmumeFrame::Modify_AudioDriver(wxCommandEvent &event)
 {
 	const int selection = event.GetId() - wAUDIODRIVER_SDL;
@@ -755,6 +762,7 @@ void DesmumeFrame::loadfileMenu(wxMenu *fileMenu)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wxID_EXIT, _T("E&xit\tAlt-X"), _T("Quit this program"));
 
+	recentMenu->Append(wClearHistory, wxT("Clear recent list"));
 	history->UseMenu(recentMenu);
 	history->AddFilesToMenu();
 
@@ -897,6 +905,8 @@ BEGIN_EVENT_TABLE(DesmumeFrame, wxFrame)
 
 	EVT_MENU(wPause,DesmumeFrame::pause)
 	EVT_MENU(wReset,DesmumeFrame::reset)
+
+	EVT_MENU(wClearHistory,DesmumeFrame::ClearHistory)
 
 	EVT_MENU_RANGE(wAUDIODRIVER_SDL,wAUDIODRIVER_DISABLE,DesmumeFrame::Modify_AudioDriver)
 	EVT_MENU_RANGE(wSPUMODE_DUALASYNC,wSPUMODE_SYNCZ,DesmumeFrame::Modify_SPUMode)
