@@ -202,8 +202,7 @@ if test "x$HAVE_ALSA" = "xno"; then
    fi
 fi
 
-AM_CONDITIONAL([HAVE_LIBAGG], [test "${HAVE_LIBAGG}" = "yes"])
-
+AM_CONDITIONAL([HAVE_LIBAGG], [test "x$libagg" = "xyes" -a "${FOUND_LIBAGG}" = "yes"])
 if test "x$libagg" = "xyes" ; then
    if test "x$FOUND_LIBAGG" = "xyes" ; then
        AC_SUBST(LIBAGG_CFLAGS)
