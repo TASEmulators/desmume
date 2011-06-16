@@ -1495,13 +1495,14 @@ void WIFI_usTrigger()
 			Wifi_RXPacket& pkt = wifiMac.RXPacketQueue.front();
 			if (pkt.NotStarted)
 			{
+#ifdef EXPERIMENTAL_WIFI_COMM
 				WIFI_RXPutWord(*(u16*)&pkt.Data[0]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[2]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[4]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[6]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[8]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[10]);
-
+#endif
 				WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 				pkt.NotStarted = false;
 
@@ -1509,7 +1510,9 @@ void WIFI_usTrigger()
 				wifiMac.rfPins = 0x00C7;
 			}
 
-			WIFI_RXPutWord(*(u16*)&pkt.Data[pkt.CurOffset]);
+#ifdef EXPERIMENTAL_WIFI_COMM
+      WIFI_RXPutWord(*(u16*)&pkt.Data[pkt.CurOffset]);
+#endif
 			pkt.CurOffset += 2;
 			pkt.RemHWords--;
 
