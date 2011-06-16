@@ -292,6 +292,7 @@ static void mmu_savestate(EMUFILE* os)
 	MMU_new.dsi_tsc.save_state(os);
 }
 
+// TODO: integrate the new wifi state variables once everything is settled
 SFORMAT SF_WIFI[]={
 	{ "W000", 4, 1, &wifiMac.powerOn},
 	{ "W010", 4, 1, &wifiMac.powerOnPending},
@@ -306,17 +307,8 @@ SFORMAT SF_WIFI[]={
 	{ "W070", 2, 1, &wifiMac.wepMode},
 	{ "W080", 4, 1, &wifiMac.WEP_enable},
 
-	{ "W090", 2, 3, &wifiMac.TXSlot[0]},
 	{ "W100", 2, 1, &wifiMac.TXCnt},
-	{ "W110", 2, 1, &wifiMac.TXOpt},
 	{ "W120", 2, 1, &wifiMac.TXStat},
-	{ "W130", 2, 1, &wifiMac.BeaconAddr},
-	{ "W140", 4, 1, &wifiMac.BeaconEnable},
-	{ "W150", 1, 1, &wifiMac.txCurSlot},
-	{ "W160", 1, 3, &wifiMac.txSlotBusy[0]},
-	{ "W170", 4, 3, &wifiMac.txSlotAddr[0]},
-	{ "W180", 4, 3, &wifiMac.txSlotLen[0]},
-	{ "W190", 4, 3, &wifiMac.txSlotRemainingBytes[0]},
 
 	{ "W200", 2, 1, &wifiMac.RXCnt},
 	{ "W210", 2, 1, &wifiMac.RXCheckCounter},
@@ -371,18 +363,10 @@ SFORMAT SF_WIFI[]={
 	{ "W530", 2, 1, &wifiMac.CircBufWrEnd},
 	{ "W540", 2, 1, &wifiMac.CircBufWrSkip},
 
-	{ "W550", 4, 1, &wifiMac.curPacketSize[0]},
-	{ "W560", 4, 1, &wifiMac.curPacketPos[0]},
-	{ "W570", 4, 1, &wifiMac.curPacketSending[0]},
-
 	{ "W580", 2, 0x800, &wifiMac.IOPorts[0]},
 	{ "W590", 2, 1, &wifiMac.randomSeed},
 
 	{ "WX00", 8, 1, &SoftAP.usecCounter},
-	{ "WX10", 1, 4096, &SoftAP.curPacket[0]},
-	{ "WX20", 4, 1, &SoftAP.curPacketSize},
-	{ "WX30", 4, 1, &SoftAP.curPacketPos},
-	{ "WX40", 4, 1, &SoftAP.curPacketSending},
 
 	{ 0 }
 };
