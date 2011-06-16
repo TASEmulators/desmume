@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include "types.h"
 
+#include <queue>
+
 #ifdef EXPERIMENTAL_WIFI_COMM
 
 #define HAVE_REMOTE
@@ -78,17 +80,17 @@
 #define     REG_WIFI_CIRCBUFWR_SKIP     0x076
 
 // 078 - internal
-#define     REG_WIFI_TXLOCBEACON        0x080
+#define     REG_WIFI_TXBUF_BEACON       0x080
 #define     REG_WIFI_LISTENCOUNT        0x088
 #define     REG_WIFI_BEACONPERIOD       0x08C
 #define     REG_WIFI_LISTENINT          0x08E
-#define 	REG_WIFI_TXLOCEXTRA			0x090
-// 094 - ?
-// 098 - ?
+#define 	REG_WIFI_TXBUF_CMD			0x090
+#define		REG_WIFI_TXBUF_REPLY1		0x094
+#define		REG_WIFI_TXBUF_REPLY2		0x098
 // 09C - internal
-#define     REG_WIFI_TXLOC1             0x0A0
-#define     REG_WIFI_TXLOC2             0x0A4
-#define     REG_WIFI_TXLOC3             0x0A8
+#define     REG_WIFI_TXBUF_LOC1         0x0A0
+#define     REG_WIFI_TXBUF_LOC2         0x0A4
+#define     REG_WIFI_TXBUF_LOC3         0x0A8
 #define     REG_WIFI_TXREQ_RESET        0x0AC
 #define     REG_WIFI_TXREQ_SET          0x0AE
 #define		REG_WIFI_TXREQ_READ			0x0B0
@@ -165,6 +167,7 @@
 #define		REG_WIFI_RFSTATUS			0x214
 #define		REG_WIFI_IF_SET				0x21C
 #define 	REG_WIFI_TXSEQNO			0x210
+#define		REG_WIFI_RXTXADDR			0x268
 #define		REG_WIFI_POWERACK			0x2D0
 
 
@@ -408,14 +411,34 @@ typedef union
 #define WIFI_IRQ_TIMEBEACON             14
 #define WIFI_IRQ_TIMEPREBEACON          15
 
-typedef struct
+struct Wifi_TXSlot
 {
-	bool enabled;
-	u16 address;
+	u16 RegVal;
 
-	bool sending;
-	u16 remtime;
-} Wifi_TXLoc;
+	u16 CurAddr;
+	int RemPreamble; // preamble time in µs
+	int RemHWords;
+	u32 TimeMask; // 3 = 2mbps, 7 = 1mbps
+	bool NotStarted;
+};
+
+#define WIFI_TXSLOT_LOC1		0
+#define WIFI_TXSLOT_MPCMD		1
+#define WIFI_TXSLOT_LOC2		2
+#define WIFI_TXSLOT_LOC3		3
+#define WIFI_TXSLOT_BEACON		4
+#define WIFI_TXSLOT_MPREPLY		5
+#define WIFI_TXSLOT_NUM			6
+
+struct Wifi_RXPacket
+{
+	u8* Data;
+	int CurOffset;
+	int RemHWords;
+	bool NotStarted;
+};
+
+typedef std::queue<Wifi_RXPacket> Wifi_RXPacketQueue;
 
 enum EAPStatus
 {
@@ -449,28 +472,18 @@ typedef struct
 	/* sending */
 	u16 TXStatCnt;
 	u16 TXPower;
-	u16 TXSlot[3];
 	u16 TXCnt;
-	u16 TXOpt;
 	u16 TXStat;
-	u16 BeaconAddr;
-	BOOL BeaconEnable;
-	u16 TXSlotExtra;
 	u16 TXSeqNo;
-	u8 txCurSlot;
-	u8 txSlotBusy[3];
-	u32 txSlotAddr[3];
-	u32 txSlotLen[3];
-	u32 txSlotRemainingBytes[3];
-	bool ExtraSlotBusy;
-	u16 ExtraSlotAddr;
-	u16 ExtraSlotLen;
-	u16 ExtraSlotRemBytes;
+	Wifi_TXSlot TXSlots[WIFI_TXSLOT_NUM];
+	int TXCurSlot;
+	u16 TXBusy;
 
 	/* receiving */
 	u16 RXCnt;
 	u16 RXCheckCounter;
 	u8 RXNum;
+	Wifi_RXPacketQueue RXPacketQueue;
 
 	u16 RXTXAddr;
 
@@ -529,11 +542,6 @@ typedef struct
 	u16         CircBufWrEnd;
 	u16         CircBufWrSkip;
 
-	/* tx packets */
-	s32 curPacketSize[3];
-	s32 curPacketPos[3];
-	BOOL curPacketSending[3];
-
 	/* I/O ports */
 	u16			IOPorts[0x800];
 
@@ -552,11 +560,6 @@ typedef struct
 typedef struct
 {
 	u64 usecCounter;
-
-	u8 curPacket[4096];
-	s32 curPacketSize;
-	s32 curPacketPos;
-	BOOL curPacketSending;
 
 	EAPStatus status;
 	u16 seqNum;

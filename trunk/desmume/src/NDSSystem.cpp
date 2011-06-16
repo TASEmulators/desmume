@@ -1375,7 +1375,7 @@ static void initSchedule()
 // ARM7_CLOCK   = 33.51 mhz
 //				= 33513982 cycles per second
 // 				= 33.513982 cycles per microsecond
-const u64 kWifiCycles = 34*2;
+const u64 kWifiCycles = 67;//34*2;
 //(this isn't very precise. I don't think it needs to be)
 
 void Sequencer::init()
