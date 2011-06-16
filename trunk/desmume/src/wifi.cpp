@@ -740,7 +740,6 @@ INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 len, u8 maxR
 	buf[11] = 0xA0;//minRSSI;
 }
 
-#ifdef EXPERIMENTAL_WIFI_COMM
 static void WIFI_RXPutWord(u16 val)
 {
 	/* abort when RX data queuing is not enabled */
@@ -770,7 +769,6 @@ static void WIFI_RXQueuePacket(u8* packet, u32 len)
 	pkt.NotStarted = true;
 	wifiMac.RXPacketQueue.push(pkt);
 }
-#endif
 
 static void WIFI_TXStart(u32 slot)
 {
@@ -1495,14 +1493,13 @@ void WIFI_usTrigger()
 			Wifi_RXPacket& pkt = wifiMac.RXPacketQueue.front();
 			if (pkt.NotStarted)
 			{
-#ifdef EXPERIMENTAL_WIFI_COMM
 				WIFI_RXPutWord(*(u16*)&pkt.Data[0]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[2]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[4]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[6]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[8]);
 				WIFI_RXPutWord(*(u16*)&pkt.Data[10]);
-#endif
+
 				WIFI_triggerIRQ(WIFI_IRQ_RXSTART);
 				pkt.NotStarted = false;
 
@@ -1510,9 +1507,8 @@ void WIFI_usTrigger()
 				wifiMac.rfPins = 0x00C7;
 			}
 
-#ifdef EXPERIMENTAL_WIFI_COMM
-      WIFI_RXPutWord(*(u16*)&pkt.Data[pkt.CurOffset]);
-#endif
+			WIFI_RXPutWord(*(u16*)&pkt.Data[pkt.CurOffset]);
+
 			pkt.CurOffset += 2;
 			pkt.RemHWords--;
 
@@ -1527,6 +1523,7 @@ void WIFI_usTrigger()
 				WIFI_triggerIRQ(WIFI_IRQ_RXEND);
 
 				//if (((*(u16*)&pkt.Data[12]) & 0xE7FF) == 0x0228)
+				//{ wifiMac.aid = 0xC001; wifiMac.pid = 1; }
 				//	WIFI_triggerIRQ(WIFI_IRQ_UNK);
 
 				delete[] pkt.Data;
