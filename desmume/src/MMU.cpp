@@ -3903,6 +3903,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 										//our totally pathetic register handling, only the one thing we've wanted so far
 										if(MMU.powerMan_Reg[0]&PM_SYSTEM_PWR) {
 											printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
+											printf("Did your main() return?\n");
 											emu_halt();
 										}
 									}
