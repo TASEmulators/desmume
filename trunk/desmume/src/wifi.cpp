@@ -648,6 +648,7 @@ void WIFI_DeInit()
 
 void WIFI_Reset()
 {
+#ifdef EXPERIMENTAL_WIFI_COMM
 	//memset(&wifiMac, 0, sizeof(wifimac_t));
 
 	WIFI_resetRF(&wifiMac.RF);
@@ -683,6 +684,7 @@ void WIFI_Reset()
 	wifi_lastmode = CommonSettings.wifi.mode;
 
 	bWFCUserWarned = false;
+#endif
 }
 
 
