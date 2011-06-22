@@ -1193,6 +1193,10 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 	memcpy(&card.command[0], &MMU.MMU_MEM[TEST_PROCNUM][0x40][0x1A8], 8);
 
+	card.blocklen = 0;
+	slot1_device.write32(PROCNUM,0xFFFFFFFF,val); //Special case for some flashcarts
+	if(card.blocklen==0x01020304)
+
 	if(!(val & 0x80000000))
 	{
 		card.address = 0;
@@ -1448,21 +1452,22 @@ static u32 readreg_POWCNT1(const int size, const u32 adr) {
 	case 8:
 		switch(adr)
 		{
-		case REG_POWCNT1: {
-			u8 ret = 0;		
-			ret |= nds.power1.lcd?BIT(0):0;
-			ret |= nds.power1.gpuMain?BIT(1):0;
-			ret |= nds.power1.gfx3d_render?BIT(2):0;
-			ret |= nds.power1.gfx3d_geometry?BIT(3):0;
-			return ret;
+			case REG_POWCNT1: {
+				u8 ret = 0;		
+				ret |= nds.power1.lcd?BIT(0):0;
+				ret |= nds.power1.gpuMain?BIT(1):0;
+				ret |= nds.power1.gfx3d_render?BIT(2):0;
+				ret |= nds.power1.gfx3d_geometry?BIT(3):0;
+				return ret;
 			}
-		case REG_POWCNT1+1: {
-			u8 ret = 0;
-			ret |= nds.power1.gpuSub?BIT(1):0;
-			ret |= nds.power1.dispswap?BIT(7):0;
-			return ret;
+			case REG_POWCNT1+1: {
+				u8 ret = 0;
+				ret |= nds.power1.gpuSub?BIT(1):0;
+				ret |= nds.power1.dispswap?BIT(7):0;
+				return ret;
 			}
-		}
+			default:
+				return 0;		}
 	case 16:
 	case 32:
 		return readreg_POWCNT1(8,adr)|(readreg_POWCNT1(8,adr+1)<<8);
@@ -1538,10 +1543,8 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, sync_l);
 	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, sync_r);
 
-	if ((sync_l & 0x2000) && (sync_r & 0x4000))
-		setIF(proc^1, ( 1 << 16 ));
-
-
+	if ((sync_l & IPCSYNC_IRQ_SEND) && (sync_r & IPCSYNC_IRQ_RECV))
+		NDS_makeIrq(proc^1, IRQ_BIT_IPCSYNC);
 
 	NDS_Reschedule();
 }
@@ -4209,7 +4212,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 
 			case REG_GCDATAIN:
-				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN,val);
+				slot1_device.write32(ARMCPU_ARM7, REG_GCDATAIN,val);
 				return;
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
