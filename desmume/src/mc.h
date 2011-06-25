@@ -1,6 +1,6 @@
 /*  Copyright (C) 2006 thoduv
     Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2010 DeSmuME team
+    Copyright (C) 2008-2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -70,7 +70,7 @@ struct memory_chip_t
 	
 	// needs only for firmware
 	bool isFirmware;
-	char userfile[260];
+	char userfile[MAX_PATH];
 };
 
 //the new backup system by zeromus
