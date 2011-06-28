@@ -1138,7 +1138,7 @@ static char SoftRastInit(void)
 
 	TexCache_Reset();
 
-	printf("SoftRast Initialized\n");
+	printf("SoftRast Initialized with cores=%d\n",rasterizerCores);
 	return 1;
 }
 
