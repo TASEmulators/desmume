@@ -27,6 +27,7 @@
 #include <string>
 #include "types.h"
 #include "emufile.h"
+#include "common.h"
 
 #define MAX_SAVE_TYPES 13
 #define MC_TYPE_AUTODETECT      0x0
