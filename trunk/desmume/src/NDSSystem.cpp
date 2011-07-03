@@ -405,8 +405,12 @@ void GameInfo::populate()
 			}
 		}*/
 
-	
+	//this may look like a poor heuristic for detecting homebrew, but it is actually pretty good.
+	//setting your own game code is stupid, so homebrew should just leave it.
+	//however, non-devkitARM-default makefiles may not have set this.
+	isHomebrew = !memcmp(header.gameCode,"####",4);
 }
+
 #ifdef _WINDOWS
 
 static std::vector<char> buffer;
@@ -566,29 +570,10 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	bool isHomebrew = !memcmp(gameInfo.header.gameCode,"####",4);
-	if(isHomebrew)
+	if(gameInfo.isHomebrew)
 		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	NDS_Reset();
-
-	//put garbage in vram for homebrew games, to help mimic the situation where libnds does not clear out junk
-	//which the card's launcher may or may not have left behind
-	if(isHomebrew)
-	{
-		u32 w=100000,x=99,y=117,z=19382173;
-		for(int i=0;i<sizeof(MMU.ARM9_LCD);i++)
-		{
-			u32 t= (x^(x<<11)); 
-			x=y;
-			y=z; 
-			z=w;
-			t = (w= (w^(w>>19))^(t^(t>>8)));
-			MMU.ARM9_LCD[i] = t;
-			if (i<sizeof(MMU.ARM9_VMEM))
-				MMU.ARM9_VMEM[i] = t;
-		}
-	}
 
 	memset(buf, 0, MAX_PATH);
 
@@ -2099,6 +2084,32 @@ void NDS_Reset()
 	SPU_DeInit();
 
 	MMU_Reset();
+
+
+	//put garbage in vram for homebrew games, to help mimic the situation where libnds does not clear out junk
+	//which the card's launcher may or may not have left behind
+	if(gameInfo.isHomebrew)
+	{
+		u32 w=100000,x=99,y=117,z=19382173;
+		CTASSERT(sizeof(MMU.ARM9_LCD) < sizeof(MMU.MAIN_MEM));
+		CTASSERT(sizeof(MMU.ARM9_VMEM) < sizeof(MMU.MAIN_MEM));
+		CTASSERT(sizeof(MMU.ARM9_ITCM) < sizeof(MMU.MAIN_MEM));
+		CTASSERT(sizeof(MMU.ARM9_DTCM) < sizeof(MMU.MAIN_MEM));
+		for(int i=0;i<sizeof(MMU.MAIN_MEM);i++)
+		{
+			u32 t= (x^(x<<11)); 
+			x=y;
+			y=z; 
+			z=w;
+			t = (w= (w^(w>>19))^(t^(t>>8)));
+			MMU.MAIN_MEM[i] = t;
+			if (i<sizeof(MMU.ARM9_LCD)) MMU.ARM9_LCD[i] = t;
+			if (i<sizeof(MMU.ARM9_VMEM)) MMU.ARM9_VMEM[i] = t;
+			if (i<sizeof(MMU.ARM9_ITCM)) MMU.ARM9_ITCM[i] = t;
+			if (i<sizeof(MMU.ARM9_DTCM)) MMU.ARM9_DTCM[i] = t;
+		}
+	}
+
 
 	NDS_ARM7.BIOS_loaded = false;
 	NDS_ARM9.BIOS_loaded = false;
