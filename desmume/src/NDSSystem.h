@@ -347,6 +347,7 @@ struct GameInfo
 	u32 mask;
 	const RomBanner& getRomBanner();
 	bool hasRomBanner();
+	bool isHomebrew;
 };
 
 typedef struct TSCalInfo
