@@ -79,7 +79,7 @@ static void ENDGL() {
 #include "shaders.h"
 #include "texcache.h"
 
-static ALIGN(16) u8  GPU_screen3D			[256*192*4];
+static DS_ALIGN(16) u8  GPU_screen3D			[256*192*4];
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
