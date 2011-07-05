@@ -82,17 +82,17 @@
 
 
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define ALIGN(X) __declspec(align(X))
+#define DS_ALIGN(X) __declspec(align(X))
 #elif defined(__GNUC__)
-#define ALIGN(X) __attribute__ ((aligned (X)))
+#define DS_ALIGN(X) __attribute__ ((aligned (X)))
 #else
-#define ALIGN(X)
+#define DS_ALIGN(X)
 #endif
 
-#define CACHE_ALIGN ALIGN(32)
+#define CACHE_ALIGN DS_ALIGN(32)
 
 //use this for example when you want a byte value to be better-aligned
-#define FAST_ALIGN ALIGN(4)
+#define FAST_ALIGN DS_ALIGN(4)
 
 #ifndef FASTCALL
 #ifdef __MINGW32__

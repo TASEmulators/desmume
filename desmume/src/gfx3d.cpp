@@ -590,7 +590,7 @@ static void SetVertex()
 		s16coord[2]
 	};
 
-	ALIGN(16) s32 coordTransformed[4] = { coord[0], coord[1], coord[2], (1<<12) };
+	DS_ALIGN(16) s32 coordTransformed[4] = { coord[0], coord[1], coord[2], (1<<12) };
 
 	if (texCoordinateTransform == 3)
 	{
