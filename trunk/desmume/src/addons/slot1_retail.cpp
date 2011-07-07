@@ -122,7 +122,7 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 					//INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
 					//	card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 
-					address = (0x8000 + (card.address&0x1FF));
+					address = (0x8000 + (address&0x1FF));
 				}
 
 				//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
