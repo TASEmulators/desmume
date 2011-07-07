@@ -108,8 +108,13 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 		case 0x00:
 		case 0xB7:
 			{
+				//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
+				//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
+				//but there is no test case yet
+				u32 address = card.address & (gameInfo.mask);
+
 				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
-				if((card.command[0] == 0xB7) && (card.address < 0x8000))
+				if((card.command[0] == 0xB7) && (address < 0x8000))
 				{
 					//TODO - refactor this to include the PROCNUM, for debugging purposes if nothing else
 					//(can refactor gbaslot also)
@@ -117,13 +122,8 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 					//INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
 					//	card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 
-					card.address = (0x8000 + (card.address&0x1FF));
+					address = (0x8000 + (card.address&0x1FF));
 				}
-
-				//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
-				//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
-				//but there is no test case yet
-				u32 address = card.address & (gameInfo.mask);
 
 				//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
 				//we need to protect ourselves by returning 0xFF for things still out of range
