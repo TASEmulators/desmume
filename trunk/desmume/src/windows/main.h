@@ -39,6 +39,7 @@ static const int LANGUAGE_ITALIAN = 4;
 static const int LANGUAGE_JAPANESE = 5;
 static const int LANGUAGE_SPANISH = 6;
 static const int LANGUAGE_KOREAN = 7;
+static const int LANGUAGE_BRAZILIAN = 8;
 
 extern void Change3DCoreWithFallbackAndSave(int newCore, int fallbackCore=GPU3D_SWRAST);
 

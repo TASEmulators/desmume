@@ -2246,6 +2246,11 @@ void SetLanguage(int langid)
 		setLanguage(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
 		break;
+	case LANGUAGE_BRAZILIAN:
+		currLanguageMenuItem = IDC_LANG_BRAZILIAN_PORTUGUESE;
+		setLanguage(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
+		break;
 
 	default:
 		break;
@@ -3973,7 +3978,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Updated Checked menu items
 
 			//language choices
-			for(UINT i = IDC_LANGENGLISH; i <= IDC_LANGKOREAN; i++)
+			for(UINT i = IDC_LANGENGLISH; i <= IDC_LANG_BRAZILIAN_PORTUGUESE; i++)
 				MainWindow->checkMenu(i, i == currLanguageMenuItem);
 
 			//emulation menu
@@ -5364,6 +5369,9 @@ DOKEYDOWN:
 			return 0;
 		case IDC_LANGKOREAN:
 			ChangeLanguage(LANGUAGE_KOREAN);
+			return 0;
+		case IDC_LANG_BRAZILIAN_PORTUGUESE:
+			ChangeLanguage(LANGUAGE_BRAZILIAN);
 			return 0;
 
 		case IDC_FRAMELIMIT:
