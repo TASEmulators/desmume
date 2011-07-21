@@ -1195,7 +1195,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 	card.blocklen = 0;
 	slot1_device.write32(PROCNUM,0xFFFFFFFF,val); //Special case for some flashcarts
-	if(card.blocklen==0x01020304)
+	if(card.blocklen==0x01020304) return;
 
 	if(!(val & 0x80000000))
 	{
