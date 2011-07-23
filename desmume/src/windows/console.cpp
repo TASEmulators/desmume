@@ -29,13 +29,45 @@
 HANDLE hConsole = NULL;
 void printlog(const char *fmt, ...);
 
+std::wstring SkipEverythingButProgramInCommandLine(wchar_t* cmdLine)
+{
+	//skip past the program name. can anyone think of a better way to do this?
+	//we could use CommandLineToArgvW (commented out below) but then we would just have to re-assemble and potentially re-quote it
+	//NOTE - this objection predates this use of the code. its not such a bad objection now...
+	wchar_t* childCmdLine = cmdLine;
+	wchar_t* lastSlash = cmdLine;
+	wchar_t* lastGood = cmdLine;
+	bool quote = false;
+	for(;;)
+	{
+		wchar_t cur = *childCmdLine;
+		if(cur == 0) break;
+		childCmdLine++;
+		bool thisIsQuote = (cur == '\"');
+		if(cur == '\\' || cur == '/')
+			lastSlash = childCmdLine;
+		if(quote)
+		{
+			if(thisIsQuote)
+				quote = false;
+			else lastGood = childCmdLine;
+		}
+		else
+		{
+			if(cur == ' ' || cur == '\t')
+				break;
+			if(thisIsQuote)
+				quote = true;
+			lastGood = childCmdLine;
+		}
+	}
+	std::wstring remainder = ((std::wstring)cmdLine).substr(childCmdLine-cmdLine);
+	std::wstring path = ((std::wstring)cmdLine).substr(lastSlash-cmdLine,(lastGood-cmdLine)-(lastSlash-cmdLine));
+	return path + L" " + remainder;
+}
+
 void OpenConsole() 
 {
-	COORD csize = {0};
-	CONSOLE_SCREEN_BUFFER_INFO csbiInfo = {0}; 
-	SMALL_RECT srect = {0};
-	char buf[256] = {0};
-
 	//dont do anything if we're already analyzed
 	if (hConsole) return;
 
@@ -75,9 +107,18 @@ void OpenConsole()
 	if(!attached)
 	{
 		if (!AllocConsole()) return;
+
+		SetConsoleCP(GetACP());
+		SetConsoleOutputCP(GetACP());
 	}
 
-	if (hConsole == INVALID_HANDLE_VALUE) return;
+	//old console title:
+	//char buf[256] = {0};
+	//sprintf(buf,"CONSOLE - %s", EMU_DESMUME_NAME_AND_VERSION());
+	//SetConsoleTitle(TEXT(buf));
+
+	//newer and improved console title:
+	SetConsoleTitleW(SkipEverythingButProgramInCommandLine(GetCommandLineW()).c_str());
 
 	if(shouldRedirectStdout)
 	{
@@ -86,19 +127,6 @@ void OpenConsole()
 		freopen("CONIN$", "r", stdin);
 	}
 
-	sprintf(buf,"%s OUTPUT", EMU_DESMUME_NAME_AND_VERSION());
-	SetConsoleTitle(TEXT(buf));
-	csize.X = 60;
-	csize.Y = 800;
-	SetConsoleScreenBufferSize(hConsole, csize);
-	GetConsoleScreenBufferInfo(hConsole, &csbiInfo);
-	srect = csbiInfo.srWindow;
-	srect.Right = srect.Left + 99;
-	srect.Bottom = srect.Top + 64;
-	SetConsoleWindowInfo(hConsole, TRUE, &srect);
-	SetConsoleCP(GetACP());
-	SetConsoleOutputCP(GetACP());
-	//if(attached) printlog("\n");
 	printlog("%s\n",EMU_DESMUME_NAME_AND_VERSION());
 	printlog("- compiled: %s %s\n",__DATE__,__TIME__);
 	if(attached) printf("\nuse cmd /c desmume.exe to get more sensible console behaviour\n");
