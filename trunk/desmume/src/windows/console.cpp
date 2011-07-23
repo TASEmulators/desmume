@@ -46,9 +46,14 @@ void OpenConsole()
 	//is FILE_TYPE_PIPE (3) for pipe
 	//i think it is FILE_TYPE_CHAR (2) for console
 
+  //SOMETHING LIKE THIS MIGHT BE NEEDED ONE DAY
+	//disable stdout buffering unless we know for sure we've been redirected to the disk
+	//the runtime will be smart and set buffering when we may have in fact chosen to pipe the output to a console and dont want it buffered
+	//if(GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) != FILE_TYPE_DISK) 
+	//	setvbuf(stdout,NULL,_IONBF,0);
+
 	//stdout is already connected to something. keep using it and dont let the console interfere
 	bool shouldRedirectStdout = fileType == FILE_TYPE_UNKNOWN;
-
 
 	//attach to an existing console (if we can; this is circuitous because AttachConsole wasnt added until XP)
 	//remember to abstract this late bound function notion if we end up having to do this anywhere else
@@ -78,6 +83,7 @@ void OpenConsole()
 	{
 		freopen("CONOUT$", "w", stdout);
 		freopen("CONOUT$", "w", stderr);
+		freopen("CONIN$", "r", stdin);
 	}
 
 	sprintf(buf,"%s OUTPUT", EMU_DESMUME_NAME_AND_VERSION());
@@ -92,9 +98,11 @@ void OpenConsole()
 	SetConsoleWindowInfo(hConsole, TRUE, &srect);
 	SetConsoleCP(GetACP());
 	SetConsoleOutputCP(GetACP());
-	if(attached) printlog("\n");
+	//if(attached) printlog("\n");
 	printlog("%s\n",EMU_DESMUME_NAME_AND_VERSION());
-	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
+	printlog("- compiled: %s %s\n",__DATE__,__TIME__);
+	if(attached) printf("\nuse cmd /c desmume.exe to get more sensible console behaviour\n");
+	printlog("\n");
 }
 
 void CloseConsole() {
