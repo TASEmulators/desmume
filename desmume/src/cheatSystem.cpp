@@ -1132,7 +1132,7 @@ bool CHEATSEXPORT::load(char *path)
 		return false;
 	}
 
-	char *headerID = "R4 CheatCode";
+	const char *headerID = "R4 CheatCode";
 	char buf[255] = {0};
 	fread(buf, 1, strlen(headerID), fp);
 	if (strncmp(buf, headerID, strlen(headerID)) != 0)
