@@ -565,12 +565,7 @@ BOOL CHEATS::save()
 	if (flist)
 	{
 		fprintf(flist, "; DeSmuME cheats file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		std::wstring wtemp = (std::wstring)gameInfo.getRomBanner().titles[1];
-		std::string temp = wcstombs(wtemp);
-		strcpy(buf, temp.c_str());
-		trim(buf);
-		removeSpecialChars(buf);
-		fprintf(flist, "Name=%s\n", buf);
+		fprintf(flist, "Name=%s\n", gameInfo.ROMname);
 		fprintf(flist, "Serial=%s\n", gameInfo.ROMserial);
 		fputs("\n; cheats list\n", flist);
 		for (size_t i = 0;  i < list.size(); i++)

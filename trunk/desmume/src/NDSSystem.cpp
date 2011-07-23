@@ -306,8 +306,6 @@ RomBanner::RomBanner(bool defaultInit)
 	memset(bitmap,0,sizeof(bitmap));
 	memset(palette,0,sizeof(palette));
 	memset(titles,0,sizeof(titles));
-	for(int i=0;i<NUM_TITLES;i++)
-		wcscpy(titles[i],L"None");
 	memset(end0xFF,0,sizeof(end0xFF));
 }
 
