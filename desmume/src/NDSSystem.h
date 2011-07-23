@@ -284,14 +284,14 @@ struct RomBanner
 	enum { NUM_TITLES = 6 };
 	union {
 		struct {
-			wchar_t title_jp[0x80]; //Title 0 Japanese (128 characters, 16bit Unicode)
-			wchar_t title_en[0x80]; //Title 1 English  ("")
-			wchar_t title_fr[0x80]; //Title 2 French   ("")
-			wchar_t title_de[0x80]; //Title 3 German   ("")
-			wchar_t title_it[0x80]; //Title 4 Italian  ("")
-			wchar_t title_es[0x80]; //Title 5 Spanish  ("")
+			u16 title_jp[0x80]; //Title 0 Japanese (128 characters, 16bit Unicode)
+			u16 title_en[0x80]; //Title 1 English  ("")
+			u16 title_fr[0x80]; //Title 2 French   ("")
+			u16 title_de[0x80]; //Title 3 German   ("")
+			u16 title_it[0x80]; //Title 4 Italian  ("")
+			u16 title_es[0x80]; //Title 5 Spanish  ("")
 		};
-		wchar_t titles[NUM_TITLES][0x80];
+		u16 titles[NUM_TITLES][0x80];
 	};
 	u8 end0xFF[0x1C0]; 
   //840h  ?    (Maybe newer/chinese firmware do also support chinese title?)
