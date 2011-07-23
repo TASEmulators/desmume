@@ -3102,18 +3102,34 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	GetINIPath();
 
-  #if !defined(PUBLIC_RELEASE) || defined(DEVELOPER)
-  static const bool defaultConsoleEnable = true;
-  #else
-  static const bool defaultConsoleEnable = false;
-  #endif
-  
-  if(GetPrivateProfileBool("Display", "Show Console", defaultConsoleEnable, IniName))
-	  OpenConsole();			// Init debug console
+	#if !defined(PUBLIC_RELEASE) || defined(DEVELOPER)
+		static const bool defaultConsoleEnable = true;
+	#else
+		static const bool defaultConsoleEnable = false;
+	#endif
 
+	if(GetPrivateProfileBool("Display", "Show Console", defaultConsoleEnable, IniName))
+		OpenConsole();			// Init debug console
+
+	//--------------------------------
 	int ret = _main();
+	//--------------------------------
+
+	printf("returning from main\n");
 
 	timeEndPeriod (wmTimerRes);
+
+	//dump any console input to keep the shell from processing it after desmume exits.
+	//(we would be unique in doing this, as every other program has this "problem", but I am saving the code for future reference)
+	//for(;;)
+	//{
+	//  INPUT_RECORD ir;
+	//  DWORD nEventsRead;
+	// BOOL ret = PeekConsoleInput(GetStdHandle(STD_INPUT_HANDLE),&ir,1,&nEventsRead);
+	//  printf("%d %d %d\n",ir.Event.KeyEvent.uChar,nEventsRead,ret);
+	//  if(nEventsRead==0) break;
+	//  ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE),&ir,1,&nEventsRead);
+	//}
 
 	CloseConsole();
 
