@@ -1,4 +1,5 @@
-/*  Copyright 2009-2010 DeSmuME team
+/*
+	Copyright 2009-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -39,44 +40,26 @@
 #include "utils/xstring.h"
 
 #ifdef _WINDOWS
-void FCEUD_MakePathDirs(const char *fname);
+#define FILE_EXT_DELIMITER_CHAR		'.'
+#define DIRECTORY_DELIMITER_CHAR	'\\'
+#else
+#define FILE_EXT_DELIMITER_CHAR		'.'
+#define DIRECTORY_DELIMITER_CHAR	'/'
 #endif
 
-//-----------------------------------
-//This is taken from mono Path.cs
-static const char InvalidPathChars[] = {
-	'\x22', '\x3C', '\x3E', '\x7C', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07',
-	'\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E', '\x0F', '\x10', '\x11', '\x12', 
-	'\x13', '\x14', '\x15', '\x16', '\x17', '\x18', '\x19', '\x1A', '\x1B', '\x1C', '\x1D', 
-	'\x1E', '\x1F'
-};
-
-//but it is sort of windows-specific. Does it work in linux? Maybe we'll have to make it smarter
-static const char VolumeSeparatorChar = ':';
-static const char DirectorySeparatorChar = '\\';
-static const char AltDirectorySeparatorChar = '/';
-static bool dirEqualsVolume = (DirectorySeparatorChar == VolumeSeparatorChar);
+#ifdef _WINDOWS
+void FCEUD_MakePathDirs(const char *fname);
+#endif
 
 class Path
 {
 public:
-	static bool IsPathRooted (const std::string& path)
-	{
-		if (path.size() == 0)
-			return false;
-
-		
-		if (path.find_first_of(InvalidPathChars) != -1)
-		{
-			//yuck.
-			//throw new ArgumentException ("Illegal characters in path.");
-		}
-
-		char c = path [0];
-		return (c == DirectorySeparatorChar 	||
-			c == AltDirectorySeparatorChar 	||
-			(!dirEqualsVolume && path.size() > 1 && path [1] == VolumeSeparatorChar));
-	}
+	static bool IsPathRooted (const std::string &path);
+	static std::string GetFileDirectoryPath(std::string filePath);
+	static std::string GetFileNameFromPath(std::string filePath);
+	static std::string GetFileNameWithoutExt(std::string fileName);
+	static std::string GetFileNameFromPathWithoutExt(std::string filePath);
+	static std::string GetFileExt(std::string fileName);
 };
 
 class PathInfo
@@ -85,6 +68,7 @@ public:
 
 	std::string path;
 	std::string RomName;
+	std::string RomDirectory;
 
 	#define MAX_FORMAT		20
 	#define SECTION			"PathSettings"
@@ -132,7 +116,7 @@ public:
 	char pathToModule[MAX_PATH];
 	char pathToLua[MAX_PATH];
 
-	void init(const char * filename) {
+	void init(const char *filename) {
 
 		path = std::string(filename);
 
@@ -155,15 +139,10 @@ public:
 
 		GetModuleFileName(NULL, pathToModule, sizeof(pathToModule));
 		p = pathToModule + lstrlen(pathToModule);
-		while (p >= pathToModule && *p != '\\') p--;
+		while (p >= pathToModule && *p != DIRECTORY_DELIMITER_CHAR) p--;
 		if (++p >= pathToModule) *p = 0;
 #elif defined(DESMUME_COCOA)
-		std::string pathStr = path;
-
-		//Truncate the path from filename
-		int x = pathStr.find_last_of("/\\");
-		if (x > 0)
-			pathStr = pathStr.substr(0, x);
+		std::string pathStr = Path::GetFileDirectoryPath(path);
 
 		strncpy(pathToModule, pathStr.c_str(), MAX_PATH);
 #else
@@ -183,7 +162,7 @@ public:
 	void GetDefaultPath(char *pathToDefault, const char *key, int maxCount)
 	{
 #ifdef _WINDOWS
-		std::string temp = (std::string)".\\" + pathToDefault;
+		std::string temp = (std::string)"." + DIRECTORY_DELIMITER_CHAR + pathToDefault;
 		strncpy(pathToDefault, temp.c_str(), maxCount);
 #else
 		strncpy(pathToDefault, pathToModule, maxCount);
@@ -233,7 +212,7 @@ public:
 		}*/
 	}
 
-	void SwitchPath(Action action, KnownPath path, char * buffer)
+	void SwitchPath(Action action, KnownPath path, char *buffer)
 	{
 		char *pathToCopy = 0;
 		switch(path)
@@ -269,28 +248,23 @@ public:
 
 		if(action == GET)
 		{
-			std::string temp = pathToCopy;
-			int len = (int)temp.size()-1;
-#ifdef WIN32
+			std::string thePath = pathToCopy;
+			std::string relativePath = "." + DIRECTORY_DELIMITER_CHAR;
+			
+			int len = (int)thePath.size()-1;
+
 			if(len == -1)
-				temp = ".\\";
-			else
-				if(temp[len] != '\\') 
-					temp += "\\";
-#else
-			if(len == -1)
-				temp = "./";
+				thePath = relativePath;
 			else 
-				if(temp[len] != '/') 
-					temp += "/";
-#endif
+				if(thePath[len] != DIRECTORY_DELIMITER_CHAR) 
+					thePath += DIRECTORY_DELIMITER_CHAR;
 	
-			if(!Path::IsPathRooted(temp))
+			if(!Path::IsPathRooted(thePath))
 			{
-				temp = (std::string)pathToModule + temp;
+				thePath = (std::string)pathToModule + thePath;
 			}
 
-			strncpy(buffer, temp.c_str(), MAX_PATH);
+			strncpy(buffer, thePath.c_str(), MAX_PATH);
 			#ifdef _WINDOWS
 			FCEUD_MakePathDirs(buffer);
 			#endif
@@ -298,7 +272,7 @@ public:
 		else if(action == SET)
 		{
 			int len = strlen(buffer)-1;
-			if(buffer[len] == '\\') 
+			if(buffer[len] == DIRECTORY_DELIMITER_CHAR) 
 				buffer[len] = '\0';
 
 			strncpy(pathToCopy, buffer, MAX_PATH);
@@ -333,26 +307,16 @@ public:
 		strcat(buffer, GetRomNameWithoutExtension().c_str());
 	}
 
-	std::string extension() {
-
-		for(int i = int(path.size()) - 1; i >= 0; --i)
-		{
-			if (path[i] == '.') {
-				return path.substr(i+1);
-			}
-		}
-		return path;
+	std::string extension()
+	{
+		return Path::GetFileExt(path);
 	}
 
-	std::string noextension() {
-
-		for(int i = int(path.size()) - 1; i >= 0; --i)
-		{
-			if (path[i] == '.') {
-				return path.substr(0, i);
-			}
-		}
-		return path;
+	std::string noextension()
+	{
+		std::string romNameWithPath = Path::GetFileDirectoryPath(path) + DIRECTORY_DELIMITER_CHAR + Path::GetFileNameWithoutExt(RomName);
+		
+		return romNameWithPath;
 	}
 
 	void formatname(char *output)
@@ -445,13 +409,10 @@ public:
 
 	void SetRomName(const char *filename)
 	{
-		std::string str = filename;
-		
-		//Truncate the path from filename
-		int x = str.find_last_of("/\\");
-		if (x > 0)
-			str = str.substr(x+1);
-		RomName = str;
+		std::string romPath = filename;
+
+		RomName = Path::GetFileNameFromPath(romPath);
+		RomDirectory = Path::GetFileDirectoryPath(romPath);
 	}
 
 	const char *GetRomName()
@@ -461,18 +422,21 @@ public:
 
 	std::string GetRomNameWithoutExtension()
 	{
-		int x = RomName.find_last_of(".");
-		if (x > 0)
-			return RomName.substr(0,x);
-		else return RomName;
+		return Path::GetFileNameWithoutExt(RomName);
 	}
 
-	bool isdsgba(std::string str) {
-		int x = str.find_last_of(".");
-		if (x > 0)
-			str = str.substr(x-2);
-		if(!strcmp(str.c_str(), "ds.gba"))
+	bool isdsgba(std::string fileName)
+	{
+		size_t i = fileName.find_last_of(FILE_EXT_DELIMITER_CHAR);
+		
+		if (i != std::string::npos) {
+			fileName = fileName.substr(i - 2);
+		}
+		
+		if(fileName == "ds.gba") {
 			return true;
+		}
+		
 		return false;
 	}
 };
