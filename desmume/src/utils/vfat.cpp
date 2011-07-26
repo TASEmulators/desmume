@@ -150,7 +150,7 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 			if(!ok) 
 				printf("ERROR adding file %s via libfat\n",path.c_str());
 			delete[] buf;
-		}
+		} else printf("ERROR opening file %s for add via libfat\n",path.c_str());
 	}
 		
 }
