@@ -19,6 +19,7 @@
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
 		AB06CB57135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		AB06CB58135B8A4D00E977B3 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		AB06CB59135B8A4D00E977B3 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
@@ -250,6 +251,7 @@
 		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slot1_retail_nand.cpp; path = ../addons/slot1_retail_nand.cpp; sourceTree = SOURCE_ROOT; };
 		AB06CB41135B8A4D00E977B3 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		AB06CB42135B8A4D00E977B3 /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = "<group>"; };
 		AB06CB43135B8A4D00E977B3 /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = "<group>"; };
@@ -572,6 +574,7 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */,
 				AB06CD9B135B8AED00E977B3 /* addons */,
 				AB06CDA7135B8AED00E977B3 /* cli */,
 				AB06CDAF135B8AED00E977B3 /* gdbstub */,
@@ -926,7 +929,6 @@
 			isa = PBXProject;
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME" */;
 			compatibilityVersion = "Xcode 2.4";
-			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				English,
@@ -1218,6 +1220,7 @@
 				AB06CEC9135B8E0B00E977B3 /* rom_info.m in Sources */,
 				AB06CECA135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */,
 				AB06CEEC135B8E4A00E977B3 /* OGLRender.cpp in Sources */,
+				956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
