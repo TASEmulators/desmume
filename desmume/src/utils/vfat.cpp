@@ -56,11 +56,7 @@ static void list_files(const char *filepath, ListCallback list_callback)
 	hFind = FsReadFirst(DirSpec, &entry);
 	if (hFind == NULL) return;
 
-	fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
-	list_callback(&entry,EListCallbackArg_Item);
-
-	while (FsReadNext(hFind, &entry) != 0)
-	{
+	do {
 		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
 		list_callback(&entry,EListCallbackArg_Item);
 		printf("cflash added %s\n",entry.cFileName);
@@ -74,7 +70,7 @@ static void list_files(const char *filepath, ListCallback list_callback)
 				list_callback(&entry, EListCallbackArg_Pop);
 			}
 		}
-	}
+	} while (FsReadNext(hFind, &entry) != 0);
 
 	dwError = FsError();
 	FsClose(hFind);
