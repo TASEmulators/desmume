@@ -4143,8 +4143,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindowToolbar->AppendButton(IDM_OPEN, IDB_OPEN, TBSTATE_ENABLED, false);
 			MainWindowToolbar->AppendSeparator();
 			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
-			MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
-			MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
 			MainWindowToolbar->AppendSeparator();
 
 			int cwid, ccwid;
@@ -4159,6 +4157,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindowToolbar->AppendButton(ccwid, IDB_ROTATECCW, rotstate, false);
 			MainWindowToolbar->AppendButton(cwid, IDB_ROTATECW, rotstate, false);
+
+			//we WANT it to be hard to do these operations. accidents would be bad. lets not use these buttons
+			//MainWindowToolbar->AppendSeparator();
+			//MainWindowToolbar->AppendSeparator();
+			//MainWindowToolbar->AppendSeparator();
+			//MainWindowToolbar->AppendButton(IDM_CLOSEROM, IDB_STOP, 0, false);
+			//MainWindowToolbar->AppendButton(IDM_RESET, IDB_RESET, 0, false);
+
 
 			bool showtb = GetPrivateProfileBool("Display", "Show Toolbar", true, IniName);
 			MainWindowToolbar->Show(showtb);
