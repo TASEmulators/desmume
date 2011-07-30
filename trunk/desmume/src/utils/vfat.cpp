@@ -142,11 +142,12 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 			fclose(inf);
 
 			std::string path = currVirtPath + "/" + fname;
+			printf("adding path %s for libfat\n",path.c_str());
 			bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
 			if(!ok) 
-				printf("ERROR adding file %s via libfat\n",path.c_str());
+				printf("ERROR adding file to fat\n");
 			delete[] buf;
-		} else printf("ERROR opening file %s for add via libfat\n",path.c_str());
+		} else printf("ERROR opening file for fat\n");
 	}
 		
 }
