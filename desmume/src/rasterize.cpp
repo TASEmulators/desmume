@@ -287,10 +287,11 @@ static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & sr
 {
 	if(gfx3d.renderState.enableAlphaBlending)
 	{
-		if(src.a == 0 || dst.a == 0)
+		if(src.a == 31 || dst.a == 0)
 		{
 			dst = src;
 		}
+		//else if(src.a == 0) { } //this is not necessary since it was handled earlier
 		else
 		{
 			u8 alpha = src.a+1;
@@ -1416,6 +1417,15 @@ void SoftRasterizerEngine::framebufferProcess()
 			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
 		}
 	}
+
+	////debug alpha channel framebuffer contents
+	//for(int i=0;i<256*192;i++)
+	//{
+	//	FragmentColor &destFragmentColor = screenColor[i];
+	//	destFragmentColor.r = destFragmentColor.a;
+	//	destFragmentColor.g = destFragmentColor.a;
+	//	destFragmentColor.b = destFragmentColor.a;
+	//}
 }
 
 void SoftRasterizerEngine::performClipping(bool hirez)
