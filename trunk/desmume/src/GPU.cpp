@@ -2039,19 +2039,13 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization. 
 	gpu->currBgNum = 5;
 	switch(gpu->setFinalColorBck_funcNum) {
-		case 0: case 1: //for backdrops, (even with window enabled) none and blend are both the same: just copy the color
+		//for backdrops, effects arent applied. 
+		case 0: case 1: 
+		case 2: case 3:
 			memset_u16_le<256>(gpu->currDst,backdrop_color); 
 			break;
-		case 2:
-			//for non-windowed fade, we can just fade the color and fill
-			memset_u16_le<256>(gpu->currDst,gpu->currentFadeInColors[backdrop_color]);
-			break;
-		case 3:
-			//likewise for non-windowed fadeout
-			memset_u16_le<256>(gpu->currDst,gpu->currentFadeOutColors[backdrop_color]);
-			break;
 
-		//windowed fades need special treatment
+		//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
 		case 4: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,4>(backdrop_color,x,1); break;
 		case 5: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,5>(backdrop_color,x,1); break;
 		case 6: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,6>(backdrop_color,x,1); break;
