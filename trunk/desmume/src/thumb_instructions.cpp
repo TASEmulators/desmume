@@ -163,7 +163,7 @@ TEMPLATE static  u32 FASTCALL OP_LSR_REG(const u32 i)
 TEMPLATE static  u32 FASTCALL OP_ASR_0(const u32 i)
 {
 	cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 3)]);
-	cpu->R[REG_NUM(i, 0)] = cpu->CPSR.bits.C * 0xFFFFFFFF;
+	cpu->R[REG_NUM(i, 0)] = BIT31(cpu->R[REG_NUM(i, 3)])*0xFFFFFFFF;
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 
@@ -201,7 +201,7 @@ TEMPLATE static  u32 FASTCALL OP_ASR_REG(const u32 i)
 	}
 	
 	cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 0)]);
-	cpu->R[REG_NUM(i, 0)] = cpu->CPSR.bits.C * 0xFFFFFFFF;
+	cpu->R[REG_NUM(i, 0)] = BIT31(cpu->R[REG_NUM(i, 0)])*0xFFFFFFFF;
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
 	cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
 	
