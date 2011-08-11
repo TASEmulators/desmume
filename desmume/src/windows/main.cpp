@@ -405,7 +405,7 @@ UINT currLanguageMenuItem = IDC_LANGENGLISH;
 extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
 static bool lastPauseFromLostFocus = false;
-static bool FrameLimit = true;
+bool FrameLimit = true;
 extern bool allowBackgroundInput;
 
 std::vector<HWND> LuaScriptHWnds;

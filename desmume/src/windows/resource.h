@@ -725,6 +725,7 @@
 #define ID_LABEL_HK7                    4471
 #define IDC_GI_TITLEFR                  4472
 #define ID_LABEL_HK8                    4472
+#define ID_LABEL_HK8b                   44720
 #define IDC_GI_TITLEGE                  4473
 #define ID_LABEL_HK9                    4473
 #define IDC_GI_TITLEIT                  4474
