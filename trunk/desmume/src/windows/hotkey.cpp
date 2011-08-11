@@ -412,6 +412,11 @@ void HK_FastForwardKeyDown(int, bool justPressed) { FastForward = 1; }
 void HK_FastForwardKeyUp(int) { FastForward = 0; }
 void HK_IncreaseSpeed(int, bool justPressed) { IncreaseSpeed(); }
 void HK_DecreaseSpeed(int, bool justPressed) { DecreaseSpeed(); }
+void HK_FrameLimitToggle(int, bool justPressed) {
+	FrameLimit ^= 1;
+	WritePrivateProfileInt("FrameLimit", "FrameLimit", FrameLimit, IniName);
+}
+
 void HK_FrameAdvanceKeyDown(int, bool justPressed) { FrameAdvance(true); }
 void HK_FrameAdvanceKeyUp(int) { FrameAdvance(false); }
 
@@ -517,6 +522,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->DecreaseSpeed.name = STRW(ID_LABEL_HK8);
 	keys->DecreaseSpeed.page = HOTKEY_PAGE_MAIN;
 	keys->DecreaseSpeed.key = VK_OEM_MINUS;
+
+	keys->FrameLimitToggle.handleKeyDown = HK_FrameLimitToggle;
+	keys->FrameLimitToggle.code = "FrameLimitToggle";
+	keys->FrameLimitToggle.name = STRW(ID_LABEL_HK8b);
+	keys->FrameLimitToggle.page = HOTKEY_PAGE_MAIN;
+	keys->FrameLimitToggle.key = NULL;
 
 	keys->IncreasePressure.handleKeyDown = HK_IncreasePressure;
 	keys->IncreasePressure.code = "IncreasePressure";
