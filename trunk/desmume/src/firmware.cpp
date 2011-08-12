@@ -566,10 +566,7 @@ bool CFIRMWARE::load()
 		INFO("   * ARM7 unpacked size:         0x%08X (%i) bytes\n", size7, size7);
 	}
 
-	PathInfo path;
-	path.init(CommonSettings.Firmware);
-	path.getpathnoext(path.FIRMWARE, &MMU.fw.userfile[0]);
-	strcat(MMU.fw.userfile, ".dfc");		// DeSmuME Firmware Config
+	snprintf(MMU.fw.userfile, MAX_PATH, "%sFirmware%cfirmware.dfc", path.pathToModule, DIRECTORY_DELIMITER_CHAR);
 
 	fclose(fp);
 	fp = fopen(MMU.fw.userfile, "rb");
