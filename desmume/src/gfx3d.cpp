@@ -107,8 +107,8 @@ public:
 		for(int i=0;i<4;i++) {
 			commandsPending[i].command = 0;
 			commandsPending[i].countdown = 0;
-		size = 0;
 		}
+		size = 0;
 	}
 
 	void receive(u32 val) 
@@ -126,8 +126,9 @@ public:
 				while (gfx3d_commandTypes[front().command] == GFX_NOARG_COMMAND)
 				{
 					GFX_FIFOsend(front().command, 0);
+					size--; 
 					if (size == 0) break;
-					size--; dequeue();
+					dequeue();
 				}
 			}
 		}
