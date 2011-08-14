@@ -4902,7 +4902,7 @@ DOKEYDOWN:
 		case IDM_STATE_SAVE:
 			{
 				OPENFILENAME ofn;
-				NDS_Pause();
+				bool unpause = NDS_Pause();
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
@@ -4918,14 +4918,13 @@ DOKEYDOWN:
 				path.getpath(path.STATES, buffer);
 				ofn.lpstrInitialDir = buffer;
 
-				if(!GetSaveFileName(&ofn))
+				if(GetSaveFileName(&ofn))
 				{
-					return 0;
+					savestate_save(SavName);
+					LoadSaveStateInfo();
 				}
-
-				savestate_save(SavName);
-				LoadSaveStateInfo();
-				NDS_UnPause();
+				if(unpause) NDS_UnPause();
+				return 0;
 			}
 			return 0;
 		case IDM_STATE_SAVE_F1:
