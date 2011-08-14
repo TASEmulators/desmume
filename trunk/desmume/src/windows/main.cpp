@@ -1978,19 +1978,20 @@ DWORD WINAPI run()
 	return 1;
 }
 
-void NDS_Pause(bool showMsg)
+//returns true if it just now paused
+bool NDS_Pause(bool showMsg)
 {
-	if (!paused)
-	{
-		emu_halt();
-		paused = TRUE;
-		SPU_Pause(1);
-		while (!paused) {}
-		if (showMsg) INFO("Emulation paused\n");
+	if(paused) return false;
 
-		SetWindowText(MainWindow->getHWnd(), "Paused");
-		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
-	}
+	emu_halt();
+	paused = TRUE;
+	SPU_Pause(1);
+	while (!paused) {}
+	if (showMsg) INFO("Emulation paused\n");
+
+	SetWindowText(MainWindow->getHWnd(), "Paused");
+	MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
+	return true;
 }
 
 void NDS_UnPause(bool showMsg)
