@@ -100,6 +100,8 @@ void HK_SearchCheats(int, bool justPressed)
 }
 void HK_QuickScreenShot(int param, bool justPressed)
 {
+	bool unpause = NDS_Pause(false);
+
 	char buffer[MAX_PATH];
 	ZeroMemory(buffer, sizeof(buffer));
 	path.getpath(path.SCREENSHOTS, buffer);
@@ -127,9 +129,13 @@ void HK_QuickScreenShot(int param, bool justPressed)
 		}
 		break;
 	}
+
+	if(unpause) NDS_UnPause(false);
 }
 void HK_PrintScreen(int param, bool justPressed)
 {
+	if(!justPressed) return;
+
 	char outFilename[MAX_PATH];
 	
 	OPENFILENAME ofn;
