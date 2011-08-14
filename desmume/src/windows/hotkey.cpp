@@ -100,8 +100,6 @@ void HK_SearchCheats(int, bool justPressed)
 }
 void HK_QuickScreenShot(int param, bool justPressed)
 {
-	bool unpause = NDS_Pause(false);
-
 	char buffer[MAX_PATH];
 	ZeroMemory(buffer, sizeof(buffer));
 	path.getpath(path.SCREENSHOTS, buffer);
@@ -129,12 +127,13 @@ void HK_QuickScreenShot(int param, bool justPressed)
 		}
 		break;
 	}
-
-	if(unpause) NDS_UnPause(false);
 }
+
 void HK_PrintScreen(int param, bool justPressed)
 {
 	if(!justPressed) return;
+
+	bool unpause = NDS_Pause(false);
 
 	char outFilename[MAX_PATH];
 	
@@ -170,14 +169,17 @@ void HK_PrintScreen(int param, bool justPressed)
 	}
 
 	strcpy(outFilename,filename.c_str());
- 	if(!GetSaveFileName(&ofn))
-		return;
-	filename = outFilename;
+	if(GetSaveFileName(&ofn))
+	{
+		filename = outFilename;
 
-	if(toupper(strright(filename,4)) == ".PNG")
-		NDS_WritePNG(filename.c_str());
-	else if(toupper(strright(filename,4)) == ".BMP")
-		NDS_WriteBMP(filename.c_str());
+		if(toupper(strright(filename,4)) == ".PNG")
+			NDS_WritePNG(filename.c_str());
+		else if(toupper(strright(filename,4)) == ".BMP")
+			NDS_WriteBMP(filename.c_str());
+	}
+
+	if(unpause) NDS_UnPause(false);
 }
 
 void HK_StateSaveSlot(int num, bool justPressed)
