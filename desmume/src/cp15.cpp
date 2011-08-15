@@ -29,7 +29,7 @@ armcp15_t *armcp15_new(armcpu_t * c)
 
 
 	armcp15->cpu = c;
-	armcp15->IDCode = 0x41049460;
+	armcp15->IDCode = 0x41059461;
 	armcp15->cacheType = 0x0F0D2112;
 	armcp15->TCMSize = 0x00140180;
 	armcp15->ctrl = 0x00012078;
