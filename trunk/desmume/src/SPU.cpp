@@ -793,22 +793,21 @@ void SPU_WriteLong(u32 addr, u32 val)
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(s32 a, s32 b, double _ratio)
+template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(s32 a, s32 b, double ratio)
 {
-	float ratio = (float)_ratio;
 	if(INTERPOLATE_MODE == SPUInterpolation_Cosine)
 	{
 		//why did we change it away from the lookup table? somebody should research that
-		ratio = ratio - (int)ratio;
+		ratio = ratio - sputrunc(ratio);
 		double ratio2 = ((1.0 - cos(ratio * M_PI)) * 0.5);
 		//double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
-		return (s32)(((1-ratio2)*a) + (ratio2*b));
+		return s32floor((float)(((1-ratio2)*a) + (ratio2*b)));
 	}
 	else
 	{
 		//linear interpolation
 		ratio = ratio - sputrunc(ratio);
-		return s32floor((1-ratio)*a + ratio*b);
+		return s32floor((float)((1-ratio)*a + ratio*b));
 	}
 }
 
