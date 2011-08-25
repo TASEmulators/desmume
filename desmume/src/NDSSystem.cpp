@@ -43,6 +43,7 @@
 
 #include "path.h"
 
+//int xxctr=0;
 //#define LOG_ARM9
 //#define LOG_ARM7
 //bool dolog = false;
@@ -2084,29 +2085,34 @@ void NDS_Reset()
 	MMU_Reset();
 
 
-	//put garbage in vram for homebrew games, to help mimic the situation where libnds does not clear out junk
+	//put random garbage in vram for homebrew games, to help mimic the situation where libnds does not clear out junk
 	//which the card's launcher may or may not have left behind
-	if(gameInfo.isHomebrew)
-	{
-		u32 w=100000,x=99,y=117,z=19382173;
-		CTASSERT(sizeof(MMU.ARM9_LCD) < sizeof(MMU.MAIN_MEM));
-		CTASSERT(sizeof(MMU.ARM9_VMEM) < sizeof(MMU.MAIN_MEM));
-		CTASSERT(sizeof(MMU.ARM9_ITCM) < sizeof(MMU.MAIN_MEM));
-		CTASSERT(sizeof(MMU.ARM9_DTCM) < sizeof(MMU.MAIN_MEM));
-		for(int i=0;i<sizeof(MMU.MAIN_MEM);i++)
-		{
-			u32 t= (x^(x<<11)); 
-			x=y;
-			y=z; 
-			z=w;
-			t = (w= (w^(w>>19))^(t^(t>>8)));
-			MMU.MAIN_MEM[i] = t;
-			if (i<sizeof(MMU.ARM9_LCD)) MMU.ARM9_LCD[i] = t;
-			if (i<sizeof(MMU.ARM9_VMEM)) MMU.ARM9_VMEM[i] = t;
-			if (i<sizeof(MMU.ARM9_ITCM)) MMU.ARM9_ITCM[i] = t;
-			if (i<sizeof(MMU.ARM9_DTCM)) MMU.ARM9_DTCM[i] = t;
-		}
-	}
+  //1. retail games dont clear TCM, so why should we jumble it and expect homebrew to clear it?
+  //2. some retail games _dont boot_ if main memory is jumbled. wha...?
+  //3. clearing this is not as useful as tracking uninitialized reads in dev+ builds
+  //4. the vram clearing causes lots of graphical corruptions in badly coded homebrews. this reduces compatibility substantially
+  //conclusion: disable it for now and bring it back as an option
+	//if(gameInfo.isHomebrew)
+	//{
+	//	u32 w=100000,x=99,y=117,z=19382173;
+	//	CTASSERT(sizeof(MMU.ARM9_LCD) < sizeof(MMU.MAIN_MEM));
+	//	CTASSERT(sizeof(MMU.ARM9_VMEM) < sizeof(MMU.MAIN_MEM));
+	//	CTASSERT(sizeof(MMU.ARM9_ITCM) < sizeof(MMU.MAIN_MEM));
+	//	CTASSERT(sizeof(MMU.ARM9_DTCM) < sizeof(MMU.MAIN_MEM));
+	//	for(int i=0;i<sizeof(MMU.MAIN_MEM);i++)
+	//	{
+	//		u32 t= (x^(x<<11)); 
+	//		x=y;
+	//		y=z; 
+	//		z=w;
+	//		t = (w= (w^(w>>19))^(t^(t>>8)));
+	//		//MMU.MAIN_MEM[i] = t;
+	//		if (i<sizeof(MMU.ARM9_LCD)) MMU.ARM9_LCD[i] = t;
+	//		if (i<sizeof(MMU.ARM9_VMEM)) MMU.ARM9_VMEM[i] = t;
+	//		//if (i<sizeof(MMU.ARM9_ITCM)) MMU.ARM9_ITCM[i] = t;
+	//		//if (i<sizeof(MMU.ARM9_DTCM)) MMU.ARM9_DTCM[i] = t;
+	//	}
+	//}
 
 
 	NDS_ARM7.BIOS_loaded = false;
