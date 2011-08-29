@@ -28,6 +28,7 @@
 #include "types.h"
 #include "emufile.h"
 #include "common.h"
+#include "utils/tinyxml/tinyxml.h"
 
 #define MAX_SAVE_TYPES 13
 #define MC_TYPE_AUTODETECT      0x0
@@ -50,6 +51,43 @@
 #define MC_SIZE_128MBITS                0x1000000
 #define MC_SIZE_256MBITS                0x2000000
 #define MC_SIZE_512MBITS                0x4000000
+
+// ============================================= ADVANsCEne
+#define _ADVANsCEne_BASE_ID "DeSmuME database (ADVANsCEne)\0x1A"
+#define _ADVANsCEne_BASE_VERSION_MAJOR 1
+#define _ADVANsCEne_BASE_VERSION_MINOR 0
+#define _ADVANsCEne_BASE_NAME "ADVANsCEne Nintendo DS Collection"
+struct ADVANsCEne
+{
+private:
+	char			database_path[MAX_PATH];		// DeSmuME save types 
+	u8				versionBase[2];
+	char			version[4];
+	time_t			createTime;
+	u8				saveType;
+	u32				crc32;
+
+	// XML
+	const char		*datName;
+	const char		*datVersion;
+	const char		*urlVersion;
+	const char		*urlDat;
+	bool getXMLConfig(const char *in_filaname);
+public:
+	ADVANsCEne() :	saveType(0xFF),
+					crc32(0)
+	{
+		memset(database_path, 0, sizeof(database_path));
+		memset(versionBase, 0, sizeof(versionBase));
+		memset(version, 0, sizeof(version));
+	}
+	void setDatabase(const char *path) { strcpy(database_path, path); }
+	u32 convertDB(const char *in_filaname);
+	u8 check(const char *serial, u32 crc = 0);
+	u32 getSaveType() { return saveType; }
+	u32 getCRC32() { return crc32; }
+};
+
 
 struct memory_chip_t
 {

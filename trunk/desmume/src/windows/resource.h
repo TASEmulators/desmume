@@ -883,6 +883,7 @@
 #define ID_FILTRI_HQ4X                  40092
 #define ID_40093                        40093
 #define IDM_SLOT1                       40097
+#define IDM_FILE_IMPORT_DB              40103
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002

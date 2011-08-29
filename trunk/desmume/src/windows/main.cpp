@@ -5010,6 +5010,44 @@ DOKEYDOWN:
 				NDS_UnPause();
 				return 0;
 			}
+		case IDM_FILE_IMPORT_DB:
+			{
+				OPENFILENAME ofn;
+				NDS_Pause();
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hwnd;
+				ofn.lpstrFilter = "ADVANsCEne database (XML)\0*.xml;\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile =  ImportSavName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.lpstrDefExt = "xml";
+				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
+
+				char buffer[MAX_PATH];
+				ZeroMemory(buffer, sizeof(buffer));
+				strcpy(buffer, path.pathToModule);
+				ofn.lpstrInitialDir = buffer;
+				strcat(buffer, "desmume.ddb");
+				advsc.setDatabase(buffer);
+
+				if(!GetOpenFileName(&ofn))
+				{
+					NDS_UnPause();
+					return 0;
+				}
+
+				u32 count = advsc.convertDB(ImportSavName);
+				if (count > 0)
+				{
+					sprintf(buffer, "ADVANsCEne database was successfully imported\n(%i records)", count);
+					MessageBox(hwnd,buffer,"DeSmuME",MB_OK|MB_ICONINFORMATION);
+				}
+				else
+					MessageBox(hwnd,"ADVANsCEne database was not successfully imported","DeSmuME",MB_OK|MB_ICONERROR);
+				NDS_UnPause();
+				return 0;
+			}
 		
 		
 		case IDM_CONFIG:
