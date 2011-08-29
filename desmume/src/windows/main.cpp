@@ -2579,6 +2579,7 @@ int _main()
 	path.ReadPathSettings();
 
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
+	CommonSettings.autodetectBackupMethod = GetPrivateProfileInt("General", "autoDetectMethod", 0, IniName);
 
 	ColorCtrl_Register();
 	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
@@ -4109,6 +4110,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				MainWindow->checkMenu(IDC_SAVETYPE+i, false);
 
 			MainWindow->checkMenu(IDC_SAVETYPE+CommonSettings.manualBackupType, true);
+			MainWindow->checkMenu(IDM_AUTODETECTSAVETYPE_INTERNAL+CommonSettings.autodetectBackupMethod, true);
 
 			// recent/active scripts menu
 			PopulateLuaSubmenu();
@@ -5600,6 +5602,12 @@ DOKEYDOWN:
 				if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
 			}
 			return 0;
+
+		case IDM_AUTODETECTSAVETYPE_INTERNAL: 
+		case IDM_AUTODETECTSAVETYPE_FROMDATABASE: 
+			CommonSettings.autodetectBackupMethod = LOWORD(wParam) - IDM_AUTODETECTSAVETYPE_INTERNAL; 
+			WritePrivateProfileInt("General", "autoDetectMethod", CommonSettings.autodetectBackupMethod, IniName);
+		return 0;
 
 		case IDC_SAVETYPE_FORCE: backup_forceManualBackupType(); return 0; 
 
