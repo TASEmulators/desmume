@@ -1128,11 +1128,24 @@ bool BackupDevice::load_raw(const char* filename)
 	FILE* inf = fopen(filename,"rb");
 	fseek(inf, 0, SEEK_END);
 	u32 size = (u32)ftell(inf);
+	u32 left = 0;
+	u8 sv = advsc.getSaveType();
+	if (sv < MAX_SAVE_TYPES)
+	{
+		if (size > save_types[sv+1][1])
+			size = save_types[sv+1][1];
+		else
+			if (size < save_types[sv+1][1])
+			{
+				left = save_types[sv+1][1] - size;
+				size = save_types[sv+1][1];
+			}
+	}
 	fseek(inf, 0, SEEK_SET);
 
 	raw_applyUserSettings(size);
 
-	fread(&data[0],1,size,inf);
+	fread(&data[0],1,size-left,inf);
 	fclose(inf);
 
 	//dump back out as a dsv, just to keep things sane
@@ -1166,11 +1179,25 @@ bool BackupDevice::load_duc(const char* filename)
    // Skip the rest of the header since we don't need it
    fseek(file, 500, SEEK_SET);
 
+	u32 left = 0;
+	u8 sv = advsc.getSaveType();
+	if (sv < MAX_SAVE_TYPES)
+	{
+		if (size > save_types[sv+1][1])
+			size = save_types[sv+1][1];
+		else
+			if (size < save_types[sv+1][1])
+			{
+				left = save_types[sv+1][1] - size;
+				size = save_types[sv+1][1];
+			}
+	}
+
    raw_applyUserSettings(size);
 
    ensure((u32)size);
 
-   fread(&data[0],1,size,file);
+   fread(&data[0],1,size-left,file);
    fclose(file);
 
    //choose 
