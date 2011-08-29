@@ -884,6 +884,8 @@
 #define ID_40093                        40093
 #define IDM_SLOT1                       40097
 #define IDM_FILE_IMPORT_DB              40103
+#define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
+#define IDM_AUTODETECTSAVETYPE_FROMDATABASE 40105
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002

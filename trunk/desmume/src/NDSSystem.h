@@ -489,6 +489,7 @@ extern struct TCommonSettings {
 		, micMode(InternalNoise)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, manualBackupType(0)
+		, autodetectBackupMethod(0)
 		, spu_captureMuted(false)
 		, spu_advanced(false)
 		, StylusPressure(50)
@@ -563,6 +564,7 @@ extern struct TCommonSettings {
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
 	//int gfx3d_flushMode;
 
+	int autodetectBackupMethod;
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
 	int manualBackupType;
 

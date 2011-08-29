@@ -39,6 +39,7 @@ public:
 	int depth_threshold;
 	int debug_console;
 	int dsi_mode;
+	int autodetect_method;
 	std::string nds_file;
 	std::string play_movie_file;
 	std::string record_movie_file;

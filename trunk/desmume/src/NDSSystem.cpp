@@ -591,6 +591,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 			else
 			{
 				printf("%s", save_names[sv]);
+				if (CommonSettings.autodetectBackupMethod == 1)
+					backup_setManualBackupType(sv);
 			}
 		printf("\n\t* ROM crc: %08X\n", advsc.getCRC32());
 	}

@@ -56,6 +56,7 @@ CommandLine::CommandLine()
 , arm9_gdb_port(0)
 , arm7_gdb_port(0)
 , start_paused(FALSE)
+, autodetect_method(-1)
 {
 #ifndef _MSC_VER
 	disable_sound = 0;
@@ -106,6 +107,7 @@ void CommandLine::loadCommonOptions()
 		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
 		{ "arm7gdb", 0, 0, G_OPTION_ARG_INT, &arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
 #endif
+		{ "autodetect_method", 0, 0, G_OPTION_ARG_INT, &autodetect_method, "Autodetect backup method (0 - internal, 1 - from database)", "AUTODETECT_METHOD"},
 		{ NULL }
 	};
 
@@ -139,6 +141,9 @@ bool CommandLine::parse(int argc,char **argv)
 		CommonSettings.DebugConsole = (debug_console==1);
 	if(dsi_mode != -1)
 		CommonSettings.DSI = (dsi_mode==1);
+
+	if(autodetect_method != -1)
+		CommonSettings.autodetectBackupMethod = autodetect_method;
 
 	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
@@ -196,6 +201,11 @@ bool CommandLine::validate()
 	if((_cflash_image && _gbaslot_rom) || (_cflash_path && _gbaslot_rom)) {
 		g_printerr("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
 	}
+	
+	if ((autodetect_method < 0) || (autodetect_method > 1)) {
+		g_printerr("Invalid autodetect save method (0 - internal, 1 - from database)\n");
+	}
+
 
 	return true;
 }
