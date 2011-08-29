@@ -283,6 +283,7 @@ GLuint shaderProgram;
 
 static GLint hasTexLoc;
 static GLint texBlendLoc;
+static GLint oglWBuffer;
 static bool hasTexture = false;
 
 static TexCacheItem* currTexture = NULL;
@@ -357,7 +358,7 @@ static void OGLReset()
 		glUniform1i(hasTexLoc, 0);
 		hasTexture = false;
 		glUniform1i(texBlendLoc, 0);
-
+		glUniform1i(oglWBuffer, 0);
 	}
 
 	TexCache_Reset();
@@ -504,6 +505,8 @@ static char OGLInit(void)
 		hasTexLoc = glGetUniformLocation(shaderProgram, "hasTexture");
 
 		texBlendLoc = glGetUniformLocation(shaderProgram, "texBlending");
+
+		oglWBuffer = glGetUniformLocation(shaderProgram, "oglWBuffer");
 	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
@@ -1037,6 +1040,8 @@ static void OGLRender()
 			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rgbToonTable[0]);
 			gfx3d.state.invalidateToon = false;
 		}
+
+		glUniform1i(oglWBuffer, gfx3d.renderState.wbuffer);
 	}
 
 	xglDepthMask(GL_TRUE);
