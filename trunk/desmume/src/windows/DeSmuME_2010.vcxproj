@@ -489,6 +489,10 @@
     <ClCompile Include="..\utils\libfat\libfat_public_api.cpp" />
     <ClCompile Include="..\utils\libfat\lock.cpp" />
     <ClCompile Include="..\utils\libfat\partition.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinystr.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinyxml.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinyxmlerror.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinyxmlparser.cpp" />
     <ClCompile Include="..\utils\vfat.cpp" />
     <ClCompile Include="..\version.cpp" />
     <ClCompile Include="..\wifi.cpp" />
@@ -631,6 +635,8 @@
     <ClInclude Include="..\utils\libfat\lock.h" />
     <ClInclude Include="..\utils\libfat\mem_allocate.h" />
     <ClInclude Include="..\utils\libfat\partition.h" />
+    <ClInclude Include="..\utils\tinyxml\tinystr.h" />
+    <ClInclude Include="..\utils\tinyxml\tinyxml.h" />
     <ClInclude Include="..\utils\vfat.h" />
     <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />

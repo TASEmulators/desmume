@@ -49,6 +49,9 @@
     <Filter Include="Core\utils\libfat">
       <UniqueIdentifier>{c751e37c-54da-44e2-9be8-0399cb02467a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\utils\tinyxml">
+      <UniqueIdentifier>{6d47beab-6087-48e1-953d-f5da134a023a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp">
@@ -453,6 +456,18 @@
     <ClCompile Include="filter\hq4x.cpp">
       <Filter>Windows\filters</Filter>
     </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinystr.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinyxml.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinyxmlerror.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinyxmlparser.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -848,6 +863,12 @@
     </ClInclude>
     <ClInclude Include="filter\hq4x.h">
       <Filter>Windows\filters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\tinyxml\tinystr.h">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\tinyxml\tinyxml.h">
+      <Filter>Core\utils\tinyxml</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
