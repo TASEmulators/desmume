@@ -604,5 +604,7 @@ void ClearAutoHold(void);
 
 bool ValidateSlot2Access(u32 procnum, u32 demandSRAMSpeed, u32 demand1stROMSpeed, u32 demand2ndROMSpeed, int clockbits);
 
+extern ADVANsCEne	advsc;
+
 #endif
 

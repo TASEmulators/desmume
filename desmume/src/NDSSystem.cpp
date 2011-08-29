@@ -67,6 +67,7 @@ static u8	countLid = 0;
 GameInfo gameInfo;
 NDSSystem nds;
 CFIRMWARE	*firmware = NULL;
+ADVANsCEne	advsc;
 
 using std::min;
 using std::max;
@@ -563,10 +564,37 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	gameInfo.populate();
 	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
-	INFO("\nROM crc: %08X\n", gameInfo.crc);
+	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
+	INFO("ROM crc: %08X\n", gameInfo.crc);
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
-	INFO("ROM internal name: %s\n\n", gameInfo.ROMname);
-	INFO("ROM game code: %c%c%c%c\n\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
+	INFO("ROM internal name: %s\n", gameInfo.ROMname);
+	
+	memset(buf, 0, MAX_PATH);
+	strcpy(buf, path.pathToModule);
+	strcat(buf, "desmume.ddb");							// DeSmuME database	:)
+	advsc.setDatabase(buf);
+	buf[0] = gameInfo.header.gameCode[0];
+	buf[1] = gameInfo.header.gameCode[1];
+	buf[2] = gameInfo.header.gameCode[2];
+	buf[3] = gameInfo.header.gameCode[3];
+	buf[4] = 0;
+	if (advsc.check(buf))
+	{
+		u8 sv = advsc.getSaveType();
+		printf("ADVANsCEne database:\n");
+		printf("\t* ROM save type: ");
+		if (sv == 0xFF)
+			printf("Unknown");
+		else
+			if (sv == 0xFE)
+				printf("None");
+			else
+			{
+				printf("%s", save_names[sv]);
+			}
+		printf("\n\t* ROM crc: %08X\n", advsc.getCRC32());
+	}
+	printf("\n");
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(gameInfo.isHomebrew)
@@ -575,17 +603,12 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	NDS_Reset();
 
 	memset(buf, 0, MAX_PATH);
-
 	path.getpathnoext(path.BATTERY, buf);
-	
 	strcat(buf, ".dsv");							// DeSmuME memory card	:)
-
 	MMU_new.backupDevice.load_rom(buf);
 
 	memset(buf, 0, MAX_PATH);
-
 	path.getpathnoext(path.CHEATS, buf);
-	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheats->init(buf);
 
@@ -1751,7 +1774,7 @@ FORCEINLINE void arm9log()
 			INFO("Disassembler is stopped\n");
 		}*/
 #else
-		printf("%05d:%03d %12lld 9:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
+		printf("%05d:%03d %12lld 9:%08X %08X %-30s\nR00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
 			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM9.instruct_adr,NDS_ARM9.instruction, dasmbuf, 
 			NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
@@ -1818,7 +1841,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	const u64 nds_timer_base, const s32 s32next, s32 arm9, s32 arm7)
 {
 	s32 timer = minarmtime<doarm9,doarm7>(arm9,arm7);
-	while(timer < s32next && !sequencer.reschedule)
+	while(timer < s32next && !sequencer.reschedule && execute)
 	{
 		if(doarm9 && (!doarm7 || arm9 <= timer))
 		{

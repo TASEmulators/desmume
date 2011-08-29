@@ -78,6 +78,12 @@ libdesmume_a_SOURCES = \
 	utils/libfat/mem_allocate.h \
 	utils/libfat/partition.cpp \
 	utils/libfat/partition.h \
+	utils/tinyxml/tinystr.cpp \
+	utils/tinyxml/tinystr.h \
+	utils/tinyxml/tinyxml.cpp \
+	utils/tinyxml/tinyxml.h \
+	utils/tinyxml/tinyxmlerror.cpp \
+	utils/tinyxml/tinyxmlparser.cpp \
 	addons.cpp addons.h \
 	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp addons/slot1_retail_nand.cpp \
 	cheatSystem.cpp cheatSystem.h \

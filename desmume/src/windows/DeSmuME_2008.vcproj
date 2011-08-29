@@ -1249,6 +1249,34 @@
 						>
 					</File>
 				</Filter>
+				<Filter
+					Name="tinyxml"
+					>
+					<File
+						RelativePath="..\utils\tinyxml\tinystr.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\tinyxml\tinystr.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\tinyxml\tinyxml.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\tinyxml\tinyxml.h"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\tinyxml\tinyxmlerror.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\utils\tinyxml\tinyxmlparser.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="metaspu"
