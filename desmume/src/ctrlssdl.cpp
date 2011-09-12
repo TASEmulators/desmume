@@ -436,7 +436,7 @@ process_ctrls_event( SDL_Event& event,
           if (event.active.gain) {
             cfg->focused = 1;
             SPU_Pause(0);
-            osd->addLine("Auto pause disabled\n");
+            osd->addLine("Auto pause disabled");
           } else {
             cfg->focused = 0;
             SPU_Pause(1);
@@ -470,18 +470,18 @@ process_ctrls_event( SDL_Event& event,
                 cfg->fake_mic = !cfg->fake_mic;
                 Mic_DoNoise(cfg->fake_mic);
                 if (cfg->fake_mic)
-                  osd->addLine("Fake mic enabled\n");
+                  osd->addLine("Fake mic enabled");
                 else
-                  osd->addLine("Fake mic disabled\n");
+                  osd->addLine("Fake mic disabled");
                 break;
 #endif
 
             case SDLK_o:
                 cfg->boost = !cfg->boost;
                 if (cfg->boost)
-                  osd->addLine("Boost mode enabled\n");
+                  osd->addLine("Boost mode enabled");
                 else
-                  osd->addLine("Boost mode disabled\n");
+                  osd->addLine("Boost mode disabled");
                 break;
 
             case SDLK_LSHIFT:
