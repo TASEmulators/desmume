@@ -2004,10 +2004,10 @@ static void ToggleAudio (GtkToggleAction *action)
 {
     if (gtk_toggle_action_get_active(action) == TRUE) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-        osd->addLine("Audio enabled\n");
+        osd->addLine("Audio enabled");
     } else {
         SPU_ChangeSoundCore(0, 0);
-        osd->addLine("Audio disabled\n");
+        osd->addLine("Audio disabled");
     }
 }
 
@@ -2018,9 +2018,9 @@ static void ToggleMicNoise (GtkToggleAction *action)
 
     Mic_DoNoise(doNoise);
     if (doNoise)
-       osd->addLine("Fake mic enabled\n");
+       osd->addLine("Fake mic enabled");
     else
-       osd->addLine("Fake mic disabled\n");
+       osd->addLine("Fake mic disabled");
 }
 #endif
 

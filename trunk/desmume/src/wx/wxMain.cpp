@@ -680,12 +680,12 @@ void DesmumeFrame::Modify_AudioDriver(wxCommandEvent &event)
 	switch (selection) {
 	case AUDIODRIVER_DISABLE:
 		SPU_ChangeSoundCore(0, 0);
-		osd->addLine("Audio disabled\n");
+		osd->addLine("Audio disabled");
 		break;
 	default:
 	case AUDIODRIVER_SDL:
 		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-		osd->addLine("Audio enabled (SDL driver)\n");
+		osd->addLine("Audio enabled (SDL driver)");
 		break;
 	}
 }
