@@ -4597,6 +4597,9 @@ static const struct luaL_reg memorylib [] =
 	{"writeshort", memory_writeword},
 	{"writelong", memory_writedword},
 
+	{"vram_readword", vram_readword},
+	{"vram_writeword", vram_writeword},
+
 	// memory hooks
 	{"registerwrite", memory_registerwrite},
 	{"registerread", memory_registerread},
