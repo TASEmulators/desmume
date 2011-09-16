@@ -1750,6 +1750,14 @@ DEFINE_LUA_FUNCTION(memory_readbytesigned, "address")
 	lua_pushinteger(L, value);
 	return 1;
 }
+DEFINE_LUA_FUNCTION(vram_readword, "address")
+{
+	int address = luaL_checkinteger(L,1);
+	u16 value = T1ReadWord(MMU.ARM9_LCD,address);
+	lua_settop(L,0);
+	lua_pushinteger(L, value);
+	return 1;
+}
 DEFINE_LUA_FUNCTION(memory_readword, "address")
 {
 	int address = luaL_checkinteger(L,1);
@@ -1795,6 +1803,13 @@ DEFINE_LUA_FUNCTION(memory_writeword, "address,value")
 	int address = luaL_checkinteger(L,1);
 	unsigned short value = (unsigned short)(luaL_checkinteger(L,2) & 0xFFFF);
 	_MMU_write16<ARMCPU_ARM9>(address, value);
+	return 0;
+}
+DEFINE_LUA_FUNCTION(vram_writeword, "address,value")
+{
+	int address = luaL_checkinteger(L,1);
+	u16 value = (u16)(luaL_checkinteger(L,2) & 0xFFFF);
+	T1WriteWord(MMU.ARM9_LCD,address,value);
 	return 0;
 }
 DEFINE_LUA_FUNCTION(memory_writedword, "address,value")
