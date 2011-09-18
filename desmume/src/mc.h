@@ -83,7 +83,7 @@ public:
 	}
 	void setDatabase(const char *path) { strcpy(database_path, path); }
 	u32 convertDB(const char *in_filaname);
-	u8 check(const char *serial, u32 crc = 0);
+	u8 check(const char *serial);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }
 };
