@@ -1253,7 +1253,7 @@ void BackupDevice::forceManualBackupType()
 }
 
 // ============================================= ADVANsCEne
-u8 ADVANsCEne::check(const char *serial)
+u8 ADVANsCEne::checkDB(const char *serial)
 {
 	FILE *fp = fopen(database_path, "rb");
 	if (fp)

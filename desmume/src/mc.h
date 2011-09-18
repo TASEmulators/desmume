@@ -57,7 +57,7 @@
 #define _ADVANsCEne_BASE_VERSION_MAJOR 1
 #define _ADVANsCEne_BASE_VERSION_MINOR 0
 #define _ADVANsCEne_BASE_NAME "ADVANsCEne Nintendo DS Collection"
-struct ADVANsCEne
+class ADVANsCEne
 {
 private:
 	char			database_path[MAX_PATH];		// DeSmuME save types 
@@ -83,7 +83,7 @@ public:
 	}
 	void setDatabase(const char *path) { strcpy(database_path, path); }
 	u32 convertDB(const char *in_filaname);
-	u8 check(const char *serial);
+	u8 checkDB(const char *serial);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }
 };
