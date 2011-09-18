@@ -18,6 +18,14 @@
 		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
+		7FA912201426523900E2ABDD /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
+		7FA912211426523900E2ABDD /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121C1426523900E2ABDD /* tinyxml.cpp */; };
+		7FA912221426523900E2ABDD /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121E1426523900E2ABDD /* tinyxmlerror.cpp */; };
+		7FA912231426523900E2ABDD /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */; };
+		7FA912241426523900E2ABDD /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
+		7FA912251426523900E2ABDD /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121C1426523900E2ABDD /* tinyxml.cpp */; };
+		7FA912261426523900E2ABDD /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121E1426523900E2ABDD /* tinyxmlerror.cpp */; };
+		7FA912271426523900E2ABDD /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
 		AB06CB57135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
@@ -250,6 +258,12 @@
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
+		7FA9121A1426523900E2ABDD /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
+		7FA9121B1426523900E2ABDD /* tinystr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinystr.h; sourceTree = "<group>"; };
+		7FA9121C1426523900E2ABDD /* tinyxml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxml.cpp; sourceTree = "<group>"; };
+		7FA9121D1426523900E2ABDD /* tinyxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinyxml.h; sourceTree = "<group>"; };
+		7FA9121E1426523900E2ABDD /* tinyxmlerror.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlerror.cpp; sourceTree = "<group>"; };
+		7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slot1_retail_nand.cpp; path = ../addons/slot1_retail_nand.cpp; sourceTree = SOURCE_ROOT; };
 		AB06CB41135B8A4D00E977B3 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
@@ -574,6 +588,7 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				7FA912191426523900E2ABDD /* tinyxml */,
 				956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */,
 				AB06CD9B135B8AED00E977B3 /* addons */,
 				AB06CDA7135B8AED00E977B3 /* cli */,
@@ -704,6 +719,20 @@
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
+		};
+		7FA912191426523900E2ABDD /* tinyxml */ = {
+			isa = PBXGroup;
+			children = (
+				7FA9121A1426523900E2ABDD /* tinystr.cpp */,
+				7FA9121B1426523900E2ABDD /* tinystr.h */,
+				7FA9121C1426523900E2ABDD /* tinyxml.cpp */,
+				7FA9121D1426523900E2ABDD /* tinyxml.h */,
+				7FA9121E1426523900E2ABDD /* tinyxmlerror.cpp */,
+				7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */,
+			);
+			name = tinyxml;
+			path = ../utils/tinyxml;
+			sourceTree = SOURCE_ROOT;
 		};
 		AB06CB79135B8A7600E977B3 /* Other Sources */ = {
 			isa = PBXGroup;
@@ -929,6 +958,7 @@
 			isa = PBXProject;
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				English,
@@ -1115,6 +1145,10 @@
 				AB06CE96135B8AEE00E977B3 /* xstring.cpp in Sources */,
 				AB06CECB135B8E0B00E977B3 /* rom_info.m in Sources */,
 				AB06CECC135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */,
+				7FA912241426523900E2ABDD /* tinystr.cpp in Sources */,
+				7FA912251426523900E2ABDD /* tinyxml.cpp in Sources */,
+				7FA912261426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
+				7FA912271426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1221,6 +1255,10 @@
 				AB06CECA135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */,
 				AB06CEEC135B8E4A00E977B3 /* OGLRender.cpp in Sources */,
 				956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */,
+				7FA912201426523900E2ABDD /* tinystr.cpp in Sources */,
+				7FA912211426523900E2ABDD /* tinyxml.cpp in Sources */,
+				7FA912221426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
+				7FA912231426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
