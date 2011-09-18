@@ -578,7 +578,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	buf[2] = gameInfo.header.gameCode[2];
 	buf[3] = gameInfo.header.gameCode[3];
 	buf[4] = 0;
-	if (advsc.check(buf))
+	if (advsc.checkDB(buf))
 	{
 		u8 sv = advsc.getSaveType();
 		printf("ADVANsCEne database:\n");
