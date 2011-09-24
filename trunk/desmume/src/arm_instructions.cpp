@@ -3231,8 +3231,17 @@ TEMPLATE static u32 FASTCALL  OP_BLX_REG(const u32 i)
 
 #define SIGNEXTEND_24(i) (((s32)i<<8)>>8)
 
-TEMPLATE static u32 FASTCALL  OP_B(const u32 i)
+TEMPLATE static u32 FASTCALL OP_B(const u32 i)
 {
+	static const u32 mov_r12_r12 = 0xE1A0C00C;
+	const u32 last = _MMU_read32<PROCNUM,MMU_AT_DEBUG>(cpu->instruct_adr-4);
+	if(last == mov_r12_r12)
+	{
+		const u32 next = _MMU_read16<PROCNUM,MMU_AT_DEBUG>(cpu->instruct_adr+4);
+		if(next == 0x6464)
+			NocashMessage(cpu, 8);
+	}
+
 	u32 off = SIGNEXTEND_24(i);
 	if(CONDITION(i)==0xF)
 	{
@@ -3243,7 +3252,7 @@ TEMPLATE static u32 FASTCALL  OP_B(const u32 i)
 	cpu->R[15] &= (0xFFFFFFFC|(cpu->CPSR.bits.T<<1));
 	cpu->next_instruction = cpu->R[15];
 
-    return 3;
+	return 3;
 }
 
 TEMPLATE static u32 FASTCALL  OP_BL(const u32 i)
