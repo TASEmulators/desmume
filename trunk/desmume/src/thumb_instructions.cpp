@@ -1072,7 +1072,7 @@ TEMPLATE static  u32 FASTCALL OP_B_UNCOND(const u32 i)
 	static const u16 mov_r12_r12 = 0x46E4;
 	if(last == mov_r12_r12 && next == 0x6464)
 	{
-		NocashMessage(cpu);
+		NocashMessage(cpu,6);
 	}
 
 	cpu->R[15] += (SIGNEEXT_IMM11(i)<<1);
