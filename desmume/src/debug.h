@@ -141,7 +141,7 @@ public:
 #define INFO(...) INFOC(10, __VA_ARGS__)
 
 void IdeasLog(armcpu_t* cpu);
-void NocashMessage(armcpu_t* cpu);
+void NocashMessage(armcpu_t* cpu, int offset);
 
 enum EDEBUG_EVENT
 {

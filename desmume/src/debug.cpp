@@ -336,9 +336,9 @@ void IdeasLog(armcpu_t* cpu)
 	//don't emit a newline. that is a pain in the butt.
 }
 
-void NocashMessage(armcpu_t* cpu)
+void NocashMessage(armcpu_t* cpu, int offset)
 {
-	u32 adr = cpu->instruct_adr + 6;
+	u32 adr = cpu->instruct_adr + offset;
 
 	std::string todo;
 	for(;;) {
