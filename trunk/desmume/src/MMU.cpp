@@ -2017,6 +2017,8 @@ void DmaController::doCopy()
 	// zeromus, check it
 	if (wordcount > todo)
 		nextEvent += todo/4; //TODO - surely this is a gross simplification
+	//<zeromus> nextEvent must [always] be advanced to schedule the completion IRQ to fire, even if the timing is pretty much completely imaginary.
+	//<crazymax> but it fixes contra 4 bonus menu, #2867258
 	//apparently moon has very, very tight timing (i didnt spy it using waitbyloop swi...)
 	//so lets bump this down a bit for now,
 	//(i think this code is in nintendo libraries)
