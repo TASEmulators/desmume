@@ -988,17 +988,16 @@ void WIFI_write16(u32 address, u16 val)
 				wifiMac.RXWriteCursor = WIFI_IOREG(REG_WIFI_WRITECSRLATCH);
 				WIFI_IOREG(REG_WIFI_RXHWWRITECSR) = wifiMac.RXWriteCursor;
 			}
-			else
-			{
-				while (!wifiMac.RXPacketQueue.empty())
-					wifiMac.RXPacketQueue.pop();
-			}
-
 			if (BIT7(val))
 			{
 				WIFI_LOG(2, "TXBUF_REPLY=%04X\n", WIFI_IOREG(REG_WIFI_TXBUF_REPLY1));
 				wifiMac.TXSlots[WIFI_TXSLOT_MPREPLY].RegVal = WIFI_IOREG(REG_WIFI_TXBUF_REPLY1);
 				WIFI_IOREG(REG_WIFI_TXBUF_REPLY1) = 0x0000;
+			}
+			if (!BIT15(val))
+			{
+				while (!wifiMac.RXPacketQueue.empty())
+					wifiMac.RXPacketQueue.pop();
 			}
 			break;
 		case REG_WIFI_RXRANGEBEGIN:
