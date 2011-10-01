@@ -1128,14 +1128,15 @@ static void gfx3d_glNormal(s32 v)
 	s16 ny = ((v<<12)>>22)<<3;
 	s16 nz = ((v<<2)>>22)<<3;
 
+	CACHE_ALIGN s32 normal[4] =  { nx,ny,nz,(1<<12) };
+
 	if (texCoordinateTransform == 2)
 	{
 		//SM64 highlight rendered star in main menu tests this
-		last_s = (s32)(((s64)nx * mtxCurrent[3][0] + (s64)ny * mtxCurrent[3][4] + (s64)nz * mtxCurrent[3][8] + (_s<<24))>>24);
-		last_t = (s32)(((s64)nx * mtxCurrent[3][1] + (s64)ny * mtxCurrent[3][5] + (s64)nz * mtxCurrent[3][9] + (_t<<24))>>24);
+		//also smackdown 2010 player textures tested this (needed cast on _s and _t)
+		last_s = (s32)(((s64)normal[0] * mtxCurrent[3][0] + (s64)normal[1] * mtxCurrent[3][4] + (s64)normal[2] * mtxCurrent[3][8] + (((s64)_s)<<24))>>24);
+		last_t = (s32)(((s64)normal[0] * mtxCurrent[3][1] + (s64)normal[1] * mtxCurrent[3][5] + (s64)normal[2] * mtxCurrent[3][9] + (((s64)_t)<<24))>>24);
 	}
-
-	CACHE_ALIGN s32 normal[4] =  { nx,ny,nz,(1<<12) };
 
 	MatrixMultVec3x3_fixed(mtxCurrent[2],normal);
 
