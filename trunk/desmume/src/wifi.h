@@ -504,6 +504,7 @@ typedef struct
 	u16 retryLimit;
 
 	/* timing */
+	u64 GlobalUsecTimer;
 	BOOL crystalEnabled;
 	u64 usec;
 	BOOL usecEnable;
@@ -553,14 +554,6 @@ typedef struct
 
 typedef struct
 {
-	u64 usecCounter;
-
-} Adhoc_t;
-
-typedef struct
-{
-	u64 usecCounter;
-
 	EAPStatus status;
 	u16 seqNum;
 
@@ -573,7 +566,6 @@ extern pcap_t *wifi_bridge;
 #endif
 
 extern wifimac_t wifiMac;
-extern Adhoc_t Adhoc;
 extern SoftAP_t SoftAP;
 
 bool WIFI_Init();

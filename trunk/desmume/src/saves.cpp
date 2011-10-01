@@ -366,8 +366,6 @@ SFORMAT SF_WIFI[]={
 	{ "W580", 2, 0x800, &wifiMac.IOPorts[0]},
 	{ "W590", 2, 1, &wifiMac.randomSeed},
 
-	{ "WX00", 8, 1, &SoftAP.usecCounter},
-
 	{ 0 }
 };
 
