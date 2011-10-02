@@ -1150,18 +1150,19 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     GdkPixbuf *resizedPixbuf, *drawPixbuf;
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
     cairo_t *cr;
+    GdkWindow *window;
 
     gfloat vratio, hratio, nscreen_ratio;
     gint daW, daH, imgW, imgH, screenW, screenH, gapW, gapH;
     gint primaryOffsetX, primaryOffsetY, secondaryOffsetX, secondaryOffsetY;
     const gboolean gap_vertical = ((nds_screen.orientation == ORIENT_VERTICAL) ^ (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 270));
   
-#if GTK_CHECK_VERSION(2,14,0)
-    gdk_drawable_get_size(
-            gtk_widget_get_window(GTK_WIDGET(pDrawingArea)), &daW, &daH);
+    window = gtk_widget_get_window(GTK_WIDGET(pDrawingArea));
+#if GTK_CHECK_VERSION(2,24,0)
+    daW = gdk_window_get_width(window);
+    daH = gdk_window_get_height(window);
 #else
-    gdk_drawable_get_size(
-            (GTK_WIDGET(pDrawingArea))->window, &daW, &daH);
+    gdk_drawable_get_size(window, &daW, &daH);
 #endif
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
