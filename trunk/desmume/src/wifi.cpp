@@ -678,7 +678,7 @@ void WIFI_Reset()
 	wifiCom = wifiComs[CommonSettings.wifi.mode];
 	if (wifiCom && (wifi_lastmode != CommonSettings.wifi.mode))
 		wifiCom->Init();
-	else
+	else if (wifiCom)
 		wifiCom->Reset();
 	wifi_lastmode = CommonSettings.wifi.mode;
 
