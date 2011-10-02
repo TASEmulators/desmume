@@ -24,6 +24,8 @@
 // the count of bytes copied from the firmware into memory 
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
 
+#define FW_CONFIG_FILE_EXT "dfc"
+
 class CFIRMWARE
 {
 private:
@@ -47,6 +49,8 @@ public:
 	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0) {};
 	
 	bool load();
+
+	static std::string GetExternalFilePath();
 
 	struct HEADER
 	{

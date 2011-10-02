@@ -1,4 +1,4 @@
-/*	Copyright (C) 2009 DeSmuME Team
+/*	Copyright (C) 2009-2011 DeSmuME Team
 
     This file is part of DeSmuME
 
@@ -566,7 +566,9 @@ bool CFIRMWARE::load()
 		INFO("   * ARM7 unpacked size:         0x%08X (%i) bytes\n", size7, size7);
 	}
 
-	snprintf(MMU.fw.userfile, MAX_PATH, "%sFirmware%cfirmware.dfc", path.pathToModule, DIRECTORY_DELIMITER_CHAR);
+	// Generate the path for the external firmware config file.
+	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
+	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
 
 	fclose(fp);
 	fp = fopen(MMU.fw.userfile, "rb");
@@ -607,6 +609,15 @@ bool CFIRMWARE::load()
 	return true;
 }
 
+std::string CFIRMWARE::GetExternalFilePath()
+{
+	std::string fwPath = CommonSettings.Firmware;
+	std::string fwFileName = Path::GetFileNameFromPathWithoutExt(fwPath);
+	std::string configPath = path.pathToBattery;
+	std::string finalPath = configPath + DIRECTORY_DELIMITER_CHAR + fwFileName + FILE_EXT_DELIMITER_CHAR + FW_CONFIG_FILE_EXT;
+
+	return finalPath;
+}
 
 //=====================================================================================================
 static u32
