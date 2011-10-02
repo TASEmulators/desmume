@@ -74,10 +74,6 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-#if GTK_CHECK_VERSION(2,14,0)
-#define HAVE_TIMEOUT 1
-#endif
-
 #define SCREENS_PIXEL_SIZE (256*192*2)
 #define SCREEN_BYTES_PER_PIXEL 3
 #define GAP_SIZE 50
@@ -455,9 +451,7 @@ public:
 
   int firmware_language;
 
-#ifdef HAVE_TIMEOUT
   int timeout;
-#endif
 };
 
 static void
@@ -467,9 +461,7 @@ init_configured_features( class configured_features *config)
 
   config->savetype = 0;
 
-#ifdef HAVE_TIMEOUT
   config->timeout = 0;
-#endif
 
   /* use the default language */
   config->firmware_language = -1;
@@ -504,9 +496,7 @@ fill_configured_features( class configured_features *config,
                                     "\t\t\t\t  4 = Italian\n"
                                     "\t\t\t\t  5 = Spanish\n",
                                     "LANG"},
-#ifdef HAVE_TIMEOUT
     { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit desmume after the specified seconds for testing purpose.", "SECONDS"},
-#endif
     { NULL }
   };
 
@@ -1686,11 +1676,7 @@ static void Printscreen()
                           NULL);
 
     filen = g_strdup_printf("desmume-screenshot-%d.png", seq);
-#if GLIB_CHECK_VERSION(2,14,0)
     filename = g_build_filename(g_get_user_special_dir(G_USER_DIRECTORY_PICTURES), filen, NULL);
-#else
-    filename = g_build_filename("./", filen, NULL);
-#endif
 
     gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
     if (error) {
@@ -2036,7 +2022,6 @@ static void desmume_gtk_menu_tools (GtkActionGroup *ag)
     }
 }
 
-#ifdef HAVE_TIMEOUT
 static gboolean timeout_exit_cb(gpointer data)
 {
     DoQuit();
@@ -2044,8 +2029,6 @@ static gboolean timeout_exit_cb(gpointer data)
 
     return FALSE;
 }
-#endif
-
 
 static int
 common_gtk_main( class configured_features *my_config)
@@ -2326,11 +2309,9 @@ common_gtk_main( class configured_features *my_config)
         }
     }
 
-#ifdef HAVE_TIMEOUT
     if (my_config->timeout > 0) {
         g_timeout_add_seconds(my_config->timeout, timeout_exit_cb, GINT_TO_POINTER(my_config->timeout));
     }
-#endif
 
     /* Main loop */
     gtk_main();
