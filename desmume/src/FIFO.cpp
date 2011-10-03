@@ -197,12 +197,13 @@ static void GXF_FIFO_handleEvents()
 	if(emptychange||lowchange) NDS_Reschedule();
 }
 
+static bool IsMatrixStackCommand(u8 cmd)
+{
+	return cmd == 0x11 || cmd == 0x12;
+}
+
 void GFX_FIFOsend(u8 cmd, u32 param)
 {
-	if(cmd==0x41) {
-		int zzz=9;
-	}
-
 	//INFO("gxFIFO: send 0x%02X = 0x%08X (size %03i/0x%02X) gxstat 0x%08X\n", cmd, param, gxFIFO.size, gxFIFO.size, gxstat);
 	//printf("fifo recv: %02X: %08X upto:%d\n",cmd,param,gxFIFO.size+1);
 
@@ -228,7 +229,7 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	//if a matrix op is entering the pipeline, do accounting for it
 	//(this is tested by wild west, which will jam a few ops in the fifo and then wait for the matrix stack to be 
 	//un-busy so it can read back the current matrix stack position)
-	if((cmd & 0xF0) == 0x10)
+	if(IsMatrixStackCommand(cmd))
 		gxFIFO.matrix_stack_op_size++;
 
 	if(gxFIFO.size>=HACK_GXIFO_SIZE) {
@@ -257,7 +258,7 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 	*param = gxFIFO.param[gxFIFO.head];
 
 	//see the associated increment in another function
-	if((*cmd & 0xF0) == 0x10)
+	if(IsMatrixStackCommand(*cmd))
 	{
 		gxFIFO.matrix_stack_op_size--;
 		if(gxFIFO.matrix_stack_op_size>0x10000000)
