@@ -1,4 +1,4 @@
-/*  
+/*
 	Copyright (C) 2006-2007 shash
 	Copyright (C) 2007-2011 DeSmuME team
 
