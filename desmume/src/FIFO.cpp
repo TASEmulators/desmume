@@ -1,6 +1,6 @@
-/*  Copyright (C) 2006 yopyop
+/*  Copyright 2006 yopyop
     Copyright 2007 shash
-	Copyright 2007-2010 DeSmuME team
+	Copyright 2007-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -169,6 +169,7 @@ void GFX_PIPEclear()
 	gxPIPE.head = 0;
 	gxPIPE.tail = 0;
 	gxPIPE.size = 0;
+	gxFIFO.matrix_stack_op_size = 0;
 }
 
 void GFX_FIFOclear()
@@ -176,6 +177,7 @@ void GFX_FIFOclear()
 	gxFIFO.head = 0;
 	gxFIFO.tail = 0;
 	gxFIFO.size = 0;
+	gxFIFO.matrix_stack_op_size = 0;
 }
 
 static void GXF_FIFO_handleEvents()
@@ -188,6 +190,9 @@ static void GXF_FIFO_handleEvents()
 	bool empty = gxFIFO.size == 0;
 	bool emptychange = MMU_new.gxstat.fifo_empty ^ empty;
 	MMU_new.gxstat.fifo_empty = empty;
+
+
+	MMU_new.gxstat.sb = gxFIFO.matrix_stack_op_size != 0;
 
 	if(emptychange||lowchange) NDS_Reschedule();
 }
@@ -220,6 +225,12 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	gxFIFO.size++;
 	if (gxFIFO.tail > HACK_GXIFO_SIZE-1) gxFIFO.tail = 0;
 
+	//if a matrix op is entering the pipeline, do accounting for it
+	//(this is tested by wild west, which will jam a few ops in the fifo and then wait for the matrix stack to be 
+	//un-busy so it can read back the current matrix stack position)
+	if((cmd & 0xF0) == 0x10)
+		gxFIFO.matrix_stack_op_size++;
+
 	if(gxFIFO.size>=HACK_GXIFO_SIZE) {
 		printf("--FIFO FULL-- : %d\n",gxFIFO.size);
 	}
@@ -244,6 +255,14 @@ BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
 
 	*cmd = gxFIFO.cmd[gxFIFO.head];
 	*param = gxFIFO.param[gxFIFO.head];
+
+	//see the associated increment in another function
+	if((*cmd & 0xF0) == 0x10)
+	{
+		gxFIFO.matrix_stack_op_size--;
+		if(gxFIFO.matrix_stack_op_size>0x10000000)
+			printf("bad news disaster in matrix_stack_op_size\n");
+	}
 
 	gxFIFO.head++;
 	gxFIFO.size--;
