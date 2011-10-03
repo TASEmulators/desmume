@@ -1,6 +1,7 @@
-/*  Copyright (C) 2006 yopyop
+/*  
+	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2011 DeSmuME team
 
 	This file is part of DeSmuME
 
@@ -3023,6 +3024,7 @@ TEMPLATE static u32 FASTCALL  OP_MSR_CPSR(const u32 i)
 	}
 	cpu->CPSR.val = ((cpu->CPSR.val & (~mask)) | (operand & mask));
 	if (BIT16(i)) armcpu_switchMode(cpu, cpu->CPSR.bits.mode);
+	cpu->changeCPSR();
 #else
 	if(cpu->CPSR.bits.mode!=USR)
 	{
@@ -3070,6 +3072,7 @@ TEMPLATE static u32 FASTCALL  OP_MSR_SPSR(const u32 i)
 		mask = byte_mask & (v4_USER_MASK | v4_PRIV_MASK | v4_STATE_MASK);
 	}
 	cpu->SPSR.val = ((cpu->SPSR.val & (~mask)) | (operand & mask));
+	cpu->changeCPSR();
 #else
 	if(cpu->CPSR.bits.mode!=USR)
 	{
@@ -3084,6 +3087,7 @@ TEMPLATE static u32 FASTCALL  OP_MSR_SPSR(const u32 i)
 	}
 	if(BIT19(i))
 		cpu->SPSR.val = (cpu->SPSR.val & 0x00FFFFFF) | (operand & 0xFF000000);
+	cpu->changeCPSR();
 #endif
 	
 	return 1;
@@ -3126,6 +3130,7 @@ TEMPLATE static u32 FASTCALL  OP_MSR_CPSR_IMM_VAL(const u32 i)
 	}
 	cpu->CPSR.val = ((cpu->CPSR.val & (~mask)) | (operand & mask));
 	if (BIT16(i)) armcpu_switchMode(cpu, cpu->CPSR.bits.mode);
+	cpu->changeCPSR();
 #else
 	if(cpu->CPSR.bits.mode!=USR)
 	{

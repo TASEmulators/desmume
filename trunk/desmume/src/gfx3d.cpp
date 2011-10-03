@@ -1,5 +1,6 @@
-/*	Copyright (C) 2006 yopyop
-    Copyright (C) 2008-2010 DeSmuME team
+/*	
+	Copyright (C) 2006 yopyop
+	Copyright (C) 2008-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -851,8 +852,6 @@ static void gfx3d_glPushMatrix()
 
 	if(mymode==2)
 		MatrixStackPushMatrix (&mtxStack[1], mtxCurrent[1]);
-
-	MMU_new.gxstat.sb = 1; // set busy
 }
 
 static void gfx3d_glPopMatrix(s32 i)
@@ -874,8 +873,6 @@ static void gfx3d_glPopMatrix(s32 i)
 
 	if (mymode == 2)
 		MatrixStackPopMatrix(mtxCurrent[1], &mtxStack[1], i);
-
-	MMU_new.gxstat.sb = 1; // set busy
 }
 
 static void gfx3d_glStoreMatrix(u32 v)
@@ -888,7 +885,9 @@ static void gfx3d_glStoreMatrix(u32 v)
 	if(mymode==0 || mymode==3)
 		v = 0;
 
-	if (v >= 31) return;
+	v &= 31;
+	//this behaviour is unverified. gbatek suggests that it may be meaningful somehow.
+	if(v==31) return;
 
 	MatrixStackLoadMatrix (&mtxStack[mymode], v, mtxCurrent[mymode]);
 
@@ -908,7 +907,14 @@ static void gfx3d_glRestoreMatrix(u32 v)
 	if(mymode==0 || mymode==3)
 		v = 0;
 
-	if (v >= 31) return;
+	v &= 31;
+
+	//this seems to do something irrational if v==31, as far as we know.
+	//lets arbitrarily choose to use entry -
+	if(v==31) {
+		v = 0;
+		printf("gfx3d_glRestoreMatrix is using -1. why would anyone do this? please report!\n");
+	}
 
 	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v));
 
@@ -916,9 +922,6 @@ static void gfx3d_glRestoreMatrix(u32 v)
 
 	if (mymode == 2)
 		MatrixCopy (mtxCurrent[1], MatrixStackGetPos(&mtxStack[1], v));
-
-	//printf("restore: matrix %d to: \n",mymode); MatrixPrint(mtxCurrent[1]);
-
 }
 
 static void gfx3d_glLoadIdentity()
@@ -1672,7 +1675,7 @@ s32 gfx3d_GetClipMatrix (unsigned int index)
 {
 	s32 val = MatrixGetMultipliedIndex (index, mtxCurrent[0], mtxCurrent[1]);
 
-	//val *= (1<<12);
+	//printf("reading clip matrix: %d\n",index);
 
 	return (s32)val;
 }
@@ -1827,7 +1830,6 @@ static void gfx3d_execute(u8 cmd, u32 param)
 	log3D(cmd, param);
 #endif
 
-	MMU_new.gxstat.sb = 0;	// clear stack busy flag
 	switch (cmd)
 	{
 		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
@@ -2001,6 +2003,8 @@ void gfx3d_glFlush(u32 v)
 #endif
 	
 	isSwapBuffers = TRUE;
+
+	//printf("%05d:%03d:%12lld: FLUSH\n",currFrameCounter, nds.VCount, nds_timer);
 	
 	//well, the game wanted us to flush.
 	//it may be badly timed. lets just flush it.
@@ -2173,6 +2177,8 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 void gfx3d_sendCommandToFIFO(u32 val)
 {
+	//printf("gxFIFO: send val=0x%08X, size=%03i (fifo)\n", val, gxFIFO.size);
+
 	gxf_hardware.receive(val);
 }
 
@@ -2338,6 +2344,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GFHE", 4, 1, &gxFIFO.head},
 	{ "GFTA", 4, 1, &gxFIFO.tail},
 	{ "GFSZ", 4, 1, &gxFIFO.size},
+	{ "GFMS", 4, 1, &gxFIFO.matrix_stack_op_size},
 	{ "GFCM", 1, HACK_GXIFO_SIZE, &gxFIFO.cmd[0]},
 	{ "GFPM", 4, HACK_GXIFO_SIZE, &gxFIFO.param[0]},
 	{ "GPHE", 1, 1, &gxPIPE.head},

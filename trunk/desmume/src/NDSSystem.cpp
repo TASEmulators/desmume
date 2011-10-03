@@ -1776,7 +1776,7 @@ FORCEINLINE void arm9log()
 			INFO("Disassembler is stopped\n");
 		}*/
 #else
-		printf("%05d:%03d %12lld 9:%08X %08X %-30s\nR00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
+		printf("%05d:%03d %12lld 9:%08X %08X %-30s R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
 			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM9.instruct_adr,NDS_ARM9.instruction, dasmbuf, 
 			NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
@@ -1889,7 +1889,6 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 
 		timer = minarmtime<doarm9,doarm7>(arm9,arm7);
 		nds_timer = nds_timer_base + timer;
-		if (nds_timer >= MMU.gfx3dCycles) MMU_new.gxstat.sb = 0;	// clear stack busy flag
 	}
 
 	return std::make_pair(arm9, arm7);

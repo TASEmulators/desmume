@@ -1636,7 +1636,9 @@ u32 TGXSTAT::read32()
 	
 	// stack position always equal zero. possible timings is wrong
 	// using in "The Wild West"
-	ret |= ((_hack_getMatrixStackLevel(0) << 13) | (_hack_getMatrixStackLevel(1) << 8)); //matrix stack levels //no proof that these are needed yet
+	int proj_level = _hack_getMatrixStackLevel(0);
+	int mv_level = _hack_getMatrixStackLevel(1);
+	ret |= ((proj_level << 13) | (mv_level << 8)); //matrix stack levels //no proof that these are needed yet
 
 	ret |= sb<<14;	//stack busy
 	ret |= se<<15;
@@ -1649,10 +1651,13 @@ u32 TGXSTAT::read32()
 	if(isSwapBuffers) ret |= BIT(27);
 	//if fifo is nonempty, we're busy
 	if(gxFIFO.size!=0) ret |= BIT(27);
+
+	//printf("[%d] %d %d %d\n",currFrameCounter,se,sb,gxFIFO.size!=0);
+
 	
 	ret |= ((gxfifo_irq & 0x3) << 30); //user's irq flags
 
-	//printf("vc=%03d Returning gxstat read: %08X\n",nds.VCount,ret);
+	//printf("vc=%03d Returning gxstat read: %08X (isSwapBuffers=%d)\n",nds.VCount,ret,isSwapBuffers);
 
 	//ret = (2 << 8);
 	//INFO("gxSTAT 0x%08X (proj %i, pos %i)\n", ret, _hack_getMatrixStackLevel(1), _hack_getMatrixStackLevel(2));

@@ -1,21 +1,19 @@
 /*  
 	Copyright (C) 2006-2007 shash
+	Copyright (C) 2007-2011 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -274,7 +272,13 @@ static void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 
 	if((stack->position < 0) || (stack->position > stack->size))
 		MMU_new.gxstat.se = 1;
-	stack->position &= stack->size;
+
+	//this behaviour is unverified, but its more logical than the old code which would wrap around and turn negative
+	//it may still be right to wrap around, but we have no proof right now one way or another
+	if(stack->position < 0)
+		stack->position = 0;
+	if(stack->position > stack->size)
+		stack->position = stack->size;
 }
 
 void MatrixStackPushMatrix (MatrixStack *stack, const s32 *ptr)
