@@ -3,11 +3,6 @@
 
 //ref: http://vba-rerecording.googlecode.com/svn/trunk/src/2xsai.cpp
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef int s32;
-
 static u32 colorMask = 0xfefefe;
 static u32 lowPixelMask = 0x010101;
 static u32 qcolorMask = 0xfcfcfc;
