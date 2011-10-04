@@ -16,12 +16,12 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-struct SSurface {
+typedef struct {
 	unsigned char *Surface;
 
 	unsigned int Pitch;
 	unsigned int Width, Height;
-};
+} SSurface;
 
 void RenderNearest2X (SSurface Src, SSurface Dst);
 void RenderLQ2X (SSurface Src, SSurface Dst);
