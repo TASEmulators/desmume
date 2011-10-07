@@ -20,7 +20,11 @@
 #import <Cocoa/Cocoa.h>
 #import "../nds_control.h"
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+@interface SpeedLimitSelectionWindow : NSWindow <NSWindowDelegate>
+#else
 @interface SpeedLimitSelectionWindow : NSWindow
+#endif
 {
 	BOOL modal;
 	NintendoDS *target;

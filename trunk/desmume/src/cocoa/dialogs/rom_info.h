@@ -30,3 +30,14 @@
 + (void)changeDS:(NintendoDS*)DS;
 + (void)closeROMInfo;
 @end
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+void setUpTextField(NSTextField *text, bool data);
+
+#ifdef __cplusplus
+}
+#endif
