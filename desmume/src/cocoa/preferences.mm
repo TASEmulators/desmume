@@ -70,8 +70,12 @@ void setAppDefaults()
 }
 
 ///////////////////////////////
-
-@interface PreferencesDelegate : NSObject {}
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+@interface PreferencesDelegate : NSObject <NSWindowDelegate>
+#else
+@interface PreferencesDelegate : NSObject
+#endif
+{}
 @end
 
 @implementation PreferencesDelegate
@@ -106,8 +110,11 @@ void setAppDefaults()
 @end
 
 ////////////////////////////////////////////////////
-
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+@interface ToolbarDelegate : NSObject <NSToolbarDelegate>
+#else
 @interface ToolbarDelegate : NSObject
+#endif
 {
 	NSWindow *window;
 	NSToolbarItem *interface;

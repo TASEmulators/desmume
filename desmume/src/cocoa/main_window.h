@@ -32,7 +32,11 @@
 //This interface is to create and manaage the window
 //that displays DS video output and takes keyboard/mouse input
 //do not instanciate more than one of these
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+@interface VideoOutputWindow : NintendoDS <NSWindowDelegate>
+#else
 @interface VideoOutputWindow : NintendoDS
+#endif
 {
 	@private
 	NSWindow *window;

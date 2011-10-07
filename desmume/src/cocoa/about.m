@@ -45,7 +45,11 @@ NSTextField *about_version;
 NSTextField *about_date;
 NSTextField *about_website;
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+@interface AboutDelegate : NSObject <NSWindowDelegate>
+#else
 @interface AboutDelegate : NSObject
+#endif
 {
 }
 - (void)windowDidResize:(NSNotification*)notification;
