@@ -145,15 +145,6 @@ PKG_CHECK_MODULES(GTK,
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
 
-PKG_CHECK_MODULES(GTKGLEXT,
-                  "gtkglext-1.0",
-                  HAVE_GTKGLEXT=yes,
-                  HAVE_GTKGLEXT=no)
-AC_SUBST(GTKGLEXT_CFLAGS)
-AC_SUBST(GTKGLEXT_LIBS)
-if test "x$HAVE_GTKGLEXT" = "xyes"; then
-   AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
-fi
 
 PKG_CHECK_MODULES(GTHREAD,
                   "gthread-2.0",
@@ -162,16 +153,30 @@ PKG_CHECK_MODULES(GTHREAD,
 AC_SUBST(GTHREAD_CFLAGS)
 AC_SUBST(GTHREAD_LIBS)
 
-PKG_CHECK_MODULES(LIBGLADE,
-                  "libglade-2.0",
-                  HAVE_LIBGLADE=yes,
-                  HAVE_LIBGLADE=no)
-AC_SUBST(LIBGLADE_CFLAGS)
-AC_SUBST(LIBGLADE_LIBS)
+AC_ARG_ENABLE([glade],
+               [AC_HELP_STRING([--enable-glade], [enable glade frontend])],
+               [glade=$enableval],
+               [glade=yes])
 
-dnl uninstalled glade ui dir
-AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
-AC_SUBST(GLADEUI_UNINSTALLED_DIR)
+if test "x$glade" = "xyes" ; then
+    PKG_CHECK_MODULES(LIBGLADE,
+                      "libglade-2.0",
+                      HAVE_LIBGLADE=yes,
+                      HAVE_LIBGLADE=no)
+    AC_SUBST(LIBGLADE_CFLAGS)
+    AC_SUBST(LIBGLADE_LIBS)
+
+    dnl uninstalled glade ui dir
+    AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
+    AC_SUBST(GLADEUI_UNINSTALLED_DIR)
+
+    PKG_CHECK_MODULES(GTKGLEXT,
+                      "gtkglext-1.0",
+                      AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
+                      [])
+    AC_SUBST(GTKGLEXT_CFLAGS)
+    AC_SUBST(GTKGLEXT_LIBS)
+fi
 
 AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
 
