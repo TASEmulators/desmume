@@ -39,6 +39,11 @@ m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 dnl - Check for intltool/gettext macros
 m4_ifdef([IT_PROG_INTLTOOL],[IT_PROG_INTLTOOL])
 
+AC_CHECK_TOOL(HAVE_PKG, pkg-config, [])
+if test "xHAVE_PKG" = "x" ; then
+  AC_MSG_ERROR([pkg-config is required to build desmume])
+fi
+
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
@@ -115,93 +120,83 @@ if test "x$openal" = "xyes" ; then
 		LIBS="$LIBS -lopenal"
 	])
 fi
+AM_CONDITIONAL([HAVE_OPENAL], [test "${HAVE_OPENAL}" = "yes"])
 
 dnl - Check for GTK and/or libglade
 FOUND_GLIB=no
 HAVE_ALSA=no
 GLIB_VER=2.8
 GTK_VER=2.14
-AC_CHECK_TOOL(HAVE_PKG, pkg-config)
-AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
-  if test ! "x$HAVE_PKG" = "x" ; then
-    PKG_CHECK_MODULES(GLIB,
-                      glib-2.0 >= $GLIB_VER,
-                      FOUND_GLIB=yes,
-                      FOUND_GLIB=no)
 
-    PKG_CHECK_MODULES(GTK,
-                      gtk+-2.0 >= $GTK_VER,
-                      HAVE_GTK=yes,
-                      HAVE_GTK=no)
-    AC_SUBST(GTK_CFLAGS)
-    AC_SUBST(GTK_LIBS)
-
-    PKG_CHECK_MODULES(GTKGLEXT,
-                      "gtkglext-1.0",
-                      HAVE_GTKGLEXT=yes,
-                      HAVE_GTKGLEXT=no)
-    AC_SUBST(GTKGLEXT_CFLAGS)
-    AC_SUBST(GTKGLEXT_LIBS)
-
-    PKG_CHECK_MODULES(GTHREAD,
-                      "gthread-2.0",
-                      HAVE_GTHREAD=yes,
-                      HAVE_GTHREAD=no)
-    AC_SUBST(GTHREAD_CFLAGS)
-    AC_SUBST(GTHREAD_LIBS)
-
-    PKG_CHECK_MODULES(LIBGLADE,
-                      "libglade-2.0",
-                      HAVE_LIBGLADE=yes,
-                      HAVE_LIBGLADE=no)
-    AC_SUBST(LIBGLADE_CFLAGS)
-    AC_SUBST(LIBGLADE_LIBS)
-
-    dnl uninstalled glade ui dir
-    AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
-    AC_SUBST(GLADEUI_UNINSTALLED_DIR)
-
-    # Need check for both lua and lua5.1 to run on debian, see mysql bug #29945
-    PKG_CHECK_MODULES(LUA,
-                      lua >= 5.1,
-                      HAVE_LUA=yes,
-                      HAVE_LUA=no)
-    PKG_CHECK_MODULES(LUA,
-                      lua5.1 >= 5.1,
-                      HAVE_LUA=yes,
-                      HAVE_LUA=no)
-    AC_SUBST(LUA_CFLAGS)
-    AC_SUBST(LUA_LIBS)
-
-    if test ! "x$HAVE_OPENAL" = "xyes" ; then
-      PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
-      AC_SUBST(ALSA_CFLAGS)
-      AC_SUBST(ALSA_LIBS)
-    fi
-
-    PKG_CHECK_MODULES(LIBAGG, libagg >= 2.5.0, FOUND_LIBAGG=yes, FOUND_LIBAGG=no)
-
-    PKG_CHECK_MODULES(LIBSOUNDTOUCH, soundtouch >= 1.5.0, HAVE_LIBSOUNDTOUCH=yes, HAVE_LIBSOUNDTOUCH=no)
-    AC_SUBST(LIBSOUNDTOUCH_CFLAGS)
-    AC_SUBST(LIBSOUNDTOUCH_LIBS)
-
-    AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
-  fi
-],[
-    AC_MSG_ERROR([pkg-config is required to build desmume])
-])
-
-dnl -- force lua disabled
-AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
-
-AM_CONDITIONAL([HAVE_OPENAL], [test "${HAVE_OPENAL}" = "yes"])
-AM_CONDITIONAL([HAVE_ALSA], [test "${HAVE_ALSA}" = "yes"])
-if test "x$HAVE_ALSA" = "xno"; then
-   if test "x$HAVE_OPENAL" = "xno"; then
-      AC_DEFINE([FAKE_MIC])
+PKG_CHECK_MODULES(GLIB,
+                  glib-2.0 >= $GLIB_VER,
+                  FOUND_GLIB=yes,
+                  FOUND_GLIB=no)
+if test "x$FOUND_GLIB" = "xno"; then
+   if test ! "x$GTK_MACOSX_HACK" = "xyes"; then
+     AC_MSG_ERROR([Glib is required to build desmume])
    fi
 fi
 
+PKG_CHECK_MODULES(GTK,
+                  gtk+-2.0 >= $GTK_VER,
+                  HAVE_GTK=yes,
+                  HAVE_GTK=no)
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+
+PKG_CHECK_MODULES(GTKGLEXT,
+                  "gtkglext-1.0",
+                  HAVE_GTKGLEXT=yes,
+                  HAVE_GTKGLEXT=no)
+AC_SUBST(GTKGLEXT_CFLAGS)
+AC_SUBST(GTKGLEXT_LIBS)
+if test "x$HAVE_GTKGLEXT" = "xyes"; then
+   AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
+fi
+
+PKG_CHECK_MODULES(GTHREAD,
+                  "gthread-2.0",
+                  HAVE_GTHREAD=yes,
+                  HAVE_GTHREAD=no)
+AC_SUBST(GTHREAD_CFLAGS)
+AC_SUBST(GTHREAD_LIBS)
+
+PKG_CHECK_MODULES(LIBGLADE,
+                  "libglade-2.0",
+                  HAVE_LIBGLADE=yes,
+                  HAVE_LIBGLADE=no)
+AC_SUBST(LIBGLADE_CFLAGS)
+AC_SUBST(LIBGLADE_LIBS)
+
+dnl uninstalled glade ui dir
+AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
+AC_SUBST(GLADEUI_UNINSTALLED_DIR)
+
+AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
+
+# Need check for both lua and lua5.1 to run on debian, see mysql bug #29945
+PKG_CHECK_MODULES(LUA,
+                  lua >= 5.1,
+                  HAVE_LUA=yes,
+                  HAVE_LUA=no)
+PKG_CHECK_MODULES(LUA,
+                  lua5.1 >= 5.1,
+                  HAVE_LUA=yes,
+                  HAVE_LUA=no)
+AC_SUBST(LUA_CFLAGS)
+AC_SUBST(LUA_LIBS)
+dnl -- force lua disabled
+AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
+
+if test ! "x$HAVE_OPENAL" = "xyes" ; then
+  PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
+  AC_SUBST(ALSA_CFLAGS)
+  AC_SUBST(ALSA_LIBS)
+fi
+AM_CONDITIONAL([HAVE_ALSA], [test "${HAVE_ALSA}" = "yes"])
+
+PKG_CHECK_MODULES(LIBAGG, libagg >= 2.5.0, FOUND_LIBAGG=yes, FOUND_LIBAGG=no)
 AM_CONDITIONAL([HAVE_LIBAGG], [test "x$libagg" = "xyes" -a "${FOUND_LIBAGG}" = "yes"])
 if test "x$libagg" = "xyes" ; then
    if test "x$FOUND_LIBAGG" = "xyes" ; then
@@ -213,6 +208,9 @@ if test "x$libagg" = "xyes" ; then
    fi
 fi
 
+PKG_CHECK_MODULES(LIBSOUNDTOUCH, soundtouch >= 1.5.0, HAVE_LIBSOUNDTOUCH=yes, HAVE_LIBSOUNDTOUCH=no)
+AC_SUBST(LIBSOUNDTOUCH_CFLAGS)
+AC_SUBST(LIBSOUNDTOUCH_LIBS)
 AM_CONDITIONAL([HAVE_LIBSOUNDTOUCH], [test "${HAVE_LIBSOUNDTOUCH}" = "yes"])
 if test "x$HAVE_LIBSOUNDTOUCH" = "xyes"; then
    AC_DEFINE([HAVE_LIBSOUNDTOUCH])
@@ -220,15 +218,10 @@ else
    AC_MSG_WARN([SoundTouch library not found, pcsx2 resampler will be disabled])
 fi
 
-if test "x$FOUND_GLIB" = "xno"; then
-   if test ! "x$GTK_MACOSX_HACK" = "xyes"; then
-     AC_MSG_ERROR([Glib is required to build desmume])
+if test "x$HAVE_ALSA" = "xno"; then
+   if test "x$HAVE_OPENAL" = "xno"; then
+      AC_DEFINE([FAKE_MIC])
    fi
-fi
-
-dnl - If the gtkGLext package is available define the corresponding C macro
-if test "x$HAVE_GTKGLEXT" = "xyes"; then
-   AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
 fi
 
 dnl - Check for wxWidgets
