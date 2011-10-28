@@ -55,7 +55,7 @@ BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 	list[num].num = 1;
 	list[num].type = 0;
 	list[num].size = size;
-	strcpy(list[num].description, description);
+	this->setDescription(description, num);
 	list[num].enabled = enabled;
 	return TRUE;
 }
@@ -68,7 +68,7 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 	list[pos].num = 1;
 	list[pos].type = 0;
 	list[pos].size = size;
-	strcpy(list[pos].description, description);
+	this->setDescription(description, pos);
 	list[pos].enabled = enabled;
 	return TRUE;
 }
@@ -463,7 +463,7 @@ BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 	
 	list[num].type = 1;
 	
-	strcpy(list[num].description, description);
+	this->setDescription(description, num);
 	list[num].enabled = enabled;
 	return TRUE;
 }
@@ -475,7 +475,7 @@ BOOL CHEATS::update_AR(char *code, char *description, BOOL enabled, u32 pos)
 	if (code != NULL)
 	{
 		if (!XXcodePreParser(&list[pos], code)) return FALSE;
-		strcpy(list[pos].description, description);
+		this->setDescription(description, pos);
 		list[pos].type = 1;
 	}
 	
@@ -492,7 +492,7 @@ BOOL CHEATS::add_CB(char *code, char *description, BOOL enabled)
 	
 	list[num].type = 2;
 	
-	strcpy(list[num].description, description);
+	this->setDescription(description, num);
 	list[num].enabled = enabled;
 	return TRUE;
 }
@@ -505,7 +505,7 @@ BOOL CHEATS::update_CB(char *code, char *description, BOOL enabled, u32 pos)
 	{
 		if (!XXcodePreParser(&list[pos], code)) return FALSE;
 		list[pos].type = 2;
-		strcpy(list[pos].description, description);
+		this->setDescription(description, pos);
 	}
 	list[pos].enabled = enabled;
 	return TRUE;
@@ -556,10 +556,16 @@ u32	CHEATS::getSize()
 	return list.size();
 }
 
+void CHEATS::setDescription(const char *description, u32 pos)
+{
+	strncpy(list[pos].description, description, sizeof(list[pos].description));
+	list[pos].description[sizeof(list[pos].description) - 1] = '\0';
+}
+
 BOOL CHEATS::save()
 {
 	const char	*types[] = {"DS", "AR", "CB"};
-	char		buf[sizeof(list[0].code) * 2 + 200] = { 0 };
+	std::string	cheatLineStr = "";
 	FILE		*flist = fopen((char *)filename, "w");
 
 	if (flist)
@@ -571,8 +577,11 @@ BOOL CHEATS::save()
 		for (size_t i = 0;  i < list.size(); i++)
 		{
 			if (list[i].num == 0) continue;
-			memset(buf, 0, sizeof(buf));
-			sprintf(buf, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
+			
+			char buf1[8] = {0};
+			sprintf(buf1, "%s %c ", types[list[i].type], list[i].enabled?'1':'0');
+			cheatLineStr = buf1;
+			
 			for (int t = 0; t < list[i].num; t++)
 			{
 				char buf2[10] = { 0 };
@@ -585,16 +594,17 @@ BOOL CHEATS::save()
 					adr |= (list[i].size << 28);
 				}
 				sprintf(buf2, "%08X", adr);
-				strcat(buf, buf2);
+				cheatLineStr += buf2;
 				
 				sprintf(buf2, "%08X", list[i].code[t][1]);
-				strcat(buf, buf2);
+				cheatLineStr += buf2;
 				if (t < (list[i].num - 1))
-					strcat(buf, ",");
+					cheatLineStr += ",";
 			}
-			strcat(buf, " ;");
-			strcat(buf, trim(list[i].description));
-			fprintf(flist, "%s\n", buf);
+			
+			cheatLineStr += " ;";
+			cheatLineStr += trim(list[i].description);
+			fprintf(flist, "%s\n", cheatLineStr.c_str());
 		}
 		fputs("\n", flist);
 		fclose(flist);
@@ -625,95 +635,117 @@ char *CHEATS::clearCode(char *s)
 
 BOOL CHEATS::load()
 {
-	FILE			*flist = fopen((char *)filename, "r");
-	char			buf[sizeof(list[0].code) * 2 + 200] = { 0 };
-	u32				last = 0;
-	char			tmp_code[sizeof(list[0].code) * 2] = { 0 };
-	u32				line = 0;
-
-	if (flist)
+	FILE *flist = fopen((char *)filename, "r");
+	if (flist == NULL)
 	{
-		INFO("Load cheats: %s\n", filename);
-		clear();
-		last = 0; line = 0;
-		while (!feof(flist))
-		{
-			CHEATS_LIST		tmp_cht;
-			line++;				// only for debug
-			memset(buf, 0, sizeof(buf));
-			if (fgets(buf, sizeof(buf), flist) == NULL) {
-				//INFO("Cheats: Failed to read from flist at line %i\n", line);
-				continue;
-			}
-			trim(buf);
-			if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
-			if(!strncasecmp(buf,"name=",5)) continue;
-			if(!strncasecmp(buf,"serial=",7)) continue;
+		return FALSE;
+	}
+	
+	size_t readSize = (MAX_XX_CODE * 17) + sizeof(list[0].description) + 7;
+	if (readSize < CHEAT_FILE_MIN_FGETS_BUFFER)
+	{
+		readSize = CHEAT_FILE_MIN_FGETS_BUFFER;
+	}
+	
+	char *buf = (char *)malloc(readSize);
+	if (buf == NULL)
+	{
+		fclose(flist);
+		return FALSE;
+	}
+	
+	readSize *= sizeof(*buf);
+	
+	std::string		codeStr = "";
+	u32				last = 0;
+	u32				line = 0;
+	
+	INFO("Load cheats: %s\n", filename);
+	clear();
+	last = 0; line = 0;
+	while (!feof(flist))
+	{
+		CHEATS_LIST		tmp_cht;
+		line++;				// only for debug
+		memset(buf, 0, readSize);
+		if (fgets(buf, readSize, flist) == NULL) {
+			//INFO("Cheats: Failed to read from flist at line %i\n", line);
+			continue;
+		}
+		trim(buf);
+		if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
+		if(!strncasecmp(buf,"name=",5)) continue;
+		if(!strncasecmp(buf,"serial=",7)) continue;
 
-			memset(&tmp_cht, 0, sizeof(tmp_cht));
-			if ((buf[0] == 'D') && (buf[1] == 'S'))		// internal
-				tmp_cht.type = 0;
+		memset(&tmp_cht, 0, sizeof(tmp_cht));
+		if ((buf[0] == 'D') && (buf[1] == 'S'))		// internal
+			tmp_cht.type = 0;
+		else
+			if ((buf[0] == 'A') && (buf[1] == 'R'))	// Action Replay
+				tmp_cht.type = 1;
 			else
-				if ((buf[0] == 'A') && (buf[1] == 'R'))	// Action Replay
-					tmp_cht.type = 1;
+				if ((buf[0] == 'B') && (buf[1] == 'S'))	// Codebreaker
+					tmp_cht.type = 2;
 				else
-					if ((buf[0] == 'B') && (buf[1] == 'S'))	// Codebreaker
-						tmp_cht.type = 2;
-					else
-						continue;
-			// TODO: CB not supported
-			if (tmp_cht.type == 3)
-			{
-				INFO("Cheats: Codebreaker code no supported at line %i\n", line);
-				continue;
-			}
-			
-			memset(tmp_code, 0, sizeof(tmp_code));
-			strcpy(tmp_code, (char*)(buf+5));
-			strcpy(tmp_code, clearCode(tmp_code));
-			if ((strlen(tmp_code) == 0) || (strlen(tmp_code) % 16 !=0))
-			{
-				INFO("Cheats: Syntax error at line %i\n", line);
-				continue;
-			}
-
-			tmp_cht.enabled = (buf[3] == '0')?FALSE:TRUE;
-			u32 descr_pos = (u32)(std::max<s32>(strchr((char*)buf, ';') - buf, 0));
-			if (descr_pos != 0)
-				strcpy(tmp_cht.description, (buf + descr_pos + 1));
-
-			tmp_cht.num = strlen(tmp_code) / 16;
-			if ((tmp_cht.type == 0) && (tmp_cht.num > 1))
-			{
-				INFO("Cheats: Too many values for internal cheat\n", line);
-				continue;
-			}
-			for (int i = 0; i < tmp_cht.num; i++)
-			{
-				char tmp_buf[9] = {0};
-
-				strncpy(tmp_buf, (char*)(tmp_code + (i*16)), 8);
-				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][0]);
-
-				if (tmp_cht.type == 0)
-				{
-					tmp_cht.size = std::min<u32>(3, ((tmp_cht.code[i][0] & 0xF0000000) >> 28));
-					tmp_cht.code[i][0] &= 0x00FFFFFF;
-				}
-				
-				strncpy(tmp_buf, (char*)(tmp_code + (i*16) + 8), 8);
-				sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][1]);
-			}
-
-			list.push_back(tmp_cht);
-			last++;
+					continue;
+		// TODO: CB not supported
+		if (tmp_cht.type == 3)
+		{
+			INFO("Cheats: Codebreaker code no supported at line %i\n", line);
+			continue;
+		}
+		
+		codeStr = (char *)(buf + 5);
+		codeStr = clearCode((char *)codeStr.c_str());
+		
+		if (codeStr.empty() || (codeStr.length() % 16 != 0))
+		{
+			INFO("Cheats: Syntax error at line %i\n", line);
+			continue;
 		}
 
-		fclose(flist);
-		INFO("Added %i cheat codes\n", list.size());
-		return TRUE;
+		tmp_cht.enabled = (buf[3] == '0')?FALSE:TRUE;
+		u32 descr_pos = (u32)(std::max<s32>(strchr((char*)buf, ';') - buf, 0));
+		if (descr_pos != 0)
+		{
+			strncpy(tmp_cht.description, (buf + descr_pos + 1), sizeof(tmp_cht.description));
+			tmp_cht.description[sizeof(tmp_cht.description) - 1] = '\0';
+		}
+
+		tmp_cht.num = codeStr.length() / 16;
+		if ((tmp_cht.type == 0) && (tmp_cht.num > 1))
+		{
+			INFO("Cheats: Too many values for internal cheat\n", line);
+			continue;
+		}
+		for (int i = 0; i < tmp_cht.num; i++)
+		{
+			char tmp_buf[9] = {0};
+
+			strncpy(tmp_buf, &codeStr[i * 16], 8);
+			sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][0]);
+
+			if (tmp_cht.type == 0)
+			{
+				tmp_cht.size = std::min<u32>(3, ((tmp_cht.code[i][0] & 0xF0000000) >> 28));
+				tmp_cht.code[i][0] &= 0x00FFFFFF;
+			}
+			
+			strncpy(tmp_buf, &codeStr[(i * 16) + 8], 8);
+			sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][1]);
+		}
+
+		list.push_back(tmp_cht);
+		last++;
 	}
-	return FALSE;
+	
+	free(buf);
+	buf = NULL;
+
+	fclose(flist);
+	INFO("Added %i cheat codes\n", list.size());
+	
+	return TRUE;
 }
 
 void CHEATS::process()
@@ -783,14 +815,11 @@ BOOL CHEATSEARCH::start(u8 type, u8 size, u8 sign)
 	if (mem) return FALSE;
 
 	statMem = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
-	
 	memset(statMem, 0xFF, ( 4 * 1024 * 1024 ) / 8);
 
-	if (type == 1) // comparative search type (need 8Mb RAM !!! (4+4))
-	{
-		mem = new u8 [ ( 4 * 1024 * 1024 ) ];
-		memcpy(mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
-	}
+	// comparative search type (need 8Mb RAM !!! (4+4))
+	mem = new u8 [ ( 4 * 1024 * 1024 ) ];
+	memcpy(mem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 
 	_type = type;
 	_size = size;
@@ -1266,9 +1295,14 @@ bool CHEATSEXPORT::getCodes()
 
 	if (encrypted)
 		R4decrypt(data, dataSize, fat.addr >> 9);
-
-	gametitle = data + encOffset;
-	u32 *cmd = (u32 *)(((intptr_t)gametitle + strlen((char*)gametitle) + 4) & 0xFFFFFFFC);
+	
+	intptr_t ptrMask = (~0 << 2);
+	u8 *gameTitlePtr = (u8 *)data + encOffset;
+	
+	memset(gametitle, 0, CHEAT_DB_GAME_TITLE_SIZE);
+	memcpy(gametitle, gameTitlePtr, strlen((const char *)gameTitlePtr));
+	
+	u32 *cmd = (u32 *)(((intptr_t)gameTitlePtr + strlen((const char *)gameTitlePtr) + 4) & ptrMask);
 	numCheats = cmd[0] & 0x0FFFFFFF;
 	cmd += 9;
 	cheats = new CHEATS_LIST[numCheats];
@@ -1285,37 +1319,42 @@ bool CHEATSEXPORT::getCodes()
 			folderName = (u8*)((intptr_t)cmd + 4);
 			folderNote = (u8*)((intptr_t)folderName + strlen((char*)folderName) + 1);
 			pos++;
-			cmd = (u32 *)(((intptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & 0xFFFFFFFC);
+			cmd = (u32 *)(((intptr_t)folderName + strlen((char*)folderName) + 1 + strlen((char*)folderNote) + 1 + 3) & ptrMask);
 		}
 
-		for (int i = 0; i < folderNum; i++)		// in folder
+		for (u32 i = 0; i < folderNum; i++)		// in folder
 		{
 			u8 *cheatName = (u8 *)((intptr_t)cmd + 4);
 			u8 *cheatNote = (u8 *)((intptr_t)cheatName + strlen((char*)cheatName) + 1);
-			u32 *cheatData = (u32 *)(((intptr_t)cheatNote + strlen((char*)cheatNote) + 1 + 3) & 0xFFFFFFFC);
+			u32 *cheatData = (u32 *)(((intptr_t)cheatNote + strlen((char*)cheatNote) + 1 + 3) & ptrMask);
 			u32 cheatDataLen = *cheatData++;
+			u32 numberCodes = cheatDataLen / 2;
 
-			if (cheatDataLen)
+			if (numberCodes <= MAX_XX_CODE)
 			{
-				char buf[2048];
-				memset(buf, 0, 2048);
-
-				cheats[pos_cht].num = cheatDataLen/2;
-				cheats[pos_cht].type = 1;
-
+				std::string descriptionStr = "";
+				
 				if ( folderName && *folderName )
 				{
-					sprintf(cheats[pos_cht].description, "%s: ", folderName);
+					descriptionStr += (char *)folderName;
+					descriptionStr += ": ";
 				}
-				strcat(cheats[pos_cht].description, (char*)cheatName);
+				
+				descriptionStr += (char *)cheatName;
 				
 				if ( cheatNote && *cheatNote )
 				{
-					strcat(cheats[pos_cht].description, "| ");
-					strcat(cheats[pos_cht].description, (char*)cheatNote);
+					descriptionStr += " | ";
+					descriptionStr += (char *)cheatNote;
 				}
+				
+				strncpy(cheats[pos_cht].description, descriptionStr.c_str(), sizeof(cheats[pos_cht].description));
+				cheats[pos_cht].description[sizeof(cheats[pos_cht].description) - 1] = '\0';
+				
+				cheats[pos_cht].num = numberCodes;
+				cheats[pos_cht].type = 1;
 
-				for(u32 j = 0, t = 0; j < (cheatDataLen/2); j++, t+=2 )
+				for(u32 j = 0, t = 0; j < numberCodes; j++, t+=2 )
 				{
 					cheats[pos_cht].code[j][0] = (u32)*(cheatData+t);
 					//printf("%i: %08X ", j, cheats[pos_cht].code[j][0]);

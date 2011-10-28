@@ -21,10 +21,12 @@
 #include "common.h"
 #include <vector>
 
-#define CHEAT_VERSION_MAJOR		2
-#define CHEAT_VERSION_MINOR		0
-#define MAX_CHEAT_LIST			100
-#define	MAX_XX_CODE				255
+#define CHEAT_VERSION_MAJOR			2
+#define CHEAT_VERSION_MINOR			0
+#define MAX_CHEAT_LIST				100
+#define	MAX_XX_CODE					1024
+#define CHEAT_FILE_MIN_FGETS_BUFFER	32768
+#define CHEAT_DB_GAME_TITLE_SIZE	256
 
 struct CHEATS_LIST
 {
@@ -42,7 +44,7 @@ struct CHEATS_LIST
 								// 1 - can decrease
 								// 2 - can increase
 	u32		code[MAX_XX_CODE][2];
-	char	description[255];
+	char	description[1024];
 	int		num;
 	u8		size;
 };
@@ -80,6 +82,7 @@ public:
 	BOOL	getList(CHEATS_LIST *cheat);
 	BOOL	get(CHEATS_LIST *cheat, u32 pos);
 	u32		getSize();
+	void	setDescription(const char *description, u32 pos);
 	BOOL	save();
 	BOOL	load();
 	void	process();
@@ -164,9 +167,14 @@ public:
 			error(0)
 	{
 		memset(date, 0, sizeof(date));
+		gametitle = (u8 *)malloc(CHEAT_DB_GAME_TITLE_SIZE);
+		memset(gametitle, 0, CHEAT_DB_GAME_TITLE_SIZE);
 	}
 	~CHEATSEXPORT()
-	{}
+	{
+		free(gametitle);
+		gametitle = NULL;
+	}
 
 	u8				*gametitle;
 	u8				date[17];
