@@ -378,13 +378,18 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			{
 				u8	*tmp_code = (u8*)(list.code[i+1]);
 				u32 addr = hi+offset;
-
-				for (u32 t = 0; t < lo; t++)
+				u32 maxByteReadLocation = ((2 * 4) * (MAX_XX_CODE - i - 1)) - 1; // 2 = 2 array dimensions, 4 = 4 bytes per array element
+				
+				if (lo <= maxByteReadLocation)
 				{
-					u8	tmp = tmp_code[t];
-					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, tmp);
-					addr++;
+					for (u32 t = 0; t < lo; t++)
+					{
+						u8	tmp = tmp_code[t];
+						_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, tmp);
+						addr++;
+					}
 				}
+				
 				i += (lo / 8);
 			}
 			break;
