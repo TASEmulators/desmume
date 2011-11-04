@@ -430,9 +430,15 @@ public:
 
 private:
 	u16 read16();
-	u16 selection;
+	u8 reg_selection;
+	u8 read_flag;
 	s32 state;
 	s32 readcount;
+
+	//registers[0] contains the current page.
+	//we are going to go ahead and save these out in case we want to change the way this is emulated in the future..
+	//we may want to poke registers in here at more convenient times and have the TSC dumbly pluck them out,
+	//rather than generate the values on the fly
 	u8 registers[0x80];
 };
 
