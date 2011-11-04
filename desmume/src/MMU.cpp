@@ -1074,84 +1074,90 @@ static void execdiv() {
 }
 
 DSI_TSC::DSI_TSC()
-	: state(0)
-	, selection(0)
 {
 	for(int i=0;i<ARRAY_SIZE(registers);i++)
 		registers[i] = 0x00;
+	reset_command();
 }
 
 void DSI_TSC::reset_command()
 {
 	state = 0;
 	readcount = 0;
+	read_flag = 1;
 }
 
 u16 DSI_TSC::write16(u16 val)
 {
+	u16 ret;
 	switch(state)
 	{
 	case 0:
-		selection = val;
+		reg_selection = val>>1;
+		read_flag = val&1;
 		state = 1;
 		return read16();
 	case 1:
-		{
-		u16 regsel = selection>>1;
-		if(selection&1)
-		{
-			//read
-		}
+		if(read_flag)
+		{ }
 		else
 		{
-			//write
-			registers[regsel] = val;
+			registers[reg_selection] = val;
 		}
-		state = 2;
-		return read16();
-		}
-	case 2:
-		{
-		//continuing...
-		readcount++;
-		return read16();
-		}
-		break;
+		ret = read16();
+		reg_selection++;
+		return ret;
 	}
 	return 0;
 }
 
 u16 DSI_TSC::read16()
 {
-	u16 regsel = selection>>1;
-	switch(regsel)
+	u8 page = registers[0];
+	switch(page)
 	{
-	case 1:
+	case 3: //page 3
+		switch(reg_selection)
 		{
-			u16 temp;
-			if(registers[0] != 252) return 0xFF;
-			if(readcount<10) temp = nds.touchX;
-			else temp = nds.touchY;
-			if(readcount&1) return temp&0xFF;
-			else return (temp>>8)&0xFF;
-		}
-	case 9:
-		if(registers[0] == 3)
-		{
+		case 9:
 			if(nds.isTouch) 
 				return 0;
 			else return 0x40;
-		}
-		break;
-	case 14:
-		if(registers[0] == 3)
-		{
+			break;
+		case 14:
 			if(nds.isTouch) 
 				return 0;
-			else return 2;
+			else return 0x02;
+			break;
 		}
 		break;
-	}
+
+	case 252: //page 252
+		switch(reg_selection)
+		{
+		//high byte of X:
+		case 1: case 3: case 5: case 7: case 9:
+			return (nds.touchX>>8)&0xFF;
+
+		//low byte of X:
+		case 2: case 4: case 6: case 8: case 10:
+			return nds.touchX&0xFF;
+
+		//high byte of Y:
+		case 11: case 13: case 15: case 17: case 19:
+			return (nds.touchY>>8)&0xFF;
+
+		//low byte of Y:
+		case 12: case 14: case 16: case 18: case 20:
+			return nds.touchY&0xFF;
+		
+		default:
+			return 0xFF;
+		}
+		break;
+	} //switch(page)
+
+	//unknown page or register
 	return 0xFF;
 }
 
@@ -1160,7 +1166,8 @@ bool DSI_TSC::save_state(EMUFILE* os)
 	u32 version = 0;
 	write32le(version,os);
 
-	write16le(selection,os);
+	write8le(reg_selection,os);
+	write8le(read_flag,os);
 	write32le(state,os);
 	write32le(readcount,os);
 	for(int i=0;i<ARRAY_SIZE(registers);i++)
@@ -1174,7 +1181,8 @@ bool DSI_TSC::load_state(EMUFILE* is)
 	u32 version;
 	read32le(&version,is);
 
-	read16le(&selection,is);
+	read8le(&reg_selection,is);
+	read8le(&read_flag,is);
 	read32le(&state,is);
 	read32le(&readcount,is);
 	for(int i=0;i<ARRAY_SIZE(registers);i++)
@@ -3850,18 +3858,14 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						}
 					}
 
-						//MMU.fw.com == 0; // reset fw device communication
+					//MMU.fw.com == 0; // reset fw device communication
 					if ( reset_firmware) 
 					{
 					  // reset fw device communication
 					  fw_reset_com(&MMU.fw);
 					}
 					MMU.SPI_CNT = val;
-
-					//new code:
-					if(!BIT11(MMU.SPI_CNT))
-							MMU_new.dsi_tsc.reset_command();
-					
+				
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
 				}
 				return;
@@ -3936,7 +3940,13 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						{
 							if(CommonSettings.DSI)
 							{
+								//pass data to TSC
 								val = MMU_new.dsi_tsc.write16(val);
+								
+								//apply reset command if appropriate
+								if(!BIT11(MMU.SPI_CNT))
+									MMU_new.dsi_tsc.reset_command();
+
 								break;
 							}
 
@@ -4445,10 +4455,10 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM7);
-            case REG_TM0CNTL :
-            case REG_TM1CNTL :
-            case REG_TM2CNTL :
-            case REG_TM3CNTL :
+			case REG_TM0CNTL :
+			case REG_TM1CNTL :
+			case REG_TM2CNTL :
+			case REG_TM3CNTL :
 			{
 				u32 val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
@@ -4458,7 +4468,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				//INFO("arm7 romctrl read\n");
 				break;
 			}
-            case REG_GCDATAIN:
+			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
 
 		}
