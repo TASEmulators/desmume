@@ -2652,8 +2652,13 @@ void NDS_setTouchPos(u16 x, u16 y)
 	if(movieMode != MOVIEMODE_INACTIVE && movieMode != MOVIEMODE_FINISHED)
 	{
 		// just in case, since the movie only stores 8 bits per touch coord
+#ifdef WORDS_BIGENDIAN
+		rawUserInput.touch.touchX &= 0xF00F;
+		rawUserInput.touch.touchY &= 0xF00F;
+#else
 		rawUserInput.touch.touchX &= 0x0FF0;
 		rawUserInput.touch.touchY &= 0x0FF0;
+#endif
 	}
 }
 void NDS_releaseTouch(void)
@@ -2717,6 +2722,7 @@ static void NDS_applyFinalInput()
 		((input.buttons.E ? 0 : 0x80) << 1) |
 		((input.buttons.W ? 0 : 0x80) << 2)) ;
 
+	pad = LOCAL_TO_LE_16(pad);
 	((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
@@ -2789,13 +2795,15 @@ static void NDS_applyFinalInput()
 			countLid--;
 	}
 
-	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070) |
-		((input.buttons.X ? 0 : 0x80) >> 7) |
+	u16 padExt = ((input.buttons.X ? 0 : 0x80) >> 7) |
 		((input.buttons.Y ? 0 : 0x80) >> 6) |
 		((input.buttons.G ? 0 : 0x80) >> 4) |
 		((LidClosed) << 7) |
 		0x0034;
 
+	padExt = LOCAL_TO_LE_16(padExt);
+	padExt |= (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070);
+	
 	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
 
 	InputDisplayString=MakeInputDisplayString(padExt, pad);
