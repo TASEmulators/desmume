@@ -1184,16 +1184,16 @@ template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA
 	case BGType_AffineExt_256x1:
 		// 256 colors 
 		pal = MMU.ARM9_VMEM + gpu->core * 0x400;
-		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], NULL, pal);
+		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], 0, pal);
 		return;
 	case BGType_AffineExt_Direct:
 		// direct colors / BMP
-		apply_rot_fun<rot_BMP_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], NULL, NULL);
+		apply_rot_fun<rot_BMP_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], 0, NULL);
 		return;
 	case BGType_Large8bpp:
 		// large screen 256 colors
 		pal = MMU.ARM9_VMEM + gpu->core * 0x400;
-		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_large_ram[num], NULL, pal);
+		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_large_ram[num], 0, pal);
 		return;
 	default: break;
 	}
