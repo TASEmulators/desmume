@@ -249,7 +249,7 @@ public:
 		if(action == GET)
 		{
 			std::string thePath = pathToCopy;
-			std::string relativePath = "." + DIRECTORY_DELIMITER_CHAR;
+			std::string relativePath = (std::string)"." + DIRECTORY_DELIMITER_CHAR;
 			
 			int len = (int)thePath.size()-1;
 
