@@ -1,4 +1,4 @@
-/*  Copyright 2009 DeSmuME team
+/*  Copyright 2009,2011 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -21,13 +21,16 @@
 #include "task.h"
 #include <stdio.h>
 
-#ifdef _MSC_VER
-
 #ifdef _WINDOWS
 #include <windows.h>
+#else
+#include <pthread.h>
+#if !defined(__APPLE__)
+#include <semaphore.h>
+#endif
 #endif
 
-
+#ifdef _MSC_VER
 class Task::Impl {
 public:
 	Impl();
@@ -154,10 +157,153 @@ void* Task::Impl::finish()
 	return param;
 }
 
-#else
+#elif defined(__APPLE__)
 
-#include <pthread.h>
-#include <semaphore.h>
+class Task::Impl {
+public:
+	Impl();
+	~Impl();
+
+	void start(bool spinlock);
+	void execute(const TWork &work, void *param);
+	void* finish();
+	void shutdown();
+
+	pthread_t thread;
+	pthread_mutex_t mutex;
+	pthread_cond_t condWork;
+
+	TWork work;
+	void *param;
+	void *ret;
+	bool exitThread;
+};
+
+void* taskProc(void *arg)
+{
+	Task::Impl *ctx = (Task::Impl *)arg;
+
+	do {
+		pthread_mutex_lock(&ctx->mutex);
+
+		while (ctx->work == NULL && !ctx->exitThread) {
+			pthread_cond_wait(&ctx->condWork, &ctx->mutex);
+		}
+
+		if (ctx->work != NULL) {
+			ctx->ret = ctx->work(ctx->param);
+		} else {
+			ctx->ret = NULL;
+		}
+
+		ctx->work = NULL;
+		pthread_cond_signal(&ctx->condWork);
+
+		pthread_mutex_unlock(&ctx->mutex);
+
+	} while(!ctx->exitThread);
+
+	return NULL;
+}
+
+Task::Impl::Impl()
+{
+	thread = -1;
+	work = NULL;
+	param = NULL;
+	ret = NULL;
+	exitThread = false;
+
+	pthread_mutex_init(&mutex, NULL);
+	pthread_cond_init(&condWork, NULL);
+}
+
+Task::Impl::~Impl()
+{
+	shutdown();
+	pthread_mutex_destroy(&mutex);
+	pthread_cond_destroy(&condWork);
+}
+
+void Task::Impl::start(bool spinlock)
+{
+	pthread_mutex_lock(&this->mutex);
+
+	if (this->thread != -1) {
+		pthread_mutex_unlock(&this->mutex);
+		return;
+	}
+
+	this->work = NULL;
+	this->param = NULL;
+	this->ret = NULL;
+	this->exitThread = false;
+	pthread_create(&this->thread, NULL, &taskProc, this);
+
+	pthread_mutex_unlock(&this->mutex);
+}
+
+void Task::Impl::execute(const TWork &work, void *param)
+{
+	pthread_mutex_lock(&this->mutex);
+
+	if (work == NULL || this->thread == -1) {
+		pthread_mutex_unlock(&this->mutex);
+		return;
+	}
+
+	this->work = work;
+	this->param = param;
+	pthread_cond_signal(&this->condWork);
+
+	pthread_mutex_unlock(&this->mutex);
+}
+
+void* Task::Impl::finish()
+{
+	void *returnValue = NULL;
+
+	pthread_mutex_lock(&this->mutex);
+
+	if (this->thread == -1) {
+		pthread_mutex_unlock(&this->mutex);
+		return returnValue;
+	}
+
+	while (this->work != NULL) {
+		pthread_cond_wait(&this->condWork, &this->mutex);
+	}
+
+	returnValue = this->ret;
+
+	pthread_mutex_unlock(&this->mutex);
+
+	return returnValue;
+}
+
+void Task::Impl::shutdown()
+{
+	pthread_mutex_lock(&this->mutex);
+
+	if (this->thread == -1) {
+		pthread_mutex_unlock(&this->mutex);
+		return;
+	}
+
+	this->work = NULL;
+	this->exitThread = true;
+	pthread_cond_signal(&this->condWork);
+
+	pthread_mutex_unlock(&this->mutex);
+
+	pthread_join(this->thread, NULL);
+
+	pthread_mutex_lock(&this->mutex);
+	this->thread = -1;
+	pthread_mutex_unlock(&this->mutex);
+}
+
+#else
 
 class Task::Impl {
 public:
