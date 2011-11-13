@@ -385,7 +385,7 @@ static void lq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1,
    unsigned i;
 
    for(i=0;i<count;++i) {
-      unsigned char mask;
+      unsigned char mask = 0;
 
       u32 c[9];
 
