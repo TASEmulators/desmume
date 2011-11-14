@@ -160,6 +160,10 @@ void* Task::Impl::finish()
 #elif defined(__APPLE__)
 
 class Task::Impl {
+private:
+	pthread_t _thread;
+	bool _isThreadRunning;
+	
 public:
 	Impl();
 	~Impl();
@@ -169,10 +173,8 @@ public:
 	void* finish();
 	void shutdown();
 
-	pthread_t thread;
 	pthread_mutex_t mutex;
 	pthread_cond_t condWork;
-
 	TWork work;
 	void *param;
 	void *ret;
@@ -208,7 +210,7 @@ void* taskProc(void *arg)
 
 Task::Impl::Impl()
 {
-	thread = -1;
+	_isThreadRunning = false;
 	work = NULL;
 	param = NULL;
 	ret = NULL;
@@ -229,7 +231,7 @@ void Task::Impl::start(bool spinlock)
 {
 	pthread_mutex_lock(&this->mutex);
 
-	if (this->thread != -1) {
+	if (this->_isThreadRunning) {
 		pthread_mutex_unlock(&this->mutex);
 		return;
 	}
@@ -238,7 +240,8 @@ void Task::Impl::start(bool spinlock)
 	this->param = NULL;
 	this->ret = NULL;
 	this->exitThread = false;
-	pthread_create(&this->thread, NULL, &taskProc, this);
+	pthread_create(&this->_thread, NULL, &taskProc, this);
+	this->_isThreadRunning = true;
 
 	pthread_mutex_unlock(&this->mutex);
 }
@@ -247,7 +250,7 @@ void Task::Impl::execute(const TWork &work, void *param)
 {
 	pthread_mutex_lock(&this->mutex);
 
-	if (work == NULL || this->thread == -1) {
+	if (work == NULL || !this->_isThreadRunning) {
 		pthread_mutex_unlock(&this->mutex);
 		return;
 	}
@@ -265,7 +268,7 @@ void* Task::Impl::finish()
 
 	pthread_mutex_lock(&this->mutex);
 
-	if (this->thread == -1) {
+	if (!this->_isThreadRunning) {
 		pthread_mutex_unlock(&this->mutex);
 		return returnValue;
 	}
@@ -285,7 +288,7 @@ void Task::Impl::shutdown()
 {
 	pthread_mutex_lock(&this->mutex);
 
-	if (this->thread == -1) {
+	if (!this->_isThreadRunning) {
 		pthread_mutex_unlock(&this->mutex);
 		return;
 	}
@@ -296,10 +299,10 @@ void Task::Impl::shutdown()
 
 	pthread_mutex_unlock(&this->mutex);
 
-	pthread_join(this->thread, NULL);
+	pthread_join(this->_thread, NULL);
 
 	pthread_mutex_lock(&this->mutex);
-	this->thread = -1;
+	this->_isThreadRunning = false;
 	pthread_mutex_unlock(&this->mutex);
 }
 
