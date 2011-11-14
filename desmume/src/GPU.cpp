@@ -1449,29 +1449,23 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 
 static u32 bmp_sprite_address(GPU* gpu, _OAM_ * spriteInfo, size sprSize, s32 y)
 {
-	u32 src;
-	if (spriteInfo->Mode == 3) //sprite is in BMP format
+	if (gpu->dispCnt().OBJ_BMP_mapping)
 	{
-		if (gpu->dispCnt().OBJ_BMP_mapping)
-		{
-			//tested by buffy sacrifice damage blood splatters in corner
-			src = gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBMPBoundary) + (y*sprSize.x*2);
-		}
-		else
-		{
-			//2d mapping:
-			//verified in rotozoomed mode by knights in the nightmare intro
-
-			if (gpu->dispCnt().OBJ_BMP_2D_dim)
-				//256*256, verified by heroes of mana FMV intro
-				src = gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
-			else 
-				//128*512, verified by harry potter and the order of the phoenix conversation portraits
-				src = gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1);
-		}
+		//tested by buffy sacrifice damage blood splatters in corner
+		return gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBMPBoundary) + (y*sprSize.x*2);
 	}
+	else
+	{
+		//2d mapping:
+		//verified in rotozoomed mode by knights in the nightmare intro
 
-	return src;
+		if (gpu->dispCnt().OBJ_BMP_2D_dim)
+			//256*256, verified by heroes of mana FMV intro
+			return gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
+		else 
+			//128*512, verified by harry potter and the order of the phoenix conversation portraits
+			return gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1);
+	}
 }
 
 

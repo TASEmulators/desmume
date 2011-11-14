@@ -121,12 +121,8 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 					KillTimer(hwnd, IDT_VIEW_LIGHTS);
 					LightsView->autoup = false;
 				}
-
-				if (LightsView!=NULL) 
-				{
-					delete LightsView;
-					LightsView = NULL;
-				}
+				delete LightsView;
+				LightsView = NULL;
 			//INFO("Close lights viewer dialog\n");
 			PostQuitMessage(0);
 			break;

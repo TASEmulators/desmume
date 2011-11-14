@@ -1,22 +1,19 @@
-/*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+/*
+	Copyright (C) 2006 yopyop
+	Copyright (C) 2006-2011 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "tileView.h"
@@ -117,7 +114,6 @@ LRESULT TileViewBox_Pal256(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
         HDC          hdc;
         PAINTSTRUCT  ps;
 //        SIZE fontsize;
-        TCHAR text[80];
         u16 bitmap[256*256];
         u16 * pal = ((u16 *)win->pal) + win->palnum*256;
         BITMAPV4HEADER bmi;
@@ -188,7 +184,6 @@ LRESULT TileViewBox_Pal16(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARA
         HDC          hdc;
         PAINTSTRUCT  ps;
 //        SIZE fontsize;
-        TCHAR text[80];
         u16 bitmap[512*512];
         u16 * pal = ((u16 *)win->pal) + win->palnum*16;
         BITMAPV4HEADER bmi;
@@ -429,11 +424,8 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 					KillTimer(hwnd, IDT_VIEW_TILE);
 					TileView->autoup = false;
 				}
-				if (TileView!=NULL) 
-				{
-					delete TileView;
-					TileView = NULL;
-				}
+				delete TileView;
+				TileView = NULL;
 				//INFO("Close Tile view dialog\n");
 				PostQuitMessage(0);
                  return 1;
