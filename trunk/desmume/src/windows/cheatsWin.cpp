@@ -92,7 +92,7 @@ void generateAR(HWND dialog, u32 addr, u32 val, u8 size)
 {
 	// Action Replay code generate
 	if (size > 3) size = 3;
-	char buf[17] = {0};
+	char buf[64] = {0};
 	sprintf(buf, "%X%07X %08X", 3-size, addr | 0x02000000, val);
 	SetWindowText(GetDlgItem(dialog, IDC_AR_CODE), buf);
 }

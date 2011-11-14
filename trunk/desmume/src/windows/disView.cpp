@@ -1,21 +1,19 @@
-/*  Copyright (C) 2006 yopyop
-    Copyright (C) 2006-2010 DeSmuME team
+/*  
+	Copyright (C) 2006 yopyop
+  Copyright (C) 2006-2011 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <algorithm>
@@ -290,8 +288,8 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 		return false;
 
 	switch (message)
-     {
-            case WM_INITDIALOG :
+	{
+			case WM_INITDIALOG :
 				{
 					SetWindowText(hwnd, "ARM7 Disassembler");
 					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
@@ -307,7 +305,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					DisViewWnd[1] = NULL;
 					return 1;
 				}
-            case WM_CLOSE :
+			case WM_CLOSE :
 				{
 					EndDialog(hwnd,0);
 					if(DisView7->autoup)
@@ -315,16 +313,13 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						KillTimer(hwnd, IDT_VIEW_DISASM7);
 						DisView7->autoup = false;
 					}
-					if (DisView7!=NULL) 
-					{
-						delete DisView7;
-						DisView7 = NULL;
-					}
+					delete DisView7;
+					DisView7 = NULL;
 					DisViewWnd[1] = NULL;
 					//INFO("Close ARM7 disassembler\n");
 					return 1;
 				}
-            case WM_PAINT:
+			case WM_PAINT:
 					DisViewDialog_OnPaint(hwnd, DisView7, wParam, lParam);
 					return 1;
 			case WM_TIMER:
@@ -555,7 +550,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					DisViewWnd[0] = NULL;
 					return 1;
 				}
-            case WM_CLOSE :
+						case WM_CLOSE :
 				{
 					EndDialog(hwnd,0);
 					if(DisView9->autoup)
@@ -563,11 +558,8 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						KillTimer(hwnd, IDT_VIEW_DISASM9);
 						DisView9->autoup = false;
 					}
-					if (DisView9!=NULL) 
-					{
-						delete DisView9;
-						DisView9 = NULL;
-					}
+					delete DisView9;
+					DisView9 = NULL;
 					DisViewWnd[0] = NULL;
 					//INFO("Close ARM9 disassembler\n");
 					return 1;
