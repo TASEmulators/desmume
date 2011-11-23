@@ -1,4 +1,5 @@
-/*  Copyright 2008-2010 DeSmuME team
+/*
+	Copyright 2008-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -814,8 +815,8 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 		 mr.touch.y = input.touch.isTouch ? input.touch.touchY >> 4 : 0;
 
 		 assert(mr.touch.touch || (!mr.touch.x && !mr.touch.y));
-		 assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
-		 assert((mr.touch.x << 4) == nds.touchX && (mr.touch.y << 4) == nds.touchY);
+		 //assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
+		 //assert((mr.touch.x << 4) == nds.touchX && (mr.touch.y << 4) == nds.touchY);
 
 		 mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
 		 currMovieData.records.push_back(mr);

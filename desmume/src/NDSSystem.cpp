@@ -46,7 +46,7 @@
 //int xxctr=0;
 //#define LOG_ARM9
 //#define LOG_ARM7
-//bool dolog = false;
+//#define dolog (currFrameCounter>15)
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 
@@ -1861,7 +1861,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				s32 temp = arm9;
 				arm9 = min(s32next, arm9 + kIrqWait);
 				nds.idleCycles[0] += arm9-temp;
-				if (gxFIFO.size < 255) nds.freezeBus = FALSE;
+				if (gxFIFO.size < 255) nds.freezeBus &= ~1;
 			}
 		}
 		if(doarm7 && (!doarm9 || arm7 <= timer))
@@ -2084,7 +2084,7 @@ void NDS_Reset()
 
 	nds.sleeping = FALSE;
 	nds.cardEjected = FALSE;
-	nds.freezeBus = FALSE;
+	nds.freezeBus = 0;
 	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1;
 	nds.power2.speakers = 1;
 	nds.power2.wifi = 0;
@@ -2382,7 +2382,7 @@ void NDS_Reset()
 	nds.wifiCycle = 0;
 	memset(nds.timerCycle, 0, sizeof(u64) * 2 * 4);
 	nds.old = 0;
-	nds.touchX = nds.touchY = 0;
+	nds.scr_touchX = nds.scr_touchY = nds.adc_touchX = nds.adc_touchY = 0;
 	nds.isTouch = 0;
 	nds.paddle = 0;
 	nds.debugConsole = CommonSettings.DebugConsole;
@@ -2528,22 +2528,22 @@ void ClearAutoHold(void) {
 	}
 }
 
-
-INLINE u16 NDS_getADCTouchPosX(u16 scrX)
+//convert a 12.4 screen coordinate to an ADC value.
+//the desmume host system will track the screen coordinate, but the hardware should be receiving the raw ADC values.
+//so we'll need to use this to simulate the ADC values corresponding to the desired screen coords, based on the current TSC calibrations
+u16 NDS_getADCTouchPosX(int scrX_lsl4)
 {
-	// this is a little iffy,
-	// we're basically adjusting the ADC results to
-	// compensate for how they will be interpreted.
-	// the actual system doesn't do this transformation.
-	int rv = (scrX - TSCal.scr.x1 + 1) * TSCal.adc.width / TSCal.scr.width + TSCal.adc.x1;
+	scrX_lsl4 >>= 4;
+	int rv = ((scrX_lsl4 - TSCal.scr.x1 + 1) * TSCal.adc.width) / TSCal.scr.width + TSCal.adc.x1;
 	rv = min(0xFFF, max(0, rv));
-	return (u16)rv;
+	return (u16)(rv);
 }
-INLINE u16 NDS_getADCTouchPosY(u16 scrY)
+u16 NDS_getADCTouchPosY(int scrY_lsl4)
 {
-	int rv = (scrY - TSCal.scr.y1 + 1) * TSCal.adc.height / TSCal.scr.height + TSCal.adc.y1;
+	scrY_lsl4 >>= 4;
+	int rv = ((scrY_lsl4 - TSCal.scr.y1 + 1) * TSCal.adc.height) / TSCal.scr.height + TSCal.adc.y1;
 	rv = min(0xFFF, max(0, rv));
-	return (u16)rv;
+	return (u16)(rv);
 }
 
 static UserInput rawUserInput = {}; // requested input, generally what the user is physically pressing
@@ -2645,8 +2645,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 void NDS_setTouchPos(u16 x, u16 y)
 {
 	gotInputRequest();
-	rawUserInput.touch.touchX = NDS_getADCTouchPosX(x);
-	rawUserInput.touch.touchY = NDS_getADCTouchPosY(y);
+	rawUserInput.touch.touchX = x<<4;
+	rawUserInput.touch.touchY = y<<4;
 	rawUserInput.touch.isTouch = true;
 
 	if(movieMode != MOVIEMODE_INACTIVE && movieMode != MOVIEMODE_FINISHED)
@@ -2759,33 +2759,32 @@ static void NDS_applyFinalInput()
 
 	if(input.touch.isTouch)
 	{
-		nds.touchX = input.touch.touchX;
-		nds.touchY = input.touch.touchY;
-		nds.isTouch = 1;
+		u16 adc_x = NDS_getADCTouchPosX(input.touch.touchX);
+		u16 adc_y = NDS_getADCTouchPosY(input.touch.touchY);
+		nds.adc_touchX = adc_x;
+		nds.adc_touchY = adc_y;
+		nds.adc_jitterctr = 0;
 
-		MMU.ARM7_REG[0x136] &= 0xBF;
+		nds.scr_touchX = input.touch.touchX;
+		nds.scr_touchY = input.touch.touchY;
+		nds.isTouch = 1;
 	}
 	else
 	{
-		nds.touchX = 0;
-		nds.touchY = 0;
+		nds.adc_touchX = 0;
+		nds.adc_touchY = 0;
+		nds.scr_touchX = 0;
+		nds.scr_touchY = 0;
 		nds.isTouch = 0;
-
-		MMU.ARM7_REG[0x136] |= 0x40;
 	}
-
 
 	if (input.buttons.F && !countLid) 
 	{
 		LidClosed = (!LidClosed) & 0x01;
 		if (!LidClosed)
 		{
-		//	SPU_Pause(FALSE);
 			NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_ARM7_FOLD);
-
 		}
-		//else
-			//SPU_Pause(TRUE);
 
 		countLid = 30;
 	}

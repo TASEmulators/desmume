@@ -18,7 +18,7 @@
 //windows note: make sure this file gets compiled with _cdecl
 
 #include <glib.h>
-
+#include <algorithm>
 #include <stdio.h>
 #include "commandline.h"
 #include "types.h"
@@ -49,9 +49,8 @@ CommandLine::CommandLine()
 , _advanced_timing(-1)
 , _slot1(NULL)
 , _slot1_fat_dir(NULL)
+, _console_type(NULL)
 , depth_threshold(-1)
-, debug_console(-1)
-, dsi_mode(-1)
 , load_slot(-1)
 , arm9_gdb_port(0)
 , arm7_gdb_port(0)
@@ -96,8 +95,7 @@ void CommandLine::loadCommonOptions()
 		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
 		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
-		{ "debug-console", 0, 0, G_OPTION_ARG_INT, &debug_console, "Behave as 8MB debug console (default 0)", "DEBUGCONSOLE"},
-		{ "dsi-mode", 0, 0, G_OPTION_ARG_INT, &dsi_mode, "Behave as a DSi", "DSIMODE"},
+		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -114,6 +112,8 @@ void CommandLine::loadCommonOptions()
 	g_option_context_add_main_entries (ctx, options, "options");
 }
 
+char mytoupper(char c) { return ::toupper(c); }
+
 bool CommandLine::parse(int argc,char **argv)
 {
 	g_option_context_parse (ctx, &argc, &argv, &error);
@@ -125,6 +125,7 @@ bool CommandLine::parse(int argc,char **argv)
 
 	if(_slot1_fat_dir) slot1_fat_dir = _slot1_fat_dir;
 	if(_slot1) slot1 = _slot1;
+	if(_console_type) console_type = _console_type;
 	if(slot1.size() != 0) str_lcase((char*)&slot1[0]);
 	if(_play_movie_file) play_movie_file = _play_movie_file;
 	if(_record_movie_file) record_movie_file = _record_movie_file;
@@ -137,14 +138,26 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
 	if(depth_threshold != -1)
 		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
-	if(debug_console != -1)
-		CommonSettings.DebugConsole = (debug_console==1);
-	if(dsi_mode != -1)
-		CommonSettings.DSI = (dsi_mode==1);
+
+
+	//process console type
+	CommonSettings.DebugConsole = false;
+	CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_FAT;
+	std::transform(console_type.begin(), console_type.end(), console_type.begin(), ::mytoupper);
+	if(console_type == "") {}
+	else if(console_type == "FAT") CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_FAT;
+	else if(console_type == "LITE") CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_LITE;
+	else if(console_type == "IQUE") CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_IQUE;
+	else if(console_type == "DSI") CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_DSI;
+	else if(console_type == "DEBUG")
+	{
+		CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_FAT;
+		CommonSettings.DebugConsole = true;
+	}
 
 	CommonSettings.autodetectBackupMethod = autodetect_method;
 
-	//TODO MAX PRIORITY! change ARM9BIOS etc to be a std::string
+	//TODO NOT MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
 	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM7BIOS,_bios_arm7); }
 	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
@@ -160,6 +173,8 @@ bool CommandLine::parse(int argc,char **argv)
 
 bool CommandLine::validate()
 {
+
+
 	if(slot1 != "")
 	{
 		if(slot1 != "r4" && slot1 != "retail" && slot1 != "none") {

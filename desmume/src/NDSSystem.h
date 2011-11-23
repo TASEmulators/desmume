@@ -1,5 +1,6 @@
-/*  Copyright (C) 2006 yopyop
-    Copyright (C) 2008-2010 DeSmuME team
+/*
+	Copyright (C) 2006 yopyop
+	Copyright (C) 2008-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -164,8 +165,15 @@ struct NDSSystem
 	u32 VCount;
 	u32 old;
 
-	u16 touchX;
-	u16 touchY;
+	//raw adc touch coords for old NDS
+	u16 adc_touchX;
+	u16 adc_touchY;
+	s32 adc_jitterctr;
+
+	//the DSI returns calibrated touch coords from its TSC (?), so we need to save these separately
+	u16 scr_touchX;
+	u16 scr_touchY;
+
 	BOOL isTouch;
 	u16 pad;
 	
@@ -180,7 +188,7 @@ struct NDSSystem
 
 	BOOL sleeping;
 	BOOL cardEjected;
-	BOOL freezeBus;
+	u32 freezeBus;
 
 	//this is not essential NDS runtime state.
 	//it was perhaps a mistake to put it here.
@@ -225,19 +233,20 @@ struct NDS_fw_touchscreen_cal {
   u8 screen_y;
 };
 
-/** /brief The type of DS
- */
-enum nds_fw_ds_type {
-  NDS_FW_DS_TYPE_FAT,
-  NDS_FW_DS_TYPE_LITE,
-  NDS_FW_DS_TYPE_iQue
+enum NDS_CONSOLE_TYPE
+{
+  NDS_CONSOLE_TYPE_FAT,
+  NDS_CONSOLE_TYPE_LITE,
+  NDS_CONSOLE_TYPE_IQUE,
+	NDS_CONSOLE_TYPE_DSI
 };
 
 #define MAX_FW_NICKNAME_LENGTH 10
 #define MAX_FW_MESSAGE_LENGTH 26
 
-struct NDS_fw_config_data {
-  enum nds_fw_ds_type ds_type;
+struct NDS_fw_config_data
+{
+  NDS_CONSOLE_TYPE ds_type;
 
   u8 fav_colour;
   u8 birth_month;
@@ -251,8 +260,8 @@ struct NDS_fw_config_data {
 
   u8 language;
 
-  /* touchscreen calibration */
-  struct NDS_fw_touchscreen_cal touch_cal[2];
+  //touchscreen calibration
+  NDS_fw_touchscreen_cal touch_cal[2];
 };
 
 extern NDSSystem nds;
@@ -352,7 +361,7 @@ struct GameInfo
 
 typedef struct TSCalInfo
 {
-	struct adc
+	struct
 	{
 		u16 x1, x2;
 		u16 y1, y2;
@@ -360,7 +369,7 @@ typedef struct TSCalInfo
 		u16 height;
 	} adc;
 
-	struct scr
+	struct
 	{
 		u8 x1, x2;
 		u8 y1, y2;
@@ -493,7 +502,7 @@ extern struct TCommonSettings {
 		, spu_captureMuted(false)
 		, spu_advanced(false)
 		, StylusPressure(50)
-		, DSI(false)
+		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -529,7 +538,8 @@ extern struct TCommonSettings {
 	bool BootFromFirmware;
 	struct NDS_fw_config_data InternalFirmConf;
 
-	bool DSI;
+	NDS_CONSOLE_TYPE ConsoleType;
+	bool Is_DSI() { return ConsoleType == NDS_CONSOLE_TYPE_DSI; }
 	bool DebugConsole;
 	bool EnsataEmulation;
 	

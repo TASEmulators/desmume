@@ -222,7 +222,7 @@ public:
 	bool loadstate(EMUFILE *f);
 
 	void exec();
-	void doCopy();
+	template<int PROCNUM> void doCopy();
 	void doPause();
 	void doStop();
 	void doSchedule();

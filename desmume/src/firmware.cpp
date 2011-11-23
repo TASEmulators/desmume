@@ -1,20 +1,18 @@
-/*	Copyright (C) 2009-2011 DeSmuME Team
+/*	
+	Copyright (C) 2009-2011 DeSmuME Team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "firmware.h"
@@ -798,7 +796,7 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	MMU.fw.data[0x8 + 3] = 'P';
 
 	// DS type
-	if ( user_settings->ds_type == NDS_FW_DS_TYPE_LITE)
+	if ( user_settings->ds_type == NDS_CONSOLE_TYPE_LITE)
 		MMU.fw.data[0x1d] = 0x20;
 	else
 		MMU.fw.data[0x1d] = 0xff;
@@ -881,7 +879,7 @@ void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
 	int str_length;
 
 	memset( fw_config, 0, sizeof( struct NDS_fw_config_data));
-	fw_config->ds_type = NDS_FW_DS_TYPE_FAT;
+	fw_config->ds_type = NDS_CONSOLE_TYPE_FAT;
 
 	fw_config->fav_colour = 7;
 
@@ -900,19 +898,32 @@ void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
 	}
 	fw_config->message_len = str_length;
 
-	/* default to English */
+	//default to English
 	fw_config->language = 1;
 
-	/* default touchscreen calibration */
+	// default touchscreen calibration
+
+	//ANCIENT DESMUME VALUES
 	fw_config->touch_cal[0].adc_x = 0x200;
 	fw_config->touch_cal[0].adc_y = 0x200;
 	fw_config->touch_cal[0].screen_x = 0x20 + 1; // calibration screen coords are 1-based,
 	fw_config->touch_cal[0].screen_y = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
+	//VALUES FROM NOCASH
+	//fw_config->touch_cal[0].adc_x = 0x02DF;
+	//fw_config->touch_cal[0].adc_y = 0x032C;
+	//fw_config->touch_cal[0].screen_x = 0x20;
+	//fw_config->touch_cal[0].screen_y = 0x20;
 
+	//ANCIENT DESMUME VALUES
 	fw_config->touch_cal[1].adc_x = 0xe00;
 	fw_config->touch_cal[1].adc_y = 0x800;
 	fw_config->touch_cal[1].screen_x = 0xe0 + 1;
 	fw_config->touch_cal[1].screen_y = 0x80 + 1;
+	//VALUES FROM NOCASH
+	//fw_config->touch_cal[1].adc_x = 0x0D3B;
+	//fw_config->touch_cal[1].adc_y = 0x0CE7;
+	//fw_config->touch_cal[1].screen_x = 0xE0;
+	//fw_config->touch_cal[1].screen_y = 0xA0;
 }
 
 void NDS_PatchFirmwareMAC()

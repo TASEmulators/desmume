@@ -4408,9 +4408,9 @@ static int stylus_read(lua_State *L){
 	
 	lua_newtable(L);
 
-	lua_pushinteger(L, nds.touchX >> 4);
+	lua_pushinteger(L, nds.scr_touchX >> 4);
 	lua_setfield(L, -2, "x");
-	lua_pushinteger(L, nds.touchY >> 4);
+	lua_pushinteger(L, nds.scr_touchY >> 4);
 	lua_setfield(L, -2, "y");
 	lua_pushboolean(L, nds.isTouch);
 	lua_setfield(L, -2, "touch");	

@@ -1,5 +1,6 @@
-/*  Copyright (C) 2006 yopyop
-    Copyright (C) 2006-2010 DeSmuME team
+/*
+	Copyright (C) 2006 yopyop
+	Copyright (C) 2006-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -297,8 +298,8 @@ static void drawPad(double x, double y, double ratio) {
 	// touch pad
 	{
 		BOOL gameTouchOn = nds.isTouch;
-		double gameTouchX = screenLeft+1 + (nds.touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
-		double gameTouchY = screenTop+1 + (nds.touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
+		double gameTouchX = screenLeft+1 + (nds.scr_touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
+		double gameTouchY = screenTop+1 + (nds.scr_touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
 		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;
 		double physicalTouchX = screenLeft+1 + (NDS_getRawUserInput().touch.touchX * 0.0625) * (screenRight - screenLeft - 2) / 256.0;
 		double physicalTouchY = screenTop+1 + (NDS_getRawUserInput().touch.touchY * 0.0625) * (screenBottom - screenTop - 2) / 192.0;
@@ -373,8 +374,8 @@ static void TextualInputDisplay() {
 	{
 		char str [32];
 		BOOL gameTouchOn = nds.isTouch;
-		int gameTouchX = nds.touchX >> 4;
-		int gameTouchY = nds.touchY >> 4;
+		int gameTouchX = nds.adc_touchX >> 4;
+		int gameTouchY = nds.adc_touchY >> 4;
 		bool physicalTouchOn = NDS_getRawUserInput().touch.isTouch;
 		int physicalTouchX = NDS_getRawUserInput().touch.touchX >> 4;
 		int physicalTouchY = NDS_getRawUserInput().touch.touchY >> 4;
@@ -433,8 +434,8 @@ static void TouchDisplay() {
 		}
 
 	if(nds.isTouch) {
-		temptouch.X = nds.touchX >> 4;
-		temptouch.Y = nds.touchY >> 4;
+		temptouch.X = nds.scr_touchX;
+		temptouch.Y = nds.scr_touchY;
 		aggDraw.hud->lineColor(255, 0, 0, 128);
 		aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
 		aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert

@@ -37,8 +37,6 @@ public:
 	//actual options: these may move to another sturct
 	int load_slot;
 	int depth_threshold;
-	int debug_console;
-	int dsi_mode;
 	int autodetect_method;
 	std::string nds_file;
 	std::string play_movie_file;
@@ -49,6 +47,7 @@ public:
 	std::string cflash_path;
 	std::string gbaslot_rom;
 	std::string slot1;
+	std::string console_type;
 	std::string slot1_fat_dir;
 #ifndef _MSC_VER
 	int disable_sound;
@@ -92,6 +91,7 @@ private:
 	int _advanced_timing;
 	char* _slot1;
 	char *_slot1_fat_dir;
+	char* _console_type;
 };
 
 #endif
