@@ -317,11 +317,14 @@ struct MMU_struct
 {
 	//ARM9 mem
 	u8 ARM9_ITCM[0x8000];
-    u8 ARM9_DTCM[0x4000];
-    u8 MAIN_MEM[0x800000]; //this has been expanded to 8MB to support debug consoles
-    u8 ARM9_REG[0x1000000];
-    u8 ARM9_BIOS[0x8000];
-    u8 ARM9_VMEM[0x800];
+	u8 ARM9_DTCM[0x4000];
+
+	//u8 MAIN_MEM[4*1024*1024]; //expanded from 4MB to 8MB to support debug consoles
+	//u8 MAIN_MEM[8*1024*1024]; //expanded from 8MB to 16MB to support dsi
+	u8 MAIN_MEM[16*1024*1024]; //expanded from 8MB to 16MB to support dsi
+	u8 ARM9_REG[0x1000000]; //this variable is evil and should be removed by correctly emulating all registers.
+	u8 ARM9_BIOS[0x8000];
+	u8 ARM9_VMEM[0x800];
 	
 	#include "PACKED.h"
 	struct {
@@ -611,13 +614,7 @@ extern u32 partie;
 extern u32 _MMU_MAIN_MEM_MASK;
 extern u32 _MMU_MAIN_MEM_MASK16;
 extern u32 _MMU_MAIN_MEM_MASK32;
-inline void SetupMMU(BOOL debugConsole) {
-	if(debugConsole) _MMU_MAIN_MEM_MASK = 0x7FFFFF;
-	else _MMU_MAIN_MEM_MASK = 0x3FFFFF;
-	_MMU_MAIN_MEM_MASK16 = _MMU_MAIN_MEM_MASK & ~1;
-	_MMU_MAIN_MEM_MASK32 = _MMU_MAIN_MEM_MASK & ~3;
-}
-
+void SetupMMU(bool debugConsole, bool dsi);
 
 FORCEINLINE void CheckMemoryDebugEvent(EDEBUG_EVENT event, const MMU_ACCESS_TYPE type, const u32 procnum, const u32 addr, const u32 size, const u32 val)
 {

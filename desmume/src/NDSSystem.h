@@ -157,6 +157,14 @@ enum ENSATA_HANDSHAKE
 	ENSATA_HANDSHAKE_complete = 4,
 };
 
+enum NDS_CONSOLE_TYPE : u8
+{
+	NDS_CONSOLE_TYPE_FAT,
+	NDS_CONSOLE_TYPE_LITE,
+	NDS_CONSOLE_TYPE_IQUE,
+	NDS_CONSOLE_TYPE_DSI
+};
+
 struct NDSSystem
 {
 	s32 wifiCycle;
@@ -199,9 +207,12 @@ struct NDSSystem
 	s32 idleFrameCounter;
 	s32 cpuloopIterationCount; //counts the number of times during a frame that a reschedule happened
 
-	//if the game was booted on a debug console, this is set
-	BOOL debugConsole;
-
+	//console type must be copied in when the system boots. it can't be changed on the fly.
+	NDS_CONSOLE_TYPE ConsoleType;
+	bool Is_DSI() { return ConsoleType == NDS_CONSOLE_TYPE_DSI; }
+	bool Is_DebugConsole() { return _DebugConsole!=0; }
+	BOOL _DebugConsole;
+	
 	//set if the user requests ensata emulation
 	BOOL ensataEmulation;
 
@@ -231,14 +242,6 @@ struct NDS_fw_touchscreen_cal {
 
   u8 screen_x;
   u8 screen_y;
-};
-
-enum NDS_CONSOLE_TYPE
-{
-  NDS_CONSOLE_TYPE_FAT,
-  NDS_CONSOLE_TYPE_LITE,
-  NDS_CONSOLE_TYPE_IQUE,
-	NDS_CONSOLE_TYPE_DSI
 };
 
 #define MAX_FW_NICKNAME_LENGTH 10
@@ -539,7 +542,6 @@ extern struct TCommonSettings {
 	struct NDS_fw_config_data InternalFirmConf;
 
 	NDS_CONSOLE_TYPE ConsoleType;
-	bool Is_DSI() { return ConsoleType == NDS_CONSOLE_TYPE_DSI; }
 	bool DebugConsole;
 	bool EnsataEmulation;
 	

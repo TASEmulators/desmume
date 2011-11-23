@@ -981,6 +981,14 @@ void MMU_Reset()
 	MMU_timing.arm9dataCache.Reset();
 }
 
+void SetupMMU(bool debugConsole, bool dsi) {
+	if(debugConsole) _MMU_MAIN_MEM_MASK = 0x7FFFFF;
+	else _MMU_MAIN_MEM_MASK = 0x3FFFFF;
+	if(dsi) _MMU_MAIN_MEM_MASK = 0xFFFFFF;
+	_MMU_MAIN_MEM_MASK16 = _MMU_MAIN_MEM_MASK & ~1;
+	_MMU_MAIN_MEM_MASK32 = _MMU_MAIN_MEM_MASK & ~3;
+}
+
 void MMU_setRom(u8 * rom, u32 mask)
 {
 	MMU.CART_ROM = rom;
@@ -3536,10 +3544,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		switch(adr)
 		{
 			case REG_DSIMODE:
-				if(!CommonSettings.Is_DSI()) break;
+				if(!nds.Is_DSI()) break;
 				return 1;
 			case 0x04004008:
-				if(!CommonSettings.Is_DSI()) break;
+				if(!nds.Is_DSI()) break;
 				return 0x8000;
 
 			case REG_DISPA_DISPSTAT:
@@ -3947,7 +3955,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						
 						case 2:
 						{
-							if(CommonSettings.Is_DSI())
+							if(nds.Is_DSI())
 							{
 								//pass data to TSC
 								val = MMU_new.dsi_tsc.write16(val);
