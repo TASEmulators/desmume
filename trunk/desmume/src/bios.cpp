@@ -1079,7 +1079,7 @@ TEMPLATE static u32 getCRC16()
 TEMPLATE static u32 isDebugger()
 {
 	//gbatek has additional specifications which are not emulated here
-	if(CommonSettings.DebugConsole)
+	if(nds.Is_DebugConsole())
 		cpu->R[0] = 1;
 	else
 		cpu->R[0] = 0;

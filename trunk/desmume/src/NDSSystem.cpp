@@ -2385,11 +2385,12 @@ void NDS_Reset()
 	nds.scr_touchX = nds.scr_touchY = nds.adc_touchX = nds.adc_touchY = 0;
 	nds.isTouch = 0;
 	nds.paddle = 0;
-	nds.debugConsole = CommonSettings.DebugConsole;
+	nds.ConsoleType = CommonSettings.ConsoleType;
+	nds._DebugConsole = CommonSettings.DebugConsole;
 	nds.ensataEmulation = CommonSettings.EnsataEmulation;
 	nds.ensataHandshake = ENSATA_HANDSHAKE_none;
 	nds.ensataIpcSyncCounter = 0;
-	SetupMMU(nds.debugConsole);
+	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());
 
 	_MMU_write16<ARMCPU_ARM9>(REG_KEYINPUT, 0x3FF);
 	_MMU_write16<ARMCPU_ARM7>(REG_KEYINPUT, 0x3FF);
@@ -2412,12 +2413,20 @@ void NDS_Reset()
 		}
 	}
 
-	// Copy the whole header to Main RAM 0x27FFE00 on startup.
-	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
-	//zero 27-jun-09 : why did this copy 0x90 more? gbatek says its not stored in ram.
-	//for (i = 0; i < ((0x170+0x90)/4); i++) {
-	for (int i = 0; i < ((0x170)/4); i++)
-		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+	// Copy the whole header to Main RAM 0x27FFE00 on startup. (http://nocash.emubase.de/gbatek.htm#dscartridgeheader)
+	//once upon a time this copied 0x90 more. this was thought to be wrong, and changed.
+	if(nds.Is_DSI())
+	{
+		//dsi needs this copied later in memory. there are probably a number of things that  get copied to a later location in memory.. thats where the NDS consoles tend to stash stuff.
+		for (int i = 0; i < ((0x170)/4); i++)
+			_MMU_write32<ARMCPU_ARM9>(0x02FFFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+	}
+	else
+	{
+		for (int i = 0; i < ((0x170)/4); i++)
+			_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+	}
+
 
 	// Write the header checksum to memory (the firmware needs it to see the cart)
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
