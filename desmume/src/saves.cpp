@@ -1152,7 +1152,7 @@ bool savestate_load(EMUFILE* is)
 
 	if((nds._DebugConsole!=0) != CommonSettings.DebugConsole) {
 			printf("WARNING: forcing console debug mode to: debugmode=%s\n",nds._DebugConsole?"TRUE":"FALSE");
-		}
+	}
 
 
 	return true;

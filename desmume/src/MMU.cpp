@@ -1101,7 +1101,7 @@ u16 DSI_TSC::write16(u16 val)
 	switch(state)
 	{
 	case 0:
-		reg_selection = val>>1;
+		reg_selection = (val>>1)&0x7F;
 		read_flag = val&1;
 		state = 1;
 		return read16();
@@ -1114,6 +1114,7 @@ u16 DSI_TSC::write16(u16 val)
 		}
 		ret = read16();
 		reg_selection++;
+		reg_selection &= 0x7F;
 		return ret;
 	}
 	return 0;
