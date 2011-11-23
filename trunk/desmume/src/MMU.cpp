@@ -1102,7 +1102,7 @@ u16 DSI_TSC::write16(u16 val)
 		{ }
 		else
 		{
-			registers[reg_selection] = val;
+			registers[reg_selection] = (u8)val;
 		}
 		ret = read16();
 		reg_selection++;
@@ -1137,19 +1137,19 @@ u16 DSI_TSC::read16()
 		{
 		//high byte of X:
 		case 1: case 3: case 5: case 7: case 9:
-			return (nds.touchX>>8)&0xFF;
+			return (nds.scr_touchX>>8)&0xFF;
 
 		//low byte of X:
 		case 2: case 4: case 6: case 8: case 10:
-			return nds.touchX&0xFF;
+			return nds.scr_touchX&0xFF;
 
 		//high byte of Y:
 		case 11: case 13: case 15: case 17: case 19:
-			return (nds.touchY>>8)&0xFF;
+			return (nds.scr_touchY>>8)&0xFF;
 
 		//low byte of Y:
 		case 12: case 14: case 16: case 18: case 20:
-			return nds.touchY&0xFF;
+			return nds.scr_touchY&0xFF;
 		
 		default:
 			return 0xFF;
@@ -1886,8 +1886,13 @@ if(_startmode==0 && wordcount==1) {
 
 void DmaController::exec()
 {
+	//this function runs when the DMA ends. the dma start actually queues this event after some kind of guess as to how long the DMA should take
+
+	//we'll need to unfreeze the arm9 bus now
+	if(procnum==ARMCPU_ARM9) nds.freezeBus &= ~(1<<(chan+1));
+
 	dmaCheck = FALSE;
-	
+
 	if(running)
 	{
 		switch(startmode) {
@@ -1944,7 +1949,8 @@ void DmaController::exec()
 			}
 			running = TRUE;
 			paused = FALSE;
-			doCopy();
+			if(procnum == ARMCPU_ARM9) doCopy<ARMCPU_ARM9>();
+			else doCopy<ARMCPU_ARM7>();
 			//printf(";%d\n",gxFIFO.size);
 		}
 	}
@@ -1952,6 +1958,7 @@ void DmaController::exec()
 	driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
 }
 
+template<int PROCNUM>
 void DmaController::doCopy()
 {
 	//generate a copy count depending on various copy mode's behavior
@@ -2004,13 +2011,13 @@ void DmaController::doCopy()
 	//TODO - these might be losing out a lot by not going through the templated version anymore.
 	//we might make another function to do just the raw copy op which can use them with checks
 	//outside the loop
+	int time_elapsed = 0;
 	if(sz==4) {
 		for(s32 i=(s32)todo; i>0; i--)
 		{
+			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,32,MMU_AD_READ,TRUE>(src,true);
+			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,32,MMU_AD_WRITE,TRUE>(dst,true);
 			u32 temp = _MMU_read32(procnum,MMU_AT_DMA,src);
-			if(startmode == EDMAMode_GXFifo) {
-				//printf("GXFIFO DMA OF %08X FROM %08X WHILE GXFIFO.SIZE=%d\n",temp,src,gxFIFO.size);
-			}
 			_MMU_write32(procnum,MMU_AT_DMA,dst, temp);
 			dst += dstinc;
 			src += srcinc;
@@ -2018,23 +2025,25 @@ void DmaController::doCopy()
 	} else {
 		for(s32 i=(s32)todo; i>0; i--)
 		{
-			_MMU_write16(procnum,MMU_AT_DMA,dst, _MMU_read16(procnum,MMU_AT_DMA,src));
+			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,16,MMU_AD_READ,TRUE>(src,true);
+			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,16,MMU_AD_WRITE,TRUE>(dst,true);
+			u16 temp = _MMU_read16(procnum,MMU_AT_DMA,src);
+			_MMU_write16(procnum,MMU_AT_DMA,dst, temp);
 			dst += dstinc;
 			src += srcinc;
 		}
 	}
 
+	//printf("dma of size %d took %d cycles\n",todo*sz,time_elapsed);
+
 	//reschedule an event for the end of this dma, and figure out how much it cost us
 	doSchedule();
+	nextEvent += time_elapsed;
 
-	// zeromus, check it
-	if (wordcount > todo)
-		nextEvent += todo/4; //TODO - surely this is a gross simplification
-	//<zeromus> nextEvent must [always] be advanced to schedule the completion IRQ to fire, even if the timing is pretty much completely imaginary.
-	//<crazymax> but it fixes contra 4 bonus menu, #2867258
-	//apparently moon has very, very tight timing (i didnt spy it using waitbyloop swi...)
-	//so lets bump this down a bit for now,
-	//(i think this code is in nintendo libraries)
+	//freeze the ARM9 bus for the duration of this DMA
+	//thats not entirely accurate
+	if(procnum==ARMCPU_ARM9) 
+		nds.freezeBus |= (1<<(chan+1));
 		
 	//write back the addresses
 	saddr = src;
@@ -2192,7 +2201,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 WRITE\n"); return;
 			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 WRITE\n"); return;
 			
-#if 0
+#if 1
 			case REG_DIVCNT: printf("ERROR 8bit DIVCNT WRITE\n"); return;
 			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 WRITE\n"); return;
 			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 WRITE\n"); return;
@@ -2543,7 +2552,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				MMU_new.div.write16(val);
 				execdiv();
 				return;
-#if 0
+#if 1
 			case REG_DIVNUMER:
 			case REG_DIVNUMER+2:
 			case REG_DIVNUMER+4:
@@ -2975,7 +2984,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x40005B:
 			case 0x40005C:		// Individual Commands
 				if (gxFIFO.size > 254)
-					nds.freezeBus = TRUE;
+					nds.freezeBus |= 1;
 
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommand(adr, val);
@@ -3354,7 +3363,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 #endif
 			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 READ\n"); return 0;
 			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 READ\n"); return 0;
-#if 0
+#if 1
 			case REG_DIVCNT: printf("ERROR 8bit DIVCNT READ\n"); return 0;
 			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 READ\n"); return 0;
 #else
@@ -3527,10 +3536,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		switch(adr)
 		{
 			case REG_DSIMODE:
-				if(!CommonSettings.DSI) break;
+				if(!CommonSettings.Is_DSI()) break;
 				return 1;
 			case 0x04004008:
-				if(!CommonSettings.DSI) break;
+				if(!CommonSettings.Is_DSI()) break;
 				return 0x8000;
 
 			case REG_DISPA_DISPSTAT:
@@ -3739,8 +3748,8 @@ static void CalculateTouchPressure(int pressurePercent, u16 &z1, u16& z2)
 		z1 = z2 = 0;
 		return;
 	}
-	int y = nds.touchY/16;
-	int x = nds.touchX/16;
+	int y = nds.scr_touchY;
+	int x = nds.scr_touchX;
 	float u = (x/256.0f);
 	float v = (y/192.0f);	
 
@@ -3938,7 +3947,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						
 						case 2:
 						{
-							if(CommonSettings.DSI)
+							if(CommonSettings.Is_DSI())
 							{
 								//pass data to TSC
 								val = MMU_new.dsi_tsc.write16(val);
@@ -3988,23 +3997,32 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									break;
 
 								case TSC_MEASURE_Y:
-									//emu_halt();
-									if(MMU.SPI_CNT&(1<<11))
 									{
-										if(partie)
+										//counter the number of adc touch coord reads and jitter it after a while to simulate a shaky human hand or multiple reads
+										nds.adc_jitterctr++;
+										if(nds.adc_jitterctr == 25)
 										{
-											val = ((nds.touchY<<3)&0x7FF);
-											partie = 0;
-											//emu_halt();
+											nds.adc_jitterctr = 0;
+											nds.adc_touchY ^= 16;
+											nds.adc_touchX ^= 16;
+										}
+										if(MMU.SPI_CNT&(1<<11))
+										{
+											if(partie)
+											{
+												val = (nds.adc_touchY<<3) & 0xFF;
+												partie = 0;
+												break;
+											}
+
+											val = (nds.adc_touchY>>5) & 0xFF;
+											partie = 1;
 											break;
 										}
-										val = (nds.touchY>>5);
+										val = (nds.adc_touchY<<3)&0xFF;
 										partie = 1;
 										break;
 									}
-									val = ((nds.touchY<<3)&0x7FF);
-									partie = 1;
-									break;
 								case TSC_MEASURE_Z1: //Z1
 									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
 									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
@@ -4054,15 +4072,15 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									{
 										if(partie)
 										{
-											val = ((nds.touchX<<3)&0x7FF);
+											val = (nds.adc_touchX << 3) & 0xFF;
 											partie = 0;
 											break;
 										}
-										val = (nds.touchX>>5);
+										val = (nds.adc_touchX>>5) & 0xFF;
 										partie = 1;
 										break;
 									}
-									val = ((nds.touchX<<3)&0x7FF);
+									val = (nds.adc_touchX<<3) & 0xFF;
 									partie = 1;
 									break;
 								case TSC_MEASURE_AUX:
@@ -4390,7 +4408,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				{
 					//this is gross. we should generate this whole reg instead of poking it in ndssystem
 					u16 ret = MMU.ARM7_REG[0x136];
-					if(nds.isTouch) ret &= ~64;
+					if(nds.isTouch) 
+						ret &= ~64;
 					else ret |= 64;
 					return ret;
 				}
