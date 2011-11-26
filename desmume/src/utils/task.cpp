@@ -25,9 +25,6 @@
 #include <windows.h>
 #else
 #include <pthread.h>
-#if !defined(__APPLE__)
-#include <semaphore.h>
-#endif
 #endif
 
 #ifdef _MSC_VER
@@ -157,7 +154,7 @@ void* Task::Impl::finish()
 	return param;
 }
 
-#elif defined(__APPLE__)
+#else
 
 class Task::Impl {
 private:
@@ -181,7 +178,7 @@ public:
 	bool exitThread;
 };
 
-void* taskProc(void *arg)
+static void* taskProc(void *arg)
 {
 	Task::Impl *ctx = (Task::Impl *)arg;
 
@@ -304,81 +301,6 @@ void Task::Impl::shutdown()
 	pthread_mutex_lock(&this->mutex);
 	this->_isThreadRunning = false;
 	pthread_mutex_unlock(&this->mutex);
-}
-
-#else
-
-class Task::Impl {
-public:
-	Impl();
-	~Impl() {}
-
-	void start(bool spinlock);
-	void execute(const TWork &work, void* param);
-	void* finish();
-	void shutdown();
-
-	pthread_t thread;
-	sem_t in, out;
-	TWork work;
-	void *param, *ret;
-	bool bStarted, bKill;
-};
-
-void *taskProc(void *arg)
-{
-	Task::Impl *ctx = (Task::Impl *)arg;
-	while(1) {
-		while(sem_wait(&ctx->in) == -1)
-			;
-		if(ctx->bKill)
-			break;
-		ctx->ret = ctx->work(ctx->param);
-		sem_post(&ctx->out);
-	}
-	return NULL;
-}
-
-Task::Impl::Impl()
-{
-	work = NULL;
-	param = NULL;
-	ret = NULL;
-	bKill = false;
-	bStarted = false;
-}
-
-void Task::Impl::start(bool spinlock)
-{
-	sem_init(&in, 0, 0);
-	sem_init(&out, 0, 0);
-	pthread_create(&thread, NULL, &taskProc, this);
-	bStarted = 1;
-}
-
-void Task::Impl::execute(const TWork &work, void* param)
-{
-	this->work = work;
-	this->param = param;
-	sem_post(&in);
-}
-
-void *Task::Impl::finish()
-{
-	while(sem_wait(&out) == -1)
-		;
-	return ret;
-}
-
-void Task::Impl::shutdown()
-{
-	if(!bStarted)
-		return;
-	bKill = 1;
-	sem_post(&in);
-	pthread_join(thread, NULL);
-	sem_destroy(&in);
-	sem_destroy(&out);
 }
 #endif
 
