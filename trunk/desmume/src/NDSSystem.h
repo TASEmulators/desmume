@@ -157,7 +157,7 @@ enum ENSATA_HANDSHAKE
 	ENSATA_HANDSHAKE_complete = 4,
 };
 
-enum NDS_CONSOLE_TYPE : u8
+enum NDS_CONSOLE_TYPE
 {
 	NDS_CONSOLE_TYPE_FAT,
 	NDS_CONSOLE_TYPE_LITE,
@@ -208,7 +208,7 @@ struct NDSSystem
 	s32 cpuloopIterationCount; //counts the number of times during a frame that a reschedule happened
 
 	//console type must be copied in when the system boots. it can't be changed on the fly.
-	NDS_CONSOLE_TYPE ConsoleType;
+	int ConsoleType;
 	bool Is_DSI() { return ConsoleType == NDS_CONSOLE_TYPE_DSI; }
 	bool Is_DebugConsole() { return _DebugConsole!=0; }
 	BOOL _DebugConsole;

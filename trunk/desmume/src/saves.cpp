@@ -170,7 +170,7 @@ SFORMAT SF_NDS[]={
 	{ "_TPB", 4, 1, &nds.isTouch},
 	{ "_DBG", 4, 1, &nds._DebugConsole},
 	{ "_ENS", 4, 1, &nds.ensataEmulation},
-	{ "_TYP", 1, 1, &nds.ConsoleType},
+	{ "_TYP", 4, 1, &nds.ConsoleType},
 	{ "_ENH", 4, 1, &nds.ensataHandshake},
 	{ "_ENI", 4, 1, &nds.ensataIpcSyncCounter},
 	{ "_SLP", 4, 1, &nds.sleeping},
