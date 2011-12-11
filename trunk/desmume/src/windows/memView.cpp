@@ -374,8 +374,7 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 	}
 	TextOut(mem_hdc, startx, 0, text, strlen(text));
 	
-	//MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
-	for(int i=0;i<0x100;i++) memory[i] = MMU.ARM9_LCD[wnd->address+i];
+	MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
 
 	for(line = 0; line < 16; line++, addr += 0x10)
 	{
