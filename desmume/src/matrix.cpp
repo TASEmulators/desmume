@@ -139,17 +139,17 @@ void MatrixScale (float *matrix, const float *ptr)
 
 void MatrixInit  (s32 *matrix)
 {
-	memset (matrix, 0, sizeof(float)*16);
+	memset (matrix, 0, sizeof(s32)*16);
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
 }
 
 void MatrixInit  (float *matrix)
 {
-	memset (matrix, 0, sizeof(float)*16);
+	memset (matrix, 0, sizeof(s32)*16);
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-void MatrixTranspose(float *matrix)
+void MatrixTranspose(s32 *matrix)
 {
 	float temp;
 #define swap(A,B) temp = matrix[A];matrix[A] = matrix[B]; matrix[B] = temp;
@@ -169,21 +169,6 @@ void	MatrixIdentity			(s32 *matrix)
 	matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0;
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
 }
-void MatrixIdentity	(float *matrix)
-{
-	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0.0f;
-	matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0.0f;
-	matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0.0f;
-	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
-}
-
-float MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
-{
-	int iMod = index%4, iDiv = (index>>2)<<2;
-
-	return	(matrix[iMod  ]*rightMatrix[iDiv  ])+(matrix[iMod+ 4]*rightMatrix[iDiv+1])+
-			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
-}
 
 s32 MatrixGetMultipliedIndex (int index, s32 *matrix, s32 *rightMatrix)
 {
@@ -195,7 +180,7 @@ s32 MatrixGetMultipliedIndex (int index, s32 *matrix, s32 *rightMatrix)
 	return (s32)(temp>>12);
 }
 
-void MatrixSet (float *matrix, int x, int y, float value)	// TODO
+void MatrixSet (s32 *matrix, int x, int y, s32 value)
 {
 	matrix [x+(y<<2)] = value;
 }
@@ -226,9 +211,9 @@ void MatrixCopy (s32* matrixDST, const s32* matrixSRC)
 	memcpy(matrixDST,matrixSRC,sizeof(s32)*16);
 }
 
-int MatrixCompare (const float* matrixDST, const float* matrixSRC)
+int MatrixCompare (const s32* matrixDST, const s32* matrixSRC)
 {
-	return memcmp((void*)matrixDST, matrixSRC, sizeof(float)*16);
+	return memcmp((void*)matrixDST, matrixSRC, sizeof(s32)*16);
 }
 
 void MatrixStackInit(MatrixStack *stack)

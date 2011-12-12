@@ -50,14 +50,12 @@ void	MatrixInit				(s32 *matrix);
 
 float	MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
 s32	MatrixGetMultipliedIndex	(int index, s32 *matrix, s32 *rightMatrix);
-void	MatrixSet				(float *matrix, int x, int y, float value);
-void	MatrixCopy				(float * matrixDST, const float * matrixSRC);
+void	MatrixSet				(s32 *matrix, int x, int y, s32 value);
 void	MatrixCopy				(s32 * matrixDST, const s32 * matrixSRC);
-int		MatrixCompare				(const float * matrixDST, const float * matrixSRC);
-void	MatrixIdentity			(float *matrix);
+int		MatrixCompare				(const s32 * matrixDST, const float * matrixSRC);
 void	MatrixIdentity			(s32 *matrix);
 
-void	MatrixTranspose				(float *matrix);
+void	MatrixTranspose				(s32 *matrix);
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
 void	MatrixStackPushMatrix		(MatrixStack *stack, const s32 *ptr);
