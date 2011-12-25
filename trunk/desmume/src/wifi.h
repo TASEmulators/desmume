@@ -485,6 +485,9 @@ typedef struct
 	u8 RXNum;
 	Wifi_RXPacketQueue RXPacketQueue;
 
+	u16 RXStatIncIF, RXStatIncIE;
+	u16 RXStatOvfIF, RXStatOvfIE;
+	u8 RXStat[16];
 	u16 RXTXAddr;
 
 	/* addressing/handshaking */
