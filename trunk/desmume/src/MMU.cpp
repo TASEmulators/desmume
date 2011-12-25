@@ -1870,6 +1870,9 @@ if(_startmode==0 && wordcount==1) {
 		int zzz=9;
 	}
 
+	if (enable && procnum==1 && (!(chan&1)) && _startmode==6)
+		printf("!!!---!!! WIFI DMA: %08X TO %08X, %i WORDS !!!---!!!\n", saddr, daddr, wordcount);
+
 	//analyze enabling and startmode.
 	//note that we only do this if the dma was freshly enabled.
 	//we should probably also only be latching these other regs in that case too..
@@ -3824,6 +3827,16 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		//Address is an IO register
 		switch(adr)
 		{
+		case REG_DISPA_VCOUNT:
+			if (nds.VCount >= 202 && nds.VCount <= 212)
+			{
+				printf("VCOUNT set to %i (previous value %i)\n", val, nds.VCount);
+				nds.VCount = val;
+			}
+			else
+				printf("Attempt to set VCOUNT while not within 202-212 (%i), ignored\n", nds.VCount);
+			return;
+
 			case REG_RTC:
 				rtcWrite(val);
 				break;
