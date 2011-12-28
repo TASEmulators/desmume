@@ -56,7 +56,7 @@ GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3DRasterize,
 #ifdef HAVE_OPENGL
-&gpu3Dgl,
+//&gpu3Dgl,
 #endif
 NULL
 };

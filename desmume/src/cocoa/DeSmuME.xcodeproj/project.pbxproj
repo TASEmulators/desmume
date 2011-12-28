@@ -3,11 +3,10 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 42;
+	objectVersion = 46;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1EFD51790F892B1A00B029BB /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
 		1EFD517A0F892B1A00B029BB /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		1EFD517B0F892B1A00B029BB /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		1EFD51B70F892B1A00B029BB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -15,7 +14,6 @@
 		1EFD51B90F892B1A00B029BB /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
-		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		7FA912201426523900E2ABDD /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
@@ -194,7 +192,6 @@
 		AB06CE5D135B8AEE00E977B3 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA4135B8AED00E977B3 /* slot2_paddle.cpp */; };
 		AB06CE5E135B8AEE00E977B3 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA5135B8AED00E977B3 /* slot2_piano.cpp */; };
 		AB06CE5F135B8AEE00E977B3 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA6135B8AED00E977B3 /* slot2_rumblepak.cpp */; };
-		AB06CE62135B8AEE00E977B3 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB06CDAB135B8AED00E977B3 /* Info.plist */; };
 		AB06CE63135B8AEE00E977B3 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDAC135B8AED00E977B3 /* main.cpp */; };
 		AB06CE66135B8AEE00E977B3 /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDB0135B8AED00E977B3 /* gdbstub.cpp */; };
 		AB06CE68135B8AEE00E977B3 /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDB4135B8AED00E977B3 /* metaspu.cpp */; };
@@ -238,7 +235,157 @@
 		AB06CECB135B8E0B00E977B3 /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
 		AB06CECC135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
 		AB06CEEC135B8E4A00E977B3 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
-		ABFE4241143E32F0009A3CCE /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
+		AB0A0D1E14AACACC00E83E91 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
+		AB0A0D3714AACE9500E83E91 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
+		AB0A0D3814AACE9500E83E91 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
+		AB0A0D3A14AACE9500E83E91 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
+		AB0A0D3B14AACE9500E83E91 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
+		AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
+		AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
+		AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
+		AB0A0D3F14AACE9500E83E91 /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB50135B8A4D00E977B3 /* main_window.mm */; };
+		AB0A0D4014AACE9500E83E91 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB51135B8A4D00E977B3 /* main.mm */; };
+		AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
+		AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
+		AB0A0D4314AACE9500E83E91 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
+		AB0A0D4414AACE9500E83E91 /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB55135B8A4D00E977B3 /* sndOSX.mm */; };
+		AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
+		AB0A0D4614AACE9500E83E91 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD0E135B8ACE00E977B3 /* addons.cpp */; };
+		AB0A0D4714AACE9500E83E91 /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD10135B8ACE00E977B3 /* arm_instructions.cpp */; };
+		AB0A0D4814AACE9500E83E91 /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD11135B8ACE00E977B3 /* armcpu.cpp */; };
+		AB0A0D4914AACE9500E83E91 /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD12135B8ACE00E977B3 /* bios.cpp */; };
+		AB0A0D4A14AACE9500E83E91 /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD13135B8ACE00E977B3 /* cheatSystem.cpp */; };
+		AB0A0D4B14AACE9500E83E91 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD15135B8ACE00E977B3 /* common.cpp */; };
+		AB0A0D4C14AACE9500E83E91 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD16135B8ACE00E977B3 /* cp15.cpp */; };
+		AB0A0D4D14AACE9500E83E91 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD18135B8ACE00E977B3 /* debug.cpp */; };
+		AB0A0D4E14AACE9500E83E91 /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD1A135B8ACE00E977B3 /* Disassembler.cpp */; };
+		AB0A0D4F14AACE9500E83E91 /* driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD1B135B8ACE00E977B3 /* driver.cpp */; };
+		AB0A0D5014AACE9500E83E91 /* emufile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD1C135B8ACE00E977B3 /* emufile.cpp */; };
+		AB0A0D5114AACE9500E83E91 /* FIFO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD1D135B8ACE00E977B3 /* FIFO.cpp */; };
+		AB0A0D5214AACE9500E83E91 /* firmware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD1E135B8ACE00E977B3 /* firmware.cpp */; };
+		AB0A0D5314AACE9500E83E91 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD1F135B8ACE00E977B3 /* fs-linux.cpp */; };
+		AB0A0D5414AACE9500E83E91 /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD21135B8ACE00E977B3 /* gfx3d.cpp */; };
+		AB0A0D5514AACE9500E83E91 /* GPU_osd_stub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD22135B8ACE00E977B3 /* GPU_osd_stub.cpp */; };
+		AB0A0D5614AACE9500E83E91 /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD24135B8ACE00E977B3 /* GPU.cpp */; };
+		AB0A0D5714AACE9500E83E91 /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD26135B8ACE00E977B3 /* matrix.cpp */; };
+		AB0A0D5814AACE9500E83E91 /* mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD27135B8ACE00E977B3 /* mc.cpp */; };
+		AB0A0D5914AACE9500E83E91 /* mic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2A135B8ACE00E977B3 /* mic.cpp */; };
+		AB0A0D5A14AACE9500E83E91 /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2B135B8ACE00E977B3 /* MMU.cpp */; };
+		AB0A0D5B14AACE9500E83E91 /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2C135B8ACE00E977B3 /* movie.cpp */; };
+		AB0A0D5C14AACE9500E83E91 /* NDSSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2D135B8ACE00E977B3 /* NDSSystem.cpp */; };
+		AB0A0D5D14AACE9500E83E91 /* path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2F135B8ACE00E977B3 /* path.cpp */; };
+		AB0A0D5E14AACE9500E83E91 /* rasterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD30135B8ACE00E977B3 /* rasterize.cpp */; };
+		AB0A0D5F14AACE9500E83E91 /* readwrite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD31135B8ACE00E977B3 /* readwrite.cpp */; };
+		AB0A0D6014AACE9500E83E91 /* render3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD32135B8ACE00E977B3 /* render3D.cpp */; };
+		AB0A0D6114AACE9500E83E91 /* ROMReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD33135B8ACE00E977B3 /* ROMReader.cpp */; };
+		AB0A0D6214AACE9500E83E91 /* rtc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD34135B8ACE00E977B3 /* rtc.cpp */; };
+		AB0A0D6314AACE9500E83E91 /* saves.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD35135B8ACE00E977B3 /* saves.cpp */; };
+		AB0A0D6414AACE9500E83E91 /* slot1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD36135B8ACE00E977B3 /* slot1.cpp */; };
+		AB0A0D6514AACE9500E83E91 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD38135B8ACE00E977B3 /* SPU.cpp */; };
+		AB0A0D6614AACE9500E83E91 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD39135B8ACE00E977B3 /* texcache.cpp */; };
+		AB0A0D6714AACE9500E83E91 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD3A135B8ACE00E977B3 /* thumb_instructions.cpp */; };
+		AB0A0D6814AACE9500E83E91 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD3B135B8ACE00E977B3 /* version.cpp */; };
+		AB0A0D6914AACE9500E83E91 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD3C135B8ACE00E977B3 /* wifi.cpp */; };
+		AB0A0D6A14AACE9500E83E91 /* slot1_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD9C135B8AED00E977B3 /* slot1_none.cpp */; };
+		AB0A0D6B14AACE9500E83E91 /* slot1_r4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD9D135B8AED00E977B3 /* slot1_r4.cpp */; };
+		AB0A0D6C14AACE9500E83E91 /* slot1_retail.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD9E135B8AED00E977B3 /* slot1_retail.cpp */; };
+		AB0A0D6D14AACE9500E83E91 /* slot2_expMemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD9F135B8AED00E977B3 /* slot2_expMemory.cpp */; };
+		AB0A0D6E14AACE9500E83E91 /* slot2_gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA0135B8AED00E977B3 /* slot2_gbagame.cpp */; };
+		AB0A0D6F14AACE9500E83E91 /* slot2_guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA1135B8AED00E977B3 /* slot2_guitarGrip.cpp */; };
+		AB0A0D7014AACE9500E83E91 /* slot2_mpcf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA2135B8AED00E977B3 /* slot2_mpcf.cpp */; };
+		AB0A0D7114AACE9500E83E91 /* slot2_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA3135B8AED00E977B3 /* slot2_none.cpp */; };
+		AB0A0D7214AACE9500E83E91 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA4135B8AED00E977B3 /* slot2_paddle.cpp */; };
+		AB0A0D7314AACE9500E83E91 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA5135B8AED00E977B3 /* slot2_piano.cpp */; };
+		AB0A0D7414AACE9500E83E91 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDA6135B8AED00E977B3 /* slot2_rumblepak.cpp */; };
+		AB0A0D7514AACE9500E83E91 /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDB4135B8AED00E977B3 /* metaspu.cpp */; };
+		AB0A0D7614AACE9500E83E91 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDB7135B8AED00E977B3 /* SndOut.cpp */; };
+		AB0A0D7714AACE9500E83E91 /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDBB135B8AED00E977B3 /* AAFilter.cpp */; };
+		AB0A0D7814AACE9500E83E91 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDC1135B8AED00E977B3 /* cpu_detect_x86_gcc.cpp */; };
+		AB0A0D7914AACE9500E83E91 /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDC4135B8AED00E977B3 /* FIFOSampleBuffer.cpp */; };
+		AB0A0D7A14AACE9500E83E91 /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDC7135B8AED00E977B3 /* FIRFilter.cpp */; };
+		AB0A0D7B14AACE9500E83E91 /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDCC135B8AED00E977B3 /* mmx_optimized.cpp */; };
+		AB0A0D7C14AACE9500E83E91 /* RateTransposer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDCD135B8AED00E977B3 /* RateTransposer.cpp */; };
+		AB0A0D7D14AACE9500E83E91 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDD0135B8AED00E977B3 /* SoundTouch.cpp */; };
+		AB0A0D7E14AACE9500E83E91 /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDD2135B8AED00E977B3 /* sse_optimized.cpp */; };
+		AB0A0D7F14AACE9500E83E91 /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDD4135B8AED00E977B3 /* TDStretch.cpp */; };
+		AB0A0D8014AACE9500E83E91 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDD6135B8AED00E977B3 /* WavFile.cpp */; };
+		AB0A0D8114AACE9500E83E91 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDD8135B8AED00E977B3 /* Timestretcher.cpp */; };
+		AB0A0D8214AACE9500E83E91 /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDDD135B8AED00E977B3 /* ConvertUTF.c */; };
+		AB0A0D8314AACE9500E83E91 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDDF135B8AED00E977B3 /* datetime.cpp */; };
+		AB0A0D8414AACE9500E83E91 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDE2135B8AED00E977B3 /* crc.cpp */; };
+		AB0A0D8514AACE9500E83E91 /* decrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDE4135B8AED00E977B3 /* decrypt.cpp */; };
+		AB0A0D8614AACE9500E83E91 /* header.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDE6135B8AED00E977B3 /* header.cpp */; };
+		AB0A0D8714AACE9500E83E91 /* dlditool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDE8135B8AED00E977B3 /* dlditool.cpp */; };
+		AB0A0D8814AACE9500E83E91 /* emufat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDE9135B8AED00E977B3 /* emufat.cpp */; };
+		AB0A0D8914AACE9500E83E91 /* guid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDEC135B8AED00E977B3 /* guid.cpp */; };
+		AB0A0D8A14AACE9500E83E91 /* cache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDF0135B8AED00E977B3 /* cache.cpp */; };
+		AB0A0D8B14AACE9500E83E91 /* directory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDF3135B8AED00E977B3 /* directory.cpp */; };
+		AB0A0D8C14AACE9500E83E91 /* disc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDF5135B8AED00E977B3 /* disc.cpp */; };
+		AB0A0D8D14AACE9500E83E91 /* fatdir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDF9135B8AED00E977B3 /* fatdir.cpp */; };
+		AB0A0D8E14AACE9500E83E91 /* fatfile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDFB135B8AED00E977B3 /* fatfile.cpp */; };
+		AB0A0D8F14AACE9500E83E91 /* file_allocation_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDFD135B8AED00E977B3 /* file_allocation_table.cpp */; };
+		AB0A0D9014AACE9500E83E91 /* filetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CDFF135B8AED00E977B3 /* filetime.cpp */; };
+		AB0A0D9114AACE9500E83E91 /* libfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE01135B8AED00E977B3 /* libfat.cpp */; };
+		AB0A0D9214AACE9500E83E91 /* libfat_public_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE03135B8AED00E977B3 /* libfat_public_api.cpp */; };
+		AB0A0D9314AACE9500E83E91 /* lock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE05135B8AED00E977B3 /* lock.cpp */; };
+		AB0A0D9414AACE9500E83E91 /* partition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE08135B8AED00E977B3 /* partition.cpp */; };
+		AB0A0D9514AACE9500E83E91 /* md5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0A135B8AED00E977B3 /* md5.cpp */; };
+		AB0A0D9614AACE9500E83E91 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0C135B8AED00E977B3 /* task.cpp */; };
+		AB0A0D9714AACE9500E83E91 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0F135B8AED00E977B3 /* vfat.cpp */; };
+		AB0A0D9814AACE9500E83E91 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE11135B8AED00E977B3 /* xstring.cpp */; };
+		AB0A0D9914AACE9500E83E91 /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
+		AB0A0D9A14AACE9500E83E91 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
+		AB0A0D9C14AACE9500E83E91 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
+		AB0A0D9D14AACE9500E83E91 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
+		AB0A0D9E14AACE9500E83E91 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121C1426523900E2ABDD /* tinyxml.cpp */; };
+		AB0A0D9F14AACE9500E83E91 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121E1426523900E2ABDD /* tinyxmlerror.cpp */; };
+		AB0A0DA014AACE9500E83E91 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */; };
+		AB0A0DA214AACE9500E83E91 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		AB0A0DA314AACE9500E83E91 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
+		AB0A0DA414AACE9500E83E91 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
+		AB0A0DA514AACE9500E83E91 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
+		AB0A0DA614AACE9500E83E91 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
+		AB0A0DA714AACE9500E83E91 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
+		AB0A0EAD14AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
+		AB0A0EAE14AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
+		AB0A0EAF14AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
+		AB0A0EB014AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
+		AB0A0EB114AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
+		AB0A0EB214AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
+		AB0A0EB314AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
+		AB0A0EB414AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
+		AB0A0EB514AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
+		AB0A0EB614AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
+		AB0A0EB714AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
+		AB0A0EB814AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
+		AB0A0EB914AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
+		AB0A0EBA14AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
+		AB0A0EBB14AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
+		AB0A0EBC14AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
+		AB0A0EBD14AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
+		AB0A0EBE14AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
+		AB0A0EBF14AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
+		AB0A0EC014AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
+		AB0A0EC114AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
+		AB0A0EC214AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
+		AB0A0EC314AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
+		AB0A0EC414AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
+		AB46780A14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */; };
+		AB46780B14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
+		AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
+		AB46780D14ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		AB46780E14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */; };
+		AB46780F14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
+		AB46781014ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
+		AB46781114ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		AB46781214ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */; };
+		AB46781314ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
+		AB46781414ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
+		AB46781514ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		AB46781614ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */; };
+		AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
+		AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
+		AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
 		ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		ABFE4243143E32F0009A3CCE /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		ABFE4245143E32F0009A3CCE /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
@@ -363,7 +510,6 @@
 		1F4B55120F53929900C8B514 /* French */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = French; path = translations/French.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
-		7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = DeSmuME.icns; sourceTree = "<group>"; };
 		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -595,9 +741,22 @@
 		AB06CEC6135B8E0B00E977B3 /* rom_info.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = rom_info.m; sourceTree = "<group>"; };
 		AB06CEC7135B8E0B00E977B3 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = speed_limit_selection_window.h; sourceTree = "<group>"; };
 		AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = speed_limit_selection_window.mm; sourceTree = "<group>"; };
-		ABFE42CD143E3398009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		ABFE42CF143E3398009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		ABFE42D1143E3399009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0A0D1D14AACACC00E83E91 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		AB0A0DAC14AACE9500E83E91 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0A0DDE14AAD26600E83E91 /* Info (Debug).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Debug).plist"; sourceTree = "<group>"; };
+		AB0A0EA714AAF77000E83E91 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../README.MAC; sourceTree = SOURCE_ROOT; };
+		AB0A0EA814AAF77000E83E91 /* AUTHORS */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = AUTHORS; path = ../../AUTHORS; sourceTree = SOURCE_ROOT; };
+		AB0A0EA914AAF77000E83E91 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../../ChangeLog; sourceTree = SOURCE_ROOT; };
+		AB0A0EAA14AAF77000E83E91 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../COPYING; sourceTree = SOURCE_ROOT; };
+		AB0A0EAB14AAF77000E83E91 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../README; sourceTree = SOURCE_ROOT; };
+		AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.TRANSLATION; path = ../../README.TRANSLATION; sourceTree = SOURCE_ROOT; };
+		AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
+		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
+		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
+		AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		ABFE42CD143E3398009A3CCE /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABFE42CF143E3398009A3CCE /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABFE42D1143E3399009A3CCE /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -620,6 +779,20 @@
 				729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */,
 				AB06CCD6135B8AA200E977B3 /* AppKit.framework in Frameworks */,
 				AB06CCD7135B8AA300E977B3 /* Foundation.framework in Frameworks */,
+				AB0A0D1E14AACACC00E83E91 /* libz.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB0A0DA114AACE9500E83E91 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB0A0DA214AACE9500E83E91 /* Cocoa.framework in Frameworks */,
+				AB0A0DA314AACE9500E83E91 /* OpenGL.framework in Frameworks */,
+				AB0A0DA414AACE9500E83E91 /* AudioUnit.framework in Frameworks */,
+				AB0A0DA514AACE9500E83E91 /* AppKit.framework in Frameworks */,
+				AB0A0DA614AACE9500E83E91 /* Foundation.framework in Frameworks */,
+				AB0A0DA714AACE9500E83E91 /* libz.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -676,6 +849,7 @@
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				729BECE60D9D57F600ED561B /* OpenGL.framework */,
+				AB0A0D1D14AACACC00E83E91 /* libz.dylib */,
 			);
 			name = "Linked Frameworks";
 			sourceTree = "<group>";
@@ -690,9 +864,10 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				ABFE42CD143E3398009A3CCE /* DeSmuME.app */,
-				ABFE42CF143E3398009A3CCE /* DeSmuME.app */,
-				ABFE42D1143E3399009A3CCE /* DeSmuME.app */,
+				ABFE42CD143E3398009A3CCE /* DeSmuME (Debug).app */,
+				ABFE42CF143E3398009A3CCE /* DeSmuME (Debug).app */,
+				ABFE42D1143E3399009A3CCE /* DeSmuME (Debug).app */,
+				AB0A0DAC14AACE9500E83E91 /* DeSmuME (Debug).app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -827,11 +1002,18 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				AB4677FA14ABD4790002FF94 /* Images */,
 				1F4B55090F53924500C8B514 /* Localizable.strings */,
 				1F4B550B0F53924500C8B514 /* MainMenu.nib */,
 				72C000010D9D59E60046B7EA /* Info.plist */,
+				AB0A0DDE14AAD26600E83E91 /* Info (Debug).plist */,
 				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
-				7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */,
+				AB0A0EA714AAF77000E83E91 /* README.MAC */,
+				AB0A0EA814AAF77000E83E91 /* AUTHORS */,
+				AB0A0EA914AAF77000E83E91 /* ChangeLog */,
+				AB0A0EAA14AAF77000E83E91 /* COPYING */,
+				AB0A0EAB14AAF77000E83E91 /* README */,
+				AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -1035,6 +1217,25 @@
 			path = dialogs;
 			sourceTree = "<group>";
 		};
+		AB4677FA14ABD4790002FF94 /* Images */ = {
+			isa = PBXGroup;
+			children = (
+				AB46782914ABD4BF0002FF94 /* App Icons */,
+			);
+			name = Images;
+			sourceTree = "<group>";
+		};
+		AB46782914ABD4BF0002FF94 /* App Icons */ = {
+			isa = PBXGroup;
+			children = (
+				AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */,
+				AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */,
+				AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */,
+				AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */,
+			);
+			name = "App Icons";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1045,7 +1246,6 @@
 				1EFD51780F892B1A00B029BB /* Resources */,
 				1EFD517C0F892B1A00B029BB /* Sources */,
 				1EFD51B60F892B1A00B029BB /* Frameworks */,
-				1EFD51BA0F892B1A00B029BB /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1054,7 +1254,7 @@
 			name = DeSmuME_gdbstub;
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABFE42CF143E3398009A3CCE /* DeSmuME.app */;
+			productReference = ABFE42CF143E3398009A3CCE /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		8D1107260486CEB800E47090 /* DeSmuME (v10.5 Leopard) */ = {
@@ -1064,7 +1264,6 @@
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
-				72C000600D9D61BF0046B7EA /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1073,7 +1272,25 @@
 			name = "DeSmuME (v10.5 Leopard)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABFE42CD143E3398009A3CCE /* DeSmuME.app */;
+			productReference = ABFE42CD143E3398009A3CCE /* DeSmuME (Debug).app */;
+			productType = "com.apple.product-type.application";
+		};
+		AB0A0D3414AACE9500E83E91 /* DeSmuME (v10.4 Tiger) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB0A0DA914AACE9500E83E91 /* Build configuration list for PBXNativeTarget "DeSmuME (v10.4 Tiger)" */;
+			buildPhases = (
+				AB0A0D3514AACE9500E83E91 /* Resources */,
+				AB0A0D3914AACE9500E83E91 /* Sources */,
+				AB0A0DA114AACE9500E83E91 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "DeSmuME (v10.4 Tiger)";
+			productInstallPath = "$(HOME)/Applications";
+			productName = DeSmuME;
+			productReference = AB0A0DAC14AACE9500E83E91 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		ABFE423F143E32F0009A3CCE /* DeSmuME (v10.6 Snow Leopard) */ = {
@@ -1083,7 +1300,6 @@
 				ABFE4240143E32F0009A3CCE /* Resources */,
 				ABFE4244143E32F0009A3CCE /* Sources */,
 				ABFE42AC143E32F0009A3CCE /* Frameworks */,
-				ABFE42B2143E32F0009A3CCE /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1092,7 +1308,7 @@
 			name = "DeSmuME (v10.6 Snow Leopard)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABFE42D1143E3399009A3CCE /* DeSmuME.app */;
+			productReference = ABFE42D1143E3399009A3CCE /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1100,8 +1316,11 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				ORGANIZATIONNAME = "DeSmuME Team";
+			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME" */;
-			compatibilityVersion = "Xcode 2.4";
+			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
@@ -1114,8 +1333,9 @@
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* DeSmuME */;
 			projectDirPath = "";
-			projectRoot = ../../../..;
+			projectRoot = "";
 			targets = (
+				AB0A0D3414AACE9500E83E91 /* DeSmuME (v10.4 Tiger) */,
 				8D1107260486CEB800E47090 /* DeSmuME (v10.5 Leopard) */,
 				ABFE423F143E32F0009A3CCE /* DeSmuME (v10.6 Snow Leopard) */,
 				1EFD51770F892B1A00B029BB /* DeSmuME_gdbstub */,
@@ -1128,10 +1348,18 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1EFD51790F892B1A00B029BB /* DeSmuME.icns in Resources */,
 				1EFD517A0F892B1A00B029BB /* Localizable.strings in Resources */,
 				1EFD517B0F892B1A00B029BB /* MainMenu.nib in Resources */,
-				AB06CE62135B8AEE00E977B3 /* Info.plist in Resources */,
+				AB0A0EB314AAF77000E83E91 /* README.MAC in Resources */,
+				AB0A0EB414AAF77000E83E91 /* AUTHORS in Resources */,
+				AB0A0EB514AAF77000E83E91 /* ChangeLog in Resources */,
+				AB0A0EB614AAF77000E83E91 /* COPYING in Resources */,
+				AB0A0EB714AAF77000E83E91 /* README in Resources */,
+				AB0A0EB814AAF77000E83E91 /* README.TRANSLATION in Resources */,
+				AB46780E14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
+				AB46780F14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
+				AB46781014ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
+				AB46781114ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1139,9 +1367,37 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */,
 				1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */,
 				1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */,
+				AB0A0EBF14AAF77000E83E91 /* README.MAC in Resources */,
+				AB0A0EC014AAF77000E83E91 /* AUTHORS in Resources */,
+				AB0A0EC114AAF77000E83E91 /* ChangeLog in Resources */,
+				AB0A0EC214AAF77000E83E91 /* COPYING in Resources */,
+				AB0A0EC314AAF77000E83E91 /* README in Resources */,
+				AB0A0EC414AAF77000E83E91 /* README.TRANSLATION in Resources */,
+				AB46781614ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
+				AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
+				AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
+				AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB0A0D3514AACE9500E83E91 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB0A0D3714AACE9500E83E91 /* Localizable.strings in Resources */,
+				AB0A0D3814AACE9500E83E91 /* MainMenu.nib in Resources */,
+				AB0A0EAD14AAF77000E83E91 /* README.MAC in Resources */,
+				AB0A0EAE14AAF77000E83E91 /* AUTHORS in Resources */,
+				AB0A0EAF14AAF77000E83E91 /* ChangeLog in Resources */,
+				AB0A0EB014AAF77000E83E91 /* COPYING in Resources */,
+				AB0A0EB114AAF77000E83E91 /* README in Resources */,
+				AB0A0EB214AAF77000E83E91 /* README.TRANSLATION in Resources */,
+				AB46780A14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
+				AB46780B14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
+				AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
+				AB46780D14ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1149,55 +1405,22 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFE4241143E32F0009A3CCE /* DeSmuME.icns in Resources */,
 				ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */,
 				ABFE4243143E32F0009A3CCE /* MainMenu.nib in Resources */,
+				AB0A0EB914AAF77000E83E91 /* README.MAC in Resources */,
+				AB0A0EBA14AAF77000E83E91 /* AUTHORS in Resources */,
+				AB0A0EBB14AAF77000E83E91 /* ChangeLog in Resources */,
+				AB0A0EBC14AAF77000E83E91 /* COPYING in Resources */,
+				AB0A0EBD14AAF77000E83E91 /* README in Resources */,
+				AB0A0EBE14AAF77000E83E91 /* README.TRANSLATION in Resources */,
+				AB46781214ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
+				AB46781314ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
+				AB46781414ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
+				AB46781514ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		1EFD51BA0F892B1A00B029BB /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\n";
-		};
-		72C000600D9D61BF0046B7EA /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\n";
-		};
-		ABFE42B2143E32F0009A3CCE /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1EFD517C0F892B1A00B029BB /* Sources */ = {
@@ -1430,6 +1653,115 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AB0A0D3914AACE9500E83E91 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB0A0D3A14AACE9500E83E91 /* about.m in Sources */,
+				AB0A0D3B14AACE9500E83E91 /* cocoa_util.m in Sources */,
+				AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */,
+				AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */,
+				AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */,
+				AB0A0D3F14AACE9500E83E91 /* main_window.mm in Sources */,
+				AB0A0D4014AACE9500E83E91 /* main.mm in Sources */,
+				AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */,
+				AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */,
+				AB0A0D4314AACE9500E83E91 /* screenshot.mm in Sources */,
+				AB0A0D4414AACE9500E83E91 /* sndOSX.mm in Sources */,
+				AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */,
+				AB0A0D4614AACE9500E83E91 /* addons.cpp in Sources */,
+				AB0A0D4714AACE9500E83E91 /* arm_instructions.cpp in Sources */,
+				AB0A0D4814AACE9500E83E91 /* armcpu.cpp in Sources */,
+				AB0A0D4914AACE9500E83E91 /* bios.cpp in Sources */,
+				AB0A0D4A14AACE9500E83E91 /* cheatSystem.cpp in Sources */,
+				AB0A0D4B14AACE9500E83E91 /* common.cpp in Sources */,
+				AB0A0D4C14AACE9500E83E91 /* cp15.cpp in Sources */,
+				AB0A0D4D14AACE9500E83E91 /* debug.cpp in Sources */,
+				AB0A0D4E14AACE9500E83E91 /* Disassembler.cpp in Sources */,
+				AB0A0D4F14AACE9500E83E91 /* driver.cpp in Sources */,
+				AB0A0D5014AACE9500E83E91 /* emufile.cpp in Sources */,
+				AB0A0D5114AACE9500E83E91 /* FIFO.cpp in Sources */,
+				AB0A0D5214AACE9500E83E91 /* firmware.cpp in Sources */,
+				AB0A0D5314AACE9500E83E91 /* fs-linux.cpp in Sources */,
+				AB0A0D5414AACE9500E83E91 /* gfx3d.cpp in Sources */,
+				AB0A0D5514AACE9500E83E91 /* GPU_osd_stub.cpp in Sources */,
+				AB0A0D5614AACE9500E83E91 /* GPU.cpp in Sources */,
+				AB0A0D5714AACE9500E83E91 /* matrix.cpp in Sources */,
+				AB0A0D5814AACE9500E83E91 /* mc.cpp in Sources */,
+				AB0A0D5914AACE9500E83E91 /* mic.cpp in Sources */,
+				AB0A0D5A14AACE9500E83E91 /* MMU.cpp in Sources */,
+				AB0A0D5B14AACE9500E83E91 /* movie.cpp in Sources */,
+				AB0A0D5C14AACE9500E83E91 /* NDSSystem.cpp in Sources */,
+				AB0A0D5D14AACE9500E83E91 /* path.cpp in Sources */,
+				AB0A0D5E14AACE9500E83E91 /* rasterize.cpp in Sources */,
+				AB0A0D5F14AACE9500E83E91 /* readwrite.cpp in Sources */,
+				AB0A0D6014AACE9500E83E91 /* render3D.cpp in Sources */,
+				AB0A0D6114AACE9500E83E91 /* ROMReader.cpp in Sources */,
+				AB0A0D6214AACE9500E83E91 /* rtc.cpp in Sources */,
+				AB0A0D6314AACE9500E83E91 /* saves.cpp in Sources */,
+				AB0A0D6414AACE9500E83E91 /* slot1.cpp in Sources */,
+				AB0A0D6514AACE9500E83E91 /* SPU.cpp in Sources */,
+				AB0A0D6614AACE9500E83E91 /* texcache.cpp in Sources */,
+				AB0A0D6714AACE9500E83E91 /* thumb_instructions.cpp in Sources */,
+				AB0A0D6814AACE9500E83E91 /* version.cpp in Sources */,
+				AB0A0D6914AACE9500E83E91 /* wifi.cpp in Sources */,
+				AB0A0D6A14AACE9500E83E91 /* slot1_none.cpp in Sources */,
+				AB0A0D6B14AACE9500E83E91 /* slot1_r4.cpp in Sources */,
+				AB0A0D6C14AACE9500E83E91 /* slot1_retail.cpp in Sources */,
+				AB0A0D6D14AACE9500E83E91 /* slot2_expMemory.cpp in Sources */,
+				AB0A0D6E14AACE9500E83E91 /* slot2_gbagame.cpp in Sources */,
+				AB0A0D6F14AACE9500E83E91 /* slot2_guitarGrip.cpp in Sources */,
+				AB0A0D7014AACE9500E83E91 /* slot2_mpcf.cpp in Sources */,
+				AB0A0D7114AACE9500E83E91 /* slot2_none.cpp in Sources */,
+				AB0A0D7214AACE9500E83E91 /* slot2_paddle.cpp in Sources */,
+				AB0A0D7314AACE9500E83E91 /* slot2_piano.cpp in Sources */,
+				AB0A0D7414AACE9500E83E91 /* slot2_rumblepak.cpp in Sources */,
+				AB0A0D7514AACE9500E83E91 /* metaspu.cpp in Sources */,
+				AB0A0D7614AACE9500E83E91 /* SndOut.cpp in Sources */,
+				AB0A0D7714AACE9500E83E91 /* AAFilter.cpp in Sources */,
+				AB0A0D7814AACE9500E83E91 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB0A0D7914AACE9500E83E91 /* FIFOSampleBuffer.cpp in Sources */,
+				AB0A0D7A14AACE9500E83E91 /* FIRFilter.cpp in Sources */,
+				AB0A0D7B14AACE9500E83E91 /* mmx_optimized.cpp in Sources */,
+				AB0A0D7C14AACE9500E83E91 /* RateTransposer.cpp in Sources */,
+				AB0A0D7D14AACE9500E83E91 /* SoundTouch.cpp in Sources */,
+				AB0A0D7E14AACE9500E83E91 /* sse_optimized.cpp in Sources */,
+				AB0A0D7F14AACE9500E83E91 /* TDStretch.cpp in Sources */,
+				AB0A0D8014AACE9500E83E91 /* WavFile.cpp in Sources */,
+				AB0A0D8114AACE9500E83E91 /* Timestretcher.cpp in Sources */,
+				AB0A0D8214AACE9500E83E91 /* ConvertUTF.c in Sources */,
+				AB0A0D8314AACE9500E83E91 /* datetime.cpp in Sources */,
+				AB0A0D8414AACE9500E83E91 /* crc.cpp in Sources */,
+				AB0A0D8514AACE9500E83E91 /* decrypt.cpp in Sources */,
+				AB0A0D8614AACE9500E83E91 /* header.cpp in Sources */,
+				AB0A0D8714AACE9500E83E91 /* dlditool.cpp in Sources */,
+				AB0A0D8814AACE9500E83E91 /* emufat.cpp in Sources */,
+				AB0A0D8914AACE9500E83E91 /* guid.cpp in Sources */,
+				AB0A0D8A14AACE9500E83E91 /* cache.cpp in Sources */,
+				AB0A0D8B14AACE9500E83E91 /* directory.cpp in Sources */,
+				AB0A0D8C14AACE9500E83E91 /* disc.cpp in Sources */,
+				AB0A0D8D14AACE9500E83E91 /* fatdir.cpp in Sources */,
+				AB0A0D8E14AACE9500E83E91 /* fatfile.cpp in Sources */,
+				AB0A0D8F14AACE9500E83E91 /* file_allocation_table.cpp in Sources */,
+				AB0A0D9014AACE9500E83E91 /* filetime.cpp in Sources */,
+				AB0A0D9114AACE9500E83E91 /* libfat.cpp in Sources */,
+				AB0A0D9214AACE9500E83E91 /* libfat_public_api.cpp in Sources */,
+				AB0A0D9314AACE9500E83E91 /* lock.cpp in Sources */,
+				AB0A0D9414AACE9500E83E91 /* partition.cpp in Sources */,
+				AB0A0D9514AACE9500E83E91 /* md5.cpp in Sources */,
+				AB0A0D9614AACE9500E83E91 /* task.cpp in Sources */,
+				AB0A0D9714AACE9500E83E91 /* vfat.cpp in Sources */,
+				AB0A0D9814AACE9500E83E91 /* xstring.cpp in Sources */,
+				AB0A0D9914AACE9500E83E91 /* rom_info.m in Sources */,
+				AB0A0D9A14AACE9500E83E91 /* speed_limit_selection_window.mm in Sources */,
+				AB0A0D9C14AACE9500E83E91 /* slot1_retail_nand.cpp in Sources */,
+				AB0A0D9D14AACE9500E83E91 /* tinystr.cpp in Sources */,
+				AB0A0D9E14AACE9500E83E91 /* tinyxml.cpp in Sources */,
+				AB0A0D9F14AACE9500E83E91 /* tinyxmlerror.cpp in Sources */,
+				AB0A0DA014AACE9500E83E91 /* tinyxmlparser.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ABFE4244143E32F0009A3CCE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1585,6 +1917,36 @@
 			};
 			name = Release;
 		};
+		AB0A0DAA14AACE9500E83E91 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					i386,
+					ppc,
+				);
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_VERSION = 4.0;
+				SDKROOT = macosx10.4;
+				SKIP_INSTALL = NO;
+				VALID_ARCHS = "i386 ppc ppc7400 ppc970";
+			};
+			name = Debug;
+		};
+		AB0A0DAB14AACE9500E83E91 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					i386,
+					ppc,
+				);
+				GCC_VERSION = 4.0;
+				SDKROOT = macosx10.4;
+				STRIP_INSTALLED_PRODUCT = YES;
+				VALID_ARCHS = "i386 ppc ppc7400 ppc970";
+			};
+			name = Release;
+		};
 		ABFE42B4143E32F0009A3CCE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1594,8 +1956,7 @@
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx10.6;
 			};
 			name = Debug;
 		};
@@ -1606,8 +1967,7 @@
 					i386,
 					x86_64,
 				);
-				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx10.6;
 				SKIP_INSTALL = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};
@@ -1618,13 +1978,13 @@
 			buildSettings = {
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				SKIP_INSTALL = NO;
 			};
 			name = Debug;
 		};
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				SKIP_INSTALL = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};
 			name = Release;
@@ -1644,24 +2004,25 @@
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_FAST_OBJC_DISPATCH = NO;
-				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = NO;
-				GCC_MODEL_TUNING = G5;
+				GCC_MODEL_TUNING = "";
+				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
+				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
 				GCC_OBJC_CALL_CXX_CDTORS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
-				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				"GCC_VERSION[sdk=macosx10.5][arch=ppc64]" = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IBC_STRIP_NIBS = NO;
-				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_FILE = "Info (Debug).plist";
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = "DeSmuME (Debug)";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = macosx10.5;
+				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
@@ -1685,24 +2046,25 @@
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
-				GCC_MODEL_TUNING = G5;
+				GCC_MODEL_TUNING = "";
+				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
+				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
-				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_STRICT_ALIASING = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_UNROLL_LOOPS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				"GCC_VERSION[sdk=macosx10.5][arch=ppc64]" = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				ONLY_ACTIVE_ARCH = NO;
-				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = DeSmuME;
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = macosx10.5;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -1715,6 +2077,15 @@
 			buildConfigurations = (
 				1EFD51BC0F892B1A00B029BB /* Debug */,
 				1EFD51BD0F892B1A00B029BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AB0A0DA914AACE9500E83E91 /* Build configuration list for PBXNativeTarget "DeSmuME (v10.4 Tiger)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB0A0DAA14AACE9500E83E91 /* Debug */,
+				AB0A0DAB14AACE9500E83E91 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

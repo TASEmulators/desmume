@@ -228,7 +228,7 @@
 		</dict>
 	</array>
 	<key>CFBundleExecutable</key>
-	<string>DeSmuME</string>
+	<string>DeSmuME (Debug)</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon_DeSmuME</string>
 	<key>CFBundleIdentifier</key>
@@ -240,7 +240,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.9.8</string>
+	<string>0.9.8 (Debug)</string>
 	<key>CFBundleSignature</key>
 	<string>DSmM</string>
 	<key>CFBundleVersion</key>
