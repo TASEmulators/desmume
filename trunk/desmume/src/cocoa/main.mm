@@ -27,6 +27,8 @@ Mac related questions can go to osx@desmume.org
 #import "main_window.h"
 #import "preferences.h"
 
+#include "sndOSX.h"
+
 #ifdef GDB_STUB
 #include <pthread.h>
 #endif
@@ -576,6 +578,8 @@ int main(int argc, char *argv[])
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification
 {
+	SNDOSXStartup();
+	
 	//Set default values for all preferences
 	//(this wont override saved preferences as
 	//they work in different preference domains)
@@ -623,7 +627,10 @@ int main(int argc, char *argv[])
 
 - (void)applicationWillTerminate:(NSNotification*)notification
 {
+	[main_window pause];
 	[main_window release];
+	
+	SNDOSXShutdown();
 }
 
 @end
