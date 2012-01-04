@@ -112,14 +112,14 @@
 				<string>dct</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
-			<string>AppIcon_CheatList.icns</string>
+			<string>AppIcon_ROMCheats.icns</string>
 			<key>CFBundleTypeName</key>
-			<string>DeSmuME Cheat List</string>
+			<string>DeSmuME ROM Cheats</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.desmume.cheatlist</string>
+				<string>com.desmume.romcheats</string>
 			</array>
 			<key>LSTypeIsPackage</key>
 			<false/>
@@ -320,11 +320,11 @@
 				<string>public.plain-text </string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>DeSmuME Cheat List</string>
+			<string>DeSmuME ROM Cheats</string>
 			<key>UTTypeIconFile</key>
-			<string>AppIcon_CheatList.icns</string>
+			<string>AppIcon_ROMCheats.icns</string>
 			<key>UTTypeIdentifier</key>
-			<string>com.desmume.cheatlist</string>
+			<string>com.desmume.romcheats</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
