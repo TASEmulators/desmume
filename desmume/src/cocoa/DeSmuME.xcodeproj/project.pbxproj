@@ -36,7 +36,6 @@
 		AB06CB5E135B8A4D00E977B3 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		AB06CB5F135B8A4D00E977B3 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
 		AB06CB60135B8A4D00E977B3 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
-		AB06CB61135B8A4D00E977B3 /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB55135B8A4D00E977B3 /* sndOSX.mm */; };
 		AB06CB62135B8A4D00E977B3 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		AB06CB63135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		AB06CB64135B8A4D00E977B3 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
@@ -48,7 +47,6 @@
 		AB06CB6A135B8A4D00E977B3 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		AB06CB6B135B8A4D00E977B3 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
 		AB06CB6C135B8A4D00E977B3 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
-		AB06CB6D135B8A4D00E977B3 /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB55135B8A4D00E977B3 /* sndOSX.mm */; };
 		AB06CB6E135B8A4D00E977B3 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		AB06CCD6135B8AA200E977B3 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		AB06CCD7135B8AA300E977B3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
@@ -248,7 +246,6 @@
 		AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
 		AB0A0D4314AACE9500E83E91 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
-		AB0A0D4414AACE9500E83E91 /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB55135B8A4D00E977B3 /* sndOSX.mm */; };
 		AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		AB0A0D4614AACE9500E83E91 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD0E135B8ACE00E977B3 /* addons.cpp */; };
 		AB0A0D4714AACE9500E83E91 /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD10135B8ACE00E977B3 /* arm_instructions.cpp */; };
@@ -386,6 +383,14 @@
 		AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
 		AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
 		AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
+		ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
+		ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
+		ABF4007A14B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
+		ABF4007F14B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
+		ABF4008014B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
+		ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
+		ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		ABFE4243143E32F0009A3CCE /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		ABFE4245143E32F0009A3CCE /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
@@ -398,7 +403,6 @@
 		ABFE424C143E32F0009A3CCE /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		ABFE424D143E32F0009A3CCE /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
 		ABFE424E143E32F0009A3CCE /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
-		ABFE424F143E32F0009A3CCE /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB55135B8A4D00E977B3 /* sndOSX.mm */; };
 		ABFE4250143E32F0009A3CCE /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		ABFE4251143E32F0009A3CCE /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD0E135B8ACE00E977B3 /* addons.cpp */; };
 		ABFE4252143E32F0009A3CCE /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD10135B8ACE00E977B3 /* arm_instructions.cpp */; };
@@ -541,7 +545,6 @@
 		AB06CB52135B8A4D00E977B3 /* nds_control.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = nds_control.mm; sourceTree = "<group>"; };
 		AB06CB53135B8A4D00E977B3 /* preferences.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = preferences.mm; sourceTree = "<group>"; };
 		AB06CB54135B8A4D00E977B3 /* screenshot.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = screenshot.mm; sourceTree = "<group>"; };
-		AB06CB55135B8A4D00E977B3 /* sndOSX.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = sndOSX.mm; sourceTree = "<group>"; };
 		AB06CB56135B8A4D00E977B3 /* video_output_view.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = video_output_view.mm; sourceTree = "<group>"; };
 		AB06CCD5135B8A9B00E977B3 /* DeSmuME_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix.pch; sourceTree = "<group>"; };
 		AB06CCD8135B8ACE00E977B3 /* addons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = addons.h; path = ../addons.h; sourceTree = SOURCE_ROOT; };
@@ -742,7 +745,7 @@
 		AB06CEC7135B8E0B00E977B3 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = speed_limit_selection_window.h; sourceTree = "<group>"; };
 		AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = speed_limit_selection_window.mm; sourceTree = "<group>"; };
 		AB0A0D1D14AACACC00E83E91 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
-		AB0A0DAC14AACE9500E83E91 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0A0DAC14AACE9500E83E91 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0A0DDE14AAD26600E83E91 /* Info (Debug).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Debug).plist"; sourceTree = "<group>"; };
 		AB0A0EA714AAF77000E83E91 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../README.MAC; sourceTree = SOURCE_ROOT; };
 		AB0A0EA814AAF77000E83E91 /* AUTHORS */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = AUTHORS; path = ../../AUTHORS; sourceTree = SOURCE_ROOT; };
@@ -754,9 +757,12 @@
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
-		ABFE42CD143E3398009A3CCE /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		ABFE42CF143E3398009A3CCE /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		ABFE42D1143E3399009A3CCE /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
+		ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
+		ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
+		ABFE42CD143E3398009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABFE42CF143E3398009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABFE42D1143E3399009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -815,6 +821,8 @@
 			isa = PBXGroup;
 			children = (
 				AB06CEC4135B8E0B00E977B3 /* dialogs */,
+				ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */,
+				ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */,
 				AB06CB41135B8A4D00E977B3 /* cocoa_input.h */,
 				AB06CB42135B8A4D00E977B3 /* globals.h */,
 				AB06CB43135B8A4D00E977B3 /* input.h */,
@@ -835,7 +843,6 @@
 				AB06CB52135B8A4D00E977B3 /* nds_control.mm */,
 				AB06CB53135B8A4D00E977B3 /* preferences.mm */,
 				AB06CB54135B8A4D00E977B3 /* screenshot.mm */,
-				AB06CB55135B8A4D00E977B3 /* sndOSX.mm */,
 				AB06CB56135B8A4D00E977B3 /* video_output_view.mm */,
 			);
 			name = "Cocoa Port";
@@ -864,10 +871,10 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				ABFE42CD143E3398009A3CCE /* DeSmuME (Debug).app */,
-				ABFE42CF143E3398009A3CCE /* DeSmuME (Debug).app */,
-				ABFE42D1143E3399009A3CCE /* DeSmuME (Debug).app */,
-				AB0A0DAC14AACE9500E83E91 /* DeSmuME (Debug).app */,
+				ABFE42CD143E3398009A3CCE /* DeSmuME.app */,
+				ABFE42CF143E3398009A3CCE /* DeSmuME.app */,
+				ABFE42D1143E3399009A3CCE /* DeSmuME.app */,
+				AB0A0DAC14AACE9500E83E91 /* DeSmuME.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1230,6 +1237,7 @@
 			children = (
 				AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */,
 				AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */,
+				ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */,
 				AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */,
 				AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */,
 			);
@@ -1254,7 +1262,7 @@
 			name = DeSmuME_gdbstub;
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABFE42CF143E3398009A3CCE /* DeSmuME (Debug).app */;
+			productReference = ABFE42CF143E3398009A3CCE /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
 		8D1107260486CEB800E47090 /* DeSmuME (v10.5 Leopard) */ = {
@@ -1272,7 +1280,7 @@
 			name = "DeSmuME (v10.5 Leopard)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABFE42CD143E3398009A3CCE /* DeSmuME (Debug).app */;
+			productReference = ABFE42CD143E3398009A3CCE /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
 		AB0A0D3414AACE9500E83E91 /* DeSmuME (v10.4 Tiger) */ = {
@@ -1290,7 +1298,7 @@
 			name = "DeSmuME (v10.4 Tiger)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = AB0A0DAC14AACE9500E83E91 /* DeSmuME (Debug).app */;
+			productReference = AB0A0DAC14AACE9500E83E91 /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
 		ABFE423F143E32F0009A3CCE /* DeSmuME (v10.6 Snow Leopard) */ = {
@@ -1308,7 +1316,7 @@
 			name = "DeSmuME (v10.6 Snow Leopard)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = ABFE42D1143E3399009A3CCE /* DeSmuME (Debug).app */;
+			productReference = ABFE42D1143E3399009A3CCE /* DeSmuME.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1360,6 +1368,7 @@
 				AB46780F14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46781014ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781114ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
+				ABF4007A14B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1379,6 +1388,7 @@
 				AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
+				ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1398,6 +1408,7 @@
 				AB46780B14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46780D14ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
+				ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1417,6 +1428,7 @@
 				AB46781314ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46781414ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781514ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
+				ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1437,7 +1449,6 @@
 				AB06CB6A135B8A4D00E977B3 /* nds_control.mm in Sources */,
 				AB06CB6B135B8A4D00E977B3 /* preferences.mm in Sources */,
 				AB06CB6C135B8A4D00E977B3 /* screenshot.mm in Sources */,
-				AB06CB6D135B8A4D00E977B3 /* sndOSX.mm in Sources */,
 				AB06CB6E135B8A4D00E977B3 /* video_output_view.mm in Sources */,
 				AB06CD6C135B8ACE00E977B3 /* addons.cpp in Sources */,
 				AB06CD6D135B8ACE00E977B3 /* aggdraw.cpp in Sources */,
@@ -1540,6 +1551,7 @@
 				7FA912251426523900E2ABDD /* tinyxml.cpp in Sources */,
 				7FA912261426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
 				7FA912271426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
+				ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1557,7 +1569,6 @@
 				AB06CB5E135B8A4D00E977B3 /* nds_control.mm in Sources */,
 				AB06CB5F135B8A4D00E977B3 /* preferences.mm in Sources */,
 				AB06CB60135B8A4D00E977B3 /* screenshot.mm in Sources */,
-				AB06CB61135B8A4D00E977B3 /* sndOSX.mm in Sources */,
 				AB06CB62135B8A4D00E977B3 /* video_output_view.mm in Sources */,
 				AB06CD3D135B8ACE00E977B3 /* addons.cpp in Sources */,
 				AB06CD3F135B8ACE00E977B3 /* arm_instructions.cpp in Sources */,
@@ -1650,6 +1661,7 @@
 				7FA912211426523900E2ABDD /* tinyxml.cpp in Sources */,
 				7FA912221426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
 				7FA912231426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
+				ABF4007F14B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1667,7 +1679,6 @@
 				AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */,
 				AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */,
 				AB0A0D4314AACE9500E83E91 /* screenshot.mm in Sources */,
-				AB0A0D4414AACE9500E83E91 /* sndOSX.mm in Sources */,
 				AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */,
 				AB0A0D4614AACE9500E83E91 /* addons.cpp in Sources */,
 				AB0A0D4714AACE9500E83E91 /* arm_instructions.cpp in Sources */,
@@ -1759,6 +1770,7 @@
 				AB0A0D9E14AACE9500E83E91 /* tinyxml.cpp in Sources */,
 				AB0A0D9F14AACE9500E83E91 /* tinyxmlerror.cpp in Sources */,
 				AB0A0DA014AACE9500E83E91 /* tinyxmlparser.cpp in Sources */,
+				ABF4008014B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1776,7 +1788,6 @@
 				ABFE424C143E32F0009A3CCE /* nds_control.mm in Sources */,
 				ABFE424D143E32F0009A3CCE /* preferences.mm in Sources */,
 				ABFE424E143E32F0009A3CCE /* screenshot.mm in Sources */,
-				ABFE424F143E32F0009A3CCE /* sndOSX.mm in Sources */,
 				ABFE4250143E32F0009A3CCE /* video_output_view.mm in Sources */,
 				ABFE4251143E32F0009A3CCE /* addons.cpp in Sources */,
 				ABFE4252143E32F0009A3CCE /* arm_instructions.cpp in Sources */,
@@ -1869,6 +1880,7 @@
 				ABFE42A9143E32F0009A3CCE /* tinyxml.cpp in Sources */,
 				ABFE42AA143E32F0009A3CCE /* tinyxmlerror.cpp in Sources */,
 				ABFE42AB143E32F0009A3CCE /* tinyxmlparser.cpp in Sources */,
+				ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
