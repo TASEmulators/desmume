@@ -275,7 +275,7 @@ bool opengl_init()
 	{
 		[context makeCurrentContext];
 
-		oglrender_init = &opengl_init;
+		//oglrender_init = &opengl_init;
 		NDS_3D_SetDriver(CORE3DLIST_RASTERIZE);
 		if(!gpu3D->NDS_3D_Init())
 			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
