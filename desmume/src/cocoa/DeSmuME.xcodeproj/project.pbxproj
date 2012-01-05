@@ -8,12 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		1EFD517A0F892B1A00B029BB /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
-		1EFD517B0F892B1A00B029BB /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		1EFD51B70F892B1A00B029BB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		1EFD51B80F892B1A00B029BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		1EFD51B90F892B1A00B029BB /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
-		1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		7FA912201426523900E2ABDD /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
@@ -117,7 +115,6 @@
 		AB06CD89135B8ACE00E977B3 /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2B135B8ACE00E977B3 /* MMU.cpp */; };
 		AB06CD8A135B8ACE00E977B3 /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2C135B8ACE00E977B3 /* movie.cpp */; };
 		AB06CD8B135B8ACE00E977B3 /* NDSSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2D135B8ACE00E977B3 /* NDSSystem.cpp */; };
-		AB06CD8C135B8ACE00E977B3 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
 		AB06CD8D135B8ACE00E977B3 /* path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2F135B8ACE00E977B3 /* path.cpp */; };
 		AB06CD8E135B8ACE00E977B3 /* rasterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD30135B8ACE00E977B3 /* rasterize.cpp */; };
 		AB06CD8F135B8ACE00E977B3 /* readwrite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD31135B8ACE00E977B3 /* readwrite.cpp */; };
@@ -232,10 +229,8 @@
 		AB06CECA135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
 		AB06CECB135B8E0B00E977B3 /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
 		AB06CECC135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
-		AB06CEEC135B8E4A00E977B3 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
 		AB0A0D1E14AACACC00E83E91 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
 		AB0A0D3714AACE9500E83E91 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
-		AB0A0D3814AACE9500E83E91 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		AB0A0D3A14AACE9500E83E91 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		AB0A0D3B14AACE9500E83E91 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
@@ -383,6 +378,10 @@
 		AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
 		AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
 		AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		ABBF04BD14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
+		ABBF04BE14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
+		ABBF04BF14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
+		ABBF04C014B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
 		ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
 		ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
 		ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
@@ -392,7 +391,6 @@
 		ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
-		ABFE4243143E32F0009A3CCE /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		ABFE4245143E32F0009A3CCE /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		ABFE4246143E32F0009A3CCE /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		ABFE4247143E32F0009A3CCE /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
@@ -489,7 +487,6 @@
 		ABFE42A3143E32F0009A3CCE /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE11135B8AED00E977B3 /* xstring.cpp */; };
 		ABFE42A4143E32F0009A3CCE /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
 		ABFE42A5143E32F0009A3CCE /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
-		ABFE42A6143E32F0009A3CCE /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
 		ABFE42A7143E32F0009A3CCE /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
 		ABFE42A8143E32F0009A3CCE /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
 		ABFE42A9143E32F0009A3CCE /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121C1426523900E2ABDD /* tinyxml.cpp */; };
@@ -505,13 +502,9 @@
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		1F4B55030F53921B00C8B514 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
-		1F4B55040F53921B00C8B514 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = translations/English.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		1F4B550D0F53928000C8B514 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Italian; path = translations/Italian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		1F4B550E0F53928400C8B514 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Japanese; path = translations/Japanese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		1F4B550F0F53928700C8B514 /* French */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = French; path = translations/French.lproj/Localizable.strings; sourceTree = "<group>"; };
-		1F4B55100F53929300C8B514 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Italian; path = translations/Italian.lproj/MainMenu.nib; sourceTree = "<group>"; };
-		1F4B55110F53929700C8B514 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Japanese; path = translations/Japanese.lproj/MainMenu.nib; sourceTree = "<group>"; };
-		1F4B55120F53929900C8B514 /* French */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = French; path = translations/French.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -757,6 +750,16 @@
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		ABBF045E14B5144D00E505A0 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "translations/English.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04C114B519CD00E505A0 /* French */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = French; path = "translations/French.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04C314B519DF00E505A0 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Italian; path = "translations/Italian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04C414B519E400E505A0 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Japanese; path = "translations/Japanese.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04C514B519EA00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Chinese; path = "translations/Chinese.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04C614B519F000E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Norwegian; path = "translations/Norwegian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04C714B519F500E505A0 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Romanian; path = "translations/Romanian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		ABBF04CB14B51BBB00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
+		ABBF04CC14B51BC300E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
+		ABBF04CD14B51BC900E505A0 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
 		ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
 		ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
@@ -1011,7 +1014,7 @@
 			children = (
 				AB4677FA14ABD4790002FF94 /* Images */,
 				1F4B55090F53924500C8B514 /* Localizable.strings */,
-				1F4B550B0F53924500C8B514 /* MainMenu.nib */,
+				ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */,
 				72C000010D9D59E60046B7EA /* Info.plist */,
 				AB0A0DDE14AAD26600E83E91 /* Info (Debug).plist */,
 				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
@@ -1338,6 +1341,9 @@
 				German,
 				TestLocale,
 				Italian,
+				Chinese,
+				Norwegian,
+				Romanian,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* DeSmuME */;
 			projectDirPath = "";
@@ -1357,7 +1363,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1EFD517A0F892B1A00B029BB /* Localizable.strings in Resources */,
-				1EFD517B0F892B1A00B029BB /* MainMenu.nib in Resources */,
 				AB0A0EB314AAF77000E83E91 /* README.MAC in Resources */,
 				AB0A0EB414AAF77000E83E91 /* AUTHORS in Resources */,
 				AB0A0EB514AAF77000E83E91 /* ChangeLog in Resources */,
@@ -1369,6 +1374,7 @@
 				AB46781014ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781114ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007A14B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
+				ABBF04C014B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1377,7 +1383,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */,
-				1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */,
 				AB0A0EBF14AAF77000E83E91 /* README.MAC in Resources */,
 				AB0A0EC014AAF77000E83E91 /* AUTHORS in Resources */,
 				AB0A0EC114AAF77000E83E91 /* ChangeLog in Resources */,
@@ -1389,6 +1394,7 @@
 				AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
+				ABBF04BE14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1397,7 +1403,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB0A0D3714AACE9500E83E91 /* Localizable.strings in Resources */,
-				AB0A0D3814AACE9500E83E91 /* MainMenu.nib in Resources */,
 				AB0A0EAD14AAF77000E83E91 /* README.MAC in Resources */,
 				AB0A0EAE14AAF77000E83E91 /* AUTHORS in Resources */,
 				AB0A0EAF14AAF77000E83E91 /* ChangeLog in Resources */,
@@ -1409,6 +1414,7 @@
 				AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46780D14ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
+				ABBF04BD14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1417,7 +1423,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */,
-				ABFE4243143E32F0009A3CCE /* MainMenu.nib in Resources */,
 				AB0A0EB914AAF77000E83E91 /* README.MAC in Resources */,
 				AB0A0EBA14AAF77000E83E91 /* AUTHORS in Resources */,
 				AB0A0EBB14AAF77000E83E91 /* ChangeLog in Resources */,
@@ -1429,6 +1434,7 @@
 				AB46781414ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781514ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
+				ABBF04BF14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1481,7 +1487,6 @@
 				AB06CD89135B8ACE00E977B3 /* MMU.cpp in Sources */,
 				AB06CD8A135B8ACE00E977B3 /* movie.cpp in Sources */,
 				AB06CD8B135B8ACE00E977B3 /* NDSSystem.cpp in Sources */,
-				AB06CD8C135B8ACE00E977B3 /* OGLRender.cpp in Sources */,
 				AB06CD8D135B8ACE00E977B3 /* path.cpp in Sources */,
 				AB06CD8E135B8ACE00E977B3 /* rasterize.cpp in Sources */,
 				AB06CD8F135B8ACE00E977B3 /* readwrite.cpp in Sources */,
@@ -1655,7 +1660,6 @@
 				AB06CE54135B8AEE00E977B3 /* xstring.cpp in Sources */,
 				AB06CEC9135B8E0B00E977B3 /* rom_info.m in Sources */,
 				AB06CECA135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */,
-				AB06CEEC135B8E4A00E977B3 /* OGLRender.cpp in Sources */,
 				956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */,
 				7FA912201426523900E2ABDD /* tinystr.cpp in Sources */,
 				7FA912211426523900E2ABDD /* tinyxml.cpp in Sources */,
@@ -1874,7 +1878,6 @@
 				ABFE42A3143E32F0009A3CCE /* xstring.cpp in Sources */,
 				ABFE42A4143E32F0009A3CCE /* rom_info.m in Sources */,
 				ABFE42A5143E32F0009A3CCE /* speed_limit_selection_window.mm in Sources */,
-				ABFE42A6143E32F0009A3CCE /* OGLRender.cpp in Sources */,
 				ABFE42A7143E32F0009A3CCE /* slot1_retail_nand.cpp in Sources */,
 				ABFE42A8143E32F0009A3CCE /* tinystr.cpp in Sources */,
 				ABFE42A9143E32F0009A3CCE /* tinyxml.cpp in Sources */,
@@ -1891,22 +1894,28 @@
 			isa = PBXVariantGroup;
 			children = (
 				1F4B55030F53921B00C8B514 /* English */,
+				1F4B550F0F53928700C8B514 /* French */,
 				1F4B550D0F53928000C8B514 /* Italian */,
 				1F4B550E0F53928400C8B514 /* Japanese */,
-				1F4B550F0F53928700C8B514 /* French */,
+				ABBF04CB14B51BBB00E505A0 /* Chinese */,
+				ABBF04CC14B51BC300E505A0 /* Norwegian */,
+				ABBF04CD14B51BC900E505A0 /* Romanian */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
-		1F4B550B0F53924500C8B514 /* MainMenu.nib */ = {
+		ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				1F4B55040F53921B00C8B514 /* English */,
-				1F4B55100F53929300C8B514 /* Italian */,
-				1F4B55110F53929700C8B514 /* Japanese */,
-				1F4B55120F53929900C8B514 /* French */,
+				ABBF045E14B5144D00E505A0 /* English */,
+				ABBF04C114B519CD00E505A0 /* French */,
+				ABBF04C314B519DF00E505A0 /* Italian */,
+				ABBF04C414B519E400E505A0 /* Japanese */,
+				ABBF04C514B519EA00E505A0 /* Chinese */,
+				ABBF04C614B519F000E505A0 /* Norwegian */,
+				ABBF04C714B519F500E505A0 /* Romanian */,
 			);
-			name = MainMenu.nib;
+			name = "MainMenu (Legacy).xib";
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
