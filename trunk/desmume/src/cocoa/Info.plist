@@ -252,7 +252,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright ©2011 DeSmuME Team. All rights reserved.</string>
 	<key>NSMainNibFile</key>
-	<string>MainMenu</string>
+	<string>MainMenu (Legacy)</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>UTExportedTypeDeclarations</key>
