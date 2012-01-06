@@ -496,6 +496,16 @@ int main(int argc, char *argv[])
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification
 {
+	// Create the needed directories in Application Support if they haven't already
+	// been created.
+	if (![CocoaDSFile setupAllAppDirectories])
+	{
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Could not create the required directories in your Application Support folder. DeSmuME will now quit.", nil)];
+		return;
+	}
+	
+	[CocoaDSFile setupAllFilePaths];
+	
 	SNDOSXStartup();
 	
 	//Set default values for all preferences
@@ -514,9 +524,6 @@ int main(int argc, char *argv[])
 {
 	//Bring the application to the front
 	[NSApp activateIgnoringOtherApps:TRUE];
-
-	//create the video output window (the only window that opens with the app)
-	//main_window = [[VideoOutputWindow alloc] init];
 	
 	//check if it should load something by default
 	if([[[NSUserDefaults standardUserDefaults] stringForKey:PREF_AFTER_LAUNCHED] compare:PREF_AFTER_LAUNCHED_OPTION_LAST_ROM]==NSOrderedSame)

@@ -17,6 +17,7 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#import "cocoa_util.h"
 #import "rom_info.h"
 #import "../nds_control.h"
 
@@ -86,7 +87,7 @@ inline void setUpTextField(NSTextField *text, bool data)
 
 	if(my_window == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"ROM Info window couldn't be created");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"ROM Info window couldn't be created", nil)];
 		return;
 	}
 
@@ -169,7 +170,7 @@ inline void setUpTextField(NSTextField *text, bool data)
 #define text sjdkasdladsjkalsd
 	//Rom file value
 	rom_file = [[NSTextField alloc] initWithFrame:NSMakeRect(127+sectionMaxWidth,173,120,17)];
-	[rom_file setStringValue:[[DS ROMFile] lastPathComponent]];
+	[rom_file setStringValue:[DS romFileName]];
 	setUpTextField(rom_file, true);
 	if([rom_file frame].size.width > valueMaxWidth)valueMaxWidth = [rom_file frame].size.width;
 	[[my_window contentView] addSubview:rom_file];
@@ -229,7 +230,7 @@ inline void setUpTextField(NSTextField *text, bool data)
 	my_window_controller = [[NSWindowController alloc] initWithWindow:my_window];
 	if(my_window_controller == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"ROM Info window controller couldn't be created");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"ROM Info window controller couldn't be created", nil)];
 		[my_window release];
 		return;
 	}
@@ -245,7 +246,7 @@ inline void setUpTextField(NSTextField *text, bool data)
 
 	[rom_icon setImage:[DS ROMIcon]];
 
-	[rom_file setStringValue:[[DS ROMFile] lastPathComponent]];
+	[rom_file setStringValue:[DS romFileName]];
 	[rom_file sizeToFit];
 	if([rom_file frame].size.width > valueMaxWidth)valueMaxWidth = [rom_file frame].size.width;
 

@@ -124,7 +124,7 @@ public:
 		std::vector<std::string> parts = tokenize_str(filename,"|");
 		SetRomName(parts[parts.size()-1].c_str());
 		LoadModulePath();
-#ifndef WIN32
+#if !defined(WIN32) && !defined(DESMUME_COCOA)
 		ReadPathSettings();
 #endif
 		
