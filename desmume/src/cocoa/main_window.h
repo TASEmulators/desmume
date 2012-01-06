@@ -116,7 +116,4 @@
 //delegate
 - (void)windowDidBecomeMain:(NSNotification*)notification;
 
-- (BOOL)saveStateExistsInSlot:(int)slot;
-- (NSString*) getSaveSlotFileName:(unsigned int)slotNumber;
-
 @end

@@ -77,8 +77,6 @@
 	volatile int frame_skip;
 	volatile int speed_limit;
 	volatile int save_type;
-
-	NSURL *loadedRomURL;
 	
 	bool doesConfigNeedUpdate;
 	NSTimeInterval calcTimeBudget;
@@ -96,6 +94,7 @@
 	
 	@public
 	CocoaDSStateBuffer *dsStateBuffer;
+	NSURL *loadedRomURL;
 }
 
 //Instanciating, setup, and deconstruction
