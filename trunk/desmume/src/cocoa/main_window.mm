@@ -1,24 +1,27 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 //DeSmuME Cocoa includes
 #import "main_window.h"
+#import "cocoa_globals.h"
+#import "cocoa_util.h"
+#import "cocoa_file.h"
 #import "screenshot.h"
 #import "screen_state.h"
 #import "video_output_view.h"
@@ -29,8 +32,6 @@
 
 //How much padding to put around the video output
 #define WINDOW_BORDER_PADDING 5
-
-#define MAX_FRAME_SKIP 10
 
 // Save types settings
 NSString *save_types[MAX_SAVE_TYPE] = { 
@@ -58,8 +59,6 @@ NSMenuItem *load_state_from_item = nil;
 NSMenuItem *saveSlot_item[MAX_SLOTS] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil }; //make sure this corresponds to the amount in max slots
 NSMenuItem *loadSlot_item[MAX_SLOTS] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
 NSMenuItem *rom_info_item = nil;
-NSMenuItem *frame_skip_auto_item = nil;
-NSMenuItem *frame_skip_item[MAX_FRAME_SKIP] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
 NSMenuItem *speed_limit_25_item = nil;
 NSMenuItem *speed_limit_50_item = nil;
 NSMenuItem *speed_limit_75_item = nil;
@@ -196,7 +195,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	NSTitledWindowMask|NSResizableWindowMask|/*NSClosableWindowMask|*/NSMiniaturizableWindowMask|NSTexturedBackgroundWindowMask
 	backing:NSBackingStoreBuffered defer:NO screen:nil])==nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create window");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create window", nil)];
 		[super release];
 		return nil;
 	}
@@ -234,8 +233,6 @@ NSMenuItem *screenshot_to_file_item = nil;
 	NSResponder *temp = [window nextResponder];
 	[window setNextResponder:input];
 	[input setNextResponder:temp];
-	
-	pathLoadedRom = nil;
 
 	return self;
 }
@@ -248,22 +245,21 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[status_view release];
 	[status_bar_text release];
 	[input release];
-	[pathLoadedRom release];
-
+	
 	[super dealloc];
 }
 
-- (BOOL)loadROM:(NSString*)filename
+- (BOOL) loadRom:(NSURL *)romURL
 {
-	//Attemp to load the rom
-	BOOL result = [super loadROM:filename];
+	//Attempt to load the rom
+	BOOL result = [super loadRom:romURL];
 
 	//Set status var and screen depending on whether the rom could be loaded
 	if(result == NO)
 	{
 		[video_output_view setScreenState:[ScreenState blackScreenState]]; //black if the rom doesn't load
 		[self setStatusText:NSLocalizedString(@"No ROM Loaded", nil)];
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't load ROM");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't load ROM", nil)];
 	} else
 	{
 		//if it worked, check the execute upon load option
@@ -276,13 +272,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 		}
 
 		//add the rom to the recent documents list
-		[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:filename]];
+		[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:romURL];
 
 		//update the rom info window, if needed
 		[ROMInfo changeDS:self];
-		
-		pathLoadedRom = filename;
-		[pathLoadedRom retain];
 	}
 
 	//reset menu items
@@ -345,47 +338,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)emulationError
 {
-	messageDialog(NSLocalizedString(@"Error", nil), NSLocalizedString(@"An emulation error occured", nil));
-}
-
-- (void)setFrameSkip:(int)frameskip
-{
-	[super setFrameSkip:frameskip];
-	frameskip = dsStateBuffer->frame_skip;
-
-	if([frame_skip_auto_item target] == self)
-	if(frameskip < 0)
-		[frame_skip_auto_item setState:NSOnState];
-	else
-		[frame_skip_auto_item setState:NSOffState];
-
-	int i;
-	for(i = 0; i < MAX_FRAME_SKIP; i++)
-		if([frame_skip_item[i] target] == self)
-			if(i == frameskip)
-				[frame_skip_item[i] setState:NSOnState];
-			else
-				[frame_skip_item[i] setState:NSOffState];
-}
-
-- (void)setFrameSkipFromMenuItem:(id)sender
-{
-	//see if this was sent from the autoskip menu item
-	if(sender == frame_skip_auto_item)
-	{
-		//set the frame skip to auto
-		[self setFrameSkip:-1];
-		return;
-	}
-
-	//search through the frame skip menu items to find out which one called this function
-	int i;
-	for(i = 0; i < MAX_FRAME_SKIP; i++)
-		if(sender == frame_skip_item[i])
-		{
-			[self setFrameSkip:i];
-			return;
-		}
+	[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"An emulation error occured", nil)];
 }
 
 - (void)setSpeedLimit:(int)speedLimit
@@ -504,18 +457,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (void)askAndCloseROM
 {
-	if(messageDialogYN(NSLocalizedString(@"DeSmuME Emulator", nil), NSLocalizedString(@"Are you sure you want to close the ROM?", nil)))
+	if([CocoaDSUtil quickYesNoDialogUsingTitle:NSLocalizedString(@"DeSmuME Emulator", nil) message:NSLocalizedString(@"Are you sure you want to close the ROM?", nil)])
 		[self closeROM];
-}
-
-- (BOOL)saveState:(NSString*)file
-{
-	return [super saveState:file];
-}
-
-- (BOOL)loadState:(NSString*)file
-{
-	return [super loadState:file];
 }
 
 - (BOOL)saveStateToSlot:(int)slot
@@ -523,14 +466,14 @@ NSMenuItem *screenshot_to_file_item = nil;
 	BOOL result = NO;
 	int i = slot;
 	
-	NSString *savePath = GetPathUserAppSupport(@"States");
-	if (savePath == nil)
+	NSString *saveStatePath = [[CocoaDSFile getURLUserAppSupportByKind:@"Save State"] path];
+	if (saveStatePath == nil)
 	{
 		// Throw an error message here...
 		return result;
 	}
 	
-	result = CreateAppDirectory(@"States");
+	result = [CocoaDSFile createUserAppSupportDirectory:@"States"];
 	if (result == NO)
 	{
 		// Should throw an error message here...
@@ -543,8 +486,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 		return result;
 	}
 	
-	NSString *fullFilePath = [[savePath stringByAppendingString:@"/"] stringByAppendingString:fileName];
-	result = [self saveState:fullFilePath];
+	BOOL wasExecuting = [self executing];
+	[super pause];
+	
+	result = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
 	if(result)
 	{
 		if([saveSlot_item[i] target] == self);
@@ -554,6 +499,11 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 		result = YES;
 	}
+	
+	if(wasExecuting == YES)
+	{
+		[super execute];
+	}
 
 	return result;
 }
@@ -562,8 +512,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	BOOL result = NO;
 	
-	NSString *savePath = GetPathUserAppSupport(@"States");
-	if (savePath == nil)
+	NSString *saveStatePath = [[CocoaDSFile getURLUserAppSupportByKind:@"Save State"] path];
+	if (saveStatePath == nil)
 	{
 		// Should throw an error message here...
 		return result;
@@ -575,48 +525,94 @@ NSMenuItem *screenshot_to_file_item = nil;
 		return result;
 	}
 	
-	NSString *fullFilePath = [[savePath stringByAppendingString:@"/"] stringByAppendingString:fileName];
-	result = [self loadState:fullFilePath];
+	BOOL wasExecuting = [self executing];
+	[super pause];
+	
+	result = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
+	
+	if(wasExecuting == YES)
+	{
+		[super execute];
+	}
 	
 	return result;
 }
 
-- (BOOL)saveStateAs
+- (BOOL) saveStateAs
 {
-    //pause emulation so it doesnt save the state after
-	BOOL was_executing = [self executing];
-	[self pause];
-
+	BOOL result = NO;
+	NSInteger buttonClicked;
+	
 	//file select
 	NSSavePanel *panel = [NSSavePanel savePanel];
 	[panel setTitle:NSLocalizedString(@"Save State...", nil)];
-	[panel setRequiredFileType:@"DST"];
+	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
 
 	//save it
-	if([panel runModal] == NSFileHandlingPanelOKButton)
+	buttonClicked = [panel runModal];
+	if(buttonClicked == NSFileHandlingPanelOKButton)
 	{
-		if(was_executing == YES)[self execute];
-		return [self saveState:[panel filename]];
+		BOOL wasExecuting = [self executing];
+		[super pause];
+		
+		result = [CocoaDSFile saveState:[panel URL]];
+		if (!result)
+		{
+			return result;
+		}
+		
+		if(wasExecuting == YES)
+		{
+			[super execute];
+		}
 	}
-
-	//unpause emulation if needed
-	if(was_executing == YES)[self execute];
-
-	return NO;
+	
+	return result;
 }
 
 - (BOOL)loadStateFrom
 {
+	BOOL result = NO;
+	NSInteger buttonClicked;
+	NSURL *selectedFile = nil;
+	
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setTitle:NSLocalizedString(@"Load State From...", nil)];
 	[panel setCanChooseFiles:YES];
 	[panel setCanChooseDirectories:NO];
 	[panel setAllowsMultipleSelection:NO];
-
-	if([panel runModalForTypes:[NSArray arrayWithObject:@"DST"]] == NSFileHandlingPanelOKButton)
-		return [self loadState:[panel filename]];
-
-	return NO;
+	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
+	
+	buttonClicked = [panel runModal];
+	if(buttonClicked == NSOKButton)
+	{
+		selectedFile = [[panel URLs] lastObject]; //hopefully also the first object
+		if(selectedFile == nil)
+		{
+			return result;
+		}
+		
+		BOOL wasExecuting = [self executing];
+		[super pause];
+		
+		result = [CocoaDSFile loadState:selectedFile];
+		if (!result)
+		{
+			if(wasExecuting == YES)
+			{
+				[super execute];
+			}
+			
+			return result;
+		}
+		
+		if(wasExecuting == YES)
+		{
+			[super execute];
+		}
+	}
+	
+	return result;
 }
 
 - (BOOL)saveToSlot:(id)menu_item
@@ -876,7 +872,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 		} else
 		{
-			messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create status bar");
+			[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create status bar", nil)];
 			return;
 		}
 
@@ -1289,10 +1285,6 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[execute_item setState:NSOffState];
 		[pause_item setState:NSOffState];
 	}
-
-	[frame_skip_auto_item setTarget:self];
-	for(i = 0; i < MAX_FRAME_SKIP; i++)[frame_skip_item[i] setTarget:self];
-	[self setFrameSkip:[self frameSkip]]; //set the menu checkmarks correctly
 	
 	// Backup media type
 	for(i = 0; i < MAX_SAVE_TYPE; i++)[save_type_item[i] setTarget:self];
@@ -1480,7 +1472,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	BOOL exists = false;
 	
-	NSString *searchPath = GetPathUserAppSupport(@"States");
+	NSString *searchPath = [[CocoaDSFile getURLUserAppSupportByKind:@"Save State"] path];
 	NSString *searchFileName = [self getSaveSlotFileName:slot];
 	
 	if (searchPath == nil || searchFileName == nil)
@@ -1489,7 +1481,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	}
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	NSString *searchFullPath = [[searchPath stringByAppendingString:@"/"] stringByAppendingString:searchFileName];
+	NSString *searchFullPath = [searchPath stringByAppendingPathComponent:searchFileName];
 	
 	exists = [fileManager isReadableFileAtPath:searchFullPath];
 	
@@ -1502,7 +1494,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	NSString *fileExtension = [NSString stringWithFormat:@".ds%d", slotNumber];
 	
-	return [[[pathLoadedRom lastPathComponent] stringByDeletingPathExtension] stringByAppendingString:fileExtension];
+	return [[[self romFileName] stringByDeletingPathExtension] stringByAppendingString:fileExtension];
 }
 
 @end

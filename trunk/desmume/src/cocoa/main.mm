@@ -1,20 +1,20 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-	This file is part of DeSmuME
-
-	DeSmuME is free software; you can redistribute it and/or modify
+	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
+	the Free Software Foundation, either version 2 of the License, or
 	(at your option) any later version.
 
-	DeSmuME is distributed in the hope that it will be useful,
+	This file is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with DeSmuME; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -24,6 +24,9 @@ Based on work by yopyop and the DeSmuME team!
 Mac related questions can go to osx@desmume.org
 */
 
+#import <Cocoa/Cocoa.h>
+#import "cocoa_file.h"
+#import "cocoa_util.h"
 #import "main_window.h"
 #import "preferences.h"
 
@@ -75,9 +78,6 @@ extern NSMenuItem *execute_item;
 extern NSMenuItem *pause_item;
 extern NSMenuItem *reset_item;
 
-extern NSMenuItem *frame_skip_auto_item;
-extern NSMenuItem *frame_skip_item[];
-
 extern NSMenuItem *save_type_item[];
 extern NSString *save_types[];
 
@@ -114,7 +114,6 @@ extern NSMenuItem *rom_info_item;
 
 //delegate methods
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename;
-- (void)application:(NSApplication*)sender openFiles:(NSArray*)filenames;
 - (void)applicationWillFinishLaunching:(NSNotification*)aNotification;
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification;
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender;
@@ -238,30 +237,6 @@ void CreateMenu(AppDelegate *delegate)
 
 		[emulation_menu addItem:[NSMenuItem separatorItem]];
 
-		//Frake skip menu
-		// Disabling frame skipping for now since it doesn't yield any significant speed improvements. -rogerman 03/28/2011
-		/*
-		temp = [emulation_menu addItemWithTitle:NSLocalizedString(@"Frame Skip", nil) action:nil keyEquivalent:@""];
-		
-		NSMenu *frame_skip_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Frame Skip", nil)];
-		if(frame_skip_menu != nil)
-		{
-			[temp setSubmenu:frame_skip_menu];
-
-			frame_skip_auto_item = [frame_skip_menu addItemWithTitle:NSLocalizedString(@"Auto", nil) action:@selector(setFrameSkipFromMenuItem:) keyEquivalent:@""];
-
-			[frame_skip_menu addItem:[NSMenuItem separatorItem]];
-
-			frame_skip_item[0] = [frame_skip_menu addItemWithTitle:NSLocalizedString(@"Off", nil) action:@selector(setFrameSkipFromMenuItem:) keyEquivalent:@""];
-
-			for(i = 1; i < MAX_FRAME_SKIP; i++)
-			{
-				frame_skip_item[i] = [frame_skip_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Skip %d", nil), i] action:@selector(setFrameSkipFromMenuItem:) keyEquivalent:@""];
-			}
-
-			[frame_skip_menu release];
-		}
-		 */
 		//Speed limit menu
 		
 		temp = [emulation_menu addItemWithTitle:NSLocalizedString(@"Speed Limit", nil) action:nil keyEquivalent:@""];
@@ -311,11 +286,6 @@ void CreateMenu(AppDelegate *delegate)
 			
 			[save_type_menu release];
 		}
-		
-
-		[emulation_menu addItem:[NSMenuItem separatorItem]];
-	
-		[emulation_menu addItemWithTitle:NSLocalizedString(@"Set FAT Image File...", nil) action:@selector(pickFlash) keyEquivalent:@""];
 	
 		[emulation_menu release];
 	}
@@ -415,12 +385,7 @@ void CreateMenu(AppDelegate *delegate)
 		[sound_menu addItem:[NSMenuItem separatorItem]];
 
 		mute_item = [sound_menu addItemWithTitle:NSLocalizedString(@"Mute", nil) action:@selector(toggleMute) keyEquivalent:@""];
-
-		//[sound_menu addItem:[NSMenuItem separatorItem]];
-		//temp = [sound_menu addItemWithTitle:@"Record to File..." action:@selector(chooseSoundOutputFile) keyEquivalent: @"r"];
-		//temp = [sound_menu addItemWithTitle:@"Pause Recording" action:@selector(startRecording) keyEquivalent: @""];
-		//temp = [sound_menu addItemWithTitle:@"Save Recording" action:@selector(pauseRecording) keyEquivalent: @""];
-
+		
 		[sound_menu release];
 	}
 
@@ -505,7 +470,6 @@ int main(int argc, char *argv[])
 	[panel setCanChooseFiles:YES];
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
-
 	[panel setTitle:NSLocalizedString(@"Open ROM...", nil)];
 
 	if([panel runModalForDirectory:nil file:nil types:[NSArray arrayWithObjects:@"NDS", @"DS.GBA", nil]] == NSOKButton)
@@ -516,64 +480,18 @@ int main(int argc, char *argv[])
 	}
 }
 
-- (void)pickFlash
-{
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
- 
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setAllowsMultipleSelection:NO];
-
-	[panel setTitle:NSLocalizedString(@"Set FAT Image File...", nil)];
-
-	if([panel runModalForDirectory:nil file:nil types:[NSArray arrayWithObjects:@"FAT", @"IMG", nil]] == NSOKButton)
-	{
-		NSString* selected_file = [[panel filenames] lastObject];
-
-		[main_window setFlashFile:selected_file];
-	}
-}
-
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
 {
-	//verify everything
-	if(sender != NSApp)return NO;
-	if(!filename)return NO;
-	if([filename length] == 0)return NO;
-
-	if([main_window loadROM:filename])
-	{
-		//[main_window execute];
-		return YES;
-	}
-
-	return NO;
-}
-
-- (void)application:(NSApplication*)sender openFiles:(NSArray*)filenames
-{
-	//verify everything
-	if(sender != NSApp ||
-	   filenames == nil ||
-	   [filenames count] == 0)
-	{
-		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
-		return;
-	}
+	BOOL result = NO;
+	NSURL *fileURL = [NSURL fileURLWithPath:filename];
 	
-	NSString *filename = [filenames lastObject];
-	if(!filename || [filename length] == 0)
+	NSString *fileKind = [CocoaDSFile fileKind:fileURL];
+	if ([fileKind isEqualToString:@"DS ROM"] || [fileKind isEqualToString:@"GBA ROM"])
 	{
-		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
-		return;
+		result = [main_window loadRom:fileURL];
 	}
 
-	if([main_window loadROM:filename])
-	{
-		//[main_window execute];
-		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
-		return;
-	}
+	return result;
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification
@@ -587,6 +505,9 @@ int main(int argc, char *argv[])
 
 	//create the menus
 	CreateMenu(self);
+	
+	//create the video output window (the only window that opens with the app)
+	main_window = [[VideoOutputWindow alloc] init];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notification
@@ -595,7 +516,7 @@ int main(int argc, char *argv[])
 	[NSApp activateIgnoringOtherApps:TRUE];
 
 	//create the video output window (the only window that opens with the app)
-	main_window = [[VideoOutputWindow alloc] init];
+	//main_window = [[VideoOutputWindow alloc] init];
 	
 	//check if it should load something by default
 	if([[[NSUserDefaults standardUserDefaults] stringForKey:PREF_AFTER_LAUNCHED] compare:PREF_AFTER_LAUNCHED_OPTION_LAST_ROM]==NSOrderedSame)
@@ -604,13 +525,9 @@ int main(int argc, char *argv[])
 		
 		if([recent_documents count] > 0)
 		{
-			//we have to convert from a URL to file path. in the future, URL's ought to be used since they are more capable/robust...
+			NSURL *romURL = [recent_documents objectAtIndex:0];
 			
-			NSString *file = [[recent_documents objectAtIndex:0] absoluteString]; //gets it in url form
-			file = [file stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding]; //convert escaped characters in url
-			file = [file substringFromIndex:16]; //gets rid of "File://localhost" url component (there should be a much better way to do this....)
-			
-			[main_window loadROM:file];
+			[main_window loadRom:romURL];
 		}
 	}
 }
@@ -619,8 +536,8 @@ int main(int argc, char *argv[])
 {
 	//Ask user about quitting if a rom is loaded (avoid accidentally quiting with unsaved progress)
 	if([main_window ROMLoaded])
-	if(!messageDialogYN(NSLocalizedString(@"DeSmuME Emulator", nil), NSLocalizedString(@"Are you sure you want to quit?", nil)))
-		return NSTerminateCancel;
+		if(![CocoaDSUtil quickYesNoDialogUsingTitle:NSLocalizedString(@"DeSmuME Emulator", nil) message:NSLocalizedString(@"Are you sure you want to quit?", nil)])
+			return NSTerminateCancel;
 
 	return NSTerminateNow;
 }

@@ -48,8 +48,6 @@
 
 	bool no_smaller_than_ds;
 	bool keep_proportions;
-	
-	NSString *pathLoadedRom;
 }
 
 //initialization
@@ -57,17 +55,14 @@
 - (void)dealloc;
 
 //overloaded from NintendoDS class
-- (BOOL)loadROM:(NSString*)filename;
+- (BOOL) loadRom:(NSURL *)romURL;
 - (void)execute;
 - (void)pause;
 - (void)reset;
-- (void)setFrameSkip:(int)frameskip;
 - (void)setSaveType:(int)savetype;
 - (void)closeROM;
 
 //save features overloaded from nds class
-- (BOOL)saveState:(NSString*)file;
-- (BOOL)loadState:(NSString*)file;
 - (BOOL)saveStateToSlot:(int)slot; //0 to MAX_SLOTS-1, anything else is ignored
 - (BOOL)loadStateFromSlot:(int)slot;
 

@@ -1,26 +1,27 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "globals.h"
-#import "cocoa_input.h"
+#import <Cocoa/Cocoa.h>
 
-@class ScreenState;
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4
+	#include "macosx_10_4_compat.h"
+#endif
 
 #ifdef GDB_STUB
 #define OBJ_C
@@ -28,7 +29,9 @@
 #endif
 
 #define MAX_SLOTS 10
-#define MAX_FRAME_SKIP 10
+
+@class CocoaDSController;
+@class ScreenState;
 
 @interface CocoaDSStateBuffer : NSObject
 {
@@ -75,8 +78,7 @@
 	volatile int speed_limit;
 	volatile int save_type;
 
-	NSString *current_file;
-	NSString *flash_file;
+	NSURL *loadedRomURL;
 	
 	bool doesConfigNeedUpdate;
 	NSTimeInterval calcTimeBudget;
@@ -109,23 +111,19 @@
 - (void)setPlayerName:(NSString*)player_name;
 
 //ROM control
-- (BOOL)loadROM:(NSString*)filename;
+- (BOOL) loadRom:(NSURL *)romURL;
 - (BOOL)ROMLoaded;
 - (void)closeROM;
 
 //ROM Info
-- (NSImage*)ROMIcon;
-- (NSString*)ROMFile;
-- (NSString*)ROMTitle;
+- (NSImage *)ROMIcon;
+- (NSString *) romFileName;
+- (NSString *)ROMTitle;
 - (NSInteger)ROMMaker;
 - (NSInteger)ROMSize;
 - (NSInteger)ROMARM9Size;
 - (NSInteger)ROMARM7Size;
 - (NSInteger)ROMDataSize;
-
-//Flash memory
-- (NSString*)flashFile;
-- (void)setFlashFile:(NSString*)filename;
 
 //execution control
 - (BOOL)executing;
@@ -133,8 +131,6 @@
 - (BOOL)paused;
 - (void)pause;
 - (void)reset;
-- (void)setFrameSkip:(int)frameskip; //negative is auto, 0 is off, more than 0 is the amount of frames to skip before showing a frame
-- (int)frameSkip; //defaults to -1
 - (void)setSpeedLimit:(int)percent; //0 is off, 1-1000 is the pertance speed it runs at, anything else does nothing
 - (int)speedLimit;
 - (void)setSaveType:(int)savetype; // see save_types in src/mmu.h
@@ -143,10 +139,6 @@
 - (void) emulateDS;
 - (void) drawFrame;
 - (void) padTime:(NSTimeInterval)timePad;
-
-//save states
-- (BOOL)saveState:(NSString*)file;
-- (BOOL)loadState:(NSString*)file;
 
 - (BOOL) isSubScreenLayerDisplayed:(int)i;
 - (BOOL) isMainScreenLayerDisplayed:(int)i;

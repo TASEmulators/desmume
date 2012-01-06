@@ -1,23 +1,27 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #import "nds_control.h"
+#import "cocoa_globals.h"
+#import "cocoa_file.h"
+#import "cocoa_input.h"
+#import "cocoa_util.h"
 #import "preferences.h"
 #import "screen_state.h"
 #import "main_window.h"
@@ -44,11 +48,6 @@
 //or if we can use inter-thread messaging introduced in leopard to update the screen (more efficient)
 bool timer_based;
 
-//ds screens are 59.8 frames per sec, so 1/59.8 seconds per frame
-//times one million for microseconds per frame
-#define DS_SECONDS_PER_FRAME (1.0 / 59.8)
-#define DS_MICROSECONDS_PER_FRAME (1.0 / 59.8) * 1000000.0
-
 //accessed from other files
 volatile bool execute = true;
 
@@ -59,13 +58,6 @@ GPU3DInterface *core3DList[] = {
 //&gpu3Dgl,
 #endif
 NULL
-};
-
-enum
-{
-	CORE3DLIST_NULL = 0,
-	CORE3DLIST_RASTERIZE,
-	CORE3DLIST_OPENGL
 };
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -108,8 +100,7 @@ bool opengl_init()
 	speed_limit = 100; //default to max speed = normal speed
 	calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)speed_limit / 100.0));
 	gui_thread = [NSThread currentThread];
-	current_file = nil;
-	flash_file = nil;
+	loadedRomURL = nil;
 	execution_lock = [[NSLock alloc] init];
 	sound_lock = [[NSLock alloc] init];
 	current_screen = nil;
@@ -123,20 +114,7 @@ bool opengl_init()
   struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
   struct armcpu_ctrl_iface *arm9_ctrl_iface;
   struct armcpu_ctrl_iface *arm7_ctrl_iface;
-#endif
-
-	//Set the flash file if it's in the prefs/cmd line.  It will be nil if it isn't.
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-	flash_file = [[defaults stringForKey:PREF_FLASH_FILE] retain];
-	if ([flash_file length] > 0) {
-		//NSLog(@"Using flash file: \"%@\"\n", flash_file);
-	} else {
-		[flash_file release];
-		flash_file = nil;
-		//NSLog(@"No flash file given\n");
-	}
-  
-#ifdef GDB_STUB
+	
   //create GDB stubs if required
   arm9_gdb_port = [defaults integerForKey:PREF_ARM9_GDB_PORT];
   arm7_gdb_port = [defaults integerForKey:PREF_ARM7_GDB_PORT];
@@ -219,14 +197,14 @@ bool opengl_init()
 
 	if((pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs]) == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for 3D rendering");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create OpenGL pixel format for 3D rendering", nil)];
 		context = nil;
 
 	} else if((context = [[NSOpenGLContext alloc] initWithFormat:pixel_format shareContext:nil]) == nil)
 	{
 		[pixel_format release];
 		pixel_format = nil;
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for 3D rendering");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create OpenGL context for 3D rendering", nil)];
 	} else
 	{
 		[context makeCurrentContext];
@@ -253,8 +231,8 @@ bool opengl_init()
 			if(pixel_buffer == nil)
 			{
 				GLenum error = glGetError();
-				messageDialog(NSLocalizedString(@"Error", nil),
-				[NSString stringWithFormat:@"Error setting up rgba pixel buffer for 3D rendering (glerror: %d)", error]);
+				NSString *errorStr = [NSString stringWithFormat:@"Error setting up rgba pixel buffer for 3D rendering (glerror: %d)", error];
+				[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(errorStr, nil)];
 			} else
 			{
 				[context setPixelBuffer:pixel_buffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:0];
@@ -276,9 +254,9 @@ bool opengl_init()
 		[context makeCurrentContext];
 
 		//oglrender_init = &opengl_init;
-		NDS_3D_SetDriver(CORE3DLIST_RASTERIZE);
+		NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
 		if(!gpu3D->NDS_3D_Init())
-			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
+			[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Unable to initialize OpenGL components", nil)];
 	}
 
 	if(prev_context != nil) //make sure the old context is restored, and make sure our new context is not set in this thread (since the other thread will need it)
@@ -294,7 +272,7 @@ bool opengl_init()
 	volume = 100;
 #ifdef DESMUME_COCOA
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
-		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize sound core");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Unable to initialize sound core", nil)];
 	else
 		SPU_SetVolume(volume);
 #endif
@@ -355,8 +333,7 @@ bool opengl_init()
 	[error_object release];
 	[context release];
 	[pixel_format release];
-	[current_file release];
-	[flash_file release];
+	[loadedRomURL release];
 	[sound_lock release];
 	[execution_lock release];
 
@@ -395,24 +372,20 @@ bool opengl_init()
 	//NDS_CreateDummyFirmware(&macDS_firmware);
 }
 
-- (BOOL)loadROM:(NSString*)filename
+- (BOOL) loadRom:(NSURL *)romURL
 {
+	BOOL result = NO;
+	
 	//pause if not already paused
 	BOOL was_paused = [self paused];
 	[self pause];
 
-	//get the flash file
-	const char *flash;
-	if (flash_file != nil)
-		flash = [flash_file UTF8String];
-	else
-		flash = NULL;
-
 	//load the rom
-	if(!NDS_LoadROM([filename cStringUsingEncoding:NSUTF8StringEncoding], flash) > 0)
+	result = [CocoaDSFile loadRom:romURL];
+	if(!result)
 	{
 		//if it didn't work give an error and dont unpause
-		messageDialog(NSLocalizedString(@"Error", nil), @"Could not open file");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Could not open file", nil)];
 
 		//continue playing if load didn't work
 		if(was_paused == NO)[self execute];
@@ -427,9 +400,10 @@ bool opengl_init()
 		current_screen = nil;
 	}
 
-	//set local vars
-	current_file = filename;
-	[current_file retain];
+	// Retain a copy of the URL of the currently loaded ROM, since we'll be
+	// using it later.
+	loadedRomURL = romURL;
+	[loadedRomURL retain];
 
 	//this is incase emulation stopped from the
 	//emulation core somehow
@@ -440,7 +414,7 @@ bool opengl_init()
 
 - (BOOL)ROMLoaded
 {
-	return (current_file==nil)?NO:YES;
+	return (loadedRomURL==nil)?NO:YES;
 }
 
 - (void)closeROM
@@ -455,8 +429,8 @@ bool opengl_init()
 
 	NDS_FreeROM();
 
-	[current_file release];
-	current_file = nil;
+	[loadedRomURL release];
+	loadedRomURL = nil;
 }
 
 - (NSImage*)ROMIcon
@@ -538,9 +512,9 @@ bool opengl_init()
 	return result;
 }
 
-- (NSString*)ROMFile
+- (NSString*)romFileName
 {
-	return current_file;
+	return [[loadedRomURL path] lastPathComponent];
 }
 
 - (NSString*)ROMTitle
@@ -571,18 +545,6 @@ bool opengl_init()
 - (NSInteger)ROMDataSize
 {
 	return NDS_getROMHeader()->ARM7binSize + NDS_getROMHeader()->ARM7src;
-}
-
-- (NSString*)flashFile
-{
-	return flash_file;
-}
-
-- (void)setFlashFile:(NSString*)filename
-{
-	if (flash_file)
-		[flash_file release];
-	flash_file = [filename retain];
 }
 
 - (BOOL)executing
@@ -633,23 +595,6 @@ bool opengl_init()
 	execute = true;
 }
 
-- (void)setFrameSkip:(int)frameskip
-{
-	dsStateBuffer->frame_skip = frameskip;
-	
-	if(frameskip < 0)
-	{
-		dsStateBuffer->frame_skip = -1;
-	}
-	
-	doesConfigNeedUpdate = true;
-}
-
-- (int)frameSkip
-{
-	return frame_skip;
-}
-
 - (void)setSpeedLimit:(int)speedLimit
 {
 	if(speedLimit < 0 || speedLimit > 1000)
@@ -678,44 +623,6 @@ bool opengl_init()
 - (int)saveType
 {
 	return CommonSettings.manualBackupType;
-}
-
-- (BOOL)saveState:(NSString*)file
-{
-	[execution_lock lock];
-	
-	BOOL result = NO;
-	if(savestate_save([file cStringUsingEncoding:NSUTF8StringEncoding]))
-		result = YES;
-	
-	[execution_lock unlock];
-	
-	return result;
-}
-
-- (BOOL)loadState:(NSString*)file
-{
-	[execution_lock lock];
-	
-	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
-	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
-	[prev_context retain];
-	[context makeCurrentContext];
-	
-	BOOL result = NO;
-	if(savestate_load([file cStringUsingEncoding:NSUTF8StringEncoding]))
-		result = YES;
-	
-	[execution_lock unlock];
-	
-	if(prev_context != nil)
-	{
-		[prev_context makeCurrentContext];
-		[prev_context release];
-	} else
-		[NSOpenGLContext clearCurrentContext];
-	
-	return result;
 }
 
 - (BOOL) isSubScreenLayerDisplayed:(int)i
@@ -1106,7 +1013,7 @@ bool opengl_init()
 
 - (void) padTime:(NSTimeInterval)timePad
 {
-#if (MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4) // Code for Mac OS X 10.4 and earlier
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4 // Code for Mac OS X 10.4 and earlier
 	
 	[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:timePad]];
 	

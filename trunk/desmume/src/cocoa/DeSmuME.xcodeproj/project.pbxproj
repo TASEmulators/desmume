@@ -25,7 +25,6 @@
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
 		AB06CB57135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
-		AB06CB58135B8A4D00E977B3 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		AB06CB59135B8A4D00E977B3 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		AB06CB5A135B8A4D00E977B3 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		AB06CB5B135B8A4D00E977B3 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
@@ -36,7 +35,6 @@
 		AB06CB60135B8A4D00E977B3 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
 		AB06CB62135B8A4D00E977B3 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		AB06CB63135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
-		AB06CB64135B8A4D00E977B3 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		AB06CB65135B8A4D00E977B3 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		AB06CB66135B8A4D00E977B3 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		AB06CB67135B8A4D00E977B3 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
@@ -232,7 +230,6 @@
 		AB0A0D1E14AACACC00E83E91 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
 		AB0A0D3714AACE9500E83E91 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		AB0A0D3A14AACE9500E83E91 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
-		AB0A0D3B14AACE9500E83E91 /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
@@ -378,10 +375,19 @@
 		AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
 		AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
 		AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		AB8FE37614B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
+		AB8FE37714B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
+		AB8FE37814B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
+		AB8FE37914B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
+		AB8FE48C14B6657D009E20B1 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
 		ABBF04BD14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
 		ABBF04BE14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
 		ABBF04BF14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
 		ABBF04C014B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
+		ABBF053014B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
+		ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
+		ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
+		ABBF053314B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
 		ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
 		ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
@@ -392,7 +398,6 @@
 		ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		ABFE4245143E32F0009A3CCE /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
-		ABFE4246143E32F0009A3CCE /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */; };
 		ABFE4247143E32F0009A3CCE /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		ABFE4248143E32F0009A3CCE /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		ABFE4249143E32F0009A3CCE /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
@@ -519,7 +524,6 @@
 		7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
 		956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slot1_retail_nand.cpp; path = ../addons/slot1_retail_nand.cpp; sourceTree = SOURCE_ROOT; };
 		AB06CB41135B8A4D00E977B3 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
-		AB06CB42135B8A4D00E977B3 /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = "<group>"; };
 		AB06CB43135B8A4D00E977B3 /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = "<group>"; };
 		AB06CB44135B8A4D00E977B3 /* main_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main_window.h; sourceTree = "<group>"; };
 		AB06CB45135B8A4D00E977B3 /* nds_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nds_control.h; sourceTree = "<group>"; };
@@ -529,7 +533,6 @@
 		AB06CB49135B8A4D00E977B3 /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = "<group>"; };
 		AB06CB4A135B8A4D00E977B3 /* video_output_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_output_view.h; sourceTree = "<group>"; };
 		AB06CB4B135B8A4D00E977B3 /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
-		AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_util.m; sourceTree = "<group>"; };
 		AB06CB4D135B8A4D00E977B3 /* screen_state.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screen_state.m; sourceTree = "<group>"; };
 		AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_input.mm; sourceTree = "<group>"; };
 		AB06CB4F135B8A4D00E977B3 /* input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = input.mm; sourceTree = "<group>"; };
@@ -750,6 +753,9 @@
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		AB8FE30A14B647D6009E20B1 /* macosx_10_4_compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = macosx_10_4_compat.h; sourceTree = "<group>"; };
+		AB8FE37414B652EC009E20B1 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
+		AB8FE37514B652EC009E20B1 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
 		ABBF045E14B5144D00E505A0 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "translations/English.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
 		ABBF04C114B519CD00E505A0 /* French */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = French; path = "translations/French.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
 		ABBF04C314B519DF00E505A0 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Italian; path = "translations/Italian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
@@ -760,6 +766,8 @@
 		ABBF04CB14B51BBB00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF04CC14B51BC300E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF04CD14B51BC900E505A0 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
+		ABBF052F14B5436E00E505A0 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
+		ABBF053B14B543B600E505A0 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
 		ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
 		ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
@@ -814,6 +822,7 @@
 				ABFE42AF143E32F0009A3CCE /* AudioUnit.framework in Frameworks */,
 				ABFE42B0143E32F0009A3CCE /* AppKit.framework in Frameworks */,
 				ABFE42B1143E32F0009A3CCE /* Foundation.framework in Frameworks */,
+				AB8FE48C14B6657D009E20B1 /* libz.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -825,10 +834,12 @@
 			children = (
 				AB06CEC4135B8E0B00E977B3 /* dialogs */,
 				ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */,
+				ABBF053B14B543B600E505A0 /* cocoa_file.h */,
 				ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */,
 				AB06CB41135B8A4D00E977B3 /* cocoa_input.h */,
-				AB06CB42135B8A4D00E977B3 /* globals.h */,
+				AB8FE37414B652EC009E20B1 /* cocoa_util.h */,
 				AB06CB43135B8A4D00E977B3 /* input.h */,
+				AB8FE30A14B647D6009E20B1 /* macosx_10_4_compat.h */,
 				AB06CB44135B8A4D00E977B3 /* main_window.h */,
 				AB06CB45135B8A4D00E977B3 /* nds_control.h */,
 				AB06CB46135B8A4D00E977B3 /* preferences.h */,
@@ -837,9 +848,10 @@
 				AB06CB49135B8A4D00E977B3 /* sndOSX.h */,
 				AB06CB4A135B8A4D00E977B3 /* video_output_view.h */,
 				AB06CB4B135B8A4D00E977B3 /* about.m */,
-				AB06CB4C135B8A4D00E977B3 /* cocoa_util.m */,
 				AB06CB4D135B8A4D00E977B3 /* screen_state.m */,
+				ABBF052F14B5436E00E505A0 /* cocoa_file.mm */,
 				AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */,
+				AB8FE37514B652EC009E20B1 /* cocoa_util.mm */,
 				AB06CB4F135B8A4D00E977B3 /* input.mm */,
 				AB06CB51135B8A4D00E977B3 /* main.mm */,
 				AB06CB50135B8A4D00E977B3 /* main_window.mm */,
@@ -1446,7 +1458,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB06CB63135B8A4D00E977B3 /* about.m in Sources */,
-				AB06CB64135B8A4D00E977B3 /* cocoa_util.m in Sources */,
 				AB06CB65135B8A4D00E977B3 /* screen_state.m in Sources */,
 				AB06CB66135B8A4D00E977B3 /* cocoa_input.mm in Sources */,
 				AB06CB67135B8A4D00E977B3 /* input.mm in Sources */,
@@ -1557,6 +1568,8 @@
 				7FA912261426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
 				7FA912271426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
 				ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				ABBF053314B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB8FE37914B652EC009E20B1 /* cocoa_util.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1565,7 +1578,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB06CB57135B8A4D00E977B3 /* about.m in Sources */,
-				AB06CB58135B8A4D00E977B3 /* cocoa_util.m in Sources */,
 				AB06CB59135B8A4D00E977B3 /* screen_state.m in Sources */,
 				AB06CB5A135B8A4D00E977B3 /* cocoa_input.mm in Sources */,
 				AB06CB5B135B8A4D00E977B3 /* input.mm in Sources */,
@@ -1666,6 +1678,8 @@
 				7FA912221426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
 				7FA912231426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
 				ABF4007F14B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				ABBF053014B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB8FE37714B652EC009E20B1 /* cocoa_util.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1674,7 +1688,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB0A0D3A14AACE9500E83E91 /* about.m in Sources */,
-				AB0A0D3B14AACE9500E83E91 /* cocoa_util.m in Sources */,
 				AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */,
 				AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */,
 				AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */,
@@ -1775,6 +1788,8 @@
 				AB0A0D9F14AACE9500E83E91 /* tinyxmlerror.cpp in Sources */,
 				AB0A0DA014AACE9500E83E91 /* tinyxmlparser.cpp in Sources */,
 				ABF4008014B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB8FE37614B652EC009E20B1 /* cocoa_util.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1783,7 +1798,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				ABFE4245143E32F0009A3CCE /* about.m in Sources */,
-				ABFE4246143E32F0009A3CCE /* cocoa_util.m in Sources */,
 				ABFE4247143E32F0009A3CCE /* screen_state.m in Sources */,
 				ABFE4248143E32F0009A3CCE /* cocoa_input.mm in Sources */,
 				ABFE4249143E32F0009A3CCE /* input.mm in Sources */,
@@ -1884,6 +1898,8 @@
 				ABFE42AA143E32F0009A3CCE /* tinyxmlerror.cpp in Sources */,
 				ABFE42AB143E32F0009A3CCE /* tinyxmlparser.cpp in Sources */,
 				ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB8FE37814B652EC009E20B1 /* cocoa_util.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

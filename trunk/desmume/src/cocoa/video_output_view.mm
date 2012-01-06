@@ -1,23 +1,25 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #import "video_output_view.h"
+#import "nds_control.h"
+#import "cocoa_util.h"
 #import "screen_state.h"
 
 #define HORIZONTAL(angle) ((angle) == -90 || (angle) == -270)
@@ -45,7 +47,7 @@
 
 	if(self==nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create a view for video output");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create a view for video output", nil)];
 		return nil;
 	}
 
@@ -72,7 +74,7 @@
 	NSOpenGLPixelFormat* pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 	if(pixel_format == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for video output");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create OpenGL pixel format for video output", nil)];
 		context = nil;
 		[self release];
 		return nil;
@@ -83,7 +85,7 @@
 		[pixel_format release];
 		if(context == nil)
 		{
-			messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for video output");
+			[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Couldn't create OpenGL context for video output", nil)];
 			[self release];
 			return nil;
 		}
@@ -116,7 +118,7 @@
 
 	if(screen == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Recieved invalid screen update");
+		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Recieved invalid screen update", nil)];
 		return;
 	}
 
