@@ -284,7 +284,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		int i;
 		for(i = 0; i < MAX_SLOTS; i++)
 			if([saveSlot_item[i] target] == self)
-				if([self saveStateExistsInSlot:i] == YES)
+				if([CocoaDSFile saveStateExistsForSlot:loadedRomURL slotNumber:i])
 					[saveSlot_item[i] setState:NSOnState];
 				else
 					[saveSlot_item[i] setState:NSOffState];
@@ -480,7 +480,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		return result;
 	}
 	
-	NSString *fileName = [self getSaveSlotFileName:slot];
+	NSString *fileName = [CocoaDSFile getSaveSlotFileName:loadedRomURL slotNumber:slot];
 	if (fileName == nil)
 	{
 		return result;
@@ -519,7 +519,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		return result;
 	}
 	
-	NSString *fileName = [self getSaveSlotFileName:slot];
+	NSString *fileName = [CocoaDSFile getSaveSlotFileName:loadedRomURL slotNumber:slot];
 	if (fileName == nil)
 	{
 		return result;
@@ -1257,7 +1257,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[saveSlot_item[i] setTarget:self];
 		[loadSlot_item[i] setTarget:self];
 
-		if([self saveStateExistsInSlot:i] == YES)
+		if ([CocoaDSFile saveStateExistsForSlot:loadedRomURL slotNumber:i])
 		{
 			[saveSlot_item[i] setState:NSOnState];
 		} else
@@ -1443,7 +1443,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	else
 		for(i = 0; i < MAX_SLOTS; i++)
 			if(item == loadSlot_item[i])
-				if([self saveStateExistsInSlot:i] == NO)return NO;
+				if (![CocoaDSFile saveStateExistsForSlot:loadedRomURL slotNumber:i]) return NO;
 
 	if(video_output_view == nil)
 	{
@@ -1466,35 +1466,6 @@ NSMenuItem *screenshot_to_file_item = nil;
 	}
 
 	return YES;
-}
-
-- (BOOL)saveStateExistsInSlot:(int)slot
-{
-	BOOL exists = false;
-	
-	NSString *searchPath = [[CocoaDSFile getURLUserAppSupportByKind:@"Save State"] path];
-	NSString *searchFileName = [self getSaveSlotFileName:slot];
-	
-	if (searchPath == nil || searchFileName == nil)
-	{
-		return exists;
-	}
-	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	NSString *searchFullPath = [searchPath stringByAppendingPathComponent:searchFileName];
-	
-	exists = [fileManager isReadableFileAtPath:searchFullPath];
-	
-	[fileManager release];
-	
-	return exists;
-}
-
-- (NSString*) getSaveSlotFileName:(unsigned int)slotNumber
-{
-	NSString *fileExtension = [NSString stringWithFormat:@".ds%d", slotNumber];
-	
-	return [[[self romFileName] stringByDeletingPathExtension] stringByAppendingString:fileExtension];
 }
 
 @end
