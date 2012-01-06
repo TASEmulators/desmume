@@ -1,23 +1,24 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #import "screen_state.h"
+#import "cocoa_util.h"
 
 @implementation ScreenState
 + (NSInteger)width
@@ -85,41 +86,67 @@
 	return color_data;
 }
 
-- (NSImage*)image
+- (NSImage *)image
 {
-	NSImage *result = [[NSImage alloc] initWithSize:[ScreenState size]];
-	[result addRepresentation:[self imageRep]];
-	return [result autorelease];
-}
-
-- (NSBitmapImageRep*)imageRep
-{
-	NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-	pixelsWide:DS_SCREEN_WIDTH
-	pixelsHigh:DS_SCREEN_HEIGHT*2
-	bitsPerSample:8
-	samplesPerPixel:3
-	hasAlpha:NO
-	isPlanar:NO
-	colorSpaceName:NSCalibratedRGBColorSpace
-	bytesPerRow:DS_SCREEN_WIDTH*3
-	bitsPerPixel:24];
-
-	if(image == nil)return nil;
-
-	unsigned char *bitmap_data = [image bitmapData];
-
-	const unsigned short *buffer_16 = (unsigned short*)color_data;
-
-	int i;
-	for(i = 0; i < DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2; i++)
-	{ //this loop we go through pixel by pixel and convert from 16bit to 24bit for the NSImage
-		*(bitmap_data++) = (*buffer_16 & 0x001F) <<  3;
-		*(bitmap_data++) = (*buffer_16 & 0x03E0) >> 5 << 3;
-		*(bitmap_data++) = (*buffer_16 & 0x7C00) >> 10 << 3;
-		buffer_16++;
+	NSImage *newImage = [[NSImage alloc] initWithSize:[ScreenState size]];
+	if (newImage == nil)
+	{
+		return newImage;
 	}
-
-	return [image autorelease];
+	
+	// Render the frame in an NSBitmapImageRep
+	NSBitmapImageRep *newImageRep = [self imageRep];
+	if (newImageRep == nil)
+	{
+		[newImage release];
+		newImage = nil;
+		return newImage;
+	}
+	
+	// Attach the rendered frame to the NSImageRep
+	[newImage addRepresentation:newImageRep];
+	
+	return newImage;
 }
+
+- (NSBitmapImageRep *)imageRep
+{
+	if (color_data == nil)
+	{
+		return nil;
+	}
+	
+	NSUInteger w = DS_SCREEN_WIDTH;
+	NSUInteger h = DS_SCREEN_HEIGHT * 2;
+	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+																		 pixelsWide:w
+																		 pixelsHigh:h
+																	  bitsPerSample:8
+																	samplesPerPixel:4
+																		   hasAlpha:YES
+																		   isPlanar:NO
+																	 colorSpaceName:NSCalibratedRGBColorSpace
+																		bytesPerRow:w * 4
+																	   bitsPerPixel:32];
+	
+	if(imageRep == nil)
+	{
+		return imageRep;
+	}
+	
+	UInt32 *bitmapData = (UInt32 *)[imageRep bitmapData];
+	RGBA5551ToRGBA8888Buffer((const uint16_t *)color_data, (uint32_t *)bitmapData, (w * h));
+	
+#ifdef __BIG_ENDIAN__
+	UInt32 *bitmapDataEnd = bitmapData + (w * h);
+	
+	while (bitmapData < bitmapDataEnd)
+	{
+		*bitmapData++ = CFSwapInt32LittleToHost(*bitmapData);
+	}
+#endif
+	
+	return [imageRep autorelease];
+}
+
 @end

@@ -1,24 +1,24 @@
-/*  Copyright (C) 2007 Jeff Bland
+/*
+	Copyright (C) 2007 Jeff Bland
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #import "preferences.h"
-#import "globals.h"
+#import "cocoa_util.h"
 #import "input.h"
 
 /* Preference settings are stored using NSUserDefaults
@@ -49,9 +49,6 @@ NSMutableDictionary *defaults;
 void setAppDefaults()
 {
 	defaults = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-
-	//Flash file default
-	@"", PREF_FLASH_FILE,
 						
 	//Interface defaults
 	@"Yes", PREF_EXECUTE_UPON_LOAD,
@@ -376,7 +373,7 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 				NSString *default_setting = [defaults objectForKey:key_raw];
 				
 				//show an error
-				messageDialog(NSLocalizedString(@"Error",nil), [NSString stringWithFormat:@"%@ setting corrupt (%@), resetting to default (%@)", key, NSLocalizedString(current_setting, nil), NSLocalizedString(default_setting, nil)]);
+				[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:[NSString stringWithFormat:@"%@ setting corrupt (%@), resetting to default (%@)", key, NSLocalizedString(current_setting, nil), NSLocalizedString(default_setting, nil)]];
 				
 				//set the setting to default
 				[[NSUserDefaults standardUserDefaults] setObject:default_setting forKey:key_raw];
