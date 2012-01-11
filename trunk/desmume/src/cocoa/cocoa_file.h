@@ -40,6 +40,7 @@
 + (void) setupAllFilePaths;
 + (BOOL) setupAllAppDirectories;
 + (NSURL *) saveStateURL;
++ (BOOL) saveScreenshot:(NSURL *)fileURL bitmapData:(NSBitmapImageRep *)bitmapImageRep fileType:(NSBitmapImageFileType)fileType;
 + (BOOL) saveStateExistsForSlot:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber;
 + (BOOL) isSaveStateSlotExtension:(NSString *)extension;
 + (NSString *) getSaveSlotFileName:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber;

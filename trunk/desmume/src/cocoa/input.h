@@ -27,26 +27,44 @@
 @class VideoOutputWindow;
 @class CocoaDSController;
 
+
+@interface ControlsDelegate : NSObject {}
+
++ (id)sharedObject;
+
+@end
+
 @interface InputHandler : NSResponder
 {
 @private
 	VideoOutputWindow *my_ds;
-	CocoaDSController *dsController;
+	CocoaDSController *cdsController;
 }
 //preferences
 + (NSView*)createPreferencesView:(float)width;
 + (NSDictionary*)appDefaults;
 
 //creation/deletion
-- (id)initWithWindow:(VideoOutputWindow*)nds;
-- (void)dealloc;
+- (id) initWithCdsController:(CocoaDSController *)theController;
+
+- (void) setCdsController:(CocoaDSController *)theController;
+- (CocoaDSController *) cdsController;
 
 //keyboard input
 - (void)keyDown:(NSEvent*)event;
 - (void)keyUp:(NSEvent*)event;
 
-//mouse input
-- (void)mouseDown:(NSEvent*)event;
-- (void)mouseDragged:(NSEvent*)event;
-- (void)mouseUp:(NSEvent*)event;
 @end
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+int testKey(NSString *chars_pressed, NSString *chars_for_key);
+
+#ifdef __cplusplus
+}
+#endif
+
+

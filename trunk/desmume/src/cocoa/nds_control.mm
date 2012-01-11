@@ -24,11 +24,7 @@
 #import "cocoa_util.h"
 #import "preferences.h"
 #import "screen_state.h"
-#import "main_window.h"
-
-#ifdef DESMUME_COCOA
-#import "sndOSX.h"
-#endif
+#include "sndOSX.h"
 
 #ifdef HAVE_OPENGL
 #import <OpenGL/OpenGL.h>
@@ -54,38 +50,17 @@ volatile bool execute = true;
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3DRasterize,
-#ifdef HAVE_OPENGL
-//&gpu3Dgl,
-#endif
 NULL
 };
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
-#ifdef DESMUME_COCOA
 &SNDOSX,
-#endif
 NULL
 };
 
 struct NDS_fw_config_data macDS_firmware;
 
-bool opengl_init()
-{
-	return true;
-}
-
-@implementation CocoaDSStateBuffer
-
-- (id) init
-{
-	frame_skip = -1; //default to auto frame skip
-	speed_limit = 100; //default to max speed = normal speed
-	
-	return self;
-}
-
-@end
 
 @implementation NintendoDS
 - (id)init
@@ -97,8 +72,9 @@ bool opengl_init()
 	display_object = nil;
 	error_object = nil;
 	frame_skip = -1; //default to auto frame skip
-	speed_limit = 100; //default to max speed = normal speed
-	calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)speed_limit / 100.0));
+	speedScalar = SPEED_SCALAR_NORMAL;
+	calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / speedScalar);
+	isSpeedLimitEnabled = YES;
 	gui_thread = [NSThread currentThread];
 	loadedRomURL = nil;
 	execution_lock = [[NSLock alloc] init];
@@ -252,8 +228,7 @@ bool opengl_init()
 	if(context)
 	{
 		[context makeCurrentContext];
-
-		//oglrender_init = &opengl_init;
+		
 		NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
 		if(!gpu3D->NDS_3D_Init())
 			[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Unable to initialize OpenGL components", nil)];
@@ -269,12 +244,12 @@ bool opengl_init()
 
 	//Sound Init
 	muted = false;
-	volume = 100;
+	volume = 100.0;
 #ifdef DESMUME_COCOA
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
 		[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Unable to initialize sound core", nil)];
 	else
-		SPU_SetVolume(volume);
+		SPU_SetVolume((int)volume);
 #endif
 
 	//Breakoff a new thread that will execute the ds stuff
@@ -282,6 +257,7 @@ bool opengl_init()
 	finished = false;
 	run = false;
 	paused = false;
+	prevCoreState = CORESTATE_PAUSE;
 	[NSThread detachNewThreadSelector:@selector(run:) toTarget:self withObject:context];
 
 	//Start a timer to update the screen
@@ -291,8 +267,7 @@ bool opengl_init()
 		[NSTimer scheduledTimerWithTimeInterval:DS_SECONDS_PER_FRAME target:self selector:@selector(videoUpdateTimerHelper) userInfo:nil repeats:YES];
 	}
 	
-	dsStateBuffer = [[CocoaDSStateBuffer alloc] init];
-	dsController = [[CocoaDSController alloc] init];
+	cdsController = nil;
 
 	return self;
 }
@@ -326,8 +301,7 @@ bool opengl_init()
 	finish = true;
 	while(!finished){}
 	
-	[dsStateBuffer release];
-	[dsController release];
+	[cdsController release];
 	
 	[display_object release];
 	[error_object release];
@@ -353,9 +327,46 @@ bool opengl_init()
 	[super dealloc];
 }
 
-- (CocoaDSController*) getDSController
+- (void) setMasterExecute:(BOOL)theState
 {
-	return dsController;
+	//OSSpinLockLock(&spinlockMasterExecute);
+	
+	if (theState)
+	{
+		execute = true;
+	}
+	else
+	{
+		execute = false;
+	}
+	
+	//OSSpinLockUnlock(&spinlockMasterExecute);
+}
+
+- (BOOL) masterExecute
+{
+	BOOL theState = NO;
+	
+	//OSSpinLockLock(&spinlockMasterExecute);
+	
+	if (execute)
+	{
+		theState = YES;
+	}
+	
+	//OSSpinLockUnlock(&spinlockMasterExecute);
+	
+	return theState;
+}
+
+- (void) setCdsController:(CocoaDSController *)theController
+{
+	cdsController = theController;
+}
+
+- (CocoaDSController*) cdsController
+{
+	return cdsController;
 }
 
 - (void)setPlayerName:(NSString*)player_name
@@ -390,16 +401,16 @@ bool opengl_init()
 		//continue playing if load didn't work
 		if(was_paused == NO)[self execute];
 
-		return NO;
+		return result;
 	}
-
+/*
 	//clear screen data
 	if(current_screen != nil)
 	{
 		[current_screen release];
 		current_screen = nil;
 	}
-
+*/
 	// Retain a copy of the URL of the currently loaded ROM, since we'll be
 	// using it later.
 	loadedRomURL = romURL;
@@ -408,11 +419,13 @@ bool opengl_init()
 	//this is incase emulation stopped from the
 	//emulation core somehow
 	execute = true;
-
-	return YES;
+	
+	result = YES;
+	
+	return result;
 }
 
-- (BOOL)ROMLoaded
+- (BOOL) isRomLoaded
 {
 	return (loadedRomURL==nil)?NO:YES;
 }
@@ -420,20 +433,20 @@ bool opengl_init()
 - (void)closeROM
 {
 	[self pause];
-
+/*
 	if(current_screen != nil)
 	{
 		[current_screen release];
 		current_screen = nil;
 	}
-
+*/
 	NDS_FreeROM();
 
 	[loadedRomURL release];
 	loadedRomURL = nil;
 }
 
-- (NSImage*)ROMIcon
+- (NSImage *) romIcon
 {
 	NDS_header *header = NDS_getROMHeader();
 	if(!header)return nil;
@@ -512,39 +525,122 @@ bool opengl_init()
 	return result;
 }
 
-- (NSString*)romFileName
+- (NSString *) romFileName
 {
 	return [[loadedRomURL path] lastPathComponent];
 }
 
-- (NSString*)ROMTitle
+- (NSString *) romTitle
 {
 	return [[NSString alloc] initWithCString:(NDS_getROMHeader()->gameTile) encoding:NSUTF8StringEncoding];
 }
 
-- (NSInteger)ROMMaker
+- (NSInteger) romMaker
 {
 	return NDS_getROMHeader()->makerCode;
 }
 
-- (NSInteger)ROMSize
+- (NSInteger) romSize
 {
 	return NDS_getROMHeader()->cardSize;
 }
 
-- (NSInteger)ROMARM9Size
+- (NSInteger) romArm9Size
 {
 	return NDS_getROMHeader()->ARM9binSize;
 }
 
-- (NSInteger)ROMARM7Size
+- (NSInteger) romArm7Size
 {
 	return NDS_getROMHeader()->ARM7binSize;
 }
 
-- (NSInteger)ROMDataSize
+- (NSInteger) romDataSize
 {
 	return NDS_getROMHeader()->ARM7binSize + NDS_getROMHeader()->ARM7src;
+}
+
+- (NSMutableDictionary *) romInfoBindings
+{
+	if (![self isRomLoaded])
+	{
+		return [NintendoDS romNotLoadedBindings];
+	}
+	
+	return [NSMutableDictionary dictionaryWithObjectsAndKeys:
+			[self romFileName], @"romFileName",
+			[self romTitle], @"romTitle",
+			[NSString stringWithFormat:@"%04X", [self romMaker]], @"makerCode",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [self romSize]], @"romSize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [self romArm9Size]], @"arm9BinarySize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [self romArm7Size]], @"arm7BinarySize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, [self romDataSize]], @"dataSize",
+			[self romIcon], @"iconImage",
+			nil];
+}
+
++ (NSMutableDictionary *) romNotLoadedBindings
+{
+	NSImage *iconImage = [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"AppIcon_DeSmuME" ofType:@"icns"]] autorelease];
+	
+	return [NSMutableDictionary dictionaryWithObjectsAndKeys:
+			NSSTRING_STATUS_NO_ROM_LOADED, @"romFileName",
+			NSSTRING_STATUS_NO_ROM_LOADED, @"romTitle",
+			NSSTRING_STATUS_NO_ROM_LOADED, @"makerCode",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"romSize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"arm9BinarySize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"arm7BinarySize",
+			[NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, 0], @"dataSize",
+			iconImage, @"iconImage",
+			nil];
+}
+
+- (NSURL *) loadedRomURL
+{
+	return loadedRomURL;
+}
+
+- (void) setCoreState:(NSInteger)coreState
+{
+	if ([self paused])
+	{
+		prevCoreState = CORESTATE_PAUSE;
+	}
+	else
+	{
+		prevCoreState = CORESTATE_EXECUTE;
+	}
+	
+	switch (coreState)
+	{
+		case CORESTATE_EXECUTE:
+			[self execute];
+			break;
+			
+		case CORESTATE_PAUSE:
+			[self pause];
+			break;
+			
+		default:
+			break;
+	}
+}
+
+- (void) restoreCoreState
+{
+	switch (prevCoreState)
+	{
+		case CORESTATE_EXECUTE:
+			[self execute];
+			break;
+			
+		case CORESTATE_PAUSE:
+			[self pause];
+			break;
+			
+		default:
+			break;
+	}
 }
 
 - (BOOL)executing
@@ -595,21 +691,26 @@ bool opengl_init()
 	execute = true;
 }
 
-- (void)setSpeedLimit:(int)speedLimit
+- (void) setSpeedScalar:(CGFloat)scalar
 {
-	if(speedLimit < 0 || speedLimit > 1000)
-	{
-		return;
-	}
-
-	dsStateBuffer->speed_limit = speedLimit;
-	
-	doesConfigNeedUpdate = true;
+	speedScalar = scalar;
+	[self updateConfig];
 }
 
-- (int)speedLimit
+- (CGFloat) speedScalar
 {
-	return speed_limit;
+	return speedScalar;
+}
+
+- (void) setIsSpeedLimitEnabled:(BOOL)theState
+{
+	isSpeedLimitEnabled = theState;
+	[self updateConfig];
+}
+
+- (BOOL) isSpeedLimitEnabled
+{
+	return isSpeedLimitEnabled;
 }
 
 - (void)setSaveType:(int)savetype
@@ -742,19 +843,25 @@ bool opengl_init()
 	return core != &SNDDummy;
 }
 
-- (void)setVolume:(int)new_volume
+- (void) setVolume:(float)vol
 {
-	if(new_volume < 0)new_volume = 0;
-	if(new_volume > 100)new_volume = 100;
-	if(volume == new_volume)return;
+	if (vol < 0.0f)
+	{
+		vol = 0.0f;
+	}
+	else if (vol > MAX_VOLUME)
+	{
+		vol = MAX_VOLUME;
+	}
 
-	volume = new_volume;
+	volume = vol;
+	
 	[sound_lock lock];
-	SPU_SetVolume(volume);
+	SPU_SetVolume((int)vol);
 	[sound_lock unlock];
 }
 
-- (int)volume
+- (float) volume
 {
 	if([self hasSound])
 		return volume;
@@ -772,7 +879,7 @@ bool opengl_init()
 - (void)disableMute
 {
 	[sound_lock lock];
-	SPU_SetVolume(volume);
+	SPU_SetVolume((int)volume);
 	[sound_lock unlock];
 	muted = false;
 }
@@ -788,6 +895,38 @@ bool opengl_init()
 - (BOOL)muted
 {
 	return muted?YES:NO;
+}
+
+- (void) copyToPasteboard
+{
+	if (current_screen == nil)
+	{
+		return;
+	}
+	
+	NSImage *screenshot = [[current_screen image] autorelease];
+	if (screenshot == nil)
+	{
+		return;
+	}
+	
+	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
+	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
+	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
+}
+
+- (NSBitmapImageRep *) bitmapImageRep
+{
+	NSBitmapImageRep *currentScreenImageRep = nil;
+	
+	if (current_screen == nil)
+	{
+		return currentScreenImageRep;
+	}
+	
+	currentScreenImageRep = [current_screen imageRep];
+	
+	return currentScreenImageRep;
 }
 
 //----------------------------
@@ -812,20 +951,12 @@ bool opengl_init()
 
 - (void)videoUpdateTimerHelper
 {
-	if(!run)return;
-
-	[video_update_lock lock];
-	ScreenState *screen = current_screen;
-	[screen retain];
-	current_screen = nil;
-	[video_update_lock unlock];
-
-	if(screen != nil)
+	if(!run || current_screen == nil)
 	{
-		[display_object performSelector:display_func withObject:screen];
-		[screen release];
+		return;
 	}
 
+	[display_object performSelector:display_func withObject:current_screen];
 }
 
 - (void)run:(NSOpenGLContext*)gl_context
@@ -863,18 +994,6 @@ bool opengl_init()
 		 */
 			loopStartDate = [NSDate date];
 			
-		/*
-			Some controls may affect how the loop runs.
-		 
-			Instead of checking and modifying the NDS config every time through
-			the loop, only change the config on an as-needed basis.
-		 */
-			if(doesConfigNeedUpdate == true)
-			{
-				[self updateConfig];
-				doesConfigNeedUpdate = false;
-			}
-			
 			// Force paused state.
 			paused = false;
 			
@@ -904,7 +1023,7 @@ bool opengl_init()
 			The time taken up by this step should be insignificant, so we
 			won't bother calculating this in the time budget.
 		 */
-			[dsController setupAllDSInputs];
+			[cdsController setupAllDSInputs];
 			NDS_beginProcessingInput();
 		/*
 			Shouldn't need to do any special processing steps in between.
@@ -997,17 +1116,20 @@ bool opengl_init()
 	if(timer_based)
 	{ //for tiger compatibility
 		[video_update_lock lock];
-		[current_screen release];
+		ScreenState *oldScreenData = current_screen;
 		current_screen = new_screen_data;
+		[oldScreenData release];
 		[video_update_lock unlock];
 	}
 	else
 	{ //for leopard and later
+		ScreenState *oldScreenData = current_screen;
+		current_screen = new_screen_data;
 		
 		//this will generate a warning when compiling on tiger or earlier, but it should
 		//be ok since the purpose of the if statement is to check if this will work
-		[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
-		[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
+		[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:current_screen waitUntilDone:NO];
+		[oldScreenData release]; //performSelector will auto retain the screen data while the other thread displays
 	}
 }
 
@@ -1026,22 +1148,25 @@ bool opengl_init()
 
 - (void) updateConfig
 {
-	// Update the Nintendo DS config
-	frame_skip = dsStateBuffer->frame_skip;
-	speed_limit = dsStateBuffer->speed_limit;
+	CGFloat newTimeBudget;
 	
-	if(speed_limit <= 0)
+	// Update speed limit
+	if(!isSpeedLimitEnabled)
 	{
-		calcTimeBudget = 0;
-	}
-	else if(speed_limit > 0 && speed_limit < 1000)
-	{
-		calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)speed_limit / 100.0));
+		newTimeBudget = 0.0;
 	}
 	else
 	{
-		calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / ((float)1000.0 / 100.0));
+		CGFloat theSpeed = speedScalar;
+		if(theSpeed <= SPEED_SCALAR_MIN)
+		{
+			theSpeed = SPEED_SCALAR_MIN;
+		}
+		
+		newTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / theSpeed);
 	}
+	
+	calcTimeBudget = newTimeBudget;
 }
 
 @end

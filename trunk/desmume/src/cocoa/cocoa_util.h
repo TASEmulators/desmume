@@ -81,7 +81,7 @@
 #ifdef __cplusplus
 extern "C"
 {
-#endif	
+#endif
 
 uint32_t RGBA5551ToRGBA8888(const uint16_t color16);
 uint32_t RGBA8888ToRGB888(const uint32_t color24);
