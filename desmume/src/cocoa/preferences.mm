@@ -93,7 +93,7 @@ void setAppDefaults()
 {
 	BOOL value = ([sender indexOfSelectedItem] == 0) ? YES : NO;
 	
-	[[NSUserDefaults standardUserDefaults] setBool:value forKey:PREF_EXECUTE_UPON_LOAD];
+	[[NSUserDefaults standardUserDefaults] setBool:value forKey:@"ExecuteROMOnLoad"];
 }
 
 - (void)afterLaunch:(id)sender
@@ -308,7 +308,9 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 	NSArray* keys = [[options allKeys] sortedArrayUsingSelector:@selector(localizedCompare:)];	
 	
 	NSEnumerator *key_enumerator = [keys reverseObjectEnumerator];
-	id key, key_raw, object;
+	NSString *key;
+	NSString *key_raw;
+	NSArray *object;
 	NSRect text_rect = NSMakeRect(5, 5, 220, 29);
 	NSRect button_rect = NSMakeRect(230, 5, PREFERENCES_WIDTH - 235, 26);
 	while ((key_raw = [key_enumerator nextObject]))
@@ -319,7 +321,7 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 		
 		NSString *current_setting = [[NSUserDefaults standardUserDefaults] objectForKey:key_raw];
 		
-		if([[object objectAtIndex:0] compare:@"Bool"] == NSOrderedSame)
+		if([(NSString *)[object objectAtIndex:0] compare:@"Bool"] == NSOrderedSame)
 		{
 			//Create the button for this option
 			NSPopUpButton *button = [[NSPopUpButton alloc] initWithFrame:button_rect pullsDown:NO];
@@ -335,12 +337,12 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 			[button addItemWithTitle:NSLocalizedString(@"Yes",nil)];
 			[button addItemWithTitle:NSLocalizedString(@"No",nil)];
 			
-			[button selectItemAtIndex:([[NSUserDefaults standardUserDefaults] boolForKey:PREF_EXECUTE_UPON_LOAD] == YES) ? 0 : 1];
+			[button selectItemAtIndex:([[NSUserDefaults standardUserDefaults] boolForKey:@"ExecuteROMOnLoad"] == YES) ? 0 : 1];
 			
 			[view addSubview:button];
 			
 		}
-		else if([[object objectAtIndex:0] compare:@"Array"] == NSOrderedSame)
+		else if([(NSString *)[object objectAtIndex:0] compare:@"Array"] == NSOrderedSame)
 		{
 			//Create the button for this option
 			NSPopUpButton *button = [[NSPopUpButton alloc] initWithFrame:button_rect pullsDown:NO];
@@ -387,7 +389,7 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 			[view addSubview:button];
 			
 		}
-		else if ([[object objectAtIndex:0] caseInsensitiveCompare:@"Text"] == NSOrderedSame)
+		else if ([(NSString *)[object objectAtIndex:0] caseInsensitiveCompare:@"Text"] == NSOrderedSame)
 		{
 			
 			//if this preference is a text field
@@ -406,7 +408,7 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 			[view addSubview:text];
 			
 		}
-		else if([[object objectAtIndex:0] compare:@"Dictionary"] == NSOrderedSame)
+		else if([(NSString *)[object objectAtIndex:0] compare:@"Dictionary"] == NSOrderedSame)
 		{
 			//Create the button for this option
 			NSPopUpButton *button = [[NSPopUpButton alloc] initWithFrame:button_rect pullsDown:NO];

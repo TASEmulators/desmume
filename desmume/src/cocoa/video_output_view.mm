@@ -19,8 +19,16 @@
 
 #import "video_output_view.h"
 #import "nds_control.h"
+#import "input.h"
+#import "cocoa_input.h"
+#import "cocoa_globals.h"
 #import "cocoa_util.h"
+#import "preferences.h"
 #import "screen_state.h"
+#include "../GPU.h"
+#include "../NDSSystem.h"
+
+#undef BOOL
 
 #define HORIZONTAL(angle) ((angle) == -90 || (angle) == -270)
 #define VERTICAL(angle) ((angle) == 0 || (angle) == -180)
@@ -52,6 +60,21 @@
 	}
 
 	screen_buffer = nil;
+	viewScale = 1.0;
+	viewRotation = 0.0;
+	displayMode = DS_DISPLAY_TYPE_COMBO;
+	gpuStateFlags =	GPUSTATE_MAIN_GPU_MASK |
+	GPUSTATE_MAIN_BG0_MASK |
+	GPUSTATE_MAIN_BG1_MASK |
+	GPUSTATE_MAIN_BG2_MASK |
+	GPUSTATE_MAIN_BG3_MASK |
+	GPUSTATE_MAIN_OBJ_MASK |
+	GPUSTATE_SUB_GPU_MASK |
+	GPUSTATE_SUB_BG0_MASK |
+	GPUSTATE_SUB_BG1_MASK |
+	GPUSTATE_SUB_BG2_MASK |
+	GPUSTATE_SUB_BG3_MASK |
+	GPUSTATE_SUB_OBJ_MASK;
 
 	//Initialize image view if for displaying the screen ----------------------------------------
 #ifndef HAVE_OPENGL
@@ -98,7 +121,9 @@
 
 	//init screen buffer
 	[self setScreenState:[ScreenState blackScreenState]];
-
+	
+	cdsController = nil;
+	
 	return self;
 }
 
@@ -158,6 +183,193 @@
 - (float)screenHeight
 {
 	return DS_SCREEN_HEIGHT*2;
+}
+
+- (NSSize) normalSize
+{
+	return [ScreenState size];
+}
+
+- (void) setScale:(double)scalar
+{
+	viewScale = scalar;
+}
+
+- (double) scale
+{
+	return viewScale;
+}
+
+- (void) setRotation:(double)angleDegrees
+{
+	viewRotation = angleDegrees;
+	[self setBoundsRotation:-angleDegrees];
+}
+
+- (double) rotation
+{
+	return viewRotation;
+}
+
+- (void) setDisplayMode:(NSInteger)theMode
+{
+	// Do nothing. This is a stub function only.
+}
+
+- (NSInteger) displayMode
+{
+	return displayMode;
+}
+
+- (void) setGpuStateFlags:(UInt32)flags
+{
+	gpuStateFlags = flags;
+	
+	if (flags & GPUSTATE_MAIN_GPU_MASK)
+	{
+		SetGPUDisplayState(DS_GPU_TYPE_MAIN, true);
+	}
+	else
+	{
+		SetGPUDisplayState(DS_GPU_TYPE_MAIN, false);
+	}
+	
+	if (flags & GPUSTATE_MAIN_BG0_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 0, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 0, false);
+	}
+	
+	if (flags & GPUSTATE_MAIN_BG1_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 1, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 1, false);
+	}
+	
+	if (flags & GPUSTATE_MAIN_BG2_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 2, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 2, false);
+	}
+	
+	if (flags & GPUSTATE_MAIN_BG3_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 3, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 3, false);
+	}
+	
+	if (flags & GPUSTATE_MAIN_OBJ_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 4, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_MAIN, 4, false);
+	}
+	
+	if (flags & GPUSTATE_SUB_GPU_MASK)
+	{
+		SetGPUDisplayState(DS_GPU_TYPE_SUB, true);
+	}
+	else
+	{
+		SetGPUDisplayState(DS_GPU_TYPE_SUB, false);
+	}
+	
+	if (flags & GPUSTATE_SUB_BG0_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 0, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 0, false);
+	}
+	
+	if (flags & GPUSTATE_SUB_BG1_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 1, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 1, false);
+	}
+	
+	if (flags & GPUSTATE_SUB_BG2_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 2, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 2, false);
+	}
+	
+	if (flags & GPUSTATE_SUB_BG3_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 3, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 3, false);
+	}
+	
+	if (flags & GPUSTATE_SUB_OBJ_MASK)
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 4, true);
+	}
+	else
+	{
+		SetGPULayerState(DS_GPU_TYPE_SUB, 4, false);
+	}
+}
+
+- (UInt32) gpuStateFlags
+{
+	return gpuStateFlags;
+}
+
+- (void) setCdsController:(CocoaDSController *)theController
+{
+	cdsController = theController;
+}
+
+- (CocoaDSController*) cdsController
+{
+	return cdsController;
+}
+
+- (void) setViewToBlack
+{
+	[self setScreenState:[ScreenState blackScreenState]];
+}
+
+- (void) setViewToWhite
+{
+	[self setScreenState:[ScreenState whiteScreenState]];
+}
+
+- (BOOL) gpuStateByBit:(UInt32)stateBit
+{
+	BOOL result = NO;
+	UInt32 flags = [self gpuStateFlags];
+	
+	if (flags & (1 << stateBit))
+	{
+		result = YES;
+	}
+	
+	return result;
 }
 
 #ifdef HAVE_OPENGL
@@ -250,40 +462,132 @@
 #ifdef HAVE_OPENGL
 - (void)setBoundsRotation:(CGFloat)angle
 {
-	float old_angle = [self boundsRotation];
+	int angleInt = (int)angle;
+	int old_angle = (int)[self boundsRotation];
 
-	[super setBoundsRotation:angle];
+	[super setBoundsRotation:angleInt];
 
 	[context makeCurrentContext];
 
 	NSSize size = [self frame].size;
 
-	if(angle == 0)
+	if(angleInt == 0)
 	{
 		glRasterPos2f(-1, 1);
 		glPixelZoom(((float)size.width) / ((float)DS_SCREEN_WIDTH), -((float)size.height) / ((float)DS_SCREEN_HEIGHT*2));
-	} else if(angle == -90)
+	} else if(angleInt == -90)
 	{
 		glRasterPos2f(-1, 1);
 		glPixelZoom(((float)size.width) / ((float)DS_SCREEN_HEIGHT*2), -((float)size.height) / ((float)DS_SCREEN_WIDTH));
-	} else if (angle == -180)
+	} else if (angleInt == -180)
 	{
 		glRasterPos2f(1, -1);
 		glPixelZoom(-((float)size.width) / ((float)DS_SCREEN_WIDTH), ((float)size.height) / ((float)DS_SCREEN_HEIGHT*2));
-	} else if (angle == -270)
+	} else if (angleInt == -270)
 	{
 		glRasterPos2f(1, -1);
 		glPixelZoom(-((float)size.width) / ((float)DS_SCREEN_HEIGHT*2), ((float)size.height) / ((float)DS_SCREEN_WIDTH));
 	}
 
 	//Rotate the screen buffer
-	if(HORIZONTAL(angle) && VERTICAL(old_angle))
+	if(HORIZONTAL(angleInt) && VERTICAL(old_angle))
 		[screen_buffer rotateTo90];
 
-	if(VERTICAL(angle) && HORIZONTAL(old_angle))
+	if(VERTICAL(angleInt) && HORIZONTAL(old_angle))
 		[screen_buffer rotateTo0];
 }
 #endif
+
+- (NSPoint) convertPointToDS:(NSPoint)touchLoc
+{
+	const CGFloat doubleDisplayHeight = (CGFloat)(GPU_DISPLAY_HEIGHT * 2);
+	const NSInteger rotation = (NSInteger)[self boundsRotation];
+	const CGFloat frameWidth = [self frame].size.width;
+	const CGFloat frameHeight = [self frame].size.height;
+	
+	if(rotation == 0)
+	{
+		// Scale
+		touchLoc.x *= (CGFloat)GPU_DISPLAY_WIDTH / frameWidth;
+		touchLoc.y *= doubleDisplayHeight / frameHeight;
+	}
+	else if(rotation == -90)
+	{
+		// Normalize
+		touchLoc.x += frameHeight;
+		
+		// Scale
+		touchLoc.x *= doubleDisplayHeight / frameWidth;
+		touchLoc.y *= (CGFloat)GPU_DISPLAY_WIDTH / frameHeight;
+	}
+	else if(rotation == -180)
+	{
+		// Normalize
+		touchLoc.x += frameWidth;
+		touchLoc.y += frameHeight;
+		
+		// Scale
+		touchLoc.x *= (CGFloat)GPU_DISPLAY_WIDTH / frameWidth;
+		touchLoc.y *= doubleDisplayHeight / frameHeight;
+	}
+	else if(rotation == -270)
+	{
+		// Normalize
+		touchLoc.y += frameWidth;
+		
+		// Scale
+		touchLoc.x *= doubleDisplayHeight / frameWidth;
+		touchLoc.y *= (CGFloat)GPU_DISPLAY_WIDTH / frameHeight;
+	}
+	
+	// Normalize the y-coordinate to the DS.
+	touchLoc.y = GPU_DISPLAY_HEIGHT - touchLoc.y;
+	
+	// Constrain the touch point to the DS dimensions.
+	if (touchLoc.x < 0)
+	{
+		touchLoc.x = 0;
+	}
+	else if (touchLoc.x > (GPU_DISPLAY_WIDTH - 1))
+	{
+		touchLoc.x = (GPU_DISPLAY_WIDTH - 1);
+	}
+	
+	if (touchLoc.y < 0)
+	{
+		touchLoc.y = 0;
+	}
+	else if (touchLoc.y > (GPU_DISPLAY_HEIGHT - 1))
+	{
+		touchLoc.y = (GPU_DISPLAY_HEIGHT - 1);
+	}
+	
+	return touchLoc;
+}
+
+- (void)mouseDown:(NSEvent*)event
+{
+	// Convert the clicked location from window coordinates, to view coordinates,
+	// and finally to DS touchscreen coordinates.
+	NSPoint touchLoc = [event locationInWindow];
+	touchLoc = [self convertPoint:touchLoc fromView:nil];
+	touchLoc = [self convertPointToDS:touchLoc];
+		
+	if(touchLoc.x >= 0 && touchLoc.y >= 0)
+	{
+		[cdsController touch:touchLoc];
+	}
+}
+
+- (void)mouseDragged:(NSEvent*)event
+{
+	[self mouseDown:event];
+}
+
+- (void)mouseUp:(NSEvent*)event
+{
+	[cdsController releaseTouch];
+}
 
 @end
 
@@ -323,3 +627,131 @@
 @end
 #endif
 
+void SetGPULayerState(int displayType, unsigned int i, bool state)
+{
+	GPU *theGpu = NULL;
+	
+	// Check bounds on the layer index.
+	if(i > 4)
+	{
+		return;
+	}
+	
+	switch (displayType)
+	{
+		case DS_GPU_TYPE_MAIN:
+			theGpu = SubScreen.gpu;
+			break;
+			
+		case DS_GPU_TYPE_SUB:
+			theGpu = MainScreen.gpu;
+			break;
+			
+		case DS_GPU_TYPE_COMBO:
+			SetGPULayerState(DS_GPU_TYPE_SUB, i, state); // Recursive call
+			theGpu = MainScreen.gpu;
+			break;
+			
+		default:
+			break;
+	}
+	
+	if (theGpu != NULL)
+	{
+		if (state)
+		{
+			GPU_addBack(theGpu, i);
+		}
+		else
+		{
+			GPU_remove(theGpu, i);
+		}
+	}
+}
+
+bool GetGPULayerState(int displayType, unsigned int i)
+{
+	bool result = false;
+	
+	// Check bounds on the layer index.
+	if(i > 4)
+	{
+		return result;
+	}
+	
+	switch (displayType)
+	{
+		case DS_GPU_TYPE_MAIN:
+			if (SubScreen.gpu != nil)
+			{
+				result = CommonSettings.dispLayers[SubScreen.gpu->core][i];
+			}
+			break;
+			
+		case DS_GPU_TYPE_SUB:
+			if (MainScreen.gpu != nil)
+			{
+				result = CommonSettings.dispLayers[MainScreen.gpu->core][i];
+			}
+			break;
+			
+		case DS_GPU_TYPE_COMBO:
+			if (SubScreen.gpu != nil && MainScreen.gpu != nil)
+			{
+				result = (CommonSettings.dispLayers[SubScreen.gpu->core][i] && CommonSettings.dispLayers[MainScreen.gpu->core][i]);
+			}
+			break;
+			
+		default:
+			break;
+	}
+	
+	return result;
+}
+
+void SetGPUDisplayState(int displayType, bool state)
+{
+	switch (displayType)
+	{
+		case DS_GPU_TYPE_MAIN:
+			CommonSettings.showGpu.sub = state;
+			break;
+			
+		case DS_GPU_TYPE_SUB:
+			CommonSettings.showGpu.main = state;
+			break;
+			
+		case DS_GPU_TYPE_COMBO:
+			CommonSettings.showGpu.sub = state;
+			CommonSettings.showGpu.main = state;
+			break;
+			
+		default:
+			break;
+	}
+}
+
+bool GetGPUDisplayState(int displayType)
+{
+	bool result = false;
+	
+	switch (displayType)
+	{
+		case DS_GPU_TYPE_MAIN:
+			result = CommonSettings.showGpu.sub;
+			break;
+			
+		case DS_GPU_TYPE_SUB:
+			result = CommonSettings.showGpu.main;
+			break;
+			
+		case DS_GPU_TYPE_COMBO:
+			result = (CommonSettings.showGpu.sub && CommonSettings.showGpu.main);
+			break;
+			
+		default:
+			break;
+	}
+	
+	return result;
+}

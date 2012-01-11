@@ -19,44 +19,13 @@
 
 #import "input.h"
 #import "cocoa_input.h"
-#import "main_window.h"
 #import "preferences.h"
 
-unsigned char utf8_return = 0x0D;
-unsigned char utf8_right[3] = { 0xEF, 0x9C, 0x83 };
-unsigned char utf8_up[3] = { 0xEF, 0x9C, 0x80 };
-unsigned char utf8_down[3] = { 0xEF, 0x9C, 0x81 };
-unsigned char utf8_left[3] = { 0xEF, 0x9C, 0x82 };
-
-@interface ControlsDelegate : NSObject {}
-+ (id)sharedObject;
-@end
-
-inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
-{
-	//Checks for common characters in chars_pressed and chars_for_key
-
-	unichar *buffer1 = (unichar*)malloc([chars_pressed length] * sizeof(unichar));
-	unichar *buffer2 = (unichar*)malloc([chars_for_key length] * sizeof(unichar));
-	if(!buffer1 || !buffer2)return 0;
-	
-	[chars_pressed getCharacters:buffer1];
-	[chars_for_key getCharacters:buffer2];
-
-	int i1, i2;
-	for(i1 = 0; i1 < [chars_pressed length]; i1++)
-	for(i2 = 0; i2 < [chars_for_key length]; i2++)
-	if(buffer1[i1] == buffer2[i2])
-	{
-		free(buffer1);
-		free(buffer2);
-		return 1;
-	}
-	
-	free(buffer1);
-	free(buffer2);
-	return 0;	
-}
+static unsigned char utf8_return = 0x0D;
+static unsigned char utf8_right[3] = { 0xEF, 0x9C, 0x83 };
+static unsigned char utf8_up[3] = { 0xEF, 0x9C, 0x80 };
+static unsigned char utf8_down[3] = { 0xEF, 0x9C, 0x81 };
+static unsigned char utf8_left[3] = { 0xEF, 0x9C, 0x82 };
 
 //
 
@@ -160,22 +129,37 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 	return nil;
 }
 
-- (id)initWithWindow:(VideoOutputWindow*)nds
+- (id) initWithCdsController:(CocoaDSController *)theController
 {
 	self = [super init];
+	if(self == nil)
+	{
+		return nil;
+	}
 	
-	my_ds = nds;
-	[my_ds retain];
-	
-	dsController = [nds getDSController];
-	[dsController retain];
+	cdsController = theController;
+	[cdsController retain];
 	
 	return self;
 }
 
 - (void)dealloc
 {
+	[cdsController release];
+	
 	[super dealloc];
+}
+
+- (void) setCdsController:(CocoaDSController *)theController
+{
+	[cdsController release];
+	cdsController = theController;
+	[cdsController retain];
+}
+
+- (CocoaDSController *) cdsController
+{
+	return cdsController;
 }
 
 - (void)keyDown:(NSEvent*)event
@@ -185,18 +169,18 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
 	NSString *chars = [event characters];
 	
-	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[dsController pressA];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[dsController pressB];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[dsController pressSelect];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[dsController pressStart];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[dsController pressRight];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[dsController pressLeft];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[dsController pressUp];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[dsController pressDown];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[dsController pressR];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[dsController pressL];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[dsController pressX];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[dsController pressY];
+	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[cdsController pressA];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[cdsController pressB];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[cdsController pressSelect];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[cdsController pressStart];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[cdsController pressRight];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[cdsController pressLeft];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[cdsController pressUp];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[cdsController pressDown];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[cdsController pressR];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[cdsController pressL];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[cdsController pressX];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[cdsController pressY];
 }
 
 - (void)keyUp:(NSEvent*)event
@@ -204,39 +188,44 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
 	NSString *chars = [event characters];
 	
-	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[dsController liftA];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[dsController liftB];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[dsController liftSelect];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[dsController liftStart];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[dsController liftRight];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[dsController liftLeft];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[dsController liftUp];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[dsController liftDown];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[dsController liftR];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[dsController liftL];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[dsController liftX];
-	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[dsController liftY];
-}
-
-- (void)mouseDown:(NSEvent*)event
-{
-	NSPoint temp = [my_ds windowPointToDSCoords:[event locationInWindow]];
-	
-	if(temp.x >= 0 && temp.y>=0)
-	{
-		[dsController touch:temp];
-	}
-}
-
-- (void)mouseDragged:(NSEvent*)event
-{
-	[self mouseDown:event];
-}
-
-- (void)mouseUp:(NSEvent*)event
-{
-	[dsController releaseTouch];
+	     if(testKey(chars, [settings stringForKey:PREF_KEY_A     ]))[cdsController liftA];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_B     ]))[cdsController liftB];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_SELECT]))[cdsController liftSelect];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_START ]))[cdsController liftStart];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_RIGHT ]))[cdsController liftRight];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_LEFT  ]))[cdsController liftLeft];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_UP    ]))[cdsController liftUp];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_DOWN  ]))[cdsController liftDown];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_R     ]))[cdsController liftR];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_L     ]))[cdsController liftL];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_X     ]))[cdsController liftX];
+	else if(testKey(chars, [settings stringForKey:PREF_KEY_Y     ]))[cdsController liftY];
 }
 
 @end
 
+inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
+{
+	//Checks for common characters in chars_pressed and chars_for_key
+	
+	unichar *buffer1 = (unichar*)malloc([chars_pressed length] * sizeof(unichar));
+	unichar *buffer2 = (unichar*)malloc([chars_for_key length] * sizeof(unichar));
+	if(!buffer1 || !buffer2)return 0;
+	
+	[chars_pressed getCharacters:buffer1];
+	[chars_for_key getCharacters:buffer2];
+	
+	int i1, i2;
+	for(i1 = 0; i1 < [chars_pressed length]; i1++)
+		for(i2 = 0; i2 < [chars_for_key length]; i2++)
+			if(buffer1[i1] == buffer2[i2])
+			{
+				free(buffer1);
+				free(buffer2);
+				return 1;
+			}
+	
+	free(buffer1);
+	free(buffer2);
+	return 0;	
+}

@@ -24,25 +24,21 @@
 		7FA912271426523900E2ABDD /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
-		AB06CB57135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
+		AB0191D314BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */; };
+		AB0191D414BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */; };
+		AB0191D514BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */; };
+		AB0191D614BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */; };
 		AB06CB59135B8A4D00E977B3 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		AB06CB5A135B8A4D00E977B3 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		AB06CB5B135B8A4D00E977B3 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
-		AB06CB5C135B8A4D00E977B3 /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB50135B8A4D00E977B3 /* main_window.mm */; };
-		AB06CB5D135B8A4D00E977B3 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB51135B8A4D00E977B3 /* main.mm */; };
 		AB06CB5E135B8A4D00E977B3 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		AB06CB5F135B8A4D00E977B3 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
-		AB06CB60135B8A4D00E977B3 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
 		AB06CB62135B8A4D00E977B3 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
-		AB06CB63135B8A4D00E977B3 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		AB06CB65135B8A4D00E977B3 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		AB06CB66135B8A4D00E977B3 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		AB06CB67135B8A4D00E977B3 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
-		AB06CB68135B8A4D00E977B3 /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB50135B8A4D00E977B3 /* main_window.mm */; };
-		AB06CB69135B8A4D00E977B3 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB51135B8A4D00E977B3 /* main.mm */; };
 		AB06CB6A135B8A4D00E977B3 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		AB06CB6B135B8A4D00E977B3 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
-		AB06CB6C135B8A4D00E977B3 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
 		AB06CB6E135B8A4D00E977B3 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		AB06CCD6135B8AA200E977B3 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		AB06CCD7135B8AA300E977B3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
@@ -223,21 +219,13 @@
 		AB06CE94135B8AEE00E977B3 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0C135B8AED00E977B3 /* task.cpp */; };
 		AB06CE95135B8AEE00E977B3 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0F135B8AED00E977B3 /* vfat.cpp */; };
 		AB06CE96135B8AEE00E977B3 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE11135B8AED00E977B3 /* xstring.cpp */; };
-		AB06CEC9135B8E0B00E977B3 /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
-		AB06CECA135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
-		AB06CECB135B8E0B00E977B3 /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
-		AB06CECC135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
 		AB0A0D1E14AACACC00E83E91 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
 		AB0A0D3714AACE9500E83E91 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
-		AB0A0D3A14AACE9500E83E91 /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
-		AB0A0D3F14AACE9500E83E91 /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB50135B8A4D00E977B3 /* main_window.mm */; };
-		AB0A0D4014AACE9500E83E91 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB51135B8A4D00E977B3 /* main.mm */; };
 		AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
-		AB0A0D4314AACE9500E83E91 /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
 		AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		AB0A0D4614AACE9500E83E91 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD0E135B8ACE00E977B3 /* addons.cpp */; };
 		AB0A0D4714AACE9500E83E91 /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD10135B8ACE00E977B3 /* arm_instructions.cpp */; };
@@ -322,8 +310,6 @@
 		AB0A0D9614AACE9500E83E91 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0C135B8AED00E977B3 /* task.cpp */; };
 		AB0A0D9714AACE9500E83E91 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0F135B8AED00E977B3 /* vfat.cpp */; };
 		AB0A0D9814AACE9500E83E91 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE11135B8AED00E977B3 /* xstring.cpp */; };
-		AB0A0D9914AACE9500E83E91 /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
-		AB0A0D9A14AACE9500E83E91 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
 		AB0A0D9C14AACE9500E83E91 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
 		AB0A0D9D14AACE9500E83E91 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
 		AB0A0D9E14AACE9500E83E91 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121C1426523900E2ABDD /* tinyxml.cpp */; };
@@ -375,19 +361,59 @@
 		AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
 		AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
 		AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
+		AB73B12B14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */; };
+		AB73B12C14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */; };
+		AB73B12D14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */; };
+		AB73B12E14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */; };
+		AB73B12F14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */; };
+		AB73B13014BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */; };
+		AB73B13114BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */; };
+		AB73B13214BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */; };
+		AB73B1C514BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C114BDA94800F49C92 /* Icon_Execute_420x420.png */; };
+		AB73B1C614BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */; };
+		AB73B1C714BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */; };
+		AB73B1C814BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */; };
+		AB73B1C914BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C114BDA94800F49C92 /* Icon_Execute_420x420.png */; };
+		AB73B1CA14BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */; };
+		AB73B1CB14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */; };
+		AB73B1CC14BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */; };
+		AB73B1CD14BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C114BDA94800F49C92 /* Icon_Execute_420x420.png */; };
+		AB73B1CE14BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */; };
+		AB73B1CF14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */; };
+		AB73B1D014BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */; };
+		AB73B1D114BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C114BDA94800F49C92 /* Icon_Execute_420x420.png */; };
+		AB73B1D214BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */; };
+		AB73B1D314BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */; };
+		AB73B1D414BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */; };
 		AB8FE37614B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
 		AB8FE37714B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
 		AB8FE37814B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
 		AB8FE37914B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
 		AB8FE48C14B6657D009E20B1 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1D14AACACC00E83E91 /* libz.dylib */; };
-		ABBF04BD14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
-		ABBF04BE14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
-		ABBF04BF14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
-		ABBF04C014B519A500E505A0 /* MainMenu (Legacy).xib in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */; };
+		ABAC890914B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
+		ABAC890A14B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
+		ABAC890B14B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
+		ABAC890C14B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
 		ABBF053014B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053314B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
+		ABEFD81D14BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png */; };
+		ABEFD81E14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png */; };
+		ABEFD81F14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png */; };
+		ABEFD82014BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */; };
+		ABEFD82114BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png */; };
+		ABEFD82214BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png */; };
+		ABEFD82314BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png */; };
+		ABEFD82414BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */; };
+		ABEFD82514BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png */; };
+		ABEFD82614BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png */; };
+		ABEFD82714BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png */; };
+		ABEFD82814BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */; };
+		ABEFD82914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png */; };
+		ABEFD82A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png */; };
+		ABEFD82B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png */; };
+		ABEFD82C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */; };
 		ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
 		ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
 		ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */; };
@@ -397,15 +423,11 @@
 		ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
-		ABFE4245143E32F0009A3CCE /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4B135B8A4D00E977B3 /* about.m */; };
 		ABFE4247143E32F0009A3CCE /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4D135B8A4D00E977B3 /* screen_state.m */; };
 		ABFE4248143E32F0009A3CCE /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */; };
 		ABFE4249143E32F0009A3CCE /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB4F135B8A4D00E977B3 /* input.mm */; };
-		ABFE424A143E32F0009A3CCE /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB50135B8A4D00E977B3 /* main_window.mm */; };
-		ABFE424B143E32F0009A3CCE /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB51135B8A4D00E977B3 /* main.mm */; };
 		ABFE424C143E32F0009A3CCE /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB52135B8A4D00E977B3 /* nds_control.mm */; };
 		ABFE424D143E32F0009A3CCE /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB53135B8A4D00E977B3 /* preferences.mm */; };
-		ABFE424E143E32F0009A3CCE /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB54135B8A4D00E977B3 /* screenshot.mm */; };
 		ABFE4250143E32F0009A3CCE /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CB56135B8A4D00E977B3 /* video_output_view.mm */; };
 		ABFE4251143E32F0009A3CCE /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD0E135B8ACE00E977B3 /* addons.cpp */; };
 		ABFE4252143E32F0009A3CCE /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD10135B8ACE00E977B3 /* arm_instructions.cpp */; };
@@ -490,8 +512,6 @@
 		ABFE42A1143E32F0009A3CCE /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0C135B8AED00E977B3 /* task.cpp */; };
 		ABFE42A2143E32F0009A3CCE /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE0F135B8AED00E977B3 /* vfat.cpp */; };
 		ABFE42A3143E32F0009A3CCE /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CE11135B8AED00E977B3 /* xstring.cpp */; };
-		ABFE42A4143E32F0009A3CCE /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC6135B8E0B00E977B3 /* rom_info.m */; };
-		ABFE42A5143E32F0009A3CCE /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */; };
 		ABFE42A7143E32F0009A3CCE /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */; };
 		ABFE42A8143E32F0009A3CCE /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121A1426523900E2ABDD /* tinystr.cpp */; };
 		ABFE42A9143E32F0009A3CCE /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9121C1426523900E2ABDD /* tinyxml.cpp */; };
@@ -523,24 +543,24 @@
 		7FA9121E1426523900E2ABDD /* tinyxmlerror.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlerror.cpp; sourceTree = "<group>"; };
 		7FA9121F1426523900E2ABDD /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
 		956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slot1_retail_nand.cpp; path = ../addons/slot1_retail_nand.cpp; sourceTree = SOURCE_ROOT; };
+		AB0191D714BD72FC004CB612 /* French */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = French; path = "translations/French.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		AB0191D814BD72FF004CB612 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Italian; path = "translations/Italian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		AB0191E614BD741B004CB612 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Japanese; path = "translations/Japanese.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		AB0191E714BD741F004CB612 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Chinese; path = "translations/Chinese.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		AB0191E814BD7423004CB612 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Norwegian; path = "translations/Norwegian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
+		AB0191E914BD7425004CB612 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Romanian; path = "translations/Romanian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
 		AB06CB41135B8A4D00E977B3 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		AB06CB43135B8A4D00E977B3 /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = "<group>"; };
-		AB06CB44135B8A4D00E977B3 /* main_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main_window.h; sourceTree = "<group>"; };
 		AB06CB45135B8A4D00E977B3 /* nds_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nds_control.h; sourceTree = "<group>"; };
 		AB06CB46135B8A4D00E977B3 /* preferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = preferences.h; sourceTree = "<group>"; };
 		AB06CB47135B8A4D00E977B3 /* screen_state.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screen_state.h; sourceTree = "<group>"; };
-		AB06CB48135B8A4D00E977B3 /* screenshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screenshot.h; sourceTree = "<group>"; };
 		AB06CB49135B8A4D00E977B3 /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = "<group>"; };
 		AB06CB4A135B8A4D00E977B3 /* video_output_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_output_view.h; sourceTree = "<group>"; };
-		AB06CB4B135B8A4D00E977B3 /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
 		AB06CB4D135B8A4D00E977B3 /* screen_state.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screen_state.m; sourceTree = "<group>"; };
 		AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_input.mm; sourceTree = "<group>"; };
 		AB06CB4F135B8A4D00E977B3 /* input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = input.mm; sourceTree = "<group>"; };
-		AB06CB50135B8A4D00E977B3 /* main_window.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = main_window.mm; sourceTree = "<group>"; };
-		AB06CB51135B8A4D00E977B3 /* main.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		AB06CB52135B8A4D00E977B3 /* nds_control.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = nds_control.mm; sourceTree = "<group>"; };
 		AB06CB53135B8A4D00E977B3 /* preferences.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = preferences.mm; sourceTree = "<group>"; };
-		AB06CB54135B8A4D00E977B3 /* screenshot.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = screenshot.mm; sourceTree = "<group>"; };
 		AB06CB56135B8A4D00E977B3 /* video_output_view.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = video_output_view.mm; sourceTree = "<group>"; };
 		AB06CCD5135B8A9B00E977B3 /* DeSmuME_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix.pch; sourceTree = "<group>"; };
 		AB06CCD8135B8ACE00E977B3 /* addons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = addons.h; path = ../addons.h; sourceTree = SOURCE_ROOT; };
@@ -736,10 +756,6 @@
 		AB06CE10135B8AED00E977B3 /* vfat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vfat.h; sourceTree = "<group>"; };
 		AB06CE11135B8AED00E977B3 /* xstring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xstring.cpp; sourceTree = "<group>"; };
 		AB06CE12135B8AED00E977B3 /* xstring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xstring.h; sourceTree = "<group>"; };
-		AB06CEC5135B8E0B00E977B3 /* rom_info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rom_info.h; sourceTree = "<group>"; };
-		AB06CEC6135B8E0B00E977B3 /* rom_info.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = rom_info.m; sourceTree = "<group>"; };
-		AB06CEC7135B8E0B00E977B3 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = speed_limit_selection_window.h; sourceTree = "<group>"; };
-		AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = speed_limit_selection_window.mm; sourceTree = "<group>"; };
 		AB0A0D1D14AACACC00E83E91 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		AB0A0DAC14AACE9500E83E91 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0A0DDE14AAD26600E83E91 /* Info (Debug).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Debug).plist"; sourceTree = "<group>"; };
@@ -753,21 +769,28 @@
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		AB73B12714BDA01C00F49C92 /* appDelegate_legacy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = appDelegate_legacy.h; path = userinterface/appDelegate_legacy.h; sourceTree = "<group>"; };
+		AB73B12814BDA01C00F49C92 /* emuWindowDelegate_legacy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emuWindowDelegate_legacy.h; path = userinterface/emuWindowDelegate_legacy.h; sourceTree = "<group>"; };
+		AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = appDelegate_legacy.mm; path = userinterface/appDelegate_legacy.mm; sourceTree = "<group>"; };
+		AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = emuWindowDelegate_legacy.mm; path = userinterface/emuWindowDelegate_legacy.mm; sourceTree = "<group>"; };
+		AB73B1C114BDA94800F49C92 /* Icon_Execute_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Execute_420x420.png; path = images/Icon_Execute_420x420.png; sourceTree = "<group>"; };
+		AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Pause_420x420.png; path = images/Icon_Pause_420x420.png; sourceTree = "<group>"; };
+		AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speed1x_420x420.png; path = images/Icon_Speed1x_420x420.png; sourceTree = "<group>"; };
+		AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speed2x_420x420.png; path = images/Icon_Speed2x_420x420.png; sourceTree = "<group>"; };
 		AB8FE30A14B647D6009E20B1 /* macosx_10_4_compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = macosx_10_4_compat.h; sourceTree = "<group>"; };
 		AB8FE37414B652EC009E20B1 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
 		AB8FE37514B652EC009E20B1 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
+		ABAC890814B7943E001B299F /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		ABBF045E14B5144D00E505A0 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "translations/English.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
-		ABBF04C114B519CD00E505A0 /* French */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = French; path = "translations/French.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
-		ABBF04C314B519DF00E505A0 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Italian; path = "translations/Italian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
-		ABBF04C414B519E400E505A0 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Japanese; path = "translations/Japanese.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
-		ABBF04C514B519EA00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Chinese; path = "translations/Chinese.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
-		ABBF04C614B519F000E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Norwegian; path = "translations/Norwegian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
-		ABBF04C714B519F500E505A0 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Romanian; path = "translations/Romanian.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
 		ABBF04CB14B51BBB00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF04CC14B51BC300E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF04CD14B51BC900E505A0 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF052F14B5436E00E505A0 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
 		ABBF053B14B543B600E505A0 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
+		ABEFD81914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeFull_16x16.png; path = images/Icon_VolumeFull_16x16.png; sourceTree = "<group>"; };
+		ABEFD81A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeMute_16x16.png; path = images/Icon_VolumeMute_16x16.png; sourceTree = "<group>"; };
+		ABEFD81B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeOneThird_16x16.png; path = images/Icon_VolumeOneThird_16x16.png; sourceTree = "<group>"; };
+		ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeTwoThird_16x16.png; path = images/Icon_VolumeTwoThird_16x16.png; sourceTree = "<group>"; };
 		ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
 		ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
 		ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
@@ -832,7 +855,7 @@
 		080E96DDFE201D6D7F000001 /* Cocoa Port */ = {
 			isa = PBXGroup;
 			children = (
-				AB06CEC4135B8E0B00E977B3 /* dialogs */,
+				ABC3ADEC14B7DC6E00D5B13D /* userinterface */,
 				ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */,
 				ABBF053B14B543B600E505A0 /* cocoa_file.h */,
 				ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */,
@@ -840,24 +863,18 @@
 				AB8FE37414B652EC009E20B1 /* cocoa_util.h */,
 				AB06CB43135B8A4D00E977B3 /* input.h */,
 				AB8FE30A14B647D6009E20B1 /* macosx_10_4_compat.h */,
-				AB06CB44135B8A4D00E977B3 /* main_window.h */,
 				AB06CB45135B8A4D00E977B3 /* nds_control.h */,
 				AB06CB46135B8A4D00E977B3 /* preferences.h */,
 				AB06CB47135B8A4D00E977B3 /* screen_state.h */,
-				AB06CB48135B8A4D00E977B3 /* screenshot.h */,
 				AB06CB49135B8A4D00E977B3 /* sndOSX.h */,
 				AB06CB4A135B8A4D00E977B3 /* video_output_view.h */,
-				AB06CB4B135B8A4D00E977B3 /* about.m */,
 				AB06CB4D135B8A4D00E977B3 /* screen_state.m */,
 				ABBF052F14B5436E00E505A0 /* cocoa_file.mm */,
 				AB06CB4E135B8A4D00E977B3 /* cocoa_input.mm */,
 				AB8FE37514B652EC009E20B1 /* cocoa_util.mm */,
 				AB06CB4F135B8A4D00E977B3 /* input.mm */,
-				AB06CB51135B8A4D00E977B3 /* main.mm */,
-				AB06CB50135B8A4D00E977B3 /* main_window.mm */,
 				AB06CB52135B8A4D00E977B3 /* nds_control.mm */,
 				AB06CB53135B8A4D00E977B3 /* preferences.mm */,
-				AB06CB54135B8A4D00E977B3 /* screenshot.mm */,
 				AB06CB56135B8A4D00E977B3 /* video_output_view.mm */,
 			);
 			name = "Cocoa Port";
@@ -899,10 +916,10 @@
 			children = (
 				080E96DDFE201D6D7F000001 /* Cocoa Port */,
 				29B97315FDCFA39411CA2CEA /* Core */,
-				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				AB06CB79135B8A7600E977B3 /* Other Sources */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
 			);
 			name = DeSmuME;
 			sourceTree = "<group>";
@@ -1026,7 +1043,7 @@
 			children = (
 				AB4677FA14ABD4790002FF94 /* Images */,
 				1F4B55090F53924500C8B514 /* Localizable.strings */,
-				ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */,
+				AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */,
 				72C000010D9D59E60046B7EA /* Info.plist */,
 				AB0A0DDE14AAD26600E83E91 /* Info (Debug).plist */,
 				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
@@ -1066,6 +1083,7 @@
 		AB06CB79135B8A7600E977B3 /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				ABAC890814B7943E001B299F /* main.m */,
 				AB06CCD5135B8A9B00E977B3 /* DeSmuME_Prefix.pch */,
 			);
 			name = "Other Sources";
@@ -1228,21 +1246,18 @@
 			path = libfat;
 			sourceTree = "<group>";
 		};
-		AB06CEC4135B8E0B00E977B3 /* dialogs */ = {
-			isa = PBXGroup;
-			children = (
-				AB06CEC5135B8E0B00E977B3 /* rom_info.h */,
-				AB06CEC6135B8E0B00E977B3 /* rom_info.m */,
-				AB06CEC7135B8E0B00E977B3 /* speed_limit_selection_window.h */,
-				AB06CEC8135B8E0B00E977B3 /* speed_limit_selection_window.mm */,
-			);
-			path = dialogs;
-			sourceTree = "<group>";
-		};
 		AB4677FA14ABD4790002FF94 /* Images */ = {
 			isa = PBXGroup;
 			children = (
 				AB46782914ABD4BF0002FF94 /* App Icons */,
+				ABEFD81914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png */,
+				ABEFD81A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png */,
+				ABEFD81B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png */,
+				ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */,
+				AB73B1C114BDA94800F49C92 /* Icon_Execute_420x420.png */,
+				AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */,
+				AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */,
+				AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */,
 			);
 			name = Images;
 			sourceTree = "<group>";
@@ -1259,6 +1274,17 @@
 			name = "App Icons";
 			sourceTree = "<group>";
 		};
+		ABC3ADEC14B7DC6E00D5B13D /* userinterface */ = {
+			isa = PBXGroup;
+			children = (
+				AB73B12714BDA01C00F49C92 /* appDelegate_legacy.h */,
+				AB73B12814BDA01C00F49C92 /* emuWindowDelegate_legacy.h */,
+				AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */,
+				AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */,
+			);
+			name = userinterface;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1266,6 +1292,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1EFD51BB0F892B1A00B029BB /* Build configuration list for PBXNativeTarget "DeSmuME_gdbstub" */;
 			buildPhases = (
+				AB73B05614BD7A8B00F49C92 /* ShellScript */,
 				1EFD51780F892B1A00B029BB /* Resources */,
 				1EFD517C0F892B1A00B029BB /* Sources */,
 				1EFD51B60F892B1A00B029BB /* Frameworks */,
@@ -1284,6 +1311,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME (v10.5 Leopard)" */;
 			buildPhases = (
+				AB73B04F14BD79CB00F49C92 /* ShellScript */,
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
@@ -1302,6 +1330,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AB0A0DA914AACE9500E83E91 /* Build configuration list for PBXNativeTarget "DeSmuME (v10.4 Tiger)" */;
 			buildPhases = (
+				AB01918414BD6A0A004CB612 /* ShellScript */,
 				AB0A0D3514AACE9500E83E91 /* Resources */,
 				AB0A0D3914AACE9500E83E91 /* Sources */,
 				AB0A0DA114AACE9500E83E91 /* Frameworks */,
@@ -1320,6 +1349,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = ABFE42B3143E32F0009A3CCE /* Build configuration list for PBXNativeTarget "DeSmuME (v10.6 Snow Leopard)" */;
 			buildPhases = (
+				AB73B05114BD79D300F49C92 /* ShellScript */,
 				ABFE4240143E32F0009A3CCE /* Resources */,
 				ABFE4244143E32F0009A3CCE /* Sources */,
 				ABFE42AC143E32F0009A3CCE /* Frameworks */,
@@ -1386,7 +1416,15 @@
 				AB46781014ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781114ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007A14B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
-				ABBF04C014B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
+				AB0191D614BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */,
+				ABEFD82514BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */,
+				ABEFD82614BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */,
+				ABEFD82714BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */,
+				ABEFD82814BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				AB73B1CD14BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */,
+				AB73B1CE14BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
+				AB73B1CF14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
+				AB73B1D014BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1406,7 +1444,15 @@
 				AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007714B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
-				ABBF04BE14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
+				AB0191D414BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */,
+				ABEFD82914BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */,
+				ABEFD82A14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */,
+				ABEFD82B14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */,
+				ABEFD82C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				AB73B1D114BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */,
+				AB73B1D214BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
+				AB73B1D314BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
+				AB73B1D414BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1426,7 +1472,15 @@
 				AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46780D14ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007814B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
-				ABBF04BD14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
+				AB0191D314BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */,
+				ABEFD81D14BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */,
+				ABEFD81E14BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */,
+				ABEFD81F14BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */,
+				ABEFD82014BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				AB73B1C514BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */,
+				AB73B1C614BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
+				AB73B1C714BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
+				AB73B1C814BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1446,72 +1500,176 @@
 				AB46781414ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
 				AB46781514ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */,
 				ABF4007914B4F19200578AE7 /* AppIcon_ROMCheats.icns in Resources */,
-				ABBF04BF14B519A500E505A0 /* MainMenu (Legacy).xib in Resources */,
+				AB0191D514BD72EC004CB612 /* MainMenu (Legacy).xib in Resources */,
+				ABEFD82114BB9E65004DB9DC /* Icon_VolumeFull_16x16.png in Resources */,
+				ABEFD82214BB9E65004DB9DC /* Icon_VolumeMute_16x16.png in Resources */,
+				ABEFD82314BB9E65004DB9DC /* Icon_VolumeOneThird_16x16.png in Resources */,
+				ABEFD82414BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				AB73B1C914BDA94800F49C92 /* Icon_Execute_420x420.png in Resources */,
+				AB73B1CA14BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
+				AB73B1CB14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
+				AB73B1CC14BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		AB01918414BD6A0A004CB612 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).xib",
+			);
+			outputPaths = (
+				"$(SRCROOT)/translations/French.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Italian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Japanese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu (Legacy).strings\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./French.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./French.lproj/MainMenu (Legacy).strings\" --write \"./French.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Italian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Italian.lproj/MainMenu (Legacy).strings\" --write \"./Italian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Japanese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Japanese.lproj/MainMenu (Legacy).strings\" --write \"./Japanese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Chinese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Chinese.lproj/MainMenu (Legacy).strings\" --write \"./Chinese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Norwegian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Norwegian.lproj/MainMenu (Legacy).strings\" --write \"./Norwegian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Romanian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Romanian.lproj/MainMenu (Legacy).strings\" --write \"./Romanian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"";
+		};
+		AB73B04F14BD79CB00F49C92 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).xib",
+			);
+			outputPaths = (
+				"$(SRCROOT)/translations/French.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Italian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Japanese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu (Legacy).strings\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./French.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./French.lproj/MainMenu (Legacy).strings\" --write \"./French.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Italian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Italian.lproj/MainMenu (Legacy).strings\" --write \"./Italian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Japanese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Japanese.lproj/MainMenu (Legacy).strings\" --write \"./Japanese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Chinese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Chinese.lproj/MainMenu (Legacy).strings\" --write \"./Chinese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Norwegian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Norwegian.lproj/MainMenu (Legacy).strings\" --write \"./Norwegian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Romanian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Romanian.lproj/MainMenu (Legacy).strings\" --write \"./Romanian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"";
+		};
+		AB73B05114BD79D300F49C92 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).xib",
+			);
+			outputPaths = (
+				"$(SRCROOT)/translations/French.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Italian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Japanese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu (Legacy).strings\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./French.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./French.lproj/MainMenu (Legacy).strings\" --write \"./French.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Italian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Italian.lproj/MainMenu (Legacy).strings\" --write \"./Italian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Japanese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Japanese.lproj/MainMenu (Legacy).strings\" --write \"./Japanese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Chinese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Chinese.lproj/MainMenu (Legacy).strings\" --write \"./Chinese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Norwegian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Norwegian.lproj/MainMenu (Legacy).strings\" --write \"./Norwegian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Romanian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Romanian.lproj/MainMenu (Legacy).strings\" --write \"./Romanian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"";
+		};
+		AB73B05614BD7A8B00F49C92 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).xib",
+			);
+			outputPaths = (
+				"$(SRCROOT)/translations/French.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Italian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Japanese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu (Legacy).strings\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./French.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./French.lproj/MainMenu (Legacy).strings\" --write \"./French.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Italian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Italian.lproj/MainMenu (Legacy).strings\" --write \"./Italian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Japanese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Japanese.lproj/MainMenu (Legacy).strings\" --write \"./Japanese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Chinese.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Chinese.lproj/MainMenu (Legacy).strings\" --write \"./Chinese.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Norwegian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Norwegian.lproj/MainMenu (Legacy).strings\" --write \"./Norwegian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"\n\nrm \"./Romanian.lproj/MainMenu (Legacy).xib\"\nibtool --strings-file \"./Romanian.lproj/MainMenu (Legacy).strings\" --write \"./Romanian.lproj/MainMenu (Legacy).xib\" \"./English.lproj/MainMenu (Legacy).xib\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1EFD517C0F892B1A00B029BB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB06CB63135B8A4D00E977B3 /* about.m in Sources */,
-				AB06CB65135B8A4D00E977B3 /* screen_state.m in Sources */,
-				AB06CB66135B8A4D00E977B3 /* cocoa_input.mm in Sources */,
-				AB06CB67135B8A4D00E977B3 /* input.mm in Sources */,
-				AB06CB68135B8A4D00E977B3 /* main_window.mm in Sources */,
-				AB06CB69135B8A4D00E977B3 /* main.mm in Sources */,
-				AB06CB6A135B8A4D00E977B3 /* nds_control.mm in Sources */,
-				AB06CB6B135B8A4D00E977B3 /* preferences.mm in Sources */,
-				AB06CB6C135B8A4D00E977B3 /* screenshot.mm in Sources */,
-				AB06CB6E135B8A4D00E977B3 /* video_output_view.mm in Sources */,
+				AB06CE80135B8AEE00E977B3 /* ConvertUTF.c in Sources */,
+				AB06CE6C135B8AEE00E977B3 /* AAFilter.cpp in Sources */,
 				AB06CD6C135B8ACE00E977B3 /* addons.cpp in Sources */,
 				AB06CD6D135B8ACE00E977B3 /* aggdraw.cpp in Sources */,
 				AB06CD6E135B8ACE00E977B3 /* arm_instructions.cpp in Sources */,
 				AB06CD6F135B8ACE00E977B3 /* armcpu.cpp in Sources */,
 				AB06CD70135B8ACE00E977B3 /* bios.cpp in Sources */,
+				AB06CE88135B8AEE00E977B3 /* cache.cpp in Sources */,
 				AB06CD71135B8ACE00E977B3 /* cheatSystem.cpp in Sources */,
 				AB06CD72135B8ACE00E977B3 /* commandline.cpp in Sources */,
 				AB06CD73135B8ACE00E977B3 /* common.cpp in Sources */,
 				AB06CD74135B8ACE00E977B3 /* cp15.cpp in Sources */,
+				AB06CE6F135B8AEE00E977B3 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB06CE82135B8AEE00E977B3 /* crc.cpp in Sources */,
 				AB06CD75135B8ACE00E977B3 /* ctrlssdl.cpp in Sources */,
+				AB06CE81135B8AEE00E977B3 /* datetime.cpp in Sources */,
 				AB06CD76135B8ACE00E977B3 /* debug.cpp in Sources */,
+				AB06CE83135B8AEE00E977B3 /* decrypt.cpp in Sources */,
 				AB06CD77135B8ACE00E977B3 /* desmume_config.cpp in Sources */,
+				AB06CE89135B8AEE00E977B3 /* directory.cpp in Sources */,
 				AB06CD78135B8ACE00E977B3 /* Disassembler.cpp in Sources */,
+				AB06CE8A135B8AEE00E977B3 /* disc.cpp in Sources */,
+				AB06CE85135B8AEE00E977B3 /* dlditool.cpp in Sources */,
 				AB06CD79135B8ACE00E977B3 /* driver.cpp in Sources */,
+				AB06CE86135B8AEE00E977B3 /* emufat.cpp in Sources */,
 				AB06CD7A135B8ACE00E977B3 /* emufile.cpp in Sources */,
+				AB06CE8B135B8AEE00E977B3 /* fatdir.cpp in Sources */,
+				AB06CE8C135B8AEE00E977B3 /* fatfile.cpp in Sources */,
 				AB06CD7B135B8ACE00E977B3 /* FIFO.cpp in Sources */,
+				AB06CE72135B8AEE00E977B3 /* FIFOSampleBuffer.cpp in Sources */,
+				AB06CE8D135B8AEE00E977B3 /* file_allocation_table.cpp in Sources */,
+				AB06CE8E135B8AEE00E977B3 /* filetime.cpp in Sources */,
+				AB06CE73135B8AEE00E977B3 /* FIRFilter.cpp in Sources */,
 				AB06CD7C135B8ACE00E977B3 /* firmware.cpp in Sources */,
 				AB06CD7D135B8ACE00E977B3 /* fs-linux.cpp in Sources */,
+				AB06CE66135B8AEE00E977B3 /* gdbstub.cpp in Sources */,
 				AB06CD7F135B8ACE00E977B3 /* gfx3d.cpp in Sources */,
-				AB06CD80135B8ACE00E977B3 /* GPU_osd_stub.cpp in Sources */,
-				AB06CD81135B8ACE00E977B3 /* GPU_osd.cpp in Sources */,
 				AB06CD82135B8ACE00E977B3 /* GPU.cpp in Sources */,
+				AB06CD81135B8ACE00E977B3 /* GPU_osd.cpp in Sources */,
+				AB06CD80135B8ACE00E977B3 /* GPU_osd_stub.cpp in Sources */,
+				AB06CE87135B8AEE00E977B3 /* guid.cpp in Sources */,
+				AB06CE84135B8AEE00E977B3 /* header.cpp in Sources */,
+				AB06CE8F135B8AEE00E977B3 /* libfat.cpp in Sources */,
+				AB06CE90135B8AEE00E977B3 /* libfat_public_api.cpp in Sources */,
+				AB06CE91135B8AEE00E977B3 /* lock.cpp in Sources */,
 				AB06CD83135B8ACE00E977B3 /* lua-engine.cpp in Sources */,
+				AB06CE63135B8AEE00E977B3 /* main.cpp in Sources */,
 				AB06CD84135B8ACE00E977B3 /* matrix.cpp in Sources */,
 				AB06CD85135B8ACE00E977B3 /* mc.cpp in Sources */,
+				AB06CE93135B8AEE00E977B3 /* md5.cpp in Sources */,
+				AB06CE68135B8AEE00E977B3 /* metaspu.cpp in Sources */,
+				AB06CD88135B8ACE00E977B3 /* mic.cpp in Sources */,
 				AB06CD86135B8ACE00E977B3 /* mic_alsa.cpp in Sources */,
 				AB06CD87135B8ACE00E977B3 /* mic_openal.cpp in Sources */,
-				AB06CD88135B8ACE00E977B3 /* mic.cpp in Sources */,
 				AB06CD89135B8ACE00E977B3 /* MMU.cpp in Sources */,
+				AB06CE77135B8AEE00E977B3 /* mmx_optimized.cpp in Sources */,
 				AB06CD8A135B8ACE00E977B3 /* movie.cpp in Sources */,
 				AB06CD8B135B8ACE00E977B3 /* NDSSystem.cpp in Sources */,
+				AB06CE92135B8AEE00E977B3 /* partition.cpp in Sources */,
 				AB06CD8D135B8ACE00E977B3 /* path.cpp in Sources */,
 				AB06CD8E135B8ACE00E977B3 /* rasterize.cpp in Sources */,
+				AB06CE78135B8AEE00E977B3 /* RateTransposer.cpp in Sources */,
 				AB06CD8F135B8ACE00E977B3 /* readwrite.cpp in Sources */,
 				AB06CD90135B8ACE00E977B3 /* render3D.cpp in Sources */,
 				AB06CD91135B8ACE00E977B3 /* ROMReader.cpp in Sources */,
 				AB06CD92135B8ACE00E977B3 /* rtc.cpp in Sources */,
 				AB06CD93135B8ACE00E977B3 /* saves.cpp in Sources */,
 				AB06CD94135B8ACE00E977B3 /* slot1.cpp in Sources */,
-				AB06CD95135B8ACE00E977B3 /* sndsdl.cpp in Sources */,
-				AB06CD96135B8ACE00E977B3 /* SPU.cpp in Sources */,
-				AB06CD97135B8ACE00E977B3 /* texcache.cpp in Sources */,
-				AB06CD98135B8ACE00E977B3 /* thumb_instructions.cpp in Sources */,
-				AB06CD99135B8ACE00E977B3 /* version.cpp in Sources */,
-				AB06CD9A135B8ACE00E977B3 /* wifi.cpp in Sources */,
 				AB06CE55135B8AEE00E977B3 /* slot1_none.cpp in Sources */,
 				AB06CE56135B8AEE00E977B3 /* slot1_r4.cpp in Sources */,
 				AB06CE57135B8AEE00E977B3 /* slot1_retail.cpp in Sources */,
@@ -1523,53 +1681,37 @@
 				AB06CE5D135B8AEE00E977B3 /* slot2_paddle.cpp in Sources */,
 				AB06CE5E135B8AEE00E977B3 /* slot2_piano.cpp in Sources */,
 				AB06CE5F135B8AEE00E977B3 /* slot2_rumblepak.cpp in Sources */,
-				AB06CE63135B8AEE00E977B3 /* main.cpp in Sources */,
-				AB06CE66135B8AEE00E977B3 /* gdbstub.cpp in Sources */,
-				AB06CE68135B8AEE00E977B3 /* metaspu.cpp in Sources */,
+				ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 				AB06CE6A135B8AEE00E977B3 /* SndOut.cpp in Sources */,
-				AB06CE6C135B8AEE00E977B3 /* AAFilter.cpp in Sources */,
-				AB06CE6F135B8AEE00E977B3 /* cpu_detect_x86_gcc.cpp in Sources */,
-				AB06CE72135B8AEE00E977B3 /* FIFOSampleBuffer.cpp in Sources */,
-				AB06CE73135B8AEE00E977B3 /* FIRFilter.cpp in Sources */,
-				AB06CE77135B8AEE00E977B3 /* mmx_optimized.cpp in Sources */,
-				AB06CE78135B8AEE00E977B3 /* RateTransposer.cpp in Sources */,
+				AB06CD95135B8ACE00E977B3 /* sndsdl.cpp in Sources */,
 				AB06CE7A135B8AEE00E977B3 /* SoundTouch.cpp in Sources */,
+				AB06CD96135B8ACE00E977B3 /* SPU.cpp in Sources */,
 				AB06CE7B135B8AEE00E977B3 /* sse_optimized.cpp in Sources */,
-				AB06CE7C135B8AEE00E977B3 /* TDStretch.cpp in Sources */,
-				AB06CE7D135B8AEE00E977B3 /* WavFile.cpp in Sources */,
-				AB06CE7E135B8AEE00E977B3 /* Timestretcher.cpp in Sources */,
-				AB06CE80135B8AEE00E977B3 /* ConvertUTF.c in Sources */,
-				AB06CE81135B8AEE00E977B3 /* datetime.cpp in Sources */,
-				AB06CE82135B8AEE00E977B3 /* crc.cpp in Sources */,
-				AB06CE83135B8AEE00E977B3 /* decrypt.cpp in Sources */,
-				AB06CE84135B8AEE00E977B3 /* header.cpp in Sources */,
-				AB06CE85135B8AEE00E977B3 /* dlditool.cpp in Sources */,
-				AB06CE86135B8AEE00E977B3 /* emufat.cpp in Sources */,
-				AB06CE87135B8AEE00E977B3 /* guid.cpp in Sources */,
-				AB06CE88135B8AEE00E977B3 /* cache.cpp in Sources */,
-				AB06CE89135B8AEE00E977B3 /* directory.cpp in Sources */,
-				AB06CE8A135B8AEE00E977B3 /* disc.cpp in Sources */,
-				AB06CE8B135B8AEE00E977B3 /* fatdir.cpp in Sources */,
-				AB06CE8C135B8AEE00E977B3 /* fatfile.cpp in Sources */,
-				AB06CE8D135B8AEE00E977B3 /* file_allocation_table.cpp in Sources */,
-				AB06CE8E135B8AEE00E977B3 /* filetime.cpp in Sources */,
-				AB06CE8F135B8AEE00E977B3 /* libfat.cpp in Sources */,
-				AB06CE90135B8AEE00E977B3 /* libfat_public_api.cpp in Sources */,
-				AB06CE91135B8AEE00E977B3 /* lock.cpp in Sources */,
-				AB06CE92135B8AEE00E977B3 /* partition.cpp in Sources */,
-				AB06CE93135B8AEE00E977B3 /* md5.cpp in Sources */,
 				AB06CE94135B8AEE00E977B3 /* task.cpp in Sources */,
-				AB06CE95135B8AEE00E977B3 /* vfat.cpp in Sources */,
-				AB06CE96135B8AEE00E977B3 /* xstring.cpp in Sources */,
-				AB06CECB135B8E0B00E977B3 /* rom_info.m in Sources */,
-				AB06CECC135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */,
+				AB06CE7C135B8AEE00E977B3 /* TDStretch.cpp in Sources */,
+				AB06CD97135B8ACE00E977B3 /* texcache.cpp in Sources */,
+				AB06CD98135B8ACE00E977B3 /* thumb_instructions.cpp in Sources */,
+				AB06CE7E135B8AEE00E977B3 /* Timestretcher.cpp in Sources */,
 				7FA912241426523900E2ABDD /* tinystr.cpp in Sources */,
 				7FA912251426523900E2ABDD /* tinyxml.cpp in Sources */,
 				7FA912261426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
 				7FA912271426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
-				ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				AB06CD99135B8ACE00E977B3 /* version.cpp in Sources */,
+				AB06CE95135B8AEE00E977B3 /* vfat.cpp in Sources */,
+				AB06CE7D135B8AEE00E977B3 /* WavFile.cpp in Sources */,
+				AB06CD9A135B8ACE00E977B3 /* wifi.cpp in Sources */,
+				AB06CE96135B8AEE00E977B3 /* xstring.cpp in Sources */,
+				ABAC890C14B7943E001B299F /* main.m in Sources */,
+				AB06CB65135B8A4D00E977B3 /* screen_state.m in Sources */,
+				AB73B12F14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */,
 				ABBF053314B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB06CB66135B8A4D00E977B3 /* cocoa_input.mm in Sources */,
 				AB8FE37914B652EC009E20B1 /* cocoa_util.mm in Sources */,
+				AB73B13014BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */,
+				AB06CB67135B8A4D00E977B3 /* input.mm in Sources */,
+				AB06CB6A135B8A4D00E977B3 /* nds_control.mm in Sources */,
+				AB06CB6B135B8A4D00E977B3 /* preferences.mm in Sources */,
+				AB06CB6E135B8A4D00E977B3 /* video_output_view.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1577,55 +1719,68 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB06CB57135B8A4D00E977B3 /* about.m in Sources */,
-				AB06CB59135B8A4D00E977B3 /* screen_state.m in Sources */,
-				AB06CB5A135B8A4D00E977B3 /* cocoa_input.mm in Sources */,
-				AB06CB5B135B8A4D00E977B3 /* input.mm in Sources */,
-				AB06CB5C135B8A4D00E977B3 /* main_window.mm in Sources */,
-				AB06CB5D135B8A4D00E977B3 /* main.mm in Sources */,
-				AB06CB5E135B8A4D00E977B3 /* nds_control.mm in Sources */,
-				AB06CB5F135B8A4D00E977B3 /* preferences.mm in Sources */,
-				AB06CB60135B8A4D00E977B3 /* screenshot.mm in Sources */,
-				AB06CB62135B8A4D00E977B3 /* video_output_view.mm in Sources */,
+				AB06CE3E135B8AEE00E977B3 /* ConvertUTF.c in Sources */,
+				AB06CE2A135B8AEE00E977B3 /* AAFilter.cpp in Sources */,
 				AB06CD3D135B8ACE00E977B3 /* addons.cpp in Sources */,
 				AB06CD3F135B8ACE00E977B3 /* arm_instructions.cpp in Sources */,
 				AB06CD40135B8ACE00E977B3 /* armcpu.cpp in Sources */,
 				AB06CD41135B8ACE00E977B3 /* bios.cpp in Sources */,
+				AB06CE46135B8AEE00E977B3 /* cache.cpp in Sources */,
 				AB06CD42135B8ACE00E977B3 /* cheatSystem.cpp in Sources */,
 				AB06CD44135B8ACE00E977B3 /* common.cpp in Sources */,
 				AB06CD45135B8ACE00E977B3 /* cp15.cpp in Sources */,
+				AB06CE2D135B8AEE00E977B3 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB06CE40135B8AEE00E977B3 /* crc.cpp in Sources */,
+				AB06CE3F135B8AEE00E977B3 /* datetime.cpp in Sources */,
 				AB06CD47135B8ACE00E977B3 /* debug.cpp in Sources */,
+				AB06CE41135B8AEE00E977B3 /* decrypt.cpp in Sources */,
+				AB06CE47135B8AEE00E977B3 /* directory.cpp in Sources */,
 				AB06CD49135B8ACE00E977B3 /* Disassembler.cpp in Sources */,
+				AB06CE48135B8AEE00E977B3 /* disc.cpp in Sources */,
+				AB06CE43135B8AEE00E977B3 /* dlditool.cpp in Sources */,
 				AB06CD4A135B8ACE00E977B3 /* driver.cpp in Sources */,
+				AB06CE44135B8AEE00E977B3 /* emufat.cpp in Sources */,
 				AB06CD4B135B8ACE00E977B3 /* emufile.cpp in Sources */,
+				AB06CE49135B8AEE00E977B3 /* fatdir.cpp in Sources */,
+				AB06CE4A135B8AEE00E977B3 /* fatfile.cpp in Sources */,
 				AB06CD4C135B8ACE00E977B3 /* FIFO.cpp in Sources */,
+				AB06CE30135B8AEE00E977B3 /* FIFOSampleBuffer.cpp in Sources */,
+				AB06CE4B135B8AEE00E977B3 /* file_allocation_table.cpp in Sources */,
+				AB06CE4C135B8AEE00E977B3 /* filetime.cpp in Sources */,
+				AB06CE31135B8AEE00E977B3 /* FIRFilter.cpp in Sources */,
 				AB06CD4D135B8ACE00E977B3 /* firmware.cpp in Sources */,
 				AB06CD4E135B8ACE00E977B3 /* fs-linux.cpp in Sources */,
 				AB06CD50135B8ACE00E977B3 /* gfx3d.cpp in Sources */,
-				AB06CD51135B8ACE00E977B3 /* GPU_osd_stub.cpp in Sources */,
 				AB06CD53135B8ACE00E977B3 /* GPU.cpp in Sources */,
+				AB06CD51135B8ACE00E977B3 /* GPU_osd_stub.cpp in Sources */,
+				AB06CE45135B8AEE00E977B3 /* guid.cpp in Sources */,
+				AB06CE42135B8AEE00E977B3 /* header.cpp in Sources */,
+				AB06CE4D135B8AEE00E977B3 /* libfat.cpp in Sources */,
+				AB06CE4E135B8AEE00E977B3 /* libfat_public_api.cpp in Sources */,
+				AB06CE4F135B8AEE00E977B3 /* lock.cpp in Sources */,
 				AB06CD55135B8ACE00E977B3 /* matrix.cpp in Sources */,
 				AB06CD56135B8ACE00E977B3 /* mc.cpp in Sources */,
+				AB06CE51135B8AEE00E977B3 /* md5.cpp in Sources */,
+				AB06CE26135B8AEE00E977B3 /* metaspu.cpp in Sources */,
 				AB06CD59135B8ACE00E977B3 /* mic.cpp in Sources */,
 				AB06CD5A135B8ACE00E977B3 /* MMU.cpp in Sources */,
+				AB06CE35135B8AEE00E977B3 /* mmx_optimized.cpp in Sources */,
 				AB06CD5B135B8ACE00E977B3 /* movie.cpp in Sources */,
 				AB06CD5C135B8ACE00E977B3 /* NDSSystem.cpp in Sources */,
+				AB06CE50135B8AEE00E977B3 /* partition.cpp in Sources */,
 				AB06CD5E135B8ACE00E977B3 /* path.cpp in Sources */,
 				AB06CD5F135B8ACE00E977B3 /* rasterize.cpp in Sources */,
+				AB06CE36135B8AEE00E977B3 /* RateTransposer.cpp in Sources */,
 				AB06CD60135B8ACE00E977B3 /* readwrite.cpp in Sources */,
 				AB06CD61135B8ACE00E977B3 /* render3D.cpp in Sources */,
 				AB06CD62135B8ACE00E977B3 /* ROMReader.cpp in Sources */,
 				AB06CD63135B8ACE00E977B3 /* rtc.cpp in Sources */,
 				AB06CD64135B8ACE00E977B3 /* saves.cpp in Sources */,
 				AB06CD65135B8ACE00E977B3 /* slot1.cpp in Sources */,
-				AB06CD67135B8ACE00E977B3 /* SPU.cpp in Sources */,
-				AB06CD68135B8ACE00E977B3 /* texcache.cpp in Sources */,
-				AB06CD69135B8ACE00E977B3 /* thumb_instructions.cpp in Sources */,
-				AB06CD6A135B8ACE00E977B3 /* version.cpp in Sources */,
-				AB06CD6B135B8ACE00E977B3 /* wifi.cpp in Sources */,
 				AB06CE13135B8AEE00E977B3 /* slot1_none.cpp in Sources */,
 				AB06CE14135B8AEE00E977B3 /* slot1_r4.cpp in Sources */,
 				AB06CE15135B8AEE00E977B3 /* slot1_retail.cpp in Sources */,
+				956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */,
 				AB06CE16135B8AEE00E977B3 /* slot2_expMemory.cpp in Sources */,
 				AB06CE17135B8AEE00E977B3 /* slot2_gbagame.cpp in Sources */,
 				AB06CE18135B8AEE00E977B3 /* slot2_guitarGrip.cpp in Sources */,
@@ -1634,52 +1789,36 @@
 				AB06CE1B135B8AEE00E977B3 /* slot2_paddle.cpp in Sources */,
 				AB06CE1C135B8AEE00E977B3 /* slot2_piano.cpp in Sources */,
 				AB06CE1D135B8AEE00E977B3 /* slot2_rumblepak.cpp in Sources */,
-				AB06CE26135B8AEE00E977B3 /* metaspu.cpp in Sources */,
+				ABF4007F14B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 				AB06CE28135B8AEE00E977B3 /* SndOut.cpp in Sources */,
-				AB06CE2A135B8AEE00E977B3 /* AAFilter.cpp in Sources */,
-				AB06CE2D135B8AEE00E977B3 /* cpu_detect_x86_gcc.cpp in Sources */,
-				AB06CE30135B8AEE00E977B3 /* FIFOSampleBuffer.cpp in Sources */,
-				AB06CE31135B8AEE00E977B3 /* FIRFilter.cpp in Sources */,
-				AB06CE35135B8AEE00E977B3 /* mmx_optimized.cpp in Sources */,
-				AB06CE36135B8AEE00E977B3 /* RateTransposer.cpp in Sources */,
 				AB06CE38135B8AEE00E977B3 /* SoundTouch.cpp in Sources */,
+				AB06CD67135B8ACE00E977B3 /* SPU.cpp in Sources */,
 				AB06CE39135B8AEE00E977B3 /* sse_optimized.cpp in Sources */,
-				AB06CE3A135B8AEE00E977B3 /* TDStretch.cpp in Sources */,
-				AB06CE3B135B8AEE00E977B3 /* WavFile.cpp in Sources */,
-				AB06CE3C135B8AEE00E977B3 /* Timestretcher.cpp in Sources */,
-				AB06CE3E135B8AEE00E977B3 /* ConvertUTF.c in Sources */,
-				AB06CE3F135B8AEE00E977B3 /* datetime.cpp in Sources */,
-				AB06CE40135B8AEE00E977B3 /* crc.cpp in Sources */,
-				AB06CE41135B8AEE00E977B3 /* decrypt.cpp in Sources */,
-				AB06CE42135B8AEE00E977B3 /* header.cpp in Sources */,
-				AB06CE43135B8AEE00E977B3 /* dlditool.cpp in Sources */,
-				AB06CE44135B8AEE00E977B3 /* emufat.cpp in Sources */,
-				AB06CE45135B8AEE00E977B3 /* guid.cpp in Sources */,
-				AB06CE46135B8AEE00E977B3 /* cache.cpp in Sources */,
-				AB06CE47135B8AEE00E977B3 /* directory.cpp in Sources */,
-				AB06CE48135B8AEE00E977B3 /* disc.cpp in Sources */,
-				AB06CE49135B8AEE00E977B3 /* fatdir.cpp in Sources */,
-				AB06CE4A135B8AEE00E977B3 /* fatfile.cpp in Sources */,
-				AB06CE4B135B8AEE00E977B3 /* file_allocation_table.cpp in Sources */,
-				AB06CE4C135B8AEE00E977B3 /* filetime.cpp in Sources */,
-				AB06CE4D135B8AEE00E977B3 /* libfat.cpp in Sources */,
-				AB06CE4E135B8AEE00E977B3 /* libfat_public_api.cpp in Sources */,
-				AB06CE4F135B8AEE00E977B3 /* lock.cpp in Sources */,
-				AB06CE50135B8AEE00E977B3 /* partition.cpp in Sources */,
-				AB06CE51135B8AEE00E977B3 /* md5.cpp in Sources */,
 				AB06CE52135B8AEE00E977B3 /* task.cpp in Sources */,
-				AB06CE53135B8AEE00E977B3 /* vfat.cpp in Sources */,
-				AB06CE54135B8AEE00E977B3 /* xstring.cpp in Sources */,
-				AB06CEC9135B8E0B00E977B3 /* rom_info.m in Sources */,
-				AB06CECA135B8E0B00E977B3 /* speed_limit_selection_window.mm in Sources */,
-				956B96C313DF4CF900FCDCD0 /* slot1_retail_nand.cpp in Sources */,
+				AB06CE3A135B8AEE00E977B3 /* TDStretch.cpp in Sources */,
+				AB06CD68135B8ACE00E977B3 /* texcache.cpp in Sources */,
+				AB06CD69135B8ACE00E977B3 /* thumb_instructions.cpp in Sources */,
+				AB06CE3C135B8AEE00E977B3 /* Timestretcher.cpp in Sources */,
 				7FA912201426523900E2ABDD /* tinystr.cpp in Sources */,
 				7FA912211426523900E2ABDD /* tinyxml.cpp in Sources */,
 				7FA912221426523900E2ABDD /* tinyxmlerror.cpp in Sources */,
 				7FA912231426523900E2ABDD /* tinyxmlparser.cpp in Sources */,
-				ABF4007F14B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				AB06CD6A135B8ACE00E977B3 /* version.cpp in Sources */,
+				AB06CE53135B8AEE00E977B3 /* vfat.cpp in Sources */,
+				AB06CE3B135B8AEE00E977B3 /* WavFile.cpp in Sources */,
+				AB06CD6B135B8ACE00E977B3 /* wifi.cpp in Sources */,
+				AB06CE54135B8AEE00E977B3 /* xstring.cpp in Sources */,
+				ABAC890914B7943E001B299F /* main.m in Sources */,
+				AB06CB59135B8A4D00E977B3 /* screen_state.m in Sources */,
+				AB73B13114BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */,
 				ABBF053014B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB06CB5A135B8A4D00E977B3 /* cocoa_input.mm in Sources */,
 				AB8FE37714B652EC009E20B1 /* cocoa_util.mm in Sources */,
+				AB73B13214BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */,
+				AB06CB5B135B8A4D00E977B3 /* input.mm in Sources */,
+				AB06CB5E135B8A4D00E977B3 /* nds_control.mm in Sources */,
+				AB06CB5F135B8A4D00E977B3 /* preferences.mm in Sources */,
+				AB06CB62135B8A4D00E977B3 /* video_output_view.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1687,55 +1826,68 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB0A0D3A14AACE9500E83E91 /* about.m in Sources */,
-				AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */,
-				AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */,
-				AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */,
-				AB0A0D3F14AACE9500E83E91 /* main_window.mm in Sources */,
-				AB0A0D4014AACE9500E83E91 /* main.mm in Sources */,
-				AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */,
-				AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */,
-				AB0A0D4314AACE9500E83E91 /* screenshot.mm in Sources */,
-				AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */,
+				AB0A0D8214AACE9500E83E91 /* ConvertUTF.c in Sources */,
+				AB0A0D7714AACE9500E83E91 /* AAFilter.cpp in Sources */,
 				AB0A0D4614AACE9500E83E91 /* addons.cpp in Sources */,
 				AB0A0D4714AACE9500E83E91 /* arm_instructions.cpp in Sources */,
 				AB0A0D4814AACE9500E83E91 /* armcpu.cpp in Sources */,
 				AB0A0D4914AACE9500E83E91 /* bios.cpp in Sources */,
+				AB0A0D8A14AACE9500E83E91 /* cache.cpp in Sources */,
 				AB0A0D4A14AACE9500E83E91 /* cheatSystem.cpp in Sources */,
 				AB0A0D4B14AACE9500E83E91 /* common.cpp in Sources */,
 				AB0A0D4C14AACE9500E83E91 /* cp15.cpp in Sources */,
+				AB0A0D7814AACE9500E83E91 /* cpu_detect_x86_gcc.cpp in Sources */,
+				AB0A0D8414AACE9500E83E91 /* crc.cpp in Sources */,
+				AB0A0D8314AACE9500E83E91 /* datetime.cpp in Sources */,
 				AB0A0D4D14AACE9500E83E91 /* debug.cpp in Sources */,
+				AB0A0D8514AACE9500E83E91 /* decrypt.cpp in Sources */,
+				AB0A0D8B14AACE9500E83E91 /* directory.cpp in Sources */,
 				AB0A0D4E14AACE9500E83E91 /* Disassembler.cpp in Sources */,
+				AB0A0D8C14AACE9500E83E91 /* disc.cpp in Sources */,
+				AB0A0D8714AACE9500E83E91 /* dlditool.cpp in Sources */,
 				AB0A0D4F14AACE9500E83E91 /* driver.cpp in Sources */,
+				AB0A0D8814AACE9500E83E91 /* emufat.cpp in Sources */,
 				AB0A0D5014AACE9500E83E91 /* emufile.cpp in Sources */,
+				AB0A0D8D14AACE9500E83E91 /* fatdir.cpp in Sources */,
+				AB0A0D8E14AACE9500E83E91 /* fatfile.cpp in Sources */,
 				AB0A0D5114AACE9500E83E91 /* FIFO.cpp in Sources */,
+				AB0A0D7914AACE9500E83E91 /* FIFOSampleBuffer.cpp in Sources */,
+				AB0A0D8F14AACE9500E83E91 /* file_allocation_table.cpp in Sources */,
+				AB0A0D9014AACE9500E83E91 /* filetime.cpp in Sources */,
+				AB0A0D7A14AACE9500E83E91 /* FIRFilter.cpp in Sources */,
 				AB0A0D5214AACE9500E83E91 /* firmware.cpp in Sources */,
 				AB0A0D5314AACE9500E83E91 /* fs-linux.cpp in Sources */,
 				AB0A0D5414AACE9500E83E91 /* gfx3d.cpp in Sources */,
-				AB0A0D5514AACE9500E83E91 /* GPU_osd_stub.cpp in Sources */,
 				AB0A0D5614AACE9500E83E91 /* GPU.cpp in Sources */,
+				AB0A0D5514AACE9500E83E91 /* GPU_osd_stub.cpp in Sources */,
+				AB0A0D8914AACE9500E83E91 /* guid.cpp in Sources */,
+				AB0A0D8614AACE9500E83E91 /* header.cpp in Sources */,
+				AB0A0D9114AACE9500E83E91 /* libfat.cpp in Sources */,
+				AB0A0D9214AACE9500E83E91 /* libfat_public_api.cpp in Sources */,
+				AB0A0D9314AACE9500E83E91 /* lock.cpp in Sources */,
 				AB0A0D5714AACE9500E83E91 /* matrix.cpp in Sources */,
 				AB0A0D5814AACE9500E83E91 /* mc.cpp in Sources */,
+				AB0A0D9514AACE9500E83E91 /* md5.cpp in Sources */,
+				AB0A0D7514AACE9500E83E91 /* metaspu.cpp in Sources */,
 				AB0A0D5914AACE9500E83E91 /* mic.cpp in Sources */,
 				AB0A0D5A14AACE9500E83E91 /* MMU.cpp in Sources */,
+				AB0A0D7B14AACE9500E83E91 /* mmx_optimized.cpp in Sources */,
 				AB0A0D5B14AACE9500E83E91 /* movie.cpp in Sources */,
 				AB0A0D5C14AACE9500E83E91 /* NDSSystem.cpp in Sources */,
+				AB0A0D9414AACE9500E83E91 /* partition.cpp in Sources */,
 				AB0A0D5D14AACE9500E83E91 /* path.cpp in Sources */,
 				AB0A0D5E14AACE9500E83E91 /* rasterize.cpp in Sources */,
+				AB0A0D7C14AACE9500E83E91 /* RateTransposer.cpp in Sources */,
 				AB0A0D5F14AACE9500E83E91 /* readwrite.cpp in Sources */,
 				AB0A0D6014AACE9500E83E91 /* render3D.cpp in Sources */,
 				AB0A0D6114AACE9500E83E91 /* ROMReader.cpp in Sources */,
 				AB0A0D6214AACE9500E83E91 /* rtc.cpp in Sources */,
 				AB0A0D6314AACE9500E83E91 /* saves.cpp in Sources */,
 				AB0A0D6414AACE9500E83E91 /* slot1.cpp in Sources */,
-				AB0A0D6514AACE9500E83E91 /* SPU.cpp in Sources */,
-				AB0A0D6614AACE9500E83E91 /* texcache.cpp in Sources */,
-				AB0A0D6714AACE9500E83E91 /* thumb_instructions.cpp in Sources */,
-				AB0A0D6814AACE9500E83E91 /* version.cpp in Sources */,
-				AB0A0D6914AACE9500E83E91 /* wifi.cpp in Sources */,
 				AB0A0D6A14AACE9500E83E91 /* slot1_none.cpp in Sources */,
 				AB0A0D6B14AACE9500E83E91 /* slot1_r4.cpp in Sources */,
 				AB0A0D6C14AACE9500E83E91 /* slot1_retail.cpp in Sources */,
+				AB0A0D9C14AACE9500E83E91 /* slot1_retail_nand.cpp in Sources */,
 				AB0A0D6D14AACE9500E83E91 /* slot2_expMemory.cpp in Sources */,
 				AB0A0D6E14AACE9500E83E91 /* slot2_gbagame.cpp in Sources */,
 				AB0A0D6F14AACE9500E83E91 /* slot2_guitarGrip.cpp in Sources */,
@@ -1744,52 +1896,36 @@
 				AB0A0D7214AACE9500E83E91 /* slot2_paddle.cpp in Sources */,
 				AB0A0D7314AACE9500E83E91 /* slot2_piano.cpp in Sources */,
 				AB0A0D7414AACE9500E83E91 /* slot2_rumblepak.cpp in Sources */,
-				AB0A0D7514AACE9500E83E91 /* metaspu.cpp in Sources */,
+				ABF4008014B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 				AB0A0D7614AACE9500E83E91 /* SndOut.cpp in Sources */,
-				AB0A0D7714AACE9500E83E91 /* AAFilter.cpp in Sources */,
-				AB0A0D7814AACE9500E83E91 /* cpu_detect_x86_gcc.cpp in Sources */,
-				AB0A0D7914AACE9500E83E91 /* FIFOSampleBuffer.cpp in Sources */,
-				AB0A0D7A14AACE9500E83E91 /* FIRFilter.cpp in Sources */,
-				AB0A0D7B14AACE9500E83E91 /* mmx_optimized.cpp in Sources */,
-				AB0A0D7C14AACE9500E83E91 /* RateTransposer.cpp in Sources */,
 				AB0A0D7D14AACE9500E83E91 /* SoundTouch.cpp in Sources */,
+				AB0A0D6514AACE9500E83E91 /* SPU.cpp in Sources */,
 				AB0A0D7E14AACE9500E83E91 /* sse_optimized.cpp in Sources */,
-				AB0A0D7F14AACE9500E83E91 /* TDStretch.cpp in Sources */,
-				AB0A0D8014AACE9500E83E91 /* WavFile.cpp in Sources */,
-				AB0A0D8114AACE9500E83E91 /* Timestretcher.cpp in Sources */,
-				AB0A0D8214AACE9500E83E91 /* ConvertUTF.c in Sources */,
-				AB0A0D8314AACE9500E83E91 /* datetime.cpp in Sources */,
-				AB0A0D8414AACE9500E83E91 /* crc.cpp in Sources */,
-				AB0A0D8514AACE9500E83E91 /* decrypt.cpp in Sources */,
-				AB0A0D8614AACE9500E83E91 /* header.cpp in Sources */,
-				AB0A0D8714AACE9500E83E91 /* dlditool.cpp in Sources */,
-				AB0A0D8814AACE9500E83E91 /* emufat.cpp in Sources */,
-				AB0A0D8914AACE9500E83E91 /* guid.cpp in Sources */,
-				AB0A0D8A14AACE9500E83E91 /* cache.cpp in Sources */,
-				AB0A0D8B14AACE9500E83E91 /* directory.cpp in Sources */,
-				AB0A0D8C14AACE9500E83E91 /* disc.cpp in Sources */,
-				AB0A0D8D14AACE9500E83E91 /* fatdir.cpp in Sources */,
-				AB0A0D8E14AACE9500E83E91 /* fatfile.cpp in Sources */,
-				AB0A0D8F14AACE9500E83E91 /* file_allocation_table.cpp in Sources */,
-				AB0A0D9014AACE9500E83E91 /* filetime.cpp in Sources */,
-				AB0A0D9114AACE9500E83E91 /* libfat.cpp in Sources */,
-				AB0A0D9214AACE9500E83E91 /* libfat_public_api.cpp in Sources */,
-				AB0A0D9314AACE9500E83E91 /* lock.cpp in Sources */,
-				AB0A0D9414AACE9500E83E91 /* partition.cpp in Sources */,
-				AB0A0D9514AACE9500E83E91 /* md5.cpp in Sources */,
 				AB0A0D9614AACE9500E83E91 /* task.cpp in Sources */,
-				AB0A0D9714AACE9500E83E91 /* vfat.cpp in Sources */,
-				AB0A0D9814AACE9500E83E91 /* xstring.cpp in Sources */,
-				AB0A0D9914AACE9500E83E91 /* rom_info.m in Sources */,
-				AB0A0D9A14AACE9500E83E91 /* speed_limit_selection_window.mm in Sources */,
-				AB0A0D9C14AACE9500E83E91 /* slot1_retail_nand.cpp in Sources */,
+				AB0A0D7F14AACE9500E83E91 /* TDStretch.cpp in Sources */,
+				AB0A0D6614AACE9500E83E91 /* texcache.cpp in Sources */,
+				AB0A0D6714AACE9500E83E91 /* thumb_instructions.cpp in Sources */,
+				AB0A0D8114AACE9500E83E91 /* Timestretcher.cpp in Sources */,
 				AB0A0D9D14AACE9500E83E91 /* tinystr.cpp in Sources */,
 				AB0A0D9E14AACE9500E83E91 /* tinyxml.cpp in Sources */,
 				AB0A0D9F14AACE9500E83E91 /* tinyxmlerror.cpp in Sources */,
 				AB0A0DA014AACE9500E83E91 /* tinyxmlparser.cpp in Sources */,
-				ABF4008014B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				AB0A0D6814AACE9500E83E91 /* version.cpp in Sources */,
+				AB0A0D9714AACE9500E83E91 /* vfat.cpp in Sources */,
+				AB0A0D8014AACE9500E83E91 /* WavFile.cpp in Sources */,
+				AB0A0D6914AACE9500E83E91 /* wifi.cpp in Sources */,
+				AB0A0D9814AACE9500E83E91 /* xstring.cpp in Sources */,
+				ABAC890B14B7943E001B299F /* main.m in Sources */,
+				AB0A0D3C14AACE9500E83E91 /* screen_state.m in Sources */,
+				AB73B12B14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */,
 				ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				AB0A0D3D14AACE9500E83E91 /* cocoa_input.mm in Sources */,
 				AB8FE37614B652EC009E20B1 /* cocoa_util.mm in Sources */,
+				AB73B12C14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */,
+				AB0A0D3E14AACE9500E83E91 /* input.mm in Sources */,
+				AB0A0D4114AACE9500E83E91 /* nds_control.mm in Sources */,
+				AB0A0D4214AACE9500E83E91 /* preferences.mm in Sources */,
+				AB0A0D4514AACE9500E83E91 /* video_output_view.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1797,55 +1933,68 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFE4245143E32F0009A3CCE /* about.m in Sources */,
-				ABFE4247143E32F0009A3CCE /* screen_state.m in Sources */,
-				ABFE4248143E32F0009A3CCE /* cocoa_input.mm in Sources */,
-				ABFE4249143E32F0009A3CCE /* input.mm in Sources */,
-				ABFE424A143E32F0009A3CCE /* main_window.mm in Sources */,
-				ABFE424B143E32F0009A3CCE /* main.mm in Sources */,
-				ABFE424C143E32F0009A3CCE /* nds_control.mm in Sources */,
-				ABFE424D143E32F0009A3CCE /* preferences.mm in Sources */,
-				ABFE424E143E32F0009A3CCE /* screenshot.mm in Sources */,
-				ABFE4250143E32F0009A3CCE /* video_output_view.mm in Sources */,
+				ABFE428D143E32F0009A3CCE /* ConvertUTF.c in Sources */,
+				ABFE4282143E32F0009A3CCE /* AAFilter.cpp in Sources */,
 				ABFE4251143E32F0009A3CCE /* addons.cpp in Sources */,
 				ABFE4252143E32F0009A3CCE /* arm_instructions.cpp in Sources */,
 				ABFE4253143E32F0009A3CCE /* armcpu.cpp in Sources */,
 				ABFE4254143E32F0009A3CCE /* bios.cpp in Sources */,
+				ABFE4295143E32F0009A3CCE /* cache.cpp in Sources */,
 				ABFE4255143E32F0009A3CCE /* cheatSystem.cpp in Sources */,
 				ABFE4256143E32F0009A3CCE /* common.cpp in Sources */,
 				ABFE4257143E32F0009A3CCE /* cp15.cpp in Sources */,
+				ABFE4283143E32F0009A3CCE /* cpu_detect_x86_gcc.cpp in Sources */,
+				ABFE428F143E32F0009A3CCE /* crc.cpp in Sources */,
+				ABFE428E143E32F0009A3CCE /* datetime.cpp in Sources */,
 				ABFE4258143E32F0009A3CCE /* debug.cpp in Sources */,
+				ABFE4290143E32F0009A3CCE /* decrypt.cpp in Sources */,
+				ABFE4296143E32F0009A3CCE /* directory.cpp in Sources */,
 				ABFE4259143E32F0009A3CCE /* Disassembler.cpp in Sources */,
+				ABFE4297143E32F0009A3CCE /* disc.cpp in Sources */,
+				ABFE4292143E32F0009A3CCE /* dlditool.cpp in Sources */,
 				ABFE425A143E32F0009A3CCE /* driver.cpp in Sources */,
+				ABFE4293143E32F0009A3CCE /* emufat.cpp in Sources */,
 				ABFE425B143E32F0009A3CCE /* emufile.cpp in Sources */,
+				ABFE4298143E32F0009A3CCE /* fatdir.cpp in Sources */,
+				ABFE4299143E32F0009A3CCE /* fatfile.cpp in Sources */,
 				ABFE425C143E32F0009A3CCE /* FIFO.cpp in Sources */,
+				ABFE4284143E32F0009A3CCE /* FIFOSampleBuffer.cpp in Sources */,
+				ABFE429A143E32F0009A3CCE /* file_allocation_table.cpp in Sources */,
+				ABFE429B143E32F0009A3CCE /* filetime.cpp in Sources */,
+				ABFE4285143E32F0009A3CCE /* FIRFilter.cpp in Sources */,
 				ABFE425D143E32F0009A3CCE /* firmware.cpp in Sources */,
 				ABFE425E143E32F0009A3CCE /* fs-linux.cpp in Sources */,
 				ABFE425F143E32F0009A3CCE /* gfx3d.cpp in Sources */,
-				ABFE4260143E32F0009A3CCE /* GPU_osd_stub.cpp in Sources */,
 				ABFE4261143E32F0009A3CCE /* GPU.cpp in Sources */,
+				ABFE4260143E32F0009A3CCE /* GPU_osd_stub.cpp in Sources */,
+				ABFE4294143E32F0009A3CCE /* guid.cpp in Sources */,
+				ABFE4291143E32F0009A3CCE /* header.cpp in Sources */,
+				ABFE429C143E32F0009A3CCE /* libfat.cpp in Sources */,
+				ABFE429D143E32F0009A3CCE /* libfat_public_api.cpp in Sources */,
+				ABFE429E143E32F0009A3CCE /* lock.cpp in Sources */,
 				ABFE4262143E32F0009A3CCE /* matrix.cpp in Sources */,
 				ABFE4263143E32F0009A3CCE /* mc.cpp in Sources */,
+				ABFE42A0143E32F0009A3CCE /* md5.cpp in Sources */,
+				ABFE4280143E32F0009A3CCE /* metaspu.cpp in Sources */,
 				ABFE4264143E32F0009A3CCE /* mic.cpp in Sources */,
 				ABFE4265143E32F0009A3CCE /* MMU.cpp in Sources */,
+				ABFE4286143E32F0009A3CCE /* mmx_optimized.cpp in Sources */,
 				ABFE4266143E32F0009A3CCE /* movie.cpp in Sources */,
 				ABFE4267143E32F0009A3CCE /* NDSSystem.cpp in Sources */,
+				ABFE429F143E32F0009A3CCE /* partition.cpp in Sources */,
 				ABFE4268143E32F0009A3CCE /* path.cpp in Sources */,
 				ABFE4269143E32F0009A3CCE /* rasterize.cpp in Sources */,
+				ABFE4287143E32F0009A3CCE /* RateTransposer.cpp in Sources */,
 				ABFE426A143E32F0009A3CCE /* readwrite.cpp in Sources */,
 				ABFE426B143E32F0009A3CCE /* render3D.cpp in Sources */,
 				ABFE426C143E32F0009A3CCE /* ROMReader.cpp in Sources */,
 				ABFE426D143E32F0009A3CCE /* rtc.cpp in Sources */,
 				ABFE426E143E32F0009A3CCE /* saves.cpp in Sources */,
 				ABFE426F143E32F0009A3CCE /* slot1.cpp in Sources */,
-				ABFE4270143E32F0009A3CCE /* SPU.cpp in Sources */,
-				ABFE4271143E32F0009A3CCE /* texcache.cpp in Sources */,
-				ABFE4272143E32F0009A3CCE /* thumb_instructions.cpp in Sources */,
-				ABFE4273143E32F0009A3CCE /* version.cpp in Sources */,
-				ABFE4274143E32F0009A3CCE /* wifi.cpp in Sources */,
 				ABFE4275143E32F0009A3CCE /* slot1_none.cpp in Sources */,
 				ABFE4276143E32F0009A3CCE /* slot1_r4.cpp in Sources */,
 				ABFE4277143E32F0009A3CCE /* slot1_retail.cpp in Sources */,
+				ABFE42A7143E32F0009A3CCE /* slot1_retail_nand.cpp in Sources */,
 				ABFE4278143E32F0009A3CCE /* slot2_expMemory.cpp in Sources */,
 				ABFE4279143E32F0009A3CCE /* slot2_gbagame.cpp in Sources */,
 				ABFE427A143E32F0009A3CCE /* slot2_guitarGrip.cpp in Sources */,
@@ -1854,52 +2003,36 @@
 				ABFE427D143E32F0009A3CCE /* slot2_paddle.cpp in Sources */,
 				ABFE427E143E32F0009A3CCE /* slot2_piano.cpp in Sources */,
 				ABFE427F143E32F0009A3CCE /* slot2_rumblepak.cpp in Sources */,
-				ABFE4280143E32F0009A3CCE /* metaspu.cpp in Sources */,
+				ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */,
 				ABFE4281143E32F0009A3CCE /* SndOut.cpp in Sources */,
-				ABFE4282143E32F0009A3CCE /* AAFilter.cpp in Sources */,
-				ABFE4283143E32F0009A3CCE /* cpu_detect_x86_gcc.cpp in Sources */,
-				ABFE4284143E32F0009A3CCE /* FIFOSampleBuffer.cpp in Sources */,
-				ABFE4285143E32F0009A3CCE /* FIRFilter.cpp in Sources */,
-				ABFE4286143E32F0009A3CCE /* mmx_optimized.cpp in Sources */,
-				ABFE4287143E32F0009A3CCE /* RateTransposer.cpp in Sources */,
 				ABFE4288143E32F0009A3CCE /* SoundTouch.cpp in Sources */,
+				ABFE4270143E32F0009A3CCE /* SPU.cpp in Sources */,
 				ABFE4289143E32F0009A3CCE /* sse_optimized.cpp in Sources */,
-				ABFE428A143E32F0009A3CCE /* TDStretch.cpp in Sources */,
-				ABFE428B143E32F0009A3CCE /* WavFile.cpp in Sources */,
-				ABFE428C143E32F0009A3CCE /* Timestretcher.cpp in Sources */,
-				ABFE428D143E32F0009A3CCE /* ConvertUTF.c in Sources */,
-				ABFE428E143E32F0009A3CCE /* datetime.cpp in Sources */,
-				ABFE428F143E32F0009A3CCE /* crc.cpp in Sources */,
-				ABFE4290143E32F0009A3CCE /* decrypt.cpp in Sources */,
-				ABFE4291143E32F0009A3CCE /* header.cpp in Sources */,
-				ABFE4292143E32F0009A3CCE /* dlditool.cpp in Sources */,
-				ABFE4293143E32F0009A3CCE /* emufat.cpp in Sources */,
-				ABFE4294143E32F0009A3CCE /* guid.cpp in Sources */,
-				ABFE4295143E32F0009A3CCE /* cache.cpp in Sources */,
-				ABFE4296143E32F0009A3CCE /* directory.cpp in Sources */,
-				ABFE4297143E32F0009A3CCE /* disc.cpp in Sources */,
-				ABFE4298143E32F0009A3CCE /* fatdir.cpp in Sources */,
-				ABFE4299143E32F0009A3CCE /* fatfile.cpp in Sources */,
-				ABFE429A143E32F0009A3CCE /* file_allocation_table.cpp in Sources */,
-				ABFE429B143E32F0009A3CCE /* filetime.cpp in Sources */,
-				ABFE429C143E32F0009A3CCE /* libfat.cpp in Sources */,
-				ABFE429D143E32F0009A3CCE /* libfat_public_api.cpp in Sources */,
-				ABFE429E143E32F0009A3CCE /* lock.cpp in Sources */,
-				ABFE429F143E32F0009A3CCE /* partition.cpp in Sources */,
-				ABFE42A0143E32F0009A3CCE /* md5.cpp in Sources */,
 				ABFE42A1143E32F0009A3CCE /* task.cpp in Sources */,
-				ABFE42A2143E32F0009A3CCE /* vfat.cpp in Sources */,
-				ABFE42A3143E32F0009A3CCE /* xstring.cpp in Sources */,
-				ABFE42A4143E32F0009A3CCE /* rom_info.m in Sources */,
-				ABFE42A5143E32F0009A3CCE /* speed_limit_selection_window.mm in Sources */,
-				ABFE42A7143E32F0009A3CCE /* slot1_retail_nand.cpp in Sources */,
+				ABFE428A143E32F0009A3CCE /* TDStretch.cpp in Sources */,
+				ABFE4271143E32F0009A3CCE /* texcache.cpp in Sources */,
+				ABFE4272143E32F0009A3CCE /* thumb_instructions.cpp in Sources */,
+				ABFE428C143E32F0009A3CCE /* Timestretcher.cpp in Sources */,
 				ABFE42A8143E32F0009A3CCE /* tinystr.cpp in Sources */,
 				ABFE42A9143E32F0009A3CCE /* tinyxml.cpp in Sources */,
 				ABFE42AA143E32F0009A3CCE /* tinyxmlerror.cpp in Sources */,
 				ABFE42AB143E32F0009A3CCE /* tinyxmlparser.cpp in Sources */,
-				ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */,
+				ABFE4273143E32F0009A3CCE /* version.cpp in Sources */,
+				ABFE42A2143E32F0009A3CCE /* vfat.cpp in Sources */,
+				ABFE428B143E32F0009A3CCE /* WavFile.cpp in Sources */,
+				ABFE4274143E32F0009A3CCE /* wifi.cpp in Sources */,
+				ABFE42A3143E32F0009A3CCE /* xstring.cpp in Sources */,
+				ABAC890A14B7943E001B299F /* main.m in Sources */,
+				ABFE4247143E32F0009A3CCE /* screen_state.m in Sources */,
+				AB73B12D14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */,
 				ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */,
+				ABFE4248143E32F0009A3CCE /* cocoa_input.mm in Sources */,
 				AB8FE37814B652EC009E20B1 /* cocoa_util.mm in Sources */,
+				AB73B12E14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */,
+				ABFE4249143E32F0009A3CCE /* input.mm in Sources */,
+				ABFE424C143E32F0009A3CCE /* nds_control.mm in Sources */,
+				ABFE424D143E32F0009A3CCE /* preferences.mm in Sources */,
+				ABFE4250143E32F0009A3CCE /* video_output_view.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1920,16 +2053,16 @@
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
-		ABBF04BC14B519A500E505A0 /* MainMenu (Legacy).xib */ = {
+		AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */ = {
 			isa = PBXVariantGroup;
 			children = (
 				ABBF045E14B5144D00E505A0 /* English */,
-				ABBF04C114B519CD00E505A0 /* French */,
-				ABBF04C314B519DF00E505A0 /* Italian */,
-				ABBF04C414B519E400E505A0 /* Japanese */,
-				ABBF04C514B519EA00E505A0 /* Chinese */,
-				ABBF04C614B519F000E505A0 /* Norwegian */,
-				ABBF04C714B519F500E505A0 /* Romanian */,
+				AB0191D714BD72FC004CB612 /* French */,
+				AB0191D814BD72FF004CB612 /* Italian */,
+				AB0191E614BD741B004CB612 /* Japanese */,
+				AB0191E714BD741F004CB612 /* Chinese */,
+				AB0191E814BD7423004CB612 /* Norwegian */,
+				AB0191E914BD7425004CB612 /* Romanian */,
 			);
 			name = "MainMenu (Legacy).xib";
 			sourceTree = "<group>";

@@ -33,17 +33,6 @@
 @class CocoaDSController;
 @class ScreenState;
 
-@interface CocoaDSStateBuffer : NSObject
-{
-	@public
-	int frame_skip;
-	int speed_limit;
-}
-
-- (id) init;
-
-@end
-
 //This class is a compelte objective-c wrapper for
 //the core emulation features, other objective-c code inherit
 //upon or instanciate this to add interfaces for these features
@@ -72,16 +61,15 @@
 	volatile bool paused; //sey by other thread to let us know if its executing
 	
 	bool muted;
-	int volume;
+	float volume;
 
 	volatile int frame_skip;
 	volatile int speed_limit;
 	volatile int save_type;
-	
-	bool doesConfigNeedUpdate;
+	CGFloat speedScalar;
+	BOOL isSpeedLimitEnabled;
 	NSTimeInterval calcTimeBudget;
-	
-	CocoaDSController *dsController;
+	CocoaDSController *cdsController;
   
 #ifdef GDB_STUB
   NSInteger arm9_gdb_port;
@@ -93,8 +81,8 @@
 	unsigned char gpu_buff[256 * 256 * 5]; //this is where the 3D rendering of the NDS is stored
 	
 	@public
-	CocoaDSStateBuffer *dsStateBuffer;
 	NSURL *loadedRomURL;
+	NSInteger prevCoreState;
 }
 
 //Instanciating, setup, and deconstruction
@@ -104,34 +92,44 @@
 - (void)dealloc;
 
 // Data accessors
-- (CocoaDSController*) getDSController;
+- (void) setMasterExecute:(BOOL)theState;
+- (BOOL) masterExecute;
+- (void) setCdsController:(CocoaDSController *)theController;
+- (CocoaDSController*) cdsController;
 
 //Firmware control
 - (void)setPlayerName:(NSString*)player_name;
 
 //ROM control
 - (BOOL) loadRom:(NSURL *)romURL;
-- (BOOL)ROMLoaded;
+- (BOOL)isRomLoaded;
 - (void)closeROM;
 
 //ROM Info
-- (NSImage *)ROMIcon;
+- (NSImage *)romIcon;
 - (NSString *) romFileName;
-- (NSString *)ROMTitle;
-- (NSInteger)ROMMaker;
-- (NSInteger)ROMSize;
-- (NSInteger)ROMARM9Size;
-- (NSInteger)ROMARM7Size;
-- (NSInteger)ROMDataSize;
+- (NSString *)romTitle;
+- (NSInteger)romMaker;
+- (NSInteger)romSize;
+- (NSInteger)romArm9Size;
+- (NSInteger)romArm7Size;
+- (NSInteger)romDataSize;
+- (NSURL *) loadedRomURL;
+- (NSMutableDictionary *) romInfoBindings;
++ (NSMutableDictionary *) romNotLoadedBindings;
 
 //execution control
+- (void) setCoreState:(NSInteger)coreState;
+- (void) restoreCoreState;
 - (BOOL)executing;
 - (void)execute;
 - (BOOL)paused;
 - (void)pause;
 - (void)reset;
-- (void)setSpeedLimit:(int)percent; //0 is off, 1-1000 is the pertance speed it runs at, anything else does nothing
-- (int)speedLimit;
+- (void) setSpeedScalar:(CGFloat)scalar;
+- (CGFloat) speedScalar;
+- (void) setIsSpeedLimitEnabled:(BOOL)theState;
+- (BOOL) isSpeedLimitEnabled;
 - (void)setSaveType:(int)savetype; // see save_types in src/mmu.h
 - (int)saveType; // default is 0, which is autodetect
 - (void) updateConfig;
@@ -146,10 +144,14 @@
 
 //Sound
 - (BOOL)hasSound;
-- (void)setVolume:(int)volume; //clamped: 0 to 100
-- (int)volume;
+- (void) setVolume:(float)vol; //clamped: 0 to 100
+- (float) volume;
 - (void)enableMute;
 - (void)disableMute;
 - (void)toggleMute;
 - (BOOL)muted;
+
+- (void) copyToPasteboard;
+- (NSBitmapImageRep *) bitmapImageRep;
+
 @end

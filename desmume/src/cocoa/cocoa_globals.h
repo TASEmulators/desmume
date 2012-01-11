@@ -41,6 +41,8 @@
 #define NSSTRING_TITLE_ENABLE_CHEATS				NSLocalizedString(@"Enable Cheats", nil)
 #define NSSTRING_TITLE_DISABLE_HUD					NSLocalizedString(@"Disable HUD", nil)
 #define NSSTRING_TITLE_ENABLE_HUD					NSLocalizedString(@"Enable HUD", nil)
+#define NSSTRING_TITLE_HIDE_STATUS_BAR				NSLocalizedString(@"Hide Status Bar", nil)
+#define NSSTRING_TITLE_SHOW_STATUS_BAR				NSLocalizedString(@"Show Status Bar", nil)
 #define NSSTRING_TITLE_SPEED_1X						NSLocalizedString(@"Speed 1x", nil)
 #define NSSTRING_TITLE_SPEED_2X						NSLocalizedString(@"Speed 2x", nil)
 #define NSSTRING_TITLE_SLOT_NUMBER					NSLocalizedString(@"Slot %d", nil)
@@ -85,6 +87,27 @@
 #define NSSTRING_DISPLAYMODE_TOUCH					NSLocalizedString(@"Touch", nil)
 #define NSSTRING_DISPLAYMODE_COMBO					NSLocalizedString(@"Combo", nil)
 
+// LEGACY STRINGS
+#define NSSTRING_TITLE_OPEN_ROM_PANEL_LEGACY		NSLocalizedString(@"Open ROM...", nil)
+#define NSSTRING_TITLE_OPEN_STATE_FILE_PANEL_LEGACY	NSLocalizedString(@"Load State From...", nil)
+#define NSSTRING_TITLE_SAVE_STATE_FILE_PANEL_LEGACY	NSLocalizedString(@"Save State...", nil)
+#define NSSTRING_STATUS_ROM_UNLOADED_LEGACY			NSLocalizedString(@"No ROM Loaded", nil)
+#define NSSTRING_STATUS_ROM_LOADED_LEGACY			NSLocalizedString(@"ROM Loaded", nil)
+#define NSSTRING_STATUS_ROM_LOADING_FAILED_LEGACY	NSLocalizedString(@"Couldn't load ROM", nil)
+#define NSSTRING_STATUS_EMULATOR_EXECUTING_LEGACY	NSLocalizedString(@"Emulation Executing", nil)
+#define NSSTRING_STATUS_EMULATOR_PAUSED_LEGACY		NSLocalizedString(@"Emulation Paused", nil)
+#define NSSTRING_STATUS_EMULATOR_RESET_LEGACY		NSLocalizedString(@"Emulation Reset", nil)
+#define NSSTRING_ERROR_TITLE_LEGACY					NSLocalizedString(@"Error", nil)
+#define NSSTRING_ERROR_GENERIC_LEGACY				NSLocalizedString(@"An emulation error occurred", nil)
+#define NSSTRING_ERROR_SCREENSHOT_FAILED_LEGACY		NSLocalizedString(@"Couldn't create the screenshot image", nil)
+#define NSSTRING_MESSAGE_TITLE_LEGACY				NSLocalizedString(@"DeSmuME Emulator", nil)
+#define NSSTRING_MESSAGE_ASK_CLOSE_LEGACY			NSLocalizedString(@"Are you sure you want to close the ROM?", nil)
+
+#define FILENAME_README								"README"
+#define FILENAME_COPYING							"COPYING"
+#define FILENAME_AUTHORS							"AUTHORS"
+#define FILENAME_CHANGELOG							"ChangeLog"
+
 #define PATH_CONFIG_DIRECTORY_0_9_6					"~/.config/desmume"
 
 #define FILE_EXT_FIRMWARE_CONFIG					"dfc"
@@ -113,7 +136,9 @@
 
 #define WINDOW_STATUS_BAR_HEIGHT					24		// Height of an emulation window status bar in pixels.
 
+#define SPEED_SCALAR_QUARTER						0.25	// Speed scalar for quarter execution speed.
 #define SPEED_SCALAR_HALF							0.5		// Speed scalar for half execution speed.
+#define SPEED_SCALAR_THREE_QUARTER					0.75	// Speed scalar for three quarters execution speed.
 #define SPEED_SCALAR_NORMAL							1.0		// Speed scalar for normal execution speed.
 #define SPEED_SCALAR_DOUBLE							2.0		// Speed scalar for double execution speed.
 #define SPEED_SCALAR_MIN							0.005	// Lower limit for the speed multiplier.

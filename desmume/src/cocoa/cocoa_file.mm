@@ -222,6 +222,53 @@
 	return [CocoaDSFile getURLUserAppSupport:@STATEKEY appVersion:nil];
 }
 
++ (BOOL) saveScreenshot:(NSURL *)fileURL bitmapData:(NSBitmapImageRep *)bitmapImageRep fileType:(NSBitmapImageFileType)fileType
+{
+	BOOL result = NO;
+	
+	if (fileURL == nil || bitmapImageRep == nil)
+	{
+		return result;
+	}
+	
+	NSString *fileExt = nil;
+	switch (fileType)
+	{
+		case NSTIFFFileType:
+			fileExt = @"tiff";
+			break;
+			
+		case NSBMPFileType:
+			fileExt = @"bmp";
+			break;
+			
+		case NSGIFFileType:
+			fileExt = @"gif";
+			break;
+			
+		case NSJPEGFileType:
+			fileExt = @"jpg";
+			break;
+			
+		case NSPNGFileType:
+			fileExt = @"png";
+			break;
+			
+		case NSJPEG2000FileType:
+			fileExt = @"jp2";
+			break;
+			
+		default:
+			break;
+	}
+	
+	NSURL *saveFileURL = [NSURL fileURLWithPath:[[fileURL path] stringByAppendingPathExtension:fileExt]];
+	
+	result = [[bitmapImageRep representationUsingType:fileType properties:[NSDictionary dictionary]] writeToURL:saveFileURL atomically:NO];
+	
+	return result;
+}
+
 /********************************************************************************************
 	fileKind:
 
