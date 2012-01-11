@@ -17,7 +17,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "screen_state.h"
+#import "screen_state_legacy.h"
 #import "cocoa_util.h"
 
 @implementation ScreenState

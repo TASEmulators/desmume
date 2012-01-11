@@ -17,9 +17,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "preferences.h"
+#import "preferences_legacy.h"
 #import "cocoa_util.h"
-#import "input.h"
+#import "input_legacy.h"
 
 /* Preference settings are stored using NSUserDefaults
  which should put them in a property list in /Users/username/Library/Preferences

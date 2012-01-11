@@ -17,13 +17,13 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "nds_control.h"
+#import "nds_control_legacy.h"
 #import "cocoa_globals.h"
 #import "cocoa_file.h"
-#import "cocoa_input.h"
 #import "cocoa_util.h"
-#import "preferences.h"
-#import "screen_state.h"
+#import "cocoa_input_legacy.h"
+#import "preferences_legacy.h"
+#import "screen_state_legacy.h"
 #include "sndOSX.h"
 
 #ifdef HAVE_OPENGL
