@@ -17,9 +17,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "input.h"
-#import "cocoa_input.h"
-#import "preferences.h"
+#import "input_legacy.h"
+#import "cocoa_input_legacy.h"
+#import "preferences_legacy.h"
 
 static unsigned char utf8_return = 0x0D;
 static unsigned char utf8_right[3] = { 0xEF, 0x9C, 0x83 };

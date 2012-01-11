@@ -18,13 +18,13 @@
 
 #import "appDelegate_legacy.h"
 #import "emuWindowDelegate_legacy.h"
-#import "cocoa_input.h"
+#import "cocoa_input_legacy.h"
 #import "cocoa_file.h"
 #import "cocoa_util.h"
 #import "cocoa_globals.h"
-#import "nds_control.h"
-#import "input.h"
-#import "preferences.h"
+#import "nds_control_legacy.h"
+#import "input_legacy.h"
+#import "preferences_legacy.h"
 #include "sndOSX.h"
 
 #undef BOOL

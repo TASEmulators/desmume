@@ -17,14 +17,14 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "video_output_view.h"
-#import "nds_control.h"
-#import "input.h"
-#import "cocoa_input.h"
+#import "video_output_view_legacy.h"
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
-#import "preferences.h"
-#import "screen_state.h"
+#import "nds_control_legacy.h"
+#import "input_legacy.h"
+#import "cocoa_input_legacy.h"
+#import "preferences_legacy.h"
+#import "screen_state_legacy.h"
 #include "../GPU.h"
 #include "../NDSSystem.h"
 

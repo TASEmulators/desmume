@@ -20,9 +20,9 @@
 #import "cocoa_file.h"
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
-#import "video_output_view.h"
-#import "nds_control.h"
-#import "input.h"
+#import "video_output_view_legacy.h"
+#import "nds_control_legacy.h"
+#import "input_legacy.h"
 
 
 @implementation EmuWindowDelegate

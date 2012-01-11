@@ -17,7 +17,7 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#import "cocoa_input.h"
+#import "cocoa_input_legacy.h"
 #include "../NDSSystem.h"
 
 
