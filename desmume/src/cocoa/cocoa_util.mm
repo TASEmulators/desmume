@@ -507,6 +507,7 @@ double GetMaxScalarInBounds(double normalBoundsWidth, double normalBoundsHeight,
  ********************************************************************************************/
 NSPoint GetNormalPointFromTransformedPoint(NSPoint transformedPt, NSSize normalBounds, NSSize transformBounds, double scalar, double angleDegrees)
 {
+	double angleRadians = angleDegrees * (M_PI/180.0);
 	double transformedX = 0.0;
 	double transformedY = 0.0;
 	
@@ -556,7 +557,7 @@ NSPoint GetNormalPointFromTransformedPoint(NSPoint transformedPt, NSSize normalB
 	// Get the normalized angle and use it to rotate about the origin.
 	// Then do polar-rect conversion and translate back to transformed coordinates
 	// with a 0 degree rotation.
-	normalizedAngle = theta - angleDegrees;
+	normalizedAngle = theta - angleRadians;
 	normalizedX = (r * cos(normalizedAngle)) + (normalBounds.width * scalar / 2.0);
 	normalizedY = (r * sin(normalizedAngle)) + (normalBounds.height * scalar / 2.0);
 	
