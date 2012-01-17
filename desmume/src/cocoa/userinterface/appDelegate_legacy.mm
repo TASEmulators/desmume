@@ -82,8 +82,8 @@ void joinThread_gdb(void *thread_handle)
 		return result;
 	}
 	
-	NSString *fileKind = [CocoaDSFile fileKind:fileURL];
-	if ([fileKind isEqualToString:@"DS ROM"] || [fileKind isEqualToString:@"GBA ROM"])
+	NSString *fileKind = [CocoaDSFile fileKindByURL:fileURL];
+	if ([fileKind isEqualToString:@"ROM"])
 	{
 		result = [mainWindowDelegate handleLoadRom:fileURL];
 	}
@@ -198,7 +198,7 @@ void joinThread_gdb(void *thread_handle)
 
 - (IBAction) showSupportFolderInFinder:(id)sender
 {
-	NSURL *folderURL = [CocoaDSFile getBaseURLUserAppSupport];
+	NSURL *folderURL = [CocoaDSFile userAppSupportBaseURL];
 	
 	[[NSWorkspace sharedWorkspace] openFile:[folderURL path] withApplication:@"Finder"];
 }

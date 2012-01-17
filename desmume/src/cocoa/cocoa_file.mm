@@ -136,15 +136,10 @@
 		return exists;
 	}
 	
-	NSString *romSaveFileName = [[[[romURL path] stringByDeletingPathExtension] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE] lastPathComponent];
-	NSURL *romSaveURL = [CocoaDSFile getURLUserAppSupport:@BATTERYKEY appVersion:nil];
-	NSString *romSavePath = [romSaveURL path];
-	romSavePath = [romSavePath stringByAppendingPathComponent:romSaveFileName];
+	NSString *romSavePath = [[CocoaDSFile fileURLFromRomURL:romURL toKind:@"ROM Save"] path];
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	
 	exists = [fileManager isReadableFileAtPath:romSavePath];
-	
 	[fileManager release];
 	
 	return exists;
@@ -162,9 +157,7 @@
 	NSString *romSavePath = [[CocoaDSFile romSaveURLFromRomURL:romURL] path];
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	
 	exists = [fileManager isReadableFileAtPath:romSavePath];
-	
 	[fileManager release];
 	
 	return exists;
@@ -172,54 +165,116 @@
 
 + (void) setupAllFilePaths
 {
-	NSURL *romURL			= [CocoaDSFile getURLUserAppSupport:@ROMKEY appVersion:nil];
-	NSURL *romSaveURL		= [CocoaDSFile getURLUserAppSupport:@BATTERYKEY appVersion:nil];
-	NSURL *saveStateURL		= [CocoaDSFile getURLUserAppSupport:@STATEKEY appVersion:nil];
-	NSURL *screenshotURL	= [CocoaDSFile getURLUserAppSupport:@SCREENSHOTKEY appVersion:nil];
-	NSURL *aviURL			= [CocoaDSFile getURLUserAppSupport:@AVIKEY appVersion:nil];
-	NSURL *cheatURL			= [CocoaDSFile getURLUserAppSupport:@CHEATKEY appVersion:nil];
-	NSURL *soundSamplesURL	= [CocoaDSFile getURLUserAppSupport:@SOUNDKEY appVersion:nil];
-	NSURL *firmwareURL		= [CocoaDSFile getURLUserAppSupport:@FIRMWAREKEY appVersion:nil];
-	NSURL *luaURL			= [CocoaDSFile getURLUserAppSupport:@LUAKEY appVersion:nil];
+	NSURL *romURL = [CocoaDSFile directoryURLByKind:@"ROM"];
+	if (romURL != nil)
+	{
+		strlcpy(path.pathToRoms, [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
 	
-	strlcpy(path.pathToRoms, [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToBattery, [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToStates, [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToScreenshots, [[screenshotURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToAviFiles, [[aviURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToCheats, [[cheatURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToSounds, [[soundSamplesURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToFirmware, [[firmwareURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
-	strlcpy(path.pathToLua, [[luaURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	NSURL *romSaveURL = [CocoaDSFile directoryURLByKind:@"ROM Save"];
+	if (romSaveURL != nil)
+	{
+		strlcpy(path.pathToBattery, [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *saveStateURL = [CocoaDSFile directoryURLByKind:@"Save State"];
+	if (saveStateURL != nil)
+	{
+		strlcpy(path.pathToStates, [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *screenshotURL = [CocoaDSFile directoryURLByKind:@"Screenshot"];
+	if (screenshotURL != nil)
+	{
+		strlcpy(path.pathToScreenshots, [[screenshotURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *aviURL = [CocoaDSFile directoryURLByKind:@"Video"];
+	if (aviURL != nil)
+	{
+		strlcpy(path.pathToAviFiles, [[aviURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *cheatURL = [CocoaDSFile directoryURLByKind:@"Cheat"];
+	if (cheatURL != nil)
+	{
+		strlcpy(path.pathToCheats, [[cheatURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *soundSamplesURL = [CocoaDSFile directoryURLByKind:@"Sound Sample"];
+	if (soundSamplesURL != nil)
+	{
+		strlcpy(path.pathToSounds, [[soundSamplesURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *firmwareURL = [CocoaDSFile directoryURLByKind:@"Firmware Configuration"];
+	if (firmwareURL != nil)
+	{
+		strlcpy(path.pathToFirmware, [[firmwareURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *luaURL = [CocoaDSFile directoryURLByKind:@"Lua Script"];
+	if (luaURL != nil)
+	{
+		strlcpy(path.pathToLua, [[luaURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
 }
 
 + (BOOL) setupAllAppDirectories
 {
-	BOOL result = NO;
+	BOOL result = YES;
+	NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
 	
-	if (![CocoaDSFile createUserAppSupportDirectory:@BATTERYKEY])
+	NSDictionary *pathDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
+	NSDictionary *pathVersionDict = (NSDictionary *)[pathDict valueForKey:currentVersion];
+	NSDictionary *pathPortDict = (NSDictionary *)[pathVersionDict valueForKey:@PORT_VERSION];
+	
+	NSDictionary *dirNameDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DirectoryNames"];
+	NSDictionary *dirNameVersionDict = (NSDictionary *)[dirNameDict valueForKey:currentVersion];
+	NSDictionary *dirNamePortDict = (NSDictionary *)[dirNameVersionDict valueForKey:@PORT_VERSION];
+	
+	NSArray *fileKindList = [pathPortDict allKeys];
+	
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4 // Mac OS X v10.4 and earlier.
+	NSEnumerator *enumerator = [fileKindList objectEnumerator];
+	NSString *fileKind;
+	
+	while ((fileKind = (NSString *)[enumerator nextObject]) != nil)
 	{
-		return result;
+		/* code to act on each element as it is returned */
 	}
 	
-	if (![CocoaDSFile createUserAppSupportDirectory:@STATEKEY])
+#else // Mac OS X v10.5 and later.
+	for (NSString *fileKind in fileKindList)
+#endif
 	{
-		return result;
+		NSString *dirPath = (NSString *)[pathPortDict valueForKey:fileKind];
+		NSString *dirName = (NSString *)[dirNamePortDict valueForKey:fileKind];
+		
+		if ([dirPath isEqualToString:@PATH_USER_APP_SUPPORT])
+		{
+			if (![CocoaDSFile createUserAppSupportDirectory:dirName])
+			{
+				result = NO;
+			}
+		}
+		else if ([dirPath isEqualToString:@PATH_WITH_ROM])
+		{
+			continue;
+		}
+		else
+		{
+			// TODO: Setup directory when using an absolute path.
+		}
 	}
-	
-	if (![CocoaDSFile createUserAppSupportDirectory:@CHEATKEY])
-	{
-		return result;
-	}
-	
-	result = YES;
 	
 	return result;
 }
 
 + (NSURL *) saveStateURL
 {
-	return [CocoaDSFile getURLUserAppSupport:@STATEKEY appVersion:nil];
+	return [CocoaDSFile directoryURLByKind:@"Save State"];
 }
 
 + (BOOL) saveScreenshot:(NSURL *)fileURL bitmapData:(NSBitmapImageRep *)bitmapImageRep fileType:(NSBitmapImageFileType)fileType
@@ -270,7 +325,7 @@
 }
 
 /********************************************************************************************
-	fileKind:
+	fileKindByURL:
 
 	Determines a DeSmuME file's type, and returns a description as a string.
 
@@ -287,7 +342,12 @@
 		Future implementations could be made more reliable by actually opening the file
 		and validating some header info. 
  ********************************************************************************************/
-+ (NSString *) fileKind:(NSURL *)fileURL
++ (NSString *) fileKindByURL:(NSURL *)fileURL
+{
+	return [CocoaDSFile fileKindByURL:fileURL version:nil port:nil];
+}
+
++ (NSString *) fileKindByURL:(NSURL *)fileURL version:(NSString *)versionString port:(NSString *)portString
 {
 	NSString *fileKind = nil;
 	
@@ -296,31 +356,33 @@
 		return fileKind;
 	}
 	
+	NSString *lookupVersionStr = versionString;
+	NSString *lookupPortStr = portString;
+	
+	if (lookupVersionStr == nil)
+	{
+		lookupVersionStr = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	}
+	
+	if (lookupPortStr == nil)
+	{
+		lookupPortStr = @PORT_VERSION;
+	}
+	
+	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
+	NSDictionary *fileTypeExtDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"FileTypeByExtensions"];
+	NSDictionary *versionDict = (NSDictionary *)[fileTypeExtDict valueForKey:lookupVersionStr];
+	NSDictionary *portDict = (NSDictionary *)[versionDict valueForKey:lookupPortStr];
+	
 	NSString *fileExt = [[fileURL path] pathExtension];
 	
-	if ([fileExt isEqualToString:@FILE_EXT_ROM_SAVE])
+	fileKind = (NSString *)[portDict valueForKey:fileExt];
+	if (fileKind == nil)
 	{
-		fileKind = @"ROM Save";
-	}
-	else if ([fileExt isEqualToString:@FILE_EXT_CHEAT])
-	{
-		fileKind = @"Cheat File";
-	}
-	else if ([fileExt isEqualToString:@FILE_EXT_FIRMWARE_CONFIG])
-	{
-		fileKind = @"Firmware Configuration";
-	}
-	else if ([CocoaDSFile isSaveStateSlotExtension:fileExt])
-	{
-		fileKind = @"Save State";
-	}
-	else if ([fileExt isEqualToString:@FILE_EXT_ROM_DS])
-	{
-		fileKind = @"DS ROM";
-	}
-	else if ([fileExt isEqualToString:@FILE_EXT_ROM_GBA])
-	{
-		fileKind = @"GBA ROM";
+		if ([CocoaDSFile isSaveStateSlotExtension:fileExt])
+		{
+			fileKind = (NSString *)[portDict valueForKey:@FILE_EXT_SAVE_STATE];
+		}
 	}
 	
 	return fileKind;
@@ -349,7 +411,7 @@
 		portStr = @"GTK";
 	}
 	
-	versionURL = [CocoaDSFile getURLUserAppSupport:nil appVersion:@"0.9.7"];
+	versionURL = [CocoaDSFile userAppSupportURL:nil version:@"0.9.7"];
 	versionPath = [versionURL path];
 	if (versionPath != nil && [[[filePath stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] isEqualToString:versionPath])
 	{
@@ -357,7 +419,7 @@
 		portStr = @"Cocoa";
 	}
 	
-	versionURL = [CocoaDSFile getURLUserAppSupport:nil appVersion:@"0.9.8"];
+	versionURL = [CocoaDSFile userAppSupportURL:nil version:@"0.9.8"];
 	versionPath = [versionURL path];
 	if (versionPath != nil && [[[filePath stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] isEqualToString:versionPath])
 	{
@@ -373,70 +435,183 @@
 + (BOOL) fileExistsForCurrent:(NSURL *)fileURL
 {
 	BOOL result = NO;
-	NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
-	NSDictionary *versionSearchDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VersionPaths" ofType:@"plist"]];
 	
 	if (fileURL == nil)
 	{
 		return result;
 	}
-	else if (currentVersion == nil)
-	{
-		NSLog(@"Could not read the main application bundle!");
-		return result;
-	}
-	else if (versionSearchDict == nil)
-	{
-		NSLog(@"Could not read the version plist file!");
-		return result;
-	}
 	
-	NSDictionary *versionDict = [versionSearchDict valueForKey:currentVersion];
-	NSDictionary *portDict = [versionDict valueForKey:@PORT_VERSION];
+	NSString *filePath = [[CocoaDSFile directoryURLByKind:[CocoaDSFile fileKindByURL:fileURL]] path];
+	filePath = [filePath stringByAppendingPathComponent:[[fileURL path] lastPathComponent]];
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	
-	NSString *existsPath = [[CocoaDSFile getURLUserAppSupportByKind:[CocoaDSFile fileKind:fileURL]] path];
-	if (existsPath == nil)
-	{
-		return result;
-	}
-	
-	existsPath = [existsPath stringByAppendingPathComponent:[[fileURL path] lastPathComponent]];
-	result = [fileManager fileExistsAtPath:existsPath];
-	
+	result = [fileManager fileExistsAtPath:filePath];
 	[fileManager release];
 	
 	return result;
 }
 
-+ (NSURL *) getURLUserAppSupportByKind:(NSString *)fileKind
++ (NSURL *) fileURLFromRomURL:(NSURL *)romURL toKind:(NSString *)fileKind
+{
+	return [CocoaDSFile fileURLFromRomURL:romURL toKind:fileKind version:nil port:nil];
+}
+
++ (NSURL *) fileURLFromRomURL:(NSURL *)romURL toKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString
 {
 	NSURL *fileURL = nil;
 	
-	if ([fileKind isEqualToString:@"ROM Save"])
+	NSString *fileExt = [CocoaDSFile fileExtensionByKind:fileKind version:versionString port:portString];
+	if (fileExt == nil)
 	{
-		fileURL = [CocoaDSFile getURLUserAppSupport:@BATTERYKEY appVersion:nil];
+		return fileURL;
 	}
-	else if ([fileKind isEqualToString:@"Cheat File"])
+	
+	if ([CocoaDSFile isFileKindWithRom:fileKind])
 	{
-		fileURL = [CocoaDSFile getURLUserAppSupport:@CHEATKEY appVersion:nil];
+		fileURL = [NSURL fileURLWithPath:[[[romURL path] stringByDeletingPathExtension] stringByAppendingPathExtension:fileExt]];
 	}
-	else if ([fileKind isEqualToString:@"Firmware Configuration"])
+	else
 	{
-		fileURL = [CocoaDSFile getURLUserAppSupport:@FIRMWAREKEY appVersion:nil];
-	}
-	else if ([fileKind isEqualToString:@"Save State"])
-	{
-		fileURL = [CocoaDSFile getURLUserAppSupport:@STATEKEY appVersion:nil];
+		NSURL *dirURL = [CocoaDSFile directoryURLByKind:fileKind version:versionString port:portString];
+		if (dirURL != nil)
+		{
+			NSString *newFileName = [[[[romURL path] lastPathComponent] stringByDeletingPathExtension] stringByAppendingPathExtension:fileExt];
+			fileURL = [NSURL fileURLWithPath:[[dirURL path] stringByAppendingPathComponent:newFileName]];
+		}
 	}
 	
 	return fileURL;
 }
 
++ (NSString *) fileExtensionByKind:(NSString *)fileKind
+{
+	return [CocoaDSFile fileExtensionByKind:fileKind version:nil port:nil];
+}
+
++ (NSString *) fileExtensionByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString
+{
+	NSString *fileExt = nil;
+	
+	if (fileKind == nil)
+	{
+		return fileExt;
+	}
+	
+	NSString *lookupVersionStr = versionString;
+	NSString *lookupPortStr = portString;
+	
+	if (lookupVersionStr == nil)
+	{
+		lookupVersionStr = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	}
+	
+	if (lookupPortStr == nil)
+	{
+		lookupPortStr = @PORT_VERSION;
+	}
+	
+	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
+	NSDictionary *fileExtDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"FileExtensionByTypes"];
+	NSDictionary *versionDict = (NSDictionary *)[fileExtDict valueForKey:lookupVersionStr];
+	NSDictionary *portDict = (NSDictionary *)[versionDict valueForKey:lookupPortStr];
+	
+	fileExt = (NSString *)[portDict valueForKey:fileKind];
+	
+	return fileExt;
+}
+
++ (NSURL *) directoryURLByKind:(NSString *)fileKind
+{
+	return [CocoaDSFile directoryURLByKind:fileKind version:nil port:nil];
+}
+
++ (NSURL *) directoryURLByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString
+{
+	NSURL *fileURL = nil;
+	NSString *lookupVersionStr = versionString;
+	NSString *lookupPortStr = portString;
+	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
+	
+	if (lookupVersionStr == nil)
+	{
+		lookupVersionStr = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	}
+	
+	if (lookupPortStr == nil)
+	{
+		lookupPortStr = @PORT_VERSION;
+	}
+	
+	NSDictionary *pathDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
+	NSDictionary *pathVersionDict = (NSDictionary *)[pathDict valueForKey:lookupVersionStr];
+	NSDictionary *pathPortDict = (NSDictionary *)[pathVersionDict valueForKey:lookupPortStr];
+	
+	NSDictionary *dirNameDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DirectoryNames"];
+	NSDictionary *dirNameVersionDict = (NSDictionary *)[dirNameDict valueForKey:lookupVersionStr];
+	NSDictionary *dirNamePortDict = (NSDictionary *)[dirNameVersionDict valueForKey:lookupPortStr];
+	
+	NSString *dirPath = (NSString *)[pathPortDict valueForKey:fileKind];
+	if (dirPath != nil)
+	{
+		NSString *dirName = (NSString *)[dirNamePortDict valueForKey:fileKind];
+		
+		if ([dirPath isEqualToString:@PATH_USER_APP_SUPPORT])
+		{
+			fileURL = [CocoaDSFile userAppSupportURL:dirName version:lookupVersionStr];
+		}
+		else if ([dirPath isEqualToString:@PATH_WITH_ROM])
+		{
+			return fileURL;
+		}
+		else
+		{
+			fileURL = [NSURL fileURLWithPath:[dirPath stringByExpandingTildeInPath]];
+		}
+	}
+	
+	return fileURL;
+}
+
++ (BOOL) isFileKindWithRom:(NSString *)fileKind
+{
+	return [CocoaDSFile isFileKindWithRom:fileKind version:nil port:nil];
+}
+
++ (BOOL) isFileKindWithRom:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString
+{
+	BOOL result = NO;
+	NSString *lookupVersionStr = versionString;
+	NSString *lookupPortStr = portString;
+	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
+	
+	if (lookupVersionStr == nil)
+	{
+		lookupVersionStr = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	}
+	
+	if (lookupPortStr == nil)
+	{
+		lookupPortStr = @PORT_VERSION;
+	}
+	
+	NSDictionary *pathDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
+	NSDictionary *pathVersionDict = (NSDictionary *)[pathDict valueForKey:lookupVersionStr];
+	NSDictionary *pathPortDict = (NSDictionary *)[pathVersionDict valueForKey:lookupPortStr];
+	NSString *dirPath = (NSString *)[pathPortDict valueForKey:fileKind];
+	
+	if ([dirPath isEqualToString:@PATH_WITH_ROM])
+	{
+		result = YES;
+	}
+	
+	return result;
+}
+
 + (BOOL) saveStateExistsForSlot:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber
 {
 	BOOL exists = NO;
+	NSString *fileKind = @"Save State";
+	NSString *saveStateFilePath = nil;
 	
 	if (romURL == nil)
 	{
@@ -448,18 +623,27 @@
 		slotNumber = 0;
 	}
 	
-	NSURL *searchURL = [CocoaDSFile getURLUserAppSupport:@STATEKEY appVersion:nil];
-	NSString *searchFileName = [CocoaDSFile getSaveSlotFileName:romURL slotNumber:slotNumber];
-	if (searchURL == nil || searchFileName == nil)
+	NSString *saveStateFileName = [CocoaDSFile saveSlotFileName:romURL slotNumber:slotNumber];
+	if (saveStateFileName == nil)
 	{
 		return exists;
 	}
 	
-	NSString *searchFullPath = [[searchURL path] stringByAppendingPathComponent:searchFileName];
+	if ([CocoaDSFile isFileKindWithRom:fileKind])
+	{
+		saveStateFilePath = [[[romURL path] stringByDeletingLastPathComponent] stringByAppendingPathComponent:saveStateFileName];
+	}
+	else
+	{
+		NSURL *dirURL = [CocoaDSFile directoryURLByKind:fileKind];
+		if (dirURL != nil)
+		{
+			saveStateFilePath = [[dirURL path] stringByAppendingPathComponent:saveStateFileName];
+		}
+	}
+	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	
-	exists = [fileManager isReadableFileAtPath:searchFullPath];
-	
+	exists = [fileManager isReadableFileAtPath:saveStateFilePath];
 	[fileManager release];
 	
 	return exists;
@@ -502,7 +686,7 @@
 	return result;
 }
 
-+ (NSString *) getSaveSlotFileName:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber
++ (NSString *) saveSlotFileName:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber
 {
 	if (romURL == nil)
 	{
@@ -520,7 +704,7 @@
 	return [[romFileName stringByDeletingPathExtension] stringByAppendingPathExtension:fileExt];
 }
 
-+ (NSURL *) getBaseURLUserAppSupport
++ (NSURL *) userAppSupportBaseURL
 {
 	NSURL *userAppSupportURL = nil;
 	NSString *userAppSupportPath = nil;
@@ -538,24 +722,24 @@
 	return userAppSupportURL;
 }
 
-+ (NSURL *) getURLUserAppSupport:(NSString *)directoryName appVersion:(NSString *)appVersion
++ (NSURL *) userAppSupportURL:(NSString *)directoryName version:(NSString *)versionString
 {
-	NSURL *userAppSupportURL = [CocoaDSFile getBaseURLUserAppSupport];
+	NSURL *userAppSupportURL = [CocoaDSFile userAppSupportBaseURL];
 	if (userAppSupportURL == nil)
 	{
 		return userAppSupportURL;
 	}
 	
 	NSString *userAppSupportPath = [userAppSupportURL path];
-	NSString *appVersionForURL = appVersion;
+	NSString *versionStringForURL = versionString;
 	
 	// If nil is passed in for appVersion, then just use the current app version.
-	if (appVersionForURL == nil)
+	if (versionStringForURL == nil)
 	{
-		appVersionForURL = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+		versionStringForURL = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
 	}
 	
-	userAppSupportPath = [userAppSupportPath stringByAppendingPathComponent:appVersionForURL];
+	userAppSupportPath = [userAppSupportPath stringByAppendingPathComponent:versionStringForURL];
 	
 	if (directoryName != nil)
 	{
@@ -635,7 +819,7 @@
 	 */
 	result = YES;
 	
-#else // Mac OS X v10.5 and later. Yes, it's that simple...
+#else // Mac OS X v10.5 and later. Yes, the code is this simple...
 	tempPath = [tempPath stringByAppendingPathComponent:appName];
 	tempPath = [tempPath stringByAppendingPathComponent:appVersion];
 	tempPath = [tempPath stringByAppendingPathComponent:directoryName];
@@ -664,7 +848,7 @@
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	
-	NSString *newLocationPath = [[CocoaDSFile getURLUserAppSupportByKind:[CocoaDSFile fileKind:fileURL]] path];
+	NSString *newLocationPath = [[CocoaDSFile directoryURLByKind:[CocoaDSFile fileKindByURL:fileURL]] path];
 	if (newLocationPath == nil)
 	{
 		return result;
@@ -690,7 +874,7 @@
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	
-	NSString *newLocationPath = [[CocoaDSFile getURLUserAppSupportByKind:[CocoaDSFile fileKind:fileURL]] path];
+	NSString *newLocationPath = [[CocoaDSFile directoryURLByKind:[CocoaDSFile fileKindByURL:fileURL]] path];
 	if (newLocationPath == nil)
 	{
 		return result;
@@ -766,10 +950,9 @@
 	}
 	
 	NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
-	NSDictionary *versionTopDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VersionPaths" ofType:@"plist"]];
-	
-	NSDictionary *versionDirectoriesDict = (NSDictionary *)[versionTopDict valueForKey:@"VersionDirectories"];
-	NSArray *versionArray = [versionDirectoriesDict allKeys];
+	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
+	NSDictionary *filePathsDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
+	NSArray *versionArray = [filePathsDict allKeys];
 	
 	for (NSString *versionKey in versionArray)
 	{
@@ -778,33 +961,18 @@
 			continue;
 		}
 		
-		NSDictionary *versionDict = (NSDictionary *)[versionDirectoriesDict valueForKey:versionKey];
+		NSDictionary *versionDict = (NSDictionary *)[filePathsDict valueForKey:versionKey];
 		NSArray *portArray = [versionDict allKeys];
 		
 		for (NSString *portKey in portArray)
 		{
 			NSDictionary *portDict = (NSDictionary *)[versionDict valueForKey:portKey];
-			NSArray *typeArray = [portDict allKeys];
+			NSArray *fileKindList = [portDict allKeys];
 			
-			for (NSString *typeKey in typeArray)
+			for (NSString *fileKind in fileKindList)
 			{
-				NSString *typePath = [portDict valueForKey:typeKey];
-				NSURL *typeURL = nil;
-				
-				if ([typePath isEqualToString:@"${WITHROM}"])
-				{
-					continue;
-				}
-				else if ([typePath isEqualToString:@"${APPSUPPORT}"])
-				{
-					typeURL = [CocoaDSFile getURLUserAppSupportByKind:typeKey];
-					[fileList addObjectsFromArray:[CocoaDSFile appFileList:typeURL fileKind:typeKey]];
-				}
-				else
-				{
-					typeURL = [NSURL fileURLWithPath:[typePath stringByExpandingTildeInPath]];
-					[fileList addObjectsFromArray:[CocoaDSFile appFileList:typeURL fileKind:typeKey]];
-				}
+				NSURL *dirURL = [CocoaDSFile directoryURLByKind:fileKind version:versionKey port:portKey];
+				[fileList addObjectsFromArray:[CocoaDSFile appFileList:dirURL fileKind:fileKind]];
 			}
 		}
 	}
@@ -850,7 +1018,7 @@
 		NSString *filePath = [directoryPath stringByAppendingPathComponent:fileName];
 		NSURL *fileURL = [NSURL fileURLWithPath:filePath];
 		NSString *fileVersion = [CocoaDSFile fileVersion:fileURL];
-		NSString *fileKind = [CocoaDSFile fileKind:fileURL];
+		NSString *fileKind = [CocoaDSFile fileKindByURL:fileURL];
 		
 		if (fileKind == nil ||
 			(theFileKind != nil && ![theFileKind isEqualToString:fileKind]) ||

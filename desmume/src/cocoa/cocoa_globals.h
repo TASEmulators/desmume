@@ -1,5 +1,6 @@
 /*
-	Copyright (C) 2011 DeSmuME team
+	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,6 +31,7 @@
 #define NSSTRING_TITLE_SELECT_ARM7_IMAGE_PANEL		NSLocalizedString(@"Select ARM7 BIOS Image", nil)
 #define NSSTRING_TITLE_SELECT_ARM9_IMAGE_PANEL		NSLocalizedString(@"Select ARM9 BIOS Image", nil)
 #define NSSTRING_TITLE_SELECT_FIRMWARE_IMAGE_PANEL	NSLocalizedString(@"Select Firmware Image", nil)
+#define NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL		NSLocalizedString(@"Save Screenshot", nil)
 
 #define NSSTRING_TITLE_EXECUTE_CONTROL				NSLocalizedString(@"Execute", nil)
 #define NSSTRING_TITLE_PAUSE_CONTROL				NSLocalizedString(@"Pause", nil)
@@ -57,10 +59,10 @@
 #define NSSTRING_STATUS_SAVESTATE_SAVED				NSLocalizedString(@"Save state file saved.", nil)
 #define NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED	NSLocalizedString(@"Save state file reverting failed!", nil)
 #define NSSTRING_STATUS_SAVESTATE_REVERTED			NSLocalizedString(@"Save state file reverted.", nil)
-#define NSSTRING_STATUS_BATTERY_IMPORT_FAILED		NSLocalizedString(@"Battery file import failed!", nil)
-#define NSSTRING_STATUS_BATTERY_IMPORTED			NSLocalizedString(@"Battery save file imported.", nil)
-#define NSSTRING_STATUS_BATTERY_EXPORT_FAILED		NSLocalizedString(@"Battery file export failed!", nil)
-#define NSSTRING_STATUS_BATTERY_EXPORTED			NSLocalizedString(@"Battery save file exported.", nil)
+#define NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED		NSLocalizedString(@"ROM save file import failed!", nil)
+#define NSSTRING_STATUS_ROM_SAVE_IMPORTED			NSLocalizedString(@"ROM save file imported.", nil)
+#define NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED		NSLocalizedString(@"ROM save file export failed!", nil)
+#define NSSTRING_STATUS_ROM_SAVE_EXPORTED			NSLocalizedString(@"ROM save file exported.", nil)
 #define NSSTRING_STATUS_ROM_LOADING					NSLocalizedString(@"Loading ROM...", nil)
 #define NSSTRING_STATUS_ROM_LOADING_FAILED			NSLocalizedString(@"ROM loading failed!", nil)
 #define NSSTRING_STATUS_ROM_LOADED					NSLocalizedString(@"ROM loaded.", nil)
@@ -109,6 +111,8 @@
 #define FILENAME_CHANGELOG							"ChangeLog"
 
 #define PATH_CONFIG_DIRECTORY_0_9_6					"~/.config/desmume"
+#define PATH_USER_APP_SUPPORT						"${APPSUPPORT}"
+#define PATH_WITH_ROM								"${WITHROM}"
 
 #define FILE_EXT_FIRMWARE_CONFIG					"dfc"
 #define FILE_EXT_SAVE_STATE							"dst"
@@ -188,6 +192,11 @@ enum
 	REASONFORCLOSE_NORMAL = 0,
 	REASONFORCLOSE_OPEN,
 	REASONFORCLOSE_TERMINATE
+};
+
+enum
+{
+	ROMSAVETYPE_AUTOMATIC							= 0
 };
 
 enum
