@@ -327,6 +327,10 @@
 		AB0A0EC214AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
 		AB0A0EC314AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
 		AB0A0EC414AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
+		AB0E770314C5635800EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
+		AB0E770414C5635800EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
+		AB0E770514C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
+		AB0E770614C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB3AD16C14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
@@ -538,7 +542,7 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
-		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
+		72C000020D9D59E60046B7EA /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		7FA9121A1426523900E2ABDD /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
 		7FA9121B1426523900E2ABDD /* tinystr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinystr.h; sourceTree = "<group>"; };
 		7FA9121C1426523900E2ABDD /* tinyxml.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxml.cpp; sourceTree = "<group>"; };
@@ -1051,7 +1055,7 @@
 				AB0191D214BD72EC004CB612 /* MainMenu (Legacy).xib */,
 				ABE240E514BE30FC006EA2D5 /* Info (Legacy Debug).plist */,
 				ABE240E614BE30FC006EA2D5 /* Info (Legacy).plist */,
-				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
+				ABEB321914C56182007F0D4C /* InfoPlist.strings */,
 				AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */,
 				AB0A0EA714AAF77000E83E91 /* README.MAC */,
 				AB0A0EA814AAF77000E83E91 /* AUTHORS */,
@@ -1432,6 +1436,7 @@
 				AB73B1CF14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1D014BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
+				AB0E770614C5635900EF460C /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1461,6 +1466,7 @@
 				AB73B1D314BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1D414BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16C14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
+				AB0E770414C5635800EF460C /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1490,6 +1496,7 @@
 				AB73B1C714BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1C814BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16F14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
+				AB0E770314C5635800EF460C /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1519,6 +1526,7 @@
 				AB73B1CB14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1CC14BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
+				AB0E770514C5635900EF460C /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2075,6 +2083,14 @@
 				AB0191E914BD7425004CB612 /* Romanian */,
 			);
 			name = "MainMenu (Legacy).xib";
+			sourceTree = "<group>";
+		};
+		ABEB321914C56182007F0D4C /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				72C000020D9D59E60046B7EA /* English */,
+			);
+			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
