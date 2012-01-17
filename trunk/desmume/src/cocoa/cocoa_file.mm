@@ -241,10 +241,6 @@
 	NSString *fileKind;
 	
 	while ((fileKind = (NSString *)[enumerator nextObject]) != nil)
-	{
-		/* code to act on each element as it is returned */
-	}
-	
 #else // Mac OS X v10.5 and later.
 	for (NSString *fileKind in fileKindList)
 #endif
