@@ -41,15 +41,23 @@
 + (BOOL) setupAllAppDirectories;
 + (NSURL *) saveStateURL;
 + (BOOL) saveScreenshot:(NSURL *)fileURL bitmapData:(NSBitmapImageRep *)bitmapImageRep fileType:(NSBitmapImageFileType)fileType;
++ (BOOL) isFileKindWithRom:(NSString *)fileKind;
++ (BOOL) isFileKindWithRom:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
 + (BOOL) saveStateExistsForSlot:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber;
 + (BOOL) isSaveStateSlotExtension:(NSString *)extension;
-+ (NSString *) getSaveSlotFileName:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber;
-+ (NSString *) fileKind:(NSURL *)fileURL;
++ (NSString *) saveSlotFileName:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber;
++ (NSString *) fileKindByURL:(NSURL *)fileURL;
++ (NSString *) fileKindByURL:(NSURL *)fileURL version:(NSString *)versionString port:(NSString *)portString;
 + (NSString *) fileVersion:(NSURL *)fileURL;
 + (BOOL) fileExistsForCurrent:(NSURL *)fileURL;
-+ (NSURL *) getURLUserAppSupportByKind:(NSString *)fileKind;
-+ (NSURL *) getBaseURLUserAppSupport;
-+ (NSURL *) getURLUserAppSupport:(NSString *)directoryName appVersion:(NSString *)appVersion;
++ (NSURL *) fileURLFromRomURL:(NSURL *)romURL toKind:(NSString *)fileKind;
++ (NSURL *) fileURLFromRomURL:(NSURL *)romURL toKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
++ (NSString *) fileExtensionByKind:(NSString *)fileKind;
++ (NSString *) fileExtensionByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
++ (NSURL *) directoryURLByKind:(NSString *)fileKind;
++ (NSURL *) directoryURLByKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;
++ (NSURL *) userAppSupportBaseURL;
++ (NSURL *) userAppSupportURL:(NSString *)directoryName version:(NSString *)versionString;
 + (BOOL) createUserAppSupportDirectory:(NSString *)directoryName;
 + (NSURL *) lastLoadedRomURL;
 

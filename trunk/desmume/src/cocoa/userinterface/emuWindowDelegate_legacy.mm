@@ -456,7 +456,7 @@
 		return;
 	}
 	
-	NSString *fileName = [CocoaDSFile getSaveSlotFileName:[self loadedRomURL] slotNumber:(NSUInteger)(i + 1)];
+	NSString *fileName = [CocoaDSFile saveSlotFileName:[self loadedRomURL] slotNumber:(NSUInteger)(i + 1)];
 	if (fileName == nil)
 	{
 		return;
@@ -498,7 +498,7 @@
 		return;
 	}
 	
-	NSString *fileName = [CocoaDSFile getSaveSlotFileName:[self loadedRomURL] slotNumber:(NSUInteger)(i + 1)];
+	NSString *fileName = [CocoaDSFile saveSlotFileName:[self loadedRomURL] slotNumber:(NSUInteger)(i + 1)];
 	if (fileName == nil)
 	{
 		return;
@@ -555,11 +555,11 @@
 	BOOL result = [CocoaDSFile importRomSave:selectedFile];
 	if (!result)
 	{
-		[self setStatus:NSSTRING_STATUS_BATTERY_IMPORT_FAILED];
+		[self setStatus:NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
 		return;
 	}
 	
-	[self setStatus:NSSTRING_STATUS_BATTERY_IMPORTED];
+	[self setStatus:NSSTRING_STATUS_ROM_SAVE_IMPORTED];
 }
 
 - (IBAction) exportRomSave:(id)sender
@@ -580,12 +580,12 @@
 		result = [CocoaDSFile exportRomSave:[panel URL]];
 		if (result == NO)
 		{
-			[self setStatus:NSSTRING_STATUS_BATTERY_EXPORT_FAILED];
+			[self setStatus:NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
 			return;
 		}
 		
 		[self restoreCoreState];
-		[self setStatus:NSSTRING_STATUS_BATTERY_EXPORTED];
+		[self setStatus:NSSTRING_STATUS_ROM_SAVE_EXPORTED];
 	}
 }
 

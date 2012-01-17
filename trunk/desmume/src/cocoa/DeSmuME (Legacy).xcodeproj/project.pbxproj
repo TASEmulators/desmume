@@ -327,6 +327,10 @@
 		AB0A0EC214AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
 		AB0A0EC314AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
 		AB0A0EC414AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
+		AB3AD16C14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
+		AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
+		AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
+		AB3AD16F14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB46780A14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */; };
 		AB46780B14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
 		AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
@@ -751,6 +755,7 @@
 		AB0A0EAA14AAF77000E83E91 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB0A0EAB14AAF77000E83E91 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../README; sourceTree = SOURCE_ROOT; };
 		AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.TRANSLATION; path = ../../README.TRANSLATION; sourceTree = SOURCE_ROOT; };
+		AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
 		AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
@@ -1047,6 +1052,7 @@
 				ABE240E514BE30FC006EA2D5 /* Info (Legacy Debug).plist */,
 				ABE240E614BE30FC006EA2D5 /* Info (Legacy).plist */,
 				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
+				AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */,
 				AB0A0EA714AAF77000E83E91 /* README.MAC */,
 				AB0A0EA814AAF77000E83E91 /* AUTHORS */,
 				AB0A0EA914AAF77000E83E91 /* ChangeLog */,
@@ -1425,6 +1431,7 @@
 				AB73B1CE14BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
 				AB73B1CF14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1D014BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
+				AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1453,6 +1460,7 @@
 				AB73B1D214BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
 				AB73B1D314BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1D414BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
+				AB3AD16C14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1481,6 +1489,7 @@
 				AB73B1C614BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
 				AB73B1C714BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1C814BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
+				AB3AD16F14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1509,6 +1518,7 @@
 				AB73B1CA14BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */,
 				AB73B1CB14BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */,
 				AB73B1CC14BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
+				AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
