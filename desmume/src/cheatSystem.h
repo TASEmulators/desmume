@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009-2011 DeSmuME team
+/*  Copyright (C) 2009-2012 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -59,7 +59,6 @@ private:
 
 	void	clear();
 	void	ARparser(CHEATS_LIST& cheat);
-	BOOL	XXcodePreParser(CHEATS_LIST *cheat, char *code);
 	char	*clearCode(char *s);
 
 public:
@@ -81,13 +80,18 @@ public:
 	BOOL	remove(u32 pos);
 	void	getListReset();
 	BOOL	getList(CHEATS_LIST *cheat);
+	CHEATS_LIST*	getListPtr();
 	BOOL	get(CHEATS_LIST *cheat, u32 pos);
+	CHEATS_LIST*	getItemByIndex(const u32 pos);
 	u32		getSize();
 	void	setDescription(const char *description, u32 pos);
 	BOOL	save();
 	BOOL	load();
 	void	process();
 	void	getXXcodeString(CHEATS_LIST cheat, char *res_buf);
+	
+	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const std::string codeString);
+	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const char *codeString);
 };
 
 class CHEATSEARCH

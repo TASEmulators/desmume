@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009-2011 DeSmuME team
+/*  Copyright (C) 2009-2012 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -406,48 +406,6 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 	}
 }
 
-BOOL CHEATS::XXcodePreParser(CHEATS_LIST *list, char *code)
-{
-	int		count = 0;
-	u16		t = 0;
-	char	tmp_buf[sizeof(list->code) * 2 + 1];
-	memset(tmp_buf, 0, sizeof(tmp_buf));
-
-	size_t code_len = strlen(code);
-	// remove wrong chars
-	for (size_t i=0; i < code_len; i++)
-	{
-		char c = code[i];
-		//apparently 100% of pokemon codes were typed with the letter O in place of zero in some places
-		//so let's try to adjust for that here
-		static const char *AR_Valid = "Oo0123456789ABCDEFabcdef";
-		if (strchr(AR_Valid, c))
-		{
-			if(c=='o' || c=='O') c='0';
-			tmp_buf[t++] = c;
-		}
-	}
-
-	size_t len = strlen(tmp_buf);
-	if ((len % 8) != 0) return FALSE;			// error
-	if ((len % 16) != 0) return FALSE;			// error
-
-	// TODO: syntax check
-	count = (len / 16);
-	for (int i=0; i < count; i++)
-	{
-		char buf[9] = {0};
-		memcpy(buf, tmp_buf+(i*16), 8);
-		sscanf(buf, "%x", &list->code[i][0]);
-		memcpy(buf, tmp_buf+(i*16) + 8, 8);
-		sscanf(buf, "%x", &list->code[i][1]);
-	}
-	
-	list->num = count;
-	list->size = 0;
-	return TRUE;
-}
-
 BOOL CHEATS::add_AR_Direct(CHEATS_LIST cheat)
 {
 	size_t num = list.size();
@@ -462,7 +420,7 @@ BOOL CHEATS::add_AR(char *code, char *description, BOOL enabled)
 	size_t num = list.size();
 
 	CHEATS_LIST temp;
-	if (!XXcodePreParser(&temp, code)) return FALSE;
+	if (!CHEATS::XXCodeFromString(&temp, code)) return FALSE;
 
 	list.push_back(temp);
 	
@@ -479,7 +437,7 @@ BOOL CHEATS::update_AR(char *code, char *description, BOOL enabled, u32 pos)
 
 	if (code != NULL)
 	{
-		if (!XXcodePreParser(&list[pos], code)) return FALSE;
+		if (!CHEATS::XXCodeFromString(this->getItemByIndex(pos), code)) return FALSE;
 		this->setDescription(description, pos);
 		list[pos].type = 1;
 	}
@@ -493,7 +451,7 @@ BOOL CHEATS::add_CB(char *code, char *description, BOOL enabled)
 	//if (num == MAX_CHEAT_LIST) return FALSE;
 	size_t num = list.size();
 
-	if (!XXcodePreParser(&list[num], code)) return FALSE;
+	if (!CHEATS::XXCodeFromString(this->getItemByIndex(num), code)) return FALSE;
 	
 	list[num].type = 2;
 	
@@ -508,7 +466,7 @@ BOOL CHEATS::update_CB(char *code, char *description, BOOL enabled, u32 pos)
 
 	if (code != NULL)
 	{
-		if (!XXcodePreParser(&list[pos], code)) return FALSE;
+		if (!CHEATS::XXCodeFromString(this->getItemByIndex(pos), code)) return FALSE;
 		list[pos].type = 2;
 		this->setDescription(description, pos);
 	}
@@ -534,26 +492,45 @@ void CHEATS::getListReset()
 
 BOOL CHEATS::getList(CHEATS_LIST *cheat)
 {
-	if (currentGet >= list.size()) 
+	BOOL result = FALSE;
+	
+	if (currentGet >= this->list.size()) 
 	{
-		currentGet = 0;
-		return FALSE;
+		this->getListReset();
+		return result;
 	}
-	//memcpy(cheat, &list[currentGet++], sizeof(CHEATS_LIST));
-	*cheat = list[currentGet++];
-	if (currentGet > list.size()) 
-	{
-		currentGet = 0;
-		return FALSE;
-	}
-	return TRUE;
+	
+	result = this->get(cheat, currentGet++);
+	
+	return result;
+}
+
+CHEATS_LIST* CHEATS::getListPtr()
+{
+	return &this->list[0];
 }
 
 BOOL CHEATS::get(CHEATS_LIST *cheat, u32 pos)
 {
-	if (pos >= list.size()) return FALSE;
-	*cheat = list[pos];
+	CHEATS_LIST *item = this->getItemByIndex(pos);
+	if (item == NULL)
+	{
+		return FALSE;
+	}
+	
+	*cheat = *item;
+	
 	return TRUE;
+}
+
+CHEATS_LIST* CHEATS::getItemByIndex(const u32 pos)
+{
+	if (pos >= this->getSize())
+	{
+		return NULL;
+	}
+	
+	return &this->list[pos];
 }
 
 u32	CHEATS::getSize()
@@ -811,6 +788,62 @@ void CHEATS::getXXcodeString(CHEATS_LIST list, char *res_buf)
 		sprintf(buf, "%08X %08X\n", list.code[i][0], list.code[i][1]);
 		strcat(res_buf, buf);
 	}
+}
+
+BOOL CHEATS::XXCodeFromString(CHEATS_LIST *cheatItem, const std::string codeString)
+{
+	return CHEATS::XXCodeFromString(cheatItem, codeString.c_str());
+}
+
+BOOL CHEATS::XXCodeFromString(CHEATS_LIST *cheatItem, const char *codeString)
+{
+	BOOL result = FALSE;
+	
+	if (cheatItem == NULL || codeString == NULL)
+	{
+		return result;
+	}
+	
+	int		count = 0;
+	u16		t = 0;
+	char	tmp_buf[sizeof(cheatItem->code) * 2 + 1];
+	memset(tmp_buf, 0, sizeof(tmp_buf));
+	
+	size_t code_len = strlen(codeString);
+	// remove wrong chars
+	for (size_t i=0; i < code_len; i++)
+	{
+		char c = codeString[i];
+		//apparently 100% of pokemon codes were typed with the letter O in place of zero in some places
+		//so let's try to adjust for that here
+		static const char *AR_Valid = "Oo0123456789ABCDEFabcdef";
+		if (strchr(AR_Valid, c))
+		{
+			if(c=='o' || c=='O') c='0';
+			tmp_buf[t++] = c;
+		}
+	}
+	
+	size_t len = strlen(tmp_buf);
+	if ((len % 16) != 0) return result;			// error
+	
+	// TODO: syntax check
+	count = (len / 16);
+	for (int i=0; i < count; i++)
+	{
+		char buf[9] = {0};
+		memcpy(buf, tmp_buf+(i*16), 8);
+		sscanf(buf, "%x", &cheatItem->code[i][0]);
+		memcpy(buf, tmp_buf+(i*16) + 8, 8);
+		sscanf(buf, "%x", &cheatItem->code[i][1]);
+	}
+	
+	cheatItem->num = count;
+	cheatItem->size = 0;
+	
+	result = TRUE;
+	
+	return result;
 }
 
 // ========================================== search
