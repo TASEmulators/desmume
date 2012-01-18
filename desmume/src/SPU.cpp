@@ -1,7 +1,7 @@
 /*  SPU.cpp
     Copyright (C) 2006 yopyop
     Copyright (C) 2006 Theo Berkau
-    Copyright (C) 2008-2010 DeSmuME team
+    Copyright (C) 2008-2012 DeSmuME team
 
     Ideas borrowed from Stephane Dallongeville's SCSP core
 
@@ -45,6 +45,7 @@
 #include "metaspu/metaspu.h"
 
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
+#define COSINE_INTERPOLATION_RESOLUTION 8192
 
 //#ifdef FASTBUILD
 	#undef FORCEINLINE
@@ -103,6 +104,7 @@ static const s16 wavedutytbl[8][8] = {
 
 static s32 precalcdifftbl[89][16];
 static u8 precalcindextbl[89][8];
+static double cos_lut[COSINE_INTERPOLATION_RESOLUTION];
 
 static const double ARM7_CLOCK = 33513982;
 
@@ -186,14 +188,13 @@ void SPU_ReInit()
 	SPU_Init(SNDCoreId, buffersize);
 }
 
-//static double cos_lut[256];
 int SPU_Init(int coreid, int buffersize)
 {
 	int i, j;
-
-	//for some reason we dont use the cos lut anymore... did someone decide it was slow?
-	//for(int i=0;i<256;i++)
-	//	cos_lut[i] = cos(i/256.0*M_PI);
+	
+	// Build the cosine interpolation LUT
+	for(unsigned int i = 0; i < COSINE_INTERPOLATION_RESOLUTION; i++)
+		cos_lut[i] = (1.0 - cos(((double)i/(double)COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5;
 
 	SPU_core = new SPU_struct((int)ceil(samples_per_hline));
 	SPU_Reset();
@@ -795,20 +796,30 @@ void SPU_WriteLong(u32 addr, u32 val)
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(s32 a, s32 b, double ratio)
 {
-	if(INTERPOLATE_MODE == SPUInterpolation_Cosine)
+	double sampleA = (double)a;
+	double sampleB = (double)b;
+	ratio = ratio - sputrunc(ratio);
+	
+	switch (INTERPOLATE_MODE)
 	{
-		//why did we change it away from the lookup table? somebody should research that
-		ratio = ratio - sputrunc(ratio);
-		double ratio2 = ((1.0 - cos(ratio * M_PI)) * 0.5);
-		//double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
-		return s32floor((float)(((1-ratio2)*a) + (ratio2*b)));
+		case SPUInterpolation_Cosine:
+			// Cosine Interpolation Formula:
+			// ratio2 = (1 - cos(ratio * M_PI)) / 2
+			// sampleI = sampleA * (1 - ratio2) + sampleB * ratio2
+			return s32floor((cos_lut[(unsigned int)(ratio * (double)COSINE_INTERPOLATION_RESOLUTION)] * (sampleB - sampleA)) + sampleA);
+			break;
+			
+		case SPUInterpolation_Linear:
+			// Linear Interpolation Formula:
+			// sampleI = sampleA * (1 - ratio) + sampleB * ratio
+			return s32floor((ratio * (sampleB - sampleA)) + sampleA);
+			break;
+			
+		default:
+			break;
 	}
-	else
-	{
-		//linear interpolation
-		ratio = ratio - sputrunc(ratio);
-		return s32floor((float)((1-ratio)*a + ratio*b));
-	}
+	
+	return a;
 }
 
 //////////////////////////////////////////////////////////////////////////////
