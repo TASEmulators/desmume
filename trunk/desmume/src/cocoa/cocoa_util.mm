@@ -37,16 +37,21 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	[message release];
 }
 
-+ (void) messageSendOneWayWithData:(NSPort *)sendPort msgID:(NSInteger)msgID data:(NSData *)msgData
++ (void) messageSendOneWayWithMessageComponents:(NSPort *)sendPort msgID:(NSInteger)msgID array:(NSArray *)msgDataArray
 {
-	NSArray *messageComponents = [[NSArray alloc] initWithObjects:msgData, nil];
-	NSPortMessage *message = [[NSPortMessage alloc] initWithSendPort:sendPort receivePort:nil components:messageComponents];
+	NSPortMessage *message = [[NSPortMessage alloc] initWithSendPort:sendPort receivePort:nil components:msgDataArray];
 	[message setMsgid:msgID];
 	NSDate *sendDate = [[NSDate alloc] init];
 	[message sendBeforeDate:distantFutureDate];
 	[sendDate release];
-	[messageComponents release];
 	[message release];
+}
+
++ (void) messageSendOneWayWithData:(NSPort *)sendPort msgID:(NSInteger)msgID data:(NSData *)msgData
+{
+	NSArray *messageComponents = [[NSArray alloc] initWithObjects:msgData, nil];
+	[CocoaDSUtil messageSendOneWayWithMessageComponents:sendPort msgID:msgID array:messageComponents];
+	[messageComponents release];
 }
 
 + (void) messageSendOneWayWithInteger:(NSPort *)sendPort msgID:(NSInteger)msgID integerValue:(NSInteger)integerValue
