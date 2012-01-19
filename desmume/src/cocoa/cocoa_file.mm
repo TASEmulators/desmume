@@ -101,18 +101,46 @@
 	return result;
 }
 
-+ (BOOL) exportRomSave:(NSURL *)romSaveURL
++ (BOOL) exportRomSaveToURL:(NSURL *)destinationURL romSaveURL:(NSURL *)romSaveURL fileType:(NSInteger)fileTypeID
 {
 	BOOL result = NO;
-	const char *romSavePath = [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding];
 	
-	NSInteger resultCode = NDS_ExportSave(romSavePath);
-	if (resultCode == 0)
+	switch (fileTypeID)
 	{
-		return result;
+		case ROMSAVEFORMAT_DESMUME:
+		{
+			NSString *destinationPath = [[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE];
+			NSFileManager *fileManager = [[NSFileManager alloc] init];
+			result = [fileManager copyItemAtPath:[romSaveURL path] toPath:destinationPath error:nil];
+			[fileManager release];
+			break;
+		}
+			
+		case ROMSAVEFORMAT_NOGBA:
+		{
+			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA] cStringUsingEncoding:NSUTF8StringEncoding];
+			bool resultCode = NDS_ExportSave(destinationPath);
+			if (resultCode)
+			{
+				result = YES;
+			}
+			break;
+		}
+			
+		case ROMSAVEFORMAT_RAW:
+		{
+			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_RAW] cStringUsingEncoding:NSUTF8StringEncoding];
+			bool resultCode = NDS_ExportSave(destinationPath);
+			if (resultCode)
+			{
+				result = YES;
+			}
+			break;
+		}
+			
+		default:
+			break;
 	}
-	
-	result = YES;
 	
 	return result;
 }

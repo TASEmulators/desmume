@@ -527,7 +527,7 @@
 	[panel setCanChooseFiles:YES];
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:NSSTRING_TITLE_IMPORT_BACKUP_MEMORY_PANEL];
+	[panel setTitle:NSSTRING_TITLE_IMPORT_ROM_SAVE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil];
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
@@ -567,7 +567,7 @@
 	BOOL result = NO;
 	NSInteger buttonClicked;
 	NSSavePanel *panel = [NSSavePanel savePanel];
-	[panel setTitle:NSSTRING_TITLE_EXPORT_BACKUP_MEMORY_PANEL];
+	[panel setTitle:NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL];
 	[panel setCanCreateDirectories:YES];
 	[panel setRequiredFileType:@FILE_EXT_ROM_SAVE_NOGBA];
 	
@@ -577,7 +577,7 @@
 	{
 		[self pauseCore];
 		
-		result = [CocoaDSFile exportRomSave:[panel URL]];
+		result = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:[self loadedRomURL] fileType:ROMSAVEFORMAT_NOGBA];
 		if (result == NO)
 		{
 			[self setStatus:NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
