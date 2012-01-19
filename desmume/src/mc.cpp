@@ -1325,19 +1325,19 @@ bool ADVANsCEne::getXMLConfig(const char *in_filaname)
 
 u32 ADVANsCEne::convertDB(const char *in_filaname)
 {
-	char *saveTypeNames[] = {	"Eeprom - 4 kbit",		// EEPROM 4kbit
-								"Eeprom - 64 kbit",		// EEPROM 64kbit
-								"Eeprom - 512 kbit",	// EEPROM 512kbit
-								"Fram - 256 kbit",		// FRAM 256kbit !
-								"Flash - 2 mbit",		// FLASH 2Mbit
-								"Flash - 4 mbit",		// FLASH 4Mbit
-								"Flash - 8 mbit",		// FLASH 8Mbit
-								"Flash - 16 mbit",		// FLASH 16Mbit !
-								"Flash - 32 mbit",		// FLASH 32Mbit !
-								"Flash - 64 mbit",		// FLASH 64Mbit
-								"Flash - 128 mbit",		// FLASH 128Mbit !
-								"Flash - 256 mbit",		// FLASH 256Mbit !
-								"Flash - 512 mbit"		// FLASH 512Mbit !
+	const char *saveTypeNames[] = {	"Eeprom - 4 kbit",		// EEPROM 4kbit
+									"Eeprom - 64 kbit",		// EEPROM 64kbit
+									"Eeprom - 512 kbit",	// EEPROM 512kbit
+									"Fram - 256 kbit",		// FRAM 256kbit !
+									"Flash - 2 mbit",		// FLASH 2Mbit
+									"Flash - 4 mbit",		// FLASH 4Mbit
+									"Flash - 8 mbit",		// FLASH 8Mbit
+									"Flash - 16 mbit",		// FLASH 16Mbit !
+									"Flash - 32 mbit",		// FLASH 32Mbit !
+									"Flash - 64 mbit",		// FLASH 64Mbit
+									"Flash - 128 mbit",		// FLASH 128Mbit !
+									"Flash - 256 mbit",		// FLASH 256Mbit !
+									"Flash - 512 mbit"		// FLASH 512Mbit !
 	};
 
 	TiXmlDocument	*xml = NULL;
