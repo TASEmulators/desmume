@@ -375,6 +375,10 @@
 		AB73B1D214BDA94800F49C92 /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */; };
 		AB73B1D314BDA94800F49C92 /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */; };
 		AB73B1D414BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */; };
+		AB7522E414C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB7522E314C7D879009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB7522E514C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB7522E314C7D879009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB7522E614C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB7522E314C7D879009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB7522E714C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB7522E314C7D879009B97B3 /* AppIcon_FirmwareConfig.icns */; };
 		AB8FE37614B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
 		AB8FE37714B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
 		AB8FE37814B652EC009E20B1 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8FE37514B652EC009E20B1 /* cocoa_util.mm */; };
@@ -772,6 +776,7 @@
 		AB73B1C214BDA94800F49C92 /* Icon_Pause_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Pause_420x420.png; path = images/Icon_Pause_420x420.png; sourceTree = "<group>"; };
 		AB73B1C314BDA94800F49C92 /* Icon_Speed1x_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speed1x_420x420.png; path = images/Icon_Speed1x_420x420.png; sourceTree = "<group>"; };
 		AB73B1C414BDA94800F49C92 /* Icon_Speed2x_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speed2x_420x420.png; path = images/Icon_Speed2x_420x420.png; sourceTree = "<group>"; };
+		AB7522E314C7D879009B97B3 /* AppIcon_FirmwareConfig.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_FirmwareConfig.icns; sourceTree = "<group>"; };
 		AB8FE30A14B647D6009E20B1 /* macosx_10_4_compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = macosx_10_4_compat.h; sourceTree = "<group>"; };
 		AB8FE37414B652EC009E20B1 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
 		AB8FE37514B652EC009E20B1 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
@@ -1279,6 +1284,7 @@
 				AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */,
 				ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */,
 				AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */,
+				AB7522E314C7D879009B97B3 /* AppIcon_FirmwareConfig.icns */,
 				AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */,
 			);
 			name = "App Icons";
@@ -1437,6 +1443,7 @@
 				AB73B1D014BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 				AB0E770614C5635900EF460C /* InfoPlist.strings in Resources */,
+				AB7522E714C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1467,6 +1474,7 @@
 				AB73B1D414BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16C14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 				AB0E770414C5635800EF460C /* InfoPlist.strings in Resources */,
+				AB7522E414C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1497,6 +1505,7 @@
 				AB73B1C814BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16F14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 				AB0E770314C5635800EF460C /* InfoPlist.strings in Resources */,
+				AB7522E514C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1527,6 +1536,7 @@
 				AB73B1CC14BDA94800F49C92 /* Icon_Speed2x_420x420.png in Resources */,
 				AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */,
 				AB0E770514C5635900EF460C /* InfoPlist.strings in Resources */,
+				AB7522E614C7D879009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
