@@ -20,11 +20,12 @@
 #define STRING_DESMUME_FORUM_SITE					"http://forums.desmume.org/index.php"
 #define STRING_DESMUME_BUG_SITE						"http://sourceforge.net/tracker/?group_id=164579&atid=832291"
 
+// User Interface Localized Strings
 #define NSSTRING_TITLE_OPEN_ROM_PANEL				NSLocalizedString(@"Open ROM", nil)
 #define NSSTRING_TITLE_OPEN_STATE_FILE_PANEL		NSLocalizedString(@"Open State File", nil)
 #define NSSTRING_TITLE_SAVE_STATE_FILE_PANEL		NSLocalizedString(@"Save State File", nil)
-#define NSSTRING_TITLE_IMPORT_BACKUP_MEMORY_PANEL	NSLocalizedString(@"Import Backup Memory", nil)
-#define NSSTRING_TITLE_EXPORT_BACKUP_MEMORY_PANEL	NSLocalizedString(@"Export Backup Memory", nil)
+#define NSSTRING_TITLE_IMPORT_ROM_SAVE_PANEL		NSLocalizedString(@"Import ROM Save File", nil)
+#define NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL		NSLocalizedString(@"Export ROM Save File", nil)
 #define NSSTRING_TITLE_SELECT_ROM_PANEL				NSLocalizedString(@"Select ROM", nil)
 #define NSSTRING_TITLE_SELECT_ADVANSCENE_DB_PANEL	NSLocalizedString(@"Select ADVANsCEne Database", nil)
 #define NSSTRING_TITLE_SELECT_R4_CHEAT_DB_PANEL		NSLocalizedString(@"Select R4 Cheat Database", nil)
@@ -118,7 +119,8 @@
 #define FILE_EXT_SAVE_STATE							"dst"
 #define FILE_EXT_ROM_SAVE							"dsv"
 #define FILE_EXT_CHEAT								"dct"
-#define FILE_EXT_ROM_SAVE_NOGBA						"sav"
+#define FILE_EXT_ROM_SAVE_NOGBA						"sav*"
+#define FILE_EXT_ROM_SAVE_RAW						"sav"
 #define FILE_EXT_ACTION_REPLAY_SAVE					"duc"
 #define FILE_EXT_ROM_DS								"nds"
 #define FILE_EXT_ROM_GBA							"ds.gba"
@@ -192,6 +194,13 @@ enum
 	REASONFORCLOSE_NORMAL = 0,
 	REASONFORCLOSE_OPEN,
 	REASONFORCLOSE_TERMINATE
+};
+
+enum
+{
+	ROMSAVEFORMAT_DESMUME							= 0,
+	ROMSAVEFORMAT_NOGBA								= 1,
+	ROMSAVEFORMAT_RAW								= 2
 };
 
 enum
@@ -345,6 +354,7 @@ enum
 	MESSAGE_SET_SPU_INTERPOLATION_MODE,
 	MESSAGE_SET_VOLUME,
 	
+	MESSAGE_REQUEST_SCREENSHOT,
 	MESSAGE_COPY_TO_PASTEBOARD
 };
 

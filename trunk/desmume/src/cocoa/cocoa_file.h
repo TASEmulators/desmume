@@ -32,7 +32,7 @@
 + (BOOL) saveState:(NSURL *)saveStateURL;
 + (BOOL) loadRom:(NSURL *)romURL;
 + (BOOL) importRomSave:(NSURL *)romSaveURL;
-+ (BOOL) exportRomSave:(NSURL *)romSaveURL;
++ (BOOL) exportRomSaveToURL:(NSURL *)destinationURL romSaveURL:(NSURL *)romSaveURL fileType:(NSInteger)fileTypeID;
 + (NSURL *) romSaveURLFromRomURL:(NSURL *)romURL;
 + (NSURL *) cheatsURLFromRomURL:(NSURL *)romURL;
 + (BOOL) romSaveExists:(NSURL *)romURL;
