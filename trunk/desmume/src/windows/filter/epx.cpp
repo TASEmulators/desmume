@@ -262,6 +262,12 @@ void RenderNearest_1Point5x (SSurface Src, SSurface Dst)
 	}
 }
 
+int CLAMP(const int value, const int high) 
+{
+  int low = 0;
+  return value < low ? low : (value >= high ? high-1 : value); 
+}
+
 // transforms each 2x2 block of pixels into 3x3 output which is
 // a 2x2 block that has 1 block of padding on the right and bottom sides
 // which are selected from neighboring pixels depending on matching diagonals
@@ -280,16 +286,17 @@ void RenderNearestPlus_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	uint32 *lpDst = (uint32*)Dst.Surface;
 
-	for(uint32 j = 0, y = 0; j < srcHeight; j+=2, y+=3)
-	{
-		u32* srcPix = lpSrc + srcPitch*j;
-		u32* dstPix = lpDst + dstPitch*y;
+ 	u32* srcPix = lpSrc;
+	u32* dstPix = lpDst;
 
-#define GET(dx,dy) *(srcPix+(dy)*srcPitch+(dx))
-#define SET(dx,dy,val) *(dstPix+(dy)*dstPitch+(dx)) = (val)
+  for(uint32 j = 0, y = 0; j < srcHeight; j+=2, y+=3)
+	{
+
+#define GET(dx,dy) *(srcPix+(CLAMP((dy)+j,srcHeight))*srcPitch+(CLAMP((dx)+i,srcWidth)))
+#define SET(dx,dy,val) *(dstPix+(dy+y)*dstPitch+(dx+x)) = (val)
 #define BETTER(dx,dy,dx2,dy2) (GET(dx,dy) == GET(dx2,dy2) && GET(dx2,dy) != GET(dx,dy2))
 
-		for(uint32 i = 0, x = 0; i < srcWidth; i+=2, x+=3, srcPix+=2, dstPix+=3)
+		for(uint32 i = 0, x = 0; i < srcWidth; i+=2, x+=3) //, srcPix+=2, dstPix+=3
 		{
 			SET(0,0,GET(0,0));
 			SET(1,0,GET(1,0));
