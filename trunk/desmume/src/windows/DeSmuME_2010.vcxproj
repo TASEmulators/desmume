@@ -452,6 +452,13 @@
     <ClCompile Include="..\driver.cpp" />
     <ClCompile Include="..\emufile.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
+    <ClCompile Include="..\filter\2xsai.cpp" />
+    <ClCompile Include="..\filter\bilinear.cpp" />
+    <ClCompile Include="..\filter\epx.cpp" />
+    <ClCompile Include="..\filter\hq2x.cpp" />
+    <ClCompile Include="..\filter\hq4x.cpp" />
+    <ClCompile Include="..\filter\lq2x.cpp" />
+    <ClCompile Include="..\filter\scanline.cpp" />
     <ClCompile Include="..\firmware.cpp" />
     <ClCompile Include="..\fs-windows.cpp" />
     <ClCompile Include="..\gfx3d.cpp" />
@@ -533,7 +540,6 @@
     <ClCompile Include="colorctrl.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
-    <ClCompile Include="filter\hq4x.cpp" />
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="hotkey.cpp" />
@@ -550,12 +556,6 @@
     <ClCompile Include="slot1_config.cpp" />
     <ClCompile Include="throttle.cpp" />
     <ClCompile Include="winutil.cpp" />
-    <ClCompile Include="filter\2xsai.cpp" />
-    <ClCompile Include="filter\bilinear.cpp" />
-    <ClCompile Include="filter\epx.cpp" />
-    <ClCompile Include="filter\hq2x.cpp" />
-    <ClCompile Include="filter\lq2x.cpp" />
-    <ClCompile Include="filter\scanline.cpp" />
     <ClCompile Include="disView.cpp" />
     <ClCompile Include="ginfo.cpp" />
     <ClCompile Include="IORegView.cpp" />
@@ -587,6 +587,11 @@
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\FIFO.h" />
+    <ClInclude Include="..\filter\filter.h" />
+    <ClInclude Include="..\filter\hq2x.h" />
+    <ClInclude Include="..\filter\hq4x.h" />
+    <ClInclude Include="..\filter\interp.h" />
+    <ClInclude Include="..\filter\lq2x.h" />
     <ClInclude Include="..\firmware.h" />
     <ClInclude Include="..\fs.h" />
     <ClInclude Include="..\gfx3d.h" />
@@ -674,7 +679,6 @@
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
     <ClInclude Include="filter\hq2x.h" />
-    <ClInclude Include="filter\hq4x.h" />
     <ClInclude Include="filter\interp.h" />
     <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
@@ -692,7 +696,6 @@
     <ClInclude Include="throttle.h" />
     <ClInclude Include="winpcap.h" />
     <ClInclude Include="winutil.h" />
-    <ClInclude Include="filter\filter.h" />
     <ClInclude Include="userconfig\userconfig.h" />
     <ClInclude Include="disView.h" />
     <ClInclude Include="ginfo.h" />
@@ -709,6 +712,7 @@
     <ClInclude Include="tileView.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\filter\hq4x.dat" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
     <None Include="bitmap1.bmp" />
@@ -825,7 +829,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\wx.tag;%(Outputs)</Outputs>
     </CustomBuild>
-    <None Include="filter\hq4x.dat" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />

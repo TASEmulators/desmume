@@ -31,9 +31,6 @@
     <Filter Include="Windows">
       <UniqueIdentifier>{56813aa6-2261-4011-8938-105c0b4b3773}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Windows\filters">
-      <UniqueIdentifier>{17421776-c56d-4ee0-820b-5ce136e020ea}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Windows\userconfig">
       <UniqueIdentifier>{78bb8fa0-5d56-4cf5-94b3-b020f4f4c290}</UniqueIdentifier>
     </Filter>
@@ -51,6 +48,9 @@
     </Filter>
     <Filter Include="Core\utils\tinyxml">
       <UniqueIdentifier>{6d47beab-6087-48e1-953d-f5da134a023a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\filter">
+      <UniqueIdentifier>{0c7156df-b4ef-4cd2-af76-6a6c1e66145a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -327,24 +327,6 @@
     <ClCompile Include="winutil.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
-    <ClCompile Include="filter\2xsai.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
-    <ClCompile Include="filter\bilinear.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
-    <ClCompile Include="filter\epx.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
-    <ClCompile Include="filter\hq2x.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
-    <ClCompile Include="filter\lq2x.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
-    <ClCompile Include="filter\scanline.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
     <ClCompile Include="disView.cpp">
       <Filter>Windows\tools</Filter>
     </ClCompile>
@@ -453,9 +435,6 @@
     <ClCompile Include="..\addons\slot2_paddle.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
-    <ClCompile Include="filter\hq4x.cpp">
-      <Filter>Windows\filters</Filter>
-    </ClCompile>
     <ClCompile Include="..\utils\tinyxml\tinystr.cpp">
       <Filter>Core\utils\tinyxml</Filter>
     </ClCompile>
@@ -467,6 +446,27 @@
     </ClCompile>
     <ClCompile Include="..\utils\tinyxml\tinyxmlparser.cpp">
       <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\epx.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\hq2x.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\hq4x.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\lq2x.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\scanline.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\2xsai.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\bilinear.cpp">
+      <Filter>Core\filter</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -752,9 +752,6 @@
     <ClInclude Include="winutil.h">
       <Filter>Windows</Filter>
     </ClInclude>
-    <ClInclude Include="filter\filter.h">
-      <Filter>Windows\filters</Filter>
-    </ClInclude>
     <ClInclude Include="userconfig\userconfig.h">
       <Filter>Windows\userconfig</Filter>
     </ClInclude>
@@ -861,14 +858,26 @@
     <ClInclude Include="..\utils\emufat_types.h">
       <Filter>Core\utils</Filter>
     </ClInclude>
-    <ClInclude Include="filter\hq4x.h">
-      <Filter>Windows\filters</Filter>
-    </ClInclude>
     <ClInclude Include="..\utils\tinyxml\tinystr.h">
       <Filter>Core\utils\tinyxml</Filter>
     </ClInclude>
     <ClInclude Include="..\utils\tinyxml\tinyxml.h">
       <Filter>Core\utils\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\filter.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\hq2x.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\hq4x.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\interp.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\lq2x.h">
+      <Filter>Core\filter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -884,8 +893,8 @@
     <None Include="DeSmuME.ico">
       <Filter>Windows\resources</Filter>
     </None>
-    <None Include="filter\hq4x.dat">
-      <Filter>Windows\filters</Filter>
+    <None Include="..\filter\hq4x.dat">
+      <Filter>Core\filter</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
