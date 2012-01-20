@@ -1558,6 +1558,7 @@
 				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).strings",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1578,6 +1579,7 @@
 				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).strings",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1598,6 +1600,7 @@
 				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).strings",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -1617,6 +1620,7 @@
 				"$(SRCROOT)/translations/Japanese.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Chinese.lproj/MainMenu (Legacy).xib",
 				"$(SRCROOT)/translations/Norwegian.lproj/MainMenu (Legacy).xib",
+				"$(SRCROOT)/translations/English.lproj/MainMenu (Legacy).strings",
 				"$(SRCROOT)/translations/Romanian.lproj/MainMenu (Legacy).xib",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
