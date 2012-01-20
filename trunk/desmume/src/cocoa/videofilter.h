@@ -23,7 +23,7 @@
 #include <string>
 #include <pthread.h>
 #include "types.h"
-#include "../windows/filter/filter.h"
+#include "../filter/filter.h"
 
 
 // VIDEO FILTER TYPES
