@@ -934,58 +934,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="filter"
-				>
-				<File
-					RelativePath=".\filter\2xsai.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\bilinear.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\epx.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\filter.h"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\hq2x.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\hq2x.h"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\hq4x.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\hq4x.dat"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\interp.h"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\lq2x.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\lq2x.h"
-					>
-				</File>
-				<File
-					RelativePath=".\filter\scanline.cpp"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="libs"
 				>
 				<File
@@ -1869,6 +1817,62 @@
 			</File>
 			<File
 				RelativePath="..\wxdlg\wxdlg3dViewer.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="filter"
+			>
+			<File
+				RelativePath="..\filter\2xsai.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\bilinear.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\epx.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\filter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\hq2x.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\hq2x.h"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\hq4x.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\hq4x.dat"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\hq4x.h"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\interp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\lq2x.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\lq2x.h"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\scanline.cpp"
 				>
 			</File>
 		</Filter>
