@@ -486,10 +486,17 @@ static NSImage *iconCodeBreaker = nil;
 	self.description = self.description;
 	self.cheatType = self.cheatType;
 	self.freezeType = self.freezeType;
-	self.code = self.code;
-	self.bytes = self.bytes;
-	self.memAddress = self.memAddress;
-	self.value = self.value;
+	
+	if (self.cheatType == CHEAT_TYPE_INTERNAL)
+	{
+		self.bytes = self.bytes;
+		self.memAddress = self.memAddress;
+		self.value = self.value;
+	}
+	else
+	{
+		self.code = self.code;
+	}
 }
 
 - (CocoaDSCheatItem *) createWorkingCopy
