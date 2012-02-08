@@ -1295,6 +1295,9 @@
 	currentEmuSaveStateURL = nil;
 	[window setDocumentEdited:NO];
 	
+	// Save the ROM's cheat list before unloading.
+	[[self cdsCheats] save];
+	
 	// Update the UI to indicate that the ROM has started the process of unloading.
 	[self setStatus:NSSTRING_STATUS_ROM_UNLOADING];
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
