@@ -2114,6 +2114,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = GDB_STUB;
 			};
 			name = Debug;
@@ -2123,7 +2124,6 @@
 			buildSettings = {
 				GCC_PREPROCESSOR_DEFINITIONS = GDB_STUB;
 				SKIP_INSTALL = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -2152,7 +2152,6 @@
 				);
 				GCC_VERSION = 4.0;
 				SDKROOT = macosx10.4;
-				STRIP_INSTALLED_PRODUCT = YES;
 				VALID_ARCHS = "i386 ppc ppc7400 ppc970";
 			};
 			name = Release;
@@ -2179,7 +2178,6 @@
 				);
 				SDKROOT = macosx10.6;
 				SKIP_INSTALL = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -2195,7 +2193,6 @@
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				STRIP_INSTALLED_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -2229,7 +2226,6 @@
 				IBC_STRIP_NIBS = NO;
 				INFOPLIST_FILE = "Info (Legacy Debug).plist";
 				ONLY_ACTIVE_ARCH = YES;
-				PREBINDING = NO;
 				PRODUCT_NAME = "DeSmuME (Debug)";
 				SDKROOT = macosx10.5;
 				SKIP_INSTALL = YES;
@@ -2247,6 +2243,7 @@
 					ppc,
 					ppc64,
 				);
+				COPY_PHASE_STRIP = NO;
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_AUTO_VECTORIZATION = YES;
 				GCC_DYNAMIC_NO_PIC = YES;
@@ -2272,9 +2269,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "Info (Legacy).plist";
 				ONLY_ACTIVE_ARCH = NO;
-				PREBINDING = NO;
 				PRODUCT_NAME = DeSmuME;
 				SDKROOT = macosx10.5;
+				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
