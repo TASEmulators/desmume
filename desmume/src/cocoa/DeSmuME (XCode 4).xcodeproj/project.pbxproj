@@ -276,6 +276,200 @@
 		ABAD3E7913AF1D6D00502E1E /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */; };
 		ABAD3E7A13AF1D6D00502E1E /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */; };
 		ABAD3E7B13AF1D6D00502E1E /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
+		ABB7154214E386740027FE88 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
+		ABB7154314E386740027FE88 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
+		ABB7154414E386740027FE88 /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
+		ABB7154514E386740027FE88 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */; };
+		ABB7154614E386740027FE88 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF5D141AB82A000CC0CD /* AppIcon_ROMSave.icns */; };
+		ABB7154714E386740027FE88 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF5E141AB82A000CC0CD /* AppIcon_DeSmuME.icns */; };
+		ABB7154814E386740027FE88 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF5F141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns */; };
+		ABB7154914E386740027FE88 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF60141AB82A000CC0CD /* AppIcon_SaveState.icns */; };
+		ABB7154A14E386740027FE88 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87914205EAE00DE561F /* InfoPlist.strings */; };
+		ABB7154B14E386740027FE88 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87C14205EBC00DE561F /* MainMenu.xib */; };
+		ABB7154C14E386740027FE88 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB901BDD1420706100348EEC /* Localizable.strings */; };
+		ABB7154D14E386740027FE88 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */; };
+		ABB7154E14E386740027FE88 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */; };
+		ABB7154F14E386740027FE88 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */; };
+		ABB7155014E386740027FE88 /* HID_usage_strings.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB350D3A147A1D93007165AC /* HID_usage_strings.plist */; };
+		ABB7155114E386740027FE88 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */; };
+		ABB7155214E386740027FE88 /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */; };
+		ABB7155314E386740027FE88 /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */; };
+		ABB7155414E386740027FE88 /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */; };
+		ABB7155514E386740027FE88 /* Icon_VolumeTwoThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */; };
+		ABB7155614E386740027FE88 /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */; };
+		ABB7155714E386740027FE88 /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */; };
+		ABB7155814E386740027FE88 /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F290014BE6E68009ABC6F /* Icon_Speed1x_420x420.png */; };
+		ABB7155914E386740027FE88 /* Icon_Speed2x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F290114BE6E68009ABC6F /* Icon_Speed2x_420x420.png */; };
+		ABB7155A14E386740027FE88 /* ColorSwatch_Blue_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292814BE6FA7009ABC6F /* ColorSwatch_Blue_16x16.png */; };
+		ABB7155B14E386740027FE88 /* ColorSwatch_Brown_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292914BE6FA7009ABC6F /* ColorSwatch_Brown_16x16.png */; };
+		ABB7155C14E386740027FE88 /* ColorSwatch_DarkBlue_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292A14BE6FA7009ABC6F /* ColorSwatch_DarkBlue_16x16.png */; };
+		ABB7155D14E386740027FE88 /* ColorSwatch_DarkGreen_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292B14BE6FA7009ABC6F /* ColorSwatch_DarkGreen_16x16.png */; };
+		ABB7155E14E386740027FE88 /* ColorSwatch_DarkPurple_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292C14BE6FA7009ABC6F /* ColorSwatch_DarkPurple_16x16.png */; };
+		ABB7155F14E386740027FE88 /* ColorSwatch_Gray_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292D14BE6FA7009ABC6F /* ColorSwatch_Gray_16x16.png */; };
+		ABB7156014E386740027FE88 /* ColorSwatch_Green_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292E14BE6FA7009ABC6F /* ColorSwatch_Green_16x16.png */; };
+		ABB7156114E386740027FE88 /* ColorSwatch_LimeGreen_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F292F14BE6FA7009ABC6F /* ColorSwatch_LimeGreen_16x16.png */; };
+		ABB7156214E386740027FE88 /* ColorSwatch_Magenta_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293014BE6FA7009ABC6F /* ColorSwatch_Magenta_16x16.png */; };
+		ABB7156314E386740027FE88 /* ColorSwatch_Orange_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293114BE6FA7009ABC6F /* ColorSwatch_Orange_16x16.png */; };
+		ABB7156414E386740027FE88 /* ColorSwatch_Pink_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293214BE6FA7009ABC6F /* ColorSwatch_Pink_16x16.png */; };
+		ABB7156514E386740027FE88 /* ColorSwatch_Red_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293314BE6FA7009ABC6F /* ColorSwatch_Red_16x16.png */; };
+		ABB7156614E386740027FE88 /* ColorSwatch_SeaGreen_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293414BE6FA7009ABC6F /* ColorSwatch_SeaGreen_16x16.png */; };
+		ABB7156714E386740027FE88 /* ColorSwatch_Turquoise_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293514BE6FA7009ABC6F /* ColorSwatch_Turquoise_16x16.png */; };
+		ABB7156814E386740027FE88 /* ColorSwatch_Violet_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293614BE6FA7009ABC6F /* ColorSwatch_Violet_16x16.png */; };
+		ABB7156914E386740027FE88 /* ColorSwatch_Yellow_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F293714BE6FA7009ABC6F /* ColorSwatch_Yellow_16x16.png */; };
+		ABB7156A14E386740027FE88 /* Icon_ActionReplay_128x128.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F296B14BE705D009ABC6F /* Icon_ActionReplay_128x128.png */; };
+		ABB7156B14E386740027FE88 /* Icon_CodeBreaker_128x128.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F296C14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png */; };
+		ABB7156C14E386740027FE88 /* VideoFilterPreview_64x64.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F297914BE70BC009ABC6F /* VideoFilterPreview_64x64.png */; };
+		ABB7156D14E386740027FE88 /* Icon_ArrowDown_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F298814BE71E0009ABC6F /* Icon_ArrowDown_420x420.png */; };
+		ABB7156E14E386740027FE88 /* Icon_ArrowLeft_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F298914BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png */; };
+		ABB7156F14E386740027FE88 /* Icon_ArrowRight_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F298A14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png */; };
+		ABB7157014E386740027FE88 /* Icon_ArrowUp_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F298B14BE71E0009ABC6F /* Icon_ArrowUp_420x420.png */; };
+		ABB7157114E386740027FE88 /* Icon_DoubleSpeed_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299414BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png */; };
+		ABB7157214E386740027FE88 /* Icon_DSButtonA_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299514BE7213009ABC6F /* Icon_DSButtonA_420x420.png */; };
+		ABB7157314E386740027FE88 /* Icon_DSButtonB_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299614BE7213009ABC6F /* Icon_DSButtonB_420x420.png */; };
+		ABB7157414E386740027FE88 /* Icon_DSButtonL_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299714BE7213009ABC6F /* Icon_DSButtonL_420x420.png */; };
+		ABB7157514E386740027FE88 /* Icon_DSButtonR_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299814BE7213009ABC6F /* Icon_DSButtonR_420x420.png */; };
+		ABB7157614E386740027FE88 /* Icon_DSButtonSelect_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299914BE7213009ABC6F /* Icon_DSButtonSelect_420x420.png */; };
+		ABB7157714E386740027FE88 /* Icon_DSButtonStart_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299A14BE7213009ABC6F /* Icon_DSButtonStart_420x420.png */; };
+		ABB7157814E386740027FE88 /* Icon_DSButtonX_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299B14BE7213009ABC6F /* Icon_DSButtonX_420x420.png */; };
+		ABB7157914E386740027FE88 /* Icon_DSButtonY_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299C14BE7213009ABC6F /* Icon_DSButtonY_420x420.png */; };
+		ABB7157A14E386740027FE88 /* Icon_Emulation_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299D14BE7213009ABC6F /* Icon_Emulation_420x420.png */; };
+		ABB7157B14E386740027FE88 /* Icon_Input_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299E14BE7213009ABC6F /* Icon_Input_420x420.png */; };
+		ABB7157C14E386740027FE88 /* Icon_Microphone_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F299F14BE7213009ABC6F /* Icon_Microphone_420x420.png */; };
+		ABB7157D14E386740027FE88 /* Icon_OpenROM_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A014BE7213009ABC6F /* Icon_OpenROM_420x420.png */; };
+		ABB7157E14E386740027FE88 /* Icon_Reset_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A114BE7213009ABC6F /* Icon_Reset_420x420.png */; };
+		ABB7157F14E386740027FE88 /* Icon_RotateCCW_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A214BE7213009ABC6F /* Icon_RotateCCW_420x420.png */; };
+		ABB7158014E386740027FE88 /* Icon_RotateCW_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */; };
+		ABB7158114E386740027FE88 /* Icon_ShowHUD_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */; };
+		ABB7158214E386740027FE88 /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
+		ABB7158314E386740027FE88 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3814C24D5400D7D192 /* AUTHORS */; };
+		ABB7158414E386740027FE88 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3914C24D5400D7D192 /* ChangeLog */; };
+		ABB7158514E386740027FE88 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
+		ABB7158614E386740027FE88 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
+		ABB7158714E386740027FE88 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3C14C24D5400D7D192 /* README.TRANSLATION */; };
+		ABB7158814E386740027FE88 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
+		ABB7158914E386740027FE88 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		ABB7158B14E386740027FE88 /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1D1345ACBF00AF11D1 /* ConvertUTF.c */; };
+		ABB7158C14E386740027FE88 /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6513AF1D6D00502E1E /* AAFilter.cpp */; };
+		ABB7158D14E386740027FE88 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA11345AC8400AF11D1 /* addons.cpp */; };
+		ABB7158E14E386740027FE88 /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA31345AC8400AF11D1 /* arm_instructions.cpp */; };
+		ABB7158F14E386740027FE88 /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA41345AC8400AF11D1 /* armcpu.cpp */; };
+		ABB7159014E386740027FE88 /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA51345AC8400AF11D1 /* bios.cpp */; };
+		ABB7159114E386740027FE88 /* cache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF301345ACBF00AF11D1 /* cache.cpp */; };
+		ABB7159214E386740027FE88 /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA61345AC8400AF11D1 /* cheatSystem.cpp */; };
+		ABB7159314E386740027FE88 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA81345AC8400AF11D1 /* common.cpp */; };
+		ABB7159414E386740027FE88 /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEA91345AC8400AF11D1 /* cp15.cpp */; };
+		ABB7159514E386740027FE88 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		ABB7159614E386740027FE88 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF221345ACBF00AF11D1 /* crc.cpp */; };
+		ABB7159714E386740027FE88 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
+		ABB7159814E386740027FE88 /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAB1345AC8400AF11D1 /* debug.cpp */; };
+		ABB7159914E386740027FE88 /* decrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF241345ACBF00AF11D1 /* decrypt.cpp */; };
+		ABB7159A14E386740027FE88 /* directory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF331345ACBF00AF11D1 /* directory.cpp */; };
+		ABB7159B14E386740027FE88 /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAD1345AC8400AF11D1 /* Disassembler.cpp */; };
+		ABB7159C14E386740027FE88 /* disc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF351345ACBF00AF11D1 /* disc.cpp */; };
+		ABB7159D14E386740027FE88 /* dlditool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF281345ACBF00AF11D1 /* dlditool.cpp */; };
+		ABB7159E14E386740027FE88 /* driver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAE1345AC8400AF11D1 /* driver.cpp */; };
+		ABB7159F14E386740027FE88 /* emufat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF291345ACBF00AF11D1 /* emufat.cpp */; };
+		ABB715A014E386740027FE88 /* emufile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEAF1345AC8400AF11D1 /* emufile.cpp */; };
+		ABB715A114E386740027FE88 /* fatdir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF391345ACBF00AF11D1 /* fatdir.cpp */; };
+		ABB715A214E386740027FE88 /* fatfile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3B1345ACBF00AF11D1 /* fatfile.cpp */; };
+		ABB715A314E386740027FE88 /* FIFO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB01345AC8400AF11D1 /* FIFO.cpp */; };
+		ABB715A414E386740027FE88 /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6813AF1D6D00502E1E /* FIFOSampleBuffer.cpp */; };
+		ABB715A514E386740027FE88 /* file_allocation_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3D1345ACBF00AF11D1 /* file_allocation_table.cpp */; };
+		ABB715A614E386740027FE88 /* filetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3F1345ACBF00AF11D1 /* filetime.cpp */; };
+		ABB715A714E386740027FE88 /* FIRFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6913AF1D6D00502E1E /* FIRFilter.cpp */; };
+		ABB715A814E386740027FE88 /* firmware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB11345AC8400AF11D1 /* firmware.cpp */; };
+		ABB715A914E386740027FE88 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
+		ABB715AA14E386740027FE88 /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */; };
+		ABB715AB14E386740027FE88 /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB71345AC8400AF11D1 /* GPU.cpp */; };
+		ABB715AC14E386740027FE88 /* GPU_osd_stub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB51345AC8400AF11D1 /* GPU_osd_stub.cpp */; };
+		ABB715AD14E386740027FE88 /* guid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF2C1345ACBF00AF11D1 /* guid.cpp */; };
+		ABB715AE14E386740027FE88 /* header.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF261345ACBF00AF11D1 /* header.cpp */; };
+		ABB715AF14E386740027FE88 /* libfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF411345ACBF00AF11D1 /* libfat.cpp */; };
+		ABB715B014E386740027FE88 /* libfat_public_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF431345ACBF00AF11D1 /* libfat_public_api.cpp */; };
+		ABB715B114E386740027FE88 /* lock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF451345ACBF00AF11D1 /* lock.cpp */; };
+		ABB715B214E386740027FE88 /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB91345AC8400AF11D1 /* matrix.cpp */; };
+		ABB715B314E386740027FE88 /* mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEBA1345AC8400AF11D1 /* mc.cpp */; };
+		ABB715B414E386740027FE88 /* md5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4A1345ACBF00AF11D1 /* md5.cpp */; };
+		ABB715B514E386740027FE88 /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF771345ACFA00AF11D1 /* metaspu.cpp */; };
+		ABB715B614E386740027FE88 /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEBE1345AC8400AF11D1 /* MMU.cpp */; };
+		ABB715B714E386740027FE88 /* mmx_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6A13AF1D6D00502E1E /* mmx_optimized.cpp */; };
+		ABB715B814E386740027FE88 /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEBF1345AC8400AF11D1 /* movie.cpp */; };
+		ABB715B914E386740027FE88 /* NDSSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC01345AC8400AF11D1 /* NDSSystem.cpp */; };
+		ABB715BA14E386740027FE88 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC11345AC8400AF11D1 /* OGLRender.cpp */; };
+		ABB715BB14E386740027FE88 /* partition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF481345ACBF00AF11D1 /* partition.cpp */; };
+		ABB715BC14E386740027FE88 /* path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC21345AC8400AF11D1 /* path.cpp */; };
+		ABB715BD14E386740027FE88 /* rasterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC31345AC8400AF11D1 /* rasterize.cpp */; };
+		ABB715BE14E386740027FE88 /* RateTransposer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6B13AF1D6D00502E1E /* RateTransposer.cpp */; };
+		ABB715BF14E386740027FE88 /* readwrite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC41345AC8400AF11D1 /* readwrite.cpp */; };
+		ABB715C014E386740027FE88 /* render3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC51345AC8400AF11D1 /* render3D.cpp */; };
+		ABB715C114E386740027FE88 /* ROMReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC61345AC8400AF11D1 /* ROMReader.cpp */; };
+		ABB715C214E386740027FE88 /* rtc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC71345AC8400AF11D1 /* rtc.cpp */; };
+		ABB715C314E386740027FE88 /* saves.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC81345AC8400AF11D1 /* saves.cpp */; };
+		ABB715C414E386740027FE88 /* slot1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC91345AC8400AF11D1 /* slot1.cpp */; };
+		ABB715C514E386740027FE88 /* slot1_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF001345AC9B00AF11D1 /* slot1_none.cpp */; };
+		ABB715C614E386740027FE88 /* slot1_r4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */; };
+		ABB715C714E386740027FE88 /* slot1_retail.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF021345AC9B00AF11D1 /* slot1_retail.cpp */; };
+		ABB715C814E386740027FE88 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
+		ABB715C914E386740027FE88 /* slot2_expMemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */; };
+		ABB715CA14E386740027FE88 /* slot2_gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */; };
+		ABB715CB14E386740027FE88 /* slot2_guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */; };
+		ABB715CC14E386740027FE88 /* slot2_mpcf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */; };
+		ABB715CD14E386740027FE88 /* slot2_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */; };
+		ABB715CE14E386740027FE88 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
+		ABB715CF14E386740027FE88 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
+		ABB715D014E386740027FE88 /* slot2_rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */; };
+		ABB715D114E386740027FE88 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
+		ABB715D214E386740027FE88 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
+		ABB715D314E386740027FE88 /* SoundTouch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6C13AF1D6D00502E1E /* SoundTouch.cpp */; };
+		ABB715D414E386740027FE88 /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECB1345AC8400AF11D1 /* SPU.cpp */; };
+		ABB715D514E386740027FE88 /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */; };
+		ABB715D614E386740027FE88 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4C1345ACBF00AF11D1 /* task.cpp */; };
+		ABB715D714E386740027FE88 /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */; };
+		ABB715D814E386740027FE88 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECC1345AC8400AF11D1 /* texcache.cpp */; };
+		ABB715D914E386740027FE88 /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECD1345AC8400AF11D1 /* thumb_instructions.cpp */; };
+		ABB715DA14E386740027FE88 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
+		ABB715DB14E386740027FE88 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
+		ABB715DC14E386740027FE88 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
+		ABB715DD14E386740027FE88 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
+		ABB715DE14E386740027FE88 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		ABB715DF14E386740027FE88 /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECE1345AC8400AF11D1 /* version.cpp */; };
+		ABB715E014E386740027FE88 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
+		ABB715E114E386740027FE88 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
+		ABB715E214E386740027FE88 /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
+		ABB715E314E386740027FE88 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
+		ABB715E414E386740027FE88 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
+		ABB715E514E386740027FE88 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABD104271346653B00AF11D1 /* main.m */; };
+		ABB715E614E386740027FE88 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
+		ABB715E714E386740027FE88 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
+		ABB715E814E386740027FE88 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
+		ABB715E914E386740027FE88 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
+		ABB715EA14E386740027FE88 /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
+		ABB715EB14E386740027FE88 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
+		ABB715EC14E386740027FE88 /* cocoa_mic.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* cocoa_mic.mm */; };
+		ABB715ED14E386740027FE88 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
+		ABB715EE14E386740027FE88 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
+		ABB715EF14E386740027FE88 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
+		ABB715F014E386740027FE88 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
+		ABB715F114E386740027FE88 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
+		ABB715F214E386740027FE88 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
+		ABB715F314E386740027FE88 /* displayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6B14C2361100D7D192 /* displayView.mm */; };
+		ABB715F414E386740027FE88 /* emuWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */; };
+		ABB715F514E386740027FE88 /* inputPrefsView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */; };
+		ABB715F614E386740027FE88 /* preferencesWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */; };
+		ABB715F714E386740027FE88 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */; };
+		ABB715F814E386740027FE88 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FB14C92FF5005D6699 /* bilinear.cpp */; };
+		ABB715F914E386740027FE88 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FC14C92FF5005D6699 /* epx.cpp */; };
+		ABB715FA14E386740027FE88 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FE14C92FF5005D6699 /* hq2x.cpp */; };
+		ABB715FB14E386740027FE88 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
+		ABB715FC14E386740027FE88 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
+		ABB715FD14E386740027FE88 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
+		ABB715FF14E386740027FE88 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
+		ABB7160014E386740027FE88 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */; };
+		ABB7160114E386740027FE88 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		ABB7160214E386740027FE88 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
+		ABB7160314E386740027FE88 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
+		ABB7160414E386740027FE88 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
+		ABB7160514E386740027FE88 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABB97876144E89CC00793FA3 /* Icon_ActionReplay_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */; };
 		ABB97877144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */; };
 		ABB97878144E89CC00793FA3 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */; };
@@ -402,8 +596,8 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		8D1107320486CEB800E47090 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB00E87D14205EBC00DE561F /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		AB00E89114205ECC00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB02475B13886BF300E9F9AB /* KeyNames.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = KeyNames.plist; sourceTree = "<group>"; };
@@ -482,7 +676,7 @@
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
 		AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
 		AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_nand.cpp; sourceTree = "<group>"; };
-		AB711F7F1481C35F009011C8 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB711F7F1481C35F009011C8 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_FirmwareConfig.icns; sourceTree = "<group>"; };
 		AB80E04C142BC4A800A52038 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
 		AB80E050142BC4FA00A52038 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
@@ -518,6 +712,7 @@
 		ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
 		ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
 		ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WavFile.cpp; sourceTree = "<group>"; };
+		ABB7160914E386740027FE88 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = Images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
 		ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_CodeBreaker_32x32.png; path = Images/Icon_CodeBreaker_32x32.png; sourceTree = "<group>"; };
 		ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DeSmuME_32x32.png; path = Images/Icon_DeSmuME_32x32.png; sourceTree = "<group>"; };
@@ -769,6 +964,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ABB715FE14E386740027FE88 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABB715FF14E386740027FE88 /* AppKit.framework in Frameworks */,
+				ABB7160014E386740027FE88 /* AudioUnit.framework in Frameworks */,
+				ABB7160114E386740027FE88 /* Cocoa.framework in Frameworks */,
+				ABB7160214E386740027FE88 /* Foundation.framework in Frameworks */,
+				ABB7160314E386740027FE88 /* IOKit.framework in Frameworks */,
+				ABB7160414E386740027FE88 /* OpenGL.framework in Frameworks */,
+				ABB7160514E386740027FE88 /* libz.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -831,8 +1040,9 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8D1107320486CEB800E47090 /* DeSmuME.app */,
-				AB711F7F1481C35F009011C8 /* DeSmuME.app */,
+				8D1107320486CEB800E47090 /* DeSmuME (Debug).app */,
+				AB711F7F1481C35F009011C8 /* DeSmuME (Debug).app */,
+				ABB7160914E386740027FE88 /* DeSmuME (Debug).app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1297,7 +1507,7 @@
 			name = "DeSmuME (v10.5 Leopard)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = 8D1107320486CEB800E47090 /* DeSmuME.app */;
+			productReference = 8D1107320486CEB800E47090 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		AB711EBD1481C35F009011C8 /* DeSmuME (v10.6 Snow Leopard) */ = {
@@ -1316,7 +1526,26 @@
 			name = "DeSmuME (v10.6 Snow Leopard)";
 			productInstallPath = "$(HOME)/Applications";
 			productName = DeSmuME;
-			productReference = AB711F7F1481C35F009011C8 /* DeSmuME.app */;
+			productReference = AB711F7F1481C35F009011C8 /* DeSmuME (Debug).app */;
+			productType = "com.apple.product-type.application";
+		};
+		ABB7153F14E386740027FE88 /* DeSmuME (v10.7 Lion) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ABB7160614E386740027FE88 /* Build configuration list for PBXNativeTarget "DeSmuME (v10.7 Lion)" */;
+			buildPhases = (
+				ABB7154014E386740027FE88 /* ShellScript */,
+				ABB7154114E386740027FE88 /* Resources */,
+				ABB7158A14E386740027FE88 /* Sources */,
+				ABB715FE14E386740027FE88 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "DeSmuME (v10.7 Lion)";
+			productInstallPath = "$(HOME)/Applications";
+			productName = DeSmuME;
+			productReference = ABB7160914E386740027FE88 /* DeSmuME (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1325,9 +1554,10 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0420;
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 4)" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -1347,6 +1577,7 @@
 			targets = (
 				8D1107260486CEB800E47090 /* DeSmuME (v10.5 Leopard) */,
 				AB711EBD1481C35F009011C8 /* DeSmuME (v10.6 Snow Leopard) */,
+				ABB7153F14E386740027FE88 /* DeSmuME (v10.7 Lion) */,
 			);
 		};
 /* End PBXProject section */
@@ -1510,6 +1741,85 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ABB7154114E386740027FE88 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABB7154214E386740027FE88 /* KeyNames.plist in Resources */,
+				ABB7154314E386740027FE88 /* DefaultKeyMappings.plist in Resources */,
+				ABB7154414E386740027FE88 /* DefaultUserPrefs.plist in Resources */,
+				ABB7154514E386740027FE88 /* FileTypeInfo.plist in Resources */,
+				ABB7154614E386740027FE88 /* AppIcon_ROMSave.icns in Resources */,
+				ABB7154714E386740027FE88 /* AppIcon_DeSmuME.icns in Resources */,
+				ABB7154814E386740027FE88 /* AppIcon_NintendoDS_ROM.icns in Resources */,
+				ABB7154914E386740027FE88 /* AppIcon_SaveState.icns in Resources */,
+				ABB7154A14E386740027FE88 /* InfoPlist.strings in Resources */,
+				ABB7154B14E386740027FE88 /* MainMenu.xib in Resources */,
+				ABB7154C14E386740027FE88 /* Localizable.strings in Resources */,
+				ABB7154D14E386740027FE88 /* Icon_ActionReplay_32x32.png in Resources */,
+				ABB7154E14E386740027FE88 /* Icon_CodeBreaker_32x32.png in Resources */,
+				ABB7154F14E386740027FE88 /* Icon_DeSmuME_32x32.png in Resources */,
+				ABB7155014E386740027FE88 /* HID_usage_strings.plist in Resources */,
+				ABB7155114E386740027FE88 /* AppIcon_ROMCheats.icns in Resources */,
+				ABB7155214E386740027FE88 /* Icon_VolumeFull_16x16.png in Resources */,
+				ABB7155314E386740027FE88 /* Icon_VolumeMute_16x16.png in Resources */,
+				ABB7155414E386740027FE88 /* Icon_VolumeOneThird_16x16.png in Resources */,
+				ABB7155514E386740027FE88 /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				ABB7155614E386740027FE88 /* Icon_Execute_420x420.png in Resources */,
+				ABB7155714E386740027FE88 /* Icon_Pause_420x420.png in Resources */,
+				ABB7155814E386740027FE88 /* Icon_Speed1x_420x420.png in Resources */,
+				ABB7155914E386740027FE88 /* Icon_Speed2x_420x420.png in Resources */,
+				ABB7155A14E386740027FE88 /* ColorSwatch_Blue_16x16.png in Resources */,
+				ABB7155B14E386740027FE88 /* ColorSwatch_Brown_16x16.png in Resources */,
+				ABB7155C14E386740027FE88 /* ColorSwatch_DarkBlue_16x16.png in Resources */,
+				ABB7155D14E386740027FE88 /* ColorSwatch_DarkGreen_16x16.png in Resources */,
+				ABB7155E14E386740027FE88 /* ColorSwatch_DarkPurple_16x16.png in Resources */,
+				ABB7155F14E386740027FE88 /* ColorSwatch_Gray_16x16.png in Resources */,
+				ABB7156014E386740027FE88 /* ColorSwatch_Green_16x16.png in Resources */,
+				ABB7156114E386740027FE88 /* ColorSwatch_LimeGreen_16x16.png in Resources */,
+				ABB7156214E386740027FE88 /* ColorSwatch_Magenta_16x16.png in Resources */,
+				ABB7156314E386740027FE88 /* ColorSwatch_Orange_16x16.png in Resources */,
+				ABB7156414E386740027FE88 /* ColorSwatch_Pink_16x16.png in Resources */,
+				ABB7156514E386740027FE88 /* ColorSwatch_Red_16x16.png in Resources */,
+				ABB7156614E386740027FE88 /* ColorSwatch_SeaGreen_16x16.png in Resources */,
+				ABB7156714E386740027FE88 /* ColorSwatch_Turquoise_16x16.png in Resources */,
+				ABB7156814E386740027FE88 /* ColorSwatch_Violet_16x16.png in Resources */,
+				ABB7156914E386740027FE88 /* ColorSwatch_Yellow_16x16.png in Resources */,
+				ABB7156A14E386740027FE88 /* Icon_ActionReplay_128x128.png in Resources */,
+				ABB7156B14E386740027FE88 /* Icon_CodeBreaker_128x128.png in Resources */,
+				ABB7156C14E386740027FE88 /* VideoFilterPreview_64x64.png in Resources */,
+				ABB7156D14E386740027FE88 /* Icon_ArrowDown_420x420.png in Resources */,
+				ABB7156E14E386740027FE88 /* Icon_ArrowLeft_420x420.png in Resources */,
+				ABB7156F14E386740027FE88 /* Icon_ArrowRight_420x420.png in Resources */,
+				ABB7157014E386740027FE88 /* Icon_ArrowUp_420x420.png in Resources */,
+				ABB7157114E386740027FE88 /* Icon_DoubleSpeed_420x420.png in Resources */,
+				ABB7157214E386740027FE88 /* Icon_DSButtonA_420x420.png in Resources */,
+				ABB7157314E386740027FE88 /* Icon_DSButtonB_420x420.png in Resources */,
+				ABB7157414E386740027FE88 /* Icon_DSButtonL_420x420.png in Resources */,
+				ABB7157514E386740027FE88 /* Icon_DSButtonR_420x420.png in Resources */,
+				ABB7157614E386740027FE88 /* Icon_DSButtonSelect_420x420.png in Resources */,
+				ABB7157714E386740027FE88 /* Icon_DSButtonStart_420x420.png in Resources */,
+				ABB7157814E386740027FE88 /* Icon_DSButtonX_420x420.png in Resources */,
+				ABB7157914E386740027FE88 /* Icon_DSButtonY_420x420.png in Resources */,
+				ABB7157A14E386740027FE88 /* Icon_Emulation_420x420.png in Resources */,
+				ABB7157B14E386740027FE88 /* Icon_Input_420x420.png in Resources */,
+				ABB7157C14E386740027FE88 /* Icon_Microphone_420x420.png in Resources */,
+				ABB7157D14E386740027FE88 /* Icon_OpenROM_420x420.png in Resources */,
+				ABB7157E14E386740027FE88 /* Icon_Reset_420x420.png in Resources */,
+				ABB7157F14E386740027FE88 /* Icon_RotateCCW_420x420.png in Resources */,
+				ABB7158014E386740027FE88 /* Icon_RotateCW_420x420.png in Resources */,
+				ABB7158114E386740027FE88 /* Icon_ShowHUD_420x420.png in Resources */,
+				ABB7158214E386740027FE88 /* Icon_Speaker_420x420.png in Resources */,
+				ABB7158314E386740027FE88 /* AUTHORS in Resources */,
+				ABB7158414E386740027FE88 /* ChangeLog in Resources */,
+				ABB7158514E386740027FE88 /* COPYING in Resources */,
+				ABB7158614E386740027FE88 /* README in Resources */,
+				ABB7158714E386740027FE88 /* README.TRANSLATION in Resources */,
+				ABB7158814E386740027FE88 /* README.MAC in Resources */,
+				ABB7158914E386740027FE88 /* AppIcon_FirmwareConfig.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -1529,6 +1839,21 @@
 			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 		AB75222C14C799C1009B97B3 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/translations/English.lproj/MainMenu.xib",
+			);
+			outputPaths = (
+				"$(SRCROOT)/translations/English.lproj/MainMenu.strings",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+		};
+		ABB7154014E386740027FE88 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1790,6 +2115,128 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ABB7158A14E386740027FE88 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABB7158B14E386740027FE88 /* ConvertUTF.c in Sources */,
+				ABB7158C14E386740027FE88 /* AAFilter.cpp in Sources */,
+				ABB7158D14E386740027FE88 /* addons.cpp in Sources */,
+				ABB7158E14E386740027FE88 /* arm_instructions.cpp in Sources */,
+				ABB7158F14E386740027FE88 /* armcpu.cpp in Sources */,
+				ABB7159014E386740027FE88 /* bios.cpp in Sources */,
+				ABB7159114E386740027FE88 /* cache.cpp in Sources */,
+				ABB7159214E386740027FE88 /* cheatSystem.cpp in Sources */,
+				ABB7159314E386740027FE88 /* common.cpp in Sources */,
+				ABB7159414E386740027FE88 /* cp15.cpp in Sources */,
+				ABB7159514E386740027FE88 /* cpu_detect_x86_gcc.cpp in Sources */,
+				ABB7159614E386740027FE88 /* crc.cpp in Sources */,
+				ABB7159714E386740027FE88 /* datetime.cpp in Sources */,
+				ABB7159814E386740027FE88 /* debug.cpp in Sources */,
+				ABB7159914E386740027FE88 /* decrypt.cpp in Sources */,
+				ABB7159A14E386740027FE88 /* directory.cpp in Sources */,
+				ABB7159B14E386740027FE88 /* Disassembler.cpp in Sources */,
+				ABB7159C14E386740027FE88 /* disc.cpp in Sources */,
+				ABB7159D14E386740027FE88 /* dlditool.cpp in Sources */,
+				ABB7159E14E386740027FE88 /* driver.cpp in Sources */,
+				ABB7159F14E386740027FE88 /* emufat.cpp in Sources */,
+				ABB715A014E386740027FE88 /* emufile.cpp in Sources */,
+				ABB715A114E386740027FE88 /* fatdir.cpp in Sources */,
+				ABB715A214E386740027FE88 /* fatfile.cpp in Sources */,
+				ABB715A314E386740027FE88 /* FIFO.cpp in Sources */,
+				ABB715A414E386740027FE88 /* FIFOSampleBuffer.cpp in Sources */,
+				ABB715A514E386740027FE88 /* file_allocation_table.cpp in Sources */,
+				ABB715A614E386740027FE88 /* filetime.cpp in Sources */,
+				ABB715A714E386740027FE88 /* FIRFilter.cpp in Sources */,
+				ABB715A814E386740027FE88 /* firmware.cpp in Sources */,
+				ABB715A914E386740027FE88 /* fs-linux.cpp in Sources */,
+				ABB715AA14E386740027FE88 /* gfx3d.cpp in Sources */,
+				ABB715AB14E386740027FE88 /* GPU.cpp in Sources */,
+				ABB715AC14E386740027FE88 /* GPU_osd_stub.cpp in Sources */,
+				ABB715AD14E386740027FE88 /* guid.cpp in Sources */,
+				ABB715AE14E386740027FE88 /* header.cpp in Sources */,
+				ABB715AF14E386740027FE88 /* libfat.cpp in Sources */,
+				ABB715B014E386740027FE88 /* libfat_public_api.cpp in Sources */,
+				ABB715B114E386740027FE88 /* lock.cpp in Sources */,
+				ABB715B214E386740027FE88 /* matrix.cpp in Sources */,
+				ABB715B314E386740027FE88 /* mc.cpp in Sources */,
+				ABB715B414E386740027FE88 /* md5.cpp in Sources */,
+				ABB715B514E386740027FE88 /* metaspu.cpp in Sources */,
+				ABB715B614E386740027FE88 /* MMU.cpp in Sources */,
+				ABB715B714E386740027FE88 /* mmx_optimized.cpp in Sources */,
+				ABB715B814E386740027FE88 /* movie.cpp in Sources */,
+				ABB715B914E386740027FE88 /* NDSSystem.cpp in Sources */,
+				ABB715BA14E386740027FE88 /* OGLRender.cpp in Sources */,
+				ABB715BB14E386740027FE88 /* partition.cpp in Sources */,
+				ABB715BC14E386740027FE88 /* path.cpp in Sources */,
+				ABB715BD14E386740027FE88 /* rasterize.cpp in Sources */,
+				ABB715BE14E386740027FE88 /* RateTransposer.cpp in Sources */,
+				ABB715BF14E386740027FE88 /* readwrite.cpp in Sources */,
+				ABB715C014E386740027FE88 /* render3D.cpp in Sources */,
+				ABB715C114E386740027FE88 /* ROMReader.cpp in Sources */,
+				ABB715C214E386740027FE88 /* rtc.cpp in Sources */,
+				ABB715C314E386740027FE88 /* saves.cpp in Sources */,
+				ABB715C414E386740027FE88 /* slot1.cpp in Sources */,
+				ABB715C514E386740027FE88 /* slot1_none.cpp in Sources */,
+				ABB715C614E386740027FE88 /* slot1_r4.cpp in Sources */,
+				ABB715C714E386740027FE88 /* slot1_retail.cpp in Sources */,
+				ABB715C814E386740027FE88 /* slot1_retail_nand.cpp in Sources */,
+				ABB715C914E386740027FE88 /* slot2_expMemory.cpp in Sources */,
+				ABB715CA14E386740027FE88 /* slot2_gbagame.cpp in Sources */,
+				ABB715CB14E386740027FE88 /* slot2_guitarGrip.cpp in Sources */,
+				ABB715CC14E386740027FE88 /* slot2_mpcf.cpp in Sources */,
+				ABB715CD14E386740027FE88 /* slot2_none.cpp in Sources */,
+				ABB715CE14E386740027FE88 /* slot2_paddle.cpp in Sources */,
+				ABB715CF14E386740027FE88 /* slot2_piano.cpp in Sources */,
+				ABB715D014E386740027FE88 /* slot2_rumblepak.cpp in Sources */,
+				ABB715D114E386740027FE88 /* sndOSX.cpp in Sources */,
+				ABB715D214E386740027FE88 /* SndOut.cpp in Sources */,
+				ABB715D314E386740027FE88 /* SoundTouch.cpp in Sources */,
+				ABB715D414E386740027FE88 /* SPU.cpp in Sources */,
+				ABB715D514E386740027FE88 /* sse_optimized.cpp in Sources */,
+				ABB715D614E386740027FE88 /* task.cpp in Sources */,
+				ABB715D714E386740027FE88 /* TDStretch.cpp in Sources */,
+				ABB715D814E386740027FE88 /* texcache.cpp in Sources */,
+				ABB715D914E386740027FE88 /* thumb_instructions.cpp in Sources */,
+				ABB715DA14E386740027FE88 /* Timestretcher.cpp in Sources */,
+				ABB715DB14E386740027FE88 /* tinystr.cpp in Sources */,
+				ABB715DC14E386740027FE88 /* tinyxml.cpp in Sources */,
+				ABB715DD14E386740027FE88 /* tinyxmlerror.cpp in Sources */,
+				ABB715DE14E386740027FE88 /* tinyxmlparser.cpp in Sources */,
+				ABB715DF14E386740027FE88 /* version.cpp in Sources */,
+				ABB715E014E386740027FE88 /* vfat.cpp in Sources */,
+				ABB715E114E386740027FE88 /* videofilter.cpp in Sources */,
+				ABB715E214E386740027FE88 /* WavFile.cpp in Sources */,
+				ABB715E314E386740027FE88 /* wifi.cpp in Sources */,
+				ABB715E414E386740027FE88 /* xstring.cpp in Sources */,
+				ABB715E514E386740027FE88 /* main.m in Sources */,
+				ABB715E614E386740027FE88 /* cocoa_cheat.mm in Sources */,
+				ABB715E714E386740027FE88 /* cocoa_core.mm in Sources */,
+				ABB715E814E386740027FE88 /* cocoa_file.mm in Sources */,
+				ABB715E914E386740027FE88 /* cocoa_firmware.mm in Sources */,
+				ABB715EA14E386740027FE88 /* cocoa_hid.mm in Sources */,
+				ABB715EB14E386740027FE88 /* cocoa_input.mm in Sources */,
+				ABB715EC14E386740027FE88 /* cocoa_mic.mm in Sources */,
+				ABB715ED14E386740027FE88 /* cocoa_output.mm in Sources */,
+				ABB715EE14E386740027FE88 /* cocoa_rom.mm in Sources */,
+				ABB715EF14E386740027FE88 /* cocoa_util.mm in Sources */,
+				ABB715F014E386740027FE88 /* cocoa_videofilter.mm in Sources */,
+				ABB715F114E386740027FE88 /* appDelegate.mm in Sources */,
+				ABB715F214E386740027FE88 /* cheatWindowDelegate.mm in Sources */,
+				ABB715F314E386740027FE88 /* displayView.mm in Sources */,
+				ABB715F414E386740027FE88 /* emuWindowDelegate.mm in Sources */,
+				ABB715F514E386740027FE88 /* inputPrefsView.mm in Sources */,
+				ABB715F614E386740027FE88 /* preferencesWindowDelegate.mm in Sources */,
+				ABB715F714E386740027FE88 /* 2xsai.cpp in Sources */,
+				ABB715F814E386740027FE88 /* bilinear.cpp in Sources */,
+				ABB715F914E386740027FE88 /* epx.cpp in Sources */,
+				ABB715FA14E386740027FE88 /* hq2x.cpp in Sources */,
+				ABB715FB14E386740027FE88 /* hq4x.cpp in Sources */,
+				ABB715FC14E386740027FE88 /* lq2x.cpp in Sources */,
+				ABB715FD14E386740027FE88 /* scanline.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
@@ -1837,40 +2284,46 @@
 		AB711F7D1481C35F009011C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					x86_64,
-				);
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx10.6;
-				VALID_ARCHS = "i386 x86_64";
 			};
 			name = Debug;
 		};
 		AB711F7E1481C35F009011C8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					i386,
-					x86_64,
-				);
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx10.6;
-				SKIP_INSTALL = NO;
-				VALID_ARCHS = "i386 x86_64";
+			};
+			name = Release;
+		};
+		ABB7160714E386740027FE88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+			};
+			name = Debug;
+		};
+		ABB7160814E386740027FE88 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
 			};
 			name = Release;
 		};
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				SKIP_INSTALL = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = macosx10.5;
 			};
 			name = Debug;
 		};
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = macosx10.5;
 			};
 			name = Release;
 		};
@@ -1878,23 +2331,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					i386,
-					x86_64,
-					ppc,
-					ppc64,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_FAST_OBJC_DISPATCH = NO;
-				GCC_MODEL_TUNING = "";
-				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc]" = G4;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
@@ -1902,11 +2344,9 @@
 				GCC_THREADSAFE_STATICS = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
-				"GCC_VERSION[sdk=macosx10.5][arch=ppc64]" = 4.2;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_PROTOTYPE_CONVERSION = NO;
 				GCC_WARN_SHADOW = NO;
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -1914,7 +2354,7 @@
 				INFOPLIST_FILE = "Info (Debug).plist";
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "DeSmuME (Debug)";
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx10.7;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -1924,17 +2364,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					i386,
-					x86_64,
-					ppc,
-					ppc64,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_OPENMP_SUPPORT = NO;
-				GCC_ALTIVEC_EXTENSIONS = YES;
-				GCC_AUTO_VECTORIZATION = YES;
 				GCC_DYNAMIC_NO_PIC = YES;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SSE41_EXTENSIONS = YES;
@@ -1942,10 +2375,6 @@
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
-				GCC_MODEL_TUNING = "";
-				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc]" = G4;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
@@ -1955,15 +2384,14 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_UNROLL_LOOPS = YES;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
-				"GCC_VERSION[sdk=macosx10.5][arch=ppc64]" = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_PROTOTYPE_CONVERSION = NO;
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
+				LLVM_LTO = NO;
 				PRODUCT_NAME = DeSmuME;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -1981,6 +2409,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		ABB7160614E386740027FE88 /* Build configuration list for PBXNativeTarget "DeSmuME (v10.7 Lion)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ABB7160714E386740027FE88 /* Debug */,
+				ABB7160814E386740027FE88 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME (v10.5 Leopard)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1990,7 +2427,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 3)" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 4)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

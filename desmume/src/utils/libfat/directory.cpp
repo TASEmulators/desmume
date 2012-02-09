@@ -42,13 +42,18 @@
 #include "filetime.h"
 
 #ifdef __APPLE__
-//apple doesn't provide strnlen. how unkind
+#include <AvailabilityMacros.h>
+
+#ifndef MAC_OS_X_VERSION_10_7
+// In Mac OS X, strnlen() is unsupported prior to v10.7, so define it here.
 static size_t strnlen(const char *s, size_t n)
 {
 	const char *p = (const char *)memchr(s, 0, n);
 	return(p ? p-s : n);
 }
 #endif
+
+#endif // __APPLE__
 
 // Directory entry codes
 #define DIR_ENTRY_LAST 0x00

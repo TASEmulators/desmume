@@ -25,6 +25,7 @@
 #import "cocoa_util.h"
 
 #include <OpenGL/OpenGL.h>
+#include <OpenGL/gl.h>
 
 #undef BOOL
 
