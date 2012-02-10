@@ -140,7 +140,7 @@ void * GZIPROMReaderInit(const char * filename)
 
 void GZIPROMReaderDeInit(void * file)
 {
-	gzclose(file);
+	gzclose((gzFile)file);
 }
 
 u32 GZIPROMReaderSize(void * file)
@@ -150,22 +150,22 @@ u32 GZIPROMReaderSize(void * file)
 
 	/* FIXME this function should first save the current
 	 * position and restore it after size calculation */
-	gzrewind(file);
-	while (gzeof (file) == 0)
-		size += gzread(file, useless, 1024);
-	gzrewind(file);
+	gzrewind((gzFile)file);
+	while (gzeof ((gzFile)file) == 0)
+		size += gzread((gzFile)file, useless, 1024);
+	gzrewind((gzFile)file);
 
 	return size;
 }
 
 int GZIPROMReaderSeek(void * file, int offset, int whence)
 {
-	return gzseek(file, offset, whence);
+	return gzseek((gzFile)file, offset, whence);
 }
 
 int GZIPROMReaderRead(void * file, void * buffer, u32 size)
 {
-	return gzread(file, buffer, size);
+	return gzread((gzFile)file, buffer, size);
 }
 #endif
 
