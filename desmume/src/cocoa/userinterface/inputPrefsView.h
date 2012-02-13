@@ -26,6 +26,7 @@
 	NSWindow *prefWindow;
 	NSButton *lastConfigButton;
 	NSInteger configInput;
+	NSMutableDictionary *configInputList;
 	NSDictionary *keyNameTable;
 	
 	CocoaDSController *cdsController;

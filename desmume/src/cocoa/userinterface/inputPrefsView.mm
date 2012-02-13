@@ -22,6 +22,8 @@
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
 
+#define INPUT_HOLD_TIME		0.1		// Time in seconds to hold a button in its on state when mapping an input.
+
 @implementation InputPrefsView
 
 @synthesize prefWindow;
@@ -38,6 +40,7 @@
 	
 	lastConfigButton = nil;
 	configInput = 0;
+	configInputList = [[NSMutableDictionary alloc] initWithCapacity:32];
 	keyNameTable = [[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KeyNames" ofType:@"plist"]];
 	cdsController = nil;
 	
@@ -53,6 +56,7 @@
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	
+	[configInputList release];
 	[keyNameTable release];
 	
 	[super dealloc];
@@ -348,6 +352,7 @@
 	if ([theButton state] == NSOnState)
 	{
 		lastConfigButton = theButton;
+		[configInputList removeAllObjects];
 		configInput = [theButton tag];
 	}
 	else
@@ -398,17 +403,39 @@
 		NSNumber *onState = (NSNumber *)[inputProperties valueForKey:@"on"];
 		if (onState != nil)
 		{
+			NSString *deviceCode = (NSString *)[inputProperties valueForKey:@"deviceCode"];
+			NSString *elementCode = (NSString *)[inputProperties valueForKey:@"elementCode"];
+			NSString *deviceElementCode = [[deviceCode stringByAppendingString:@":"] stringByAppendingString:elementCode];
+			NSDate *inputOnDate = [configInputList valueForKey:deviceElementCode];
+			
 			inputOn = [onState boolValue];
 			if (inputOn)
 			{
-				NSString *deviceCode = (NSString *)[inputProperties valueForKey:@"deviceCode"];
-				NSString *deviceName = (NSString *)[inputProperties valueForKey:@"deviceName"];
-				NSString *elementCode = (NSString *)[inputProperties valueForKey:@"elementCode"];
-				NSString *elementName = (NSString *)[inputProperties valueForKey:@"elementName"];
-				
-				[self addMappingById:configInput deviceCode:deviceCode deviceName:deviceName elementCode:elementCode elementName:elementName];
-				[self inputButtonCancelConfig];
-				break;
+				if (inputOnDate == nil)
+				{
+					[configInputList setValue:[NSDate date] forKey:deviceElementCode];
+				}
+			}
+			else
+			{
+				if (inputOnDate != nil)
+				{
+					if (([inputOnDate timeIntervalSinceNow] * -1.0) < INPUT_HOLD_TIME)
+					{
+						// If the button isn't held for at least INPUT_HOLD_TIME seconds, then reject the input.
+						[configInputList setValue:nil forKey:deviceElementCode];
+					}
+					else
+					{
+						// Add the input mapping.
+						NSString *deviceName = (NSString *)[inputProperties valueForKey:@"deviceName"];
+						NSString *elementName = (NSString *)[inputProperties valueForKey:@"elementName"];
+						
+						[self addMappingById:configInput deviceCode:deviceCode deviceName:deviceName elementCode:elementCode elementName:elementName];
+						[self inputButtonCancelConfig];
+						break;
+					}
+				}
 			}
 		}
 	}
