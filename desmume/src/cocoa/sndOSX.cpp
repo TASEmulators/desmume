@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Jeff Bland
-	Copyright (C) 2007-2011 DeSmuME team
+	Copyright (C) 2007-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -54,13 +54,10 @@ OSStatus soundMixer(void *inRefCon,
 					AudioBufferList *ioData)
 {
 //printf("SOUND CALLBACK %u off%u  pos%u\n", inNumberFrames * 4, sound_offset, sound_position);
+	UInt8 *__restrict__ outputData = (UInt8 *)ioData->mBuffers[0].mData;
 	const size_t copySize = inNumberFrames * SPU_STEREO_SAMPLE_SIZE;
 	size_t hiBufferAvailable = 0;
 	size_t loBufferAvailable = 0;
-	
-	pthread_mutex_lock(mutexAudioUnit);
-	
-	UInt8 *__restrict__ outputData = (UInt8 *)ioData->mBuffers[0].mData;
 	
 	pthread_mutex_lock(mutexSoundData);
 	
@@ -136,8 +133,6 @@ OSStatus soundMixer(void *inRefCon,
 	{
 		//ExtAudioFileWrite(outfile, inNumberFrames, ioData);
 	}
-	
-	pthread_mutex_unlock(mutexAudioUnit);
 	
 	return noErr;
 }
