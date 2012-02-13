@@ -323,6 +323,15 @@ static NSDictionary *hidUsageTable = nil;
 	IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
 	NSInteger elementUsagePage = IOHIDElementGetUsagePage(hidElementRef);
 	NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
+	
+	// IOHIDValueGetIntegerValue() will crash if the value length is too large.
+	// Do a bounds check here to prevent crashing. This workaround makes the PS3
+	// controller usable, since it returns a length of 39 on some elements.
+	if(IOHIDValueGetLength(hidValueRef) > 2)
+	{
+		return inputAttributesList;
+	}
+	
 	NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
 	NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
 	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
@@ -335,8 +344,8 @@ static NSDictionary *hidUsageTable = nil;
 	}
 	else
 	{
-		NSInteger lowerThreshold = ((logicalMax - logicalMin) / 4) + logicalMin;
-		NSInteger upperThreshold = (((logicalMax - logicalMin) * 3) / 4) + logicalMin;
+		NSInteger lowerThreshold = ((logicalMax - logicalMin) / 3) + logicalMin;
+		NSInteger upperThreshold = (((logicalMax - logicalMin) * 2) / 3) + logicalMin;
 		NSNumber *onState = [NSNumber numberWithBool:YES];
 		NSNumber *offState = [NSNumber numberWithBool:NO];
 		NSString *elementCodeLowerThreshold = [NSString stringWithFormat:@"0x%04X/0x%04X/LowerThreshold", elementUsagePage, elementUsage];
@@ -829,11 +838,14 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 			inputAttributesList = [CocoaHIDDevice inputArrayFromHIDValue:hidValueRef];
 		}
 		
-		// HID input devices don't register events, so we need to manually prevent
-		// sleep and screensaver whenever we detect an input.
-		UpdateSystemActivity(UsrActivity);
-		
-		[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.hidInputDetected" object:inputAttributesList userInfo:nil];
+		if (inputAttributesList != nil)
+		{
+			// HID input devices don't register events, so we need to manually prevent
+			// sleep and screensaver whenever we detect an input.
+			UpdateSystemActivity(UsrActivity);
+			
+			[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.hidInputDetected" object:inputAttributesList userInfo:nil];
+		}
 		
 		CFRelease(hidValueRef);
 	} while (1);

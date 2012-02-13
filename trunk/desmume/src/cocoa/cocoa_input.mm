@@ -72,6 +72,21 @@
 - (void) set:(NSString *)elementCode attributes:(NSDictionary *)mappingAttributes
 {
 	NSString *keyString = [[self.deviceCode stringByAppendingString:@":"] stringByAppendingString:elementCode];
+	
+	// Remove any input mappings with the same DS control name as the new mapping.
+	// We're doing this check since the current UI doesn't support multiple bindings per control at this time.
+	// When the UI is updated to support multiple bindings per control, this check will need to be removed.
+	NSArray *mappingKeys = [self.map allKeys];
+	for (NSString *key in mappingKeys)
+	{
+		NSDictionary *inputMapping = (NSDictionary *)[self.map valueForKey:key];
+		NSString *dsControlName = (NSString *)[inputMapping valueForKey:@"name"];
+		if ([dsControlName isEqualToString:(NSString *)[mappingAttributes valueForKey:@"name"]])
+		{
+			[self.map setValue:nil forKey:key];
+		}
+	}
+	
 	[self.map setValue:mappingAttributes forKey:keyString];
 }
 
