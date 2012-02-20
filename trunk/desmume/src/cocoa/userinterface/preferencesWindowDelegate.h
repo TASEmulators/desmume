@@ -81,7 +81,7 @@
 
 @property (readonly) IBOutlet NSImageView *previewImageView;
 
-@property (assign) NSMutableDictionary *bindings;
+@property (readonly) NSMutableDictionary *bindings;
 
 - (IBAction) showGeneralView:(id)sender;
 - (IBAction) showInputView:(id)sender;

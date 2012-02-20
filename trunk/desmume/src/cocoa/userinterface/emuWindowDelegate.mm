@@ -139,7 +139,11 @@
 	[iconVolumeOneThird release];
 	[iconVolumeMute release];
 	[bindings release];
+	
 	[self setDispViewDelegate:nil];
+	[self setCdsCheats:nil];
+	[self setCdsSpeaker:nil];
+	[self setCurrentRom:nil];
 	
 	[super dealloc];
 }
@@ -1151,7 +1155,7 @@
 	// Need to pause the core before loading the ROM.
 	[self pauseCore];
 	
-	CocoaDSRom *newRom = [[CocoaDSRom alloc] init];
+	CocoaDSRom *newRom = [[[CocoaDSRom alloc] init] autorelease];
 	if (newRom != nil)
 	{
 		isRomLoading = YES;
@@ -1180,11 +1184,6 @@
 			[self restoreCoreState];
 		}
 		
-		if (theRom != nil)
-		{
-			[theRom release];
-		}
-		
 		[self setStatus:NSSTRING_STATUS_ROM_LOADING_FAILED];
 		[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
 		
@@ -1199,7 +1198,7 @@
 	// If the ROM has an associated cheat file, load it now.
 	NSString *cheatsPath = [[CocoaDSFile fileURLFromRomURL:[theRom fileURL] toKind:@"Cheat"] path];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	CocoaDSCheatManager *newCheatList = [[CocoaDSCheatManager alloc] initWithURL:cdsCore fileURL:[NSURL fileURLWithPath:cheatsPath]];
+	CocoaDSCheatManager *newCheatList = [[[CocoaDSCheatManager alloc] initWithCore:cdsCore fileURL:[NSURL fileURLWithPath:cheatsPath]] autorelease];
 	if (newCheatList != nil)
 	{
 		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
@@ -1263,7 +1262,6 @@
 		}
 		
 		[cheatWindowDelegate setCdsCheats:newCheatList];
-		[[cheatWindowDelegate cdsCheats] setCdsCore:cdsCore];
 		[[cheatWindowDelegate cdsCheatSearch] setCdsCore:cdsCore];
 		[cheatWindowDelegate setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE];
 	}
@@ -1316,11 +1314,9 @@
 	[window displayIfNeeded];
 	
 	// Unload the ROM.
-	[[self currentRom] release];
 	[self setCurrentRom:nil];
 	
 	// Release the current cheat list and assign the empty list.
-	[[self cdsCheats] release];
 	[self setCdsCheats:nil];
 	if (dummyCheatList == nil)
 	{

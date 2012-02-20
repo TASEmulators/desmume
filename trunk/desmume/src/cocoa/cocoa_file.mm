@@ -870,8 +870,6 @@
 		return result;
 	}
 	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	
 	NSString *newLocationPath = [[CocoaDSFile directoryURLByKind:[CocoaDSFile fileKindByURL:fileURL]] path];
 	if (newLocationPath == nil)
 	{
@@ -880,8 +878,9 @@
 	
 	NSString *filePath = [fileURL path];
 	newLocationPath = [newLocationPath stringByAppendingPathComponent:[filePath lastPathComponent]];
-	result = [fileManager moveItemAtPath:filePath toPath:newLocationPath error:nil];
 	
+	NSFileManager *fileManager = [[NSFileManager alloc] init];
+	result = [fileManager moveItemAtPath:filePath toPath:newLocationPath error:nil];
 	[fileManager release];
 	
 	return result;
@@ -896,8 +895,6 @@
 		return result;
 	}
 	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	
 	NSString *newLocationPath = [[CocoaDSFile directoryURLByKind:[CocoaDSFile fileKindByURL:fileURL]] path];
 	if (newLocationPath == nil)
 	{
@@ -906,8 +903,9 @@
 	
 	NSString *filePath = [fileURL path];
 	newLocationPath = [newLocationPath stringByAppendingPathComponent:[filePath lastPathComponent]];
-	result = [fileManager copyItemAtPath:filePath toPath:newLocationPath error:nil];
 	
+	NSFileManager *fileManager = [[NSFileManager alloc] init];
+	result = [fileManager copyItemAtPath:filePath toPath:newLocationPath error:nil];
 	[fileManager release];
 	
 	return result;

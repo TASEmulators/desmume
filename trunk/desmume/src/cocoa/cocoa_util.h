@@ -58,10 +58,10 @@
 	NSPort *receivePort;	
 }
 
-@property (assign) NSThread *thread;
+@property (retain) NSThread *thread;
 @property (assign) BOOL threadExit;
 @property (assign) NSTimeInterval autoreleaseInterval;
-@property (assign) NSPort *sendPort;
+@property (retain) NSPort *sendPort;
 @property (readonly) NSPort *receivePort;
 
 - (id) initWithAutoreleaseInterval:(NSTimeInterval)interval;

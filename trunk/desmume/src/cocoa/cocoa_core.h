@@ -22,7 +22,6 @@
 #import "cocoa_util.h"
 
 
-@class CocoaDSRom;
 @class CocoaDSController;
 @class CocoaDSFirmware;
 @class CocoaDSOutput;
@@ -30,6 +29,7 @@
 typedef struct
 {
 	void *cdsCore;
+	void *cdsController;
 	int state;
 	bool isFrameSkipEnabled;
 	unsigned int frameCount;
@@ -65,15 +65,16 @@ typedef struct
 	BOOL emuFlagEmulateEnsata;
 	
 	pthread_mutex_t *mutexCoreExecute;
+	OSSpinLock spinlockCdsController;
 	OSSpinLock spinlockMasterExecute;
 	OSSpinLock spinlockExecutionChange;
 	OSSpinLock spinlockCheatEnableFlag;
 	OSSpinLock spinlockEmulationFlags;
 }
 
-@property (assign) CocoaDSController *cdsController;
-@property (assign) CocoaDSFirmware *cdsFirmware;
-@property (assign) NSMutableArray *cdsOutputList;
+@property (retain) CocoaDSController *cdsController;
+@property (retain) CocoaDSFirmware *cdsFirmware;
+@property (readonly) NSMutableArray *cdsOutputList;
 
 @property (assign) BOOL masterExecute;
 @property (assign) BOOL isFrameSkipEnabled;
@@ -93,9 +94,9 @@ typedef struct
 @property (assign) BOOL emuFlagDebugConsole;
 @property (assign) BOOL emuFlagEmulateEnsata;
 
-@property (assign) NSURL *arm9ImageURL;
-@property (assign) NSURL *arm7ImageURL;
-@property (assign) NSURL *firmwareImageURL;
+@property (copy) NSURL *arm9ImageURL;
+@property (copy) NSURL *arm7ImageURL;
+@property (copy) NSURL *firmwareImageURL;
 
 @property (readonly) pthread_mutex_t *mutexCoreExecute;
 

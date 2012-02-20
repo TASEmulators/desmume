@@ -806,19 +806,19 @@
 	NSRect newFrame = [window frameRectForContentRect:[theView frame]];
 	newFrame.origin.x = [window frame].origin.x;
 	newFrame.origin.y = [window frame].origin.y + [[window contentView] frame].size.height - [theView frame].size.height;
-    
-	[[window contentView] retain];
 	
 	NSView *tempView = [[NSView alloc] initWithFrame:[[window contentView] frame]];
 	[window setContentView:tempView];
 	
 	[window setFrame:newFrame display:YES animate:YES];
 	[window setContentView:theView];
+	
+	[tempView release];
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
-	[prefWindowController setContent:self.bindings];
+	[prefWindowController setContent:bindings];
 }
 
 @end

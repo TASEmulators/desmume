@@ -100,7 +100,7 @@
 	
 	[newImage addRepresentation:newImageRep];
 	
-	return newImage;
+	return [newImage autorelease];
 }
 
 - (NSBitmapImageRep *) bitmapImageRep

@@ -105,8 +105,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void) dealloc
 {
-	[workingCopy release];
-	workingCopy = nil;
+	[self destroyWorkingCopy];
 	
 	free(internalData);
 	internalData = NULL;
@@ -626,7 +625,7 @@ static NSImage *iconCodeBreaker = nil;
 			[NSNumber numberWithInteger:self.freezeType], @"freezeType",
 			[NSNumber numberWithUnsignedInteger:self.codeCount], @"codeCount",
 			[NSNumber numberWithUnsignedInteger:self.bytes], @"bytes",
-			self.memAddress, @"memAddress",
+			[NSNumber numberWithUnsignedInt:self.memAddress], @"memAddress",
 			self.memAddressString, @"memAddressString",
 			[NSNumber numberWithInteger:self.value], @"value",
 			self.code, @"code",
@@ -648,25 +647,25 @@ static NSImage *iconCodeBreaker = nil;
 
 - (id)init
 {
-	return [self initWithURL:nil fileURL:nil listData:nil];
+	return [self initWithCore:nil fileURL:nil listData:nil];
 }
 
 - (id) initWithCore:(CocoaDSCore *)core
 {
-	return [self initWithURL:core fileURL:nil listData:nil];
+	return [self initWithCore:core fileURL:nil listData:nil];
 }
 
-- (id) initWithURL:(CocoaDSCore *)core fileURL:(NSURL *)fileURL
+- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL
 {
-	return [self initWithURL:core fileURL:fileURL listData:nil];
+	return [self initWithCore:core fileURL:fileURL listData:nil];
 }
 
-- (id) initWithExistingList:(CocoaDSCore *)core listData:(CHEATS *)cheatList
+- (id) initWithCore:(CocoaDSCore *)core listData:(CHEATS *)cheatList
 {
-	return [self initWithURL:core fileURL:nil listData:cheatList];
+	return [self initWithCore:core fileURL:nil listData:cheatList];
 }
 
-- (id) initWithURL:(CocoaDSCore *)core fileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList
+- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList
 {
 	self = [super init];
 	if(self == nil)
@@ -706,7 +705,7 @@ static NSImage *iconCodeBreaker = nil;
 		}
 	}
 	
-	cdsCore = core;
+	cdsCore = [core retain];
 	untitledCount = 0;
 	dbTitle = nil;
 	dbDate = nil;
@@ -716,8 +715,12 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void)dealloc
 {
-	[self.list release];
+	self.dbTitle = nil;
+	self.dbDate = nil;
+	self.cdsCore = nil;
+	[list release];
 	delete self.listData;
+	
 	[super dealloc];
 }
 
@@ -1084,7 +1087,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	listData = newListData;
 	addressList = nil;
-	cdsCore = core;
+	cdsCore = [core retain];
 	searchCount = 0;
 	
 	return self;
@@ -1092,8 +1095,14 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void)dealloc
 {
-	[self reset];
+	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	self.listData->close();
+	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	
+	[addressList release];
+	self.cdsCore = nil;
 	delete self.listData;
+	
 	[super dealloc];
 }
 

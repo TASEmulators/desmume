@@ -69,7 +69,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 						  nil];
 	}
 	
-	header = [[NSMutableDictionary alloc] init];
+	header = [[NSMutableDictionary alloc] initWithCapacity:32];
 	if (header == nil)
 	{
 		[self release];
@@ -104,23 +104,17 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 - (void)dealloc
 {
-	if (self.isDataLoaded)
+	if (isDataLoaded)
 	{
 		NDS_FreeROM();
-		self.isDataLoaded = NO;
+		isDataLoaded = NO;
 	}
 	
 	[xmlElementStack release];
 	[xmlCharacterStack release];
-	
-	[self.header release];
-	self.header = nil;
-	
-	[self.bindings release];
-	self.bindings = nil;
-	
-	[self.fileURL release];
-	self.fileURL = nil;
+	[header release];
+	[bindings release];
+	[fileURL release];
 	
 	[super dealloc];
 }
@@ -216,13 +210,14 @@ static NSMutableDictionary *saveTypeValues = nil;
 	BOOL result = [CocoaDSFile loadRom:theURL];
 	if (!result)
 	{
-		NSMutableDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"DidLoad", nil];
+		NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"DidLoad", nil];
 		[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
+		[userInfo release];
 		return result;
 	}
 	
-	self.fileURL = [theURL copyWithZone:nil];
-	self.isDataLoaded = YES;
+	fileURL = [theURL copy];
+	isDataLoaded = YES;
 	[self initHeader];
 	
 	NSString *advscDBPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
@@ -236,21 +231,26 @@ static NSMutableDictionary *saveTypeValues = nil;
 		[xmlError release];
 	}
 	
-	NSMutableDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:YES], @"DidLoad", self.fileURL, @"URL", nil];
+	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:YES], @"DidLoad", self.fileURL, @"URL", nil];
 	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
+	[userInfo release];
 	
 	return result;
 }
 
 - (void) loadDataOnThread:(id)object
 {
-	NSURL *theURL = [(NSURL *)object copyWithZone:nil];
+	[self retain];
+	
+	NSURL *theURL = [(NSURL *)object copy];
 	NSAutoreleasePool *threadPool = [[NSAutoreleasePool alloc] init];
 	
 	[self loadData:theURL];
 	
 	[threadPool release];
 	[theURL release];
+	
+	[self release];
 }
 
 - (NSString *) getRomTitle

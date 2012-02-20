@@ -37,7 +37,11 @@
 @synthesize cdsController;
 @synthesize isHudEnabled;
 @synthesize isHudEditingModeEnabled;
-@synthesize normalSize;
+@dynamic normalSize;
+@dynamic scale;
+@dynamic rotation;
+@dynamic useBilinearOutput;
+@dynamic displayType;
 @synthesize bindings;
 
 - (id)init
@@ -105,6 +109,10 @@
 
 - (void)dealloc
 {
+	self.view = nil;
+	self.cdsController = nil;
+	[bindings release];
+	
 	[super dealloc];
 }
 

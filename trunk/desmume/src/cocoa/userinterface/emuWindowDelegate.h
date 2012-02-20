@@ -89,9 +89,9 @@
 @property (readonly) IBOutlet NSView <DisplayViewDelegate> *displayView;
 @property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
 @property (readonly) IBOutlet NSView *saveScreenshotPanelAccessoryView;
-@property (assign) CocoaDSRom *currentRom;
-@property (assign) CocoaDSSpeaker *cdsSpeaker;
-@property (assign) CocoaDSCheatManager *cdsCheats;
+@property (retain) CocoaDSRom *currentRom;
+@property (retain) CocoaDSSpeaker *cdsSpeaker;
+@property (retain) CocoaDSCheatManager *cdsCheats;
 
 @property (retain) DisplayViewDelegate *dispViewDelegate;
 @property (readonly) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
@@ -110,7 +110,7 @@
 @property (assign) BOOL isShowingFileMigrationSheet;
 @property (assign) NSInteger selectedRomSaveTypeID;
 
-@property (assign) NSMutableDictionary *bindings;
+@property (readonly) NSMutableDictionary *bindings;
 
 - (void) setContentScalar:(double)s;
 - (void) setContentRotation:(double)angleDegrees;

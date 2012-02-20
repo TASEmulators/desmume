@@ -33,10 +33,10 @@
 	NSMutableArray *xmlCharacterStack;
 }
 
-@property (assign) NSMutableDictionary *header;
-@property (assign) NSMutableDictionary *bindings;
-@property (assign) NSURL *fileURL;
-@property (assign) BOOL isDataLoaded;
+@property (readonly) NSMutableDictionary *header;
+@property (readonly) NSMutableDictionary *bindings;
+@property (readonly) NSURL *fileURL;
+@property (readonly) BOOL isDataLoaded;
 @property (assign) NSInteger saveType;
 
 - (id) initWithURL:(NSURL *)theURL;

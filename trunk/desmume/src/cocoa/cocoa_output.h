@@ -35,8 +35,8 @@
 
 @property (assign) BOOL isStateChanged;
 @property (assign) NSUInteger frameCount;
-@property (assign) NSData *frameData;
-@property (assign) NSMutableDictionary *property;
+@property (retain) NSData *frameData;
+@property (readonly) NSMutableDictionary *property;
 @property (readonly) pthread_mutex_t *mutexOutputFrame;
 
 - (void) doCoreEmuFrame;
@@ -100,7 +100,7 @@
 - (void) doInitVideoOutput:(NSDictionary *)properties;
 - (void) doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize;
 
-@property (assign) NSPort *sendPortDisplay;
+@property (retain) NSPort *sendPortDisplay;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
@@ -123,6 +123,7 @@
 	CocoaVideoFilter *vf;
 	
 	pthread_mutex_t *mutexRender3D;
+	OSSpinLock spinlockDelegate;
 	OSSpinLock spinlockGpuState;
 	OSSpinLock spinlockDisplayType;
 	OSSpinLock spinlockVideoFilterType;
@@ -138,7 +139,7 @@
 }
 
 @property (assign) UInt32 gpuStateFlags;
-@property (assign) id <CocoaDSDisplayDelegate> delegate;
+@property (retain) id <CocoaDSDisplayDelegate> delegate;
 @property (assign) NSInteger displayType;
 @property (assign) CocoaVideoFilter *vf;
 @property (readonly) pthread_mutex_t *mutexRender3D;

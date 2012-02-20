@@ -65,11 +65,15 @@
 	OSSpinLock spinlockUseBilinearOutput;
 }
 
-@property (assign) NSView <DisplayViewDelegate> *view;
-@property (assign) NSPort *sendPortInput;
+@property (retain) NSView <DisplayViewDelegate> *view;
+@property (retain) NSPort *sendPortInput;
 @property (retain) CocoaDSController *cdsController;
 @property (readonly) NSSize normalSize;
-@property (assign) NSMutableDictionary *bindings;
+@property (assign) double scale;
+@property (assign) double rotation;
+@property (assign) BOOL useBilinearOutput;
+@property (assign) NSInteger displayType;
+@property (readonly) NSMutableDictionary *bindings;
 
 - (void) setGpuStateFlags:(UInt32)flags;
 - (UInt32) gpuStateFlags;

@@ -31,9 +31,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 {
 	NSPortMessage *message = [[NSPortMessage alloc] initWithSendPort:sendPort receivePort:nil components:nil];
 	[message setMsgid:msgID];
-	NSDate *sendDate = [[NSDate alloc] init];
 	[message sendBeforeDate:distantFutureDate];
-	[sendDate release];
 	[message release];
 }
 
@@ -41,9 +39,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 {
 	NSPortMessage *message = [[NSPortMessage alloc] initWithSendPort:sendPort receivePort:nil components:msgDataArray];
 	[message setMsgid:msgID];
-	NSDate *sendDate = [[NSDate alloc] init];
 	[message sendBeforeDate:distantFutureDate];
-	[sendDate release];
 	[message release];
 }
 
@@ -176,8 +172,9 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 		}
 	}
 	
-	[self.sendPort release];
-	[self.receivePort release];
+	self.sendPort = nil;
+	[receivePort release];
+	
 	[super dealloc];
 }
 
@@ -187,7 +184,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	NSRunLoop *runLoop = [[NSRunLoop currentRunLoop] retain];
 	
 	[runLoop addPort:self.receivePort forMode:NSDefaultRunLoopMode];
-	self.thread = [[NSThread currentThread] retain];
+	self.thread = [NSThread currentThread];
 	
 	do
 	{
@@ -198,7 +195,6 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 		[runLoopPool release];
 	} while (!self.threadExit);
 	
-	[self.thread release];
 	self.thread = nil;
 	[runLoop release];
 	

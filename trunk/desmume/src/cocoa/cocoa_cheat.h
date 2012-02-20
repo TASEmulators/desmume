@@ -96,15 +96,15 @@
 
 @property (readonly) CHEATS *listData;
 @property (readonly) NSMutableArray *list;
-@property (assign) CocoaDSCore *cdsCore;
+@property (retain) CocoaDSCore *cdsCore;
 @property (assign) NSUInteger untitledCount;
-@property (assign) NSString *dbTitle;
-@property (assign) NSString *dbDate;
+@property (copy) NSString *dbTitle;
+@property (copy) NSString *dbDate;
 
 - (id) initWithCore:(CocoaDSCore *)core;
-- (id) initWithURL:(CocoaDSCore *)core fileURL:(NSURL *)fileURL;
-- (id) initWithExistingList:(CocoaDSCore *)core listData:(CHEATS *)cheatList;
-- (id) initWithURL:(CocoaDSCore *)core fileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList;
+- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL;
+- (id) initWithCore:(CocoaDSCore *)core listData:(CHEATS *)cheatList;
+- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList;
 
 - (BOOL) add:(CocoaDSCheatItem *)cheatItem;
 - (void) remove:(CocoaDSCheatItem *)cheatItem;
@@ -133,7 +133,7 @@
 
 @property (readonly) CHEATSEARCH *listData;
 @property (readonly) NSMutableArray *addressList;
-@property (assign) CocoaDSCore *cdsCore;
+@property (retain) CocoaDSCore *cdsCore;
 @property (readonly) NSUInteger searchCount;
 
 - (id) initWithCore:(CocoaDSCore *)core;

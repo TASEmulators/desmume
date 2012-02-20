@@ -92,10 +92,10 @@
 @property (readonly) IBOutlet NSWindow *cheatDatabaseSheet;
 
 @property (assign) NSUInteger untitledCount;
-@property (assign) NSMutableDictionary *bindings;
-@property (assign) CocoaDSCheatItem *workingCheat;
-@property (assign) CocoaDSCheatManager *cdsCheats;
-@property (assign) CocoaDSCheatSearch *cdsCheatSearch;
+@property (readonly) NSMutableDictionary *bindings;
+@property (retain) CocoaDSCheatItem *workingCheat;
+@property (retain) CocoaDSCheatManager *cdsCheats;
+@property (readonly) CocoaDSCheatSearch *cdsCheatSearch;
 
 - (IBAction) addToList:(id)sender;
 - (IBAction) removeFromList:(id)sender;
