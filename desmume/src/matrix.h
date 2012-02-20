@@ -1,5 +1,6 @@
-/*  Copyright (C) 2006-2007 shash
-	Copyright (C) 2009-2010 DeSmuME team
+/*  
+	Copyright (C) 2006-2007 shash
+	Copyright (C) 2009-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -110,6 +111,10 @@ FORCEINLINE s32 s32floor(float f)
 #else
 	return (s32)floorf(f);
 #endif
+}
+FORCEINLINE s32 s32floor(double d)
+{
+	return s32floor((float)d);
 }
 
 //switched SSE2 functions
