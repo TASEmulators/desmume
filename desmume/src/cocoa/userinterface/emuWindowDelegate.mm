@@ -115,12 +115,12 @@
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(loadRomDidFinish:)
-												 name:@"com.DeSmuME.DeSmuME.loadRomDidFinish"
+												 name:@"org.desmume.DeSmuME.loadRomDidFinish"
 											   object:nil];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(saveScreenshotAsFinish:)
-												 name:@"com.DeSmuME.DeSmuME.requestScreenshotDidFinish"
+												 name:@"org.desmume.DeSmuME.requestScreenshotDidFinish"
 											   object:nil];
 	
 	return self;

@@ -878,7 +878,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 			// sleep and screensaver whenever we detect an input.
 			UpdateSystemActivity(UsrActivity);
 			
-			[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.hidInputDetected" object:inputAttributesList userInfo:nil];
+			[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.hidInputDetected" object:inputAttributesList userInfo:nil];
 		}
 		
 		CFRelease(hidValueRef);
