@@ -211,7 +211,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	if (!result)
 	{
 		NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"DidLoad", nil];
-		[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
+		[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
 		[userInfo release];
 		return result;
 	}
@@ -232,7 +232,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	}
 	
 	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:YES], @"DidLoad", self.fileURL, @"URL", nil];
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.loadRomDidFinish" object:self userInfo:userInfo];
 	[userInfo release];
 	
 	return result;

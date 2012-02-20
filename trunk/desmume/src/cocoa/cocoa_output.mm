@@ -1398,7 +1398,7 @@ static BOOL isSPUStarted = NO;
 							  [self image], @"screenshotImage",
 							  nil];
 	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.requestScreenshotDidFinish" object:self userInfo:userInfo];
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.requestScreenshotDidFinish" object:self userInfo:userInfo];
 	[userInfo release];
 	
 	[fileURLString release];

@@ -204,7 +204,7 @@
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(handleHIDInput:)
-												 name:@"com.DeSmuME.DeSmuME.hidInputDetected"
+												 name:@"org.desmume.DeSmuME.hidInputDetected"
 											   object:nil];
 	
 	return self;

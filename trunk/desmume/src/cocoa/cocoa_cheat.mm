@@ -1132,7 +1132,7 @@ static NSImage *iconCodeBreaker = nil;
 		searchCount++;
 	}
 	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.searchDidFinish" object:self userInfo:nil];
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.searchDidFinish" object:self userInfo:nil];
 	
 	return itemCount;
 }
@@ -1174,7 +1174,7 @@ static NSImage *iconCodeBreaker = nil;
 		searchCount++;
 	}
 	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.searchDidFinish" object:self userInfo:nil];
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.searchDidFinish" object:self userInfo:nil];
 	
 	return itemCount;
 }
