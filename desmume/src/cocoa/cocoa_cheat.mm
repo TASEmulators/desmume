@@ -719,7 +719,7 @@ static NSImage *iconCodeBreaker = nil;
 	self.dbDate = nil;
 	self.cdsCore = nil;
 	[list release];
-	delete self.listData;
+	delete (CHEATS *)self.listData;
 	
 	[super dealloc];
 }
@@ -1101,7 +1101,7 @@ static NSImage *iconCodeBreaker = nil;
 	
 	[addressList release];
 	self.cdsCore = nil;
-	delete self.listData;
+	delete (CHEATSEARCH *)self.listData;
 	
 	[super dealloc];
 }
