@@ -44,27 +44,36 @@
 		return self;
 	}
 	
-	map = [[NSMutableDictionary alloc] init];
-	deviceCode = theCode;
-	deviceName = theName;
+	map = [[NSMutableDictionary alloc] initWithCapacity:32];
 	
 	if (theCode == nil)
 	{
-		deviceCode = [NSString stringWithFormat:@"0x%08X", rand()];
+		deviceCode = [[NSString stringWithFormat:@"0x%08X", rand()] retain];
+	}
+	else
+	{
+		deviceCode = [theCode copy];
 	}
 	
 	if (theName == nil)
 	{
 		deviceName = @"Unknown Device ";
-		deviceName = [deviceName stringByAppendingString:deviceCode];
+		deviceName = [[deviceName stringByAppendingString:deviceCode] retain];
 	}
+	else
+	{
+		deviceName = [theName copy];
+	}
+
 	
 	return self;
 }
 
 - (void)dealloc
 {
-	[self.map release];
+	self.map = nil;
+	self.deviceCode = nil;
+	self.deviceName = nil;
 	
 	[super dealloc];
 }
@@ -173,6 +182,11 @@
 
 - (id)init
 {
+	return [self initWithMic:nil];
+}
+
+- (id) initWithMic:(CocoaDSMic *)theMic
+{
 	self = [super init];
 	if (self == nil)
 	{
@@ -182,8 +196,8 @@
 	mutexControllerUpdate = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mutexControllerUpdate, NULL);
 	
+	cdsMic = [theMic retain];
 	states = [[NSMutableDictionary alloc] init];
-	cdsMic = [[CocoaDSMic alloc] init];
 	inputs = [[NSMutableDictionary alloc] initWithCapacity:10];
 	
 	[self initDefaultMappings];
@@ -200,9 +214,9 @@
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	
-	[self.states release];
-	[self.cdsMic release];
-	[self.inputs release];
+	self.cdsMic = nil;
+	[states release];
+	[inputs release];
 	
 	pthread_mutex_destroy(self.mutexControllerUpdate);
 	free(self.mutexControllerUpdate);
@@ -329,7 +343,7 @@
 			deviceName = deviceCode;
 		}
 		
-		input = [[CocoaDSInput alloc] initWithDeviceCode:deviceCode name:deviceName];
+		input = [[[CocoaDSInput alloc] initWithDeviceCode:deviceCode name:deviceName] autorelease];
 		[self.inputs setValue:input forKey:deviceCode];
 	}
 	

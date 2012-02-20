@@ -146,7 +146,7 @@
 	[self setHidManager:[[[CocoaHIDManager alloc] init] autorelease]];
 	
 	// Set the display view delegate.
-	DisplayViewDelegate *newDispViewDelegate = [[DisplayViewDelegate alloc] init];
+	DisplayViewDelegate *newDispViewDelegate = [[[DisplayViewDelegate alloc] init] autorelease];
 	[newDispViewDelegate setView:[mainWindowDelegate displayView]];
 	[mainWindowDelegate setDispViewDelegate:newDispViewDelegate];
 	[[mainWindowDelegate displayView] setDispViewDelegate:newDispViewDelegate];
@@ -156,7 +156,8 @@
 	[cdsCoreController setContent:newCore];
 	
 	// Init the DS controller and microphone.
-	CocoaDSController *newController = [[[CocoaDSController alloc] init] autorelease];
+	CocoaDSMic *newMic = [[[CocoaDSMic alloc] init] autorelease];
+	CocoaDSController *newController = [[[CocoaDSController alloc] initWithMic:newMic] autorelease];
 	[newCore setCdsController:newController];
 	[inputPrefsView setCdsController:newController];
 	[newDispViewDelegate setCdsController:newController];
@@ -399,7 +400,7 @@
 									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Language"], @"Language",
 									  nil];
 	
-	CocoaDSFirmware *newFirmware = [[CocoaDSFirmware alloc] initWithDictionary:newFWDict];
+	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] initWithDictionary:newFWDict] autorelease];
 	[cdsCore setCdsFirmware:newFirmware];
 	[newFirmware update];
 	

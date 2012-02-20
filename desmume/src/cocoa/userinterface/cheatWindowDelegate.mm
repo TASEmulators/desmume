@@ -99,6 +99,8 @@
 
 - (void)dealloc
 {	
+	self.workingCheat = nil;
+	self.cdsCheats = nil;
 	[cdsCheatSearch release];
 	[bindings release];
 	

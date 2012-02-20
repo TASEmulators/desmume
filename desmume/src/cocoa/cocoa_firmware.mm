@@ -122,29 +122,32 @@
 
 - (void) setNickname:(NSString *)theNickname
 {
-	if (theNickname == nil)
-	{
-		return;
-	}
-	
 	pthread_mutex_lock(&mutex);
-		
-	NSRange characterRange = {0, [theNickname length]};
 	
-	if (characterRange.length > MAX_FW_NICKNAME_LENGTH)
+	if (theNickname != nil)
 	{
-		characterRange.length = MAX_FW_NICKNAME_LENGTH;
+		NSRange characterRange = {0, [theNickname length]};
+		
+		if (characterRange.length > MAX_FW_NICKNAME_LENGTH)
+		{
+			characterRange.length = MAX_FW_NICKNAME_LENGTH;
+		}
+		
+		[theNickname getBytes:&data->nickname[0]
+					maxLength:(sizeof(UInt16) * characterRange.length)
+				   usedLength:NULL
+					 encoding:NSUTF16LittleEndianStringEncoding
+					  options:NSStringEncodingConversionAllowLossy
+						range:characterRange
+			   remainingRange:NULL];
+		
+		data->nickname_len = (u8)characterRange.length;
 	}
-	
-	[theNickname getBytes:&data->nickname[0]
-				maxLength:(sizeof(UInt16) * characterRange.length)
-			   usedLength:NULL
-				 encoding:NSUTF16LittleEndianStringEncoding
-				  options:NSStringEncodingConversionAllowLossy
-					range:characterRange
-		   remainingRange:NULL];
-	
-	data->nickname_len = (u8)characterRange.length;
+	else
+	{
+		memset(&data->nickname[0], 0, sizeof(data->nickname));
+		data->nickname_len = 0;
+	}
 	
 	pthread_mutex_unlock(&mutex);
 }
@@ -160,29 +163,32 @@
 
 - (void) setMessage:(NSString *)theMessage
 {
-	if (theMessage == nil)
-	{
-		return;
-	}
-	
 	pthread_mutex_lock(&mutex);
-		
-	NSRange characterRange = {0, [theMessage length]};
 	
-	if (characterRange.length > MAX_FW_MESSAGE_LENGTH)
+	if (theMessage != nil)
 	{
-		characterRange.length = MAX_FW_MESSAGE_LENGTH;
+		NSRange characterRange = {0, [theMessage length]};
+		
+		if (characterRange.length > MAX_FW_MESSAGE_LENGTH)
+		{
+			characterRange.length = MAX_FW_MESSAGE_LENGTH;
+		}
+		
+		[theMessage getBytes:&data->message[0]
+				   maxLength:(sizeof(UInt16) * characterRange.length)
+				  usedLength:NULL
+					encoding:NSUTF16LittleEndianStringEncoding
+					 options:NSStringEncodingConversionAllowLossy
+					   range:characterRange
+			  remainingRange:NULL];
+		
+		data->message_len = (u8)characterRange.length;
 	}
-	
-	[theMessage getBytes:&data->message[0]
-				maxLength:(sizeof(UInt16) * characterRange.length)
-			   usedLength:NULL
-				 encoding:NSUTF16LittleEndianStringEncoding
-				  options:NSStringEncodingConversionAllowLossy
-					range:characterRange
-		   remainingRange:NULL];
-	
-	data->message_len = (u8)characterRange.length;
+	else
+	{
+		memset(&data->message[0], 0, sizeof(data->message));
+		data->message_len = 0;
+	}
 	
 	pthread_mutex_unlock(&mutex);
 }
@@ -214,29 +220,33 @@
 
 - (void) setBirthday:(NSDate *)theDate
 {
-	if (theDate == nil)
-	{
-		return;
-	}
-	
 	pthread_mutex_lock(&mutex);
+	
+	if (theDate != nil)
+	{
+		NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
 		
-	NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-	
-	[dateFormatter setDateFormat:@"M"];
-	NSInteger theMonth = [[dateFormatter stringFromDate:theDate] integerValue];
-	
-	[dateFormatter setDateFormat:@"d"];
-	NSInteger theDay = [[dateFormatter stringFromDate:theDate] integerValue];
-	
-	[dateFormatter setDateFormat:@"Y"];
-	NSInteger theYear = [[dateFormatter stringFromDate:theDate] integerValue];
-	
-	[dateFormatter release];
-	
-	data->birth_month = (u8)theMonth;
-	data->birth_day = (u8)theDay;
-	birth_year = theYear;
+		[dateFormatter setDateFormat:@"M"];
+		NSInteger theMonth = [[dateFormatter stringFromDate:theDate] integerValue];
+		
+		[dateFormatter setDateFormat:@"d"];
+		NSInteger theDay = [[dateFormatter stringFromDate:theDate] integerValue];
+		
+		[dateFormatter setDateFormat:@"Y"];
+		NSInteger theYear = [[dateFormatter stringFromDate:theDate] integerValue];
+		
+		[dateFormatter release];
+		
+		data->birth_month = (u8)theMonth;
+		data->birth_day = (u8)theDay;
+		birth_year = theYear;
+	}
+	else
+	{
+		data->birth_month = 1;
+		data->birth_day = 1;
+		birth_year = 1970;
+	}
 	
 	pthread_mutex_unlock(&mutex);
 }

@@ -33,7 +33,7 @@ volatile bool execute = true;
 
 @implementation CocoaDSCore
 
-@synthesize cdsController;
+@dynamic cdsController;
 @synthesize cdsFirmware;
 @synthesize cdsOutputList;
 
@@ -87,6 +87,7 @@ static BOOL isCoreStarted = NO;
 	mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mutexCoreExecute, NULL);
 	spinlockMasterExecute = OS_SPINLOCK_INIT;
+	spinlockCdsController = OS_SPINLOCK_INIT;
 	spinlockExecutionChange = OS_SPINLOCK_INIT;
 	spinlockCheatEnableFlag = OS_SPINLOCK_INIT;
 	spinlockEmulationFlags = OS_SPINLOCK_INIT;
@@ -96,6 +97,7 @@ static BOOL isCoreStarted = NO;
 	prevCoreState = CORESTATE_PAUSE;
 	
 	threadParam.cdsCore = self;
+	threadParam.cdsController = cdsController;
 	threadParam.state = CORESTATE_PAUSE;
 	threadParam.isFrameSkipEnabled = true;
 	threadParam.frameCount = 0;
@@ -139,6 +141,10 @@ static BOOL isCoreStarted = NO;
 	pthread_mutex_destroy(self.mutexCoreExecute);
 	free(self.mutexCoreExecute);
 	mutexCoreExecute = nil;
+	
+	self.cdsController = nil;
+	self.cdsFirmware = nil;
+	[cdsOutputList release];
 	
 	[super dealloc];
 }
@@ -210,6 +216,39 @@ static BOOL isCoreStarted = NO;
 	return theState;
 }
 
+- (void) setCdsController:(CocoaDSController *)theController
+{
+	OSSpinLockLock(&spinlockCdsController);
+	
+	if (theController == cdsController)
+	{
+		OSSpinLockUnlock(&spinlockCdsController);
+		return;
+	}
+	
+	if (theController != nil)
+	{
+		[theController retain];
+	}
+	
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	[cdsController release];
+	cdsController = theController;
+	threadParam.cdsController = theController;
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	
+	OSSpinLockUnlock(&spinlockCdsController);
+}
+
+- (CocoaDSController *) cdsController
+{
+	OSSpinLockLock(&spinlockCdsController);
+	CocoaDSController *theController = cdsController;
+	OSSpinLockUnlock(&spinlockCdsController);
+	
+	return theController;
+}
+
 - (void) setIsFrameSkipEnabled:(BOOL)theState
 {
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
@@ -221,6 +260,7 @@ static BOOL isCoreStarted = NO;
 	else
 	{
 		threadParam.isFrameSkipEnabled = false;
+		threadParam.framesToSkip = 0;
 	}
 	
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
@@ -618,7 +658,7 @@ void* RunCoreThread(void *arg)
 		
 		// Get the user's input, execute a single emulation frame, and generate
 		// the frame output.
-		[cdsCore.cdsController update];
+		[(CocoaDSController *)param->cdsController update];
 		
 		NDS_beginProcessingInput();
 		// Shouldn't need to do any special processing steps in between.
@@ -635,14 +675,14 @@ void* RunCoreThread(void *arg)
 		NDS_exec<false>();
 		pthread_mutex_unlock(param->mutexCoreExecute);
 		
-		if (param->framesToSkip == 0 || !param->isFrameSkipEnabled)
+		if (param->framesToSkip == 0)
 		{
 			param->frameCount++;
 		}
 		
 		for(CocoaDSOutput *cdsOutput in cdsOutputList)
 		{
-			if (param->isFrameSkipEnabled && param->framesToSkip > 0 && [cdsOutput isMemberOfClass:[CocoaDSDisplay class]])
+			if (param->framesToSkip > 0 && [cdsOutput isMemberOfClass:[CocoaDSDisplay class]])
 			{
 				pthread_mutex_unlock(cdsOutput.mutexOutputFrame);
 				continue;

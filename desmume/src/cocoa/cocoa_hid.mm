@@ -63,7 +63,7 @@ extern "C"
 @implementation CocoaHIDDevice
 
 @synthesize hidDeviceRef;
-@synthesize runLoop;
+@dynamic runLoop;
 
 static NSDictionary *hidUsageTable = nil;
 
@@ -105,6 +105,7 @@ static NSDictionary *hidUsageTable = nil;
 	
     CFRelease(elementArray);
 	
+	spinlockRunLoop = OS_SPINLOCK_INIT;
 	[self setRunLoop:[NSRunLoop currentRunLoop]];
 	
 	return self;
@@ -127,25 +128,39 @@ static NSDictionary *hidUsageTable = nil;
 
 - (void) setRunLoop:(NSRunLoop *)theRunLoop
 {
-	if (theRunLoop == nil && runLoop != nil)
+	OSSpinLockLock(&spinlockRunLoop);
+	
+	if (theRunLoop == runLoop)
+	{
+		OSSpinLockUnlock(&spinlockRunLoop);
+		return;
+	}
+	
+	if (theRunLoop == nil)
 	{
 		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, NULL, NULL);
 		IOHIDQueueUnscheduleFromRunLoop(hidQueueRef, [runLoop getCFRunLoop], kCFRunLoopDefaultMode);
-		[runLoop release];
 	}
-	
-	runLoop = theRunLoop;
-	if (runLoop != nil)
+	else
 	{
-		[runLoop retain];
+		[theRunLoop retain];
 		IOHIDQueueScheduleWithRunLoop(hidQueueRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
 		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, HandleQueueValueAvailableCallback, self);
 	}
+	
+	[runLoop release];
+	runLoop = theRunLoop;
+	
+	OSSpinLockUnlock(&spinlockRunLoop);
 }
 
 - (NSRunLoop *) runLoop
 {
-	return runLoop;
+	OSSpinLockLock(&spinlockRunLoop);
+	NSRunLoop *theRunLoop = runLoop;
+	OSSpinLockUnlock(&spinlockRunLoop);
+	
+	return theRunLoop;
 }
 
 - (void) start
@@ -707,7 +722,7 @@ static NSDictionary *hidUsageTable = nil;
 
 @synthesize hidManagerRef;
 @synthesize deviceList;
-@synthesize runLoop;
+@dynamic runLoop;
 
 - (id)init
 {
@@ -733,11 +748,16 @@ static NSDictionary *hidUsageTable = nil;
 	CFMutableDictionaryRef cfGamepadMatcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 	CFDictionarySetValue(cfGamepadMatcher, CFSTR(kIOHIDDeviceUsagePageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDPage_GenericDesktop]);
 	CFDictionarySetValue(cfGamepadMatcher, CFSTR(kIOHIDDeviceUsageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDUsage_GD_GamePad]);
-		
-	NSArray *matcherArray = [NSArray arrayWithObjects:(NSMutableDictionary *)cfJoystickMatcher, (NSMutableDictionary *)cfGamepadMatcher, nil];
+	
+	NSArray *matcherArray = [[NSArray alloc] initWithObjects:(NSMutableDictionary *)cfJoystickMatcher, (NSMutableDictionary *)cfGamepadMatcher, nil];
 	
 	IOHIDManagerSetDeviceMatchingMultiple(hidManagerRef, (CFArrayRef)matcherArray);
 	
+	[matcherArray release];
+	CFRelease(cfJoystickMatcher);
+	CFRelease(cfGamepadMatcher);
+	
+	spinlockRunLoop = OS_SPINLOCK_INIT;
 	[self setRunLoop:[NSRunLoop currentRunLoop]];
 	
 	IOReturn result = IOHIDManagerOpen(hidManagerRef, kIOHIDOptionsTypeNone);
@@ -752,9 +772,8 @@ static NSDictionary *hidUsageTable = nil;
 
 - (void)dealloc
 {
-	[self.deviceList release];
-	
 	self.runLoop = nil;
+	[deviceList release];
 	
 	if (hidManagerRef != NULL)
 	{
@@ -768,27 +787,41 @@ static NSDictionary *hidUsageTable = nil;
 
 - (void) setRunLoop:(NSRunLoop *)theRunLoop
 {
-	if (theRunLoop == nil && runLoop != nil)
+	OSSpinLockLock(&spinlockRunLoop);
+	
+	if (theRunLoop == runLoop)
+	{
+		OSSpinLockUnlock(&spinlockRunLoop);
+		return;
+	}
+	
+	if (theRunLoop == nil)
 	{
 		IOHIDManagerRegisterDeviceMatchingCallback(hidManagerRef, NULL, NULL);
 		IOHIDManagerRegisterDeviceRemovalCallback(hidManagerRef, NULL, NULL);
 		IOHIDManagerUnscheduleFromRunLoop(hidManagerRef, [runLoop getCFRunLoop], kCFRunLoopDefaultMode);
-		[runLoop release];
 	}
-	
-	runLoop = theRunLoop;
-	if (runLoop != nil)
+	else
 	{
-		[runLoop retain];
+		[theRunLoop retain];
 		IOHIDManagerScheduleWithRunLoop(hidManagerRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
 		IOHIDManagerRegisterDeviceMatchingCallback(hidManagerRef, HandleDeviceMatchingCallback, self);
 		IOHIDManagerRegisterDeviceRemovalCallback(hidManagerRef, HandleDeviceRemovalCallback, self);
 	}
+	
+	[runLoop release];
+	runLoop = theRunLoop;
+	
+	OSSpinLockUnlock(&spinlockRunLoop);
 }
 
 - (NSRunLoop *) runLoop
 {
-	return runLoop;
+	OSSpinLockLock(&spinlockRunLoop);
+	NSRunLoop *theRunLoop = runLoop;
+	OSSpinLockUnlock(&spinlockRunLoop);
+	
+	return theRunLoop;
 }
 
 @end
@@ -819,6 +852,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 {
 	IOHIDQueueRef hidQueue = (IOHIDQueueRef)inSender;
 	NSMutableArray *inputAttributesList = nil;
+	NSAutoreleasePool *hidPool = [[NSAutoreleasePool alloc] init];
 	
 	do
 	{
@@ -849,4 +883,6 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 		
 		CFRelease(hidValueRef);
 	} while (1);
+	
+	[hidPool release];
 }

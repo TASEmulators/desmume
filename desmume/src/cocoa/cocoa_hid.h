@@ -17,6 +17,7 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#include <libkern/OSAtomic.h>
 #include <IOKit/hid/IOHIDManager.h>
 
 
@@ -25,10 +26,11 @@
 	IOHIDDeviceRef hidDeviceRef;
 	IOHIDQueueRef hidQueueRef;
 	NSRunLoop *runLoop;
+	OSSpinLock spinlockRunLoop;
 }
 
 @property (readonly) IOHIDDeviceRef hidDeviceRef;
-@property (assign) NSRunLoop *runLoop;
+@property (retain) NSRunLoop *runLoop;
 
 - (id) initWithDevice:(IOHIDDeviceRef)theDevice;
 
@@ -56,11 +58,12 @@
 	IOHIDManagerRef hidManagerRef;
 	NSRunLoop *runLoop;
 	NSMutableSet *deviceList;
+	OSSpinLock spinlockRunLoop;
 }
 
 @property (readonly) IOHIDManagerRef hidManagerRef;
 @property (readonly) NSMutableSet *deviceList;
-@property (assign) NSRunLoop *runLoop;
+@property (retain) NSRunLoop *runLoop;
 
 @end
 

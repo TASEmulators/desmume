@@ -29,9 +29,9 @@
 	NSString *deviceName;
 }
 
-@property (assign) NSMutableDictionary *map;
-@property (assign) NSString *deviceCode;
-@property (assign) NSString *deviceName;
+@property (retain) NSMutableDictionary *map;
+@property (copy) NSString *deviceCode;
+@property (copy) NSString *deviceName;
 
 - (id) initWithDeviceCode:(NSString *)theCode name:(NSString *)theName;
 
@@ -61,10 +61,12 @@
 	NSMutableDictionary *inputs;
 }
 
-@property (assign) NSMutableDictionary *states;
-@property (assign) CocoaDSMic *cdsMic;
-@property (assign) NSMutableDictionary *inputs;
+@property (readonly) NSMutableDictionary *states;
+@property (retain) CocoaDSMic *cdsMic;
+@property (readonly) NSMutableDictionary *inputs;
 @property (readonly) pthread_mutex_t *mutexControllerUpdate;
+
+- (id) initWithMic:(CocoaDSMic *)theMic;
 
 - (void) initDefaultMappings;
 - (BOOL) initUserDefaultMappings;

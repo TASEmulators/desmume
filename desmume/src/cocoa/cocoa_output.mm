@@ -89,7 +89,7 @@ SoundInterface_struct *SNDCoreList[] = {
 		}
 	}
 	
-	[frameData release];
+	self.frameData = nil;
 	[property release];
 	
 	pthread_mutex_destroy(mutexOutputFrame);
@@ -124,13 +124,7 @@ SoundInterface_struct *SNDCoreList[] = {
 - (void) handleEmuFrameProcessed:(NSData *)theData
 {
 	self.frameCount++;
-	
-	if (self.frameData != theData)
-	{
-		[self.frameData release];
-		self.frameData = theData;
-		[self.frameData retain];
-	}
+	self.frameData = theData;
 }
 
 @end
@@ -521,6 +515,7 @@ static BOOL isSPUStarted = NO;
 	mutexRender3D = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mutexRender3D, NULL);
 	
+	spinlockDelegate = OS_SPINLOCK_INIT;
 	spinlockGpuState = OS_SPINLOCK_INIT;
 	spinlockDisplayType = OS_SPINLOCK_INIT;
 	spinlockVideoFilterType = OS_SPINLOCK_INIT;
@@ -584,6 +579,7 @@ static BOOL isSPUStarted = NO;
 
 - (void)dealloc
 {
+	self.delegate = nil;
 	[vf release];
 	
 	pthread_mutex_destroy(self.mutexRender3D);
@@ -595,22 +591,33 @@ static BOOL isSPUStarted = NO;
 
 - (void) setDelegate:(id <CocoaDSDisplayDelegate>)theDelegate
 {
-	if (theDelegate == nil)
+	OSSpinLockLock(&spinlockDelegate);
+	
+	if (theDelegate == delegate)
 	{
-		[delegate release];
+		OSSpinLockUnlock(&spinlockDelegate);
+		return;
 	}
-	else
+	
+	if (theDelegate != nil)
 	{
 		[theDelegate retain];
 		[theDelegate setSendPortDisplay:self.receivePort];
 	}
 	
+	[delegate release];
 	delegate = theDelegate;
+	
+	OSSpinLockUnlock(&spinlockDelegate);
 }
 
 - (id <CocoaDSDisplayDelegate>) delegate
 {
-	return delegate;
+	OSSpinLockLock(&spinlockDelegate);
+	id <CocoaDSDisplayDelegate> theDelegate = delegate;
+	OSSpinLockUnlock(&spinlockDelegate);
+	
+	return theDelegate;
 }
 
 - (void) setGpuStateFlags:(UInt32)flags
@@ -1328,8 +1335,8 @@ static BOOL isSPUStarted = NO;
 	{
 		return;
 	}
-		
-	NSData *gpuData = [[NSData alloc] initWithBytes:texData length:dataSize];
+	
+	NSData *gpuData = [[[NSData alloc] initWithBytes:texData length:dataSize] autorelease];
 	if (gpuData == nil)
 	{
 		return;
@@ -1337,7 +1344,6 @@ static BOOL isSPUStarted = NO;
 	
 	[delegate doProcessVideoFrame:texData frameSize:destSize];
 	
-	[self.frameData release];
 	self.frameData = gpuData;
 	
 	free(texData);
@@ -1366,7 +1372,7 @@ static BOOL isSPUStarted = NO;
 	
 	memset(texData, 255, dataSize);
 	
-	NSData *gpuData = [[NSData alloc] initWithBytes:texData length:dataSize];
+	NSData *gpuData = [[[NSData alloc] initWithBytes:texData length:dataSize] autorelease];
 	if (gpuData == nil)
 	{
 		return;
@@ -1374,7 +1380,6 @@ static BOOL isSPUStarted = NO;
 	
 	[delegate doProcessVideoFrame:texData frameSize:destSize];
 	
-	[self.frameData release];
 	self.frameData = gpuData;
 	
 	free(texData);
@@ -1385,24 +1390,23 @@ static BOOL isSPUStarted = NO;
 {
 	NSString *fileURLString = [[NSString alloc] initWithData:fileURLStringData encoding:NSUTF8StringEncoding];
 	NSURL *fileURL = [NSURL URLWithString:fileURLString];
-	NSBitmapImageFileType *fileType = (NSBitmapImageFileType *)[fileTypeData bytes];
-	NSImage *screenshotImage = [[self image] autorelease];
+	NSBitmapImageFileType *fileType = (NSBitmapImageFileType *)[fileTypeData bytes];	
 	
-	
-	NSMutableDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:
-									 fileURL, @"fileURL", 
-									 [NSNumber numberWithInteger:(NSInteger)*fileType], @"fileType",
-									 screenshotImage, @"screenshotImage",
-									 nil];
+	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
+							  fileURL, @"fileURL", 
+							  [NSNumber numberWithInteger:(NSInteger)*fileType], @"fileType",
+							  [self image], @"screenshotImage",
+							  nil];
 	
 	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"com.DeSmuME.DeSmuME.requestScreenshotDidFinish" object:self userInfo:userInfo];
+	[userInfo release];
 	
 	[fileURLString release];
 }
 
 - (void) handleCopyToPasteboard
 {
-	NSImage *screenshot = [[self image] autorelease];
+	NSImage *screenshot = [self image];
 	if (screenshot == nil)
 	{
 		return;
@@ -1433,7 +1437,7 @@ static BOOL isSPUStarted = NO;
 	// Attach the rendered frame to the NSImageRep
 	[newImage addRepresentation:newImageRep];
 	
-	return newImage;
+	return [newImage autorelease];
 }
 
 - (NSBitmapImageRep *) bitmapImageRep
