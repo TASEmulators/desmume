@@ -55,7 +55,7 @@ CommandLine::CommandLine()
 , arm9_gdb_port(0)
 , arm7_gdb_port(0)
 , start_paused(FALSE)
-, autodetect_method(0)
+, autodetect_method(-1)
 {
 #ifndef _MSC_VER
 	disable_sound = 0;
@@ -155,7 +155,8 @@ bool CommandLine::parse(int argc,char **argv)
 		CommonSettings.DebugConsole = true;
 	}
 
-	CommonSettings.autodetectBackupMethod = autodetect_method;
+	if (autodetect_method != -1)
+		CommonSettings.autodetectBackupMethod = autodetect_method;
 
 	//TODO NOT MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
