@@ -468,6 +468,9 @@
     <ClCompile Include="..\filter\bilinear.cpp">
       <Filter>Core\filter</Filter>
     </ClCompile>
+    <ClCompile Include="importSave.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -878,6 +881,9 @@
     </ClInclude>
     <ClInclude Include="..\filter\lq2x.h">
       <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="importSave.h">
+      <Filter>Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

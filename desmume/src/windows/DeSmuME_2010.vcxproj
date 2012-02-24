@@ -543,6 +543,7 @@
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="hotkey.cpp" />
+    <ClCompile Include="importSave.cpp" />
     <ClCompile Include="inputdx.cpp" />
     <ClCompile Include="luaconsole.cpp" />
     <ClCompile Include="main.cpp" />
@@ -684,6 +685,7 @@
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="gbaslot_config.h" />
     <ClInclude Include="hotkey.h" />
+    <ClInclude Include="importSave.h" />
     <ClInclude Include="inputdx.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="OpenArchive.h" />

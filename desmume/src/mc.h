@@ -66,6 +66,7 @@ private:
 	time_t			createTime;
 	u8				saveType;
 	u32				crc32;
+	bool			loaded;
 
 	// XML
 	const char		*datName;
@@ -75,17 +76,19 @@ private:
 	bool getXMLConfig(const char *in_filaname);
 public:
 	ADVANsCEne() :	saveType(0xFF),
-					crc32(0)
+					crc32(0),
+					loaded(false)
 	{
 		memset(database_path, 0, sizeof(database_path));
 		memset(versionBase, 0, sizeof(versionBase));
 		memset(version, 0, sizeof(version));
 	}
-	void setDatabase(const char *path) { strcpy(database_path, path); }
+	void setDatabase(const char *path) { loaded = false; strcpy(database_path, path); }
 	u32 convertDB(const char *in_filaname);
 	u8 checkDB(const char *serial);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }
+	bool isLoaded() { return loaded; }
 };
 
 
@@ -127,6 +130,8 @@ public:
 	void close_rom();
 	void forceManualBackupType();
 	void reset_hardware();
+	std::string getFilename() { return filename; }
+	u8 searchFileSaveType(u32 size);
 
 	bool save_state(EMUFILE* os);
 	bool load_state(EMUFILE* is);
@@ -148,14 +153,17 @@ public:
 	static u32 addr_size_for_old_save_type(int bupmem_type);
 
 	static u32 pad_up_size(u32 startSize);
-	void raw_applyUserSettings(u32& size);
+	void raw_applyUserSettings(u32& size, bool manual = false);
 
-	bool load_duc(const char* filename);
-	bool load_no_gba(const char *fname);
+	bool load_duc(const char* filename, u32 force_size = 0);
+	bool load_no_gba(const char *fname, u32 force_size = 0);
 	bool save_no_gba(const char* fname);
-	bool load_raw(const char* filename);
+	bool load_raw(const char* filename, u32 force_size = 0);
 	bool save_raw(const char* filename);
 	bool load_movie(EMUFILE* is);
+	u32 get_save_duc_size(const char* filename);
+	u32 get_save_nogba_size(const char* filename);
+	u32 get_save_raw_size(const char* filename);
 
 	//call me once a second or so to lazy flush the save data
 	//here's the reason for this system: we want to dump save files when theyre READ
@@ -164,17 +172,19 @@ public:
 	void lazy_flush();
 	void flush();
 
-public: //SHOULD BE PRIVATE!!!!!!!!
-	std::string filename;
-	bool isMovieMode;
+	struct {
+			u32 size,padSize,type,addr_size,mem_size;
+		} info;
 
+	bool isMovieMode;
 private:
+	std::string filename;
+	
 	bool write_enable;	//is write enabled?
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
 	u32 addr;
 
-	
 	std::vector<u8> data_autodetect;
 	enum STATE {
 		DETECTING = 0, RUNNING = 1
@@ -218,6 +228,7 @@ void backup_setManualBackupType(int type);
 void backup_forceManualBackupType();
 
 extern const char *save_names[];
+extern const int save_types[][2];
 
 #endif /*__FW_H__*/
 

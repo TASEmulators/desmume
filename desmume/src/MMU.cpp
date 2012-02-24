@@ -962,7 +962,7 @@ void MMU_Reset()
 
 	//HACK!!!
 	//until we improve all our session tracking stuff, we need to save the backup memory filename
-	std::string bleh = MMU_new.backupDevice.filename;
+	std::string bleh = MMU_new.backupDevice.getFilename();
 	BackupDevice tempBackupDevice;
 	bool bleh2 = MMU_new.backupDevice.isMovieMode;
 	if(bleh2) tempBackupDevice = MMU_new.backupDevice;

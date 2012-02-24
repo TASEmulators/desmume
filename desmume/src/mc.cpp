@@ -88,7 +88,7 @@ static const u32 saveSizes[] = {512,			// 4k
 static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
 //the lookup table from user save types to save parameters
-static const int save_types[][2] = {
+const int save_types[][2] = {
         {MC_TYPE_AUTODETECT,1},
         {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
         {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
@@ -408,6 +408,7 @@ void BackupDevice::reset_hardware()
 
 void BackupDevice::reset()
 {
+	memset(&info, 0, sizeof(info));
 	reset_hardware();
 	resize(0);
 	data_autodetect.resize(0);
@@ -430,6 +431,16 @@ void BackupDevice::reset()
 void BackupDevice::close_rom()
 {
 	flush();
+}
+
+u8 BackupDevice::searchFileSaveType(u32 size)
+{
+	for (u8 i = 1; i < MAX_SAVE_TYPES; i++)
+	{
+		if (size == save_types[i][1])
+			return (i-1);
+	}
+	return 0xFF;
 }
 
 void BackupDevice::reset_command()
@@ -741,11 +752,42 @@ void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 //======================================================================= no$GBA
 //=======================================================================
 //=======================================================================
+const char no_GBA_HEADER_ID[] = "NocashGbaBackupMediaSavDataFile";
+const char no_GBA_HEADER_SRAM_ID[] = "SRAM";
+
+u32 BackupDevice::get_save_nogba_size(const char* fname)
+{
+	FILE *fsrc = fopen(fname, "rb");
+	if (fsrc)
+	{
+		char src[0x50] = {0};
+		u32 fsize = 0;
+		fseek(fsrc, 0, SEEK_END);
+		fsize = ftell(fsrc);
+		fseek(fsrc, 0, SEEK_SET);
+		if (fsize < 0x50) { fclose(fsrc); return 0xFFFFFFFF; }
+		memset(&src[0], 0, sizeof(src));
+		if (fread(src, 1, sizeof(src), fsrc) != sizeof(src))  { fclose(fsrc); return 0xFFFFFFFF; }
+
+		for (u8 i = 0; i < 0x1F; i++)
+			if (src[i] != no_GBA_HEADER_ID[i]) { fclose(fsrc); return 0xFFFFFFFF; }
+		if (src[0x1F] != 0x1A) { fclose(fsrc); return 0xFFFFFFFF; }
+		for (int i = 0; i < 0x4; i++)
+			if (src[i+0x40] != no_GBA_HEADER_SRAM_ID[i]) { fclose(fsrc); return 0xFFFFFFFF; }
+		
+		u32 compressMethod = *((u32*)(src+0x44));
+		if (compressMethod == 0)
+			{ fclose(fsrc); return *((u32*)(src+0x48)); }
+		else
+			if (compressMethod == 1)
+				{ fclose(fsrc); return *((u32*)(src+0x4C)); }
+		fclose(fsrc);
+	}
+	return 0xFFFFFFFF;
+}
 
 static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 {
-	const char no_GBA_HEADER_ID[] = "NocashGbaBackupMediaSavDataFile";
-	const char no_GBA_HEADER_SRAM_ID[] = "SRAM";
 	u8	*src = (u8 *)in_buf;
 	u8	*dst = (u8 *)out_buf;
 	u32 src_pos = 0;
@@ -857,7 +899,7 @@ static u32 no_gba_fillLeft(u32 size)
 	return size;
 }
 
-bool BackupDevice::load_no_gba(const char *fname)
+bool BackupDevice::load_no_gba(const char *fname, u32 force_size)
 {
 	FILE	*fsrc = fopen(fname, "rb");
 	u8		*in_buf = NULL;
@@ -881,12 +923,14 @@ bool BackupDevice::load_no_gba(const char *fname)
 			memset(out_buf, 0xFF, 8 * 1024 * 1024 / 8);
 			if (no_gba_unpackSAV(in_buf, fsize, out_buf, size) == 0)
 			{
+				if (force_size > 0)
+					size = force_size;
 				//printf("New size %i byte(s)\n", size);
 				size = no_gba_savTrim(out_buf, size);
 				//printf("--- new size after trim %i byte(s)\n", size);
 				size = no_gba_fillLeft(size);
 				//printf("--- new size after fill %i byte(s)\n", size);
-				raw_applyUserSettings(size);
+				raw_applyUserSettings(size, (force_size > 0));
 				resize(size);
 				for (u32 tt = 0; tt < size; tt++)
 					data[tt] = out_buf[tt];
@@ -992,24 +1036,47 @@ void BackupDevice::loadfile()
 			return;
 		}
 		inf->fseek(-24, SEEK_CUR);
-		struct {
-			u32 size,padSize,type,addr_size,mem_size;
-		} info;
 		read32le(&info.size,inf);
 		read32le(&info.padSize,inf);
 		read32le(&info.type,inf);
 		read32le(&info.addr_size,inf);
 		read32le(&info.mem_size,inf);
 
+		u32 left = 0;
+		if (CommonSettings.autodetectBackupMethod == 1)
+		{
+			if (advsc.isLoaded())
+			{
+				info.type = advsc.getSaveType();
+				if (info.type != 0xFF || info.type != 0xFE)
+				{
+					u32 adv_size = save_types[info.type+1][1];
+					if (info.size > adv_size)
+						info.size = adv_size;
+					else
+						if (info.size < adv_size)
+						{
+							left = adv_size - info.size;
+							info.size = adv_size;
+						}
+				}
+			}
+		}
 		//establish the save data
 		resize(info.size);
 		inf->fseek(0, SEEK_SET);
 		if(info.size>0)
-			inf->fread(&data[0],info.size); //read all the raw data we have
+			inf->fread(&data[0],info.size - left); //read all the raw data we have
 		state = RUNNING;
 		addr_size = info.addr_size;
 		//none of the other fields are used right now
 
+
+		if (CommonSettings.autodetectBackupMethod != 1 && info.type == 0) 
+		{
+			info.type = searchFileSaveType(info.size);
+			if (info.type == 0xFF) info.type = 0;
+		}
 		u32 ss = info.size * 8 / 1024;
 		if (ss >= 1024)
 		{
@@ -1065,6 +1132,8 @@ void BackupDevice::flush()
 	//never use save files if we are in movie mode
 	if(isMovieMode) return;
 
+	if (filename.length() == 0) return;
+
 	EMUFILE* outf = new EMUFILE_FILE(filename.c_str(),"wb");
 	if(!outf->fail())
 	{
@@ -1087,9 +1156,9 @@ void BackupDevice::flush()
 		//and now the actual footer
 		write32le(size,outf); //the size of data that has actually been written
 		write32le(padSize,outf); //the size we padded it to
-		write32le(0,outf); //save memory type
+		write32le(info.type,outf); //save memory type
 		write32le(addr_size,outf);
-		write32le(0,outf); //save memory size
+		write32le(info.size,outf); //save memory size
 		write32le(0,outf); //version number
 		outf->fprintf("%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
 
@@ -1098,22 +1167,28 @@ void BackupDevice::flush()
 	else
 	{
 		delete outf;
-		printf("Unable to open savefile %s\n",filename.c_str());
+		printf("Unable to open savefile %s\n", filename.c_str());
 	}
 }
 
-void BackupDevice::raw_applyUserSettings(u32& size)
+void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
 {
 	//respect the user's choice of backup memory type
-	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT)
+	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT && !manual)
 	{
 		addr_size = addr_size_for_old_save_size(size);
 		resize(size);
 	}
 	else
 	{
-		int savetype = save_types[CommonSettings.manualBackupType][0];
-		int savesize = save_types[CommonSettings.manualBackupType][1];
+		u32 type = CommonSettings.manualBackupType;
+		if (manual)
+		{
+			u32 res = searchFileSaveType(size);
+			if (res != 0xFF) type = (res + 1); // +1 - skip autodetect
+		}
+		int savetype = save_types[type][0];
+		int savesize = save_types[type][1];
 		addr_size = addr_size_for_old_save_type(savetype);
 		if((u32)savesize<size) size = savesize;
 		resize(savesize);
@@ -1122,28 +1197,42 @@ void BackupDevice::raw_applyUserSettings(u32& size)
 	state = RUNNING;
 }
 
+u32 BackupDevice::get_save_raw_size(const char* fname)
+{
+	FILE* inf = fopen(fname,"rb");
+	if (!inf) return 0xFFFFFFFF;
 
-bool BackupDevice::load_raw(const char* filename)
+	fseek(inf, 0, SEEK_END);
+	u32 size = (u32)ftell(inf);
+	fclose(inf);
+	return size;
+}
+
+bool BackupDevice::load_raw(const char* filename, u32 force_size)
 {
 	FILE* inf = fopen(filename,"rb");
+
+	if (!inf) return false;
+
 	fseek(inf, 0, SEEK_END);
 	u32 size = (u32)ftell(inf);
 	u32 left = 0;
-	u8 sv = advsc.getSaveType();
-	if (sv < MAX_SAVE_TYPES)
+	
+	if (force_size > 0)
 	{
-		if (size > save_types[sv+1][1])
-			size = save_types[sv+1][1];
+		if (size > force_size)
+			size = force_size;
 		else
-			if (size < save_types[sv+1][1])
+			if (size < force_size)
 			{
-				left = save_types[sv+1][1] - size;
-				size = save_types[sv+1][1];
+				left = force_size - size;
+				size = force_size;
 			}
 	}
+
 	fseek(inf, 0, SEEK_SET);
 
-	raw_applyUserSettings(size);
+	raw_applyUserSettings(size, (force_size > 0));
 
 	fread(&data[0],1,size-left,inf);
 	fclose(inf);
@@ -1154,14 +1243,25 @@ bool BackupDevice::load_raw(const char* filename)
 	return true;
 }
 
+u32 BackupDevice::get_save_duc_size(const char* fname)
+{
+	FILE* inf = fopen(fname,"rb");
+	if (!inf) return 0xFFFFFFFF;
 
-bool BackupDevice::load_duc(const char* filename)
+	fseek(inf, 0, SEEK_END);
+	u32 size = (u32)ftell(inf);
+	fclose(inf);
+	if (size < 500) return 0xFFFFFFFF;
+	return (size - 500);
+}
+
+bool BackupDevice::load_duc(const char* filename, u32 force_size)
 {
   u32 size;
    char id[16];
    FILE* file = fopen(filename, "rb");
-   if(file == NULL)
-      return false;
+   
+   if(!file) return false;
 
    fseek(file, 0, SEEK_END);
    size = (u32)ftell(file) - 500;
@@ -1172,28 +1272,27 @@ bool BackupDevice::load_duc(const char* filename)
 
    if (memcmp(id, "ARDS000000000001", 16) != 0)
    {
-	   printf("Not recognized as a valid DUC file\n");
-      fclose(file);
-      return false;
+		printf("Not recognized as a valid DUC file\n");
+		fclose(file);
+		return false;
    }
    // Skip the rest of the header since we don't need it
    fseek(file, 500, SEEK_SET);
 
 	u32 left = 0;
-	u8 sv = advsc.getSaveType();
-	if (sv < MAX_SAVE_TYPES)
+	if (force_size > 0)
 	{
-		if (size > save_types[sv+1][1])
-			size = save_types[sv+1][1];
+		if (size > force_size)
+			size = force_size;
 		else
-			if (size < save_types[sv+1][1])
+			if (size < force_size)
 			{
-				left = save_types[sv+1][1] - size;
-				size = save_types[sv+1][1];
+				left = force_size - size;
+				size = force_size;
 			}
 	}
 
-   raw_applyUserSettings(size);
+   raw_applyUserSettings(size, (force_size > 0));
 
    ensure((u32)size);
 
@@ -1255,6 +1354,7 @@ void BackupDevice::forceManualBackupType()
 // ============================================= ADVANsCEne
 u8 ADVANsCEne::checkDB(const char *serial)
 {
+	loaded = false;
 	FILE *fp = fopen(database_path, "rb");
 	if (fp)
 	{
@@ -1284,6 +1384,7 @@ u8 ADVANsCEne::checkDB(const char *serial)
 									//printf("%s founded: crc32=%04X, save type %02X\n", serial, crc32, buf[12]);
 									saveType = buf[12];
 									fclose(fp);
+									loaded = true;
 									return true;
 								}
 							}
