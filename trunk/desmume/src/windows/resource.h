@@ -45,6 +45,7 @@
 #define IDM_MBG3                        123
 #define IDM_SBG0                        124
 #define IDM_SBG1                        125
+#define IDD_IMPORT_SAVE_SIZE            125
 #define IDM_SBG2                        126
 #define IDM_SBG3                        127
 #define IDM_OAM                         128
@@ -419,9 +420,17 @@
 #define IDC_PIANO_DS3                   1051
 #define IDC_PIANO_HIC                   1051
 #define IDC_RADIO8                      1052
+#define IDC_IMP_AUTO_CURRENT            1052
+#define IDC_IMP_AUTO_FILE               1053
+#define IDC_IMP_AUTO_ADVANSCENE         1054
+#define IDC_IMP_MANUAL                  1055
 #define IDC_LIST1                       1056
+#define IDC_IMP_INFO_CURRENT            1056
 #define IDC_BADD_AR                     1057
+#define IDC_IMP_INFO_FILE               1057
 #define IDC_BADD_CB                     1058
+#define IDC_IMP_INFO_ADVANSCENE         1058
+#define IDC_IMP_MANUAL_SIZE             1059
 #define IDC_BREMOVE                     1060
 #define IDC_BEDIT                       1061
 #define IDC_STATIC_S1                   1061
