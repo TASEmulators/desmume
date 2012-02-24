@@ -445,7 +445,8 @@ void NDS_suspendProcessingInput(bool suspend);
 int NDS_LoadROM(const char *filename, const char* logicalFilename=0);
 void NDS_FreeROM(void);
 void NDS_Reset();
-int NDS_ImportSave(const char *filename);
+int NDS_ImportSave(const char *filename, u32 force_size = 0);
+u32 NDS_ImportSaveSize(const char *filename);
 bool NDS_ExportSave(const char *filename);
 
 void nds_savestate(EMUFILE* os);

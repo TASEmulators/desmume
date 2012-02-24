@@ -602,8 +602,6 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if(gameInfo.isHomebrew)
 		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
-	NDS_Reset();
-
 	memset(buf, 0, MAX_PATH);
 	path.getpathnoext(path.BATTERY, buf);
 	strcat(buf, ".dsv");							// DeSmuME memory card	:)
@@ -613,6 +611,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	path.getpathnoext(path.CHEATS, buf);
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheats->init(buf);
+
+	NDS_Reset();
 
 	return ret;
 }
@@ -627,20 +627,38 @@ void NDS_FreeROM(void)
 	MMU_unsetRom();
 }
 
-
-
-int NDS_ImportSave(const char *filename)
+u32 NDS_ImportSaveSize(const char *filename)
 {
-	if (strlen(filename) < 4)
-		return 0;
+	u32 res = 0;
+	if (strlen(filename) < 4) return 0;
 
 	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
-		return MMU_new.backupDevice.load_duc(filename);
+	{
+		res = MMU_new.backupDevice.get_save_duc_size(filename);
+		if (res == 0xFFFFFFFF) return 0;
+		return res;
+	}
+
+	res = MMU_new.backupDevice.get_save_nogba_size(filename);
+	if (res != 0xFFFFFFFF) return res;
+
+	res = MMU_new.backupDevice.get_save_raw_size(filename);
+	if (res != 0xFFFFFFFF) return res;
+
+	return 0;
+}
+
+int NDS_ImportSave(const char *filename, u32 force_size)
+{
+	if (strlen(filename) < 4) return 0;
+
+	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
+		return MMU_new.backupDevice.load_duc(filename, force_size);
 	else
-		if (MMU_new.backupDevice.load_no_gba(filename))
+		if (MMU_new.backupDevice.load_no_gba(filename, force_size))
 			return 1;
 		else
-			return MMU_new.backupDevice.load_raw(filename);
+			return MMU_new.backupDevice.load_raw(filename, force_size);
 
 	return 0;
 }

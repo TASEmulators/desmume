@@ -104,6 +104,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "ram_search.h"
 #include "aviout.h"
 #include "soundView.h"
+#include "importSave.h"
 //
 //static size_t heapram = 0;
 //void* operator new[](size_t amt)
@@ -382,8 +383,8 @@ struct DDRAW
 
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
-char SavName[MAX_PATH] = "";
-char ImportSavName[MAX_PATH] = "";
+char SavName[MAX_PATH] = {0};
+char ImportSavName[MAX_PATH] = {0};
 char szClassName[ ] = "DeSmuME";
 int romnum = 0;
 
@@ -4110,7 +4111,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				MainWindow->checkMenu(IDC_SAVETYPE+i, false);
 
 			MainWindow->checkMenu(IDC_SAVETYPE+CommonSettings.manualBackupType, true);
-			MainWindow->checkMenu(IDM_AUTODETECTSAVETYPE_INTERNAL+CommonSettings.autodetectBackupMethod, true);
+			MainWindow->checkMenu(IDM_AUTODETECTSAVETYPE_INTERNAL, CommonSettings.autodetectBackupMethod == 0);
+			MainWindow->checkMenu(IDM_AUTODETECTSAVETYPE_FROMDATABASE, CommonSettings.autodetectBackupMethod == 1);
 
 			// recent/active scripts menu
 			PopulateLuaSubmenu();
@@ -4959,29 +4961,8 @@ DOKEYDOWN:
 			{
 				OPENFILENAME ofn;
 				NDS_Pause();
-				ZeroMemory(&ofn, sizeof(ofn));
-				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0Raw/No$GBA Save format (*.sav)\0*.sav\0\0";
-				ofn.nFilterIndex = 1;
-				ofn.lpstrFile =  ImportSavName;
-				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrDefExt = "duc";
-				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-				char buffer[MAX_PATH];
-				ZeroMemory(buffer, sizeof(buffer));
-				path.getpath(path.BATTERY, buffer);
-				ofn.lpstrInitialDir = buffer;
-
-				if(!GetOpenFileName(&ofn))
-				{
-					NDS_UnPause();
-					return 0;
-				}
-
-				if (!NDS_ImportSave(ImportSavName))
-					MessageBox(hwnd,"Save was not successfully imported","Error",MB_OK);
+				if (!importSave(hwnd, hAppInst))
+					MessageBox(hwnd,"Save was not successfully imported", "Error", MB_OK | MB_ICONERROR);
 				NDS_UnPause();
 				return 0;
 			}
