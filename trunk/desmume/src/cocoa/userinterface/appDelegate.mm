@@ -269,14 +269,7 @@
 
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if (cdsCore != nil)
-	{
-		[cdsCore setCoreState:CORESTATE_PAUSE];
-		[cdsCore removeAllOutputs];
-		[cdsCoreController setContent:nil];
-	}
+	[cdsCoreController setContent:nil];
 }
 
 - (IBAction) showSupportFolderInFinder:(id)sender
