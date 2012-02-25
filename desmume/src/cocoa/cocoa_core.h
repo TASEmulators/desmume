@@ -34,7 +34,7 @@ typedef struct
 	bool isFrameSkipEnabled;
 	unsigned int frameCount;
 	unsigned int framesToSkip;
-	NSTimeInterval calcTimeBudget;
+	uint64_t timeBudgetMachAbsTime;
 	bool exitThread;
 	pthread_mutex_t *mutexCoreExecute;
 	pthread_mutex_t mutexThreadExecute;
@@ -121,4 +121,4 @@ typedef struct
 @end
 
 void* RunCoreThread(void *arg);
-void CoreFrameSkip(NSTimeInterval timeBudget, NSTimeInterval timeRemaining, unsigned int *outFramesToSkip);
+void CoreFrameSkip(uint64_t timeBudgetMachAbsoluteTime, uint64_t frameStartMachAbsoluteTime, unsigned int *outFramesToSkip);

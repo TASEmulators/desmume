@@ -23,6 +23,8 @@
 #import "cocoa_output.h"
 #import "cocoa_rom.h"
 #import "cocoa_util.h"
+#include <mach/mach.h>
+#include <mach/mach_time.h>
 
 #include "../NDSSystem.h"
 #undef BOOL
@@ -102,7 +104,11 @@ static BOOL isCoreStarted = NO;
 	threadParam.isFrameSkipEnabled = true;
 	threadParam.frameCount = 0;
 	threadParam.framesToSkip = 0;
-	threadParam.calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / speedScalar);
+	
+	uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / speedScalar);
+	AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
+	threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
+	
 	threadParam.exitThread = false;
 	threadParam.mutexCoreExecute = mutexCoreExecute;
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
@@ -144,6 +150,7 @@ static BOOL isCoreStarted = NO;
 	
 	self.cdsController = nil;
 	self.cdsFirmware = nil;
+	[self removeAllOutputs];
 	[cdsOutputList release];
 	
 	[super dealloc];
@@ -579,13 +586,15 @@ static BOOL isCoreStarted = NO;
 		}
 		
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-		threadParam.calcTimeBudget = (NSTimeInterval)(DS_SECONDS_PER_FRAME / theSpeed);
+		uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / theSpeed);
+		AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
+		threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	}
 	else
 	{
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-		threadParam.calcTimeBudget = 0.0;
+		threadParam.timeBudgetMachAbsTime = 0;
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	}
 }
@@ -636,23 +645,22 @@ void* RunCoreThread(void *arg)
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
-	NSDate *loopStartDate = nil;
+	uint64_t startTime = 0;
+	uint64_t elapsedMachAbsTime;
 	
 	do
 	{
-		loopStartDate = [[NSDate alloc] init];
+		startTime = mach_absolute_time();
 		pthread_mutex_lock(&param->mutexThreadExecute);
 		
 		while (!(param->state == CORESTATE_EXECUTE && execute && !param->exitThread))
 		{
-			[loopStartDate release];
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
-			loopStartDate = [[NSDate alloc] init];
+			startTime = mach_absolute_time();
 		}
 		
 		if (param->exitThread)
 		{
-			[loopStartDate release];
 			break;
 		}
 		
@@ -696,32 +704,31 @@ void* RunCoreThread(void *arg)
 		// we owe on timeBudget.
 		if (param->isFrameSkipEnabled)
 		{
-			CoreFrameSkip(param->calcTimeBudget, param->calcTimeBudget + [loopStartDate timeIntervalSinceNow], &param->framesToSkip);
+			CoreFrameSkip(param->timeBudgetMachAbsTime, startTime, &param->framesToSkip);
 		}
 		
 		// If there is any time left in the loop, go ahead and pad it.
-		NSTimeInterval timePad = param->calcTimeBudget + [loopStartDate timeIntervalSinceNow];
+		elapsedMachAbsTime = mach_absolute_time() - startTime;
 		
 		pthread_mutex_unlock(&param->mutexThreadExecute);
 		
-		if(timePad > 0.0)
+		if(param->timeBudgetMachAbsTime > elapsedMachAbsTime)
 		{
-#if (MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4) // Code for Mac OS X 10.4 and earlier
-			[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:timePad]];
-#else // Code for Mac OS X 10.5 and later
-			[NSThread sleepForTimeInterval:timePad];
-#endif
+			uint64_t padMachAbsTime = param->timeBudgetMachAbsTime - elapsedMachAbsTime;
+			Nanoseconds padNanoseconds = AbsoluteToNanoseconds(*(AbsoluteTime *)&padMachAbsTime);
+			useconds_t padMicroseconds = (useconds_t)(*(uint64_t *)&padNanoseconds / 1000);
+			usleep(padMicroseconds);
 		}
-		
-		[loopStartDate release];
 		
 	} while (!param->exitThread);
 	
 	return nil;
 }
 
-void CoreFrameSkip(NSTimeInterval timeBudget, NSTimeInterval timeRemaining, unsigned int *outFramesToSkip)
+void CoreFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime, unsigned int *outFramesToSkip)
 {
+	static unsigned int lastSetFrameSkip = 0;
+	
 	if (*outFramesToSkip > 0)
 	{
 		NDS_SkipNextFrame();
@@ -729,21 +736,38 @@ void CoreFrameSkip(NSTimeInterval timeBudget, NSTimeInterval timeRemaining, unsi
 	}
 	else
 	{
-		if (timeRemaining <= 0.0)
+		unsigned int framesToSkip = 0;
+		
+		// Calculate the time remaining.
+		uint64_t elapsed = mach_absolute_time() - frameStartMachAbsTime;
+		
+		if (elapsed > timeBudgetMachAbsTime)
 		{
-			if (timeBudget > 0.0)
+			if (timeBudgetMachAbsTime > 0)
 			{
-				*outFramesToSkip = (unsigned int)( ((-timeRemaining * FRAME_SKIP_AGGRESSIVENESS)/timeBudget) + FRAME_SKIP_BIAS );
+				framesToSkip = (unsigned int)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS) / (double)timeBudgetMachAbsTime) + FRAME_SKIP_BIAS );
+				if (framesToSkip < lastSetFrameSkip)
+				{
+					framesToSkip += (unsigned int)((double)(lastSetFrameSkip - framesToSkip) * FRAME_SKIP_SMOOTHNESS);
+				}
+				
+				lastSetFrameSkip = framesToSkip;
 			}
 			else
 			{
-				*outFramesToSkip = (unsigned int)( ((-timeRemaining * FRAME_SKIP_AGGRESSIVENESS * 100.0)/DS_SECONDS_PER_FRAME) + FRAME_SKIP_BIAS );
+				framesToSkip = (unsigned int)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS * 100.0) / DS_SECONDS_PER_FRAME) + FRAME_SKIP_BIAS );
+				// Don't need to save lastSetFrameSkip here since this code path assumes that
+				// the frame limiter is disabled.
 			}
 			
-			if (*outFramesToSkip > (unsigned int)MAX_FRAME_SKIP)
+			// Bound the frame skip.
+			if (framesToSkip > (unsigned int)MAX_FRAME_SKIP)
 			{
-				*outFramesToSkip = (unsigned int)MAX_FRAME_SKIP;
+				framesToSkip = (unsigned int)MAX_FRAME_SKIP;
+				lastSetFrameSkip = framesToSkip;
 			}
 		}
+		
+		*outFramesToSkip = framesToSkip;
 	}
 }
