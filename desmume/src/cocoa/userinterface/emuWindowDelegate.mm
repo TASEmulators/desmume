@@ -566,7 +566,7 @@
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:NSSTRING_TITLE_IMPORT_ROM_SAVE_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_SAVE_NOGBA, @FILE_EXT_ACTION_REPLAY_SAVE, nil];
+	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_SAVE_RAW, @FILE_EXT_ACTION_REPLAY_SAVE, nil];
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
