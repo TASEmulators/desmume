@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Jeff Bland
-	Copyright (C) 2007-2011 DeSmuME team
+	Copyright (C) 2007-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,30 +16,25 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _OSXSOUNDINTERFACE_
+#define _OSXSOUNDINTERFACE_
+
 #include "../SPU.h"
 
 #define SNDCORE_OSX 58325 //hopefully this is unique number
 
-
-// This is the sound interface so the emulator core can send us sound info and whatnot
+// Sound interface to the SPU
 extern SoundInterface_struct SNDOSX;
 
-// Sound interface extensions for CoreAudio
-void SNDOSXStartup();
-void SNDOSXShutdown();
-int SNDOSXInit(int buffer_size);
-void SNDOSXDeInit();
-int SNDOSXReset();
-void SNDOSXUpdateAudio(s16 *buffer, u32 num_samples);
-u32 SNDOSXGetAudioSpace();
-void SNDOSXMuteAudio();
-void SNDOSXUnMuteAudio();
-void SNDOSXSetVolume(int volume);
-void SNDOSXClearBuffer();
+// Core Audio functions for the sound interface
+int		SNDOSXInit(int buffer_size);
+void	SNDOSXDeInit();
+int		SNDOSXReset();
+void	SNDOSXUpdateAudio(s16 *buffer, u32 num_samples);
+u32		SNDOSXGetAudioSpace();
+void	SNDOSXMuteAudio();
+void	SNDOSXUnMuteAudio();
+void	SNDOSXSetVolume(int volume);
+void	SNDOSXClearBuffer();
 
-// Recording
-// Not supported as of 2011/12/28 - rogerman
-bool SNDOSXOpenFile(void *fname);  //opens a file for recording (if filename is the currently opened one, it will restart the file), fname is an NSString
-void SNDOSXStartRecording();      //begins recording to the currently open file if there is an open file
-void SNDOSXStopRecording();       //pauses recording (you can continue recording later)
-void SNDOSXCloseFile();           //closes the file, making sure it's saved
+#endif // _OSXSOUNDINTERFACE_

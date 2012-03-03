@@ -104,6 +104,12 @@
 		AB0F29C914BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
 		AB15CA7214A29EE500B8A6A4 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
 		AB181D0013B66889006CA82D /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
+		AB1B9E631501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
+		AB1B9E641501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
+		AB1B9E651501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
+		AB1B9E661501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
+		AB1B9E671501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
+		AB1B9E681501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		AB1F468413A0ADE400B80DE6 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB1F469813A0AE2F00B80DE6 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB350B6A1478A5B3007165AC /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
@@ -648,6 +654,10 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreaudiosound.cpp; sourceTree = SOURCE_ROOT; };
+		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = SOURCE_ROOT; };
+		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = SOURCE_ROOT; };
+		AB1B9E621501A78000464647 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = SOURCE_ROOT; };
 		AB350B681478A5B3007165AC /* cocoa_hid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_hid.h; sourceTree = "<group>"; };
 		AB350B691478A5B3007165AC /* cocoa_hid.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_hid.mm; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -985,6 +995,8 @@
 			isa = PBXGroup;
 			children = (
 				AB3ACB6514C2361100D7D192 /* userinterface */,
+				AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */,
+				AB1B9E601501A78000464647 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
@@ -999,13 +1011,15 @@
 				ABD104001346652500AF11D1 /* cocoa_rom.h */,
 				AB80E050142BC4FA00A52038 /* cocoa_util.h */,
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
+				AB1B9E611501A78000464647 /* coreaudiosound.h */,
+				AB1B9E621501A78000464647 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
-				AB350B691478A5B3007165AC /* cocoa_hid.mm */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
 				ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */,
+				AB350B691478A5B3007165AC /* cocoa_hid.mm */,
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				ABD9A46413DB99B300777194 /* cocoa_mic.mm */,
 				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
@@ -1554,7 +1568,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0430;
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 4)" */;
@@ -1990,6 +2004,8 @@
 				ABFE150B14C92FF5005D6699 /* hq4x.cpp in Sources */,
 				ABFE150D14C92FF5005D6699 /* lq2x.cpp in Sources */,
 				ABFE150E14C92FF5005D6699 /* scanline.cpp in Sources */,
+				AB1B9E631501A78000464647 /* coreaudiosound.cpp in Sources */,
+				AB1B9E661501A78000464647 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2112,6 +2128,8 @@
 				ABFE151314C92FF5005D6699 /* hq4x.cpp in Sources */,
 				ABFE151514C92FF5005D6699 /* lq2x.cpp in Sources */,
 				ABFE151614C92FF5005D6699 /* scanline.cpp in Sources */,
+				AB1B9E641501A78000464647 /* coreaudiosound.cpp in Sources */,
+				AB1B9E671501A78000464647 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2234,6 +2252,8 @@
 				ABB715FB14E386740027FE88 /* hq4x.cpp in Sources */,
 				ABB715FC14E386740027FE88 /* lq2x.cpp in Sources */,
 				ABB715FD14E386740027FE88 /* scanline.cpp in Sources */,
+				AB1B9E651501A78000464647 /* coreaudiosound.cpp in Sources */,
+				AB1B9E681501A78000464647 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2389,7 +2409,6 @@
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
-				LLVM_LTO = NO;
 				PRODUCT_NAME = DeSmuME;
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = NO;

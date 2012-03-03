@@ -113,6 +113,7 @@
 
 #define PATH_CONFIG_DIRECTORY_0_9_6					"~/.config/desmume"
 #define PATH_USER_APP_SUPPORT						"${APPSUPPORT}"
+#define PATH_OPEN_EMU								"${OPENEMU}"
 #define PATH_WITH_ROM								"${WITHROM}"
 
 #define FILE_EXT_FIRMWARE_CONFIG					"dfc"
@@ -162,8 +163,9 @@
 
 #define SPU_SAMPLE_RATE								44100	// Samples per second
 #define SPU_SAMPLE_RESOLUTION						16		// Bits per sample; must be a multiple of 8
-#define SPU_STEREO_SAMPLE_SIZE						((SPU_SAMPLE_RESOLUTION / 8) * 2) // Bytes per sample, multiply by 2 for stereo
-#define SPU_BUFFER_BYTES							((SPU_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * SPU_STEREO_SAMPLE_SIZE)
+#define SPU_NUMBER_CHANNELS							2		// Number of channels
+#define SPU_SAMPLE_SIZE								((SPU_SAMPLE_RESOLUTION / 8) * SPU_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
+#define SPU_BUFFER_BYTES							((SPU_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * SPU_SAMPLE_SIZE)
 
 #define CLOCKWISE_DEGREES(x)						(360.0 - x) // Converts an angle in degrees from normal-direction to clockwise-direction.
 

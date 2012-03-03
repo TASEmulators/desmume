@@ -117,8 +117,6 @@ void joinThread_gdb(void *thread_handle)
 	
 	[aboutWindowController setContent:aboutWindowProperties];
 	
-	SNDOSXStartup();
-	
 	//Set default values for all preferences
 	//(this wont override saved preferences as
 	//they work in different preference domains)
@@ -192,8 +190,6 @@ void joinThread_gdb(void *thread_handle)
 	
 	[cdsCore release];
 	[cdsCoreController setContent:nil];
-	
-	SNDOSXShutdown();
 }
 
 - (IBAction) showSupportFolderInFinder:(id)sender

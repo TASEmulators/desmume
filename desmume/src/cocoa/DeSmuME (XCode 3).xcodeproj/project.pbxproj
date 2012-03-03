@@ -296,6 +296,10 @@
 		ABC5720D1344346600E7B0B1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		ABC719E2138CB25E002827A9 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
+		ABD0A5381501AA5A0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */; };
+		ABD0A5391501AA5A0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */; };
+		ABD0A53A1501AA5A0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */; };
+		ABD0A53B1501AA5A0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */; };
 		ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		ABD1041E1346652500AF11D1 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
@@ -530,6 +534,10 @@
 		ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
+		ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreaudiosound.cpp; sourceTree = "<group>"; };
+		ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
+		ABD0A5361501AA5A0074A094 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
+		ABD0A5371501AA5A0074A094 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = "<group>"; };
 		ABD103FE1346652500AF11D1 /* cocoa_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_core.h; sourceTree = "<group>"; };
 		ABD103FF1346652500AF11D1 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		ABD104001346652500AF11D1 /* cocoa_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_rom.h; sourceTree = "<group>"; };
@@ -776,6 +784,8 @@
 			isa = PBXGroup;
 			children = (
 				AB3ACB6514C2361100D7D192 /* userinterface */,
+				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
+				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
@@ -790,13 +800,15 @@
 				ABD104001346652500AF11D1 /* cocoa_rom.h */,
 				AB80E050142BC4FA00A52038 /* cocoa_util.h */,
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
+				ABD0A5361501AA5A0074A094 /* coreaudiosound.h */,
+				ABD0A5371501AA5A0074A094 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
-				AB350B691478A5B3007165AC /* cocoa_hid.mm */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
 				ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */,
+				AB350B691478A5B3007165AC /* cocoa_hid.mm */,
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				ABD9A46413DB99B300777194 /* cocoa_mic.mm */,
 				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
@@ -1665,6 +1677,8 @@
 				ABFE150B14C92FF5005D6699 /* hq4x.cpp in Sources */,
 				ABFE150D14C92FF5005D6699 /* lq2x.cpp in Sources */,
 				ABFE150E14C92FF5005D6699 /* scanline.cpp in Sources */,
+				ABD0A5381501AA5A0074A094 /* coreaudiosound.cpp in Sources */,
+				ABD0A5391501AA5A0074A094 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1787,6 +1801,8 @@
 				ABFE151314C92FF5005D6699 /* hq4x.cpp in Sources */,
 				ABFE151514C92FF5005D6699 /* lq2x.cpp in Sources */,
 				ABFE151614C92FF5005D6699 /* scanline.cpp in Sources */,
+				ABD0A53A1501AA5A0074A094 /* coreaudiosound.cpp in Sources */,
+				ABD0A53B1501AA5A0074A094 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

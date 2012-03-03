@@ -53,12 +53,6 @@ GPU3DInterface *core3DList[] = {
 NULL
 };
 
-SoundInterface_struct *SNDCoreList[] = {
-&SNDDummy,
-&SNDOSX,
-NULL
-};
-
 struct NDS_fw_config_data macDS_firmware;
 
 

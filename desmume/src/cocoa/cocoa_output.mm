@@ -22,7 +22,6 @@
 #import "cocoa_util.h"
 
 #include <OpenGL/OpenGL.h>
-#include "sndOSX.h"
 
 #include "../NDSSystem.h"
 #include "../GPU.h"
@@ -37,12 +36,6 @@ GPU3DInterface *core3DList[] = {
 	&gpu3DNull,
 	&gpu3DRasterize,
 	//&gpu3Dgl,
-	NULL
-};
-
-SoundInterface_struct *SNDCoreList[] = {
-	&SNDDummy,
-	&SNDOSX,
 	NULL
 };
 
@@ -133,8 +126,6 @@ SoundInterface_struct *SNDCoreList[] = {
 
 @synthesize bufferSize;
 
-static BOOL isSPUStarted = NO;
-
 - (id)init
 {
 	return [self initWithVolume:MAX_VOLUME];
@@ -161,7 +152,7 @@ static BOOL isSPUStarted = NO;
 	[property setValue:[NSNumber numberWithFloat:(float)vol] forKey:@"volume"];
 	[property setValue:[NSNumber numberWithBool:NO] forKey:@"mute"];
 	[property setValue:[NSNumber numberWithInteger:0] forKey:@"filter"];
-	[property setValue:[NSNumber numberWithInteger:SNDCORE_OSX] forKey:@"audioOutputEngine"];
+	[property setValue:[NSNumber numberWithInteger:SNDCORE_DUMMY] forKey:@"audioOutputEngine"];
 	[property setValue:[NSNumber numberWithBool:NO] forKey:@"spuAdvancedLogic"];
 	[property setValue:[NSNumber numberWithInteger:SPUInterpolation_None] forKey:@"spuInterpolationMode"];
 	[property setValue:[NSNumber numberWithInteger:SPU_SYNC_MODE_DUAL_SYNC_ASYNC] forKey:@"spuSyncMode"];
@@ -173,43 +164,6 @@ static BOOL isSPUStarted = NO;
 - (void)dealloc
 {
 	[super dealloc];
-}
-
-+ (BOOL) startupSPU
-{
-	NSInteger result = -1;
-	
-	if (isSPUStarted)
-	{
-		return isSPUStarted;
-	}
-	
-	SNDOSXStartup();
-	
-	result = SPU_ChangeSoundCore(SNDCORE_OSX, (int)SPU_BUFFER_BYTES);
-	if(result == -1)
-	{
-		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-		isSPUStarted = NO;
-		return isSPUStarted;
-	}
-	
-	SPU_SetVolume(0);
-	isSPUStarted = YES;
-	
-	return isSPUStarted;
-}
-
-+ (void) shutdownSPU
-{
-	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	SNDOSXShutdown();
-	isSPUStarted = NO;
-}
-
-+ (BOOL) isSPUStarted
-{
-	return isSPUStarted;
 }
 
 - (void) setVolume:(float)vol
@@ -227,12 +181,7 @@ static BOOL isSPUStarted = NO;
 	[property setValue:[NSNumber numberWithFloat:vol] forKey:@"volume"];
 	OSSpinLockUnlock(&spinlockVolume);
 	
-	if (isSPUStarted)
-	{
-		//pthread_mutex_lock(self.mutexOutputFrame);
-		SPU_SetVolume((int)vol);
-		//pthread_mutex_unlock(self.mutexOutputFrame);
-	}
+	SPU_SetVolume((int)vol);
 }
 
 - (float) volume
@@ -253,15 +202,10 @@ static BOOL isSPUStarted = NO;
 	pthread_mutex_lock(self.mutexOutputFrame);
 	
 	NSInteger result = -1;
-	switch (methodID)
+	
+	if (methodID != SNDCORE_DUMMY)
 	{
-		case SNDCORE_OSX:
-			result = SPU_ChangeSoundCore(methodID, (int)SPU_BUFFER_BYTES);
-			break;
-			
-		default:
-			SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-			break;
+		result = SPU_ChangeSoundCore(methodID, (int)SPU_BUFFER_BYTES);
 	}
 	
 	if(result == -1)
@@ -377,16 +321,13 @@ static BOOL isSPUStarted = NO;
 {
 	[property setValue:[NSNumber numberWithBool:mute] forKey:@"mute"];
 	
-	if (isSPUStarted)
+	if (mute)
 	{
-		if (mute)
-		{
-			SPU_SetVolume(0);
-		}
-		else
-		{
-			SPU_SetVolume((int)[self volume]);
-		}
+		SPU_SetVolume(0);
+	}
+	else
+	{
+		SPU_SetVolume((int)[self volume]);
 	}
 }
 
@@ -398,16 +339,6 @@ static BOOL isSPUStarted = NO;
 - (void) setFilter:(NSInteger)filter
 {
 	[property setValue:[NSNumber numberWithInteger:filter] forKey:@"filter"];
-}
-
-- (void) runThread:(id)object
-{
-	[CocoaDSSpeaker startupSPU];
-	SPU_SetVolume((int)[self volume]);
-	
-	[super runThread:object];
-	
-	[CocoaDSSpeaker shutdownSPU];
 }
 
 - (void)handlePortMessage:(NSPortMessage*)portMessage
