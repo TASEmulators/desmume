@@ -188,8 +188,7 @@
 	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newSpeaker withObject:nil];
 	
 	// Wait until the GPU and SPU are finished starting up.
-	while (!([CocoaDSSpeaker isSPUStarted] &&
-			 [newComboDisplay thread] != nil && [newSpeaker thread] != nil))
+	while ([newComboDisplay thread] == nil || [newSpeaker thread] == nil)
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 	}

@@ -28,6 +28,110 @@
 
 @implementation CocoaDSFile
 
+// Global dictionary that can be used for storing URLs.
+//
+// Usually, it's best to add directory paths to FileTypeInfo.plist, and then
+// use directoryByKind:version:port for getting a URL, but this method only
+// works for application build targets. Other target types, such as plug-in
+// targets, don't read FileTypeInfo.plist correctly, so we include a global
+// URL dictionary so that we can manually set and get URLs at runtime.
+static NSMutableDictionary *_gURLDictionary = nil;
+
+/********************************************************************************************
+	URLDictionary
+
+	Returns the global URL dictionary.
+
+	Takes:
+		Nothing.
+
+	Returns:
+		A reference to the NSMutableDictionary URLDictionary.
+
+	Details:
+		This should always be used for getting the global URL dictionary. Never try to
+		reference the global URL dictionary directly, since this may change between
+		versions. The first time this method is called, it will automatically allocate
+		the memory for the global URL dictionary.
+ ********************************************************************************************/
++ (NSMutableDictionary *) URLDictionary
+{
+	if (_gURLDictionary == nil)
+	{
+		_gURLDictionary = [[NSMutableDictionary alloc] initWithCapacity:8];
+	}
+	
+	return _gURLDictionary;
+}
+
+/********************************************************************************************
+	addURLToURLDictionary:groupKey:fileKind:
+
+	Adds a URL to the global URL dictionary.
+
+	Takes:
+		theURL - An NSURL used to store a URL into the dictionary.
+		groupKey - An NSString that represents the key used to group a set URLs together.
+		fileKind - An NSString that represents the file type.
+
+	Returns:
+		Nothing.
+
+	Details:
+		This should always be used for adding a URL to the global URL dictionary. Never
+		try to add a URL directly, since this may change between versions.
+ ********************************************************************************************/
++ (void) addURLToURLDictionary:(NSURL *)theURL groupKey:(NSString *)groupKey fileKind:(NSString *)fileKind
+{
+	if (theURL == nil || groupKey == nil || fileKind == nil)
+	{
+		return;
+	}
+	
+	NSMutableDictionary *urlDictionary = [CocoaDSFile URLDictionary];
+	
+	NSMutableDictionary *groupDictionary = (NSMutableDictionary *)[urlDictionary valueForKey:groupKey];
+	if (groupDictionary == nil)
+	{
+		groupDictionary = [NSMutableDictionary dictionaryWithCapacity:16];
+		[urlDictionary setValue:groupDictionary forKey:groupKey];
+	}
+	
+	[groupDictionary setValue:theURL forKey:fileKind];
+}
+
+/********************************************************************************************
+	removeURLFromURLDictionaryByGroupKey:fileKind:
+
+	Removes a URL from the global URL dictionary.
+
+	Takes:
+		groupKey - An NSString that represents the key used to group a set URLs together.
+		fileKind - An NSString that represents the file type.
+
+	Returns:
+		Nothing.
+
+	Details:
+		This should always be used for removing a URL from the global URL dictionary.
+		Never try to remove a URL directly, since this may change between versions.
+ ********************************************************************************************/
++ (void) removeURLFromURLDictionaryByGroupKey:(NSString *)groupKey fileKind:(NSString *)fileKind
+{
+	if (groupKey == nil || fileKind == nil)
+	{
+		return;
+	}
+	
+	NSMutableDictionary *urlDictionary = [CocoaDSFile URLDictionary];
+	
+	NSMutableDictionary *groupDictionary = (NSMutableDictionary *)[urlDictionary valueForKey:groupKey];
+	if (groupDictionary != nil)
+	{
+		[groupDictionary setValue:nil forKey:fileKind];
+	}
+}
+
 + (BOOL) loadState:(NSURL *)saveStateURL
 {
 	BOOL result = NO;
@@ -107,6 +211,7 @@
 	
 	switch (fileTypeID)
 	{
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
 		case ROMSAVEFORMAT_DESMUME:
 		{
 			NSString *destinationPath = [[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE];
@@ -115,7 +220,7 @@
 			[fileManager release];
 			break;
 		}
-			
+#endif
 		case ROMSAVEFORMAT_NOGBA:
 		{
 			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA] cStringUsingEncoding:NSUTF8StringEncoding];
@@ -191,57 +296,174 @@
 	return exists;
 }
 
+/********************************************************************************************
+	setupAllFilePaths
+
+	Sets up all application file paths using the current version of the default port.
+
+	Takes:
+		Nothing.
+
+	Returns:
+		Nothing.
+
+	Details:
+		This method uses setupAllFilePathsForVersion:port: for its implementation.
+ ********************************************************************************************/
 + (void) setupAllFilePaths
 {
-	NSURL *romURL = [CocoaDSFile directoryURLByKind:@"ROM"];
+	[CocoaDSFile setupAllFilePathsForVersion:nil port:nil];
+}
+
+/********************************************************************************************
+	setupAllFilePathsForVersion:port:
+
+	Sets up all application file paths, reading the paths from FileTypeInfo.plist.
+
+	Takes:
+		versionString - An NSString that represents the application version. If nil is
+			used, this method assumes the current version.
+		portString - An NSString that represents the port version. If nil is used, this
+			method assumes the default port version.
+
+	Returns:
+		Nothing.
+
+	Details:
+		This is an Objective-C to C wrapper function for assigning file paths to the
+		emulation layer.
+ ********************************************************************************************/
++ (void) setupAllFilePathsForVersion:(NSString *)versionString port:(NSString *)portString
+{
+	NSURL *romURL = [CocoaDSFile directoryURLByKind:@"ROM" version:versionString port:portString];
 	if (romURL != nil)
 	{
 		strlcpy(path.pathToRoms, [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *romSaveURL = [CocoaDSFile directoryURLByKind:@"ROM Save"];
+	NSURL *romSaveURL = [CocoaDSFile directoryURLByKind:@"ROM Save" version:versionString port:portString];
 	if (romSaveURL != nil)
 	{
 		strlcpy(path.pathToBattery, [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *saveStateURL = [CocoaDSFile directoryURLByKind:@"Save State"];
+	NSURL *saveStateURL = [CocoaDSFile directoryURLByKind:@"Save State" version:versionString port:portString];
 	if (saveStateURL != nil)
 	{
 		strlcpy(path.pathToStates, [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *screenshotURL = [CocoaDSFile directoryURLByKind:@"Screenshot"];
+	NSURL *screenshotURL = [CocoaDSFile directoryURLByKind:@"Screenshot" version:versionString port:portString];
 	if (screenshotURL != nil)
 	{
 		strlcpy(path.pathToScreenshots, [[screenshotURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *aviURL = [CocoaDSFile directoryURLByKind:@"Video"];
+	NSURL *aviURL = [CocoaDSFile directoryURLByKind:@"Video" version:versionString port:portString];
 	if (aviURL != nil)
 	{
 		strlcpy(path.pathToAviFiles, [[aviURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *cheatURL = [CocoaDSFile directoryURLByKind:@"Cheat"];
+	NSURL *cheatURL = [CocoaDSFile directoryURLByKind:@"Cheat" version:versionString port:portString];
 	if (cheatURL != nil)
 	{
 		strlcpy(path.pathToCheats, [[cheatURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *soundSamplesURL = [CocoaDSFile directoryURLByKind:@"Sound Sample"];
+	NSURL *soundSamplesURL = [CocoaDSFile directoryURLByKind:@"Sound Sample" version:versionString port:portString];
 	if (soundSamplesURL != nil)
 	{
 		strlcpy(path.pathToSounds, [[soundSamplesURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *firmwareURL = [CocoaDSFile directoryURLByKind:@"Firmware Configuration"];
+	NSURL *firmwareURL = [CocoaDSFile directoryURLByKind:@"Firmware Configuration" version:versionString port:portString];
 	if (firmwareURL != nil)
 	{
 		strlcpy(path.pathToFirmware, [[firmwareURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
 	}
 	
-	NSURL *luaURL = [CocoaDSFile directoryURLByKind:@"Lua Script"];
+	NSURL *luaURL = [CocoaDSFile directoryURLByKind:@"Lua Script" version:versionString port:portString];
+	if (luaURL != nil)
+	{
+		strlcpy(path.pathToLua, [[luaURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+}
+
+/********************************************************************************************
+	setupAllFilePathsWithURLDictionary:
+
+	Sets up all application file paths using the global URLDictionary. This method exists
+	in the case where reading the paths from FileTypeInfo.plist impossible or impractical.
+
+	Takes:
+		URLDictionaryKey - An NSString that is a group key to the URLDictionary.
+
+	Returns:
+		Nothing.
+
+	Details:
+		This is an Objective-C to C wrapper function for assigning file paths to the
+		emulation layer.
+ ********************************************************************************************/
++ (void) setupAllFilePathsWithURLDictionary:(NSString *)URLDictionaryKey
+{
+	if (URLDictionaryKey == nil)
+	{
+		return;
+	}
+	
+	NSDictionary *URLDictionary = (NSDictionary *)[(NSDictionary *)[CocoaDSFile URLDictionary] valueForKey:URLDictionaryKey];
+	
+	NSURL *romURL = (NSURL *)[URLDictionary valueForKey:@"ROM"];
+	if (romURL != nil)
+	{
+		strlcpy(path.pathToRoms, [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *romSaveURL = (NSURL *)[URLDictionary valueForKey:@"ROM Save"];
+	if (romSaveURL != nil)
+	{
+		strlcpy(path.pathToBattery, [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *saveStateURL = (NSURL *)[URLDictionary valueForKey:@"Save State"];
+	if (saveStateURL != nil)
+	{
+		strlcpy(path.pathToStates, [[saveStateURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *screenshotURL = (NSURL *)[URLDictionary valueForKey:@"Screenshot"];
+	if (screenshotURL != nil)
+	{
+		strlcpy(path.pathToScreenshots, [[screenshotURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *aviURL = (NSURL *)[URLDictionary valueForKey:@"Video"];
+	if (aviURL != nil)
+	{
+		strlcpy(path.pathToAviFiles, [[aviURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *cheatURL = (NSURL *)[URLDictionary valueForKey:@"Cheat"];
+	if (cheatURL != nil)
+	{
+		strlcpy(path.pathToCheats, [[cheatURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *soundSamplesURL = (NSURL *)[URLDictionary valueForKey:@"Sound Sample"];
+	if (soundSamplesURL != nil)
+	{
+		strlcpy(path.pathToSounds, [[soundSamplesURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *firmwareURL = (NSURL *)[URLDictionary valueForKey:@"Firmware Configuration"];
+	if (firmwareURL != nil)
+	{
+		strlcpy(path.pathToFirmware, [[firmwareURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
+	}
+	
+	NSURL *luaURL = (NSURL *)[URLDictionary valueForKey:@"Lua Script"];
 	if (luaURL != nil)
 	{
 		strlcpy(path.pathToLua, [[luaURL path] cStringUsingEncoding:NSUTF8StringEncoding], MAX_PATH);
@@ -282,6 +504,11 @@
 			{
 				result = NO;
 			}
+		}
+		else if ([dirPath isEqualToString:@PATH_OPEN_EMU])
+		{
+			// OpenEmu uses its own directory structure, so no need to setup here.
+			continue;
 		}
 		else if ([dirPath isEqualToString:@PATH_WITH_ROM])
 		{
@@ -582,6 +809,14 @@
 		if ([dirPath isEqualToString:@PATH_USER_APP_SUPPORT])
 		{
 			fileURL = [CocoaDSFile userAppSupportURL:dirName version:lookupVersionStr];
+		}
+		else if ([dirPath isEqualToString:@PATH_OPEN_EMU])
+		{
+			NSMutableDictionary *urlDictionary = (NSMutableDictionary *)[[CocoaDSFile URLDictionary] valueForKey:dirPath];
+			if (urlDictionary != nil)
+			{
+				fileURL = (NSURL *)[urlDictionary valueForKey:fileKind];
+			}
 		}
 		else if ([dirPath isEqualToString:@PATH_WITH_ROM])
 		{

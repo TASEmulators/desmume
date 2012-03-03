@@ -28,6 +28,9 @@
 
 }
 
++ (NSMutableDictionary *) URLDictionary;
++ (void) addURLToURLDictionary:(NSURL *)theURL groupKey:(NSString *)groupKey fileKind:(NSString *)fileKind;
++ (void) removeURLFromURLDictionaryByGroupKey:(NSString *)groupKey fileKind:(NSString *)fileKind;
 + (BOOL) loadState:(NSURL *)saveStateURL;
 + (BOOL) saveState:(NSURL *)saveStateURL;
 + (BOOL) loadRom:(NSURL *)romURL;
@@ -38,6 +41,8 @@
 + (BOOL) romSaveExists:(NSURL *)romURL;
 + (BOOL) romSaveExistsWithRom:(NSURL *)romURL;
 + (void) setupAllFilePaths;
++ (void) setupAllFilePathsWithURLDictionary:(NSString *)URLDictionaryKey;
++ (void) setupAllFilePathsForVersion:(NSString *)versionString port:(NSString *)portString;
 + (BOOL) setupAllAppDirectories;
 + (NSURL *) saveStateURL;
 + (BOOL) saveScreenshot:(NSURL *)fileURL bitmapData:(NSBitmapImageRep *)bitmapImageRep fileType:(NSBitmapImageFileType)fileType;

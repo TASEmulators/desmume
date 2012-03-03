@@ -392,6 +392,14 @@
 		ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053314B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
+		ABD0A5661501AC5C0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */; };
+		ABD0A5671501AC5C0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */; };
+		ABD0A5681501AC5C0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */; };
+		ABD0A5691501AC5C0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */; };
+		ABD0A56A1501AC5C0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */; };
+		ABD0A56B1501AC5C0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */; };
+		ABD0A56C1501AC5C0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */; };
+		ABD0A56D1501AC5C0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */; };
 		ABE240FF14BE3169006EA2D5 /* cocoa_input_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE240F414BE3169006EA2D5 /* cocoa_input_legacy.mm */; };
 		ABE2410014BE3169006EA2D5 /* input_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE240F614BE3169006EA2D5 /* input_legacy.mm */; };
 		ABE2410114BE3169006EA2D5 /* nds_control_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE240F814BE3169006EA2D5 /* nds_control_legacy.mm */; };
@@ -787,6 +795,10 @@
 		ABBF04CD14B51BC900E505A0 /* Romanian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF052F14B5436E00E505A0 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
 		ABBF053B14B543B600E505A0 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
+		ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreaudiosound.cpp; sourceTree = "<group>"; };
+		ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
+		ABD0A5641501AC5C0074A094 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
+		ABD0A5651501AC5C0074A094 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = "<group>"; };
 		ABE240E514BE30FC006EA2D5 /* Info (Legacy Debug).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Legacy Debug).plist"; sourceTree = "<group>"; };
 		ABE240E614BE30FC006EA2D5 /* Info (Legacy).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Legacy).plist"; sourceTree = "<group>"; };
 		ABE240F314BE3169006EA2D5 /* cocoa_input_legacy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input_legacy.h; sourceTree = "<group>"; };
@@ -870,15 +882,19 @@
 			isa = PBXGroup;
 			children = (
 				ABC3ADEC14B7DC6E00D5B13D /* userinterface */,
+				ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */,
+				ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */,
 				ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */,
 				ABBF053B14B543B600E505A0 /* cocoa_file.h */,
 				ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */,
 				ABE240F314BE3169006EA2D5 /* cocoa_input_legacy.h */,
 				AB8FE37414B652EC009E20B1 /* cocoa_util.h */,
+				ABD0A5641501AC5C0074A094 /* coreaudiosound.h */,
 				ABE240F514BE3169006EA2D5 /* input_legacy.h */,
 				AB8FE30A14B647D6009E20B1 /* macosx_10_4_compat.h */,
 				ABE240F714BE3169006EA2D5 /* nds_control_legacy.h */,
 				ABE240F914BE3169006EA2D5 /* preferences_legacy.h */,
+				ABD0A5651501AC5C0074A094 /* ringbuffer.h */,
 				ABE240FB14BE3169006EA2D5 /* screen_state_legacy.h */,
 				AB06CB49135B8A4D00E977B3 /* sndOSX.h */,
 				ABE240FD14BE3169006EA2D5 /* video_output_view_legacy.h */,
@@ -1744,6 +1760,8 @@
 				ABE2410E14BE3169006EA2D5 /* preferences_legacy.mm in Sources */,
 				ABE2410F14BE3169006EA2D5 /* screen_state_legacy.m in Sources */,
 				ABE2411014BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
+				ABD0A5681501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
+				ABD0A5691501AC5C0074A094 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1851,6 +1869,8 @@
 				ABE2411414BE3169006EA2D5 /* preferences_legacy.mm in Sources */,
 				ABE2411514BE3169006EA2D5 /* screen_state_legacy.m in Sources */,
 				ABE2411614BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
+				ABD0A56C1501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
+				ABD0A56D1501AC5C0074A094 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1958,6 +1978,8 @@
 				ABE2410214BE3169006EA2D5 /* preferences_legacy.mm in Sources */,
 				ABE2410314BE3169006EA2D5 /* screen_state_legacy.m in Sources */,
 				ABE2410414BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
+				ABD0A5661501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
+				ABD0A5671501AC5C0074A094 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2065,6 +2087,8 @@
 				ABE2410814BE3169006EA2D5 /* preferences_legacy.mm in Sources */,
 				ABE2410914BE3169006EA2D5 /* screen_state_legacy.m in Sources */,
 				ABE2410A14BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
+				ABD0A56A1501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
+				ABD0A56B1501AC5C0074A094 /* ringbuffer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -62,10 +62,6 @@
 - (id) initWithVolume:(CGFloat)vol;
 - (void) dealloc;
 
-+ (BOOL) startupSPU;
-+ (void) shutdownSPU;
-+ (BOOL) isSPUStarted;
-
 - (void) setVolume:(float)vol;
 - (float) volume;
 - (void) setAudioOutputEngine:(NSInteger)methodID;
