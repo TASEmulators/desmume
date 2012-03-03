@@ -95,7 +95,7 @@
 	free(input);
 	
 	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	NDS_3D_ChangeCore(CORE3DLIST_SWRASTERIZE);
+	NDS_3D_ChangeCore(CORE3DLIST_NULL);
 	[CocoaDSCore shutdownCore];
 	
 	self.firmware = nil;
@@ -185,11 +185,17 @@
 	return GL_RGB5_A1;
 }
 
+- (NSTimeInterval)frameInterval
+{
+    return DS_FRAMES_PER_SECOND;
+}
+
 #pragma mark Audio
 
-- (NSUInteger)soundBufferCount
+- (NSUInteger)audioBufferCount
 {
-	return 1;
+	//return 1;
+	return 0;
 }
 
 - (void)getAudioBuffer:(void *)buffer frameCount:(NSUInteger)frameCount bufferIndex:(NSUInteger)index
@@ -201,7 +207,7 @@
 	
 	//if (openEmuSoundInterfaceBuffer != NULL)
 	//{
-	//	openEmuSoundInterfaceBuffer->read(buffer, frameCount * SPU_BUFFER_BYTES);
+	//	openEmuSoundInterfaceBuffer->read(buffer, frameCount * SPU_SAMPLE_SIZE);
 	//}
 }
 
@@ -211,24 +217,10 @@
 	return 0;
 }
 
-- (NSUInteger)frameSampleCount
-{
-	//static NSUInteger count = (NSUInteger)(SPU_SAMPLE_RATE / DS_FRAMES_PER_SECOND) + 1;
-	static NSUInteger count = 0;
-	
-	return count;
-}
-
-- (NSUInteger)soundBufferSize
-{
-	//return SPU_BUFFER_BYTES;
-	return 0;
-}
-
-- (NSUInteger)frameSampleRate
+- (double)audioSampleRate
 {
 	//return SPU_SAMPLE_RATE;
-	return 0;
+	return 0.0;
 }
 
 - (NSUInteger)channelCountForBuffer:(NSUInteger)buffer
@@ -236,19 +228,15 @@
     return [self channelCount];
 }
 
-- (NSUInteger)frameSampleCountForBuffer:(NSUInteger)buffer
+- (NSUInteger)audioBufferSizeForBuffer:(NSUInteger)buffer
 {
-    return [self frameSampleCount];
+	//return (SPU_BUFFER_BYTES * 2);
+	return 0;
 }
 
-- (NSUInteger)soundBufferSizeForBuffer:(NSUInteger)buffer
+- (double)audioSampleRateForBuffer:(NSUInteger)buffer
 {
-    return [self soundBufferSize];
-}
-
-- (NSUInteger)frameSampleRateForBuffer:(NSUInteger)buffer
-{
-    return [self frameSampleRate];
+    return [self audioSampleRate];
 }
 
 
