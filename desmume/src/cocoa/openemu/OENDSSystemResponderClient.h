@@ -41,7 +41,7 @@ typedef enum _OENDSButton
 
 @protocol OENDSSystemResponderClient <OESystemResponderClient, NSObject>
 
-- (void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player;
-- (void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player;
+- (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player;
+- (oneway void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player;
 
 @end

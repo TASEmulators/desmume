@@ -22,8 +22,7 @@
 #import "cocoa_core.h"
 #import "cocoa_mic.h"
 #import "cocoa_output.h"
-#include "../sndOSX.h"
-//#include "OpenEmuSoundInterface.h"
+#import "OESoundInterface.h"
 
 #include <OpenGL/gl.h>
 #include "../../path.h"
@@ -76,8 +75,9 @@
 	CommonSettings.spuInterpolationMode = SPUInterpolation_Cosine;
 	
 	// Set up the sound core
-	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OSX, (int)SPU_BUFFER_BYTES);
-	//NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
+	openEmuSoundInterfaceBuffer = [self ringBufferAtIndex:0];
+	
+	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
 	if(result == -1)
 	{
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
@@ -187,40 +187,24 @@
 
 - (NSTimeInterval)frameInterval
 {
-    return DS_FRAMES_PER_SECOND;
+	return DS_FRAMES_PER_SECOND;
 }
 
 #pragma mark Audio
 
 - (NSUInteger)audioBufferCount
 {
-	//return 1;
-	return 0;
-}
-
-- (void)getAudioBuffer:(void *)buffer frameCount:(NSUInteger)frameCount bufferIndex:(NSUInteger)index
-{
-	// TODO: Better integrate the emulator audio with OpenEmu's audio system.
-	//
-	// Right now, we're using the Cocoa port's audio handling code, which works great.
-	// But it's a good idea to not use it for the purposes of proving good code modularity.
-	
-	//if (openEmuSoundInterfaceBuffer != NULL)
-	//{
-	//	openEmuSoundInterfaceBuffer->read(buffer, frameCount * SPU_SAMPLE_SIZE);
-	//}
+	return 1;
 }
 
 - (NSUInteger)channelCount
 {
-	//return SPU_NUMBER_CHANNELS;
-	return 0;
+	return SPU_NUMBER_CHANNELS;
 }
 
 - (double)audioSampleRate
 {
-	//return SPU_SAMPLE_RATE;
-	return 0.0;
+	return SPU_SAMPLE_RATE;
 }
 
 - (NSUInteger)channelCountForBuffer:(NSUInteger)buffer
@@ -230,8 +214,7 @@
 
 - (NSUInteger)audioBufferSizeForBuffer:(NSUInteger)buffer
 {
-	//return (SPU_BUFFER_BYTES * 2);
-	return 0;
+	return (NSUInteger)SPU_BUFFER_BYTES;
 }
 
 - (double)audioSampleRateForBuffer:(NSUInteger)buffer
@@ -242,12 +225,12 @@
 
 #pragma mark Input
 
-- (void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
+- (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
 	input[button] = true;
 }
 
-- (void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
+- (oneway void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
 	input[button] = false;
 }

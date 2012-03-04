@@ -15,11 +15,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "OpenEmuSoundInterface.h"
+#include "OESoundInterface.h"
 
 #include "cocoa_globals.h"
 
-RingBuffer *openEmuSoundInterfaceBuffer = NULL;
+OERingBuffer *openEmuSoundInterfaceBuffer = nil;
 
 // Sound interface to the SPU
 SoundInterface_struct SNDOpenEmu = {
@@ -43,72 +43,49 @@ SoundInterface_struct *SNDCoreList[] = {
 
 int SNDOpenEmuInit(int buffer_size)
 {
-	if (openEmuSoundInterfaceBuffer != NULL)
-	{
-		RingBuffer *oldBuffer = openEmuSoundInterfaceBuffer;
-		openEmuSoundInterfaceBuffer = new RingBuffer(buffer_size / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
-		delete oldBuffer;
-	}
-	else
-	{
-		openEmuSoundInterfaceBuffer = new RingBuffer(buffer_size / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
-	}
+	// Do nothing. The OpenEmu frontend will take care of this.
+	[openEmuSoundInterfaceBuffer setLength:buffer_size];
 	
 	return 0;
 }
 
 void SNDOpenEmuDeInit()
 {
-	delete openEmuSoundInterfaceBuffer;
-	openEmuSoundInterfaceBuffer = NULL;
+	// Do nothing. The OpenEmu frontend will take care of this.
 }
 
 int SNDOpenEmuReset()
 {
-	SNDOpenEmuClearBuffer();
-	
+	// Do nothing. The OpenEmu frontend will take care of this.
 	return 0;
 }
 
 void SNDOpenEmuUpdateAudio(s16 *buffer, u32 num_samples)
 {
-	if (openEmuSoundInterfaceBuffer != NULL)
-	{
-		openEmuSoundInterfaceBuffer->write(buffer, openEmuSoundInterfaceBuffer->getElementSize() * (size_t)num_samples);
-	}
+	[openEmuSoundInterfaceBuffer write:buffer maxLength:num_samples * SPU_SAMPLE_SIZE];
 }
 
 u32 SNDOpenEmuGetAudioSpace()
-{
-	u32 availableSamples = 0;
-	
-	if (openEmuSoundInterfaceBuffer != NULL)
-	{
-		availableSamples = (u32)openEmuSoundInterfaceBuffer->getAvailableElements();
-	}
-	
-	return availableSamples;
+{	
+	return (u32)[openEmuSoundInterfaceBuffer usedBytes] / SPU_SAMPLE_SIZE;
 }
 
 void SNDOpenEmuMuteAudio()
 {
-	
+	// Do nothing. The OpenEmu frontend will take care of this.
 }
 
 void SNDOpenEmuUnMuteAudio()
 {
-	
+	// Do nothing. The OpenEmu frontend will take care of this.
 }
 
 void SNDOpenEmuSetVolume(int volume)
 {
-	
+	// Do nothing. The OpenEmu frontend will take care of this.
 }
 
 void SNDOpenEmuClearBuffer()
 {
-	if (openEmuSoundInterfaceBuffer != NULL)
-	{
-		openEmuSoundInterfaceBuffer->clear();
-	}
+	// Do nothing. The OpenEmu frontend will take care of this.
 }

@@ -15,10 +15,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _OPENEMUSOUNDINTERFACE_
-#define _OPENEMUSOUNDINTERFACE_
-
-#include "../ringbuffer.h"
+#import <OpenEmuBase/OERingBuffer.h>
 #include "../../SPU.h"
 
 #define SNDCORE_OPENEMU 58326
@@ -27,7 +24,12 @@
 extern SoundInterface_struct SNDOpenEmu;
 
 // Ring buffer
-extern RingBuffer *openEmuSoundInterfaceBuffer;
+extern OERingBuffer *openEmuSoundInterfaceBuffer;
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 // OpenEmu functions for the sound interface
 int		SNDOpenEmuInit(int buffer_size);
@@ -40,4 +42,6 @@ void	SNDOpenEmuUnMuteAudio();
 void	SNDOpenEmuSetVolume(int volume);
 void	SNDOpenEmuClearBuffer();
 
-#endif // _OPENEMUSOUNDINTERFACE_
+#ifdef __cplusplus
+}
+#endif

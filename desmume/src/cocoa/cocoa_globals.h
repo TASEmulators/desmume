@@ -161,11 +161,11 @@
 #define FRAME_SKIP_BIAS								0.5		// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 3.0)
 
-#define SPU_SAMPLE_RATE								44100	// Samples per second
+#define SPU_SAMPLE_RATE								44100.0	// Samples per second
 #define SPU_SAMPLE_RESOLUTION						16		// Bits per sample; must be a multiple of 8
 #define SPU_NUMBER_CHANNELS							2		// Number of channels
 #define SPU_SAMPLE_SIZE								((SPU_SAMPLE_RESOLUTION / 8) * SPU_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
-#define SPU_BUFFER_BYTES							((SPU_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * SPU_SAMPLE_SIZE)
+#define SPU_BUFFER_BYTES							((SPU_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * SPU_SAMPLE_SIZE) // Note that this value may be returned as floating point
 
 #define CLOCKWISE_DEGREES(x)						(360.0 - x) // Converts an angle in degrees from normal-direction to clockwise-direction.
 
