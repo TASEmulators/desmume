@@ -104,6 +104,7 @@
 		AB0F29C914BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
 		AB15CA7214A29EE500B8A6A4 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
 		AB181D0013B66889006CA82D /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
+		AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */; };
 		AB1B9E631501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		AB1B9E641501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
 		AB1B9E651501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
@@ -291,9 +292,6 @@
 		ABB3C6691501BF8A00E0C22E /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		ABB3C66A1501BF8A00E0C22E /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */; };
-		ABB3C66D1501C04F00E0C22E /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
-		ABB3C66E1501C04F00E0C22E /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
-		ABB3C66F1501C04F00E0C22E /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD104141346652500AF11D1 /* sndOSX.cpp */; };
 		ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABB3C6711501C04F00E0C22E /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
@@ -844,8 +842,8 @@
 		ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NDSGameCore.h; sourceTree = "<group>"; };
 		ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = NDSGameCore.mm; sourceTree = "<group>"; };
 		ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OENDSSystemResponderClient.h; sourceTree = "<group>"; };
-		ABB3C6401501BB8300E0C22E /* OpenEmuSoundInterface.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OpenEmuSoundInterface.cpp; sourceTree = "<group>"; };
-		ABB3C6411501BB8300E0C22E /* OpenEmuSoundInterface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenEmuSoundInterface.h; sourceTree = "<group>"; };
+		ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = OESoundInterface.mm; sourceTree = "<group>"; };
+		ABB3C6411501BB8300E0C22E /* OESoundInterface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OESoundInterface.h; sourceTree = "<group>"; };
 		ABB3C6471501BC6D00E0C22E /* DeSmuME.oecoreplugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DeSmuME.oecoreplugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABB7160914E386740027FE88 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = Images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
@@ -1294,10 +1292,10 @@
 		ABB3C63A1501BB8300E0C22E /* openemu */ = {
 			isa = PBXGroup;
 			children = (
-				ABB3C6401501BB8300E0C22E /* OpenEmuSoundInterface.cpp */,
+				ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */,
 				ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */,
 				ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */,
-				ABB3C6411501BB8300E0C22E /* OpenEmuSoundInterface.h */,
+				ABB3C6411501BB8300E0C22E /* OESoundInterface.h */,
 				ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */,
 				ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */,
 				ABB3C63C1501BB8300E0C22E /* Info (OpenEmu Plug-in).plist */,
@@ -2324,9 +2322,6 @@
 			files = (
 				ABE9EEEB1501C78700D3FB19 /* fs-linux.cpp in Sources */,
 				ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */,
-				ABB3C66D1501C04F00E0C22E /* coreaudiosound.cpp in Sources */,
-				ABB3C66E1501C04F00E0C22E /* ringbuffer.cpp in Sources */,
-				ABB3C66F1501C04F00E0C22E /* sndOSX.cpp in Sources */,
 				ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */,
 				ABB3C6711501C04F00E0C22E /* cocoa_core.mm in Sources */,
 				ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */,
@@ -2430,6 +2425,7 @@
 				ABB3C6D61501C04F00E0C22E /* version.cpp in Sources */,
 				ABB3C6D71501C04F00E0C22E /* wifi.cpp in Sources */,
 				ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */,
+				AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
