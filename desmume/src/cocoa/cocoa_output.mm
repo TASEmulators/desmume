@@ -703,34 +703,33 @@ GPU3DInterface *core3DList[] = {
 
 - (void) setDisplayType:(NSInteger)dispType
 {
-	OSSpinLockLock(&spinlockDisplayType);
-	
-	displayType = dispType;
-	[property setValue:[NSNumber numberWithInteger:dispType] forKey:@"displayMode"];
-	
+	NSString *newDispString = nil;
 	NSSize newSrcSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT);
 	
 	switch (dispType)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
-			[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
+			newDispString = NSSTRING_DISPLAYMODE_MAIN;
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
-			[property setValue:NSSTRING_DISPLAYMODE_TOUCH forKey:@"displayModeString"];
+			newDispString = NSSTRING_DISPLAYMODE_TOUCH;
 			break;
 			
 		case DS_DISPLAY_TYPE_COMBO:
-			[property setValue:NSSTRING_DISPLAYMODE_COMBO forKey:@"displayModeString"];
+			newDispString = NSSTRING_DISPLAYMODE_COMBO;
 			newSrcSize.height *= 2;
 			break;
 			
 		default:
-			OSSpinLockUnlock(&spinlockDisplayType);
 			return;
 			break;
 	}
 	
+	OSSpinLockLock(&spinlockDisplayType);
+	displayType = dispType;
+	[property setValue:[NSNumber numberWithInteger:dispType] forKey:@"displayMode"];
+	[property setValue:newDispString forKey:@"displayModeString"];
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
 	OSSpinLockLock(&spinlockVfSrcBuffer);
