@@ -34,7 +34,7 @@
 	<string>http://desmume.org/</string>
 	<key>OESystemIdentifiers</key>
 	<array>
-		<string>openemu.system.nintendods</string>
+		<string>openemu.system.nds</string>
 	</array>
 </dict>
 </plist>

@@ -43,5 +43,7 @@ typedef enum _OENDSButton
 
 - (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player;
 - (oneway void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player;
+- (oneway void)didTouchScreenPoint:(OEIntPoint)aPoint;
+- (oneway void)didReleaseTouch;
 
 @end
