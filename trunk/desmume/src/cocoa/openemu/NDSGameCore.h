@@ -26,6 +26,8 @@
 @interface NDSGameCore : OEGameCore
 {
 	bool *input;
+	bool isTouchPressed;
+	OEIntPoint touchLocation;
 	CocoaDSFirmware *firmware;
 	CocoaDSMic *microphone;
 	NSInteger displayMode;

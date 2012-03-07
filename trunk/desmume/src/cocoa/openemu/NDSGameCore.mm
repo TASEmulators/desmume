@@ -46,6 +46,9 @@
 	
 	// Set up input handling
 	input = (bool *)calloc(sizeof(bool), OENDSButtonCount);
+	isTouchPressed = false;
+	touchLocation.x = 0;
+	touchLocation.y = 0;
 	microphone = [[CocoaDSMic alloc] init];
 	microphone.mode = MICMODE_INTERNAL_NOISE;
 	
@@ -291,6 +294,59 @@
 	input[button] = false;
 }
 
+- (oneway void)didTouchScreenPoint:(OEIntPoint)aPoint
+{
+	bool touchPressed = false;
+	NSInteger dispMode = [self displayMode];
+	
+	switch (dispMode)
+	{
+		case DS_DISPLAY_TYPE_MAIN:
+			touchPressed = false; // Reject touch input if showing only the main screen.
+			break;
+			
+		case DS_DISPLAY_TYPE_TOUCH:
+			touchPressed = true;
+			break;
+			
+		case DS_DISPLAY_TYPE_COMBO:
+			touchPressed = true;
+			aPoint.y -= GPU_DISPLAY_HEIGHT; // Normalize the y-coordinate to the DS.
+			break;
+			
+		default:
+			return;
+			break;
+	}
+	
+	// Constrain the touch point to the DS dimensions.
+	if (aPoint.x < 0)
+	{
+		aPoint.x = 0;
+	}
+	else if (aPoint.x > (GPU_DISPLAY_WIDTH - 1))
+	{
+		aPoint.x = (GPU_DISPLAY_WIDTH - 1);
+	}
+	
+	if (aPoint.y < 0)
+	{
+		aPoint.y = 0;
+	}
+	else if (aPoint.y > (GPU_DISPLAY_HEIGHT - 1))
+	{
+		aPoint.y = (GPU_DISPLAY_HEIGHT - 1);
+	}
+	
+	isTouchPressed = touchPressed;
+	touchLocation = aPoint;
+}
+
+- (oneway void)didReleaseTouch
+{
+	isTouchPressed = false;
+}
+
 - (void) updateNDSController
 {
 	// Setup the DS pad.
@@ -309,22 +365,16 @@
 			   input[OENDSButtonDebug],
 			   input[OENDSButtonLid]);
 	
-	// TODO: Add touch pad support in OpenEmu.
-	//
-	// As of March 3, 2012, reading coordinates from a view is not exposed in OpenEmu.
-	// When this functionality is exposed, then the DS touch pad will be supported.
-	/*
 	// Setup the DS touch pad.
-	if ([self isInputPressed:@"Touch"])
+	if (isTouchPressed)
 	{
-		NSPoint touchLocation = [self inputLocation:@"Touch"];
 		NDS_setTouchPos((u16)touchLocation.x, (u16)touchLocation.y);
 	}
 	else
 	{
 		NDS_releaseTouch();
 	}
-	*/
+	
 	// Setup the DS mic.
 	NDS_setMic(input[OENDSButtonMicrophone]);
 	
