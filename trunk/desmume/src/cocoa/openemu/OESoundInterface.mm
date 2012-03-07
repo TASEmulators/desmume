@@ -15,9 +15,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "OESoundInterface.h"
+#import "OESoundInterface.h"
 
-#include "cocoa_globals.h"
+#import "cocoa_globals.h"
+
 
 OERingBuffer *openEmuSoundInterfaceBuffer = nil;
 
@@ -43,7 +44,6 @@ SoundInterface_struct *SNDCoreList[] = {
 
 int SNDOpenEmuInit(int buffer_size)
 {
-	// Do nothing. The OpenEmu frontend will take care of this.
 	[openEmuSoundInterfaceBuffer setLength:buffer_size];
 	
 	return 0;

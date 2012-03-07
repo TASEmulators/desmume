@@ -17,21 +17,25 @@
 
 #import <Cocoa/Cocoa.h>
 #import <OpenEmuBase/OEGameCore.h>
-#import <OpenEmuBase/OERingBuffer.h>
-#import "OENDSSystemResponderClient.h"
-#include "../ringbuffer.h"
+#include <libkern/OSAtomic.h>
 
 @class CocoaDSFirmware;
 @class CocoaDSMic;
+
 
 @interface NDSGameCore : OEGameCore
 {
 	bool *input;
 	CocoaDSFirmware *firmware;
 	CocoaDSMic *microphone;
+	NSInteger displayMode;
+	OEIntRect displayRect;
+	
+	OSSpinLock spinlockDisplayMode;
 }
 
 @property (retain) CocoaDSFirmware *firmware;
 @property (retain) CocoaDSMic *microphone;
+@property (assign) NSInteger displayMode;
 
 @end
