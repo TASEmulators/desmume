@@ -465,6 +465,8 @@ static BOOL isCoreStarted = NO;
 
 - (void) setCoreState:(NSInteger)coreState
 {
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	
 	if (threadParam.state == CORESTATE_PAUSE)
 	{
 		prevCoreState = CORESTATE_PAUSE;
@@ -474,7 +476,6 @@ static BOOL isCoreStarted = NO;
 		prevCoreState = CORESTATE_EXECUTE;
 	}
 	
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	threadParam.state = coreState;
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
@@ -618,6 +619,7 @@ static BOOL isCoreStarted = NO;
 
 - (void) addOutput:(CocoaDSOutput *)theOutput
 {
+	theOutput.mutexProducer = self.mutexCoreExecute;
 	[self.cdsOutputList addObject:theOutput];
 }
 
@@ -673,15 +675,19 @@ void* RunCoreThread(void *arg)
 		// We'll just jump directly to ending the input processing.
 		NDS_endProcessingInput();
 		
-		for(CocoaDSOutput *cdsOutput in cdsOutputList)
-		{
-			pthread_mutex_lock(cdsOutput.mutexOutputFrame);
-		}
-		
 		// Execute the frame and increment the frame counter.
 		pthread_mutex_lock(param->mutexCoreExecute);
 		NDS_exec<false>();
 		pthread_mutex_unlock(param->mutexCoreExecute);
+		
+		// Check if an internal execution error occurred that halted the emulation.
+		if (!execute)
+		{
+			pthread_mutex_unlock(&param->mutexThreadExecute);
+			// TODO: Message the core that emulation halted.
+			NSLog(@"The emulator halted during execution. Was it an internal error that caused this?");
+			continue;
+		}
 		
 		if (param->framesToSkip == 0)
 		{
@@ -692,12 +698,10 @@ void* RunCoreThread(void *arg)
 		{
 			if (param->framesToSkip > 0 && [cdsOutput isMemberOfClass:[CocoaDSDisplay class]])
 			{
-				pthread_mutex_unlock(cdsOutput.mutexOutputFrame);
 				continue;
 			}
 			
 			[cdsOutput doCoreEmuFrame];
-			pthread_mutex_unlock(cdsOutput.mutexOutputFrame);
 		}
 		
 		// Determine the number of frames to skip based on how much time "debt"

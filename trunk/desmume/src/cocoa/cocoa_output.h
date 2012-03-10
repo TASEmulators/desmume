@@ -30,14 +30,16 @@
 	NSData *frameData;
 	NSMutableDictionary *property;
 	
-	pthread_mutex_t *mutexOutputFrame;
+	pthread_mutex_t *mutexProducer;
+	pthread_mutex_t *mutexConsume;
 }
 
 @property (assign) BOOL isStateChanged;
 @property (assign) NSUInteger frameCount;
 @property (retain) NSData *frameData;
 @property (readonly) NSMutableDictionary *property;
-@property (readonly) pthread_mutex_t *mutexOutputFrame;
+@property (assign) pthread_mutex_t *mutexProducer;
+@property (readonly) pthread_mutex_t *mutexConsume;
 
 - (void) doCoreEmuFrame;
 - (void) handleEmuFrameProcessed:(NSData *)theData;
