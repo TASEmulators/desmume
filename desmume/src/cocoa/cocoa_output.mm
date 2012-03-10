@@ -45,7 +45,8 @@ GPU3DInterface *core3DList[] = {
 @synthesize frameCount;
 @synthesize frameData;
 @synthesize property;
-@synthesize mutexOutputFrame;
+@synthesize mutexProducer;
+@synthesize mutexConsume;
 
 - (id)init
 {
@@ -62,8 +63,8 @@ GPU3DInterface *core3DList[] = {
 	property = [[NSMutableDictionary alloc] init];
 	[property setValue:[NSDate date] forKey:@"outputTime"];
 	
-	mutexOutputFrame = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(mutexOutputFrame, NULL);
+	mutexConsume = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexConsume, NULL);
 	
 	return self;
 }
@@ -85,9 +86,9 @@ GPU3DInterface *core3DList[] = {
 	self.frameData = nil;
 	[property release];
 	
-	pthread_mutex_destroy(mutexOutputFrame);
-	free(mutexOutputFrame);
-	mutexOutputFrame = nil;
+	pthread_mutex_destroy(mutexConsume);
+	free(mutexConsume);
+	mutexConsume = NULL;
 	
 	[super dealloc];
 }
@@ -199,7 +200,7 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"audioOutputEngine"];
 	OSSpinLockUnlock(&spinlockAudioOutputEngine);
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	
 	NSInteger result = -1;
 	
@@ -213,7 +214,7 @@ GPU3DInterface *core3DList[] = {
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	}
 	
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 	
 	// Force the volume back to it's original setting.
 	[self setVolume:[self volume]];
@@ -234,9 +235,9 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithBool:state] forKey:@"spuAdvancedLogic"];
 	OSSpinLockUnlock(&spinlockSpuAdvancedLogic);
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.spu_advanced = state;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (BOOL) spuAdvancedLogic
@@ -254,9 +255,9 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuInterpolationMode"];
 	OSSpinLockUnlock(&spinlockSpuInterpolationMode);
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)modeID;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (NSInteger) spuInterpolationMode
@@ -276,9 +277,9 @@ GPU3DInterface *core3DList[] = {
 	
 	NSInteger methodID = [self spuSyncMethod];
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	SPU_SetSynchMode(modeID, methodID);
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (NSInteger) spuSyncMode
@@ -298,9 +299,9 @@ GPU3DInterface *core3DList[] = {
 	
 	NSInteger modeID = [self spuSyncMode];
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	SPU_SetSynchMode(modeID, methodID);
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (NSInteger) spuSyncMethod
@@ -554,8 +555,10 @@ GPU3DInterface *core3DList[] = {
 - (void) setGpuStateFlags:(UInt32)flags
 {
 	OSSpinLockLock(&spinlockGpuState);
-	
 	gpuStateFlags = flags;
+	OSSpinLockUnlock(&spinlockGpuState);
+	
+	pthread_mutex_lock(self.mutexProducer);
 	
 	if (flags & GPUSTATE_MAIN_GPU_MASK)
 	{
@@ -689,7 +692,7 @@ GPU3DInterface *core3DList[] = {
 		[property setValue:[NSNumber numberWithBool:NO] forKey:@"gpuStateSubOBJ"];
 	}
 	
-	OSSpinLockUnlock(&spinlockGpuState);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (UInt32) gpuStateFlags
@@ -771,9 +774,9 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"render3DRenderingEngine"];
 	OSSpinLockUnlock(&spinlockRender3DRenderingEngine);
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	NDS_3D_ChangeCore(methodID);
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (NSInteger) render3DRenderingEngine
@@ -797,9 +800,9 @@ GPU3DInterface *core3DList[] = {
 		cState = true;
 	}
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = cState;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (BOOL) render3DHighPrecisionColorInterpolation
@@ -823,9 +826,9 @@ GPU3DInterface *core3DList[] = {
 		cState = true;
 	}
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.GFX3D_EdgeMark = cState;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (BOOL) render3DEdgeMarking
@@ -849,9 +852,9 @@ GPU3DInterface *core3DList[] = {
 		cState = true;
 	}
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.GFX3D_Fog = cState;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (BOOL) render3DFog
@@ -875,9 +878,9 @@ GPU3DInterface *core3DList[] = {
 		cState = true;
 	}
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.GFX3D_Texture = cState;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (BOOL) render3DTextures
@@ -895,9 +898,9 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithInteger:threshold] forKey:@"render3DDepthComparisonThreshold"];
 	OSSpinLockUnlock(&spinlockRender3DDepthComparisonThreshold);
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = threshold;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (NSUInteger) render3DDepthComparisonThreshold
@@ -936,15 +939,15 @@ GPU3DInterface *core3DList[] = {
 		numberCores = numberThreads;
 	}
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.num_cores = numberCores;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 	
 	if ([self render3DRenderingEngine] == CORE3DLIST_SWRASTERIZE)
 	{
-		pthread_mutex_lock(self.mutexOutputFrame);
+		pthread_mutex_lock(self.mutexProducer);
 		NDS_3D_ChangeCore(CORE3DLIST_SWRASTERIZE);
-		pthread_mutex_unlock(self.mutexOutputFrame);
+		pthread_mutex_unlock(self.mutexProducer);
 	}
 }
 
@@ -969,9 +972,9 @@ GPU3DInterface *core3DList[] = {
 		cState = true;
 	}
 	
-	pthread_mutex_lock(self.mutexOutputFrame);
+	pthread_mutex_lock(self.mutexProducer);
 	CommonSettings.GFX3D_LineHack = cState;
-	pthread_mutex_unlock(self.mutexOutputFrame);
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (BOOL) render3DLineHack
