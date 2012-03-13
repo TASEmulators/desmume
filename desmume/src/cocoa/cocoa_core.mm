@@ -642,23 +642,25 @@ static BOOL isCoreStarted = NO;
 
 @end
 
-void* RunCoreThread(void *arg)
+static void* RunCoreThread(void *arg)
 {
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
 	uint64_t startTime = 0;
-	uint64_t elapsedMachAbsTime;
+	uint64_t timeBudget = 0; // Need local variable to ensure that param->timeBudgetMachAbsTime is thread-safe.
 	
 	do
 	{
 		startTime = mach_absolute_time();
 		pthread_mutex_lock(&param->mutexThreadExecute);
+		timeBudget = param->timeBudgetMachAbsTime;
 		
 		while (!(param->state == CORESTATE_EXECUTE && execute && !param->exitThread))
 		{
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
 			startTime = mach_absolute_time();
+			timeBudget = param->timeBudgetMachAbsTime;
 		}
 		
 		if (param->exitThread)
@@ -708,20 +710,15 @@ void* RunCoreThread(void *arg)
 		// we owe on timeBudget.
 		if (param->isFrameSkipEnabled)
 		{
-			CoreFrameSkip(param->timeBudgetMachAbsTime, startTime, &param->framesToSkip);
+			CoreFrameSkip(timeBudget, startTime, &param->framesToSkip);
 		}
-		
-		// If there is any time left in the loop, go ahead and pad it.
-		elapsedMachAbsTime = mach_absolute_time() - startTime;
 		
 		pthread_mutex_unlock(&param->mutexThreadExecute);
 		
-		if(param->timeBudgetMachAbsTime > elapsedMachAbsTime)
+		// If there is any time left in the loop, go ahead and pad it.
+		if(timeBudget > (mach_absolute_time() - startTime))
 		{
-			uint64_t padMachAbsTime = param->timeBudgetMachAbsTime - elapsedMachAbsTime;
-			Nanoseconds padNanoseconds = AbsoluteToNanoseconds(*(AbsoluteTime *)&padMachAbsTime);
-			useconds_t padMicroseconds = (useconds_t)(*(uint64_t *)&padNanoseconds / 1000);
-			usleep(padMicroseconds);
+			mach_wait_until(startTime + timeBudget);
 		}
 		
 	} while (!param->exitThread);
@@ -729,10 +726,8 @@ void* RunCoreThread(void *arg)
 	return nil;
 }
 
-void CoreFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime, unsigned int *outFramesToSkip)
+static void CoreFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime, unsigned int *outFramesToSkip)
 {
-	static unsigned int lastSetFrameSkip = 0;
-	
 	if (*outFramesToSkip > 0)
 	{
 		NDS_SkipNextFrame();
@@ -740,13 +735,14 @@ void CoreFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTim
 	}
 	else
 	{
-		unsigned int framesToSkip = 0;
-		
 		// Calculate the time remaining.
 		uint64_t elapsed = mach_absolute_time() - frameStartMachAbsTime;
 		
 		if (elapsed > timeBudgetMachAbsTime)
 		{
+			static unsigned int lastSetFrameSkip = 0;
+			unsigned int framesToSkip = 0;
+			
 			if (timeBudgetMachAbsTime > 0)
 			{
 				framesToSkip = (unsigned int)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS) / (double)timeBudgetMachAbsTime) + FRAME_SKIP_BIAS );
@@ -770,8 +766,12 @@ void CoreFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTim
 				framesToSkip = (unsigned int)MAX_FRAME_SKIP;
 				lastSetFrameSkip = framesToSkip;
 			}
+			
+			*outFramesToSkip = framesToSkip;
 		}
-		
-		*outFramesToSkip = framesToSkip;
+		else
+		{
+			*outFramesToSkip = 0;
+		}
 	}
 }

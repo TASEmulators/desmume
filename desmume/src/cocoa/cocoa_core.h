@@ -120,5 +120,5 @@ typedef struct
 
 @end
 
-void* RunCoreThread(void *arg);
-void CoreFrameSkip(uint64_t timeBudgetMachAbsoluteTime, uint64_t frameStartMachAbsoluteTime, unsigned int *outFramesToSkip);
+static void* RunCoreThread(void *arg);
+static void CoreFrameSkip(uint64_t timeBudgetMachAbsoluteTime, uint64_t frameStartMachAbsoluteTime, unsigned int *outFramesToSkip);
