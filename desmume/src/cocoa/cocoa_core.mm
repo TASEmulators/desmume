@@ -26,6 +26,7 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
+#include "../addons.h"
 #include "../NDSSystem.h"
 #undef BOOL
 
@@ -164,6 +165,8 @@ static BOOL isCoreStarted = NO;
 	{
 		return isCoreStarted;
 	}
+	
+	addonsChangePak(NDS_ADDON_NONE);
 	
 	result = NDS_Init();
 	if (result == -1)
@@ -665,6 +668,7 @@ static void* RunCoreThread(void *arg)
 		
 		if (param->exitThread)
 		{
+			pthread_mutex_unlock(&param->mutexThreadExecute);
 			break;
 		}
 		
@@ -716,10 +720,7 @@ static void* RunCoreThread(void *arg)
 		pthread_mutex_unlock(&param->mutexThreadExecute);
 		
 		// If there is any time left in the loop, go ahead and pad it.
-		if(timeBudget > (mach_absolute_time() - startTime))
-		{
-			mach_wait_until(startTime + timeBudget);
-		}
+		mach_wait_until(startTime + timeBudget);
 		
 	} while (!param->exitThread);
 	
