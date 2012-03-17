@@ -792,6 +792,7 @@ static void WIFI_RXPutWord(u16 val)
 	wifiMac.RXTXAddr = wifiMac.RXWriteCursor;
 }
 
+#ifdef EXPERIMENTAL_WIFI_COMM
 static void WIFI_RXQueuePacket(u8* packet, u32 len)
 {
 	if (!(wifiMac.RXCnt & 0x8000)) return;
@@ -803,6 +804,7 @@ static void WIFI_RXQueuePacket(u8* packet, u32 len)
 	pkt.NotStarted = true;
 	wifiMac.RXPacketQueue.push(pkt);
 }
+#endif
 
 template<int stat> static void WIFI_IncrementRXStat()
 {
