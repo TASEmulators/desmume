@@ -1350,11 +1350,12 @@ template<int PROCNUM> static void REG_IF_WriteByte(u32 addr, u8 val)
 	//arm7: IF &= ~0x00000000;
 	//UPDATE IN setIF() ALSO!!!!!!!!!!!!!!!!
 	//UPDATE IN mmu_loadstate ALSO!!!!!!!!!!!!
-	if(addr==2)
+	if (addr==2) {
 		if(PROCNUM==ARMCPU_ARM9)
 			val &= ~0x20;
 		else
 			val &= ~0x00;
+	}
 
 	//ZERO 01-dec-2010 : I am no longer sure this approach is correct.. it proved to be wrong for IPC fifo.......
 	//it seems as if IF bits should always be cached (only the user can clear them)
