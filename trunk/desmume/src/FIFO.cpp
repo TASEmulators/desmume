@@ -121,7 +121,6 @@ u32 IPC_FIFOrecv(u8 proc)
 
 void IPC_FIFOcnt(u8 proc, u16 val)
 {
-	u8	proc_remote = proc ^ 1;
 	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 
