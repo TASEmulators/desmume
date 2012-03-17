@@ -202,11 +202,15 @@ void fw_reset_com(memory_chip_t *mc)
 			if (fp)
 			{
 				if (fwrite(&mc->data[0x3FF00], 1, 0x100, fp) == 0x100)		// User Settings
+				{
 					if (fwrite(&mc->data[0x0002A], 1, 0x1D6, fp) == 0x1D6)  // WiFi Settings
+					{
 						if (fwrite(&mc->data[0x3FA00], 1, 0x300, fp) == 0x300)  // WiFi AP Settings
 							printf(" - done\n");
 						else
 							printf(" - failed\n");
+					}
+				}
 				fclose(fp);
 			}
 			else
