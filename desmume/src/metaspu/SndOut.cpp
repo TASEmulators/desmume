@@ -121,7 +121,7 @@ StereoOut32* SndBuffer::sndTempBuffer = NULL;
 StereoOut16* SndBuffer::sndTempBuffer16 = NULL;
 int SndBuffer::sndTempProgress = 0;
 
-int GetAlignedBufferSize( int comp )
+static int GetAlignedBufferSize( int comp )
 {
 	return (comp + SndOutPacketSize-1) & ~(SndOutPacketSize-1);
 }
