@@ -112,7 +112,7 @@ void CommandLine::loadCommonOptions()
 	g_option_context_add_main_entries (ctx, options, "options");
 }
 
-char mytoupper(char c) { return ::toupper(c); }
+static char mytoupper(char c) { return ::toupper(c); }
 
 bool CommandLine::parse(int argc,char **argv)
 {
