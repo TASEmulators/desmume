@@ -217,7 +217,7 @@ bool CommandLine::validate()
 		g_printerr("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
 	}
 
-	if ((autodetect_method != -1) && (autodetect_method < 0) || (autodetect_method > 1)) {
+	if (autodetect_method < -1 || autodetect_method > 1) {
 		g_printerr("Invalid autodetect save method (0 - internal, 1 - from database)\n");
 	}
 
