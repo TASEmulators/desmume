@@ -498,8 +498,8 @@ void gfx3d_reset()
 	control = 0;
 	drawPending = FALSE;
 	flushPending = FALSE;
-	memset(polylists, 0, sizeof(polylists));
-	memset(vertlists, 0, sizeof(vertlists));
+	memset(polylists, 0, sizeof(POLYLIST)*2);
+	memset(vertlists, 0, sizeof(VERTLIST)*2);
 	gfx3d.state.invalidateToon = true;
 	listTwiddle = 1;
 	twiddleLists();
