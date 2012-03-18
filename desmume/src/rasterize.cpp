@@ -33,6 +33,10 @@
 #include <math.h>
 #include <string.h>
 
+#ifndef _MSC_VER
+#include <stdint.h>
+#endif
+
 #include "bits.h"
 #include "common.h"
 #include "matrix.h"
