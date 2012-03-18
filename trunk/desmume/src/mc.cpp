@@ -745,7 +745,7 @@ u32 BackupDevice::addr_size_for_old_save_type(int bupmem_type)
 void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 {
 	state = RUNNING;
-	addr_size = addr_size;
+	this->addr_size = addr_size;
 	resize(datasize);
 	memcpy(&this->data[0],data,datasize);
 
