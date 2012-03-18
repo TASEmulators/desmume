@@ -736,6 +736,7 @@ FORCEINLINE void GPU::setFinalColorBG(u16 color, const u32 x)
 		case 5: draw = _master_setFinalBGColor<BACKDROP,Blend,true>(color,x); break;
 		case 6: draw = _master_setFinalBGColor<BACKDROP,Increase,true>(color,x); break;
 		case 7: draw = _master_setFinalBGColor<BACKDROP,Decrease,true>(color,x); break;
+		default: draw = false; break;
 	};
 
 	if(BACKDROP || draw) //backdrop must always be drawn
