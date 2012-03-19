@@ -6265,16 +6265,18 @@ TEMPLATE static u32 FASTCALL  OP_MRC(const u32 i)
 	//	V flag = data[28]
 	//else /* Rd is not R15 */
 	//	Rd = data
-	
-	armcp15_moveCP2ARM((armcp15_t*)cpu->coproc[cpnum], &cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
+
+	u32 data = 0;	
+	armcp15_moveCP2ARM((armcp15_t*)cpu->coproc[cpnum], &data, REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
 	if (REG_POS(i, 12) == 15)
 	{
-		u32 Rd = cpu->R[REG_POS(i, 12)];
-		cpu->CPSR.bits.N = BIT31(Rd);
-		cpu->CPSR.bits.Z = BIT30(Rd);
-		cpu->CPSR.bits.C = BIT29(Rd);
-		cpu->CPSR.bits.V = BIT28(Rd);
+		cpu->CPSR.bits.N = BIT31(data);
+		cpu->CPSR.bits.Z = BIT30(data);
+		cpu->CPSR.bits.C = BIT29(data);
+		cpu->CPSR.bits.V = BIT28(data);
 	}
+	else
+		cpu->R[REG_POS(i, 12)] = data;
 	//cpu->coproc[cpnum]->moveCP2ARM(&cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
 	return 4;
 }
