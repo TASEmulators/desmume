@@ -2133,6 +2133,11 @@ static char * OP_LDR_M_IMM_OFF(u32 adr, u32 i, char * txt)
 		sprintf(txt, "LDR%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0x7FF));
 return txt;}
 
+static char * OP_LDREX(u32 adr, u32 i, char * txt)
+{
+	sprintf(txt, "LDREX%s %s, [%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)]);
+return txt;}
+
 static char * OP_LDR_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "", "", "]");
@@ -2440,6 +2445,11 @@ return txt;}
 static char * OP_STR_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0x7FF));
+return txt;}
+
+static char * OP_STREX(u32 adr, u32 i, char * txt)
+{
+     sprintf(txt, "STREX%s %s, %s, [%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
 static char * OP_STR_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
