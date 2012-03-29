@@ -205,6 +205,7 @@ SFORMAT SF_MMU[]={
 	{ "MIME", 4, 2,       MMU.reg_IME},
 	{ "MIE_", 4, 2,       MMU.reg_IE},
 	{ "MIF_", 4, 2,       MMU.reg_IF_bits},
+	{ "MIFP", 4, 2,       MMU.reg_IF_pending},
 
 	{ "MGXC", 8, 1,       &MMU.gfx3dCycles},
 	
