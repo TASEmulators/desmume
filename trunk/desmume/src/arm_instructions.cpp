@@ -3653,7 +3653,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAW_T(const u32 i)
 	\
 	if(REG_POS(i,12)==15) \
 	{ \
-		if (PROCNUM == 0) \
+		if (cpu->LDTBit) \
 		{ \
 			cpu->CPSR.bits.T = BIT0(cpu->R[15]); \
 			cpu->R[15] &= 0xFFFFFFFE; \
@@ -3675,7 +3675,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAW_T(const u32 i)
 	\
 	if(REG_POS(i,12)==15) \
 	{ \
-		if (PROCNUM == 0) \
+		if (cpu->LDTBit) \
 		{ \
 			cpu->CPSR.bits.T = BIT0(cpu->R[15]); \
 			cpu->R[15] &= 0xFFFFFFFE; \
@@ -3698,7 +3698,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAW_T(const u32 i)
 	\
 	if(REG_POS(i,12)==15) \
 	{ \
-		if (PROCNUM == 0) \
+		if (cpu->LDTBit) \
 		{ \
 			cpu->CPSR.bits.T = BIT0(cpu->R[15]); \
 			cpu->R[15] &= 0xFFFFFFFE; \
@@ -4860,7 +4860,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA(const u32 i)
 		//	T Bit = value[0]
 		//else
 		//	pc = value AND 0xFFFFFFFC
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -4904,7 +4904,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB(const u32 i)
 		start += 4;
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -4928,7 +4928,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA(const u32 i)
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -4970,7 +4970,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
 	{
 		start -= 4;
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5027,7 +5027,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5079,7 +5079,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
 		start += 4;
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5113,7 +5113,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5163,11 +5163,10 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
 		u32 tmp;
 		start -= 4;
 		tmp = READ32(cpu->mem_if->data, start);
-		if (PROCNUM == 0)
+		if (cpu->LDTBit)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
-			registres[15] = tmp & 0xFFFFFFFE;
-		}
+			registres[15] = tmp & 0xFFFFFFFE;		}
 		else
 			registres[15] = tmp & 0xFFFFFFFC;
 		cpu->next_instruction = registres[15];

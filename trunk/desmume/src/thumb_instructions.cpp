@@ -637,7 +637,7 @@ TEMPLATE static  u32 FASTCALL OP_MUL_REG(const u32 i)
 	//In earlier versions of the architecture, the value of the C flag was UNPREDICTABLE
 	//after a MUL instruction.
 	
-	if (PROCNUM == 1)	// ARM4T 1S + mI, m = 3
+	if (!cpu->LDTBit)	// ARM4T 1S + mI, m = 3
 		return 4;
 
 	MUL_Mxx_END_THUMB(1);
@@ -909,7 +909,7 @@ TEMPLATE static  u32 FASTCALL OP_POP_PC(const u32 i)
 
 	v = READ32(cpu->mem_if->data, adr);
 	c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(adr);
-	if(PROCNUM==0)
+	if(cpu->LDTBit)
 		cpu->CPSR.bits.T = BIT0(v);
 
 	cpu->R[15] = v & 0xFFFFFFFE;
