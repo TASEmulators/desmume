@@ -215,7 +215,7 @@ void armcpu_t::changeCPSR()
 
 void armcpu_init(armcpu_t *armcpu, u32 adr)
 {
-	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
+	armcpu->LDTBit = (armcpu->proc_ID==0); //arm9 is ARMv5 style. this should be renamed, or more likely, all references to this should poll a function to return an architecture level enum
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
 	armcpu->waitIRQ = FALSE;
 	armcpu->halt_IE_and_IF = FALSE;
