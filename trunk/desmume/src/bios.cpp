@@ -1053,12 +1053,13 @@ TEMPLATE static u32 getCRC16()
 	u16 crc = (u16)cpu->R[0];
 	u32 datap = cpu->R[1];
 	u32 size = cpu->R[2]>>1;
+	u16 currVal = 0;
 
 	const u16 val[] = { 0x0000,0xCC01,0xD801,0x1400,0xF001,0x3C00,0x2800,0xE401,0xA001,0x6C00,0x7800,0xB401,0x5000,0x9C01,0x8801,0x4400};
 
 	for(u32 i = 0; i < size; i++)
 	{
-		u16 currVal = _MMU_read16<PROCNUM>(datap + i*2);
+		currVal = _MMU_read16<PROCNUM>(datap + i*2);
 
 		for(int j=0;j<4;j++)
 		{
@@ -1073,6 +1074,8 @@ TEMPLATE static u32 getCRC16()
 	}
 
 	cpu->R[0] = crc;
+	// R3 contains the last processed halfword 
+	cpu->R[3] = currVal;
 	return 1;
 }
 
