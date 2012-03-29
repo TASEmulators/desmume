@@ -913,6 +913,7 @@ void MMU_Reset()
 	memset(MMU.reg_IME,       0, sizeof(u32) * 2);
 	memset(MMU.reg_IE,        0, sizeof(u32) * 2);
 	memset(MMU.reg_IF_bits,   0, sizeof(u32) * 2);
+	memset(MMU.reg_IF_pending,   0, sizeof(u32) * 2);
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 
@@ -3461,7 +3462,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				{
 					nds.ensataHandshake = ENSATA_HANDSHAKE_ack;
 					return 270;
-				} else return nds.VCount;
+				} 
+				else 
+					return nds.VCount;
 
 			// ============================================= 3D
 			case eng_3D_RAM_COUNT:

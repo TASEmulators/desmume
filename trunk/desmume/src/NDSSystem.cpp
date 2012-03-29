@@ -1050,7 +1050,7 @@ void NDS_OmitFrameSkip(int force) {
 
 enum ESI_DISPCNT
 {
-	ESI_DISPCNT_HStart, ESI_DISPCNT_HBlank
+	ESI_DISPCNT_HStart, ESI_DISPCNT_HStartIRQ, ESI_DISPCNT_HDraw, ESI_DISPCNT_HBlank
 };
 
 u64 nds_timer;
@@ -1505,8 +1505,8 @@ static void execHardware_hstart_vblankEnd()
 	sequencer.reschedule = true;
 
 	//turn off vblank status bit
-	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFE);
-	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
+	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & ~1);
+	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & ~1);
 
 	//some emulation housekeeping
 	frameSkipper.Advance();
@@ -1516,16 +1516,13 @@ static void execHardware_hstart_vblankStart()
 {
 	//printf("--------VBLANK!!!--------\n");
 
-	//turn on vblank status bit
-	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 1);
-	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
-
 	//fire vblank interrupts if necessary
-	if(T1ReadWord(MMU.ARM9_REG, 4) & 0x8) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VBLANK);
-	if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_LCD_VBLANK);
-
-	//some emulation housekeeping
-	gfx3d_VBlankSignal();
+	for(int i=0;i<2;i++)
+		if(MMU.reg_IF_pending[i] & (1<<IRQ_BIT_LCD_VBLANK))
+		{
+			MMU.reg_IF_pending[i] &= ~(1<<IRQ_BIT_LCD_VBLANK);
+			NDS_makeIrq(i,IRQ_BIT_LCD_VBLANK);
+		}
 
 	//trigger vblank dmas
 	triggerDma(EDMAMode_VBlank);
@@ -1539,16 +1536,37 @@ static void execHardware_hstart_vblankStart()
 	nds.idleCycles[1] = 0;
 }
 
-static void execHardware_hstart_vcount()
+static u16 execHardware_gen_vmatch_goal()
 {
 	u16 vmatch = T1ReadWord(MMU.ARM9_REG, 4);
 	vmatch = ((vmatch>>8)|((vmatch<<1)&(1<<8)));
+	return vmatch;
+}
+
+static void execHardware_hstart_vcount_irq()
+{
+	//trigger pending VMATCH irqs
+	if(MMU.reg_IF_pending[ARMCPU_ARM9] & (1<<IRQ_BIT_LCD_VMATCH))
+	{
+		MMU.reg_IF_pending[ARMCPU_ARM9] &= ~(1<<IRQ_BIT_LCD_VMATCH);
+		NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VMATCH);
+	}
+	if(MMU.reg_IF_pending[ARMCPU_ARM7] & (1<<IRQ_BIT_LCD_VMATCH))
+	{
+		MMU.reg_IF_pending[ARMCPU_ARM7] &= ~(1<<IRQ_BIT_LCD_VMATCH);
+		NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_LCD_VMATCH);
+	}
+}
+
+static void execHardware_hstart_vcount()
+{
+	u16 vmatch = execHardware_gen_vmatch_goal();
 	if(nds.VCount==vmatch)
 	{
 		//arm9 vmatch
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM9_REG, 4) & 32) {
-			NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_LCD_VMATCH);
+			MMU.reg_IF_pending[ARMCPU_ARM9] |= (1<<IRQ_BIT_LCD_VMATCH);
 		}
 	}
 	else
@@ -1561,10 +1579,34 @@ static void execHardware_hstart_vcount()
 		//arm7 vmatch
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
 		if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
-			NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_LCD_VMATCH);
+			MMU.reg_IF_pending[ARMCPU_ARM7] |= (1<<IRQ_BIT_LCD_VMATCH);
 	}
 	else
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
+}
+
+static void execHardware_hdraw()
+{
+	//due to hacks in our selection of rendering time, we do not actually render here as intended.
+	//consider changing this if there is some problem with raster fx timing but check the documentation near the gpu rendering calls
+	//to make sure you check for regressions (nsmb, sonic classics, et al)
+}
+
+static void execHardware_hstart_irq()
+{
+	//this function very soon after the registers get updated to trigger IRQs
+	//this is necessary to fix "egokoro kyoushitsu" which idles waiting for vcount=192, which never happens due to a long vblank irq
+	//100% accurate emulation would require the read of VCOUNT to be in the pipeline already with the irq coming in behind it, thus 
+	//allowing the vcount to register as 192 occasionally (maybe about 1 out of 28 frames)
+	//the actual length of the delay is in execHardware() where the events are scheduled
+	sequencer.reschedule = true;
+	if(nds.VCount==192)
+	{
+		//when the vcount hits 192, vblank begins
+		execHardware_hstart_vblankStart();
+	}
+
+	execHardware_hstart_vcount_irq();
 }
 
 static void execHardware_hstart()
@@ -1582,14 +1624,28 @@ static void execHardware_hstart()
 
 	if(nds.VCount==263)
 	{
+		//when the vcount hits 263 it rolls over to 0
 		nds.VCount=0;
 	}
 	if(nds.VCount==262)
 	{
+		//when the vcount hits 262, vblank ends (oam pre-renders by one scanline)
 		execHardware_hstart_vblankEnd();
-	} else if(nds.VCount==192)
+	}
+	else if(nds.VCount==191)
 	{
-		execHardware_hstart_vblankStart();
+		//when the vcount hits 191, the 3d vblank occurs (maybe because OAM doesnt need to run anymore, so we can power it down, and give the 3d as much time as possible?)
+		gfx3d_VBlankSignal();
+	}
+	else if(nds.VCount==192)
+	{
+		//turn on vblank status bit
+		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 1);
+		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
+
+		//check whether we'll need to fire vblank irqs
+		if(T1ReadWord(MMU.ARM9_REG, 4) & 0x8) MMU.reg_IF_pending[ARMCPU_ARM9] |= (1<<IRQ_BIT_LCD_VBLANK);
+		if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8) MMU.reg_IF_pending[ARMCPU_ARM7] |= (1<<IRQ_BIT_LCD_VBLANK);
 	}
 
 	//write the new vcount
@@ -1691,12 +1747,32 @@ void Sequencer::execHardware()
 		{
 		case ESI_DISPCNT_HStart:
 			execHardware_hstart();
-			dispcnt.timestamp += 3168;
+			//(used to be 3168)
+			//hstart is actually 8 dots before the visible drawing begins
+			//we're going to run 1 here and then run 7 in the next case
+			dispcnt.timestamp += 1*6*2;
+			dispcnt.param = ESI_DISPCNT_HStartIRQ;
+			break;
+		case ESI_DISPCNT_HStartIRQ:
+			execHardware_hstart_irq();
+			dispcnt.timestamp += 7*6*2;
+			dispcnt.param = ESI_DISPCNT_HDraw;
+			break;
+			
+		case ESI_DISPCNT_HDraw:
+			execHardware_hdraw();
+			//duration of non-blanking period is ~1606 clocks (gbatek agrees) [but says its different on arm7]
+			//im gonna call this 267 dots = 267*6=1602
+			//so, this event lasts 267 dots minus the 8 dot preroll
+			dispcnt.timestamp += (267-8)*6*2;
 			dispcnt.param = ESI_DISPCNT_HBlank;
 			break;
+
 		case ESI_DISPCNT_HBlank:
 			execHardware_hblank();
-			dispcnt.timestamp += 1092;
+			//(once this was 1092 or 1092/12=91 dots.)
+			//there are surely 355 dots per scanline, less 267 for non-blanking period. the rest is hblank and then after that is hstart
+			dispcnt.timestamp += (355-267)*6*2;
 			dispcnt.param = ESI_DISPCNT_HStart;
 			break;
 		}
