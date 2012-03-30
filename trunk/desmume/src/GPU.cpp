@@ -1,7 +1,8 @@
-/*  Copyright (C) 2006 yopyop
-    Copyright (C) 2006-2007 Theo Berkau
-    Copyright (C) 2007 shash
-	Copyright (C) 2008-2011 DeSmuME team
+/*
+	Copyright (C) 2006 yopyop
+	Copyright (C) 2006-2007 Theo Berkau
+	Copyright (C) 2007 shash
+	Copyright (C) 2008-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,6 +17,7 @@
 	You should have received a copy of the GNU General Public License
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include <algorithm>
 #include <string.h>
@@ -2033,11 +2035,22 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 	//we need to write backdrop colors in the same way as we do BG pixels in order to do correct window processing
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization. 
 	gpu->currBgNum = 5;
-	switch(gpu->setFinalColorBck_funcNum) {
-		//for backdrops, effects arent applied. 
-		case 0: case 1: 
-		case 2: case 3:
+	switch(gpu->setFinalColorBck_funcNum)
+	{
+		//for backdrops, blend isnt applied (it's illogical, isnt it?)
+		case 0: 
+		case 1: 
 			memset_u16_le<256>(gpu->currDst,backdrop_color); 
+			break;
+
+		//for backdrops, fade in and fade out can be applied if it's a 1st target screen
+		case 2:
+			if(gpu->BLDCNT & 0x20) //backdrop is selected for color effect
+				memset_u16_le<256>(gpu->currDst,gpu->currentFadeInColors[backdrop_color]);
+			break;
+		case 3:
+			if(gpu->BLDCNT & 0x20) //backdrop is selected for color effect
+				memset_u16_le<256>(gpu->currDst,gpu->currentFadeOutColors[backdrop_color]);
 			break;
 
 		//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
