@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -863,9 +863,13 @@ static void gfx3d_glPopMatrix(s32 i)
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
-	//6 bits, sign extended
-	//this was necessary to fix sims apartment pets
 	//i = (i<<26)>>26;
+	//previously, we sign extended here. that isnt really necessary since the stacks are apparently modularly addressed. so i am somewhat doubtful that this is a real concept.
+	//example:
+	//suppose we had a -30 that would be %100010.
+	//which is the same as adding 34. if our stack was at 17 then one way is 17-30(+32)=19 and the other way is 17+34(-32)=19
+	
+	//please note that our ability to skip treating this as signed is dependent on the modular addressing later. if that ever changes, we need to change this back.
 
 	MatrixStackPopMatrix(mtxCurrent[mymode], &mtxStack[mymode], i);
 
@@ -886,8 +890,13 @@ static void gfx3d_glStoreMatrix(u32 v)
 		v = 0;
 
 	v &= 31;
-	//this behaviour is unverified. gbatek suggests that it may be meaningful somehow.
-	if(v==31) return;
+
+	//according to gbatek, 31 works but sets the stack overflow flag
+	//spider-man 2 tests this on the spiderman model (and elsewhere)
+	//i am somewhat skeptical of this, but we'll leave it this way for now.
+	//a test shouldnt be too hard
+	if(v==31)
+		MMU_new.gxstat.se = 1;
 
 	MatrixStackLoadMatrix (&mtxStack[mymode], v, mtxCurrent[mymode]);
 
@@ -909,12 +918,13 @@ static void gfx3d_glRestoreMatrix(u32 v)
 
 	v &= 31;
 
-	//this seems to do something irrational if v==31, as far as we know.
-	//lets arbitrarily choose to use entry -
-	if(v==31) {
-		v = 0;
-		printf("gfx3d_glRestoreMatrix is using -1. why would anyone do this? please report!\n");
-	}
+	//according to gbatek, 31 works but sets the stack overflow flag
+	//spider-man 2 tests this on the spiderman model (and elsewhere)
+	//i am somewhat skeptical of this, but we'll leave it this way for now.
+	//a test shouldnt be too hard
+	if(v==31)
+		MMU_new.gxstat.se = 1;
+
 
 	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v));
 
