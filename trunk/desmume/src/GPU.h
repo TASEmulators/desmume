@@ -1,4 +1,5 @@
-/*  Copyright (C) 2006 yopyop
+/*
+	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
 	Copyright (C) 2009-2010 DeSmuME team

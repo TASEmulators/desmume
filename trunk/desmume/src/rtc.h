@@ -1,5 +1,6 @@
-/*  Copyright 2006 yopyop
-    Copyright 2008 CrazyMax
+/*
+	Copyright 2006 yopyop
+	Copyright 2008 CrazyMax
 	Copyright 2008-2010 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify

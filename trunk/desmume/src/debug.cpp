@@ -1,5 +1,6 @@
-/*  Copyright (C) 2008 Guillaume Duhamel
-	Copyright (C) 2009-2010 DeSmuME team
+/*
+	Copyright (C) 2006 Guillaume Duhamel
+	Copyright (C) 2006-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

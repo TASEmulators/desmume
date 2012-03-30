@@ -846,7 +846,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\pathsettings.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pathsettings.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ram_search.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ram_search.h"
 				>
 			</File>
 			<File
@@ -1909,10 +1921,6 @@
 			>
 		</File>
 		<File
-			RelativePath="..\ARM9.h"
-			>
-		</File>
-		<File
 			RelativePath="..\arm_instructions.cpp"
 			>
 		</File>
@@ -2013,10 +2021,6 @@
 			>
 		</File>
 		<File
-			RelativePath="..\config.h"
-			>
-		</File>
-		<File
 			RelativePath="..\cp15.cpp"
 			>
 		</File>
@@ -2054,10 +2058,6 @@
 		</File>
 		<File
 			RelativePath="..\emufile.h"
-			>
-		</File>
-		<File
-			RelativePath="..\fat.h"
 			>
 		</File>
 		<File
@@ -2121,38 +2121,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\bitmaps\IDB_FRAMEADVANCE.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_OPEN.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_PAUSE.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_PLAY.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_RESET.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_ROTATECCW.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_ROTATECW.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\bitmaps\IDB_STOP.bmp"
-			>
-		</File>
-		<File
 			RelativePath="..\instruction_tabdef.inc"
 			>
 		</File>
@@ -2182,10 +2150,6 @@
 		</File>
 		<File
 			RelativePath="..\mem.h"
-			>
-		</File>
-		<File
-			RelativePath="..\memorystream.h"
 			>
 		</File>
 		<File
@@ -2234,14 +2198,6 @@
 		</File>
 		<File
 			RelativePath="..\path.h"
-			>
-		</File>
-		<File
-			RelativePath=".\pathsettings.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\pathsettings.h"
 			>
 		</File>
 		<File
