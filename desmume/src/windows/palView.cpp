@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2006 yopyop
+	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify

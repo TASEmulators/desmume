@@ -1,4 +1,5 @@
-/*	Copyright (C) 2010 DeSmuME team
+/*
+	Copyright (C) 2010 DeSmuME team
 
 	This file is based on System.DateTime.cs and System.TimeSpan.cs from mono-2.6.7
 
