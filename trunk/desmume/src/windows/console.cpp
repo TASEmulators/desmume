@@ -93,14 +93,14 @@ void OpenConsole()
 	HMODULE lib = LoadLibrary("kernel32.dll");
 	if(lib)
 	{
-		//typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
-		//_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
-		//if(_AttachConsole)
-		//{
-		//	if(_AttachConsole(-1))
-		//		attached = true;
-		//}
-		//FreeLibrary(lib);
+		typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
+		_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
+		if(_AttachConsole)
+		{
+			if(_AttachConsole(-1))
+				attached = true;
+		}
+		FreeLibrary(lib);
 	}
 
 	//if we failed to attach, then alloc a new console
