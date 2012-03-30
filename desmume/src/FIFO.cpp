@@ -1,6 +1,7 @@
-/*  Copyright 2006 yopyop
-    Copyright 2007 shash
-	Copyright 2007-2011 DeSmuME team
+/*
+	Copyright 2006 yopyop
+	Copyright 2007 shash
+	Copyright 2007-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
