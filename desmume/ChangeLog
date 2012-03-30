@@ -1,9 +1,25 @@
-0.9.7 -> X (r3812-r3918-r????)
+0.9.7 -> 0.9.8 (r3812-r4228)
+
+Yes, it's been a while since the last release, but we haven't been completely idle. There's a brand new top shelf Cocoa frontend to make life far more pleasant for OSX users, and a host of compatibility fixes.
 
 General/Core:
  bug: fix more IPC FIFO errors
  bug: import more save files correctly
  bug: don't autopatch already-patched roms
+ bug: fix bugs in piano and guitar grip
+ bug: fix ARM7's VRAMSTAT register
+ bug: fix memory leaks on compact flash emulation
+ bug: fix reading of rom from low header area
+ bug: spu: fix some poppy interpolation audio quality issues
+ bug: improve timing of dma operations by running through normal mem cycle accounting; fixes an annoying number of games and graphical glitches
+ bug: fix opcode MRC and fake bios CRC16
+ enh: jitter some related register and irq events to simulate pipeline effects and stimulate some race conditions to other outcomes
+ enh: fake (deterministic) some tiny jitter from human's hand holding stylus; some games were accidentally depending on this
+ enh: support nocash-stylep rints from arm
+ enh: add lua apis for accessing vram
+ enh: platforms other than windows receive threading optimizations
+ enh: provide diagnostics when system powers off (useful for homebrewers returning from main())
+ enh: clarify handling of different console types within the family (ds,dslite,debug)
  enh: vfat support for slot-1 devices
  enh: emulate temperature register
  enh: add paddle emulation
@@ -12,13 +28,33 @@ Graphics:
  bug: fix occasional crash from uninitialized blending table
  bug: fix some 2d alpha blending cases resulting in white screens
  bug: fix VRAM_I B_OBJ mirroring and fix sprites rendering across the end of vram
+ bug: fix rotoscaled sprites wrapping around screen
+ bug: dont fix rotscaled bitmap sprites with alpha==0
+ bug: opengl: fix degradation of toon rendering during loadstate
+ bug: opengl: alpha blending fixes
+ bug: many refinements to opengl renderer
+ bug: opengl: support rear-plane/ClearImage emulation (fixes many graphics)
+ bug: rasterizer: fix some rare alpha blending cases
+ bug: fix bug in environment mapping introduced after 0.9.6
+ bug: fix totally glitched out 3d graphics with several improvements involving matrix stack
+ bug: fix memory overflows in epx filter
+ bug: prevent backdrop from blending with ???
+ enh: opengl: better depth buffering emulation
  enh: better support for line segment "polys" by detection and special rendering logic
- enh: opengl: support quad primitives
- enh: opengl: support rear-plane/ClearImage emulation (fixes many graphics)
+ enh: opengl: support quad primitives directly
+ enh: add hq4x filter
  
 Windows:
  bug: fix a long-standing loadstate crash
  bug: fix lag frame accounting
+ bug: fix glitches in cheat entry menu
+ bug: stop compact flash emulation from accidentally scanning c:\ sometimes
+ enh: add support for game database for improved save type detection
+ enh: hotkey for limit framerate toggle
+ enh: remove stop and reset toolbar buttons which were accidentally getting used
+ enh: additional complexification to desmume's behaviour run from a console prompt. whether it's better is uncertain.
+ enh: add support for cheats databases
+ enh: improvements to ram search tool
  enh: preliminary support for varying stylus pressure
  enh: add [Display] Show Console=1 to ini file
  enh: more graceful cheat parsing and add some hotkeys
@@ -27,19 +63,21 @@ Windows:
  enh: improve FPS throttle feedback and granularity
  enh: add lua menu API
  enh: hud font switching
+ enh: add optional file association for .nds to path config dialog
 
 Cocoa:
- enh: Big update to cocoa frontend (rogerman)
+ enh: Big update to cocoa frontend. Pretty much entirely new. (rogerman)
 
-Cli:
-  enh: better fps limiting (Thomas Jones)
-
-Gtk:
-  enh: add SPU mode selection (Tobias Jakobi)
-
-Wx:
+Linux:
+ bug: gtk: glitches in rom and recent rom loading
+ bug: glade: normalize savestate slot to hotkey mapping
+ enh: support soundtouch for use by metaspu
+ enh: gtk: add SPU mode selection (Tobias Jakobi)
+ enh: cli: better fps limiting (Thomas Jones)
+ 
+Wx: 
   bug: some small fixes here and there (Jan Bücken)
-  enh: lot of code cleanup (Jan Bücken)
+  enh: lot of code cleanup (Jan Bücken) 
 
 0.9.6 -> 0.9.7 (r3493-r3812)
 
