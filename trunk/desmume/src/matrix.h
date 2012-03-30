@@ -56,7 +56,6 @@ void	MatrixCopy				(s32 * matrixDST, const s32 * matrixSRC);
 int		MatrixCompare				(const s32 * matrixDST, const float * matrixSRC);
 void	MatrixIdentity			(s32 *matrix);
 
-void	MatrixTranspose				(s32 *matrix);
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
 void	MatrixStackPushMatrix		(MatrixStack *stack, const s32 *ptr);

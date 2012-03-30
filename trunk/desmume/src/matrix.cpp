@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2011 DeSmuME team
+	Copyright (C) 2007-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -149,19 +149,6 @@ void MatrixInit  (float *matrix)
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-void MatrixTranspose(s32 *matrix)
-{
-	float temp;
-#define swap(A,B) temp = matrix[A];matrix[A] = matrix[B]; matrix[B] = temp;
-	swap(1,4);
-	swap(2,8);
-	swap(3,0xC);
-	swap(6,9);
-	swap(7,0xD);
-	swap(0xB,0xE);
-#undef swap
-}
-
 void	MatrixIdentity			(s32 *matrix)
 {
 	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0;
@@ -258,12 +245,10 @@ static void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 	if((stack->position < 0) || (stack->position > stack->size))
 		MMU_new.gxstat.se = 1;
 
-	//this behaviour is unverified, but its more logical than the old code which would wrap around and turn negative
-	//it may still be right to wrap around, but we have no proof right now one way or another
-	if(stack->position < 0)
-		stack->position = 0;
-	if(stack->position > stack->size)
-		stack->position = stack->size;
+	//once upon a time, we tried clamping to the size.
+	//this utterly broke sims 2 apartment pets.
+	//changing to wrap around made it work perfectly
+	stack->position = ((u32)stack->position) & stack->size;
 }
 
 void MatrixStackPushMatrix (MatrixStack *stack, const s32 *ptr)
