@@ -1,69 +1,97 @@
-                        DeSmuME
-        _________________________________________
-        Copyright (C) 2006 yopyop
-        Copyright (C) 2006-2007-2008-2009 DeSmuME team
+                                       DeSmuME
+                      _________________________________________
+                      Copyright (C) 2006 yopyop
+                      Copyright (C) 2006-2012 DeSmuME team
+                      Last Updated: March 31, 2012
+
+Contents:
+1) About ................................................................... 14
+2) Credits ................................................................. 59
+3) Contact Information ..................................................... 72
+4) License ................................................................. 83
 
 
-1) Introduction.............................................13
-2) Staff/Thanks.............................................36
-3) Contact information......................................72
-4) Disclaimer...............................................82
+1) About ______________________________________________________________________
+
+DeSmuME is software that allows you to emulate a Nintendo DS system. Think of
+it as a Swiss-Army knife for Nintendo DS emulation, giving you access to many
+powerful tools for testing DS features, from viewing ROM properties to managing
+Action Replay cheats. And best of all, this software is completely free and
+open-source.
+
+For information on how to install or operate DeSmuME for your operating system,
+please see the README file that should be present with your installation.
+
+Port-specific README files:
+    * README.LIN for the Linux port
+    * README.WIN for the Windows port
+    * README.MAC for the Macintosh port
+
+Note that each DeSmuME port may have a different feature set from another port.
+You may see more feature parity between ports over time as we continue
+developing DeSmuME.
+
+You can find our documentation on our online Wiki page. The major pages of
+interest are:
+
+* Official Documentation: http://wiki.desmume.org/index.php?title=Main_Page
+
+This is the main Wiki page that contains all of our official documentation.
+
+* Manuals: http://wiki.desmume.org/index.php?title=Manual
+
+The manuals contain detailed information about how to operate DeSmuME for each
+port.
+
+* FAQ: http://wiki.desmume.org/index.php?title=Faq
+
+The Frequently Asked Questions (FAQ) page has a lot of useful general
+information about DeSmuME. Do note that some of the information may be platform
+specific, and may not directly apply to your version of DeSmuME.
+
+* Build Instructions:
+http://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source
+
+This page contains detailed port-specific instructions about how to make your
+own build of DeSmuME directly from the source code.
 
 
-1 Introduction________________________________________________
+2) Credits ____________________________________________________________________
 
-DeSmuME is a Nintendo DS emulator under GNU GPL.
+See the AUTHORS file for list of DeSmuME team members.
 
-DeSmuME can boot homebrew and games, some of which are
-playable.
+Special thanks go to:
 
-For installation/how to use informations, check the ports
-specific README files:
+    * yopyop (original author of DeSmuME),
+      for releasing the source code of this great emulator.
 
-  * README.LIN for the linux port
-  * README.WIN for the windows port
-  * README.MAC for the mac port
+    * Martin Korth (author of GBATEK),
+      for his well-written Gameboy Advance and Nintendo DS documentation.
 
 
-2 Staff/Thanks________________________________________________
+3) Contact Information ________________________________________________________
 
-See the AUTHORS file for team members list.
+Official Website:   http://desmume.org
+Public Forum:       http://forum.desmume.org
+Developer Chat:     irc://irc.freenode.net/desmume
+Bug Reports:        http://sourceforge.net/tracker/?group_id=164579&atid=832291
 
-Thanks to:
-
-  * yopyop (original author of DeSMUME),
-    for releasing the source code of this great emulator.
-
-  * Martin Korth (author of GBATEK),
-    for his well-written Gameboy Advance and Nintendo DS
-    documentation.
+Please don't ask for ROMs, BIOS files, or any other copyrighted stuff.
 
 
-3 Contact information_________________________________________
+4) License ____________________________________________________________________
 
-E-mail:	guillaume.duhamel@gmail.com
-Web:    http://desmume.org
-IRC:    irc://irc.freenode.net/desmume
+This file is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 2 of the License, or (at your option) any later
+version.
 
-Please don't ask for roms, bios files or any other
-copyrighted stuff.
+This file is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-4 Disclaimer__________________________________________________
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License as 
-published by the Free Software Foundation; either version 2 of 
-the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be
-useful,but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public
-License along with this program; if not, write to the Free
-Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307  USA
-
-See the GNU General Public License details in COPYING.
+    * See the GNU General Public License details in COPYING.

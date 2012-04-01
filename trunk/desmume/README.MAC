@@ -8,7 +8,7 @@ Contents:
 1) Quick Start Guide for Using DeSmuME for OS X ............................ 14
 2) Additional Documentation ................................................ 86
 3) Contact Information .................................................... 116
-4) License ................................................................ 234
+4) License ................................................................ 235
 
 
 1) Quick Start Guide for Using DeSmuME for OS X _______________________________
@@ -174,12 +174,13 @@ application.
 It is very important that you provide us with this information! If you don't,
 then it will take much longer for us to respond to your question.
 
-* Live Developer Chat Channel: #openemu
+* Live Developer Chat Channel: irc://irc.freenode.net/desmume
 
-We have a live developer chatline on Freenode IRC. This channel is meant for discussing the development of DeSmuME, and shows the real work that goes on
-behind the scenes. If you are interested in doing any sort of software
-programming, software testing, documentation, or graphics work, then please
-join our chat channel! We would love for you to join us!
+We have a live developer chatline on Freenode IRC at #desmume. This channel
+is meant for discussing the development of DeSmuME, and shows the real work
+that goes on behind the scenes. If you are interested in doing any sort of
+software programming, software testing, documentation, or graphics work, then
+please join our chat channel! We would love for you to join us!
 
 * Bug Reports: http://sourceforge.net/tracker/?group_id=164579&atid=832291
 
@@ -246,4 +247,4 @@ You should have received a copy of the GNU General Public License along with
 this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-* See the GNU General Public License details in COPYING.
+    * See the GNU General Public License details in COPYING.
