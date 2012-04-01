@@ -5,13 +5,35 @@
                       Last Updated: March 31, 2012
 
 Contents:
-1) Quick Start Guide for Using DeSmuME for OS X ............................ 14
-2) Additional Documentation ................................................ 86
-3) Contact Information .................................................... 116
-4) License ................................................................ 235
+1) System Requirements ..................................................... 15
+2) Quick Start Guide for Using DeSmuME for OS X ............................ 36
+3) Additional Documentation ............................................... 108
+4) Contact Information .................................................... 138
+5) License ................................................................ 257
 
 
-1) Quick Start Guide for Using DeSmuME for OS X _______________________________
+1) System Requirements ________________________________________________________
+
+DeSmuME is a very demanding app, especially for CPU usage. Before you begin,
+make sure that your Mac meets the listed system requirements.
+
+If your Mac meets only the minimum requirements, then you should expect to run
+most simple 2D-only games with some frameskip, but you will be unable to run
+complex 2D games or any 3D-heavy games. However, if your Mac meets the
+recommended requirements, then you should expect to run almost every game,
+including very complex 3D-heavy games, with minimal to no frameskip.
+
+Operating System: OS X v10.5 (Leopard) or later
+
+CPU:              Can run on any PowerPC G4, G5, or Intel processor
+                  2.1 GHz Intel Core 2 Duo (minimum)
+                  3.0 GHz Intel Core 2 Duo or faster (recommended)
+
+RAM:              512 MB (minimum)
+                  2 GB (recommended)
+
+
+2) Quick Start Guide for Using DeSmuME for OS X _______________________________
 
 Installing DeSmuME is as easy as copying DeSmuME.app to your Applications
 folder (or other folder of your choice). Double-click the app to start DeSmuME.
@@ -83,7 +105,7 @@ use to quickly freeze/restore the emulation state.
   The default hotkey for this is (#).
 
 
-2) Additional Documentation ___________________________________________________
+3) Additional Documentation ___________________________________________________
 
 The quick start guide in this Read Me is by no means a complete reference to
 everything that DeSmuME can do! If you need any additional information about
@@ -113,7 +135,7 @@ This page contains complete and detailed instructions about how to make your
 own build of DeSmuME for OS X directly from the source code.
 
 
-3) Contact Information ________________________________________________________
+4) Contact Information ________________________________________________________
 
 Thank you for you interest in DeSmuME! If you want to tell us how useful
 DeSmuME is in your life, your love (or hate) of certain NDS games, your passion
@@ -232,7 +254,7 @@ logs. For the above example, we would probably ask you for your save states to
 help us track down the bug.
 
 
-4) License ____________________________________________________________________
+5) License ____________________________________________________________________
 
 This file is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
