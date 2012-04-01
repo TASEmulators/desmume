@@ -1,107 +1,249 @@
-                        DeSmuME
-        _________________________________________
-        Copyright (C) 2006 yopyop
-        Copyright (C) 2006-2007 DeSmuME team
+                                       DeSmuME
+                      _________________________________________
+                      Copyright (C) 2006 yopyop
+                      Copyright (C) 2006-2012 DeSmuME team
+                      Last Updated: March 31, 2012
+
+Contents:
+1) Quick Start Guide for Using DeSmuME for OS X ............................ 14
+2) Additional Documentation ................................................ 82
+3) Contact Information .................................................... 110
+4) License ................................................................ 217
 
 
-1) Compiling instructions...................................13
-2) How to use DeSmuME.......................................31
-3) Contact information......................................73
-4) Disclaimer...............................................90
+1) Quick Start Guide for Using DeSmuME for OS X _______________________________
+
+Installing DeSmuME is as easy as copying DeSmuME.app to your Applications
+folder (or other folder of your choice). Double-click the app to start DeSmuME.
+
+Note that DeSmuME for OS X may have a different feature set than DeSmuME for
+Windows and DeSmuME for Linux. As of this writing, some features that are
+present in DeSmuME for Windows are not present in DeSmuME for OS X.
+
+The rest of this section will be a guide to help you quickly get started using
+DeSmuME for OS X.
+
+Loading a ROM and Starting the Emulator:
+Simply double-click the desired ROM from the Finder to play the game. By
+default, DeSmuME will load the ROM and start emulation. Also, there are
+additional ROM loading options that you can change in DeSmuME > Preferences if
+you need them.
+
+Using the DS Controller:
+Each DS controller button can be mapped to a button of your choice on your
+keyboard, gamepad, or joystick. You can view the mappings by clicking on Input
+in DeSmuME > Preferences, and then clicking the Controller tab on the Input
+page. To change a mapping, click on the DS control that you want to change,
+then press the button on your input device to map it.
+
+By default, the DS controller is mapped to the following keys on your keyboard:
+    Up - Up Arrow
+    Down - Down Arrow
+    Left - Left Arrow
+    Right - Right Arrow
+    A Button - X
+    B Button - Z
+    X Button - S
+    Y Button - A
+    L Trigger - Q
+    R Trigger - W
+    Start - Return
+    Select - Tab
+    Lid - Delete (Backspace)
+    Debug - \
+    Microphone - `
+
+Using the DS Touch Pad:
+Touch pad input is emulated using the left mouse button. Simply click in the
+touch pad area of the DS display window to use the DS touch pad.
+
+Rotating the DS Display:
+Some games require that the DS display be at a certain rotation in order to
+look correct. Rotation options can be found by choosing
+View > Display Rotation. You can also use the toolbar buttons Rotate Left and
+Rotate Right to rotate the display by 90 degrees counterclockwise or clockwise,
+respectively.
+
+Freezing and Restoring the Emulation State:
+Save states are a powerful feature that allows you to freeze the emulation
+state and restore it later. However, note that save states are only a
+temporary means of saving -- more permanent saves must be done using the
+in-game save (or ROM save).
+
+- To freeze the emulation state, choose File > Save State File.
+- To restore the emulation state, choose File > Open State File.
+
+You can also freeze/restore emulation states without having to manage the
+Open/Save dialogs. There are ten available save state "slots" that you can
+use to quickly freeze/restore the emulation state.
+
+- To quick freeze the emulation state, choose File > Save State Slot > Slot #.
+  The default hotkey for this is (Shift-#).
+- To quick restore the emulation state, choose File > Load State Slot > Slot #.
+  The default hotkey for this is (#).
 
 
-1 Compiling instructions______________________________________
+2) Additional Documentation ___________________________________________________
 
-DeSmuME is written in C, and the Cocoa interface was written 
-in Objective-C. It uses the Cocoa, OpenGL, and [optionally]
-the zlib library.
+The quick start guide in this Read Me is by no means a complete reference to
+everything that DeSmuME can do! If you need any additional information about
+DeSmuME, then you can reference our online Wiki pages for up-to-date
+information.
 
-So you need a working C and Objective-C compiler, such as
-GCC for Mac OS X.
+* Official Documentation: http://wiki.desmume.org/index.php?title=Main_Page
 
-  * Cocoa and OpenGL come standard with Mac OS X
+This is the main Wiki page that contains all of our official documentation.
 
-  * zlib can be found at http://www.zlib.net, and may
-    also come with Mac OS X.
+* FAQ: http://wiki.desmume.org/index.php?title=Faq
 
-DeSmuME for Mac OS X can be compiled using the XCode IDE
-or the CodeBlocks IDE. Project files are available in the
-Cocoa source folder.
+The Frequently Asked Questions (FAQ) page has a lot of useful general
+information about DeSmuME. Do note that some of the information may be platform
+specific, and may not directly apply to the OS X version of DeSmuME.
 
-2 How to use DeSmuME__________________________________________
+* DeSmuME Manual for OS X:
+http://wiki.desmume.org/index.php?title=DeSmuME_Manual_for_the_Macintosh_port
 
-To install DeSmuME, copy DeSmuME.app into the folder of your 
-choice (Applications folder is recommended). You can also drag
-it to your dock for quicker launching.
+This page contains complete and detailed information about how to operate
+DeSmuME for OS X.
 
-Double click the application to launch DeSmuME.
+* DeSmuME Build Instructions for OS X:
+http://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source_on_OS_X
 
-Most options can be found in the menu bar a the top of the
-screen. On Leopard, you can use the search box under the help
-menu to find things.
+This page contains complete and detailed instructions about how to make your
+own build of DeSmuME for OS X directly from the source code.
 
-DeSmuME for Mac OS X does not support all the features of the
-Linux and Windows versions.
 
-Click the lower screen for DS touch-screen input.
+3) Contact Information ________________________________________________________
 
-Key mappings can be changed or viewed from the preferences
-panel. Here are the defaults (may be subject to change):
-up arrow - Up
-left arrow - Left
-down arrow - Down
-right arrow - Right
-v - A button
-b - B button
-g - X button
-h - Y button
-c - Left Trigger
-n - Right Trigger
-enter - Start button
-space - Select button
+Thank you for you interest in DeSmuME! If you want to tell us how useful
+DeSmuME is in your life, your love (or hate) of certain NDS games, your passion
+for NDS homebrew development, or anything else related to DeSmuME or NDS
+emulation, then there are various ways for you to contact us!
 
-States can be saved with shift + number keys.
-States can be loaded with the number keys.
+However, keep in mind that there are a few of rules that you need to follow:
+- Do not ask us to provide ROMs, BIOS files, or any other copyrighted stuff.
+  We don't want to have to deal with any legal issues that could get us in
+  trouble, or worse, completely shut down.
+  
+- When contacting us, please use the appropriate means to do it. For example,
+  if you simply want to tell us how much you love or hate us, then use the
+  comments on the official webpage. Another example: If you want to post on the
+  forum, be sure to keep the topic focused on DeSmuME; questions that ask for
+  things like us providing you the latest Pokemon cheats are not DeSmuME
+  related, and we will instead refer you to a Pokemon cheaters forum. Finally,
+  our developer chat channel is intended for furthering the development work of
+  DeSmuME; questions about how to use DeSmuME should not come here, but instead
+  go to the Support forum. In short, use the appropriate contact method. That's
+  why the different methods exist!
 
-To set up a FAT disk image (for homebrew apps) you can use the 
-"Emulation > Set FAT Image File" option in the menu.  You can
-also set this from the command line by launching DeSmuME
-inside its app bundle:
+* Official Website: http://desmume.org
 
-DeSmuME.app/Contents/MacOS/DeSmuME -FlashFile /path/to/file.img
+Our official website has the latest news on DeSmuME releases, and also has a
+lot of other useful information about DeSmuME. You can comment on different
+posts telling us how you feel about DeSmuME. Is DeSmuME the best thing in your
+life? Is it making you cry? Or is it a bunch of blah? Let us know here!
 
-3 Contact information_________________________________________
+* Public Forum: http://forum.desmume.org
 
-General inquiries should go to:
-E-mail:	guillaume.duhamel@gmail.com
+If you have a question about DeSmuME, then this is the place to ask it. But
+before you ask it, be aware that your question may have already been
+answered before, so try the following things first:
 
-Mac OS X Port-related inquiries should go to:
-E-mail: osx@desmume.org
+- Read the manual and the FAQ. A lot of questions people have are usually
+  already answered in our documentation.
+- Do a forum search about your question.
 
-Web:    http://desmume.org
+If you still need to ask a question, then be sure to provide us the following
+information:
 
-Please don't ask for roms, bios files or any other copyrighted
-stuff.
+- DeSmuME app version
+- Your operating system and OS version
+- The name of the ROM (if a ROM is involved)
+- The serial code of the ROM (if a ROM is involved)
 
-If you want to submit a bug report, please run desmume, go
-into the "Help" menu, and click on "Submit a bug report". If
-you're having trouble with it, please feel free to email.
+The app version can be found by choosing DeSmuME > About DeSmuME in the DeSmuME
+app. Alternatively, you can select the DeSmuME app in the Finder and choose
+File > Get Info.
 
-4 Disclaimer__________________________________________________
+You can find your operating system and OS version by choosing About This Mac in
+the Apple menu.
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License as 
-published by the Free Software Foundation; either version 2 of 
-the License, or (at your option) any later version.
+The ROM name and serial can be found by choosing File > ROM Info in the DeSmuME
+application.
 
-This program is distributed in the hope that it will be
-useful,but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.  See the GNU General Public License for more details.
+It is very important that you provide us with this information! If you don't,
+then it will take much longer for us to respond to your question.
 
-You should have received a copy of the GNU General Public
-License along with this program; if not, write to the Free
-Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-MA  02111-1307  USA
+* Live Developer Chat Channel: #openemu
 
-See the GNU General Public License details in COPYING.
+We have a live developer chatline on Freenode IRC. This channel is meant for discussing the development of DeSmuME, and shows the real work that goes on
+behind the scenes. If you are interested in doing any sort of software
+programming, software testing, documentation, or graphics work, then please
+join our chat channel! We would love for you to join us!
+
+* Bug Reports: http://sourceforge.net/tracker/?group_id=164579&atid=832291
+
+If you believe that you have found a bug, you may submit a bug report by
+choosing Help > Submit a Bug Report in the DeSmuME application, or by
+following the above link. This will take you to our bug tracker on SourceForge.
+Do note that you will need a SourceForge account in order to submit a bug
+report.
+
+Bug submissions are very welcome and encouraged. However, when you submit a bug
+to us, you MUST provide the following information, or else your bug submission
+may be rejected:
+
+- DeSmuME app version
+- Your operating system and OS version
+- Your Mac model identifier
+- The name of the running ROM when the bug was observed (or "None", if no ROM
+  was running)
+- The serial code of the running ROM when the bug was observed (or "None", if
+  no ROM was running)
+- A description of the exact behavior you observed
+- A description of the behavior you expected
+
+You can find your Mac model identifier in the System Profiler app. The app is
+located in the Applications/Utilities folder.
+
+When you write your description, make sure that they are as detailed as
+possible. The better your descriptions are, the faster we can test and fix
+bugs.
+
+For example, if you observed a bug in the game Golden Sun: Dark Dawn, then the
+bug report could look something like this:
+
+    App Version: v0.9.8
+    Operating System: OS X v10.6.8
+    Mac Model Identifier: iMac 11,2
+    ROM Name: GOLDENSUN_DD
+    ROM Serial: NTR-BO5E-USA
+    Observed Behavior: I tried to load a save state using the
+    File > Load State > Slot 3 menu option, but the game froze. If I reset, I
+    can get the game working again.
+    Expected Behavior: The game should continue running from the point where I
+    made the save state.
+
+We will try to get your bug tested as soon as possible, but any fixes may take
+longer, depending on the complexity of the bug. Also, some bugs may require us
+to ask you for certain files, such as your ROM saves, save states, or console
+logs. For the above example, we would probably ask you for your save states to
+help us track down the bug.
+
+
+4) License ____________________________________________________________________
+
+This file is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 2 of the License, or (at your option) any later
+version.
+
+This file is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this software.  If not, see <http://www.gnu.org/licenses/>.
+
+
+* See the GNU General Public License details in COPYING.
