@@ -132,13 +132,11 @@
 		AB3ACC3F14C24D5400D7D192 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3914C24D5400D7D192 /* ChangeLog */; };
 		AB3ACC4014C24D5400D7D192 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
 		AB3ACC4114C24D5400D7D192 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
-		AB3ACC4214C24D5400D7D192 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3C14C24D5400D7D192 /* README.TRANSLATION */; };
 		AB3ACC4314C24D5400D7D192 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
 		AB3ACC4414C24D5400D7D192 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3814C24D5400D7D192 /* AUTHORS */; };
 		AB3ACC4514C24D5400D7D192 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3914C24D5400D7D192 /* ChangeLog */; };
 		AB3ACC4614C24D5400D7D192 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
 		AB3ACC4714C24D5400D7D192 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
-		AB3ACC4814C24D5400D7D192 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3C14C24D5400D7D192 /* README.TRANSLATION */; };
 		AB3ACC4914C24D5400D7D192 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
 		AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
@@ -463,7 +461,6 @@
 		ABB7158414E386740027FE88 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3914C24D5400D7D192 /* ChangeLog */; };
 		ABB7158514E386740027FE88 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
 		ABB7158614E386740027FE88 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
-		ABB7158714E386740027FE88 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3C14C24D5400D7D192 /* README.TRANSLATION */; };
 		ABB7158814E386740027FE88 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
 		ABB7158914E386740027FE88 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
 		ABB7158B14E386740027FE88 /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1D1345ACBF00AF11D1 /* ConvertUTF.c */; };
@@ -793,7 +790,6 @@
 		AB3ACC3914C24D5400D7D192 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../../ChangeLog; sourceTree = SOURCE_ROOT; };
 		AB3ACC3A14C24D5400D7D192 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB3ACC3B14C24D5400D7D192 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../README; sourceTree = SOURCE_ROOT; };
-		AB3ACC3C14C24D5400D7D192 /* README.TRANSLATION */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.TRANSLATION; path = ../../README.TRANSLATION; sourceTree = SOURCE_ROOT; };
 		AB3ACC3D14C24D5400D7D192 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../README.MAC; sourceTree = SOURCE_ROOT; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
@@ -1242,7 +1238,6 @@
 				AB3ACC3914C24D5400D7D192 /* ChangeLog */,
 				AB3ACC3A14C24D5400D7D192 /* COPYING */,
 				AB3ACC3B14C24D5400D7D192 /* README */,
-				AB3ACC3C14C24D5400D7D192 /* README.TRANSLATION */,
 				AB3ACC3D14C24D5400D7D192 /* README.MAC */,
 			);
 			name = Resources;
@@ -1844,7 +1839,6 @@
 				AB3ACC3F14C24D5400D7D192 /* ChangeLog in Resources */,
 				AB3ACC4014C24D5400D7D192 /* COPYING in Resources */,
 				AB3ACC4114C24D5400D7D192 /* README in Resources */,
-				AB3ACC4214C24D5400D7D192 /* README.TRANSLATION in Resources */,
 				AB3ACC4314C24D5400D7D192 /* README.MAC in Resources */,
 				AB75226E14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
@@ -1923,7 +1917,6 @@
 				AB3ACC4514C24D5400D7D192 /* ChangeLog in Resources */,
 				AB3ACC4614C24D5400D7D192 /* COPYING in Resources */,
 				AB3ACC4714C24D5400D7D192 /* README in Resources */,
-				AB3ACC4814C24D5400D7D192 /* README.TRANSLATION in Resources */,
 				AB3ACC4914C24D5400D7D192 /* README.MAC in Resources */,
 				AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
@@ -2011,7 +2004,6 @@
 				ABB7158414E386740027FE88 /* ChangeLog in Resources */,
 				ABB7158514E386740027FE88 /* COPYING in Resources */,
 				ABB7158614E386740027FE88 /* README in Resources */,
-				ABB7158714E386740027FE88 /* README.TRANSLATION in Resources */,
 				ABB7158814E386740027FE88 /* README.MAC in Resources */,
 				ABB7158914E386740027FE88 /* AppIcon_FirmwareConfig.icns in Resources */,
 			);
