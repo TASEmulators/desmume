@@ -25,6 +25,7 @@
 #include "movie.h"
 #include "readwrite.h"
 #include "NDSSystem.h"
+#define TIXML_USE_STL
 #include "utils/tinyxml/tinyxml.h"
 
 //temporary hack until we have better error reporting facilities
@@ -1453,6 +1454,7 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 	u32				crc32 = 0;
 	u32				reserved = 0;
 
+	printf("Converting DB...\n");
 	if (getXMLConfig(in_filaname))
 	{
 		if (!datName) return 0;
@@ -1531,8 +1533,12 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 		count++;
 		el = el->NextSiblingElement("game");
 	}
-	printf("ADVANsCEne converter: %i found\n", count);
 	delete xml;
 	fclose(fp);
+	if (count > 0) 
+		printf("done\n");
+	else
+		printf("error\n");
+	printf("ADVANsCEne converter: %i found\n", count);
 	return count;
 }
