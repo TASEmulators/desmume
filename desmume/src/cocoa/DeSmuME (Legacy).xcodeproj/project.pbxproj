@@ -308,25 +308,21 @@
 		AB0A0EAF14AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
 		AB0A0EB014AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
 		AB0A0EB114AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
-		AB0A0EB214AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
 		AB0A0EB314AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
 		AB0A0EB414AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
 		AB0A0EB514AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
 		AB0A0EB614AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
 		AB0A0EB714AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
-		AB0A0EB814AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
 		AB0A0EB914AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
 		AB0A0EBA14AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
 		AB0A0EBB14AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
 		AB0A0EBC14AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
 		AB0A0EBD14AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
-		AB0A0EBE14AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
 		AB0A0EBF14AAF77000E83E91 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA714AAF77000E83E91 /* README.MAC */; };
 		AB0A0EC014AAF77000E83E91 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA814AAF77000E83E91 /* AUTHORS */; };
 		AB0A0EC114AAF77000E83E91 /* ChangeLog in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EA914AAF77000E83E91 /* ChangeLog */; };
 		AB0A0EC214AAF77000E83E91 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAA14AAF77000E83E91 /* COPYING */; };
 		AB0A0EC314AAF77000E83E91 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAB14AAF77000E83E91 /* README */; };
-		AB0A0EC414AAF77000E83E91 /* README.TRANSLATION in Resources */ = {isa = PBXBuildFile; fileRef = AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */; };
 		AB0E770314C5635800EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB0E770414C5635800EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB0E770514C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
@@ -770,7 +766,6 @@
 		AB0A0EA914AAF77000E83E91 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../../ChangeLog; sourceTree = SOURCE_ROOT; };
 		AB0A0EAA14AAF77000E83E91 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB0A0EAB14AAF77000E83E91 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../README; sourceTree = SOURCE_ROOT; };
-		AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.TRANSLATION; path = ../../README.TRANSLATION; sourceTree = SOURCE_ROOT; };
 		AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
 		AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
@@ -1083,7 +1078,6 @@
 				AB0A0EA914AAF77000E83E91 /* ChangeLog */,
 				AB0A0EAA14AAF77000E83E91 /* COPYING */,
 				AB0A0EAB14AAF77000E83E91 /* README */,
-				AB0A0EAC14AAF77000E83E91 /* README.TRANSLATION */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -1442,7 +1436,6 @@
 				AB0A0EB514AAF77000E83E91 /* ChangeLog in Resources */,
 				AB0A0EB614AAF77000E83E91 /* COPYING in Resources */,
 				AB0A0EB714AAF77000E83E91 /* README in Resources */,
-				AB0A0EB814AAF77000E83E91 /* README.TRANSLATION in Resources */,
 				AB46780E14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
 				AB46780F14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46781014ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
@@ -1473,7 +1466,6 @@
 				AB0A0EC114AAF77000E83E91 /* ChangeLog in Resources */,
 				AB0A0EC214AAF77000E83E91 /* COPYING in Resources */,
 				AB0A0EC314AAF77000E83E91 /* README in Resources */,
-				AB0A0EC414AAF77000E83E91 /* README.TRANSLATION in Resources */,
 				AB46781614ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
 				AB46781714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
@@ -1504,7 +1496,6 @@
 				AB0A0EAF14AAF77000E83E91 /* ChangeLog in Resources */,
 				AB0A0EB014AAF77000E83E91 /* COPYING in Resources */,
 				AB0A0EB114AAF77000E83E91 /* README in Resources */,
-				AB0A0EB214AAF77000E83E91 /* README.TRANSLATION in Resources */,
 				AB46780A14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
 				AB46780B14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
@@ -1535,7 +1526,6 @@
 				AB0A0EBB14AAF77000E83E91 /* ChangeLog in Resources */,
 				AB0A0EBC14AAF77000E83E91 /* COPYING in Resources */,
 				AB0A0EBD14AAF77000E83E91 /* README in Resources */,
-				AB0A0EBE14AAF77000E83E91 /* README.TRANSLATION in Resources */,
 				AB46781214ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */,
 				AB46781314ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB46781414ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */,
