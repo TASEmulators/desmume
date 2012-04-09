@@ -378,7 +378,6 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/cli/Makefile
                  src/cli/doc/Makefile
-                 src/cocoa/Makefile
                  src/gtk/Makefile
                  src/gtk/doc/Makefile
                  src/gtk-glade/Makefile
