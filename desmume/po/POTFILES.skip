@@ -1,3 +1,7 @@
 src/wx/PadSimple/GUI/ConfigDlg.cpp
 src/wxdlg/wxdlg3dViewer.cpp
 src/wxdlg/wxcontrolsconfigdialog.cpp
+src/windows/libelf_libdwarf/libelf/errors.h
+src/windows/wx/include/wx/msw/ole/oleutils.h
+src/windows/wx/include/wx/unix/pipe.h
+src/windows/wx/include/wx/xti.h
