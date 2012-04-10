@@ -1,0 +1,166 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH DESMUME 1 "June 26, 2007"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+desmume \- Nintendo DS emulator
+.SH SYNOPSIS
+.B desmume
+.RI [ options ] " files" ...
+.SH DESCRIPTION
+This manual page documents briefly the
+.B desmume
+program
+.PP
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics, 
+.\" respectively.
+\fBdesmume\fP is a Nintendo DS emulator running homebrew demos and commercial games.
+.SH OPTIONS
+These programs follow the usual GNU command line syntax, with long
+options starting with two dashes (`-').
+A summary of options is included below.
+.TP
+.B \-\-load-slot=NUM
+Loads savegame from slot NUM
+.TP
+.B \-\-opengl-2d
+Enables using OpenGL for screen rendering
+.TP
+.B \-\-soft-convert
+Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.
+.TP
+.B \-\-3d-engine=ENGINE
+Select available 3d emulation:
+.RS
+0 = 3d disabled 
+.RE
+.RS
+1 = internal desmume software rasterizer (default)
+.RE
+.RS
+2 = osmesa or gtkglext opengl (if available, depending on compilation options, see desmume \-\-help)
+.RE
+.TP
+.B \-\-disable-sound
+Disables the sound emulation
+.TP
+.B \-\-disable-limiter
+Disables the 60 fps limiter
+.TP
+.B \-\-arm9gdb=PORT_NUM
+Enable the ARM9 GDB stub on the given port
+.TP
+.B \-\-arm7gdb=PORT_NUM
+Enable the ARM7 GDB stub on the given port
+.TP
+.B \-\-save-type=TYPE
+Select savetype from the following:
+.RS
+0 = Autodetect
+.RE
+.RS
+1 = EEPROM 4kbit
+.RE
+.RS
+2 = EEPROM 64kbit
+.RE
+.RS
+3 = EEPROM 512kbit
+.RE
+.RS
+4 = FRAM 256kbit
+.RE
+.RS
+5 = FLASH 2mbit
+.RE
+.RS
+6 = FLASH 4mbit
+.RE
+.TP
+.B \-\-fwlang=LANG
+Set the language in the firmware, LANG as follows:
+.RS
+0 = Japanese
+.RE
+.RS
+1 = English
+.RE
+.RS
+2 = French
+.RE
+.RS
+3 = German
+.RE
+.RS
+4 = Italian
+.RE
+.RS
+5 = Spanish
+.RE
+.TP
+.B \-\-cflash=PATH_TO_DISK_IMAGE
+Enable disk image GBAMP compact flash emulation
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-v, \-\-version
+Show version of program.
+.SH INPUT
+Mouse cursor acts as stylus, mouse click replaces stylus touch.
+.PP
+Keyboard can be configured and by default works as follows:
+.RS
+F1-F10 load savegame from slot 1-10
+.RE
+.RS
+Shift+F1-F10 save game to slot 1-10
+.RE
+.RS
+Non-keypad arrows act as d-pad
+.RE
+.RS
+z = A
+.RE
+.RS
+x = B
+.RE
+.RS
+a = Y
+.RE
+.RS
+s = X
+.RE
+.RS
+q = L
+.RE
+.RS
+w = R
+.RE
+.RS
+Enter = START
+.RE
+.RS
+Left Shift = SELECT
+.RE
+.PP
+Desmume accepts joystick events, which can be configured by user.
+.SH AUTHOR
+desmume was written by DeSmuME team
+(http://sourceforge.net/projects/desmume).
+.PP
+This manual page was written by Reinhard Tartler <siretart@tauware.de> and modified by Pascal Giard <pascal@debian.org>, for the Debian project (but may be used by others).

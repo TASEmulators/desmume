@@ -1,0 +1,1704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>0x0001</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Pointer</string>
+		<key>0x0002</key>
+		<string>Mouse</string>
+		<key>0x0004</key>
+		<string>Joystick</string>
+		<key>0x0005</key>
+		<string>GamePad</string>
+		<key>0x0006</key>
+		<string>Keyboard</string>
+		<key>0x0007</key>
+		<string>Keypad</string>
+		<key>0x0008</key>
+		<string>MultiAxisController</string>
+		<key>0x0030</key>
+		<string>X</string>
+		<key>0x0031</key>
+		<string>Y</string>
+		<key>0x0032</key>
+		<string>Z</string>
+		<key>0x0033</key>
+		<string>Rx</string>
+		<key>0x0034</key>
+		<string>Ry</string>
+		<key>0x0035</key>
+		<string>Rz</string>
+		<key>0x0036</key>
+		<string>Slider</string>
+		<key>0x0037</key>
+		<string>Dial</string>
+		<key>0x0038</key>
+		<string>Wheel</string>
+		<key>0x0039</key>
+		<string>Hatswitch</string>
+		<key>0x003A</key>
+		<string>Counted Buffer</string>
+		<key>0x003B</key>
+		<string>Byte Count</string>
+		<key>0x003C</key>
+		<string>Motion Wakeup</string>
+		<key>0x003D</key>
+		<string>Start</string>
+		<key>0x003E</key>
+		<string>Select</string>
+		<key>0x0040</key>
+		<string>Vx</string>
+		<key>0x0041</key>
+		<string>Vy</string>
+		<key>0x0042</key>
+		<string>Vz</string>
+		<key>0x0043</key>
+		<string>Vbrx</string>
+		<key>0x0044</key>
+		<string>Vbry</string>
+		<key>0x0045</key>
+		<string>Vbrz</string>
+		<key>0x0046</key>
+		<string>Vno</string>
+		<key>0x0080</key>
+		<string>System Control</string>
+		<key>0x0081</key>
+		<string>System Power Down</string>
+		<key>0x0082</key>
+		<string>System Sleep</string>
+		<key>0x0083</key>
+		<string>System Wake Up</string>
+		<key>0x0084</key>
+		<string>SystemContext Menu</string>
+		<key>0x0085</key>
+		<string>System Main Menu</string>
+		<key>0x0086</key>
+		<string>System App Menu</string>
+		<key>0x0087</key>
+		<string>System Menu help</string>
+		<key>0x0088</key>
+		<string>System Menu Exit</string>
+		<key>0x0089</key>
+		<string>System Menu</string>
+		<key>0x008A</key>
+		<string>System Menu Right</string>
+		<key>0x008B</key>
+		<string>System Menu Left</string>
+		<key>0x008C</key>
+		<string>System Menu Up</string>
+		<key>0x008D</key>
+		<string>System Menu Down</string>
+		<key>0x0090</key>
+		<string>DPad Up</string>
+		<key>0x0091</key>
+		<string>DPad Down</string>
+		<key>0x0092</key>
+		<string>DPad Right</string>
+		<key>0x0093</key>
+		<string>DPad Left</string>
+		<key>Name</key>
+		<string>Generic Desktop</string>
+	</dict>
+	<key>0x0002</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Flight Simulation Device</string>
+		<key>0x0002</key>
+		<string>Automobile Simulation Device</string>
+		<key>0x0003</key>
+		<string>Tank Simulation Device</string>
+		<key>0x0004</key>
+		<string>Spaceship Simulation Device</string>
+		<key>0x0005</key>
+		<string>Submarine Simulation Device</string>
+		<key>0x0006</key>
+		<string>Sailing Simulation Device</string>
+		<key>0x0007</key>
+		<string>Motorcycle Simulation Device</string>
+		<key>0x0008</key>
+		<string>Sports Simulation Device</string>
+		<key>0x0009</key>
+		<string>Airplane Simulation Device</string>
+		<key>0x000A</key>
+		<string>Helicopter Simulation Device</string>
+		<key>0x000B</key>
+		<string>Magic Carpet Simulation Device</string>
+		<key>0x000C</key>
+		<string>Bicycle Simulation Device</string>
+		<key>0x0020</key>
+		<string>Flight Control Stick</string>
+		<key>0x0021</key>
+		<string>Flight Stick</string>
+		<key>0x0022</key>
+		<string>Cyclic Control</string>
+		<key>0x0023</key>
+		<string>Cyclic Trim</string>
+		<key>0x0024</key>
+		<string>Flight Yoke</string>
+		<key>0x0025</key>
+		<string>Track Control</string>
+		<key>0x00B0</key>
+		<string>Aileron</string>
+		<key>0x00B1</key>
+		<string>Aileron Trim</string>
+		<key>0x00B2</key>
+		<string>Anti Torque Control</string>
+		<key>0x00B5</key>
+		<string>Collective Control</string>
+		<key>0x00B6</key>
+		<string>Dive Brake</string>
+		<key>0x00B7</key>
+		<string>Electronic Countermeasures</string>
+		<key>0x00B8</key>
+		<string>Elevator</string>
+		<key>0x00B9</key>
+		<string>Elevator Trim</string>
+		<key>0x00BA</key>
+		<string>Rudder</string>
+		<key>0x00BB</key>
+		<string>Throttle</string>
+		<key>0x00BC</key>
+		<string>Flight Communications</string>
+		<key>0x00BD</key>
+		<string>Flare Release</string>
+		<key>0x00BE</key>
+		<string>Landing Gear</string>
+		<key>0x00BF</key>
+		<string>Toe Brake</string>
+		<key>0x00C0</key>
+		<string>Trigger</string>
+		<key>0x00C1</key>
+		<string>Weapons Arm</string>
+		<key>0x00C2</key>
+		<string>Weapons</string>
+		<key>0x00C3</key>
+		<string>Wing Flaps</string>
+		<key>0x00C4</key>
+		<string>Accelerator</string>
+		<key>0x00C5</key>
+		<string>Brake</string>
+		<key>0x00C6</key>
+		<string>Clutch</string>
+		<key>0x00C7</key>
+		<string>Shifter</string>
+		<key>0x00C8</key>
+		<string>Steering</string>
+		<key>0x00C9</key>
+		<string>Turret Direction</string>
+		<key>0x00CA</key>
+		<string>Barrel Elevation</string>
+		<key>0x00CB</key>
+		<string>Dive Plane</string>
+		<key>0x00CC</key>
+		<string>Ballast</string>
+		<key>0x00CD</key>
+		<string>Bicycle Crank</string>
+		<key>0x00CE</key>
+		<string>Handle Bars</string>
+		<key>0x00CF</key>
+		<string>Front Brake</string>
+		<key>0x00D0</key>
+		<string>Rear Brake</string>
+		<key>Name</key>
+		<string>Simulation</string>
+	</dict>
+	<key>0x0003</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Belt</string>
+		<key>0x0002</key>
+		<string>Body Suit</string>
+		<key>0x0003</key>
+		<string>Flexor</string>
+		<key>0x0004</key>
+		<string>Glove</string>
+		<key>0x0005</key>
+		<string>Head Tracker</string>
+		<key>0x0006</key>
+		<string>Head Mounted Display</string>
+		<key>0x0007</key>
+		<string>Hand Tracker</string>
+		<key>0x0008</key>
+		<string>Oculometer</string>
+		<key>0x0009</key>
+		<string>Vest</string>
+		<key>0x000A</key>
+		<string>Animatronic Device</string>
+		<key>0x0020</key>
+		<string>Stereo Enable</string>
+		<key>0x0021</key>
+		<string>Display Enable</string>
+		<key>Name</key>
+		<string>Virtual Reality</string>
+	</dict>
+	<key>0x0004</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Baseball Bat</string>
+		<key>0x0002</key>
+		<string>Golf Club</string>
+		<key>0x0003</key>
+		<string>Rowing Machine</string>
+		<key>0x0004</key>
+		<string>Treadmill</string>
+		<key>0x0030</key>
+		<string>Oar</string>
+		<key>0x0031</key>
+		<string>Slope</string>
+		<key>0x0032</key>
+		<string>Rate</string>
+		<key>0x0033</key>
+		<string>Stick Speed</string>
+		<key>0x0034</key>
+		<string>Stick Face Angle</string>
+		<key>0x0035</key>
+		<string>Stick Heel Or Toe</string>
+		<key>0x0036</key>
+		<string>Stick Follow Through</string>
+		<key>0x0037</key>
+		<string>Stick Tempo</string>
+		<key>0x0038</key>
+		<string>Stick Type</string>
+		<key>0x0039</key>
+		<string>Stick Height</string>
+		<key>0x0050</key>
+		<string>Putter</string>
+		<key>0x0051</key>
+		<string>1 Iron</string>
+		<key>0x0052</key>
+		<string>2 Iron</string>
+		<key>0x0053</key>
+		<string>3 Iron</string>
+		<key>0x0054</key>
+		<string>4 Iron</string>
+		<key>0x0055</key>
+		<string>5 Iron</string>
+		<key>0x0056</key>
+		<string>6 Iron</string>
+		<key>0x0057</key>
+		<string>7 Iron</string>
+		<key>0x0058</key>
+		<string>8 Iron</string>
+		<key>0x0059</key>
+		<string>9 Iron</string>
+		<key>0x005A</key>
+		<string>10 Iron</string>
+		<key>0x005B</key>
+		<string>11 Iron</string>
+		<key>0x005C</key>
+		<string>Sand Wedge</string>
+		<key>0x005D</key>
+		<string>Loft Wedge</string>
+		<key>0x005E</key>
+		<string>Power Wedge</string>
+		<key>0x005F</key>
+		<string>1 Wood</string>
+		<key>0x0060</key>
+		<string>3 Wood</string>
+		<key>0x0061</key>
+		<string>5 Wood</string>
+		<key>0x0062</key>
+		<string>7 Wood</string>
+		<key>0x0063</key>
+		<string>9 Wood</string>
+		<key>Name</key>
+		<string>Sport</string>
+	</dict>
+	<key>0x0005</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>3D Game Controller</string>
+		<key>0x0002</key>
+		<string>Pinball Device</string>
+		<key>0x0003</key>
+		<string>Gun</string>
+		<key>0x0020</key>
+		<string>Point of View</string>
+		<key>0x0021</key>
+		<string>Turn Right Or Left</string>
+		<key>0x0022</key>
+		<string>Pitch Up Or Down</string>
+		<key>0x0023</key>
+		<string>Roll Right Or Left</string>
+		<key>0x0024</key>
+		<string>Move Right Or Left</string>
+		<key>0x0025</key>
+		<string>Move Forward Or Backward</string>
+		<key>0x0026</key>
+		<string>Move Up Or Down</string>
+		<key>0x0027</key>
+		<string>Lean Right Or Left</string>
+		<key>0x0029</key>
+		<string>Height Of POV</string>
+		<key>0x002A</key>
+		<string>Flipper</string>
+		<key>0x002B</key>
+		<string>Secondary Flipper</string>
+		<key>0x002C</key>
+		<string>Bump</string>
+		<key>0x002D</key>
+		<string>New Game</string>
+		<key>0x002E</key>
+		<string>Shoot Ball</string>
+		<key>0x002F</key>
+		<string>Player</string>
+		<key>0x0030</key>
+		<string>Gun Bolt</string>
+		<key>0x0031</key>
+		<string>Gun Clip</string>
+		<key>0x0032</key>
+		<string>Gun</string>
+		<key>0x0033</key>
+		<string>Gun Single Shot</string>
+		<key>0x0034</key>
+		<string>Gun Burst</string>
+		<key>0x0035</key>
+		<string>Gun Automatic</string>
+		<key>0x0036</key>
+		<string>Gun Safety</string>
+		<key>0x0037</key>
+		<string>Gamepad Fire Or Jump</string>
+		<key>0x0039</key>
+		<string>Gamepad Trigger</string>
+		<key>Name</key>
+		<string>Game</string>
+	</dict>
+	<key>0x0007</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Error Roll Over</string>
+		<key>0x0002</key>
+		<string>POST Fail</string>
+		<key>0x0003</key>
+		<string>Error Undefined</string>
+		<key>0x0004</key>
+		<string>A</string>
+		<key>0x0005</key>
+		<string>B</string>
+		<key>0x0006</key>
+		<string>C</string>
+		<key>0x0007</key>
+		<string>D</string>
+		<key>0x0008</key>
+		<string>E</string>
+		<key>0x0009</key>
+		<string>F</string>
+		<key>0x000A</key>
+		<string>G</string>
+		<key>0x000B</key>
+		<string>H</string>
+		<key>0x000C</key>
+		<string>I</string>
+		<key>0x000D</key>
+		<string>J</string>
+		<key>0x000E</key>
+		<string>K</string>
+		<key>0x000F</key>
+		<string>L</string>
+		<key>0x0010</key>
+		<string>M</string>
+		<key>0x0011</key>
+		<string>N</string>
+		<key>0x0012</key>
+		<string>O</string>
+		<key>0x0013</key>
+		<string>P</string>
+		<key>0x0014</key>
+		<string>Q</string>
+		<key>0x0015</key>
+		<string>R</string>
+		<key>0x0016</key>
+		<string>S</string>
+		<key>0x0017</key>
+		<string>T</string>
+		<key>0x0018</key>
+		<string>U</string>
+		<key>0x0019</key>
+		<string>V</string>
+		<key>0x001A</key>
+		<string>W</string>
+		<key>0x001B</key>
+		<string>X</string>
+		<key>0x001C</key>
+		<string>Y</string>
+		<key>0x001D</key>
+		<string>Z</string>
+		<key>0x001E</key>
+		<string>1</string>
+		<key>0x001F</key>
+		<string>2</string>
+		<key>0x0020</key>
+		<string>3</string>
+		<key>0x0021</key>
+		<string>4</string>
+		<key>0x0022</key>
+		<string>5</string>
+		<key>0x0023</key>
+		<string>6</string>
+		<key>0x0024</key>
+		<string>7</string>
+		<key>0x0025</key>
+		<string>8</string>
+		<key>0x0026</key>
+		<string>9</string>
+		<key>0x0027</key>
+		<string>0</string>
+		<key>0x0028</key>
+		<string>Return</string>
+		<key>0x0029</key>
+		<string>Escape</string>
+		<key>0x002A</key>
+		<string>Delete</string>
+		<key>0x002B</key>
+		<string>Tab</string>
+		<key>0x002C</key>
+		<string>Spacebar</string>
+		<key>0x002D</key>
+		<string>Dash</string>
+		<key>0x002E</key>
+		<string>Equal</string>
+		<key>0x002F</key>
+		<string>Left Square Bracket</string>
+		<key>0x0030</key>
+		<string>Right Square Bracket</string>
+		<key>0x0031</key>
+		<string>Slash</string>
+		<key>0x0032</key>
+		<string>Non-US #</string>
+		<key>0x0033</key>
+		<string>Semi-Colan</string>
+		<key>0x0034</key>
+		<string>Single Quote</string>
+		<key>0x0035</key>
+		<string>Grave Accent</string>
+		<key>0x0036</key>
+		<string>Comma</string>
+		<key>0x0037</key>
+		<string>Period</string>
+		<key>0x0038</key>
+		<string>Slash</string>
+		<key>0x0039</key>
+		<string>Caps Lock</string>
+		<key>0x003A</key>
+		<string>F1</string>
+		<key>0x003B</key>
+		<string>F2</string>
+		<key>0x003C</key>
+		<string>F3</string>
+		<key>0x003D</key>
+		<string>F4</string>
+		<key>0x003E</key>
+		<string>F5</string>
+		<key>0x003F</key>
+		<string>F6</string>
+		<key>0x0040</key>
+		<string>F7</string>
+		<key>0x0041</key>
+		<string>F8</string>
+		<key>0x0042</key>
+		<string>F9</string>
+		<key>0x0043</key>
+		<string>F10</string>
+		<key>0x0044</key>
+		<string>F11</string>
+		<key>0x0045</key>
+		<string>F12</string>
+		<key>0x0046</key>
+		<string>Print Screen</string>
+		<key>0x0047</key>
+		<string>Scroll Lock</string>
+		<key>0x0048</key>
+		<string>Pause</string>
+		<key>0x0049</key>
+		<string>Insert</string>
+		<key>0x004A</key>
+		<string>Home</string>
+		<key>0x004B</key>
+		<string>Page Up</string>
+		<key>0x004C</key>
+		<string>Delete Forward</string>
+		<key>0x004D</key>
+		<string>End</string>
+		<key>0x004E</key>
+		<string>Page Down</string>
+		<key>0x004F</key>
+		<string>Right Arrow</string>
+		<key>0x0050</key>
+		<string>Left Arrow</string>
+		<key>0x0051</key>
+		<string>Down Arrow</string>
+		<key>0x0052</key>
+		<string>Up Arrow</string>
+		<key>0x0053</key>
+		<string>Keypad NumLock</string>
+		<key>0x0054</key>
+		<string>Keypad Slash</string>
+		<key>0x0055</key>
+		<string>Keypad Asterisk</string>
+		<key>0x0056</key>
+		<string>Keypad Dash</string>
+		<key>0x0057</key>
+		<string>Keypad Plus</string>
+		<key>0x0058</key>
+		<string>Keypad Enter</string>
+		<key>0x0059</key>
+		<string>Keypad 1</string>
+		<key>0x005A</key>
+		<string>Keypad 2</string>
+		<key>0x005B</key>
+		<string>Keypad 3</string>
+		<key>0x005C</key>
+		<string>Keypad 4</string>
+		<key>0x005D</key>
+		<string>Keypad 5</string>
+		<key>0x005E</key>
+		<string>Keypad 6</string>
+		<key>0x005F</key>
+		<string>Keypad 7</string>
+		<key>0x0060</key>
+		<string>Keypad 8</string>
+		<key>0x0061</key>
+		<string>Keypad 9</string>
+		<key>0x0062</key>
+		<string>Keypad 0</string>
+		<key>0x0063</key>
+		<string>Keypad Period</string>
+		<key>0x0064</key>
+		<string>Non-US Backslash</string>
+		<key>0x0065</key>
+		<string> Application </string>
+		<key>0x0066</key>
+		<string> Power </string>
+		<key>0x0067</key>
+		<string>Keypad Equal</string>
+		<key>0x0068</key>
+		<string>F13</string>
+		<key>0x0069</key>
+		<string>F14</string>
+		<key>0x006A</key>
+		<string>F15</string>
+		<key>0x006B</key>
+		<string>F16</string>
+		<key>0x006C</key>
+		<string>F17</string>
+		<key>0x006D</key>
+		<string>F18</string>
+		<key>0x006E</key>
+		<string>F19</string>
+		<key>0x006F</key>
+		<string>F20</string>
+		<key>0x0070</key>
+		<string>F21</string>
+		<key>0x0071</key>
+		<string>F22</string>
+		<key>0x0072</key>
+		<string>F23</string>
+		<key>0x0073</key>
+		<string>F24</string>
+		<key>0x0074</key>
+		<string>Execute</string>
+		<key>0x0075</key>
+		<string>Help</string>
+		<key>0x0076</key>
+		<string>Menu</string>
+		<key>0x0077</key>
+		<string>Select</string>
+		<key>0x0078</key>
+		<string>Stop</string>
+		<key>0x0079</key>
+		<string>Again</string>
+		<key>0x007A</key>
+		<string>Undo</string>
+		<key>0x007B</key>
+		<string>Cut</string>
+		<key>0x007C</key>
+		<string>Copy</string>
+		<key>0x007D</key>
+		<string>Paste</string>
+		<key>0x007E</key>
+		<string>Find</string>
+		<key>0x007F</key>
+		<string>Mute</string>
+		<key>0x0080</key>
+		<string>Volume Up</string>
+		<key>0x0081</key>
+		<string>Volume Down</string>
+		<key>0x0082</key>
+		<string>Locking Caps Lock</string>
+		<key>0x0083</key>
+		<string>Locking Num Lock</string>
+		<key>0x0084</key>
+		<string>Locking Scroll Lock</string>
+		<key>0x0085</key>
+		<string>Keypad Comma</string>
+		<key>0x0086</key>
+		<string>Keypad Equal Sign for AS-400</string>
+		<key>0x0087</key>
+		<string>International1</string>
+		<key>0x0088</key>
+		<string>International2</string>
+		<key>0x0089</key>
+		<string>International3</string>
+		<key>0x008A</key>
+		<string>International4</string>
+		<key>0x008B</key>
+		<string>International5</string>
+		<key>0x008C</key>
+		<string>International6</string>
+		<key>0x008D</key>
+		<string>International7</string>
+		<key>0x008E</key>
+		<string>International8</string>
+		<key>0x008F</key>
+		<string>International9</string>
+		<key>0x0090</key>
+		<string>LANG1</string>
+		<key>0x0091</key>
+		<string>LANG2</string>
+		<key>0x0092</key>
+		<string>LANG3</string>
+		<key>0x0093</key>
+		<string>LANG4</string>
+		<key>0x0094</key>
+		<string>LANG5</string>
+		<key>0x0095</key>
+		<string>LANG6</string>
+		<key>0x0096</key>
+		<string>LANG7</string>
+		<key>0x0097</key>
+		<string>LANG8</string>
+		<key>0x0098</key>
+		<string>LANG9</string>
+		<key>0x0099</key>
+		<string>Alternate Erase</string>
+		<key>0x009A</key>
+		<string>SysReq or Attention</string>
+		<key>0x009B</key>
+		<string>Cancel</string>
+		<key>0x009C</key>
+		<string>Clear</string>
+		<key>0x009D</key>
+		<string>Prior</string>
+		<key>0x009E</key>
+		<string>Return</string>
+		<key>0x009F</key>
+		<string> Separator </string>
+		<key>0x00A0</key>
+		<string>Out</string>
+		<key>0x00A1</key>
+		<string>Oper</string>
+		<key>0x00A2</key>
+		<string>Clear or Again</string>
+		<key>0x00A3</key>
+		<string>CrSel or Props</string>
+		<key>0x00A4</key>
+		<string>ExSel</string>
+		<key>0x00E0</key>
+		<string>Left Control</string>
+		<key>0x00E1</key>
+		<string>Left Shift</string>
+		<key>0x00E2</key>
+		<string>Left Alt</string>
+		<key>0x00E3</key>
+		<string>Left GUI</string>
+		<key>0x00E4</key>
+		<string>Right Control</string>
+		<key>0x00E5</key>
+		<string>Right Shift</string>
+		<key>0x00E6</key>
+		<string>Right Alt</string>
+		<key>0x00E7</key>
+		<string>Right GUI</string>
+		<key>Name</key>
+		<string>Keyboard or Keypad</string>
+	</dict>
+	<key>0x0008</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Num Lock</string>
+		<key>0x0002</key>
+		<string>Caps Lock</string>
+		<key>0x0003</key>
+		<string>Scroll Lock</string>
+		<key>0x0004</key>
+		<string>Compose</string>
+		<key>0x0005</key>
+		<string>Kana</string>
+		<key>0x0006</key>
+		<string>Power</string>
+		<key>0x0007</key>
+		<string>Shift</string>
+		<key>0x0008</key>
+		<string>DoNotDisturb</string>
+		<key>0x0009</key>
+		<string>Mute</string>
+		<key>0x000A</key>
+		<string>Tone Enable</string>
+		<key>0x000B</key>
+		<string>High Cut Filter</string>
+		<key>0x000C</key>
+		<string>Low Cut Filter</string>
+		<key>0x000D</key>
+		<string>Equalizer Enable</string>
+		<key>0x000E</key>
+		<string>Sound Field On</string>
+		<key>0x000F</key>
+		<string>Surround On</string>
+		<key>0x0010</key>
+		<string>Repeat</string>
+		<key>0x0011</key>
+		<string>Stereo</string>
+		<key>0x0012</key>
+		<string>Sampling Rate Detect</string>
+		<key>0x0013</key>
+		<string>Spinning</string>
+		<key>0x0014</key>
+		<string>CAV</string>
+		<key>0x0015</key>
+		<string>CLV</string>
+		<key>0x0016</key>
+		<string>Recording Format Detect</string>
+		<key>0x0017</key>
+		<string>Off Hook</string>
+		<key>0x0018</key>
+		<string>Ring</string>
+		<key>0x0019</key>
+		<string>Message Waiting</string>
+		<key>0x001A</key>
+		<string>Data Mode</string>
+		<key>0x001B</key>
+		<string>Battery Operation</string>
+		<key>0x001C</key>
+		<string>Battery OK</string>
+		<key>0x001D</key>
+		<string>Battery Low</string>
+		<key>0x001E</key>
+		<string>Speaker</string>
+		<key>0x001F</key>
+		<string>Headset</string>
+		<key>0x0020</key>
+		<string>Hold</string>
+		<key>0x0021</key>
+		<string>Microphone</string>
+		<key>0x0022</key>
+		<string>Coverage</string>
+		<key>0x0023</key>
+		<string>Night Mode</string>
+		<key>0x0024</key>
+		<string>Send Calls</string>
+		<key>0x0025</key>
+		<string>Call Pickup</string>
+		<key>0x0026</key>
+		<string>Conference</string>
+		<key>0x0027</key>
+		<string>Stand By</string>
+		<key>0x0028</key>
+		<string>Camera On</string>
+		<key>0x0029</key>
+		<string>Camera Off</string>
+		<key>0x002A</key>
+		<string>On Line</string>
+		<key>0x002B</key>
+		<string>Off Line</string>
+		<key>0x002C</key>
+		<string>Busy</string>
+		<key>0x002D</key>
+		<string>Ready</string>
+		<key>0x002E</key>
+		<string>Paper Out</string>
+		<key>0x002F</key>
+		<string>Paper Jam</string>
+		<key>0x0030</key>
+		<string>Remote</string>
+		<key>0x0031</key>
+		<string>Forward</string>
+		<key>0x0032</key>
+		<string>Reverse</string>
+		<key>0x0033</key>
+		<string>Stop</string>
+		<key>0x0034</key>
+		<string>Rewind</string>
+		<key>0x0035</key>
+		<string>Fast Forward</string>
+		<key>0x0036</key>
+		<string>Play</string>
+		<key>0x0037</key>
+		<string>Pause</string>
+		<key>0x0038</key>
+		<string>Record</string>
+		<key>0x0039</key>
+		<string>Error</string>
+		<key>0x003A</key>
+		<string>Usage</string>
+		<key>0x003B</key>
+		<string>Usage In Use Indicator</string>
+		<key>0x003C</key>
+		<string>Usage Multi Mode indicator</string>
+		<key>0x003D</key>
+		<string>Indicator On</string>
+		<key>0x003E</key>
+		<string>Indicator Flash</string>
+		<key>0x003F</key>
+		<string>Indicator Slow Blink</string>
+		<key>0x0040</key>
+		<string>Indicator Fast Blink</string>
+		<key>0x0041</key>
+		<string>Indicator Off</string>
+		<key>0x0042</key>
+		<string>Flash On Time</string>
+		<key>0x0043</key>
+		<string>Slow Blink On Time</string>
+		<key>0x0044</key>
+		<string>Slow Blink Off Time</string>
+		<key>0x0045</key>
+		<string>Fast Blink On Time</string>
+		<key>0x0046</key>
+		<string>Fast Blink Off Time</string>
+		<key>0x0047</key>
+		<string>Usage Indicator Color</string>
+		<key>0x0048</key>
+		<string>Indicator Red</string>
+		<key>0x0049</key>
+		<string>Indicator Green</string>
+		<key>0x004A</key>
+		<string>Indicator Amber</string>
+		<key>0x004B</key>
+		<string>Generic Indicator</string>
+		<key>0x004C</key>
+		<string>System Suspend</string>
+		<key>0x004D</key>
+		<string>External Power Connected</string>
+		<key>Name</key>
+		<string>LED</string>
+	</dict>
+	<key>0x0009</key>
+	<dict>
+		<key>Name</key>
+		<string>Button</string>
+	</dict>
+	<key>0x000C</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Consumer Control</string>
+		<key>0x0002</key>
+		<string>Numeric KeyPad</string>
+		<key>0x0003</key>
+		<string>Programmable Buttons</string>
+		<key>0x0020</key>
+		<string>Plus 10</string>
+		<key>0x0021</key>
+		<string>Plus 100</string>
+		<key>0x0022</key>
+		<string>AM Or PM</string>
+		<key>0x0030</key>
+		<string>Power</string>
+		<key>0x0031</key>
+		<string>Reset</string>
+		<key>0x0032</key>
+		<string>Sleep</string>
+		<key>0x0033</key>
+		<string>Sleep After</string>
+		<key>0x0034</key>
+		<string>Sleep Mode</string>
+		<key>0x0035</key>
+		<string>Illumination</string>
+		<key>0x0036</key>
+		<string>Function Buttons</string>
+		<key>0x0040</key>
+		<string>Menu</string>
+		<key>0x0041</key>
+		<string>Menu Pick</string>
+		<key>0x0042</key>
+		<string>Menu Up</string>
+		<key>0x0043</key>
+		<string>Menu Down</string>
+		<key>0x0044</key>
+		<string>Menu Left</string>
+		<key>0x0045</key>
+		<string>Menu Right</string>
+		<key>0x0046</key>
+		<string>Menu Escape</string>
+		<key>0x0047</key>
+		<string>Menu Value Increase</string>
+		<key>0x0048</key>
+		<string>Menu Value Decrease</string>
+		<key>0x0060</key>
+		<string>Data On Screen</string>
+		<key>0x0061</key>
+		<string>Closed Caption</string>
+		<key>0x0062</key>
+		<string>Closed Caption Select</string>
+		<key>0x0063</key>
+		<string>VCR Or TV</string>
+		<key>0x0064</key>
+		<string>Broadcast Mode</string>
+		<key>0x0065</key>
+		<string>Snapshot</string>
+		<key>0x0066</key>
+		<string>Still</string>
+		<key>0x0080</key>
+		<string>Selection</string>
+		<key>0x0081</key>
+		<string>Assign</string>
+		<key>0x0082</key>
+		<string>Mode Step</string>
+		<key>0x0083</key>
+		<string>Recall Last</string>
+		<key>0x0084</key>
+		<string>Enter Channel</string>
+		<key>0x0085</key>
+		<string>Order Movie</string>
+		<key>0x0086</key>
+		<string>Channel</string>
+		<key>0x0087</key>
+		<string>Media Selection</string>
+		<key>0x0088</key>
+		<string>Media Select Computer</string>
+		<key>0x0089</key>
+		<string>Media Select TV</string>
+		<key>0x008A</key>
+		<string>Media Select WWW</string>
+		<key>0x008B</key>
+		<string>Media Select DVD</string>
+		<key>0x008E</key>
+		<string>Media Select Video Phone</string>
+		<key>0x008F</key>
+		<string>Media Select Games</string>
+		<key>0x0090</key>
+		<string>Media Select Messages</string>
+		<key>0x0091</key>
+		<string>Media Select CD</string>
+		<key>0x0092</key>
+		<string>Media Select VCR</string>
+		<key>0x0093</key>
+		<string>Media Select Tuner</string>
+		<key>0x0094</key>
+		<string>Quit</string>
+		<key>0x0095</key>
+		<string>Help</string>
+		<key>0x0096</key>
+		<string>Media Select Tape</string>
+		<key>0x0097</key>
+		<string>Media Select Cable</string>
+		<key>0x0098</key>
+		<string>Media Select Satellite</string>
+		<key>0x0099</key>
+		<string>Media Select Security</string>
+		<key>0x009A</key>
+		<string>Media Select Home</string>
+		<key>0x009B</key>
+		<string>Media Select Call</string>
+		<key>0x009C</key>
+		<string>Channel Increment</string>
+		<key>0x009D</key>
+		<string>Channel Decrement</string>
+		<key>0x009E</key>
+		<string>Media</string>
+		<key>0x00A0</key>
+		<string>VCR Plus</string>
+		<key>0x00A1</key>
+		<string>Once</string>
+		<key>0x00A2</key>
+		<string>Daily</string>
+		<key>0x00A3</key>
+		<string>Weekly</string>
+		<key>0x00A4</key>
+		<string>Monthly</string>
+		<key>0x00B0</key>
+		<string>Play</string>
+		<key>0x00B1</key>
+		<string>Pause</string>
+		<key>0x00B2</key>
+		<string>Record</string>
+		<key>0x00B3</key>
+		<string>Fast Forward</string>
+		<key>0x00B4</key>
+		<string>Rewind</string>
+		<key>0x00B5</key>
+		<string>Scan Next Track</string>
+		<key>0x00B6</key>
+		<string>Scan Previous Track</string>
+		<key>0x00B7</key>
+		<string>Stop</string>
+		<key>0x00B8</key>
+		<string>Eject</string>
+		<key>0x00B9</key>
+		<string>Random Play</string>
+		<key>0x00BA</key>
+		<string>Select Disc</string>
+		<key>0x00BB</key>
+		<string>Enter Disc</string>
+		<key>0x00BC</key>
+		<string>Repeat</string>
+		<key>0x00BD</key>
+		<string>Tracking</string>
+		<key>0x00BE</key>
+		<string>Track Normal</string>
+		<key>0x00BF</key>
+		<string>Slow Tracking</string>
+		<key>0x00C0</key>
+		<string>Frame Forward</string>
+		<key>0x00C1</key>
+		<string>Frame Back</string>
+		<key>0x00C2</key>
+		<string>Mark</string>
+		<key>0x00C3</key>
+		<string>Clear Mark</string>
+		<key>0x00C4</key>
+		<string>Repeat From Mark</string>
+		<key>0x00C5</key>
+		<string>Return To Mark</string>
+		<key>0x00C6</key>
+		<string>Search Mark Forward</string>
+		<key>0x00C7</key>
+		<string>Search Mark Backwards</string>
+		<key>0x00C8</key>
+		<string>Counter Reset</string>
+		<key>0x00C9</key>
+		<string>Show Counter</string>
+		<key>0x00CA</key>
+		<string>Tracking Increment</string>
+		<key>0x00CB</key>
+		<string>Tracking Decrement</string>
+		<key>0x00CC</key>
+		<string>Stop Or Eject</string>
+		<key>0x00CD</key>
+		<string>Play Or Pause</string>
+		<key>0x00CE</key>
+		<string>Play Or Skip</string>
+		<key>0x00E0</key>
+		<string>Volume</string>
+		<key>0x00E1</key>
+		<string>Balance</string>
+		<key>0x00E2</key>
+		<string>Mute</string>
+		<key>0x00E3</key>
+		<string>Bass</string>
+		<key>0x00E4</key>
+		<string>Treble</string>
+		<key>0x00E5</key>
+		<string>Bass Boost</string>
+		<key>0x00E6</key>
+		<string>Surround Mode</string>
+		<key>0x00E7</key>
+		<string>Loudness</string>
+		<key>0x00E8</key>
+		<string>MPX</string>
+		<key>0x00E9</key>
+		<string>Volume Increment</string>
+		<key>0x00EA</key>
+		<string>Volume Decrement</string>
+		<key>0x00F0</key>
+		<string>Speed</string>
+		<key>0x00F1</key>
+		<string>Playback Speed</string>
+		<key>0x00F2</key>
+		<string>Standard Play</string>
+		<key>0x00F3</key>
+		<string>Long Play</string>
+		<key>0x00F4</key>
+		<string>Extended Play</string>
+		<key>0x00F5</key>
+		<string>Slow</string>
+		<key>0x0100</key>
+		<string>Fan Enable</string>
+		<key>0x0101</key>
+		<string>Fan Speed</string>
+		<key>0x0102</key>
+		<string>Light Enable</string>
+		<key>0x0103</key>
+		<string>Light Illumination Level</string>
+		<key>0x0104</key>
+		<string>Climate Control Enable</string>
+		<key>0x0105</key>
+		<string>Room Temperature</string>
+		<key>0x0106</key>
+		<string>Security Enable</string>
+		<key>0x0107</key>
+		<string>Fire Alarm</string>
+		<key>0x0108</key>
+		<string>Police Alarm</string>
+		<key>0x0150</key>
+		<string>Balance Right</string>
+		<key>0x0151</key>
+		<string>Balance Left</string>
+		<key>0x0152</key>
+		<string>Bass Increment</string>
+		<key>0x0153</key>
+		<string>Bass Decrement</string>
+		<key>0x0154</key>
+		<string>Treble Increment</string>
+		<key>0x0155</key>
+		<string>Treble Decrement</string>
+		<key>0x0160</key>
+		<string>Speaker System</string>
+		<key>0x0161</key>
+		<string>Channel Left</string>
+		<key>0x0162</key>
+		<string>Channel Right</string>
+		<key>0x0164</key>
+		<string>Channel Front</string>
+		<key>0x0165</key>
+		<string>Channel Center Front</string>
+		<key>0x0166</key>
+		<string>Channel Side</string>
+		<key>0x0167</key>
+		<string>Channel Surround</string>
+		<key>0x0168</key>
+		<string>Channel Low Frequency Enhancement</string>
+		<key>0x0169</key>
+		<string>Channel Top</string>
+		<key>0x016A</key>
+		<string>Channel Unknown</string>
+		<key>0x0170</key>
+		<string>Sub Channel</string>
+		<key>0x0171</key>
+		<string>Sub Channel Increment</string>
+		<key>0x0172</key>
+		<string>Sub Channel Decrement</string>
+		<key>0x0173</key>
+		<string>Alternate Audio Increment</string>
+		<key>0x0174</key>
+		<string>Alternate Audio Decrement</string>
+		<key>0x0180</key>
+		<string>Application Launch Buttons</string>
+		<key>0x0181</key>
+		<string>AL Launch Button Configuration Tool</string>
+		<key>0x0182</key>
+		<string>AL Programmable Button Configuration</string>
+		<key>0x0183</key>
+		<string>AL Consumer Control Configuration</string>
+		<key>0x0184</key>
+		<string>AL Word Processor</string>
+		<key>0x0185</key>
+		<string>AL Text Editor</string>
+		<key>0x0186</key>
+		<string>AL Spreadsheet</string>
+		<key>0x0187</key>
+		<string>AL Graphics Editor</string>
+		<key>0x0188</key>
+		<string>AL Presentation App</string>
+		<key>0x0189</key>
+		<string>AL Database App</string>
+		<key>0x018A</key>
+		<string>AL Email Reader</string>
+		<key>0x018B</key>
+		<string>AL Newsreader</string>
+		<key>0x018C</key>
+		<string>AL Voicemail</string>
+		<key>0x018D</key>
+		<string>AL Contacts Or AddressBook</string>
+		<key>0x018E</key>
+		<string>AL Calendar Or Schedule</string>
+		<key>0x018F</key>
+		<string>AL Task Or Project Manager</string>
+		<key>0x0190</key>
+		<string>AL Log Or Journal Or Timecard</string>
+		<key>0x0191</key>
+		<string>AL Checkbook Or Finance</string>
+		<key>0x0192</key>
+		<string>AL Calculator</string>
+		<key>0x0193</key>
+		<string>AL A Or V Capture Or Playback</string>
+		<key>0x0194</key>
+		<string>AL Local Machine Browser</string>
+		<key>0x0195</key>
+		<string>AL LAN Or WAN Browser</string>
+		<key>0x0196</key>
+		<string>AL Internet Browser</string>
+		<key>0x0197</key>
+		<string>AL Remote Networking Or ISP Connect</string>
+		<key>0x0198</key>
+		<string>AL Network Conference</string>
+		<key>0x0199</key>
+		<string>AL Network Chat</string>
+		<key>0x019A</key>
+		<string>AL Telephony Or Dialer</string>
+		<key>0x019B</key>
+		<string>AL Logon</string>
+		<key>0x019C</key>
+		<string>AL Logoff</string>
+		<key>0x019D</key>
+		<string>AL Logon Or Logoff</string>
+		<key>0x019E</key>
+		<string>AL Terminal Lock Or Screensaver</string>
+		<key>0x019F</key>
+		<string>AL Control Panel</string>
+		<key>0x01A0</key>
+		<string>AL Command Line Processor Or Run</string>
+		<key>0x01A1</key>
+		<string>AL Process Or Task Manager</string>
+		<key>0x01A2</key>
+		<string>AL</string>
+		<key>0x01A3</key>
+		<string>AL Next Task Or Application</string>
+		<key>0x01A4</key>
+		<string>AL Previous Task Or Application</string>
+		<key>0x01A5</key>
+		<string>AL Preemptive Halt Task Or Application</string>
+		<key>0x0200</key>
+		<string>Generic GUI Application Controls</string>
+		<key>0x0201</key>
+		<string>AC New</string>
+		<key>0x0202</key>
+		<string>AC Open</string>
+		<key>0x0203</key>
+		<string>AC Close</string>
+		<key>0x0204</key>
+		<string>AC Exit</string>
+		<key>0x0205</key>
+		<string>AC Maximize</string>
+		<key>0x0206</key>
+		<string>AC Minimize</string>
+		<key>0x0207</key>
+		<string>AC Save</string>
+		<key>0x0208</key>
+		<string>AC Print</string>
+		<key>0x0209</key>
+		<string>AC Properties</string>
+		<key>0x021A</key>
+		<string>AC Undo</string>
+		<key>0x021B</key>
+		<string>AC Copy</string>
+		<key>0x021C</key>
+		<string>AC Cut</string>
+		<key>0x021D</key>
+		<string>AC Paste</string>
+		<key>0x021E</key>
+		<string>AC</string>
+		<key>0x021F</key>
+		<string>AC Find</string>
+		<key>0x0220</key>
+		<string>AC Find and Replace</string>
+		<key>0x0221</key>
+		<string>AC Search</string>
+		<key>0x0222</key>
+		<string>AC Go To</string>
+		<key>0x0223</key>
+		<string>AC Home</string>
+		<key>0x0224</key>
+		<string>AC Back</string>
+		<key>0x0225</key>
+		<string>AC Forward</string>
+		<key>0x0226</key>
+		<string>AC Stop</string>
+		<key>0x0227</key>
+		<string>AC Refresh</string>
+		<key>0x0228</key>
+		<string>AC Previous Link</string>
+		<key>0x0229</key>
+		<string>AC Next Link</string>
+		<key>0x022A</key>
+		<string>AC Bookmarks</string>
+		<key>0x022B</key>
+		<string>AC History</string>
+		<key>0x022C</key>
+		<string>AC Subscriptions</string>
+		<key>0x022D</key>
+		<string>AC Zoom In</string>
+		<key>0x022E</key>
+		<string>AC Zoom Out</string>
+		<key>0x022F</key>
+		<string>AC Zoom</string>
+		<key>0x0230</key>
+		<string>AC Full Screen View</string>
+		<key>0x0231</key>
+		<string>AC Normal View</string>
+		<key>0x0232</key>
+		<string>AC View Toggle</string>
+		<key>0x0233</key>
+		<string>AC Scroll Up</string>
+		<key>0x0234</key>
+		<string>AC Scroll Down</string>
+		<key>0x0235</key>
+		<string>AC Scroll</string>
+		<key>0x0236</key>
+		<string>AC Pan Left</string>
+		<key>0x0237</key>
+		<string>AC Pan Right</string>
+		<key>0x0238</key>
+		<string>AC Pan</string>
+		<key>0x0239</key>
+		<string>AC New Window</string>
+		<key>0x023A</key>
+		<string>AC Tile Horizontally</string>
+		<key>0x023B</key>
+		<string>AC Tile Vertically</string>
+		<key>0x023C</key>
+		<string>AC Format</string>
+		<key>Name</key>
+		<string>Consumer</string>
+	</dict>
+	<key>0x0084</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Name Index</string>
+		<key>0x0002</key>
+		<string>Present Status</string>
+		<key>0x0003</key>
+		<string>Changed Status</string>
+		<key>0x0004</key>
+		<string>Uninterruptible Power Supply</string>
+		<key>0x0005</key>
+		<string>Power Supply</string>
+		<key>0x0010</key>
+		<string>Battery System power module</string>
+		<key>0x0011</key>
+		<string>Battery System ID</string>
+		<key>0x0012</key>
+		<string>Battery</string>
+		<key>0x0013</key>
+		<string>Battery ID</string>
+		<key>0x0014</key>
+		<string>Charger</string>
+		<key>0x0015</key>
+		<string>Charger ID</string>
+		<key>0x0016</key>
+		<string>Power Converter power module</string>
+		<key>0x0017</key>
+		<string>Power Converter ID</string>
+		<key>0x0018</key>
+		<string>Outlet System power module</string>
+		<key>0x0019</key>
+		<string>Outlet System ID</string>
+		<key>0x001A</key>
+		<string>Input</string>
+		<key>0x001B</key>
+		<string>Input ID</string>
+		<key>0x001C</key>
+		<string>Output</string>
+		<key>0x001D</key>
+		<string>Output ID</string>
+		<key>0x001E</key>
+		<string>Flow</string>
+		<key>0x001F</key>
+		<string>Flow ID</string>
+		<key>0x0020</key>
+		<string>Outlet</string>
+		<key>0x0021</key>
+		<string>Outlet ID</string>
+		<key>0x0022</key>
+		<string>Gang</string>
+		<key>0x0023</key>
+		<string>Gang ID</string>
+		<key>0x0024</key>
+		<string>Power Summary</string>
+		<key>0x0025</key>
+		<string>Power Summary ID</string>
+		<key>0x0030</key>
+		<string>Voltage</string>
+		<key>0x0031</key>
+		<string>Current</string>
+		<key>0x0032</key>
+		<string>Frequency</string>
+		<key>0x0033</key>
+		<string>Apparent Power</string>
+		<key>0x0034</key>
+		<string>RMS Power</string>
+		<key>0x0035</key>
+		<string>Percent Load</string>
+		<key>0x0036</key>
+		<string>Temperature</string>
+		<key>0x0037</key>
+		<string>Humidity</string>
+		<key>0x0038</key>
+		<string>Bad Condition Count</string>
+		<key>0x0040</key>
+		<string>Nominal Voltage</string>
+		<key>0x0041</key>
+		<string>Nominal Current</string>
+		<key>0x0042</key>
+		<string>Nominal Frequency</string>
+		<key>0x0043</key>
+		<string>Nominal Apparent Power</string>
+		<key>0x0044</key>
+		<string>Nominal RMS Power</string>
+		<key>0x0045</key>
+		<string>Nominal Percent Load</string>
+		<key>0x0046</key>
+		<string>Nominal Temperature</string>
+		<key>0x0047</key>
+		<string>Nominal Humidity</string>
+		<key>0x0050</key>
+		<string>Switch On Control</string>
+		<key>0x0051</key>
+		<string>Switch Off Control</string>
+		<key>0x0052</key>
+		<string>Toogle Sequence Control</string>
+		<key>0x0053</key>
+		<string>Min Transfer Voltage</string>
+		<key>0x0054</key>
+		<string>Max Transfer Voltage</string>
+		<key>0x0055</key>
+		<string>Delay Before Reboot</string>
+		<key>0x0056</key>
+		<string>Delay Before Startup</string>
+		<key>0x0057</key>
+		<string>Delay Before Shutdown</string>
+		<key>0x0058</key>
+		<string>Test Request/Result</string>
+		<key>0x0059</key>
+		<string>Reset Request/Result</string>
+		<key>0x005A</key>
+		<string>Audible Alarm Control</string>
+		<key>0x0060</key>
+		<string>Present</string>
+		<key>0x0061</key>
+		<string>Good</string>
+		<key>0x0062</key>
+		<string>Internal Failure</string>
+		<key>0x0063</key>
+		<string>Voltage Out Of Range</string>
+		<key>0x0064</key>
+		<string>Frequency Out Of Range</string>
+		<key>0x0065</key>
+		<string>Overload</string>
+		<key>0x0066</key>
+		<string>Over Charged</string>
+		<key>0x0067</key>
+		<string>Over Temperature</string>
+		<key>0x0068</key>
+		<string>Shutdown Requested</string>
+		<key>0x0069</key>
+		<string>Shutdown Imminent</string>
+		<key>0x006B</key>
+		<string>On/Off Switch Status</string>
+		<key>0x006C</key>
+		<string>Switchable</string>
+		<key>0x006D</key>
+		<string>Used</string>
+		<key>0x006E</key>
+		<string>Boosted</string>
+		<key>0x006F</key>
+		<string>Bucked</string>
+		<key>0x0070</key>
+		<string>Initialized</string>
+		<key>0x0071</key>
+		<string>Tested</string>
+		<key>0x0072</key>
+		<string>Awaiting Power</string>
+		<key>0x0073</key>
+		<string>Communication Lost</string>
+		<key>0x00FD</key>
+		<string>Manufacturer String Index</string>
+		<key>0x00FE</key>
+		<string>Product String Index</string>
+		<key>0x00FF</key>
+		<string>Serial Number String Index</string>
+		<key>Name</key>
+		<string>Power Device Page</string>
+	</dict>
+	<key>0x0085</key>
+	<dict>
+		<key>0x0000</key>
+		<string>Undefined Usage</string>
+		<key>0x0001</key>
+		<string>Mode</string>
+		<key>0x0002</key>
+		<string>Status</string>
+		<key>0x0003</key>
+		<string>Alarm Warning</string>
+		<key>0x0004</key>
+		<string>Charger Mode</string>
+		<key>0x0005</key>
+		<string>Charger Status</string>
+		<key>0x0006</key>
+		<string>Charger Extended Status</string>
+		<key>0x0007</key>
+		<string>Selector State</string>
+		<key>0x0008</key>
+		<string>Selector Presets</string>
+		<key>0x0009</key>
+		<string>Selector Info</string>
+		<key>0x0010</key>
+		<string>Mfg Function 1</string>
+		<key>0x0011</key>
+		<string>Mfg Function 2</string>
+		<key>0x0012</key>
+		<string>Mfg Function 3</string>
+		<key>0x0013</key>
+		<string>Mfg Function 4</string>
+		<key>0x0014</key>
+		<string>Mfg Function 5</string>
+		<key>0x0015</key>
+		<string>Connection To System Management Bus</string>
+		<key>0x0016</key>
+		<string>Output Connection Status</string>
+		<key>0x0017</key>
+		<string>Charger Connection</string>
+		<key>0x0018</key>
+		<string>Battery Insertion</string>
+		<key>0x0019</key>
+		<string>Use Next</string>
+		<key>0x001A</key>
+		<string>OK To Use</string>
+		<key>0x001B</key>
+		<string>Battery Supported</string>
+		<key>0x001C</key>
+		<string>Selector Revision</string>
+		<key>0x001D</key>
+		<string>Charging Indicator</string>
+		<key>0x0028</key>
+		<string>Manufacturer Access</string>
+		<key>0x0029</key>
+		<string>Remaining Capacity Limit</string>
+		<key>0x002A</key>
+		<string>Remaining Time Limit</string>
+		<key>0x002B</key>
+		<string>At Rate...</string>
+		<key>0x002C</key>
+		<string>Capacity Mode</string>
+		<key>0x002D</key>
+		<string>Broadcast To Charger</string>
+		<key>0x002E</key>
+		<string>Primary Battery</string>
+		<key>0x002F</key>
+		<string>Charge Controller</string>
+		<key>0x0040</key>
+		<string>Terminate Charge</string>
+		<key>0x0041</key>
+		<string>Terminate Discharge</string>
+		<key>0x0042</key>
+		<string>Below Remaining Capacity Limit</string>
+		<key>0x0043</key>
+		<string>Remaining Time Limit Expired</string>
+		<key>0x0044</key>
+		<string>Charging</string>
+		<key>0x0045</key>
+		<string>Discharging</string>
+		<key>0x0046</key>
+		<string>Fully Charged</string>
+		<key>0x0047</key>
+		<string>Fully Discharged</string>
+		<key>0x0048</key>
+		<string>Conditioning Flag</string>
+		<key>0x0049</key>
+		<string>At Rate OK</string>
+		<key>0x004A</key>
+		<string>SMB Error Code</string>
+		<key>0x004B</key>
+		<string>Need Replacement</string>
+		<key>0x0060</key>
+		<string>At Rate Time To Full</string>
+		<key>0x0061</key>
+		<string>At Rate Time To Empty</string>
+		<key>0x0062</key>
+		<string>Average Current</string>
+		<key>0x0063</key>
+		<string>Max Error</string>
+		<key>0x0065</key>
+		<string>Absolute State Of Charge</string>
+		<key>0x0066</key>
+		<string>Remaining Capacity</string>
+		<key>0x0067</key>
+		<string>Full Charge Capacity</string>
+		<key>0x0068</key>
+		<string>Run Time To Empty</string>
+		<key>0x0069</key>
+		<string>Average Time To Empty</string>
+		<key>0x006A</key>
+		<string>Average Time To Full</string>
+		<key>0x006B</key>
+		<string>Cycle Count</string>
+		<key>0x0080</key>
+		<string>Batt Pack Model Level</string>
+		<key>0x0081</key>
+		<string>Internal Charge Controller</string>
+		<key>0x0082</key>
+		<string>Primary Battery Support</string>
+		<key>0x0083</key>
+		<string>Design Capacity</string>
+		<key>0x0084</key>
+		<string>Specification Info</string>
+		<key>0x0085</key>
+		<string>Manufacturer Date</string>
+		<key>0x0086</key>
+		<string>Serial Number</string>
+		<key>0x0087</key>
+		<string>Manufacturer Name Index</string>
+		<key>0x0088</key>
+		<string>Device Name Index</string>
+		<key>0x0089</key>
+		<string>Device Chemistry Index</string>
+		<key>0x008A</key>
+		<string>Manufacturer Data</string>
+		<key>0x008B</key>
+		<string>Rechargable</string>
+		<key>0x008C</key>
+		<string>Warning Capacity Limit</string>
+		<key>0x008D</key>
+		<string>Capacity Granularity 1</string>
+		<key>0x008E</key>
+		<string>Capacity Granularity 2</string>
+		<key>0x008F</key>
+		<string>OEM Information Index</string>
+		<key>0x00C0</key>
+		<string>Inhibit Charge</string>
+		<key>0x00C1</key>
+		<string>Enable Polling</string>
+		<key>0x00C2</key>
+		<string>Reset To Zero</string>
+		<key>0x00D0</key>
+		<string>AC Present</string>
+		<key>0x00D1</key>
+		<string>Battery Present</string>
+		<key>0x00D2</key>
+		<string>Power Fail</string>
+		<key>0x00D3</key>
+		<string>Alarm Inhibited</string>
+		<key>0x00D4</key>
+		<string>Thermistor Under Range</string>
+		<key>0x00D5</key>
+		<string>Thermistor Hot</string>
+		<key>0x00D6</key>
+		<string>Thermistor Cold</string>
+		<key>0x00D7</key>
+		<string>Thermistor Over Range</string>
+		<key>0x00D8</key>
+		<string>Voltage Out Of Range</string>
+		<key>0x00D9</key>
+		<string>Current Out Of Range</string>
+		<key>0x00DA</key>
+		<string>Current Not Regulated</string>
+		<key>0x00DB</key>
+		<string>Voltage Not Regulated</string>
+		<key>0x00DC</key>
+		<string>Master Mode</string>
+		<key>0x00F0</key>
+		<string>Charger Support Selector</string>
+		<key>0x00F1</key>
+		<string>Charger Specification</string>
+		<key>0x00F2</key>
+		<string>Charger Level 2</string>
+		<key>0x00F3</key>
+		<string>Charger Level 3</string>
+		<key>Name</key>
+		<string>Battery System Page</string>
+	</dict>
+	<key>0xFF00</key>
+	<dict>
+		<key>Name</key>
+		<string>Vendor</string>
+	</dict>
+</dict>
+</plist>
