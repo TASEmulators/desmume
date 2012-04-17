@@ -2038,8 +2038,9 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 	switch(gpu->setFinalColorBck_funcNum)
 	{
 		//for backdrops, blend isnt applied (it's illogical, isnt it?)
-		case 0: 
-		case 1: 
+		case 0:
+		case 1:
+PLAIN_CLEAR:
 			memset_u16_le<256>(gpu->currDst,backdrop_color); 
 			break;
 
@@ -2047,10 +2048,12 @@ static void GPU_RenderLine_layer(NDS_Screen * screen, u16 l)
 		case 2:
 			if(gpu->BLDCNT & 0x20) //backdrop is selected for color effect
 				memset_u16_le<256>(gpu->currDst,gpu->currentFadeInColors[backdrop_color]);
+			else goto PLAIN_CLEAR;
 			break;
 		case 3:
 			if(gpu->BLDCNT & 0x20) //backdrop is selected for color effect
 				memset_u16_le<256>(gpu->currDst,gpu->currentFadeOutColors[backdrop_color]);
+			else goto PLAIN_CLEAR;
 			break;
 
 		//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
