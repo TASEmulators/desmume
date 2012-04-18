@@ -15,11 +15,11 @@
 	<key>CFBundlePackageType</key>
 	<string>BNDL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>v0.9.8 (OpenEmu Plug-in)</string>
+	<string>v0.9.9 (OpenEmu Plug-in)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>0.9.8</string>
+	<string>0.9.9</string>
 	<key>CSResourcesFileMapped</key>
 	<string>yes</string>
 	<key>NSHumanReadableCopyright</key>

@@ -1663,6 +1663,7 @@
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
+				AB067BF0153E59B000F417B1 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -2012,6 +2013,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		AB067BF0153E59B000F417B1 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/sh\n\n# This script creates an application package that merges the ppc and ppc64\n# binaries of an Xcode 3 universal build to the i386 and x86_64 binaries of\n# an Xcode 4 (or later) Intel-only build.\n#\n# Before you use this script, make sure that you already have an existing\n# universal binary Release build from Xcode 3 in the ${SRCROOT}/build/Release\n# directory.\n\nif test -e ${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\nthen\n\n# Create the Merged Release directory, plus a working copy of the\n# universal binary .app.\ncd ${SRCROOT}/build\nmkdir -p \"./Merged Release\"\ncd \"./Merged Release\"\ncp -a ../Release/${PRODUCT_NAME}.app ./\nrm -f ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\n\n# Create the temp binaries for PowerPC.\ncd ${SRCROOT}/build/Release\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin ppc7400 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin ppc64 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\n\n# Create the temp binaries for Intel.\ncd ${TARGET_BUILD_DIR}\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin i386 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin x86_64 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\n\n# Merge the separate temp binaries into a single binary package.\ncd \"${SRCROOT}/build/Merged Release\"\nlipo ../Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400 ../Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64 ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386 ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64 -create -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\n\n# Remove the temp binaries now that we're done with them.\nrm -f ${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\nrm -f ${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\nrm -f ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\nrm -f ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\n\nfi";
+		};
 		AB75221714C79884009B97B3 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -2025,7 +2039,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd ${SRCROOT}/translations\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 		AB75222C14C799C1009B97B3 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2040,7 +2054,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd ${SRCROOT}/translations\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 		ABB7154014E386740027FE88 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2055,7 +2069,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd ${SRCROOT}/translations\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
