@@ -2965,6 +2965,8 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
+	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", true, IniName);
+
   video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
 
@@ -3784,11 +3786,14 @@ void ScreenshotToClipboard(bool extraInfo)
 		memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
 
-		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
+		sprintf(str, "CPU: %s", CommonSettings.use_jit ? "JIT":"Interpreter");
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
 
-		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 5:4), str, strlen(str));
+
+		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 6:5), str, strlen(str));
 	}
 
 	OpenClipboard(NULL);
@@ -5797,6 +5802,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			CheckDlgItem(hDlg, IDC_PATCHSWI3, CommonSettings.PatchSWI3);
 			SetDlgItemText(hDlg, IDC_ARM9BIOS, CommonSettings.ARM9BIOS);
 			SetDlgItemText(hDlg, IDC_ARM7BIOS, CommonSettings.ARM7BIOS);
+			CheckDlgItem(hDlg, IDC_CHECKBOX_DYNAREC, CommonSettings.use_jit);
 
 			if(CommonSettings.UseExtBIOS == false)
 			{
@@ -5864,6 +5870,8 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					CommonSettings.EnsataEmulation = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_ENSATAEMULATION);
 					CommonSettings.advanced_timing = IsDlgCheckboxChecked(hDlg, IDC_CHECBOX_ADVANCEDTIMING);
 
+					CommonSettings.use_jit = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DYNAREC);
+
 					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("Emulation", "EnsataEmulation", ((CommonSettings.EnsataEmulation == true) ? 1 : 0), IniName);
 					WritePrivateProfileBool("Emulation", "AdvancedTiming", CommonSettings.advanced_timing, IniName);
@@ -5876,6 +5884,8 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
 					WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
 					WritePrivateProfileInt("Firmware", "BootFromFirmware", ((CommonSettings.BootFromFirmware == true) ? 1 : 0), IniName);
+
+					WritePrivateProfileInt("Emulation", "CPUmode", ((CommonSettings.use_jit == true) ? 1 : 0), IniName);
 
 					if(val == IDYES)
 					{

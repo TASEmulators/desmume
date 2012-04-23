@@ -1054,8 +1054,9 @@ public:
 
 static SoftRasterizerEngine mainSoftRasterizer;
 
-static Task rasterizerUnitTask[4];
-static RasterizerUnit<true> rasterizerUnit[4];
+#define _MAX_CORES 16
+static Task rasterizerUnitTask[_MAX_CORES];
+static RasterizerUnit<true> rasterizerUnit[_MAX_CORES];
 static RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
 static int rasterizerCores;
 static bool rasterizerUnitTasksInited = false;
@@ -1076,35 +1077,25 @@ static char SoftRastInit(void)
 		_HACK_viewer_rasterizerUnit.SLI_MASK = 1;
 		_HACK_viewer_rasterizerUnit.SLI_VALUE = 0;
 
-		if(CommonSettings.num_cores>=4)
+		rasterizerCores = CommonSettings.num_cores;
+		if (rasterizerCores > _MAX_CORES) 
+			rasterizerCores = _MAX_CORES;
+		if(CommonSettings.num_cores == 1)
 		{
-			rasterizerCores = 4;
-			rasterizerUnit[0].SLI_MASK = 3;
-			rasterizerUnit[1].SLI_MASK = 3;
-			rasterizerUnit[2].SLI_MASK = 3;
-			rasterizerUnit[3].SLI_MASK = 3;
-			rasterizerUnit[0].SLI_VALUE = 0;
-			rasterizerUnit[1].SLI_VALUE = 1;
-			rasterizerUnit[2].SLI_VALUE = 2;
-			rasterizerUnit[3].SLI_VALUE = 3;
-			rasterizerUnitTask[0].start(false);
-			rasterizerUnitTask[1].start(false);
-			rasterizerUnitTask[2].start(false);
-			rasterizerUnitTask[3].start(false);
-		} else if(CommonSettings.num_cores>1)
-		{
-			rasterizerCores = 2;
-			rasterizerUnit[0].SLI_MASK = 1;
-			rasterizerUnit[1].SLI_MASK = 1;
-			rasterizerUnit[0].SLI_VALUE = 0;
-			rasterizerUnit[1].SLI_VALUE = 1;
-			rasterizerUnitTask[0].start(false);
-			rasterizerUnitTask[1].start(false);
-		} else {
 			rasterizerCores = 1;
 			rasterizerUnit[0].SLI_MASK = 0;
 			rasterizerUnit[0].SLI_VALUE = 0;
 		}
+		else
+		{
+			for (u8 i = 0; i < rasterizerCores; i++)
+			{
+				rasterizerUnit[i].SLI_MASK = (rasterizerCores - 1);
+				rasterizerUnit[i].SLI_VALUE = i;
+				rasterizerUnitTask[i].start(false);
+			}
+		}
+
 	}
 
 	static bool tables_generated = false;
@@ -1149,7 +1140,7 @@ static void SoftRastReset() {
 
 static void SoftRastClose()
 {
-	for(int i=0;i<4;i++)
+	for(int i=0; i<_MAX_CORES; i++)
 		rasterizerUnitTask[i].shutdown();
 	rasterizerUnitTasksInited = false;
 }

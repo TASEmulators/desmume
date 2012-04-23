@@ -419,6 +419,7 @@
 #define IDC_RADIO7                      1051
 #define IDC_PIANO_DS3                   1051
 #define IDC_PIANO_HIC                   1051
+#define IDC_CHECKBOX_DYNAREC            1052
 #define IDC_RADIO8                      1052
 #define IDC_IMP_AUTO_CURRENT            1052
 #define IDC_IMP_AUTO_FILE               1053
@@ -722,6 +723,7 @@
 #define ID_LABEL_HK2                    4466
 #define IDC_GI_USEDROMSIZE              4467
 #define ID_LABEL_HK3                    4467
+#define ID_LABEL_HK3b                   44670
 #define IDC_3DSETTINGS_FOG2             4467
 #define IDC_3DSETTINGS_TEXTURE          4467
 #define ID_LABEL_HK4                    4468
