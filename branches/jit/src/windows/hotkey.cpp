@@ -102,7 +102,10 @@ void HK_CpuMode(int, bool justPressed)
 	CommonSettings.use_jit = !CommonSettings.use_jit;
 	arm_jit_reset(CommonSettings.use_jit);
 
-	printf("CPU mode: %s\n", CommonSettings.use_jit?"JIT":"Interpreter");
+	char tmp[256];
+	sprintf(tmp,"CPU mode: %s\n", CommonSettings.use_jit?"JIT":"Interpreter");
+	printf(tmp);
+	osd->addLine(tmp);
 	//WritePrivateProfileInt("Emulation", "CpuMode", CommonSettings.use_jit, IniName)
 }
 void HK_SearchCheats(int, bool justPressed) 
