@@ -38,9 +38,11 @@
 #define LOG_JIT_LEVEL 0
 
 #if (LOG_JIT_LEVEL == 1)
+#define LOG_JIT 1
 #define JIT_COMMENT(...) c.comment(__VA_ARGS__)
 #define printJIT(____io, buf, val)
 #elif (LOG_JIT_LEVEL > 1)
+#define LOG_JIT 1
 #define JIT_COMMENT(...) c.comment(__VA_ARGS__)
 #define printJIT(____io, buf, val) {\
 	static char printJITbuf[1024]; \
@@ -60,6 +62,7 @@
 	prn->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<void, void*>()); \
 	prn->setArgument(0, io); }
 #else
+#define LOG_JIT 0
 #define JIT_COMMENT(...)
 #define printJIT(____io, buf, val)
 #endif
@@ -1171,10 +1174,10 @@ static int OP_MVN_S_IMM_VAL(const u32 i) { OP_MOV_S(S_IMM_VAL; rhs = ~rhs); }
 //   QADD / QDADD / QSUB / QDSUB
 //-----------------------------------------------------------------------------
 // TODO
-static int OP_QADD(const u32 i) { return 0; printf("OP_QADD\n"); return 0; }
-static int OP_QSUB(const u32 i) { return 0; printf("OP_QSUB\n"); return 0; }
-static int OP_QDADD(const u32 i) { return 0; printf("OP_QDADD\n"); return 0; }
-static int OP_QDSUB(const u32 i) { return 0; printf("OP_QDSUB\n"); return 0; }
+static int OP_QADD(const u32 i) { printf("JIT: unimplemented OP_QADD\n"); return 0; }
+static int OP_QSUB(const u32 i) { printf("JIT: unimplemented OP_QSUB\n"); return 0; }
+static int OP_QDADD(const u32 i) { printf("JIT: unimplemented OP_QDADD\n"); return 0; }
+static int OP_QDSUB(const u32 i) { printf("JIT: unimplemented OP_QDSUB\n"); return 0; }
 
 //-----------------------------------------------------------------------------
 //   MUL
@@ -2950,8 +2953,20 @@ static int FASTCALL OP_MRC(const u32 i)
 	return 1;
 }
 
-// TODO
-static int OP_SWI(const u32 i) { return 0; }
+static int OP_SWI(const u32 i)
+{
+	if(cpu->swi_tab)
+	{
+		u32 swinum = (i >> 16) & 0x1F;
+
+		ECall *ctx = c.call((void*)ARM_swi_tab[PROCNUM][swinum]);
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<u32>());
+		ctx->setReturn(bb_cycles);
+		c.add(bb_cycles, 3);
+		return 1;
+	}
+	return 0; 
+}
 
 //-----------------------------------------------------------------------------
 //   BKPT
@@ -3940,13 +3955,10 @@ static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1); }
 
 static int OP_SWI_THUMB(const u32 i)
 {
-	//RET;
 	if(cpu->swi_tab)
 	{
 		u32 swinum = i & 0x1F;
-#ifdef _X64
-		// TODO
-#endif
+
 		ECall *ctx = c.call((void*)ARM_swi_tab[PROCNUM][swinum]);
 		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<u32>());
 		ctx->setReturn(bb_cycles);
@@ -4025,11 +4037,13 @@ static bool instr_is_branch(u32 opcode)
 	if(bb_thumb)
 		return (x & BRANCH_ALWAYS)
 		    || ((x & BRANCH_POS0) && ((opcode&7) | ((opcode>>4)&8)) == 15)
+			|| ((x & BRANCH_SWI) && !cpu->swi_tab)
 		    || (x & JIT_BYPASS);
 	else
 		return (x & BRANCH_ALWAYS)
 		    || ((x & BRANCH_POS12) && REG_POS(opcode,12) == 15)
 		    || ((x & BRANCH_LDM) && BIT15(opcode))
+			|| ((x & BRANCH_SWI) && !cpu->swi_tab)
 		    || (x & JIT_BYPASS);
 }
 
@@ -4362,6 +4376,9 @@ void arm_jit_reset(bool enable)
 {
 #if LOG_JIT
 	c.setLogger(&logger);
+#ifdef _WINDOWS
+	freopen("\\desmume_jit.log", "w", stderr);
+#endif
 #endif
 	
 	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");

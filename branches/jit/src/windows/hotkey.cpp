@@ -103,8 +103,7 @@ void HK_CpuMode(int, bool justPressed)
 	arm_jit_reset(CommonSettings.use_jit);
 
 	char tmp[256];
-	sprintf(tmp,"CPU mode: %s\n", CommonSettings.use_jit?"JIT":"Interpreter");
-	printf(tmp);
+	sprintf(tmp,"CPU mode: %s", CommonSettings.use_jit?"JIT":"Interpreter");
 	osd->addLine(tmp);
 	//WritePrivateProfileInt("Emulation", "CpuMode", CommonSettings.use_jit, IniName)
 }
