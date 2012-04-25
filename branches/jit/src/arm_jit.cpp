@@ -185,6 +185,7 @@ static void *op_cmp[2][2];
 #define reg_pos_ptrH(x)	word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x)))+2)
 #define reg_pos_thumb(x)dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*((i>>x)&0x7)))
 #define cp15_ptr(x)     dword_ptr(bb_cp15, offsetof(armcp15_t,x))
+#define mmu_ptr(x)      dword_ptr(bb_mmu, offsetof(MMU_struct,x))
 #define _REG_NUM(i, n) ((i>>n)&0x7)
 
 // TODO
@@ -1041,6 +1042,7 @@ static int OP_TEQ_IMM_VAL(const u32 i)
 static void init_op_cmp(int PROCNUM, int sign)
 {
 	c.clear();
+	JIT_COMMENT("init_op_cmp ARM%c, sign %d", PROCNUM?'7':'9', sign);
 	// actually takes 1 input, the flags reg
 	c.newFunction(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
 	c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
@@ -2145,7 +2147,7 @@ static INLINE FASTCALL u32 OP_LDM_STM_other(u32 adr, u16 reg_mask, int n)
 	return cycles;
 }
 
-template <int PROCNUM, bool store, int dir>
+template <int PROCNUM, bool store, int dir, bool null_compiled>
 static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u16 reg_mask, int n, u8 *ptr, u32 cycles)
 {
 #ifdef ENABLE_ADVANCED_TIMING
@@ -2156,8 +2158,10 @@ static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u16 reg_mask, int n, u8
 	do {
 		if (((reg_mask >> reg_idx) & 0x1) == 1)
 		{
-			if (store && func)
-			{	*func = 0;
+			// no need to zero functions in DTCM, since we can't execute from it
+			if (null_compiled && store && func)
+			{	
+				*func = 0;
 				*(func+1) = 0;
 				*(func+2) = 0;
 				*(func+3) = 0;
@@ -2194,7 +2198,7 @@ static u32 FASTCALL OP_LDM_STM(u32 adr, u16 reg_mask, int n)
 			ptr = MMU.ARM9_DTCM + (adr & 0x3FFC);
 			cycles = n * MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
 			if(store)
-				return OP_LDM_STM_main<PROCNUM, store, dir>(adr, reg_mask, n, ptr, cycles);
+				return OP_LDM_STM_main<PROCNUM, store, dir, 0>(adr, reg_mask, n, ptr, cycles);
 		}
 		else 
 			if((adr & 0x0F000000) == 0x02000000)
@@ -2217,7 +2221,7 @@ static u32 FASTCALL OP_LDM_STM(u32 adr, u16 reg_mask, int n)
 					else
 						return OP_LDM_STM_other<PROCNUM, store, dir>(adr, reg_mask, n);
 
-	return OP_LDM_STM_main<PROCNUM, store, dir>(adr, reg_mask, n, ptr, cycles);
+	return OP_LDM_STM_main<PROCNUM, store, dir, store>(adr, reg_mask, n, ptr, cycles);
 }
 
 typedef u32 FASTCALL (*LDMOpFunc)(u32,u16,int);
@@ -2490,8 +2494,14 @@ static int FASTCALL OP_MCR(const u32 i)
 	u32 cpnum = REG_POS(i, 8);
 	if(cpnum != 15)
 	{
-		printf("MCR P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", 
+		// TODO - exception?
+		printf("JIT: MCR P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", 
 			cpnum, REG_POS(i, 12), REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
+		return 2;
+	}
+	if (REG_POS(i, 12) == 15)
+	{
+		printf("JIT: MCR Rd=R15\n");
 		return 2;
 	}
 
@@ -2678,13 +2688,16 @@ static int FASTCALL OP_MCR(const u32 i)
 								//MMU.DTCMRegion = DTCMRegion = val & 0x0FFFF000;
 								c.and_(data, 0x0FFFF000);
 								c.mov(cp15_ptr(DTCMRegion), data);
-								c.mov(cp15_ptr(DTCMRegion), data);
 								break;
 							case 1:
+								{
 								//ITCMRegion = val;
 								//ITCM base is not writeable!
-								//MMU.ITCMRegion = 0;
+								GPVar bb_mmu = c.newGP(VARIABLE_TYPE_GPN);
+								c.mov(bb_mmu, (intptr_t)&MMU);
+								c.mov(mmu_ptr(ITCMRegion), 0);
 								c.mov(cp15_ptr(ITCMRegion), data);
+								}
 								break;
 							default:
 								bUnknown = true;
@@ -4190,20 +4203,24 @@ static void emit_armop_call(u32 opcode)
 
 FORCEINLINE void _armlog(u32 addr, u32 opcode)
 {
-	return;
+#if 0
+#if 0
+	fprintf(stderr, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+		cpu->R[0],  cpu->R[1],  cpu->R[2],  cpu->R[3],  cpu->R[4],  cpu->R[5],  cpu->R[6],  cpu->R[7], 
+		cpu->R[8],  cpu->R[9],  cpu->R[10],  cpu->R[11],  cpu->R[12],  cpu->R[13],  cpu->R[14],  cpu->R[15],
+		cpu->next_instruction, cpu->CPSR.bits.N, cpu->CPSR.bits.Z, cpu->CPSR.bits.C, cpu->CPSR.bits.V);
+#endif
 	#define INDEX22(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 	char dasmbuf[4096];
 	if(cpu->CPSR.bits.T)
 		des_thumb_instructions_set[((opcode)>>6)&1023](addr, opcode, dasmbuf);
 	else
 		des_arm_instructions_set[INDEX22(opcode)](addr, opcode, dasmbuf);
-	fprintf(stderr, "%s %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", addr, opcode, dasmbuf); return;
-
-	fprintf(stderr, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
-		cpu->R[0],  cpu->R[1],  cpu->R[2],  cpu->R[3],  cpu->R[4],  cpu->R[5],  cpu->R[6],  cpu->R[7], 
-		cpu->R[8],  cpu->R[9],  cpu->R[10],  cpu->R[11],  cpu->R[12],  cpu->R[13],  cpu->R[14],  cpu->R[15] & ~0xF,
-		cpu->next_instruction & ~0xF, cpu->CPSR.bits.N, cpu->CPSR.bits.Z, cpu->CPSR.bits.C, cpu->CPSR.bits.V);
-		fprintf(stderr, "%s %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", addr, opcode, dasmbuf);
+	#undef INDEX22
+	fprintf(stderr, "%s %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", addr, opcode, dasmbuf); 
+#else
+	return;
+#endif
 }
 
 template<int PROCNUM>
@@ -4247,13 +4264,13 @@ static u32 compile_basicblock()
 		char dasmbuf[1024] = {0};
 		u32 dasm_addr = start_adr + (i*bb_opcodesize);
 		if(ARMPROC.CPSR.bits.T)
-			des_thumb_instructions_set[opcodes[i]>>6](start_adr, opcodes[i], dasmbuf);
+			des_thumb_instructions_set[opcodes[i]>>6](dasm_addr, opcodes[i], dasmbuf);
 		else
-			des_arm_instructions_set[INSTRUCTION_INDEX(opcodes[i])](start_adr, opcodes[i], dasmbuf);
+			des_arm_instructions_set[INSTRUCTION_INDEX(opcodes[i])](dasm_addr, opcodes[i], dasmbuf);
 		fprintf(stderr, "%08X\t%s\t\t; %s \n", dasm_addr, dasmbuf, disassemble(opcodes[i]));
 	}
-	fflush(stderr);
 #endif
+
 	c.clear();
 	c.newFunction(ASMJIT_CALL_CONV, FunctionBuilder0<int>());
 	c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
@@ -4380,7 +4397,7 @@ void arm_jit_reset(bool enable)
 	freopen("\\desmume_jit.log", "w", stderr);
 #endif
 #endif
-	
+
 	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
 
 	if (enable)
