@@ -46,7 +46,7 @@
 // to disable this feature. ASMJIT_NOTHROW marks functions that never throws
 // an exception.
 
-// #define ASMJIT_HIDDEN
+#define ASMJIT_HIDDEN
 #define ASMJIT_API
 // #define ASMJIT_NOTHROW
 

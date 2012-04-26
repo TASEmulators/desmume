@@ -133,8 +133,8 @@ public:
 		BOOL moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
 		BOOL isAccessAllowed(u32 address,u32 access);
 		// savestate
-		void armcp15_t::saveone(EMUFILE* os);
-		bool armcp15_t::loadone(EMUFILE* is);
+		void saveone(EMUFILE* os);
+		bool loadone(EMUFILE* is);
 };
 
 extern armcp15_t cp15;

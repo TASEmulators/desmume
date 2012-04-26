@@ -32,18 +32,18 @@ template<int PROCNUM> u32 arm_jit_compile();
 struct JIT_struct 
 {
 	//Shared ram
-	u32 MAIN_MEM[8*1024*1024];
+	u32 MAIN_MEM[16*1024*1024];
 	u32 SWIRAM[0x8000];
 	
 	//ARM9 mem
 	u32 ARM9_ITCM[0x8000];
 	u32 ARM9_DTCM[0x4000];
-	u32 ARM9_LCD[0x20000];
+	u32 ARM9_LCD[0xC4000];
 	u32 ARM9_BIOS[0x8000];
 	//ARM7 mem
 	u32 ARM7_BIOS[0x4000];
-	u32 ARM7_ERAM[0x20000];
-	u32 ARM7_WIRAM[0x20000];
+	u32 ARM7_ERAM[0x10000];
+	u32 ARM7_WIRAM[0x10000];
 
 	static u32 *JIT_MEM[2][256];
 	static u32 JIT_MASK[2][256];

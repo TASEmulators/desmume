@@ -24,6 +24,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <unistd.h>
+#define HAVE_STATIC_CODE_BUFFER
 #endif
 #include "instructions.h"
 #include "instruction_attributes.h"
@@ -157,9 +158,63 @@ u32 JIT_struct::JIT_MASK[2][256] = {
 		}
 };
 
-static void emit_branch(int cond, Label to);
+#ifdef HAVE_STATIC_CODE_BUFFER
+// On x86_64, allocate jitted code from a static buffer to ensure that it's within 2GB of .text
+// Allows call instructions to use pcrel offsets, as opposed to slower indirect calls.
+// Reduces memory needed for function pointers.
+// FIXME win64 needs this too, x86_32 doesn't
 
+static uint8_t scratchpad[1<<28];
+static uint8_t *scratchptr;
+
+struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
+{
+	StaticCodeGenerator()
+	{
+		if(((uintptr_t)scratchpad+sizeof(scratchpad)-1) & ~(uintptr_t)0xFFFFFFFF)
+		{
+			fprintf(stderr, "jit scratchpad (%p) isn't in low address space\n", scratchpad);
+			abort();
+		}
+		scratchptr = scratchpad;
+		int err = mprotect((void*)((intptr_t)scratchpad & -sysconf(_SC_PAGESIZE)), sizeof(scratchpad), PROT_READ|PROT_WRITE|PROT_EXEC);
+		if(err)
+		{
+			fprintf(stderr, "mprotect failed: %s\n", strerror(errno));
+			abort();
+		}
+	}
+
+	uint32_t generate(void** dest, Assembler* assembler)
+	{
+		intptr_t size = assembler->getCodeSize();
+		if(size == 0)
+		{
+			*dest = NULL;
+			return ERROR_NO_FUNCTION;
+		}
+		if(size > (intptr_t)(scratchpad+sizeof(scratchpad)-scratchptr-10000))
+		{
+			fprintf(stderr, "out of memory for asmjit\n");
+			abort();
+		}
+		void *p = scratchptr;
+		size = assembler->relocCode(p);
+		scratchptr += size;
+		*dest = p;
+		return ERROR_NONE;
+	}
+};
+
+static StaticCodeGenerator codegen;
+static Compiler c(&codegen);
+#else
 static Compiler c;
+#endif
+
+static void emit_branch(int cond, Label to);
+static void _armlog(u32 addr, u32 opcode);
+
 static FileLogger logger(stderr);
 
 static int PROCNUM;
@@ -1368,7 +1423,7 @@ static int OP_MRS_SPSR(const u32 i)
 
 // TODO: SPSR: if(cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS) return 1;
 #define OP_MSR_(reg, args, sw) \
-	Mem xPSR_mem = cpu_ptr(##reg.val); \
+	Mem xPSR_mem = cpu_ptr(reg.val); \
 	GPVar xPSR = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar operand = c.newGP(VARIABLE_TYPE_GPD); \
 	args; \
@@ -1387,7 +1442,7 @@ static int OP_MRS_SPSR(const u32 i)
 					c.mov(mode, rhs); \
 					c.and_(mode, 0x1F); \
 					ECall* ctx = c.call((void*)armcpu_switchMode); \
-					ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<void, void*, u8>()); \
+					ctx->setPrototype(CALL_CONV_DEFAULT, FunctionBuilder2<void, void*, u8>()); \
 					ctx->setArgument(0, bb_cpu); \
 					ctx->setArgument(1, mode); \
 				} \
@@ -1476,7 +1531,7 @@ static int OP_MRS_SPSR(const u32 i)
 		c.mov(mode, rhs); \
 		c.and_(mode, 0x1F); \
 		ECall* ctx = c.call((void*)armcpu_switchMode); \
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<void, void*, u8>()); \
+		ctx->setPrototype(CALL_CONV_DEFAULT, FunctionBuilder2<void, void*, u8>()); \
 		ctx->setArgument(0, bb_cpu); \
 		ctx->setArgument(1, mode); \
 	} \
@@ -1600,7 +1655,7 @@ static u32 sub(u32 lhs, u32 rhs) { return lhs - rhs; }
 		c.sign_op(adr, rhs); \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	ECall *ctx = c.call((void*)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u32*>()); \
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u32, u32*>()); \
 	ctx->setArgument(0, adr); \
 	ctx->setArgument(1, dst); \
 	ctx->setReturn(bb_cycles); \
@@ -1619,7 +1674,6 @@ static u32 sub(u32 lhs, u32 rhs) { return lhs - rhs; }
 		c.sign_op(adr, rhs); \
 		c.mov(reg_pos_ptr(16), adr); \
 	} \
-	else \
 	if(post && (!rhs_is_imm || *(u32*)&rhs)) \
 	{ \
 		GPVar tmp_reg = c.newGP(VARIABLE_TYPE_GPD); \
@@ -1629,7 +1683,7 @@ static u32 sub(u32 lhs, u32 rhs) { return lhs - rhs; }
 	} \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	ECall *ctx = c.call((void*)mem_op##_tab[PROCNUM][classify_adr(adr_first,0)]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u32*>()); \
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u32, u32*>()); \
 	ctx->setArgument(0, adr); \
 	ctx->setArgument(1, dst); \
 	ctx->setReturn(bb_cycles); \
@@ -1787,7 +1841,7 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 		c.sign_op(adr, rhs); \
 	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
 	ECall *ctx = c.call((void*)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u32>()); \
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u32, u32>()); \
 	ctx->setArgument(0, adr); \
 	ctx->setArgument(1, data); \
 	ctx->setReturn(bb_cycles); \
@@ -1804,12 +1858,6 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 		c.sign_op(adr, rhs); \
 		c.mov(reg_pos_ptr(16), adr); \
 	} \
-	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
-	ECall *ctx = c.call((void*)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u32>()); \
-	ctx->setArgument(0, adr); \
-	ctx->setArgument(1, data); \
-	ctx->setReturn(bb_cycles); \
 	if(post && (!rhs_is_imm || *(u32*)&rhs)) \
 	{ \
 		GPVar tmp_reg = c.newGP(VARIABLE_TYPE_GPD); \
@@ -1817,6 +1865,12 @@ static const OpSTR STRB_tab[2][3]  = { T(OP_STRB) };
 		c.sign_op(tmp_reg, rhs); \
 		c.mov(reg_pos_ptr(16), tmp_reg); \
 	} \
+	u32 adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
+	ECall *ctx = c.call((void*)mem_op##_tab[PROCNUM][classify_adr(adr_first,1)]); \
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u32, u32>()); \
+	ctx->setArgument(0, adr); \
+	ctx->setArgument(1, data); \
+	ctx->setReturn(bb_cycles); \
 	return 1;
 
 static int OP_STR_P_IMM_OFF(const u32 i) { OP_STR_(STR, IMM_OFF_12, add); }
@@ -1956,7 +2010,7 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	if (BIT5(i))		// Store
 	{
 		ECall *ctx = c.call((void*)op_strd_tab[PROCNUM][Rd_num]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<Void, u32>());
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<u32, u32>());
 		ctx->setArgument(0, addr);
 		ctx->setReturn(bb_cycles);
 		emit_MMU_aluMemCycles(3, bb_cycles, 0);
@@ -1964,7 +2018,7 @@ static int OP_LDRD_STRD_POST_INDEX(const u32 i)
 	else				// Load
 	{
 		ECall *ctx = c.call((void*)op_ldrd_tab[PROCNUM][Rd_num]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<Void, u32>());
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<u32, u32>());
 		ctx->setArgument(0, addr);
 		ctx->setReturn(bb_cycles);
 		emit_MMU_aluMemCycles(3, bb_cycles, 0);
@@ -2003,7 +2057,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 	if (BIT5(i))		// Store
 	{
 		ECall *ctx = c.call((void*)op_strd_tab[PROCNUM][Rd_num]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<Void, u32>());
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<u32, u32>());
 		ctx->setArgument(0, addr);
 		ctx->setReturn(bb_cycles);
 		if (BIT21(i)) // W bit - writeback
@@ -2015,7 +2069,7 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(const u32 i)
 		if (BIT21(i)) // W bit - writeback
 			c.mov(reg_pos_ptr(16), addr);
 		ECall *ctx = c.call((void*)op_ldrd_tab[PROCNUM][Rd_num]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<Void, u32>());
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<u32, u32>());
 		ctx->setArgument(0, addr);
 		ctx->setReturn(bb_cycles);
 		emit_MMU_aluMemCycles(3, bb_cycles, 0);
@@ -2058,7 +2112,7 @@ static int OP_SWP(const u32 i)
 	c.mov(addr, reg_pos_ptr(16));
 	c.lea(Rd, reg_pos_ptr(12));
 	ECall *ctx = c.call((void*)op_swp_tab[PROCNUM][Rd_num]);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u8*>());
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u32, u8*>());
 	ctx->setArgument(0, addr);
 	ctx->setArgument(1, Rd);
 	ctx->setReturn(bb_cycles);
@@ -2074,7 +2128,7 @@ static int OP_SWPB(const u32 i)
 	c.mov(addr, reg_pos_ptr(16));
 	c.lea(Rd, reg_pos_ptr(12));
 	ECall *ctx = c.call((void*)op_swpb_tab[PROCNUM][Rd_num]);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u8*>());
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u32, u8*>());
 	ctx->setArgument(0, addr);
 	ctx->setArgument(1, Rd);
 	ctx->setReturn(bb_cycles);
@@ -2336,7 +2390,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 		//oldmode = armcpu_switchMode(cpu, SYS);
 		c.mov(oldmode, SYS);
 		ECall *ctx = c.call((void*)armcpu_switchMode);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<u32, u8*, u8>());
+		ctx->setPrototype(CALL_CONV_DEFAULT, FunctionBuilder2<u32, u8*, u8>());
 		ctx->setArgument(0, bb_cpu);
 		ctx->setArgument(1, oldmode);
 		ctx->setReturn(oldmode);
@@ -2362,7 +2416,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{
 		//armcpu_switchMode(cpu, oldmode);
 		ECall *ctx = c.call((void*)armcpu_switchMode);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u8*, u8>());
+		ctx->setPrototype(CALL_CONV_DEFAULT, FunctionBuilder2<Void, u8*, u8>());
 		ctx->setArgument(0, bb_cpu);
 		ctx->setArgument(1, oldmode);
 	}
@@ -2468,7 +2522,7 @@ static int OP_BLX_REG(const u32 i) { return op_bx(reg_pos_ptr(0), 1, 1); }
 //-----------------------------------------------------------------------------
 //   CLZ
 //-----------------------------------------------------------------------------
-static int FASTCALL OP_CLZ(const u32 i)
+static int OP_CLZ(const u32 i)
 {
 	GPVar res = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(res, 0x3F);
@@ -2487,7 +2541,7 @@ static int FASTCALL OP_CLZ(const u32 i)
 	ECall* ctxM = c.call((void*)maskPrecalc); \
 	ctxM->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
 }
-static int FASTCALL OP_MCR(const u32 i) 
+static int OP_MCR(const u32 i)
 {
 	if (PROCNUM == ARMCPU_ARM7) return 0;
 
@@ -2727,7 +2781,7 @@ static int FASTCALL OP_MCR(const u32 i)
 
 	return 1;
 }
-static int FASTCALL OP_MRC(const u32 i)
+static int OP_MRC(const u32 i)
 {
 	if (PROCNUM == ARMCPU_ARM7) return 0;
 
@@ -4201,7 +4255,7 @@ static void emit_armop_call(u32 opcode)
 	ctx->setReturn(bb_cycles);
 }
 
-FORCEINLINE void _armlog(u32 addr, u32 opcode)
+static void _armlog(u32 addr, u32 opcode)
 {
 #if 0
 #if 0
@@ -4397,6 +4451,9 @@ void arm_jit_reset(bool enable)
 	freopen("\\desmume_jit.log", "w", stderr);
 #endif
 #endif
+#ifdef HAVE_STATIC_CODE_BUFFER
+	scratchptr = scratchpad;
+#endif
 
 	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
 
@@ -4407,7 +4464,7 @@ void arm_jit_reset(bool enable)
 		memset(JIT.ARM9_ITCM, 0, sizeof(JIT.ARM9_ITCM));
 		memset(JIT.ARM9_DTCM, 0, sizeof(JIT.ARM9_DTCM));
 		memset(JIT.ARM9_BIOS, 0, sizeof(JIT.ARM9_BIOS));
-		memset(JIT.ARM9_LCD, 0, sizeof(JIT.ARM9_LCD));
+		memset(JIT.ARM9_LCD,  0, sizeof(JIT.ARM9_LCD));
 		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM9_BIOS));
 		memset(JIT.ARM7_ERAM, 0, sizeof(JIT.ARM7_ERAM));
 		memset(JIT.ARM7_WIRAM,0, sizeof(JIT.ARM7_WIRAM));
@@ -4419,4 +4476,4 @@ void arm_jit_reset(bool enable)
 	}
 	c.clear();
 }
-#endif // !HAVE_JIT
+#endif // HAVE_JIT
