@@ -27,8 +27,7 @@ void arm_jit_reset(bool enable);
 void arm_jit_sync();
 template<int PROCNUM> u32 arm_jit_compile();
 
-#define MAPPED_JIT_FUNCS
-#ifdef MAPPED_JIT_FUNCS
+#ifndef HAVE_STATIC_CODE_BUFFER
 struct JIT_struct 
 {
 	//Shared ram

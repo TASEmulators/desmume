@@ -262,8 +262,17 @@ struct armcpu_t
 
 	u32 (* *swi_tab)();
 
-  // flag indicating if the processor is stalled (for debugging)
-  int stalled;
+	// flag indicating if the processor is stalled (for debugging)
+	int stalled;
+
+#ifdef _M_X64
+	u8 cond_table[16*16];
+
+	armcpu_t()
+	{
+		memcpy(&cond_table[0], &arm_cond_table[0], sizeof(arm_cond_table));
+	}
+#endif
 
 #ifdef GDB_STUB
   /** there is a pending irq for the cpu */

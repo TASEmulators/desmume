@@ -1103,7 +1103,7 @@ static void init_op_cmp(int PROCNUM, int sign)
 	c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
 	GPVar x = c.newGP(VARIABLE_TYPE_GPD);
 	GPVar y = c.newGP(VARIABLE_TYPE_GPD);
-#ifdef _X64
+#ifdef _M_X64
 	GPVar bb_cpu = c.newGP(VARIABLE_TYPE_GPN);
 	c.mov(bb_cpu, (intptr_t)&ARMPROC);
 	Mem flags = cpu_ptr_byte(CPSR.val, 3);
@@ -3022,6 +3022,10 @@ static int OP_MRC(const u32 i)
 
 static int OP_SWI(const u32 i)
 {
+#ifdef _M_X64
+	// TODO:
+	return 0;
+#else
 	if(cpu->swi_tab)
 	{
 		u32 swinum = (i >> 16) & 0x1F;
@@ -3032,6 +3036,7 @@ static int OP_SWI(const u32 i)
 		c.add(bb_cycles, 3);
 		return 1;
 	}
+#endif
 	return 0; 
 }
 
@@ -4022,6 +4027,10 @@ static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1); }
 
 static int OP_SWI_THUMB(const u32 i)
 {
+#ifdef _M_X64
+	// TODO:
+	return 0;
+#else
 	if(cpu->swi_tab)
 	{
 		u32 swinum = i & 0x1F;
@@ -4032,7 +4041,7 @@ static int OP_SWI_THUMB(const u32 i)
 		c.add(bb_cycles, 3);
 		return 1;
 	}
-
+#endif
 	// TODO
 	return 0;
 }
@@ -4213,7 +4222,7 @@ static void sync_r15(u32 opcode, bool is_last, bool force)
 
 static void emit_branch(int cond, Label to)
 {
-	c.comment("emit_branch cond %02X", cond);
+	JIT_COMMENT("emit_branch cond %02X", cond);
 	static const u8 cond_bit[] = {0x40, 0x40, 0x20, 0x20, 0x80, 0x80, 0x10, 0x10};
 	Mem flags = byte_ptr(bb_cpu, offsetof(armcpu_t,CPSR)+3);
 	if(cond < 8)
@@ -4226,7 +4235,7 @@ static void emit_branch(int cond, Label to)
 		GPVar x = c.newGP(VARIABLE_TYPE_GPN);
 		c.mov(x, flags);
 		c.and_(x, 0xF0);
-#ifdef _X64
+#ifdef _M_X64
 		c.add(x, offsetof(armcpu_t,cond_table) + cond);
 		c.test(byte_ptr(bb_cpu, x), 1);
 #else
