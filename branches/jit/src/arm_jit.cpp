@@ -3020,11 +3020,39 @@ static int OP_MRC(const u32 i)
 	return 1;
 }
 
+#define _OP_SWI_EXT { \
+	GPVar oldCPSR = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar mode = c.newGP(VARIABLE_TYPE_GPD); \
+	Mem CPSR = cpu_ptr(CPSR.val); \
+	JIT_COMMENT("store CPSR to x86 stack"); \
+	c.mov(oldCPSR, CPSR); \
+	JIT_COMMENT("enter SVC mode"); \
+	c.mov(mode, imm(SVC)); \
+	ECall* ctx = c.call((void*)armcpu_switchMode); \
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, void*, u8>()); \
+	ctx->setArgument(0, bb_cpu); \
+	ctx->setArgument(1, mode); \
+	c.unuse(mode); \
+	JIT_COMMENT("store next instruction address to R14"); \
+	c.mov(reg_ptr(14), bb_next_instruction); \
+	JIT_COMMENT("save old CPSR as new SPSR"); \
+	c.mov(cpu_ptr(SPSR.val), oldCPSR); \
+	JIT_COMMENT("CPSR: clear T, set I"); \
+	GPVar _cpsr = c.newGP(VARIABLE_TYPE_GPD); \
+	c.mov(_cpsr, CPSR); \
+	c.and_(_cpsr, ~(1 << 5));	/* clear T */ \
+	c.or_(_cpsr, (1 << 7));		/* set I */ \
+	c.mov(CPSR, _cpsr); \
+	c.unuse(_cpsr); \
+	JIT_COMMENT("set next instruction"); \
+	c.mov(cpu_ptr(next_instruction), imm(cpu->intVector+0x08)); \
+	return 1; }
+
 static int OP_SWI(const u32 i)
 {
 #ifdef _M_X64
 	// TODO:
-	return 0;
+	if (cpu->swi_tab) return 0;
 #else
 	if(cpu->swi_tab)
 	{
@@ -3036,8 +3064,9 @@ static int OP_SWI(const u32 i)
 		c.add(bb_cycles, 3);
 		return 1;
 	}
+
 #endif
-	return 0; 
+	_OP_SWI_EXT;
 }
 
 //-----------------------------------------------------------------------------
@@ -4024,12 +4053,11 @@ static int op_bx_thumb(Mem srcreg, bool blx)
 static int OP_BX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 0); }
 static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1); }
 
-
 static int OP_SWI_THUMB(const u32 i)
 {
 #ifdef _M_X64
 	// TODO:
-	return 0;
+	if (cpu->swi_tab) return 0;
 #else
 	if(cpu->swi_tab)
 	{
@@ -4042,8 +4070,7 @@ static int OP_SWI_THUMB(const u32 i)
 		return 1;
 	}
 #endif
-	// TODO
-	return 0;
+	_OP_SWI_EXT;
 }
 
 //-----------------------------------------------------------------------------
@@ -4144,7 +4171,7 @@ static bool instr_uses_r15(u32 opcode)
 static bool instr_uses_nextinst(u32 opcode)
 {
 	u32 x = instr_attributes(opcode);
-	return (x & SRCREG_NEXTINST) || (x & JIT_BYPASS);
+	return (x & SRCREG_NEXTINST) || ((x & BRANCH_SWI) && !cpu->swi_tab) || (x & JIT_BYPASS);
 }
 
 static bool instr_is_conditional(u32 opcode)
@@ -4157,9 +4184,15 @@ static bool instr_is_conditional(u32 opcode)
 
 static int instr_cycles(u32 opcode)
 {
-	u32 c = instr_attributes(opcode) & INSTR_CYCLES_MASK;
+	u32 x = instr_attributes(opcode);
+	u32 c = (x & INSTR_CYCLES_MASK);
 	if(c == INSTR_CYCLES_VARIABLE)
+	{
+		if ((x & BRANCH_SWI) && !cpu->swi_tab)
+			return 3;
+		
 		return 0;
+	}
 	if(instr_is_branch(opcode) && !(instr_attributes(opcode) & (BRANCH_ALWAYS|BRANCH_LDM)))
 		c += 2;
 	return c;
