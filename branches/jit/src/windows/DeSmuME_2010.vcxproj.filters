@@ -1019,12 +1019,6 @@
     <None Include="..\utils\AsmJit\README.txt">
       <Filter>Core\utils\AsmJit</Filter>
     </None>
-    <None Include="..\instruction_jitdef.inc">
-      <Filter>Core</Filter>
-    </None>
-    <None Include="..\thumb_jitdef.inc">
-      <Filter>Core</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">

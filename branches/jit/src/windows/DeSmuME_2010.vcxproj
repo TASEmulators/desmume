@@ -751,9 +751,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\filter\hq4x.dat" />
-    <None Include="..\instruction_jitdef.inc" />
     <None Include="..\instruction_tabdef.inc" />
-    <None Include="..\thumb_jitdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
     <None Include="..\utils\AsmJit\COPYING.txt" />
     <None Include="..\utils\AsmJit\README.txt" />

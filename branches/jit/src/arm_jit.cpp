@@ -3985,7 +3985,7 @@ static int OP_B_UNCOND(const u32 i)
 	return 1;
 }
 
-static int OP_BLX_11(const u32 i)
+static int OP_BLX(const u32 i)
 {
 	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(dst, cpu_ptr(R[14]));
@@ -4074,19 +4074,45 @@ static int OP_SWI_THUMB(const u32 i)
 }
 
 //-----------------------------------------------------------------------------
+//   Unimplemented; fall back to the C versions
+//-----------------------------------------------------------------------------
+
+#define OP_UND           NULL
+#define OP_LDREX         NULL
+#define OP_STREX         NULL
+#define OP_LDC_P_IMM_OFF NULL
+#define OP_LDC_M_IMM_OFF NULL
+#define OP_LDC_P_PREIND  NULL
+#define OP_LDC_M_PREIND  NULL
+#define OP_LDC_P_POSTIND NULL
+#define OP_LDC_M_POSTIND NULL
+#define OP_LDC_OPTION    NULL
+#define OP_STC_P_IMM_OFF NULL
+#define OP_STC_M_IMM_OFF NULL
+#define OP_STC_P_PREIND  NULL
+#define OP_STC_M_PREIND  NULL
+#define OP_STC_P_POSTIND NULL
+#define OP_STC_M_POSTIND NULL
+#define OP_STC_OPTION    NULL
+#define OP_CDP           NULL
+
+#define OP_UND_THUMB     NULL
+#define OP_BKPT_THUMB    NULL
+
+//-----------------------------------------------------------------------------
 //   Dispatch table
 //-----------------------------------------------------------------------------
 
 typedef int (*ArmOpCompiler)(u32);
 static const ArmOpCompiler arm_instruction_compilers[4096] = {
 #define TABDECL(x) x
-#include "instruction_jitdef.inc"
+#include "instruction_tabdef.inc"
 #undef TABDECL
 };
 
 static const ArmOpCompiler thumb_instruction_compilers[1024] = {
 #define TABDECL(x) x
-#include "thumb_jitdef.inc"
+#include "thumb_tabdef.inc"
 #undef TABDECL
 };
 

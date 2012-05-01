@@ -787,10 +787,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\instruction_jitdef.inc"
-				>
-			</File>
-			<File
 				RelativePath="..\instruction_tabdef.inc"
 				>
 			</File>
@@ -956,10 +952,6 @@
 			</File>
 			<File
 				RelativePath="..\thumb_instructions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\thumb_jitdef.inc"
 				>
 			</File>
 			<File

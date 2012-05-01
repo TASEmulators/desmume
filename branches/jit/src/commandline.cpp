@@ -100,7 +100,7 @@ void CommandLine::loadCommonOptions()
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },
 #ifdef HAVE_JIT
-		{ "cpu-mode", 0, 0, G_OPTION_ARG_NONE, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
+		{ "cpu-mode", 0, 0, G_OPTION_ARG_INT, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
 #endif
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},

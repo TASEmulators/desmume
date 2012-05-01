@@ -48,9 +48,6 @@
 
 #define JIT_BYPASS     0x80000000 // JIT makes no assumptions about what this instruction does
 
-#define OP_UND_JIT			NULL
-#define OP_UND_THUMB_JIT	NULL
-
 static const u32 instruction_attributes[4096] = {
 INSTR_CYCLES(1) | BRANCH_POS12 | SRCREG_POS0 | SRCREG_POS16, //OP_AND_LSL_IMM
 INSTR_CYCLES(2) | BRANCH_POS12 | SRCREG_POS0 | SRCREG_POS8 | SRCREG_POS16, //OP_AND_LSL_REG
