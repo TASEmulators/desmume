@@ -70,6 +70,7 @@
 
 using namespace AsmJit;
 
+#ifndef HAVE_STATIC_CODE_BUFFER
 CACHE_ALIGN JIT_struct JIT;
 
 u32 * JIT_struct::JIT_MEM[2][256] = {
@@ -158,7 +159,8 @@ u32 JIT_struct::JIT_MASK[2][256] = {
 		}
 };
 
-#ifdef HAVE_STATIC_CODE_BUFFER
+static Compiler c;
+#else
 // On x86_64, allocate jitted code from a static buffer to ensure that it's within 2GB of .text
 // Allows call instructions to use pcrel offsets, as opposed to slower indirect calls.
 // Reduces memory needed for function pointers.
@@ -208,8 +210,6 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 
 static StaticCodeGenerator codegen;
 static Compiler c(&codegen);
-#else
-static Compiler c;
 #endif
 
 static void emit_branch(int cond, Label to);
@@ -476,7 +476,7 @@ static void *op_cmp[2][2];
 #define LSX_REG(name, x86inst, sign) \
 	JIT_COMMENT(#name); \
 	bool rhs_is_imm = false; \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __lt32 = c.newLabel(); \
 	c.movzx(imm, reg_pos_ptrB(8)); \
@@ -492,7 +492,7 @@ static void *op_cmp[2][2];
 	JIT_COMMENT(#name); \
 	bool rhs_is_imm = false; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __zero = c.newLabel(); \
 	Label __lt32 = c.newLabel(); \
@@ -536,24 +536,23 @@ static void *op_cmp[2][2];
 #define ROR_REG \
 	JIT_COMMENT("ROR_REG"); \
 	bool rhs_is_imm = false; \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	c.mov(imm, reg_pos_ptr(8)); \
+	c.movzx(imm, reg_pos_ptrB(8)); \
 	c.ror(rhs, imm); \
 
 #define S_ROR_REG \
 	JIT_COMMENT("S_ROR_REG"); \
 	bool rhs_is_imm = false; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __zero = c.newLabel(); \
 	Label __zero2 = c.newLabel(); \
 	Label __done = c.newLabel(); \
-	c.mov(imm, reg_pos_ptr(8)); \
+	c.movzx(imm, reg_pos_ptrB(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	c.and_(imm, 0xFF); \
 	c.jz(__zero);\
 	c.and_(imm, 0x1F); \
 	c.jz(__zero2);\
@@ -4216,16 +4215,19 @@ void arm_jit_reset(bool enable)
 
 	if (enable)
 	{
+#ifdef HAVE_STATIC_CODE_BUFFER
+		memset(&scratchpad[0], 0, sizeof(scratchpad));
+#else
 		memset(JIT.MAIN_MEM,  0, sizeof(JIT.MAIN_MEM));
 		memset(JIT.SWIRAM,	  0, sizeof(JIT.SWIRAM));
 		memset(JIT.ARM9_ITCM, 0, sizeof(JIT.ARM9_ITCM));
 		memset(JIT.ARM9_DTCM, 0, sizeof(JIT.ARM9_DTCM));
 		memset(JIT.ARM9_BIOS, 0, sizeof(JIT.ARM9_BIOS));
 		memset(JIT.ARM9_LCD,  0, sizeof(JIT.ARM9_LCD));
-		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM9_BIOS));
+		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM7_BIOS));
 		memset(JIT.ARM7_ERAM, 0, sizeof(JIT.ARM7_ERAM));
 		memset(JIT.ARM7_WIRAM,0, sizeof(JIT.ARM7_WIRAM));
-
+#endif
 		init_op_cmp(0, 0);
 		init_op_cmp(0, 1);
 		init_op_cmp(1, 0);

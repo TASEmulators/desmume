@@ -1051,7 +1051,7 @@ void BackupDevice::loadfile()
 			if (advsc.isLoaded())
 			{
 				info.type = advsc.getSaveType();
-				if (info.type != 0xFF || info.type != 0xFE)
+				if (info.type != 0xFF && info.type != 0xFE)
 				{
 					u32 adv_size = save_types[info.type+1][1];
 					if (info.size > adv_size)

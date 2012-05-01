@@ -2265,6 +2265,8 @@ void NDS_Reset()
 	NDS_ARM9.BIOS_loaded = false;
 	memset(MMU.ARM7_BIOS, 0, sizeof(MMU.ARM7_BIOS));
 	memset(MMU.ARM9_BIOS, 0, sizeof(MMU.ARM9_BIOS));
+	NDS_ARM7.swi_tab = 0;
+	NDS_ARM9.swi_tab = 0;
 
 	//ARM7 BIOS IRQ HANDLER
 	if(CommonSettings.UseExtBIOS == true)
