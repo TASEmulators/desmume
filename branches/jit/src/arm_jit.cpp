@@ -3512,7 +3512,7 @@ static int OP_LDR_PCREL(const u32 i)
 {
 	u32 imm = ((i&0xFF)<<2);
 	u32 adr_first = (bb_r15 & 0xFFFFFFFC) + imm;
-
+	
 	GPVar addr = c.newGP(VARIABLE_TYPE_GPD);
 	GPVar data = c.newGP(VARIABLE_TYPE_GPN);
 	c.mov(addr, adr_first);
@@ -4045,11 +4045,14 @@ static u32 compile_basicblock()
 	bb_thumb = cpu->CPSR.bits.T;
 	bb_opcodesize = bb_thumb ? 2 : 4;
 
+#ifndef HAVE_STATIC_CODE_BUFFER
 	if (!JIT.JIT_MEM[PROCNUM][(start_adr & 0x0FFFFFFF)>>20])
 	{
 		printf("JIT: use unmapped memory address %08X\n", start_adr);
-		fflush(stdout);
+		execute = false;
+		return 1;
 	}
+#endif
 
 	for(n=0; n<MAX_JIT_BLOCK_SIZE;)
 	{
@@ -4102,6 +4105,13 @@ static u32 compile_basicblock()
 		u32 opcode = opcodes[i];
 		bb_adr = start_adr + i*bb_opcodesize;
 		JIT_COMMENT("%s (PC:%08X)", disassemble(opcode), bb_adr);
+		
+		// CrazyMax(1 may 2012): sync register R15
+		// test: armwrestler - crash on the start, executing at 04xxxxxxh
+		// FIXME
+		if (instr_uses_r15(opcode))
+			c.mov(reg_ptr(15), bb_r15);
+		
 		bb_cycles = c.newGP(VARIABLE_TYPE_GPD);
 		if(instr_is_conditional(opcode))
 		{
