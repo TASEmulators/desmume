@@ -2295,13 +2295,12 @@ static int op_b(u32 i, bool bl)
 	{
 		if(bl)
 			dst += 2;
-		c.or_(cpu_ptr(CPSR), 1<<5);
+		c.or_(cpu_ptr_byte(CPSR, 0), 1<<5);
 	}
 	if(bl || CONDITION(i)==0xF)
 		c.mov(reg_ptr(14), bb_next_instruction);
 
 	c.mov(cpu_ptr(instruct_adr), dst);
-	c.mov(cpu_ptr(next_instruction), dst);
 	return 1;
 }
 
@@ -2322,7 +2321,7 @@ static int op_bx(Mem srcreg, bool blx, bool test_thumb)
 		c.and_(thumb, 1);
 		c.lea(mask, ptr_abs((void*)0xFFFFFFFC, thumb.r64(), TIMES_2));
 		c.shl(thumb, 5);
-		c.or_(cpu_ptr(CPSR), thumb);
+		c.or_(cpu_ptr_byte(CPSR, 0), thumb.r8Lo());
 		c.and_(dst, mask);
 	}
 	else
@@ -3203,12 +3202,7 @@ static int OP_ADD_SPE(const u32 i)
 static int OP_ADD_2PC(const u32 i)
 {
 	u32 imm = ((i&0xFF)<<2);
-	//cpu->R[REG_NUM(i, 8)] = (cpu->R[15]&0xFFFFFFFC) + ((i&0xFF)<<2);
-	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(tmp, reg_ptr(15));
-	c.and_(tmp, 0xFFFFFFFC);
-	if (imm) c.add(tmp, imm);
-	c.mov(reg_pos_thumb(8), tmp);
+	c.mov(reg_pos_thumb(8), (bb_r15 & 0xFFFFFFFC) + imm);
 	return 1;
 }
 
@@ -3518,13 +3512,11 @@ static int OP_LDR_SPREL(const u32 i)
 static int OP_LDR_PCREL(const u32 i)
 {
 	u32 imm = ((i&0xFF)<<2);
-	u32 adr_first = (cpu->R[15] &0xFFFFFFFC) + imm;
+	u32 adr_first = (bb_r15 & 0xFFFFFFFC) + imm;
 
 	GPVar addr = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(addr, reg_ptr(15));
-	c.and_(addr, 0xFFFFFFFC);
-	if (imm) c.add(addr, imm);
 	GPVar data = c.newGP(VARIABLE_TYPE_GPN);
+	c.mov(addr, adr_first);
 	c.lea(data, reg_pos_thumb(8));
 	ECall *ctx = c.call((void*)LDR_tab[PROCNUM][classify_adr(adr_first,0)]);
 	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, u32, u32*>());
@@ -3640,7 +3632,7 @@ template <int PROCNUM> static NOINLINE FASTCALL u32 OP_POP_exec(u32 mask)
 		if(PROCNUM==0)
 			arm->CPSR.bits.T = BIT0(v);
 
-		arm->next_instruction = arm->R[15] = v & 0xFFFFFFFE;
+		arm->instruct_adr = arm->R[15] = v & 0xFFFFFFFE;
 		
 		R13 += 4;
 	}
@@ -3682,28 +3674,21 @@ static int OP_POP_PC(const u32 i)	 { return op_push_pop(i, 0, 1); }
 //-----------------------------------------------------------------------------
 static int OP_B_COND(const u32 i)
 {
-	//printf("OP_B_COND %08X (cond %02X)\n", cpu->R[15] + ((u32)((s8)(i&0xFF))<<1), (i >> 8) & 0xF);
+	u32 dst = bb_r15 + ((u32)((s8)(i&0xFF))<<1);
+	c.mov(cpu_ptr(instruct_adr), bb_next_instruction);
 	c.mov(bb_cycles, 1);		// optimize
 	Label skip = c.newLabel();
-	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
 	emit_branch((i>>8)&0xF, skip);
-	c.mov(dst, cpu_ptr(R[15]));
-	c.add(dst, (u32)((s8)(i&0xFF))<<1);
-	c.mov(cpu_ptr(R[15]), dst);
-	c.mov(cpu_ptr(next_instruction), dst);
-	c.mov(bb_cycles, 3);
+	c.mov(cpu_ptr(instruct_adr), dst);
+	c.add(bb_cycles, 2);
 	c.bind(skip);
 	return 1;
 }
 
 static int OP_B_UNCOND(const u32 i)
 {
-	//printf("OP_B_UNCOND %08X\n", cpu->R[15] + (SIGNEXTEND_11(i)<<1));
-	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(dst, cpu_ptr(R[15]));
-	c.add(dst, (u32)SIGNEXTEND_11(i)<<1);
-	c.mov(cpu_ptr(R[15]), dst);
-	c.mov(cpu_ptr(next_instruction), dst);
+	u32 dst = bb_r15 + (SIGNEXTEND_11(i)<<1);
+	c.mov(cpu_ptr(instruct_adr), dst);
 	return 1;
 }
 
@@ -3711,13 +3696,12 @@ static int OP_BLX(const u32 i)
 {
 	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(dst, cpu_ptr(R[14]));
-	c.add(dst, (u32)((i&0x7FF) << 1));
+	c.add(dst, (i&0x7FF) << 1);
 	c.and_(dst, 0xFFFFFFFC);
 	c.mov(cpu_ptr(instruct_adr), dst);
 	c.mov(cpu_ptr(R[14]), bb_next_instruction | 1);
-	c.mov(cpu_ptr(next_instruction), dst);
 	// reset T bit
-	c.and_(cpu_ptr(CPSR), ~(1<<5));
+	c.and_(cpu_ptr_byte(CPSR, 0), ~(1<<5));
 	return 1;
 }
 
@@ -3731,44 +3715,34 @@ static int OP_BL_11(const u32 i)
 {
 	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(dst, cpu_ptr(R[14]));
-	c.add(dst, (u32)((i&0x7FF) << 1));
+	c.add(dst, (i&0x7FF) << 1);
 	c.mov(cpu_ptr(instruct_adr), dst);
 	c.mov(cpu_ptr(R[14]), bb_next_instruction | 1);
-	c.mov(cpu_ptr(next_instruction), dst);
 	return 1;
 }
 
 static int op_bx_thumb(Mem srcreg, bool blx)
 {
 	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
-	GPVar tmp;
 	c.mov(dst, srcreg);
 	GPVar thumb = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(thumb, dst);						// * cpu->CPSR.bits.T = BIT0(Rm);
-	c.and_(thumb, 1);						// *
-	if (!blx)
-	{
-		tmp = c.newGP(VARIABLE_TYPE_GPD);
-		c.mov(tmp, thumb);
-	}
-	c.shl(thumb, 5);						// *
-	c.and_(cpu_ptr(CPSR), ~(1<<5));			// *
-	c.or_(cpu_ptr(CPSR), thumb);			// ******************************
+	c.mov(thumb, dst);								// * cpu->CPSR.bits.T = BIT0(Rm);
+	c.and_(thumb, 1);								// *
 	if (blx)
 	{
-		c.mov(reg_ptr(14), bb_next_instruction);
-		c.or_(reg_ptr(14), 1);
+		c.mov(reg_ptr(14), bb_next_instruction | 1);
 		c.and_(dst, 0xFFFFFFFE);
 	}
 	else
 	{
 		GPVar mask = c.newGP(VARIABLE_TYPE_GPD);
-		c.lea(mask, ptr_abs((void*)0xFFFFFFFC, tmp.r64(), TIMES_2));
+		c.lea(mask, ptr_abs((void*)0xFFFFFFFC, thumb.r64(), TIMES_2));
 		c.and_(dst, mask);
 	}
+	c.shl(thumb, 5);								// *
+	c.or_(thumb, ~(1<<5));							// *
+	c.and_(cpu_ptr_byte(CPSR, 0), thumb.r8Lo());	// ******************************
 	c.mov(cpu_ptr(instruct_adr), dst);
-	c.mov(cpu_ptr(next_instruction), dst);
-	
 	return 1;
 }
 
@@ -3902,24 +3876,16 @@ static bool instr_uses_r15(u32 opcode)
 {
 	u32 x = instr_attributes(opcode);
 	if(bb_thumb)
-		return (x & SRCREG_R15)
-			|| ((x & SRCREG_POS0) && ((opcode&7) | ((opcode>>4)&8)) == 15)
+		return ((x & SRCREG_POS0) && ((opcode&7) | ((opcode>>4)&8)) == 15)
 			|| ((x & SRCREG_POS3) && REG_POS(opcode,3) == 15)
 			|| (x & JIT_BYPASS);
 	else
-		return (x & SRCREG_R15)
-		    || ((x & SRCREG_POS0) && REG_POS(opcode,0) == 15)
+		return ((x & SRCREG_POS0) && REG_POS(opcode,0) == 15)
 		    || ((x & SRCREG_POS8) && REG_POS(opcode,8) == 15)
 		    || ((x & SRCREG_POS12) && REG_POS(opcode,12) == 15)
 		    || ((x & SRCREG_POS16) && REG_POS(opcode,16) == 15)
 		    || ((x & SRCREG_STM) && BIT15(opcode))
 		    || (x & JIT_BYPASS);
-}
-
-static bool instr_uses_nextinst(u32 opcode)
-{
-	u32 x = instr_attributes(opcode);
-	return (x & SRCREG_NEXTINST) || ((x & BRANCH_SWI) && !cpu->swi_tab) || (x & JIT_BYPASS);
 }
 
 static bool instr_is_conditional(u32 opcode)
@@ -3948,10 +3914,13 @@ static int instr_cycles(u32 opcode)
 
 static bool instr_does_prefetch(u32 opcode)
 {
-	if(bb_thumb || !instr_is_branch(opcode) || !arm_instruction_compilers[INSTRUCTION_INDEX(opcode)])
-		return 0;
 	u32 x = instr_attributes(opcode);
-	return (x & BRANCH_ALWAYS) || (x & BRANCH_LDM);
+	if(bb_thumb)
+		return thumb_instruction_compilers[opcode>>6]
+			   && (x & BRANCH_ALWAYS);
+	else
+		return instr_is_branch(opcode) && arm_instruction_compilers[INSTRUCTION_INDEX(opcode)]
+			   && ((x & BRANCH_ALWAYS) || (x & BRANCH_LDM));
 }
 
 static const char *disassemble(u32 opcode)
@@ -3974,7 +3943,6 @@ static void sync_r15(u32 opcode, bool is_last, bool force)
 	if(instr_does_prefetch(opcode))
 	{
 		assert(!instr_uses_r15(opcode));
-		assert(!instr_uses_nextinst(opcode));
 		if(force)
 		{
 			JIT_COMMENT("sync_r15: force instruct_adr %08Xh", bb_adr);
@@ -3983,7 +3951,7 @@ static void sync_r15(u32 opcode, bool is_last, bool force)
 	}
 	else
 	{
-		if(force || instr_uses_nextinst(opcode) || (is_last && !instr_is_branch(opcode)))
+		if(force || (instr_attributes(opcode) & JIT_BYPASS) || (is_last && !instr_is_branch(opcode)))
 		{
 			JIT_COMMENT("sync_r15: next_instruction %08Xh", bb_next_instruction);
 			c.mov(cpu_ptr(next_instruction), bb_next_instruction);
