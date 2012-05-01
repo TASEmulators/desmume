@@ -5090,7 +5090,7 @@ void CompilerContext::_clear() ASMJIT_NOTHROW
   _modifiedMMRegisters = 0;
   _modifiedXMMRegisters = 0;
 
-  _allocableEBP = false;
+  _allocableEBP = true;
 
   _adjustESP = 0;
 
