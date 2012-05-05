@@ -433,9 +433,10 @@ static void TouchDisplay() {
 			aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
 		}
 
-	if(nds.isTouch) {
-		temptouch.X = nds.scr_touchX;
-		temptouch.Y = nds.scr_touchY;
+	if(nds.isTouch)
+	{
+		temptouch.X = nds.scr_touchX / 16;
+		temptouch.Y = nds.scr_touchY / 16;
 		aggDraw.hud->lineColor(255, 0, 0, 128);
 		aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
 		aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
