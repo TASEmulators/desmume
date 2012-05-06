@@ -2168,10 +2168,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if(adr < 0x02000000)
 	{
-		adr &= 0x7FFF;
 #ifdef HAVE_JIT
-		JIT.ARM9_ITCM[adr + 0] = 0;
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF) = 0;
 #endif
+		adr &= 0x7FFF;
 		T1WriteByte(MMU.ARM9_ITCM, adr, val);
 		return;
 	}
@@ -2435,12 +2435,8 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	if(restricted) return; //block 8bit vram writes
 
 #ifdef HAVE_JIT
-	if (JIT.JIT_MEM[ARMCPU_ARM9][adr>>20])
-	{
-		#define PROCNUM ARMCPU_ARM9
-		JIT_COMPILED_FUNC(adr+0) = 0;
-		#undef PROCNUM
-	}
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9) = 0;
 #endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -2456,11 +2452,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if (adr < 0x02000000)
 	{
-		adr &= 0x7FFF;
 #ifdef HAVE_JIT
-		JIT.ARM9_ITCM[adr + 0] = 0;
-		JIT.ARM9_ITCM[adr + 1] = 0;
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF) = 0;
 #endif
+		adr &= 0x7FFF;
 		T1WriteWord(MMU.ARM9_ITCM, adr, val);
 		return;
 	}
@@ -2907,13 +2902,8 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 	if(unmapped) return;
 
 #ifdef HAVE_JIT
-	if (JIT.JIT_MEM[ARMCPU_ARM9][adr>>20])
-	{
-		#define PROCNUM ARMCPU_ARM9
-		JIT_COMPILED_FUNC(adr+0) = 0;
-		JIT_COMPILED_FUNC(adr+1) = 0;
-		#undef PROCNUM
-	}
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9) = 0;
 #endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -2929,13 +2919,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if(adr<0x02000000)
 	{
-		adr &= 0x7FFF;
 #ifdef HAVE_JIT
-		JIT.ARM9_ITCM[adr + 0] = 0;
-		JIT.ARM9_ITCM[adr + 1] = 0;
-		JIT.ARM9_ITCM[adr + 2] = 0;
-		JIT.ARM9_ITCM[adr + 3] = 0;
+		*(u64*)&JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF) = 0;
 #endif
+		adr &= 0x7FFF;
 		T1WriteLong(MMU.ARM9_ITCM, adr, val);
 		return ;
 	}
@@ -3360,15 +3347,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	if(unmapped) return;
 
 #ifdef HAVE_JIT
-	if (JIT.JIT_MEM[ARMCPU_ARM9][adr>>20])
-	{
-		#define PROCNUM ARMCPU_ARM9
-		JIT_COMPILED_FUNC(adr+0) = 0;
-		JIT_COMPILED_FUNC(adr+1) = 0;
-		JIT_COMPILED_FUNC(adr+2) = 0;
-		JIT_COMPILED_FUNC(adr+3) = 0;
-		#undef PROCNUM
-	}
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		*(u64*)&JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9) = 0;
 #endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -3795,12 +3775,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	if(unmapped) return;
 
 #ifdef HAVE_JIT
-	if (JIT.JIT_MEM[ARMCPU_ARM7][adr>>20])
-	{
-		#define PROCNUM ARMCPU_ARM7
-		JIT_COMPILED_FUNC(adr+0) = 0;
-		#undef PROCNUM
-	}
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7) = 0;
 #endif
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -4239,13 +4215,8 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	if(unmapped) return;
 
 #ifdef HAVE_JIT
-	if (JIT.JIT_MEM[ARMCPU_ARM7][adr>>20])
-	{
-		#define PROCNUM ARMCPU_ARM7
-		JIT_COMPILED_FUNC(adr+0) = 0;
-		JIT_COMPILED_FUNC(adr+1) = 0;
-		#undef PROCNUM
-	}
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7) = 0;
 #endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
@@ -4346,15 +4317,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	if(unmapped) return;
 
 #ifdef HAVE_JIT
-	if (JIT.JIT_MEM[ARMCPU_ARM7][adr>>20])
-	{
-		#define PROCNUM ARMCPU_ARM7
-		JIT_COMPILED_FUNC(adr+0) = 0;
-		JIT_COMPILED_FUNC(adr+1) = 0;
-		JIT_COMPILED_FUNC(adr+2) = 0;
-		JIT_COMPILED_FUNC(adr+3) = 0;
-		#undef PROCNUM
-	}
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		*(u64*)&JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7) = 0;
 #endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]

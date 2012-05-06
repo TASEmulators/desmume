@@ -669,7 +669,7 @@ u32 armcpu_exec()
 {
 	if (jit)
 	{
-		ArmOpCompiled f = (ArmOpCompiled)JIT_COMPILED_FUNC(ARMPROC.instruct_adr);
+		ArmOpCompiled f = (ArmOpCompiled)JIT_COMPILED_FUNC(ARMPROC.instruct_adr, PROCNUM);
 		return f ? f() : arm_jit_compile<PROCNUM>();
 	}
 

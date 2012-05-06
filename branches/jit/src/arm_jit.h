@@ -27,32 +27,36 @@ void arm_jit_reset(bool enable);
 void arm_jit_sync();
 template<int PROCNUM> u32 arm_jit_compile();
 
-#ifndef HAVE_STATIC_CODE_BUFFER
+#ifdef _WINDOWS
+#define MAPPED_JIT_FUNCS
+#endif
+#ifdef MAPPED_JIT_FUNCS
 struct JIT_struct 
 {
-	//Shared ram
-	u32 MAIN_MEM[16*1024*1024];
-	u32 SWIRAM[0x8000];
-	
-	//ARM9 mem
-	u32 ARM9_ITCM[0x8000];
-	u32 ARM9_DTCM[0x4000];
-	u32 ARM9_LCD[0xC4000];
-	u32 ARM9_BIOS[0x8000];
-	//ARM7 mem
-	u32 ARM7_BIOS[0x4000];
-	u32 ARM7_ERAM[0x10000];
-	u32 ARM7_WIRAM[0x10000];
+	// only include the memory types that code can execute from
+	u32 MAIN_MEM[16*1024*1024/2];
+	u32 SWIRAM[0x8000/2];
+	u32 ARM9_ITCM[0x8000/2];
+	u32 ARM9_BIOS[0x8000/2];
+	u32 ARM7_BIOS[0x4000/2];
+	u32 ARM7_ERAM[0x10000/2];
+	u32 ARM7_WIRAM[0x10000/2];
 
-	static u32 *JIT_MEM[2][256];
-	static u32 JIT_MASK[2][256];
+	static u32 *JIT_MEM[2][0x4000];
 };
 extern CACHE_ALIGN JIT_struct JIT;
-#define JIT_COMPILED_FUNC(adr) JIT.JIT_MEM[PROCNUM][(adr&0x0FFFFFFE)>>20][(adr&0x0FFFFFFE)&JIT.JIT_MASK[PROCNUM][(adr&0x0FFFFFFE)>>20]]
+#define JIT_COMPILED_FUNC(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][((adr)&0x0FFFC000)>>14][((adr)&0x00003FFE)>>1]
+#define JIT_COMPILED_FUNC_PREMASKED(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][(adr)>>14][((adr)&0x00003FFE)>>1]
+#define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask) JIT.bank[((adr)&(mask))>>1]
+#define JIT_MAPPED(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][(adr)>>14]
 #else
 // actually an array of function pointers, but they fit in 32bit address space, so might as well save memory
 extern u32 compiled_funcs[];
-#define JIT_COMPILED_FUNC(adr) compiled_funcs[(adr & 0x0FFFFFFE) >> 1]
+// there isn't anything mapped between 07000000 and 0EFFFFFF, so we can mask off bit 27 and get away with a smaller array
+#define JIT_COMPILED_FUNC(adr, PROCNUM) compiled_funcs[((adr) & 0x07FFFFFE) >> 1]
+#define JIT_COMPILED_FUNC_PREMASKED JIT_COMPILED_FUNC
+#define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask) JIT_COMPILED_FUNC(adr, PROCNUM)
+#define JIT_MAPPED(adr, PROCNUM) true
 #endif
 
 

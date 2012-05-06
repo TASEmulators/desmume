@@ -70,104 +70,122 @@
 
 using namespace AsmJit;
 
-#ifndef HAVE_STATIC_CODE_BUFFER
+#ifdef MAPPED_JIT_FUNCS
 CACHE_ALIGN JIT_struct JIT;
 
-u32 * JIT_struct::JIT_MEM[2][256] = {
+u32 *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
+
+static u32 *JIT_MEM[2][32] = {
 	//arm9
 	{
-		/* 0X*/	DUP16(JIT.ARM9_ITCM), 
-		/* 1X*/	DUP16(JIT.ARM9_ITCM), // mirror
-		/* 2X*/	DUP16(JIT.MAIN_MEM),
-		/* 3X*/	DUP16(JIT.SWIRAM),
-		/* 4X*/	DUP16(NULL),
-		/* 5X*/	DUP16(NULL),
-		/* 6X*/	DUP16(NULL),
-		/* 7X*/	DUP16(NULL),
-		/* 8X*/	DUP16(NULL),
-		/* 9X*/	DUP16(NULL),
-		/* AX*/	DUP16(NULL),
-		/* BX*/	DUP16(NULL),
-		/* CX*/	DUP16(NULL),
-		/* DX*/	DUP16(NULL),
-		/* EX*/	DUP16(NULL),
-		/* FX*/	DUP16(JIT.ARM9_BIOS)
+		/* 0X*/	DUP2(JIT.ARM9_ITCM),
+		/* 1X*/	DUP2(JIT.ARM9_ITCM), // mirror
+		/* 2X*/	DUP2(JIT.MAIN_MEM),
+		/* 3X*/	DUP2(JIT.SWIRAM),
+		/* 4X*/	DUP2(NULL),
+		/* 5X*/	DUP2(NULL),
+		/* 6X*/	DUP2(NULL),
+		/* 7X*/	DUP2(NULL),
+		/* 8X*/	DUP2(NULL),
+		/* 9X*/	DUP2(NULL),
+		/* AX*/	DUP2(NULL),
+		/* BX*/	DUP2(NULL),
+		/* CX*/	DUP2(NULL),
+		/* DX*/	DUP2(NULL),
+		/* EX*/	DUP2(NULL),
+		/* FX*/	DUP2(JIT.ARM9_BIOS)
 	},
 	//arm7
 	{
-		/* 0X*/	DUP16(JIT.ARM7_BIOS), 
-		/* 1X*/	DUP16(NULL), 
-		/* 2X*/	DUP16(JIT.MAIN_MEM),
-		/* 3X*/	DUP8(JIT.SWIRAM),
-				DUP8(JIT.ARM7_ERAM),
-		/* 4X*/	DUP8(NULL),
-				DUP8(JIT.ARM7_WIRAM),
-		/* 5X*/	DUP16(NULL),
-		/* 6X*/	DUP16(JIT.ARM9_LCD),
-		/* 7X*/	DUP16(NULL),
-		/* 8X*/	DUP16(NULL),
-		/* 9X*/	DUP16(NULL),
-		/* AX*/	DUP16(NULL),
-		/* BX*/	DUP16(NULL),
-		/* CX*/	DUP16(NULL),
-		/* DX*/	DUP16(NULL),
-		/* EX*/	DUP16(NULL),
-		/* FX*/	DUP16(NULL)
+		/* 0X*/	DUP2(JIT.ARM7_BIOS),
+		/* 1X*/	DUP2(NULL),
+		/* 2X*/	DUP2(JIT.MAIN_MEM),
+		/* 3X*/	     JIT.SWIRAM,
+		             JIT.ARM7_ERAM,
+		/* 4X*/	     NULL,
+		             JIT.ARM7_WIRAM,
+		/* 5X*/	DUP2(NULL),
+		/* 6X*/	DUP2(NULL),
+		/* 7X*/	DUP2(NULL),
+		/* 8X*/	DUP2(NULL),
+		/* 9X*/	DUP2(NULL),
+		/* AX*/	DUP2(NULL),
+		/* BX*/	DUP2(NULL),
+		/* CX*/	DUP2(NULL),
+		/* DX*/	DUP2(NULL),
+		/* EX*/	DUP2(NULL),
+		/* FX*/	DUP2(NULL)
 		}
 };
 
-u32 JIT_struct::JIT_MASK[2][256] = {
+static u32 JIT_MASK[2][32] = {
 	//arm9
 	{
-		/* 0X*/	DUP16(0x00007FFF), 
-		/* 1X*/	DUP16(0x00007FFF),
-		/* 2X*/	DUP16(0x003FFFFF),
-		/* 3X*/	DUP16(0x00007FFF),
-		/* 4X*/	DUP16(0x00000000),
-		/* 5X*/	DUP16(0x00000000),
-		/* 6X*/	DUP16(0x00000000),
-		/* 7X*/	DUP16(0x00000000),
-		/* 8X*/	DUP16(0x00000000),
-		/* 9X*/	DUP16(0x00000000),
-		/* AX*/	DUP16(0x00000000),
-		/* BX*/	DUP16(0x00000000),
-		/* CX*/	DUP16(0x00000000),
-		/* DX*/	DUP16(0x00000000),
-		/* EX*/	DUP16(0x00000000),
-		/* FX*/	DUP16(0x00007FFF)
+		/* 0X*/	DUP2(0x00007FFF),
+		/* 1X*/	DUP2(0x00007FFF),
+		/* 2X*/	DUP2(0x003FFFFF), // FIXME _MMU_MAIN_MEM_MASK
+		/* 3X*/	DUP2(0x00007FFF),
+		/* 4X*/	DUP2(0x00000000),
+		/* 5X*/	DUP2(0x00000000),
+		/* 6X*/	DUP2(0x00000000),
+		/* 7X*/	DUP2(0x00000000),
+		/* 8X*/	DUP2(0x00000000),
+		/* 9X*/	DUP2(0x00000000),
+		/* AX*/	DUP2(0x00000000),
+		/* BX*/	DUP2(0x00000000),
+		/* CX*/	DUP2(0x00000000),
+		/* DX*/	DUP2(0x00000000),
+		/* EX*/	DUP2(0x00000000),
+		/* FX*/	DUP2(0x00007FFF)
 	},
 	//arm7
 	{
-		/* 0X*/	DUP16(0x00003FFF), 
-		/* 1X*/	DUP16(0x00000000),
-		/* 2X*/	DUP16(0x003FFFFF),
-		/* 3X*/	DUP8(0x00007FFF),
-				DUP8(0x0000FFFF),
-		/* 4X*/	DUP8(0x00FFFFFF),
-				DUP8(0x0000FFFF),
-		/* 5X*/	DUP16(0x00000000),
-		/* 6X*/	DUP16(0x0001FFFF),
-		/* 7X*/	DUP16(0x00000000),
-		/* 8X*/	DUP16(0x00000000),
-		/* 9X*/	DUP16(0x00000000),
-		/* AX*/	DUP16(0x00000000),
-		/* BX*/	DUP16(0x00000000),
-		/* CX*/	DUP16(0x00000000),
-		/* DX*/	DUP16(0x00000000),
-		/* EX*/	DUP16(0x00000000),
-		/* FX*/	DUP16(0x00000000)
+		/* 0X*/	DUP2(0x00003FFF),
+		/* 1X*/	DUP2(0x00000000),
+		/* 2X*/	DUP2(0x003FFFFF),
+		/* 3X*/	     0x00007FFF,
+		             0x0000FFFF,
+		/* 4X*/	     0x00000000,
+		             0x0000FFFF,
+		/* 5X*/	DUP2(0x00000000),
+		/* 6X*/	DUP2(0x00000000),
+		/* 7X*/	DUP2(0x00000000),
+		/* 8X*/	DUP2(0x00000000),
+		/* 9X*/	DUP2(0x00000000),
+		/* AX*/	DUP2(0x00000000),
+		/* BX*/	DUP2(0x00000000),
+		/* CX*/	DUP2(0x00000000),
+		/* DX*/	DUP2(0x00000000),
+		/* EX*/	DUP2(0x00000000),
+		/* FX*/	DUP2(0x00000000)
 		}
 };
 
-static Compiler c;
+static void init_jit_mem()
+{
+	static bool inited = false;
+	if(inited)
+		return;
+	inited = true;
+	for(int proc=0; proc<2; proc++)
+		for(int i=0; i<0x4000; i++)
+			JIT.JIT_MEM[proc][i] = JIT_MEM[proc][i>>9] + (((i<<14) & JIT_MASK[proc][i>>9]) >> 1);
+}
+
 #else
+DS_ALIGN(4096) u32 compiled_funcs[1<<26] = {0};
+#endif
+
+static u8 recompile_counts[(1<<26)/16];
+
+#ifdef HAVE_STATIC_CODE_BUFFER
 // On x86_64, allocate jitted code from a static buffer to ensure that it's within 2GB of .text
 // Allows call instructions to use pcrel offsets, as opposed to slower indirect calls.
 // Reduces memory needed for function pointers.
 // FIXME win64 needs this too, x86_32 doesn't
 
-static uint8_t scratchpad[1<<28];
-static uint8_t *scratchptr;
+DS_ALIGN(4096) static u8 scratchpad[1<<25];
+static u8 *scratchptr;
 
 struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 {
@@ -179,7 +197,8 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 			abort();
 		}
 		scratchptr = scratchpad;
-		int err = mprotect((void*)((intptr_t)scratchpad & -sysconf(_SC_PAGESIZE)), sizeof(scratchpad), PROT_READ|PROT_WRITE|PROT_EXEC);
+		int align = (intptr_t)scratchpad & (sysconf(_SC_PAGESIZE) - 1);
+		int err = mprotect(scratchpad-align, sizeof(scratchpad)+align, PROT_READ|PROT_WRITE|PROT_EXEC);
 		if(err)
 		{
 			fprintf(stderr, "mprotect failed: %s\n", strerror(errno));
@@ -195,10 +214,13 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 			*dest = NULL;
 			return ERROR_NO_FUNCTION;
 		}
-		if(size > (intptr_t)(scratchpad+sizeof(scratchpad)-scratchptr-10000))
+		if(size > (intptr_t)(scratchpad+sizeof(scratchpad)-scratchptr))
 		{
-			fprintf(stderr, "out of memory for asmjit\n");
-			abort();
+			fprintf(stderr, "Out of memory for asmjit. Clearing code cache.\n");
+			arm_jit_reset(1);
+			// If arm_jit_reset didn't involve recompiling op_cmp, we could keep the current function.
+			*dest = NULL;
+			return ERROR_NONE;
 		}
 		void *p = scratchptr;
 		size = assembler->relocCode(p);
@@ -210,6 +232,8 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 
 static StaticCodeGenerator codegen;
 static Compiler c(&codegen);
+#else
+static Compiler c;
 #endif
 
 static void emit_branch(int cond, Label to);
@@ -2025,25 +2049,19 @@ static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u16 reg_mask, int n, u8
 	cycles = 0;
 #endif
 	u8 reg_idx = (dir>0)?0:15;
-	u32 *func = (u32*)&JIT_COMPILED_FUNC(adr);
+	u64 *func = (u64*)&JIT_COMPILED_FUNC(adr, PROCNUM);
 	do {
 		if (((reg_mask >> reg_idx) & 0x1) == 1)
 		{
 			// no need to zero functions in DTCM, since we can't execute from it
 			if (null_compiled && store && func)
-			{	
 				*func = 0;
-				*(func+1) = 0;
-				*(func+2) = 0;
-				*(func+3) = 0;
-			}
-			// no need to zero functions in DTCM, since we can't execute from it
 			if(store) *(u32*)ptr = cpu->R[reg_idx];
 			else cpu->R[reg_idx] = *(u32*)ptr;
 #ifdef ENABLE_ADVANCED_TIMING
 			cycles += MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
 #endif
-			func+= (4*dir);
+			func += dir;
 			adr += (4*dir);
 			ptr += (4*dir);
 			--n;
@@ -4045,14 +4063,12 @@ static u32 compile_basicblock()
 	bb_thumb = cpu->CPSR.bits.T;
 	bb_opcodesize = bb_thumb ? 2 : 4;
 
-#ifndef HAVE_STATIC_CODE_BUFFER
-	if (!JIT.JIT_MEM[PROCNUM][(start_adr & 0x0FFFFFFF)>>20])
+	if (!JIT_MAPPED(start_adr & 0x0FFFFFFF, PROCNUM))
 	{
 		printf("JIT: use unmapped memory address %08X\n", start_adr);
 		execute = false;
 		return 1;
 	}
-#endif
 
 	for(n=0; n<MAX_JIT_BLOCK_SIZE;)
 	{
@@ -4169,7 +4185,7 @@ static u32 compile_basicblock()
 	c.endFunction();
 
 	ArmOpCompiled f = (ArmOpCompiled)c.make();
-	if(!f)
+	if(c.getError())
 	{
 		fprintf(stderr, "JIT error: %s\n", getErrorString(c.getError()));
 		f = op_decode[PROCNUM][bb_thumb];
@@ -4180,7 +4196,7 @@ static u32 compile_basicblock()
 	fflush(stderr);
 #endif
 	
-	JIT_COMPILED_FUNC(start_adr) = (u32)(intptr_t)f;
+	JIT_COMPILED_FUNC(start_adr, PROCNUM) = (u32)(intptr_t)f;
 	return interpreted_cycles;
 }
 
@@ -4188,21 +4204,18 @@ template<int PROCNUM> u32 arm_jit_compile()
 {
 	*PROCNUM_ptr = PROCNUM;
 
-	// TODO
-#if 0
+	// prevent endless recompilation of self-modifying code, which would be a memleak since we only free code all at once.
+	// also allows us to clear compiled_funcs[] while leaving it sparsely allocated, if the OS does memory overcommit.
 	u32 adr = cpu->instruct_adr;
-	// prevent endless recompilation of self-modifying code
-	u32 mask_adr = (adr & 0x0FFFFFFF) >> 4;
-	if(recompile_counts[mask_adr] > 8)
+	u32 mask_adr = (adr & 0x07FFFFFE) >> 4;
+	if(((recompile_counts[mask_adr >> 1] >> 4*(mask_adr & 1)) & 0xF) > 8)
 	{
-		//recompile_counts[mask_adr] = 0;
 		ArmOpCompiled f = op_decode[PROCNUM][cpu->CPSR.bits.T];
-		JIT_COMPILED_FUNC(adr) = (u32)(intptr_t)f;
+		JIT_COMPILED_FUNC(adr, PROCNUM) = (u32)(intptr_t)f;
 		return f();
 	}
+	recompile_counts[mask_adr >> 1] += 1 << 4*(mask_adr & 1);
 
-	recompile_counts[mask_adr]++;
-#endif
 	return compile_basicblock<PROCNUM>();
 }
 
@@ -4225,19 +4238,25 @@ void arm_jit_reset(bool enable)
 
 	if (enable)
 	{
-#ifdef HAVE_STATIC_CODE_BUFFER
-		memset(&scratchpad[0], 0, sizeof(scratchpad));
-#else
+#ifdef MAPPED_JIT_FUNCS
 		memset(JIT.MAIN_MEM,  0, sizeof(JIT.MAIN_MEM));
-		memset(JIT.SWIRAM,	  0, sizeof(JIT.SWIRAM));
+		memset(JIT.SWIRAM,    0, sizeof(JIT.SWIRAM));
 		memset(JIT.ARM9_ITCM, 0, sizeof(JIT.ARM9_ITCM));
-		memset(JIT.ARM9_DTCM, 0, sizeof(JIT.ARM9_DTCM));
 		memset(JIT.ARM9_BIOS, 0, sizeof(JIT.ARM9_BIOS));
-		memset(JIT.ARM9_LCD,  0, sizeof(JIT.ARM9_LCD));
 		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM7_BIOS));
 		memset(JIT.ARM7_ERAM, 0, sizeof(JIT.ARM7_ERAM));
 		memset(JIT.ARM7_WIRAM,0, sizeof(JIT.ARM7_WIRAM));
+		memset(recompile_counts, 0, sizeof(recompile_counts));
+		init_jit_mem();
+#else
+		for(int i=0; i<sizeof(recompile_counts)/8; i++)
+			if(((u64*)recompile_counts)[i])
+			{
+				((u64*)recompile_counts)[i] = 0;
+				memset(compiled_funcs+128*i, 0, 128*sizeof(*compiled_funcs));
+			}
 #endif
+
 		init_op_cmp(0, 0);
 		init_op_cmp(0, 1);
 		init_op_cmp(1, 0);
