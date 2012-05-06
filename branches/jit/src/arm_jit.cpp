@@ -577,6 +577,7 @@ static void *op_cmp[2][2];
 	Label __done = c.newLabel(); \
 	c.movzx(imm, reg_pos_ptrB(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
+	c.test(imm, imm); \
 	c.jz(__zero);\
 	c.and_(imm, 0x1F); \
 	c.jz(__zero2);\
@@ -1987,133 +1988,148 @@ static u32 popcount(u32 x)
 	return pop;
 }
 
-// noinline because generic needs to spill regs, and if it's inlined gcc isn't smart enough to keep the spills out of the common case
+static u64 get_reg_list(u32 reg_mask, int dir)
+{
+	u64 regs = 0;
+	for(int j=0; j<16; j++)
+	{
+		int k = dir<0 ? j : 15-j;
+		if(BIT_N(reg_mask,k))
+			regs = (regs << 4) | k;
+	}
+	return regs;
+}
+
+#ifdef ASMJIT_X64
+// generic needs to spill regs and main doesn't; if it's inlined gcc isn't smart enough to keep the spills out of the common case.
+#define LDM_INLINE NOINLINE
+#else
+// spills either way, and we might as well save codesize by not having separate functions
+#define LDM_INLINE INLINE
+#endif
+
 template <int PROCNUM, bool store, int dir>
-static INLINE FASTCALL u32 OP_LDM_STM_generic(u32 adr, u16 reg_mask, int n)
+static LDM_INLINE FASTCALL u32 OP_LDM_STM_generic(u32 adr, u64 regs, int n)
 {
 	u32 cycles = 0;
 	adr &= ~3;
-	u8 reg_idx = (dir>0)?0:15;
 	do {
-		if (((reg_mask >> reg_idx) & 0x1) == 1)
-		{
-			if(store) _MMU_write32<PROCNUM>(adr, cpu->R[reg_idx]);
-			else cpu->R[reg_idx] = _MMU_read32<PROCNUM>(adr);
-			cycles += MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
-			adr += 4*dir;
-			--n;
-		}
-		reg_idx += dir;
-	} while(n > 0);
+		if(store) _MMU_write32<PROCNUM>(adr, cpu->R[regs&0xF]);
+		else cpu->R[regs&0xF] = _MMU_read32<PROCNUM>(adr);
+		cycles += MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
+		adr += 4*dir;
+		regs >>= 4;
+	} while(--n > 0);
 	return cycles;
 }
 
+#ifdef ENABLE_ADVANCED_TIMING
+#define ADV_CYCLES cycles += MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
+#else
+#define ADV_CYCLES
+#endif
+
 template <int PROCNUM, bool store, int dir>
-static INLINE FASTCALL u32 OP_LDM_STM_other(u32 adr, u16 reg_mask, int n)
+static LDM_INLINE FASTCALL u32 OP_LDM_STM_other(u32 adr, u64 regs, int n)
 {
 	u32 cycles = 0;
 	adr &= ~3;
-	u8 reg_idx = (dir>0)?0:15;
-
+#ifndef ENABLE_ADVANCED_TIMING
+	cycles = n * MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
+#endif
 	do {
-		if (((reg_mask >> reg_idx) & 0x1) == 1)
-		{
-			if (PROCNUM==ARMCPU_ARM9)
-			{
-				if(store)
-					_MMU_ARM9_write32(adr, cpu->R[reg_idx]);
-				else
-					cpu->R[reg_idx] = _MMU_ARM9_read32(adr);
-			}
-			else
-			{
-				if(store)
-					_MMU_ARM7_write32(adr, cpu->R[reg_idx]);
-				else
-					cpu->R[reg_idx] = _MMU_ARM7_read32(adr);
-			}
-			cycles += MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
-			//func += dir;
-			adr += 4*dir;
-			--n;
-		}
-		reg_idx += dir;
-	} while(n > 0);
+		if(PROCNUM==ARMCPU_ARM9)
+			if(store) _MMU_ARM9_write32(adr, cpu->R[regs&0xF]);
+			else cpu->R[regs&0xF] = _MMU_ARM9_read32(adr);
+		else
+			if(store) _MMU_ARM7_write32(adr, cpu->R[regs&0xF]);
+			else cpu->R[regs&0xF] = _MMU_ARM7_read32(adr);
+		ADV_CYCLES;
+		adr += 4*dir;
+		regs >>= 4;
+	} while(--n > 0);
 	return cycles;
 }
 
 template <int PROCNUM, bool store, int dir, bool null_compiled>
-static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u16 reg_mask, int n, u8 *ptr, u32 cycles)
+static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u64 regs, int n, u8 *ptr, u32 cycles)
 {
 #ifdef ENABLE_ADVANCED_TIMING
 	cycles = 0;
 #endif
-	u8 reg_idx = (dir>0)?0:15;
 	u64 *func = (u64*)&JIT_COMPILED_FUNC(adr, PROCNUM);
+
+#define OP(j) { \
+	/* no need to zero functions in DTCM, since we can't execute from it */ \
+	if(null_compiled && store) \
+		*func = 0; \
+	int Rd = ((uintptr_t)regs >> (j*4)) & 0xF; \
+	if(store) *(u32*)ptr = cpu->R[Rd]; \
+	else cpu->R[Rd] = *(u32*)ptr; \
+	ADV_CYCLES; \
+	func += dir; \
+	adr += 4*dir; \
+	ptr += 4*dir; }
+
 	do {
-		if (((reg_mask >> reg_idx) & 0x1) == 1)
-		{
-			// no need to zero functions in DTCM, since we can't execute from it
-			if (null_compiled && store && func)
-				*func = 0;
-			if(store) *(u32*)ptr = cpu->R[reg_idx];
-			else cpu->R[reg_idx] = *(u32*)ptr;
-#ifdef ENABLE_ADVANCED_TIMING
-			cycles += MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
-#endif
-			func += dir;
-			adr += (4*dir);
-			ptr += (4*dir);
-			--n;
-		}
-		reg_idx += dir;
+		OP(0);
+		if(n == 1) break;
+		OP(1);
+		if(n == 2) break;
+		OP(2);
+		if(n == 3) break;
+		OP(3);
+		regs >>= 16;
+		n -= 4;
 	} while(n > 0);
 	return cycles;
+#undef OP
+#undef ADV_CYCLES
 }
 
 template <int PROCNUM, bool store, int dir>
-static u32 FASTCALL OP_LDM_STM(u32 adr, u16 reg_mask, int n)
+static u32 FASTCALL OP_LDM_STM(u32 adr, u64 regs, int n)
 {
-	// FIXME use classify_adr?
+	// TODO use classify_adr?
 	u32 cycles;
 	u8 *ptr;
 
 	if((adr ^ (adr + (dir>0 ? (n-1)*4 : -15*4))) & ~0x3FFF) // a little conservative, but we don't want to run too many comparisons
-		return OP_LDM_STM_generic<PROCNUM, store, dir>(adr, reg_mask, n);
+	{
+		// the memory region spans a page boundary, so we can't factor the address translation out of the loop
+		return OP_LDM_STM_generic<PROCNUM, store, dir>(adr, regs, n);
+	}
+	else if(PROCNUM==ARMCPU_ARM9 && (adr & ~0x3FFF) == MMU.DTCMRegion)
+	{
+		// don't special-case DTCM cycles, even though that would be both faster and more accurate,
+		// because that wouldn't match the non-jitted version with !ACCOUNT_FOR_DATA_TCM_SPEED
+		ptr = MMU.ARM9_DTCM + (adr & 0x3FFC);
+		cycles = n * MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
+		if(store)
+			return OP_LDM_STM_main<PROCNUM, store, dir, 0>(adr, regs, n, ptr, cycles);
+	}
+	else if((adr & 0x0F000000) == 0x02000000)
+	{
+		ptr = MMU.MAIN_MEM + (adr & _MMU_MAIN_MEM_MASK32);
+		cycles = n * ((PROCNUM==ARMCPU_ARM9) ? 4 : 2);
+	}
+	else if(PROCNUM==ARMCPU_ARM7 && !store && (adr & 0xFF800000) == 0x03800000)
+	{
+		ptr = MMU.ARM7_ERAM + (adr & 0xFFFC);
+		cycles = n;
+	}
+	else if(PROCNUM==ARMCPU_ARM7 && !store && (adr & 0xFF800000) == 0x03000000)
+	{
+		ptr = MMU.SWIRAM + (adr & 0x7FFC);
+		cycles = n;
+	}
 	else
-		if(PROCNUM==ARMCPU_ARM9 && (adr & ~0x3FFF) == MMU.DTCMRegion)
-		{
-			// don't special-case DTCM cycles, because that wouldn't match !ACCOUNT_FOR_DATA_TCM_SPEED
-			ptr = MMU.ARM9_DTCM + (adr & 0x3FFC);
-			cycles = n * MMU_memAccessCycles<PROCNUM,32,store?MMU_AD_WRITE:MMU_AD_READ>(adr);
-			if(store)
-				return OP_LDM_STM_main<PROCNUM, store, dir, 0>(adr, reg_mask, n, ptr, cycles);
-		}
-		else 
-			if((adr & 0x0F000000) == 0x02000000)
-			{
-				ptr = MMU.MAIN_MEM + (adr & _MMU_MAIN_MEM_MASK32);
-				cycles = n * ((PROCNUM==ARMCPU_ARM9) ? 4 : 2);
-			}
-			else 
-				if(PROCNUM==ARMCPU_ARM7 && !store && (adr & 0xFF800000) == 0x03800000)
-				{
-					ptr = MMU.ARM7_ERAM + (adr & 0xFFFC);
-					cycles = n;
-				}
-				else
-					if(PROCNUM==ARMCPU_ARM7 && !store && (adr & 0xFF800000) == 0x03000000)
-					{
-						ptr = MMU.SWIRAM + (adr & 0x7FFC);
-						cycles = n;
-					}
-					else
-						return OP_LDM_STM_other<PROCNUM, store, dir>(adr, reg_mask, n);
+		return OP_LDM_STM_other<PROCNUM, store, dir>(adr, regs, n);
 
-	return OP_LDM_STM_main<PROCNUM, store, dir, store>(adr, reg_mask, n, ptr, cycles);
+	return OP_LDM_STM_main<PROCNUM, store, dir, store>(adr, regs, n, ptr, cycles);
 }
 
-typedef u32 FASTCALL (*LDMOpFunc)(u32,u16,int);
+typedef u32 FASTCALL (*LDMOpFunc)(u32,u64,int);
 static const LDMOpFunc op_ldm_stm_tab[2][2][2] = {{
 	{ OP_LDM_STM<0,0,-1>, OP_LDM_STM<0,0,+1> },
 	{ OP_LDM_STM<0,1,-1>, OP_LDM_STM<0,1,+1> },
@@ -2122,7 +2138,41 @@ static const LDMOpFunc op_ldm_stm_tab[2][2][2] = {{
 	{ OP_LDM_STM<1,1,-1>, OP_LDM_STM<1,1,+1> },
 }};
 
+static void call_ldm_stm(GPVar adr, u32 bitmask, bool store, int dir)
+{
+	if(bitmask)
+	{
+		GPVar n = c.newGP(VARIABLE_TYPE_GPD);
+		c.mov(n, popcount(bitmask));
+#ifdef ASMJIT_X64
+		GPVar regs = c.newGP(VARIABLE_TYPE_GPN);
+		c.mov(regs, get_reg_list(bitmask, dir));
+		ECall *ctx = c.call((void*)op_ldm_stm_tab[PROCNUM][store][dir>0]);
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder3<u32, u32, uint64_t, int>());
+		ctx->setArgument(0, adr);
+		ctx->setArgument(1, regs);
+		ctx->setArgument(2, n);
+#else
+		// same prototype, but we have to handle splitting of a u64 arg manually
+		GPVar regs_lo = c.newGP(VARIABLE_TYPE_GPD);
+		GPVar regs_hi = c.newGP(VARIABLE_TYPE_GPD);
+		c.mov(regs_lo, (u32)get_reg_list(bitmask, dir));
+		c.mov(regs_hi, get_reg_list(bitmask, dir) >> 32);
+		ECall *ctx = c.call((void*)op_ldm_stm_tab[PROCNUM][store][dir>0]);
+		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder4<u32, u32, u32, u32, int>());
+		ctx->setArgument(0, adr);
+		ctx->setArgument(1, regs_lo);
+		ctx->setArgument(2, regs_hi);
+		ctx->setArgument(3, n);
+#endif
+		ctx->setReturn(bb_cycles);
+	}
+	else
+		c.mov(bb_cycles, 1);
+}
+
 static int op_bx(Mem srcreg, bool blx, bool test_thumb);
+static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb);
 
 static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 {
@@ -2134,21 +2184,7 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 	if(before)
 		c.add(adr, 4*dir);
 
-	if(bitmask)
-	{
-		GPVar regp = c.newGP(VARIABLE_TYPE_GPN);
-		GPVar n = c.newGP(VARIABLE_TYPE_GPD);
-		c.mov(regp, bitmask);
-		c.mov(n, pop);
-		ECall *ctx = c.call((void*)op_ldm_stm_tab[PROCNUM][store][dir>0?1:0]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder3<u32, u32, u16, int>());
-		ctx->setArgument(0, adr);
-		ctx->setArgument(1, regp);
-		ctx->setArgument(2, n);
-		ctx->setReturn(bb_cycles);
-	}
-	else
-		c.mov(bb_cycles, 1);
+	call_ldm_stm(adr, bitmask, store, dir);
 
 	if(BIT15(i) && !store)
 	{
@@ -2231,21 +2267,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 		ctx->setReturn(oldmode);
 	}
 
-	if(bitmask)
-	{
-		GPVar regp = c.newGP(VARIABLE_TYPE_GPD);
-		GPVar n = c.newGP(VARIABLE_TYPE_GPD);
-		c.mov(regp, bitmask);
-		c.mov(n, pop);
-		ECall *ctx = c.call((void*)op_ldm_stm_tab[PROCNUM][store][dir>0?1:0]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder3<u32, u32, u16, int>());
-		ctx->setArgument(0, adr);
-		ctx->setArgument(1, regp);
-		ctx->setArgument(2, n);
-		ctx->setReturn(bb_cycles);
-	}
-	else
-		c.mov(bb_cycles, 1);
+	call_ldm_stm(adr, bitmask, store, dir);
 
 	if(!bit15)
 	{
@@ -3557,21 +3579,7 @@ static int op_ldm_stm_thumb(u32 i, bool store)
 	GPVar adr = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(adr, reg_pos_thumb(8));
 
-	if(bitmask)
-	{
-		GPVar regp = c.newGP(VARIABLE_TYPE_GPN);
-		GPVar n = c.newGP(VARIABLE_TYPE_GPD);
-		c.mov(regp, bitmask);
-		c.mov(n, pop);
-		ECall *ctx = c.call((void*)op_ldm_stm_tab[PROCNUM][store][1]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder3<u32, u32, u16, int>());
-		ctx->setArgument(0, adr);
-		ctx->setArgument(1, regp);
-		ctx->setArgument(2, n);
-		ctx->setReturn(bb_cycles);
-	}
-	else
-		c.mov(bb_cycles, 1);
+	call_ldm_stm(adr, bitmask, store, 1);
 
 	// ARM_REF:	THUMB: Causes base register write-back, and is not optional
 	// ARM_REF:	If the base register <Rn> is specified in <registers>, the final value of <Rn> is the loaded value
@@ -3600,91 +3608,32 @@ static int OP_ADJUST_M_SP(const u32 i) { c.sub(reg_ptr(13), ((i&0x7F)<<2)); retu
 //-----------------------------------------------------------------------------
 //   PUSH / POP
 //-----------------------------------------------------------------------------
-typedef u32 FASTCALL (*PUSHPOPOpFunc)(u32);
-template <int PROCNUM> static NOINLINE FASTCALL u32 OP_PUSH_exec(u32 mask)
-{
-	armcpu_t *arm = &ARMPROC;
-	u32 R13 = arm->R[13];
-	u32 cycles = 0;
-	
-	//printf("OP_PUSH_def ARM%c, R13:%08X mask %02X\n", PROCNUM?'7':'9', R13, mask);
-	R13 -= 4;
-	if ((mask & (1<<31)))		// LR
-	{
-		_MMU_write32<PROCNUM>(R13, cpu->R[14]);
-		cycles += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(R13);
-		R13 -= 4;
-	}
-	for (u8 t = 0; t < 8; t++)
-	{
-		u8 k = (7 - t);
-		if (!BIT_N(mask, k)) continue;
-		
-		_MMU_write32<PROCNUM>(R13, cpu->R[k]);
-		cycles += MMU_memAccessCycles<PROCNUM,32,MMU_AD_WRITE>(R13);
-		R13 -= 4;
-	}
-	arm->R[13] = (R13 + 4);
-
-	return cycles;
-}
-template <int PROCNUM> static NOINLINE FASTCALL u32 OP_POP_exec(u32 mask)
-{
-	armcpu_t *arm = &ARMPROC;
-	u32 R13 = arm->R[13];
-	u32 cycles = 0;
-	//printf("OP_POP_def ARM%c, R13:%08X mask %02X\n", PROCNUM?'7':'9', R13, mask);
-	for (u8 t = 0; t < 8; t++)
-	{
-		if (!BIT_N(mask, t)) continue;
-		
-		cpu->R[t] = _MMU_read32<PROCNUM>(R13);
-		cycles += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(R13);
-		R13 += 4;
-	}
-	if ((mask & (1<<31)))		// PC
-	{
-		u32 v = _MMU_read32<PROCNUM>(R13);
-		cycles += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(R13);
-		if(PROCNUM==0)
-			arm->CPSR.bits.T = BIT0(v);
-
-		arm->instruct_adr = arm->R[15] = v & 0xFFFFFFFE;
-		
-		R13 += 4;
-	}
-	arm->R[13] = R13;
-
-	return cycles;
-}
-static const PUSHPOPOpFunc op_push_pop_tab[2][2] = { {OP_POP_exec<0>, OP_PUSH_exec<0>}, {OP_POP_exec<1>, OP_PUSH_exec<1>} };
-
-static int op_push_pop(u32 i, bool push, bool pc_lr)
+static int op_push_pop(u32 i, bool store, bool pc_lr)
 {
 	u32 bitmask = (i & 0xFF);
+	bitmask |= pc_lr << (store ? 14 : 15);
 	u32 pop = popcount(bitmask);
-	
-	bitmask |= (pc_lr << 31);
+	int dir = store ? -1 : 1;
 
-	if (bitmask)
-	{
-		GPVar mask = c.newGP(VARIABLE_TYPE_GPD);
-		c.mov(mask, bitmask);
-		ECall *ctx = c.call((void*)op_push_pop_tab[PROCNUM][push]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<u32, u32>());
-		ctx->setArgument(0, mask);
-		ctx->setReturn(bb_cycles);
-	}
-	else
-		c.mov(bb_cycles, 1);	// TODO: exception?
+	GPVar adr = c.newGP(VARIABLE_TYPE_GPD);
+	c.mov(adr, reg_ptr(13));
+	if(store)
+		c.sub(adr, 4);
 
-	emit_MMU_aluMemCycles(push ? (pc_lr?4:3) : (pc_lr?5:2), bb_cycles, pop);
+	call_ldm_stm(adr, bitmask, store, dir);
+
+	if(pc_lr && !store)
+		op_bx_thumb(reg_ptr(15), 0, PROCNUM == ARMCPU_ARM9);
+	c.add(reg_ptr(13), 4*dir*pop);
+
+	emit_MMU_aluMemCycles(store ? (pc_lr?4:3) : (pc_lr?5:2), bb_cycles, pop);
 	return 1;
 }
-static int OP_PUSH(const u32 i)	 { return op_push_pop(i, 1, 0); }
+
+static int OP_PUSH(const u32 i)    { return op_push_pop(i, 1, 0); }
 static int OP_PUSH_LR(const u32 i) { return op_push_pop(i, 1, 1); }
-static int OP_POP(const u32 i)	 { return op_push_pop(i, 0, 0); }
-static int OP_POP_PC(const u32 i)	 { return op_push_pop(i, 0, 1); }
+static int OP_POP(const u32 i)     { return op_push_pop(i, 0, 0); }
+static int OP_POP_PC(const u32 i)  { return op_push_pop(i, 0, 1); }
 
 //-----------------------------------------------------------------------------
 //   Branch
@@ -3738,7 +3687,7 @@ static int OP_BL_11(const u32 i)
 	return 1;
 }
 
-static int op_bx_thumb(Mem srcreg, bool blx)
+static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 {
 	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(dst, srcreg);
@@ -3746,16 +3695,15 @@ static int op_bx_thumb(Mem srcreg, bool blx)
 	c.mov(thumb, dst);								// * cpu->CPSR.bits.T = BIT0(Rm);
 	c.and_(thumb, 1);								// *
 	if (blx)
-	{
 		c.mov(reg_ptr(14), bb_next_instruction | 1);
-		c.and_(dst, 0xFFFFFFFE);
-	}
-	else
+	if(test_thumb)
 	{
 		GPVar mask = c.newGP(VARIABLE_TYPE_GPD);
 		c.lea(mask, ptr_abs((void*)0xFFFFFFFC, thumb.r64(), TIMES_2));
 		c.and_(dst, mask);
 	}
+	else
+		c.and_(dst, 0xFFFFFFFE);
 	c.shl(thumb, 5);								// *
 	c.or_(thumb, ~(1<<5));							// *
 	c.and_(cpu_ptr_byte(CPSR, 0), thumb.r8Lo());	// ******************************
@@ -3763,8 +3711,8 @@ static int op_bx_thumb(Mem srcreg, bool blx)
 	return 1;
 }
 
-static int OP_BX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 0); }
-static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1); }
+static int OP_BX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 0, 0); }
+static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1, 1); }
 
 static int OP_SWI_THUMB(const u32 i)
 {
