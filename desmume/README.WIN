@@ -906,7 +906,7 @@ DeSmuME is a Nintendo DS emulator and the name is a play of words - DS Emu + ME 
 Its name is derived from emu which is short for emulator, DS and me. It's possibly supposed to mean "DS emulator for me".
 [edit] Under what license is DeSmuME distributed ?
 
-DeSmuME is distributed under the GNU General Public License, or GPL: http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+DeSmuME is distributed under the GNU General Public License, or GPL: http://www.gnu.org/licenses/gpl-2.0.html
 [edit] Can I freely copy DeSmuME ?
 
 Yes you can, as long as you adhere to the license as specified in the GNU GPL.
