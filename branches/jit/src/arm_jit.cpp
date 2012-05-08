@@ -78,10 +78,10 @@ uintptr_t *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
 static uintptr_t *JIT_MEM[2][32] = {
 	//arm9
 	{
-		/* 0X*/	DUP2(JIT.ARM9_ITCM),
-		/* 1X*/	DUP2(JIT.ARM9_ITCM), // mirror
-		/* 2X*/	DUP2(JIT.MAIN_MEM),
-		/* 3X*/	DUP2(JIT.SWIRAM),
+		/* 0X*/	DUP2((uintptr_t*)JIT.ARM9_ITCM),
+		/* 1X*/	DUP2((uintptr_t*)JIT.ARM9_ITCM), // mirror
+		/* 2X*/	DUP2((uintptr_t*)JIT.MAIN_MEM),
+		/* 3X*/	DUP2((uintptr_t*)JIT.SWIRAM),
 		/* 4X*/	DUP2(NULL),
 		/* 5X*/	DUP2(NULL),
 		/* 6X*/	DUP2(NULL),
@@ -93,17 +93,17 @@ static uintptr_t *JIT_MEM[2][32] = {
 		/* CX*/	DUP2(NULL),
 		/* DX*/	DUP2(NULL),
 		/* EX*/	DUP2(NULL),
-		/* FX*/	DUP2(JIT.ARM9_BIOS)
+		/* FX*/	DUP2((uintptr_t*)JIT.ARM9_BIOS)
 	},
 	//arm7
 	{
-		/* 0X*/	DUP2(JIT.ARM7_BIOS),
+		/* 0X*/	DUP2((uintptr_t*)JIT.ARM7_BIOS),
 		/* 1X*/	DUP2(NULL),
-		/* 2X*/	DUP2(JIT.MAIN_MEM),
-		/* 3X*/	     JIT.SWIRAM,
-		             JIT.ARM7_ERAM,
+		/* 2X*/	DUP2((uintptr_t*)JIT.MAIN_MEM),
+		/* 3X*/	     (uintptr_t*)JIT.SWIRAM,
+		             (uintptr_t*)JIT.ARM7_ERAM,
 		/* 4X*/	     NULL,
-		             JIT.ARM7_WIRAM,
+		             (uintptr_t*)JIT.ARM7_WIRAM,
 		/* 5X*/	DUP2(NULL),
 		/* 6X*/	DUP2(NULL),
 		/* 7X*/	DUP2(NULL),
