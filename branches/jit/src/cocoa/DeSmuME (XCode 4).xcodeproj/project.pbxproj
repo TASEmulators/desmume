@@ -111,6 +111,62 @@
 		AB1B9E661501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		AB1B9E671501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		AB1B9E681501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
+		AB1EFE3E1549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE1D1549ECC100D4F9CE /* AssemblerX86X64.cpp */; };
+		AB1EFE3F1549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE1D1549ECC100D4F9CE /* AssemblerX86X64.cpp */; };
+		AB1EFE401549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE1D1549ECC100D4F9CE /* AssemblerX86X64.cpp */; };
+		AB1EFE411549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE1D1549ECC100D4F9CE /* AssemblerX86X64.cpp */; };
+		AB1EFE421549ECC100D4F9CE /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE201549ECC100D4F9CE /* CodeGenerator.cpp */; };
+		AB1EFE431549ECC100D4F9CE /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE201549ECC100D4F9CE /* CodeGenerator.cpp */; };
+		AB1EFE441549ECC100D4F9CE /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE201549ECC100D4F9CE /* CodeGenerator.cpp */; };
+		AB1EFE451549ECC100D4F9CE /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE201549ECC100D4F9CE /* CodeGenerator.cpp */; };
+		AB1EFE461549ECC100D4F9CE /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE221549ECC100D4F9CE /* Compiler.cpp */; };
+		AB1EFE471549ECC100D4F9CE /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE221549ECC100D4F9CE /* Compiler.cpp */; };
+		AB1EFE481549ECC100D4F9CE /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE221549ECC100D4F9CE /* Compiler.cpp */; };
+		AB1EFE491549ECC100D4F9CE /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE221549ECC100D4F9CE /* Compiler.cpp */; };
+		AB1EFE4A1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE241549ECC100D4F9CE /* CompilerX86X64.cpp */; };
+		AB1EFE4B1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE241549ECC100D4F9CE /* CompilerX86X64.cpp */; };
+		AB1EFE4C1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE241549ECC100D4F9CE /* CompilerX86X64.cpp */; };
+		AB1EFE4D1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE241549ECC100D4F9CE /* CompilerX86X64.cpp */; };
+		AB1EFE521549ECC100D4F9CE /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE281549ECC100D4F9CE /* CpuInfo.cpp */; };
+		AB1EFE531549ECC100D4F9CE /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE281549ECC100D4F9CE /* CpuInfo.cpp */; };
+		AB1EFE541549ECC100D4F9CE /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE281549ECC100D4F9CE /* CpuInfo.cpp */; };
+		AB1EFE551549ECC100D4F9CE /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE281549ECC100D4F9CE /* CpuInfo.cpp */; };
+		AB1EFE561549ECC100D4F9CE /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2A1549ECC100D4F9CE /* Defs.cpp */; };
+		AB1EFE571549ECC100D4F9CE /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2A1549ECC100D4F9CE /* Defs.cpp */; };
+		AB1EFE581549ECC100D4F9CE /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2A1549ECC100D4F9CE /* Defs.cpp */; };
+		AB1EFE591549ECC100D4F9CE /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2A1549ECC100D4F9CE /* Defs.cpp */; };
+		AB1EFE5A1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2C1549ECC100D4F9CE /* DefsX86X64.cpp */; };
+		AB1EFE5B1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2C1549ECC100D4F9CE /* DefsX86X64.cpp */; };
+		AB1EFE5C1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2C1549ECC100D4F9CE /* DefsX86X64.cpp */; };
+		AB1EFE5D1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2C1549ECC100D4F9CE /* DefsX86X64.cpp */; };
+		AB1EFE5E1549ECC100D4F9CE /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2E1549ECC100D4F9CE /* Logger.cpp */; };
+		AB1EFE5F1549ECC100D4F9CE /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2E1549ECC100D4F9CE /* Logger.cpp */; };
+		AB1EFE601549ECC100D4F9CE /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2E1549ECC100D4F9CE /* Logger.cpp */; };
+		AB1EFE611549ECC100D4F9CE /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE2E1549ECC100D4F9CE /* Logger.cpp */; };
+		AB1EFE621549ECC100D4F9CE /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE301549ECC100D4F9CE /* MemoryManager.cpp */; };
+		AB1EFE631549ECC100D4F9CE /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE301549ECC100D4F9CE /* MemoryManager.cpp */; };
+		AB1EFE641549ECC100D4F9CE /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE301549ECC100D4F9CE /* MemoryManager.cpp */; };
+		AB1EFE651549ECC100D4F9CE /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE301549ECC100D4F9CE /* MemoryManager.cpp */; };
+		AB1EFE661549ECC100D4F9CE /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE321549ECC100D4F9CE /* MemoryMarker.cpp */; };
+		AB1EFE671549ECC100D4F9CE /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE321549ECC100D4F9CE /* MemoryMarker.cpp */; };
+		AB1EFE681549ECC100D4F9CE /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE321549ECC100D4F9CE /* MemoryMarker.cpp */; };
+		AB1EFE691549ECC100D4F9CE /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE321549ECC100D4F9CE /* MemoryMarker.cpp */; };
+		AB1EFE6A1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE351549ECC100D4F9CE /* OperandX86X64.cpp */; };
+		AB1EFE6B1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE351549ECC100D4F9CE /* OperandX86X64.cpp */; };
+		AB1EFE6C1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE351549ECC100D4F9CE /* OperandX86X64.cpp */; };
+		AB1EFE6D1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE351549ECC100D4F9CE /* OperandX86X64.cpp */; };
+		AB1EFE6E1549ECC100D4F9CE /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE371549ECC100D4F9CE /* Platform.cpp */; };
+		AB1EFE6F1549ECC100D4F9CE /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE371549ECC100D4F9CE /* Platform.cpp */; };
+		AB1EFE701549ECC100D4F9CE /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE371549ECC100D4F9CE /* Platform.cpp */; };
+		AB1EFE711549ECC100D4F9CE /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE371549ECC100D4F9CE /* Platform.cpp */; };
+		AB1EFE7A1549ECC100D4F9CE /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE3B1549ECC100D4F9CE /* Util.cpp */; };
+		AB1EFE7B1549ECC100D4F9CE /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE3B1549ECC100D4F9CE /* Util.cpp */; };
+		AB1EFE7C1549ECC100D4F9CE /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE3B1549ECC100D4F9CE /* Util.cpp */; };
+		AB1EFE7D1549ECC100D4F9CE /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE3B1549ECC100D4F9CE /* Util.cpp */; };
+		AB1EFE801549ECD700D4F9CE /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE7F1549ECD700D4F9CE /* arm_jit.cpp */; };
+		AB1EFE811549ECD700D4F9CE /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE7F1549ECD700D4F9CE /* arm_jit.cpp */; };
+		AB1EFE821549ECD700D4F9CE /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE7F1549ECD700D4F9CE /* arm_jit.cpp */; };
+		AB1EFE831549ECD700D4F9CE /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1EFE7F1549ECD700D4F9CE /* arm_jit.cpp */; };
 		AB1F468413A0ADE400B80DE6 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB1F469813A0AE2F00B80DE6 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB350B6A1478A5B3007165AC /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
@@ -770,6 +826,44 @@
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = SOURCE_ROOT; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = SOURCE_ROOT; };
 		AB1B9E621501A78000464647 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = SOURCE_ROOT; };
+		AB1EFE191549ECC100D4F9CE /* ApiBegin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApiBegin.h; sourceTree = "<group>"; };
+		AB1EFE1A1549ECC100D4F9CE /* ApiEnd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApiEnd.h; sourceTree = "<group>"; };
+		AB1EFE1B1549ECC100D4F9CE /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
+		AB1EFE1C1549ECC100D4F9CE /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
+		AB1EFE1D1549ECC100D4F9CE /* AssemblerX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AssemblerX86X64.cpp; sourceTree = "<group>"; };
+		AB1EFE1E1549ECC100D4F9CE /* AssemblerX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AssemblerX86X64.h; sourceTree = "<group>"; };
+		AB1EFE1F1549ECC100D4F9CE /* Build.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Build.h; sourceTree = "<group>"; };
+		AB1EFE201549ECC100D4F9CE /* CodeGenerator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CodeGenerator.cpp; sourceTree = "<group>"; };
+		AB1EFE211549ECC100D4F9CE /* CodeGenerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CodeGenerator.h; sourceTree = "<group>"; };
+		AB1EFE221549ECC100D4F9CE /* Compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Compiler.cpp; sourceTree = "<group>"; };
+		AB1EFE231549ECC100D4F9CE /* Compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Compiler.h; sourceTree = "<group>"; };
+		AB1EFE241549ECC100D4F9CE /* CompilerX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompilerX86X64.cpp; sourceTree = "<group>"; };
+		AB1EFE251549ECC100D4F9CE /* CompilerX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompilerX86X64.h; sourceTree = "<group>"; };
+		AB1EFE261549ECC100D4F9CE /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
+		AB1EFE281549ECC100D4F9CE /* CpuInfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CpuInfo.cpp; sourceTree = "<group>"; };
+		AB1EFE291549ECC100D4F9CE /* CpuInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CpuInfo.h; sourceTree = "<group>"; };
+		AB1EFE2A1549ECC100D4F9CE /* Defs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Defs.cpp; sourceTree = "<group>"; };
+		AB1EFE2B1549ECC100D4F9CE /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
+		AB1EFE2C1549ECC100D4F9CE /* DefsX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefsX86X64.cpp; sourceTree = "<group>"; };
+		AB1EFE2D1549ECC100D4F9CE /* DefsX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DefsX86X64.h; sourceTree = "<group>"; };
+		AB1EFE2E1549ECC100D4F9CE /* Logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logger.cpp; sourceTree = "<group>"; };
+		AB1EFE2F1549ECC100D4F9CE /* Logger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Logger.h; sourceTree = "<group>"; };
+		AB1EFE301549ECC100D4F9CE /* MemoryManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryManager.cpp; sourceTree = "<group>"; };
+		AB1EFE311549ECC100D4F9CE /* MemoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryManager.h; sourceTree = "<group>"; };
+		AB1EFE321549ECC100D4F9CE /* MemoryMarker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryMarker.cpp; sourceTree = "<group>"; };
+		AB1EFE331549ECC100D4F9CE /* MemoryMarker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryMarker.h; sourceTree = "<group>"; };
+		AB1EFE341549ECC100D4F9CE /* Operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Operand.h; sourceTree = "<group>"; };
+		AB1EFE351549ECC100D4F9CE /* OperandX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OperandX86X64.cpp; sourceTree = "<group>"; };
+		AB1EFE361549ECC100D4F9CE /* OperandX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OperandX86X64.h; sourceTree = "<group>"; };
+		AB1EFE371549ECC100D4F9CE /* Platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Platform.cpp; sourceTree = "<group>"; };
+		AB1EFE381549ECC100D4F9CE /* Platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Platform.h; sourceTree = "<group>"; };
+		AB1EFE3B1549ECC100D4F9CE /* Util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Util.cpp; sourceTree = "<group>"; };
+		AB1EFE3C1549ECC100D4F9CE /* Util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Util.h; sourceTree = "<group>"; };
+		AB1EFE3D1549ECC100D4F9CE /* Util_p.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Util_p.h; sourceTree = "<group>"; };
+		AB1EFE7F1549ECD700D4F9CE /* arm_jit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_jit.cpp; path = ../arm_jit.cpp; sourceTree = "<group>"; };
+		AB1EFE841549ECEB00D4F9CE /* arm_jit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_jit.h; path = ../arm_jit.h; sourceTree = "<group>"; };
+		AB1EFE851549ED0200D4F9CE /* instruction_attributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = instruction_attributes.h; path = ../instruction_attributes.h; sourceTree = "<group>"; };
+		AB1EFE861549ED0200D4F9CE /* instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = instructions.h; path = ../instructions.h; sourceTree = "<group>"; };
 		AB350B681478A5B3007165AC /* cocoa_hid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_hid.h; sourceTree = "<group>"; };
 		AB350B691478A5B3007165AC /* cocoa_hid.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_hid.mm; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -868,7 +962,6 @@
 		ABD1FE6B1345AC8400AF11D1 /* addons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = addons.h; path = ../addons.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE6C1345AC8400AF11D1 /* agg2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = agg2d.h; path = ../agg2d.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE6D1345AC8400AF11D1 /* aggdraw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aggdraw.h; path = ../aggdraw.h; sourceTree = SOURCE_ROOT; };
-		ABD1FE6E1345AC8400AF11D1 /* arm_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_instructions.h; path = ../arm_instructions.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE6F1345AC8400AF11D1 /* armcpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = armcpu.h; path = ../armcpu.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE701345AC8400AF11D1 /* bios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bios.h; path = ../bios.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE711345AC8400AF11D1 /* bits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bits.h; path = ../bits.h; sourceTree = SOURCE_ROOT; };
@@ -915,7 +1008,6 @@
 		ABD1FE9A1345AC8400AF11D1 /* sndsdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sndsdl.h; path = ../sndsdl.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9B1345AC8400AF11D1 /* SPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPU.h; path = ../SPU.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9C1345AC8400AF11D1 /* texcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = texcache.h; path = ../texcache.h; sourceTree = SOURCE_ROOT; };
-		ABD1FE9D1345AC8400AF11D1 /* thumb_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thumb_instructions.h; path = ../thumb_instructions.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9E1345AC8400AF11D1 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = types.h; path = ../types.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9F1345AC8400AF11D1 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../version.h; sourceTree = SOURCE_ROOT; };
 		ABD1FEA01345AC8400AF11D1 /* wifi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = wifi.h; path = ../wifi.h; sourceTree = SOURCE_ROOT; };
@@ -1252,6 +1344,47 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		AB1EFE181549ECC100D4F9CE /* AsmJit */ = {
+			isa = PBXGroup;
+			children = (
+				AB1EFE191549ECC100D4F9CE /* ApiBegin.h */,
+				AB1EFE1A1549ECC100D4F9CE /* ApiEnd.h */,
+				AB1EFE1B1549ECC100D4F9CE /* AsmJit.h */,
+				AB1EFE1C1549ECC100D4F9CE /* Assembler.h */,
+				AB1EFE1D1549ECC100D4F9CE /* AssemblerX86X64.cpp */,
+				AB1EFE1E1549ECC100D4F9CE /* AssemblerX86X64.h */,
+				AB1EFE1F1549ECC100D4F9CE /* Build.h */,
+				AB1EFE201549ECC100D4F9CE /* CodeGenerator.cpp */,
+				AB1EFE211549ECC100D4F9CE /* CodeGenerator.h */,
+				AB1EFE221549ECC100D4F9CE /* Compiler.cpp */,
+				AB1EFE231549ECC100D4F9CE /* Compiler.h */,
+				AB1EFE241549ECC100D4F9CE /* CompilerX86X64.cpp */,
+				AB1EFE251549ECC100D4F9CE /* CompilerX86X64.h */,
+				AB1EFE261549ECC100D4F9CE /* Config.h */,
+				AB1EFE281549ECC100D4F9CE /* CpuInfo.cpp */,
+				AB1EFE291549ECC100D4F9CE /* CpuInfo.h */,
+				AB1EFE2A1549ECC100D4F9CE /* Defs.cpp */,
+				AB1EFE2B1549ECC100D4F9CE /* Defs.h */,
+				AB1EFE2C1549ECC100D4F9CE /* DefsX86X64.cpp */,
+				AB1EFE2D1549ECC100D4F9CE /* DefsX86X64.h */,
+				AB1EFE2E1549ECC100D4F9CE /* Logger.cpp */,
+				AB1EFE2F1549ECC100D4F9CE /* Logger.h */,
+				AB1EFE301549ECC100D4F9CE /* MemoryManager.cpp */,
+				AB1EFE311549ECC100D4F9CE /* MemoryManager.h */,
+				AB1EFE321549ECC100D4F9CE /* MemoryMarker.cpp */,
+				AB1EFE331549ECC100D4F9CE /* MemoryMarker.h */,
+				AB1EFE341549ECC100D4F9CE /* Operand.h */,
+				AB1EFE351549ECC100D4F9CE /* OperandX86X64.cpp */,
+				AB1EFE361549ECC100D4F9CE /* OperandX86X64.h */,
+				AB1EFE371549ECC100D4F9CE /* Platform.cpp */,
+				AB1EFE381549ECC100D4F9CE /* Platform.h */,
+				AB1EFE3B1549ECC100D4F9CE /* Util.cpp */,
+				AB1EFE3C1549ECC100D4F9CE /* Util.h */,
+				AB1EFE3D1549ECC100D4F9CE /* Util_p.h */,
+			);
+			path = AsmJit;
+			sourceTree = "<group>";
+		};
 		AB3ACB6514C2361100D7D192 /* userinterface */ = {
 			isa = PBXGroup;
 			children = (
@@ -1370,6 +1503,7 @@
 				ABD1FEA21345AC8400AF11D1 /* aggdraw.cpp */,
 				ABD1FEA31345AC8400AF11D1 /* arm_instructions.cpp */,
 				ABD1FEA41345AC8400AF11D1 /* armcpu.cpp */,
+				AB1EFE7F1549ECD700D4F9CE /* arm_jit.cpp */,
 				ABD1FEA51345AC8400AF11D1 /* bios.cpp */,
 				ABD1FEA61345AC8400AF11D1 /* cheatSystem.cpp */,
 				ABD1FEA71345AC8400AF11D1 /* commandline.cpp */,
@@ -1415,7 +1549,7 @@
 				ABD1FE6B1345AC8400AF11D1 /* addons.h */,
 				ABD1FE6C1345AC8400AF11D1 /* agg2d.h */,
 				ABD1FE6D1345AC8400AF11D1 /* aggdraw.h */,
-				ABD1FE6E1345AC8400AF11D1 /* arm_instructions.h */,
+				AB1EFE841549ECEB00D4F9CE /* arm_jit.h */,
 				ABD1FE6F1345AC8400AF11D1 /* armcpu.h */,
 				ABD1FE701345AC8400AF11D1 /* bios.h */,
 				ABD1FE711345AC8400AF11D1 /* bits.h */,
@@ -1437,6 +1571,8 @@
 				ABD1FE811345AC8400AF11D1 /* gfx3d.h */,
 				ABD1FE831345AC8400AF11D1 /* GPU.h */,
 				ABD1FE821345AC8400AF11D1 /* GPU_osd.h */,
+				AB1EFE851549ED0200D4F9CE /* instruction_attributes.h */,
+				AB1EFE861549ED0200D4F9CE /* instructions.h */,
 				ABD1FE841345AC8400AF11D1 /* lua-engine.h */,
 				ABD1FE851345AC8400AF11D1 /* matrix.h */,
 				ABD1FE861345AC8400AF11D1 /* mc.h */,
@@ -1462,7 +1598,6 @@
 				ABD1FE9A1345AC8400AF11D1 /* sndsdl.h */,
 				ABD1FE9B1345AC8400AF11D1 /* SPU.h */,
 				ABD1FE9C1345AC8400AF11D1 /* texcache.h */,
-				ABD1FE9D1345AC8400AF11D1 /* thumb_instructions.h */,
 				ABD1FE9E1345AC8400AF11D1 /* types.h */,
 				ABD1FE9F1345AC8400AF11D1 /* version.h */,
 				ABD1FEA01345AC8400AF11D1 /* wifi.h */,
@@ -1503,6 +1638,7 @@
 		ABD1FF1C1345ACBF00AF11D1 /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				AB1EFE181549ECC100D4F9CE /* AsmJit */,
 				ABD1FF211345ACBF00AF11D1 /* decrypt */,
 				ABD1FF2E1345ACBF00AF11D1 /* libfat */,
 				ABE670241415DE6C00E8E4C9 /* tinyxml */,
@@ -2181,6 +2317,20 @@
 				ABFE150E14C92FF5005D6699 /* scanline.cpp in Sources */,
 				AB1B9E631501A78000464647 /* coreaudiosound.cpp in Sources */,
 				AB1B9E661501A78000464647 /* ringbuffer.cpp in Sources */,
+				AB1EFE3E1549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */,
+				AB1EFE421549ECC100D4F9CE /* CodeGenerator.cpp in Sources */,
+				AB1EFE461549ECC100D4F9CE /* Compiler.cpp in Sources */,
+				AB1EFE4A1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */,
+				AB1EFE521549ECC100D4F9CE /* CpuInfo.cpp in Sources */,
+				AB1EFE561549ECC100D4F9CE /* Defs.cpp in Sources */,
+				AB1EFE5A1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */,
+				AB1EFE5E1549ECC100D4F9CE /* Logger.cpp in Sources */,
+				AB1EFE621549ECC100D4F9CE /* MemoryManager.cpp in Sources */,
+				AB1EFE661549ECC100D4F9CE /* MemoryMarker.cpp in Sources */,
+				AB1EFE6A1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */,
+				AB1EFE6E1549ECC100D4F9CE /* Platform.cpp in Sources */,
+				AB1EFE7A1549ECC100D4F9CE /* Util.cpp in Sources */,
+				AB1EFE801549ECD700D4F9CE /* arm_jit.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2305,6 +2455,20 @@
 				ABFE151614C92FF5005D6699 /* scanline.cpp in Sources */,
 				AB1B9E641501A78000464647 /* coreaudiosound.cpp in Sources */,
 				AB1B9E671501A78000464647 /* ringbuffer.cpp in Sources */,
+				AB1EFE3F1549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */,
+				AB1EFE431549ECC100D4F9CE /* CodeGenerator.cpp in Sources */,
+				AB1EFE471549ECC100D4F9CE /* Compiler.cpp in Sources */,
+				AB1EFE4B1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */,
+				AB1EFE531549ECC100D4F9CE /* CpuInfo.cpp in Sources */,
+				AB1EFE571549ECC100D4F9CE /* Defs.cpp in Sources */,
+				AB1EFE5B1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */,
+				AB1EFE5F1549ECC100D4F9CE /* Logger.cpp in Sources */,
+				AB1EFE631549ECC100D4F9CE /* MemoryManager.cpp in Sources */,
+				AB1EFE671549ECC100D4F9CE /* MemoryMarker.cpp in Sources */,
+				AB1EFE6B1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */,
+				AB1EFE6F1549ECC100D4F9CE /* Platform.cpp in Sources */,
+				AB1EFE7B1549ECC100D4F9CE /* Util.cpp in Sources */,
+				AB1EFE811549ECD700D4F9CE /* arm_jit.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2418,6 +2582,20 @@
 				ABB3C6D71501C04F00E0C22E /* wifi.cpp in Sources */,
 				ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */,
 				AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */,
+				AB1EFE411549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */,
+				AB1EFE451549ECC100D4F9CE /* CodeGenerator.cpp in Sources */,
+				AB1EFE491549ECC100D4F9CE /* Compiler.cpp in Sources */,
+				AB1EFE4D1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */,
+				AB1EFE551549ECC100D4F9CE /* CpuInfo.cpp in Sources */,
+				AB1EFE591549ECC100D4F9CE /* Defs.cpp in Sources */,
+				AB1EFE5D1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */,
+				AB1EFE611549ECC100D4F9CE /* Logger.cpp in Sources */,
+				AB1EFE651549ECC100D4F9CE /* MemoryManager.cpp in Sources */,
+				AB1EFE691549ECC100D4F9CE /* MemoryMarker.cpp in Sources */,
+				AB1EFE6D1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */,
+				AB1EFE711549ECC100D4F9CE /* Platform.cpp in Sources */,
+				AB1EFE7D1549ECC100D4F9CE /* Util.cpp in Sources */,
+				AB1EFE831549ECD700D4F9CE /* arm_jit.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2542,6 +2720,20 @@
 				ABB715FD14E386740027FE88 /* scanline.cpp in Sources */,
 				AB1B9E651501A78000464647 /* coreaudiosound.cpp in Sources */,
 				AB1B9E681501A78000464647 /* ringbuffer.cpp in Sources */,
+				AB1EFE401549ECC100D4F9CE /* AssemblerX86X64.cpp in Sources */,
+				AB1EFE441549ECC100D4F9CE /* CodeGenerator.cpp in Sources */,
+				AB1EFE481549ECC100D4F9CE /* Compiler.cpp in Sources */,
+				AB1EFE4C1549ECC100D4F9CE /* CompilerX86X64.cpp in Sources */,
+				AB1EFE541549ECC100D4F9CE /* CpuInfo.cpp in Sources */,
+				AB1EFE581549ECC100D4F9CE /* Defs.cpp in Sources */,
+				AB1EFE5C1549ECC100D4F9CE /* DefsX86X64.cpp in Sources */,
+				AB1EFE601549ECC100D4F9CE /* Logger.cpp in Sources */,
+				AB1EFE641549ECC100D4F9CE /* MemoryManager.cpp in Sources */,
+				AB1EFE681549ECC100D4F9CE /* MemoryMarker.cpp in Sources */,
+				AB1EFE6C1549ECC100D4F9CE /* OperandX86X64.cpp in Sources */,
+				AB1EFE701549ECC100D4F9CE /* Platform.cpp in Sources */,
+				AB1EFE7C1549ECC100D4F9CE /* Util.cpp in Sources */,
+				AB1EFE821549ECD700D4F9CE /* arm_jit.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

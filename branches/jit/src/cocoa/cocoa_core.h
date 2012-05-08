@@ -63,6 +63,7 @@ typedef struct
 	BOOL emuFlagFirmwareBoot;
 	BOOL emuFlagDebugConsole;
 	BOOL emuFlagEmulateEnsata;
+	NSInteger cpuEmulationEngine;
 	
 	pthread_mutex_t *mutexCoreExecute;
 	OSSpinLock spinlockCdsController;
@@ -70,6 +71,7 @@ typedef struct
 	OSSpinLock spinlockExecutionChange;
 	OSSpinLock spinlockCheatEnableFlag;
 	OSSpinLock spinlockEmulationFlags;
+	OSSpinLock spinlockCPUEmulationEngine;
 }
 
 @property (retain) CocoaDSController *cdsController;
@@ -93,6 +95,7 @@ typedef struct
 @property (assign) BOOL emuFlagFirmwareBoot;
 @property (assign) BOOL emuFlagDebugConsole;
 @property (assign) BOOL emuFlagEmulateEnsata;
+@property (assign) NSInteger cpuEmulationEngine;
 
 @property (copy) NSURL *arm9ImageURL;
 @property (copy) NSURL *arm7ImageURL;

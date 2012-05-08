@@ -383,6 +383,9 @@
 	
 	[cdsCore setEmulationFlags:emuFlags];
 	
+	// Set the CPU emulation engine per user preferences.
+	[cdsCore setCpuEmulationEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_CPUEmulationEngine"]];
+	
 	// Set up the firmware per user preferences.
 	NSMutableDictionary *newFWDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 									  [[NSUserDefaults standardUserDefaults] objectForKey:@"FirmwareConfig_Nickname"], @"Nickname",

@@ -23,4 +23,5 @@
 #define DESMUME_COCOA
 #define HAVE_OPENGL
 #define HAVE_LIBZ
+#define HAVE_JIT
 #define PORT_VERSION	"Cocoa"

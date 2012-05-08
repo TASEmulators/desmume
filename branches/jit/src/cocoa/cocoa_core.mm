@@ -56,6 +56,7 @@ volatile bool execute = true;
 @synthesize emuFlagFirmwareBoot;
 @synthesize emuFlagDebugConsole;
 @synthesize emuFlagEmulateEnsata;
+@dynamic cpuEmulationEngine;
 
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
@@ -94,6 +95,7 @@ static BOOL isCoreStarted = NO;
 	spinlockExecutionChange = OS_SPINLOCK_INIT;
 	spinlockCheatEnableFlag = OS_SPINLOCK_INIT;
 	spinlockEmulationFlags = OS_SPINLOCK_INIT;
+	spinlockCPUEmulationEngine = OS_SPINLOCK_INIT;
 	
 	isSpeedLimitEnabled = YES;
 	speedScalar = SPEED_SCALAR_NORMAL;
@@ -466,6 +468,33 @@ static BOOL isCoreStarted = NO;
 	return theFlags;
 }
 
+- (void) setCpuEmulationEngine:(NSInteger)engineID
+{
+	bool useDynaRec = false;
+	
+	OSSpinLockLock(&spinlockCPUEmulationEngine);
+	cpuEmulationEngine = engineID;
+	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
+	
+	if (engineID == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER)
+	{
+		useDynaRec = true;
+	}
+	
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	CommonSettings.use_jit = useDynaRec;
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+}
+
+- (NSInteger) cpuEmulationEngine
+{
+	OSSpinLockLock(&spinlockCPUEmulationEngine);
+	NSInteger engineID = cpuEmulationEngine;
+	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
+	
+	return engineID;
+}
+
 - (void) setCoreState:(NSInteger)coreState
 {
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
@@ -589,7 +618,7 @@ static BOOL isCoreStarted = NO;
 			theSpeed = SPEED_SCALAR_MIN;
 		}
 		
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		pthread_mutex_lock(&threadParam.mutexThreadExecute);
 		uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / theSpeed);
 		AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
 		threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
@@ -597,7 +626,7 @@ static BOOL isCoreStarted = NO;
 	}
 	else
 	{
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		pthread_mutex_lock(&threadParam.mutexThreadExecute);
 		threadParam.timeBudgetMachAbsTime = 0;
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	}
