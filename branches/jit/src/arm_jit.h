@@ -42,7 +42,7 @@ struct JIT_struct
 	u32 ARM7_ERAM[0x10000/2];
 	u32 ARM7_WIRAM[0x10000/2];
 
-	static u32 *JIT_MEM[2][0x4000];
+	static uintptr_t *JIT_MEM[2][0x4000];
 };
 extern CACHE_ALIGN JIT_struct JIT;
 #define JIT_COMPILED_FUNC(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][((adr)&0x0FFFC000)>>14][((adr)&0x00003FFE)>>1]
@@ -51,7 +51,7 @@ extern CACHE_ALIGN JIT_struct JIT;
 #define JIT_MAPPED(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][(adr)>>14]
 #else
 // actually an array of function pointers, but they fit in 32bit address space, so might as well save memory
-extern u32 compiled_funcs[];
+extern uintptr_t compiled_funcs[];
 // there isn't anything mapped between 07000000 and 0EFFFFFF, so we can mask off bit 27 and get away with a smaller array
 #define JIT_COMPILED_FUNC(adr, PROCNUM) compiled_funcs[((adr) & 0x07FFFFFE) >> 1]
 #define JIT_COMPILED_FUNC_PREMASKED JIT_COMPILED_FUNC

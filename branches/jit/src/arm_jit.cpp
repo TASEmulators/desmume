@@ -73,9 +73,9 @@ using namespace AsmJit;
 #ifdef MAPPED_JIT_FUNCS
 CACHE_ALIGN JIT_struct JIT;
 
-u32 *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
+uintptr_t *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
 
-static u32 *JIT_MEM[2][32] = {
+static uintptr_t *JIT_MEM[2][32] = {
 	//arm9
 	{
 		/* 0X*/	DUP2(JIT.ARM9_ITCM),
@@ -173,7 +173,7 @@ static void init_jit_mem()
 }
 
 #else
-DS_ALIGN(4096) u32 compiled_funcs[1<<26] = {0};
+DS_ALIGN(4096) uintptr_t compiled_funcs[1<<26] = {0};
 #endif
 
 static u8 recompile_counts[(1<<26)/16];
@@ -191,13 +191,8 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 {
 	StaticCodeGenerator()
 	{
-		if(((uintptr_t)scratchpad+sizeof(scratchpad)-1) & ~(uintptr_t)0xFFFFFFFF)
-		{
-			fprintf(stderr, "jit scratchpad (%p) isn't in low address space\n", scratchpad);
-			abort();
-		}
 		scratchptr = scratchpad;
-		int align = (intptr_t)scratchpad & (sysconf(_SC_PAGESIZE) - 1);
+		int align = (uintptr_t)scratchpad & (sysconf(_SC_PAGESIZE) - 1);
 		int err = mprotect(scratchpad-align, sizeof(scratchpad)+align, PROT_READ|PROT_WRITE|PROT_EXEC);
 		if(err)
 		{
@@ -208,13 +203,13 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 
 	uint32_t generate(void** dest, Assembler* assembler)
 	{
-		intptr_t size = assembler->getCodeSize();
+		uintptr_t size = assembler->getCodeSize();
 		if(size == 0)
 		{
 			*dest = NULL;
 			return ERROR_NO_FUNCTION;
 		}
-		if(size > (intptr_t)(scratchpad+sizeof(scratchpad)-scratchptr))
+		if(size > (uintptr_t)(scratchpad+sizeof(scratchpad)-scratchptr))
 		{
 			fprintf(stderr, "Out of memory for asmjit. Clearing code cache.\n");
 			arm_jit_reset(1);
@@ -973,9 +968,9 @@ static void init_op_cmp(int PROCNUM, int sign)
 	c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
 	GPVar x = c.newGP(VARIABLE_TYPE_GPD);
 	GPVar y = c.newGP(VARIABLE_TYPE_GPD);
-#ifdef _M_X64
+#if defined(_M_X64) || defined(__x86_64__)
 	GPVar bb_cpu = c.newGP(VARIABLE_TYPE_GPN);
-	c.mov(bb_cpu, (intptr_t)&ARMPROC);
+	c.mov(bb_cpu, (uintptr_t)&ARMPROC);
 	Mem flags = flags_ptr;
 #else
 	Mem flags = byte_ptr_abs((u8*)&cpu->CPSR.val+3);
@@ -2057,7 +2052,7 @@ static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u64 regs, int n, u8 *pt
 #ifdef ENABLE_ADVANCED_TIMING
 	cycles = 0;
 #endif
-	u64 *func = (u64*)&JIT_COMPILED_FUNC(adr, PROCNUM);
+	uintptr_t *func = (uintptr_t *)&JIT_COMPILED_FUNC(adr, PROCNUM);
 
 #define OP(j) { \
 	/* no need to zero functions in DTCM, since we can't execute from it */ \
@@ -2423,7 +2418,7 @@ static int OP_MCR(const u32 i)
 	GPVar bb_cp15 = c.newGP(VARIABLE_TYPE_GPN);
 	GPVar data = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(data, reg_pos_ptr(12));
-	c.mov(bb_cp15, (intptr_t)&cp15);
+	c.mov(bb_cp15, (uintptr_t)&cp15);
 
 	bool bUnknown = false;
 	switch(CRn)
@@ -2604,7 +2599,7 @@ static int OP_MCR(const u32 i)
 								//ITCMRegion = val;
 								//ITCM base is not writeable!
 								GPVar bb_mmu = c.newGP(VARIABLE_TYPE_GPN);
-								c.mov(bb_mmu, (intptr_t)&MMU);
+								c.mov(bb_mmu, (uintptr_t)&MMU);
 								c.mov(mmu_ptr(ITCMRegion), 0);
 								c.mov(cp15_ptr(ITCMRegion), data);
 								}
@@ -2656,7 +2651,7 @@ static int OP_MRC(const u32 i)
 	GPVar bb_cp15 = c.newGP(VARIABLE_TYPE_GPN);
 	GPVar data = c.newGP(VARIABLE_TYPE_GPD);
 
-	c.mov(bb_cp15, (intptr_t)&cp15);
+	c.mov(bb_cp15, (uintptr_t)&cp15);
 	
 	bool bUnknown = false;
 	switch(CRn)
@@ -2906,7 +2901,7 @@ static int OP_MRC(const u32 i)
 
 static int OP_SWI(const u32 i)
 {
-#ifdef _M_X64
+#if defined(_M_X64) || defined(__x86_64__)
 	// TODO:
 	if (cpu->swi_tab) return 0;
 #else
@@ -3716,7 +3711,7 @@ static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1, 1);
 
 static int OP_SWI_THUMB(const u32 i)
 {
-#ifdef _M_X64
+#if defined(_M_X64) || defined(__x86_64__)
 	// TODO:
 	if (cpu->swi_tab) return 0;
 #else
@@ -3948,7 +3943,7 @@ static void emit_branch(int cond, Label to)
 		GPVar x = c.newGP(VARIABLE_TYPE_GPN);
 		c.movzx(x, flags_ptr);
 		c.and_(x, 0xF0);
-#ifdef _M_X64
+#if defined(_M_X64) || defined(__x86_64__)
 		c.add(x, offsetof(armcpu_t,cond_table) + cond);
 		c.test(byte_ptr(bb_cpu, x), 1);
 #else
@@ -4054,7 +4049,7 @@ static u32 compile_basicblock()
 	c.getFunction()->setHint(FUNCTION_HINT_PUSH_POP_SEQUENCE, true);
 	bb_cpu = c.newGP(VARIABLE_TYPE_GPN);
 	JIT_COMMENT("CPU ptr");
-	c.mov(bb_cpu, (intptr_t)&ARMPROC);
+	c.mov(bb_cpu, (uintptr_t)&ARMPROC);
 
 	GPVar total_cycles;
 	if(has_variable_cycles)
@@ -4139,12 +4134,12 @@ static u32 compile_basicblock()
 		f = op_decode[PROCNUM][bb_thumb];
 	}
 #if LOG_JIT
-	u32 baddr = (u32)(intptr_t)f;
-	fprintf(stderr, "Block address %08X\n\n", baddr);
+	uintptr_t baddr = (uintptr_t)f;
+	fprintf(stderr, "Block address %08lX\n\n", baddr);
 	fflush(stderr);
 #endif
 	
-	JIT_COMPILED_FUNC(start_adr, PROCNUM) = (u32)(intptr_t)f;
+	JIT_COMPILED_FUNC(start_adr, PROCNUM) = (uintptr_t)f;
 	return interpreted_cycles;
 }
 
@@ -4159,7 +4154,7 @@ template<int PROCNUM> u32 arm_jit_compile()
 	if(((recompile_counts[mask_adr >> 1] >> 4*(mask_adr & 1)) & 0xF) > 8)
 	{
 		ArmOpCompiled f = op_decode[PROCNUM][cpu->CPSR.bits.T];
-		JIT_COMPILED_FUNC(adr, PROCNUM) = (u32)(intptr_t)f;
+		JIT_COMPILED_FUNC(adr, PROCNUM) = (uintptr_t)f;
 		return f();
 	}
 	recompile_counts[mask_adr >> 1] += 1 << 4*(mask_adr & 1);

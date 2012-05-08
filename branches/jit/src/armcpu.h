@@ -265,7 +265,7 @@ struct armcpu_t
 	// flag indicating if the processor is stalled (for debugging)
 	int stalled;
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(__x86_64__)
 	u8 cond_table[16*16];
 
 	armcpu_t()
