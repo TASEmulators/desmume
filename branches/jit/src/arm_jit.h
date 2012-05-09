@@ -34,21 +34,21 @@ template<int PROCNUM> u32 arm_jit_compile();
 struct JIT_struct 
 {
 	// only include the memory types that code can execute from
-	u32 MAIN_MEM[16*1024*1024/2];
-	u32 SWIRAM[0x8000/2];
-	u32 ARM9_ITCM[0x8000/2];
-	u32 ARM9_BIOS[0x8000/2];
-	u32 ARM7_BIOS[0x4000/2];
-	u32 ARM7_ERAM[0x10000/2];
-	u32 ARM7_WIRAM[0x10000/2];
-	u32 ARM7_WRAM[0x40000/2];
+	uintptr_t MAIN_MEM[16*1024*1024/2];
+	uintptr_t SWIRAM[0x8000/2];
+	uintptr_t ARM9_ITCM[0x8000/2];
+	uintptr_t ARM9_BIOS[0x8000/2];
+	uintptr_t ARM7_BIOS[0x4000/2];
+	uintptr_t ARM7_ERAM[0x10000/2];
+	uintptr_t ARM7_WIRAM[0x10000/2];
+	uintptr_t ARM7_WRAM[0x40000/2];
 
 	static uintptr_t *JIT_MEM[2][0x4000];
 };
 extern CACHE_ALIGN JIT_struct JIT;
 #define JIT_COMPILED_FUNC(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][((adr)&0x0FFFC000)>>14][((adr)&0x00003FFE)>>1]
-#define JIT_COMPILED_FUNC_PREMASKED(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][(adr)>>14][((adr)&0x00003FFE)>>1]
-#define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask) JIT.bank[((adr)&(mask))>>1]
+#define JIT_COMPILED_FUNC_PREMASKED(adr, PROCNUM, ofs) JIT.JIT_MEM[PROCNUM][(adr)>>14][(((adr)&0x00003FFE)>>1)+ofs]
+#define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask, ofs) JIT.bank[(((adr)&(mask))>>1)+ofs]
 #define JIT_MAPPED(adr, PROCNUM) JIT.JIT_MEM[PROCNUM][(adr)>>14]
 #else
 // actually an array of function pointers, but they fit in 32bit address space, so might as well save memory

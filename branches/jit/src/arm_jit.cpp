@@ -78,10 +78,10 @@ uintptr_t *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
 static uintptr_t *JIT_MEM[2][32] = {
 	//arm9
 	{
-		/* 0X*/	DUP2((uintptr_t*)JIT.ARM9_ITCM),
-		/* 1X*/	DUP2((uintptr_t*)JIT.ARM9_ITCM), // mirror
-		/* 2X*/	DUP2((uintptr_t*)JIT.MAIN_MEM),
-		/* 3X*/	DUP2((uintptr_t*)JIT.SWIRAM),
+		/* 0X*/	DUP2(JIT.ARM9_ITCM),
+		/* 1X*/	DUP2(JIT.ARM9_ITCM), // mirror
+		/* 2X*/	DUP2(JIT.MAIN_MEM),
+		/* 3X*/	DUP2(JIT.SWIRAM),
 		/* 4X*/	DUP2(NULL),
 		/* 5X*/	DUP2(NULL),
 		/* 6X*/	DUP2(NULL),
@@ -93,19 +93,20 @@ static uintptr_t *JIT_MEM[2][32] = {
 		/* CX*/	DUP2(NULL),
 		/* DX*/	DUP2(NULL),
 		/* EX*/	DUP2(NULL),
-		/* FX*/	DUP2((uintptr_t*)JIT.ARM9_BIOS)
+		/* FX*/	DUP2(JIT.ARM9_BIOS)
 	},
 	//arm7
 	{
-		/* 0X*/	DUP2((uintptr_t*)JIT.ARM7_BIOS),
+		/* 0X*/	DUP2(JIT.ARM7_BIOS),
 		/* 1X*/	DUP2(NULL),
-		/* 2X*/	DUP2((uintptr_t*)JIT.MAIN_MEM),
-		/* 3X*/	     (uintptr_t*)JIT.SWIRAM,
-		             (uintptr_t*)JIT.ARM7_ERAM,
+		/* 2X*/	DUP2(JIT.MAIN_MEM),
+		/* 3X*/	     JIT.SWIRAM,
+		             JIT.ARM7_ERAM,
 		/* 4X*/	     NULL,
-		             (uintptr_t*)JIT.ARM7_WIRAM,
+		             JIT.ARM7_WIRAM,
 		/* 5X*/	DUP2(NULL),
-		/* 6X*/	DUP2((uintptr_t*)JIT.ARM7_WRAM),		// VRAM allocated as Work RAM to ARM7 (max. 256K)
+		/* 6X*/		 JIT.ARM7_WRAM,		// VRAM allocated as Work RAM to ARM7 (max. 256K)
+					 NULL,
 		/* 7X*/	DUP2(NULL),
 		/* 8X*/	DUP2(NULL),
 		/* 9X*/	DUP2(NULL),
@@ -148,7 +149,8 @@ static u32 JIT_MASK[2][32] = {
 		/* 4X*/	     0x00000000,
 		             0x0000FFFF,
 		/* 5X*/	DUP2(0x00000000),
-		/* 6X*/	DUP2(0x0003FFFF),
+		/* 6X*/		 0x0003FFFF,
+					 0x00000000,
 		/* 7X*/	DUP2(0x00000000),
 		/* 8X*/	DUP2(0x00000000),
 		/* 9X*/	DUP2(0x00000000),
