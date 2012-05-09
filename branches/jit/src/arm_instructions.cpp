@@ -6208,7 +6208,7 @@ TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 		cpu->changeCPSR();
 		cpu->R[15] = cpu->intVector + 0x08;
 		cpu->next_instruction = cpu->R[15];
-		return 4;
+		return 3;
 	}
 }
 

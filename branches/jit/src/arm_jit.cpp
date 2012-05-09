@@ -105,7 +105,7 @@ static uintptr_t *JIT_MEM[2][32] = {
 		/* 4X*/	     NULL,
 		             (uintptr_t*)JIT.ARM7_WIRAM,
 		/* 5X*/	DUP2(NULL),
-		/* 6X*/	DUP2(NULL),
+		/* 6X*/	DUP2((uintptr_t*)JIT.ARM7_WRAM),		// VRAM allocated as Work RAM to ARM7 (max. 256K)
 		/* 7X*/	DUP2(NULL),
 		/* 8X*/	DUP2(NULL),
 		/* 9X*/	DUP2(NULL),
@@ -148,7 +148,7 @@ static u32 JIT_MASK[2][32] = {
 		/* 4X*/	     0x00000000,
 		             0x0000FFFF,
 		/* 5X*/	DUP2(0x00000000),
-		/* 6X*/	DUP2(0x00000000),
+		/* 6X*/	DUP2(0x0003FFFF),
 		/* 7X*/	DUP2(0x00000000),
 		/* 8X*/	DUP2(0x00000000),
 		/* 9X*/	DUP2(0x00000000),
@@ -4192,6 +4192,7 @@ void arm_jit_reset(bool enable)
 		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM7_BIOS));
 		memset(JIT.ARM7_ERAM, 0, sizeof(JIT.ARM7_ERAM));
 		memset(JIT.ARM7_WIRAM,0, sizeof(JIT.ARM7_WIRAM));
+		memset(JIT.ARM7_WRAM, 0, sizeof(JIT.ARM7_WRAM));
 		memset(recompile_counts, 0, sizeof(recompile_counts));
 		init_jit_mem();
 #else

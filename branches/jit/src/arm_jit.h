@@ -41,6 +41,7 @@ struct JIT_struct
 	u32 ARM7_BIOS[0x4000/2];
 	u32 ARM7_ERAM[0x10000/2];
 	u32 ARM7_WIRAM[0x10000/2];
+	u32 ARM7_WRAM[0x40000/2];
 
 	static uintptr_t *JIT_MEM[2][0x4000];
 };
