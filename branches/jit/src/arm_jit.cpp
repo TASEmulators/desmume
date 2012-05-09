@@ -2057,12 +2057,15 @@ static FORCEINLINE FASTCALL u32 OP_LDM_STM_main(u32 adr, u64 regs, int n, u8 *pt
 #define OP(j) { \
 	/* no need to zero functions in DTCM, since we can't execute from it */ \
 	if(null_compiled && store) \
+	{ \
 		*func = 0; \
+		*(func+1) = 0; \
+	} \
 	int Rd = ((uintptr_t)regs >> (j*4)) & 0xF; \
 	if(store) *(u32*)ptr = cpu->R[Rd]; \
 	else cpu->R[Rd] = *(u32*)ptr; \
 	ADV_CYCLES; \
-	func += dir; \
+	func += 2*dir; \
 	adr += 4*dir; \
 	ptr += 4*dir; }
 
