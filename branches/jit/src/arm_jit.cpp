@@ -265,6 +265,7 @@ static void *op_cmp[2][2];
 #define reg_pos_thumb(x)dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*((i>>x)&0x7)))
 #define cp15_ptr(x)     dword_ptr(bb_cp15, offsetof(armcp15_t,x))
 #define mmu_ptr(x)      dword_ptr(bb_mmu, offsetof(MMU_struct,x))
+#define mmu_ptr_byte(x) byte_ptr(bb_mmu, offsetof(MMU_struct,x))
 #define _REG_NUM(i, n) ((i>>n)&0x7)
 
 #ifndef ASMJIT_X64
@@ -2436,8 +2437,10 @@ static int OP_MCR(const u32 i)
 				GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
 				// On the NDS bit0,2,7,12..19 are R/W, Bit3..6 are always set, all other bits are always zero.
 				//MMU.ARM9_RW_MODE = BIT7(val);
-				Mem rwmode = byte_ptr_abs((u8*)&MMU.ARM9_RW_MODE);
-				Mem ldtbit = byte_ptr_abs((u8*)&ARMPROC.LDTBit);
+				GPVar bb_mmu = c.newGP(VARIABLE_TYPE_GPN);
+				c.mov(bb_mmu, (uintptr_t)&MMU);
+				Mem rwmode = mmu_ptr_byte(ARM9_RW_MODE);
+				Mem ldtbit = cpu_ptr_byte(LDTBit, 0);
 				c.bt(data, 7);
 				c.setc(rwmode);
 				//cpu->intVector = 0xFFFF0000 * (BIT13(val));
