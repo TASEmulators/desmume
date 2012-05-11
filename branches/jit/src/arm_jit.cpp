@@ -84,7 +84,8 @@ static uintptr_t *JIT_MEM[2][32] = {
 		/* 3X*/	DUP2(JIT.SWIRAM),
 		/* 4X*/	DUP2(NULL),
 		/* 5X*/	DUP2(NULL),
-		/* 6X*/	DUP2(NULL),
+		/* 6X*/		 NULL, 
+					 JIT.ARM9_LCDC,	// Plain ARM9-CPU Access (LCDC mode) (max 656KB)
 		/* 7X*/	DUP2(NULL),
 		/* 8X*/	DUP2(NULL),
 		/* 9X*/	DUP2(NULL),
@@ -128,7 +129,8 @@ static u32 JIT_MASK[2][32] = {
 		/* 3X*/	DUP2(0x00007FFF),
 		/* 4X*/	DUP2(0x00000000),
 		/* 5X*/	DUP2(0x00000000),
-		/* 6X*/	DUP2(0x00000000),
+		/* 6X*/		 0x00000000,
+					 0x000FFFFF,
 		/* 7X*/	DUP2(0x00000000),
 		/* 8X*/	DUP2(0x00000000),
 		/* 9X*/	DUP2(0x00000000),
@@ -2876,44 +2878,14 @@ static int OP_MRC(const u32 i)
 	return 1;
 }
 
-#define _OP_SWI_EXT { \
-	GPVar oldCPSR = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar mode = c.newGP(VARIABLE_TYPE_GPD); \
-	Mem CPSR = cpu_ptr(CPSR.val); \
-	JIT_COMMENT("store CPSR to x86 stack"); \
-	c.mov(oldCPSR, CPSR); \
-	JIT_COMMENT("enter SVC mode"); \
-	c.mov(mode, imm(SVC)); \
-	ECall* ctx = c.call((void*)armcpu_switchMode); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, void*, u8>()); \
-	ctx->setArgument(0, bb_cpu); \
-	ctx->setArgument(1, mode); \
-	c.unuse(mode); \
-	JIT_COMMENT("store next instruction address to R14"); \
-	c.mov(reg_ptr(14), bb_next_instruction); \
-	JIT_COMMENT("save old CPSR as new SPSR"); \
-	c.mov(cpu_ptr(SPSR.val), oldCPSR); \
-	JIT_COMMENT("CPSR: clear T, set I"); \
-	GPVar _cpsr = c.newGP(VARIABLE_TYPE_GPD); \
-	c.mov(_cpsr, CPSR); \
-	c.and_(_cpsr, ~(1 << 5));	/* clear T */ \
-	c.or_(_cpsr, (1 << 7));		/* set I */ \
-	c.mov(CPSR, _cpsr); \
-	c.unuse(_cpsr); \
-	JIT_COMMENT("set next instruction"); \
-	c.mov(cpu_ptr(next_instruction), imm(cpu->intVector+0x08)); \
-	return 1; }
-
-static int OP_SWI(const u32 i)
+u32 op_swi(u8 swinum)
 {
-#if defined(_M_X64) || defined(__x86_64__)
-	// TODO:
-	if (cpu->swi_tab) return 0;
-#else
 	if(cpu->swi_tab)
 	{
-		u32 swinum = (i >> 16) & 0x1F;
-
+#if defined(_M_X64) || defined(__x86_64__)
+		// TODO:
+		return 0;
+#endif
 		ECall *ctx = c.call((void*)ARM_swi_tab[PROCNUM][swinum]);
 		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<u32>());
 		ctx->setReturn(bb_cycles);
@@ -2921,9 +2893,36 @@ static int OP_SWI(const u32 i)
 		return 1;
 	}
 
-#endif
-	_OP_SWI_EXT;
+	GPVar oldCPSR = c.newGP(VARIABLE_TYPE_GPD);
+	GPVar mode = c.newGP(VARIABLE_TYPE_GPD);
+	Mem CPSR = cpu_ptr(CPSR.val);
+	JIT_COMMENT("store CPSR to x86 stack");
+	c.mov(oldCPSR, CPSR);
+	JIT_COMMENT("enter SVC mode");
+	c.mov(mode, imm(SVC));
+	ECall* ctx = c.call((void*)armcpu_switchMode);
+	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder2<Void, void*, u8>());
+	ctx->setArgument(0, bb_cpu);
+	ctx->setArgument(1, mode);
+	c.unuse(mode);
+	JIT_COMMENT("store next instruction address to R14");
+	c.mov(reg_ptr(14), bb_next_instruction);
+	JIT_COMMENT("save old CPSR as new SPSR");
+	c.mov(cpu_ptr(SPSR.val), oldCPSR);
+	JIT_COMMENT("CPSR: clear T, set I");
+	GPVar _cpsr = c.newGP(VARIABLE_TYPE_GPD);
+	c.mov(_cpsr, CPSR);
+	c.and_(_cpsr, ~(1 << 5));	/* clear T */
+	c.or_(_cpsr, (1 << 7));		/* set I */
+	c.mov(CPSR, _cpsr);
+	c.unuse(_cpsr);
+	JIT_COMMENT("set next instruction");
+	c.mov(cpu_ptr(next_instruction), imm(cpu->intVector+0x08));
+	
+	return 1;
 }
+
+static int OP_SWI(const u32 i) { return op_swi((i >> 16) & 0x1F); }
 
 //-----------------------------------------------------------------------------
 //   BKPT
@@ -3714,25 +3713,7 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 static int OP_BX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 0, 0); }
 static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1, 1); }
 
-static int OP_SWI_THUMB(const u32 i)
-{
-#if defined(_M_X64) || defined(__x86_64__)
-	// TODO:
-	if (cpu->swi_tab) return 0;
-#else
-	if(cpu->swi_tab)
-	{
-		u32 swinum = i & 0x1F;
-
-		ECall *ctx = c.call((void*)ARM_swi_tab[PROCNUM][swinum]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<u32>());
-		ctx->setReturn(bb_cycles);
-		c.add(bb_cycles, 3);
-		return 1;
-	}
-#endif
-	_OP_SWI_EXT;
-}
+static int OP_SWI_THUMB(const u32 i) { return op_swi(i & 0x1F); }
 
 //-----------------------------------------------------------------------------
 //   Unimplemented; fall back to the C versions
@@ -3827,13 +3808,13 @@ static bool instr_is_branch(u32 opcode)
 	if(bb_thumb)
 		return (x & BRANCH_ALWAYS)
 		    || ((x & BRANCH_POS0) && ((opcode&7) | ((opcode>>4)&8)) == 15)
-			|| ((x & BRANCH_SWI) && !cpu->swi_tab)
+			|| (x & BRANCH_SWI)
 		    || (x & JIT_BYPASS);
 	else
 		return (x & BRANCH_ALWAYS)
 		    || ((x & BRANCH_POS12) && REG_POS(opcode,12) == 15)
 		    || ((x & BRANCH_LDM) && BIT15(opcode))
-			|| ((x & BRANCH_SWI) && !cpu->swi_tab)
+			|| (x & BRANCH_SWI)
 		    || (x & JIT_BYPASS);
 }
 
@@ -3916,7 +3897,7 @@ static void sync_r15(u32 opcode, bool is_last, bool force)
 	}
 	else
 	{
-		if(force || (instr_attributes(opcode) & JIT_BYPASS) || (is_last && !instr_is_branch(opcode)))
+		if(force || (instr_attributes(opcode) & JIT_BYPASS) || (instr_attributes(opcode) & BRANCH_SWI) || (is_last && !instr_is_branch(opcode)))
 		{
 			JIT_COMMENT("sync_r15: next_instruction %08Xh", bb_next_instruction);
 			c.mov(cpu_ptr(next_instruction), bb_next_instruction);
@@ -4190,6 +4171,7 @@ void arm_jit_reset(bool enable)
 		memset(JIT.MAIN_MEM,  0, sizeof(JIT.MAIN_MEM));
 		memset(JIT.SWIRAM,    0, sizeof(JIT.SWIRAM));
 		memset(JIT.ARM9_ITCM, 0, sizeof(JIT.ARM9_ITCM));
+		memset(JIT.ARM9_LCDC, 0, sizeof(JIT.ARM9_LCDC));
 		memset(JIT.ARM9_BIOS, 0, sizeof(JIT.ARM9_BIOS));
 		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM7_BIOS));
 		memset(JIT.ARM7_ERAM, 0, sizeof(JIT.ARM7_ERAM));

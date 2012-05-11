@@ -37,6 +37,7 @@ struct JIT_struct
 	uintptr_t MAIN_MEM[16*1024*1024/2];
 	uintptr_t SWIRAM[0x8000/2];
 	uintptr_t ARM9_ITCM[0x8000/2];
+	uintptr_t ARM9_LCDC[0xA4000/2];
 	uintptr_t ARM9_BIOS[0x8000/2];
 	uintptr_t ARM7_BIOS[0x4000/2];
 	uintptr_t ARM7_ERAM[0x10000/2];
