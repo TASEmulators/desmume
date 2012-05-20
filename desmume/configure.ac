@@ -249,7 +249,8 @@ fi
 AM_CONDITIONAL([HAVE_WX], [test "x$wxwidgets" = "xyes"])
 
 dnl - Determine which UIs to build and if po/ should be included
-PO_DIR=""
+PO_DIR="po"
+PO_MAKEFILE="po/Makefile.in"
 UI_DIR="cli $UI_DIR"
 if test "x$HAVE_GTK" = "xyes"; then
   UI_DIR="gtk $UI_DIR"
@@ -268,8 +269,6 @@ if test "x$HAVE_LIBGLADE" = "xyes"; then
     AC_SUBST(GETTEXT_PACKAGE)
     ALL_LINGUAS="fr nb pt_BR sv zh_CN zh_TW"
     AM_GLIB_GNU_GETTEXT
-    PO_DIR="po"
-    PO_MAKEFILE="po/Makefile.in"
   ],[
     echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed."
   ])
