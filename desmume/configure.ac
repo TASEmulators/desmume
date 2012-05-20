@@ -103,11 +103,6 @@ AC_ARG_ENABLE([hud],
               [AC_HELP_STRING([--enable-hud], [Enable HUD rendering, requires libagg])],
               [libagg=yes])
 
-dnl - hack to help zero build gtk frontend macos x package
-AC_ARG_ENABLE(macosxhack,
-	      [AC_HELP_STRING(--enable-macosxhack, hack to build MacOSX package)],
-	      [GTK_MACOSX_HACK=yes])
-
 HAVE_OPENAL=no
 dnl - openal support
 AC_ARG_ENABLE(openal,
@@ -132,11 +127,6 @@ PKG_CHECK_MODULES(GLIB,
                   glib-2.0 >= $GLIB_VER,
                   FOUND_GLIB=yes,
                   FOUND_GLIB=no)
-if test "x$FOUND_GLIB" = "xno"; then
-   if test ! "x$GTK_MACOSX_HACK" = "xyes"; then
-     AC_MSG_ERROR([Glib is required to build desmume])
-   fi
-fi
 
 PKG_CHECK_MODULES(GTK,
                   gtk+-2.0 >= $GTK_VER,
@@ -291,12 +281,6 @@ case $host in
     UI_DIR="windows"
     ;;
   *darwin*)
-    if test "x$GTK_MACOSX_HACK" = "xyes" ; then
-      LIBS="$LIBS -framework Gtk -framework GLib"
-      CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers"
-      GLIB_LIBS=""
-      AC_SUBST(GLIB_LIBS)
-    fi
     dnl - openal is required on mac os x and we are not able to figure out if it's installed or not
     AC_DEFINE(HAVE_OPENAL)
     LIBS="$LIBS -framework OpenGL -framework OpenAL"
