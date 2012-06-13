@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ typedef struct
 	bool autoup;
 
 	s16 num;
-	OAM *oam;
+	void*oam;
 	GPU *gpu;
 	u8 scale;
 	bool border;
@@ -109,7 +109,18 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
 {
         HDC          hdc;
         PAINTSTRUCT  ps;
-        OAM * oam = &win->oam[win->num];
+				//_OAM_ _oam;
+				//_OAM_* oam = &_oam;
+				//SlurpOAM(oam,win->oam,win->num);
+
+				struct MyOam
+				{
+					u16 attr0,attr1,attr2,attr3;
+				} myOam;
+
+				MyOam* oam = &myOam;
+				memcpy(oam,(u8*)win->oam + 8*win->num,8);
+
         char text[80];
         u16 bitmap[256*192];
 		u8 bitmap_alpha[256*192];
@@ -265,7 +276,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                  {
 						OAMView = new oamview_struct;
 						memset(OAMView, 0, sizeof(oamview_struct));
-						OAMView->oam = (OAM *)(MMU.ARM9_OAM);
+						OAMView->oam = MMU.ARM9_OAM;
 						OAMView->gpu = MainScreen.gpu;
 						OAMView->scale = 2;
 						OAMView->border = true;
@@ -375,12 +386,12 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                                             switch(sel)
                                             {
                                                  case 0 :
-                                                      OAMView->oam = (OAM *)MMU.ARM9_OAM;
+                                                      OAMView->oam = MMU.ARM9_OAM;
                                                       OAMView->num = 0;
                                                       OAMView->gpu = MainScreen.gpu;
                                                       break;
                                                  case 1 :
-                                                      OAMView->oam = (OAM *)(MMU.ARM9_OAM+0x400);
+                                                      OAMView->oam = (MMU.ARM9_OAM+0x400);
                                                       OAMView->num = 0;
                                                       OAMView->gpu = SubScreen.gpu;
                                                       break;

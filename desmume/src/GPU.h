@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -510,77 +510,30 @@ enum GPU_OBJ_MODE
 	GPU_OBJ_MODE_Bitmap = 3
 };
 
-/*
-	this structure is for Sprite description,
-	it holds flags & transformations for 1 sprite
-	(max 128 OBJs / screen)
-ref: http://www.bottledlight.com/ds/index.php/Video/Sprites
-*/
-
 struct _OAM_
 {
-#ifdef WORDS_BIGENDIAN
-// attr0
-/* 0*/    unsigned Y:8;
-/*14*/    unsigned Shape:2;    // (00: Square, 01: Wide, 10: Tall, 11: Illegal)
-/*13*/    unsigned Depth:1;    // (0: 16, 1: 256)
-/*12*/    unsigned Mosaic:1;   // (1: Enabled)
-/*10*/    unsigned Mode:2;     // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
-/* 8*/    unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
-// attr1
-/* 0*/    signed   X:9;
-/*14*/    unsigned Size:2;
-/*13*/    unsigned VFlip:1;
-/*12*/    unsigned HFlip:1;
-/* 9*/    unsigned RotScalIndex:3; // Rot/scale matrix index
-// attr2
-/* 0*/    unsigned TileIndex:10;
-/*12*/    unsigned PaletteIndex:4;
-/*10*/    unsigned Priority:2;
-// attr3
-          unsigned attr3:16;    
-#else
-// attr0
-/* 0*/	unsigned Y:8;
-/* 8*/	unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
-/*10*/	unsigned Mode:2;	 // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
-/*12*/	unsigned Mosaic:1;   // (1: Enabled)
-/*13*/	unsigned Depth:1;	// (0: 16, 1: 256)
-/*14*/	unsigned Shape:2;	// (00: Square, 01: Wide, 10: Tall, 11: Illegal)
-// attr1
-/* 0*/	signed   X:9;
-/* 9*/	unsigned RotScalIndex:3; // Rot/scale matrix index
-/*12*/	unsigned HFlip:1;
-/*13*/	unsigned VFlip:1;
-/*14*/	unsigned Size:2;
-// attr2
-/* 0*/	unsigned TileIndex:10;
-/*10*/	unsigned Priority:2;
-/*12*/	unsigned PaletteIndex:4;
-// attr3
-	unsigned attr3:16;
-#endif
+	//attr0
+	u8 Y;
+	u8 RotScale;
+	u8 Mode;
+	u8 Mosaic;
+	u8 Depth;
+	u8 Shape;
+	//att1
+	s16 X;
+	u8 RotScalIndex;
+	u8 HFlip, VFlip;
+	u8 Size;
+	//attr2
+	u16 TileIndex;
+	u8 Priority;
+	u8 PaletteIndex;
+	//attr3
+	u16 attr3;
 };
 
-typedef struct
-{
-#ifdef WORDS_BIGENDIAN
-	 u8 attr00;
-	 u8 attr01;
-	 u8 attr10;
-	 u8 attr11;
-	 u8 attr20;
-	 u8 attr21;
-	 u8 attr30;
-	 u8 attr31;
-#else
-	 u16 attr0;
-	 u16 attr1;
-	 u16 attr2;
-	 u16 attr3;
-#endif
-} OAM;
-
+void SlurpOAM(_OAM_* oam_output, void* oam_buffer, int oam_index);
+u16 SlurpOAMAffineParam(void* oam_buffer, int oam_index);
 
 typedef struct
 {
@@ -589,15 +542,9 @@ typedef struct
 } size;
 
 
-
-
-/*
-	this structure holds information
-	for rendering.
-*/
-
 #define NB_PRIORITIES	4
 #define NB_BG		4
+//this structure holds information for rendering.
 typedef struct
 {
 	u8 PixelsX[256];
@@ -690,7 +637,7 @@ struct GPU
 
 	BOOL bg0HasHighestPrio;
 
-	OAM * oam;
+	void * oam;
 	u32	sprMem;
 	u8 sprBoundary;
 	u8 sprBMPBoundary;

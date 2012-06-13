@@ -219,14 +219,14 @@ void GPU_Reset(GPU *g, u8 l)
 
 	if(g->core == GPU_SUB)
 	{
-		g->oam = (OAM *)(MMU.ARM9_OAM + ADDRESS_STEP_1KB);
+		g->oam = (MMU.ARM9_OAM + ADDRESS_STEP_1KB);
 		g->sprMem = MMU_BOBJ;
 		// GPU core B
 		g->dispx_st = (REG_DISPx*)(&MMU.ARM9_REG[REG_DISPB]);
 	}
 	else
 	{
-		g->oam = (OAM *)(MMU.ARM9_OAM);
+		g->oam = (MMU.ARM9_OAM);
 		g->sprMem = MMU_AOBJ;
 		// GPU core A
 		g->dispx_st = (REG_DISPx*)(&MMU.ARM9_REG[0]);
@@ -822,6 +822,45 @@ finish:
 	}
 }
 
+//unpacks an _OAM_ structure from the provided oam buffer (should point at OAM 0) and provided OAM index.
+//is endian-safe
+void SlurpOAM(_OAM_* oam_output, void* oam_buffer, int oam_index)
+{
+	u16* u16_oam_buffer = (u16*)oam_buffer;
+	int u16_offset = oam_index<<2;
+	u16 attr[4];
+	for(int i=0;i<4;i++)
+		attr[i] = LE_TO_LOCAL_16(u16_oam_buffer[u16_offset + i]);
+	
+	oam_output->Y = (attr[0]>>0) & 0xFF;
+	oam_output->RotScale = (attr[0]>>8)&3;
+	oam_output->Mode = (attr[0]>>10)&3;
+	oam_output->Mosaic = (attr[0]>>12)&1;
+	oam_output->Depth = (attr[0]>>13)&1;
+	oam_output->Shape = (attr[0]>>14)&3;
+	
+	oam_output->X = (s16)((attr[1]>>0)&0x1FF);
+	oam_output->RotScalIndex = (attr[1]>>9)&7;
+	oam_output->HFlip = (attr[1]>>12)&1;
+	oam_output->VFlip = (attr[1]>>13)&1;
+	oam_output->Size = (attr[1]>>14)&3;
+
+	oam_output->TileIndex = (attr[2]>>0)&0x3FF;
+	oam_output->Priority = (attr[2]>>10)&3;
+	oam_output->PaletteIndex = (attr[2]>>12)&0xF;
+
+	oam_output->attr3 = attr[3];
+}
+
+//gets the affine parameter associated with the specified oam index.
+u16 SlurpOAMAffineParam(void* oam_buffer, int oam_index)
+{
+	u16* u16_oam_buffer = (u16*)oam_buffer;
+	int u16_offset = oam_index<<2;
+	return LE_TO_LOCAL_16(u16_oam_buffer[u16_offset + 3]);
+}
+
+
 //this is fantastically inaccurate.
 //we do the early return even though it reduces the resulting accuracy
 //because we need the speed, and because it is inaccurate anyway
@@ -830,8 +869,9 @@ static void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_al
 	int x_int;
 	int y = l;
 
-	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + gpu->sprNum[x]);
-	bool enabled = spriteInfo->Mosaic;
+	_OAM_ spriteInfo;
+	SlurpOAM(&spriteInfo,gpu->oam,gpu->sprNum[x]);
+	bool enabled = spriteInfo.Mosaic!=0;
 	if(!enabled)
 		return;
 
@@ -1289,8 +1329,6 @@ template<bool MOSAIC> void lineExtRot(GPU * gpu)
 //			SPRITE RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
 
-#define nbShow 128
-
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
@@ -1481,28 +1519,14 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 	int cost = 0;
 
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam);
 	u8 block = gpu->sprBoundary;
-	u8 i;
 
-	//what the hell? why is all this here? the #ifdefs in the bitfields definition should take care of this.
-	//this needs to be fixed anyway since i changed the sprite render order
-	//better yet, just dont do it this way at all. _OAM_ is so small, why not just copy it and then twiddle it?
-
-//#ifdef WORDS_BIGENDIAN
-//	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
-//	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
-//#endif
-
-	for(i = 0; i<nbShow; ++i, ++spriteInfo
-//#ifdef WORDS_BIGENDIAN    
-//	,*(((u16*)(spriteInfo+1))+1) = (*(((u16*)(spriteInfo+1))+1) << 1) | *(((u16*)(spriteInfo+1))+1) >> 15
-//	,*(((u16*)(spriteInfo+1))+2) = (*(((u16*)(spriteInfo+1))+2) << 2) | *(((u16*)(spriteInfo+1))+2) >> 14
-//	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
-//	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
-//#endif
-	)     
+	for(int i = 0; i<128; i++)     
 	{
+		_OAM_ oam;
+		_OAM_* spriteInfo = &oam;
+		SlurpOAM(spriteInfo, gpu->oam, i);
+
 		//for each sprite:
 		if(cost>=2130)
 		{
@@ -1573,17 +1597,11 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			blockparameter = (spriteInfo->RotScalIndex + (spriteInfo->HFlip<< 3) + (spriteInfo->VFlip << 4))*4;
 
 			// Get rotation/scale parameters
-#ifdef WORDS_BIGENDIAN
-			dx  = ((s16)(gpu->oam + blockparameter+0)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+0)->attr30);
-			dmx = ((s16)(gpu->oam + blockparameter+1)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+1)->attr30);
-			dy  = ((s16)(gpu->oam + blockparameter+2)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+2)->attr30);
-			dmy = ((s16)(gpu->oam + blockparameter+3)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+3)->attr30);
-#else
-			dx  = (s16)(gpu->oam + blockparameter+0)->attr3;
-			dmx = (s16)(gpu->oam + blockparameter+1)->attr3;
-			dy  = (s16)(gpu->oam + blockparameter+2)->attr3;
-			dmy = (s16)(gpu->oam + blockparameter+3)->attr3;
-#endif
+			dx = SlurpOAMAffineParam(gpu->oam,blockparameter+0);
+			dmx = SlurpOAMAffineParam(gpu->oam,blockparameter+1);
+			dy = SlurpOAMAffineParam(gpu->oam,blockparameter+2);
+			dmy = SlurpOAMAffineParam(gpu->oam,blockparameter+3);
+
 
 			// Calculate fixed poitn 8.8 start offsets
 			realX = ((sprSize.x) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + y * dmx;
