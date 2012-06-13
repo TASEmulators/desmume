@@ -92,14 +92,6 @@ const short sizeTab[8][4][2] =
 	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext direct
 };
 
-static GraphicsInterface_struct *GFXCore=NULL;
-
-// This should eventually be moved to the port specific code
-GraphicsInterface_struct *GFXCoreList[] = {
-&GFXDummy,
-NULL
-};
-
 static const CACHE_ALIGN u8 win_empty[256] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1850,11 +1842,6 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 		}
 	}
 
-//#ifdef WORDS_BIGENDIAN
-//	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) << 1) | *(((u16*)spriteInfo)+1) >> 15;
-//	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
-//#endif
-
 }
 
 
@@ -1875,7 +1862,7 @@ int Screen_Init(int coreid)
 	if (osd)  {delete osd; osd =NULL; }
 	osd  = new OSDCLASS(-1);
 
-	return GPU_ChangeGraphicsCore(coreid);
+	return 0;
 }
 
 void Screen_Reset(void)
@@ -1896,87 +1883,7 @@ void Screen_DeInit(void)
 	GPU_DeInit(MainScreen.gpu);
 	GPU_DeInit(SubScreen.gpu);
 
-	if (GFXCore)
-		GFXCore->DeInit();
-
 	if (osd)  {delete osd; osd =NULL; }
-}
-
-/*****************************************************************************/
-//			GRAPHICS CORE
-/*****************************************************************************/
-
-// This is for future graphics core switching. This is by no means set in stone
-
-int GPU_ChangeGraphicsCore(int coreid)
-{
-   int i;
-
-   // Make sure the old core is freed
-   if (GFXCore)
-      GFXCore->DeInit();
-
-   // So which core do we want?
-   if (coreid == GFXCORE_DEFAULT)
-      coreid = 0; // Assume we want the first one
-
-   // Go through core list and find the id
-   for (i = 0; GFXCoreList[i] != NULL; i++)
-   {
-      if (GFXCoreList[i]->id == coreid)
-      {
-         // Set to current core
-         GFXCore = GFXCoreList[i];
-         break;
-      }
-   }
-
-   if (GFXCore == NULL)
-   {
-      GFXCore = &GFXDummy;
-      return -1;
-   }
-
-   if (GFXCore->Init() == -1)
-   {
-      // Since it failed, instead of it being fatal, we'll just use the dummy
-      // core instead
-      GFXCore = &GFXDummy;
-   }
-
-   return 0;
-}
-
-int GFXDummyInit();
-void GFXDummyDeInit();
-void GFXDummyResize(int width, int height, BOOL fullscreen);
-void GFXDummyOnScreenText(char *string, ...);
-
-GraphicsInterface_struct GFXDummy = {
-GFXCORE_DUMMY,
-"Dummy Graphics Interface",
-0,
-GFXDummyInit,
-GFXDummyDeInit,
-GFXDummyResize,
-GFXDummyOnScreenText
-};
-
-int GFXDummyInit()
-{
-   return 0;
-}
-
-void GFXDummyDeInit()
-{
-}
-
-void GFXDummyResize(int width, int height, BOOL fullscreen)
-{
-}
-
-void GFXDummyOnScreenText(char *string, ...)
-{
 }
 
 
