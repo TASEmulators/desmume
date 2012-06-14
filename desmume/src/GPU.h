@@ -842,7 +842,7 @@ typedef struct {
 extern NDS_Screen MainScreen;
 extern NDS_Screen SubScreen;
 
-int Screen_Init(int coreid);
+int Screen_Init();
 void Screen_Reset(void);
 void Screen_DeInit(void);
 
