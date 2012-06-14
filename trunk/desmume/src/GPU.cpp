@@ -1849,7 +1849,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 //			SCREEN FUNCTIONS
 /*****************************************************************************/
 
-int Screen_Init(int coreid)
+int Screen_Init()
 {
 	MainScreen.gpu = GPU_Init(0);
 	SubScreen.gpu = GPU_Init(1);

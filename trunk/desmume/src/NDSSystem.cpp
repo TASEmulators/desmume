@@ -114,7 +114,7 @@ int NDS_Init( void) {
 	//got to print this somewhere..
 	printf("%s\n", EMU_DESMUME_NAME_AND_VERSION());
 
-	if (Screen_Init(GFXCORE_DUMMY) != 0)
+	if (Screen_Init() != 0)
 		return -1;
 
 	gfx3d_init();
