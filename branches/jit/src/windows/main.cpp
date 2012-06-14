@@ -3734,7 +3734,7 @@ void ScreenshotToClipboard(bool extraInfo)
 	int exHeight = 0;
 	if(extraInfo)
 	{
-		exHeight = (14 * (twolinever ? 6:5));
+		exHeight = (14 * (twolinever ? 7:6));
 	}
 
 	HDC hScreenDC = GetDC(NULL);

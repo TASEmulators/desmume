@@ -1856,7 +1856,7 @@ DEFINE_LUA_FUNCTION(memory_readbyterange, "address,length")
 	{
 		if(IsHardwareAddressValid(a))
 		{
-			unsigned char value = (unsigned char)(_MMU_read08<ARMCPU_ARM9>(address) & 0xFF);
+			unsigned char value = (unsigned char)(_MMU_read08<ARMCPU_ARM9>(a) & 0xFF);
 			lua_pushinteger(L, value);
 			lua_rawseti(L, -2, n);
 		}

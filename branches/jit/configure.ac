@@ -103,11 +103,6 @@ AC_ARG_ENABLE([hud],
               [AC_HELP_STRING([--enable-hud], [Enable HUD rendering, requires libagg])],
               [libagg=yes])
 
-dnl - hack to help zero build gtk frontend macos x package
-AC_ARG_ENABLE(macosxhack,
-	      [AC_HELP_STRING(--enable-macosxhack, hack to build MacOSX package)],
-	      [GTK_MACOSX_HACK=yes])
-
 HAVE_OPENAL=no
 dnl - openal support
 AC_ARG_ENABLE(openal,
@@ -132,11 +127,6 @@ PKG_CHECK_MODULES(GLIB,
                   glib-2.0 >= $GLIB_VER,
                   FOUND_GLIB=yes,
                   FOUND_GLIB=no)
-if test "x$FOUND_GLIB" = "xno"; then
-   if test ! "x$GTK_MACOSX_HACK" = "xyes"; then
-     AC_MSG_ERROR([Glib is required to build desmume])
-   fi
-fi
 
 PKG_CHECK_MODULES(GTK,
                   gtk+-2.0 >= $GTK_VER,
@@ -249,7 +239,8 @@ fi
 AM_CONDITIONAL([HAVE_WX], [test "x$wxwidgets" = "xyes"])
 
 dnl - Determine which UIs to build and if po/ should be included
-PO_DIR=""
+PO_DIR="po"
+PO_MAKEFILE="po/Makefile.in"
 UI_DIR="cli $UI_DIR"
 if test "x$HAVE_GTK" = "xyes"; then
   UI_DIR="gtk $UI_DIR"
@@ -268,21 +259,10 @@ if test "x$HAVE_LIBGLADE" = "xyes"; then
     AC_SUBST(GETTEXT_PACKAGE)
     ALL_LINGUAS="fr nb pt_BR sv zh_CN zh_TW"
     AM_GLIB_GNU_GETTEXT
-    PO_DIR="po"
-    PO_MAKEFILE="po/Makefile.in"
   ],[
     echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed."
   ])
 fi
-
-dnl - jit support
-case $host_cpu in
-  x86|x86_64|i386|i486|i586|i686)
-    HAVE_JIT=yes
-    AC_DEFINE(HAVE_JIT)
-    ;;
-esac
-AM_CONDITIONAL([HAVE_JIT], [test "x$HAVE_JIT" = "xyes"])
 
 dnl - wifi support
 AC_ARG_ENABLE(wifi,
@@ -301,12 +281,6 @@ case $host in
     UI_DIR="windows"
     ;;
   *darwin*)
-    if test "x$GTK_MACOSX_HACK" = "xyes" ; then
-      LIBS="$LIBS -framework Gtk -framework GLib"
-      CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/Cairo.framework/Headers -I/Library/Frameworks/Gtk.framework/Headers -I/Library/Frameworks/GLib.framework/Headers"
-      GLIB_LIBS=""
-      AC_SUBST(GLIB_LIBS)
-    fi
     dnl - openal is required on mac os x and we are not able to figure out if it's installed or not
     AC_DEFINE(HAVE_OPENAL)
     LIBS="$LIBS -framework OpenGL -framework OpenAL"
