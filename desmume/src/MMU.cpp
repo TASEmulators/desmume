@@ -737,6 +737,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x240 + block, VRAMBankCnt);
 
 	//refresh all bank settings
+	//zero XX-XX-200X (long before jun 2012)
 	//these are enumerated so that we can tune the order they get applied
 	//in order to emulate prioritization rules for memory regions
 	//with multiple banks mapped.
@@ -749,10 +750,14 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	MMU_VRAMmapRefreshBank(VRAM_BANK_G);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_F);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_E);
-	MMU_VRAMmapRefreshBank(VRAM_BANK_D);
-	MMU_VRAMmapRefreshBank(VRAM_BANK_C);
-	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
+	//zero 21-jun-2012
+	//tomwi's streaming music demo sets A and D to ABG (the A is an accident).
+	//in this case, D should get priority. 
+	//this is somewhat risky. will it break other things?
 	MMU_VRAMmapRefreshBank(VRAM_BANK_A);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_C);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_D);
 
 	//printf(vramConfiguration.describe().c_str());
 	//printf("vram remapped at vcount=%d\n",nds.VCount);
