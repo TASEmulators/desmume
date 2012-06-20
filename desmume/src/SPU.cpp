@@ -42,6 +42,9 @@
 
 #include "metaspu/metaspu.h"
 
+static inline s16 read16(u32 addr) { return (s16)_MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
+static inline u8 read08(u32 addr) { return _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
+
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
 #define COSINE_INTERPOLATION_RESOLUTION 8192
 
@@ -395,23 +398,20 @@ void SPU_struct::KeyOn(int channel)
 	switch(thischan.format)
 	{
 	case 0: // 8-bit
-		thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 2;
 	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
 		thischan.sampcnt = -3;
 		break;
 	case 1: // 16-bit
-		thischan.buf16 = (s16 *)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 1;
 	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
 		thischan.sampcnt = -3;
 		break;
 	case 2: // ADPCM
 		{
-			thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
-			thischan.pcm16b = (s16)((thischan.buf8[1] << 8) | thischan.buf8[0]);
+			thischan.pcm16b = (s16)read16(thischan.addr);
 			thischan.pcm16b_last = thischan.pcm16b;
-			thischan.index = thischan.buf8[2] & 0x7F;
+			thischan.index = read08(thischan.addr + 2) & 0x7F;;
 			thischan.lastsampcnt = 7;
 			thischan.sampcnt = -3;
 			thischan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
@@ -833,15 +833,15 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8Bi
 	u32 loc = sputrunc(chan->sampcnt);
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
-		s32 a = (s32)(chan->buf8[loc] << 8);
+		s32 a = (s32)(read08(chan->addr + loc) << 8);
 		if(loc < (chan->totlength << 2) - 1) {
-			s32 b = (s32)(chan->buf8[loc + 1] << 8);
+			s32 b = (s32)(read08(chan->addr + loc + 1) << 8);
 			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 		}
 		*data = a;
 	}
 	else
-		*data = (s32)chan->buf8[loc] << 8;
+		*data = (s32)read08(chan->addr + loc)<< 8;
 }
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
@@ -855,16 +855,17 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch16B
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
 		u32 loc = sputrunc(chan->sampcnt);
-		s32 a = (s32)chan->buf16[loc], b;
+		
+		s32 a = (s32)read16(loc*2 + chan->addr), b;
 		if(loc < (chan->totlength << 1) - 1)
 		{
-			b = (s32)chan->buf16[loc + 1];
+			b = (s32)read16(loc*2 + chan->addr + 2);
 			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 		}
 		*data = a;
 	}
 	else
-		*data = (s32)chan->buf16[sputrunc(chan->sampcnt)];
+		*data = read16(chan->addr + sputrunc(chan->sampcnt)*2);
 }
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
@@ -878,27 +879,27 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void FetchADP
 	// No sense decoding, just return the last sample
 	if (chan->lastsampcnt != sputrunc(chan->sampcnt)){
 
-	    const u32 endExclusive = sputrunc(chan->sampcnt+1);
-	    for (u32 i = chan->lastsampcnt+1; i < endExclusive; i++)
-	    {
-	    	const u32 shift = (i&1)<<2;
-	    	const u32 data4bit = (((u32)chan->buf8[i >> 1]) >> shift);
+		const u32 endExclusive = sputrunc(chan->sampcnt+1);
+		for (u32 i = chan->lastsampcnt+1; i < endExclusive; i++)
+		{
+			const u32 shift = (i&1)<<2;
+			const u32 data4bit = ((u32)read08(chan->addr + (i>>1))) >> shift;
 
-	    	const s32 diff = precalcdifftbl[chan->index][data4bit & 0xF];
-	    	chan->index = precalcindextbl[chan->index][data4bit & 0x7];
+			const s32 diff = precalcdifftbl[chan->index][data4bit & 0xF];
+			chan->index = precalcindextbl[chan->index][data4bit & 0x7];
 
-	    	chan->pcm16b_last = chan->pcm16b;
-	    	chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
+			chan->pcm16b_last = chan->pcm16b;
+			chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
 
 			if(i == (chan->loopstart<<3)) {
 				if(chan->loop_index != K_ADPCM_LOOPING_RECOVERY_INDEX) printf("over-snagging\n");
 				chan->loop_pcm16b = chan->pcm16b;
 				chan->loop_index = chan->index;
 			}
-	    }
+		}
 
-	    chan->lastsampcnt = sputrunc(chan->sampcnt);
-    }
+		chan->lastsampcnt = sputrunc(chan->sampcnt);
+	}
 
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 		*data = Interpolate<INTERPOLATE_MODE>((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
@@ -1011,8 +1012,8 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 
 			if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
 			{
-				chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
-				chan->index = chan->buf8[2] & 0x7F;
+				chan->pcm16b = (s16)read16(chan->addr);
+				chan->index = read08(chan->addr+2) & 0x7F;
 				chan->lastsampcnt = 7;
 			}
 			else
@@ -1714,10 +1715,6 @@ bool spu_loadstate(EMUFILE* is, int size)
 
 		//hopefully trigger a recovery of the adpcm looping system
 		chan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
-
-		//fixup the pointers which we had are supposed to keep cached
-		chan.buf8 = (s8*)&MMU.MMU_MEM[1][(chan.addr>>20)&0xFF][(chan.addr & MMU.MMU_MASK[1][(chan.addr >> 20) & 0xFF])];
-		chan.buf16 = (s16*)chan.buf8;
 	}
 
 	if(version>=2) {
