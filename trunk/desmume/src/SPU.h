@@ -86,10 +86,6 @@ struct channel_struct
    u32 length;
    u32 totlength;
    double double_totlength_shifted;
-   union {
-		s8 *buf8;
-		s16 *buf16;
-   };
    double sampcnt;
    double sampinc;
    // ADPCM specific
