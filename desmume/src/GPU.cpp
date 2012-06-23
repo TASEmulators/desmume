@@ -831,7 +831,7 @@ void SlurpOAM(_OAM_* oam_output, void* oam_buffer, int oam_index)
 	oam_output->Depth = (attr[0]>>13)&1;
 	oam_output->Shape = (attr[0]>>14)&3;
 	
-	oam_output->X = (s16)((attr[1]>>0)&0x1FF);
+	oam_output->X = (((s32)((attr[1]>>0)&0x1FF))<<23)>>23;
 	oam_output->RotScalIndex = (attr[1]>>9)&7;
 	oam_output->HFlip = (attr[1]>>12)&1;
 	oam_output->VFlip = (attr[1]>>13)&1;
