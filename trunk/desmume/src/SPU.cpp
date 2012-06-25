@@ -44,6 +44,7 @@
 
 static inline s16 read16(u32 addr) { return (s16)_MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
 static inline u8 read08(u32 addr) { return _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
+static inline s8 read_s8(u32 addr) { return (s8)_MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
 
 #define K_ADPCM_LOOPING_RECOVERY_INDEX 99999
 #define COSINE_INTERPOLATION_RESOLUTION 8192
@@ -833,15 +834,15 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8Bi
 	u32 loc = sputrunc(chan->sampcnt);
 	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
-		s32 a = (s32)(read08(chan->addr + loc) << 8);
+		s32 a = (s32)(read_s8(chan->addr + loc) << 8);
 		if(loc < (chan->totlength << 2) - 1) {
-			s32 b = (s32)(read08(chan->addr + loc + 1) << 8);
+			s32 b = (s32)(read_s8(chan->addr + loc + 1) << 8);
 			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 		}
 		*data = a;
 	}
 	else
-		*data = (s32)read08(chan->addr + loc)<< 8;
+		*data = (s32)read_s8(chan->addr + loc)<< 8;
 }
 
 template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
