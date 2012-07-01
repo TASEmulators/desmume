@@ -1632,11 +1632,6 @@ static void execHardware_hstart()
 		//when the vcount hits 262, vblank ends (oam pre-renders by one scanline)
 		execHardware_hstart_vblankEnd();
 	}
-	else if(nds.VCount==191)
-	{
-		//when the vcount hits 191, the 3d vblank occurs (maybe because OAM doesnt need to run anymore, so we can power it down, and give the 3d as much time as possible?)
-		gfx3d_VBlankSignal();
-	}
 	else if(nds.VCount==192)
 	{
 		//turn on vblank status bit
@@ -1646,6 +1641,18 @@ static void execHardware_hstart()
 		//check whether we'll need to fire vblank irqs
 		if(T1ReadWord(MMU.ARM9_REG, 4) & 0x8) MMU.reg_IF_pending[ARMCPU_ARM9] |= (1<<IRQ_BIT_LCD_VBLANK);
 		if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8) MMU.reg_IF_pending[ARMCPU_ARM7] |= (1<<IRQ_BIT_LCD_VBLANK);
+	}
+	else if(nds.VCount==193)
+	{
+		//for our purposes, this block of code is the ending of the swapbuffers process.
+		//it happens 392 system clocks after vblank. thats 392/6=65 dots -- not one scanline.
+		//however, for convenience, we're deferring it to this scanline until we find that it needs to be more detailed
+		//OR - until we restore proper emulation of 3d command timing.
+		//this is important for the character select in Dragon Ball Kai - Ultimate Butouden
+		//it seems if you allow the 3d to begin before the vblank, then it will get interrupted and not complete.
+		//the game needs to pick up the gxstat reg busy as clear after it finishes processing vblank.
+		//therefore, this can't happen until sometime after vblank
+		gfx3d_VBlankSignal();
 	}
 
 	//write the new vcount
