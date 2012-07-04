@@ -589,7 +589,7 @@ static BOOL isCoreStarted = NO;
 			theSpeed = SPEED_SCALAR_MIN;
 		}
 		
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		pthread_mutex_lock(&threadParam.mutexThreadExecute);
 		uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / theSpeed);
 		AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
 		threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
@@ -597,7 +597,7 @@ static BOOL isCoreStarted = NO;
 	}
 	else
 	{
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		pthread_mutex_lock(&threadParam.mutexThreadExecute);
 		threadParam.timeBudgetMachAbsTime = 0;
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	}
