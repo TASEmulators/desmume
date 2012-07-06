@@ -3163,7 +3163,7 @@ static int OP_NEG(const u32 i)
 		c.neg(tmp);
 		c.mov(reg_pos_thumb(0), tmp);
 	}
-	SET_NZCV(0);
+	SET_NZCV(1);
 	return 1;
 }
 
