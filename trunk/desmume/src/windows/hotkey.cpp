@@ -451,6 +451,12 @@ void HK_DecreasePressure(int, bool justPressed) {
 	osd->addLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
 }
 
+void HK_Rotate0(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 0);}
+void HK_Rotate90(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 90);}
+void HK_Rotate180(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 180);}
+void HK_Rotate270(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 270);}
+
+
 
 //======================================================================================
 //=====================================DEFINITIONS======================================
@@ -807,6 +813,31 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
 	keys->ResetLagCounter.page = HOTKEY_PAGE_MOVIE;
 	keys->ResetLagCounter.key = NULL;
+
+	//Other Page -------------------------------------------------------
+	keys->Rotate0.handleKeyDown = HK_Rotate0;
+	keys->Rotate0.code = "Rotate0";
+	keys->Rotate0.name = STRW(ID_LABEL_HK57);
+	keys->Rotate0.page = HOTKEY_PAGE_OTHER;
+	keys->Rotate0.key = NULL;
+
+	keys->Rotate90.handleKeyDown = HK_Rotate90;
+	keys->Rotate90.code = "Rotate90";
+	keys->Rotate90.name = STRW(ID_LABEL_HK58);
+	keys->Rotate90.page = HOTKEY_PAGE_OTHER;
+	keys->Rotate90.key = NULL;
+
+	keys->Rotate180.handleKeyDown = HK_Rotate180;
+	keys->Rotate180.code = "Rotate180";
+	keys->Rotate180.name = STRW(ID_LABEL_HK59);
+	keys->Rotate180.page = HOTKEY_PAGE_OTHER;
+	keys->Rotate180.key = NULL;
+
+	keys->Rotate270.handleKeyDown = HK_Rotate270;
+	keys->Rotate270.code = "Rotate270";
+	keys->Rotate270.name = STRW(ID_LABEL_HK60);
+	keys->Rotate270.page = HOTKEY_PAGE_OTHER;
+	keys->Rotate270.key = NULL;
 
 	//StateSlots Page --------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
