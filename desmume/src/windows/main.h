@@ -41,6 +41,7 @@ void WavRecordTo(int wavmode);
 void WavEnd();
 void UpdateToolWindows();
 bool DemandLua();
+void SetRotate(HWND hwnd, int rot, bool user = true);
 
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
