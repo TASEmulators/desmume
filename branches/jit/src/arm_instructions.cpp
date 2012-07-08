@@ -1903,6 +1903,9 @@ TEMPLATE static u32 FASTCALL  OP_ORR_S_IMM_VAL(const u32 i)
 
 TEMPLATE static u32 FASTCALL  OP_MOV_LSL_IMM(const u32 i)
 {
+	if (i == 0xE1A00000)	// nop: MOV R0, R0
+		return 1;
+
 	LSL_IMM;
 	OP_MOV(1,3);
 }
