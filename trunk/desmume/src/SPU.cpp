@@ -40,7 +40,6 @@
 #include "NDSSystem.h"
 #include "matrix.h"
 
-#include "metaspu/metaspu.h"
 
 static inline s16 read16(u32 addr) { return (s16)_MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
 static inline u8 read08(u32 addr) { return _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
@@ -1391,52 +1390,117 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
+	bool needToMix = true;
+	SoundInterface_struct *soundProcessor = SPU_SoundCore();
+	
 	samples += samples_per_hline;
 	spu_core_samples = (int)(samples);
 	samples -= spu_core_samples;
-
-	bool synchronize = (synchmode == ESynchMode_Synchronous);
-	bool mix = driver->AVI_IsRecording() || driver->WAV_IsRecording() || synchronize;
-
-	SPU_MixAudio(mix,SPU_core,spu_core_samples);
-	if(synchronize && SPU_currentCoreNum != SNDCORE_DUMMY)
-		synchronizer->enqueue_samples(SPU_core->outbuf, spu_core_samples);
+	
+	// We don't need to mix audio for Dual Synch/Asynch mode since we do this
+	// later in SPU_Emulate_user(). Disable mixing here to speed up processing.
+	if (synchmode == ESynchMode_DualSynchAsynch)
+	{
+		needToMix = false;
+	}
+	
+	SPU_MixAudio(needToMix, SPU_core, spu_core_samples);
+	
+	if (soundProcessor == NULL)
+	{
+		return;
+	}
+	
+	if (soundProcessor->FetchSamples != NULL)
+	{
+		soundProcessor->FetchSamples(SPU_core->outbuf, spu_core_samples, synchmode, synchronizer);
+	}
+	else
+	{
+		SPU_DefaultFetchSamples(SPU_core->outbuf, spu_core_samples, synchmode, synchronizer);
+	}
 }
 
 void SPU_Emulate_user(bool mix)
 {
-	u32 audiosize;
-
-	// Check to see how much free space there is
-	// If there is some, fill up the buffer
-	if(!SNDCore) return;
-	audiosize = SNDCore->GetAudioSpace();
-
-	if (audiosize > 0)
+	static s16 *postProcessBuffer = NULL;
+	static size_t postProcessBufferSize = 0;
+	size_t freeSampleCount = 0;
+	size_t processedSampleCount = 0;
+	SoundInterface_struct *soundProcessor = SPU_SoundCore();
+	
+	if (soundProcessor == NULL)
 	{
-		//printf("mix %i samples\n", audiosize);
-		if (audiosize > buffersize)
-			audiosize = buffersize;
-
-		s16* outbuf;
-		int samplesOutput;
-		if(synchmode == ESynchMode_Synchronous)
-		{
-			static std::vector<s16> tempbuf;
-			if(tempbuf.size() < audiosize*2) tempbuf.resize(audiosize*2);
-			outbuf = &tempbuf[0];
-			samplesOutput = synchronizer->output_samples(outbuf, audiosize);
-		}
-		else if(SPU_user != NULL)
-		{
-			outbuf = SPU_user->outbuf;
-			samplesOutput = (SPU_MixAudio(mix,SPU_user,audiosize), audiosize);
-		}
-		else return;
-
-		SNDCore->UpdateAudio(outbuf, samplesOutput);
-		WAV_WavSoundUpdate(outbuf, samplesOutput, WAVMODE_USER);
+		return;
 	}
+	
+	// Check to see how many free samples are available.
+	// If there are some, fill up the output buffer.
+	freeSampleCount = soundProcessor->GetAudioSpace();
+	if (freeSampleCount == 0)
+	{
+		return;
+	}
+	
+	//printf("mix %i samples\n", audiosize);
+	if (freeSampleCount > buffersize)
+	{
+		freeSampleCount = buffersize;
+	}
+	
+	// If needed, resize the post-process buffer to guarantee that
+	// we can store all the sound data.
+	if (postProcessBufferSize < freeSampleCount * 2 * sizeof(s16))
+	{
+		postProcessBufferSize = freeSampleCount * 2 * sizeof(s16);
+		postProcessBuffer = (s16 *)realloc(postProcessBuffer, postProcessBufferSize);
+	}
+	
+	if (soundProcessor->PostProcessSamples != NULL)
+	{
+		processedSampleCount = soundProcessor->PostProcessSamples(postProcessBuffer, freeSampleCount, synchmode, synchronizer);
+	}
+	else
+	{
+		processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, freeSampleCount, synchmode, synchronizer);
+	}
+	
+	soundProcessor->UpdateAudio(postProcessBuffer, processedSampleCount);
+	WAV_WavSoundUpdate(postProcessBuffer, processedSampleCount, WAVMODE_USER);
+}
+
+void SPU_DefaultFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
+{
+	if (synchMode == ESynchMode_Synchronous)
+	{
+		theSynchronizer->enqueue_samples(sampleBuffer, sampleCount);
+	}
+}
+
+size_t SPU_DefaultPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
+{
+	size_t processedSampleCount = 0;
+	
+	switch (synchMode)
+	{
+		case ESynchMode_DualSynchAsynch:
+			if(SPU_user != NULL)
+			{
+				SPU_MixAudio(true, SPU_user, requestedSampleCount);
+				memcpy(postProcessBuffer, SPU_user->outbuf, requestedSampleCount * 2 * sizeof(s16));
+				processedSampleCount = requestedSampleCount;
+			}
+			break;
+			
+		case ESynchMode_Synchronous:
+			processedSampleCount = theSynchronizer->output_samples(postProcessBuffer, requestedSampleCount);
+			break;
+			
+		default:
+			break;
+	}
+	
+	return processedSampleCount;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1450,6 +1514,9 @@ u32 SNDDummyGetAudioSpace();
 void SNDDummyMuteAudio();
 void SNDDummyUnMuteAudio();
 void SNDDummySetVolume(int volume);
+void SNDDummyClearBuffer();
+void SNDDummyFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+size_t SNDDummyPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 
 SoundInterface_struct SNDDummy = {
 	SNDCORE_DUMMY,
@@ -1460,7 +1527,10 @@ SoundInterface_struct SNDDummy = {
 	SNDDummyGetAudioSpace,
 	SNDDummyMuteAudio,
 	SNDDummyUnMuteAudio,
-	SNDDummySetVolume
+	SNDDummySetVolume,
+	SNDDummyClearBuffer,
+	SNDDummyFetchSamples,
+	SNDDummyPostProcessSamples
 };
 
 int SNDDummyInit(int buffersize) { return 0; }
@@ -1470,6 +1540,9 @@ u32 SNDDummyGetAudioSpace() { return DESMUME_SAMPLE_RATE/60 + 5; }
 void SNDDummyMuteAudio() {}
 void SNDDummyUnMuteAudio() {}
 void SNDDummySetVolume(int volume) {}
+void SNDDummyClearBuffer() {}
+void SNDDummyFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer) {}
+size_t SNDDummyPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer) { return 0; }
 
 //---------wav writer------------
 
