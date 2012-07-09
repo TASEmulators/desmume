@@ -19,8 +19,7 @@
 #define _RINGBUFFER_
 
 #include <stdlib.h>
-#include <string.h>
-#include <libkern/OSAtomic.h>
+#include <stdint.h>
 
 
 class RingBuffer
@@ -31,7 +30,7 @@ private:
 	size_t _bufferSize;
 	size_t _numElements;
 	size_t _elementSize;
-	int32_t _bufferFillSize;
+	int32_t _bufferFillSize; // need to use int32_t for OSAtomicAdd32Barrier()
 	size_t _readPosition;
 	size_t _writePosition;
 	
@@ -42,6 +41,7 @@ public:
 	void clear();
 	size_t read(void *__restrict__ destBuffer, size_t requestedNumberBytes);
 	size_t write(const void *__restrict__ srcBuffer, size_t requestedNumberBytes);
+	size_t getBufferFillSize();
 	size_t getAvailableElements();
 	size_t getElementSize();
 };

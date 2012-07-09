@@ -17,6 +17,9 @@
 
 #include "ringbuffer.h"
 
+#include <string.h>
+#include <libkern/OSAtomic.h>
+
 
 RingBuffer::RingBuffer(size_t numberElements, size_t newBufferElementSize)
 {
@@ -124,7 +127,7 @@ size_t RingBuffer::write(const void *__restrict__ srcBuffer, size_t requestedNum
 		hiBufferAvailable = inputDataSize - inputDataWritePos;
 		loBufferAvailable = inputDataReadPos;
 		
-		// Subtract a sample's worth of bytes
+		// Subtract one element's worth of bytes
 		if (loBufferAvailable > 0)
 		{
 			loBufferAvailable -= 1;
@@ -171,6 +174,11 @@ size_t RingBuffer::write(const void *__restrict__ srcBuffer, size_t requestedNum
 	this->_writePosition = inputDataWritePos;
 		
 	return requestedNumberBytes;
+}
+
+size_t RingBuffer::getBufferFillSize()
+{
+	return (size_t)this->_bufferFillSize;
 }
 
 size_t RingBuffer::getAvailableElements()
