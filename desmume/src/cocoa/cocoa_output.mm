@@ -20,6 +20,7 @@
 #import "cocoa_globals.h"
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
+#include "sndOSX.h"
 
 #include <OpenGL/OpenGL.h>
 
@@ -213,6 +214,8 @@ GPU3DInterface *core3DList[] = {
 	{
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	}
+	
+	mutexAudioEmulateCore = self.mutexProducer;
 	
 	pthread_mutex_unlock(self.mutexProducer);
 	
