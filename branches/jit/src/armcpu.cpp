@@ -200,10 +200,6 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 
 	armcpu->next_instruction = adr;
 	
-	// only ARM9 have co-processor
-	if (armcpu->proc_ID==0)
-		cp15.reset(armcpu);
-
 //#ifndef GDB_STUB
 	armcpu_prefetch(armcpu);
 //#endif

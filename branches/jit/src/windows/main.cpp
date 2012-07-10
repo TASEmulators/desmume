@@ -435,8 +435,6 @@ bool romloaded = false;
 
 void SetScreenGap(int gap);
 
-void SetRotate(HWND hwnd, int rot, bool user=true);
-
 bool ForceRatio = true;
 bool SeparationBorderDrag = true;
 int ScreenGapColor = 0xFFFFFF;

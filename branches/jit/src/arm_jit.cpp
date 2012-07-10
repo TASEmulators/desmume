@@ -355,6 +355,7 @@ static void *op_cmp[2][2];
 	c.and_(tmp, reg_ptr(15)); \
 	c.mov(cpu_ptr(next_instruction), tmp); \
 	c.unuse(tmp); \
+	JIT_COMMENT("end S_DST_R15"); \
 }
 
 // ============================================================================================= IMM
@@ -2259,12 +2260,6 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	u32 pop = popcount(bitmask);
 	bool bit15 = BIT15(i);
 
-	if (BIT15(i)) 
-	{
-		printf("JIT: R15!!!!!! ARM%c: %s2 R%d:%08X, bitmask %02X\n", PROCNUM?'7':'9', (store?"STM":"LDM"), REG_POS(i, 16), cpu->R[REG_POS(i, 16)], bitmask);
-		return 0;
-	}
-
 	//printf("ARM%c: %s R%d:%08X, bitmask %02X\n", PROCNUM?'7':'9', (store?"STM":"LDM"), REG_POS(i, 16), cpu->R[REG_POS(i, 16)], bitmask);
 	u32 adr_first = cpu->R[REG_POS(i, 16)];
 
@@ -2275,7 +2270,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	if(before)
 		c.add(adr, 4*dir);
 
-	if (!bit15)
+	if (!bit15 || store)
 	{  
 		//if((cpu->CPSR.bits.mode==USR)||(cpu->CPSR.bits.mode==SYS)) { printf("ERROR1\n"); return 1; }
 		//oldmode = armcpu_switchMode(cpu, SYS);
@@ -2289,7 +2284,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 
 	call_ldm_stm(adr, bitmask, store, dir);
 
-	if(!bit15)
+	if(!bit15 || store)
 	{
 		//armcpu_switchMode(cpu, oldmode);
 		ECall *ctx = c.call((void*)armcpu_switchMode);
@@ -2301,6 +2296,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{
 		// TODO
 		printf("op_ldm_stm2: used R15\n");
+		S_DST_R15;
 	}
 
 	// FIXME
@@ -2906,12 +2902,13 @@ u32 op_swi(u8 swinum)
 #if defined(_M_X64) || defined(__x86_64__)
 		// TODO:
 		return 0;
-#endif
+#else
 		ECall *ctx = c.call((void*)ARM_swi_tab[PROCNUM][swinum]);
 		ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<u32>());
 		ctx->setReturn(bb_cycles);
 		c.add(bb_cycles, 3);
 		return 1;
+#endif
 	}
 
 	GPVar oldCPSR = c.newGP(VARIABLE_TYPE_GPD);
@@ -4092,13 +4089,13 @@ static u32 compile_basicblock()
 			
 			if(cycles == 0)
 			{
-				JIT_COMMENT("total cycles");
+				JIT_COMMENT("cycles");
 				c.lea(total_cycles, ptr(total_cycles.r64(), bb_cycles.r64(), TIMES_1, -1));
 			}
 			else 
 				if(cycles > 1)
 				{
-					JIT_COMMENT("total cycles (%d)", cycles);
+					JIT_COMMENT("cycles (%d)", cycles);
 					c.add(total_cycles, cycles - 1);
 				}
 			c.bind(skip);
@@ -4109,7 +4106,7 @@ static u32 compile_basicblock()
 			emit_armop_call(opcode);
 			if(cycles == 0)
 			{
-				JIT_COMMENT("total cycles");
+				JIT_COMMENT("cycles");
 				c.add(total_cycles, bb_cycles);
 			}
 		}
@@ -4126,7 +4123,7 @@ static u32 compile_basicblock()
 		c.unuse(x);
 	}
 
-	JIT_COMMENT("cycles");
+	JIT_COMMENT("total cycles (block)");
 	GPVar ret = c.newGP(VARIABLE_TYPE_GPD);
 	if(has_variable_cycles)
 		c.mov(ret, total_cycles);

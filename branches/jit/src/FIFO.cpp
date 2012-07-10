@@ -228,7 +228,9 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 
 	//if a matrix op is entering the pipeline, do accounting for it
 	//(this is tested by wild west, which will jam a few ops in the fifo and then wait for the matrix stack to be 
-	//un-busy so it can read back the current matrix stack position)
+	//un-busy so it can read back the current matrix stack position).
+	//it is definitely only pushes and pops which set this flag.
+	//seems like it would be less work in the HW to make a counter than do cmps on all the command bytes, so maybe we're even doing it right.
 	if(IsMatrixStackCommand(cmd))
 		gxFIFO.matrix_stack_op_size++;
 
