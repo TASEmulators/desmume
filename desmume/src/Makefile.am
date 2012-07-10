@@ -13,6 +13,7 @@ noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
 	armcpu.cpp armcpu.h \
 	arm_instructions.cpp arm_instructions.h \
+	arm_jit.cpp arm_jit.h instruction_attributes.h \
 	agg2d.h agg2d.inl \
 	bios.cpp bios.h bits.h cp15.cpp cp15.h \
 	commandline.h commandline.cpp \
@@ -91,6 +92,44 @@ libdesmume_a_SOURCES = \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
 	version.cpp version.h \
 	desmume_config.cpp desmume_config.h
+
+if HAVE_JIT
+libdesmume_a_SOURCES += \
+	utils/AsmJit/ApiBegin.h \
+	utils/AsmJit/ApiEnd.h \
+	utils/AsmJit/AsmJit.h \
+	utils/AsmJit/Assembler.h \
+	utils/AsmJit/AssemblerX86X64.cpp \
+	utils/AsmJit/AssemblerX86X64.h \
+	utils/AsmJit/Build.h \
+	utils/AsmJit/CodeGenerator.cpp \
+	utils/AsmJit/CodeGenerator.h \
+	utils/AsmJit/Compiler.cpp \
+	utils/AsmJit/Compiler.h \
+	utils/AsmJit/CompilerX86X64.cpp \
+	utils/AsmJit/CompilerX86X64.h \
+	utils/AsmJit/Config.h \
+	utils/AsmJit/CpuInfo.cpp \
+	utils/AsmJit/CpuInfo.h \
+	utils/AsmJit/Defs.cpp \
+	utils/AsmJit/Defs.h \
+	utils/AsmJit/DefsX86X64.cpp \
+	utils/AsmJit/DefsX86X64.h \
+	utils/AsmJit/Logger.cpp \
+	utils/AsmJit/Logger.h \
+	utils/AsmJit/MemoryManager.cpp \
+	utils/AsmJit/MemoryManager.h \
+	utils/AsmJit/MemoryMarker.cpp \
+	utils/AsmJit/MemoryMarker.h \
+	utils/AsmJit/Operand.h \
+	utils/AsmJit/OperandX86X64.cpp \
+	utils/AsmJit/OperandX86X64.h \
+	utils/AsmJit/Platform.cpp \
+	utils/AsmJit/Platform.h \
+	utils/AsmJit/Util.cpp \
+	utils/AsmJit/Util.h \
+	utils/AsmJit/Util_p.h
+endif
 
 if HAVE_GL
 libdesmume_a_SOURCES += OGLRender.cpp

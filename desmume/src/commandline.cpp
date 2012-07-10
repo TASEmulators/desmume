@@ -49,6 +49,9 @@ CommandLine::CommandLine()
 , _advanced_timing(-1)
 , _slot1(NULL)
 , _slot1_fat_dir(NULL)
+#ifdef HAVE_JIT
+, _cpu_mode(-1)
+#endif
 , _console_type(NULL)
 , depth_threshold(-1)
 , load_slot(-1)
@@ -96,6 +99,9 @@ void CommandLine::loadCommonOptions()
 		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },
+#ifdef HAVE_JIT
+		{ "cpu-mode", 0, 0, G_OPTION_ARG_INT, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
+#endif
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
@@ -136,6 +142,9 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
 	if(_rigorous_timing) CommonSettings.rigorous_timing = true;
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
+#ifdef HAVE_JIT
+	if(_cpu_mode != -1) CommonSettings.use_jit = (_cpu_mode==1);
+#endif
 	if(depth_threshold != -1)
 		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
 
@@ -221,6 +230,11 @@ bool CommandLine::validate()
 		g_printerr("Invalid autodetect save method (0 - internal, 1 - from database)\n");
 	}
 
+#ifdef HAVE_JIT
+	if (_cpu_mode < -1 || _cpu_mode > 1) {
+		g_printerr("Invalid cpu mode emulation (0 - interpreter, 1 - dynarec)\n");
+	}
+#endif
 
 	return true;
 }

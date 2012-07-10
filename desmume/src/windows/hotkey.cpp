@@ -93,6 +93,20 @@ void HK_ReloadROM(int, bool justPressed)
 	void OpenRecentROM(int listNum);
 	OpenRecentROM(0);
 }
+void HK_CpuMode(int, bool justPressed)
+{
+	extern void arm_jit_sync();
+	void arm_jit_reset(bool enable);
+
+	arm_jit_sync();
+	CommonSettings.use_jit = !CommonSettings.use_jit;
+	arm_jit_reset(CommonSettings.use_jit);
+
+	char tmp[256];
+	sprintf(tmp,"CPU mode: %s", CommonSettings.use_jit?"JIT":"Interpreter");
+	osd->addLine(tmp);
+	//WritePrivateProfileInt("Emulation", "CpuMode", CommonSettings.use_jit, IniName)
+}
 void HK_SearchCheats(int, bool justPressed) 
 { 
 	if (romloaded)
@@ -456,8 +470,6 @@ void HK_Rotate90(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 90);}
 void HK_Rotate180(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 180);}
 void HK_Rotate270(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 270);}
 
-
-
 //======================================================================================
 //=====================================DEFINITIONS======================================
 //======================================================================================
@@ -508,6 +520,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Pause.name = STRW(ID_LABEL_HK3);
 	keys->Pause.page = HOTKEY_PAGE_MAIN;
 	keys->Pause.key = VK_PAUSE;
+
+	keys->CpuMode.handleKeyDown = HK_CpuMode;
+	keys->CpuMode.code = "CpuMode";
+	keys->CpuMode.name = STRW(ID_LABEL_HK3b);
+	keys->CpuMode.page = HOTKEY_PAGE_MAIN;
+	keys->CpuMode.key = VK_SCROLL;
 
 	keys->FrameAdvance.handleKeyDown = HK_FrameAdvanceKeyDown;
 	keys->FrameAdvance.handleKeyUp = HK_FrameAdvanceKeyUp;
@@ -578,7 +596,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->StylusAutoHold.handleKeyDown = HK_StylusAutoHoldKeyDown;
 	keys->StylusAutoHold.code = "StylusAutoHold";
 	keys->StylusAutoHold.name = STRW(ID_LABEL_HK29);
-	keys->StylusAutoHold.page = HOTKEY_PAGE_MOVIE; // TODO: set more appropriate category?
+	keys->StylusAutoHold.page = HOTKEY_PAGE_TOOLS; // TODO: set more appropriate category?
 	keys->StylusAutoHold.key = NULL;
 
 	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
@@ -596,13 +614,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
 	keys->PrintScreen.code = "SaveScreenshotas";
 	keys->PrintScreen.name = STRW(ID_LABEL_HK13);
-	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
+	keys->PrintScreen.page = HOTKEY_PAGE_TOOLS;
 	keys->PrintScreen.key = VK_F12;
 
 	keys->QuickPrintScreen.handleKeyDown = HK_QuickScreenShot;
 	keys->QuickPrintScreen.code = "QuickScreenshot";
 	keys->QuickPrintScreen.name = STRW(ID_LABEL_HK13b);
-	keys->QuickPrintScreen.page = HOTKEY_PAGE_MAIN;
+	keys->QuickPrintScreen.page = HOTKEY_PAGE_TOOLS;
 	keys->QuickPrintScreen.key = VK_F12;
 	keys->QuickPrintScreen.modifiers = CUSTKEY_CTRL_MASK;
 
@@ -633,13 +651,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->RecordWAV.handleKeyDown = HK_RecordWAV;
 	keys->RecordWAV.code = "RecordWAV";
 	keys->RecordWAV.name = STRW(ID_LABEL_HK14);
-	keys->RecordWAV.page = HOTKEY_PAGE_MAIN;
+	keys->RecordWAV.page = HOTKEY_PAGE_MOVIE;
 	keys->RecordWAV.key = NULL;
 
 	keys->RecordAVI.handleKeyDown = HK_RecordAVI;
 	keys->RecordAVI.code = "RecordAVI";
 	keys->RecordAVI.name = STRW(ID_LABEL_HK15);
-	keys->RecordAVI.page = HOTKEY_PAGE_MAIN;
+	keys->RecordAVI.page = HOTKEY_PAGE_MOVIE;
 	keys->RecordAVI.key = NULL;
 
 	//Turbo Page---------------------------------------
@@ -756,62 +774,62 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->LCDsMode.handleKeyUp = HK_LCDsMode;
 	keys->LCDsMode.code = "LCDsLayoutMode";
 	keys->LCDsMode.name = STRW(ID_LABEL_HK30);
-	keys->LCDsMode.page = HOTKEY_PAGE_MOVIE;
+	keys->LCDsMode.page = HOTKEY_PAGE_TOOLS;
 	keys->LCDsMode.key = VK_END;
 
 	keys->LCDsSwap.handleKeyUp = HK_LCDsSwap;
 	keys->LCDsSwap.code = "LCDsSwap";
 	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
-	keys->LCDsSwap.page = HOTKEY_PAGE_MOVIE;
+	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
 	keys->LCDsSwap.key = VK_NEXT;
 
 	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
 	keys->SearchCheats.code = "SearchCheats";
 	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
-	keys->SearchCheats.page = HOTKEY_PAGE_MOVIE;
+	keys->SearchCheats.page = HOTKEY_PAGE_TOOLS;
 	keys->SearchCheats.key = 'S';
 	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
 
 	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
 	keys->IncreaseVolume.code = "IncreaseVolume";
 	keys->IncreaseVolume.name = STRW(ID_LABEL_HK32);
-	keys->IncreaseVolume.page = HOTKEY_PAGE_MOVIE;
+	keys->IncreaseVolume.page = HOTKEY_PAGE_TOOLS;
 	keys->IncreaseVolume.key = NULL;
 
 	keys->DecreaseVolume.handleKeyDown = HK_DecreaseVolume;
 	keys->DecreaseVolume.code = "DecreaseVolume";
 	keys->DecreaseVolume.name = STRW(ID_LABEL_HK33);
-	keys->DecreaseVolume.page = HOTKEY_PAGE_MOVIE;
+	keys->DecreaseVolume.page = HOTKEY_PAGE_TOOLS;
 	keys->DecreaseVolume.key = NULL;
 
 	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
 	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
 	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
-	keys->ToggleFrameCounter.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleFrameCounter.page = HOTKEY_PAGE_TOOLS;
 	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
 
 	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
 	keys->ToggleFPS.code = "ToggleFPSDisplay";
 	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
-	keys->ToggleFPS.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleFPS.page = HOTKEY_PAGE_TOOLS;
 	keys->ToggleFPS.key = NULL;
 
 	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
 	keys->ToggleInput.code = "ToggleInputDisplay";
 	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
-	keys->ToggleInput.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleInput.page = HOTKEY_PAGE_TOOLS;
 	keys->ToggleInput.key = VK_OEM_COMMA;
 
 	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
 	keys->ToggleLag.code = "ToggleLagDisplay";
 	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
-	keys->ToggleLag.page = HOTKEY_PAGE_MOVIE;
+	keys->ToggleLag.page = HOTKEY_PAGE_TOOLS;
 	keys->ToggleLag.key = NULL;
 
 	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
 	keys->ResetLagCounter.code = "ResetLagCounter";
 	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
-	keys->ResetLagCounter.page = HOTKEY_PAGE_MOVIE;
+	keys->ResetLagCounter.page = HOTKEY_PAGE_TOOLS;
 	keys->ResetLagCounter.key = NULL;
 
 	//Other Page -------------------------------------------------------

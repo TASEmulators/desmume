@@ -30,6 +30,7 @@
 #include "gfx3d.h"
 #include "utils/decrypt/decrypt.h"
 #include "utils/decrypt/crc.h"
+#include "cp15.h"
 #include "bios.h"
 #include "debug.h"
 #include "cheatSystem.h"
@@ -47,6 +48,7 @@
 //#define LOG_ARM9
 //#define LOG_ARM7
 //#define dolog (currFrameCounter>15)
+//bool dolog=true;
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 
@@ -332,7 +334,7 @@ const RomBanner& GameInfo::getRomBanner()
 
 void GameInfo::populate()
 {
-	const char *regions[] = {	"JPFSEDIRKH",
+	const char *regions[] = {	"JPFSEDIRKHX",
 								"JPN",
 								"EUR",
 								"FRA",
@@ -343,6 +345,7 @@ void GameInfo::populate()
 								"RUS",
 								"KOR",
 								"HOL",
+								"EUU",
 
 	};
 
@@ -1937,7 +1940,11 @@ static FORCEINLINE s32 minarmtime(s32 arm9, s32 arm7)
 		return arm7;
 }
 
+#ifdef HAVE_JIT
+template<bool doarm9, bool doarm7, bool jit>
+#else
 template<bool doarm9, bool doarm7>
+#endif
 static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	const u64 nds_timer_base, const s32 s32next, s32 arm9, s32 arm7)
 {
@@ -1950,7 +1957,11 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			{
 				arm9log();
 				debug();
+#ifdef HAVE_JIT
+				arm9 += armcpu_exec<ARMCPU_ARM9,jit>();
+#else
 				arm9 += armcpu_exec<ARMCPU_ARM9>();
+#endif
 				#ifdef DEVELOPER
 					nds_debug_continuing[0] = false;
 				#endif
@@ -1968,7 +1979,11 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 			if(!NDS_ARM7.waitIRQ&&!nds.freezeBus)
 			{
 				arm7log();
+#ifdef HAVE_JIT
+				arm7 += (armcpu_exec<ARMCPU_ARM7,jit>()<<1);
+#else
 				arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
+#endif
 				#ifdef DEVELOPER
 					nds_debug_continuing[1] = false;
 				#endif
@@ -1981,7 +1996,11 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				if(arm7 == s32next)
 				{
 					nds_timer = nds_timer_base + minarmtime<doarm9,false>(arm9,arm7);
+#ifdef HAVE_JIT
+					return armInnerLoop<doarm9,false,jit>(nds_timer_base, s32next, arm9, arm7);
+#else
 					return armInnerLoop<doarm9,false>(nds_timer_base, s32next, arm9, arm7);
+#endif
 				}
 			}
 		}
@@ -2085,7 +2104,13 @@ void NDS_exec(s32 nb)
 				}
 			#endif
 
-			std::pair<s32,s32> arm9arm7 = armInnerLoop<true,true>(nds_timer_base,s32next,arm9,arm7);
+#ifdef HAVE_JIT
+			std::pair<s32,s32> arm9arm7 = CommonSettings.use_jit
+				? armInnerLoop<true,true,true>(nds_timer_base,s32next,arm9,arm7)
+				: armInnerLoop<true,true,false>(nds_timer_base,s32next,arm9,arm7);
+#else
+				std::pair<s32,s32> arm9arm7 = armInnerLoop<true,true>(nds_timer_base,s32next,arm9,arm7);
+#endif
 
 			#ifdef DEVELOPER
 				if(singleStep)
@@ -2237,11 +2262,16 @@ void NDS_Reset()
 	//	}
 	//}
 
+#ifdef HAVE_JIT
+	arm_jit_reset(CommonSettings.use_jit);
+#endif
 
 	NDS_ARM7.BIOS_loaded = false;
 	NDS_ARM9.BIOS_loaded = false;
 	memset(MMU.ARM7_BIOS, 0, sizeof(MMU.ARM7_BIOS));
 	memset(MMU.ARM9_BIOS, 0, sizeof(MMU.ARM9_BIOS));
+	NDS_ARM7.swi_tab = 0;
+	NDS_ARM9.swi_tab = 0;
 
 	//ARM7 BIOS IRQ HANDLER
 	if(CommonSettings.UseExtBIOS == true)
@@ -2255,7 +2285,7 @@ void NDS_Reset()
 		fclose(inf);
 
 		if((CommonSettings.SWIFromBIOS) && (NDS_ARM7.BIOS_loaded)) NDS_ARM7.swi_tab = 0;
-		else NDS_ARM7.swi_tab = ARM7_swi_tab;
+		else NDS_ARM7.swi_tab = ARM_swi_tab[ARMCPU_ARM7];
 
 		if (CommonSettings.PatchSWI3)
 			_MMU_write16<ARMCPU_ARM7>(0x00002F08, 0x4770);
@@ -2264,7 +2294,7 @@ void NDS_Reset()
 	} 
 	else 
 	{
-		NDS_ARM7.swi_tab = ARM7_swi_tab;
+		NDS_ARM7.swi_tab = ARM_swi_tab[ARMCPU_ARM7];
 
 #if 0
 		// TODO
@@ -2298,7 +2328,7 @@ void NDS_Reset()
 		fclose(inf);
 
 		if((CommonSettings.SWIFromBIOS) && (NDS_ARM9.BIOS_loaded)) NDS_ARM9.swi_tab = 0;
-		else NDS_ARM9.swi_tab = ARM9_swi_tab;
+		else NDS_ARM9.swi_tab = ARM_swi_tab[ARMCPU_ARM9];
 
 		if (CommonSettings.PatchSWI3)
 			_MMU_write16<ARMCPU_ARM9>(0xFFFF07CC, 0x4770);
@@ -2307,7 +2337,7 @@ void NDS_Reset()
 	} 
 	else 
 	{
-		NDS_ARM9.swi_tab = ARM9_swi_tab;
+		NDS_ARM9.swi_tab = ARM_swi_tab[ARMCPU_ARM9];
 
 		//bios chains data abort to fast irq
 
@@ -2460,6 +2490,10 @@ void NDS_Reset()
 		_MMU_write08<ARMCPU_ARM9>(REG_POSTFLG, 1);
 		_MMU_write08<ARMCPU_ARM7>(REG_POSTFLG, 1);
 	}
+	// only ARM9 have co-processor
+	reconstruct(&cp15);
+	cp15.reset(&NDS_ARM9);
+
 	//bitbox 4k demo is so stripped down it relies on default stack values
 	//otherwise the arm7 will crash before making a sound
 	//(these according to gbatek softreset bios docs)

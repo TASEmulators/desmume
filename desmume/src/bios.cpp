@@ -199,9 +199,7 @@ TEMPLATE static u32 WaitByLoop()
 	//INFO("ARM%c: SWI 0x03 (WaitByLoop)\n", PROCNUM?'7':'9');
 	if (PROCNUM == ARMCPU_ARM9)
 	{
-		armcp15_t *cp = (armcp15_t*)(cpu->coproc[15]);
-
-		if (cp->ctrl & ((1<<16)|(1<<18)))		// DTCM or ITCM is on (cache)
+		if (cp15.ctrl & ((1<<16)|(1<<18)))		// DTCM or ITCM is on (cache)
 			elapsed = cpu->R[0] * 2;
 		else
 			elapsed = cpu->R[0] * 8;
@@ -219,13 +217,13 @@ TEMPLATE static u32 wait4IRQ()
 	return 1;
 }
 
-TEMPLATE u32 intrWaitARM()
+TEMPLATE static u32 intrWaitARM()
 {
 	//TODO - account for differences between arm7 and arm9 (according to gbatek, the "bug doesn't work")
 
 	const u32 intrFlagAdr = (PROCNUM == ARMCPU_ARM7)
 		? 0x380FFF8
-		: (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
+		: (cp15.DTCMRegion&0xFFFFF000)+0x3FF8;
 
 	//set IME=1
 	//without this, no irq handlers can happen (even though IF&IE waits can happily happen)
@@ -329,7 +327,7 @@ TEMPLATE static u32 copy()
                          break;
                     case 1:
                          {
-                              u32 val = _MMU_read16<PROCNUM>(src);
+                              u16 val = _MMU_read16<PROCNUM>(src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
@@ -1108,7 +1106,8 @@ TEMPLATE static u32 getBootProcs()
 	return 1;
 }
 
-u32 (* ARM9_swi_tab[32])()={
+u32 (* ARM_swi_tab[2][32])()={
+	{
          bios_nop<ARMCPU_ARM9>,             // 0x00
          bios_nop<ARMCPU_ARM9>,             // 0x01
          bios_nop<ARMCPU_ARM9>,             // 0x02
@@ -1141,9 +1140,8 @@ u32 (* ARM9_swi_tab[32])()={
          bios_nop<ARMCPU_ARM9>,             // 0x1D
          bios_nop<ARMCPU_ARM9>,             // 0x1E
          setHaltCR<ARMCPU_ARM9>,            // 0x1F
-};
-
-u32 (* ARM7_swi_tab[32])()={
+	},
+	{
          bios_nop<ARMCPU_ARM7>,             // 0x00
          bios_nop<ARMCPU_ARM7>,             // 0x01
          bios_nop<ARMCPU_ARM7>,             // 0x02
@@ -1176,4 +1174,5 @@ u32 (* ARM7_swi_tab[32])()={
          getBootProcs<ARMCPU_ARM7>,         // 0x1D
          bios_nop<ARMCPU_ARM7>,             // 0x1E
          setHaltCR<ARMCPU_ARM7>,            // 0x1F
+	}
 };

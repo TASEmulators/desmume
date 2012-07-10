@@ -26,6 +26,7 @@
 
 enum HotkeyPage {
 	HOTKEY_PAGE_MAIN=0,
+	HOTKEY_PAGE_TOOLS,
 	HOTKEY_PAGE_MOVIE,
 	HOTKEY_PAGE_STATE,
 	HOTKEY_PAGE_STATE_SLOTS,
@@ -36,7 +37,8 @@ enum HotkeyPage {
 
 static LPCTSTR hotkeyPageTitle[] = {
 	_T("Main"),
-	_T("Movie / Tools"),
+	_T("Tools"),
+	_T("Movie"),
 	_T("Savestates"),
 	_T("Savestate Slots"),
 	_T("Turbo"),
@@ -66,10 +68,10 @@ struct SCustomKeys
 	SCustomKey Load[10];
 	SCustomKey Slot[10];
 	SCustomKey QuickSave, QuickLoad, NextSaveSlot, PreviousSaveSlot;
-
+	
 	SCustomKey Rotate0, Rotate90, Rotate180, Rotate270;
 
-	SCustomKey OpenROM, ReloadROM, Reset, Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure;
+	SCustomKey OpenROM, ReloadROM, Reset, Pause, CpuMode, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure;
 
 	SCustomKey PlayMovie, RecordMovie, StopMovie, ToggleReadOnly;
 	

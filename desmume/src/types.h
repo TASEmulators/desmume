@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@
 	#ifdef DEVELOPER
 		#define HAVE_LUA
 	#endif
+	#define HAVE_JIT
 #endif
 
 #ifdef __GNUC__
@@ -95,16 +96,18 @@
 //use this for example when you want a byte value to be better-aligned
 #define FAST_ALIGN DS_ALIGN(4)
 
-#ifndef FASTCALL
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
+#define ASMJIT_CALL_CONV CALL_CONV_GCCFASTCALL
 #elif defined (__i386__) && !defined(__clang__)
 #define FASTCALL __attribute__((regparm(3)))
+#define ASMJIT_CALL_CONV CALL_CONV_GCCREGPARM_3
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define FASTCALL
+#define ASMJIT_CALL_CONV CALL_CONV_DEFAULT
 #else
 #define FASTCALL
-#endif
+#define ASMJIT_CALL_CONV CALL_CONV_DEFAULT
 #endif
 
 #ifdef _MSC_VER
@@ -128,6 +131,14 @@
 #else
 #define FORCEINLINE inline __attribute__((always_inline)) 
 #define MSC_FORCEINLINE
+#endif
+#endif
+
+#ifndef NOINLINE
+#ifdef __GNUC__
+#define NOINLINE __attribute__((noinline))
+#else
+#define NOINLINE
 #endif
 #endif
 

@@ -21,8 +21,7 @@
 #include <assert.h>
 #include <algorithm>
 #include "types.h"
-#include "arm_instructions.h"
-#include "thumb_instructions.h"
+#include "instructions.h"
 #include "cp15.h"
 #include "bios.h"
 #include "debug.h"
@@ -32,6 +31,9 @@
 #ifdef HAVE_LUA
 #include "lua-engine.h"
 #endif
+#ifdef HAVE_JIT
+#include "arm_jit.h"
+#endif
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -39,57 +41,6 @@ FORCEINLINE u32 armcpu_prefetch(armcpu_t *armcpu) {
 	if(armcpu->proc_ID==0) return armcpu_prefetch<0>();
 	else return armcpu_prefetch<1>();
 }
-
-const unsigned char arm_cond_table[16*16] = {
-    /* N=0, Z=0, C=0, V=0 */
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,
-    0x00,0xFF,0xFF,0x00,0xFF,0x00,0xFF,0x20,
-    /* N=0, Z=0, C=0, V=1 */
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x00,
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=0, Z=0, C=1, V=0 */
-    0x00,0xFF,0xFF,0x00,0x00,0xFF,0x00,0xFF,
-    0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x20,
-    /* N=0, Z=0, C=1, V=1 */
-    0x00,0xFF,0xFF,0x00,0x00,0xFF,0xFF,0x00,
-    0xFF,0x00,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=0, Z=1, C=0, V=0 */
-    0xFF,0x00,0x00,0xFF,0x00,0xFF,0x00,0xFF,
-    0x00,0xFF,0xFF,0x00,0x00,0xFF,0xFF,0x20,
-    /* N=0, Z=1, C=0, V=1 */
-    0xFF,0x00,0x00,0xFF,0x00,0xFF,0xFF,0x00,
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=0, Z=1, C=1, V=0 */
-    0xFF,0x00,0xFF,0x00,0x00,0xFF,0x00,0xFF,
-    0x00,0xFF,0xFF,0x00,0x00,0xFF,0xFF,0x20,
-    /* N=0, Z=1, C=1, V=1 */
-    0xFF,0x00,0xFF,0x00,0x00,0xFF,0xFF,0x00,
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=1, Z=0, C=0, V=0 */
-    0x00,0xFF,0x00,0xFF,0xFF,0x00,0x00,0xFF,
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=1, Z=0, C=0, V=1 */
-    0x00,0xFF,0x00,0xFF,0xFF,0x00,0xFF,0x00,
-    0x00,0xFF,0xFF,0x00,0xFF,0x00,0xFF,0x20,
-    /* N=1, Z=0, C=1, V=0 */
-    0x00,0xFF,0xFF,0x00,0xFF,0x00,0x00,0xFF,
-    0xFF,0x00,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=1, Z=0, C=1, V=1 */
-    0x00,0xFF,0xFF,0x00,0xFF,0x00,0xFF,0x00,
-    0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x20,
-    /* N=1, Z=1, C=0, V=0 */
-    0xFF,0x00,0x00,0xFF,0xFF,0x00,0x00,0xFF,
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=1, Z=1, C=0, V=1 */
-    0xFF,0x00,0x00,0xFF,0xFF,0x00,0xFF,0x00,
-    0x00,0xFF,0xFF,0x00,0x00,0xFF,0xFF,0x20,
-    /* N=1, Z=1, C=1, V=0 */
-    0xFF,0x00,0xFF,0x00,0xFF,0x00,0x00,0xFF,
-    0x00,0xFF,0x00,0xFF,0x00,0xFF,0xFF,0x20,
-    /* N=1, Z=1, C=1, V=1 */
-    0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,
-    0x00,0xFF,0xFF,0x00,0x00,0xFF,0xFF,0x20,
-};
 
 armcpu_t NDS_ARM7;
 armcpu_t NDS_ARM9;
@@ -216,7 +167,7 @@ void armcpu_t::changeCPSR()
 
 void armcpu_init(armcpu_t *armcpu, u32 adr)
 {
-	armcpu->LDTBit = (armcpu->proc_ID==0); //arm9 is ARMv5 style. this should be renamed, or more likely, all references to this should poll a function to return an architecture level enum
+	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
 	armcpu->waitIRQ = FALSE;
 	armcpu->halt_IE_and_IF = FALSE;
@@ -227,11 +178,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 //#endif
 
 	for(int i = 0; i < 16; ++i)
-	{
 		armcpu->R[i] = 0;
-		if(armcpu->coproc[i]) free(armcpu->coproc[i]);
-		armcpu->coproc[i] = NULL;
-	}
 	
 	armcpu->CPSR.val = armcpu->SPSR.val = SYS;
 	
@@ -253,10 +200,6 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 
 	armcpu->next_instruction = adr;
 	
-	// only ARM9 have co-processor
-	if (armcpu->proc_ID==0)
-		armcpu->coproc[15] = (armcp_t*)armcp15_new(armcpu);
-
 //#ifndef GDB_STUB
 	armcpu_prefetch(armcpu);
 //#endif
@@ -361,8 +304,9 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 				armcpu->SPSR = armcpu->SPSR_und;
 				break;
 				
-				default :
-					break;
+			default :
+				printf("switchMode: WRONG mode %02X\n",mode);
+				break;
 	}
 	
 	armcpu->CPSR.bits.mode = mode & 0x1F;
@@ -666,18 +610,10 @@ u32 armcpu_exec()
 #ifdef HAVE_LUA
 			CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 4, ARMPROC.instruction, LUAMEMHOOK_EXEC); // should report even if condition=false?
 #endif
-			if(PROCNUM==0) {
-				#ifdef DEVELOPER
-				DEBUG_statistics.instructionHits[0].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
-				#endif
-				cExecute = arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruction);
-			}
-			else {
-				#ifdef DEVELOPER
-				DEBUG_statistics.instructionHits[1].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
-				#endif
-				cExecute = arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruction);
-			}
+			#ifdef DEVELOPER
+			DEBUG_statistics.instructionHits[PROCNUM].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
+			#endif
+			cExecute = arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruction);
 		}
 		else
 			cExecute = 1; // If condition=false: 1S cycle
@@ -695,19 +631,10 @@ u32 armcpu_exec()
 #ifdef HAVE_LUA
 	CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 2, ARMPROC.instruction, LUAMEMHOOK_EXEC);
 #endif
-	if(PROCNUM==0)
-	{
-		#ifdef DEVELOPER
-		DEBUG_statistics.instructionHits[0].thumb[ARMPROC.instruction>>6]++;
-		#endif
-		cExecute = thumb_instructions_set_0[ARMPROC.instruction>>6](ARMPROC.instruction);
-	}
-	else {
-		#ifdef DEVELOPER
-		DEBUG_statistics.instructionHits[1].thumb[ARMPROC.instruction>>6]++;
-		#endif
-		cExecute = thumb_instructions_set_1[ARMPROC.instruction>>6](ARMPROC.instruction);
-	}
+	#ifdef DEVELOPER
+	DEBUG_statistics.instructionHits[PROCNUM].thumb[ARMPROC.instruction>>6]++;
+	#endif
+	cExecute = thumb_instructions_set[PROCNUM][ARMPROC.instruction>>6](ARMPROC.instruction);
 
 #ifdef GDB_STUB
 	if ( ARMPROC.post_ex_fn != NULL) {
@@ -723,3 +650,31 @@ u32 armcpu_exec()
 //these templates needed to be instantiated manually
 template u32 armcpu_exec<0>();
 template u32 armcpu_exec<1>();
+
+#ifdef HAVE_JIT
+void arm_jit_sync()
+{
+	NDS_ARM7.next_instruction = NDS_ARM7.instruct_adr;
+	NDS_ARM9.next_instruction = NDS_ARM9.instruct_adr;
+	armcpu_prefetch<0>();
+	armcpu_prefetch<1>();
+}
+
+template<int PROCNUM, bool jit>
+u32 armcpu_exec()
+{
+	if (jit)
+	{
+		ArmOpCompiled f = (ArmOpCompiled)JIT_COMPILED_FUNC(ARMPROC.instruct_adr, PROCNUM);
+		return f ? f() : arm_jit_compile<PROCNUM>();
+	}
+
+	return armcpu_exec<PROCNUM>();
+}
+
+template u32 armcpu_exec<0,false>();
+template u32 armcpu_exec<0,true>();
+template u32 armcpu_exec<1,false>();
+template u32 armcpu_exec<1,true>();
+#endif
+

@@ -181,6 +181,7 @@
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;7z-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -271,6 +272,7 @@
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <CreateHotpatchableImage>false</CreateHotpatchableImage>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;7z-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -315,6 +317,7 @@
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -360,6 +363,7 @@
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -406,6 +410,7 @@
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;7z-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -438,6 +443,7 @@
     <ClCompile Include="..\aggdraw.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
     <ClCompile Include="..\armcpu.cpp" />
+    <ClCompile Include="..\arm_jit.cpp" />
     <ClCompile Include="..\bios.cpp" />
     <ClCompile Include="..\cheatSystem.cpp" />
     <ClCompile Include="..\commandline.cpp">
@@ -482,6 +488,19 @@
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
+    <ClCompile Include="..\utils\AsmJit\AssemblerX86X64.cpp" />
+    <ClCompile Include="..\utils\AsmJit\CodeGenerator.cpp" />
+    <ClCompile Include="..\utils\AsmJit\Compiler.cpp" />
+    <ClCompile Include="..\utils\AsmJit\CompilerX86X64.cpp" />
+    <ClCompile Include="..\utils\AsmJit\CpuInfo.cpp" />
+    <ClCompile Include="..\utils\AsmJit\Defs.cpp" />
+    <ClCompile Include="..\utils\AsmJit\DefsX86X64.cpp" />
+    <ClCompile Include="..\utils\AsmJit\Logger.cpp" />
+    <ClCompile Include="..\utils\AsmJit\MemoryManager.cpp" />
+    <ClCompile Include="..\utils\AsmJit\MemoryMarker.cpp" />
+    <ClCompile Include="..\utils\AsmJit\OperandX86X64.cpp" />
+    <ClCompile Include="..\utils\AsmJit\Platform.cpp" />
+    <ClCompile Include="..\utils\AsmJit\Util.cpp" />
     <ClCompile Include="..\utils\datetime.cpp" />
     <ClCompile Include="..\utils\dlditool.cpp" />
     <ClCompile Include="..\utils\emufat.cpp" />
@@ -573,8 +592,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h" />
-    <ClInclude Include="..\arm_instructions.h" />
     <ClInclude Include="..\armcpu.h" />
+    <ClInclude Include="..\arm_jit.h" />
     <ClInclude Include="..\bios.h" />
     <ClInclude Include="..\bits.h" />
     <ClInclude Include="..\cheatSystem.h" />
@@ -598,6 +617,8 @@
     <ClInclude Include="..\gfx3d.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />
+    <ClInclude Include="..\instructions.h" />
+    <ClInclude Include="..\instruction_attributes.h" />
     <ClInclude Include="..\lua-engine.h" />
     <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\mc.h" />
@@ -620,8 +641,28 @@
     <ClInclude Include="..\slot1.h" />
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
-    <ClInclude Include="..\thumb_instructions.h" />
     <ClInclude Include="..\types.h" />
+    <ClInclude Include="..\utils\AsmJit\ApiBegin.h" />
+    <ClInclude Include="..\utils\AsmJit\ApiEnd.h" />
+    <ClInclude Include="..\utils\AsmJit\AsmJit.h" />
+    <ClInclude Include="..\utils\AsmJit\Assembler.h" />
+    <ClInclude Include="..\utils\AsmJit\AssemblerX86X64.h" />
+    <ClInclude Include="..\utils\AsmJit\Build.h" />
+    <ClInclude Include="..\utils\AsmJit\CodeGenerator.h" />
+    <ClInclude Include="..\utils\AsmJit\Compiler.h" />
+    <ClInclude Include="..\utils\AsmJit\CompilerX86X64.h" />
+    <ClInclude Include="..\utils\AsmJit\Config.h" />
+    <ClInclude Include="..\utils\AsmJit\CpuInfo.h" />
+    <ClInclude Include="..\utils\AsmJit\Defs.h" />
+    <ClInclude Include="..\utils\AsmJit\DefsX86X64.h" />
+    <ClInclude Include="..\utils\AsmJit\Logger.h" />
+    <ClInclude Include="..\utils\AsmJit\MemoryManager.h" />
+    <ClInclude Include="..\utils\AsmJit\MemoryMarker.h" />
+    <ClInclude Include="..\utils\AsmJit\Operand.h" />
+    <ClInclude Include="..\utils\AsmJit\OperandX86X64.h" />
+    <ClInclude Include="..\utils\AsmJit\Platform.h" />
+    <ClInclude Include="..\utils\AsmJit\Util.h" />
+    <ClInclude Include="..\utils\AsmJit\Util_p.h" />
     <ClInclude Include="..\utils\datetime.h" />
     <ClInclude Include="..\utils\emufat.h" />
     <ClInclude Include="..\utils\emufat_types.h" />
@@ -717,6 +758,8 @@
     <None Include="..\filter\hq4x.dat" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
+    <None Include="..\utils\AsmJit\COPYING.txt" />
+    <None Include="..\utils\AsmJit\README.txt" />
     <None Include="bitmap1.bmp" />
     <None Include="DeSmuME.ico" />
     <CustomBuild Include="7z\7z.7z">

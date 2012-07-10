@@ -1643,6 +1643,146 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="AsmJit"
+				>
+				<File
+					RelativePath="..\utils\AsmJit\ApiBegin.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\ApiEnd.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\AsmJit.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Assembler.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\AssemblerX86X64.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\AssemblerX86X64.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Build.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\CodeGenerator.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\CodeGenerator.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Compiler.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Compiler.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\CompilerX86X64.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\CompilerX86X64.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Config.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\CpuInfo.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\CpuInfo.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Defs.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Defs.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\DefsX86X64.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\DefsX86X64.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Logger.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Logger.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\MemoryManager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\MemoryManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\MemoryMarker.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\MemoryMarker.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Operand.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\OperandX86X64.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\OperandX86X64.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Platform.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Platform.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Util.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Util.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\AsmJit\Util_p.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="addons"
@@ -1929,6 +2069,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\arm_jit.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\arm_jit.h"
+			>
+		</File>
+		<File
 			RelativePath="..\armcpu.cpp"
 			>
 		</File>
@@ -2118,6 +2266,10 @@
 		</File>
 		<File
 			RelativePath="..\GPU_osd.h"
+			>
+		</File>
+		<File
+			RelativePath="..\instruction_attributes.h"
 			>
 		</File>
 		<File

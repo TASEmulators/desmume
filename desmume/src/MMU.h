@@ -32,6 +32,10 @@
 #include "lua-engine.h"
 #endif
 
+#ifdef HAVE_JIT
+#include "arm_jit.h"
+#endif
+
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
 #define ARMPROC (PROCNUM ? NDS_ARM7:NDS_ARM9)
@@ -312,6 +316,11 @@ typedef struct
 	int blocklen;
 	
 } nds_dscard;
+
+#define DUP2(x)  x, x
+#define DUP4(x)  x, x, x, x
+#define DUP8(x)  x, x, x, x,  x, x, x, x
+#define DUP16(x) x, x, x, x,  x, x, x, x,  x, x, x, x,  x, x, x, x
 
 struct MMU_struct 
 {
@@ -795,6 +804,9 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(addr, MAIN_MEM, _MMU_MAIN_MEM_MASK, 0) = 0;
+#endif
 		T1WriteByte( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 #ifdef HAVE_LUA
 		CallRegisteredLuaMemHook(addr, 1, val, LUAMEMHOOK_WRITE);
@@ -831,6 +843,9 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(addr, MAIN_MEM, _MMU_MAIN_MEM_MASK16, 0) = 0;
+#endif
 		T1WriteWord( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK16, val);
 #ifdef HAVE_LUA
 		CallRegisteredLuaMemHook(addr, 2, val, LUAMEMHOOK_WRITE);
@@ -867,6 +882,10 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(addr, MAIN_MEM, _MMU_MAIN_MEM_MASK32, 0) = 0;
+		JIT_COMPILED_FUNC_KNOWNBANK(addr, MAIN_MEM, _MMU_MAIN_MEM_MASK32, 1) = 0;
+#endif
 		T1WriteLong( MMU.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK32, val);
 #ifdef HAVE_LUA
 		CallRegisteredLuaMemHook(addr, 4, val, LUAMEMHOOK_WRITE);

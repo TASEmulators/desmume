@@ -20,9 +20,21 @@
 #define __CP15_H__
 
 #include "armcpu.h"
+#include "emufile.h"
+
+#define CP15_ACCESS_WRITE         0
+#define CP15_ACCESS_READ          2
+#define CP15_ACCESS_EXECUTE       4
+#define CP15_ACCESS_WRITEUSR      CP15_ACCESS_WRITE
+#define CP15_ACCESS_WRITESYS      1
+#define CP15_ACCESS_READUSR       CP15_ACCESS_READ
+#define CP15_ACCESS_READSYS       3
+#define CP15_ACCESS_EXECUSR       CP15_ACCESS_EXECUTE
+#define CP15_ACCESS_EXECSYS       5
 
 struct armcp15_t
 {
+public:
         u32 IDCode;
         u32 cacheType;
         u32 TCMSize;
@@ -65,27 +77,66 @@ struct armcp15_t
         u32 regionExecuteSet_USR[8] ;
         u32 regionExecuteSet_SYS[8] ;
 
-	armcpu_t * cpu;
+		armcpu_t *cpu;
 
+		void setSingleRegionAccess(u32 dAccess,u32 iAccess,unsigned char num, u32 mask,u32 set);
+		void maskPrecalc();
+
+public:
+		armcp15_t() :	IDCode(0),
+						cacheType(0),
+						TCMSize(0),
+						ctrl(0),
+						DCConfig(0),
+						ICConfig(0),
+						writeBuffCtrl(0),
+						und(0),
+						DaccessPerm(0),
+						IaccessPerm(0),
+						protectBaseSize0(0),
+						protectBaseSize1(0),
+						protectBaseSize2(0),
+						protectBaseSize3(0),
+						protectBaseSize4(0),
+						protectBaseSize5(0),
+						protectBaseSize6(0),
+						protectBaseSize7(0),
+						cacheOp(0),
+						DcacheLock(0),
+						IcacheLock(0),
+						ITCMRegion(0),
+						DTCMRegion(0),
+						processID(0),
+						RAM_TAG(0),
+						testState(0),
+						cacheDbg(0),
+						cpu(NULL)
+		{
+			memset(&regionWriteMask_USR[0], 0, sizeof(regionWriteMask_USR));
+			memset(&regionWriteMask_SYS[0], 0, sizeof(regionWriteMask_SYS));
+			memset(&regionReadMask_USR[0], 0, sizeof(regionReadMask_USR));
+			memset(&regionReadMask_SYS[0], 0, sizeof(regionReadMask_SYS));
+			memset(&regionExecuteMask_USR[0], 0, sizeof(regionExecuteMask_USR));
+			memset(&regionExecuteMask_SYS[0], 0, sizeof(regionExecuteMask_SYS));
+			memset(&regionWriteSet_USR[0], 0, sizeof(regionWriteSet_USR));
+			memset(&regionWriteSet_SYS[0], 0, sizeof(regionWriteSet_SYS));
+			memset(&regionReadSet_USR[0], 0, sizeof(regionReadSet_USR));
+			memset(&regionReadSet_SYS[0], 0, sizeof(regionReadSet_SYS));
+			memset(&regionExecuteSet_USR[0], 0, sizeof(regionExecuteSet_USR));
+			memset(&regionExecuteSet_SYS[0], 0, sizeof(regionExecuteSet_SYS));
+		}
+		bool reset(armcpu_t * c);
+		BOOL dataProcess(u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+		BOOL load(u8 CRd, u8 adr);
+		BOOL store(u8 CRd, u8 adr);
+		BOOL moveCP2ARM(u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+		BOOL moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+		BOOL isAccessAllowed(u32 address,u32 access);
+		// savestate
+		void saveone(EMUFILE* os);
+		bool loadone(EMUFILE* is);
 };
 
-armcp15_t *armcp15_new(armcpu_t *c);
-BOOL armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
-BOOL armcp15_load(armcp15_t *armcp15, u8 CRd, u8 adr);
-BOOL armcp15_store(armcp15_t *armcp15, u8 CRd, u8 adr);
-BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
-BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
-BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access);
-
-
-#define CP15_ACCESS_WRITE         0
-#define CP15_ACCESS_READ          2
-#define CP15_ACCESS_EXECUTE       4
-#define CP15_ACCESS_WRITEUSR      CP15_ACCESS_WRITE
-#define CP15_ACCESS_WRITESYS      1
-#define CP15_ACCESS_READUSR       CP15_ACCESS_READ
-#define CP15_ACCESS_READSYS       3
-#define CP15_ACCESS_EXECUSR       CP15_ACCESS_EXECUTE
-#define CP15_ACCESS_EXECSYS       5
-
+extern armcp15_t cp15;
+void maskPrecalc();
 #endif /* __CP15_H__*/
