@@ -20,6 +20,9 @@
 #define ARM_JIT
 
 #include "types.h"
+#ifndef _MSC_VER
+#include <stdint.h>
+#endif
 
 typedef u32 (FASTCALL* ArmOpCompiled)();
 
