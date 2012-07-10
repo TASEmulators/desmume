@@ -19,12 +19,13 @@
 #ifndef _OSXSOUNDINTERFACE_
 #define _OSXSOUNDINTERFACE_
 
+#include <pthread.h>
 #include "../SPU.h"
 
 #define SNDCORE_OSX 58325 //hopefully this is unique number
 
-// Sound interface to the SPU
-extern SoundInterface_struct SNDOSX;
+extern SoundInterface_struct SNDOSX; // Sound interface to the SPU
+extern pthread_mutex_t *mutexAudioEmulateCore; // Mutex for the emulation core - used when mixing audio in Dual Synch/Asynch mode in post-process
 
 // Core Audio functions for the sound interface
 int		SNDOSXInit(int buffer_size);
@@ -36,5 +37,7 @@ void	SNDOSXMuteAudio();
 void	SNDOSXUnMuteAudio();
 void	SNDOSXSetVolume(int volume);
 void	SNDOSXClearBuffer();
+void	SNDOSXFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+size_t	SNDOSXPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 
 #endif // _OSXSOUNDINTERFACE_
