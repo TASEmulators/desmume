@@ -523,6 +523,11 @@ extern struct TCommonSettings {
 		for(int g=0;g<2;g++)
 			for(int x=0;x<5;x++)
 				dispLayers[g][x]=true;
+#ifdef HAVE_JIT
+		use_jit = true;
+#else
+		use_jit = false;
+#endif
 	}
 	bool GFX3D_HighResolutionInterpolateColor;
 	bool GFX3D_EdgeMark;
@@ -557,6 +562,8 @@ extern struct TCommonSettings {
 	bool dispLayers[2][5];
 	
 	FAST_ALIGN bool advanced_timing;
+
+	bool use_jit;
 	
 	struct _Wifi {
 		int mode;

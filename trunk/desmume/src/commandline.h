@@ -19,6 +19,7 @@
 #define _COMMANDLINE_H_
 
 #include <string>
+#include "types.h"
 
 //I hate C. we have to forward declare these with more detail than I like
 typedef struct _GOptionContext GOptionContext;
@@ -89,6 +90,9 @@ private:
 	int _num_cores;
 	int _rigorous_timing;
 	int _advanced_timing;
+#ifdef HAVE_JIT
+	int _cpu_mode;
+#endif
 	char* _slot1;
 	char *_slot1_fat_dir;
 	char* _console_type;

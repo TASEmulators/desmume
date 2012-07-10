@@ -456,102 +456,14 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	return ok;
 }
 
-static void cp15_saveone(armcp15_t *cp15, EMUFILE* os)
-{
-	write32le(cp15->IDCode,os);
-	write32le(cp15->cacheType,os);
-    write32le(cp15->TCMSize,os);
-    write32le(cp15->ctrl,os);
-    write32le(cp15->DCConfig,os);
-    write32le(cp15->ICConfig,os);
-    write32le(cp15->writeBuffCtrl,os);
-    write32le(cp15->und,os);
-    write32le(cp15->DaccessPerm,os);
-    write32le(cp15->IaccessPerm,os);
-    write32le(cp15->protectBaseSize0,os);
-    write32le(cp15->protectBaseSize1,os);
-    write32le(cp15->protectBaseSize2,os);
-    write32le(cp15->protectBaseSize3,os);
-    write32le(cp15->protectBaseSize4,os);
-    write32le(cp15->protectBaseSize5,os);
-    write32le(cp15->protectBaseSize6,os);
-    write32le(cp15->protectBaseSize7,os);
-    write32le(cp15->cacheOp,os);
-    write32le(cp15->DcacheLock,os);
-    write32le(cp15->IcacheLock,os);
-    write32le(cp15->ITCMRegion,os);
-    write32le(cp15->DTCMRegion,os);
-    write32le(cp15->processID,os);
-    write32le(cp15->RAM_TAG,os);
-    write32le(cp15->testState,os);
-    write32le(cp15->cacheDbg,os);
-    for(int i=0;i<8;i++) write32le(cp15->regionWriteMask_USR[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionWriteMask_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionReadMask_USR[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionReadMask_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionExecuteMask_USR[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionExecuteMask_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionWriteSet_USR[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionWriteSet_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionReadSet_USR[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionReadSet_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionExecuteSet_USR[i],os);
-    for(int i=0;i<8;i++) write32le(cp15->regionExecuteSet_SYS[i],os);
-}
-
 static void cp15_savestate(EMUFILE* os)
 {
 	//version
 	write32le(1,os);
 
-	cp15_saveone((armcp15_t *)NDS_ARM9.coproc[15],os);
+	cp15.saveone(os);
 	//ARM7 not have coprocessor
 	//cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
-}
-
-static bool cp15_loadone(armcp15_t *cp15, EMUFILE* is)
-{
-	if(!read32le(&cp15->IDCode,is)) return false;
-	if(!read32le(&cp15->cacheType,is)) return false;
-    if(!read32le(&cp15->TCMSize,is)) return false;
-    if(!read32le(&cp15->ctrl,is)) return false;
-    if(!read32le(&cp15->DCConfig,is)) return false;
-    if(!read32le(&cp15->ICConfig,is)) return false;
-    if(!read32le(&cp15->writeBuffCtrl,is)) return false;
-    if(!read32le(&cp15->und,is)) return false;
-    if(!read32le(&cp15->DaccessPerm,is)) return false;
-    if(!read32le(&cp15->IaccessPerm,is)) return false;
-    if(!read32le(&cp15->protectBaseSize0,is)) return false;
-    if(!read32le(&cp15->protectBaseSize1,is)) return false;
-    if(!read32le(&cp15->protectBaseSize2,is)) return false;
-    if(!read32le(&cp15->protectBaseSize3,is)) return false;
-    if(!read32le(&cp15->protectBaseSize4,is)) return false;
-    if(!read32le(&cp15->protectBaseSize5,is)) return false;
-    if(!read32le(&cp15->protectBaseSize6,is)) return false;
-    if(!read32le(&cp15->protectBaseSize7,is)) return false;
-    if(!read32le(&cp15->cacheOp,is)) return false;
-    if(!read32le(&cp15->DcacheLock,is)) return false;
-    if(!read32le(&cp15->IcacheLock,is)) return false;
-    if(!read32le(&cp15->ITCMRegion,is)) return false;
-    if(!read32le(&cp15->DTCMRegion,is)) return false;
-    if(!read32le(&cp15->processID,is)) return false;
-    if(!read32le(&cp15->RAM_TAG,is)) return false;
-    if(!read32le(&cp15->testState,is)) return false;
-    if(!read32le(&cp15->cacheDbg,is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteMask_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteMask_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadMask_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadMask_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteMask_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteMask_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteSet_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteSet_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadSet_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadSet_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteSet_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteSet_SYS[i],is)) return false;
-
-    return true;
 }
 
 static bool cp15_loadstate(EMUFILE* is, int size)
@@ -561,14 +473,14 @@ static bool cp15_loadstate(EMUFILE* is, int size)
 	if(read32le(&version,is) != 1) return false;
 	if(version > 1) return false;
 
-	if(!cp15_loadone((armcp15_t *)NDS_ARM9.coproc[15],is)) return false;
+	if(!cp15.loadone(is)) return false;
 	
 	if(version == 0)
 	{
 		//ARM7 not have coprocessor
 		u8 *tmp_buf = new u8 [sizeof(armcp15_t)];
 		if (!tmp_buf) return false;
-		if(!cp15_loadone((armcp15_t *)tmp_buf,is)) return false;
+		if(!cp15.loadone(is)) return false;
 		delete [] tmp_buf;
 		tmp_buf = NULL;
 	}
@@ -902,6 +814,9 @@ static void writechunks(EMUFILE* os);
 
 bool savestate_save(EMUFILE* outstream, int compressionLevel)
 {
+#ifdef HAVE_JIT 
+	arm_jit_sync();
+#endif
 	#ifndef HAVE_LIBZ
 	compressionLevel = Z_NO_COMPRESSION;
 	#endif

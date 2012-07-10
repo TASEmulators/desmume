@@ -150,11 +150,6 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 //#define LOG_DMA2
 //#define LOG_DIV
 
-#define DUP2(x)  x, x
-#define DUP4(x)  x, x, x, x
-#define DUP8(x)  x, x, x, x,  x, x, x, x
-#define DUP16(x) x, x, x, x,  x, x, x, x,  x, x, x, x,  x, x, x, x
-
 MMU_struct MMU;
 MMU_struct_new MMU_new;
 MMU_struct_timing MMU_timing;
@@ -1981,6 +1976,7 @@ void DmaController::doCopy()
 	u32 src = saddr;
 	u32 dst = daddr;
 
+
 	//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
 	//then danny phantom title screen will be filled with a garbage char which is made by
 	//dmaing from 0x00000000 to 0x06000000
@@ -2132,7 +2128,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if(adr < 0x02000000)
 	{
-		T1WriteByte(MMU.ARM9_ITCM, adr&0x7FFF, val);
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 0) = 0;
+#endif
+		T1WriteByte(MMU.ARM9_ITCM, adr & 0x7FFF, val);
 		return;
 	}
 
@@ -2393,7 +2392,12 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
 	if(restricted) return; //block 8bit vram writes
-	
+
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 0) = 0;
+#endif
+
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
 }
@@ -2407,7 +2411,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if (adr < 0x02000000)
 	{
-		T1WriteWord(MMU.ARM9_ITCM, adr&0x7FFF, val);
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 0) = 0;
+#endif
+		T1WriteWord(MMU.ARM9_ITCM, adr & 0x7FFF, val);
 		return;
 	}
 
@@ -2849,6 +2856,11 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
 
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 0) = 0;
+#endif
+
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 } 
@@ -2862,7 +2874,11 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if(adr<0x02000000)
 	{
-		T1WriteLong(MMU.ARM9_ITCM, adr&0x7FFF, val);
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 0) = 0;
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 1) = 0;
+#endif
+		T1WriteLong(MMU.ARM9_ITCM, adr & 0x7FFF, val);
 		return ;
 	}
 
@@ -3279,6 +3295,14 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
 	if(unmapped) return;
+
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+	{
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 0) = 0;
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 1) = 0;
+	}
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
@@ -3702,6 +3726,11 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return;
+
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 0) = 0;
+#endif
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
@@ -4138,6 +4167,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return;
 
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 0) = 0;
+#endif
+
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 } 
@@ -4234,6 +4268,14 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return;
+
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+	{
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 0) = 0;
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 1) = 0;
+	}
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);

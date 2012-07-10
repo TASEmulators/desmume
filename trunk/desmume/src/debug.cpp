@@ -23,8 +23,7 @@
 #include <stdio.h>
 #include "MMU.h"
 #include "armcpu.h"
-#include "arm_instructions.h"
-#include "thumb_instructions.h"
+#include "instructions.h"
 #include "cp15.h"
 #include "NDSSystem.h"
 #include "utils/xstring.h"
@@ -49,7 +48,7 @@ static bool acl_check_access(u32 adr, u32 access) {
 	if(NDS_ARM9.CPSR.bits.mode != USR)
 		access |= 1;
 	
-	if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE) {
+	if (cp15.isAccessAllowed(adr,access)==FALSE) {
 		HandleDebugEvent(DEBUG_EVENT_ACL_EXCEPTION);
 	}
 	return true;

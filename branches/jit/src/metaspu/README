@@ -1,3 +1,0 @@
-Much of the contents of this directory was taken from the SPU2-X plugin from PCSX2 (GPL)
-This in turn makes use of the SoundTouch library (LGPL)
-The main metaspu files were written for DeSmuME (GPL) and ported from there to other emulators.

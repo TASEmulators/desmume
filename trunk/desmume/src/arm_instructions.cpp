@@ -31,7 +31,6 @@
 #include "MMU.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
-#include "arm_instructions.h"
 #include "MMU_timing.h"
 
 #define cpu (&ARMPROC)
@@ -1900,10 +1899,13 @@ TEMPLATE static u32 FASTCALL  OP_ORR_S_IMM_VAL(const u32 i)
 	cpu->CPSR.bits.C = c; \
 	cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
 	cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
-	return a; \
+	return a;
 
 TEMPLATE static u32 FASTCALL  OP_MOV_LSL_IMM(const u32 i)
 {
+	if (i == 0xE1A00000)	// nop: MOV R0, R0
+		return 1;
+
 	LSL_IMM;
 	OP_MOV(1,3);
 }
@@ -2975,228 +2977,99 @@ TEMPLATE static u32 FASTCALL  OP_MRS_SPSR(const u32 i)
 	
 	return 1;
 }
-#define v4_UNALLOC_MASK	0x0FFFFF00
-#define v4_USER_MASK	0xF0000000
-#define v4_PRIV_MASK	0x0000000F
-#define v4_STATE_MASK	0x00000020
 
-#define v5_UNALLOC_MASK	0x07FFFF00
-#define v5_USER_MASK	0xF8000000
-#define v5_PRIV_MASK	0x0000000F
-#define v5_STATE_MASK	0x00000020
+#define OP_MSR_CPSR_(operand) \
+	u32 byte_mask = (cpu->CPSR.bits.mode == USR)?(BIT19(i)?0xFF000000:0x00000000): \
+												(BIT16(i)?0x000000FF:0x00000000) | \
+												(BIT17(i)?0x0000FF00:0x00000000) | \
+												(BIT18(i)?0x00FF0000:0x00000000) | \
+												(BIT19(i)?0xFF000000:0x00000000); \
+	if(cpu->CPSR.bits.mode != USR && BIT16(i)) \
+		{ armcpu_switchMode(cpu, operand & 0x1F); } \
+	cpu->CPSR.val = (cpu->CPSR.val & ~byte_mask) | (operand & byte_mask); \
+	cpu->changeCPSR();
+
+#define OP_MSR_SPSR_(operand) \
+	if(cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS) return 1; \
+	u32 byte_mask = (BIT16(i)?0x000000FF:0x00000000) | \
+					(BIT17(i)?0x0000FF00:0x00000000) | \
+					(BIT18(i)?0x00FF0000:0x00000000) | \
+					(BIT19(i)?0xFF000000:0x00000000); \
+	cpu->SPSR.val = (cpu->SPSR.val & ~byte_mask) | (operand & byte_mask); \
+	cpu->changeCPSR();
+
+//#define __NEW_MSR
+#ifdef __NEW_MSR
+#define v4T_UNALLOC_MASK	0x0FFFFF00
+#define v4T_USER_MASK		0xF0000000
+#define v4T_PRIV_MASK		0x0000000F
+#define v4T_STATE_MASK		0x00000020
+
+#define v5TE_UNALLOC_MASK	0x07FFFF00
+#define v5TE_USER_MASK		0xF8000000
+#define v5TE_PRIV_MASK		0x0000000F
+#define v5TE_STATE_MASK		0x00000020
+#endif
 
 TEMPLATE static u32 FASTCALL  OP_MSR_CPSR(const u32 i)
 {
 	u32 operand = cpu->R[REG_POS(i,0)];
 	
-#if 0
-	// TODO
+#ifdef __NEW_MSR
 	u32 mask = 0;
 	u32 byte_mask = (BIT16(i)?0x000000FF:0x00000000) |
 					(BIT17(i)?0x0000FF00:0x00000000) |
 					(BIT18(i)?0x00FF0000:0x00000000) |
 					(BIT19(i)?0xFF000000:0x00000000);
 	
-	if (PROCNUM == 0)
+	const u32 unallocMask = PROCNUM?v4T_UNALLOC_MASK: v5TE_UNALLOC_MASK;
+	const u32 userMask =	PROCNUM?v4T_USER_MASK	: v5TE_USER_MASK;
+	const u32 privMask =	PROCNUM?v4T_PRIV_MASK	: v5TE_PRIV_MASK;
+	const u32 stateMask =	PROCNUM?v4T_STATE_MASK	: v5TE_STATE_MASK;
+
+	if ((operand & unallocMask) != 0) printf("ARM%c: MSR_CPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", PROCNUM?'7':'9', operand);
+	if (cpu->CPSR.bits.mode != USR) // Privileged mode
 	{
-		if ((operand & v5_UNALLOC_MASK) != 0) printf("ARM9: MSR_CPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		if (cpu->CPSR.bits.mode != USR) // Privileged mode
-		{
-			if ((operand & v5_STATE_MASK) != 0) printf("ARM9: MSR_CPSR_REG UNPREDICTABLE STATE (operand %08X)\n", operand);
-			mask = byte_mask & (v5_USER_MASK | v5_PRIV_MASK);
-		}
+		if (BIT16(i)) armcpu_switchMode(cpu, operand & 0x1F);
+		if ((operand & stateMask) != 0) 
+			printf("ARM%c: MSR_CPSR_REG UNPREDICTABLE STATE (operand %08X)\n", PROCNUM?'7':'9', operand);
 		else
-			mask = byte_mask & v5_USER_MASK;
+			mask = byte_mask & (userMask | privMask);
 	}
 	else
-	{
-		if ((operand & v4_UNALLOC_MASK) != 0) printf("ARM7: MSR_CPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		if(cpu->CPSR.bits.mode != USR) // Privileged mode
-		{
-			if ((operand & v4_STATE_MASK) != 0) printf("ARM7: MSR_CPSR_REG UNPREDICTABLE STATE (operand %08X)\n", operand);
-			mask = byte_mask & (v4_USER_MASK | v4_PRIV_MASK);
-		}
-		else
-			mask = byte_mask & v4_USER_MASK;
-	}
+		mask = byte_mask & userMask;
+	
+	u32 new_val = ((cpu->CPSR.val & (~mask)) | (operand & mask));
 	cpu->CPSR.val = ((cpu->CPSR.val & (~mask)) | (operand & mask));
-	if (BIT16(i)) armcpu_switchMode(cpu, cpu->CPSR.bits.mode);
 	cpu->changeCPSR();
 #else
-	if(cpu->CPSR.bits.mode!=USR)
-	{
-		if(BIT16(i))
-		{
-			armcpu_switchMode(cpu, operand & 0x1F);
-			cpu->CPSR.val = (cpu->CPSR.val & 0xFFFFFF00) | (operand & 0xFF);
-		}
-		if(BIT17(i))
-			cpu->CPSR.val = (cpu->CPSR.val & 0xFFFF00FF) | (operand & 0xFF00);
-		if(BIT18(i))
-			cpu->CPSR.val = (cpu->CPSR.val & 0xFF00FFFF) | (operand & 0xFF0000);
-	}
-	if(BIT19(i))
-		cpu->CPSR.val = (cpu->CPSR.val & 0x00FFFFFF) | (operand & 0xFF000000);
-
-	cpu->changeCPSR();
+	OP_MSR_CPSR_(operand);
 #endif
-			
 	return 1;
 }
 
 TEMPLATE static u32 FASTCALL  OP_MSR_SPSR(const u32 i)
 {
+	//printf("OP_MSR_SPSR\n");
 	u32 operand = cpu->R[REG_POS(i,0)];
-
-#if 0
-	// TODO
-	u32 mask = 0;
-	u32 byte_mask = (BIT16(i)?0x000000FF:0x00000000) |
-					(BIT17(i)?0x0000FF00:0x00000000) |
-					(BIT18(i)?0x00FF0000:0x00000000) |
-					(BIT19(i)?0xFF000000:0x00000000);
-	
-	if (PROCNUM == 0)
-	{
-		if ((operand & v5_UNALLOC_MASK) != 0) printf("ARM9: MSR_SPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		// if CurrentModeHasSPSR
-		mask = byte_mask & (v5_USER_MASK | v5_PRIV_MASK | v5_STATE_MASK);
-	}
-	else
-	{
-		if ((operand & v4_UNALLOC_MASK) != 0) printf("ARM7: MSR_SPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		// if CurrentModeHasSPSR
-		mask = byte_mask & (v4_USER_MASK | v4_PRIV_MASK | v4_STATE_MASK);
-	}
-	cpu->SPSR.val = ((cpu->SPSR.val & (~mask)) | (operand & mask));
-	cpu->changeCPSR();
-#else
-	if(cpu->CPSR.bits.mode!=USR)
-	{
-		if(BIT16(i))
-		{
-			cpu->SPSR.val = (cpu->SPSR.val & 0xFFFFFF00) | (operand & 0xFF);
-		}
-		if(BIT17(i))
-			cpu->SPSR.val = (cpu->SPSR.val & 0xFFFF00FF) | (operand & 0xFF00);
-		if(BIT18(i))
-			cpu->SPSR.val = (cpu->SPSR.val & 0xFF00FFFF) | (operand & 0xFF0000);
-	}
-	if(BIT19(i))
-		cpu->SPSR.val = (cpu->SPSR.val & 0x00FFFFFF) | (operand & 0xFF000000);
-	cpu->changeCPSR();
-#endif
+	OP_MSR_SPSR_(operand);
 	
 	return 1;
 }
 
 TEMPLATE static u32 FASTCALL  OP_MSR_CPSR_IMM_VAL(const u32 i)
 {
+	//printf("OP_MSR_CPSR_IMM_VAL\n");
 	IMM_VALUE;
-
-#if 0
-	// TODO
-	u32 operand = shift_op;
-	u32 mask = 0;
-	u32 byte_mask = (BIT16(i)?0x000000FF:0x00000000) |
-					(BIT17(i)?0x0000FF00:0x00000000) |
-					(BIT18(i)?0x00FF0000:0x00000000) |
-					(BIT19(i)?0xFF000000:0x00000000);
-	
-	if (PROCNUM == 0)
-	{
-		if ((operand & v5_UNALLOC_MASK) != 0) printf("ARM9: MSR_CPSR_IMM UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		if (cpu->CPSR.bits.mode != USR) // Privileged mode
-		{
-			if ((operand & v5_STATE_MASK) != 0) printf("ARM9: MSR_CPSR_IMM UNPREDICTABLE STATE (operand %08X)\n", operand);
-			mask = byte_mask & (v5_USER_MASK | v5_PRIV_MASK);
-		}
-		else
-			mask = byte_mask & v5_USER_MASK;
-	}
-	else
-	{
-		if ((operand & v4_UNALLOC_MASK) != 0) printf("ARM7: MSR_CPSR_IMM UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		if(cpu->CPSR.bits.mode != USR) // Privileged mode
-		{
-			if ((operand & v4_STATE_MASK) != 0) printf("ARM7: MSR_CPSR_IMM UNPREDICTABLE STATE (operand %08X)\n", operand);
-			mask = byte_mask & (v4_USER_MASK | v4_PRIV_MASK);
-		}
-		else
-			mask = byte_mask & v4_USER_MASK;
-	}
-	cpu->CPSR.val = ((cpu->CPSR.val & (~mask)) | (operand & mask));
-	if (BIT16(i)) armcpu_switchMode(cpu, cpu->CPSR.bits.mode);
-	cpu->changeCPSR();
-#else
-	if(cpu->CPSR.bits.mode!=USR)
-	{
-		if(BIT16(i))
-		{
-			armcpu_switchMode(cpu, shift_op & 0x1F);
-			cpu->CPSR.val = (cpu->CPSR.val & 0xFFFFFF00) | (shift_op & 0xFF);
-		}
-		if(BIT17(i))
-			cpu->CPSR.val = (cpu->CPSR.val & 0xFFFF00FF) | (shift_op & 0xFF00);
-		if(BIT18(i))
-			cpu->CPSR.val = (cpu->CPSR.val & 0xFF00FFFF) | (shift_op & 0xFF0000);
-	}
-	if(BIT19(i))
-	  {
-		//cpu->CPSR.val = (cpu->CPSR.val & 0xFF000000) | (shift_op & 0xFF000000);
-		  cpu->CPSR.val = (cpu->CPSR.val & 0x00FFFFFF) | (shift_op & 0xFF000000);
-	  }
-	cpu->changeCPSR();
-#endif
-	
+	OP_MSR_CPSR_(shift_op);
 	return 1;
 }
 
 TEMPLATE static u32 FASTCALL  OP_MSR_SPSR_IMM_VAL(const u32 i)
 {
+	//printf("OP_MSR_SPSR_IMM_VAL\n");
 	IMM_VALUE;
-
-#if 0
-	// TODO
-	u32 operand = shift_op;
-	u32 mask = 0;
-	u32 byte_mask = (BIT16(i)?0x000000FF:0x00000000) |
-					(BIT17(i)?0x0000FF00:0x00000000) |
-					(BIT18(i)?0x00FF0000:0x00000000) |
-					(BIT19(i)?0xFF000000:0x00000000);
-	
-	if (PROCNUM == 0)
-	{
-		if ((operand & v5_UNALLOC_MASK) != 0) printf("ARM9: MSR_SPSR_IMM UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		// if CurrentModeHasSPSR
-		mask = byte_mask & (v5_USER_MASK | v5_PRIV_MASK | v5_STATE_MASK);
-	}
-	else
-	{
-		if ((operand & v4_UNALLOC_MASK) != 0) printf("ARM7: MSR_SPSR_IMM UNPREDICTABLE UNALLOC (operand %08X)\n", operand);
-		// if CurrentModeHasSPSR
-		mask = byte_mask & (v4_USER_MASK | v4_PRIV_MASK | v4_STATE_MASK);
-	}
-	cpu->SPSR.val = ((cpu->SPSR.val & (~mask)) | (operand & mask));
-#else
-	if(cpu->CPSR.bits.mode!=USR)
-	{
-		if(BIT16(i))
-		{
-			cpu->SPSR.val = (cpu->SPSR.val & 0xFFFFFF00) | (shift_op & 0xFF);
-		}
-		if(BIT17(i))
-			cpu->SPSR.val = (cpu->SPSR.val & 0xFFFF00FF) | (shift_op & 0xFF00);
-		if(BIT18(i))
-			cpu->SPSR.val = (cpu->SPSR.val & 0xFF00FFFF) | (shift_op & 0xFF0000);
-	}
-	if(BIT19(i))
-	{
-		cpu->SPSR.val = (cpu->SPSR.val & 0xFF000000) | (shift_op & 0xFF000000);
-	}
-	
-	cpu->changeCPSR();
-#endif
+	OP_MSR_SPSR_(shift_op);
 	
 	return 1;
 }
@@ -3314,7 +3187,7 @@ TEMPLATE static u32 FASTCALL  OP_CLZ(const u32 i)
 		CLZ_TAB[(Rm>>28)&0xF];
 
 	cpu->R[REG_POS(i,12)]=32 - pos;
-	
+
 	return 2;
 }
 
@@ -3369,7 +3242,6 @@ TEMPLATE static u32 FASTCALL  OP_QDADD(const u32 i)
 	u32 mul = cpu->R[REG_POS(i,16)]<<1;
 	u32 res;
 
-
 	//LOG("spe add\n");
 	if(BIT31(cpu->R[REG_POS(i,16)])!=BIT31(mul))
 	{
@@ -3398,7 +3270,6 @@ TEMPLATE static u32 FASTCALL  OP_QDSUB(const u32 i)
 {
 	u32 mul = cpu->R[REG_POS(i,16)]<<1;
 	u32 res;
-
 
 	//LOG("spe add\n");
 	if(BIT31(cpu->R[REG_POS(i,16)])!=BIT31(mul))
@@ -3486,7 +3357,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLA_B_T(const u32 i)
 	u32 tmp = (u32)(LWORD(cpu->R[REG_POS(i,0)])* HWORD(cpu->R[REG_POS(i,8)]));
 	u32 a = cpu->R[REG_POS(i,12)];
 	
-	//INFO("SMLABT %08X * %08X + %08X = %08X\n", cpu->R[REG_POS(i,0)], cpu->R[REG_POS(i,8)], a, tmp + a);
+	//INFO("SMLABT R%d:%08X * R%d:%08X + R%d:%08X = %08X\n", REG_POS(i,0), cpu->R[REG_POS(i,0)], REG_POS(i,8), cpu->R[REG_POS(i,8)], REG_POS(i,12), a, tmp + a);
 	cpu->R[REG_POS(i,16)] = tmp + a;
 	
 	if(SIGNED_OVERFLOW(tmp, a, cpu->R[REG_POS(i,16)]))
@@ -3650,7 +3521,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAW_T(const u32 i)
 	\
 	if(REG_POS(i,12)==15) \
 	{ \
-		if (cpu->LDTBit) \
+		if (PROCNUM == 0) \
 		{ \
 			cpu->CPSR.bits.T = BIT0(cpu->R[15]); \
 			cpu->R[15] &= 0xFFFFFFFE; \
@@ -3672,7 +3543,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAW_T(const u32 i)
 	\
 	if(REG_POS(i,12)==15) \
 	{ \
-		if (cpu->LDTBit) \
+		if (PROCNUM == 0) \
 		{ \
 			cpu->CPSR.bits.T = BIT0(cpu->R[15]); \
 			cpu->R[15] &= 0xFFFFFFFE; \
@@ -3695,7 +3566,7 @@ TEMPLATE static u32 FASTCALL  OP_SMLAW_T(const u32 i)
 	\
 	if(REG_POS(i,12)==15) \
 	{ \
-		if (cpu->LDTBit) \
+		if (PROCNUM == 0) \
 		{ \
 			cpu->CPSR.bits.T = BIT0(cpu->R[15]); \
 			cpu->R[15] &= 0xFFFFFFFE; \
@@ -3721,13 +3592,6 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF(const u32 i)
 {
 	u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
 	OP_LDR(3, 5);
-}
-
-TEMPLATE static u32 FASTCALL  OP_LDREX(const u32 i)
-{
-	u32 adr = cpu->R[REG_POS(i,16)];
-	cpu->R[REG_POS(i,12)] = ROR(READ32(cpu->mem_if->data, adr), 8*(adr&3));
-	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF(const u32 i)
@@ -3910,6 +3774,17 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_POSTIND(const u32 i)
 {
 	ROR_IMM; 
 	OP_LDR_W2(3, 5, -shift_op);
+}
+
+//-----------------------------------------------------------------------------
+//   LDREX
+//-----------------------------------------------------------------------------
+TEMPLATE static u32 FASTCALL  OP_LDREX(const u32 i)
+{
+	printf("LDREX\n");
+	u32 adr = cpu->R[REG_POS(i,16)];
+	cpu->R[REG_POS(i,12)] = ROR(READ32(cpu->mem_if->data, adr), 8*(adr&3));
+	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_READ>(3,adr);
 }
 
 //-----------------------------------------------------------------------------
@@ -4220,15 +4095,6 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_IMM_OFF(const u32 i)
 	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
-TEMPLATE static u32 FASTCALL  OP_STREX(const u32 i)
-{
-	u32 adr = cpu->R[REG_POS(i,16)];
-	WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,0)]);
-	cpu->R[REG_POS(i,12)] = 0;
-
-	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
-}
-
 TEMPLATE static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF(const u32 i)
 {
 	LSL_IMM; 
@@ -4494,6 +4360,19 @@ TEMPLATE static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_POSTIND(const u32 i)
 	WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
 	cpu->R[REG_POS(i,16)] = adr - shift_op;
 	
+	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
+}
+
+//-----------------------------------------------------------------------------
+//   STREX
+//-----------------------------------------------------------------------------
+TEMPLATE static u32 FASTCALL  OP_STREX(const u32 i)
+{
+	printf("STREX\n");
+	u32 adr = cpu->R[REG_POS(i,16)];
+	WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,0)]);
+	cpu->R[REG_POS(i,12)] = 0;
+
 	return MMU_aluMemAccessCycles<PROCNUM,32,MMU_AD_WRITE>(2,adr);
 }
 
@@ -4857,7 +4736,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA(const u32 i)
 		//	T Bit = value[0]
 		//else
 		//	pc = value AND 0xFFFFFFFC
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -4901,7 +4780,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB(const u32 i)
 		start += 4;
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -4925,7 +4804,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA(const u32 i)
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -4967,7 +4846,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB(const u32 i)
 	{
 		start -= 4;
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5002,9 +4881,8 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 	u32 c = 0;
 	u32 start = cpu->R[REG_POS(i,16)];
 	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
-	
 	u32 * registres = cpu->R;
-	
+
 	OP_L_IA(0, start);
 	OP_L_IA(1, start);
 	OP_L_IA(2, start);
@@ -5024,7 +4902,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5043,7 +4921,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W(const u32 i)
 	else
 		cpu->R[REG_POS(i,16)] = start;
 
-	return MMU_aluMemCycles<PROCNUM>(2, c);
+	return MMU_aluMemCycles<PROCNUM>(BIT15(i)?4:2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
@@ -5076,7 +4954,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
 		start += 4;
 		c += MMU_memAccessCycles<PROCNUM,32,MMU_AD_READ>(start);
 		tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5093,10 +4971,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W(const u32 i)
 	else
 		cpu->R[REG_POS(i,16)] = start;
 	
-	if(BIT15(i))
-		return MMU_aluMemCycles<PROCNUM>(4, c);
-	else
-		return MMU_aluMemCycles<PROCNUM>(2, c);
+	return MMU_aluMemCycles<PROCNUM>(BIT15(i)?4:2, c);
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
@@ -5110,7 +4985,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA_W(const u32 i)
 	if(BIT15(i))
 	{
 		u32 tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
 			registres[15] = tmp & 0xFFFFFFFE;
@@ -5160,10 +5035,11 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W(const u32 i)
 		u32 tmp;
 		start -= 4;
 		tmp = READ32(cpu->mem_if->data, start);
-		if (cpu->LDTBit)
+		if (PROCNUM == 0)
 		{
 			cpu->CPSR.bits.T = BIT0(tmp);
-			registres[15] = tmp & 0xFFFFFFFE;		}
+			registres[15] = tmp & 0xFFFFFFFE;
+		}
 		else
 			registres[15] = tmp & 0xFFFFFFFC;
 		cpu->next_instruction = registres[15];
@@ -6239,7 +6115,7 @@ TEMPLATE static u32 FASTCALL  OP_MCR(const u32 i)
 {
 	u32 cpnum = REG_POS(i, 8);
 	
-	if(!cpu->coproc[cpnum])
+	if(cpnum != 15)
 	{
 		//emu_halt();
 		//INFO("Stopped (OP_MCR) \n");
@@ -6248,8 +6124,8 @@ TEMPLATE static u32 FASTCALL  OP_MCR(const u32 i)
 		return 2;
 	}
 
-	armcp15_moveARM2CP((armcp15_t*)cpu->coproc[cpnum], cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
-	//cpu->coproc[cpnum]->moveARM2CP(cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
+	cp15.moveARM2CP(cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
+
 	return 2;
 }
 
@@ -6259,7 +6135,7 @@ TEMPLATE static u32 FASTCALL  OP_MRC(const u32 i)
 
 	u32 cpnum = REG_POS(i, 8);
 	
-	if(!cpu->coproc[cpnum])
+	if(cpnum != 15)
 	{
 		//emu_halt();
 		//INFO("Stopped (OP_MRC) \n");
@@ -6278,8 +6154,8 @@ TEMPLATE static u32 FASTCALL  OP_MRC(const u32 i)
 	//else /* Rd is not R15 */
 	//	Rd = data
 
-	u32 data = 0;	
-	armcp15_moveCP2ARM((armcp15_t*)cpu->coproc[cpnum], &data, REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
+	u32 data = 0;
+	cp15.moveCP2ARM(&data, REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
 	if (REG_POS(i, 12) == 15)
 	{
 		cpu->CPSR.bits.N = BIT31(data);
@@ -6300,7 +6176,7 @@ TEMPLATE static u32 FASTCALL  OP_MRC(const u32 i)
 TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 {
 	u32 swinum = (i>>16)&0xFF;
-	
+
 	//ideas-style debug prints (execute this SWI with the null terminated string address in R0)
 	if(swinum==0xFC) 
 	{
@@ -6335,7 +6211,7 @@ TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 		cpu->changeCPSR();
 		cpu->R[15] = cpu->intVector + 0x08;
 		cpu->next_instruction = cpu->R[15];
-		return 4;
+		return 3;
 	}
 }
 
@@ -6345,6 +6221,21 @@ TEMPLATE static u32 FASTCALL  OP_SWI(const u32 i)
 
 TEMPLATE static u32 FASTCALL OP_BKPT(const u32 i)
 {
+	/* ARM-ref
+	if (not overridden by debug hardware)
+		R14_abt = address of BKPT instruction + 4
+		SPSR_abt = CPSR
+		CPSR[4:0] = 0b10111 // Enter Abort mode 
+		CPSR[5] = 0 // Execute in ARM state
+		// CPSR[6] is unchanged
+		CPSR[7] = 1 // Disable normal interrupts
+		CPSR[8] = 1 // Disable imprecise aborts - v6 only
+		CPSR[9] = CP15_reg1_EEbit
+		if high vectors configured then
+			PC = 0xFFFF000C
+		else
+			PC = 0x0000000C
+	*/
 	static u32 last_bkpt = 0xFFFFFFFF;
 	if(i != last_bkpt)
 		printf("ARM OP_BKPT triggered\n");
@@ -6369,17 +6260,15 @@ TEMPLATE static u32 FASTCALL  OP_CDP(const u32 i)
 //   The End
 //-----------------------------------------------------------------------------
 
+const OpFunc arm_instructions_set[2][4096] = {{
 #define TABDECL(x) x<0>
-const ArmOpFunc arm_instructions_set_0[4096] = {
 #include "instruction_tabdef.inc"
-};
 #undef TABDECL
-
+},{
 #define TABDECL(x) x<1>
-const ArmOpFunc arm_instructions_set_1[4096] = {
 #include "instruction_tabdef.inc"
-};
 #undef TABDECL
+}};
 
 #define TABDECL(x) #x
 const char* arm_instruction_names[4096] = {
