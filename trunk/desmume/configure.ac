@@ -264,6 +264,15 @@ if test "x$HAVE_LIBGLADE" = "xyes"; then
   ])
 fi
 
+dnl - jit support
+case $host_cpu in
+  x86|x86_64|i386|i486|i586|i686)
+    HAVE_JIT=yes
+    AC_DEFINE(HAVE_JIT)
+    ;;
+esac
+AM_CONDITIONAL([HAVE_JIT], [test "x$HAVE_JIT" = "xyes"])
+
 dnl - wifi support
 AC_ARG_ENABLE(wifi,
 	      [AC_HELP_STRING(--enable-wifi, enable experimental wifi comm support)],
