@@ -18,6 +18,9 @@
 
 #include "types.h"
 #ifdef HAVE_JIT
+#if !defined(__x86_64__) && !defined(__LP64) && !defined(__IA64__) && !defined(_M_X64) && !defined(_WIN64) && !defined(_M_IX86) && !defined(__INTEL__) && !defined(__i386__)
+#error "ERROR: JIT compiler - unsupported target platform"
+#endif
 #ifdef _WINDOWS
 // **** Windows port
 #else
@@ -38,37 +41,15 @@
 #define MAX_JIT_BLOCK_SIZE 100
 #define LOG_JIT_LEVEL 0
 
-#if (LOG_JIT_LEVEL == 1)
+using namespace AsmJit;
+
+#if (LOG_JIT_LEVEL > 0)
 #define LOG_JIT 1
 #define JIT_COMMENT(...) c.comment(__VA_ARGS__)
-#define printJIT(____io, buf, val)
-#elif (LOG_JIT_LEVEL > 1)
-#define LOG_JIT 1
-#define JIT_COMMENT(...) c.comment(__VA_ARGS__)
-#define printJIT(____io, buf, val) {\
-	static char printJITbuf[1024]; \
-	GPVar txt = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar data = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar io = c.newGP(VARIABLE_TYPE_GPD); \
-	strcpy(printJITbuf, buf); \
-	c.lea(io, dword_ptr_abs((u8*)&__iob_func()[____io])); \
-	c.lea(txt, dword_ptr_abs(&printJITbuf)); \
-	c.mov(data, *(GPVar*)&val); \
-	ECall* prn = c.call((void*)fprintf); \
-	prn->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder3<void, void*, void*, u32>()); \
-	prn->setArgument(0, io); \
-	prn->setArgument(1, txt); \
-	prn->setArgument(2, data); \
-	prn = c.call((void*)fflush); \
-	prn->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder1<void, void*>()); \
-	prn->setArgument(0, io); }
 #else
 #define LOG_JIT 0
 #define JIT_COMMENT(...)
-#define printJIT(____io, buf, val)
 #endif
-
-using namespace AsmJit;
 
 #ifdef MAPPED_JIT_FUNCS
 CACHE_ALIGN JIT_struct JIT;
@@ -247,6 +228,7 @@ static int bb_adr;
 static bool bb_thumb;
 static GPVar bb_cpu;
 static GPVar bb_cycles;
+static GPVar total_cycles;
 
 static void *op_cmp[2][2];
 
@@ -336,7 +318,6 @@ static void *op_cmp[2][2];
 		c.bind(__skipQ); \
 		JIT_COMMENT("end SET_Q"); }
 
-// TODO: optimize
 #define S_DST_R15 { \
 	JIT_COMMENT("S_DST_R15"); \
 	GPVar SPSR = c.newGP(VARIABLE_TYPE_GPD); \
@@ -655,6 +636,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
+			c.add(total_cycles, 2); \
 			return 1; \
 		} \
 		c.call(op_cmp[PROCNUM][!symmetric])->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
@@ -666,6 +648,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 			GPVar tmp = c.newGP(VARIABLE_TYPE_GPD); \
 			c.mov(tmp, reg_ptr(15)); \
 			c.mov(cpu_ptr(next_instruction), tmp); \
+			c.add(total_cycles, 2); \
 		} \
 	} \
 	return 1;
@@ -707,6 +690,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
+		c.add(total_cycles, 2); \
 		return 1; \
 	} \
 	SET_NZC; \
@@ -1074,6 +1058,7 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
+		c.add(total_cycles, 2); \
 		return 1; \
 	} \
 	if(!rhs_is_imm) \
@@ -2294,7 +2279,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	}
 	else
 	{
-		// TODO
+		// TODO: untested
 		printf("op_ldm_stm2: used R15\n");
 		S_DST_R15;
 	}
@@ -2945,7 +2930,7 @@ static int OP_SWI(const u32 i) { return op_swi((i >> 16) & 0x1F); }
 //-----------------------------------------------------------------------------
 //   BKPT
 //-----------------------------------------------------------------------------
-static int OP_BKPT(const u32 i) { printf("OP_BKPT\n"); return 0; }
+static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return 0; }
 
 //-----------------------------------------------------------------------------
 //   THUMB
@@ -3020,16 +3005,16 @@ static int OP_BKPT(const u32 i) { printf("OP_BKPT\n"); return 0; }
 	c.mov(reg_pos_thumb(0), 0); \
 	SET_NZC_SHIFTS_ZERO(1); \
 	c.jmp(__done); \
+	/* imm == 0 */ \
+	c.bind(__zero); \
+	c.cmp(reg_pos_thumb(0), 0); \
+	SET_NZ; \
+	c.jmp(__done); \
 	/* imm < 32 */ \
 	c.bind(__ls32); \
 	c.x86inst(reg_pos_thumb(0), imm); \
 	c.setc(rcf.r8Lo()); \
 	SET_NZC; \
-	c.jmp(__done); \
-	/* imm == 0 */ \
-	c.bind(__zero); \
-	c.cmp(reg_pos_thumb(0), 0); \
-	SET_NZ; \
 	c.bind(__done); \
 	return 1;
 
@@ -3046,17 +3031,15 @@ static int OP_BKPT(const u32 i) { printf("OP_BKPT\n"); return 0; }
 //-----------------------------------------------------------------------------
 static int OP_LSL_0(const u32 i) 
 {
-	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD);
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
-	{
 		c.cmp(reg_pos_thumb(0), 0);
-		SET_NZ;
-		return 1;
+	else
+	{
+		GPVar rhs = c.newGP(VARIABLE_TYPE_GPD);
+		c.mov(rhs, reg_pos_thumb(3));
+		c.mov(reg_pos_thumb(0), rhs);
+		c.cmp(rhs, 0);
 	}
-	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(rhs, reg_pos_thumb(3));
-	c.mov(reg_pos_thumb(0), rhs);
-	c.cmp(rhs, 0);
 	SET_NZ;
 	return 1;
 }
@@ -3106,16 +3089,16 @@ static int OP_ASR_REG(const u32 i)
 	c.sar(reg_pos_thumb(0), 31);
 	SET_NZC;
 	c.jmp(__done);
+	/* imm == 0 */
+	c.bind(__zero);
+	c.cmp(reg_pos_thumb(0), 0);
+	SET_NZ;
+	c.jmp(__done);
 	/* imm < 32 */
 	c.bind(__ls32);
 	c.sar(reg_pos_thumb(0), imm);
 	c.setc(rcf.r8Lo());
 	SET_NZC;
-	c.jmp(__done);
-	/* imm == 0 */
-	c.bind(__zero);
-	c.cmp(reg_pos_thumb(0), 0);
-	SET_NZ;
 	c.bind(__done);
 
 	return 1;
@@ -3229,12 +3212,19 @@ static int OP_ADD_REG(const u32 i)
 		c.add(reg_pos_thumb(0), tmp);
 	}
 	else
-	{
-		GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
-		c.mov(tmp, reg_pos_thumb(3));
-		c.add(tmp, reg_pos_thumb(6));
-		c.mov(reg_pos_thumb(0), tmp);
-	}
+		if (_REG_NUM(i, 0) == _REG_NUM(i, 6))
+		{
+			GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
+			c.mov(tmp, reg_pos_thumb(3));
+			c.add(reg_pos_thumb(0), tmp);
+		}
+		else
+			{
+				GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
+				c.mov(tmp, reg_pos_thumb(3));
+				c.add(tmp, reg_pos_thumb(6));
+				c.mov(reg_pos_thumb(0), tmp);
+			}
 	SET_NZCV(0);
 	return 1; 
 }
@@ -3243,14 +3233,12 @@ static int OP_ADD_SPE(const u32 i)
 	u32 Rd = _REG_NUM(i, 0) | ((i>>4)&8);
 	//cpu->R[Rd] += cpu->R[REG_POS(i, 3)];
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(tmp, reg_pos_ptr(3));
-	c.add(reg_ptr(Rd), tmp);
+	c.mov(tmp, reg_ptr(Rd));
+	c.add(tmp, reg_pos_ptr(3));
+	c.mov(reg_ptr(Rd), tmp);
 	
 	if(Rd==15)
-	{
-		c.mov(tmp, reg_ptr(Rd));
 		c.mov(cpu_ptr(next_instruction), tmp);
-	}
 		
 	return 1;
 }
@@ -3281,6 +3269,7 @@ static int OP_SUB_IMM3(const u32 i)
 {
 	u32 imm3 = (i >> 6) & 0x07;
 
+	// cpu->R[REG_NUM(i, 0)] = cpu->R[REG_NUM(i, 3)] - imm3;
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 	{
 		c.sub(reg_pos_thumb(0), imm3);
@@ -3297,6 +3286,7 @@ static int OP_SUB_IMM3(const u32 i)
 }
 static int OP_SUB_IMM8(const u32 i)
 {
+	//cpu->R[REG_NUM(i, 8)] -= imm8;
 	c.sub(reg_pos_thumb(8), (i & 0xFF));
 	SET_NZCV(1);
 	return 1; 
@@ -3361,7 +3351,7 @@ static int OP_MOV_IMM8(const u32 i)
 static int OP_MOV_SPE(const u32 i)
 {
 	u32 Rd = _REG_NUM(i, 0) | ((i>>4)&8);
-	if(Rd == 15) return 0;
+
 	//cpu->R[Rd] = cpu->R[REG_POS(i, 3)];
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(tmp, reg_pos_ptr(3));
@@ -3369,9 +3359,11 @@ static int OP_MOV_SPE(const u32 i)
 	if(Rd == 15)
 	{
 		c.mov(cpu_ptr(next_instruction), tmp);
-		// TODO: cycles
-		//return 3;
+		c.mov(bb_cycles, 3);
+		return 1;
 	}
+	else
+		c.mov(bb_cycles, 1); 
 		
 	return 1;
 }
@@ -3437,7 +3429,7 @@ static int OP_CMP_SPE(const u32 i)
 static int OP_CMN(const u32 i) 
 {
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(tmp, reg_pos_thumb(8));
+	c.mov(tmp, reg_pos_thumb(0));
 	c.add(tmp, reg_pos_thumb(3));
 	ECall* ctx = c.call(op_cmp[PROCNUM][0]);
 	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
@@ -3658,12 +3650,13 @@ static int OP_B_COND(const u32 i)
 {
 	u32 dst = bb_r15 + ((u32)((s8)(i&0xFF))<<1);
 	c.mov(cpu_ptr(instruct_adr), bb_next_instruction);
-	c.mov(bb_cycles, 1);		// optimize
+	c.mov(bb_cycles, 1);
 	Label skip = c.newLabel();
 	emit_branch((i>>8)&0xF, skip);
 	c.mov(cpu_ptr(instruct_adr), dst);
 	c.add(bb_cycles, 2);
 	c.bind(skip);
+
 	return 1;
 }
 
@@ -4060,7 +4053,6 @@ static u32 compile_basicblock()
 	JIT_COMMENT("CPU ptr");
 	c.mov(bb_cpu, (uintptr_t)&ARMPROC);
 
-	GPVar total_cycles;
 	if(has_variable_cycles)
 	{
 		total_cycles = c.newGP(VARIABLE_TYPE_GPD);
@@ -4112,7 +4104,6 @@ static u32 compile_basicblock()
 		}
 		interpreted_cycles += op_decode[PROCNUM][bb_thumb]();
 	}
-	JIT_COMMENT("************************");
 	
 	if(!instr_does_prefetch(opcodes[n-1]))
 	{
