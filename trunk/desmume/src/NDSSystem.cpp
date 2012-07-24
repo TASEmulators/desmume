@@ -104,10 +104,11 @@ void Desmume_InitOnce()
 int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
 struct armcpu_ctrl_iface **arm9_ctrl_iface,
 struct armcpu_memory_iface *arm7_mem_if,
-struct armcpu_ctrl_iface **arm7_ctrl_iface) {
+struct armcpu_ctrl_iface **arm7_ctrl_iface)
 #else
-int NDS_Init( void) {
+int NDS_Init( void)
 #endif
+{
 	nds.idleFrameCounter = 0;
 	memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
 	MMU_Init();
