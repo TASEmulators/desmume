@@ -19,9 +19,10 @@
 #include "videofilter.h"
 
 // Parameters for Scanline filter
-int scanline_filter_a = 2;
-int scanline_filter_b = 4;
-
+int scanline_filter_a = 0;
+int scanline_filter_b = 2;
+int scanline_filter_c = 2;
+int scanline_filter_d = 4;
 
 /********************************************************************************************
 	CLASS CONSTRUCTORS
