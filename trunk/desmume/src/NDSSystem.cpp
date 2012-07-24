@@ -388,7 +388,7 @@ void GameInfo::populate()
 		memcpy(ROMserial+4, header.gameCode, 4);
 
 		u32 region = (u32)(std::max<s32>(strchr(regions[0],header.gameCode[3]) - regions[0] + 1, 0));
-		if (region != 0)
+		if (region > 0 && region < 12)
 			strcat(ROMserial, regions[region]);
 		else
 			strcat(ROMserial, "Unknown");
