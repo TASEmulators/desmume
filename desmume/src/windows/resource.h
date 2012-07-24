@@ -422,6 +422,7 @@
 #define IDC_CHECKBOX_DYNAREC            1052
 #define IDC_RADIO8                      1052
 #define IDC_IMP_AUTO_CURRENT            1052
+#define IDC_USE_STDOUT                  1052
 #define IDC_IMP_AUTO_FILE               1053
 #define IDC_IMP_AUTO_ADVANSCENE         1054
 #define IDC_IMP_MANUAL                  1055
@@ -723,7 +724,6 @@
 #define ID_LABEL_HK2                    4466
 #define IDC_GI_USEDROMSIZE              4467
 #define ID_LABEL_HK3                    4467
-#define ID_LABEL_HK3b                   44670
 #define IDC_3DSETTINGS_FOG2             4467
 #define IDC_3DSETTINGS_TEXTURE          4467
 #define ID_LABEL_HK4                    4468
@@ -736,7 +736,6 @@
 #define ID_LABEL_HK7                    4471
 #define IDC_GI_TITLEFR                  4472
 #define ID_LABEL_HK8                    4472
-#define ID_LABEL_HK8b                   44720
 #define IDC_GI_TITLEGE                  4473
 #define ID_LABEL_HK9                    4473
 #define IDC_GI_TITLEIT                  4474
@@ -802,10 +801,10 @@
 #define ID_LABEL_HK54                   4519
 #define ID_LABEL_HK55                   4520
 #define ID_LABEL_HK56                   4521
-#define ID_LABEL_HK57					4522
-#define ID_LABEL_HK58					4523
-#define ID_LABEL_HK59					4524
-#define ID_LABEL_HK60					4525
+#define ID_LABEL_HK57                   4522
+#define ID_LABEL_HK58                   4523
+#define ID_LABEL_HK59                   4524
+#define ID_LABEL_HK60                   4525
 #define IDD_MICROPHONE                  5000
 #define IDM_MICROPHONESETTINGS          5001
 #define IDC_MICSAMPLEBROWSE             5003
@@ -901,6 +900,8 @@
 #define IDM_FILE_IMPORT_DB              40103
 #define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
 #define IDM_AUTODETECTSAVETYPE_FROMDATABASE 40105
+#define ID_LABEL_HK3b                   44670
+#define ID_LABEL_HK8b                   44720
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
 #define IDC_LABEL_LEFT                  50002
@@ -1002,7 +1003,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40102
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

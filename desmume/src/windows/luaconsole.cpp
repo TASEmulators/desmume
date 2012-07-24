@@ -254,6 +254,12 @@ void PrintToWindowConsole(int hDlgAsInt, const char* str)
 	HWND hDlg = (HWND)hDlgAsInt;
 	HWND hConsole = GetDlgItem(hDlg, IDC_LUACONSOLE);
 
+	if (IsDlgButtonChecked(hDlg, IDC_USE_STDOUT) == BST_CHECKED)
+	{
+		printf(str);
+		return;
+	}
+
 	int length = GetWindowTextLength(hConsole);
 	if(length >= 250000)
 	{
