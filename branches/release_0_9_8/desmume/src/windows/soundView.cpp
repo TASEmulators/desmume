@@ -361,7 +361,7 @@ static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			if(data == NULL)
 			{
 				data = (SoundView_DataStruct*)lParam;
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)data);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LONG_PTR)data);
 			}
 			data->hDlg = hDlg;
 
