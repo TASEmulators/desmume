@@ -2522,6 +2522,7 @@ void NDS_Reset()
 	nds.ConsoleType = CommonSettings.ConsoleType;
 	nds._DebugConsole = CommonSettings.DebugConsole;
 	nds.ensataEmulation = CommonSettings.EnsataEmulation;
+	nds.stylusJitter = CommonSettings.StylusJitter;
 	nds.ensataHandshake = ENSATA_HANDSHAKE_none;
 	nds.ensataIpcSyncCounter = 0;
 	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());

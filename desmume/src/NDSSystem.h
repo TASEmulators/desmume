@@ -177,6 +177,7 @@ struct NDSSystem
 	u16 adc_touchX;
 	u16 adc_touchY;
 	s32 adc_jitterctr;
+	BOOL stylusJitter;
 
 	//the DSI returns calibrated touch coords from its TSC (?), so we need to save these separately
 	u16 scr_touchX;
@@ -507,6 +508,7 @@ extern struct TCommonSettings {
 		, spu_advanced(false)
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
+		, StylusJitter(true)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -558,6 +560,7 @@ extern struct TCommonSettings {
 	bool rigorous_timing;
 
 	int StylusPressure;
+	bool StylusJitter;
 
 	bool dispLayers[2][5];
 	
