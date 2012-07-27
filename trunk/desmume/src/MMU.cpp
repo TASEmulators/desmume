@@ -4009,8 +4009,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 										if(nds.adc_jitterctr == 25)
 										{
 											nds.adc_jitterctr = 0;
-											nds.adc_touchY ^= 16;
-											nds.adc_touchX ^= 16;
+											if (nds.stylusJitter)
+											{
+												nds.adc_touchY ^= 16;
+												nds.adc_touchX ^= 16;
+											}
 										}
 										if(MMU.SPI_CNT&(1<<11))
 										{

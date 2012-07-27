@@ -71,7 +71,7 @@ struct SCustomKeys
 	
 	SCustomKey Rotate0, Rotate90, Rotate180, Rotate270;
 
-	SCustomKey OpenROM, ReloadROM, Reset, Pause, CpuMode, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure;
+	SCustomKey OpenROM, ReloadROM, Reset, Pause, CpuMode, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure, ToggleStylusJitter;
 
 	SCustomKey PlayMovie, RecordMovie, StopMovie, ToggleReadOnly;
 	
