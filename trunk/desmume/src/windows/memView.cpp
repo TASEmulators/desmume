@@ -34,12 +34,13 @@ typedef u32 HWAddressType;
 
 enum RegionType {
 	MEMVIEW_ARM9 = 0,
-	MEMVIEW_ARM7
+	MEMVIEW_ARM7,
+	MEMVIEW_FIRMWARE
 };
 
 struct MemViewRegion
 {
-	char name[8];     // name of this region (ex. ARM9, region dropdown)
+	char name[16];     // name of this region (ex. ARM9, region dropdown)
 	char longname[16]; // name of this region (ex. ARM9 memory, window title)
 	HWAddressType hardwareAddress; // hardware address of the start of this region
 	unsigned int size; // number of bytes to the end of this region
@@ -49,6 +50,7 @@ const HWAddressType arm9InitAddress = 0x02000000;
 const HWAddressType arm7InitAddress = 0x02000000;
 static const MemViewRegion s_arm9Region = { "ARM9", "ARM9 memory", arm9InitAddress, 0x1000000 };
 static const MemViewRegion s_arm7Region = { "ARM7", "ARM7 memory", arm7InitAddress, 0x1000000 };
+static const MemViewRegion s_firmwareRegion = { "Firmware", "Firmware", 0x00000000, 0x40000 };
 
 typedef std::vector<MemViewRegion> MemoryList;
 static MemoryList s_memoryRegions;
@@ -72,6 +74,9 @@ u8 memRead8 (RegionType regionType, HWAddressType address)
 	case MEMVIEW_ARM7:
 		MMU_DumpMemBlock(ARMCPU_ARM7, address, 1, &value);
 		return value;
+	case MEMVIEW_FIRMWARE:
+		value = MMU.fw.data[address];
+		return value;
 	}
 	return 0;
 }
@@ -93,6 +98,9 @@ u16 memRead16 (RegionType regionType, HWAddressType address)
 	case MEMVIEW_ARM7:
 		MMU_DumpMemBlock(ARMCPU_ARM7, address, 2, (u8*)&value);
 		return value;
+	case MEMVIEW_FIRMWARE:
+		value = *(u16*)(&MMU.fw.data[address]);
+		return value;
 	}
 	return 0;
 }
@@ -113,6 +121,9 @@ u32 memRead32 (RegionType regionType, HWAddressType address)
 		return value;
 	case MEMVIEW_ARM7:
 		MMU_DumpMemBlock(ARMCPU_ARM7, address, 4, (u8*)&value);
+		return value;
+	case MEMVIEW_FIRMWARE:
+		value = *(u32*)(&MMU.fw.data[address]);
 		return value;
 	}
 	return 0;
@@ -159,6 +170,9 @@ void memWrite8 (RegionType regionType, HWAddressType address, u8 value)
 	case MEMVIEW_ARM7:
 		MMU_write8(ARMCPU_ARM7, address, value);
 		break;
+	case MEMVIEW_FIRMWARE:
+		MMU.fw.data[address] = value;
+		break;
 	}
 }
 
@@ -172,6 +186,9 @@ void memWrite16 (RegionType regionType, HWAddressType address, u16 value)
 	case MEMVIEW_ARM7:
 		MMU_write16(ARMCPU_ARM7, address, value);
 		break;
+	case MEMVIEW_FIRMWARE:
+		*((u16*)&MMU.fw.data[address]) = value;
+		break;
 	}
 }
 
@@ -184,6 +201,9 @@ void memWrite32 (RegionType regionType, HWAddressType address, u32 value)
 		break;
 	case MEMVIEW_ARM7:
 		MMU_write32(ARMCPU_ARM7, address, value);
+		break;
+	case MEMVIEW_FIRMWARE:
+		*((u32*)&MMU.fw.data[address]) = value;
 		break;
 	}
 }
@@ -204,6 +224,7 @@ CMemView::CMemView()
 	{
 		s_memoryRegions.push_back(s_arm9Region);
 		s_memoryRegions.push_back(s_arm7Region);
+		s_memoryRegions.push_back(s_firmwareRegion);
 	}
 
 	PostInitialize();
