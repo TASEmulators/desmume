@@ -45,8 +45,10 @@ struct MemViewRegion
 	unsigned int size; // number of bytes to the end of this region
 };
 
-static const MemViewRegion s_arm9Region = { "ARM9", "ARM9 memory", 0x02000000, 0x1000000 };
-static const MemViewRegion s_arm7Region = { "ARM7", "ARM7 memory", 0x02000000, 0x1000000 };
+const HWAddressType arm9InitAddress = 0x02000000;
+const HWAddressType arm7InitAddress = 0x02000000;
+static const MemViewRegion s_arm9Region = { "ARM9", "ARM9 memory", arm9InitAddress, 0x1000000 };
+static const MemViewRegion s_arm7Region = { "ARM7", "ARM7 memory", arm7InitAddress, 0x1000000 };
 
 typedef std::vector<MemViewRegion> MemoryList;
 static MemoryList s_memoryRegions;
@@ -203,7 +205,6 @@ CMemView::CMemView()
 		s_memoryRegions.push_back(s_arm9Region);
 		s_memoryRegions.push_back(s_arm7Region);
 	}
-	address = s_memoryRegions.front().hardwareAddress;
 
 	PostInitialize();
 }
@@ -237,6 +238,10 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			wnd->font = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
 
+			s_memoryRegions[MEMVIEW_ARM9].hardwareAddress = arm9InitAddress;
+			s_memoryRegions[MEMVIEW_ARM7].hardwareAddress = arm7InitAddress;
+			wnd->address = s_memoryRegions.front().hardwareAddress;
+
 			MemViewRegion& region = s_memoryRegions[wnd->region];
 
 			cur = GetDlgItem(hDlg, IDC_REGION);
@@ -251,7 +256,6 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"Halfwords");
 			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"Words");
 			SendMessage(cur, CB_SETCURSEL, 0, 0);
-
 			cur = GetDlgItem(hDlg, IDC_ADDRESS);
 			SendMessage(cur, EM_SETLIMITTEXT, 8, 0);
 			char addressText[9];
