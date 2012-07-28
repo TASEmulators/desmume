@@ -233,29 +233,32 @@ static GPVar total_cycles;
 static void *op_cmp[2][2];
 
 #define cpu (&ARMPROC)
-#define bb_next_instruction  (bb_adr+bb_opcodesize)
-#define bb_r15  (bb_adr+2*bb_opcodesize)
+#define bb_next_instruction (bb_adr+bb_opcodesize)
+#define bb_r15				(bb_adr+2*bb_opcodesize)
 
-#define cpu_ptr(x)		dword_ptr(bb_cpu, offsetof(armcpu_t,x))
-#define cpu_ptr_byte(x, y)		byte_ptr(bb_cpu, offsetof(armcpu_t,x)+y)
-#define flags_ptr		cpu_ptr_byte(CPSR.val, 3)
-#define reg_ptr(x)		dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*(x)))
-#define reg_pos_ptr(x)	dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
-#define reg_pos_ptrL(x)	word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
-#define reg_pos_ptrH(x)	word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x)))+2)
-#define reg_pos_ptrB(x)	byte_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
-#define reg_pos_thumb(x)dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*((i>>x)&0x7)))
-#define cp15_ptr(x)     dword_ptr(bb_cp15, offsetof(armcp15_t,x))
-#define mmu_ptr(x)      dword_ptr(bb_mmu, offsetof(MMU_struct,x))
-#define mmu_ptr_byte(x) byte_ptr(bb_mmu, offsetof(MMU_struct,x))
-#define _REG_NUM(i, n) ((i>>n)&0x7)
+#define cpu_ptr(x)			dword_ptr(bb_cpu, offsetof(armcpu_t,x))
+#define cpu_ptr_byte(x, y)	byte_ptr(bb_cpu, offsetof(armcpu_t,x)+y)
+#define flags_ptr			cpu_ptr_byte(CPSR.val, 3)
+#define reg_ptr(x)			dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*(x)))
+#define reg_pos_ptr(x)		dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
+#define reg_pos_ptrL(x)		word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
+#define reg_pos_ptrH(x)		word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x)))+2)
+#define reg_pos_ptrB(x)		byte_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
+#define reg_pos_thumb(x)	dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*((i>>x)&0x7)))
+#define cp15_ptr(x)			dword_ptr(bb_cp15, offsetof(armcp15_t,x))
+#define mmu_ptr(x)			dword_ptr(bb_mmu, offsetof(MMU_struct,x))
+#define mmu_ptr_byte(x)		byte_ptr(bb_mmu, offsetof(MMU_struct,x))
+#define _REG_NUM(i, n)		((i>>n)&0x7)
 
 #ifndef ASMJIT_X64
 #define r64 r32
 #endif
 
-// TODO
-#define changeCPSR NDS_Reschedule
+// sequencer.reschedule = true;
+#define changeCPSR { \
+			ECall* ctxCPSR = c.call((void*)NDS_Reschedule); \
+			ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
+}
 
 //-----------------------------------------------------------------------------
 //   Shifting macros
@@ -654,8 +657,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 	return 1;
 
 #define OP_ARITHMETIC_R(arg, x86inst, symmetric, flags) \
-    if(REG_POS(i,12)==15) \
-        return 0; \
     arg; \
 	if(symmetric && !rhs_is_imm) \
 	{ \
@@ -670,7 +671,25 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 		c.mov(reg_pos_ptr(12), lhs); \
 	} \
 	if(flags) \
+	{ \
+		if(REG_POS(i,12)==15) \
+		{ \
+			S_DST_R15; \
+			c.add(total_cycles, 2); \
+			return 1; \
+		} \
 		c.call(op_cmp[PROCNUM][!symmetric])->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
+	} \
+	else \
+	{ \
+		if(REG_POS(i,12)==15) \
+		{ \
+			GPVar tmp = c.newGP(VARIABLE_TYPE_GPD); \
+			c.mov(tmp, reg_ptr(15)); \
+			c.mov(cpu_ptr(next_instruction), tmp); \
+			c.add(total_cycles, 2); \
+		} \
+	} \
 	return 1;
 
 #define OP_ARITHMETIC_S(arg, x86inst, symmetric) \
@@ -1325,8 +1344,7 @@ static int OP_MRS_SPSR(const u32 i)
 				c.and_(xPSR, 0xFFFFFF00); \
 				c.or_(xPSR, operand); \
 				c.mov(xPSR_mem, xPSR); \
-				ECall* ctxCPSR = c.call((void*)changeCPSR); \
-				ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
+				changeCPSR; \
 				c.bind(__skip); \
 			} \
 			return 1; \
@@ -1344,8 +1362,7 @@ static int OP_MRS_SPSR(const u32 i)
 				c.and_(xPSR, 0xFFFF00FF); \
 				c.or_(xPSR, operand); \
 				c.mov(xPSR_mem, xPSR); \
-				ECall* ctxCPSR = c.call((void*)changeCPSR); \
-				ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
+				changeCPSR; \
 				c.bind(__skip); \
 			} \
 			return 1; \
@@ -1363,8 +1380,7 @@ static int OP_MRS_SPSR(const u32 i)
 				c.and_(xPSR, 0xFF00FFFF); \
 				c.or_(xPSR, operand); \
 				c.mov(xPSR_mem, xPSR); \
-				ECall* ctxCPSR = c.call((void*)changeCPSR); \
-				ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
+				changeCPSR; \
 				c.bind(__skip); \
 			} \
 			return 1; \
@@ -1376,8 +1392,7 @@ static int OP_MRS_SPSR(const u32 i)
 				c.and_(xPSR, 0x00FFFFFF); \
 				c.or_(xPSR, operand); \
 				c.mov(xPSR_mem, xPSR); \
-				ECall* ctxCPSR = c.call((void*)changeCPSR); \
-				ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
+				changeCPSR; \
 			} \
 			return 1; \
 		default: \
@@ -1425,8 +1440,7 @@ static int OP_MRS_SPSR(const u32 i)
 	c.or_(xPSR, operand); \
 	c.mov(xPSR_mem, xPSR); \
 	c.bind(__done); \
-	ECall* ctxCPSR = c.call((void*)changeCPSR); \
-	ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
+	changeCPSR; \
 	return 1;
 
 static int OP_MSR_CPSR(const u32 i) { OP_MSR_(CPSR, REG_OFF, 1); }
@@ -2194,7 +2208,7 @@ static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 
 	if(BIT15(i) && !store)
 	{
-		op_bx(cpu_ptr(R[15]), 0, PROCNUM == ARMCPU_ARM9);
+		op_bx(reg_ptr(15), 0, PROCNUM == ARMCPU_ARM9);
 	}
 
 	if(writeback)
@@ -3674,7 +3688,7 @@ static int OP_BLX(const u32 i)
 	c.add(dst, (i&0x7FF) << 1);
 	c.and_(dst, 0xFFFFFFFC);
 	c.mov(cpu_ptr(instruct_adr), dst);
-	c.mov(cpu_ptr(R[14]), bb_next_instruction | 1);
+	c.mov(reg_ptr(14), bb_next_instruction | 1);
 	// reset T bit
 	c.and_(cpu_ptr_byte(CPSR, 0), ~(1<<5));
 	return 1;
@@ -3683,16 +3697,16 @@ static int OP_BLX(const u32 i)
 static int OP_BL_10(const u32 i)
 {
 	u32 dst = bb_r15 + (SIGNEXTEND_11(i)<<12);
-	c.mov(cpu_ptr(R[14]), dst);
+	c.mov(reg_ptr(14), dst);
 	return 1;
 }
 static int OP_BL_11(const u32 i) 
 {
 	GPVar dst = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(dst, cpu_ptr(R[14]));
+	c.mov(dst, reg_ptr(14));
 	c.add(dst, (i&0x7FF) << 1);
 	c.mov(cpu_ptr(instruct_adr), dst);
-	c.mov(cpu_ptr(R[14]), bb_next_instruction | 1);
+	c.mov(reg_ptr(14), bb_next_instruction | 1);
 	return 1;
 }
 
@@ -3782,7 +3796,7 @@ static u32 FASTCALL OP_DECODE()
 		cpu->next_instruction = adr + 2;
 		cpu->R[15] = adr + 4;
 		u32 opcode = _MMU_read16<PROCNUM, MMU_AT_CODE>(adr);
-		_armlog(adr, opcode);
+		_armlog(PROCNUM, adr, opcode);
 		cycles = thumb_instructions_set[PROCNUM][opcode>>6](opcode);
 	}
 	else
@@ -3790,7 +3804,7 @@ static u32 FASTCALL OP_DECODE()
 		cpu->next_instruction = adr + 4;
 		cpu->R[15] = adr + 8;
 		u32 opcode = _MMU_read32<PROCNUM, MMU_AT_CODE>(adr);
-		_armlog(adr, opcode);
+		_armlog(PROCNUM, adr, opcode);
 		if(CONDITION(opcode) == 0xE || TEST_COND(CONDITION(opcode), CODE(opcode), cpu->CPSR))
 			cycles = arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(opcode)](opcode);
 		else
@@ -3973,7 +3987,7 @@ static void emit_armop_call(u32 opcode)
 	ctx->setReturn(bb_cycles);
 }
 
-static void _armlog(u32 addr, u32 opcode)
+static void _armlog(u8 proc, u32 addr, u32 opcode)
 {
 #if 0
 #if 0
@@ -3989,7 +4003,7 @@ static void _armlog(u32 addr, u32 opcode)
 	else
 		des_arm_instructions_set[INDEX22(opcode)](addr, opcode, dasmbuf);
 	#undef INDEX22
-	fprintf(stderr, "%s %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", addr, opcode, dasmbuf); 
+	fprintf(stderr, "%s%c %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", proc?'7':'9', addr, opcode, dasmbuf); 
 #else
 	return;
 #endif
@@ -4021,7 +4035,7 @@ static u32 compile_basicblock()
 			opcode = _MMU_read16<PROCNUM, MMU_AT_CODE>(start_adr + n*2);
 		else
 			opcode = _MMU_read32<PROCNUM, MMU_AT_CODE>(start_adr + n*4);
-
+		
 		opcodes[n++] = opcode;
 		has_variable_cycles |= (instr_is_conditional(opcode) && instr_cycles(opcode) > 1)
 		                    || instr_cycles(opcode) == 0;
