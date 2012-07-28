@@ -30,18 +30,181 @@
 
 using namespace std;
 
+typedef u32 HWAddressType;
+
+enum RegionType {
+	MEMVIEW_ARM9 = 0,
+	MEMVIEW_ARM7
+};
+
+struct MemViewRegion
+{
+	char name[8];     // name of this region (ex. ARM9, region dropdown)
+	char longname[16]; // name of this region (ex. ARM9 memory, window title)
+	HWAddressType hardwareAddress; // hardware address of the start of this region
+	unsigned int size; // number of bytes to the end of this region
+};
+
+static const MemViewRegion s_arm9Region = { "ARM9", "ARM9 memory", 0x02000000, 0x1000000 };
+static const MemViewRegion s_arm7Region = { "ARM7", "ARM7 memory", 0x02000000, 0x1000000 };
+
+typedef std::vector<MemViewRegion> MemoryList;
+static MemoryList s_memoryRegions;
+
+//////////////////////////////////////////////////////////////////////////////
+
+u8 memRead8 (RegionType regionType, HWAddressType address)
+{
+	MemViewRegion& region = s_memoryRegions[regionType];
+	if (address < region.hardwareAddress || address >= (region.hardwareAddress + region.size))
+	{
+		return 0;
+	}
+
+	u8 value = 0;
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_DumpMemBlock(ARMCPU_ARM9, address, 1, &value);
+		return value;
+	case MEMVIEW_ARM7:
+		MMU_DumpMemBlock(ARMCPU_ARM7, address, 1, &value);
+		return value;
+	}
+	return 0;
+}
+
+u16 memRead16 (RegionType regionType, HWAddressType address)
+{
+	MemViewRegion& region = s_memoryRegions[regionType];
+	if (address < region.hardwareAddress || (address + 1) >= (region.hardwareAddress + region.size))
+	{
+		return 0;
+	}
+
+	u16 value = 0;
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_DumpMemBlock(ARMCPU_ARM9, address, 2, (u8*)&value);
+		return value;
+	case MEMVIEW_ARM7:
+		MMU_DumpMemBlock(ARMCPU_ARM7, address, 2, (u8*)&value);
+		return value;
+	}
+	return 0;
+}
+
+u32 memRead32 (RegionType regionType, HWAddressType address)
+{
+	MemViewRegion& region = s_memoryRegions[regionType];
+	if (address < region.hardwareAddress || (address + 3) >= (region.hardwareAddress + region.size))
+	{
+		return 0;
+	}
+
+	u32 value = 0;
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_DumpMemBlock(ARMCPU_ARM9, address, 4, (u8*)&value);
+		return value;
+	case MEMVIEW_ARM7:
+		MMU_DumpMemBlock(ARMCPU_ARM7, address, 4, (u8*)&value);
+		return value;
+	}
+	return 0;
+}
+
+void memRead(u8* buffer, RegionType regionType, HWAddressType address, size_t size)
+{
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_DumpMemBlock(ARMCPU_ARM9, address, size, buffer);
+		break;
+	case MEMVIEW_ARM7:
+		MMU_DumpMemBlock(ARMCPU_ARM7, address, size, buffer);
+		break;
+	default:
+		for (size_t i = 0; i < size; i++)
+		{
+			buffer[i] = memRead8(regionType, address + i);
+		}
+		break;
+	}
+}
+
+bool memIsAvailable(RegionType regionType, HWAddressType address)
+{
+	if (regionType == MEMVIEW_ARM7 && (address & 0xFFFF0000) == 0x04800000)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+void memWrite8 (RegionType regionType, HWAddressType address, u8 value)
+{
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_write8(ARMCPU_ARM9, address, value);
+		break;
+	case MEMVIEW_ARM7:
+		MMU_write8(ARMCPU_ARM7, address, value);
+		break;
+	}
+}
+
+void memWrite16 (RegionType regionType, HWAddressType address, u16 value)
+{
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_write16(ARMCPU_ARM9, address, value);
+		break;
+	case MEMVIEW_ARM7:
+		MMU_write16(ARMCPU_ARM7, address, value);
+		break;
+	}
+}
+
+void memWrite32 (RegionType regionType, HWAddressType address, u32 value)
+{
+	switch (regionType)
+	{
+	case MEMVIEW_ARM9:
+		MMU_write32(ARMCPU_ARM9, address, value);
+		break;
+	case MEMVIEW_ARM7:
+		MMU_write32(ARMCPU_ARM7, address, value);
+		break;
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 CMemView::CMemView()
 	: CToolWindow(IDD_MEM_VIEW, MemView_DlgProc, "ARM9 memory")
-	, cpu(ARMCPU_ARM9)
-	, address(0x02000000)
+	, region(MEMVIEW_ARM9)
 	, viewMode(0)
 	, sel(FALSE)
 	, selPart(0)
 	, selAddress(0x00000000)
 	, selNewVal(0x00000000)
 {
+	// initialize memory regions
+	if (s_memoryRegions.empty())
+	{
+		s_memoryRegions.push_back(s_arm9Region);
+		s_memoryRegions.push_back(s_arm7Region);
+	}
+	address = s_memoryRegions.front().hardwareAddress;
+
 	PostInitialize();
 }
 
@@ -74,9 +237,13 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			wnd->font = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 				OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, GetFontQuality(), FIXED_PITCH, "Courier New");
 
-			cur = GetDlgItem(hDlg, IDC_CPU);
-			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"ARM9");
-			SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)"ARM7");
+			MemViewRegion& region = s_memoryRegions[wnd->region];
+
+			cur = GetDlgItem(hDlg, IDC_REGION);
+			for(MemoryList::iterator iter = s_memoryRegions.begin(); iter != s_memoryRegions.end(); ++iter)
+			{
+				SendMessage(cur, CB_ADDSTRING, 0, (LPARAM)iter->name);
+			}
 			SendMessage(cur, CB_SETCURSEL, 0, 0);
 
 			cur = GetDlgItem(hDlg, IDC_VIEWMODE);
@@ -87,7 +254,9 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 			cur = GetDlgItem(hDlg, IDC_ADDRESS);
 			SendMessage(cur, EM_SETLIMITTEXT, 8, 0);
-			SetWindowText(cur, "02000000");
+			char addressText[9];
+			wsprintf(addressText, "%08X", wnd->address);
+			SetWindowText(cur, addressText);
 
 			wnd->Refresh();
 		}
@@ -104,17 +273,22 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			CloseToolWindow(wnd);
 			return 1;
 
-		case IDC_CPU:
+		case IDC_REGION:
 			if ((HIWORD(wParam) == CBN_SELCHANGE) || (HIWORD(wParam) == CBN_CLOSEUP))
 			{
-				wnd->cpu = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
+				wnd->region = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
+
+				MemViewRegion& region = s_memoryRegions[wnd->region];
+				wnd->address = region.hardwareAddress;
+				SetScrollRange(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, 0x00000000, (region.size - 1) >> 4, TRUE);
+				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, 0x00000000, TRUE);
 
 				wnd->sel = FALSE;
 				wnd->selAddress = 0x00000000;
 				wnd->selPart = 0;
 				wnd->selNewVal = 0x00000000;
 
-				wnd->SetTitle((wnd->cpu == ARMCPU_ARM9) ? "ARM9 memory":"ARM7 memory");
+				wnd->SetTitle(region.longname);
 
 				wnd->Refresh();
 			}
@@ -184,14 +358,22 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 						address |= ((ch - 'a' + 0xA) << shift);
 				}
 
-				wnd->address = min((u32)0xFFFFFF00, (address & 0xFFFFFFF0));
+				MemViewRegion& region = s_memoryRegions[wnd->region];
+				if (wnd->region == MEMVIEW_ARM9 || wnd->region == MEMVIEW_ARM7)
+				{
+					region.hardwareAddress = address & 0xFF000000;
+				}
+				HWAddressType addrMin = (region.hardwareAddress) & 0xFFFFFF00;
+				HWAddressType addrMax = max(addrMin, (region.hardwareAddress + region.size - 0x100 - 1) & 0xFFFFFF00);
+
+				wnd->address = max((u32)addrMin, min((u32)addrMax, (address & 0xFFFFFFF0)));
 
 				wnd->sel = FALSE;
 				wnd->selAddress = 0x00000000;
 				wnd->selPart = 0;
 				wnd->selNewVal = 0x00000000;
 
-				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, ((wnd->address >> 4) & 0x000FFFFF), TRUE);
+				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, (((wnd->address - region.hardwareAddress) >> 4) & 0x000FFFFF), TRUE);
 				wnd->Refresh();
 			}
 			return 1;
@@ -217,8 +399,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 					u8 memory[0x100];
 					int line;
 
-					//MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
-					for(int i=0;i<0x100;i++) memory[i] = MMU.ARM9_LCD[wnd->address+i];
+					memRead(memory, (RegionType)wnd->region, wnd->address, 0x100);
 
 					f = fopen(fileName, "a");
 
@@ -301,16 +482,47 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 					{
 						EMUFILE_FILE f(fileName,"ab");
 						u8 memory[0x100];
-						MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
+						memRead(memory, (RegionType)wnd->region, wnd->address, 0x100);
 						f.fwrite(memory, 0x100);
 					}
 					else
 					{
 						EMUFILE_FILE f(fileName,"wb");
-						DEBUG_dumpMemory(&f);
+						switch(wnd->region)
+						{
+						case MEMVIEW_ARM9:
+						case MEMVIEW_ARM7:
+							DEBUG_dumpMemory(&f);
+							break;
+						default:
+							{
+								const size_t blocksize = 0x100;
+								byte* memory = new byte[blocksize];
+								if (memory != NULL)
+								{
+									MemViewRegion& region = s_memoryRegions[wnd->region];
+									for (HWAddressType address = region.hardwareAddress;
+										address < region.hardwareAddress + region.size; address += blocksize)
+									{
+										size_t size = blocksize;
+										if (address + size > region.hardwareAddress + region.size)
+										{
+											size = region.size - (address - region.hardwareAddress);
+										}
+										memRead(memory, (RegionType)wnd->region, address, size);
+										f.fwrite(memory, size);
+									}
+									delete [] memory;
+								}
+							}	break;
+						}
 					}
 				}
 			}
+			return 1;
+
+		case IDC_BIG_ENDIAN:
+			wnd->Refresh();
 			return 1;
 		}
 		return 0;
@@ -374,7 +586,7 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 	}
 	TextOut(mem_hdc, startx, 0, text, strlen(text));
 	
-	MMU_DumpMemBlock(wnd->cpu, wnd->address, 0x100, memory);
+	memRead(memory, (RegionType)wnd->region, wnd->address, 0x100);
 
 	for(line = 0; line < 16; line++, addr += 0x10)
 	{
@@ -467,7 +679,7 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 		case 2:
 			{
 				u8 smallbuf[4];
-				MMU_DumpMemBlock(wnd->cpu, wnd->selAddress, 4, smallbuf);
+				MMU_DumpMemBlock(wnd->region, wnd->selAddress, 4, smallbuf);
 				char textbuf[32];
 				sprintf(textbuf,"%f",((s32)T1ReadLong(smallbuf,0))/4096.0f);
 				SetDlgItemText(wnd->hWnd,IDC_2012,textbuf);
@@ -653,7 +865,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 			if(((ch >= '0') && (ch <= '9')) || ((ch >= 'A') && (ch <= 'F')) || ((ch >= 'a') && (ch <= 'f')))
 			{
-				if ((wnd->cpu == ARMCPU_ARM7) && ((wnd->selAddress & 0xFFFF0000) == 0x04800000))
+				if (!memIsAvailable((RegionType)wnd->region, wnd->selAddress))
 					return DefWindowProc(hCtl, uMsg, wParam, lParam);
 
 				u8 maxSelPart[3] = {2, 4, 8};
@@ -672,11 +884,9 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 				{
 					switch(wnd->viewMode)
 					{
-					case 0: MMU_write8(wnd->cpu, wnd->selAddress, (u8)wnd->selNewVal); wnd->selAddress++; break;
-					//case 1: MMU_write16(wnd->cpu, wnd->selAddress, (u16)wnd->selNewVal); wnd->selAddress += 2; break;
-						//case 1: MMU_write16(wnd->cpu, wnd->selAddress, (u16)wnd->selNewVal); wnd->selAddress += 2; break;
-					case 1: MMU.ARM9_LCD[wnd->selAddress] = wnd->selNewVal; break;
-					case 2: MMU_write32(wnd->cpu, wnd->selAddress, wnd->selNewVal); wnd->selAddress += 4; break;
+					case 0: memWrite8((RegionType)wnd->region, wnd->selAddress, (u8)wnd->selNewVal); wnd->selAddress++; break;
+					case 1: memWrite16((RegionType)wnd->region, wnd->selAddress, (u16)wnd->selNewVal); wnd->selAddress += 2; break;
+					case 2: memWrite32((RegionType)wnd->region, wnd->selAddress, wnd->selNewVal); wnd->selAddress += 4; break;
 					}
 					wnd->selPart = 0;
 					wnd->selNewVal = 0x00000000;
@@ -700,23 +910,26 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 	case WM_VSCROLL:
 		{
 			int firstpos = GetScrollPos(hCtl, SB_VERT);
+			MemViewRegion& region = s_memoryRegions[wnd->region];
+			HWAddressType addrMin = (region.hardwareAddress) & 0xFFFFFF00;
+			HWAddressType addrMax = (region.hardwareAddress + region.size - 1) & 0xFFFFFF00;
 
 			switch(LOWORD(wParam))
 			{
 			case SB_LINEUP:
-				wnd->address = (u32)max(0x00000000, ((int)wnd->address - 0x10));
+				wnd->address = (u32)max((int)addrMin, ((int)wnd->address - 0x10));
 				break;
 
 			case SB_LINEDOWN:
-				wnd->address = min((u32)0xFFFFFF00, (wnd->address + 0x10));
+				wnd->address = min((u32)addrMax, (wnd->address + 0x10));
 				break;
 
 			case SB_PAGEUP:
-				wnd->address = (u32)max(0x00000000, ((int)wnd->address - 0x100));
+				wnd->address = (u32)max((int)addrMin, ((int)wnd->address - 0x100));
 				break;
 
 			case SB_PAGEDOWN:
-				wnd->address = min((u32)0xFFFFFF00, (wnd->address + 0x100));
+				wnd->address = min((u32)addrMax, (wnd->address + 0x100));
 				break;
 
 			case SB_THUMBTRACK:
@@ -730,7 +943,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 
 					GetScrollInfo(hCtl, SB_VERT, &si);
 
-					wnd->address = min((u32)0xFFFFFF00, (wnd->address + ((si.nTrackPos - firstpos) * 16)));
+					wnd->address = min((u32)addrMax, (wnd->address + ((si.nTrackPos - firstpos) * 16)));
 				}
 				break;
 			}
@@ -743,7 +956,7 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 				wnd->selNewVal = 0x00000000;
 			}
 
-			SetScrollPos(hCtl, SB_VERT, ((wnd->address >> 4) & 0x000FFFFF), TRUE);
+			SetScrollPos(hCtl, SB_VERT, (((wnd->address - region.hardwareAddress) >> 4) & 0x000FFFFF), TRUE);
 			wnd->Refresh();
 		}
 		return 1;
