@@ -922,8 +922,23 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 					}
 					else if(wnd->selAddress >= (wnd->address + 0x100))
 					{
-						wnd->address = min((u32)0xFFFFFF00, (wnd->address + 0x10));
-						SetScrollPos(hCtl, SB_VERT, ((wnd->address >> 4) & 0x000FFFFF), TRUE);
+						MemViewRegion& region = s_memoryRegions[wnd->region];
+						HWAddressType addrMin = (region.hardwareAddress) & 0xFFFFFF00;
+						HWAddressType addrMax = max(addrMin, (region.hardwareAddress + region.size - 0x100 - 1) & 0xFFFFFF00);
+						if (wnd->address + 0x10 <= addrMax)
+						{
+							wnd->address += 0x10;
+							SetScrollPos(hCtl, SB_VERT, (((wnd->address - region.hardwareAddress) >> 4) & 0x000FFFFF), TRUE);
+						}
+						else
+						{
+							switch(wnd->viewMode)
+							{
+							case 0: wnd->selAddress--; break;
+							case 1: wnd->selAddress -= 2; break;
+							case 2: wnd->selAddress -= 4; break;
+							}
+						}
 					}
 				}
 			}
