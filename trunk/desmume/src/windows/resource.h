@@ -815,6 +815,7 @@
 #define IDC_USENOISE                    5010
 #define IDC_REGION                      6000
 #define IDC_IOREG                       6001
+#define IDC_CPU                         6002
 #define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK 9000
 #define IDC_ZELDA_SHADOW_DEPTH_HACK     9001
 #define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2 9003

@@ -2460,8 +2460,9 @@ void NDS_Reset()
 			armcpu_init(&NDS_ARM9, firmware->ARM9bootAddr);
 		}
 
-			_MMU_write08<ARMCPU_ARM9>(0x04000300, 0);
-			_MMU_write08<ARMCPU_ARM7>(0x04000300, 0);
+			// REG_POSTFLG
+			MMU.ARM9_REG[0x300] = 0;
+			MMU.ARM7_REG[0x300] = 0;
 	}
 	else
 	{
@@ -2488,8 +2489,9 @@ void NDS_Reset()
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
 		
-		_MMU_write08<ARMCPU_ARM9>(REG_POSTFLG, 1);
-		_MMU_write08<ARMCPU_ARM7>(REG_POSTFLG, 1);
+		// REG_POSTFLG
+		MMU.ARM9_REG[0x300] = 1;
+		MMU.ARM7_REG[0x300] = 1;
 	}
 	// only ARM9 have co-processor
 	reconstruct(&cp15);
