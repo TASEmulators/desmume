@@ -813,7 +813,7 @@
 #define IDC_USEMICSAMPLE                5005
 #define IDC_USEMICRAND                  5009
 #define IDC_USENOISE                    5010
-#define IDC_CPU                         6000
+#define IDC_REGION                      6000
 #define IDC_IOREG                       6001
 #define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK 9000
 #define IDC_ZELDA_SHADOW_DEPTH_HACK     9001
