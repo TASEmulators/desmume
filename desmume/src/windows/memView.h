@@ -33,7 +33,7 @@ public:
 
 	HFONT font;
 
-	u32 cpu;
+	u32 region;
 	u32 address;
 	u32 viewMode;
 
