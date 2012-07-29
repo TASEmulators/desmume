@@ -230,6 +230,7 @@ SFORMAT SF_MMU[]={
 	{ "BUAZ", 1, 1,       &MMU.fw.addr_size},
 	{ "BUWE", 4, 1,       &MMU.fw.write_enable},
 	{ "BUWR", 4, 1,       &MMU.fw.writeable_buffer},
+	{ "BUJQ", 1, 0x40000, &MMU.fw.data}, // doesn't work (because of delayed allocation), needs dynamic modification, see writechunks and ReadStateChunks
 	//end memory chips
 
 	{ "MC0A", 4, 1,       &MMU.dscard[0].address},
@@ -258,7 +259,7 @@ SFORMAT SF_MMU[]={
 	{ "PMCR", 1, 5,			&MMU.powerMan_Reg},
 
 	{ "MR3D", 4, 1,		&MMU.reg_DISP3DCNT_bits},
-	
+
 	{ 0 }
 };
 
@@ -983,6 +984,16 @@ bool savestate_save (const char *file_name)
 extern SFORMAT SF_RTC[];
 
 static void writechunks(EMUFILE* os) {
+	// poor hack for firmware
+	SFORMAT* temp = SF_MMU;
+	while(temp->v) {
+		if(strcmp(temp->desc,"BUJQ") == 0) {
+			temp->v = MMU.fw.data;
+			temp->count = MMU.fw.size;
+		}
+		temp++;
+	}
+
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
 	savestate_WriteChunk(os,3,cp15_savestate);
@@ -1005,6 +1016,16 @@ static void writechunks(EMUFILE* os) {
 
 static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 {
+	// poor hack for firmware
+	SFORMAT* temp = SF_MMU;
+	while(temp->v) {
+		if(strcmp(temp->desc,"BUJQ") == 0) {
+			temp->v = MMU.fw.data;
+			temp->count = MMU.fw.size;
+		}
+		temp++;
+	}
+
 	bool ret = true;
 	while(totalsize > 0)
 	{
