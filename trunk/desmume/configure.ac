@@ -267,7 +267,7 @@ fi
 dnl - jit support
 case $host_cpu in
   x86|x86_64|i386|i486|i586|i686)
-    HAVE_JIT=yes
+    HAVE_JIT=no
     AC_DEFINE(HAVE_JIT)
     ;;
 esac
