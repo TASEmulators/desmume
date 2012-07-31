@@ -217,7 +217,7 @@ static Compiler c;
 #endif
 
 static void emit_branch(int cond, Label to);
-static void _armlog(u32 addr, u32 opcode);
+static void _armlog(u8 proc, u32 addr, u32 opcode);
 
 static FileLogger logger(stderr);
 
