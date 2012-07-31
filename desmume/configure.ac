@@ -268,7 +268,7 @@ dnl - jit support
 case $host_cpu in
   x86|x86_64|i386|i486|i586|i686)
     HAVE_JIT=no
-    AC_DEFINE(HAVE_JIT)
+    #AC_DEFINE(HAVE_JIT)
     ;;
 esac
 AM_CONDITIONAL([HAVE_JIT], [test "x$HAVE_JIT" = "xyes"])
