@@ -13,7 +13,6 @@ noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
 	armcpu.cpp armcpu.h \
 	arm_instructions.cpp arm_instructions.h \
-	arm_jit.cpp arm_jit.h instruction_attributes.h \
 	agg2d.h agg2d.inl \
 	bios.cpp bios.h bits.h cp15.cpp cp15.h \
 	commandline.h commandline.cpp \
@@ -95,6 +94,7 @@ libdesmume_a_SOURCES = \
 
 if HAVE_JIT
 libdesmume_a_SOURCES += \
+	arm_jit.cpp arm_jit.h instruction_attributes.h \
 	utils/AsmJit/ApiBegin.h \
 	utils/AsmJit/ApiEnd.h \
 	utils/AsmJit/AsmJit.h \
