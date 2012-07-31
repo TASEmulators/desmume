@@ -559,6 +559,8 @@ int main(int argc, char ** argv) {
     g_thread_init( NULL);
   }
 
+  driver = new UnixDriver();
+
 #ifdef GDB_STUB
   if ( my_config.arm9_gdb_port != 0) {
     arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
