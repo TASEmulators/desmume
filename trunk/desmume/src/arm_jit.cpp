@@ -27,6 +27,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stddef.h>
 #define HAVE_STATIC_CODE_BUFFER
 #endif
 #include "instructions.h"
