@@ -750,7 +750,7 @@
 
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
-	self = [super init];
+	self = [super initWithCoder:aDecoder];
 	if (self == nil)
 	{
 		return self;
