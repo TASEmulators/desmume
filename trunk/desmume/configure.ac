@@ -138,7 +138,7 @@ AC_SUBST(GTHREAD_LIBS)
 AC_ARG_ENABLE([glade],
                [AC_HELP_STRING([--enable-glade], [enable glade frontend])],
                [glade=$enableval],
-               [glade=yes])
+               [glade=no])
 
 if test "x$glade" = "xyes" ; then
     PKG_CHECK_MODULES(LIBGLADE,
