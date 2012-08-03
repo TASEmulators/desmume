@@ -868,7 +868,6 @@
 		ABD1FE6B1345AC8400AF11D1 /* addons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = addons.h; path = ../addons.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE6C1345AC8400AF11D1 /* agg2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = agg2d.h; path = ../agg2d.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE6D1345AC8400AF11D1 /* aggdraw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aggdraw.h; path = ../aggdraw.h; sourceTree = SOURCE_ROOT; };
-		ABD1FE6E1345AC8400AF11D1 /* arm_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_instructions.h; path = ../arm_instructions.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE6F1345AC8400AF11D1 /* armcpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = armcpu.h; path = ../armcpu.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE701345AC8400AF11D1 /* bios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bios.h; path = ../bios.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE711345AC8400AF11D1 /* bits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bits.h; path = ../bits.h; sourceTree = SOURCE_ROOT; };
@@ -915,7 +914,6 @@
 		ABD1FE9A1345AC8400AF11D1 /* sndsdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sndsdl.h; path = ../sndsdl.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9B1345AC8400AF11D1 /* SPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPU.h; path = ../SPU.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9C1345AC8400AF11D1 /* texcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = texcache.h; path = ../texcache.h; sourceTree = SOURCE_ROOT; };
-		ABD1FE9D1345AC8400AF11D1 /* thumb_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thumb_instructions.h; path = ../thumb_instructions.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9E1345AC8400AF11D1 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = types.h; path = ../types.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE9F1345AC8400AF11D1 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../version.h; sourceTree = SOURCE_ROOT; };
 		ABD1FEA01345AC8400AF11D1 /* wifi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = wifi.h; path = ../wifi.h; sourceTree = SOURCE_ROOT; };
@@ -1415,7 +1413,6 @@
 				ABD1FE6B1345AC8400AF11D1 /* addons.h */,
 				ABD1FE6C1345AC8400AF11D1 /* agg2d.h */,
 				ABD1FE6D1345AC8400AF11D1 /* aggdraw.h */,
-				ABD1FE6E1345AC8400AF11D1 /* arm_instructions.h */,
 				ABD1FE6F1345AC8400AF11D1 /* armcpu.h */,
 				ABD1FE701345AC8400AF11D1 /* bios.h */,
 				ABD1FE711345AC8400AF11D1 /* bits.h */,
@@ -1462,7 +1459,6 @@
 				ABD1FE9A1345AC8400AF11D1 /* sndsdl.h */,
 				ABD1FE9B1345AC8400AF11D1 /* SPU.h */,
 				ABD1FE9C1345AC8400AF11D1 /* texcache.h */,
-				ABD1FE9D1345AC8400AF11D1 /* thumb_instructions.h */,
 				ABD1FE9E1345AC8400AF11D1 /* types.h */,
 				ABD1FE9F1345AC8400AF11D1 /* version.h */,
 				ABD1FEA01345AC8400AF11D1 /* wifi.h */,
@@ -2024,7 +2020,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/sh\n\n# This script creates an application package that merges the ppc and ppc64\n# binaries of an Xcode 3 universal build to the i386 and x86_64 binaries of\n# an Xcode 4 (or later) Intel-only build.\n#\n# Before you use this script, make sure that you already have an existing\n# universal binary Release build from Xcode 3 in the ${SRCROOT}/build/Release\n# directory.\n\nif test -e ${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\nthen\n\n# Create the Merged Release directory, plus a working copy of the\n# universal binary .app.\ncd ${SRCROOT}/build\nmkdir -p \"./Merged Release\"\ncd \"./Merged Release\"\ncp -a ../Release/${PRODUCT_NAME}.app ./\nrm -f ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\n\n# Create the temp binaries for PowerPC.\ncd ${SRCROOT}/build/Release\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin ppc7400 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin ppc64 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\n\n# Create the temp binaries for Intel.\ncd ${TARGET_BUILD_DIR}\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin i386 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\nlipo ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME} -thin x86_64 -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\n\n# Merge the separate temp binaries into a single binary package.\ncd \"${SRCROOT}/build/Merged Release\"\nlipo ../Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400 ../Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64 ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386 ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64 -create -output ./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\n\n# Remove the temp binaries now that we're done with them.\nrm -f ${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\nrm -f ${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\nrm -f ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\nrm -f ${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\n\nfi";
+			shellScript = "#!/bin/sh\n\n# This script creates an application package that merges the ppc and ppc64\n# binaries of an Xcode 3 universal build to the i386 and x86_64 binaries of\n# an Xcode 4 (or later) Intel-only build.\n#\n# Before you use this script, make sure that you already have an existing\n# universal binary Release build from Xcode 3 in the ${SRCROOT}/build/Release\n# directory.\n\nif test -e \"${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\nthen\n\n# Create the Merged Release directory, plus a working copy of the\n# universal binary .app.\ncd \"${SRCROOT}/build\"\nmkdir -p \"./Merged Release\"\ncd \"./Merged Release\"\ncp -a \"../Release/${PRODUCT_NAME}.app\" \"./\"\nrm -f \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\n\n# Create the temp binaries for PowerPC.\ncd \"${SRCROOT}/build/Release\"\nlipo \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\" -thin ppc7400 -output \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\"\nlipo \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\" -thin ppc64 -output \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\"\n\n# Create the temp binaries for Intel.\ncd \"${TARGET_BUILD_DIR}\"\nlipo \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\" -thin i386 -output \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\"\nlipo \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\" -thin x86_64 -output \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\"\n\n# Merge the separate temp binaries into a single binary package.\ncd \"${SRCROOT}/build/Merged Release\"\nlipo \"../Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\" \"../Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\" \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\" \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\" -create -output \"./${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}\"\n\n# Remove the temp binaries now that we're done with them.\nrm -f \"${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc7400\"\nrm -f \"${SRCROOT}/build/Release/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_ppc64\"\nrm -f \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_i386\"\nrm -f \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/MacOS/${EXECUTABLE_NAME}_x86_64\"\n\nfi";
 		};
 		AB75221714C79884009B97B3 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2039,7 +2035,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd ${SRCROOT}/translations\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 		AB75222C14C799C1009B97B3 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2054,7 +2050,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd ${SRCROOT}/translations\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 		ABB7154014E386740027FE88 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2069,7 +2065,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd ${SRCROOT}/translations\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+			shellScript = "cd \"${SRCROOT}/translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
