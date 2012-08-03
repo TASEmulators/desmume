@@ -69,6 +69,29 @@ inline int chanOfs()
 	return SoundView_Data->viewFirst8Channels ? 0 : 8;
 }
 
+inline int ProgressSetPosImmediate(HWND hDlg, int nIDDlgItem, int nPos)
+{
+	int nOldPos = SendDlgItemMessage(hDlg, nIDDlgItem, PBM_GETPOS, (WPARAM)0, (LPARAM)0);
+	int nMin = SendDlgItemMessage(hDlg, nIDDlgItem, PBM_GETRANGE, (WPARAM)TRUE, (LPARAM)NULL);
+	int nMax = SendDlgItemMessage(hDlg, nIDDlgItem, PBM_GETRANGE, (WPARAM)FALSE, (LPARAM)NULL);
+
+	// get rid of fancy progress animation since Windows Vista
+	// http://stackoverflow.com/questions/1061715/how-do-i-make-tprogressbar-stop-lagging
+	if (nPos < nMax)
+	{
+		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETPOS, (WPARAM)(nPos + 1), (LPARAM)0);
+		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETPOS, (WPARAM)nPos, (LPARAM)0); // This will set Progress backwards and give an instant update
+	}
+	else
+	{
+		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETRANGE32, nMin, nPos + 1);
+		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETPOS, (WPARAM)(nPos + 1), (LPARAM)0);
+		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETRANGE32, nMin, nPos); // This will also set Progress backwards also so instant update
+	}
+
+	return nOldPos;
+}
+
 BOOL SoundView_DlgOpen(HWND hParentWnd)
 {
 	HWND hDlg;
@@ -126,12 +149,11 @@ void SoundView_Refresh()
 		int chan = chanId + chanOfs();
 		channel_struct &thischan = SPU_core->channels[chan];
 
-		SendDlgItemMessage(hDlg, IDC_SOUND0PANBAR+chanId, PBM_SETPOS, (WPARAM)spumuldiv7(128, thischan.pan), (LPARAM)0);
+		ProgressSetPosImmediate(hDlg, IDC_SOUND0PANBAR+chanId, spumuldiv7(128, thischan.pan));
 		if(thischan.status != CHANSTAT_STOPPED)
 		{
 			s32 vol = spumuldiv7(128, thischan.vol) >> thischan.datashift;
-			SendDlgItemMessage(hDlg, IDC_SOUND0VOLBAR+chanId, PBM_SETPOS,
-				(WPARAM)vol, (LPARAM)0);
+			ProgressSetPosImmediate(hDlg, IDC_SOUND0VOLBAR+chanId, vol);
 
 			if(SoundView_Data->volModeAlternate) 
 				sprintf(buf, "%d/%d", thischan.vol, 1 << thischan.datashift);
@@ -188,7 +210,7 @@ void SoundView_Refresh()
 			SetDlgItemText(hDlg, IDC_SOUND0POSLEN+chanId, buf);
 		}
 		else {
-			SendDlgItemMessage(hDlg, IDC_SOUND0VOLBAR+chanId, PBM_SETPOS, (WPARAM)0, (LPARAM)0);
+			ProgressSetPosImmediate(hDlg, IDC_SOUND0VOLBAR+chanId, 0);
 			strcpy(buf, "---");
 			SetDlgItemText(hDlg, IDC_SOUND0VOL+chanId, buf);
 			SetDlgItemText(hDlg, IDC_SOUND0PAN+chanId, buf);
