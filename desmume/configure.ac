@@ -34,7 +34,7 @@ AC_DEFINE_UNQUOTED([SVN_REV], "$REVISION", [subversion revision number])
 
 
 dnl - Check for intltool/gettext macros
-m4_ifdef([IT_PROG_INTLTOOL],[IT_PROG_INTLTOOL])
+IT_PROG_INTLTOOL
 
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
@@ -242,7 +242,6 @@ if test "x$wxwin" = "xyes"; then
 fi
 
 if test "x$HAVE_LIBGLADE" = "xyes"; then
-  AC_PROVIDE_IFELSE([IT_PROG_INTLTOOL],[
     UI_DIR="gtk-glade $UI_DIR"
 
     dnl -- localization for gtk-glade UI
@@ -251,9 +250,6 @@ if test "x$HAVE_LIBGLADE" = "xyes"; then
     AC_SUBST(GETTEXT_PACKAGE)
     ALL_LINGUAS="fr nb pt_BR sv zh_CN zh_TW"
     AM_GLIB_GNU_GETTEXT
-  ],[
-    echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed."
-  ])
 fi
 
 dnl - jit support
