@@ -23,4 +23,9 @@
 #define DESMUME_COCOA
 #define HAVE_OPENGL
 #define HAVE_LIBZ
+
+#if defined(__i386__) || defined(__x86_64__)
+	#define HAVE_JIT
+#endif
+
 #define PORT_VERSION	"Cocoa"

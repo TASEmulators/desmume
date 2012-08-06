@@ -22,7 +22,7 @@
 @class CocoaHIDManager;
 
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 #else
 @interface AppDelegate : NSObject
@@ -54,6 +54,7 @@
 	
 	CocoaHIDManager *hidManager;
 	BOOL migrationFilesPresent;
+	BOOL isAppRunningOnIntel;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
@@ -80,6 +81,7 @@
 
 @property (retain) CocoaHIDManager *hidManager;
 @property (assign) BOOL migrationFilesPresent;
+@property (assign) BOOL isAppRunningOnIntel;
 
 // Emulation Menu
 

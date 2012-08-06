@@ -32,7 +32,7 @@
  or later.
  */
 
-#if !__LP64__ || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#if !__LP64__ || MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 
 #include <CoreServices/CoreServices.h>
 
@@ -58,7 +58,7 @@ extern "C"
 }
 #endif
 	
-#endif // !__LP64__ || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#endif // !__LP64__ || MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 
 @implementation CocoaHIDDevice
 

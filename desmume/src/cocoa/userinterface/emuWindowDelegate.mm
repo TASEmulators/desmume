@@ -312,7 +312,7 @@
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	buttonClicked = [panel runModal];
 #else
@@ -356,7 +356,7 @@
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	buttonClicked = [panel runModal];
 #else
@@ -570,7 +570,7 @@
 	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
 	buttonClicked = [panel runModal];
 #else
@@ -1155,6 +1155,9 @@
 	// Need to pause the core before loading the ROM.
 	[self pauseCore];
 	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setDynaRec];
+	
 	CocoaDSRom *newRom = [[[CocoaDSRom alloc] init] autorelease];
 	if (newRom != nil)
 	{
@@ -1266,13 +1269,6 @@
 		[cheatWindowDelegate setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE];
 	}
 	
-	// After the ROM loading is complete, send an execute message to the Cocoa DS per
-	// user preferences.
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"General_ExecuteROMOnLoad"])
-	{
-		[self executeCore];
-	}
-	
 	// Add the last loaded ROM to the Recent ROMs list.
 	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[theRom fileURL]];
 	
@@ -1283,6 +1279,13 @@
 	[self setIsRomLoaded:YES];
 	[window displayIfNeeded];
 	isRomLoading = NO;
+	
+	// After the ROM loading is complete, send an execute message to the Cocoa DS per
+	// user preferences.
+	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"General_ExecuteROMOnLoad"])
+	{
+		[self executeCore];
+	}
 }
 
 - (BOOL) unloadRom
@@ -1997,6 +2000,7 @@
 	[[(NSControl *)sender window] makeFirstResponder:nil];
 	
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore cpuEmulationEngine] forKey:@"Emulation_CPUEmulationEngine"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalBios] forKey:@"Emulation_UseExternalBIOSImages"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateBiosInterrupts] forKey:@"Emulation_BIOSEmulateSWI"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagPatchDelayLoop] forKey:@"Emulation_BIOSPatchDelayLoopSWI"];

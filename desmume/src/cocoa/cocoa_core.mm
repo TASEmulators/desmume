@@ -56,6 +56,7 @@ volatile bool execute = true;
 @synthesize emuFlagFirmwareBoot;
 @synthesize emuFlagDebugConsole;
 @synthesize emuFlagEmulateEnsata;
+@dynamic cpuEmulationEngine;
 
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
@@ -94,6 +95,7 @@ static BOOL isCoreStarted = NO;
 	spinlockExecutionChange = OS_SPINLOCK_INIT;
 	spinlockCheatEnableFlag = OS_SPINLOCK_INIT;
 	spinlockEmulationFlags = OS_SPINLOCK_INIT;
+	spinlockCPUEmulationEngine = OS_SPINLOCK_INIT;
 	
 	isSpeedLimitEnabled = YES;
 	speedScalar = SPEED_SCALAR_NORMAL;
@@ -466,6 +468,28 @@ static BOOL isCoreStarted = NO;
 	return theFlags;
 }
 
+- (void) setCpuEmulationEngine:(NSInteger)engineID
+{
+#if defined(__i386__) || defined(__x86_64__)
+	OSSpinLockLock(&spinlockCPUEmulationEngine);
+	cpuEmulationEngine = engineID;
+	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
+#else
+	OSSpinLockLock(&spinlockCPUEmulationEngine);
+	cpuEmulationEngine = CPU_EMULATION_ENGINE_INTERPRETER;
+	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
+#endif
+}
+
+- (NSInteger) cpuEmulationEngine
+{
+	OSSpinLockLock(&spinlockCPUEmulationEngine);
+	NSInteger engineID = cpuEmulationEngine;
+	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
+	
+	return engineID;
+}
+
 - (void) setCoreState:(NSInteger)coreState
 {
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
@@ -603,6 +627,39 @@ static BOOL isCoreStarted = NO;
 	}
 }
 
+/********************************************************************************************
+	setDynaRec
+
+	Sets the use_jit variable for CommonSettings.
+
+	Takes:
+		Nothing.
+
+	Returns:
+		Nothing.
+
+	Details:
+		In the UI, we call setCpuEmulationEngine to set whether we should use the
+		interpreter or the dynamic recompiler. However, the emulator cannot handle
+		changing the engine while the emulation is running. Therefore, we use this
+		method to set the engine at a later time, using the last cpuEmulationEngine
+		value from the user.
+ ********************************************************************************************/
+- (void) setDynaRec
+{
+	NSInteger engineID = [self cpuEmulationEngine];
+	bool useDynaRec = false;
+	
+	if (engineID == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER)
+	{
+		useDynaRec = true;
+	}
+	
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	CommonSettings.use_jit = useDynaRec;
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+}
+
 - (void) restoreCoreState
 {
 	[self setCoreState:prevCoreState];
@@ -611,6 +668,7 @@ static BOOL isCoreStarted = NO;
 - (void) reset
 {
 	[self setCoreState:CORESTATE_PAUSE];
+	[self setDynaRec];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	NDS_Reset();
@@ -638,6 +696,7 @@ static BOOL isCoreStarted = NO;
 
 - (void) runThread:(id)object
 {
+	[self setDynaRec];
 	[CocoaDSCore startupCore];
 	[super runThread:object];
 	[CocoaDSCore shutdownCore];

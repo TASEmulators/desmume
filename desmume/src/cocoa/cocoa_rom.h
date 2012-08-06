@@ -20,7 +20,7 @@
 #include <libkern/OSAtomic.h>
 
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface CocoaDSRom : NSObject <NSXMLParserDelegate>
 #else
 @interface CocoaDSRom : NSObject

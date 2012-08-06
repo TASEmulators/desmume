@@ -58,6 +58,8 @@
 
 @synthesize hidManager;
 @synthesize migrationFilesPresent;
+@synthesize isAppRunningOnIntel;
+
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
@@ -93,6 +95,13 @@
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
 	CheatWindowDelegate *cheatWindowDelegate = [cheatListWindow delegate];
 	
+	// Determine if we're running on Intel or PPC.
+#if defined(__i386__) || defined(__x86_64__)
+	isAppRunningOnIntel = YES;
+#else
+	isAppRunningOnIntel = NO;
+#endif
+	
 	// Create the needed directories in Application Support if they haven't already
 	// been created.
 	if (![CocoaDSFile setupAllAppDirectories])
@@ -104,13 +113,18 @@
 	[CocoaDSFile setupAllFilePaths];
 	
 	// Setup the About window.
+	NSString *buildVersionStr = @"Build Version: ";
+	buildVersionStr = [buildVersionStr stringByAppendingString:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
+	NSString *buildDateStr = @"Build Date: ";
+	buildDateStr = [buildDateStr stringByAppendingString:@__DATE__];
+	
 	NSMutableDictionary *aboutWindowProperties = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_README ofType:@""], @"readMePath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_COPYING ofType:@""], @"licensePath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_AUTHORS ofType:@""], @"authorsPath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_CHANGELOG ofType:@""], @"changeLogPath",
-												  [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], @"versionString",
-												  @__DATE__, @"dateString",
+												  buildVersionStr, @"versionString",
+												  buildDateStr, @"dateString",
 												  nil];
 	
 	[aboutWindowController setContent:aboutWindowProperties];
@@ -382,6 +396,15 @@
 	}
 	
 	[cdsCore setEmulationFlags:emuFlags];
+	
+	// If we're not running on Intel, force the CPU emulation engine to use the interpreter engine.
+	if (!isAppRunningOnIntel)
+	{
+		[[NSUserDefaults standardUserDefaults] setInteger:CPU_EMULATION_ENGINE_INTERPRETER forKey:@"Emulation_CPUEmulationEngine"];
+	}
+	
+	// Set the CPU emulation engine per user preferences.
+	[cdsCore setCpuEmulationEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_CPUEmulationEngine"]];
 	
 	// Set up the firmware per user preferences.
 	NSMutableDictionary *newFWDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:
