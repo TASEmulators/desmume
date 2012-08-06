@@ -21,6 +21,8 @@
 
 
 OERingBuffer *openEmuSoundInterfaceBuffer = nil;
+static pthread_mutex_t *mutexAudioSampleReadWrite = NULL;
+pthread_mutex_t *mutexAudioEmulateCore = NULL;
 
 // Sound interface to the SPU
 SoundInterface_struct SNDOpenEmu = {
@@ -33,7 +35,9 @@ SoundInterface_struct SNDOpenEmu = {
 	SNDOpenEmuMuteAudio,
 	SNDOpenEmuUnMuteAudio,
 	SNDOpenEmuSetVolume,
-	SNDOpenEmuClearBuffer
+	SNDOpenEmuClearBuffer,
+	SNDOpenEmuFetchSamples,
+	SNDOpenEmuPostProcessSamples
 };
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -46,12 +50,23 @@ int SNDOpenEmuInit(int buffer_size)
 {
 	[openEmuSoundInterfaceBuffer setLength:buffer_size];
 	
+	if (mutexAudioSampleReadWrite == NULL)
+	{
+		mutexAudioSampleReadWrite = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+		pthread_mutex_init(mutexAudioSampleReadWrite, NULL);
+	}
+	
 	return 0;
 }
 
 void SNDOpenEmuDeInit()
 {
-	// Do nothing. The OpenEmu frontend will take care of this.
+	if (mutexAudioSampleReadWrite != NULL)
+	{
+		pthread_mutex_destroy(mutexAudioSampleReadWrite);
+		free(mutexAudioSampleReadWrite);
+		mutexAudioSampleReadWrite = NULL;
+	}
 }
 
 int SNDOpenEmuReset()
@@ -88,4 +103,47 @@ void SNDOpenEmuSetVolume(int volume)
 void SNDOpenEmuClearBuffer()
 {
 	// Do nothing. The OpenEmu frontend will take care of this.
+}
+
+void SNDOpenEmuFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
+{
+	if (mutexAudioSampleReadWrite == NULL)
+	{
+		return;
+	}
+	
+	pthread_mutex_lock(mutexAudioSampleReadWrite);
+	SPU_DefaultFetchSamples(sampleBuffer, sampleCount, synchMode, theSynchronizer);
+	pthread_mutex_unlock(mutexAudioSampleReadWrite);
+}
+
+size_t SNDOpenEmuPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
+{
+	size_t processedSampleCount = 0;
+	
+	switch (synchMode)
+	{
+		case ESynchMode_DualSynchAsynch:
+			if (mutexAudioEmulateCore != NULL)
+			{
+				pthread_mutex_lock(mutexAudioEmulateCore);
+				processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
+				pthread_mutex_unlock(mutexAudioEmulateCore);
+			}
+			break;
+			
+		case ESynchMode_Synchronous:
+			if (mutexAudioSampleReadWrite != NULL)
+			{
+				pthread_mutex_lock(mutexAudioSampleReadWrite);
+				processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
+				pthread_mutex_unlock(mutexAudioSampleReadWrite);
+			}
+			break;
+			
+		default:
+			break;
+	}
+	
+	return processedSampleCount;
 }
