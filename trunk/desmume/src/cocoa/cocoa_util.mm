@@ -127,7 +127,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 
 @end
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
 @implementation CocoaDSThread
 
 @synthesize thread;
