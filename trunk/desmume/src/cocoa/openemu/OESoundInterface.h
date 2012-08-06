@@ -41,6 +41,8 @@ void	SNDOpenEmuMuteAudio();
 void	SNDOpenEmuUnMuteAudio();
 void	SNDOpenEmuSetVolume(int volume);
 void	SNDOpenEmuClearBuffer();
+void	SNDOpenEmuFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+size_t	SNDOpenEmuPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 
 #ifdef __cplusplus
 }

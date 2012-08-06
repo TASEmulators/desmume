@@ -54,6 +54,7 @@
 	
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
+	CommonSettings.use_jit = false;
 	[CocoaDSCore startupCore];
 	
 	// Set up the DS firmware using the internal firmware
