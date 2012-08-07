@@ -1056,7 +1056,11 @@ GPU3DInterface *core3DList[] = {
 		case MESSAGE_CHANGE_BILINEAR_OUTPUT:
 			[self handleChangeBilinearOutput:[messageComponents objectAtIndex:0]];
 			break;
-			
+		
+		case MESSAGE_CHANGE_VERTICAL_SYNC:
+			[self handleChangeVerticalSync:[messageComponents objectAtIndex:0]];
+			break;
+		
 		case MESSAGE_CHANGE_VIDEO_FILTER:
 			[self handleChangeVideoFilter:[messageComponents objectAtIndex:0]];
 			break;
@@ -1187,6 +1191,17 @@ GPU3DInterface *core3DList[] = {
 	const BOOL *theState = (BOOL *)[bilinearStateData bytes];
 	[delegate doBilinearOutputChanged:*theState];
 	[self handleEmuFrameProcessed:self.frameData];
+}
+
+- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData
+{
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doVerticalSyncChanged:)])
+	{
+		return;
+	}
+	
+	const BOOL *theState = (BOOL *)[verticalSyncStateData bytes];
+	[delegate doVerticalSyncChanged:*theState];
 }
 
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData

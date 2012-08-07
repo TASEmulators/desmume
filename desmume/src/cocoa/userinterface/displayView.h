@@ -39,6 +39,7 @@
 - (void) doRedraw;
 - (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
+- (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
 - (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
 
 @end
@@ -63,6 +64,7 @@
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
 	OSSpinLock spinlockUseBilinearOutput;
+	OSSpinLock spinlockUseVerticalSync;
 }
 
 @property (retain) NSView <DisplayViewDelegate> *view;
@@ -72,6 +74,7 @@
 @property (assign) double scale;
 @property (assign) double rotation;
 @property (assign) BOOL useBilinearOutput;
+@property (assign) BOOL useVerticalSync;
 @property (assign) NSInteger displayType;
 @property (readonly) NSMutableDictionary *bindings;
 
@@ -83,6 +86,8 @@
 - (double) rotation;
 - (void) setUseBilinearOutput:(BOOL)theState;
 - (BOOL) useBilinearOutput;
+- (void) setUseVerticalSync:(BOOL)theState;
+- (BOOL) useVerticalSync;
 - (void) setDisplayType:(NSInteger)theType;
 - (NSInteger) displayType;
 - (void) setVideoFilterType:(NSInteger)theType;

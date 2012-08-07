@@ -850,6 +850,11 @@
 	[dispViewDelegate setUseBilinearOutput:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
 }
 
+- (IBAction) changeVerticalSync:(id)sender
+{
+	[dispViewDelegate setUseVerticalSync:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
+}
+
 - (IBAction) changeDisplayMode:(id)sender
 {
 	[dispViewDelegate setDisplayType:[CocoaDSUtil getIBActionSenderTag:sender]];
@@ -1942,6 +1947,7 @@
 	// Setup the window display view per user preferences.
 	[[self dispViewDelegate] setVideoFilterType:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
 	[[self dispViewDelegate] setUseBilinearOutput:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"]];
+	[[self dispViewDelegate] setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
 	
 	// Set the 3D rendering options per user preferences.
 	[[self dispViewDelegate] setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
@@ -1972,6 +1978,7 @@
 	
 	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"videoFilterType"] integerValue] forKey:@"DisplayView_VideoFilter"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"useBilinearOutput"] boolValue] forKey:@"DisplayView_UseBilinearOutput"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"useVerticalSync"] boolValue] forKey:@"DisplayView_UseVerticalSync"];
 }
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender

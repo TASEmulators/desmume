@@ -41,6 +41,7 @@
 @dynamic scale;
 @dynamic rotation;
 @dynamic useBilinearOutput;
+@dynamic useVerticalSync;
 @dynamic displayType;
 @synthesize bindings;
 
@@ -67,6 +68,7 @@
 	spinlockScale = OS_SPINLOCK_INIT;
 	spinlockRotation = OS_SPINLOCK_INIT;
 	spinlockUseBilinearOutput = OS_SPINLOCK_INIT;
+	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
 	
 	normalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2.0);
 	sendPortDisplay = nil;
@@ -91,6 +93,7 @@
 	[bindings setValue:[NSNumber numberWithDouble:1.0] forKey:@"scale"];
 	[bindings setValue:[NSNumber numberWithDouble:0.0] forKey:@"rotation"];
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"useBilinearOutput"];
+	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"useVerticalSync"];
 	[bindings setValue:[NSNumber numberWithInteger:DS_DISPLAY_TYPE_COMBO] forKey:@"displayMode"];
 	[bindings setValue:@"Combo" forKey:@"displayModeString"];
 	[bindings setValue:[NSNumber numberWithInteger:VideoFilterTypeID_None] forKey:@"videoFilterType"];
@@ -189,6 +192,24 @@
 	OSSpinLockLock(&spinlockUseBilinearOutput);
 	BOOL theState = [[bindings valueForKey:@"useBilinearOutput"] boolValue];
 	OSSpinLockUnlock(&spinlockUseBilinearOutput);
+	
+	return theState;
+}
+
+- (void) setUseVerticalSync:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockUseVerticalSync);
+	[bindings setValue:[NSNumber numberWithBool:theState] forKey:@"useVerticalSync"];
+	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	
+	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_CHANGE_VERTICAL_SYNC boolValue:theState];
+}
+
+- (BOOL) useVerticalSync
+{
+	OSSpinLockLock(&spinlockUseVerticalSync);
+	BOOL theState = [[bindings valueForKey:@"useVerticalSync"] boolValue];
+	OSSpinLockUnlock(&spinlockUseVerticalSync);
 	
 	return theState;
 }
@@ -512,6 +533,16 @@
 	}
 	
 	[view doBilinearOutputChanged:useBilinear];
+}
+
+- (void) doVerticalSyncChanged:(BOOL)useVerticalSync
+{
+	if (view == nil || ![view respondsToSelector:@selector(doVerticalSyncChanged:)])
+	{
+		return;
+	}
+	
+	[view doVerticalSyncChanged:useVerticalSync];
 }
 
 - (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID
@@ -842,7 +873,7 @@
 	
 	glEnd();
 	
-	glFlush();
+	CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
 }
 
 - (void) uploadFrameTexture:(const GLvoid *)frameBytes textureSize:(NSSize)textureSize
@@ -987,31 +1018,47 @@
 	GLfloat rotation = (GLfloat)[dispViewDelegate rotation];
 	NSRect rect = [self frame];
 	
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	
 	[[self openGLContext] makeCurrentContext];
 	SetupOpenGLView((GLsizei)rect.size.width, (GLsizei)rect.size.height, scale, rotation);
+	
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	
 	[dispViewDelegate setViewToBlack];
 }
 
 - (void)doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
 {
-	[[self openGLContext] makeCurrentContext];	
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	
+	[[self openGLContext] makeCurrentContext];
 	[self uploadFrameTexture:(const GLvoid *)videoFrameData textureSize:frameSize];
 	lastFrameSize = frameSize;
 	[self drawVideoFrame];
+	
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 }
 
 - (void)doResizeView:(NSRect)rect
 {
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	
 	[[self openGLContext] makeCurrentContext];
 	SetupOpenGLView((GLsizei)rect.size.width, (GLsizei)rect.size.height, (GLfloat)[dispViewDelegate scale], (GLfloat)[dispViewDelegate rotation]);
 	[[self openGLContext] update];
+	
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 }
 
 - (void)doRedraw
 {
+	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	
 	[[self openGLContext] makeCurrentContext];
 	[self drawVideoFrame];
+	
+	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 }
 
 - (void) doBilinearOutputChanged:(BOOL)useBilinear
@@ -1020,6 +1067,21 @@
 	if (useBilinear)
 	{
 		glTexRenderStyle = GL_LINEAR;
+	}
+}
+
+- (void) doVerticalSyncChanged:(BOOL)useVerticalSync
+{
+	GLint swapInt = 1;
+	
+	if (useVerticalSync)
+	{
+		[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+	}
+	else
+	{
+		swapInt = 0;
+		[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
 	}
 }
 
