@@ -187,6 +187,7 @@
 - (IBAction) changeRotation:(id)sender;
 - (IBAction) changeRotationRelative:(id)sender;
 - (IBAction) changeBilinearOutput:(id)sender;
+- (IBAction) changeVerticalSync:(id)sender;
 - (IBAction) changeDisplayMode:(id)sender;
 - (IBAction) changeVideoFilter:(id)sender;
 - (IBAction) change3DRenderMethod:(id)sender;

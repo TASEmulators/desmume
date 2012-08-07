@@ -105,6 +105,7 @@
 - (void) doRedraw;
 - (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
+- (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
 - (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
 
 @property (assign) BOOL isHudEnabled;
@@ -164,6 +165,7 @@
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData;
 - (void) handleChangeDisplayType:(NSData *)displayTypeIdData;
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData;
+- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData;
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData;
 - (void) handleSetRender3DRenderingEngine:(NSData *)methodIdData;
 - (void) handleSetRender3DHighPrecisionColorInterpolation:(NSData *)stateData;
