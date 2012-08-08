@@ -18,6 +18,8 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#include <pthread.h>
+
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4
 	#include "macosx_10_4_compat.h"
@@ -51,6 +53,7 @@
 	
 	NSLock *execution_lock;
 	NSLock *sound_lock;
+	pthread_mutex_t *mutexCoreExecute;
 	
 	ScreenState * volatile current_screen;
 	NSLock *video_update_lock;
@@ -155,3 +158,5 @@
 - (NSBitmapImageRep *) bitmapImageRep;
 
 @end
+
+bool OSXOpenGLRendererInit();
