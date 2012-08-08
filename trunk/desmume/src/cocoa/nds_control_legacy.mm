@@ -50,11 +50,18 @@ volatile bool execute = true;
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3DRasterize,
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
+&gpu3Dgl,
+#endif
 NULL
 };
 
 struct NDS_fw_config_data macDS_firmware;
 
+bool OSXOpenGLRendererInit()
+{
+	return true;
+}
 
 @implementation NintendoDS
 - (id)init
@@ -74,6 +81,10 @@ struct NDS_fw_config_data macDS_firmware;
 	execution_lock = [[NSLock alloc] init];
 	sound_lock = [[NSLock alloc] init];
 	current_screen = nil;
+	
+	mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexCoreExecute, NULL);
+	mutexAudioEmulateCore = mutexCoreExecute;
   
 #ifdef GDB_STUB
   arm9_gdb_port = 0;
@@ -120,6 +131,10 @@ struct NDS_fw_config_data macDS_firmware;
 	//this is for compatibility for tiger and earlier
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
 
+#ifdef HAVE_JIT
+	CommonSettings.use_jit = true;
+#endif
+	
 	//Firmware setup
 #ifdef GDB_STUB
   NDS_Init(arm9_memio, &arm9_ctrl_iface,
@@ -223,7 +238,13 @@ struct NDS_fw_config_data macDS_firmware;
 	{
 		[context makeCurrentContext];
 		
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4 
+		oglrender_init = &OSXOpenGLRendererInit;
+		//NDS_3D_SetDriver(CORE3DLIST_OPENGL);
 		NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
+#else
+		NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
+#endif
 		if(!gpu3D->NDS_3D_Init())
 			[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Unable to initialize OpenGL components", nil)];
 	}
@@ -304,6 +325,9 @@ struct NDS_fw_config_data macDS_firmware;
 	[loadedRomURL release];
 	[sound_lock release];
 	[execution_lock release];
+	
+	pthread_mutex_destroy(mutexCoreExecute);
+	free(mutexCoreExecute);
 
 	NDS_DeInit();
 
@@ -676,7 +700,9 @@ struct NDS_fw_config_data macDS_firmware;
 		while(!paused){}
 	}
 
+	pthread_mutex_lock(mutexCoreExecute);
 	NDS_Reset();
+	pthread_mutex_unlock(mutexCoreExecute);
 
 	//[execution_lock unlock];
 	run = old_run;
@@ -1092,12 +1118,12 @@ struct NDS_fw_config_data macDS_firmware;
 {
 	[execution_lock lock];
 	
+	pthread_mutex_lock(mutexCoreExecute);
 	NDS_exec<false>();
+	pthread_mutex_unlock(mutexCoreExecute);
 	
 	[sound_lock lock];
-	
 	SPU_Emulate_user();
-	
 	[sound_lock unlock];
 	
 	[execution_lock unlock];
