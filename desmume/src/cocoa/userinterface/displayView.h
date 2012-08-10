@@ -130,11 +130,14 @@
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
-	GLuint drawTexture[1];
+	GLuint swRasterizerDrawTexture[2];
 }
 
 - (void) drawVideoFrame;
-- (void) uploadFrameTexture:(const GLvoid *)frameBytes textureSize:(NSSize)textureSize;
+- (void) uploadSWRasterizerTexturesUsingSize:(NSSize)textureSize
+								   mainBytes:(const GLvoid *)mainBytes
+								  touchBytes:(const GLvoid *)touchBytes;
+- (void) renderSWRasterizer;
 
 @end
 
@@ -144,6 +147,9 @@ extern "C"
 #endif
 
 void SetupOpenGLView(GLsizei width, GLsizei height, GLfloat scalar, GLfloat angleDegrees);
+bool OSXOpenGLRendererInit();
+bool OSXOpenGLRendererBegin();
+void OSXOpenGLRendererEnd();
 
 #ifdef __cplusplus
 }

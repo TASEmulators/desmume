@@ -29,6 +29,8 @@
 
 #undef BOOL
 
+NSOpenGLContext *OSXDefaultOpenGLContext = nil;
+
 @implementation DisplayViewDelegate
 
 @synthesize view;
@@ -797,6 +799,9 @@
 	glTexBack = (GLvoid *)calloc(w * h, sizeof(UInt16));
 	glTexBackSize = NSMakeSize(w, h);
 	
+	OSXDefaultOpenGLContext = [[self openGLContext] retain];
+	[OSXDefaultOpenGLContext makeCurrentContext];
+	
     return self;
 }
 
@@ -843,52 +848,31 @@
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-	glGenTextures(1, &drawTexture[0]);
-	glBindTexture(GL_TEXTURE_2D, drawTexture[0]);
+	
+	glGenTextures(2, &swRasterizerDrawTexture[0]);
+	
+	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
+							   &OSXOpenGLRendererBegin,
+							   &OSXOpenGLRendererEnd);
 }
 
 - (void) drawVideoFrame
 {
-	GLfloat w = (GLfloat)dispViewDelegate.normalSize.width;
-	GLfloat h = (GLfloat)dispViewDelegate.normalSize.height;
-	GLfloat texRatioW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((UInt32)lastFrameSize.width);
-	GLfloat texRatioH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((UInt32)lastFrameSize.height);
-	
-	glClear(GL_COLOR_BUFFER_BIT);
-	
-	glBegin(GL_QUADS);
-	
-		glTexCoord2f(0.0f, 0.0f);
-		glVertex3f(-(w/2.0f), (h/2.0f), 0.0f);
-		
-		glTexCoord2f(texRatioW, 0.0f);
-		glVertex3f((w/2.0f), (h/2.0f), 0.0f);
-		
-		glTexCoord2f(texRatioW, texRatioH);
-		glVertex3f((w/2.0f), -(h/2.0f), 0.0f);
-		
-		glTexCoord2f(0.0f, texRatioH);
-		glVertex3f(-(w/2.0f), -(h/2.0f), 0.0f);
-	
-	glEnd();
-	
 	CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
 }
 
-- (void) uploadFrameTexture:(const GLvoid *)frameBytes textureSize:(NSSize)textureSize
+- (void) uploadSWRasterizerTexturesUsingSize:(NSSize)textureSize
+								   mainBytes:(const GLvoid *)mainBytes
+								  touchBytes:(const GLvoid *)touchBytes
 {
-	UInt32 w = GetNearestPositivePOT((UInt32)textureSize.width);
-	UInt32 h = GetNearestPositivePOT((UInt32)textureSize.height);
-	NSUInteger bitDepth;
+	uint32_t w = GetNearestPositivePOT((uint32_t)textureSize.width);
+	uint32_t h = GetNearestPositivePOT((uint32_t)textureSize.height);
+	
+	size_t bitDepth = sizeof(uint32_t);
 	
 	if (glTexPixelFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 	{
-		bitDepth = sizeof(UInt16);
-	}
-	else
-	{
-		bitDepth = sizeof(UInt32);
+		bitDepth = sizeof(uint16_t);
 	}
 	
 	if (glTexBackSize.width != w || glTexBackSize.height != h)
@@ -897,17 +881,107 @@
 		glTexBackSize.height = h;
 		
 		free(glTexBack);
-		glTexBack = (GLvoid *)calloc(w * h, bitDepth);
+		glTexBack = (GLvoid *)calloc((size_t)w * (size_t)h, bitDepth);
 		if (glTexBack == NULL)
 		{
 			return;
 		}
 	}
 	
+	// Main screen
+	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, glTexPixelFormat, glTexBack);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, frameBytes);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, mainBytes);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glTexRenderStyle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glTexRenderStyle);
+	
+	// Touch screen
+	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, glTexPixelFormat, glTexBack);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, touchBytes);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glTexRenderStyle);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glTexRenderStyle);
+}
+
+- (void) renderSWRasterizer
+{
+	NSInteger displayType = [dispViewDelegate displayType];
+	GLfloat w = (GLfloat)dispViewDelegate.normalSize.width;
+	GLfloat h = (GLfloat)dispViewDelegate.normalSize.height;
+	
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	if (displayType == DS_DISPLAY_TYPE_COMBO)
+	{
+		GLfloat texRatioMainW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.width);
+		GLfloat texRatioMainH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.height);
+		GLfloat texRatioTouchW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.width);
+		GLfloat texRatioTouchH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.height);
+		
+		// Main screen
+		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
+		glBegin(GL_QUADS);
+			
+			glTexCoord2f(0.0f, 0.0f);
+			glVertex3f(-(w/2.0f), (h/2.0f), 0.0f);
+			
+			glTexCoord2f(texRatioMainW, 0.0f);
+			glVertex3f((w/2.0f), (h/2.0f), 0.0f);
+			
+			glTexCoord2f(texRatioMainW, texRatioMainH);
+			glVertex3f((w/2.0f), 0.0f, 0.0f);
+			
+			glTexCoord2f(0.0f, texRatioMainH);
+			glVertex3f(-(w/2.0f), 0.0f, 0.0f);
+			
+		glEnd();
+		
+		// Touch screen
+		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+		glBegin(GL_QUADS);
+			
+			glTexCoord2f(0.0f, 0.0f);
+			glVertex3f(-(w/2.0f), 0.0f, 0.0f);
+			
+			glTexCoord2f(texRatioTouchW, 0.0f);
+			glVertex3f((w/2.0f), 0.0f, 0.0f);
+			
+			glTexCoord2f(texRatioTouchW, texRatioTouchH);
+			glVertex3f((w/2.0f), -(h/2.0f), 0.0f);
+			
+			glTexCoord2f(0.0f, texRatioTouchH);
+			glVertex3f(-(w/2.0f), -(h/2.0f), 0.0f);
+			
+		glEnd();
+	}
+	else
+	{
+		GLfloat texRatioW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.width);
+		GLfloat texRatioH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.height);
+		GLuint drawTexture = swRasterizerDrawTexture[0];
+		
+		if (displayType == DS_DISPLAY_TYPE_TOUCH)
+		{
+			drawTexture = swRasterizerDrawTexture[1];
+		}
+		
+		glBindTexture(GL_TEXTURE_2D, drawTexture);
+		glBegin(GL_QUADS);
+			
+			glTexCoord2f(0.0f, 0.0f);
+			glVertex3f(-(w/2.0f), (h/2.0f), 0.0f);
+			
+			glTexCoord2f(texRatioW, 0.0f);
+			glVertex3f((w/2.0f), (h/2.0f), 0.0f);
+			
+			glTexCoord2f(texRatioW, texRatioH);
+			glVertex3f((w/2.0f), -(h/2.0f), 0.0f);
+			
+			glTexCoord2f(0.0f, texRatioH);
+			glVertex3f(-(w/2.0f), -(h/2.0f), 0.0f);
+			
+		glEnd();
+	}
 }
 
 - (void)keyDown:(NSEvent *)theEvent
@@ -1030,11 +1104,51 @@
 
 - (void)doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
 {
+	lastFrameSize = frameSize;
+	
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	
 	[[self openGLContext] makeCurrentContext];
-	[self uploadFrameTexture:(const GLvoid *)videoFrameData textureSize:frameSize];
-	lastFrameSize = frameSize;
+	
+	switch ([dispViewDelegate displayType])
+	{
+		case DS_DISPLAY_TYPE_MAIN:
+			[self uploadSWRasterizerTexturesUsingSize:frameSize
+											mainBytes:videoFrameData
+										   touchBytes:videoFrameData];
+			break;
+			
+		case DS_DISPLAY_TYPE_TOUCH:
+			[self uploadSWRasterizerTexturesUsingSize:frameSize
+											mainBytes:videoFrameData
+										   touchBytes:videoFrameData];
+			break;
+			
+		case DS_DISPLAY_TYPE_COMBO:
+		{
+			frameSize.height /= 2.0;
+			
+			if (glTexPixelFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+			{
+				[self uploadSWRasterizerTexturesUsingSize:frameSize
+												mainBytes:videoFrameData
+											   touchBytes:(const uint16_t *)videoFrameData + ((size_t)frameSize.width * (size_t)frameSize.height)];
+			}
+			else
+			{
+				[self uploadSWRasterizerTexturesUsingSize:frameSize
+												mainBytes:videoFrameData
+											   touchBytes:(const uint32_t *)videoFrameData + ((size_t)frameSize.width * (size_t)frameSize.height)];
+			}
+			
+			break;
+		}
+			
+		default:
+			break;
+	}
+	
+	[self renderSWRasterizer];
 	[self drawVideoFrame];
 	
 	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
@@ -1056,6 +1170,7 @@
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	
 	[[self openGLContext] makeCurrentContext];
+	[self renderSWRasterizer];
 	[self drawVideoFrame];
 	
 	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
@@ -1072,17 +1187,14 @@
 
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync
 {
-	GLint swapInt = 1;
+	GLint swapInt = 0;
 	
 	if (useVerticalSync)
 	{
-		[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+		swapInt = 1;
 	}
-	else
-	{
-		swapInt = 0;
-		[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
-	}
+	
+	[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
 }
 
 - (void)doVideoFilterChanged:(NSInteger)videoFilterTypeID
@@ -1106,4 +1218,24 @@ void SetupOpenGLView(GLsizei width, GLsizei height, GLfloat scalar, GLfloat angl
 	glTranslatef(width / 2.0f, height / 2.0f, 0.0f);
 	glRotatef((GLfloat)CLOCKWISE_DEGREES(angleDegrees), 0.0f, 0.0f, 1.0f);
 	glScalef(scalar, scalar, 0.0f);
+}
+
+bool OSXOpenGLRendererInit()
+{
+	[OSXDefaultOpenGLContext makeCurrentContext];
+	
+	return true;
+}
+
+bool OSXOpenGLRendererBegin()
+{
+	CGLLockContext((CGLContextObj)[OSXDefaultOpenGLContext CGLContextObj]);
+	[OSXDefaultOpenGLContext makeCurrentContext];
+	
+	return true;
+}
+
+void OSXOpenGLRendererEnd()
+{
+	CGLUnlockContext((CGLContextObj)[OSXDefaultOpenGLContext CGLContextObj]);
 }
