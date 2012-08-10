@@ -36,7 +36,7 @@
 GPU3DInterface *core3DList[] = {
 	&gpu3DNull,
 	&gpu3DRasterize,
-	//&gpu3Dgl,
+	&gpu3Dgl,
 	NULL
 };
 
@@ -1267,74 +1267,12 @@ GPU3DInterface *core3DList[] = {
 
 - (void) handleSetViewToBlack
 {
-	NSSize destSize = [vf destSize];
-	NSUInteger dataSize = (NSUInteger)destSize.width * (NSUInteger)destSize.height;
-	
-	void *texData = NULL;
-	if ([vf typeID] == VideoFilterTypeID_None)
-	{
-		texData = calloc(dataSize, sizeof(UInt16));
-		dataSize *= sizeof(UInt16);
-	}
-	else
-	{
-		texData = calloc(dataSize, sizeof(UInt32));
-		dataSize *= sizeof(UInt32);
-	}
-	
-	if (texData == NULL)
-	{
-		return;
-	}
-	
-	NSData *gpuData = [[[NSData alloc] initWithBytes:texData length:dataSize] autorelease];
-	if (gpuData == nil)
-	{
-		return;
-	}
-	
-	[delegate doProcessVideoFrame:texData frameSize:destSize];
-	
-	self.frameData = gpuData;
-	
-	free(texData);
-	texData = nil;
+	[self fillVideoFrameWithColor:0];
 }
 
 - (void) handleSetViewToWhite
 {
-	NSSize destSize = [vf destSize];
-	NSUInteger dataSize = (NSUInteger)destSize.width * (NSUInteger)destSize.height;
-	
-	if ([vf typeID] == VideoFilterTypeID_None)
-	{
-		dataSize *= sizeof(UInt16);
-	}
-	else
-	{
-		dataSize *= sizeof(UInt32);
-	}
-	
-	void *texData = malloc(dataSize);
-	if (texData == NULL)
-	{
-		return;
-	}
-	
-	memset(texData, 255, dataSize);
-	
-	NSData *gpuData = [[[NSData alloc] initWithBytes:texData length:dataSize] autorelease];
-	if (gpuData == nil)
-	{
-		return;
-	}
-	
-	[delegate doProcessVideoFrame:texData frameSize:destSize];
-	
-	self.frameData = gpuData;
-	
-	free(texData);
-	texData = nil;
+	[self fillVideoFrameWithColor:255];
 }
 
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
@@ -1366,6 +1304,24 @@ GPU3DInterface *core3DList[] = {
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
 	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
+}
+
+- (void) fillVideoFrameWithColor:(UInt8)colorValue
+{
+	UInt16 *gpuBytes = (UInt16 *)malloc(GPU_SCREEN_SIZE_BYTES * 2);
+	if (gpuBytes == NULL)
+	{
+		return;
+	}
+	
+	memset(gpuBytes, colorValue, GPU_SCREEN_SIZE_BYTES * 2);
+	
+	NSData *gpuData = [[[NSData alloc] initWithBytes:gpuBytes length:GPU_SCREEN_SIZE_BYTES * 2] autorelease];
+	
+	free(gpuBytes);
+	gpuBytes = nil;
+	
+	[self handleEmuFrameProcessed:gpuData];
 }
 
 - (NSImage *) image
@@ -1533,11 +1489,6 @@ GPU3DInterface *core3DList[] = {
 
 @end
 
-bool opengl_init(void)
-{
-	return true;
-}
-
 void HandleMessageEchoResponse(NSPortMessage *portMessage)
 {
 	NSPortMessage *echo = [[NSPortMessage alloc] initWithSendPort:[portMessage receivePort] receivePort:[portMessage sendPort] components:nil];
@@ -1675,4 +1626,13 @@ bool GetGPUDisplayState(int displayType)
 	}
 	
 	return result;
+}
+
+void SetOpenGLRendererFunctions(bool (*initFunction)(),
+								bool (*beginOGLFunction)(),
+								void (*endOGLFunction)())
+{
+	oglrender_init = initFunction;
+	oglrender_beginOpenGL = beginOGLFunction;
+	oglrender_endOpenGL = endOGLFunction;
 }

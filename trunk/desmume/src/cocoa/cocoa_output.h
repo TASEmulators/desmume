@@ -180,6 +180,8 @@
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
+- (void) fillVideoFrameWithColor:(UInt8)colorValue;
+
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
 
@@ -195,14 +197,16 @@ extern "C"
 {
 #endif
 
-bool opengl_init();
-
 void HandleMessageEchoResponse(NSPortMessage *portMessage);
 void SetGPULayerState(int displayType, unsigned int i, bool state);
 bool GetGPULayerState(int displayType, unsigned int i);
 void SetGPUDisplayState(int displayType, bool state);
 bool GetGPUDisplayState(int displayType);
-	
+
+void SetOpenGLRendererFunctions(bool (*initFunction)(),
+								bool (*beginOGLFunction)(),
+								void (*endOGLFunction)());
+
 #ifdef __cplusplus
 }
 #endif
