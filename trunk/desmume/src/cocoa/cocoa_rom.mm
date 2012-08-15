@@ -131,12 +131,12 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	if (&ndsRomBanner != NULL)
 	{
-		[self.header setValue:[self getRomBannerTitle:ndsRomBanner.titles[0]] forKey:@"bannerJapanese"];
-		[self.header setValue:[self getRomBannerTitle:ndsRomBanner.titles[1]] forKey:@"bannerEnglish"];
-		[self.header setValue:[self getRomBannerTitle:ndsRomBanner.titles[2]] forKey:@"bannerFrench"];
-		[self.header setValue:[self getRomBannerTitle:ndsRomBanner.titles[3]] forKey:@"bannerGerman"];
-		[self.header setValue:[self getRomBannerTitle:ndsRomBanner.titles[4]] forKey:@"bannerItalian"];
-		[self.header setValue:[self getRomBannerTitle:ndsRomBanner.titles[5]] forKey:@"bannerSpanish"];
+		[self.header setValue:[self banner:ndsRomBanner.titles[0]] forKey:@"bannerJapanese"];
+		[self.header setValue:[self banner:ndsRomBanner.titles[1]] forKey:@"bannerEnglish"];
+		[self.header setValue:[self banner:ndsRomBanner.titles[2]] forKey:@"bannerFrench"];
+		[self.header setValue:[self banner:ndsRomBanner.titles[3]] forKey:@"bannerGerman"];
+		[self.header setValue:[self banner:ndsRomBanner.titles[4]] forKey:@"bannerItalian"];
+		[self.header setValue:[self banner:ndsRomBanner.titles[5]] forKey:@"bannerSpanish"];
 		
 		[self.bindings setValue:[self.header objectForKey:@"bannerJapanese"] forKey:@"bannerJapanese"];
 		[self.bindings setValue:[self.header objectForKey:@"bannerEnglish"] forKey:@"bannerEnglish"];
@@ -148,8 +148,8 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	if (ndsRomHeader != NULL)
 	{
-		[self.header setValue:[self getRomTitle] forKey:@"gameTitle"];
-		[self.header setValue:[self getRomCode] forKey:@"gameCode"];
+		[self.header setValue:[self title] forKey:@"gameTitle"];
+		[self.header setValue:[self code] forKey:@"gameCode"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->makerCode] forKey:@"makerCode"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->cardSize] forKey:@"romSize"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->ARM9src] forKey:@"arm9BinaryOffset"];
@@ -196,8 +196,8 @@ static NSMutableDictionary *saveTypeValues = nil;
 		[self.bindings setObject:(NSImage *)[self.header objectForKey:@"iconImage"] forKey:@"iconImage"];
 	}
 	
-	[self.header setValue:[self getRomInternalName] forKey:@"romInternalName"];
-	[self.header setValue:[self getRomSerial] forKey:@"romSerial"];
+	[self.header setValue:[self internalName] forKey:@"romInternalName"];
+	[self.header setValue:[self serial] forKey:@"romSerial"];
 	
 	[self.bindings setValue:[self.header objectForKey:@"romInternalName"] forKey:@"romInternalName"];
 	[self.bindings setValue:[self.header objectForKey:@"romSerial"] forKey:@"romSerial"];
@@ -253,7 +253,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	[self release];
 }
 
-- (NSString *) getRomTitle
+- (NSString *) title
 {
 	NDS_header *ndsRomHeader = NDS_getROMHeader();
 	if (ndsRomHeader == nil)
@@ -264,7 +264,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	return [[[NSString alloc] initWithBytes:ndsRomHeader->gameTile length:ROMINFO_GAME_TITLE_LENGTH encoding:NSUTF8StringEncoding] autorelease];
 }
 
-- (NSString *) getRomCode
+- (NSString *) code
 {
 	NDS_header *ndsRomHeader = NDS_getROMHeader();
 	if (ndsRomHeader == nil)
@@ -275,19 +275,19 @@ static NSMutableDictionary *saveTypeValues = nil;
 	return [[[NSString alloc] initWithBytes:ndsRomHeader->gameCode length:ROMINFO_GAME_CODE_LENGTH encoding:NSUTF8StringEncoding] autorelease];
 }
 
-- (NSString *) getRomBannerTitle:(const UInt16 *)title
+- (NSString *) banner:(const UInt16 *)UTF16TextBuffer
 {
-	NSUInteger titleLength = ROMINFO_GAME_BANNER_LENGTH * sizeof(*title);
+	NSUInteger bannerLength = ROMINFO_GAME_BANNER_LENGTH * sizeof(*UTF16TextBuffer);
 	
-	return [[[NSString alloc] initWithBytes:title length:titleLength encoding:NSUTF16LittleEndianStringEncoding] autorelease];
+	return [[[NSString alloc] initWithBytes:UTF16TextBuffer length:bannerLength encoding:NSUTF16LittleEndianStringEncoding] autorelease];
 }
 
-- (NSString *) getRomInternalName
+- (NSString *) internalName
 {
 	return [NSString stringWithCString:gameInfo.ROMname encoding:NSUTF8StringEncoding];
 }
 
-- (NSString *) getRomSerial
+- (NSString *) serial
 {
 	return [NSString stringWithCString:gameInfo.ROMserial encoding:NSUTF8StringEncoding];
 }
