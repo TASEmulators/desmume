@@ -48,11 +48,11 @@
 - (void) initHeader;
 - (BOOL) loadData:(NSURL *)theURL;
 - (void) loadDataOnThread:(id)object;
-- (NSString *) getRomTitle;
-- (NSString *) getRomCode;
-- (NSString *) getRomBannerTitle:(const UInt16 *)title;
-- (NSString *) getRomInternalName;
-- (NSString *) getRomSerial;
+- (NSString *) title;
+- (NSString *) code;
+- (NSString *) banner:(const UInt16 *)UTF16TextBuffer;
+- (NSString *) internalName;
+- (NSString *) serial;
 - (NSImage *) icon;
 - (void) handleAdvansceneDatabaseInfo;
 
