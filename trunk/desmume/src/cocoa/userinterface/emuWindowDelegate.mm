@@ -1286,6 +1286,16 @@
 	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[theRom fileURL]];
 	
 	// Update the UI to indicate that a ROM has indeed been loaded.
+#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
+	[window setRepresentedFilename:[[theRom fileURL] path]];
+#else
+	[window setRepresentedURL:[theRom fileURL]];
+#endif
+	[[window standardWindowButton:NSWindowDocumentIconButton] setImage:[theRom icon]];
+	
+	NSString *newWindowTitle = [theRom internalName];
+	[window setTitle:newWindowTitle];
+	
 	[dispViewDelegate setViewToWhite];
 	[self setStatus:NSSTRING_STATUS_ROM_LOADED];
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
@@ -1341,6 +1351,15 @@
 	[CocoaDSCheatManager setMasterCheatList:dummyCheatList];
 	
 	// Update the UI to indicate that the ROM has finished unloading.
+#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
+	[window setRepresentedFilename:nil];
+#else
+	[window setRepresentedURL:nil];
+#endif
+	
+	NSString *newWindowTitle = (NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
+	[window setTitle:newWindowTitle];
+	
 	[dispViewDelegate setViewToBlack];
 	[self setStatus:NSSTRING_STATUS_ROM_UNLOADED];
 	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
