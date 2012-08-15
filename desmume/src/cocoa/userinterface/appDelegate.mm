@@ -249,6 +249,7 @@
 	
 	//Bring the application to the front
 	[NSApp activateIgnoringOtherApps:TRUE];
+	[mainWindow setTitle:(NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]];
 	[mainWindow makeKeyAndOrderFront:nil];
 	[mainWindow makeMainWindow];
 	
