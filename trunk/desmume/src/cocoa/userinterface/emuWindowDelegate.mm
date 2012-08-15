@@ -428,7 +428,15 @@
 	
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:NSSTRING_TITLE_SAVE_STATE_FILE_PANEL];
+	
+	// The NSSavePanel method -(void)setRequiredFileType:
+	// is deprecated in Mac OS X v10.6.
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
+	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
+	[panel setAllowedFileTypes:fileTypes];
+#else
 	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
+#endif
 	
 	buttonClicked = [panel runModal];
 	if(buttonClicked == NSOKButton)
