@@ -412,6 +412,7 @@ extern bool allowBackgroundInput;
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
 
+bool autoLoadLua;
 #define MAX_RECENT_SCRIPTS 15 // must match value in luaconsole.cpp (belongs in a header, but I didn't want to create one just for this)
 extern char Recent_Scripts[MAX_RECENT_SCRIPTS][1024];
 
@@ -2653,6 +2654,7 @@ int _main()
 		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
 	}
 
+	autoLoadLua = GetPrivateProfileBool("Scripting", "AutoLoad", false, IniName);
 
 	for(int i = 0; i < MAX_RECENT_SCRIPTS; i++)
 	{
@@ -3464,6 +3466,30 @@ static BOOL OpenCore(const char* filename)
 			if(!start_paused)
 				Unpause();
 			start_paused = 0;
+		}
+
+		if(autoLoadLua)
+		{
+			string luaScript;
+			luaScript.append(path.pathToLua);
+			if(!Path::IsPathRooted(luaScript))
+			{
+				luaScript.clear();
+				luaScript.append(path.pathToModule);
+				luaScript.append(path.pathToLua);
+			}
+			luaScript.append("\\");
+			luaScript.append(path.GetRomNameWithoutExtension());
+			luaScript.append(".lua");
+
+			FILE* file;
+			file = fopen(luaScript.c_str(), "rb");
+			if(file)
+			{
+				fclose(file);
+				HWND hDlg = CreateDialogW(hAppInst, MAKEINTRESOURCEW(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+				SendDlgItemMessage(hDlg, IDC_EDIT_LUAPATH, WM_SETTEXT, (WPARAM) 512, (LPARAM) luaScript.c_str());
+			}
 		}
 
 		// Update the toolbar

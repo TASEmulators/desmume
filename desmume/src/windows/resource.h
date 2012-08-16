@@ -998,6 +998,7 @@
 #define IDM_RENDER_LQ2X                 60082
 #define IDM_RENDER_LQ2XS                60083
 #define IDC_SAVETYPE                    64000
+#define IDC_AUTOLOADLUA                 64001
 
 // Next default values for new objects
 // 

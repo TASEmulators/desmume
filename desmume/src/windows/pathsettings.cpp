@@ -28,6 +28,8 @@
 #include "path.h"
 #include "pathsettings.h"
 
+extern bool autoLoadLua;
+
 #define HANDLE_DLGMSG(hwnd, message, fn)										\
 	case (message): return (SetDlgMsgResult(hDlg, uMsg,							\
 	HANDLE_##message( (hwnd), (wParam), (lParam), (fn) ) ) )
@@ -119,6 +121,8 @@ void WritePathSettings()
 
 	WritePrivateProfileInt(SECTION, LASTVISITKEY, path.savelastromvisit, IniName);
 	WritePrivateProfileInt(SECTION, ASSOCIATEKEY, associate, IniName);
+	WritePrivateProfileBool("Scripting", "AutoLoad", autoLoadLua, IniName);
+
 //	WritePrivateProfileInt(SECTION, DEFAULTFORMATKEY, defaultFormat, IniName);
 //	WritePrivateProfileInt(SECTION, NEEDSSAVINGKEY, needsSaving, IniName);
 }
@@ -142,6 +146,7 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 
 	CheckDlgButton(hDlg, IDC_USELASTVISIT, (path.savelastromvisit) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_ASSOCIATE, (associate) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hDlg, IDC_AUTOLOADLUA, (autoLoadLua) ? BST_CHECKED : BST_UNCHECKED);
 	CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, (int)path.imageformat());
 	CheckRadioButton(hDlg, IDC_R4TYPE1, IDC_R4TYPE2, (int)path.r4Format);
 
@@ -314,6 +319,9 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 					strncpy(path.screenshotFormat, buffer, MAX_FORMAT);
 				}
 			}
+			break;
+		case IDC_AUTOLOADLUA:
+				autoLoadLua = !autoLoadLua;
 			break;
 		case IDOK:
 
