@@ -985,24 +985,46 @@
 
 - (IBAction) toggleStatusBar:(id)sender
 {
-	NSRect frameRect = [window frame];
-	
 	if (isShowingStatusBar)
 	{
-		isShowingStatusBar = NO;
+		[self setShowStatusBar:NO];
+	}
+	else
+	{
+		[self setShowStatusBar:YES];
+	}
+}
+
+- (void) setShowStatusBar:(BOOL)showStatusBar
+{
+	NSRect frameRect = [window frame];
+	
+	if (showStatusBar)
+	{
+		statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
+		frameRect.origin.y -= WINDOW_STATUS_BAR_HEIGHT;
+		frameRect.size.height += WINDOW_STATUS_BAR_HEIGHT;
+		
+		NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
+		if (frameRect.size.height > screenFrame.size.height)
+		{
+			NSRect windowContentRect = [[window contentView] bounds];
+			double widthToHeightRatio = windowContentRect.size.width / windowContentRect.size.height;
+			windowContentRect.size.height -= frameRect.size.height - screenFrame.size.height;
+			windowContentRect.size.width = windowContentRect.size.height * widthToHeightRatio;
+			frameRect.size.width = windowContentRect.size.width;			
+		}
+	}
+	else
+	{
 		statusBarHeight = 0;
 		frameRect.origin.y += WINDOW_STATUS_BAR_HEIGHT;
 		frameRect.size.height -= WINDOW_STATUS_BAR_HEIGHT;
 	}
-	else
-	{
-		isShowingStatusBar = YES;
-		statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
-		frameRect.origin.y -= WINDOW_STATUS_BAR_HEIGHT;
-		frameRect.size.height += WINDOW_STATUS_BAR_HEIGHT;
-	}
 	
-	[[self bindings] setValue:[NSNumber numberWithBool:isShowingStatusBar] forKey:@"isShowingStatusBar"];
+	isShowingStatusBar = showStatusBar;
+	[[self bindings] setValue:[NSNumber numberWithBool:showStatusBar] forKey:@"isShowingStatusBar"];
+	[[NSUserDefaults standardUserDefaults] setBool:showStatusBar forKey:@"DisplayView_ShowStatusBar"];
 	[window setFrame:frameRect display:YES animate:NO];
 }
 
@@ -1955,6 +1977,9 @@
 
 - (void) setupUserDefaults
 {
+	// Set the display window per user preferences.
+	[self setShowStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
+	
 	// Set the display mode, sizing, and rotation.
 	double displayScalar = (double)([[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Size"] / 100.0);
 	double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
