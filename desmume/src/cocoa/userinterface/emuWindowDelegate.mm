@@ -1002,7 +1002,6 @@
 	if (showStatusBar)
 	{
 		statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
-		frameRect.origin.y -= WINDOW_STATUS_BAR_HEIGHT;
 		frameRect.size.height += WINDOW_STATUS_BAR_HEIGHT;
 		
 		NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
@@ -1012,7 +1011,13 @@
 			double widthToHeightRatio = windowContentRect.size.width / windowContentRect.size.height;
 			windowContentRect.size.height -= frameRect.size.height - screenFrame.size.height;
 			windowContentRect.size.width = windowContentRect.size.height * widthToHeightRatio;
+			
+			frameRect.size.height = screenFrame.size.height;
 			frameRect.size.width = windowContentRect.size.width;			
+		}
+		else
+		{
+			frameRect.origin.y -= WINDOW_STATUS_BAR_HEIGHT;
 		}
 	}
 	else
