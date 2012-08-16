@@ -199,6 +199,8 @@
 - (IBAction) change3DRenderThreads:(id)sender;
 - (IBAction) change3DRenderLineHack:(id)sender;
 
+- (void) setShowStatusBar:(BOOL)showStatusBar;
+
 - (IBAction) closeMigrationSheet:(id)sender;
 - (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
