@@ -40,11 +40,14 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 @synthesize isHudEnabled;
 @synthesize isHudEditingModeEnabled;
 @dynamic normalSize;
+@dynamic gpuStateFlags;
 @dynamic scale;
 @dynamic rotation;
 @dynamic useBilinearOutput;
 @dynamic useVerticalSync;
 @dynamic displayType;
+@dynamic displayOrientation;
+@dynamic displayOrder;
 @synthesize bindings;
 
 - (id)init
@@ -64,13 +67,15 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	}
 	
 	view = nil;
-	spinlockGpuStateFlags = OS_SPINLOCK_INIT;
-	spinlockDisplayType = OS_SPINLOCK_INIT;
 	spinlockNormalSize = OS_SPINLOCK_INIT;
+	spinlockGpuStateFlags = OS_SPINLOCK_INIT;
 	spinlockScale = OS_SPINLOCK_INIT;
 	spinlockRotation = OS_SPINLOCK_INIT;
 	spinlockUseBilinearOutput = OS_SPINLOCK_INIT;
 	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
+	spinlockDisplayType = OS_SPINLOCK_INIT;
+	spinlockDisplayOrientation = OS_SPINLOCK_INIT;
+	spinlockDisplayOrder = OS_SPINLOCK_INIT;
 	
 	normalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2.0);
 	sendPortDisplay = nil;
@@ -218,7 +223,7 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 
 - (void) setDisplayType:(NSInteger)theType
 {
-	NSSize theSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
+	NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 	NSString *modeString = @"Unknown";
 	
 	switch (theType)
@@ -232,8 +237,17 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 			break;
 			
 		case DS_DISPLAY_TYPE_COMBO:
-			theSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
 			modeString = NSSTRING_DISPLAYMODE_COMBO;
+			
+			if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
+			{
+				newDisplaySize.height *= 2;
+			}
+			else
+			{
+				newDisplaySize.width *= 2;
+			}
+			
 			break;
 			
 		default:
@@ -246,7 +260,7 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
 	OSSpinLockLock(&spinlockNormalSize);
-	normalSize = theSize;
+	normalSize = newDisplaySize;
 	OSSpinLockUnlock(&spinlockNormalSize);
 	
 	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_CHANGE_DISPLAY_TYPE integerValue:theType];
@@ -259,6 +273,60 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
 	return theType;
+}
+
+- (void) setDisplayOrientation:(NSInteger)theOrientation
+{
+	OSSpinLockLock(&spinlockDisplayOrientation);
+	[bindings setValue:[NSNumber numberWithInteger:theOrientation] forKey:@"displayOrientation"];
+	OSSpinLockUnlock(&spinlockDisplayOrientation);
+	
+	if ([self displayType] == DS_DISPLAY_TYPE_COMBO)
+	{
+		NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
+		
+		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
+		{
+			newDisplaySize.height *= 2;
+		}
+		else
+		{
+			newDisplaySize.width *= 2;
+		}
+		
+		OSSpinLockLock(&spinlockNormalSize);
+		normalSize = newDisplaySize;
+		OSSpinLockUnlock(&spinlockNormalSize);
+	}
+	
+	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_CHANGE_DISPLAY_ORIENTATION integerValue:theOrientation];
+}
+
+- (NSInteger) displayOrientation
+{
+	OSSpinLockLock(&spinlockDisplayOrientation);
+	NSInteger theOrientation = [[bindings valueForKey:@"displayOrientation"] integerValue];
+	OSSpinLockUnlock(&spinlockDisplayOrientation);
+	
+	return theOrientation;
+}
+
+- (void) setDisplayOrder:(NSInteger)theOrder
+{
+	OSSpinLockLock(&spinlockDisplayOrder);
+	[bindings setValue:[NSNumber numberWithInteger:theOrder] forKey:@"displayOrder"];
+	OSSpinLockUnlock(&spinlockDisplayOrder);
+	
+	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_CHANGE_DISPLAY_ORDER integerValue:theOrder];
+}
+
+- (NSInteger) displayOrder
+{
+	OSSpinLockLock(&spinlockDisplayOrder);
+	NSInteger theOrder = [[bindings valueForKey:@"displayOrder"] integerValue];
+	OSSpinLockUnlock(&spinlockDisplayOrder);
+	
+	return theOrder;
 }
 
 - (void) setVideoFilterType:(NSInteger)theType
@@ -348,6 +416,21 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, self.normalSize, [[self view] bounds].size, [self scale], viewAngle);
 	
 	// Normalize the y-coordinate to the DS.
+	if ([self displayType] == DS_DISPLAY_TYPE_COMBO)
+	{
+		NSInteger theOrientation = [self displayOrientation];
+		NSInteger theOrder = [self displayOrder];
+		
+		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL && theOrder == DS_DISPLAY_ORDER_TOUCH_FIRST)
+		{
+			touchLoc.y -= GPU_DISPLAY_HEIGHT;
+		}
+		else if (theOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL && theOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
+		{
+			touchLoc.x -= GPU_DISPLAY_WIDTH;
+		}
+	}
+	
 	touchLoc.y = GPU_DISPLAY_HEIGHT - touchLoc.y;
 	
 	// Constrain the touch point to the DS dimensions.
@@ -525,6 +608,26 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	}
 	
 	[view doDisplayTypeChanged:displayTypeID];
+}
+
+- (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID
+{
+	if (view == nil || ![view respondsToSelector:@selector(doDisplayOrientationChanged:)])
+	{
+		return;
+	}
+	
+	[view doDisplayOrientationChanged:displayOrientationID];
+}
+
+- (void) doDisplayOrderChanged:(NSInteger)displayOrderID
+{
+	if (view == nil || ![view respondsToSelector:@selector(doDisplayOrderChanged:)])
+	{
+		return;
+	}
+	
+	[view doDisplayOrderChanged:displayOrderID];
 }
 
 - (void) doBilinearOutputChanged:(BOOL)useBilinear
@@ -790,12 +893,11 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	}
 	
 	dispViewDelegate = nil;
-	lastFrameSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2.0);
 	glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	glTexRenderStyle = GL_LINEAR;
 	
-	UInt32 w = GetNearestPositivePOT((UInt32)lastFrameSize.width);
-	UInt32 h = GetNearestPositivePOT((UInt32)lastFrameSize.height);
+	UInt32 w = GetNearestPositivePOT((UInt32)GPU_DISPLAY_WIDTH);
+	UInt32 h = GetNearestPositivePOT((UInt32)(GPU_DISPLAY_HEIGHT * 2.0));
 	glTexBack = (GLvoid *)calloc(w * h, sizeof(UInt16));
 	glTexBackSize = NSMakeSize(w, h);
 	
@@ -888,6 +990,24 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 		}
 	}
 	
+	swRasterizerMainTexCoord[0][0] = 0.0f;
+	swRasterizerMainTexCoord[0][1] = 0.0f;
+	swRasterizerMainTexCoord[1][0] = (GLfloat)(textureSize.width / w);
+	swRasterizerMainTexCoord[1][1] = 0.0f;
+	swRasterizerMainTexCoord[2][0] = (GLfloat)(textureSize.width / w);
+	swRasterizerMainTexCoord[2][1] = (GLfloat)(textureSize.height / h);
+	swRasterizerMainTexCoord[3][0] = 0.0f;
+	swRasterizerMainTexCoord[3][1] = (GLfloat)(textureSize.height / h);
+	
+	swRasterizerTouchTexCoord[0][0] = 0.0f;
+	swRasterizerTouchTexCoord[0][1] = 0.0f;
+	swRasterizerTouchTexCoord[1][0] = (GLfloat)(textureSize.width / w);
+	swRasterizerTouchTexCoord[1][1] = 0.0f;
+	swRasterizerTouchTexCoord[2][0] = (GLfloat)(textureSize.width / w);
+	swRasterizerTouchTexCoord[2][1] = (GLfloat)(textureSize.height / h);
+	swRasterizerTouchTexCoord[3][0] = 0.0f;
+	swRasterizerTouchTexCoord[3][1] = (GLfloat)(textureSize.height / h);
+	
 	// Main screen
 	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, glTexPixelFormat, glTexBack);
@@ -906,81 +1026,157 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 - (void) renderSWRasterizer
 {
 	NSInteger displayType = [dispViewDelegate displayType];
-	GLfloat w = (GLfloat)dispViewDelegate.normalSize.width;
-	GLfloat h = (GLfloat)dispViewDelegate.normalSize.height;
 	
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	if (displayType == DS_DISPLAY_TYPE_COMBO)
+	// Render the main screen
+	if (displayType == DS_DISPLAY_TYPE_MAIN || displayType == DS_DISPLAY_TYPE_COMBO)
 	{
-		GLfloat texRatioMainW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.width);
-		GLfloat texRatioMainH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.height);
-		GLfloat texRatioTouchW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.width);
-		GLfloat texRatioTouchH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.height);
-		
-		// Main screen
 		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
 		glBegin(GL_QUADS);
-			
-			glTexCoord2f(0.0f, 0.0f);
-			glVertex3f(-(w/2.0f), (h/2.0f), 0.0f);
-			
-			glTexCoord2f(texRatioMainW, 0.0f);
-			glVertex3f((w/2.0f), (h/2.0f), 0.0f);
-			
-			glTexCoord2f(texRatioMainW, texRatioMainH);
-			glVertex3f((w/2.0f), 0.0f, 0.0f);
-			
-			glTexCoord2f(0.0f, texRatioMainH);
-			glVertex3f(-(w/2.0f), 0.0f, 0.0f);
-			
-		glEnd();
 		
-		// Touch screen
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			glTexCoord2f(swRasterizerMainTexCoord[i][0], swRasterizerMainTexCoord[i][1]);
+			glVertex2f(swRasterizerMainVertex[i][0], swRasterizerMainVertex[i][1]);
+		}
+		
+		glEnd();
+	}
+	
+	// Render the touch screen
+	if (displayType == DS_DISPLAY_TYPE_TOUCH || displayType == DS_DISPLAY_TYPE_COMBO)
+	{
 		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
 		glBegin(GL_QUADS);
-			
-			glTexCoord2f(0.0f, 0.0f);
-			glVertex3f(-(w/2.0f), 0.0f, 0.0f);
-			
-			glTexCoord2f(texRatioTouchW, 0.0f);
-			glVertex3f((w/2.0f), 0.0f, 0.0f);
-			
-			glTexCoord2f(texRatioTouchW, texRatioTouchH);
-			glVertex3f((w/2.0f), -(h/2.0f), 0.0f);
-			
-			glTexCoord2f(0.0f, texRatioTouchH);
-			glVertex3f(-(w/2.0f), -(h/2.0f), 0.0f);
-			
+		
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			glTexCoord2f(swRasterizerTouchTexCoord[i][0], swRasterizerTouchTexCoord[i][1]);
+			glVertex2f(swRasterizerTouchVertex[i][0], swRasterizerTouchVertex[i][1]);
+		}
+		
 		glEnd();
+	}
+}
+
+- (void) setupSWRasterizerVertices
+{
+	NSInteger displayType = [dispViewDelegate displayType];
+	GLfloat w = (GLfloat)dispViewDelegate.normalSize.width * [dispViewDelegate scale];
+	GLfloat h = (GLfloat)dispViewDelegate.normalSize.height * [dispViewDelegate scale];
+	
+	if (displayType == DS_DISPLAY_TYPE_COMBO)
+	{
+		NSInteger displayOrientation = [dispViewDelegate displayOrientation];
+		NSInteger displayOrder = [dispViewDelegate displayOrder];
+		
+		if (displayOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
+		{
+			if (displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
+			{
+				swRasterizerMainVertex[0][0] = -w/2.0f;
+				swRasterizerMainVertex[0][1] = h/2.0f;
+				swRasterizerMainVertex[1][0] = w/2.0f;
+				swRasterizerMainVertex[1][1] = h/2.0f;
+				swRasterizerMainVertex[2][0] = w/2.0f;
+				swRasterizerMainVertex[2][1] = 0.0f;
+				swRasterizerMainVertex[3][0] = -w/2.0f;
+				swRasterizerMainVertex[3][1] = 0.0f;
+				
+				swRasterizerTouchVertex[0][0] = -w/2.0f;
+				swRasterizerTouchVertex[0][1] = 0.0f;
+				swRasterizerTouchVertex[1][0] = w/2.0f;
+				swRasterizerTouchVertex[1][1] = 0.0f;
+				swRasterizerTouchVertex[2][0] = w/2.0f;
+				swRasterizerTouchVertex[2][1] = -h/2.0f;
+				swRasterizerTouchVertex[3][0] = -w/2.0f;
+				swRasterizerTouchVertex[3][1] = -h/2.0f;
+			}
+			else // displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
+			{
+				swRasterizerTouchVertex[0][0] = -w/2.0f;
+				swRasterizerTouchVertex[0][1] = h/2.0f;
+				swRasterizerTouchVertex[1][0] = w/2.0f;
+				swRasterizerTouchVertex[1][1] = h/2.0f;
+				swRasterizerTouchVertex[2][0] = w/2.0f;
+				swRasterizerTouchVertex[2][1] = 0.0f;
+				swRasterizerTouchVertex[3][0] = -w/2.0f;
+				swRasterizerTouchVertex[3][1] = 0.0f;
+				
+				swRasterizerMainVertex[0][0] = -w/2.0f;
+				swRasterizerMainVertex[0][1] = 0.0f;
+				swRasterizerMainVertex[1][0] = w/2.0f;
+				swRasterizerMainVertex[1][1] = 0.0f;
+				swRasterizerMainVertex[2][0] = w/2.0f;
+				swRasterizerMainVertex[2][1] = -h/2.0f;
+				swRasterizerMainVertex[3][0] = -w/2.0f;
+				swRasterizerMainVertex[3][1] = -h/2.0f;
+			}
+		}
+		else // displayOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL
+		{
+			if (displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
+			{
+				swRasterizerMainVertex[0][0] = -w/2.0f;
+				swRasterizerMainVertex[0][1] = h/2.0f;
+				swRasterizerMainVertex[1][0] = 0.0f;
+				swRasterizerMainVertex[1][1] = h/2.0f;
+				swRasterizerMainVertex[2][0] = 0.0f;
+				swRasterizerMainVertex[2][1] = -h/2.0f;
+				swRasterizerMainVertex[3][0] = -w/2.0f;
+				swRasterizerMainVertex[3][1] = -h/2.0f;
+				
+				swRasterizerTouchVertex[0][0] = 0.0f;
+				swRasterizerTouchVertex[0][1] = h/2.0f;
+				swRasterizerTouchVertex[1][0] = w/2.0f;
+				swRasterizerTouchVertex[1][1] = h/2.0f;
+				swRasterizerTouchVertex[2][0] = w/2.0f;
+				swRasterizerTouchVertex[2][1] = -h/2.0f;
+				swRasterizerTouchVertex[3][0] = 0.0f;
+				swRasterizerTouchVertex[3][1] = -h/2.0f;
+			}
+			else // displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
+			{
+				swRasterizerTouchVertex[0][0] = -w/2.0f;
+				swRasterizerTouchVertex[0][1] = h/2.0f;
+				swRasterizerTouchVertex[1][0] = 0.0f;
+				swRasterizerTouchVertex[1][1] = h/2.0f;
+				swRasterizerTouchVertex[2][0] = 0.0f;
+				swRasterizerTouchVertex[2][1] = -h/2.0f;
+				swRasterizerTouchVertex[3][0] = -w/2.0f;
+				swRasterizerTouchVertex[3][1] = -h/2.0f;
+				
+				swRasterizerMainVertex[0][0] = 0.0f;
+				swRasterizerMainVertex[0][1] = h/2.0f;
+				swRasterizerMainVertex[1][0] = w/2.0f;
+				swRasterizerMainVertex[1][1] = h/2.0f;
+				swRasterizerMainVertex[2][0] = w/2.0f;
+				swRasterizerMainVertex[2][1] = -h/2.0f;
+				swRasterizerMainVertex[3][0] = 0.0f;
+				swRasterizerMainVertex[3][1] = -h/2.0f;
+			}
+		}
 	}
 	else
 	{
-		GLfloat texRatioW = (GLfloat)lastFrameSize.width / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.width);
-		GLfloat texRatioH = (GLfloat)lastFrameSize.height / (GLfloat)GetNearestPositivePOT((uint32_t)lastFrameSize.height);
-		GLuint drawTexture = swRasterizerDrawTexture[0];
+		swRasterizerMainVertex[0][0] = -w/2.0f;
+		swRasterizerMainVertex[0][1] = h/2.0f;
+		swRasterizerMainVertex[1][0] = w/2.0f;
+		swRasterizerMainVertex[1][1] = h/2.0f;
+		swRasterizerMainVertex[2][0] = w/2.0f;
+		swRasterizerMainVertex[2][1] = -h/2.0f;
+		swRasterizerMainVertex[3][0] = -w/2.0f;
+		swRasterizerMainVertex[3][1] = -h/2.0f;
 		
-		if (displayType == DS_DISPLAY_TYPE_TOUCH)
-		{
-			drawTexture = swRasterizerDrawTexture[1];
-		}
-		
-		glBindTexture(GL_TEXTURE_2D, drawTexture);
-		glBegin(GL_QUADS);
-			
-			glTexCoord2f(0.0f, 0.0f);
-			glVertex3f(-(w/2.0f), (h/2.0f), 0.0f);
-			
-			glTexCoord2f(texRatioW, 0.0f);
-			glVertex3f((w/2.0f), (h/2.0f), 0.0f);
-			
-			glTexCoord2f(texRatioW, texRatioH);
-			glVertex3f((w/2.0f), -(h/2.0f), 0.0f);
-			
-			glTexCoord2f(0.0f, texRatioH);
-			glVertex3f(-(w/2.0f), -(h/2.0f), 0.0f);
-			
-		glEnd();
+		swRasterizerTouchVertex[0][0] = -w/2.0f;
+		swRasterizerTouchVertex[0][1] = h/2.0f;
+		swRasterizerTouchVertex[1][0] = w/2.0f;
+		swRasterizerTouchVertex[1][1] = h/2.0f;
+		swRasterizerTouchVertex[2][0] = w/2.0f;
+		swRasterizerTouchVertex[2][1] = -h/2.0f;
+		swRasterizerTouchVertex[3][0] = -w/2.0f;
+		swRasterizerTouchVertex[3][1] = -h/2.0f;
 	}
 }
 
@@ -1104,8 +1300,6 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 
 - (void)doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
 {
-	lastFrameSize = frameSize;
-	
 	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 	
 	[[self openGLContext] makeCurrentContext];
@@ -1163,6 +1357,8 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	[[self openGLContext] update];
 	
 	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	
+	[self setupSWRasterizerVertices];
 }
 
 - (void)doRedraw
@@ -1176,7 +1372,12 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
 }
 
-- (void) doBilinearOutputChanged:(BOOL)useBilinear
+- (void)doDisplayTypeChanged:(NSInteger)displayTypeID
+{
+	[self setupSWRasterizerVertices];
+}
+
+- (void)doBilinearOutputChanged:(BOOL)useBilinear
 {
 	glTexRenderStyle = GL_NEAREST;
 	if (useBilinear)
@@ -1185,7 +1386,22 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	}
 }
 
-- (void) doVerticalSyncChanged:(BOOL)useVerticalSync
+- (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID
+{
+	[self setupSWRasterizerVertices];
+}
+
+- (void) doDisplayOrderChanged:(NSInteger)displayOrderID
+{
+	[self setupSWRasterizerVertices];
+	
+	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
+	{
+		[self doRedraw];
+	}
+}
+
+- (void)doVerticalSyncChanged:(BOOL)useVerticalSync
 {
 	GLint swapInt = 0;
 	
@@ -1213,11 +1429,8 @@ void SetupOpenGLView(GLsizei width, GLsizei height, GLfloat scalar, GLfloat angl
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0, width, 0.0, height, -1.0, 1.0);
-	
-	glTranslatef(width / 2.0f, height / 2.0f, 0.0f);
+	glOrtho(-width/2.0, width/2.0, -height/2.0, height/2.0, -1.0, 1.0);
 	glRotatef((GLfloat)CLOCKWISE_DEGREES(angleDegrees), 0.0f, 0.0f, 1.0f);
-	glScalef(scalar, scalar, 0.0f);
 }
 
 bool OSXOpenGLRendererInit()

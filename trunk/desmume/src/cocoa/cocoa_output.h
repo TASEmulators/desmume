@@ -104,6 +104,8 @@
 - (void) doResizeView:(NSRect)rect;
 - (void) doRedraw;
 - (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
+- (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
+- (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
 - (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
@@ -164,6 +166,8 @@
 - (void) handleRedrawView;
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData;
 - (void) handleChangeDisplayType:(NSData *)displayTypeIdData;
+- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
+- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData;
 - (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData;
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData;

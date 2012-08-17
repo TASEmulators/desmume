@@ -38,6 +38,8 @@
 - (void) doResizeView:(NSRect)rect;
 - (void) doRedraw;
 - (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
+- (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
+- (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
 - (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
@@ -58,38 +60,31 @@
 	NSSize normalSize;
 	NSMutableDictionary *bindings;
 	
-	OSSpinLock spinlockGpuStateFlags;
-	OSSpinLock spinlockDisplayType;
 	OSSpinLock spinlockNormalSize;
+	OSSpinLock spinlockGpuStateFlags;
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
 	OSSpinLock spinlockUseBilinearOutput;
 	OSSpinLock spinlockUseVerticalSync;
+	OSSpinLock spinlockDisplayType;
+	OSSpinLock spinlockDisplayOrientation;
+	OSSpinLock spinlockDisplayOrder;
 }
 
 @property (retain) NSView <DisplayViewDelegate> *view;
 @property (retain) NSPort *sendPortInput;
 @property (retain) CocoaDSController *cdsController;
 @property (readonly) NSSize normalSize;
+@property (assign) UInt32 gpuStateFlags;
 @property (assign) double scale;
 @property (assign) double rotation;
 @property (assign) BOOL useBilinearOutput;
 @property (assign) BOOL useVerticalSync;
 @property (assign) NSInteger displayType;
+@property (assign) NSInteger displayOrientation;
+@property (assign) NSInteger displayOrder;
 @property (readonly) NSMutableDictionary *bindings;
 
-- (void) setGpuStateFlags:(UInt32)flags;
-- (UInt32) gpuStateFlags;
-- (void) setScale:(double)s;
-- (double) scale;
-- (void) setRotation:(double)angleDegrees;
-- (double) rotation;
-- (void) setUseBilinearOutput:(BOOL)theState;
-- (BOOL) useBilinearOutput;
-- (void) setUseVerticalSync:(BOOL)theState;
-- (BOOL) useVerticalSync;
-- (void) setDisplayType:(NSInteger)theType;
-- (NSInteger) displayType;
 - (void) setVideoFilterType:(NSInteger)theType;
 - (void) setRender3DRenderingEngine:(NSInteger)methodID;
 - (void) setRender3DHighPrecisionColorInterpolation:(BOOL)state;
@@ -125,12 +120,16 @@
 @interface OpenGLDisplayView : NSOpenGLView <DisplayViewDelegate>
 {
 	DisplayViewDelegate *dispViewDelegate;
-	NSSize lastFrameSize;
 	GLint glTexRenderStyle;
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
+	
 	GLuint swRasterizerDrawTexture[2];
+	GLfloat swRasterizerMainTexCoord[4][2];
+	GLfloat swRasterizerMainVertex[4][2];
+	GLfloat swRasterizerTouchTexCoord[4][2];
+	GLfloat swRasterizerTouchVertex[4][2];
 }
 
 - (void) drawVideoFrame;
@@ -138,6 +137,7 @@
 								   mainBytes:(const GLvoid *)mainBytes
 								  touchBytes:(const GLvoid *)touchBytes;
 - (void) renderSWRasterizer;
+- (void) setupSWRasterizerVertices;
 
 @end
 
