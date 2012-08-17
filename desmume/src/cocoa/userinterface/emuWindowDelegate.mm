@@ -869,6 +869,21 @@
 	[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:[dispViewDelegate rotation]];
 }
 
+- (IBAction) changeDisplayOrientation:(id)sender
+{
+	[dispViewDelegate setDisplayOrientation:[CocoaDSUtil getIBActionSenderTag:sender]];
+	
+	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
+	{
+		[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:[dispViewDelegate rotation]];
+	}
+}
+
+- (IBAction) changeDisplayOrder:(id)sender
+{
+	[dispViewDelegate setDisplayOrder:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
 - (IBAction) changeVideoFilter:(id)sender
 {
 	[dispViewDelegate setVideoFilterType:[CocoaDSUtil getIBActionSenderTag:sender]];
@@ -1709,6 +1724,34 @@
 			}
 		}
 	}
+	else if (theAction == @selector(changeDisplayOrientation:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			if ([dispViewDelegate displayOrientation] == [theItem tag])
+			{
+				[(NSMenuItem*)theItem setState:NSOnState];
+			}
+			else
+			{
+				[(NSMenuItem*)theItem setState:NSOffState];
+			}
+		}
+	}
+	else if (theAction == @selector(changeDisplayOrder:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			if ([dispViewDelegate displayOrder] == [theItem tag])
+			{
+				[(NSMenuItem*)theItem setState:NSOnState];
+			}
+			else
+			{
+				[(NSMenuItem*)theItem setState:NSOffState];
+			}
+		}
+	}
 	else if (theAction == @selector(openEmuSaveState:) ||
 			 theAction == @selector(saveEmuSaveState:) ||
 			 theAction == @selector(saveEmuSaveStateAs:))
@@ -1985,10 +2028,12 @@
 	// Set the display window per user preferences.
 	[self setShowStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
-	// Set the display mode, sizing, and rotation.
+	// Set the display settings per user preferences.
 	double displayScalar = (double)([[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Size"] / 100.0);
 	double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
 	[dispViewDelegate setDisplayType:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]];
+	[dispViewDelegate setDisplayOrientation:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]];
+	[dispViewDelegate setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]];
 	[self setContentScalar:displayScalar];
 	[self setContentRotation:displayRotation];
 	

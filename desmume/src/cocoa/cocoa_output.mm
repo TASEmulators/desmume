@@ -1053,6 +1053,14 @@ GPU3DInterface *core3DList[] = {
 			[self handleChangeDisplayType:[messageComponents objectAtIndex:0]];
 			break;
 			
+		case MESSAGE_CHANGE_DISPLAY_ORIENTATION:
+			[self handleChangeDisplayOrientation:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_CHANGE_DISPLAY_ORDER:
+			[self handleChangeDisplayOrder:[messageComponents objectAtIndex:0]];
+			break;
+			
 		case MESSAGE_CHANGE_BILINEAR_OUTPUT:
 			[self handleChangeBilinearOutput:[messageComponents objectAtIndex:0]];
 			break;
@@ -1179,6 +1187,28 @@ GPU3DInterface *core3DList[] = {
 	const NSInteger *theType = (NSInteger *)[displayTypeIdData bytes];
 	self.displayType = *theType;
 	[delegate doDisplayTypeChanged:*theType];
+}
+
+- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData
+{
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
+	{
+		return;
+	}
+	
+	const NSInteger *theOrientation = (NSInteger *)[displayOrientationIdData bytes];
+	[delegate doDisplayOrientationChanged:*theOrientation];
+}
+
+- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData
+{
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrderChanged:)])
+	{
+		return;
+	}
+	
+	const NSInteger *theOrder = (NSInteger *)[displayOrderIdData bytes];
+	[delegate doDisplayOrderChanged:*theOrder];
 }
 
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData

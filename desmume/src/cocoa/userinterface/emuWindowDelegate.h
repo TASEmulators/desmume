@@ -189,6 +189,8 @@
 - (IBAction) changeBilinearOutput:(id)sender;
 - (IBAction) changeVerticalSync:(id)sender;
 - (IBAction) changeDisplayMode:(id)sender;
+- (IBAction) changeDisplayOrientation:(id)sender;
+- (IBAction) changeDisplayOrder:(id)sender;
 - (IBAction) changeVideoFilter:(id)sender;
 - (IBAction) change3DRenderMethod:(id)sender;
 - (IBAction) change3DRenderHighPrecisionColorInterpolation:(id)sender;
