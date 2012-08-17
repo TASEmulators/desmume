@@ -35,6 +35,7 @@
 
 - (id) initWithSize:(NSSize)theSize;
 - (id) initWithSize:(NSSize)theSize typeID:(VideoFilterTypeID)typeID;
+- (id) initWithSize:(NSSize)theSize typeID:(VideoFilterTypeID)typeID numberThreads:(NSUInteger)numThreads;
 - (BOOL) setSourceSize:(NSSize)theSize;
 - (BOOL) changeFilter:(VideoFilterTypeID)typeID;
 - (UInt32 *) runFilter;

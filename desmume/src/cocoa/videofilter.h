@@ -72,6 +72,21 @@ enum VideoFilterTypeID
 
 typedef void (*VideoFilterCallback)(SSurface Src, SSurface Dst);
 
+typedef struct
+{
+	SSurface srcSurface;
+	SSurface destSurface;
+	VideoFilterCallback filterCallback;
+	
+	bool exitThread;
+	pthread_mutex_t mutexThreadExecute;
+	pthread_cond_t condThreadExecute;
+	pthread_cond_t *condThreadFinish;
+	pthread_mutex_t *mutexThreadFinish;
+	bool *isFilterRunning;
+	
+} VideoFilterThreadParam;
+
 /********************************************************************************************
 	VideoFilter - C++ CLASS
 
@@ -99,11 +114,20 @@ class VideoFilter
 private:
 	VideoFilterTypeID _typeID;
 	std::string _typeString;
-	SSurface *_srcSurface;
-	SSurface *_destSurface;
+	SSurface *_srcSurfaceMaster;
+	SSurface *_destSurfaceMaster;
+	SSurface *_srcSurfaceThread;
+	SSurface *_destSurfaceThread;
 	uint32_t *_srcSurfaceBufferMaster;
 	VideoFilterCallback _filterCallback;
 	bool _isFilterRunning;
+	
+	unsigned int _threadCount;
+	pthread_t *_vfThread;
+	VideoFilterThreadParam *_vfThreadParam;
+	pthread_cond_t *_condVFThreadFinish;
+	pthread_mutex_t *_mutexVFThreadFinish;
+	bool *_isFilterRunningThread;
 	
 	pthread_mutex_t _mutexSrc;
 	pthread_mutex_t _mutexDest;
@@ -119,6 +143,7 @@ public:
 	VideoFilter();
 	VideoFilter(unsigned int srcWidth, unsigned int srcHeight);
 	VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID);
+	VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID, unsigned int numberThreads);
 	~VideoFilter();
 	
 	bool SetSourceSize(unsigned int width, unsigned int height);
@@ -135,5 +160,7 @@ public:
 	unsigned int GetDestWidth();
 	unsigned int GetDestHeight();
 };
+
+static void* RunVideoFilterThread(void *arg);
 
 #endif
