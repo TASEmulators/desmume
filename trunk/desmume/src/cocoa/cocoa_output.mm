@@ -465,7 +465,7 @@ GPU3DInterface *core3DList[] = {
 	spinlockRender3DLineHack = OS_SPINLOCK_INIT;
 	
 	displayType = DS_DISPLAY_TYPE_COMBO;
-	vf = [[CocoaVideoFilter alloc] initWithSize:NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2)];
+	vf = [[CocoaVideoFilter alloc] initWithSize:NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2) typeID:VideoFilterTypeID_None numberThreads:2];
 	
 	gpuStateFlags =	GPUSTATE_MAIN_GPU_MASK |
 	GPUSTATE_MAIN_BG0_MASK |

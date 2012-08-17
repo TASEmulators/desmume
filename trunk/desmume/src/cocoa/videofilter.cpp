@@ -29,6 +29,8 @@ int scanline_filter_d = 4;
  ********************************************************************************************/
 VideoFilter::VideoFilter()
 {
+	_threadCount = 1;
+	
 	SSurface *newSrcSurface = (SSurface *)malloc(sizeof(SSurface));
 	if (newSrcSurface == NULL)
 	{
@@ -43,26 +45,101 @@ VideoFilter::VideoFilter()
 		throw;
 	}
 	
+	_srcSurfaceMaster = newSrcSurface;
+	_destSurfaceMaster = newDestSurface;
+	_srcSurfaceThread = _srcSurfaceMaster;
+	_destSurfaceThread = _destSurfaceMaster;
+	
+	_isFilterRunning = false;
+	_srcSurfaceBufferMaster = NULL;
+	_typeID = VideoFilterTypeID_None;
+	
 	pthread_mutex_init(&_mutexSrc, NULL);
 	pthread_mutex_init(&_mutexDest, NULL);
 	pthread_mutex_init(&_mutexTypeID, NULL);
 	pthread_mutex_init(&_mutexTypeString, NULL);
 	pthread_cond_init(&_condRunning, NULL);
 	
-	_isFilterRunning = false;
-	_srcSurfaceBufferMaster = NULL;
-	newSrcSurface->Surface = NULL;
-	newDestSurface->Surface = NULL;
+	_vfThread = (pthread_t *)malloc(sizeof(pthread_t));
+	if (_vfThread == NULL)
+	{
+		throw;
+	}
 	
-	_srcSurface = newSrcSurface;
-	_destSurface = newDestSurface;
-	_typeID = VideoFilterTypeID_None;
+	_vfThreadParam = (VideoFilterThreadParam *)malloc(sizeof(VideoFilterThreadParam));
+	if (_vfThreadParam == NULL)
+	{
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
 	
+	_condVFThreadFinish = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+	if (_condVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
+	
+	_mutexVFThreadFinish = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	if (_mutexVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_isFilterRunningThread = (bool *)malloc(sizeof(bool));
+	if (_isFilterRunningThread == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		
+		free(_mutexVFThreadFinish);
+		_mutexVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_vfThreadParam->exitThread = false;
+	pthread_mutex_init(&_vfThreadParam->mutexThreadExecute, NULL);
+	pthread_cond_init(&_vfThreadParam->condThreadExecute, NULL);
+	
+	pthread_cond_init(_condVFThreadFinish, NULL);
+	_vfThreadParam->condThreadFinish = _condVFThreadFinish;
+	
+	pthread_mutex_init(_mutexVFThreadFinish, NULL);
+	_vfThreadParam->mutexThreadFinish = _mutexVFThreadFinish;
+	
+	*_isFilterRunningThread = false;
+	_vfThreadParam->isFilterRunning = _isFilterRunningThread;
+	
+	pthread_create(_vfThread, NULL, &RunVideoFilterThread, _vfThreadParam);
+	
+	_srcSurfaceMaster->Surface = NULL;
+	_destSurfaceMaster->Surface = NULL;
 	SetSourceSize(1, 1);
 }
 
 VideoFilter::VideoFilter(unsigned int srcWidth, unsigned int srcHeight)
 {
+	_threadCount = 1;
+	
 	SSurface *newSrcSurface = (SSurface *)malloc(sizeof(SSurface));
 	if (newSrcSurface == NULL)
 	{
@@ -77,26 +154,101 @@ VideoFilter::VideoFilter(unsigned int srcWidth, unsigned int srcHeight)
 		throw;
 	}
 	
+	_srcSurfaceMaster = newSrcSurface;
+	_destSurfaceMaster = newDestSurface;
+	_srcSurfaceThread = _srcSurfaceMaster;
+	_destSurfaceThread = _destSurfaceMaster;
+	
+	_isFilterRunning = false;
+	_srcSurfaceBufferMaster = NULL;
+	_typeID = VideoFilterTypeID_None;
+	
 	pthread_mutex_init(&_mutexSrc, NULL);
 	pthread_mutex_init(&_mutexDest, NULL);
 	pthread_mutex_init(&_mutexTypeID, NULL);
 	pthread_mutex_init(&_mutexTypeString, NULL);
 	pthread_cond_init(&_condRunning, NULL);
 	
-	_isFilterRunning = false;
-	_srcSurfaceBufferMaster = NULL;
-	newSrcSurface->Surface = NULL;
-	newDestSurface->Surface = NULL;
+	_vfThread = (pthread_t *)malloc(sizeof(pthread_t));
+	if (_vfThread == NULL)
+	{
+		throw;
+	}
 	
-	_srcSurface = newSrcSurface;
-	_destSurface = newDestSurface;
-	_typeID = VideoFilterTypeID_None;
+	_vfThreadParam = (VideoFilterThreadParam *)malloc(sizeof(VideoFilterThreadParam));
+	if (_vfThreadParam == NULL)
+	{
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
 	
+	_condVFThreadFinish = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+	if (_condVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
+	
+	_mutexVFThreadFinish = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	if (_mutexVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_isFilterRunningThread = (bool *)malloc(sizeof(bool));
+	if (_isFilterRunningThread == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		
+		free(_mutexVFThreadFinish);
+		_mutexVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_vfThreadParam->exitThread = false;
+	pthread_mutex_init(&_vfThreadParam->mutexThreadExecute, NULL);
+	pthread_cond_init(&_vfThreadParam->condThreadExecute, NULL);
+	
+	pthread_cond_init(_condVFThreadFinish, NULL);
+	_vfThreadParam->condThreadFinish = _condVFThreadFinish;
+	
+	pthread_mutex_init(_mutexVFThreadFinish, NULL);
+	_vfThreadParam->mutexThreadFinish = _mutexVFThreadFinish;
+	
+	*_isFilterRunningThread = false;
+	_vfThreadParam->isFilterRunning = _isFilterRunningThread;
+	
+	pthread_create(_vfThread, NULL, &RunVideoFilterThread, _vfThreadParam);
+	
+	_srcSurfaceMaster->Surface = NULL;
+	_destSurfaceMaster->Surface = NULL;
 	SetSourceSize(srcWidth, srcHeight);
 }
 
 VideoFilter::VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID)
 {
+	_threadCount = 1;
+	
 	SSurface *newSrcSurface = (SSurface *)malloc(sizeof(SSurface));
 	if (newSrcSurface == NULL)
 	{
@@ -111,21 +263,234 @@ VideoFilter::VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFil
 		throw;
 	}
 	
+	_srcSurfaceMaster = newSrcSurface;
+	_destSurfaceMaster = newDestSurface;
+	_srcSurfaceThread = _srcSurfaceMaster;
+	_destSurfaceThread = _destSurfaceMaster;
+	
+	_isFilterRunning = false;
+	_srcSurfaceBufferMaster = NULL;
+	_typeID = typeID;
+	
 	pthread_mutex_init(&_mutexSrc, NULL);
 	pthread_mutex_init(&_mutexDest, NULL);
 	pthread_mutex_init(&_mutexTypeID, NULL);
 	pthread_mutex_init(&_mutexTypeString, NULL);
 	pthread_cond_init(&_condRunning, NULL);
 	
+	_vfThread = (pthread_t *)malloc(sizeof(pthread_t));
+	if (_vfThread == NULL)
+	{
+		throw;
+	}
+	
+	_vfThreadParam = (VideoFilterThreadParam *)malloc(sizeof(VideoFilterThreadParam));
+	if (_vfThreadParam == NULL)
+	{
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
+	
+	_condVFThreadFinish = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
+	if (_condVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
+	
+	_mutexVFThreadFinish = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	if (_mutexVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_isFilterRunningThread = (bool *)malloc(sizeof(bool));
+	if (_isFilterRunningThread == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		
+		free(_mutexVFThreadFinish);
+		_mutexVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_vfThreadParam->exitThread = false;
+	pthread_mutex_init(&_vfThreadParam->mutexThreadExecute, NULL);
+	pthread_cond_init(&_vfThreadParam->condThreadExecute, NULL);
+	
+	pthread_cond_init(_condVFThreadFinish, NULL);
+	_vfThreadParam->condThreadFinish = _condVFThreadFinish;
+	
+	pthread_mutex_init(_mutexVFThreadFinish, NULL);
+	_vfThreadParam->mutexThreadFinish = _mutexVFThreadFinish;
+	
+	*_isFilterRunningThread = false;
+	_vfThreadParam->isFilterRunning = _isFilterRunningThread;
+	
+	pthread_create(_vfThread, NULL, &RunVideoFilterThread, _vfThreadParam);
+	
+	_srcSurfaceMaster->Surface = NULL;
+	_destSurfaceMaster->Surface = NULL;
+	SetSourceSize(srcWidth, srcHeight);
+}
+
+VideoFilter::VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID, unsigned int numberThreads)
+{
+	// Bounds check
+	if (numberThreads <= 1)
+	{
+		numberThreads = 1;
+	}
+	
+	_threadCount = numberThreads;
+	
+	// We maintain a master surface with our master settings, plus additional surfaces
+	// specific to each thread that work off the master surface.
+	size_t threadAlloc = numberThreads + 1;
+	if (numberThreads == 1)
+	{
+		threadAlloc = 1;
+	}
+	
+	SSurface *newSrcSurface = (SSurface *)malloc(sizeof(SSurface) * threadAlloc);
+	if (newSrcSurface == NULL)
+	{
+		throw;
+	}
+	
+	SSurface *newDestSurface = (SSurface *)malloc(sizeof(SSurface) * threadAlloc);
+	if (newDestSurface == NULL)
+	{
+		free(newSrcSurface);
+		newSrcSurface = NULL;
+		throw;
+	}
+	
+	// Index the master surface at 0. When freeing, always free the master surface.
+	_srcSurfaceMaster = newSrcSurface;
+	_destSurfaceMaster = newDestSurface;
+	
+	// If we're only using one thread, we can make the master surface and the thread
+	// surface the same. Otherwise, index the thread surfaces starting at 1. Since
+	// thread surfaces are pointers relative to the master surface, do not free any
+	// thread surface directly!
+	if (_threadCount <= 1)
+	{
+		_srcSurfaceThread = _srcSurfaceMaster;
+		_destSurfaceThread = _destSurfaceMaster;
+	}
+	else
+	{
+		_srcSurfaceThread = _srcSurfaceMaster + 1;
+		_destSurfaceThread = _destSurfaceMaster + 1;
+	}
+	
 	_isFilterRunning = false;
 	_srcSurfaceBufferMaster = NULL;
-	newSrcSurface->Surface = NULL;
-	newDestSurface->Surface = NULL;
-	
-	_srcSurface = newSrcSurface;
-	_destSurface = newDestSurface;
 	_typeID = typeID;
 	
+	pthread_mutex_init(&_mutexSrc, NULL);
+	pthread_mutex_init(&_mutexDest, NULL);
+	pthread_mutex_init(&_mutexTypeID, NULL);
+	pthread_mutex_init(&_mutexTypeString, NULL);
+	pthread_cond_init(&_condRunning, NULL);
+	
+	_vfThread = (pthread_t *)malloc(sizeof(pthread_t) * _threadCount);
+	if (_vfThread == NULL)
+	{
+		throw;
+	}
+	
+	_vfThreadParam = (VideoFilterThreadParam *)malloc(sizeof(VideoFilterThreadParam) * _threadCount);
+	if (_vfThreadParam == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		throw;
+	}
+	
+	_condVFThreadFinish = (pthread_cond_t *)malloc(sizeof(pthread_cond_t) * _threadCount);
+	if (_condVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		throw;
+	}
+	
+	_mutexVFThreadFinish = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t) * _threadCount);
+	if (_mutexVFThreadFinish == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		throw;
+	}
+	
+	_isFilterRunningThread = (bool *)malloc(sizeof(bool) * _threadCount);
+	if (_isFilterRunningThread == NULL)
+	{
+		free(_vfThread);
+		_vfThread = NULL;
+		
+		free(_vfThreadParam);
+		_vfThreadParam = NULL;
+		
+		free(_condVFThreadFinish);
+		_condVFThreadFinish = NULL;
+		
+		free(_mutexVFThreadFinish);
+		_mutexVFThreadFinish = NULL;
+		throw;
+	}
+	
+	for (unsigned int i = 0; i < _threadCount; i++)
+	{
+		_vfThreadParam[i].exitThread = false;
+		pthread_mutex_init(&_vfThreadParam[i].mutexThreadExecute, NULL);
+		pthread_cond_init(&_vfThreadParam[i].condThreadExecute, NULL);
+		
+		pthread_cond_init(&_condVFThreadFinish[i], NULL);
+		_vfThreadParam[i].condThreadFinish = &_condVFThreadFinish[i];
+		
+		pthread_mutex_init(&_mutexVFThreadFinish[i], NULL);
+		_vfThreadParam[i].mutexThreadFinish = &_mutexVFThreadFinish[i];
+		
+		_isFilterRunningThread[i] = false;
+		_vfThreadParam[i].isFilterRunning = &_isFilterRunningThread[i];
+		
+		pthread_create(&_vfThread[i], NULL, &RunVideoFilterThread, &_vfThreadParam[i]);
+	}
+	
+	_srcSurfaceMaster->Surface = NULL;
+	_destSurfaceMaster->Surface = NULL;
 	SetSourceSize(srcWidth, srcHeight);
 }
 
@@ -141,10 +506,10 @@ VideoFilter::~VideoFilter()
 		pthread_cond_wait(&this->_condRunning, &this->_mutexDest);
 	}
 	
-	free(_destSurface->Surface);
-	_destSurface->Surface = NULL;
-	free(_destSurface);
-	_destSurface = NULL;
+	free(_destSurfaceMaster->Surface);
+	_destSurfaceMaster->Surface = NULL;
+	free(_destSurfaceMaster);
+	_destSurfaceMaster = NULL;
 	
 	pthread_mutex_unlock(&_mutexDest);
 	
@@ -152,11 +517,38 @@ VideoFilter::~VideoFilter()
 	
 	free(_srcSurfaceBufferMaster);
 	_srcSurfaceBufferMaster = NULL;
-	_srcSurface->Surface = NULL;
-	free(_srcSurface);
-	_srcSurface = NULL;
+	_srcSurfaceMaster->Surface = NULL;
+	free(_srcSurfaceMaster);
+	_srcSurfaceMaster = NULL;
 	
 	pthread_mutex_unlock(&_mutexSrc);
+	
+	for (unsigned int i = 0; i < _threadCount; i++)
+	{
+		pthread_mutex_lock(&_vfThreadParam[i].mutexThreadExecute);
+		_vfThreadParam[i].exitThread = true;
+		pthread_cond_signal(&_vfThreadParam[i].condThreadExecute);
+		pthread_mutex_unlock(&_vfThreadParam[i].mutexThreadExecute);
+		
+		pthread_join(_vfThread[i], NULL);
+		_vfThread[i] = NULL;
+		pthread_mutex_destroy(&_vfThreadParam[i].mutexThreadExecute);
+		pthread_cond_destroy(&_vfThreadParam[i].condThreadExecute);
+		
+		pthread_cond_destroy(&_condVFThreadFinish[i]);
+		pthread_mutex_destroy(&_mutexVFThreadFinish[i]);
+	}
+	
+	free(_vfThread);
+	_vfThread = NULL;
+	free(_vfThreadParam);
+	_vfThreadParam = NULL;
+	free(_condVFThreadFinish);
+	_condVFThreadFinish = NULL;
+	free(_mutexVFThreadFinish);
+	_mutexVFThreadFinish = NULL;
+	free(_isFilterRunningThread);
+	_isFilterRunningThread = NULL;
 	
 	pthread_mutex_destroy(&_mutexSrc);
 	pthread_mutex_destroy(&_mutexDest);
@@ -194,15 +586,29 @@ bool VideoFilter::SetSourceSize(unsigned int width, unsigned int height)
 		return result;
 	}
 	
-	this->_srcSurface->Width = width;
-	this->_srcSurface->Height = height;
-	this->_srcSurface->Pitch = width * 2;
+	this->_srcSurfaceMaster->Width = width;
+	this->_srcSurfaceMaster->Height = height;
+	this->_srcSurfaceMaster->Pitch = width * 2;
 	// Set the working source buffer pointer so that the working memory block is padded
 	// with 4 pixel rows worth of memory on both sides.
-	this->_srcSurface->Surface = (unsigned char *)(newSurfaceBuffer + (width * 4));
+	this->_srcSurfaceMaster->Surface = (unsigned char *)(newSurfaceBuffer + (width * 4));
 	
 	free(this->_srcSurfaceBufferMaster);
 	this->_srcSurfaceBufferMaster = newSurfaceBuffer;
+	
+	// Update the surfaces on threads.
+	for (unsigned int i = 0; i < this->_threadCount; i++)
+	{
+		this->_srcSurfaceThread[i] = *this->_srcSurfaceMaster;
+		this->_srcSurfaceThread[i].Height /= this->_threadCount;
+		
+		if (i > 0)
+		{
+			this->_srcSurfaceThread[i].Surface = (unsigned char *)((uint32_t *)this->_srcSurfaceThread[i - 1].Surface + (this->_srcSurfaceThread[i - 1].Width * this->_srcSurfaceThread[i - 1].Height));
+		}
+		
+		this->_vfThreadParam[i].srcSurface = this->_srcSurfaceThread[i];
+	}
 	
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
@@ -229,8 +635,8 @@ bool VideoFilter::ChangeFilter(VideoFilterTypeID typeID)
 	bool result = false;
 	
 	pthread_mutex_lock(&this->_mutexSrc);
-	const unsigned int srcWidth = this->_srcSurface->Width;
-	const unsigned int srcHeight = this->_srcSurface->Height;
+	const unsigned int srcWidth = this->_srcSurfaceMaster->Width;
+	const unsigned int srcHeight = this->_srcSurfaceMaster->Height;
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
 	unsigned int destWidth = srcWidth;
@@ -358,12 +764,27 @@ bool VideoFilter::ChangeFilter(VideoFilterTypeID typeID)
 	}
 	
 	this->_filterCallback = filterCallback;
-	this->_destSurface->Width = destWidth;
-	this->_destSurface->Height = destHeight;
-	this->_destSurface->Pitch = destWidth * 2;
+	this->_destSurfaceMaster->Width = destWidth;
+	this->_destSurfaceMaster->Height = destHeight;
+	this->_destSurfaceMaster->Pitch = destWidth * 2;
 	
-	free(this->_destSurface->Surface);
-	this->_destSurface->Surface = (unsigned char*)newSurfaceBuffer;
+	free(this->_destSurfaceMaster->Surface);
+	this->_destSurfaceMaster->Surface = (unsigned char*)newSurfaceBuffer;
+	
+	// Update the surfaces on threads.
+	for (unsigned int i = 0; i < this->_threadCount; i++)
+	{
+		this->_destSurfaceThread[i] = *this->_destSurfaceMaster;
+		this->_destSurfaceThread[i].Height /= this->_threadCount;
+		
+		if (i > 0)
+		{
+			this->_destSurfaceThread[i].Surface = (unsigned char *)((uint32_t *)this->_destSurfaceThread[i - 1].Surface + (this->_destSurfaceThread[i - 1].Width * this->_destSurfaceThread[i - 1].Height));
+		}
+		
+		this->_vfThreadParam[i].destSurface = this->_destSurfaceThread[i];
+		this->_vfThreadParam[i].filterCallback = this->_filterCallback;
+	}
 	
 	pthread_mutex_unlock(&this->_mutexDest);
 	
@@ -392,17 +813,35 @@ uint32_t* VideoFilter::RunFilter()
 	pthread_mutex_lock(&this->_mutexDest);
 	
 	this->_isFilterRunning = true;
-	uint32_t *destBufPtr = (uint32_t *)this->_destSurface->Surface;
+	uint32_t *destBufPtr = (uint32_t *)this->_destSurfaceMaster->Surface;
 	
 	pthread_mutex_lock(&this->_mutexSrc);
 	
 	if (this->_filterCallback == NULL)
 	{
-		memcpy(this->_destSurface->Surface, this->_srcSurface->Surface, this->_destSurface->Width * this->_destSurface->Height * sizeof(uint32_t));
+		memcpy(this->_destSurfaceMaster->Surface, this->_srcSurfaceMaster->Surface, this->_destSurfaceMaster->Width * this->_destSurfaceMaster->Height * sizeof(uint32_t));
 	}
 	else
 	{
-		this->_filterCallback(*this->_srcSurface, *this->_destSurface);
+		for (unsigned int i = 0; i < this->_threadCount; i++)
+		{
+			pthread_mutex_lock(&this->_vfThreadParam[i].mutexThreadExecute);
+			*this->_vfThreadParam[i].isFilterRunning = true;
+			pthread_cond_signal(&this->_vfThreadParam[i].condThreadExecute);
+			pthread_mutex_unlock(&this->_vfThreadParam[i].mutexThreadExecute);
+		}
+		
+		for (unsigned int i = 0; i < this->_threadCount; i++)
+		{
+			pthread_mutex_lock(&this->_mutexVFThreadFinish[i]);
+			
+			while (this->_isFilterRunningThread[i])
+			{
+				pthread_cond_wait(&this->_condVFThreadFinish[i], &this->_mutexVFThreadFinish[i]);
+			}
+			
+			pthread_mutex_unlock(&this->_mutexVFThreadFinish[i]);
+		}
 	}
 	
 	pthread_mutex_unlock(&this->_mutexSrc);
@@ -557,7 +996,7 @@ void VideoFilter::SetTypeString(std::string typeString)
 uint32_t* VideoFilter::GetSrcBufferPtr()
 {
 	pthread_mutex_lock(&this->_mutexSrc);
-	uint32_t *ptr = (uint32_t *)this->_srcSurface->Surface;
+	uint32_t *ptr = (uint32_t *)this->_srcSurfaceMaster->Surface;
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
 	return ptr;
@@ -566,7 +1005,7 @@ uint32_t* VideoFilter::GetSrcBufferPtr()
 uint32_t* VideoFilter::GetDestBufferPtr()
 {
 	pthread_mutex_lock(&this->_mutexDest);
-	uint32_t *ptr = (uint32_t *)this->_destSurface->Surface;
+	uint32_t *ptr = (uint32_t *)this->_destSurfaceMaster->Surface;
 	pthread_mutex_unlock(&this->_mutexDest);
 	
 	return ptr;
@@ -575,7 +1014,7 @@ uint32_t* VideoFilter::GetDestBufferPtr()
 unsigned int VideoFilter::GetSrcWidth()
 {
 	pthread_mutex_lock(&this->_mutexSrc);
-	unsigned int width = this->_srcSurface->Width;
+	unsigned int width = this->_srcSurfaceMaster->Width;
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
 	return width;
@@ -584,7 +1023,7 @@ unsigned int VideoFilter::GetSrcWidth()
 unsigned int VideoFilter::GetSrcHeight()
 {
 	pthread_mutex_lock(&this->_mutexSrc);
-	unsigned int height = this->_srcSurface->Height;
+	unsigned int height = this->_srcSurfaceMaster->Height;
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
 	return height;
@@ -593,7 +1032,7 @@ unsigned int VideoFilter::GetSrcHeight()
 unsigned int VideoFilter::GetDestWidth()
 {
 	pthread_mutex_lock(&this->_mutexDest);
-	unsigned int width = this->_destSurface->Width;
+	unsigned int width = this->_destSurfaceMaster->Width;
 	pthread_mutex_unlock(&this->_mutexDest);
 	
 	return width;
@@ -602,8 +1041,41 @@ unsigned int VideoFilter::GetDestWidth()
 unsigned int VideoFilter::GetDestHeight()
 {
 	pthread_mutex_lock(&this->_mutexDest);
-	unsigned int height = this->_destSurface->Height;
+	unsigned int height = this->_destSurfaceMaster->Height;
 	pthread_mutex_unlock(&this->_mutexDest);
 	
 	return height;
+}
+
+static void* RunVideoFilterThread(void *arg)
+{
+	VideoFilterThreadParam *param = (VideoFilterThreadParam *)arg;
+	
+	do
+	{
+		pthread_mutex_lock(&param->mutexThreadExecute);
+		
+		while (!*param->isFilterRunning && !param->exitThread)
+		{
+			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
+		}
+		
+		if (param->exitThread)
+		{
+			pthread_mutex_unlock(&param->mutexThreadExecute);
+			break;
+		}
+		
+		param->filterCallback(param->srcSurface, param->destSurface);
+		
+		pthread_mutex_lock(param->mutexThreadFinish);
+		*param->isFilterRunning = false;
+		pthread_cond_signal(param->condThreadFinish);
+		pthread_mutex_unlock(param->mutexThreadFinish);
+		
+		pthread_mutex_unlock(&param->mutexThreadExecute);
+		
+	} while (!param->exitThread);
+	
+	return NULL;
 }
