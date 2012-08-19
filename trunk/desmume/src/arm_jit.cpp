@@ -41,6 +41,11 @@
 
 #define MAX_JIT_BLOCK_SIZE 100
 #define LOG_JIT_LEVEL 0
+#define PROFILER_JIT_LEVEL 0
+
+#if (PROFILER_JIT_LEVEL > 0)
+#include <algorithm>
+#endif
 
 using namespace AsmJit;
 
@@ -234,22 +239,22 @@ static GPVar total_cycles;
 static void *op_cmp[2][2];
 
 #define cpu (&ARMPROC)
-#define bb_next_instruction (bb_adr+bb_opcodesize)
-#define bb_r15				(bb_adr+2*bb_opcodesize)
+#define bb_next_instruction (bb_adr + bb_opcodesize)
+#define bb_r15				(bb_adr + 2 * bb_opcodesize)
 
-#define cpu_ptr(x)			dword_ptr(bb_cpu, offsetof(armcpu_t,x))
-#define cpu_ptr_byte(x, y)	byte_ptr(bb_cpu, offsetof(armcpu_t,x)+y)
+#define cpu_ptr(x)			dword_ptr(bb_cpu, offsetof(armcpu_t, x))
+#define cpu_ptr_byte(x, y)	byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y)
 #define flags_ptr			cpu_ptr_byte(CPSR.val, 3)
-#define reg_ptr(x)			dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*(x)))
-#define reg_pos_ptr(x)		dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
-#define reg_pos_ptrL(x)		word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
-#define reg_pos_ptrH(x)		word_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x)))+2)
-#define reg_pos_ptrB(x)		byte_ptr( bb_cpu, offsetof(armcpu_t,R)+(4*REG_POS(i,(x))))
-#define reg_pos_thumb(x)	dword_ptr(bb_cpu, offsetof(armcpu_t,R)+(4*((i>>x)&0x7)))
-#define cp15_ptr(x)			dword_ptr(bb_cp15, offsetof(armcp15_t,x))
-#define mmu_ptr(x)			dword_ptr(bb_mmu, offsetof(MMU_struct,x))
-#define mmu_ptr_byte(x)		byte_ptr(bb_mmu, offsetof(MMU_struct,x))
-#define _REG_NUM(i, n)		((i>>n)&0x7)
+#define reg_ptr(x)			dword_ptr(bb_cpu, offsetof(armcpu_t, R[x]))
+#define reg_pos_ptr(x)		dword_ptr(bb_cpu, offsetof(armcpu_t, R[REG_POS(i,(x))]))
+#define reg_pos_ptrL(x)		word_ptr( bb_cpu, offsetof(armcpu_t, R[REG_POS(i,(x))]))
+#define reg_pos_ptrH(x)		word_ptr( bb_cpu, offsetof(armcpu_t, R[REG_POS(i,(x))]) + 2)
+#define reg_pos_ptrB(x)		byte_ptr( bb_cpu, offsetof(armcpu_t, R[REG_POS(i,(x))]))
+#define reg_pos_thumb(x)	dword_ptr(bb_cpu, offsetof(armcpu_t, R[(i>>(x))&0x7]))
+#define cp15_ptr(x)			dword_ptr(bb_cp15, offsetof(armcp15_t, x))
+#define mmu_ptr(x)			dword_ptr(bb_mmu, offsetof(MMU_struct, x))
+#define mmu_ptr_byte(x)		byte_ptr(bb_mmu, offsetof(MMU_struct, x))
+#define _REG_NUM(i, n)		((i>>(n))&0x7)
 
 #ifndef ASMJIT_X64
 #define r64 r32
@@ -261,6 +266,41 @@ static void *op_cmp[2][2];
 			ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<void>()); \
 }
 
+#if (PROFILER_JIT_LEVEL > 0)
+struct PROFILER_COUNTER_INFO
+{
+	u64	count;
+	char name[64];
+};
+
+struct JIT_PROFILER
+{
+	JIT_PROFILER::JIT_PROFILER()
+	{
+		memset(&arm_count[0], 0, sizeof(arm_count));
+		memset(&thumb_count[0], 0, sizeof(thumb_count));
+	}
+
+	u64 arm_count[4096];
+	u64 thumb_count[1024];
+} profiler_counter[2];
+
+static GPVar bb_profiler;
+
+#define profiler_counter_arm(opcode)   qword_ptr(bb_profiler, offsetof(JIT_PROFILER, arm_count[INSTRUCTION_INDEX(opcode)]))
+#define profiler_counter_thumb(opcode) qword_ptr(bb_profiler, offsetof(JIT_PROFILER, thumb_count[opcode>>6]))
+
+#if (PROFILER_JIT_LEVEL > 1)
+struct PROFILER_ENTRY
+{
+	u32 addr;
+	u32	cycles;
+} profiler_entry[2][1<<26];
+
+static GPVar bb_profiler_entry;
+#endif
+
+#endif
 //-----------------------------------------------------------------------------
 //   Shifting macros
 //-----------------------------------------------------------------------------
@@ -4075,12 +4115,24 @@ static u32 compile_basicblock()
 		c.mov(total_cycles, constant_cycles);
 	}
 
+#if (PROFILER_JIT_LEVEL > 0)
+	JIT_COMMENT("Profiler ptr");
+	bb_profiler = c.newGP(VARIABLE_TYPE_GPN);
+	c.mov(bb_profiler, (uintptr_t)&profiler_counter[PROCNUM]);
+#endif
+
 	for(int i=0; i<n; i++)
 	{
 		u32 opcode = opcodes[i];
 		bb_adr = start_adr + i*bb_opcodesize;
 		JIT_COMMENT("%s (PC:%08X)", disassemble(opcode), bb_adr);
-		
+#if (PROFILER_JIT_LEVEL > 0)
+		JIT_COMMENT("*** profiler - counter");
+		if (bb_thumb)
+			c.add(profiler_counter_thumb(opcode), 1);
+		else
+			c.add(profiler_counter_arm(opcode), 1);
+#endif
 		bb_cycles = c.newGP(VARIABLE_TYPE_GPD);
 		u32 cycles = instr_cycles(opcode);
 		if(instr_is_conditional(opcode))
@@ -4135,6 +4187,16 @@ static u32 compile_basicblock()
 		c.mov(ret, total_cycles);
 	else
 		c.mov(ret, constant_cycles);
+
+#if (PROFILER_JIT_LEVEL > 1)
+	JIT_COMMENT("*** profiler - cycles");
+	u32 padr = ((start_adr & 0x07FFFFFE) >> 1);
+	bb_profiler_entry = c.newGP(VARIABLE_TYPE_GPN);
+	c.mov(bb_profiler_entry, (uintptr_t)&profiler_entry[PROCNUM][padr]);
+	c.add(dword_ptr(bb_profiler_entry, offsetof(PROFILER_ENTRY, cycles)), ret);
+	profiler_entry[PROCNUM][padr].addr = start_adr;
+#endif
+
 	c.ret(ret);
 	c.endFunction();
 
@@ -4218,5 +4280,170 @@ void arm_jit_reset(bool enable)
 		init_op_cmp(1, 1);
 	}
 	c.clear();
+
+#if (PROFILER_JIT_LEVEL > 0)
+	reconstruct(&profiler_counter[0]);
+	reconstruct(&profiler_counter[1]);
+#if (PROFILER_JIT_LEVEL > 1)
+	for (u8 t = 0; t < 2; t++)
+	{
+		for (u32 i = 0; i < (1<<26); i++)
+			memset(&profiler_entry[t][i], 0, sizeof(PROFILER_ENTRY));
+	}
+#endif
+#endif
+}
+
+#if (PROFILER_JIT_LEVEL > 0)
+static int pcmp(PROFILER_COUNTER_INFO *info1, PROFILER_COUNTER_INFO *info2)
+{
+	return (int)(info2->count - info1->count);
+}
+
+#if (PROFILER_JIT_LEVEL > 1)
+static int pcmp_entry(PROFILER_ENTRY *info1, PROFILER_ENTRY *info2)
+{
+	return (int)(info1->cycles - info2->cycles);
+}
+#endif
+#endif
+
+void arm_jit_close()
+{
+#if (PROFILER_JIT_LEVEL > 0)
+	printf("Generating profile report...");
+
+	for (u8 proc = 0; proc < 2; proc++)
+	{
+		extern GameInfo gameInfo;
+		u16 last[2] = {0};
+		PROFILER_COUNTER_INFO *arm_info = NULL;
+		PROFILER_COUNTER_INFO *thumb_info = NULL;
+		
+		arm_info = new PROFILER_COUNTER_INFO[4096];
+		thumb_info = new PROFILER_COUNTER_INFO[1024];
+		memset(arm_info, 0, sizeof(PROFILER_COUNTER_INFO) * 4096);
+		memset(thumb_info, 0, sizeof(PROFILER_COUNTER_INFO) * 1024);
+
+		// ARM
+		last[0] = 0;
+		for (u16 i=0; i < 4096; i++)
+		{
+			u16 t = 0;
+			if (profiler_counter[proc].arm_count[i] == 0) continue;
+
+			for (t = 0; t < last[0]; t++)
+			{
+				if (strcmp(arm_instruction_names[i], arm_info[t].name) == 0)
+				{
+					arm_info[t].count += profiler_counter[proc].arm_count[i];
+					break;
+				}
+			}
+			if (t == last[0])
+			{
+				strcpy(arm_info[last[0]++].name, arm_instruction_names[i]);
+				arm_info[t].count = profiler_counter[proc].arm_count[i];
+			}
+		}
+
+		// THUMB
+		last[1] = 0;
+		for (u16 i=0; i < 1024; i++)
+		{
+			u16 t = 0;
+			if (profiler_counter[proc].thumb_count[i] == 0) continue;
+
+			for (t = 0; t < last[1]; t++)
+			{
+				if (strcmp(thumb_instruction_names[i], thumb_info[t].name) == 0)
+				{
+					thumb_info[t].count += profiler_counter[proc].thumb_count[i];
+					break;
+				}
+			}
+			if (t == last[1])
+			{
+				strcpy(thumb_info[last[1]++].name, thumb_instruction_names[i]);
+				thumb_info[t].count = profiler_counter[proc].thumb_count[i];
+			}
+		}
+
+		std::qsort(arm_info, last[0], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
+		std::qsort(thumb_info, last[1], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
+
+		char buf[MAX_PATH] = {0};
+		sprintf(buf, "\\desmume_jit%c_counter.profiler", proc==0?'9':'7');
+		FILE *fp = fopen(buf, "w");
+		if (fp)
+		{
+			if (!gameInfo.isHomebrew)
+			{
+				fprintf(fp, "Name:   %s\n", gameInfo.ROMname);
+				fprintf(fp, "Serial: %s\n", gameInfo.ROMserial);
+			}
+			else
+				fprintf(fp, "Homebrew\n");
+			fprintf(fp, "CPU: ARM%c\n\n", proc==0?'9':'7');
+
+			if (last[0])
+			{
+				fprintf(fp, "========================================== ARM ==========================================\n");
+				for (int i=0; i < last[0]; i++)
+					fprintf(fp, "%30s: %20ld\n", arm_info[i].name, arm_info[i].count);
+				fprintf(fp, "\n");
+			}
+			
+			if (last[1])
+			{
+				fprintf(fp, "========================================== THUMB ==========================================\n");
+				for (int i=0; i < last[1]; i++)
+					fprintf(fp, "%30s: %20ld\n", thumb_info[i].name, thumb_info[i].count);
+				fprintf(fp, "\n");
+			}
+
+			fclose(fp);
+		}
+
+		delete [] arm_info; arm_info = NULL;
+		delete [] thumb_info; thumb_info = NULL;
+
+#if (PROFILER_JIT_LEVEL > 1)
+		sprintf(buf, "\\desmume_jit%c_entry.profiler", proc==0?'9':'7');
+		fp = fopen(buf, "w");
+		if (fp)
+		{
+			u32 count = 0;
+			PROFILER_ENTRY *tmp = NULL;
+
+			fprintf(fp, "Entrypoints (cycles):\n");
+			tmp = new PROFILER_ENTRY[1<<26];
+			memset(tmp, 0, sizeof(PROFILER_ENTRY) * (1<<26));
+			for (u32 i = 0; i < (1<<26); i++)
+			{
+				if (profiler_entry[proc][i].cycles == 0) continue;
+				memcpy(&tmp[count++], &profiler_entry[proc][i], sizeof(PROFILER_ENTRY));
+			}
+			std::qsort(tmp, count, sizeof(PROFILER_ENTRY), (int (*)(const void *, const void *))pcmp_entry);
+			if (!gameInfo.isHomebrew)
+			{
+				fprintf(fp, "Name:   %s\n", gameInfo.ROMname);
+				fprintf(fp, "Serial: %s\n", gameInfo.ROMserial);
+			}
+			else
+				fprintf(fp, "Homebrew\n");
+			fprintf(fp, "CPU: ARM%c\n\n", proc==0?'9':'7');
+
+			while ((count--) > 0)
+				fprintf(fp, "%08X: %20ld\n", tmp[count].addr, tmp[count].cycles);
+
+			delete [] tmp; tmp = NULL;
+
+			fclose(fp);
+		}
+#endif
+	}
+	printf(" done.\n");
+#endif
 }
 #endif // HAVE_JIT
