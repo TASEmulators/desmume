@@ -27,6 +27,7 @@
 typedef u32 (FASTCALL* ArmOpCompiled)();
 
 void arm_jit_reset(bool enable);
+void arm_jit_close();
 void arm_jit_sync();
 template<int PROCNUM> u32 arm_jit_compile();
 

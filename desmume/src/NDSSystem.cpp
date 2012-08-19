@@ -170,6 +170,10 @@ void NDS_DeInit(void) {
 	if (cheatSearch)
 		delete cheatSearch;
 
+#ifdef HAVE_JIT
+	arm_jit_close();
+#endif
+
 #ifdef LOG_ARM7
 	if (fp_dis7 != NULL) 
 	{
