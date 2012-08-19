@@ -32,7 +32,7 @@
 #endif
 
 //todo - everyone will want to support this eventually, i suppose
-#if defined(_WINDOWS) && !defined(WXPORT)
+#if (defined(_WINDOWS) && !defined(WXPORT)) || defined(DESMUME_COCOA)
 	#include "svnrev.h"
 #else
 	#ifdef SVN_REV

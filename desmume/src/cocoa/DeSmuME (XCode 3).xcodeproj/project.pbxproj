@@ -1825,6 +1825,7 @@
 			buildPhases = (
 				AB2F3B7B15CF9C6000858373 /* ShellScript */,
 				AB2F3B7C15CF9C6000858373 /* Resources */,
+				ABE76A8015E0904E00F458AE /* ShellScript */,
 				AB2F3BC415CF9C6000858373 /* Sources */,
 				AB2F3C3A15CF9C6000858373 /* Frameworks */,
 			);
@@ -1844,6 +1845,7 @@
 			buildPhases = (
 				AB75222C14C799C1009B97B3 /* ShellScript */,
 				AB711EBE1481C35F009011C8 /* Resources */,
+				ABE76A5215E08E1100F458AE /* ShellScript */,
 				AB711EFF1481C35F009011C8 /* Sources */,
 				AB711F731481C35F009011C8 /* Frameworks */,
 			);
@@ -1863,6 +1865,7 @@
 			buildPhases = (
 				AB73A9681507C9F500A310C8 /* ShellScript */,
 				AB73A9691507C9F500A310C8 /* Resources */,
+				ABE76A7C15E0902700F458AE /* ShellScript */,
 				AB73A9B21507C9F500A310C8 /* Sources */,
 				AB73AA281507C9F500A310C8 /* Frameworks */,
 			);
@@ -1882,6 +1885,7 @@
 			buildPhases = (
 				ABAD0F7115ACE7A00000EC47 /* ShellScript */,
 				ABAD0F7215ACE7A00000EC47 /* Resources */,
+				ABE76A7E15E0903E00F458AE /* ShellScript */,
 				ABAD0FBA15ACE7A00000EC47 /* Sources */,
 				ABAD103E15ACE7A00000EC47 /* Frameworks */,
 			);
@@ -2304,6 +2308,62 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "cd \"./translations\"\nibtool --generate-strings-file \"./English.lproj/MainMenu.strings\" \"./English.lproj/MainMenu.xib\"";
+		};
+		ABE76A5215E08E1100F458AE /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../svnrev.h",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+		};
+		ABE76A7C15E0902700F458AE /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../svnrev.h",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+		};
+		ABE76A7E15E0903E00F458AE /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../svnrev.h",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+		};
+		ABE76A8015E0904E00F458AE /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../svnrev.h",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
 		};
 /* End PBXShellScriptBuildPhase section */
 

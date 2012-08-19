@@ -20,6 +20,8 @@
 #import "cocoa_globals.h"
 #import "types.h"
 
+#include "../version.h"
+
 #undef BOOL
 
 
@@ -123,6 +125,26 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 + (BOOL) quickYesNoDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText
 {
 	return NSRunAlertPanel(titleText, messageText, NSLocalizedString(@"Yes", nil), NSLocalizedString(@"No", nil), nil) != 0;
+}
+
++ (NSInteger) appVersionNumeric
+{
+	return (NSInteger)EMU_DESMUME_VERSION_NUMERIC();
+}
+
++ (NSString *) appInternalVersionString
+{
+	return [NSString stringWithCString:EMU_DESMUME_VERSION_STRING() encoding:NSUTF8StringEncoding];
+}
+
++ (NSString *) appInternalNameAndVersionString
+{
+	return [NSString stringWithCString:EMU_DESMUME_NAME_AND_VERSION() encoding:NSUTF8StringEncoding];
+}
+
++ (NSString *) appCompilerDetailString
+{
+	return [NSString stringWithCString:EMU_DESMUME_COMPILER_DETAIL() encoding:NSUTF8StringEncoding];
 }
 
 @end
