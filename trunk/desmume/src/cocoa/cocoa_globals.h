@@ -16,7 +16,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define STRING_DESMUME_WEBSITE						"http://www.desmume.org"
+#define STRING_DESMUME_WEBSITE						"http://desmume.org"
+#define STRING_DESMUME_SHORT_DESCRIPTION			"Nintendo DS Emulator"
 #define STRING_DESMUME_FORUM_SITE					"http://forums.desmume.org/index.php"
 #define STRING_DESMUME_BUG_SITE						"http://sourceforge.net/tracker/?group_id=164579&atid=832291"
 

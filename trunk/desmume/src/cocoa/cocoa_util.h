@@ -41,6 +41,11 @@
 + (void) quickDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText;
 + (BOOL) quickYesNoDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText;
 
++ (NSInteger) appVersionNumeric;
++ (NSString *) appInternalVersionString;
++ (NSString *) appInternalNameAndVersionString;
++ (NSString *) appCompilerDetailString;
+
 @end
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4

@@ -30,6 +30,7 @@
 #import "cocoa_hid.h"
 #import "cocoa_input.h"
 #import "cocoa_mic.h"
+#import "cocoa_util.h"
 
 
 @implementation AppDelegate
@@ -113,18 +114,21 @@
 	[CocoaDSFile setupAllFilePaths];
 	
 	// Setup the About window.
-	NSString *buildVersionStr = @"Build Version: ";
-	buildVersionStr = [buildVersionStr stringByAppendingString:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
-	NSString *buildDateStr = @"Build Date: ";
-	buildDateStr = [buildDateStr stringByAppendingString:@__DATE__];
+	NSString *descriptionStr = [[[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"] stringByAppendingString:@" "] stringByAppendingString:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
+	descriptionStr = [[descriptionStr stringByAppendingString:@"\n"] stringByAppendingString:@STRING_DESMUME_SHORT_DESCRIPTION];
+	descriptionStr = [[descriptionStr stringByAppendingString:@"\n"] stringByAppendingString:@STRING_DESMUME_WEBSITE];
+	
+	NSString *buildInfoStr = @"Build Info:";
+	buildInfoStr = [[buildInfoStr stringByAppendingString:[CocoaDSUtil appInternalVersionString]] stringByAppendingString:[CocoaDSUtil appCompilerDetailString]];
+	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nBuild Date: "] stringByAppendingString:@__DATE__];
 	
 	NSMutableDictionary *aboutWindowProperties = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_README ofType:@""], @"readMePath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_COPYING ofType:@""], @"licensePath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_AUTHORS ofType:@""], @"authorsPath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_CHANGELOG ofType:@""], @"changeLogPath",
-												  buildVersionStr, @"versionString",
-												  buildDateStr, @"dateString",
+												  descriptionStr, @"descriptionString",
+												  buildInfoStr, @"buildInfoString",
 												  nil];
 	
 	[aboutWindowController setContent:aboutWindowProperties];
