@@ -20,7 +20,7 @@
 #ifndef OPENARCHIVE_HEADER
 #define OPENARCHIVE_HEADER
 
-#include "7zip.h"
+#include "FEX_Interface.h"
 
 // ObtainFile()
 // this is the main, high-level function for opening possibly-compressed files.

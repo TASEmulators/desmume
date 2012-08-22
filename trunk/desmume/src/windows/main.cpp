@@ -72,7 +72,7 @@
 #include "hotkey.h"
 #include "snddx.h"
 #include "commandline.h"
-#include "7zip.h"
+#include "FEX_Interface.h"
 #include "OpenArchive.h"
 #include "utils/xstring.h"
 #include "directx/ddraw.h"
@@ -2065,13 +2065,13 @@ void LoadSaveStateInfo()
 	}
 }
 
-static BOOL LoadROM(const char * filename, const char * logicalName)
+static BOOL LoadROM(const char * filename, const char * physicalName, const char * logicalName)
 {
 	ResetSaveStateTimes();
 	Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
-	if (NDS_LoadROM(filename, logicalName) > 0)
+	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
 		LoadSaveStateInfo();
@@ -3458,7 +3458,7 @@ static BOOL OpenCore(const char* filename)
 
 	StopAllLuaScripts();
 
-	if(LoadROM(filename, LogicalName))
+	if(LoadROM(filename, PhysicalName, LogicalName))
 	{
 		romloaded = TRUE;
 		if(movieMode == MOVIEMODE_INACTIVE)
@@ -3518,13 +3518,13 @@ LRESULT OpenFile()
 	ofn.hwndOwner = hwnd;
 
 	ofn.lpstrFilter = 
-		"All Usable Files (*.nds, *.ds.gba, *.srl, *.zip, *.7z, *.rar, *.bz2)\0*.nds;*.ds.gba;*.srl;*.zip;*.7z;*.rar;*.bz2\0"
+		"All Usable Files (*.nds, *.ds.gba, *.srl, *.zip, *.7z, *.rar, *.gz)\0*.nds;*.ds.gba;*.srl;*.zip;*.7z;*.rar;*.gz\0"
 		"NDS ROM file (*.nds,*.srl)\0*.nds;*.srl\0"
 		"NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0"
 		"Zipped NDS ROM file (*.zip)\0*.zip\0"
 		"7Zipped NDS ROM file (*.7z)\0*.7z\0"
 		"RARed NDS ROM file (*.rar)\0*.rar\0"
-		"BZipped NDS ROM file (*.bz2)\0*.bz2\0"
+		"GZipped NDS ROM file (*.gz)\0*.gz\0"
 		"Any file (*.*)\0*.*\0"
 		"\0"
 		; //gzip doesnt actually work right now

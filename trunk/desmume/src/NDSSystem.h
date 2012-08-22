@@ -443,7 +443,7 @@ void NDS_suspendProcessingInput(bool suspend);
 
 
 
-int NDS_LoadROM(const char *filename, const char* logicalFilename=0);
+int NDS_LoadROM(const char *filename, const char* physicalFilename=0, const char* logicalFilename=0);
 void NDS_FreeROM(void);
 void NDS_Reset();
 int NDS_ImportSave(const char *filename, u32 force_size = 0);
