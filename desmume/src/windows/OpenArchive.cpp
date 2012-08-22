@@ -26,7 +26,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
-#include "7zip.h"
+#include "FEX_Interface.h"
 //#include "G_main.h"
 //#include "G_dsound.h"
 #include "resource.h"
@@ -213,7 +213,7 @@ static struct TempFiles
 		TemporaryFile()
 		{
 			filename[0] = 0;
-			category[0] = 0;
+			category.resize(0);
 		}
 		bool Delete(bool returnFalseOnRegistryRemovalFailure=false)
 		{

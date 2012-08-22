@@ -440,7 +440,7 @@ static void loadrom(std::string fname) {
 	fclose(inf);
 }
 
-static int rom_init_path(const char *filename, const char *logicalFilename)
+static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
 {
 	int	type = ROM_NDS;
 
@@ -452,7 +452,7 @@ static int rom_init_path(const char *filename, const char *logicalFilename)
 	}
 	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
 		type = ROM_NDS;
-		loadrom(path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
+		loadrom(physicalName ? physicalName : path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
 		//...but since the data was extracted to gameInfo then it is ok
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
@@ -461,7 +461,7 @@ static int rom_init_path(const char *filename, const char *logicalFilename)
 	} else {
 		//well, try to load it as an nds rom anyway
 		type = ROM_NDS;
-		loadrom(path.path);
+		loadrom(physicalName ? physicalName : path.path);
 	}
 
 	if(type == ROM_DSGBA)
@@ -478,7 +478,7 @@ static int rom_init_path(const char *filename, const char *logicalFilename)
 	return 1;
 }
 #else
-static int rom_init_path(const char *filename, const char *logicalFilename)
+static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
 {
 	int			ret;
 	int			type;
@@ -540,7 +540,7 @@ static int rom_init_path(const char *filename, const char *logicalFilename)
 }
 #endif
 
-int NDS_LoadROM(const char *filename, const char *logicalFilename)
+int NDS_LoadROM(const char *filename, const char *physicalName, const char *logicalFilename)
 {
 	int	ret;
 	char	buf[MAX_PATH];
@@ -548,7 +548,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if (filename == NULL)
 		return -1;
 
-	ret = rom_init_path(filename, logicalFilename);
+	ret = rom_init_path(filename, physicalName, logicalFilename);
 	if (ret < 1)
 		return ret;
 
