@@ -335,7 +335,7 @@
 	[self handleLoadRom:selectedFile];
 }
 
-- (IBAction) closeRom:(id)sender;
+- (IBAction) closeRom:(id)sender
 {
 	[self handleUnloadRom:REASONFORCLOSE_NORMAL romToLoad:nil];
 }
@@ -1130,7 +1130,7 @@
 		
 		[fileURL retain];
 		[self setIsSheetControllingExecution:YES];
-		[self setIsShowingSaveStateSheet:YES];
+		[self setIsShowingFileMigrationSheet:YES];
 		
 		[NSApp beginSheet:saveFileMigrationSheet
 		   modalForWindow:window
