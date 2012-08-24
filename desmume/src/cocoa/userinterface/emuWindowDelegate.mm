@@ -60,6 +60,7 @@
 @synthesize isSheetControllingExecution;
 @synthesize isShowingSaveStateSheet;
 @synthesize isShowingFileMigrationSheet;
+@dynamic isMinSizeNormal;
 @synthesize selectedRomSaveTypeID;
 
 @synthesize bindings;
@@ -290,6 +291,46 @@
 - (NSString *) status
 {
 	return (NSString *)[bindings valueForKey:@"status"];
+}
+
+- (void) setIsMinSizeNormal:(BOOL)theState
+{
+	isMinSizeNormal = theState;
+	
+	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
+	{
+		if ([dispViewDelegate displayOrientation] == DS_DISPLAY_ORIENTATION_HORIZONTAL)
+		{
+			minDisplayViewSize.width = GPU_DISPLAY_WIDTH * 2;
+			minDisplayViewSize.height = GPU_DISPLAY_HEIGHT;
+		}
+		else
+		{
+			minDisplayViewSize.width = GPU_DISPLAY_WIDTH;
+			minDisplayViewSize.height = GPU_DISPLAY_HEIGHT * 2;
+		}
+	}
+	else
+	{
+		minDisplayViewSize.width = GPU_DISPLAY_WIDTH;
+		minDisplayViewSize.height = GPU_DISPLAY_HEIGHT;
+	}
+	
+	if (!isMinSizeNormal)
+	{
+		minDisplayViewSize.width /= 4;
+		minDisplayViewSize.height /= 4;
+	}
+	
+	// Set the minimum content size, keeping the display rotation in mind.
+	NSSize transformedMinSize = GetTransformedBounds(minDisplayViewSize, 1.0, CLOCKWISE_DEGREES([dispViewDelegate rotation]));
+	transformedMinSize.height += statusBarHeight;
+	[window setContentMinSize:transformedMinSize];
+}
+
+- (BOOL) isMinSizeNormal
+{
+	return isMinSizeNormal;
 }
 
 - (IBAction) openRom:(id)sender
@@ -872,11 +913,8 @@
 - (IBAction) changeDisplayOrientation:(id)sender
 {
 	[dispViewDelegate setDisplayOrientation:[CocoaDSUtil getIBActionSenderTag:sender]];
-	
-	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
-	{
-		[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:[dispViewDelegate rotation]];
-	}
+	[self setIsMinSizeNormal:[self isMinSizeNormal]];
+	[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:[dispViewDelegate rotation]];
 }
 
 - (IBAction) changeDisplayOrder:(id)sender
@@ -962,39 +1000,34 @@
 
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
 {
-	if (isMinSizeNormal)
+	if ([self isMinSizeNormal])
 	{
-		minDisplayViewSize.width /= 4;
-		minDisplayViewSize.height /= 4;
-		isMinSizeNormal = NO;
+		[self setIsMinSizeNormal:NO];
 	}
 	else
 	{
-		minDisplayViewSize.width = GPU_DISPLAY_WIDTH;
-		minDisplayViewSize.height = GPU_DISPLAY_HEIGHT * 2;
-		isMinSizeNormal = YES;
-	}
-	
-	// Set the minimum content size, keeping the display rotation in mind.
-	NSSize transformedMinSize = GetTransformedBounds(minDisplayViewSize, 1.0, CLOCKWISE_DEGREES([dispViewDelegate rotation]));
-	transformedMinSize.height += statusBarHeight;
-	[window setContentMinSize:transformedMinSize];
-	
-	// Resize the window if it's smaller than the minimum content size.
-	NSRect windowContentRect = [window contentRectForFrameRect:[window frame]];
-	if (windowContentRect.size.width < transformedMinSize.width || windowContentRect.size.height < transformedMinSize.height)
-	{
-		// Prepare to resize.
-		NSRect oldFrameRect = [window frame];
-		windowContentRect.size = transformedMinSize;
-		NSRect newFrameRect = [window frameRectForContentRect:windowContentRect];
+		[self setIsMinSizeNormal:YES];
 		
-		// Keep the window centered when expanding the size.
-		newFrameRect.origin.x = oldFrameRect.origin.x - ((newFrameRect.size.width - oldFrameRect.size.width) / 2);
-		newFrameRect.origin.y = oldFrameRect.origin.y - ((newFrameRect.size.height - oldFrameRect.size.height) / 2);
+		// Set the minimum content size, keeping the display rotation in mind.
+		NSSize transformedMinSize = GetTransformedBounds(minDisplayViewSize, 1.0, CLOCKWISE_DEGREES([dispViewDelegate rotation]));
+		transformedMinSize.height += statusBarHeight;
 		
-		// Set the window size.
-		[window setFrame:newFrameRect display:YES animate:NO];
+		// Resize the window if it's smaller than the minimum content size.
+		NSRect windowContentRect = [window contentRectForFrameRect:[window frame]];
+		if (windowContentRect.size.width < transformedMinSize.width || windowContentRect.size.height < transformedMinSize.height)
+		{
+			// Prepare to resize.
+			NSRect oldFrameRect = [window frame];
+			windowContentRect.size = transformedMinSize;
+			NSRect newFrameRect = [window frameRectForContentRect:windowContentRect];
+			
+			// Keep the window centered when expanding the size.
+			newFrameRect.origin.x = oldFrameRect.origin.x - ((newFrameRect.size.width - oldFrameRect.size.width) / 2);
+			newFrameRect.origin.y = oldFrameRect.origin.y - ((newFrameRect.size.height - oldFrameRect.size.height) / 2);
+			
+			// Set the window size.
+			[window setFrame:newFrameRect display:YES animate:NO];
+		}
 	}
 }
 
