@@ -645,7 +645,7 @@ namespace UtfConverter
             const UTF8* sourcestart = reinterpret_cast<const UTF8*>(utf8string.c_str());
             const UTF8* sourceend = sourcestart + widesize;
             UTF32* targetstart = reinterpret_cast<UTF32*>(widestringnative);
-            UTF32* targetend = targetstart + widesize;
+            UTF32* targetend = targetstart + widesize+1;
             ConversionResult res = ConvertUTF8toUTF32(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
             if (res != conversionOK)
             {
