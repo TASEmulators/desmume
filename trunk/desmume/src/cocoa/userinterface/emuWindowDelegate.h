@@ -108,6 +108,7 @@
 @property (assign) BOOL isSheetControllingExecution;
 @property (assign) BOOL isShowingSaveStateSheet;
 @property (assign) BOOL isShowingFileMigrationSheet;
+@property (assign) BOOL isMinSizeNormal;
 @property (assign) NSInteger selectedRomSaveTypeID;
 
 @property (readonly) NSMutableDictionary *bindings;
