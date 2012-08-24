@@ -224,8 +224,16 @@ void MovieData::installValue(std::string& key, std::string& val)
 		installInt(val,rerecordCount);
 	else if(key == "romFilename")
 		romFilename = val;
-	else if(key == "romChecksum")
-		StringToBytes(val,&romChecksum,MD5DATA::size);
+	else if(key == "romChecksum") {
+		// TODO: The current implementation of reading the checksum doesn't work correctly, and can
+		// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
+		// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
+		// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
+		// used in practice at this time. - rogerman, 2012/08/24
+		//StringToBytes(val,&romChecksum,MD5DATA::size);
+		
+		romChecksum = 0;
+	}
 	else if(key == "romSerial")
 		romSerial = val;
 	else if(key == "guid")
