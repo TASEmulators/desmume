@@ -132,7 +132,7 @@ SFORMAT SF_ARM9[]={
 	{ "9LDT", 1, 1, &NDS_ARM9.LDTBit},
 	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
 	{ "9hef", 4, 1, &NDS_ARM9.halt_IE_and_IF },
-	{ "9iws", 1, 1, &NDS_ARM7.intrWaitARM_state },
+	{ "9iws", 1, 1, &NDS_ARM9.intrWaitARM_state },
 	{ 0 }
 };
 
@@ -446,9 +446,8 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
 
-	if(version < 5) return ok;
-	
-	MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
+	if(version < 5)
+		MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
 
 	if(version < 6) return ok;
 
