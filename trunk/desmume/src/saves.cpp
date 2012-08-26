@@ -419,7 +419,7 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 
 	bool ok = MMU_new.backupDevice.load_state(is);
 
-	if(version < 3) return true;
+	if(version < 3) return ok;
 
 	ok &= MMU_new.gxstat.loadstate(is);
 	
@@ -434,7 +434,7 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	ok &= MMU_timing.arm9codeCache.loadstate(is, version);
 	ok &= MMU_timing.arm9dataCache.loadstate(is, version);
 
-	if(version < 4) return true;
+	if(version < 4) return ok;
 
 	ok &= MMU_new.sqrt.loadstate(is,version);
 	ok &= MMU_new.div.loadstate(is,version);
@@ -446,8 +446,9 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
 
-	if(version < 5)
-		MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
+	if(version < 5) return ok;
+	
+	MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
 
 	if(version < 6) return ok;
 
