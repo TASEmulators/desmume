@@ -151,7 +151,7 @@
 #define SPEED_SCALAR_DOUBLE							2.0		// Speed scalar for double execution speed.
 #define SPEED_SCALAR_MIN							0.005	// Lower limit for the speed multiplier.
 
-#define DS_FRAMES_PER_SECOND						59.73	// Number of DS frames per second.
+#define DS_FRAMES_PER_SECOND						59.8261	// Number of DS frames per second.
 #define DS_SECONDS_PER_FRAME						(1.0 / DS_FRAMES_PER_SECOND) // The length of time in seconds that, ideally, a frame should be processed within.
 
 #define FRAME_SKIP_AGGRESSIVENESS					10.0	// Must be a value between 0.0 (inclusive) and positive infinity.
