@@ -132,7 +132,7 @@ SFORMAT SF_ARM9[]={
 	{ "9LDT", 1, 1, &NDS_ARM9.LDTBit},
 	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
 	{ "9hef", 4, 1, &NDS_ARM9.halt_IE_and_IF },
-	{ "9iws", 1, 1, &NDS_ARM7.intrWaitARM_state },
+	{ "9iws", 1, 1, &NDS_ARM9.intrWaitARM_state },
 	{ 0 }
 };
 
@@ -420,7 +420,7 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 
 	bool ok = MMU_new.backupDevice.load_state(is);
 
-	if(version < 3) return true;
+	if(version < 3) return ok;
 
 	ok &= MMU_new.gxstat.loadstate(is);
 	
@@ -435,7 +435,7 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	ok &= MMU_timing.arm9codeCache.loadstate(is, version);
 	ok &= MMU_timing.arm9dataCache.loadstate(is, version);
 
-	if(version < 4) return true;
+	if(version < 4) return ok;
 
 	ok &= MMU_new.sqrt.loadstate(is,version);
 	ok &= MMU_new.div.loadstate(is,version);
