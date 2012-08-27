@@ -143,7 +143,7 @@ public:
 			commandCursor = 0;
 			size = 0;
 
-			// A “command without parameters” is one of the four following commands:
+			// A "command without parameters" is one of the four following commands:
 			// - PushMatrix
 			// - LoadIdentity
 			// - End
