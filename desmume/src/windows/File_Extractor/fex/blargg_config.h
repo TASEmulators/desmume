@@ -27,7 +27,8 @@
 	fex_zip_type,
 */
 
-#define HAVE_STDINT_H
+//old (any?) msvc doesnt have stdint.h so this better not be here.
+//#define HAVE_STDINT_H
 
 // Use standard config.h if present
 #ifdef HAVE_CONFIG_H
