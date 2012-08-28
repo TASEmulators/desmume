@@ -533,7 +533,12 @@
     <ClCompile Include="..\utils\md5.cpp" />
     <ClCompile Include="..\utils\task.cpp" />
     <ClCompile Include="..\utils\xstring.cpp" />
-    <ClCompile Include="..\utils\decrypt\crc.cpp" />
+    <ClCompile Include="..\utils\decrypt\crc.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">$(IntDir)\decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">$(IntDir)\decrypt\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\utils\decrypt\decrypt.cpp" />
     <ClCompile Include="..\utils\decrypt\header.cpp" />
     <ClCompile Include="..\metaspu\metaspu.cpp" />
