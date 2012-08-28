@@ -200,6 +200,11 @@ struct edge_fx_fl {
 		float curr, step, stepExtra;
 		FORCEINLINE void doStep() { curr += step; }
 		FORCEINLINE void doStepExtra() { curr += stepExtra; }
+		FORCEINLINE void initialize(float value) {
+			curr = value;
+			step = 0;
+			stepExtra = 0;
+		}
 		FORCEINLINE void initialize(float top, float bottom, float dx, float dy, long XStep, float XPrestep, float YPrestep) {
 			dx = 0;
 			dy *= (bottom-top);
@@ -265,8 +270,18 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 	}
 	else
 	{
-		memset(this, 0, sizeof(*this));
-		this->verts = verts;
+		// even if Width == 0 && Height == 0, give some info for pixel poly
+		// example: Castlevania Portrait of Ruin, warp stone
+		XStep = 1;
+		Numerator = 0;
+		Denominator = 1;
+		ErrorTerm = 0;
+		invw.initialize(1/verts[Top]->w);
+		u.initialize(verts[Top]->u);
+		v.initialize(verts[Top]->v);
+		z.initialize(verts[Top]->z);
+		for(int i=0;i<3;i++)
+			color[i].initialize(verts[Top]->fcolor[i]);
 	}
 }
 
@@ -1045,7 +1060,7 @@ public:
 
 			polyAttr.backfacing = engine->polyBackfacing[i];
 
-			shape_engine<SLI>(type,!polyAttr.backfacing, gfx3d_IsLinePoly(poly));
+			shape_engine<SLI>(type,!polyAttr.backfacing, (poly->vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
 		}
 	}
 
