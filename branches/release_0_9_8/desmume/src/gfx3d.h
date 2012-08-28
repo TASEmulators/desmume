@@ -447,6 +447,4 @@ bool gfx3d_loadstate(EMUFILE* is, int size);
 
 void gfx3d_ClearStack();
 
-bool gfx3d_IsLinePoly(POLY *poly);
-
 #endif //_GFX3D_H_
