@@ -929,9 +929,6 @@
     <ClInclude Include="..\wxdlg\wxdlg3dViewer.h">
       <Filter>Core\wxdlg</Filter>
     </ClInclude>
-    <ClInclude Include="7zipstreams.h">
-      <Filter>Windows</Filter>
-    </ClInclude>
     <ClInclude Include="AboutBox.h">
       <Filter>Windows</Filter>
     </ClInclude>
