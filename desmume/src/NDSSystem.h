@@ -508,7 +508,7 @@ extern struct TCommonSettings {
 		, spu_advanced(false)
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
-		, StylusJitter(true)
+		, StylusJitter(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
