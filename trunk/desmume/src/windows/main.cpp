@@ -2637,6 +2637,7 @@ int _main()
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
 	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", false, IniName);
 	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
+	CommonSettings.StylusJitter = GetPrivateProfileBool("Emulation", "StylusJitter", false, IniName);
 
 	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = GetPrivateProfileInt("3D", "ZeldaShadowDepthHack", 0, IniName);
 		
