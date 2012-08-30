@@ -2175,9 +2175,9 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			
 #if 1
 			case REG_DIVCNT: printf("ERROR 8bit DIVCNT WRITE\n"); return;
-			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 WRITE\n"); return;
-			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 WRITE\n"); return;
-			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT3 WRITE\n"); return;
+			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT+1 WRITE\n"); return;
+			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT+2 WRITE\n"); return;
+			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT+3 WRITE\n"); return;
 #endif
 
 			//fog table: only write bottom 7 bits
@@ -3343,24 +3343,21 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 				break;
 			case REG_DISPx_VCOUNT: return nds.VCount & 0xFF;
 			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8) & 0xFF;
-#if 0
-			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
-			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT1 READ\n"); return 0;//(MMU_new.sqrt.read16() & 0xFF00)>>8;
-#else
+
 			case REG_SQRTCNT: return (MMU_new.sqrt.read16() & 0xFF);
 			case REG_SQRTCNT+1: return ((MMU_new.sqrt.read16()>>8) & 0xFF);
-#endif
-			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 READ\n"); return 0;
-			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 READ\n"); return 0;
-#if 1
-			case REG_DIVCNT: printf("ERROR 8bit DIVCNT READ\n"); return 0;
-			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 READ\n"); return 0;
-#else
+				
+			//sqrtcnt isnt big enough for these to exist. but they'd probably return 0 so its ok
+			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT+2 READ\n"); return 0;
+			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT+3 READ\n"); return 0;
+
+			//Nostalgia's options menu requires that these work
 			case REG_DIVCNT: return (MMU_new.div.read16() & 0xFF);
 			case REG_DIVCNT+1: return ((MMU_new.div.read16()>>8) & 0xFF);
-#endif
-			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 READ\n"); return 0;
-			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT3 READ\n"); return 0;
+
+			//divcnt isnt big enough for these to exist. but they'd probably return 0 so its ok
+			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT+2 READ\n"); return 0;
+			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT+3 READ\n"); return 0;
 
 			//fog table: write only
 			case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x01: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x03: 
@@ -3429,7 +3426,13 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				break;
 
 			case REG_SQRTCNT: return MMU_new.sqrt.read16();
+			//sqrtcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
+			case REG_SQRTCNT+2: printf("ERROR 16bit SQRTCNT+2 READ\n"); return 0;
+
 			case REG_DIVCNT: return MMU_new.div.read16();
+			//divcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
+			case REG_DIVCNT+2: printf("ERROR 16bit DIVCNT+2 READ\n"); return 0;
+
 			case eng_3D_GXSTAT: return MMU_new.gxstat.read(16,adr);
 
 			case REG_DISPA_VCOUNT:
@@ -3538,10 +3541,11 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 			case REG_DISPx_VCOUNT: return nds.VCount;
 
+			//despite these being 16bit regs,
 			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
+			//well, it's pretty reasonable to read them as 32bits though, isnt it?
 			case REG_DIVCNT: return MMU_new.div.read16();
-			//I guess we'll do this also
-			case REG_SQRTCNT: return MMU_new.sqrt.read16();
+			case REG_SQRTCNT: return MMU_new.sqrt.read16(); //I guess we'll do this also
 
 			//fog table: write only
 			case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0C:
