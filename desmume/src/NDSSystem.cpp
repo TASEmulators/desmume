@@ -944,14 +944,10 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
 }
 
 void NDS_Sleep() { nds.sleeping = TRUE; }
-void NDS_ToggleCardEject()
+
+void NDS_TriggerCardEjectIRQ()
 {
-	if(!nds.cardEjected)
-	{
-		//staff of kings will test this (it also uses the arm9 0xB8 poll)
-		NDS_makeIrq(ARMCPU_ARM7, IRQ_BIT_GC_IREQ_MC);
-	}
-	nds.cardEjected ^= TRUE;
+	NDS_makeIrq(ARMCPU_ARM7, IRQ_BIT_GC_IREQ_MC);
 }
 
 
