@@ -47,6 +47,7 @@
 #define IDM_SBG1                        125
 #define IDD_IMPORT_SAVE_SIZE            125
 #define IDM_SBG2                        126
+#define IDD_SLOT1CONFIG                 126
 #define IDM_SBG3                        127
 #define IDM_OAM                         128
 #define IDM_PRINTSCREEN                 129
@@ -383,6 +384,7 @@
 #define IDC_PIANO_CS                    1034
 #define IDC_BBROWSE                     1035
 #define IDC_PIANO_D                     1035
+#define IDC_ADDONS_INFO2                1035
 #define IDC_PATHIMG                     1036
 #define IDC_PIANO_DS                    1036
 #define IDC_PATH                        1037
@@ -872,7 +874,6 @@
 #define ID_RAMSEARCH_CAPTIONTEXT        40064
 #define IDM_VIEW3D                      40065
 #define IDM_LOCKDOWN                    40066
-#define IDM_EJECTCARD                   40068
 #define IDM_SHOWTOOLBAR                 40069
 #define ID_CONFIG_DISPLAYMETHOD         40070
 #define ID_DISPLAYMETHOD_DIRECTDRAWHW   40071
@@ -1004,7 +1005,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        125
+#define _APS_NEXT_RESOURCE_VALUE        127
 #define _APS_NEXT_COMMAND_VALUE         40102
 #define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           101

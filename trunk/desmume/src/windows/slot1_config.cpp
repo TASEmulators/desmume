@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011 DeSmuME team
+	Copyright (C) 2011-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -140,12 +140,13 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				case IDOK:
 					{
 						int Msg = IDYES;
-						if (romloaded && (needReset_slot1 || (temp_type_slot1!=slot1_device_type)) )
-						{
-							Msg = MessageBox(dialog, 
-									"After change slot1 device game will reset!\nAre you sure to continue?", "DeSmuME",
-									MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2);
-						}
+						//zero 30-aug-2012 - do we really need to reset whenever we change the slot 1 device? why should resetting matter? if thats what you want to do, then do it.
+						//if (romloaded && (needReset_slot1 || (temp_type_slot1!=slot1_device_type)) )
+						//{
+						//	Msg = MessageBox(dialog, 
+						//			"After change slot1 device game will reset!\nAre you sure to continue?", "DeSmuME",
+						//			MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2);
+						//}
 						if (Msg == IDYES)
 						{
 							if (wndConfigSlot1) DestroyWindow(wndConfigSlot1);
@@ -194,7 +195,7 @@ void slot1Dialog(HWND hwnd)
 	last_type_slot1 = temp_type_slot1;
 	_OKbutton_slot1 = false;
 	needReset_slot1 = true;
-	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_GBASLOT), hwnd, (DLGPROC)Slot1Box_Proc);
+	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_SLOT1CONFIG), hwnd, (DLGPROC)Slot1Box_Proc);
 	if (res)
 	{
 		switch (temp_type_slot1)
@@ -222,8 +223,9 @@ void slot1Dialog(HWND hwnd)
 		WritePrivateProfileInt("Slot1","type",temp_type_slot1,IniName);
 
 		slot1Change((NDS_SLOT1_TYPE)temp_type_slot1);
-		if (romloaded && needReset_slot1)
-			NDS_Reset();
+		//zero 30-aug-2012 
+		//if (romloaded && needReset_slot1)
+		//	NDS_Reset();
 		return;
 	}
 }

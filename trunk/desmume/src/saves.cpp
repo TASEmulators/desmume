@@ -18,6 +18,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//MUST SAVE ADDONS! OMG HOW DID WE FORGET THAT
+
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif

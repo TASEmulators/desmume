@@ -3993,7 +3993,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, romloaded);
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
 			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
-			DesEnableMenuItem(mainMenu, IDM_EJECTCARD,         romloaded && movieMode == MOVIEMODE_INACTIVE);
 			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded && !(movieMode == MOVIEMODE_PLAY && movie_readonly));
 			DesEnableMenuItem(mainMenu, IDM_CLOSEROM,          romloaded);
 			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
@@ -4032,7 +4031,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//emulation menu
 			MainWindow->checkMenu(IDM_PAUSE, ((paused)));
-			MainWindow->checkMenu(IDM_EJECTCARD, nds.cardEjected != FALSE);
 
 			// LCDs layout
 			MainWindow->checkMenu(ID_LCDS_VERTICAL, ((video.layout==0)));
@@ -5349,10 +5347,6 @@ DOKEYDOWN:
 				ddraw.createSurfaces(hwnd);
 			}
 			break;
-
-		case IDM_EJECTCARD:
-			NDS_ToggleCardEject();
-			return 0;
 
 		case IDM_RESET:
 			ResetGame();

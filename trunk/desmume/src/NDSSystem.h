@@ -456,7 +456,7 @@ bool nds_loadstate(EMUFILE* is, int size);
 int NDS_WriteBMP(const char *filename);
 
 void NDS_Sleep();
-void NDS_ToggleCardEject();
+void NDS_TriggerCardEjectIRQ();
 
 void NDS_SkipNextFrame();
 #define NDS_SkipFrame(s) if(s) NDS_SkipNext2DFrame();
