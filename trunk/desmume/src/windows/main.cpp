@@ -2966,7 +2966,9 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
-	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", true, IniName);
+	//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
+	//id rather have people discover a bonus speedhack than discover new bugs in a new version
+	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", false, IniName);
 
   video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
