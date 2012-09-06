@@ -526,7 +526,9 @@ extern struct TCommonSettings {
 			for(int x=0;x<5;x++)
 				dispLayers[g][x]=true;
 #ifdef HAVE_JIT
-		use_jit = true;
+		//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
+		//id rather have people discover a bonus speedhack than discover new bugs in a new version
+		use_jit = false;
 #else
 		use_jit = false;
 #endif
