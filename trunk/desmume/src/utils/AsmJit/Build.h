@@ -179,24 +179,60 @@ namespace AsmJit {
 // Use typedefs.
 #if defined(_MSC_VER)
 #if (_MSC_VER < 1300)
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-#else
-typedef __int8 int8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef __int64 int64_t;
-typedef unsigned __int8 uint8_t;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int32 uint32_t;
-typedef unsigned __int64 uint64_t;
+
+#ifndef HAVE_INT8_T
+	typedef char int8_t;
 #endif
+#ifndef HAVE_INT16_T
+	typedef short int16_t;
+#endif
+#ifndef HAVE_INT32_T
+	typedef int int32_t;
+#endif
+#ifndef HAVE_UINT8_T
+	typedef unsigned char uint8_t;
+#endif
+#ifndef HAVE_UINT16_T
+	typedef unsigned short uint16_t;
+#endif
+#ifndef HAVE_UINT32_T
+	typedef unsigned int uint32_t;
+#endif
+#ifndef HAVE_INT64_T
+	typedef __int64 int64_t;
+#endif
+#ifndef HAVE_UINT64_T
+	typedef unsigned __int64 uint64_t;
+#endif
+
+#else
+
+#ifndef HAVE_INT8_T
+	typedef __int8 int8_t;
+#endif
+#ifndef HAVE_INT16_T
+	typedef __int16 int16_t;
+#endif
+#ifndef HAVE_INT32_T
+	typedef __int32 int32_t;
+#endif
+#ifndef HAVE_INT64_T
+	typedef __int64 int64_t;
+#endif
+#ifndef HAVE_UINT8_T
+	typedef unsigned __int8 uint8_t;
+#endif
+#ifndef HAVE_UINT16_T
+	typedef unsigned __int16 uint16_t;
+#endif
+#ifndef HAVE_UINT32_T
+	typedef unsigned __int32 uint32_t;
+#endif
+#ifndef HAVE_UINT64_T
+	typedef unsigned __int64 uint64_t;
+#endif //HAVE_U_INT64_T
+
+#endif // _MSC_VER
 #endif // _MSC_VER
 #endif // STDINT.H
 
