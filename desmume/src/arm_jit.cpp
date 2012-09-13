@@ -236,8 +236,6 @@ static GPVar bb_cpu;
 static GPVar bb_cycles;
 static GPVar total_cycles;
 
-static void *op_cmp[2][2];
-
 #define cpu (&ARMPROC)
 #define bb_next_instruction (bb_adr + bb_opcodesize)
 #define bb_r15				(bb_adr + 2 * bb_opcodesize)
@@ -304,63 +302,85 @@ static GPVar bb_profiler_entry;
 //-----------------------------------------------------------------------------
 //   Shifting macros
 //-----------------------------------------------------------------------------
+#define SET_NZCV(sign) { \
+	JIT_COMMENT("SET_NZCV"); \
+	GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
+	c.sets(x.r8Lo()); \
+	c.setz(y.r8Lo()); \
+	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
+	c.set(sign ? C_NC : C_C, y.r8Lo()); \
+	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
+	c.seto(y.r8Lo()); \
+	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
+	c.movzx(y, flags_ptr); \
+	c.shl(x, 4); \
+	c.and_(y, 0xF); \
+	c.or_(x, y); \
+	c.mov(flags_ptr, x.r8Lo()); \
+	c.unuse(x); \
+	c.unuse(y); \
+	JIT_COMMENT("end SET_NZCV"); \
+}
+
 #define SET_NZC { \
-		JIT_COMMENT("SET_NZC"); \
-		GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
-		GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
-		c.sets(x.r8Lo()); \
-		c.setz(y.r8Lo()); \
-		c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
-		c.lea(x, ptr(rcf.r64(), x.r64(), TIMES_2)); \
-		c.unuse(rcf); \
-		c.movzx(y, flags_ptr); \
-		c.shl(x, 5); \
-		c.and_(y, 0x1F); \
-		c.or_(x, y); \
-		c.mov(flags_ptr, x.r8Lo()); \
-		JIT_COMMENT("end SET_NZC"); }
+	JIT_COMMENT("SET_NZC"); \
+	GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
+	c.sets(x.r8Lo()); \
+	c.setz(y.r8Lo()); \
+	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
+	c.lea(x, ptr(rcf.r64(), x.r64(), TIMES_2)); \
+	c.unuse(rcf); \
+	c.movzx(y, flags_ptr); \
+	c.shl(x, 5); \
+	c.and_(y, 0x1F); \
+	c.or_(x, y); \
+	c.mov(flags_ptr, x.r8Lo()); \
+	JIT_COMMENT("end SET_NZC"); \
+}
 
 #define SET_NZ { \
-		JIT_COMMENT("SET_NZ"); \
-		GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
-		GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
-		c.sets(x.r8Lo()); \
-		c.setz(y.r8Lo()); \
-		c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
-		c.movzx(y, flags_ptr); \
-		c.shl(x, 6); \
-		c.and_(y, 0x3F); \
-		c.or_(x, y); \
-		c.mov(flags_ptr, x.r8Lo()); \
-		c.unuse(x); \
-		c.unuse(y); \
-		JIT_COMMENT("end SET_NZ"); }
+	JIT_COMMENT("SET_NZ"); \
+	GPVar x = c.newGP(VARIABLE_TYPE_GPN); \
+	GPVar y = c.newGP(VARIABLE_TYPE_GPN); \
+	c.pushf(); \
+	c.pop(x); \
+	c.and_(x, (3 << 6)); \
+	c.mov(y, flags_ptr); \
+	c.and_(y, 0x3F); \
+	c.or_(x, y); \
+	c.mov(flags_ptr, x.r8Lo()); \
+	JIT_COMMENT("end SET_NZ"); \
+}
 
-#define SET_NZ_W { \
-		JIT_COMMENT("SET_NZ_W"); \
-		GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
-		GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
-		c.cmp(hi, lhs); \
-		c.setz(y.r8Lo()); \
-		c.bt(hi, 31); \
-		c.setc(x.r8Lo()); \
-		c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
-		c.movzx(y, flags_ptr); \
-		c.shl(x, 6); \
-		c.and_(y, 0x3F); \
-		c.or_(x, y); \
-		c.mov(flags_ptr, x.r8Lo()); \
-		c.unuse(x); \
-		c.unuse(y); \
-		JIT_COMMENT("end SET_NZ_W"); }
+#define SET_NZ_MUL { \
+	JIT_COMMENT("SET_NZ_W"); \
+	GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
+	c.cmp(hi, lhs); \
+	c.setz(y.r8Lo()); \
+	c.test(hi, (1 << 31)); \
+	c.setnz(x.r8Lo()); \
+	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
+	c.movzx(y, flags_ptr); \
+	c.shl(x, 6); \
+	c.and_(y, 0x3F); \
+	c.or_(x, y); \
+	c.mov(flags_ptr, x.r8Lo()); \
+	c.unuse(x); \
+	c.unuse(y); \
+	JIT_COMMENT("end SET_NZ_W"); \
+}
 
 #define SET_Q { \
-		JIT_COMMENT("SET_Q"); \
-		Label __skipQ = c.newLabel(); \
-		c.jno(__skipQ); \
-		c.or_(flags_ptr, (1<<3)); \
-		c.bind(__skipQ); \
-		JIT_COMMENT("end SET_Q"); }
+	JIT_COMMENT("SET_Q"); \
+	Label __skipQ = c.newLabel(); \
+	c.jno(__skipQ); \
+	c.or_(flags_ptr, (1<<3)); \
+	c.bind(__skipQ); \
+	JIT_COMMENT("end SET_Q"); \
+}
 
 #define S_DST_R15 { \
 	JIT_COMMENT("S_DST_R15"); \
@@ -401,10 +421,15 @@ static GPVar bb_profiler_entry;
 	u32 imm = ((i>>7)&0x1F); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (imm == 0) \
-		c.bt(flags_ptr, 5); \
+	{ \
+		c.test(flags_ptr, (1 << 5)); \
+		c.setnz(rcf.r8Lo()); \
+	} \
 	else \
+	{ \
 		c.shl(rhs, imm); \
-	c.setc(rcf.r8Lo());
+		c.setc(rcf.r8Lo()); \
+	}
 
 #define LSR_IMM \
 	JIT_COMMENT("LSR_IMM"); \
@@ -428,15 +453,16 @@ static GPVar bb_profiler_entry;
 	u32 imm = ((i>>7)&0x1F); \
 	if (!imm) \
 	{ \
-		c.bt(reg_pos_ptr(0), 31); \
+		c.test(reg_pos_ptr(0), (1 << 31)); \
+		c.setnz(rcf.r8Lo()); \
 		c.mov(rhs, 0); \
 	} \
 	else \
 	{ \
 		c.mov(rhs, reg_pos_ptr(0)); \
 		c.shr(rhs, imm); \
-	} \
-	c.setc(rcf.r8Lo());
+		c.setc(rcf.r8Lo()); \
+	}
 
 #define ASR_IMM \
 	JIT_COMMENT("ASR_IMM"); \
@@ -514,18 +540,13 @@ static GPVar bb_profiler_entry;
 	bool rhs_is_imm = true; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
 	u32 rhs = ROR((i&0xFF), (i>>7)&0x1E); \
-	if ((i>>8)&0xF) c.mov(rcf, BIT31(rhs)); \
+	if ((i>>8)&0xF) \
+		c.mov(rcf, BIT31(rhs)); \
 	else \
 	{ \
-		c.bt(flags_ptr, 5); \
-		c.setc(rcf.r8Lo()); \
+		c.test(flags_ptr, (1 << 5)); \
+		c.setnz(rcf.r8Lo()); \
 	} \
-	u32 rhs_first = rhs;
-
-#define IMM_VALUE \
-	JIT_COMMENT("IMM_VALUE"); \
-	bool rhs_is_imm = true; \
-	u32 rhs = ROR((i&0xFF), (i>>7)&0x1E); \
 	u32 rhs_first = rhs;
 
 #define IMM_OFF \
@@ -576,23 +597,27 @@ static GPVar bb_profiler_entry;
 		Label __eq32 = c.newLabel(); \
 		c.je(__eq32); \
 		/* imm > 32 */ \
-		c.xor_(rhs, rhs); \
+		c.mov(rhs, 0); \
+		c.mov(rcf, 0); \
+		c.jmp(__done); \
 		/* imm == 32 */ \
 		c.bind(__eq32); \
 	} \
 	c.x86inst(rhs, 31); \
 	c.x86inst(rhs, 1); \
+	c.setc(rcf.r8Lo()); \
 	c.jmp(__done); \
 	/* imm == 0 */ \
 	c.bind(__zero); \
-	c.bt(flags_ptr, 5); \
+	c.test(flags_ptr, (1 << 5)); \
+	c.setnz(rcf.r8Lo()); \
 	c.jmp(__done); \
 	/* imm < 32 */ \
 	c.bind(__lt32); \
 	c.x86inst(rhs, imm); \
+	c.setc(rcf.r8Lo()); \
 	/* done */\
-	c.bind(__done); \
-	c.setc(rcf.r8Lo());
+	c.bind(__done);
 
 #define LSL_REG LSX_REG(LSL_REG, shl, 0)
 #define LSR_REG LSX_REG(LSR_REG, shr, 0)
@@ -617,27 +642,29 @@ static GPVar bb_profiler_entry;
 	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __zero = c.newLabel(); \
-	Label __zero2 = c.newLabel(); \
+	Label __zero_1F = c.newLabel(); \
 	Label __done = c.newLabel(); \
 	c.movzx(imm, reg_pos_ptrB(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	c.test(imm, imm); \
 	c.jz(__zero);\
 	c.and_(imm, 0x1F); \
-	c.jz(__zero2);\
+	c.jz(__zero_1F);\
 	/* imm&0x1F != 0 */ \
 	c.ror(rhs, imm); \
+	c.setc(rcf.r8Lo()); \
 	c.jmp(__done); \
 	/* imm&0x1F == 0 */ \
-	c.bind(__zero2); \
-	c.bt(rhs, 31); \
+	c.bind(__zero_1F); \
+	c.test(rhs, (1 << 31)); \
+	c.setnz(rcf.r8Lo()); \
 	c.jmp(__done); \
 	/* imm == 0 */ \
 	c.bind(__zero); \
-	c.bt(flags_ptr, 5); \
+	c.test(flags_ptr, (1 << 5)); \
+	c.setnz(rcf.r8Lo()); \
 	/* done */ \
-	c.bind(__done); \
-	c.setc(rcf.r8Lo());
+	c.bind(__done);
 
 //==================================================================== common funcs
 static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int population)
@@ -683,7 +710,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 			c.add(total_cycles, 2); \
 			return 1; \
 		} \
-		c.call(op_cmp[PROCNUM][!symmetric])->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
+		SET_NZCV(!symmetric); \
 	} \
 	else \
 	{ \
@@ -697,20 +724,12 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 	} \
 	return 1;
 
-#define OP_ARITHMETIC_R(arg, x86inst, symmetric, flags) \
+#define OP_ARITHMETIC_R(arg, x86inst, flags) \
     arg; \
-	if(symmetric && !rhs_is_imm) \
-	{ \
-		c.x86inst(*(GPVar*)&rhs, reg_pos_ptr(16)); \
-		c.mov(reg_pos_ptr(12), rhs); \
-	} \
-	else \
-	{ \
-		GPVar lhs = c.newGP(VARIABLE_TYPE_GPD); \
-		c.mov(lhs, rhs); \
-		c.x86inst(lhs, reg_pos_ptr(16)); \
-		c.mov(reg_pos_ptr(12), lhs); \
-	} \
+	GPVar lhs = c.newGP(VARIABLE_TYPE_GPD); \
+	c.mov(lhs, rhs); \
+	c.x86inst(lhs, reg_pos_ptr(16)); \
+	c.mov(reg_pos_ptr(12), lhs); \
 	if(flags) \
 	{ \
 		if(REG_POS(i,12)==15) \
@@ -719,15 +738,14 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 			c.add(total_cycles, 2); \
 			return 1; \
 		} \
-		c.call(op_cmp[PROCNUM][!symmetric])->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
+		SET_NZCV(1); \
 	} \
 	else \
 	{ \
 		if(REG_POS(i,12)==15) \
 		{ \
 			GPVar tmp = c.newGP(VARIABLE_TYPE_GPD); \
-			c.mov(tmp, reg_ptr(15)); \
-			c.mov(cpu_ptr(next_instruction), tmp); \
+			c.mov(cpu_ptr(next_instruction), lhs); \
 			c.add(total_cycles, 2); \
 		} \
 	} \
@@ -735,7 +753,9 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GPVar mem_cycles, int populati
 
 #define OP_ARITHMETIC_S(arg, x86inst, symmetric) \
     arg; \
-	if(symmetric && !rhs_is_imm) \
+	if(REG_POS(i,12) == REG_POS(i,16)) \
+		c.x86inst(reg_pos_ptr(12), rhs); \
+	else if(symmetric && !rhs_is_imm) \
 	{ \
 		c.x86inst(*(GPVar*)&rhs, reg_pos_ptr(16)); \
 		c.mov(reg_pos_ptr(12), rhs); \
@@ -810,15 +830,15 @@ static int OP_SUB_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, sub, 0, 0); }
 static int OP_SUB_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, sub, 0, 0); }
 static int OP_SUB_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, sub, 0, 0); }
 
-static int OP_RSB_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, sub, 0, 0); }
-static int OP_RSB_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, sub, 0, 0); }
-static int OP_RSB_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, sub, 0, 0); }
-static int OP_RSB_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, sub, 0, 0); }
-static int OP_RSB_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, sub, 0, 0); }
-static int OP_RSB_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, sub, 0, 0); }
-static int OP_RSB_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, sub, 0, 0); }
-static int OP_RSB_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, sub, 0, 0); }
-static int OP_RSB_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, sub, 0, 0); }
+static int OP_RSB_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, sub, 0); }
+static int OP_RSB_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, sub, 0); }
+static int OP_RSB_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, sub, 0); }
+static int OP_RSB_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, sub, 0); }
+static int OP_RSB_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, sub, 0); }
+static int OP_RSB_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, sub, 0); }
+static int OP_RSB_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, sub, 0); }
+static int OP_RSB_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, sub, 0); }
+static int OP_RSB_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, sub, 0); }
 
 // ================================ S instructions
 static int OP_AND_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_S(S_LSL_IMM, and_, 1); }
@@ -871,15 +891,15 @@ static int OP_SUB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM, sub, 0, 1); }
 static int OP_SUB_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG, sub, 0, 1); }
 static int OP_SUB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL, sub, 0, 1); }
 
-static int OP_RSB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, sub, 0, 1); }
-static int OP_RSB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, sub, 0, 1); }
-static int OP_RSB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, sub, 0, 1); }
-static int OP_RSB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, sub, 0, 1); }
-static int OP_RSB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, sub, 0, 1); }
-static int OP_RSB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, sub, 0, 1); }
-static int OP_RSB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, sub, 0, 1); }
-static int OP_RSB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, sub, 0, 1); }
-static int OP_RSB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, sub, 0, 1); }
+static int OP_RSB_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM, sub, 1); }
+static int OP_RSB_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG, sub, 1); }
+static int OP_RSB_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM, sub, 1); }
+static int OP_RSB_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG, sub, 1); }
+static int OP_RSB_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM, sub, 1); }
+static int OP_RSB_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG, sub, 1); }
+static int OP_RSB_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM, sub, 1); }
+static int OP_RSB_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG, sub, 1); }
+static int OP_RSB_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL, sub, 1); }
 
 static int OP_ADC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; GET_CARRY(0), adc, 1, 0); }
 static int OP_ADC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; GET_CARRY(0), adc, 1, 0); }
@@ -921,25 +941,25 @@ static int OP_SBC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC(ROR_IMM; GET_CARRY(1), 
 static int OP_SBC_S_ROR_REG(const u32 i) { OP_ARITHMETIC(ROR_REG; GET_CARRY(1), sbb, 0, 1); }
 static int OP_SBC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC(IMM_VAL; GET_CARRY(1), sbb, 0, 1); }
 
-static int OP_RSC_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), sbb, 0, 0); }
-static int OP_RSC_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), sbb, 0, 0); }
+static int OP_RSC_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), sbb, 0); }
+static int OP_RSC_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), sbb, 0); }
 
-static int OP_RSC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), sbb, 0, 1); }
-static int OP_RSC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), sbb, 0, 1); }
+static int OP_RSC_S_LSL_IMM(const u32 i) { OP_ARITHMETIC_R(LSL_IMM; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_LSL_REG(const u32 i) { OP_ARITHMETIC_R(LSL_REG; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_LSR_IMM(const u32 i) { OP_ARITHMETIC_R(LSR_IMM; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_LSR_REG(const u32 i) { OP_ARITHMETIC_R(LSR_REG; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_ASR_IMM(const u32 i) { OP_ARITHMETIC_R(ASR_IMM; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_ASR_REG(const u32 i) { OP_ARITHMETIC_R(ASR_REG; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_ROR_IMM(const u32 i) { OP_ARITHMETIC_R(ROR_IMM; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_ROR_REG(const u32 i) { OP_ARITHMETIC_R(ROR_REG; GET_CARRY(1), sbb, 1); }
+static int OP_RSC_S_IMM_VAL(const u32 i) { OP_ARITHMETIC_R(IMM_VAL; GET_CARRY(1), sbb, 1); }
 
 static int OP_BIC_LSL_IMM(const u32 i) { OP_ARITHMETIC(LSL_IMM; c.not_(rhs), and_, 1, 0); }
 static int OP_BIC_LSL_REG(const u32 i) { OP_ARITHMETIC(LSL_REG; c.not_(rhs), and_, 1, 0); }
@@ -1009,43 +1029,10 @@ static int OP_TEQ_IMM_VAL(const u32 i) { OP_TEQ_(S_IMM_VAL); }
 //-----------------------------------------------------------------------------
 //   CMP
 //-----------------------------------------------------------------------------
-static void init_op_cmp(int PROCNUM, int sign)
-{
-	c.clear();
-	JIT_COMMENT("init_op_cmp ARM%c, sign %d", PROCNUM?'7':'9', sign);
-	// actually takes 1 input, the flags reg
-	c.newFunction(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
-	c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
-	GPVar x = c.newGP(VARIABLE_TYPE_GPD);
-	GPVar y = c.newGP(VARIABLE_TYPE_GPD);
-#if defined(_M_X64) || defined(__x86_64__)
-	GPVar bb_cpu = c.newGP(VARIABLE_TYPE_GPN);
-	c.mov(bb_cpu, (uintptr_t)&ARMPROC);
-	Mem flags = flags_ptr;
-#else
-	Mem flags = byte_ptr_abs((u8*)&cpu->CPSR.val+3);
-#endif
-	c.sets(x.r8Lo());
-	c.setz(y.r8Lo());
-	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2));
-	c.set(sign ? C_NC : C_C, y.r8Lo());
-	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2));
-	c.seto(y.r8Lo());
-	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2));
-	c.movzx(y, flags);
-	c.shl(x, 4);
-	c.and_(y, 0xF);
-	c.or_(x, y);
-	c.mov(flags, x.r8Lo());
-	c.endFunction();
-	op_cmp[PROCNUM][sign] = c.make();
-}
-
 #define OP_CMP(arg) \
 	arg; \
 	c.cmp(reg_pos_ptr(16), rhs); \
-	ECall* ctx = c.call(op_cmp[PROCNUM][1]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
+	SET_NZCV(1); \
 	return 1;
 
 static int OP_CMP_LSL_IMM(const u32 i) { OP_CMP(LSL_IMM); }
@@ -1074,8 +1061,7 @@ static int OP_CMP_IMM_VAL(const u32 i) { OP_CMP(IMM_VAL); }
 		c.mov(lhs, reg_pos_ptr(16)); \
 		c.add(lhs, rhs); \
 	} \
-	ECall* ctx = c.call(op_cmp[PROCNUM][sign]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>()); \
+	SET_NZCV(sign); \
 	return 1;
 
 static int OP_CMN_LSL_IMM(const u32 i) { OP_CMN(LSL_IMM); }
@@ -1208,7 +1194,7 @@ static void MUL_Mxx_END(GPVar x, bool sign, int cycles)
 			c.adc(hi, reg_pos_ptr(16)); \
 			c.mov(reg_pos_ptr(12), lhs); \
 			c.mov(reg_pos_ptr(16), hi); \
-			SET_NZ_W; \
+			SET_NZ_MUL; \
 		} \
 		else \
 		{ \
@@ -1220,7 +1206,7 @@ static void MUL_Mxx_END(GPVar x, bool sign, int cycles)
 	{ \
 		c.mov(reg_pos_ptr(12), lhs); \
 		c.mov(reg_pos_ptr(16), hi); \
-		if(flags) SET_NZ_W; \
+		if(flags) SET_NZ_MUL; \
 	} \
 	else \
 	{ \
@@ -1486,8 +1472,8 @@ static int OP_MRS_SPSR(const u32 i)
 
 static int OP_MSR_CPSR(const u32 i) { OP_MSR_(CPSR, REG_OFF, 1); }
 static int OP_MSR_SPSR(const u32 i) { OP_MSR_(SPSR, REG_OFF, 0); }
-static int OP_MSR_CPSR_IMM_VAL(const u32 i) { OP_MSR_(CPSR, IMM_VALUE, 1); }
-static int OP_MSR_SPSR_IMM_VAL(const u32 i) { OP_MSR_(SPSR, IMM_VALUE, 0); }
+static int OP_MSR_CPSR_IMM_VAL(const u32 i) { OP_MSR_(CPSR, IMM_VAL, 1); }
+static int OP_MSR_SPSR_IMM_VAL(const u32 i) { OP_MSR_(SPSR, IMM_VAL, 0); }
 
 //-----------------------------------------------------------------------------
 //   LDR
@@ -2495,8 +2481,8 @@ static int OP_MCR(const u32 i)
 				c.mov(bb_mmu, (uintptr_t)&MMU);
 				Mem rwmode = mmu_ptr_byte(ARM9_RW_MODE);
 				Mem ldtbit = cpu_ptr_byte(LDTBit, 0);
-				c.bt(data, 7);
-				c.setc(rwmode);
+				c.test(data, (1<<7));
+				c.setnz(rwmode);
 				//cpu->intVector = 0xFFFF0000 * (BIT13(val));
 				GPVar vec = c.newGP(VARIABLE_TYPE_GPD);
 				c.mov(tmp, 0xFFFF0000);
@@ -2505,8 +2491,8 @@ static int OP_MCR(const u32 i)
 				c.cmovc(vec, tmp);
 				c.mov(cpu_ptr(intVector), vec);
 				//cpu->LDTBit = !BIT15(val); //TBit
-				c.bt(data, 1);
-				c.setnc(ldtbit);
+				c.test(data, (1 << 1));
+				c.setz(ldtbit);
 				//ctrl = (val & 0x000FF085) | 0x00000078;
 				c.and_(data, 0x000FF085);
 				c.or_(data, 0x00000078);
@@ -2990,23 +2976,22 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 //-----------------------------------------------------------------------------
 //   THUMB
 //-----------------------------------------------------------------------------
-#define SET_NZCV(sign) \
-	ECall* ctx = c.call(op_cmp[PROCNUM][sign]); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
-
-#define SET_NZCV_ZERO_CV { \
-	GPVar x = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar y = c.newGP(VARIABLE_TYPE_GPD); \
-	c.sets(x.r8Lo()); \
-	c.setz(y.r8Lo()); \
-	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
-	c.movzx(y, flags_ptr); \
-	c.shl(x, 6); \
-	c.and_(y, 0xF); \
+#define SET_NZ_CLEAR_CV { \
+	JIT_COMMENT("SET_NZ_CLEAR_CV"); \
+	GPVar x = c.newGP(VARIABLE_TYPE_GPN); \
+	GPVar y = c.newGP(VARIABLE_TYPE_GPN); \
+	c.pushf(); \
+	c.pop(x); \
+	c.and_(x, (3 << 6)); \
+	c.mov(y, flags_ptr); \
+	c.and_(y, 0x0F); \
 	c.or_(x, y); \
-	c.mov(flags_ptr, x.r8Lo()); }
+	c.mov(flags_ptr, x.r8Lo()); \
+	JIT_COMMENT("end SET_NZ_CLEAR_CV"); \
+}
 
 #define SET_NZC_SHIFTS_ZERO(cf) { \
+	JIT_COMMENT("SET_NZC_SHIFTS_ZERO"); \
 	c.and_(flags_ptr, 0x1F); \
 	if(cf) \
 	{ \
@@ -3015,7 +3000,9 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 		c.or_(flags_ptr, rcf.r8Lo()); \
 	} \
 	else \
-		c.or_(flags_ptr, (1<<6)); }
+		c.or_(flags_ptr, (1<<6)); \
+	JIT_COMMENT("end SET_NZC_SHIFTS_ZERO"); \
+}
 
 //-----------------------------------------------------------------------------
 #define OP_SHIFTS_IMM(x86inst) \
@@ -3055,8 +3042,8 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 	c.jmp(__done); \
 	/* imm == 32 */ \
 	c.bind(__eq32); \
-	c.bt(reg_pos_thumb(0), bit); \
-	c.setc(rcf.r8Lo()); \
+	c.test(reg_pos_thumb(0), (1 << bit)); \
+	c.setnz(rcf.r8Lo()); \
 	c.mov(reg_pos_thumb(0), 0); \
 	SET_NZC_SHIFTS_ZERO(1); \
 	c.jmp(__done); \
@@ -3103,8 +3090,8 @@ static int OP_LSL_REG(const u32 i) { OP_SHIFTS_REG(shl, 0); }
 static int OP_LSR_0(const u32 i) 
 {
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD);
-	c.bt(reg_pos_thumb(3), 31);
-	c.setc(rcf.r8Lo());
+	c.test(reg_pos_thumb(3), (1 << 31));
+	c.setnz(rcf.r8Lo());
 	SET_NZC_SHIFTS_ZERO(1);
 	c.mov(reg_pos_thumb(0), 0);
 	return 1;
@@ -3116,8 +3103,8 @@ static int OP_ASR_0(const u32 i)
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD);
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(rhs, reg_pos_thumb(3));
-	c.bt(rhs, 31);
-	c.setc(rcf.r8Lo());
+	c.test(rhs, (1 << 31));
+	c.setnz(rcf.r8Lo());
 	c.sar(rhs, 31);
 	c.mov(reg_pos_thumb(0), rhs);
 	SET_NZC;
@@ -3233,7 +3220,7 @@ static int OP_ADD_IMM3(const u32 i)
 		c.mov(tmp, reg_pos_thumb(3));
 		c.mov(reg_pos_thumb(0), tmp);
 		c.cmp(tmp, 0);
-		SET_NZCV_ZERO_CV;
+		SET_NZ_CLEAR_CV;
 		return 1;
 	}
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
@@ -3458,8 +3445,7 @@ static int OP_MUL_REG(const u32 i)
 static int OP_CMP_IMM8(const u32 i) 
 {
 	c.cmp(reg_pos_thumb(8), (i & 0xFF));
-	ECall* ctx = c.call(op_cmp[PROCNUM][1]);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
+	SET_NZCV(1);
 	return 1; 
 };
 static int OP_CMP(const u32 i) 
@@ -3467,8 +3453,7 @@ static int OP_CMP(const u32 i)
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(tmp, reg_pos_thumb(3));
 	c.cmp(reg_pos_thumb(0), tmp);
-	ECall* ctx = c.call(op_cmp[PROCNUM][1]);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
+	SET_NZCV(1);
 	return 1; 
 };
 static int OP_CMP_SPE(const u32 i) 
@@ -3477,8 +3462,7 @@ static int OP_CMP_SPE(const u32 i)
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(tmp, reg_pos_ptr(3));
 	c.cmp(reg_ptr(Rn), tmp);
-	ECall* ctx = c.call(op_cmp[PROCNUM][1]);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
+	SET_NZCV(1);
 	return 1; 
 };
 static int OP_CMN(const u32 i) 
@@ -3486,8 +3470,7 @@ static int OP_CMN(const u32 i)
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(tmp, reg_pos_thumb(0));
 	c.add(tmp, reg_pos_thumb(3));
-	ECall* ctx = c.call(op_cmp[PROCNUM][0]);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FunctionBuilder0<Void>());
+	SET_NZCV(0);
 	return 1; 
 };
 
@@ -4273,12 +4256,8 @@ void arm_jit_reset(bool enable)
 				memset(compiled_funcs+128*i, 0, 128*sizeof(*compiled_funcs));
 			}
 #endif
-
-		init_op_cmp(0, 0);
-		init_op_cmp(0, 1);
-		init_op_cmp(1, 0);
-		init_op_cmp(1, 1);
 	}
+
 	c.clear();
 
 #if (PROFILER_JIT_LEVEL > 0)
