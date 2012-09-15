@@ -2966,9 +2966,13 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
+#ifdef HAVE_JIT
 	//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
 	//id rather have people discover a bonus speedhack than discover new bugs in a new version
 	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", false, IniName);
+#else
+	CommonSettings.use_jit = false;
+#endif
 
   video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
@@ -5824,6 +5828,9 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			SetDlgItemText(hDlg, IDC_ARM9BIOS, CommonSettings.ARM9BIOS);
 			SetDlgItemText(hDlg, IDC_ARM7BIOS, CommonSettings.ARM7BIOS);
 			CheckDlgItem(hDlg, IDC_CHECKBOX_DYNAREC, CommonSettings.use_jit);
+#ifndef HAVE_JIT
+			EnableWindow(GetDlgItem(hDlg, IDC_CHECKBOX_DYNAREC), false);
+#endif
 
 			if(CommonSettings.UseExtBIOS == false)
 			{
@@ -5890,8 +5897,9 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					CommonSettings.DebugConsole = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
 					CommonSettings.EnsataEmulation = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_ENSATAEMULATION);
 					CommonSettings.advanced_timing = IsDlgCheckboxChecked(hDlg, IDC_CHECBOX_ADVANCEDTIMING);
-
+#ifdef HAVE_JIT
 					CommonSettings.use_jit = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DYNAREC);
+#endif
 
 					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("Emulation", "EnsataEmulation", ((CommonSettings.EnsataEmulation == true) ? 1 : 0), IniName);
@@ -5905,8 +5913,9 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
 					WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
 					WritePrivateProfileInt("Firmware", "BootFromFirmware", ((CommonSettings.BootFromFirmware == true) ? 1 : 0), IniName);
-
+#ifdef HAVE_JIT
 					WritePrivateProfileInt("Emulation", "CPUmode", ((CommonSettings.use_jit == true) ? 1 : 0), IniName);
+#endif
 
 					if(val == IDYES)
 					{

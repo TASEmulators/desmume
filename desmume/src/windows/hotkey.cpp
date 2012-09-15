@@ -93,6 +93,8 @@ void HK_ReloadROM(int, bool justPressed)
 	void OpenRecentROM(int listNum);
 	OpenRecentROM(0);
 }
+
+#ifdef HAVE_JIT
 void HK_CpuMode(int, bool justPressed)
 {
 	extern void arm_jit_sync();
@@ -107,6 +109,8 @@ void HK_CpuMode(int, bool justPressed)
 	osd->addLine(tmp);
 	//WritePrivateProfileInt("Emulation", "CpuMode", CommonSettings.use_jit, IniName)
 }
+#endif
+
 void HK_SearchCheats(int, bool justPressed) 
 { 
 	if (romloaded)
@@ -527,11 +531,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Pause.page = HOTKEY_PAGE_MAIN;
 	keys->Pause.key = VK_PAUSE;
 
+#ifdef HAVE_JIT
 	keys->CpuMode.handleKeyDown = HK_CpuMode;
 	keys->CpuMode.code = "CpuMode";
 	keys->CpuMode.name = STRW(ID_LABEL_HK3b);
 	keys->CpuMode.page = HOTKEY_PAGE_MAIN;
 	keys->CpuMode.key = VK_SCROLL;
+#endif
 
 	keys->FrameAdvance.handleKeyDown = HK_FrameAdvanceKeyDown;
 	keys->FrameAdvance.handleKeyUp = HK_FrameAdvanceKeyUp;
