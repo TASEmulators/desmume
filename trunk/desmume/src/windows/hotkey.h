@@ -23,6 +23,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <string>
+#include "../types.h"
 
 enum HotkeyPage {
 	HOTKEY_PAGE_MAIN=0,
@@ -71,7 +72,12 @@ struct SCustomKeys
 	
 	SCustomKey Rotate0, Rotate90, Rotate180, Rotate270;
 
-	SCustomKey OpenROM, ReloadROM, Reset, Pause, CpuMode, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure, ToggleStylusJitter;
+	SCustomKey OpenROM, ReloadROM, Reset, Pause;
+
+#ifdef HAVE_JIT
+	SCustomKey CpuMode;
+#endif
+	SCustomKey FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure, ToggleStylusJitter;
 
 	SCustomKey PlayMovie, RecordMovie, StopMovie, ToggleReadOnly;
 	
