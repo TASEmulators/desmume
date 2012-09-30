@@ -249,6 +249,7 @@ static GPVar total_cycles;
 #define reg_pos_ptrH(x)		word_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)) + 2)
 #define reg_pos_ptrB(x)		byte_ptr( bb_cpu, offsetof(armcpu_t, R) + 4*REG_POS(i,(x)))
 #define reg_pos_thumb(x)	dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7))
+#define reg_pos_thumbB(x)	byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7))
 #define cp15_ptr(x)			dword_ptr(bb_cp15, offsetof(armcp15_t, x))
 #define mmu_ptr(x)			dword_ptr(bb_mmu, offsetof(MMU_struct, x))
 #define mmu_ptr_byte(x)		byte_ptr(bb_mmu, offsetof(MMU_struct, x))
@@ -331,25 +332,39 @@ static GPVar bb_profiler_entry;
 	c.sets(x.r8Lo()); \
 	c.setz(y.r8Lo()); \
 	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
-	c.lea(x, ptr(rcf.r64(), x.r64(), TIMES_2)); \
-	c.unuse(rcf); \
+	if (cf_change) { c.lea(x, ptr(rcf.r64(), x.r64(), TIMES_2)); c.unuse(rcf); } \
 	c.movzx(y, flags_ptr); \
-	c.shl(x, 5); \
-	c.and_(y, 0x1F); \
+	c.shl(x, 6 - cf_change); \
+	c.and_(y, cf_change?0x1F:0x3F); \
 	c.or_(x, y); \
 	c.mov(flags_ptr, x.r8Lo()); \
 	JIT_COMMENT("end SET_NZC"); \
 }
 
-#define SET_NZ { \
+#define SET_NZC_SHIFTS_ZERO(cf) { \
+	JIT_COMMENT("SET_NZC_SHIFTS_ZERO"); \
+	c.and_(flags_ptr, 0x1F); \
+	if(cf) \
+	{ \
+		c.shl(rcf, 5); \
+		c.or_(rcf, (1<<6)); \
+		c.or_(flags_ptr, rcf.r8Lo()); \
+	} \
+	else \
+		c.or_(flags_ptr, (1<<6)); \
+	JIT_COMMENT("end SET_NZC_SHIFTS_ZERO"); \
+}
+
+#define SET_NZ(clear_cv) { \
 	JIT_COMMENT("SET_NZ"); \
 	GPVar x = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar y = c.newGP(VARIABLE_TYPE_GPN); \
-	c.pushf(); \
-	c.pop(x); \
-	c.and_(x, (3 << 6)); \
-	c.mov(y, flags_ptr); \
-	c.and_(y, 0x3F); \
+	c.sets(x.r8Lo()); \
+	c.setz(y.r8Lo()); \
+	c.lea(x, ptr(y.r64(), x.r64(), TIMES_2)); \
+	c.movzx(y, flags_ptr); \
+	c.and_(y, clear_cv?0x0F:0x3F); \
+	c.shl(x, 6); \
 	c.or_(x, y); \
 	c.mov(flags_ptr, x.r8Lo()); \
 	JIT_COMMENT("end SET_NZ"); \
@@ -398,18 +413,16 @@ static GPVar bb_profiler_entry;
 #define S_LSL_IMM \
 	JIT_COMMENT("S_LSL_IMM"); \
 	bool rhs_is_imm = false; \
-	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
+	u8 cf_change = 0; \
+	GPVar rcf; \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	u32 imm = ((i>>7)&0x1F); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	if (imm == 0) \
+	if (imm)  \
 	{ \
-		c.test(flags_ptr, (1 << 5)); \
-		c.setnz(rcf.r8Lo()); \
-	} \
-	else \
-	{ \
+		cf_change = 1; \
 		c.shl(rhs, imm); \
+		rcf = c.newGP(VARIABLE_TYPE_GPD); \
 		c.setc(rcf.r8Lo()); \
 	}
 
@@ -430,18 +443,19 @@ static GPVar bb_profiler_entry;
 #define S_LSR_IMM \
 	JIT_COMMENT("S_LSR_IMM"); \
 	bool rhs_is_imm = false; \
+	u8 cf_change = 1; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	u32 imm = ((i>>7)&0x1F); \
+	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) \
 	{ \
-		c.test(reg_pos_ptr(0), (1 << 31)); \
+		c.test(rhs, (1 << 31)); \
 		c.setnz(rcf.r8Lo()); \
-		c.mov(rhs, 0); \
+		c.xor_(rhs, rhs); \
 	} \
 	else \
 	{ \
-		c.mov(rhs, reg_pos_ptr(0)); \
 		c.shr(rhs, imm); \
 		c.setc(rcf.r8Lo()); \
 	}
@@ -459,20 +473,14 @@ static GPVar bb_profiler_entry;
 #define S_ASR_IMM \
 	JIT_COMMENT("S_ASR_IMM"); \
 	bool rhs_is_imm = false; \
+	u8 cf_change = 1; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	u32 imm = ((i>>7)&0x1F); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	if (!imm) \
-	{ \
-		c.sar(rhs, 31); \
-		c.setnz(rcf.r8Lo()); \
-	} \
-	else \
-	{ \
-		c.sar(rhs, imm); \
-		c.setc(rcf.r8Lo()); \
-	}
+	if (!imm) imm = 31; \
+	c.sar(rhs, imm); \
+	c.sets(rcf.r8Lo());
 
 #define ROR_IMM \
 	JIT_COMMENT("ROR_IMM"); \
@@ -487,11 +495,12 @@ static GPVar bb_profiler_entry;
 	} \
 	else \
 		c.ror(rhs, imm); \
-	u32 rhs_first = ROR(cpu->R[REG_POS(i,0)], imm);	/* TODO */
+	u32 rhs_first = imm?ROR(cpu->R[REG_POS(i,0)], imm) : ((u32)cpu->CPSR.bits.C<<31)|(cpu->R[REG_POS(i,0)]>>1);
 
 #define S_ROR_IMM \
 	JIT_COMMENT("S_ROR_IMM"); \
 	bool rhs_is_imm = false; \
+	u8 cf_change = 1; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	u32 imm = ((i>>7)&0x1F); \
@@ -520,14 +529,14 @@ static GPVar bb_profiler_entry;
 #define S_IMM_VAL \
 	JIT_COMMENT("S_IMM_VAL"); \
 	bool rhs_is_imm = true; \
-	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
+	u8 cf_change = 0; \
+	GPVar rcf; \
 	u32 rhs = ROR((i&0xFF), (i>>7)&0x1E); \
 	if ((i>>8)&0xF) \
-		c.mov(rcf, BIT31(rhs)); \
-	else \
 	{ \
-		c.test(flags_ptr, (1 << 5)); \
-		c.setnz(rcf.r8Lo()); \
+		cf_change = 1; \
+		rcf = c.newGP(VARIABLE_TYPE_GPD); \
+		c.mov(rcf, BIT31(rhs)); \
 	} \
 	u32 rhs_first = rhs;
 
@@ -547,24 +556,26 @@ static GPVar bb_profiler_entry;
 #define LSX_REG(name, x86inst, sign) \
 	JIT_COMMENT(#name); \
 	bool rhs_is_imm = false; \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
-	Label __lt32 = c.newLabel(); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
+	GPVar tmp = c.newGP(VARIABLE_TYPE_GPN); \
+	if(sign) c.mov(tmp, 31); \
+	else c.mov(tmp, 0); \
 	c.movzx(imm, reg_pos_ptrB(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	c.cmp(imm, 32); \
-	c.jl(__lt32); \
-	if(sign) c.mov(imm, 31); \
-	else c.xor_(rhs, rhs); \
-	c.bind(__lt32); \
-	c.x86inst(rhs, imm);
+	c.cmp(imm, 31); \
+	if(sign) c.cmovg(imm, tmp); \
+	else c.cmovg(rhs, tmp); \
+	c.x86inst(rhs, imm); \
+	c.unuse(tmp);
 
 #define S_LSX_REG(name, x86inst, sign) \
 	JIT_COMMENT(#name); \
 	bool rhs_is_imm = false; \
+	u8 cf_change = 1; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	Label __zero = c.newLabel(); \
 	Label __lt32 = c.newLabel(); \
 	Label __done = c.newLabel(); \
@@ -611,24 +622,25 @@ static GPVar bb_profiler_entry;
 #define ROR_REG \
 	JIT_COMMENT("ROR_REG"); \
 	bool rhs_is_imm = false; \
-	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	c.movzx(imm, reg_pos_ptrB(8)); \
-	c.ror(rhs, imm); \
+	c.mov(imm, reg_pos_ptrB(8)); \
+	c.ror(rhs, imm.r8Lo());
 
 #define S_ROR_REG \
 	JIT_COMMENT("S_ROR_REG"); \
 	bool rhs_is_imm = false; \
+	bool cf_change = 1; \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __zero = c.newLabel(); \
 	Label __zero_1F = c.newLabel(); \
 	Label __done = c.newLabel(); \
-	c.movzx(imm, reg_pos_ptrB(8)); \
+	c.mov(imm, reg_pos_ptr(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	c.test(imm, imm); \
+	c.and_(imm, 0xFF); \
 	c.jz(__zero);\
 	c.and_(imm, 0x1F); \
 	c.jz(__zero_1F);\
@@ -1034,7 +1046,7 @@ static int OP_CMP_IMM_VAL(const u32 i) { OP_CMP(IMM_VAL); }
 #define OP_CMN(arg) \
 	arg; \
 	u32 rhs_imm = *(u32*)&rhs; \
-	int sign = rhs_is_imm && rhs_imm != -rhs_imm; \
+	int sign = rhs_is_imm && (rhs_imm != -rhs_imm); \
 	if(sign) \
 		c.cmp(reg_pos_ptr(16), -rhs_imm); \
 	else \
@@ -1176,7 +1188,7 @@ static void MUL_Mxx_END(GPVar x, bool sign, int cycles)
 			c.adc(hi, reg_pos_ptr(16)); \
 			c.mov(reg_pos_ptr(12), lhs); \
 			c.mov(reg_pos_ptr(16), hi); \
-			c.cmp(hi, lhs); SET_NZ; \
+			c.cmp(hi, lhs); SET_NZ(0); \
 		} \
 		else \
 		{ \
@@ -1188,13 +1200,13 @@ static void MUL_Mxx_END(GPVar x, bool sign, int cycles)
 	{ \
 		c.mov(reg_pos_ptr(12), lhs); \
 		c.mov(reg_pos_ptr(16), hi); \
-		if(flags) { c.cmp(hi, lhs); SET_NZ; } \
+		if(flags) { c.cmp(hi, lhs); SET_NZ(0); } \
 	} \
 	else \
 	{ \
 		if(accum) c.add(lhs, reg_pos_ptr(12)); \
 		c.mov(reg_pos_ptr(16), lhs); \
-		if(flags) { c.cmp(lhs, 0); SET_NZ; }\
+		if(flags) { c.cmp(lhs, 0); SET_NZ(0); }\
 	} \
 	MUL_Mxx_END(rhs, sign, 1+width+accum); \
 	return 1;
@@ -1321,8 +1333,6 @@ static int OP_MRS_SPSR(const u32 i)
 
 // TODO: SPSR: if(cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS) return 1;
 #define OP_MSR_(reg, args, sw) \
-	Mem xPSR_mem = cpu_ptr(reg.val); \
-	GPVar xPSR = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar operand = c.newGP(VARIABLE_TYPE_GPD); \
 	args; \
 	switch (((i>>16) & 0xF)) \
@@ -1345,11 +1355,8 @@ static int OP_MRS_SPSR(const u32 i)
 					ctx->setArgument(1, mode); \
 				} \
 				c.mov(operand, rhs); \
-				c.mov(xPSR, xPSR_mem); \
-				c.and_(operand, 0x000000FF); \
-				c.and_(xPSR, 0xFFFFFF00); \
-				c.or_(xPSR, operand); \
-				c.mov(xPSR_mem, xPSR); \
+				Mem xPSR_memB = cpu_ptr_byte(reg, 0); \
+				c.mov(xPSR_memB, operand.r8Lo()); \
 				changeCPSR; \
 				c.bind(__skip); \
 			} \
@@ -1363,11 +1370,9 @@ static int OP_MRS_SPSR(const u32 i)
 				c.cmp(mode, USR); \
 				c.je(__skip); \
 				c.mov(operand, rhs); \
-				c.mov(xPSR, xPSR_mem); \
-				c.and_(operand, 0x0000FF00); \
-				c.and_(xPSR, 0xFFFF00FF); \
-				c.or_(xPSR, operand); \
-				c.mov(xPSR_mem, xPSR); \
+				Mem xPSR_memB = cpu_ptr_byte(reg, 1); \
+				c.shr(operand, 8); \
+				c.mov(xPSR_memB, operand.r8Lo()); \
 				changeCPSR; \
 				c.bind(__skip); \
 			} \
@@ -1381,11 +1386,9 @@ static int OP_MRS_SPSR(const u32 i)
 				c.cmp(mode, USR); \
 				c.je(__skip); \
 				c.mov(operand, rhs); \
-				c.mov(xPSR, xPSR_mem); \
-				c.and_(operand, 0x00FF0000); \
-				c.and_(xPSR, 0xFF00FFFF); \
-				c.or_(xPSR, operand); \
-				c.mov(xPSR_mem, xPSR); \
+				Mem xPSR_memB = cpu_ptr_byte(reg, 2); \
+				c.shr(operand, 16); \
+				c.mov(xPSR_memB, operand.r8Lo()); \
 				changeCPSR; \
 				c.bind(__skip); \
 			} \
@@ -1393,11 +1396,9 @@ static int OP_MRS_SPSR(const u32 i)
 		case 0x8:		/* bit 19 */ \
 			{ \
 				c.mov(operand, rhs); \
-				c.mov(xPSR, xPSR_mem); \
-				c.and_(operand, 0xFF000000); \
-				c.and_(xPSR, 0x00FFFFFF); \
-				c.or_(xPSR, operand); \
-				c.mov(xPSR_mem, xPSR); \
+				Mem xPSR_memB = cpu_ptr_byte(reg, 3); \
+				c.shr(operand, 24); \
+				c.mov(xPSR_memB, operand.r8Lo()); \
 				changeCPSR; \
 			} \
 			return 1; \
@@ -1411,6 +1412,8 @@ static int OP_MRS_SPSR(const u32 i)
 							(BIT19(i)?0xFF000000:0x00000000); \
 	static u32 byte_mask_USR = (BIT19(i)?0xFF000000:0x00000000); \
 \
+	Mem xPSR_mem = cpu_ptr(reg.val); \
+	GPVar xPSR = c.newGP(VARIABLE_TYPE_GPD); \
 	GPVar mode = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __USR = c.newLabel(); \
 	Label __done = c.newLabel(); \
@@ -2299,8 +2302,6 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	}
 	else
 	{
-		// TODO: untested
-		printf("op_ldm_stm2: used R15\n");
 		S_DST_R15;
 	}
 
@@ -2466,11 +2467,11 @@ static int OP_MCR(const u32 i)
 				GPVar vec = c.newGP(VARIABLE_TYPE_GPD);
 				c.mov(tmp, 0xFFFF0000);
 				c.xor_(vec, vec);
-				c.bt(data, 13);
-				c.cmovc(vec, tmp);
+				c.test(data, (1 << 13));
+				c.cmovnz(vec, tmp);
 				c.mov(cpu_ptr(intVector), vec);
 				//cpu->LDTBit = !BIT15(val); //TBit
-				c.test(data, (1 << 1));
+				c.test(data, (1 << 15));
 				c.setz(ldtbit);
 				//ctrl = (val & 0x000FF085) | 0x00000078;
 				c.and_(data, 0x000FF085);
@@ -2619,18 +2620,23 @@ static int OP_MCR(const u32 i)
 						switch(opcode2)
 						{
 							case 0:
-								//MMU.DTCMRegion = DTCMRegion = val & 0x0FFFF000;
-								c.and_(data, 0x0FFFF000);
-								c.mov(cp15_ptr(DTCMRegion), data);
+								{
+									//MMU.DTCMRegion = DTCMRegion = val & 0x0FFFF000;
+									c.and_(data, 0x0FFFF000);
+									GPVar bb_mmu = c.newGP(VARIABLE_TYPE_GPN);
+									c.mov(bb_mmu, (uintptr_t)&MMU);
+									c.mov(mmu_ptr(DTCMRegion), data);
+									c.mov(cp15_ptr(DTCMRegion), data);
+								}
 								break;
 							case 1:
 								{
-								//ITCMRegion = val;
-								//ITCM base is not writeable!
-								GPVar bb_mmu = c.newGP(VARIABLE_TYPE_GPN);
-								c.mov(bb_mmu, (uintptr_t)&MMU);
-								c.mov(mmu_ptr(ITCMRegion), 0);
-								c.mov(cp15_ptr(ITCMRegion), data);
+									//ITCMRegion = val;
+									//ITCM base is not writeable!
+									GPVar bb_mmu = c.newGP(VARIABLE_TYPE_GPN);
+									c.mov(bb_mmu, (uintptr_t)&MMU);
+									c.mov(mmu_ptr(ITCMRegion), 0);
+									c.mov(cp15_ptr(ITCMRegion), data);
 								}
 								break;
 							default:
@@ -2955,37 +2961,9 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 //-----------------------------------------------------------------------------
 //   THUMB
 //-----------------------------------------------------------------------------
-#define SET_NZ_CLEAR_CV { \
-	JIT_COMMENT("SET_NZ_CLEAR_CV"); \
-	GPVar x = c.newGP(VARIABLE_TYPE_GPN); \
-	GPVar y = c.newGP(VARIABLE_TYPE_GPN); \
-	c.pushf(); \
-	c.pop(x); \
-	c.and_(x, (3 << 6)); \
-	c.mov(y, flags_ptr); \
-	c.and_(y, 0x0F); \
-	c.or_(x, y); \
-	c.mov(flags_ptr, x.r8Lo()); \
-	JIT_COMMENT("end SET_NZ_CLEAR_CV"); \
-}
-
-#define SET_NZC_SHIFTS_ZERO(cf) { \
-	JIT_COMMENT("SET_NZC_SHIFTS_ZERO"); \
-	c.and_(flags_ptr, 0x1F); \
-	if(cf) \
-	{ \
-		c.shl(rcf, 5); \
-		c.or_(rcf, (1<<6)); \
-		c.or_(flags_ptr, rcf.r8Lo()); \
-	} \
-	else \
-		c.or_(flags_ptr, (1<<6)); \
-	JIT_COMMENT("end SET_NZC_SHIFTS_ZERO"); \
-}
-
-//-----------------------------------------------------------------------------
 #define OP_SHIFTS_IMM(x86inst) \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
+	u8 cf_change = 1; \
 	const u32 rhs = ((i>>6) & 0x1F); \
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3)) \
 		c.x86inst(reg_pos_thumb(0), rhs); \
@@ -3002,6 +2980,7 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 	return 1;
 
 #define OP_SHIFTS_REG(x86inst, bit) \
+	u8 cf_change = 1; \
 	GPVar imm = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD); \
 	Label __eq32 = c.newLabel(); \
@@ -3029,7 +3008,7 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 	/* imm == 0 */ \
 	c.bind(__zero); \
 	c.cmp(reg_pos_thumb(0), 0); \
-	SET_NZ; \
+	SET_NZ(0); \
 	c.jmp(__done); \
 	/* imm < 32 */ \
 	c.bind(__ls32); \
@@ -3044,7 +3023,7 @@ static int OP_BKPT(const u32 i) { printf("JIT: unimplemented OP_BKPT\n"); return
 	c.mov(rhs, reg_pos_thumb(3)); \
 	if (_conv==1) c.not_(rhs); \
 	c.x86inst(reg_pos_thumb(0), rhs); \
-	SET_NZ; \
+	SET_NZ(0); \
 	return 1;
 
 //-----------------------------------------------------------------------------
@@ -3061,7 +3040,7 @@ static int OP_LSL_0(const u32 i)
 		c.mov(reg_pos_thumb(0), rhs);
 		c.cmp(rhs, 0);
 	}
-	SET_NZ;
+	SET_NZ(0);
 	return 1;
 }
 static int OP_LSL(const u32 i) { OP_SHIFTS_IMM(shl); }
@@ -3079,49 +3058,53 @@ static int OP_LSR(const u32 i) { OP_SHIFTS_IMM(shr); }
 static int OP_LSR_REG(const u32 i) { OP_SHIFTS_REG(shr, 31); }
 static int OP_ASR_0(const u32 i)
 {
+	u8 cf_change = 1;
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD);
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD);
-	c.mov(rhs, reg_pos_thumb(3));
-	c.test(rhs, (1 << 31));
-	c.setnz(rcf.r8Lo());
-	c.sar(rhs, 31);
-	c.mov(reg_pos_thumb(0), rhs);
+	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
+		c.sar(reg_pos_thumb(0), 31);
+	else
+	{
+		c.mov(rhs, reg_pos_thumb(3));
+		c.sar(rhs, 31);
+		c.mov(reg_pos_thumb(0), rhs);
+	}
+	c.sets(rcf.r8Lo());
 	SET_NZC;
 	return 1;
 }
 static int OP_ASR(const u32 i) { OP_SHIFTS_IMM(sar); }
 static int OP_ASR_REG(const u32 i) 
 {
+	u8 cf_change = 1;
+	Label __gr0 = c.newLabel();
+	Label __lt32 = c.newLabel();
+	Label __done = c.newLabel();
+	Label __setFlags = c.newLabel();
 	GPVar imm = c.newGP(VARIABLE_TYPE_GPN);
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD);
-	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD);
-	Label __ls32 = c.newLabel();
-	Label __zero = c.newLabel();
-	Label __done = c.newLabel();
-
 	c.mov(imm, reg_pos_thumb(3));
 	c.and_(imm, 0xFF);
-	c.jz(__zero);
-	c.cmp(imm, 32);
-	c.jl(__ls32);
-	/* imm > 32 */
-	c.mov(rcf, reg_pos_thumb(0));
-	c.shr(rcf, 31);
-	c.sar(reg_pos_thumb(0), 31);
-	SET_NZC;
-	c.jmp(__done);
+	c.jnz(__gr0);
 	/* imm == 0 */
-	c.bind(__zero);
 	c.cmp(reg_pos_thumb(0), 0);
-	SET_NZ;
+	SET_NZ(0);
 	c.jmp(__done);
+	/* imm > 0 */
+	c.bind(__gr0);
+	c.cmp(imm, 32);
+	c.jl(__lt32);
+	/* imm > 31 */
+	c.sar(reg_pos_thumb(0), 31);
+	c.sets(rcf.r8Lo());
+	c.jmp(__setFlags);
 	/* imm < 32 */
-	c.bind(__ls32);
+	c.bind(__lt32);
 	c.sar(reg_pos_thumb(0), imm);
 	c.setc(rcf.r8Lo());
+	c.bind(__setFlags);
 	SET_NZC;
 	c.bind(__done);
-
 	return 1;
 }
 
@@ -3130,6 +3113,7 @@ static int OP_ASR_REG(const u32 i)
 //-----------------------------------------------------------------------------
 static int OP_ROR_REG(const u32 i)
 {
+	u8 cf_change = 1;
 	GPVar imm = c.newGP(VARIABLE_TYPE_GPN);
 	GPVar rcf = c.newGP(VARIABLE_TYPE_GPD);
 	Label __zero = c.newLabel();
@@ -3154,7 +3138,7 @@ static int OP_ROR_REG(const u32 i)
 	/* imm == 0 */
 	c.bind(__zero);
 	c.cmp(reg_pos_thumb(0), 0);
-	SET_NZ;
+	SET_NZ(0);
 	c.bind(__done);
 
 	return 1;
@@ -3199,7 +3183,7 @@ static int OP_ADD_IMM3(const u32 i)
 		c.mov(tmp, reg_pos_thumb(3));
 		c.mov(reg_pos_thumb(0), tmp);
 		c.cmp(tmp, 0);
-		SET_NZ_CLEAR_CV;
+		SET_NZ(1);
 		return 1;
 	}
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
@@ -3365,7 +3349,7 @@ static int OP_MOV_IMM8(const u32 i)
 {
 	c.mov(reg_pos_thumb(8), (i & 0xFF));
 	c.cmp(reg_pos_thumb(8), 0);
-	SET_NZ;
+	SET_NZ(0);
 	return 1;
 }
 
@@ -3395,7 +3379,7 @@ static int OP_MVN(const u32 i)
 	c.not_(tmp);
 	c.cmp(tmp, 0);
 	c.mov(reg_pos_thumb(0), tmp);
-	SET_NZ;
+	SET_NZ(0);
 	return 1;
 }
 
@@ -3409,7 +3393,7 @@ static int OP_MUL_REG(const u32 i)
 	c.imul(lhs, reg_pos_thumb(3));
 	c.cmp(lhs, 0);
 	c.mov(reg_pos_thumb(0), lhs);
-	SET_NZ;
+	SET_NZ(0);
 	if (PROCNUM == ARMCPU_ARM7)
 		c.mov(bb_cycles, 4);
 	else
@@ -3463,7 +3447,7 @@ static int OP_TST(const u32 i)
 	GPVar tmp = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(tmp, reg_pos_thumb(3));
 	c.test(reg_pos_thumb(0), tmp);
-	SET_NZ;
+	SET_NZ(0);
 	return 1;
 }
 
@@ -3601,8 +3585,8 @@ static int op_ldm_stm_thumb(u32 i, bool store)
 	u32 bitmask = i & 0xFF;
 	u32 pop = popcount(bitmask);
 
-	if (BIT_N(i, _REG_NUM(i, 8)))
-		printf("WARNING - %sIA with Rb in Rlist (THUMB)\n", store?"STM":"LDM");
+	//if (BIT_N(i, _REG_NUM(i, 8)))
+	//	printf("WARNING - %sIA with Rb in Rlist (THUMB)\n", store?"STM":"LDM");
 
 	GPVar adr = c.newGP(VARIABLE_TYPE_GPD);
 	c.mov(adr, reg_pos_thumb(8));
@@ -4078,8 +4062,9 @@ static u32 compile_basicblock()
 	c.newFunction(ASMJIT_CALL_CONV, FunctionBuilder0<int>());
 	c.getFunction()->setHint(FUNCTION_HINT_NAKED, true);
 	c.getFunction()->setHint(FUNCTION_HINT_PUSH_POP_SEQUENCE, true);
-	bb_cpu = c.newGP(VARIABLE_TYPE_GPN);
+	
 	JIT_COMMENT("CPU ptr");
+	bb_cpu = c.newGP(VARIABLE_TYPE_GPN);
 	c.mov(bb_cpu, (uintptr_t)&ARMPROC);
 
 	if(has_variable_cycles)
