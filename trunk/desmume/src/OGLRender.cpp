@@ -95,6 +95,7 @@ static bool isTranslucent;
 
 static u32 textureFormat=0, texturePalette=0;
 
+static char *extString = NULL;
 // ClearImage/Rear-plane (FBO)
 GLenum	oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
 GLuint	oglClearImageBuffers = 0;
@@ -308,7 +309,6 @@ static void createShaders()
 		glGetShaderInfoLog == NULL)
 		NOSHADERS("Shaders aren't supported by your system.");*/
 
-	const char *extString = (const char*)glGetString(GL_EXTENSIONS);
 	if ((strstr(extString, "GL_ARB_shader_objects") == NULL) ||
 		(strstr(extString, "GL_ARB_vertex_shader") == NULL) ||
 		(strstr(extString, "GL_ARB_fragment_shader") == NULL))
@@ -366,11 +366,14 @@ static void OGLReset()
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 
-	memset(oglClearImageColor, 0, 256*192*sizeof(u32));
-	memset(oglClearImageDepth, 0, 256*192*sizeof(float));
-	memset(oglClearImageColorTemp, 0, 256*192*sizeof(u16));
-	memset(oglClearImageDepthTemp, 0, 256*192*sizeof(u16));
-	oglClearImageScrollOld = 0;
+	if (!oglFBOdisabled)
+	{
+		memset(oglClearImageColor, 0, 256*192*sizeof(u32));
+		memset(oglClearImageDepth, 0, 256*192*sizeof(float));
+		memset(oglClearImageColorTemp, 0, 256*192*sizeof(u16));
+		memset(oglClearImageDepthTemp, 0, 256*192*sizeof(u16));
+		oglClearImageScrollOld = 0;
+	}
 }
 
 //static class OGLTexCacheUser : public ITexCacheUser
@@ -429,6 +432,8 @@ static char OGLInit(void)
 
 	for (u8 i = 0; i < 255; i++)
 		material_8bit_to_float[i] = (float)(i<<2)/255.f;
+
+	extString = (char*)glGetString(GL_EXTENSIONS);
 
 	expandFreeTextures();
 
@@ -537,51 +542,58 @@ static char OGLInit(void)
 		gfx3d.state.invalidateToon = false;
 	}
 
-	// ClearImage/Rear-plane
-	glGenTextures (2, &oglClearImageTextureID[0]);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-	glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
 	// FBO
-	oglFBOdisabled = false;
-	glGenFramebuffersEXT(1, &oglClearImageBuffers);
+	oglFBOdisabled = (strstr(extString, "GL_ARB_framebuffer_object") == NULL)?true:false;
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, oglClearImageTextureID[0], 0);
-
-	//glDrawBuffer(GL_NONE);
-	//glReadBuffer(GL_NONE);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, oglClearImageTextureID[1], 0);
-	
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)==GL_FRAMEBUFFER_COMPLETE_EXT)
-		INFO("Successfully created OpenGL Framebuffer object (FBO)\n");
-	else
+	if (!oglFBOdisabled)
 	{
-		INFO("Failed to created OpenGL Framebuffer object (FBO): ClearImage disabled\n");
-		oglFBOdisabled = true;
+		// ClearImage/Rear-plane
+		glGenTextures (2, &oglClearImageTextureID[0]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+		// FBO - init
+		glGenFramebuffersEXT(1, &oglClearImageBuffers);
+
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, oglClearImageTextureID[0], 0);
+
+		//glDrawBuffer(GL_NONE);
+		//glReadBuffer(GL_NONE);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, oglClearImageTextureID[1], 0);
+		
+		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)==GL_FRAMEBUFFER_COMPLETE_EXT)
+			INFO("Successfully created OpenGL Framebuffer object (FBO)\n");
+		else
+		{
+			INFO("Failed to created OpenGL Framebuffer objects (FBO): ClearImage emulation disabled\n");
+			oglFBOdisabled = true;
+		}
+
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		oglClearImageColor = new u32[256*192];
+		oglClearImageColorTemp = new u16[256*192];
+		oglClearImageDepth = new float[256*192];
+		oglClearImageDepthTemp = new u16[256*192];
 	}
-
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-
-	oglClearImageColor = new u32[256*192];
-	oglClearImageColorTemp = new u16[256*192];
-	oglClearImageDepth = new float[256*192];
-	oglClearImageDepthTemp = new u16[256*192];
+	else
+		INFO("OpenGL: graphics card not supports Framebuffer objects (FBO) - ClearImage emulation disabled\n");
 
 	glActiveTexture(GL_TEXTURE0);
 
@@ -624,32 +636,35 @@ static void OGLClose()
 	glDeleteTextures(1, &oglToonTableTextureID);
 
 	// FBO
-	glDeleteTextures(2, &oglClearImageTextureID[0]);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	glDeleteFramebuffersEXT(1, &oglClearImageBuffers);
-
-	if (oglClearImageColor)
+	if (!oglFBOdisabled)
 	{
-		delete [] oglClearImageColor;
-		oglClearImageColor = NULL;
-	}
+		glDeleteTextures(2, &oglClearImageTextureID[0]);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glDeleteFramebuffersEXT(1, &oglClearImageBuffers);
 
-	if (oglClearImageDepth)
-	{
-		delete [] oglClearImageDepth;
-		oglClearImageDepth = NULL;
-	}
+		if (oglClearImageColor)
+		{
+			delete [] oglClearImageColor;
+			oglClearImageColor = NULL;
+		}
 
-	if (oglClearImageColorTemp)
-	{
-		delete [] oglClearImageColorTemp;
-		oglClearImageColorTemp = NULL;
-	}
+		if (oglClearImageDepth)
+		{
+			delete [] oglClearImageDepth;
+			oglClearImageDepth = NULL;
+		}
 
-	if (oglClearImageDepthTemp)
-	{
-		delete [] oglClearImageDepthTemp;
-		oglClearImageDepthTemp = NULL;
+		if (oglClearImageColorTemp)
+		{
+			delete [] oglClearImageColorTemp;
+			oglClearImageColorTemp = NULL;
+		}
+
+		if (oglClearImageDepthTemp)
+		{
+			delete [] oglClearImageDepthTemp;
+			oglClearImageDepthTemp = NULL;
+		}
 	}
 
 	ENDGL();
@@ -952,6 +967,7 @@ static void GL_ReadFramebuffer()
 //			Harry Potter and the Order of the Phoenix
 static void oglClearImageFBO()
 {
+	if (oglFBOdisabled) return;
 	//printf("enableClearImage\n");
 	u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
 	u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];

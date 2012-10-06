@@ -76,7 +76,7 @@ void OpenConsole()
 	//is FILE_TYPE_PIPE (3) for pipe
 	//i think it is FILE_TYPE_CHAR (2) for console
 
-  //SOMETHING LIKE THIS MIGHT BE NEEDED ONE DAY
+	//SOMETHING LIKE THIS MIGHT BE NEEDED ONE DAY
 	//disable stdout buffering unless we know for sure we've been redirected to the disk
 	//the runtime will be smart and set buffering when we may have in fact chosen to pipe the output to a console and dont want it buffered
 	//if(GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) != FILE_TYPE_DISK) 
@@ -84,36 +84,31 @@ void OpenConsole()
 
 	//stdout is already connected to something. keep using it and dont let the console interfere
 	bool shouldRedirectStdout = fileType == FILE_TYPE_UNKNOWN;
-
-	//attach to an existing console (if we can; this is circuitous because AttachConsole wasnt added until XP)
-	//remember to abstract this late bound function notion if we end up having to do this anywhere else
 	bool attached = false;
-	HMODULE lib = LoadLibrary("kernel32.dll");
-	if(lib)
+	if (!AllocConsole())
 	{
-		typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
-		_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
-		if(_AttachConsole)
+		HMODULE lib = LoadLibrary("kernel32.dll");
+		if(lib)
 		{
-			if(_AttachConsole(-1))
+			typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
+			_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
+			if(_AttachConsole)
+			{
+				if(!_AttachConsole(-1)) 
+				{
+					FreeLibrary(lib);
+					return;
+				}
 				attached = true;
+			}
+			FreeLibrary(lib);
 		}
-		FreeLibrary(lib);
 	}
-
-	//if we failed to attach, then alloc a new console
-	if(!attached)
+	else
 	{
-		if (!AllocConsole()) return;
-
 		SetConsoleCP(GetACP());
 		SetConsoleOutputCP(GetACP());
 	}
-
-	//old console title:
-	//char buf[256] = {0};
-	//sprintf(buf,"CONSOLE - %s", EMU_DESMUME_NAME_AND_VERSION());
-	//SetConsoleTitle(TEXT(buf));
 
 	//newer and improved console title:
 	SetConsoleTitleW(SkipEverythingButProgramInCommandLine(GetCommandLineW()).c_str());
