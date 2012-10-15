@@ -72,6 +72,8 @@ struct SCustomKeys
 	
 	SCustomKey Rotate0, Rotate90, Rotate180, Rotate270;
 
+	SCustomKey CursorToggle;
+
 	SCustomKey OpenROM, ReloadROM, Reset, Pause;
 
 #ifdef HAVE_JIT
