@@ -480,6 +480,16 @@ void HK_Rotate90(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 90);}
 void HK_Rotate180(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 180);}
 void HK_Rotate270(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 270);}
 
+
+void HK_CursorToggle(int, bool)
+{
+	static int cursorVisible = ShowCursor(TRUE);
+	if(cursorVisible >= 0)
+		while( (cursorVisible = ShowCursor(FALSE)) >= 0);
+	else
+		while( (cursorVisible = ShowCursor(TRUE)) <= 0);
+}
+
 //======================================================================================
 //=====================================DEFINITIONS======================================
 //======================================================================================
@@ -874,6 +884,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Rotate270.name = STRW(ID_LABEL_HK60);
 	keys->Rotate270.page = HOTKEY_PAGE_OTHER;
 	keys->Rotate270.key = NULL;
+
+	keys->CursorToggle.handleKeyDown = HK_CursorToggle;
+	keys->CursorToggle.code = "Toggle Cursor";
+	keys->CursorToggle.name = STRW(ID_LABEL_HK62);
+	keys->CursorToggle.page = HOTKEY_PAGE_OTHER;
+	keys->CursorToggle.key = NULL;
 
 	//StateSlots Page --------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
