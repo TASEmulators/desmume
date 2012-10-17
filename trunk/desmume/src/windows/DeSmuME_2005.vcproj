@@ -961,6 +961,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\File_Extractor\fex\fex.h"
+					>
+				</File>
+				<File
 					RelativePath=".\File_Extractor\fex\File_Extractor.cpp"
 					>
 				</File>
