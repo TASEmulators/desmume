@@ -50,6 +50,7 @@ protected:
 	{
 		int size;
 		char* name;
+		s64 offset;
 	};
 	ArchiveItem* m_items;
 	int m_numItems;

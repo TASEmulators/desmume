@@ -223,6 +223,7 @@ ArchiveFile::ArchiveFile(const char* filename)
 				if (err) break;
 
 				item.size = fex_size(object);
+				item.offset = fex_tell_arc(object);
 
 				fex_next(object);
 			}
@@ -302,7 +303,7 @@ int ArchiveFile::ExtractItem(int index, unsigned char* outBuffer, int bufSize) c
 		fex_err_t err = fex_open_type( &object, m_filename, s_formatInfos[m_typeIndex].type );
 		if ( !err )
 		{
-			if ( index != 0 ) err = fex_seek_arc( object, index );
+			if ( index != 0 ) err = fex_seek_arc( object, item.offset );
 			if ( !err )
 			{
 				err = fex_read( object, outBuffer, item.size );
@@ -348,7 +349,7 @@ int ArchiveFile::ExtractItem(int index, const char* outFilename) const
 		fex_err_t err = fex_open_type( &object, m_filename, s_formatInfos[m_typeIndex].type );
 		if ( !err )
 		{
-			if ( index != 0 ) err = fex_seek_arc( object, index );
+			if ( index != 0 ) err = fex_seek_arc( object, item.offset );
 			if ( !err )
 			{
 				unsigned char * buffer = new unsigned char[item.size];
