@@ -144,7 +144,6 @@
 - (IBAction) speedLimitDisable:(id)sender;
 - (IBAction) toggleAutoFrameSkip:(id)sender;
 - (IBAction) cheatsDisable:(id)sender;
-- (IBAction) ejectCard:(id)sender;
 - (IBAction) executeCoreToggle:(id)sender;
 - (IBAction) resetCore:(id)sender;
 - (IBAction) changeRomSaveType:(id)sender;

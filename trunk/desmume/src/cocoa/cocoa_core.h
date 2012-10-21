@@ -109,7 +109,6 @@ typedef struct
 
 - (BOOL) ejectCardFlag;
 - (void) setEjectCardFlag;
-- (void) toggleEjectCard;
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID;
 - (void) changeExecutionSpeed;
