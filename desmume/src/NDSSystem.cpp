@@ -2469,6 +2469,11 @@ void NDS_Reset()
 	{
 		//fake firmware boot-up process
 
+		//according to smea, this is initialized to 3. who does this? we're doing it here because we're not sure if the firmware depends on it
+		//but it mustve been done by the time the game boots, unless it was libnds doing it.
+		//it's important that this be done before the copy happens so that arm7 programs can load into SIWRAM if thats where theyre specified to go
+		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
+
 		//copy the arm9 program to the address specified by rom header
 		u32 src = header->ARM9src;
 		u32 dst = header->ARM9cpy;
@@ -2493,11 +2498,6 @@ void NDS_Reset()
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
 
-		//TODO reading REG_WRAMSTAT (
-		//according to smea, this is initialized to 3. who does this? we're doing it here because we're not sure if the firmware depends on it
-		//but it mustve been done by the time the game boots, unless it was libnds doing it.
-		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
-		
 		//set REG_POSTFLG to the value indicating post-firmware status
 		MMU.ARM9_REG[0x300] = 1;
 		MMU.ARM7_REG[0x300] = 1;

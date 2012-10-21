@@ -787,9 +787,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	if(block == 7)
 	{
 		MMU.WRAMCNT = VRAMBankCnt & 3;
-		//copy new value into WRAMSTAT
-		//TODO - block user writes to WRAMSTAT 
-		T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
 		return;
 	}
 
@@ -1002,6 +999,8 @@ void MMU_Reset()
 
 	MMU.SPI_CNT = 0;
 	MMU.AUX_SPI_CNT = 0;
+
+	MMU.WRAMCNT = 0;
 
 	// Enable the sound speakers
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
