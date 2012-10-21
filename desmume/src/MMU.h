@@ -366,7 +366,7 @@ struct MMU_struct
 	u32 LCD_VRAM_ADDR[10];
 	u8 LCDCenable[10];
 
-	//Shared ram
+	//32KB of shared WRAM - can be switched between ARM7 & ARM9 in two blocks
 	u8 SWIRAM[0x8000];
 
 	//Card rom & ram
@@ -419,6 +419,8 @@ struct MMU_struct
 	u16 SPI_CMD;
 	u16 AUX_SPI_CNT;
 	u16 AUX_SPI_CMD;
+
+	u8 WRAMCNT;
 
 	u64 gfx3dCycles;
 

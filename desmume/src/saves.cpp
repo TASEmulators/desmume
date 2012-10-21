@@ -216,6 +216,8 @@ SFORMAT SF_MMU[]={
 	{ "MASX", 1, 2,       &MMU.AUX_SPI_CNT},
 	{ "MASC", 1, 2,       &MMU.AUX_SPI_CMD},
 
+	{ "MWRA", 1, 2,       &MMU.WRAMCNT},
+
 	{ "MDV1", 4, 1,       &MMU.divRunning},
 	{ "MDV2", 8, 1,       &MMU.divResult},
 	{ "MDV3", 8, 1,       &MMU.divMod},
@@ -272,7 +274,7 @@ SFORMAT SF_MOVIE[]={
 
 static void mmu_savestate(EMUFILE* os)
 {
-	u32 version = 6;
+	u32 version = 7;
 	write32le(version,os);
 	
 	//version 2:
@@ -454,6 +456,12 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	if(version < 6) return ok;
 
 	MMU_new.dsi_tsc.load_state(is);
+
+	if(version < 7)
+	{
+		//recover WRAMCNT from the stashed WRAMSTAT memory location
+		MMU.WRAMCNT = MMU.MMU_MEM[ARMCPU_ARM7][0x40][0x241];
+	}
 
 	return ok;
 }

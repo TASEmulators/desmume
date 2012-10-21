@@ -2197,8 +2197,6 @@ void NDS_Reset()
 {
 	singleStep = false;
 	nds_debug_continuing[0] = nds_debug_continuing[1] = false;
-	u32 src = 0;
-	u32 dst = 0;
 	bool fw_success = false;
 	FILE* inf = NULL;
 	NDS_header * header = NDS_getROMHeader();
@@ -2428,16 +2426,21 @@ void NDS_Reset()
 	}
 	firmware = new CFIRMWARE();
 	fw_success = firmware->load();
+
 	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && fw_success)
 	{
-		// Copy secure area to memory if needed
+		//Copy secure area to memory if needed.
+		//could we get a comment about what's going on here?
+		//how does this stuff get copied before anything ever even runs?
+		//does it get mapped straight to the rom somehow?
+		//This code could be made more clear too.
 		if ((header->ARM9src >= 0x4000) && (header->ARM9src < 0x8000))
 		{
-			src = header->ARM9src;
-			dst = header->ARM9cpy;
+			u32 src = header->ARM9src;
+			u32 dst = header->ARM9cpy;
 
 			u32 size = (0x8000 - src) >> 2;
-			//INFO("Copy secure area from 0x%08X to 0x%08X (size %i/0x%08X)\n", src, dst, size, size);
+	
 			for (u32 i = 0; i < size; i++)
 			{
 				_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
@@ -2445,6 +2448,7 @@ void NDS_Reset()
 			}
 		}
 
+		//TODO someone describe why here
 		if (firmware->patched)
 		{
 			armcpu_init(&NDS_ARM7, 0x00000008);
@@ -2452,23 +2456,22 @@ void NDS_Reset()
 		}
 		else
 		{
-			//INFO("Booting at ARM9: 0x%08X, ARM7: 0x%08X\n", firmware->ARM9bootAddr, firmware->ARM7bootAddr);
-			// need for firmware
-			//armcpu_init(&NDS_ARM7, 0x00000008);
-			//armcpu_init(&NDS_ARM9, 0xFFFF0008);
+			//set the cpus to an initial state with their respective firmware program entrypoints
 			armcpu_init(&NDS_ARM7, firmware->ARM7bootAddr);
 			armcpu_init(&NDS_ARM9, firmware->ARM9bootAddr);
 		}
 
-			// REG_POSTFLG
-			MMU.ARM9_REG[0x300] = 0;
-			MMU.ARM7_REG[0x300] = 0;
+		//set REG_POSTFLG to the value indicating pre-firmware status
+		MMU.ARM9_REG[0x300] = 0;
+		MMU.ARM7_REG[0x300] = 0;
 	}
 	else
 	{
-		src = header->ARM9src;
-		dst = header->ARM9cpy;
+		//fake firmware boot-up process
 
+		//copy the arm9 program to the address specified by rom header
+		u32 src = header->ARM9src;
+		u32 dst = header->ARM9cpy;
 		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
 		{
 			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
@@ -2476,9 +2479,9 @@ void NDS_Reset()
 			src += 4;
 		}
 
+		//copy the arm7 program to the address specified by rom header
 		src = header->ARM7src;
 		dst = header->ARM7cpy;
-
 		for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
 		{
 			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
@@ -2486,13 +2489,20 @@ void NDS_Reset()
 			src += 4;
 		}
 
+		//set the cpus to an initial state with their respective programs entrypoints
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
+
+		//TODO reading REG_WRAMSTAT (
+		//according to smea, this is initialized to 3. who does this? we're doing it here because we're not sure if the firmware depends on it
+		//but it mustve been done by the time the game boots, unless it was libnds doing it.
+		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
 		
-		// REG_POSTFLG
+		//set REG_POSTFLG to the value indicating post-firmware status
 		MMU.ARM9_REG[0x300] = 1;
 		MMU.ARM7_REG[0x300] = 1;
 	}
+
 	// only ARM9 have co-processor
 	reconstruct(&cp15);
 	cp15.reset(&NDS_ARM9);
