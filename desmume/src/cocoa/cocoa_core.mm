@@ -590,12 +590,6 @@ static BOOL isCoreStarted = NO;
 	return NO;
 }
 
-- (void) toggleEjectCard
-{
-	NDS_ToggleCardEject();
-	[self setEjectCardFlag];
-}
-
 - (void) changeRomSaveType:(NSInteger)saveTypeID
 {
 	pthread_mutex_lock(self.mutexCoreExecute);

@@ -788,13 +788,6 @@
 	}
 }
 
-- (IBAction) ejectCard:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	[cdsCore toggleEjectCard];
-}
-
 // View Menu
 
 - (IBAction) changeCoreSpeed:(id)sender
@@ -1528,23 +1521,6 @@
 		{
 			enable = NO;
 		}
-	}
-	else if (theAction == @selector(ejectCard:))
-	{
-		if (![self isRomLoaded])
-		{
-			enable = NO;
-		}
-		
-		if ([cdsCore ejectCardFlag])
-		{
-			[(NSMenuItem*)theItem setState:NSOnState];
-		}
-		else
-		{
-			[(NSMenuItem*)theItem setState:NSOffState];
-		}
-		
 	}
 	else if (theAction == @selector(_openRecentDocument:))
 	{
