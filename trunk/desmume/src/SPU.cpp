@@ -62,7 +62,7 @@ int SPU_currentCoreNum = SNDCORE_DUMMY;
 static int volume = 100;
 
 
-static int buffersize = 0;
+static size_t buffersize = 0;
 static ESynchMode synchmode = ESynchMode_DualSynchAsynch;
 static ESynchMethod synchmethod = ESynchMethod_N;
 

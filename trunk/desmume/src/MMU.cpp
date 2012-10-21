@@ -311,16 +311,85 @@ static const TVramBankInfo vram_bank_info[VRAM_BANKS] = {
 //in order to play nicely with the MMU address and mask tables
 #define LCDC_HACKY_LOCATION 0x06000000
 
+#define ARM7_HACKY_IWRAM_LOCATION 0x03800000
+#define ARM7_HACKY_SIWRAM_LOCATION 0x03000000
+
 //maps an ARM9 BG/OBJ or LCDC address into an LCDC address, and informs the caller of whether it isn't mapped
 //TODO - in cases where this does some mapping work, we could bypass the logic at the end of the _read* and _write* routines
 //this is a good optimization to consider
+//NOTE - this whole approach is probably fundamentally wrong.
+//according to dasShiny research, its possible to map multiple banks to the same addresses. something more sophisticated would be needed.
+//however, it hasnt proven necessary yet for any known test case.
 template<int PROCNUM> 
 static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped, bool& restricted)
 {
 	unmapped = false;
 	restricted = false; //this will track whether 8bit writes are allowed
 
-	//in case the address is entirely outside of the interesting ranges
+	//handle SIWRAM and non-shared IWRAM in here too, since it is quite similar to vram.
+	//in fact it is probably implemented with the same pieces of hardware.
+	//its sort of like arm7 non-shared IWRAM is lowest priority, and then SIWRAM goes on top.
+	//however, we implement it differently than vram in emulator for historical reasons.
+	//instead of keeping a page map like we do vram, we just have a list of all possible page maps (there are only 4 each for arm9 and arm7)
+	if(addr >= 0x03000000 && addr < 0x04000000)
+	{
+		//blocks 0,1,2,3 is arm7 non-shared IWRAM and blocks 4,5 is SIWRAM, and block 8 is un-mapped zeroes
+		int iwram_block_16k;
+		int iwram_offset = addr & 0x3FFF;
+		addr &= 0x00FFFFFF;
+		if(PROCNUM == ARMCPU_ARM7)
+		{
+			static const int arm7_siwram_blocks[2][4][4] =
+			{
+				{
+					{0,1,2,3}, //WRAMCNT = 0 -> map to IWRAM
+					{4,4,4,4}, //WRAMCNT = 1 -> map to SIWRAM block 0
+					{5,5,5,5}, //WRAMCNT = 2 -> map to SIWRAM block 1
+					{4,5,4,5}, //WRAMCNT = 3 -> map to SIWRAM blocks 0,1
+				},
+					 //high region; always maps to non-shared IWRAM
+				{
+					{0,1,2,3}, {0,1,2,3}, {0,1,2,3}, {0,1,2,3}
+				}
+			};
+			int region = (addr >> 23)&1;
+			int block = (addr >> 14)&3;
+			assert(region<2);
+			assert(block<4);
+			iwram_block_16k = arm7_siwram_blocks[region][MMU.WRAMCNT][block];
+		} //PROCNUM == ARMCPU_ARM7
+		else
+		{
+			//PROCNUM == ARMCPU_ARM9
+			static const int arm9_siwram_blocks[4][4] =
+			{
+				{4,5,4,5}, //WRAMCNT = 0 -> map to SIWRAM blocks 0,1
+				{5,5,5,5}, //WRAMCNT = 1 -> map to SIWRAM block 1
+				{4,4,4,4}, //WRAMCNT = 2 -> map to SIWRAM block 0
+				{8,8,8,8}, //WRAMCNT = 3 -> unmapped
+			};
+			int block = (addr >> 14)&3;
+			assert(block<4);
+			iwram_block_16k = arm9_siwram_blocks[MMU.WRAMCNT][block];
+		}
+
+		switch(iwram_block_16k>>2)
+		{
+		case 0: //arm7 non-shared IWRAM
+			return ARM7_HACKY_IWRAM_LOCATION + (iwram_block_16k<<14) + iwram_offset;
+		case 1: //SIWRAM
+			return ARM7_HACKY_SIWRAM_LOCATION + ((iwram_block_16k&3)<<14) + iwram_offset;
+		case 2: //zeroes
+		CASE2:
+			unmapped = true;
+			return 0;
+		default:
+			assert(false); //how did this happen?
+			goto CASE2;
+		}
+	}
+
+	//in case the address is entirely outside of the interesting VRAM ranges
 	if(addr < 0x06000000) return addr;
 	if(addr >= 0x07000000) return addr;
 
@@ -343,6 +412,7 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped, bool& restricted)
 	restricted = true;
 
 	//handle LCD memory mirroring
+	//TODO - this is gross! this should be renovated if the vram mapping is ever done in a more sophisticated way taking into account dasShiny research
 	if(addr>=0x068A4000)
 		addr = 0x06800000 + 
 		//(addr%0xA4000); //yuck!! is this even how it mirrors? but we have to keep from overrunning the buffer somehow
@@ -713,9 +783,13 @@ void MMU_VRAM_unmap_all()
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
-	//dont handle wram mappings in here
-	if(block == 7) {
-		//wram
+	//handle WRAM, first of all
+	if(block == 7)
+	{
+		MMU.WRAMCNT = VRAMBankCnt & 3;
+		//copy new value into WRAMSTAT
+		//TODO - block user writes to WRAMSTAT 
+		T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
 		return;
 	}
 
@@ -2331,12 +2405,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
 
-			case REG_WRAMCNT:	
-				/* Update WRAMSTAT at the ARM7 side */
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val);
-				break;
-
-            case REG_POWCNT1: writereg_POWCNT1(8,adr,val); break;
+			case REG_POWCNT1: writereg_POWCNT1(8,adr,val); break;
 			
 			case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(8,adr,val); return;
 			case REG_DISPA_DISP3DCNT+1: writereg_DISP3DCNT(8,adr,val); return;
@@ -2358,10 +2427,12 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_VRAMCNTE:
 			case REG_VRAMCNTF:
 			case REG_VRAMCNTG:
+			case REG_WRAMCNT:
 			case REG_VRAMCNTH:
 			case REG_VRAMCNTI:
 					MMU_VRAMmapControl(adr-REG_VRAMCNTA, val);
 				break;
+
 			case REG_DISPA_DISPMMEMFIFO:
 			{
 				DISP_FIFOsend(val);
@@ -2736,14 +2807,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_VRAMCNTA:
 			case REG_VRAMCNTC:
 			case REG_VRAMCNTE:
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
-				break;
 			case REG_VRAMCNTG:
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
-				/* Update WRAMSTAT at the ARM7 side */
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val >> 8);
-				break;
 			case REG_VRAMCNTH:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
@@ -3159,17 +3223,11 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 
 			case REG_VRAMCNTA:
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, (val >> 8) & 0xFF);
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA+2, (val >> 16) & 0xFF);
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA+3, (val >> 24) & 0xFF);
-				break;
 			case REG_VRAMCNTE:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, (val >> 8) & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+2, (val >> 16) & 0xFF);
-				/* Update WRAMSTAT at the ARM7 side */
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, (val >> 24) & 0xFF);
+				MMU_VRAMmapControl(adr-REG_VRAMCNTA+3, (val >> 24) & 0xFF);
 				break;
 			case REG_VRAMCNTH:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
@@ -3337,6 +3395,9 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case REG_IF+2: return (MMU.gen_IF<ARMCPU_ARM9>()>>16);
 			case REG_IF+3: return (MMU.gen_IF<ARMCPU_ARM9>()>>24);
 
+			case REG_WRAMCNT:
+				return MMU.WRAMCNT;
+
 			case REG_DISPA_DISPSTAT:
 				break;
 			case REG_DISPA_DISPSTAT+1:
@@ -3456,6 +3517,10 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			// ============================================= 3D end
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
+
+			//WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
+			case REG_VRAMCNTG:
+				return MMU.WRAMCNT << 8;
 				
 			case REG_IE :
 				return (u16)MMU.reg_IE[ARMCPU_ARM9];
@@ -3539,7 +3604,12 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_DISPA_DISPSTAT:
 				break;
 
-			case REG_DISPx_VCOUNT: return nds.VCount;
+			case REG_DISPx_VCOUNT:
+				return nds.VCount;
+
+			//WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
+			case REG_VRAMCNTE:
+				return MMU.WRAMCNT << 24;
 
 			//despite these being 16bit regs,
 			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
@@ -4211,11 +4281,11 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
-    if ((adr>=0x04000400)&&(adr<0x04000520))
-    {
-        SPU_WriteLong(adr, val);
-        return;
-    }
+	if ((adr>=0x04000400)&&(adr<0x04000520))
+	{
+		SPU_WriteLong(adr, val);
+		return;
+	}
 
 	if((adr>>24)==4)
 	{
@@ -4326,10 +4396,10 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		else return addon.read08(ARMCPU_ARM7,adr);
 	}
 
-    if ((adr>=0x04000400)&&(adr<0x04000520))
-    {
-        return SPU_ReadByte(adr);
-    }
+	if ((adr>=0x04000400)&&(adr<0x04000520))
+	{
+		return SPU_ReadByte(adr);
+	}
 
 	if (adr == REG_RTC) return (u8)rtcRead();
 
@@ -4348,6 +4418,8 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 			case REG_DISPx_VCOUNT: return nds.VCount&0xFF;
 			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8)&0xFF;
+
+			case REG_WRAMSTAT: return MMU.WRAMCNT;
 		}
 
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
@@ -4357,7 +4429,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
 	if(unmapped) return 0;
 
-    return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
+	return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
 }
 //================================================= MMU ARM7 read 16
 u16 FASTCALL _MMU_ARM7_read16(u32 adr)
@@ -4423,6 +4495,11 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
 				return read_timer(ARMCPU_ARM7,(adr&0xF)>>2);
+
+			case REG_VRAMSTAT:
+				//make sure WRAMSTAT is stashed and then fallthrough to return the value from memory. i know, gross.
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
+				break;
 
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
@@ -4519,7 +4596,12 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
 
+			case REG_VRAMSTAT:
+				//make sure WRAMSTAT is stashed and then fallthrough return the value from memory. i know, gross.
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
+				break;
 		}
+
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]);
 	}
 
