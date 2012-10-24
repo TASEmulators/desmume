@@ -40,7 +40,7 @@ SLOT1INTERFACE slot1List[NDS_SLOT1_COUNT] = {
 };
 
 SLOT1INTERFACE slot1_device = slot1Retail; //default for frontends that dont even configure this
-u8 slot1_device_type = NDS_SLOT1_RETAIL;
+NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL;
 
 static void scanDir()
 {
@@ -112,4 +112,9 @@ std::string slot1GetFatDir()
 EMUFILE* slot1GetFatImage()
 {
 	return fatImage;
+}
+
+NDS_SLOT1_TYPE slot1GetCurrentType()
+{
+	return slot1_device_type;
 }

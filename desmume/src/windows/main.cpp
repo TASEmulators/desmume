@@ -2761,7 +2761,7 @@ int _main()
 	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
 
 	// Slot 1 / Slot 2 (GBA slot)
-	slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL, IniName);
+	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL, IniName);
 	cmdline.slot1_fat_dir = GetPrivateProfileStdString("Slot1", "fat_path", "");
 
 	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
@@ -2773,18 +2773,6 @@ int _main()
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();
 	
-	switch (slot1_device_type)
-	{
-		case NDS_SLOT1_NONE:
-		case NDS_SLOT1_RETAIL:
-		case NDS_SLOT1_R4:
-		case NDS_SLOT1_RETAIL_NAND:
-			break;
-		default:
-			slot1_device_type = NDS_SLOT1_RETAIL;
-			break;
-	}
-
 	if(cmdline.is_cflash_configured)
 	{
 	    addon_type = NDS_ADDON_CFLASH;

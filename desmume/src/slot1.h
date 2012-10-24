@@ -67,7 +67,6 @@ enum NDS_SLOT1_TYPE
 
 extern SLOT1INTERFACE slot1_device;						// current slot1 device
 extern SLOT1INTERFACE slot1List[NDS_SLOT1_COUNT];
-extern u8 slot1_device_type;
 
 BOOL slot1Init();
 void slot1Close();
@@ -75,5 +74,6 @@ void slot1Reset();
 BOOL slot1Change(NDS_SLOT1_TYPE type);				// change current adddon
 void slot1SetFatDir(const std::string& dir);
 std::string slot1GetFatDir();
+NDS_SLOT1_TYPE slot1GetCurrentType();
 EMUFILE* slot1GetFatImage();
 #endif //__SLOT1_H__

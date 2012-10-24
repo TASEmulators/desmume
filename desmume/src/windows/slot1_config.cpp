@@ -24,13 +24,13 @@
 #include "../NDSSystem.h"
 #include <shlobj.h>
 
-HWND		wndConfigSlot1 = NULL;
-u8			temp_type_slot1 = 0;
-u8			last_type_slot1 = 0;
-char		tmp_fat_path[MAX_PATH] = {0};
-HWND		OKbutton_slot1 = NULL;
-bool		_OKbutton_slot1 = false;
-bool		needReset_slot1 = true;
+HWND wndConfigSlot1 = NULL;
+NDS_SLOT1_TYPE temp_type_slot1 = NDS_SLOT1_NONE;
+u8 last_type_slot1 = 0;
+char tmp_fat_path[MAX_PATH] = {0};
+HWND OKbutton_slot1 = NULL;
+bool _OKbutton_slot1 = false;
+bool needReset_slot1 = true;
 
 
 INT_PTR CALLBACK Slot1None(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
@@ -162,7 +162,7 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				case IDC_ADDONS_LIST:
 					if (HIWORD(wparam) == CBN_SELENDOK)
 					{
-						temp_type_slot1 = ComboBox_GetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST));
+						temp_type_slot1 = (NDS_SLOT1_TYPE)ComboBox_GetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST));
 						if (temp_type_slot1 != last_type_slot1)
 						{
 							if (wndConfigSlot1) DestroyWindow(wndConfigSlot1);
@@ -191,7 +191,7 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 void slot1Dialog(HWND hwnd)
 {
 	strcpy(tmp_fat_path, slot1GetFatDir().c_str());
-	temp_type_slot1 = slot1_device_type;
+	temp_type_slot1 = slot1GetCurrentType();
 	last_type_slot1 = temp_type_slot1;
 	_OKbutton_slot1 = false;
 	needReset_slot1 = true;
@@ -201,7 +201,7 @@ void slot1Dialog(HWND hwnd)
 		switch (temp_type_slot1)
 		{
 			case NDS_SLOT1_NONE:
-				if (temp_type_slot1 != slot1_device_type)
+				if (temp_type_slot1 != slot1GetCurrentType())
 					needReset_slot1 = true;
 				else
 					needReset_slot1 = false;
