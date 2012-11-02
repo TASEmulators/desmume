@@ -257,7 +257,7 @@ static GPVar total_cycles;
 
 #ifndef ASMJIT_X64
 #define r64 r32
-#define movsxd mov
+#define movsxd movsx
 #endif
 
 // sequencer.reschedule = true;
