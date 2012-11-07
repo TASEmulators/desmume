@@ -1051,8 +1051,9 @@ void UpdateWndRects(HWND hwnd)
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
 
-		ratio = ((float)wndHeight / (float)defHeight);
-		oneScreenHeight = (int)((video.height/2) * ratio);
+		ratio = ((float)wndHeight / (float)512);
+		oneScreenHeight = (int)((256) * ratio);
+		int oneScreenWidth = (int)((192) * ratio);
 
 		// Main screen
 		ptClient.x = rc.left;
@@ -1061,7 +1062,7 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.left = ptClient.x;
 		MainScreenRect.top = ptClient.y;
 		ptClient.x = (rc.left + oneScreenHeight);
-		ptClient.y = (rc.top + wndWidth);
+		ptClient.y = (rc.top + oneScreenWidth);
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
@@ -1073,7 +1074,7 @@ void UpdateWndRects(HWND hwnd)
 		SubScreenRect.left = ptClient.x;
 		SubScreenRect.top = ptClient.y;
 		ptClient.x = (rc.left + oneScreenHeight + oneScreenHeight);
-		ptClient.y = (rc.top + wndWidth);
+		ptClient.y = (rc.top + oneScreenWidth);
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.right = ptClient.x;
 		SubScreenRect.bottom = ptClient.y;
