@@ -39,6 +39,7 @@ struct ArchiveFile
 	int GetNumItems();
 	int GetItemSize(int item);
 	const char* GetItemName(int item);
+	const wchar_t* GetItemNameW(int item);
 	int ExtractItem(int item, unsigned char* outBuffer, int bufSize) const; // returns size, or 0 if failed
 	int ExtractItem(int item, const char* outFilename) const;
 
@@ -50,6 +51,7 @@ protected:
 	{
 		int size;
 		char* name;
+		wchar_t* wname;
 		s64 offset;
 	};
 	ArchiveItem* m_items;

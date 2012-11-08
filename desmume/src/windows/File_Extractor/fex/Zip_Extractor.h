@@ -40,6 +40,9 @@ private:
 	blargg_err_t first_read( int count );
 	void reorder_entry_header( int offset );
 	static blargg_err_t inflater_read( void* data, void* out, int* count );
+
+	blargg_vector<char> name;
+	blargg_vector<wchar_t> wname;
 };
 
 #endif

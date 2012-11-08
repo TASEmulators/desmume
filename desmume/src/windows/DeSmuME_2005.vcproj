@@ -989,6 +989,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\File_Extractor\fex\Zip_Extractor.h"
+					>
+				</File>
+				<File
 					RelativePath=".\File_Extractor\fex\Zlib_Inflater.cpp"
 					>
 				</File>

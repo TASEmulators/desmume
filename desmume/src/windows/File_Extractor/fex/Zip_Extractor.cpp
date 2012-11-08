@@ -34,6 +34,8 @@ int const disk_block_size = 4 * 1024;
 // Read buffer used for extracting file data
 int const read_buf_size = 16 * 1024;
 
+#include <string>
+
 struct header_t
 {
 	char type [4];
@@ -250,12 +252,64 @@ blargg_err_t Zip_Extractor::update_info( bool advance_first )
 
 		if ( !advance_first )
 		{
+			char unterminate = e.filename[len];
 			e.filename [len] = 0; // terminate name
+			std::string fname = e.filename;
 			
 			if ( is_normal_file( e, len ) )
 			{
-				set_name( e.filename );
+				e.filename[len] = unterminate;
+				name.resize(fname.size()+1);
+				if(len != 0)
+				{
+					memcpy(name.begin(),fname.c_str(),len);
+					name[name.size()-1] = 0;
+				}
+				set_name( name.begin() );
 				set_info( get_le32( e.size ), get_le32( e.date ), get_le32( e.crc ) );
+
+				unsigned extra_len = get_le32(e.extra_len);
+
+				//walk over extra fields
+				unsigned i = len;
+				while(i < extra_len + len)
+				{
+					unsigned id = get_le16(e.filename + i);
+					i += 2;
+					unsigned exlen = get_le16(e.filename + i);
+					i += 2;
+					int exfield = i;
+					i += exlen;
+					if(id == 0x7075) //INFO-ZIP unicode path extra field (contains version, checksum, and utf-8 filename)
+					{
+						unsigned version = (unsigned char)*(e.filename + exfield);
+						if(version == 1)
+						{
+							exfield += 1; //skip version
+							exfield += 4; //skip crc
+							//the remainder is a utf-8 filename
+							int fnamelen = exlen-5;
+							char* tempbuf = (char*)malloc(fnamelen + 1);
+							memcpy(tempbuf,e.filename + exfield, fnamelen);
+							tempbuf[fnamelen] = 0;
+							wchar_t* wfname_buf = blargg_to_wide(tempbuf);
+							std::wstring wfname = wfname_buf;
+							free(tempbuf);
+							free(wfname_buf);
+							
+							size_t wfname_len = wfname.size();
+
+							this->wname.resize(wfname_len+1);
+							if(wfname_len != 0)
+							{
+								memcpy(this->wname.begin(),wfname.c_str(),wfname_len*sizeof(wchar_t));
+								wname[wname.size()-1] = 0;
+							}
+							set_name( name.begin(), wname.begin() );
+							
+						}
+					}
+				}
 				break;
 			}
 		}
