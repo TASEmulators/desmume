@@ -15,6 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//TODO - consider making this use UTF-8 everywhere instead of wstrings. sort of cleaner. but im tired of it now. it works presently.
+
 #include "FEX_Interface.h"
 
 #include "File_Extractor/fex/fex.h"
