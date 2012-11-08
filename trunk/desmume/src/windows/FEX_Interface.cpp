@@ -129,8 +129,18 @@ ArchiveFile::ArchiveFile(const char* filename)
 	if(!file)
 		return;
 
-	m_filename = new char[strlen(filename)+1];
-	strcpy(m_filename, filename);
+	//TODO - maybe windows only check here if we ever drop fex into portable code. unfortunately this is probably too unwieldy to ever happen
+
+	//convert the filename to unicode
+	wchar_t temp_wchar[MAX_PATH*2];
+	char filename_utf8[MAX_PATH*4];
+	MultiByteToWideChar(CP_THREAD_ACP,0,filename,-1,temp_wchar,ARRAY_SIZE(temp_wchar));
+	//now convert it back to utf-8. is there a way to do this in one step?
+	WideCharToMultiByte(CP_UTF8,0,temp_wchar,-1,filename_utf8,ARRAY_SIZE(filename_utf8), NULL, NULL);
+
+
+	m_filename = new char[strlen(filename_utf8)+1];
+	strcpy(m_filename, filename_utf8);
 
 	// detect archive type using format signature in file
 	for(size_t i = 0; i < s_formatInfos.size() && m_typeIndex < 0; i++)
@@ -187,11 +197,13 @@ ArchiveFile::ArchiveFile(const char* filename)
 
 		m_items[0].name = new char[strlen(filename)+1];
 		strcpy(m_items[0].name, filename);
+
+		m_items[0].wname = _wcsdup(temp_wchar);
 	}
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, filename, s_formatInfos[m_typeIndex].type );
+		fex_err_t err = fex_open_type( &object, m_filename, s_formatInfos[m_typeIndex].type );
 		if ( !err )
 		{
 			int numItems = 0;
@@ -219,6 +231,21 @@ ArchiveFile::ArchiveFile(const char* filename)
 				item.name = new char[strlen(name)+1];
 				strcpy(item.name, name);
 
+				const wchar_t* wname = fex_wname(object);
+				if(wname)
+				{
+					item.wname = _wcsdup(fex_wname(object));
+				}
+				else
+				{
+					const char* name = fex_name(object);
+					wchar_t temp_wchar[MAX_PATH];
+					//what code page to use??? who knows. 
+					MultiByteToWideChar(CP_ACP,0,name,-1,temp_wchar,ARRAY_SIZE(temp_wchar));
+					item.wname = _wcsdup(temp_wchar);
+				}
+
+
 				err = fex_stat(object);
 				if (err) break;
 
@@ -240,6 +267,7 @@ ArchiveFile::~ArchiveFile()
 	for(int i = 0; i < m_numItems; i++)
 	{
 		delete[] m_items[i].name;
+		free(m_items[i].wname);
 	}
 	delete[] m_items;
 	delete[] m_filename;
@@ -273,6 +301,14 @@ const char* ArchiveFile::GetItemName(int item)
 	if(!(item >= 0 && item < m_numItems)) return "";
 	return m_items[item].name;
 }
+
+const wchar_t* ArchiveFile::GetItemNameW(int item)
+{
+	//assert(item >= 0 && item < m_numItems);
+	if(!(item >= 0 && item < m_numItems)) return L"";
+	return m_items[item].wname;
+}
+
 
 bool ArchiveFile::IsCompressed()
 {

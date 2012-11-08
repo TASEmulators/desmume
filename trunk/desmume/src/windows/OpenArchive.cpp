@@ -51,7 +51,10 @@ tryagain:
 		{
 			if(archive.GetItemSize(i))
 			{
-				const char* name = archive.GetItemName(i);
+				//bullshit time. convert to system locale
+				char name[MAX_PATH];
+				WideCharToMultiByte(CP_ACP,0,archive.GetItemNameW(i),-1,name,ARRAY_SIZE(name), NULL, NULL);
+
 				const char* ext = strrchr(name, '.');
 				bool ok = true;
 				if(ext++)
@@ -454,7 +457,15 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 				s_tempFiles.ReleaseFile(TempFileName);
 			s_tempFiles.ReleaseFile(PhysicalName);
 			strcpy(PhysicalName, TempFileName);
-			_snprintf(LogicalName + strlen(LogicalName), 1024 - (strlen(LogicalName)+1), "|%s", archive.GetItemName(item));
+
+			const wchar_t* itemNameW = archive.GetItemNameW(item);
+
+			//convert the itemname to local encoding
+			char itemname_utf8[MAX_PATH*4];
+			WideCharToMultiByte(CP_THREAD_ACP,0,itemNameW,-1,itemname_utf8,ARRAY_SIZE(itemname_utf8),NULL,NULL);
+
+			//strcat(LogicalName,itemname_utf8);
+			_snprintf(LogicalName + strlen(LogicalName), 1024 - (strlen(LogicalName)+1), "|%s", itemname_utf8);
 		}
 	}
 }
