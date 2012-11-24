@@ -434,9 +434,9 @@ GPU3DInterface *core3DList[] = {
 @implementation CocoaDSDisplay
 
 @synthesize gpuStateFlags;
-@synthesize delegate;
-@synthesize displayType;
-@synthesize vf;
+@dynamic delegate;
+@dynamic displayType;
+@dynamic frameSize;
 @synthesize mutexRender3D;
 
 - (id)init
@@ -453,8 +453,6 @@ GPU3DInterface *core3DList[] = {
 	spinlockDelegate = OS_SPINLOCK_INIT;
 	spinlockGpuState = OS_SPINLOCK_INIT;
 	spinlockDisplayType = OS_SPINLOCK_INIT;
-	spinlockVideoFilterType = OS_SPINLOCK_INIT;
-	spinlockVfSrcBuffer = OS_SPINLOCK_INIT;
 	spinlockRender3DRenderingEngine = OS_SPINLOCK_INIT;
 	spinlockRender3DHighPrecisionColorInterpolation = OS_SPINLOCK_INIT;
 	spinlockRender3DEdgeMarking = OS_SPINLOCK_INIT;
@@ -465,7 +463,7 @@ GPU3DInterface *core3DList[] = {
 	spinlockRender3DLineHack = OS_SPINLOCK_INIT;
 	
 	displayType = DS_DISPLAY_TYPE_COMBO;
-	vf = [[CocoaVideoFilter alloc] initWithSize:NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2) typeID:VideoFilterTypeID_None numberThreads:2];
+	frameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT * 2);
 	
 	gpuStateFlags =	GPUSTATE_MAIN_GPU_MASK |
 	GPUSTATE_MAIN_BG0_MASK |
@@ -498,8 +496,6 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateSubOBJ"];
 	[property setValue:[NSNumber numberWithInteger:displayType] forKey:@"displayMode"];
 	[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
-	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
-	[property setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];
 	[property setValue:[NSNumber numberWithInteger:CORE3DLIST_NULL] forKey:@"render3DRenderingEngine"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"render3DHighPrecisionColorInterpolation"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"render3DEdgeMarking"];
@@ -515,7 +511,6 @@ GPU3DInterface *core3DList[] = {
 - (void)dealloc
 {
 	self.delegate = nil;
-	[vf release];
 	
 	pthread_mutex_destroy(self.mutexRender3D);
 	free(self.mutexRender3D);
@@ -710,7 +705,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setDisplayType:(NSInteger)dispType
 {
 	NSString *newDispString = nil;
-	NSSize newSrcSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT);
+	NSSize newFrameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT);
 	
 	switch (dispType)
 	{
@@ -724,7 +719,7 @@ GPU3DInterface *core3DList[] = {
 			
 		case DS_DISPLAY_TYPE_COMBO:
 			newDispString = NSSTRING_DISPLAYMODE_COMBO;
-			newSrcSize.height *= 2;
+			newFrameSize.height *= 2;
 			break;
 			
 		default:
@@ -734,13 +729,10 @@ GPU3DInterface *core3DList[] = {
 	
 	OSSpinLockLock(&spinlockDisplayType);
 	displayType = dispType;
+	frameSize = newFrameSize;
 	[property setValue:[NSNumber numberWithInteger:dispType] forKey:@"displayMode"];
 	[property setValue:newDispString forKey:@"displayModeString"];
 	OSSpinLockUnlock(&spinlockDisplayType);
-	
-	OSSpinLockLock(&spinlockVfSrcBuffer);
-	[vf setSourceSize:newSrcSize];
-	OSSpinLockUnlock(&spinlockVfSrcBuffer);
 }
 
 - (NSInteger) displayType
@@ -752,23 +744,13 @@ GPU3DInterface *core3DList[] = {
 	return dispType;
 }
 
-- (void) setVfType:(NSInteger)videoFilterTypeID
+- (NSSize) frameSize
 {
-	[vf changeFilter:(VideoFilterTypeID)videoFilterTypeID];
+	OSSpinLockLock(&spinlockDisplayType);
+	NSSize size = frameSize;
+	OSSpinLockUnlock(&spinlockDisplayType);
 	
-	OSSpinLockLock(&spinlockVideoFilterType);
-	[property setValue:[NSNumber numberWithInteger:videoFilterTypeID] forKey:@"videoFilterType"];
-	[property setValue:NSLocalizedString([vf typeString], nil) forKey:@"videoFilterTypeString"];
-	OSSpinLockUnlock(&spinlockVideoFilterType);
-}
-
-- (NSInteger) vfType
-{
-	OSSpinLockLock(&spinlockVideoFilterType);
-	NSInteger theType = [(NSNumber *)[property valueForKey:@"videoFilterType"] integerValue];
-	OSSpinLockUnlock(&spinlockVideoFilterType);
-	
-	return theType;
+	return size;
 }
 
 - (void) setRender3DRenderingEngine:(NSInteger)methodID
@@ -943,15 +925,14 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	pthread_mutex_lock(self.mutexProducer);
-	CommonSettings.num_cores = numberCores;
-	pthread_mutex_unlock(self.mutexProducer);
 	
+	CommonSettings.num_cores = numberCores;
 	if ([self render3DRenderingEngine] == CORE3DLIST_SWRASTERIZE)
 	{
-		pthread_mutex_lock(self.mutexProducer);
 		NDS_3D_ChangeCore(CORE3DLIST_SWRASTERIZE);
-		pthread_mutex_unlock(self.mutexProducer);
 	}
+	
+	pthread_mutex_unlock(self.mutexProducer);
 }
 
 - (NSUInteger) render3DThreads
@@ -987,15 +968,6 @@ GPU3DInterface *core3DList[] = {
 	OSSpinLockUnlock(&spinlockRender3DLineHack);
 	
 	return state;
-}
-
-- (void) runThread:(id)object
-{
-	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	[delegate doInitVideoOutput:self.property];
-	[tempPool release];
-	
-	[super runThread:object];
 }
 
 - (void) doCoreEmuFrame
@@ -1037,40 +1009,12 @@ GPU3DInterface *core3DList[] = {
 			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0]];
 			break;
 			
-		case MESSAGE_RESIZE_VIEW:
-			[self handleResizeView:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_REDRAW_VIEW:
-			[self handleRedrawView];
-			break;
-			
 		case MESSAGE_SET_GPU_STATE_FLAGS:
 			[self handleChangeGpuStateFlags:[messageComponents objectAtIndex:0]];
 			break;
 			
 		case MESSAGE_CHANGE_DISPLAY_TYPE:
 			[self handleChangeDisplayType:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_DISPLAY_ORIENTATION:
-			[self handleChangeDisplayOrientation:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_DISPLAY_ORDER:
-			[self handleChangeDisplayOrder:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_BILINEAR_OUTPUT:
-			[self handleChangeBilinearOutput:[messageComponents objectAtIndex:0]];
-			break;
-		
-		case MESSAGE_CHANGE_VERTICAL_SYNC:
-			[self handleChangeVerticalSync:[messageComponents objectAtIndex:0]];
-			break;
-		
-		case MESSAGE_CHANGE_VIDEO_FILTER:
-			[self handleChangeVideoFilter:[messageComponents objectAtIndex:0]];
 			break;
 			
 		case MESSAGE_SET_RENDER3D_METHOD:
@@ -1129,45 +1073,7 @@ GPU3DInterface *core3DList[] = {
 
 - (void) handleEmuFrameProcessed:(NSData *)theData
 {
-	// Tell the video output object to process the video frame with our copied GPU data.
-	if ([vf typeID] == VideoFilterTypeID_None)
-	{
-		[delegate doProcessVideoFrame:[theData bytes] frameSize:[vf destSize]];
-	}
-	else
-	{
-		NSSize srcSize = [vf srcSize];
-		
-		OSSpinLockLock(&spinlockVfSrcBuffer);
-		RGBA5551ToRGBA8888Buffer((const uint16_t *)[theData bytes], (uint32_t *)[vf srcBufferPtr], ((unsigned int)srcSize.width * (unsigned int)srcSize.height));
-		OSSpinLockUnlock(&spinlockVfSrcBuffer);
-		
-		const UInt32 *vfDestBufferPtr = [vf runFilter];
-		[delegate doProcessVideoFrame:vfDestBufferPtr frameSize:[vf destSize]];
-	}
-	
 	[super handleEmuFrameProcessed:theData];
-}
-
-- (void) handleResizeView:(NSData *)rectData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doResizeView:)])
-	{
-		return;
-	}
-	
-	const NSRect *resizeRect = (NSRect *)[rectData bytes];
-	[delegate doResizeView:*resizeRect];
-}
-
-- (void) handleRedrawView
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doRedraw)])
-	{
-		return;
-	}
-	
-	[delegate doRedraw];
 }
 
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData
@@ -1187,64 +1093,6 @@ GPU3DInterface *core3DList[] = {
 	const NSInteger *theType = (NSInteger *)[displayTypeIdData bytes];
 	self.displayType = *theType;
 	[delegate doDisplayTypeChanged:*theType];
-}
-
-- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger *theOrientation = (NSInteger *)[displayOrientationIdData bytes];
-	[delegate doDisplayOrientationChanged:*theOrientation];
-}
-
-- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrderChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger *theOrder = (NSInteger *)[displayOrderIdData bytes];
-	[delegate doDisplayOrderChanged:*theOrder];
-}
-
-- (void) handleChangeBilinearOutput:(NSData *)bilinearStateData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doBilinearOutputChanged:)])
-	{
-		return;
-	}
-	
-	const BOOL *theState = (BOOL *)[bilinearStateData bytes];
-	[delegate doBilinearOutputChanged:*theState];
-	[self handleEmuFrameProcessed:self.frameData];
-}
-
-- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doVerticalSyncChanged:)])
-	{
-		return;
-	}
-	
-	const BOOL *theState = (BOOL *)[verticalSyncStateData bytes];
-	[delegate doVerticalSyncChanged:*theState];
-}
-
-- (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doVideoFilterChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger *theType = (NSInteger *)[videoFilterTypeIdData bytes];
-	[self setVfType:*theType];
-	[delegate doVideoFilterChanged:*theType];
-	[self handleEmuFrameProcessed:self.frameData];
 }
 
 - (void) handleSetRender3DRenderingEngine:(NSData *)methodIdData
@@ -1356,7 +1204,7 @@ GPU3DInterface *core3DList[] = {
 
 - (NSImage *) image
 {
-	NSImage *newImage = [[NSImage alloc] initWithSize:[vf srcSize]];
+	NSImage *newImage = [[NSImage alloc] initWithSize:self.frameSize];
 	if (newImage == nil)
 	{
 		return newImage;
@@ -1384,7 +1232,7 @@ GPU3DInterface *core3DList[] = {
 		return nil;
 	}
 	
-	NSSize srcSize = [vf srcSize];
+	NSSize srcSize = self.frameSize;
 	NSUInteger w = (NSUInteger)srcSize.width;
 	NSUInteger h = (NSUInteger)srcSize.height;
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
@@ -1515,6 +1363,269 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	self.gpuStateFlags = flags;
+}
+
+@end
+
+@implementation CocoaDSDisplayVideo
+
+@synthesize vf;
+
+- (id)init
+{
+	self = [super init];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	videoDelegate = nil;
+	
+	spinlockVideoFilterType = OS_SPINLOCK_INIT;
+	spinlockVfSrcBuffer = OS_SPINLOCK_INIT;
+	
+	vf = [[CocoaVideoFilter alloc] initWithSize:frameSize typeID:VideoFilterTypeID_None numberThreads:2];
+	
+	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
+	[property setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	[vf release];
+	
+	[super dealloc];
+}
+
+- (void) setDelegate:(id <CocoaDSDisplayVideoDelegate>)theDelegate
+{
+	OSSpinLockLock(&spinlockDelegate);
+	
+	if (theDelegate == videoDelegate)
+	{
+		OSSpinLockUnlock(&spinlockDelegate);
+		return;
+	}
+	
+	if (theDelegate != nil)
+	{
+		[theDelegate retain];
+		[theDelegate setSendPortDisplay:self.receivePort];
+	}
+	
+	[videoDelegate release];
+	videoDelegate = theDelegate;
+	
+	OSSpinLockUnlock(&spinlockDelegate);
+	
+	[super setDelegate:theDelegate];
+}
+
+- (id <CocoaDSDisplayVideoDelegate>) delegate
+{
+	OSSpinLockLock(&spinlockDelegate);
+	id <CocoaDSDisplayVideoDelegate> theDelegate = videoDelegate;
+	OSSpinLockUnlock(&spinlockDelegate);
+	
+	return theDelegate;
+}
+
+- (void) setDisplayType:(NSInteger)dispType
+{
+	[super setDisplayType:dispType];
+	
+	OSSpinLockLock(&spinlockVfSrcBuffer);
+	[vf setSourceSize:self.frameSize];
+	OSSpinLockUnlock(&spinlockVfSrcBuffer);
+}
+
+- (void) setVfType:(NSInteger)videoFilterTypeID
+{
+	[vf changeFilter:(VideoFilterTypeID)videoFilterTypeID];
+	
+	OSSpinLockLock(&spinlockVideoFilterType);
+	[property setValue:[NSNumber numberWithInteger:videoFilterTypeID] forKey:@"videoFilterType"];
+	[property setValue:NSLocalizedString([vf typeString], nil) forKey:@"videoFilterTypeString"];
+	OSSpinLockUnlock(&spinlockVideoFilterType);
+}
+
+- (NSInteger) vfType
+{
+	OSSpinLockLock(&spinlockVideoFilterType);
+	NSInteger theType = [(NSNumber *)[property valueForKey:@"videoFilterType"] integerValue];
+	OSSpinLockUnlock(&spinlockVideoFilterType);
+	
+	return theType;
+}
+
+- (void) runThread:(id)object
+{
+	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	[videoDelegate doInitVideoOutput:self.property];
+	[tempPool release];
+	
+	[super runThread:object];
+}
+
+- (void)handlePortMessage:(NSPortMessage *)portMessage
+{
+	NSInteger message = (NSInteger)[portMessage msgid];
+	NSArray *messageComponents = [portMessage components];
+	
+	switch (message)
+	{
+		case MESSAGE_EMU_FRAME_PROCESSED:
+			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_RESIZE_VIEW:
+			[self handleResizeView:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_REDRAW_VIEW:
+			[self handleRedrawView];
+			break;
+			
+		case MESSAGE_CHANGE_DISPLAY_ORIENTATION:
+			[self handleChangeDisplayOrientation:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_CHANGE_DISPLAY_ORDER:
+			[self handleChangeDisplayOrder:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_CHANGE_BILINEAR_OUTPUT:
+			[self handleChangeBilinearOutput:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_CHANGE_VERTICAL_SYNC:
+			[self handleChangeVerticalSync:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_CHANGE_VIDEO_FILTER:
+			[self handleChangeVideoFilter:[messageComponents objectAtIndex:0]];
+			break;
+			
+		default:
+			[super handlePortMessage:portMessage];
+			break;
+	}
+}
+
+- (void) handleEmuFrameProcessed:(NSData *)theData
+{
+	if (theData == nil)
+	{
+		return;
+	}
+	
+	NSSize destSize = [vf destSize];
+	size_t dataSize = (size_t)destSize.width * (size_t)destSize.height * sizeof(UInt32);
+	if ([vf typeID] == VideoFilterTypeID_None)
+	{
+		destSize = self.frameSize;
+		dataSize = (size_t)destSize.width * (size_t)destSize.height * sizeof(UInt16);
+	}
+	
+	// Tell the video delegate to process the video frame with our copied GPU data.
+	if ([vf typeID] == VideoFilterTypeID_None)
+	{
+		[videoDelegate doProcessVideoFrame:[theData bytes] frameSize:self.frameSize];
+	}
+	else
+	{
+		NSSize srcSize = [vf srcSize];
+		
+		OSSpinLockLock(&spinlockVfSrcBuffer);
+		RGBA5551ToRGBA8888Buffer((const uint16_t *)[theData bytes], (uint32_t *)[vf srcBufferPtr], ((unsigned int)srcSize.width * (unsigned int)srcSize.height));
+		OSSpinLockUnlock(&spinlockVfSrcBuffer);
+		
+		UInt32 *vfDestBuffer = [vf runFilter];
+		[videoDelegate doProcessVideoFrame:vfDestBuffer frameSize:[vf destSize]];
+	}
+		
+	[super handleEmuFrameProcessed:theData];
+}
+
+- (void) handleResizeView:(NSData *)rectData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doResizeView:)])
+	{
+		return;
+	}
+	
+	const NSRect *resizeRect = (NSRect *)[rectData bytes];
+	[videoDelegate doResizeView:*resizeRect];
+}
+
+- (void) handleRedrawView
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doRedraw)])
+	{
+		return;
+	}
+	
+	[videoDelegate doRedraw];
+}
+
+- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
+	{
+		return;
+	}
+	
+	const NSInteger *theOrientation = (NSInteger *)[displayOrientationIdData bytes];
+	[videoDelegate doDisplayOrientationChanged:*theOrientation];
+}
+
+- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doDisplayOrderChanged:)])
+	{
+		return;
+	}
+	
+	const NSInteger *theOrder = (NSInteger *)[displayOrderIdData bytes];
+	[videoDelegate doDisplayOrderChanged:*theOrder];
+}
+
+- (void) handleChangeBilinearOutput:(NSData *)bilinearStateData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doBilinearOutputChanged:)])
+	{
+		return;
+	}
+	
+	const BOOL *theState = (BOOL *)[bilinearStateData bytes];
+	[videoDelegate doBilinearOutputChanged:*theState];
+	[self handleEmuFrameProcessed:self.frameData];
+}
+
+- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doVerticalSyncChanged:)])
+	{
+		return;
+	}
+	
+	const BOOL *theState = (BOOL *)[verticalSyncStateData bytes];
+	[videoDelegate doVerticalSyncChanged:*theState];
+}
+
+- (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doVideoFilterChanged:frameSize:)])
+	{
+		return;
+	}
+	
+	const NSInteger *theType = (NSInteger *)[videoFilterTypeIdData bytes];
+	[self setVfType:*theType];
+	[videoDelegate doVideoFilterChanged:*theType frameSize:[vf destSize]];
+	[self handleEmuFrameProcessed:self.frameData];
 }
 
 @end

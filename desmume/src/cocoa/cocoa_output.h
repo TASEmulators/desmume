@@ -95,23 +95,28 @@
 @protocol CocoaDSDisplayDelegate <NSObject>
 
 @required
-- (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize;
+- (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
 
 @property (retain) NSPort *sendPortDisplay;
+@property (assign) BOOL isHudEnabled;
+@property (assign) BOOL isHudEditingModeEnabled;
+
+@end
+
+@protocol CocoaDSDisplayVideoDelegate <CocoaDSDisplayDelegate>
+
+@required
+- (void) doInitVideoOutput:(NSDictionary *)properties;
+- (void) doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
 - (void) doRedraw;
-- (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
-- (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
-
-@property (assign) BOOL isHudEnabled;
-@property (assign) BOOL isHudEditingModeEnabled;
+- (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID frameSize:(NSSize)videoFilterDestSize;
 
 @end
 
@@ -121,14 +126,12 @@
 	UInt32 gpuStateFlags;
 	id <CocoaDSDisplayDelegate> delegate;
 	NSInteger displayType;
-	CocoaVideoFilter *vf;
+	NSSize frameSize;
 	
 	pthread_mutex_t *mutexRender3D;
 	OSSpinLock spinlockDelegate;
 	OSSpinLock spinlockGpuState;
 	OSSpinLock spinlockDisplayType;
-	OSSpinLock spinlockVideoFilterType;
-	OSSpinLock spinlockVfSrcBuffer;
 	OSSpinLock spinlockRender3DRenderingEngine;
 	OSSpinLock spinlockRender3DHighPrecisionColorInterpolation;
 	OSSpinLock spinlockRender3DEdgeMarking;
@@ -142,7 +145,7 @@
 @property (assign) UInt32 gpuStateFlags;
 @property (retain) id <CocoaDSDisplayDelegate> delegate;
 @property (assign) NSInteger displayType;
-@property (assign) CocoaVideoFilter *vf;
+@property (readonly) NSSize frameSize;
 @property (readonly) pthread_mutex_t *mutexRender3D;
 
 - (void) setRender3DRenderingEngine:(NSInteger)methodID;
@@ -162,15 +165,8 @@
 - (void) setRender3DLineHack:(BOOL)state;
 - (BOOL) render3DLineHack;
 
-- (void) handleResizeView:(NSData *)rectData;
-- (void) handleRedrawView;
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData;
 - (void) handleChangeDisplayType:(NSData *)displayTypeIdData;
-- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
-- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
-- (void) handleChangeBilinearOutput:(NSData *)bilinearStateData;
-- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData;
-- (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData;
 - (void) handleSetRender3DRenderingEngine:(NSData *)methodIdData;
 - (void) handleSetRender3DHighPrecisionColorInterpolation:(NSData *)stateData;
 - (void) handleSetRender3DEdgeMarking:(NSData *)stateData;
@@ -193,6 +189,28 @@
 - (BOOL) isGPUTypeDisplayed:(NSInteger)theGpuType;
 - (void) hideGPUType:(NSInteger)theGpuType;
 - (void) showGPUType:(NSInteger)theGpuType;
+
+@end
+
+@interface CocoaDSDisplayVideo : CocoaDSDisplay
+{
+	CocoaVideoFilter *vf;
+	id <CocoaDSDisplayVideoDelegate> videoDelegate;
+		
+	OSSpinLock spinlockVideoFilterType;
+	OSSpinLock spinlockVfSrcBuffer;
+}
+
+@property (retain) id <CocoaDSDisplayVideoDelegate> delegate;
+@property (assign) CocoaVideoFilter *vf;
+
+- (void) handleResizeView:(NSData *)rectData;
+- (void) handleRedrawView;
+- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
+- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
+- (void) handleChangeBilinearOutput:(NSData *)bilinearStateData;
+- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData;
+- (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData;
 
 @end
 

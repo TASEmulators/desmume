@@ -181,9 +181,9 @@
 	[newDispViewDelegate setCdsController:newController];
 	
 	// Init the DS displays.
-	CocoaDSDisplay *newComboDisplay = [[[CocoaDSDisplay alloc] init] autorelease];
-	[newComboDisplay setDelegate:newDispViewDelegate];
-	[newCore addOutput:newComboDisplay];
+	CocoaDSDisplayVideo *newVideoDisplay = [[[CocoaDSDisplayVideo alloc] init] autorelease];
+	[newVideoDisplay setDelegate:newDispViewDelegate];
+	[newCore addOutput:newVideoDisplay];
 	NSPort *guiPort = [NSPort port];
 	[[NSRunLoop currentRunLoop] addPort:guiPort forMode:NSDefaultRunLoopMode];
 	
@@ -202,11 +202,11 @@
 	}
 	
 	// Start up the threads for our outputs.
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newComboDisplay withObject:nil];
+	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newVideoDisplay withObject:nil];
 	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newSpeaker withObject:nil];
 	
 	// Wait until the GPU and SPU are finished starting up.
-	while ([newComboDisplay thread] == nil || [newSpeaker thread] == nil)
+	while ([newVideoDisplay thread] == nil || [newSpeaker thread] == nil)
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 	}

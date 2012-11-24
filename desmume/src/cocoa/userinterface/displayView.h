@@ -42,11 +42,11 @@
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
-- (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
+- (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID frameSize:(NSSize)videoFilterDestSize;
 
 @end
 
-@interface DisplayViewDelegate : NSObject <CocoaDSDisplayDelegate>
+@interface DisplayViewDelegate : NSObject <CocoaDSDisplayVideoDelegate>
 {
 	NSView <DisplayViewDelegate> *view;
 	NSPort *sendPortDisplay;
@@ -130,14 +130,14 @@
 	GLfloat swRasterizerMainVertex[4][2];
 	GLfloat swRasterizerTouchTexCoord[4][2];
 	GLfloat swRasterizerTouchVertex[4][2];
+	GLuint swRasterizerDisplayListIndex;
 }
 
 - (void) drawVideoFrame;
-- (void) uploadSWRasterizerTexturesUsingSize:(NSSize)textureSize
-								   mainBytes:(const GLvoid *)mainBytes
-								  touchBytes:(const GLvoid *)touchBytes;
+- (void) uploadSWRasterizerTextureData:(const GLvoid *)textureData textureSize:(NSSize)textureSize;
 - (void) renderSWRasterizer;
 - (void) setupSWRasterizerVertices;
+- (void) updateDisplayLists;
 
 @end
 
