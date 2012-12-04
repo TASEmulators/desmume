@@ -352,10 +352,16 @@ static void OGLReset()
 {
 	if(hasShaders)
 	{
-		glUniform1i(hasTexLoc, 0);
 		hasTexture = false;
-		glUniform1i(texBlendLoc, 0);
-		glUniform1i(oglWBuffer, 0);
+		
+		if(BEGINGL())
+		{
+			glUniform1i(hasTexLoc, 0);
+			glUniform1i(texBlendLoc, 0);
+			glUniform1i(oglWBuffer, 0);
+			
+			ENDGL();
+		}
 	}
 
 	TexCache_Reset();
@@ -597,9 +603,9 @@ static char OGLInit(void)
 
 	glActiveTexture(GL_TEXTURE0);
 
-	OGLReset();
-
 	ENDGL();
+	
+	OGLReset();
 
 	return 1;
 }
