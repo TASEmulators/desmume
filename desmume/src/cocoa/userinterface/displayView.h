@@ -119,25 +119,31 @@
 
 @interface OpenGLDisplayView : NSOpenGLView <DisplayViewDelegate>
 {
+	CGLContextObj cglDisplayContext;
+	NSOpenGLContext *oglRendererContext;
+	
 	DisplayViewDelegate *dispViewDelegate;
 	GLint glTexRenderStyle;
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
 	
-	GLuint swRasterizerDrawTexture[2];
-	GLfloat swRasterizerMainTexCoord[4][2];
-	GLfloat swRasterizerMainVertex[4][2];
-	GLfloat swRasterizerTouchTexCoord[4][2];
-	GLfloat swRasterizerTouchVertex[4][2];
-	GLuint swRasterizerDisplayListIndex;
+	GLfloat mainDisplayTexCoord[4][2];
+	GLfloat touchDisplayTexCoord[4][2];
+	GLint mainDisplayVtx[4][2];
+	GLint touchDisplayVtx[4][2];
+	
+	GLuint mainDisplayTexIndex;
+	GLuint touchDisplayTexIndex;
+	GLuint renderDisplayListIndex;
 }
 
 - (void) drawVideoFrame;
-- (void) uploadSWRasterizerTextureData:(const GLvoid *)textureData textureSize:(NSSize)textureSize;
-- (void) renderSWRasterizer;
-- (void) setupSWRasterizerVertices;
-- (void) updateDisplayLists;
+- (void) uploadDisplayTextures:(const GLvoid *)textureData textureSize:(NSSize)textureSize;
+- (void) renderDisplay;
+- (void) calculateDisplayVertices;
+- (void) updateRenderDisplayLists;
+- (void) updateDisplays;
 
 @end
 
@@ -146,7 +152,6 @@ extern "C"
 {
 #endif
 
-void SetupOpenGLView(GLsizei width, GLsizei height, GLfloat scalar, GLfloat angleDegrees);
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();
 void OSXOpenGLRendererEnd();

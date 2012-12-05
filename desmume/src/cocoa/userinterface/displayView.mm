@@ -29,7 +29,7 @@
 
 #undef BOOL
 
-NSOpenGLContext *OSXDefaultOpenGLContext = nil;
+CGLContextObj OSXOpenGLRendererContext = NULL;
 
 @implementation DisplayViewDelegate
 
@@ -900,47 +900,64 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	UInt32 h = GetNearestPositivePOT((UInt32)(GPU_DISPLAY_HEIGHT * 2.0));
 	glTexBack = (GLvoid *)calloc(w * h, sizeof(UInt16));
 	glTexBackSize = NSMakeSize(w, h);
+	cglDisplayContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
 	
-	OSXDefaultOpenGLContext = [[self openGLContext] retain];
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
 	
-	NSOpenGLContext *prevContext = [NSOpenGLContext currentContext];
-	[OSXDefaultOpenGLContext makeCurrentContext];
-	
-	glGenTextures(2, swRasterizerDrawTexture);
-	swRasterizerDisplayListIndex = glGenLists(3);
+	renderDisplayListIndex = glGenLists(3);
+	glGenTextures(1, &mainDisplayTexIndex);
+	glGenTextures(1, &touchDisplayTexIndex);
 	
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
 							   &OSXOpenGLRendererBegin,
 							   &OSXOpenGLRendererEnd);
 	
-	if (prevContext != nil)
+	CGLSetCurrentContext(prevContext);
+	
+	NSOpenGLPixelFormatAttribute attrs[] =
 	{
-		[prevContext makeCurrentContext];
-	}
-	else
-	{
-		[NSOpenGLContext clearCurrentContext];
-	}
+		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFAOffScreen,
+		(NSOpenGLPixelFormatAttribute)0
+	};
+	
+	NSOpenGLPixelFormat *tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+	NSOpenGLPixelBuffer *tempPixelBuffer = [[NSOpenGLPixelBuffer alloc]
+											initWithTextureTarget:GL_TEXTURE_2D
+											textureInternalFormat:GL_RGBA
+											textureMaxMipMapLevel:0
+											pixelsWide:GPU_DISPLAY_WIDTH
+											pixelsHigh:GPU_DISPLAY_HEIGHT*2];
+	
+	NSOpenGLContext *newOGLRendererContext = [[NSOpenGLContext alloc] initWithFormat:tempPixelFormat shareContext:nil];
+	[newOGLRendererContext setPixelBuffer:tempPixelBuffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:0];
+	
+	[tempPixelFormat release];
+	[tempPixelBuffer release];
+	
+	oglRendererContext = newOGLRendererContext;
+	OSXOpenGLRendererContext = (CGLContextObj)[oglRendererContext CGLContextObj];
 	
     return self;
 }
 
 - (void)dealloc
 {
-	NSOpenGLContext *prevContext = [NSOpenGLContext currentContext];
-	[[self openGLContext] makeCurrentContext];
+	[oglRendererContext release];
+	OSXOpenGLRendererContext = NULL;
 	
-	glDeleteTextures(2, swRasterizerDrawTexture);
-	glDeleteLists(swRasterizerDisplayListIndex, 3);
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
 	
-	if (prevContext != nil)
-	{
-		[prevContext makeCurrentContext];
-	}
-	else
-	{
-		[NSOpenGLContext clearCurrentContext];
-	}
+	glDeleteTextures(1, &mainDisplayTexIndex);
+	glDeleteTextures(1, &touchDisplayTexIndex);
+	glDeleteLists(renderDisplayListIndex, 3);
+	
+	CGLSetCurrentContext(prevContext);
 	
 	free(glTexBack);
 	glTexBack = NULL;
@@ -974,8 +991,10 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_BLEND);
 	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_LIGHTING);
 	glDisable(GL_FOG);
 	glDisable(GL_DEPTH_TEST);
+	
 	glEnable(GL_TEXTURE_2D);
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -985,10 +1004,10 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 
 - (void) drawVideoFrame
 {
-	CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	CGLFlushDrawable(cglDisplayContext);
 }
 
-- (void) uploadSWRasterizerTextureData:(const GLvoid *)textureData textureSize:(NSSize)textureSize
+- (void) uploadDisplayTextures:(const GLvoid *)textureData textureSize:(NSSize)textureSize
 {
 	NSInteger displayType = [dispViewDelegate displayType];
 	
@@ -1000,12 +1019,12 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	switch (displayType)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
-			glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
+			glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, textureData);
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
-			glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+			glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, textureData);
 			break;
 			
@@ -1014,10 +1033,10 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 			textureSize.height /= 2;
 			size_t offset = (size_t)textureSize.width * (size_t)textureSize.height;
 			
-			glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
+			glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, textureData);
 			
-			glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+			glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
 			if (glTexPixelFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 			{
 				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, (uint16_t *)textureData + offset);
@@ -1034,25 +1053,25 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 			break;
 	}
 	
-	glBindTexture(GL_TEXTURE_2D, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-- (void) renderSWRasterizer
+- (void) renderDisplay
 {
 	NSInteger displayType = [dispViewDelegate displayType];
 	
 	switch (displayType)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
-			glCallList(swRasterizerDisplayListIndex);
+			glCallList(renderDisplayListIndex);
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
-			glCallList(swRasterizerDisplayListIndex + 1);
+			glCallList(renderDisplayListIndex + 1);
 			break;
 			
 		case DS_DISPLAY_TYPE_COMBO:
-			glCallList(swRasterizerDisplayListIndex + 2);
+			glCallList(renderDisplayListIndex + 2);
 			break;
 			
 		default:
@@ -1060,11 +1079,11 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	}
 }
 
-- (void) setupSWRasterizerVertices
+- (void) calculateDisplayVertices
 {
 	NSInteger displayType = [dispViewDelegate displayType];
-	GLfloat w = (GLfloat)dispViewDelegate.normalSize.width * [dispViewDelegate scale];
-	GLfloat h = (GLfloat)dispViewDelegate.normalSize.height * [dispViewDelegate scale];
+	GLint w = (GLint)((dispViewDelegate.normalSize.width * [dispViewDelegate scale]) + 0.75);
+	GLint h = (GLint)((dispViewDelegate.normalSize.height * [dispViewDelegate scale]) + 0.75);
 	
 	if (displayType == DS_DISPLAY_TYPE_COMBO)
 	{
@@ -1075,174 +1094,237 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 		{
 			if (displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
 			{
-				swRasterizerMainVertex[0][0] = -w/2.0f;
-				swRasterizerMainVertex[0][1] = h/2.0f;
-				swRasterizerMainVertex[1][0] = w/2.0f;
-				swRasterizerMainVertex[1][1] = h/2.0f;
-				swRasterizerMainVertex[2][0] = w/2.0f;
-				swRasterizerMainVertex[2][1] = 0.0f;
-				swRasterizerMainVertex[3][0] = -w/2.0f;
-				swRasterizerMainVertex[3][1] = 0.0f;
+				mainDisplayVtx[0][0] = 0;
+				mainDisplayVtx[0][1] = h;
+				mainDisplayVtx[1][0] = w;
+				mainDisplayVtx[1][1] = h;
+				mainDisplayVtx[2][0] = w;
+				mainDisplayVtx[2][1] = h/2;
+				mainDisplayVtx[3][0] = 0;
+				mainDisplayVtx[3][1] = h/2;
 				
-				swRasterizerTouchVertex[0][0] = -w/2.0f;
-				swRasterizerTouchVertex[0][1] = 0.0f;
-				swRasterizerTouchVertex[1][0] = w/2.0f;
-				swRasterizerTouchVertex[1][1] = 0.0f;
-				swRasterizerTouchVertex[2][0] = w/2.0f;
-				swRasterizerTouchVertex[2][1] = -h/2.0f;
-				swRasterizerTouchVertex[3][0] = -w/2.0f;
-				swRasterizerTouchVertex[3][1] = -h/2.0f;
+				touchDisplayVtx[0][0] = 0;
+				touchDisplayVtx[0][1] = h/2;
+				touchDisplayVtx[1][0] = w;
+				touchDisplayVtx[1][1] = h/2;
+				touchDisplayVtx[2][0] = w;
+				touchDisplayVtx[2][1] = 0;
+				touchDisplayVtx[3][0] = 0;
+				touchDisplayVtx[3][1] = 0;
 			}
 			else // displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
 			{
-				swRasterizerTouchVertex[0][0] = -w/2.0f;
-				swRasterizerTouchVertex[0][1] = h/2.0f;
-				swRasterizerTouchVertex[1][0] = w/2.0f;
-				swRasterizerTouchVertex[1][1] = h/2.0f;
-				swRasterizerTouchVertex[2][0] = w/2.0f;
-				swRasterizerTouchVertex[2][1] = 0.0f;
-				swRasterizerTouchVertex[3][0] = -w/2.0f;
-				swRasterizerTouchVertex[3][1] = 0.0f;
+				touchDisplayVtx[0][0] = 0;
+				touchDisplayVtx[0][1] = h;
+				touchDisplayVtx[1][0] = w;
+				touchDisplayVtx[1][1] = h;
+				touchDisplayVtx[2][0] = w;
+				touchDisplayVtx[2][1] = h/2;
+				touchDisplayVtx[3][0] = 0;
+				touchDisplayVtx[3][1] = h/2;
 				
-				swRasterizerMainVertex[0][0] = -w/2.0f;
-				swRasterizerMainVertex[0][1] = 0.0f;
-				swRasterizerMainVertex[1][0] = w/2.0f;
-				swRasterizerMainVertex[1][1] = 0.0f;
-				swRasterizerMainVertex[2][0] = w/2.0f;
-				swRasterizerMainVertex[2][1] = -h/2.0f;
-				swRasterizerMainVertex[3][0] = -w/2.0f;
-				swRasterizerMainVertex[3][1] = -h/2.0f;
+				mainDisplayVtx[0][0] = 0;
+				mainDisplayVtx[0][1] = h/2;
+				mainDisplayVtx[1][0] = w;
+				mainDisplayVtx[1][1] = h/2;
+				mainDisplayVtx[2][0] = w;
+				mainDisplayVtx[2][1] = 0;
+				mainDisplayVtx[3][0] = 0;
+				mainDisplayVtx[3][1] = 0;
 			}
 		}
 		else // displayOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL
 		{
 			if (displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
 			{
-				swRasterizerMainVertex[0][0] = -w/2.0f;
-				swRasterizerMainVertex[0][1] = h/2.0f;
-				swRasterizerMainVertex[1][0] = 0.0f;
-				swRasterizerMainVertex[1][1] = h/2.0f;
-				swRasterizerMainVertex[2][0] = 0.0f;
-				swRasterizerMainVertex[2][1] = -h/2.0f;
-				swRasterizerMainVertex[3][0] = -w/2.0f;
-				swRasterizerMainVertex[3][1] = -h/2.0f;
+				mainDisplayVtx[0][0] = 0;
+				mainDisplayVtx[0][1] = h;
+				mainDisplayVtx[1][0] = w/2;
+				mainDisplayVtx[1][1] = h;
+				mainDisplayVtx[2][0] = w/2;
+				mainDisplayVtx[2][1] = 0;
+				mainDisplayVtx[3][0] = 0;
+				mainDisplayVtx[3][1] = 0;
 				
-				swRasterizerTouchVertex[0][0] = 0.0f;
-				swRasterizerTouchVertex[0][1] = h/2.0f;
-				swRasterizerTouchVertex[1][0] = w/2.0f;
-				swRasterizerTouchVertex[1][1] = h/2.0f;
-				swRasterizerTouchVertex[2][0] = w/2.0f;
-				swRasterizerTouchVertex[2][1] = -h/2.0f;
-				swRasterizerTouchVertex[3][0] = 0.0f;
-				swRasterizerTouchVertex[3][1] = -h/2.0f;
+				touchDisplayVtx[0][0] = w/2;
+				touchDisplayVtx[0][1] = h;
+				touchDisplayVtx[1][0] = w;
+				touchDisplayVtx[1][1] = h;
+				touchDisplayVtx[2][0] = w;
+				touchDisplayVtx[2][1] = 0;
+				touchDisplayVtx[3][0] = w/2;
+				touchDisplayVtx[3][1] = 0;
 			}
 			else // displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
 			{
-				swRasterizerTouchVertex[0][0] = -w/2.0f;
-				swRasterizerTouchVertex[0][1] = h/2.0f;
-				swRasterizerTouchVertex[1][0] = 0.0f;
-				swRasterizerTouchVertex[1][1] = h/2.0f;
-				swRasterizerTouchVertex[2][0] = 0.0f;
-				swRasterizerTouchVertex[2][1] = -h/2.0f;
-				swRasterizerTouchVertex[3][0] = -w/2.0f;
-				swRasterizerTouchVertex[3][1] = -h/2.0f;
+				touchDisplayVtx[0][0] = 0;
+				touchDisplayVtx[0][1] = h;
+				touchDisplayVtx[1][0] = w/2;
+				touchDisplayVtx[1][1] = h;
+				touchDisplayVtx[2][0] = w/2;
+				touchDisplayVtx[2][1] = 0;
+				touchDisplayVtx[3][0] = 0;
+				touchDisplayVtx[3][1] = 0;
 				
-				swRasterizerMainVertex[0][0] = 0.0f;
-				swRasterizerMainVertex[0][1] = h/2.0f;
-				swRasterizerMainVertex[1][0] = w/2.0f;
-				swRasterizerMainVertex[1][1] = h/2.0f;
-				swRasterizerMainVertex[2][0] = w/2.0f;
-				swRasterizerMainVertex[2][1] = -h/2.0f;
-				swRasterizerMainVertex[3][0] = 0.0f;
-				swRasterizerMainVertex[3][1] = -h/2.0f;
+				mainDisplayVtx[0][0] = w/2;
+				mainDisplayVtx[0][1] = h;
+				mainDisplayVtx[1][0] = w;
+				mainDisplayVtx[1][1] = h;
+				mainDisplayVtx[2][0] = w;
+				mainDisplayVtx[2][1] = 0;
+				mainDisplayVtx[3][0] = w/2;
+				mainDisplayVtx[3][1] = 0;
 			}
 		}
 	}
 	else // displayType == DS_DISPLAY_TYPE_MAIN || displayType == DS_DISPLAY_TYPE_TOUCH
 	{
-		swRasterizerMainVertex[0][0] = -w/2.0f;
-		swRasterizerMainVertex[0][1] = h/2.0f;
-		swRasterizerMainVertex[1][0] = w/2.0f;
-		swRasterizerMainVertex[1][1] = h/2.0f;
-		swRasterizerMainVertex[2][0] = w/2.0f;
-		swRasterizerMainVertex[2][1] = -h/2.0f;
-		swRasterizerMainVertex[3][0] = -w/2.0f;
-		swRasterizerMainVertex[3][1] = -h/2.0f;
+		mainDisplayVtx[0][0] = 0;
+		mainDisplayVtx[0][1] = h;
+		mainDisplayVtx[1][0] = w;
+		mainDisplayVtx[1][1] = h;
+		mainDisplayVtx[2][0] = w;
+		mainDisplayVtx[2][1] = 0;
+		mainDisplayVtx[3][0] = 0;
+		mainDisplayVtx[3][1] = 0;
 		
-		swRasterizerTouchVertex[0][0] = -w/2.0f;
-		swRasterizerTouchVertex[0][1] = h/2.0f;
-		swRasterizerTouchVertex[1][0] = w/2.0f;
-		swRasterizerTouchVertex[1][1] = h/2.0f;
-		swRasterizerTouchVertex[2][0] = w/2.0f;
-		swRasterizerTouchVertex[2][1] = -h/2.0f;
-		swRasterizerTouchVertex[3][0] = -w/2.0f;
-		swRasterizerTouchVertex[3][1] = -h/2.0f;
+		touchDisplayVtx[0][0] = 0;
+		touchDisplayVtx[0][1] = h;
+		touchDisplayVtx[1][0] = w;
+		touchDisplayVtx[1][1] = h;
+		touchDisplayVtx[2][0] = w;
+		touchDisplayVtx[2][1] = 0;
+		touchDisplayVtx[3][0] = 0;
+		touchDisplayVtx[3][1] = 0;
 	}
 }
 
-- (void) updateDisplayLists
+- (void) updateRenderDisplayLists
 {
+	GLfloat angleDegrees = (GLfloat)CLOCKWISE_DEGREES([dispViewDelegate rotation]);
+	GLfloat frameWidth = (GLfloat)[self frame].size.width;
+	GLfloat frameHeight = (GLfloat)[self frame].size.height;
+	GLfloat displayWidth = (GLfloat)(dispViewDelegate.normalSize.width * [dispViewDelegate scale]);
+	GLfloat displayHeight = (GLfloat)(dispViewDelegate.normalSize.height * [dispViewDelegate scale]);
+	
 	// Main screen only
-	glNewList(swRasterizerDisplayListIndex, GL_COMPILE);
-		glClear(GL_COLOR_BUFFER_BIT);
+	glNewList(renderDisplayListIndex, GL_COMPILE);
+		glViewport(0, 0, frameWidth, frameHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0.0, frameWidth, 0.0, frameHeight, -1.0, 1.0);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+		
+		glTranslatef(frameWidth/2.0f, frameHeight/2.0f, 0.0f);
+		glRotatef(angleDegrees, 0.0f, 0.0f, 1.0f);
+		glTranslatef(-displayWidth/2.0f, -displayHeight/2.0f, 0.0f);
+		
+		glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
 		glBegin(GL_QUADS);
 		
 		for (unsigned int i = 0; i < 4; i++)
 		{
-			glTexCoord2f(swRasterizerMainTexCoord[i][0], swRasterizerMainTexCoord[i][1]);
-			glVertex2f(swRasterizerMainVertex[i][0], swRasterizerMainVertex[i][1]);
+			glTexCoord2fv(mainDisplayTexCoord[i]);
+			glVertex2iv(mainDisplayVtx[i]);
 		}
 		
 		glEnd();
-		glBindTexture(GL_TEXTURE_2D, NULL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		
+		glPopMatrix();
 	glEndList();
 	
 	// Touch screen only
-	glNewList(swRasterizerDisplayListIndex + 1, GL_COMPILE);
-		glClear(GL_COLOR_BUFFER_BIT);
+	glNewList(renderDisplayListIndex + 1, GL_COMPILE);
+		glViewport(0, 0, frameWidth, frameHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0.0, frameWidth, 0.0, frameHeight, -1.0, 1.0);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+		
+		glTranslatef(frameWidth/2.0f, frameHeight/2.0f, 0.0f);
+		glRotatef(angleDegrees, 0.0f, 0.0f, 1.0f);
+		glTranslatef(-displayWidth/2.0f, -displayHeight/2.0f, 0.0f);
+		
+		glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
 		glBegin(GL_QUADS);
 		
 		for (unsigned int i = 0; i < 4; i++)
 		{
-			glTexCoord2f(swRasterizerTouchTexCoord[i][0], swRasterizerTouchTexCoord[i][1]);
-			glVertex2f(swRasterizerTouchVertex[i][0], swRasterizerTouchVertex[i][1]);
+			glTexCoord2fv(touchDisplayTexCoord[i]);
+			glVertex2iv(touchDisplayVtx[i]);
 		}
 		
 		glEnd();
-		glBindTexture(GL_TEXTURE_2D, NULL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		
+		glPopMatrix();
 	glEndList();
 	
 	// Combo screens
-	glNewList(swRasterizerDisplayListIndex + 2, GL_COMPILE);
-		glClear(GL_COLOR_BUFFER_BIT);
+	glNewList(renderDisplayListIndex + 2, GL_COMPILE);
+		glViewport(0, 0, frameWidth, frameHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0.0, frameWidth, 0.0, frameHeight, -1.0, 1.0);
 		
-		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+		
+		glTranslatef(frameWidth/2.0f, frameHeight/2.0f, 0.0f);
+		glRotatef(angleDegrees, 0.0f, 0.0f, 1.0f);
+		glTranslatef(-displayWidth/2.0f, -displayHeight/2.0f, 0.0f);
+		
+		glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
 		glBegin(GL_QUADS);
 		
 		for (unsigned int i = 0; i < 4; i++)
 		{
-			glTexCoord2f(swRasterizerMainTexCoord[i][0], swRasterizerMainTexCoord[i][1]);
-			glVertex2f(swRasterizerMainVertex[i][0], swRasterizerMainVertex[i][1]);
+			glTexCoord2fv(mainDisplayTexCoord[i]);
+			glVertex2iv(mainDisplayVtx[i]);
 		}
 		
 		glEnd();
 		
-		glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+		glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
 		glBegin(GL_QUADS);
 		
 		for (unsigned int i = 0; i < 4; i++)
 		{
-			glTexCoord2f(swRasterizerTouchTexCoord[i][0], swRasterizerTouchTexCoord[i][1]);
-			glVertex2f(swRasterizerTouchVertex[i][0], swRasterizerTouchVertex[i][1]);
+			glTexCoord2fv(touchDisplayTexCoord[i]);
+			glVertex2iv(touchDisplayVtx[i]);
 		}
 		
 		glEnd();
-		glBindTexture(GL_TEXTURE_2D, NULL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		
+		glPopMatrix();
 	glEndList();
+}
+
+- (void) updateDisplays
+{
+	[self calculateDisplayVertices];
+	
+	CGLLockContext(cglDisplayContext);
+	
+	CGLSetCurrentContext(cglDisplayContext);
+	[self updateRenderDisplayLists];
+	
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)keyDown:(NSEvent *)theEvent
@@ -1349,61 +1431,40 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 
 - (void)doInitVideoOutput:(NSDictionary *)properties
 {
-	GLfloat scale = (GLfloat)[dispViewDelegate scale];
-	GLfloat rotation = (GLfloat)[dispViewDelegate rotation];
-	NSRect rect = [self frame];
-	
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
-	
-	[[self openGLContext] makeCurrentContext];
-	SetupOpenGLView((GLsizei)rect.size.width, (GLsizei)rect.size.height, scale, rotation);
-	[[self openGLContext] update];
-	
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	// No init needed, so do nothing.
 }
 
 - (void)doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
 {
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	CGLLockContext(cglDisplayContext);
 	
-	[[self openGLContext] makeCurrentContext];
-	
-	[self uploadSWRasterizerTextureData:videoFrameData textureSize:frameSize];
-	[self renderSWRasterizer];
+	CGLSetCurrentContext(cglDisplayContext);
+	[self uploadDisplayTextures:videoFrameData textureSize:frameSize];
+	[self renderDisplay];
 	[self drawVideoFrame];
 	
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doResizeView:(NSRect)rect
 {
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
-	
-	[[self openGLContext] makeCurrentContext];
-	SetupOpenGLView((GLsizei)rect.size.width, (GLsizei)rect.size.height, (GLfloat)[dispViewDelegate scale], (GLfloat)[dispViewDelegate rotation]);
-	[[self openGLContext] update];
-	
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
-	
-	[self setupSWRasterizerVertices];
-	[self updateDisplayLists];
+	[self updateDisplays];
 }
 
 - (void)doRedraw
 {
-	CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	CGLLockContext(cglDisplayContext);
 	
-	[[self openGLContext] makeCurrentContext];
-	[self renderSWRasterizer];
+	CGLSetCurrentContext(cglDisplayContext);
+	[self renderDisplay];
 	[self drawVideoFrame];
 	
-	CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doDisplayTypeChanged:(NSInteger)displayTypeID
 {
-	[self setupSWRasterizerVertices];
-	[self updateDisplayLists];
+	[self updateDisplays];
 }
 
 - (void)doBilinearOutputChanged:(BOOL)useBilinear
@@ -1414,27 +1475,29 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 		glTexRenderStyle = GL_LINEAR;
 	}
 	
-	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
+	CGLLockContext(cglDisplayContext);
+	
+	glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glTexRenderStyle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glTexRenderStyle);
 	
-	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+	glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glTexRenderStyle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glTexRenderStyle);
 	
 	glBindTexture(GL_TEXTURE_2D, NULL);
+	
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID
 {
-	[self setupSWRasterizerVertices];
-	[self updateDisplayLists];
+	[self updateDisplays];
 }
 
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID
 {
-	[self setupSWRasterizerVertices];
-	[self updateDisplayLists];
+	[self updateDisplays];
 	
 	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
 	{
@@ -1451,7 +1514,7 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 		swapInt = 1;
 	}
 	
-	[[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
 }
 
 - (void)doVideoFilterChanged:(NSInteger)videoFilterTypeID frameSize:(NSSize)videoFilterDestSize
@@ -1487,63 +1550,53 @@ NSOpenGLContext *OSXDefaultOpenGLContext = nil;
 	}
 	
 	// Main screen
-	swRasterizerMainTexCoord[0][0] = 0.0f;
-	swRasterizerMainTexCoord[0][1] = 0.0f;
-	swRasterizerMainTexCoord[1][0] = (GLfloat)(videoFilterDestSize.width / w);
-	swRasterizerMainTexCoord[1][1] = 0.0f;
-	swRasterizerMainTexCoord[2][0] = (GLfloat)(videoFilterDestSize.width / w);
-	swRasterizerMainTexCoord[2][1] = (GLfloat)(videoFilterDestSize.height / h);
-	swRasterizerMainTexCoord[3][0] = 0.0f;
-	swRasterizerMainTexCoord[3][1] = (GLfloat)(videoFilterDestSize.height / h);
-	
-	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[0]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, glTexPixelFormat, glTexBack);
+	mainDisplayTexCoord[0][0] = 0.0f;
+	mainDisplayTexCoord[0][1] = 0.0f;
+	mainDisplayTexCoord[1][0] = (GLfloat)(videoFilterDestSize.width / w);
+	mainDisplayTexCoord[1][1] = 0.0f;
+	mainDisplayTexCoord[2][0] = (GLfloat)(videoFilterDestSize.width / w);
+	mainDisplayTexCoord[2][1] = (GLfloat)(videoFilterDestSize.height / h);
+	mainDisplayTexCoord[3][0] = 0.0f;
+	mainDisplayTexCoord[3][1] = (GLfloat)(videoFilterDestSize.height / h);
 	
 	// Touch screen
-	swRasterizerTouchTexCoord[0][0] = 0.0f;
-	swRasterizerTouchTexCoord[0][1] = 0.0f;
-	swRasterizerTouchTexCoord[1][0] = (GLfloat)(videoFilterDestSize.width / w);
-	swRasterizerTouchTexCoord[1][1] = 0.0f;
-	swRasterizerTouchTexCoord[2][0] = (GLfloat)(videoFilterDestSize.width / w);
-	swRasterizerTouchTexCoord[2][1] = (GLfloat)(videoFilterDestSize.height / h);
-	swRasterizerTouchTexCoord[3][0] = 0.0f;
-	swRasterizerTouchTexCoord[3][1] = (GLfloat)(videoFilterDestSize.height / h);
+	touchDisplayTexCoord[0][0] = 0.0f;
+	touchDisplayTexCoord[0][1] = 0.0f;
+	touchDisplayTexCoord[1][0] = (GLfloat)(videoFilterDestSize.width / w);
+	touchDisplayTexCoord[1][1] = 0.0f;
+	touchDisplayTexCoord[2][0] = (GLfloat)(videoFilterDestSize.width / w);
+	touchDisplayTexCoord[2][1] = (GLfloat)(videoFilterDestSize.height / h);
+	touchDisplayTexCoord[3][0] = 0.0f;
+	touchDisplayTexCoord[3][1] = (GLfloat)(videoFilterDestSize.height / h);
 	
-	glBindTexture(GL_TEXTURE_2D, swRasterizerDrawTexture[1]);
+	CGLLockContext(cglDisplayContext);
+	
+	glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, glTexPixelFormat, glTexBack);
+	glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)w, (GLsizei)h, 0, GL_RGBA, glTexPixelFormat, glTexBack);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	glBindTexture(GL_TEXTURE_2D, NULL);
+	[self updateRenderDisplayLists];
 	
-	[self updateDisplayLists];
+	CGLUnlockContext(cglDisplayContext);
 }
 
 @end
 
-void SetupOpenGLView(GLsizei width, GLsizei height, GLfloat scalar, GLfloat angleDegrees)
-{
-	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-width/2.0, width/2.0, -height/2.0, height/2.0, -1.0, 1.0);
-	glRotatef((GLfloat)CLOCKWISE_DEGREES(angleDegrees), 0.0f, 0.0f, 1.0f);
-}
-
 bool OSXOpenGLRendererInit()
 {
-	[OSXDefaultOpenGLContext makeCurrentContext];
-	
 	return true;
 }
 
 bool OSXOpenGLRendererBegin()
 {
-	CGLLockContext((CGLContextObj)[OSXDefaultOpenGLContext CGLContextObj]);
-	[OSXDefaultOpenGLContext makeCurrentContext];
+	CGLSetCurrentContext(OSXOpenGLRendererContext);
 	
 	return true;
 }
 
 void OSXOpenGLRendererEnd()
 {
-	CGLUnlockContext((CGLContextObj)[OSXDefaultOpenGLContext CGLContextObj]);
+	
 }
