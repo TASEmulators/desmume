@@ -782,8 +782,11 @@ static void BeginRenderPoly()
 	{
 		xglPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 	}
-
-	setTexture(textureFormat, texturePalette);
+	
+	if (gfx3d.renderState.enableTexturing)
+	{
+		setTexture(textureFormat, texturePalette);
+	}
 
 	if(isTranslucent)
 		enableDepthWrite = alphaDepthWrite;
@@ -879,9 +882,29 @@ static void InstallPolygonAttrib(u32 val)
 
 static void Control()
 {
-	if(gfx3d.renderState.enableTexturing) glEnable (GL_TEXTURE_2D);
-	else glDisable (GL_TEXTURE_2D);
-
+	if (gfx3d.renderState.enableTexturing)
+	{
+		if (hasShaders)
+		{
+			glUniform1i(hasTexLoc, 1);
+		}
+		else
+		{
+			glEnable(GL_TEXTURE_2D);
+		}
+	}
+	else
+	{
+		if (hasShaders)
+		{
+			glUniform1i(hasTexLoc, 0);
+		}
+		else
+		{
+			glDisable(GL_TEXTURE_2D);
+		}
+	}
+	
 	if(gfx3d.renderState.enableAlphaTest)
 		// FIXME: alpha test should pass gfx3d.alphaTestRef==poly->getAlpha
 		glAlphaFunc	(GL_GREATER, gfx3d.renderState.alphaTestRef/31.f);
