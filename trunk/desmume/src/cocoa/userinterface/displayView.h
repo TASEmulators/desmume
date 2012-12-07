@@ -128,22 +128,18 @@
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
 	
-	GLfloat mainDisplayTexCoord[4][2];
-	GLfloat touchDisplayTexCoord[4][2];
-	GLint mainDisplayVtx[4][2];
-	GLint touchDisplayVtx[4][2];
-	
 	GLuint mainDisplayTexIndex;
 	GLuint touchDisplayTexIndex;
 	GLuint renderDisplayListIndex;
+	GLuint vboTexCoordID;
+	GLuint vboVertexID;
+	GLuint vboElementID;
 }
 
 - (void) drawVideoFrame;
 - (void) uploadDisplayTextures:(const GLvoid *)textureData textureSize:(NSSize)textureSize;
 - (void) renderDisplay;
-- (void) calculateDisplayVertices;
-- (void) updateRenderDisplayLists;
-- (void) updateDisplays;
+- (void) updateDisplayVertices;
 
 @end
 
