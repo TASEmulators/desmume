@@ -78,6 +78,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	spinlockDisplayOrder = OS_SPINLOCK_INIT;
 	
 	normalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2.0);
+	comboScreenGap = (normalSize.height/2.0) * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO;
 	sendPortDisplay = nil;
 	cdsController = nil;
 	isHudEnabled = NO;
@@ -131,6 +132,28 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	OSSpinLockLock(&spinlockNormalSize);
 	NSSize theSize = normalSize;
 	OSSpinLockUnlock(&spinlockNormalSize);
+	
+	return theSize;
+}
+
+- (NSSize) normalSizeWithGap
+{
+	OSSpinLockLock(&spinlockNormalSize);
+	NSSize theSize = normalSize;
+	OSSpinLockUnlock(&spinlockNormalSize);
+	
+	NSInteger theType = [self displayType];
+	if (theType == DS_DISPLAY_TYPE_COMBO)
+	{
+		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
+		{
+			theSize.height += (theSize.height/2.0) * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO;
+		}
+		else
+		{
+			theSize.width += (theSize.width/2.0) * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO;
+		}
+	}
 	
 	return theSize;
 }
@@ -413,9 +436,9 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		viewAngle = CLOCKWISE_DEGREES(viewAngle);
 	}
 	
-	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, self.normalSize, [[self view] bounds].size, [self scale], viewAngle);
+	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, [self normalSizeWithGap], [[self view] bounds].size, [self scale], viewAngle);
 	
-	// Normalize the y-coordinate to the DS.
+	// Normalize the touch location to the DS.
 	if ([self displayType] == DS_DISPLAY_TYPE_COMBO)
 	{
 		NSInteger theOrientation = [self displayOrientation];
@@ -423,11 +446,11 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		
 		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL && theOrder == DS_DISPLAY_ORDER_TOUCH_FIRST)
 		{
-			touchLoc.y -= GPU_DISPLAY_HEIGHT;
+			touchLoc.y -= GPU_DISPLAY_HEIGHT /* + transformedGap */;
 		}
 		else if (theOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL && theOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
 		{
-			touchLoc.x -= GPU_DISPLAY_WIDTH;
+			touchLoc.x -= GPU_DISPLAY_WIDTH /* + transformedGap */;
 		}
 	}
 	
@@ -924,11 +947,19 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFAOffScreen,
+		NSOpenGLPFAAccelerated,
 		(NSOpenGLPixelFormatAttribute)0
 	};
 	
 	NSOpenGLPixelFormat *tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+	if (tempPixelFormat == nil)
+	{
+		// Remove the HW rendering requirement and try again. Note that this will
+		// result in SW rendering, which will cause a substantial speed hit.
+		attrs[8] = (NSOpenGLPixelFormatAttribute)0;
+		tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+	}
+	
 	NSOpenGLPixelBuffer *tempPixelBuffer = [[NSOpenGLPixelBuffer alloc]
 											initWithTextureTarget:GL_TEXTURE_2D
 											textureInternalFormat:GL_RGBA
@@ -987,7 +1018,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	CGLSetCurrentContext(cglDisplayContext);
 	
 	glViewport(0, 0, rect.size.width, rect.size.height);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -1019,7 +1050,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClearDepth(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	// Set up initial display vertices and store in VBO
 	static const GLint vertices[8*2] =	{-GPU_DISPLAY_WIDTH/2, GPU_DISPLAY_HEIGHT,		// Top display, top left
@@ -1123,7 +1154,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	GLfloat angleDegrees = (GLfloat)CLOCKWISE_DEGREES([dispViewDelegate rotation]);
 	GLfloat s = (GLfloat)[dispViewDelegate scale];
 	
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
 	glTexCoordPointer(2, GL_FLOAT, 0, 0);
