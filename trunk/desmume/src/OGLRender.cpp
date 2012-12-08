@@ -107,6 +107,8 @@ u16		*oglClearImageColorTemp = NULL;
 u16		*oglClearImageDepthTemp = NULL;
 u32		oglClearImageScrollOld = 0;
 
+static GLfloat *color4fBuffer = NULL;
+
 //------------------------------------------------------------
 
 #define OGLEXT(x,y) x y = 0;
@@ -380,6 +382,8 @@ static void OGLReset()
 		memset(oglClearImageDepthTemp, 0, 256*192*sizeof(u16));
 		oglClearImageScrollOld = 0;
 	}
+	
+	memset(color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
 }
 
 //static class OGLTexCacheUser : public ITexCacheUser
@@ -605,6 +609,12 @@ static char OGLInit(void)
 
 	ENDGL();
 	
+	// Map the vertex list's colors with 4 floats per color. This is being done
+	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
+	// uses 3-colors per vertex, and adds alpha through the poly, so we can't
+	// simply reference the colors+alpha from just the vertices themselves.)
+	color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
+	
 	OGLReset();
 
 	return 1;
@@ -612,6 +622,9 @@ static char OGLInit(void)
 
 static void OGLClose()
 {
+	delete [] color4fBuffer;
+	color4fBuffer = NULL;
+	
 	if(!BEGINGL())
 		return;
 
@@ -924,8 +937,7 @@ static void Control()
 
 static void GL_ReadFramebuffer()
 {
-	if(!BEGINGL()) return; 
-	glFinish();
+	if(!BEGINGL()) return;
 //	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
 	glReadPixels(0,0,256,192,GL_BGRA_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
 	ENDGL();
@@ -1058,8 +1070,9 @@ static void oglClearImageFBO()
 
 static void OGLRender()
 {
-	float alpha = 1.0f;
-
+	static const GLenum frm[]	= {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUADS,	//TODO: GL_QUAD_STRIP
+								   GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
+	
 	if(!BEGINGL()) return;
 
 	Control();
@@ -1118,10 +1131,18 @@ static void OGLRender()
 
 		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0, lastViewport = 0xFFFFFFFF;
 		// int lastProjIndex = -1;
+		
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		
+		glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
+		glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+		glVertexPointer(4, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
 			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
-			int type = poly->type;
+			unsigned int type = poly->type;
 
 			//a very macro-level state caching approach:
 			//these are the only things which control the GPU rendering state.
@@ -1142,32 +1163,34 @@ static void OGLRender()
 				glViewport(viewport.x,viewport.y,viewport.width,viewport.height);
 				lastViewport = poly->viewport;
 			}
-
-			if(wireframe || !isTranslucent) alpha = 1.0f;
-			else 
-				alpha = poly->getAlpha()/31.0f;
-
-			GLenum frm[] = {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUADS,	//TODO: GL_QUAD_STRIP
-							GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
-
-			glBegin(frm[poly->vtxFormat]);
-
-			for(int j = 0; j < type; j++)
+			
+			// Consolidate the vertex color and the poly alpha to our internal color buffer
+			// so that OpenGL can use it.
+			GLfloat alpha = 1.0f;
+			if (!wireframe && isTranslucent)
+			{
+				alpha = (GLfloat)(poly->getAlpha() / 31.0f);
+			}
+			
+			for(unsigned int j = 0; j < type; j++)
 			{
 				VERT *vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				
-				glTexCoord2fv(vert->texcoord);
-				glColor4f(material_8bit_to_float[vert->color[0]], 
-							material_8bit_to_float[vert->color[1]], 
-							material_8bit_to_float[vert->color[2]],
-							alpha);
-				glVertex4fv(vert->coord);
+				color4fBuffer[(4*poly->vertIndexes[j])+0] = material_8bit_to_float[vert->color[0]];
+				color4fBuffer[(4*poly->vertIndexes[j])+1] = material_8bit_to_float[vert->color[1]];
+				color4fBuffer[(4*poly->vertIndexes[j])+2] = material_8bit_to_float[vert->color[2]];
+				color4fBuffer[(4*poly->vertIndexes[j])+3] = alpha;
 			}
-
-			glEnd();
+			
+			// Upload the vertices to the framebuffer
+			glDrawElements(frm[poly->vtxFormat], type, GL_UNSIGNED_SHORT, poly->vertIndexes);
 		}
+		
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
-
+	
 	//needs to happen before endgl because it could free some textureids for expired cache items
 	TexCache_EvictFrame();
 
