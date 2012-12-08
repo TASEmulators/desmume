@@ -78,7 +78,6 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	spinlockDisplayOrder = OS_SPINLOCK_INIT;
 	
 	normalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2.0);
-	comboScreenGap = (normalSize.height/2.0) * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO;
 	sendPortDisplay = nil;
 	cdsController = nil;
 	isHudEnabled = NO;
@@ -132,28 +131,6 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	OSSpinLockLock(&spinlockNormalSize);
 	NSSize theSize = normalSize;
 	OSSpinLockUnlock(&spinlockNormalSize);
-	
-	return theSize;
-}
-
-- (NSSize) normalSizeWithGap
-{
-	OSSpinLockLock(&spinlockNormalSize);
-	NSSize theSize = normalSize;
-	OSSpinLockUnlock(&spinlockNormalSize);
-	
-	NSInteger theType = [self displayType];
-	if (theType == DS_DISPLAY_TYPE_COMBO)
-	{
-		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
-		{
-			theSize.height += (theSize.height/2.0) * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO;
-		}
-		else
-		{
-			theSize.width += (theSize.width/2.0) * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO;
-		}
-	}
 	
 	return theSize;
 }
@@ -436,7 +413,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		viewAngle = CLOCKWISE_DEGREES(viewAngle);
 	}
 	
-	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, [self normalSizeWithGap], [[self view] bounds].size, [self scale], viewAngle);
+	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, [self normalSize], [[self view] bounds].size, [self scale], viewAngle);
 	
 	// Normalize the touch location to the DS.
 	if ([self displayType] == DS_DISPLAY_TYPE_COMBO)
@@ -446,11 +423,11 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		
 		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL && theOrder == DS_DISPLAY_ORDER_TOUCH_FIRST)
 		{
-			touchLoc.y -= GPU_DISPLAY_HEIGHT /* + transformedGap */;
+			touchLoc.y -= GPU_DISPLAY_HEIGHT;
 		}
 		else if (theOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL && theOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
 		{
-			touchLoc.x -= GPU_DISPLAY_WIDTH /* + transformedGap */;
+			touchLoc.x -= GPU_DISPLAY_WIDTH;
 		}
 	}
 	
