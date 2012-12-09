@@ -257,7 +257,6 @@ static GPVar total_cycles;
 
 #ifndef ASMJIT_X64
 #define r64 r32
-#define movsxd movsx
 #endif
 
 // sequencer.reschedule = true;
@@ -1295,6 +1294,7 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(c.imul(hi,lhs,rhs), H, H, 1, 1,
 //-----------------------------------------------------------------------------
 //   SMULW / SMLAW
 //-----------------------------------------------------------------------------
+#ifdef ASMJIT_X64
 #define OP_SMxxW_(x, accum, flags) \
 	GPVar lhs = c.newGP(VARIABLE_TYPE_GPN); \
 	GPVar rhs = c.newGP(VARIABLE_TYPE_GPN); \
@@ -1306,6 +1306,22 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(c.imul(hi,lhs,rhs), H, H, 1, 1,
 	c.mov(reg_pos_ptr(16), lhs.r32()); \
 	if (flags) { SET_Q; } \
 	return 1;
+#else
+#define OP_SMxxW_(x, accum, flags) \
+	GPVar lhs = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar rhs = c.newGP(VARIABLE_TYPE_GPD); \
+	GPVar hi = c.newGP(VARIABLE_TYPE_GPD); \
+	c.movsx(lhs, reg_pos_ptr##x(8)); \
+	c.mov(rhs, reg_pos_ptr(0)); \
+	c.imul(hi, lhs, rhs);  \
+	c.shr(lhs, 16); \
+	c.shl(hi, 16); \
+	c.or_(lhs, hi); \
+	if (accum) c.add(lhs, reg_pos_ptr(12)); \
+	c.mov(reg_pos_ptr(16), lhs); \
+	if (flags) { SET_Q; } \
+	return 1;
+#endif
 
 static int OP_SMULW_B(const u32 i) { OP_SMxxW_(L, 0, 0); }
 static int OP_SMULW_T(const u32 i) { OP_SMxxW_(H, 0, 0); }
