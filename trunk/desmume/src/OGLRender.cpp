@@ -28,6 +28,7 @@
 #include "OGLRender.h"
 #include "debug.h"
 
+#define VERT_INDEX_BUFFER_SIZE 8192
 CACHE_ALIGN float material_8bit_to_float[255] = {0};
 
 bool (*oglrender_init)() = 0;
@@ -108,6 +109,7 @@ u16		*oglClearImageDepthTemp = NULL;
 u32		oglClearImageScrollOld = 0;
 
 static GLfloat *color4fBuffer = NULL;
+static GLushort *vertIndexBuffer = NULL;
 
 //------------------------------------------------------------
 
@@ -384,6 +386,7 @@ static void OGLReset()
 	}
 	
 	memset(color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
+	memset(vertIndexBuffer, 0, VERT_INDEX_BUFFER_SIZE * sizeof(GLushort));
 }
 
 //static class OGLTexCacheUser : public ITexCacheUser
@@ -615,6 +618,12 @@ static char OGLInit(void)
 	// simply reference the colors+alpha from just the vertices themselves.)
 	color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
 	
+	// Make our own vertex index buffer for primitive conversions. This is
+	// necessary since OpenGL deprecates primitives like GL_QUADS and
+	// GL_QUAD_STRIP in later versions. (Maybe we can also use the buffer for
+	// future vertex batching?)
+	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
+	
 	OGLReset();
 
 	return 1;
@@ -624,6 +633,9 @@ static void OGLClose()
 {
 	delete [] color4fBuffer;
 	color4fBuffer = NULL;
+	
+	delete [] vertIndexBuffer;
+	vertIndexBuffer = NULL;
 	
 	if(!BEGINGL())
 		return;
@@ -1070,7 +1082,7 @@ static void oglClearImageFBO()
 
 static void OGLRender()
 {
-	static const GLenum frm[]	= {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUADS,	//TODO: GL_QUAD_STRIP
+	static const GLenum frm[]	= {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUAD_STRIP,
 								   GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
 	
 	if(!BEGINGL()) return;
@@ -1121,9 +1133,11 @@ static void OGLRender()
 	
 	glClear(clearFlag);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
+	if (!hasShaders)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+	}
 
 	//render display list
 	//TODO - properly doublebuffer the display lists
@@ -1131,6 +1145,10 @@ static void OGLRender()
 
 		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0, lastViewport = 0xFFFFFFFF;
 		// int lastProjIndex = -1;
+		
+		unsigned int vertIndexCount = 0;
+		GLenum polyPrimitive = 0;
+		unsigned int polyType = 0;
 		
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
@@ -1142,7 +1160,8 @@ static void OGLRender()
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
 			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
-			unsigned int type = poly->type;
+			polyPrimitive = frm[poly->vtxFormat];
+			polyType = poly->type;
 
 			//a very macro-level state caching approach:
 			//these are the only things which control the GPU rendering state.
@@ -1172,20 +1191,45 @@ static void OGLRender()
 				alpha = (GLfloat)(poly->getAlpha() / 31.0f);
 			}
 			
-			for(unsigned int j = 0; j < type; j++)
+			for(unsigned int j = 0; j < polyType; j++)
 			{
-				VERT *vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
+				GLushort vertIndex = poly->vertIndexes[j];
+				VERT *vert = &gfx3d.vertlist->list[vertIndex];
 				
-				color4fBuffer[(4*poly->vertIndexes[j])+0] = material_8bit_to_float[vert->color[0]];
-				color4fBuffer[(4*poly->vertIndexes[j])+1] = material_8bit_to_float[vert->color[1]];
-				color4fBuffer[(4*poly->vertIndexes[j])+2] = material_8bit_to_float[vert->color[2]];
-				color4fBuffer[(4*poly->vertIndexes[j])+3] = alpha;
+				color4fBuffer[(4*vertIndex)+0] = material_8bit_to_float[vert->color[0]];
+				color4fBuffer[(4*vertIndex)+1] = material_8bit_to_float[vert->color[1]];
+				color4fBuffer[(4*vertIndex)+2] = material_8bit_to_float[vert->color[2]];
+				color4fBuffer[(4*vertIndex)+3] = alpha;
+				
+				// While we're looping through our vertices, add each vertex index to
+				// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
+				// here to convert them to GL_TRIANGLES, which are much easier to work with
+				// and won't be deprecated in future OpenGL versions.
+				vertIndexBuffer[vertIndexCount++] = vertIndex;
+				if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+				{
+					if (j == 2)
+					{
+						vertIndexBuffer[vertIndexCount++] = vertIndex;
+					}
+					else if (j == 3)
+					{
+						vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+					}
+				}
+			}
+			
+			// GL_QUADS and GL_QUAD_STRIP were converted to GL_TRIANGLES, so redefine them as such.
+			if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+			{
+				polyPrimitive = GL_TRIANGLES;
 			}
 			
 			// Upload the vertices to the framebuffer
-			glDrawElements(frm[poly->vtxFormat], type, GL_UNSIGNED_SHORT, poly->vertIndexes);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, vertIndexBuffer);
+			vertIndexCount = 0;
 		}
-		
+				
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_COLOR_ARRAY);
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);

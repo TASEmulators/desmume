@@ -721,9 +721,9 @@ static void SetVertex()
 					break;
 				polygonListCompleted = 1;
 				SUBMITVERTEX(0,0);
-				SUBMITVERTEX(1,1);	// TODO:
-				SUBMITVERTEX(2,3);	// OpenGL Quad_Strip must be	: 3,3
-				SUBMITVERTEX(3,2);	//								: 2,2
+				SUBMITVERTEX(1,1);
+				SUBMITVERTEX(2,3);
+				SUBMITVERTEX(3,2);
 				polylist->list[polylist->count].type = 4;
 				tempVertInfo.map[0] = vertlist->count+2-continuation;
 				tempVertInfo.map[1] = vertlist->count+3-continuation;
