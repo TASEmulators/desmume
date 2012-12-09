@@ -4213,15 +4213,20 @@ void arm_jit_reset(bool enable)
 	if (enable)
 	{
 #ifdef MAPPED_JIT_FUNCS
-		memset(JIT.MAIN_MEM,  0, sizeof(JIT.MAIN_MEM));
-		memset(JIT.SWIRAM,    0, sizeof(JIT.SWIRAM));
-		memset(JIT.ARM9_ITCM, 0, sizeof(JIT.ARM9_ITCM));
-		memset(JIT.ARM9_LCDC, 0, sizeof(JIT.ARM9_LCDC));
-		memset(JIT.ARM9_BIOS, 0, sizeof(JIT.ARM9_BIOS));
-		memset(JIT.ARM7_BIOS, 0, sizeof(JIT.ARM7_BIOS));
-		memset(JIT.ARM7_ERAM, 0, sizeof(JIT.ARM7_ERAM));
-		memset(JIT.ARM7_WIRAM,0, sizeof(JIT.ARM7_WIRAM));
-		memset(JIT.ARM7_WRAM, 0, sizeof(JIT.ARM7_WRAM));
+
+		//these pointers are allocated by asmjit and need freeing
+		#define JITFREE(x)  for(int iii=0;iii<ARRAY_SIZE(x);iii++) if(x[iii]) AsmJit::MemoryManager::getGlobal()->free((void*)x[iii]);  memset(x,0,sizeof(x));
+			JITFREE(JIT.MAIN_MEM);
+			JITFREE(JIT.SWIRAM);
+			JITFREE(JIT.ARM9_ITCM);
+			JITFREE(JIT.ARM9_LCDC);
+			JITFREE(JIT.ARM9_BIOS);
+			JITFREE(JIT.ARM7_BIOS);
+			JITFREE(JIT.ARM7_ERAM);
+			JITFREE(JIT.ARM7_WIRAM);
+			JITFREE(JIT.ARM7_WRAM);
+		#undef JITFREE
+
 		memset(recompile_counts, 0, sizeof(recompile_counts));
 		init_jit_mem();
 #else
