@@ -798,15 +798,6 @@ static void BeginRenderPoly()
 		xglEnable(GL_CULL_FACE);
 		glCullFace(map3d_cull[cullingMask]);
 	}
-
-	if (!wireframe)
-	{
-		xglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	}
-	else
-	{
-		xglPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
-	}
 	
 	if (gfx3d.renderState.enableTexturing)
 	{
@@ -1219,13 +1210,22 @@ static void OGLRender()
 				}
 			}
 			
-			// GL_QUADS and GL_QUAD_STRIP were converted to GL_TRIANGLES, so redefine them as such.
-			if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+			// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
+			// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
+			// drawing more accurate this way, but it also allows GL_QUADS and
+			// GL_QUAD_STRIP primitives to properly draw as wireframe without the
+			// extra diagonal line.
+			if (wireframe)
 			{
+				polyPrimitive = GL_LINE_LOOP;
+			}
+			else if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+			{
+				// Redefine GL_QUADS and GL_QUAD_STRIP as GL_TRIANGLES since we converted them.
 				polyPrimitive = GL_TRIANGLES;
 			}
 			
-			// Upload the vertices to the framebuffer
+			// Upload the vertices to the framebuffer.
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, vertIndexBuffer);
 			vertIndexCount = 0;
 		}
