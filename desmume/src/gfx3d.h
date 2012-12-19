@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -119,20 +119,132 @@ inline u32 gfx3d_extendDepth_15_to_24(u32 depth)
 	else return depth<<9;
 }
 
-#define TEXMODE_NONE 0
-#define TEXMODE_A3I5 1
-#define TEXMODE_I2 2
-#define TEXMODE_I4 3
-#define TEXMODE_I8 4
-#define TEXMODE_4X4 5
-#define TEXMODE_A5I3 6
-#define TEXMODE_16BPP 7
+// POLYGON ATTRIBUTES - BIT LOCATIONS
+enum
+{
+	POLYGON_ATTR_ENABLE_LIGHT0_BIT				= 0,
+	POLYGON_ATTR_ENABLE_LIGHT1_BIT				= 1,
+	POLYGON_ATTR_ENABLE_LIGHT2_BIT				= 2,
+	POLYGON_ATTR_ENABLE_LIGHT3_BIT				= 3,
+	POLYGON_ATTR_MODE_BIT						= 4, // Bits 4 - 5
+	POLYGON_ATTR_ENABLE_BACK_SURFACE_BIT		= 6,
+	POLYGON_ATTR_ENABLE_FRONT_SURFACE_BIT		= 7,
+	// Bits 8 - 10 unused
+	POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_BIT	= 11,
+	POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_BIT	= 12,
+	POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_BIT		= 13,
+	POLYGON_ATTR_ENABLE_DEPTH_TEST_BIT			= 14,
+	POLYGON_ATTR_ENABLE_FOG_BIT					= 15,
+	POLYGON_ATTR_ALPHA_BIT						= 16, // Bits 16 - 20
+	// Bits 21 - 23 unused
+	POLYGON_ATTR_POLYGON_ID_BIT					= 24, // Bits 24 - 29
+	// Bits 30 - 31 unused
+};
+
+// POLYGON ATTRIBUTES - BIT MASKS
+enum
+{
+	POLYGON_ATTR_ENABLE_LIGHT0_MASK				= 0x01 << POLYGON_ATTR_ENABLE_LIGHT0_BIT,
+	POLYGON_ATTR_ENABLE_LIGHT1_MASK				= 0x01 << POLYGON_ATTR_ENABLE_LIGHT1_BIT,
+	POLYGON_ATTR_ENABLE_LIGHT2_MASK				= 0x01 << POLYGON_ATTR_ENABLE_LIGHT2_BIT,
+	POLYGON_ATTR_ENABLE_LIGHT3_MASK				= 0x01 << POLYGON_ATTR_ENABLE_LIGHT3_BIT,
+	POLYGON_ATTR_MODE_MASK						= 0x03 << POLYGON_ATTR_MODE_BIT,
+	POLYGON_ATTR_ENABLE_BACK_SURFACE_MASK		= 0x01 << POLYGON_ATTR_ENABLE_BACK_SURFACE_BIT,
+	POLYGON_ATTR_ENABLE_FRONT_SURFACE_MASK		= 0x01 << POLYGON_ATTR_ENABLE_FRONT_SURFACE_BIT,
+	POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_MASK	= 0x01 << POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_BIT,
+	POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_MASK = 0x01 << POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_BIT,
+	POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_MASK		= 0x01 << POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_BIT,
+	POLYGON_ATTR_ENABLE_DEPTH_TEST_MASK			= 0x01 << POLYGON_ATTR_ENABLE_DEPTH_TEST_BIT,
+	POLYGON_ATTR_ENABLE_FOG_MASK				= 0x01 << POLYGON_ATTR_ENABLE_FOG_BIT,
+	POLYGON_ATTR_ALPHA_MASK						= 0x1F << POLYGON_ATTR_ALPHA_BIT,
+	POLYGON_ATTR_POLYGON_ID_MASK				= 0x3F << POLYGON_ATTR_POLYGON_ID_BIT
+};
+
+// TEXTURE PARAMETERS - BIT LOCATIONS
+enum
+{
+	TEXTURE_PARAM_VRAM_OFFSET_BIT				= 0,  // Bits 0 - 15
+	TEXTURE_PARAM_ENABLE_REPEAT_S_BIT			= 16,
+	TEXTURE_PARAM_ENABLE_REPEAT_T_BIT			= 17,
+	TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_S_BIT	= 18,
+	TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_T_BIT	= 19,
+	TEXTURE_PARAM_SIZE_S_BIT					= 20, // Bits 20 - 22
+	TEXTURE_PARAM_SIZE_T_BIT					= 23, // Bits 23 - 25
+	TEXTURE_PARAM_FORMAT_BIT					= 26, // Bits 26 - 28
+	TEXTURE_PARAM_ENABLE_TRANSPARENT_COLOR0_BIT	= 29,
+	TEXTURE_PARAM_COORD_TRANSFORM_MODE_BIT		= 30  // Bits 30 - 31
+};
+
+// TEXTURE PARAMETERS - BIT MASKS
+enum
+{
+	TEXTURE_PARAM_VRAM_OFFSET_MASK				= 0xFFFF << TEXTURE_PARAM_VRAM_OFFSET_BIT,
+	TEXTURE_PARAM_ENABLE_REPEAT_S_MASK			= 0x01 << TEXTURE_PARAM_ENABLE_REPEAT_S_BIT,
+	TEXTURE_PARAM_ENABLE_REPEAT_T_MASK			= 0x01 << TEXTURE_PARAM_ENABLE_REPEAT_T_BIT,
+	TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_S_MASK	= 0x01 << TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_S_BIT,
+	TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_T_MASK	= 0x01 << TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_T_BIT,
+	TEXTURE_PARAM_SIZE_S_MASK					= 0x07 << TEXTURE_PARAM_SIZE_S_BIT,
+	TEXTURE_PARAM_SIZE_T_MASK					= 0x07 << TEXTURE_PARAM_SIZE_T_BIT,
+	TEXTURE_PARAM_FORMAT_MASK					= 0x07 << TEXTURE_PARAM_FORMAT_BIT,
+	TEXTURE_PARAM_ENABLE_TRANSPARENT_COLOR0_MASK = 0x01 << TEXTURE_PARAM_ENABLE_TRANSPARENT_COLOR0_BIT,
+	TEXTURE_PARAM_COORD_TRANSFORM_MODE_MASK		= 0x03 << TEXTURE_PARAM_COORD_TRANSFORM_MODE_BIT
+};
+
+// TEXTURE PARAMETERS - FORMAT ID
+enum
+{
+	TEXMODE_NONE								= 0,
+	TEXMODE_A3I5								= 1,
+	TEXMODE_I2									= 2,
+	TEXMODE_I4									= 3,
+	TEXMODE_I8									= 4,
+	TEXMODE_4X4									= 5,
+	TEXMODE_A5I3								= 6,
+	TEXMODE_16BPP								= 7
+};
 
 void gfx3d_init();
 void gfx3d_reset();
 
 #define OSWRITE(x) os->fwrite((char*)&(x),sizeof((x)));
 #define OSREAD(x) is->fread((char*)&(x),sizeof((x)));
+
+typedef struct
+{
+	u8		enableLightFlags;
+	bool	enableLight0;
+	bool	enableLight1;
+	bool	enableLight2;
+	bool	enableLight3;
+	u8		polygonMode;
+	u8		surfaceCullingMode;
+	bool	enableRenderBackSurface;
+	bool	enableRenderFrontSurface;
+	bool	enableAlphaDepthWrite;
+	bool	enableRenderOnFarPlaneIntersect;
+	bool	enableRenderOneDot;
+	bool	enableDepthTest;
+	bool	enableRenderFog;
+	bool	isWireframe;
+	bool	isOpaque;
+	bool	isTranslucent;
+	u8		alpha;
+	u8		polygonID;
+} PolygonAttributes;
+
+typedef struct
+{
+	u16		VRAMOffset;
+	bool	enableRepeatS;
+	bool	enableRepeatT;
+	bool	enableMirroredRepeatS;
+	bool	enableMirroredRepeatT;
+	u8		sizeS;
+	u8		sizeT;
+	u8		texFormat;
+	bool	enableTransparentColor0;
+	u8		coordTransformMode;
+} PolygonTexParams;
 
 struct POLY {
 	int type; //tri or quad
@@ -150,23 +262,214 @@ struct POLY {
 		if(d != -1) { vertIndexes[3] = d; type = 4; }
 		else type = 3;
 	}
-
+	
+	u8 getAttributeEnableLightFlags()
+	{
+		return ((polyAttr & (POLYGON_ATTR_ENABLE_LIGHT0_MASK |
+							 POLYGON_ATTR_ENABLE_LIGHT1_MASK |
+							 POLYGON_ATTR_ENABLE_LIGHT2_MASK |
+							 POLYGON_ATTR_ENABLE_LIGHT3_MASK)) >> POLYGON_ATTR_ENABLE_LIGHT0_BIT);
+	}
+	
+	bool getAttributeEnableLight0()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT0_MASK) > 0);
+	}
+	
+	bool getAttributeEnableLight1()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT1_MASK) > 0);
+	}
+	
+	bool getAttributeEnableLight2()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT2_MASK) > 0);
+	}
+	
+	bool getAttributeEnableLight3()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT3_MASK) > 0);
+	}
+	
+	u8 getAttributePolygonMode()
+	{
+		return ((polyAttr & POLYGON_ATTR_MODE_MASK) >> POLYGON_ATTR_MODE_BIT);
+	}
+	
+	u8 getAttributeEnableFaceCullingFlags()
+	{
+		return ((polyAttr & (POLYGON_ATTR_ENABLE_BACK_SURFACE_MASK |
+							 POLYGON_ATTR_ENABLE_FRONT_SURFACE_MASK)) >> POLYGON_ATTR_ENABLE_BACK_SURFACE_BIT);
+	}
+	
+	bool getAttributeEnableBackSurface()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_BACK_SURFACE_MASK) > 0);
+	}
+	
+	bool getAttributeEnableFrontSurface()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_FRONT_SURFACE_MASK) > 0);
+	}
+	
+	bool getAttributeEnableAlphaDepthWrite()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_MASK) > 0);
+	}
+	
+	bool getAttributeEnableRenderOnFarPlaneIntersect()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_MASK) > 0);
+	}
+	
+	bool getAttributeEnableOneDotRender()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_MASK) > 0);
+	}
+	
+	bool getAttributeEnableDepthTest()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_DEPTH_TEST_MASK) > 0);
+	}
+	
+	bool getAttributeEnableFog()
+	{
+		return ((polyAttr & POLYGON_ATTR_ENABLE_FOG_MASK) > 0);
+	}
+	
+	u8 getAttributeAlpha()
+	{
+		return ((polyAttr & POLYGON_ATTR_ALPHA_MASK) >> POLYGON_ATTR_ALPHA_BIT);
+	}
+	
+	u8 getAttributePolygonID()
+	{
+		return ((polyAttr & POLYGON_ATTR_POLYGON_ID_MASK) >> POLYGON_ATTR_POLYGON_ID_BIT);
+	}
+	
+	PolygonAttributes getAttributes()
+	{
+		PolygonAttributes theAttr;
+		
+		theAttr.enableLightFlags				= this->getAttributeEnableLightFlags();
+		theAttr.enableLight0					= this->getAttributeEnableLight0();
+		theAttr.enableLight1					= this->getAttributeEnableLight1();
+		theAttr.enableLight2					= this->getAttributeEnableLight2();
+		theAttr.enableLight3					= this->getAttributeEnableLight3();
+		theAttr.polygonMode						= this->getAttributePolygonMode();
+		theAttr.surfaceCullingMode				= this->getAttributeEnableFaceCullingFlags();
+		theAttr.enableRenderBackSurface			= this->getAttributeEnableBackSurface();
+		theAttr.enableRenderFrontSurface		= this->getAttributeEnableFrontSurface();
+		theAttr.enableAlphaDepthWrite			= this->getAttributeEnableAlphaDepthWrite();
+		theAttr.enableRenderOnFarPlaneIntersect	= this->getAttributeEnableRenderOnFarPlaneIntersect();
+		theAttr.enableRenderOneDot				= this->getAttributeEnableOneDotRender();
+		theAttr.enableDepthTest					= this->getAttributeEnableDepthTest();
+		theAttr.enableRenderFog					= this->getAttributeEnableFog();
+		theAttr.alpha							= this->getAttributeAlpha();
+		theAttr.isWireframe						= this->isWireframe();
+		theAttr.isOpaque						= this->isOpaque();
+		theAttr.isTranslucent					= this->isTranslucent();
+		theAttr.polygonID						= this->getAttributePolygonID();
+		
+		return theAttr;
+	}
+	
+	u16 getTexParamVRAMOffset()
+	{
+		return ((texParam & TEXTURE_PARAM_VRAM_OFFSET_MASK) >> TEXTURE_PARAM_VRAM_OFFSET_BIT);
+	}
+	
+	bool getTexParamEnableRepeatS()
+	{
+		return ((texParam & TEXTURE_PARAM_ENABLE_REPEAT_S_MASK) > 0);
+	}
+	
+	bool getTexParamEnableRepeatT()
+	{
+		return ((texParam & TEXTURE_PARAM_ENABLE_REPEAT_T_MASK) > 0);
+	}
+	
+	bool getTexParamEnableMirroredRepeatS()
+	{
+		return ((texParam & TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_S_MASK) > 0);
+	}
+	
+	bool getTexParamEnableMirroredRepeatT()
+	{
+		return ((texParam & TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_T_MASK) > 0);
+	}
+	
+	u8 getTexParamSizeS()
+	{
+		return ((texParam & TEXTURE_PARAM_SIZE_S_MASK) >> TEXTURE_PARAM_SIZE_S_BIT);
+	}
+	
+	u8 getTexParamSizeT()
+	{
+		return ((texParam & TEXTURE_PARAM_SIZE_T_MASK) >> TEXTURE_PARAM_SIZE_T_BIT);
+	}
+	
+	u8 getTexParamTexFormat()
+	{
+		return ((texParam & TEXTURE_PARAM_FORMAT_MASK) >> TEXTURE_PARAM_FORMAT_BIT);
+	}
+	
+	bool getTexParamEnableTransparentColor0()
+	{
+		return ((texParam & TEXTURE_PARAM_ENABLE_TRANSPARENT_COLOR0_MASK) > 0);
+	}
+	
+	u8 getTexParamCoordTransformMode()
+	{
+		return ((texParam & TEXTURE_PARAM_COORD_TRANSFORM_MODE_MASK) >> TEXTURE_PARAM_COORD_TRANSFORM_MODE_BIT);
+	}
+	
+	PolygonTexParams getTexParams()
+	{
+		PolygonTexParams theTexParams;
+		
+		theTexParams.VRAMOffset					= this->getTexParamVRAMOffset();
+		theTexParams.enableRepeatS				= this->getTexParamEnableRepeatS();
+		theTexParams.enableRepeatT				= this->getTexParamEnableRepeatT();
+		theTexParams.enableMirroredRepeatS		= this->getTexParamEnableMirroredRepeatS();
+		theTexParams.enableMirroredRepeatT		= this->getTexParamEnableMirroredRepeatT();
+		theTexParams.sizeS						= this->getTexParamSizeS();
+		theTexParams.sizeT						= this->getTexParamSizeT();
+		theTexParams.texFormat					= this->getTexParamTexFormat();
+		theTexParams.enableTransparentColor0	= this->getTexParamEnableTransparentColor0();
+		theTexParams.coordTransformMode			= this->getTexParamCoordTransformMode();
+		
+		return theTexParams;
+	}
+	
+	bool isWireframe()
+	{
+		return (this->getAttributeAlpha() == 0);
+	}
+	
+	bool isOpaque()
+	{
+		return (this->getAttributeAlpha() == 31);
+	}
+	
 	bool isTranslucent()
 	{
-		//alpha != 31 -> translucent
-		//except for alpha 0 which is wireframe (unless it has a translucent tex)
-		if((polyAttr&0x001F0000) != 0x001F0000 && (polyAttr&0x001F0000) != 0)
+		// First, check if the polygon is wireframe or opaque.
+		// If neither, then it must be translucent.
+		if (!this->isWireframe() && !this->isOpaque())
+		{
 			return true;
-		int texFormat = (texParam>>26)&7;
-
+		}
+		
+		// Also check for translucent texture format.
+		u8 texFormat = this->getTexParamTexFormat();
+		
 		//a5i3 or a3i5 -> translucent
-		if(texFormat==1 || texFormat==6) 
+		if(texFormat == TEXMODE_A3I5 || texFormat == TEXMODE_A5I3) 
 			return true;
 		
 		return false;
 	}
-
-	int getAlpha() { return (polyAttr>>16)&0x1F; }
 
 	void save(EMUFILE* os)
 	{

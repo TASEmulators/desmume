@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -29,11 +29,10 @@
 #include "debug.h"
 
 #define VERT_INDEX_BUFFER_SIZE 8192
-CACHE_ALIGN float material_8bit_to_float[255] = {0};
 
-bool (*oglrender_init)() = 0;
-bool (*oglrender_beginOpenGL)() = 0;
-void (*oglrender_endOpenGL)() = 0;
+bool (*oglrender_init)() = NULL;
+bool (*oglrender_beginOpenGL)() = NULL;
+void (*oglrender_endOpenGL)() = NULL;
 
 static bool BEGINGL() {
 	if(oglrender_beginOpenGL) 
@@ -79,37 +78,60 @@ static void ENDGL() {
 
 static DS_ALIGN(16) u8  GPU_screen3D			[256*192*4];
 
-static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
-static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
-static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
+static const GLenum map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
+static const GLint texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
+static const GLenum depthFunc[2] = { GL_LESS, GL_EQUAL };
 
-//derived values extracted from polyattr etc
-static bool wireframe=false, alpha31=false;
-static unsigned int polyID=0;
-static unsigned int depthFuncMode=0;
-static unsigned int envMode=0;
-static unsigned int lastEnvMode=0;
-static unsigned int cullingMask=0;
-static bool alphaDepthWrite;
-static unsigned int lightMask=0;
-static bool isTranslucent;
+/// Polygon Info
+static PolygonAttributes currentPolyAttr;
+static PolygonTexParams currentTexParams;
+static GLenum depthFuncMode = 0;
+static unsigned int lastEnvMode = 0;
+static GLenum cullingMode = 0;
+static GLfloat polyAlpha = 1.0f;
 
-static u32 textureFormat=0, texturePalette=0;
+static u32 stencilStateSet = -1;
 
 static char *extString = NULL;
+
 // ClearImage/Rear-plane (FBO)
-GLenum	oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
-GLuint	oglClearImageBuffers = 0;
-GLuint	oglClearImageRender[1] = {0};
-bool	oglFBOdisabled = false;
-u32		*oglClearImageColor = NULL;
-float	*oglClearImageDepth = NULL;
-u16		*oglClearImageColorTemp = NULL;
-u16		*oglClearImageDepthTemp = NULL;
-u32		oglClearImageScrollOld = 0;
+static GLenum oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
+static GLuint oglClearImageBuffers = 0;
+static bool oglFBOdisabled = false;
+static u32 *oglClearImageColor = NULL;
+static float *oglClearImageDepth = NULL;
+static u16 *oglClearImageColorTemp = NULL;
+static u16 *oglClearImageDepthTemp = NULL;
+static u32 oglClearImageScrollOld = 0;
+
+// Shader states
+static bool hasShaders = false;
+
+static GLuint vertexShaderID;
+static GLuint fragmentShaderID;
+static GLuint shaderProgram;
+
+static GLint uniformPolyAlpha;
+static GLint uniformTexScale;
+static GLint uniformHasTexture;
+static GLint uniformTextureBlendingMode;
+static GLint uniformWBuffer;
+
+static bool hasTexture = false;
+static TexCacheItem* currTexture = NULL;
 
 static GLfloat *color4fBuffer = NULL;
 static GLushort *vertIndexBuffer = NULL;
+
+static CACHE_ALIGN GLfloat material_8bit_to_float[255] = {0};
+static const GLfloat divide5bitBy31LUT[32] =	{0.0, 0.03225806451613, 0.06451612903226, 0.09677419354839,
+												 0.1290322580645, 0.1612903225806, 0.1935483870968, 0.2258064516129,
+												 0.258064516129, 0.2903225806452, 0.3225806451613, 0.3548387096774,
+												 0.3870967741935, 0.4193548387097, 0.4516129032258, 0.4838709677419,
+												 0.5161290322581, 0.5483870967742, 0.5806451612903, 0.6129032258065,
+												 0.6451612903226, 0.6774193548387, 0.7096774193548, 0.741935483871,
+												 0.7741935483871, 0.8064516129032, 0.8387096774194, 0.8709677419355,
+												 0.9032258064516, 0.9354838709677, 0.9677419354839, 1.0};
 
 //------------------------------------------------------------
 
@@ -277,19 +299,6 @@ GLenum			oglToonTableTextureID;
 	} \
 }
 
-bool hasShaders = false;
-
-GLuint vertexShaderID;
-GLuint fragmentShaderID;
-GLuint shaderProgram;
-
-static GLint hasTexLoc;
-static GLint texBlendLoc;
-static GLint oglWBuffer;
-static bool hasTexture = false;
-
-static TexCacheItem* currTexture = NULL;
-
 /* Shaders init */
 
 static void createShaders()
@@ -360,20 +369,25 @@ static void OGLReset()
 		
 		if(BEGINGL())
 		{
-			glUniform1i(hasTexLoc, 0);
-			glUniform1i(texBlendLoc, 0);
-			glUniform1i(oglWBuffer, 0);
+			glUniform1f(uniformPolyAlpha, 1.0f);
+			glUniform2f(uniformTexScale, 1.0f, 1.0f);
+			glUniform1i(uniformHasTexture, 0);
+			glUniform1i(uniformTextureBlendingMode, 0);
+			glUniform1i(uniformWBuffer, 0);
 			
 			ENDGL();
 		}
 	}
-
+	else
+	{
+		memset(color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
+	}
+	
 	TexCache_Reset();
 	if (currTexture) 
 		delete currTexture;
 	currTexture = NULL;
 
-//	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 
 	if (!oglFBOdisabled)
@@ -385,7 +399,6 @@ static void OGLReset()
 		oglClearImageScrollOld = 0;
 	}
 	
-	memset(color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
 	memset(vertIndexBuffer, 0, VERT_INDEX_BUFFER_SIZE * sizeof(GLushort));
 }
 
@@ -444,7 +457,7 @@ static char OGLInit(void)
 		return 0;
 
 	for (u8 i = 0; i < 255; i++)
-		material_8bit_to_float[i] = (float)(i<<2)/255.f;
+		material_8bit_to_float[i] = (GLfloat)(i<<2)/255.f;
 
 	extString = (char*)glGetString(GL_EXTENSIONS);
 
@@ -516,12 +529,12 @@ static char OGLInit(void)
 
 		loc = glGetUniformLocation(shaderProgram, "toonTable");
 		glUniform1i(loc, 1);
-
-		hasTexLoc = glGetUniformLocation(shaderProgram, "hasTexture");
-
-		texBlendLoc = glGetUniformLocation(shaderProgram, "texBlending");
-
-		oglWBuffer = glGetUniformLocation(shaderProgram, "oglWBuffer");
+		
+		uniformPolyAlpha = glGetUniformLocation(shaderProgram, "polyAlpha");
+		uniformTexScale = glGetUniformLocation(shaderProgram, "texScale");
+		uniformHasTexture = glGetUniformLocation(shaderProgram, "hasTexture");
+		uniformTextureBlendingMode = glGetUniformLocation(shaderProgram, "texBlending");
+		uniformWBuffer = glGetUniformLocation(shaderProgram, "oglWBuffer");
 	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
@@ -553,6 +566,14 @@ static char OGLInit(void)
 			rgbToonTable[i] = RGB15TO32_NOALPHA(gfx3d.renderState.u16ToonTable[i]);
 		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rgbToonTable[0]);
 		gfx3d.state.invalidateToon = false;
+	}
+	else
+	{
+		// Map the vertex list's colors with 4 floats per color. This is being done
+		// because OpenGL needs 4-colors per vertex to support translucency. (The DS
+		// uses 3-colors per vertex, and adds alpha through the poly, so we can't
+		// simply reference the colors+alpha from just the vertices themselves.)
+		color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
 	}
 
 	// FBO
@@ -612,12 +633,6 @@ static char OGLInit(void)
 
 	ENDGL();
 	
-	// Map the vertex list's colors with 4 floats per color. This is being done
-	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
-	// uses 3-colors per vertex, and adds alpha through the poly, so we can't
-	// simply reference the colors+alpha from just the vertices themselves.)
-	color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
-	
 	// Make our own vertex index buffer for primitive conversions. This is
 	// necessary since OpenGL deprecates primitives like GL_QUADS and
 	// GL_QUAD_STRIP in later versions. (Maybe we can also use the buffer for
@@ -631,9 +646,6 @@ static char OGLInit(void)
 
 static void OGLClose()
 {
-	delete [] color4fBuffer;
-	color4fBuffer = NULL;
-	
 	delete [] vertIndexBuffer;
 	vertIndexBuffer = NULL;
 	
@@ -652,6 +664,11 @@ static void OGLClose()
 		glDeleteShader(fragmentShaderID);
 
 		hasShaders = false;
+	}
+	else
+	{
+		delete [] color4fBuffer;
+		color4fBuffer = NULL;
 	}
 
 	//kill the tex cache to free all the texture ids
@@ -710,25 +727,15 @@ static void texDeleteCallback(TexCacheItem* item)
 
 static void setTexture(unsigned int format, unsigned int texpal)
 {
-	textureFormat = format;
-	texturePalette = texpal;
-
-	u32 textureMode = (unsigned short)((format>>26)&0x07);
-
-	if (format==0)
+	if (format == 0 || currentTexParams.texFormat == TEXMODE_NONE)
 	{
-		if(hasShaders && hasTexture) { glUniform1i(hasTexLoc, 0); hasTexture = false; }
-		return;
-	}
-	if (textureMode==0)
-	{
-		if(hasShaders && hasTexture) { glUniform1i(hasTexLoc, 0); hasTexture = false; }
+		if(hasShaders && hasTexture) { glUniform1i(uniformHasTexture, 0); hasTexture = false; }
 		return;
 	}
 
 	if(hasShaders)
 	{
-		if(!hasTexture) { glUniform1i(hasTexLoc, 1); hasTexture = true; }
+		if(!hasTexture) { glUniform1i(uniformHasTexture, 1); hasTexture = true; }
 		glActiveTexture(GL_TEXTURE0);
 	}
 
@@ -765,53 +772,69 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		}
 
 		//in either case, we need to setup the tex mtx
-		glMatrixMode(GL_TEXTURE);
-		glLoadIdentity();
-		glScalef(currTexture->invSizeX, currTexture->invSizeY, 1.0f);
-
+		if (hasShaders)
+		{
+			glUniform2f(uniformTexScale, currTexture->invSizeX, currTexture->invSizeY);
+		}
+		else
+		{
+			glMatrixMode(GL_TEXTURE);
+			glLoadIdentity();
+			glScalef(currTexture->invSizeX, currTexture->invSizeY, 1.0f);
+		}
 	}
 }
 
-
-
-//controls states:
-//glStencilFunc
-//glStencilOp
-//glColorMask
-static u32 stencilStateSet = -1;
-
-static u32 polyalpha=0;
-
-static void BeginRenderPoly()
+static void SetupPolygonRender(POLY *thePoly)
 {
 	bool enableDepthWrite = true;
-
+	
+	// Get polygon info
+	currentPolyAttr = thePoly->getAttributes();
+	
+	polyAlpha		= 1.0f;
+	if (!currentPolyAttr.isWireframe && currentPolyAttr.isTranslucent)
+	{
+		polyAlpha	= divide5bitBy31LUT[currentPolyAttr.alpha];
+	}
+	
+	if (hasShaders)
+	{
+		glUniform1f(uniformPolyAlpha, polyAlpha);
+	}
+	
+	cullingMode		= map3d_cull[currentPolyAttr.surfaceCullingMode];	
+	depthFuncMode	= depthFunc[currentPolyAttr.enableDepthTest];
+	
+	// Set up texture
+	if (gfx3d.renderState.enableTexturing)
+	{
+		currentTexParams = thePoly->getTexParams();
+		setTexture(thePoly->texParam, thePoly->texPalette);
+	}
+	
+	// Set up rendering states
 	xglDepthFunc (depthFuncMode);
 
 	// Cull face
-	if (cullingMask == 0x03)
+	if (cullingMode == 0)
 	{
 		xglDisable(GL_CULL_FACE);
 	}
 	else
 	{
 		xglEnable(GL_CULL_FACE);
-		glCullFace(map3d_cull[cullingMask]);
-	}
-	
-	if (gfx3d.renderState.enableTexturing)
-	{
-		setTexture(textureFormat, texturePalette);
+		glCullFace(cullingMode);
 	}
 
-	if(isTranslucent)
-		enableDepthWrite = alphaDepthWrite;
+	if(currentPolyAttr.isTranslucent)
+		enableDepthWrite = currentPolyAttr.enableAlphaDepthWrite;
 
 	//handle shadow polys
-	if(envMode == 3)
+	if(currentPolyAttr.polygonMode == 3)
 	{
 		xglEnable(GL_STENCIL_TEST);
-		if(polyID == 0) {
+		if(currentPolyAttr.polygonID == 0) {
 			enableDepthWrite = false;
 			if(stencilStateSet!=0) {
 				stencilStateSet = 0;
@@ -836,10 +859,10 @@ static void BeginRenderPoly()
 		}
 	} else {
 		xglEnable(GL_STENCIL_TEST);
-		if(isTranslucent)
+		if(currentPolyAttr.isTranslucent)
 		{
 			stencilStateSet = 3;
-			glStencilFunc(GL_NOTEQUAL,polyID,255);
+			glStencilFunc(GL_NOTEQUAL,currentPolyAttr.polygonID,255);
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 		}
@@ -851,49 +874,23 @@ static void BeginRenderPoly()
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 		}
 	}
-
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[envMode]);
-
-	if(hasShaders)
+	
+	if(currentPolyAttr.polygonMode != lastEnvMode)
 	{
-		if(envMode != lastEnvMode)
+		lastEnvMode = currentPolyAttr.polygonMode;
+		
+		if(hasShaders)
 		{
-			lastEnvMode = envMode;
-
 			int _envModes[4] = {0, 1, (2 + gfx3d.renderState.shading), 0};
-			glUniform1i(texBlendLoc, _envModes[envMode]);
+			glUniform1i(uniformTextureBlendingMode, _envModes[currentPolyAttr.polygonMode]);
+		}
+		else
+		{
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[currentPolyAttr.polygonMode]);
 		}
 	}
 
 	xglDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
-}
-
-static void InstallPolygonAttrib(u32 val)
-{
-	// Light enable/disable
-	lightMask = (val&0xF);
-
-	// texture environment
-	envMode = (val&0x30)>>4;
-
-	// overwrite depth on alpha pass
-	alphaDepthWrite = BIT11(val)!=0;
-
-	// depth test function
-	depthFuncMode = depthFunc[BIT14(val)];
-
-	// back face culling
-	cullingMask = (val >> 6) & 0x03;
-
-	alpha31 = ((val>>16)&0x1F)==31;
-	
-	// Alpha value, actually not well handled, 0 should be wireframe
-	wireframe = ((val>>16)&0x1F)==0;
-
-	polyalpha = ((val>>16)&0x1F);
-
-	// polyID
-	polyID = (val>>24)&0x3F;
 }
 
 static void Control()
@@ -902,7 +899,7 @@ static void Control()
 	{
 		if (hasShaders)
 		{
-			glUniform1i(hasTexLoc, 1);
+			glUniform1i(uniformHasTexture, 1);
 		}
 		else
 		{
@@ -913,7 +910,7 @@ static void Control()
 	{
 		if (hasShaders)
 		{
-			glUniform1i(hasTexLoc, 0);
+			glUniform1i(uniformHasTexture, 0);
 		}
 		else
 		{
@@ -921,19 +918,22 @@ static void Control()
 		}
 	}
 	
-	if(gfx3d.renderState.enableAlphaTest)
-		// FIXME: alpha test should pass gfx3d.alphaTestRef==poly->getAlpha
-		glAlphaFunc	(GL_GREATER, gfx3d.renderState.alphaTestRef/31.f);
-	else
-		glAlphaFunc	(GL_GREATER, 0);
-
-	if(gfx3d.renderState.enableAlphaBlending)
+	if(gfx3d.renderState.enableAlphaTest && (gfx3d.renderState.alphaTestRef > 0))
 	{
-		glEnable		(GL_BLEND);
+		glAlphaFunc(GL_GEQUAL, divide5bitBy31LUT[gfx3d.renderState.alphaTestRef]);
 	}
 	else
 	{
-		glDisable		(GL_BLEND);
+		glAlphaFunc(GL_GREATER, 0);
+	}
+
+	if(gfx3d.renderState.enableAlphaBlending)
+	{
+		glEnable(GL_BLEND);
+	}
+	else
+	{
+		glDisable(GL_BLEND);
 	}
 }
 
@@ -941,8 +941,7 @@ static void Control()
 static void GL_ReadFramebuffer()
 {
 	if(!BEGINGL()) return;
-//	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
-	glReadPixels(0,0,256,192,GL_BGRA_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, GPU_screen3D);	
 	ENDGL();
 
 	//convert the pixels to a different format which is more convenient
@@ -1099,7 +1098,7 @@ static void OGLRender()
 			gfx3d.state.invalidateToon = false;
 		}
 
-		glUniform1i(oglWBuffer, gfx3d.renderState.wbuffer);
+		glUniform1i(uniformWBuffer, gfx3d.renderState.wbuffer);
 	}
 
 	xglDepthMask(GL_TRUE);
@@ -1111,14 +1110,15 @@ static void OGLRender()
 			oglClearImageFBO();
 	else
 	{
-		float clearColor[4] = {
-			((float)(gfx3d.renderState.clearColor&0x1F))/31.0f,
-			((float)((gfx3d.renderState.clearColor>>5)&0x1F))/31.0f,
-			((float)((gfx3d.renderState.clearColor>>10)&0x1F))/31.0f,
-			((float)((gfx3d.renderState.clearColor>>16)&0x1F))/31.0f,
+		GLfloat clearColor[4] = {
+			divide5bitBy31LUT[gfx3d.renderState.clearColor & 0x1F],
+			divide5bitBy31LUT[(gfx3d.renderState.clearColor >> 5) & 0x1F],
+			divide5bitBy31LUT[(gfx3d.renderState.clearColor >> 10) & 0x1F],
+			divide5bitBy31LUT[(gfx3d.renderState.clearColor >> 16) & 0x1F]
 		};
+		
 		glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
-		glClearDepth((float)gfx3d.renderState.clearDepth / (float)0x00FFFFFF);
+		glClearDepth((GLfloat)gfx3d.renderState.clearDepth / (GLfloat)0x00FFFFFF);
 		clearFlag |= GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
 	}
 	
@@ -1133,10 +1133,11 @@ static void OGLRender()
 	//render display list
 	//TODO - properly doublebuffer the display lists
 	{
-
-		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0, lastViewport = 0xFFFFFFFF;
-		// int lastProjIndex = -1;
-		
+		u32 lastTexParams = 0;
+		u32 lastTexPalette = 0;
+		u32 lastPolyAttr = 0;
+		u32 lastViewport = 0xFFFFFFFF;
+		unsigned int polyCount = gfx3d.polylist->count;
 		unsigned int vertIndexCount = 0;
 		GLenum polyPrimitive = 0;
 		unsigned int polyType = 0;
@@ -1145,25 +1146,33 @@ static void OGLRender()
 		glEnableClientState(GL_COLOR_ARRAY);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		
+		if (hasShaders)
+		{
+			glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(VERT), &gfx3d.vertlist->list[0].color);
+		}
+		else
+		{
+			glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+		}
+		
 		glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
-		glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
 		glVertexPointer(4, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
-
-		for(int i=0;i<gfx3d.polylist->count;i++) {
+		
+		for(unsigned int i = 0; i < polyCount; i++)
+		{
 			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
 			polyPrimitive = frm[poly->vtxFormat];
 			polyType = poly->type;
 
 			//a very macro-level state caching approach:
 			//these are the only things which control the GPU rendering state.
-			if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
+			if(lastPolyAttr != poly->polyAttr || lastTexParams != poly->texParam || lastTexPalette != poly->texPalette || i == 0)
 			{
-				isTranslucent = poly->isTranslucent();
-				InstallPolygonAttrib(poly->polyAttr);
-				lastTextureFormat = textureFormat = poly->texParam;
-				lastTexturePalette = texturePalette = poly->texPalette;
-				lastPolyAttr = poly->polyAttr;
-				BeginRenderPoly();
+				lastPolyAttr	= poly->polyAttr;
+				lastTexParams	= poly->texParam;
+				lastTexPalette	= poly->texPalette;
+				
+				SetupPolygonRender(poly);
 			}
 			
 			if(lastViewport != poly->viewport)
@@ -1174,38 +1183,60 @@ static void OGLRender()
 				lastViewport = poly->viewport;
 			}
 			
-			// Consolidate the vertex color and the poly alpha to our internal color buffer
-			// so that OpenGL can use it.
-			GLfloat alpha = 1.0f;
-			if (!wireframe && isTranslucent)
+			// Set up vertices
+			if (hasShaders)
 			{
-				alpha = (GLfloat)(poly->getAlpha() / 31.0f);
-			}
-			
-			for(unsigned int j = 0; j < polyType; j++)
-			{
-				GLushort vertIndex = poly->vertIndexes[j];
-				VERT *vert = &gfx3d.vertlist->list[vertIndex];
-				
-				color4fBuffer[(4*vertIndex)+0] = material_8bit_to_float[vert->color[0]];
-				color4fBuffer[(4*vertIndex)+1] = material_8bit_to_float[vert->color[1]];
-				color4fBuffer[(4*vertIndex)+2] = material_8bit_to_float[vert->color[2]];
-				color4fBuffer[(4*vertIndex)+3] = alpha;
-				
-				// While we're looping through our vertices, add each vertex index to
-				// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
-				// here to convert them to GL_TRIANGLES, which are much easier to work with
-				// and won't be deprecated in future OpenGL versions.
-				vertIndexBuffer[vertIndexCount++] = vertIndex;
-				if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+				for(unsigned int j = 0; j < polyType; j++)
 				{
-					if (j == 2)
+					GLushort vertIndex = poly->vertIndexes[j];
+					
+					// While we're looping through our vertices, add each vertex index to
+					// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
+					// here to convert them to GL_TRIANGLES, which are much easier to work with
+					// and won't be deprecated in future OpenGL versions.
+					vertIndexBuffer[vertIndexCount++] = vertIndex;
+					if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
 					{
-						vertIndexBuffer[vertIndexCount++] = vertIndex;
+						if (j == 2)
+						{
+							vertIndexBuffer[vertIndexCount++] = vertIndex;
+						}
+						else if (j == 3)
+						{
+							vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+						}
 					}
-					else if (j == 3)
+				}
+			}
+			else
+			{
+				for(unsigned int j = 0; j < polyType; j++)
+				{
+					GLushort vertIndex = poly->vertIndexes[j];
+					
+					// Consolidate the vertex color and the poly alpha to our internal color buffer
+					// so that OpenGL can use it.
+					VERT *vert = &gfx3d.vertlist->list[vertIndex];
+					color4fBuffer[(4*vertIndex)+0] = material_8bit_to_float[vert->color[0]];
+					color4fBuffer[(4*vertIndex)+1] = material_8bit_to_float[vert->color[1]];
+					color4fBuffer[(4*vertIndex)+2] = material_8bit_to_float[vert->color[2]];
+					color4fBuffer[(4*vertIndex)+3] = polyAlpha;
+					
+					// While we're looping through our vertices, add each vertex index to
+					// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
+					// here to convert them to GL_TRIANGLES, which are much easier to work with
+					// and won't be deprecated in future OpenGL versions.
+					vertIndexBuffer[vertIndexCount++] = vertIndex;
+					if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
 					{
-						vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+						if (j == 2)
+						{
+							vertIndexBuffer[vertIndexCount++] = vertIndex;
+						}
+						else if (j == 3)
+						{
+							vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+						}
 					}
 				}
 			}
@@ -1215,7 +1246,7 @@ static void OGLRender()
 			// drawing more accurate this way, but it also allows GL_QUADS and
 			// GL_QUAD_STRIP primitives to properly draw as wireframe without the
 			// extra diagonal line.
-			if (wireframe)
+			if (currentPolyAttr.isWireframe)
 			{
 				polyPrimitive = GL_LINE_LOOP;
 			}
