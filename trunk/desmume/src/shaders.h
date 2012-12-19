@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,12 +19,26 @@
 
 /* Vertex shader */
 const char *vertexShader = {"\
+	uniform float polyAlpha; \n\
+	uniform vec2 texScale; \n\
 	varying vec4 pos; \n\
+	varying vec4 vtxColor; \n\
 	void main() \n\
 	{ \n\
-		gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex; \n\
-		gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0; \n\
-		gl_FrontColor = gl_Color; \n\
+		mat4 projectionMtx	= mat4(	vec4(1.0, 0.0, 0.0, 0.0), \n\
+									vec4(0.0, 1.0, 0.0, 0.0), \n\
+									vec4(0.0, 0.0, 1.0, 0.0), \n\
+									vec4(0.0, 0.0, 0.0, 1.0));\n\
+		\n\
+		mat4 texScaleMtx	= mat4(	vec4(texScale.x,        0.0, 0.0, 0.0), \n\
+									vec4(       0.0, texScale.y, 0.0, 0.0), \n\
+									vec4(       0.0,        0.0, 1.0, 0.0), \n\
+									vec4(       0.0,        0.0, 0.0, 1.0)); \n\
+		\n\
+		vtxColor = vec4(gl_Color.rgb * 4.0, polyAlpha); \n\
+		gl_Position = projectionMtx * gl_Vertex; \n\
+		gl_TexCoord[0] = texScaleMtx * gl_MultiTexCoord0; \n\
+		gl_FrontColor = vtxColor; \n\
 		pos = gl_Position; \n\
 	} \n\
 "};
@@ -37,6 +51,7 @@ const char *fragmentShader = {"\
 	uniform int texBlending; \n\
 	uniform int oglWBuffer; \n\
 	varying vec4 pos; \n\
+	varying vec4 vtxColor; \n\
 	void main() \n\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
@@ -49,33 +64,33 @@ const char *fragmentShader = {"\
 		flagColor = texColor; \n\
 		if(texBlending == 0) \n\
 		{ \n\
-			flagColor = gl_Color * texColor; \n\
+			flagColor = vtxColor * texColor; \n\
 		} \n\
 		else \n\
 			if(texBlending == 1) \n\
 			{ \n\
 				if (texColor.a == 0.0 || hasTexture == 0) \n\
-					flagColor.rgb = gl_Color.rgb;\n\
+					flagColor.rgb = vtxColor.rgb;\n\
 				else \n\
 					if (texColor.a == 1.0) \n\
 						flagColor.rgb = texColor.rgb;\n\
 					else \n\
-					flagColor.rgb = texColor.rgb * (1.0-texColor.a) + gl_Color.rgb * texColor.a;\n\
-				flagColor.a = gl_Color.a; \n\
+					flagColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a;\n\
+				flagColor.a = vtxColor.a; \n\
 			} \n\
 			else \n\
 				if(texBlending == 2) \n\
 				{ \n\
-					vec3 toonColor = vec3(texture1D(toonTable, gl_Color.r).rgb); \n\
+					vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
 					flagColor.rgb = texColor.rgb * toonColor.rgb;\n\
-					flagColor.a = texColor.a * gl_Color.a;\n\
+					flagColor.a = texColor.a * vtxColor.a;\n\
 				} \n\
 				else \n\
 					if(texBlending == 3) \n\
 					{ \n\
-						vec3 toonColor = vec3(texture1D(toonTable, gl_Color.r).rgb); \n\
-						flagColor.rgb = texColor.rgb * gl_Color.rgb + toonColor.rgb; \n\
-						flagColor.a = texColor.a * gl_Color.a; \n\
+						vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
+						flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
+						flagColor.a = texColor.a * vtxColor.a; \n\
 					} \n\
 		if (oglWBuffer == 1) \n\
 			// TODO \n\
