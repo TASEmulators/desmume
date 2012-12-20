@@ -26,8 +26,44 @@
 
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 
 #undef BOOL
+
+// VERTEX SHADER FOR DISPLAY OUTPUT
+const char *vShader = {"\
+	uniform vec2 viewSize;\n\
+	uniform float scalar;\n\
+	uniform float angleDegrees;\n\
+	\n\
+	void main() \n\
+	{ \n\
+		float angleRadians = radians(angleDegrees); \n\
+		\n\
+		mat2 projection	= mat2(	vec2(2.0/viewSize.x, 0.0), \n\
+								vec2(0.0, 2.0/viewSize.y));\n\
+		\n\
+		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
+								vec2(sin(angleRadians),  cos(angleRadians))); \n\
+		\n\
+		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
+								vec2(   0.0, scalar)); \n\
+		\n\
+		gl_Position = vec4(projection * rotation * scale * gl_Vertex.xy, 1.0, 1.0);\n\
+		gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0; \n\
+	} \n\
+	"};
+
+// FRAGMENT SHADER FOR DISPLAY OUTPUT
+const char *fShader = {"\
+	uniform sampler2D tex;\n\
+	void main() \n\
+	{ \n\
+		vec4 color = texture2D(tex, gl_TexCoord[0].st);\n\
+		gl_FragColor = color;\n\
+	} \n\
+"};
+
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
 
@@ -902,22 +938,11 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	glTexBackSize = NSMakeSize(w, h);
 	cglDisplayContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
 	
-	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(cglDisplayContext);
+	vtxBuffer = new GLint[8*2];
+	texCoordBuffer = new GLfloat[8*2];
+	vtxIndexBuffer = new GLubyte[12];
 	
-	renderDisplayListIndex = glGenLists(3);
-	glGenTextures(1, &mainDisplayTexIndex);
-	glGenTextures(1, &touchDisplayTexIndex);
-	glGenBuffers(1, &vboTexCoordID);
-	glGenBuffers(1, &vboVertexID);
-	glGenBuffers(1, &vboElementID);
-	
-	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
-							   &OSXOpenGLRendererBegin,
-							   &OSXOpenGLRendererEnd);
-	
-	CGLSetCurrentContext(prevContext);
-	
+	// Create a new context for the OpenGL-based emulated 3D renderer
 	NSOpenGLPixelFormatAttribute attrs[] =
 	{
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
@@ -939,19 +964,23 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	
 	NSOpenGLPixelBuffer *tempPixelBuffer = [[NSOpenGLPixelBuffer alloc]
 											initWithTextureTarget:GL_TEXTURE_2D
-											textureInternalFormat:GL_RGBA
+											textureInternalFormat:GL_BGRA
 											textureMaxMipMapLevel:0
 											pixelsWide:GPU_DISPLAY_WIDTH
 											pixelsHigh:GPU_DISPLAY_HEIGHT*2];
 	
 	NSOpenGLContext *newOGLRendererContext = [[NSOpenGLContext alloc] initWithFormat:tempPixelFormat shareContext:nil];
-	[newOGLRendererContext setPixelBuffer:tempPixelBuffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:0];
+	[newOGLRendererContext setPixelBuffer:tempPixelBuffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:[[self openGLContext] currentVirtualScreen]];
 	
 	[tempPixelFormat release];
 	[tempPixelBuffer release];
 	
 	oglRendererContext = newOGLRendererContext;
 	OSXOpenGLRendererContext = (CGLContextObj)[oglRendererContext CGLContextObj];
+	
+	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
+							   &OSXOpenGLRendererBegin,
+							   &OSXOpenGLRendererEnd);
 	
     return self;
 }
@@ -966,12 +995,36 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	
 	glDeleteTextures(1, &mainDisplayTexIndex);
 	glDeleteTextures(1, &touchDisplayTexIndex);
-	glDeleteLists(renderDisplayListIndex, 3);
-	glDeleteBuffers(1, &vboTexCoordID);
-	glDeleteBuffers(1, &vboVertexID);
-	glDeleteBuffers(1, &vboElementID);
+	
+	if (isVBOSupported)
+	{
+		glDeleteBuffers(1, &vboTexCoordID);
+		glDeleteBuffers(1, &vboVertexID);
+		glDeleteBuffers(1, &vboElementID);
+	}
+	
+	if (isShadersSupported)
+	{
+		glUseProgram(0);
+		
+		glDetachShader(shaderProgram, vertexShaderID);
+		glDetachShader(shaderProgram, fragmentShaderID);
+		
+		glDeleteProgram(shaderProgram);
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+	}
 	
 	CGLSetCurrentContext(prevContext);
+	
+	delete [] vtxBuffer;
+	vtxBuffer = NULL;
+	
+	delete [] texCoordBuffer;
+	texCoordBuffer = NULL;
+	
+	delete [] vtxIndexBuffer;
+	vtxIndexBuffer = NULL;
 	
 	free(glTexBack);
 	glTexBack = NULL;
@@ -991,15 +1044,32 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	NSRect oldFrame = [self frame];
 	[super setFrame:rect];
 	
+	GLfloat angleDegrees = (GLfloat)[dispViewDelegate rotation];
+	GLfloat s = (GLfloat)[dispViewDelegate scale];
+	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
 	glViewport(0, 0, rect.size.width, rect.size.height);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-rect.size.width/2, -rect.size.width/2 + rect.size.width, -rect.size.height/2, -rect.size.height/2 + rect.size.height, -1.0, 1.0);
+	if (isShadersSupported)
+	{
+		glUniform2f(uniformViewSize, rect.size.width, rect.size.height);
+		glUniform1f(uniformAngleDegrees, angleDegrees);
+		glUniform1f(uniformScalar, s);
+	}
+	else
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-rect.size.width/2, -rect.size.width/2 + rect.size.width, -rect.size.height/2, -rect.size.height/2 + rect.size.height, -1.0, 1.0);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glRotatef(CLOCKWISE_DEGREES(angleDegrees), 0.0f, 0.0f, 1.0f);
+		glScalef(s, s, 1.0f);
+	}
 	
 	CGLUnlockContext(cglDisplayContext);
 	
@@ -1013,8 +1083,46 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 }
 
-- (void) prepareOpenGL
+- (void)prepareOpenGL
 {
+	// Check the OpenGL capabilities for this renderer
+	const GLubyte *glExtString = glGetString(GL_EXTENSIONS);
+	
+	isVBOSupported			=   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_buffer_object", glExtString);
+	
+	isShadersSupported		= ( gluCheckExtension((const GLubyte *)"GL_ARB_shader_objects", glExtString) &&
+							    gluCheckExtension((const GLubyte *)"GL_ARB_vertex_shader", glExtString) &&
+							    gluCheckExtension((const GLubyte *)"GL_ARB_fragment_shader", glExtString) );
+		
+	// Generate OpenGL names
+	glGenTextures(1, &mainDisplayTexIndex);
+	glGenTextures(1, &touchDisplayTexIndex);
+	
+	if (isVBOSupported)
+	{
+		glGenBuffers(1, &vboTexCoordID);
+		glGenBuffers(1, &vboVertexID);
+		glGenBuffers(1, &vboElementID);
+	}
+	
+	// Set up shaders
+	if (isShadersSupported)
+	{
+		GLint shaderStatus = SetupShaders(&vertexShaderID, &fragmentShaderID, &shaderProgram);
+		
+		if (shaderStatus == GL_TRUE)
+		{
+			uniformAngleDegrees = glGetUniformLocation(shaderProgram, "angleDegrees");
+			uniformScalar = glGetUniformLocation(shaderProgram, "scalar");
+			uniformViewSize = glGetUniformLocation(shaderProgram, "viewSize");
+		}
+		else
+		{
+			isShadersSupported = false;
+		}
+	}
+	
+	// Set up rendering states
 	glDisable(GL_DITHER);
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_BLEND);
@@ -1025,50 +1133,66 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	
 	glEnable(GL_TEXTURE_2D);
 	
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClearDepth(1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	// Set up initial display vertices and store in VBO
-	static const GLint vertices[8*2] =	{-GPU_DISPLAY_WIDTH/2, GPU_DISPLAY_HEIGHT,		// Top display, top left
-										 GPU_DISPLAY_WIDTH/2, GPU_DISPLAY_HEIGHT,		// Top display, top right
-										 GPU_DISPLAY_WIDTH/2, 0,						// Top display, bottom right
-										 -GPU_DISPLAY_WIDTH/2, 0,						// Top display, bottom left
-										 
-										 -GPU_DISPLAY_WIDTH/2, 0,						// Bottom display, top left
-										 GPU_DISPLAY_WIDTH/2, 0,						// Bottom display, top right
-										 GPU_DISPLAY_WIDTH/2, -GPU_DISPLAY_HEIGHT,		// Bottom display, bottom right
-										 -GPU_DISPLAY_WIDTH/2, -GPU_DISPLAY_HEIGHT};	// Bottom display, bottom left
+	// Set up initial display vertices
+	vtxBuffer[0]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[1]	= GPU_DISPLAY_HEIGHT;	// Top display, top left
+	vtxBuffer[2]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[3]	= GPU_DISPLAY_HEIGHT;	// Top display, top right
+	vtxBuffer[4]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[5]	= 0;					// Top display, bottom right
+	vtxBuffer[6]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[7]	= 0;					// Top display, bottom left
 	
-	glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	vtxBuffer[8]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[9]	= 0;					// Bottom display, top left
+	vtxBuffer[10]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[11]	= 0;					// Bottom display, top right
+	vtxBuffer[12]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[13]	= -GPU_DISPLAY_HEIGHT;	// Bottom display, bottom right
+	vtxBuffer[14]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[15]	= -GPU_DISPLAY_HEIGHT;	// Bottom display, bottom left
 	
-	// Set up initial texture coordinates and store in VBO
-	static const GLfloat texCoords[8*2] =	{0.0f, 0.0f,
-											 1.0f, 0.0f,
-											 1.0f, 1.0f,
-											 0.0f, 1.0f,
-											 
-											 0.0f, 0.0f,
-											 1.0f, 0.0f,
-											 1.0f, 1.0f,
-											 0.0f, 1.0f};
+	// Set up initial texture coordinates
+	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	= 0.0f;
+	texCoordBuffer[2]	= 1.0f;		texCoordBuffer[3]	= 0.0f;
+	texCoordBuffer[4]	= 1.0f;		texCoordBuffer[5]	= 1.0f;
+	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= 1.0f;
 	
-	glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords), texCoords, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= 0.0f;
+	texCoordBuffer[10]	= 1.0f;		texCoordBuffer[11]	= 0.0f;
+	texCoordBuffer[12]	= 1.0f;		texCoordBuffer[13]	= 1.0f;
+	texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	= 1.0f;
 	
-	// Set up initial vertex elements and store in VBO
-	static const GLubyte elements[12] =	{0, 1, 2,
-										 2, 3, 0,
-										 
-										 4, 5, 6,
-										 6, 7, 4};
+	// Set up initial vertex elements
+	vtxIndexBuffer[0]	= 0;	vtxIndexBuffer[1]	= 1;	vtxIndexBuffer[2]	= 2;
+	vtxIndexBuffer[3]	= 2;	vtxIndexBuffer[4]	= 3;	vtxIndexBuffer[5]	= 0;
 	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
+	vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
+	
+	if (isVBOSupported)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * 8 * 2, vtxBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 8 * 2, texCoordBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		
+		// Also enable multithreaded OpenGL if VBOs are supported.
+		//
+		// If VBOs aren't supported, then multithreading may result in a substantial
+		// performance penalty.
+		CGLEnable(cglDisplayContext, kCGLCEMPEngine);
+		CGLEnable(OSXOpenGLRendererContext, kCGLCEMPEngine);
+	}
+	
+	if (isShadersSupported)
+	{
+		glUseProgram(shaderProgram);
+		
+		glUniform1f(uniformAngleDegrees, 0.0f);
+		glUniform1f(uniformScalar, 1.0f);
+		glUniform2f(uniformViewSize, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
+	}
 }
 
 - (void) drawVideoFrame
@@ -1128,59 +1252,60 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 - (void) renderDisplay
 {
 	NSInteger displayType = [dispViewDelegate displayType];
-	GLfloat angleDegrees = (GLfloat)CLOCKWISE_DEGREES([dispViewDelegate rotation]);
-	GLfloat s = (GLfloat)[dispViewDelegate scale];
+	GLubyte *elementPointer = 0;
 	
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-	glTexCoordPointer(2, GL_FLOAT, 0, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-	glVertexPointer(2, GL_INT, 0, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
+	if (isVBOSupported)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
+		glTexCoordPointer(2, GL_FLOAT, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
+		glVertexPointer(2, GL_INT, 0, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
+	}
+	else
+	{
+		glTexCoordPointer(2, GL_FLOAT, 0, texCoordBuffer);
+		glVertexPointer(2, GL_INT, 0, vtxBuffer);
+		elementPointer = vtxIndexBuffer;
+	}
 	
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
-	
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	
-	glRotatef(angleDegrees, 0.0f, 0.0f, 1.0f);
-	glScalef(s, s, 1.0f);
 	
 	switch (displayType)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
 			glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, elementPointer);
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
 			glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, elementPointer);
 			break;
 			
 		case DS_DISPLAY_TYPE_COMBO:
 			glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, elementPointer);
 			glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (GLubyte *)6);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, elementPointer + 6);
 			break;
 			
 		default:
 			break;
 	}
 	
-	glPopMatrix();
-	
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindBuffer(GL_TEXTURE_COORD_ARRAY, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	if (isVBOSupported)
+	{
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
 }
 
 - (void) updateDisplayVertices
@@ -1189,60 +1314,59 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	GLint w = (GLint)GPU_DISPLAY_WIDTH;
 	GLint h = (GLint)GPU_DISPLAY_HEIGHT;
 	
-	GLint *vertices = new GLint[8*2];
-	
 	if (displayType == DS_DISPLAY_TYPE_COMBO)
 	{
 		NSInteger displayOrientation = [dispViewDelegate displayOrientation];
 		
 		if (displayOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
 		{
-			vertices[0]		= -w/2;		vertices[1]		= h;		// Top display, top left
-			vertices[2]		= w/2;		vertices[3]		= h;		// Top display, top right
-			vertices[4]		= w/2;		vertices[5]		= 0;		// Top display, bottom right
-			vertices[6]		= -w/2;		vertices[7]		= 0;		// Top display, bottom left
+			vtxBuffer[0]	= -w/2;		vtxBuffer[1]		= h;		// Top display, top left
+			vtxBuffer[2]	= w/2;		vtxBuffer[3]		= h;		// Top display, top right
+			vtxBuffer[4]	= w/2;		vtxBuffer[5]		= 0;		// Top display, bottom right
+			vtxBuffer[6]	= -w/2;		vtxBuffer[7]		= 0;		// Top display, bottom left
 			
-			vertices[8]		= -w/2;		vertices[9]		= 0;		// Bottom display, top left
-			vertices[10]	= w/2;		vertices[11]	= 0;		// Bottom display, top right
-			vertices[12]	= w/2;		vertices[13]	= -h;		// Bottom display, bottom right
-			vertices[14]	= -w/2;		vertices[15]	= -h;		// Bottom display, bottom left
+			vtxBuffer[8]	= -w/2;		vtxBuffer[9]		= 0;		// Bottom display, top left
+			vtxBuffer[10]	= w/2;		vtxBuffer[11]		= 0;		// Bottom display, top right
+			vtxBuffer[12]	= w/2;		vtxBuffer[13]		= -h;		// Bottom display, bottom right
+			vtxBuffer[14]	= -w/2;		vtxBuffer[15]		= -h;		// Bottom display, bottom left
 		}
 		else // displayOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL
 		{
-			vertices[0]		= -w;		vertices[1]		= h/2;		// Left display, top left
-			vertices[2]		= 0;		vertices[3]		= h/2;		// Left display, top right
-			vertices[4]		= 0;		vertices[5]		= -h/2;		// Left display, bottom right
-			vertices[6]		= -w;		vertices[7]		= -h/2;		// Left display, bottom left
+			vtxBuffer[0]	= -w;		vtxBuffer[1]		= h/2;		// Left display, top left
+			vtxBuffer[2]	= 0;		vtxBuffer[3]		= h/2;		// Left display, top right
+			vtxBuffer[4]	= 0;		vtxBuffer[5]		= -h/2;		// Left display, bottom right
+			vtxBuffer[6]	= -w;		vtxBuffer[7]		= -h/2;		// Left display, bottom left
 			
-			vertices[8]		= 0;		vertices[9]		= h/2;		// Right display, top left
-			vertices[10]	= w;		vertices[11]	= h/2;		// Right display, top right
-			vertices[12]	= w;		vertices[13]	= -h/2;		// Right display, bottom right
-			vertices[14]	= 0;		vertices[15]	= -h/2;		// Right display, bottom left
+			vtxBuffer[8]	= 0;		vtxBuffer[9]		= h/2;		// Right display, top left
+			vtxBuffer[10]	= w;		vtxBuffer[11]		= h/2;		// Right display, top right
+			vtxBuffer[12]	= w;		vtxBuffer[13]		= -h/2;		// Right display, bottom right
+			vtxBuffer[14]	= 0;		vtxBuffer[15]		= -h/2;		// Right display, bottom left
 		}
 	}
 	else // displayType == DS_DISPLAY_TYPE_MAIN || displayType == DS_DISPLAY_TYPE_TOUCH
 	{
-		vertices[0]		= -w/2;		vertices[1]		= h/2;		// Left display, top left
-		vertices[2]		= w/2;		vertices[3]		= h/2;		// Left display, top right
-		vertices[4]		= w/2;		vertices[5]		= -h/2;		// Left display, bottom right
-		vertices[6]		= -w/2;		vertices[7]		= -h/2;		// Left display, bottom left
+		vtxBuffer[0]		= -w/2;		vtxBuffer[1]		= h/2;		// Left display, top left
+		vtxBuffer[2]		= w/2;		vtxBuffer[3]		= h/2;		// Left display, top right
+		vtxBuffer[4]		= w/2;		vtxBuffer[5]		= -h/2;		// Left display, bottom right
+		vtxBuffer[6]		= -w/2;		vtxBuffer[7]		= -h/2;		// Left display, bottom left
 		
-		vertices[8]		= -w/2;		vertices[9]		= h/2;		// Right display, top left
-		vertices[10]	= w/2;		vertices[11]	= h/2;		// Right display, top right
-		vertices[12]	= w/2;		vertices[13]	= -h/2;		// Right display, bottom right
-		vertices[14]	= -w/2;		vertices[15]	= -h/2;		// Right display, bottom left
+		vtxBuffer[8]		= -w/2;		vtxBuffer[9]		= h/2;		// Right display, top left
+		vtxBuffer[10]		= w/2;		vtxBuffer[11]		= h/2;		// Right display, top right
+		vtxBuffer[12]		= w/2;		vtxBuffer[13]		= -h/2;		// Right display, bottom right
+		vtxBuffer[14]		= -w/2;		vtxBuffer[15]		= -h/2;		// Right display, bottom left
 	}
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * 8 * 2, vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	if (isVBOSupported)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * 8 * 2, vtxBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 	
 	CGLUnlockContext(cglDisplayContext);
-	
-	delete [] vertices;
 }
 
 - (void)keyDown:(NSEvent *)theEvent
@@ -1415,31 +1539,30 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID
 {
-	// Set up vertex elements and store in VBO
-	static const GLubyte mainFirstElements[12] =	{0, 1, 2,
-													 2, 3, 0,
-													 
-													 4, 5, 6,
-													 6, 7, 4};
-	
-	static const GLubyte touchFirstElements[12] =	{4, 5, 6,
-													 6, 7, 4,
-													 
-													 0, 1, 2,
-													 2, 3, 0};
-	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
-	
+	// Set up vertex elements
 	if (displayOrderID == DS_DISPLAY_ORDER_MAIN_FIRST)
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(mainFirstElements), mainFirstElements, GL_STATIC_DRAW);
+		vtxIndexBuffer[0]	= 0;	vtxIndexBuffer[1]	= 1;	vtxIndexBuffer[2]	= 2;
+		vtxIndexBuffer[3]	= 2;	vtxIndexBuffer[4]	= 3;	vtxIndexBuffer[5]	= 0;
+		
+		vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
+		vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
 	}
 	else // displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
 	{
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(touchFirstElements), touchFirstElements, GL_STATIC_DRAW);
+		vtxIndexBuffer[0]	= 4;	vtxIndexBuffer[1]	= 5;	vtxIndexBuffer[2]	= 6;
+		vtxIndexBuffer[3]	= 6;	vtxIndexBuffer[4]	= 7;	vtxIndexBuffer[5]	= 4;
+		
+		vtxIndexBuffer[6]	= 0;	vtxIndexBuffer[7]	= 1;	vtxIndexBuffer[8]	= 2;
+		vtxIndexBuffer[9]	= 2;	vtxIndexBuffer[10]	= 3;	vtxIndexBuffer[11]	= 0;
 	}
 	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	if (isVBOSupported)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
 	
 	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
 	{
@@ -1499,30 +1622,100 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	CGLLockContext(cglDisplayContext);
 	
 	glBindTexture(GL_TEXTURE_2D, mainDisplayTexIndex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)potW, (GLsizei)potH, 0, GL_RGBA, glTexPixelFormat, glTexBack);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, glTexPixelFormat, glTexBack);
 	glBindTexture(GL_TEXTURE_2D, touchDisplayTexIndex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)potW, (GLsizei)potH, 0, GL_RGBA, glTexPixelFormat, glTexBack);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, glTexPixelFormat, glTexBack);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	// Set up texture coordinates and store in VBO
-	GLfloat texCoords[8*2] =	{0.0f, 0.0f,
-								 w, 0.0f,
-								 w, h,
-								 0.0f, h,
-								 
-								 0.0f, 0.0f,
-								 w, 0.0f,
-								 w, h,
-								 0.0f, h};
+	// Set up texture coordinates
+	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	= 0.0f;
+	texCoordBuffer[2]	=    w;		texCoordBuffer[3]	= 0.0f;
+	texCoordBuffer[4]	=    w;		texCoordBuffer[5]	=    h;
+	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	=    h;
 	
-	glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords), texCoords, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= 0.0f;
+	texCoordBuffer[10]	=    w;		texCoordBuffer[11]	= 0.0f;
+	texCoordBuffer[12]	=    w;		texCoordBuffer[13]	=    h;
+	texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=    h;
+	
+	if (isVBOSupported)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 8 * 2, texCoordBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 	
 	CGLUnlockContext(cglDisplayContext);
 }
 
 @end
+
+static GLint SetupShaders(GLuint *vShaderID, GLuint *fShaderID, GLuint *programID)
+{
+	GLint shaderStatus = GL_TRUE;
+	
+	*vShaderID = glCreateShader(GL_VERTEX_SHADER);
+	if (*vShaderID == 0)
+	{
+		NSLog(@"OpenGL Error - Failed to create vertex shader.");
+		return shaderStatus;
+	}
+	
+	glShaderSource(*vShaderID, 1, (const GLchar **)&vShader, NULL);
+	glCompileShader(*vShaderID);
+	glGetShaderiv(*vShaderID, GL_COMPILE_STATUS, &shaderStatus);
+	if (shaderStatus == GL_FALSE)
+	{
+		glDeleteShader(*vShaderID);
+		NSLog(@"OpenGL Error - Failed to compile vertex shader.");
+		return shaderStatus;
+	}
+	
+	*fShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	if (*fShaderID == 0)
+	{
+		glDeleteShader(*vShaderID);
+		NSLog(@"OpenGL Error - Failed to create fragment shader.");
+		return shaderStatus;
+	}
+	
+	glShaderSource(*fShaderID, 1, (const GLchar **)&fShader, NULL);
+	glCompileShader(*fShaderID);
+	glGetShaderiv(*fShaderID, GL_COMPILE_STATUS, &shaderStatus);
+	if (shaderStatus == GL_FALSE)
+	{
+		glDeleteShader(*vShaderID);
+		glDeleteShader(*fShaderID);
+		NSLog(@"OpenGL Error - Failed to compile fragment shader.");
+		return shaderStatus;
+	}
+	
+	*programID = glCreateProgram();
+	if (*programID == 0)
+	{
+		glDeleteShader(*vShaderID);
+		glDeleteShader(*fShaderID);
+		NSLog(@"OpenGL Error - Failed to create shader program.");
+		return shaderStatus;
+	}
+	
+	glAttachShader(*programID, *vShaderID);
+	glAttachShader(*programID, *fShaderID);
+	glLinkProgram(*programID);
+	glGetProgramiv(*programID, GL_LINK_STATUS, &shaderStatus);
+	if (shaderStatus == GL_FALSE)
+	{
+		glDeleteProgram(*programID);
+		glDeleteShader(*vShaderID);
+		glDeleteShader(*fShaderID);
+		NSLog(@"OpenGL Error - Failed to link shader program.");
+		return shaderStatus;
+	}
+	
+	glValidateProgram(*programID);
+	
+	return shaderStatus;
+}
 
 bool OSXOpenGLRendererInit()
 {
