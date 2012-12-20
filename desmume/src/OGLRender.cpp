@@ -92,21 +92,26 @@ static GLfloat polyAlpha = 1.0f;
 
 static u32 stencilStateSet = -1;
 
+// OpenGL Feature Support
 static char *extString = NULL;
+static bool isVBOSupported = false;
+static bool isFBOSupported = false;
+static bool isShaderSupported = false;
 
 // ClearImage/Rear-plane (FBO)
 static GLenum oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
 static GLuint oglClearImageBuffers = 0;
-static bool oglFBOdisabled = false;
 static u32 *oglClearImageColor = NULL;
 static float *oglClearImageDepth = NULL;
 static u16 *oglClearImageColorTemp = NULL;
 static u16 *oglClearImageDepthTemp = NULL;
 static u32 oglClearImageScrollOld = 0;
 
-// Shader states
-static bool hasShaders = false;
+// VBO
+static GLuint vboVertexID;
+static GLuint vboTexCoordID;
 
+// Shader states
 static GLuint vertexShaderID;
 static GLuint fragmentShaderID;
 static GLuint shaderProgram;
@@ -169,6 +174,11 @@ OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
 OGLEXT(PFNGLUNIFORM1FPROC,glUniform1f)
 OGLEXT(PFNGLUNIFORM2FPROC,glUniform2f)
+// VBO
+OGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
+OGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
+OGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
+OGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
 // FBO
 OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
 OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
@@ -264,7 +274,7 @@ static std::queue<GLuint> freeTextureIds;
 
 GLenum			oglToonTableTextureID;
 
-#define NOSHADERS(s)					{ hasShaders = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(%s)\n", s); return; }
+#define NOSHADERS(s)					{ isShaderSupported = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(%s)\n", s); return; }
 
 #define SHADER_COMPCHECK(s, t)				{ \
 	GLint status = GL_TRUE; \
@@ -305,7 +315,7 @@ GLenum			oglToonTableTextureID;
 
 static void createShaders()
 {
-	hasShaders = true;
+	isShaderSupported = true;
 
 #ifdef HAVE_LIBOSMESA
 	NOSHADERS("Shaders aren't supported by OSMesa.");
@@ -365,7 +375,7 @@ static void createShaders()
 
 static void OGLReset()
 {
-	if(hasShaders)
+	if(isShaderSupported)
 	{
 		hasTexture = false;
 		
@@ -392,7 +402,7 @@ static void OGLReset()
 
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 
-	if (!oglFBOdisabled)
+	if (isFBOSupported)
 	{
 		memset(oglClearImageColor, 0, 256*192*sizeof(u32));
 		memset(oglClearImageDepth, 0, 256*192*sizeof(float));
@@ -497,6 +507,11 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
+	// VBO
+	INITOGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
+	INITOGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
+	INITOGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
+	INITOGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
 	// FBO
 	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
 	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
@@ -526,7 +541,7 @@ static char OGLInit(void)
 
 	/* Assign the texture units : 0 for main textures, 1 for toon table */
 	/* Also init the locations for some variables in the shaders */
-	if(hasShaders)
+	if(isShaderSupported)
 	{
 		loc = glGetUniformLocation(shaderProgram, "tex2d");
 		glUniform1i(loc, 0);
@@ -554,8 +569,16 @@ static char OGLInit(void)
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
 		
 	}
+	
+	// VBO
+	isVBOSupported = (strstr(extString, "GL_ARB_vertex_buffer_object") == NULL)?false:true;
+	if (isVBOSupported)
+	{
+		glGenBuffersARB(1, &vboVertexID);
+		glGenBuffersARB(1, &vboTexCoordID);
+	}
 
-	if(hasShaders)
+	if(isShaderSupported)
 	{
 		glGenTextures (1, &oglToonTableTextureID);
 		glActiveTexture(GL_TEXTURE1);
@@ -581,9 +604,8 @@ static char OGLInit(void)
 	}
 
 	// FBO
-	oglFBOdisabled = (strstr(extString, "GL_ARB_framebuffer_object") == NULL)?true:false;
-
-	if (!oglFBOdisabled)
+	isFBOSupported = (strstr(extString, "GL_ARB_framebuffer_object") == NULL)?false:true;
+	if (isFBOSupported)
 	{
 		// ClearImage/Rear-plane
 		glGenTextures (2, &oglClearImageTextureID[0]);
@@ -620,7 +642,7 @@ static char OGLInit(void)
 		else
 		{
 			INFO("Failed to created OpenGL Framebuffer objects (FBO): ClearImage emulation disabled\n");
-			oglFBOdisabled = true;
+			isFBOSupported = false;
 		}
 
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -637,10 +659,9 @@ static char OGLInit(void)
 
 	ENDGL();
 	
-	// Make our own vertex index buffer for primitive conversions. This is
-	// necessary since OpenGL deprecates primitives like GL_QUADS and
-	// GL_QUAD_STRIP in later versions. (Maybe we can also use the buffer for
-	// future vertex batching?)
+	// Maintain our own vertex index buffer for vertex batching and primitive
+	// conversions. Such conversions are necessary since OpenGL deprecates
+	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
 	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
 	
 	OGLReset();
@@ -656,7 +677,7 @@ static void OGLClose()
 	if(!BEGINGL())
 		return;
 
-	if(hasShaders)
+	if(isShaderSupported)
 	{
 		glUseProgram(0);
 
@@ -667,7 +688,7 @@ static void OGLClose()
 		glDeleteShader(vertexShaderID);
 		glDeleteShader(fragmentShaderID);
 
-		hasShaders = false;
+		isShaderSupported = false;
 	}
 	else
 	{
@@ -687,8 +708,14 @@ static void OGLClose()
 	//glDeleteTextures(MAX_TEXTURE, &oglTempTextureID[0]);
 	glDeleteTextures(1, &oglToonTableTextureID);
 
+	if (isVBOSupported)
+	{
+		glDeleteBuffersARB(1, &vboVertexID);
+		glDeleteBuffersARB(1, &vboTexCoordID);
+	}
+	
 	// FBO
-	if (!oglFBOdisabled)
+	if (isFBOSupported)
 	{
 		glDeleteTextures(2, &oglClearImageTextureID[0]);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -733,11 +760,11 @@ static void setTexture(unsigned int format, unsigned int texpal)
 {
 	if (format == 0 || currentTexParams.texFormat == TEXMODE_NONE)
 	{
-		if(hasShaders && hasTexture) { glUniform1i(uniformHasTexture, 0); hasTexture = false; }
+		if(isShaderSupported && hasTexture) { glUniform1i(uniformHasTexture, 0); hasTexture = false; }
 		return;
 	}
 
-	if(hasShaders)
+	if(isShaderSupported)
 	{
 		if(!hasTexture) { glUniform1i(uniformHasTexture, 1); hasTexture = true; }
 		glActiveTexture(GL_TEXTURE0);
@@ -776,7 +803,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		}
 
 		//in either case, we need to setup the tex mtx
-		if (hasShaders)
+		if (isShaderSupported)
 		{
 			glUniform2f(uniformTexScale, currTexture->invSizeX, currTexture->invSizeY);
 		}
@@ -802,7 +829,7 @@ static void SetupPolygonRender(POLY *thePoly)
 		polyAlpha	= divide5bitBy31LUT[currentPolyAttr.alpha];
 	}
 	
-	if (hasShaders)
+	if (isShaderSupported)
 	{
 		glUniform1f(uniformPolyAlpha, polyAlpha);
 	}
@@ -883,7 +910,7 @@ static void SetupPolygonRender(POLY *thePoly)
 	{
 		lastEnvMode = currentPolyAttr.polygonMode;
 		
-		if(hasShaders)
+		if(isShaderSupported)
 		{
 			int _envModes[4] = {0, 1, (2 + gfx3d.renderState.shading), 0};
 			glUniform1i(uniformTextureBlendingMode, _envModes[currentPolyAttr.polygonMode]);
@@ -901,7 +928,7 @@ static void Control()
 {
 	if (gfx3d.renderState.enableTexturing)
 	{
-		if (hasShaders)
+		if (isShaderSupported)
 		{
 			glUniform1i(uniformHasTexture, 1);
 		}
@@ -912,7 +939,7 @@ static void Control()
 	}
 	else
 	{
-		if (hasShaders)
+		if (isShaderSupported)
 		{
 			glUniform1i(uniformHasTexture, 0);
 		}
@@ -1014,7 +1041,7 @@ static void GL_ReadFramebuffer()
 //			Harry Potter and the Order of the Phoenix
 static void oglClearImageFBO()
 {
-	if (oglFBOdisabled) return;
+	if (!isFBOSupported) return;
 	//printf("enableClearImage\n");
 	u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
 	u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
@@ -1083,7 +1110,7 @@ static void OGLRender()
 
 	Control();
 
-	if(hasShaders)
+	if(isShaderSupported)
 	{
 		//NOTE: this toon invalidation logic is hopelessly buggy.
 		//it may sometimes fail. it would be better to always recreate this data.
@@ -1110,7 +1137,7 @@ static void OGLRender()
 	glClearStencil((gfx3d.renderState.clearColor >> 24) & 0x3F);
 	u32 clearFlag = GL_STENCIL_BUFFER_BIT;
 
-	if (!oglFBOdisabled && gfx3d.renderState.enableClearImage)
+	if (isFBOSupported && gfx3d.renderState.enableClearImage)
 			oglClearImageFBO();
 	else
 	{
@@ -1128,7 +1155,7 @@ static void OGLRender()
 	
 	glClear(clearFlag);
 
-	if (!hasShaders)
+	if (!isShaderSupported)
 	{
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -1145,23 +1172,47 @@ static void OGLRender()
 		unsigned int vertIndexCount = 0;
 		GLenum polyPrimitive = 0;
 		unsigned int polyType = 0;
+		bool needVertexUpload = true;
 		
+		// Assign vertex attributes based on which OpenGL features we have.
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		
-		if (hasShaders)
+		if (isVBOSupported)
 		{
-			glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(VERT), &gfx3d.vertlist->list[0].color);
+			if (!isShaderSupported)
+			{
+				glBindBufferARB(GL_ARRAY_BUFFER, 0);
+				glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+			}
+			
+			glBindBufferARB(GL_ARRAY_BUFFER, vboVertexID);
+			glBufferDataARB(GL_ARRAY_BUFFER, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW);
+			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
+			glVertexPointer(4, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
+			
+			if (isShaderSupported)
+			{
+				glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+			}
 		}
 		else
 		{
-			glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
+			glVertexPointer(4, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
+			
+			if (isShaderSupported)
+			{
+				glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(VERT), &gfx3d.vertlist->list[0].color);
+			}
+			else
+			{
+				glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+			}
 		}
 		
-		glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
-		glVertexPointer(4, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
-		
+		// Render all polygons
 		for(unsigned int i = 0; i < polyCount; i++)
 		{
 			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
@@ -1188,7 +1239,7 @@ static void OGLRender()
 			}
 			
 			// Set up vertices
-			if (hasShaders)
+			if (isShaderSupported)
 			{
 				for(unsigned int j = 0; j < polyType; j++)
 				{
@@ -1217,14 +1268,15 @@ static void OGLRender()
 				for(unsigned int j = 0; j < polyType; j++)
 				{
 					GLushort vertIndex = poly->vertIndexes[j];
+					GLushort colorIndex = vertIndex * 4;
 					
 					// Consolidate the vertex color and the poly alpha to our internal color buffer
 					// so that OpenGL can use it.
 					VERT *vert = &gfx3d.vertlist->list[vertIndex];
-					color4fBuffer[(4*vertIndex)+0] = material_8bit_to_float[vert->color[0]];
-					color4fBuffer[(4*vertIndex)+1] = material_8bit_to_float[vert->color[1]];
-					color4fBuffer[(4*vertIndex)+2] = material_8bit_to_float[vert->color[2]];
-					color4fBuffer[(4*vertIndex)+3] = polyAlpha;
+					color4fBuffer[colorIndex+0] = material_8bit_to_float[vert->color[0]];
+					color4fBuffer[colorIndex+1] = material_8bit_to_float[vert->color[1]];
+					color4fBuffer[colorIndex+2] = material_8bit_to_float[vert->color[2]];
+					color4fBuffer[colorIndex+3] = polyAlpha;
 					
 					// While we're looping through our vertices, add each vertex index to
 					// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
@@ -1245,26 +1297,63 @@ static void OGLRender()
 				}
 			}
 			
-			// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
-			// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
-			// drawing more accurate this way, but it also allows GL_QUADS and
-			// GL_QUAD_STRIP primitives to properly draw as wireframe without the
-			// extra diagonal line.
-			if (currentPolyAttr.isWireframe)
+			needVertexUpload = true;
+			
+			// Look ahead to the next polygon to see if we can simply buffer the indices
+			// instead of uploading them now. We can buffer if all polygon states remain
+			// the same and we're not drawing a line loop or line strip.
+			if (i+1 < polyCount)
 			{
-				polyPrimitive = GL_LINE_LOOP;
-			}
-			else if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
-			{
-				// Redefine GL_QUADS and GL_QUAD_STRIP as GL_TRIANGLES since we converted them.
-				polyPrimitive = GL_TRIANGLES;
+				POLY *nextPoly = &gfx3d.polylist->list[gfx3d.indexlist.list[i+1]];
+				
+				if (lastPolyAttr == nextPoly->polyAttr &&
+					lastTexParams == nextPoly->texParam &&
+					lastTexPalette == nextPoly->texPalette &&
+					polyPrimitive == frm[nextPoly->vtxFormat] &&
+					polyPrimitive != GL_LINE_LOOP &&
+					polyPrimitive != GL_LINE_STRIP &&
+					frm[nextPoly->vtxFormat] != GL_LINE_LOOP &&
+					frm[nextPoly->vtxFormat] != GL_LINE_STRIP)
+				{
+					needVertexUpload = false;
+				}
 			}
 			
-			// Upload the vertices to the framebuffer.
-			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, vertIndexBuffer);
-			vertIndexCount = 0;
-		}
+			// Upload the vertices if necessary.
+			if (needVertexUpload)
+			{
+				// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
+				// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
+				// drawing more accurate this way, but it also allows GL_QUADS and
+				// GL_QUAD_STRIP primitives to properly draw as wireframe without the
+				// extra diagonal line.
+				if (currentPolyAttr.isWireframe)
+				{
+					polyPrimitive = GL_LINE_LOOP;
+				}
+				else if (polyPrimitive == GL_TRIANGLE_STRIP || polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+				{
+					// Redefine GL_QUADS and GL_QUAD_STRIP as GL_TRIANGLES since we converted them.
+					//
+					// Also redefine GL_TRIANGLE_STRIP as GL_TRIANGLES. This is okay since this
+					// is actually how the POLY struct stores triangle strip vertices, which is
+					// in sets of 3 vertices each. This redefinition is necessary since uploading
+					// more than 3 indices at a time will cause glDrawElements() to draw the
+					// triangle strip incorrectly.
+					polyPrimitive = GL_TRIANGLES;
+				}
 				
+				// Upload the vertices to the framebuffer.
+				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, vertIndexBuffer);
+				vertIndexCount = 0;
+			}
+		}
+		
+		if (isVBOSupported)
+		{
+			glBindBufferARB(GL_ARRAY_BUFFER, 0);
+		}
+		
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_COLOR_ARRAY);
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
