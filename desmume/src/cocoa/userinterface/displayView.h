@@ -122,6 +122,9 @@
 	CGLContextObj cglDisplayContext;
 	NSOpenGLContext *oglRendererContext;
 	
+	BOOL isVBOSupported;
+	BOOL isShadersSupported;
+	
 	DisplayViewDelegate *dispViewDelegate;
 	GLint glTexRenderStyle;
 	GLenum glTexPixelFormat;
@@ -130,10 +133,21 @@
 	
 	GLuint mainDisplayTexIndex;
 	GLuint touchDisplayTexIndex;
-	GLuint renderDisplayListIndex;
 	GLuint vboTexCoordID;
 	GLuint vboVertexID;
 	GLuint vboElementID;
+	
+	GLuint vertexShaderID;
+	GLuint fragmentShaderID;
+	GLuint shaderProgram;
+	
+	GLint uniformAngleDegrees;
+	GLint uniformScalar;
+	GLint uniformViewSize;
+	
+	GLint *vtxBuffer;
+	GLfloat *texCoordBuffer;
+	GLubyte *vtxIndexBuffer;
 }
 
 - (void) drawVideoFrame;
@@ -148,6 +162,7 @@ extern "C"
 {
 #endif
 
+static GLint SetupShaders(GLuint *vShaderID, GLuint *fShaderID, GLuint *programID);
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();
 void OSXOpenGLRendererEnd();
