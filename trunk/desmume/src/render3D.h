@@ -43,6 +43,9 @@ typedef struct Render3DInterface
 
 	//called when the emulator reconfigures its vram. you may need to invalidate your texture cache.
 	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
+	
+	//called when the emulator requests rendered graphics data
+	u8* (CALL_CONVENTION*	NDS_3D_GetLineData)				(u8 lineNumber);
 
 } GPU3DInterface;
 

@@ -2291,7 +2291,14 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 
 void gfx3d_GetLineData(int line, u8** dst)
 {
-	*dst = gfx3d_convertedScreen+((line)<<(8+2));
+	if (gpu3D->NDS_3D_GetLineData == NULL)
+	{
+		*dst = gfx3d_convertedScreen+((line)<<(8+2));
+	}
+	else
+	{
+		*dst = gpu3D->NDS_3D_GetLineData(line);
+	}
 }
 
 void gfx3d_GetLineData15bpp(int line, u16** dst)
