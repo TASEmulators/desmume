@@ -753,18 +753,9 @@ static char OGLInit(void)
 	if (CommonSettings.num_cores > 1)
 	{
 #ifdef _WINDOWS
-		if (!isPBOSupported)
-		{
-			// Don't know why this doesn't work on Windows when the GPU
-			// lacks PBO support. Someone please research.
-			enableMultithreading = false;
-		}
-		else
-		{
-			enableMultithreading = true;
-			oglReadPixelsTask.start(false);
-		}
-#else	
+		// Multithreading don't work on Windows, more study will be necessary
+		enableMultithreading = false;
+#else
 		enableMultithreading = true;
 		oglReadPixelsTask.start(false);
 #endif
