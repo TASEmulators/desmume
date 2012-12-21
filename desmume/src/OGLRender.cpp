@@ -75,6 +75,7 @@ static void ENDGL() {
 
 #include "shaders.h"
 #include "texcache.h"
+#include "utils/task.h"
 
 static DS_ALIGN(16) u8  GPU_screen3D			[256*192*4];
 
@@ -82,7 +83,12 @@ static const GLenum map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const GLint texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const GLenum depthFunc[2] = { GL_LESS, GL_EQUAL };
 
-/// Polygon Info
+// Multithreading States
+static bool enableMultithreading = false;
+static bool isReadPixelsWorking = false;
+static Task oglReadPixelsTask;
+
+// Polygon Info
 static PolygonAttributes currentPolyAttr;
 static PolygonTexParams currentTexParams;
 static GLenum depthFuncMode = 0;
@@ -95,6 +101,7 @@ static u32 stencilStateSet = -1;
 // OpenGL Feature Support
 static char *extString = NULL;
 static bool isVBOSupported = false;
+static bool isPBOSupported = false;
 static bool isFBOSupported = false;
 static bool isShaderSupported = false;
 
@@ -110,6 +117,10 @@ static u32 oglClearImageScrollOld = 0;
 // VBO
 static GLuint vboVertexID;
 static GLuint vboTexCoordID;
+
+// PBO
+static GLuint pboRenderDataID[2];
+static u8 *pboRenderBuffer[2];
 
 // Shader states
 static GLuint vertexShaderID;
@@ -174,11 +185,13 @@ OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
 OGLEXT(PFNGLUNIFORM1FPROC,glUniform1f)
 OGLEXT(PFNGLUNIFORM2FPROC,glUniform2f)
-// VBO
+// VBO and PBO
 OGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
 OGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
 OGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
 OGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
+OGLEXT(PFNGLMAPBUFFERPROC,glMapBufferARB)
+OGLEXT(PFNGLUNMAPBUFFERPROC,glUnmapBufferARB)
 // FBO
 OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
 OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
@@ -193,6 +206,64 @@ OGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT);
 OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
 
+static void* execReadPixelsTask(void *arg)
+{
+	u8 *pixBuffer = NULL;
+	
+	if (isPBOSupported)
+	{
+		unsigned int *bufferIndex = (unsigned int *)arg;
+		
+		if(!BEGINGL()) return 0;
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[*bufferIndex]);
+		
+		pboRenderBuffer[*bufferIndex] = (u8 *)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+		if (pboRenderBuffer[*bufferIndex] != NULL)
+		{
+			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+		}
+		
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		ENDGL();
+		
+		pixBuffer = pboRenderBuffer[*bufferIndex];
+	}
+	else
+	{
+		if(!BEGINGL()) return 0;
+		glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, GPU_screen3D);
+		ENDGL();
+		
+		pixBuffer = GPU_screen3D;
+	}
+	
+	//convert the pixels to a different format which is more convenient
+	//is it safe to modify the screen buffer? if not, we could make a temp copy
+	for(int i=0,y=191;y>=0;y--)
+	{
+		u8* dst = gfx3d_convertedScreen + (y<<(8+2));
+		
+		for(int x=0;x<256;x++,i++)
+		{
+			u32 &u32screen3D = ((u32*)pixBuffer)[i];
+			u32screen3D>>=2;
+			u32screen3D &= 0x3F3F3F3F;
+			
+			const int t = i<<2;
+			const u8 a = pixBuffer[t+3] >> 1;
+			const u8 r = pixBuffer[t+2];
+			const u8 g = pixBuffer[t+1];
+			const u8 b = pixBuffer[t+0];
+			
+			*dst++ = r;
+			*dst++ = g;
+			*dst++ = b;
+			*dst++ = a;
+		}
+	}
+	
+	return 0;
+}
 
 //opengl state caching:
 //This is of dubious performance assistance, but it is easy to take out so I am leaving it for now.
@@ -507,11 +578,13 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
-	// VBO
+	// VBO and PBO
 	INITOGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
 	INITOGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
 	INITOGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
 	INITOGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
+	INITOGLEXT(PFNGLMAPBUFFERPROC,glMapBufferARB)
+	INITOGLEXT(PFNGLUNMAPBUFFERPROC,glUnmapBufferARB)
 	// FBO
 	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT);
 	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT);
@@ -576,6 +649,21 @@ static char OGLInit(void)
 	{
 		glGenBuffersARB(1, &vboVertexID);
 		glGenBuffersARB(1, &vboTexCoordID);
+	}
+	
+	// PBO
+	isPBOSupported = (strstr(extString, "GL_ARB_pixel_buffer_object") == NULL)?false:true;
+	if (isPBOSupported)
+	{
+		glGenBuffersARB(2, pboRenderDataID);
+		for (unsigned int i = 0; i < 2; i++)
+		{
+			glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[i]);
+			glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, 256 * 192 * sizeof(u32), NULL, GL_STREAM_READ_ARB);
+			pboRenderBuffer[i] = NULL;
+		}
+		
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 	}
 
 	if(isShaderSupported)
@@ -659,6 +747,33 @@ static char OGLInit(void)
 
 	ENDGL();
 	
+	// Set up multithreading
+	isReadPixelsWorking = false;
+
+	if (CommonSettings.num_cores > 1)
+	{
+#ifdef _WINDOWS
+		if (!isPBOSupported)
+		{
+			// Don't know why this doesn't work on Windows when the GPU
+			// lacks PBO support. Someone please research.
+			enableMultithreading = false;
+		}
+		else
+		{
+			enableMultithreading = true;
+			oglReadPixelsTask.start(false);
+		}
+#else	
+		enableMultithreading = true;
+		oglReadPixelsTask.start(false);
+#endif
+	}
+	else
+	{
+		enableMultithreading = false;
+	}
+	
 	// Maintain our own vertex index buffer for vertex batching and primitive
 	// conversions. Such conversions are necessary since OpenGL deprecates
 	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
@@ -714,6 +829,13 @@ static void OGLClose()
 		glDeleteBuffersARB(1, &vboTexCoordID);
 	}
 	
+	if (isPBOSupported)
+	{
+		glDeleteBuffersARB(2, pboRenderDataID);
+		pboRenderBuffer[0] = NULL;
+		pboRenderBuffer[1] = NULL;
+	}
+	
 	// FBO
 	if (isFBOSupported)
 	{
@@ -747,6 +869,13 @@ static void OGLClose()
 	}
 
 	ENDGL();
+	
+	if (enableMultithreading)
+	{
+		oglReadPixelsTask.finish();
+		oglReadPixelsTask.shutdown();
+		isReadPixelsWorking = false;
+	}
 }
 
 static void texDeleteCallback(TexCacheItem* item)
@@ -968,71 +1097,42 @@ static void Control()
 	}
 }
 
-
 static void GL_ReadFramebuffer()
 {
-	if(!BEGINGL()) return;
-	glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, GPU_screen3D);	
-	ENDGL();
-
-	//convert the pixels to a different format which is more convenient
-	//is it safe to modify the screen buffer? if not, we could make a temp copy
-	for(int i=0,y=191;y>=0;y--)
+	static unsigned int bufferIndex = 0;
+	
+	bufferIndex = (bufferIndex + 1) % 2;
+	
+	if (isPBOSupported)
 	{
-		u8* dst = gfx3d_convertedScreen + (y<<(8+2));
-
-		for(int x=0;x<256;x++,i++)
-		{
-			u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
-			u32screen3D>>=2;
-			u32screen3D &= 0x3F3F3F3F;
-			
-			const int t = i<<2;
-			const u8 a = GPU_screen3D[t+3] >> 1;
-			const u8 r = GPU_screen3D[t+2];
-			const u8 g = GPU_screen3D[t+1];
-			const u8 b = GPU_screen3D[t+0];
-			*dst++ = r;
-			*dst++ = g;
-			*dst++ = b;
-			*dst++ = a;
-		}
+		if(!BEGINGL()) return;
+		
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
+		glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		
+		ENDGL();
 	}
-
-#if 0
-	//convert the pixels to a different format which is more convenient
-	//is it safe to modify the screen buffer? if not, we could make a temp copy
-	for(int i=0,y=191;y>=0;y--)
+	
+	// If multithreading is enabled, call glReadPixels() on a separate thread
+	// (or glMapBuffer()/glUnmapBuffer() if PBOs are supported). This is a big
+	// deal, since these functions can cause the thread to block. If 3D rendering
+	// is happening on the same thread as the core emulation, (which is the most
+	// likely scenario), this can make the thread stall.
+	//
+	// We can get away with doing this since 3D rendering begins on H-Start,
+	// but the emulation doesn't actually need the rendered data until H-Blank.
+	// So in between that time, we can let these functions block the other thread
+	// and then only block this thread for the remaining time difference.
+	if (enableMultithreading)
 	{
-		u16* dst = gfx3d_convertedScreen + (y<<8);
-		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
-
-			//I dont know much about this kind of stuff, but this seems to help
-			//for some reason I couldnt make the intrinsics work 
-			//u8* u8screen3D =  (u8*)&((u32*)GPU_screen3D)[i];
-			/*#define PREFETCH32(X,Y) __asm { prefetchnta [u8screen3D+32*0x##X##Y] }
-			#define PREFETCH128(X) 	PREFETCH32(X,0) PREFETCH32(X,1) PREFETCH32(X,2) PREFETCH32(X,3) \
-									PREFETCH32(X,4) PREFETCH32(X,5) PREFETCH32(X,6) PREFETCH32(X,7) \
-									PREFETCH32(X,8) PREFETCH32(X,9) PREFETCH32(X,A) PREFETCH32(X,B) \
-									PREFETCH32(X,C) PREFETCH32(X,D) PREFETCH32(X,E) PREFETCH32(X,F) 
-			PREFETCH128(0); PREFETCH128(1);*/
-
-		for(int x=0;x<256;x++,i++)
-		{
-			u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
-			u32screen3D>>=3;
-			u32screen3D &= 0x1F1F1F1F;
-
-			const int t = i<<2;
-			const u8 a = GPU_screen3D[t+3];
-			const u8 r = GPU_screen3D[t+2];
-			const u8 g = GPU_screen3D[t+1];
-			const u8 b = GPU_screen3D[t+0];
-			dst[x] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
-			dstAlpha[x] = a;
-		}
+		isReadPixelsWorking = true;
+		oglReadPixelsTask.execute(execReadPixelsTask, &bufferIndex);
 	}
-#endif
+	else
+	{
+		execReadPixelsTask(&bufferIndex);
+	}
 }
 
 // TODO: optimize
@@ -1372,6 +1472,18 @@ static void OGLVramReconfigureSignal()
 	TexCache_Invalidate();
 }
 
+static u8* OGLGetLineData(u8 lineNumber)
+{
+	// If OpenGL is still reading back pixels on a separate thread, wait for it to finish.
+	if (isReadPixelsWorking)
+	{
+		oglReadPixelsTask.finish();
+		isReadPixelsWorking = false;
+	}
+	
+	return ( gfx3d_convertedScreen + (lineNumber << (8+2)) );
+}
+
 GPU3DInterface gpu3Dgl = {
 	"OpenGL",
 	OGLInit,
@@ -1379,4 +1491,5 @@ GPU3DInterface gpu3Dgl = {
 	OGLClose,
 	OGLRender,
 	OGLVramReconfigureSignal,
+	OGLGetLineData
 };

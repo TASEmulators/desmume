@@ -30,6 +30,7 @@ GPU3DInterface gpu3DNull = {
 	NDS_nullFunc1, //NDS_3D_Close
 	NDS_nullFunc1, //NDS_3D_Render
 	NDS_nullFunc1, //NDS_3D_VramReconfigureSignal
+	0
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;

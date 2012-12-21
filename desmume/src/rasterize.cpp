@@ -1650,5 +1650,6 @@ GPU3DInterface gpu3DRasterize = {
 	SoftRastClose,
 	SoftRastRender,
 	SoftRastVramReconfigureSignal,
+	NULL
 };
 
