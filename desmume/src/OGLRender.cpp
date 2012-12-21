@@ -212,13 +212,13 @@ static void* execReadPixelsTask(void *arg)
 	
 	if (isPBOSupported)
 	{
-		unsigned int *bufferIndex = (unsigned int *)arg;
+		unsigned int bufferIndex = *(unsigned int *)arg;
 		
 		if(!BEGINGL()) return 0;
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[*bufferIndex]);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
 		
-		pboRenderBuffer[*bufferIndex] = (u8 *)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
-		if (pboRenderBuffer[*bufferIndex] != NULL)
+		pboRenderBuffer[bufferIndex] = (u8 *)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+		if (pboRenderBuffer[bufferIndex] != NULL)
 		{
 			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		}
@@ -226,7 +226,7 @@ static void* execReadPixelsTask(void *arg)
 		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 		ENDGL();
 		
-		pixBuffer = pboRenderBuffer[*bufferIndex];
+		pixBuffer = pboRenderBuffer[bufferIndex];
 	}
 	else
 	{
@@ -747,14 +747,30 @@ static char OGLInit(void)
 
 	ENDGL();
 	
+	// Maintain our own vertex index buffer for vertex batching and primitive
+	// conversions. Such conversions are necessary since OpenGL deprecates
+	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
+	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
+	
+	OGLReset();
+	
 	// Set up multithreading
 	isReadPixelsWorking = false;
 
 	if (CommonSettings.num_cores > 1)
 	{
 #ifdef _WINDOWS
-		// Multithreading don't work on Windows, more study will be necessary
-		enableMultithreading = false;
+		if (!isPBOSupported)
+		{
+			// Don't know why this doesn't work on Windows when the GPU
+			// lacks PBO support. Someone please research.
+			enableMultithreading = false;
+		}
+		else
+		{
+			enableMultithreading = true;
+			oglReadPixelsTask.start(false);
+		}
 #else
 		enableMultithreading = true;
 		oglReadPixelsTask.start(false);
@@ -764,19 +780,19 @@ static char OGLInit(void)
 	{
 		enableMultithreading = false;
 	}
-	
-	// Maintain our own vertex index buffer for vertex batching and primitive
-	// conversions. Such conversions are necessary since OpenGL deprecates
-	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
-	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
-	
-	OGLReset();
 
 	return 1;
 }
 
 static void OGLClose()
 {
+	if (enableMultithreading)
+	{
+		oglReadPixelsTask.finish();
+		oglReadPixelsTask.shutdown();
+		isReadPixelsWorking = false;
+	}
+	
 	delete [] vertIndexBuffer;
 	vertIndexBuffer = NULL;
 	
@@ -860,13 +876,6 @@ static void OGLClose()
 	}
 
 	ENDGL();
-	
-	if (enableMultithreading)
-	{
-		oglReadPixelsTask.finish();
-		oglReadPixelsTask.shutdown();
-		isReadPixelsWorking = false;
-	}
 }
 
 static void texDeleteCallback(TexCacheItem* item)
@@ -1092,12 +1101,17 @@ static void GL_ReadFramebuffer()
 {
 	static unsigned int bufferIndex = 0;
 	
-	bufferIndex = (bufferIndex + 1) % 2;
+	if (enableMultithreading && isReadPixelsWorking)
+	{
+		oglReadPixelsTask.finish();
+		isReadPixelsWorking = false;
+	}
 	
 	if (isPBOSupported)
 	{
 		if(!BEGINGL()) return;
 		
+		bufferIndex = (bufferIndex + 1) % 2;
 		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
 		glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
 		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
