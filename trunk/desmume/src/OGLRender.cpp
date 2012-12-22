@@ -78,6 +78,7 @@ static void ENDGL() {
 #include "utils/task.h"
 
 static DS_ALIGN(16) u8  GPU_screen3D			[256*192*4];
+static bool gpuScreen3DHasNewData = false;
 
 static const GLenum map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const GLint texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
@@ -120,7 +121,9 @@ static GLuint vboTexCoordID;
 
 // PBO
 static GLuint pboRenderDataID[2];
-static u8 *pboRenderBuffer[2];
+static u8 *pboRenderBuffer[2] = {NULL, NULL};
+static bool pboHasNewData[2] = {false, false};
+static unsigned int pboBufferIndex = 0;
 
 // Shader states
 static GLuint vertexShaderID;
@@ -206,6 +209,39 @@ OGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT);
 OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
 
+static void OGLConvertFramebuffer(u8 *pixBuffer)
+{
+	if (pixBuffer == NULL)
+	{
+		return;
+	}
+	
+	//convert the pixels to a different format which is more convenient
+	//is it safe to modify the screen buffer? if not, we could make a temp copy
+	for(int i=0,y=191;y>=0;y--)
+	{
+		u8* dst = gfx3d_convertedScreen + (y<<(8+2));
+		
+		for(int x=0;x<256;x++,i++)
+		{
+			u32 &u32screen3D = ((u32*)pixBuffer)[i];
+			u32screen3D>>=2;
+			u32screen3D &= 0x3F3F3F3F;
+			
+			const int t = i<<2;
+			const u8 a = pixBuffer[t+3] >> 1;
+			const u8 r = pixBuffer[t+2];
+			const u8 g = pixBuffer[t+1];
+			const u8 b = pixBuffer[t+0];
+			
+			*dst++ = r;
+			*dst++ = g;
+			*dst++ = b;
+			*dst++ = a;
+		}
+	}
+}
+
 static void* execReadPixelsTask(void *arg)
 {
 	u8 *pixBuffer = NULL;
@@ -237,30 +273,7 @@ static void* execReadPixelsTask(void *arg)
 		pixBuffer = GPU_screen3D;
 	}
 	
-	//convert the pixels to a different format which is more convenient
-	//is it safe to modify the screen buffer? if not, we could make a temp copy
-	for(int i=0,y=191;y>=0;y--)
-	{
-		u8* dst = gfx3d_convertedScreen + (y<<(8+2));
-		
-		for(int x=0;x<256;x++,i++)
-		{
-			u32 &u32screen3D = ((u32*)pixBuffer)[i];
-			u32screen3D>>=2;
-			u32screen3D &= 0x3F3F3F3F;
-			
-			const int t = i<<2;
-			const u8 a = pixBuffer[t+3] >> 1;
-			const u8 r = pixBuffer[t+2];
-			const u8 g = pixBuffer[t+1];
-			const u8 b = pixBuffer[t+0];
-			
-			*dst++ = r;
-			*dst++ = g;
-			*dst++ = b;
-			*dst++ = a;
-		}
-	}
+	OGLConvertFramebuffer(pixBuffer);
 	
 	return 0;
 }
@@ -661,9 +674,14 @@ static char OGLInit(void)
 			glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[i]);
 			glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, 256 * 192 * sizeof(u32), NULL, GL_STREAM_READ_ARB);
 			pboRenderBuffer[i] = NULL;
+			pboHasNewData[i] = false;
 		}
 		
 		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+	}
+	else
+	{
+		gpuScreen3DHasNewData = false;
 	}
 
 	if(isShaderSupported)
@@ -841,6 +859,12 @@ static void OGLClose()
 		glDeleteBuffersARB(2, pboRenderDataID);
 		pboRenderBuffer[0] = NULL;
 		pboRenderBuffer[1] = NULL;
+		pboHasNewData[0] = false;
+		pboHasNewData[1] = false;
+	}
+	else
+	{
+		gpuScreen3DHasNewData = false;
 	}
 	
 	// FBO
@@ -1107,19 +1131,7 @@ static void GL_ReadFramebuffer()
 		isReadPixelsWorking = false;
 	}
 	
-	if (isPBOSupported)
-	{
-		if(!BEGINGL()) return;
-		
-		bufferIndex = (bufferIndex + 1) % 2;
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
-		glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-		
-		ENDGL();
-	}
-	
-	// If multithreading is enabled, call glReadPixels() on a separate thread
+	// If multithreading is ENABLED, call glReadPixels() on a separate thread
 	// (or glMapBuffer()/glUnmapBuffer() if PBOs are supported). This is a big
 	// deal, since these functions can cause the thread to block. If 3D rendering
 	// is happening on the same thread as the core emulation, (which is the most
@@ -1129,14 +1141,44 @@ static void GL_ReadFramebuffer()
 	// but the emulation doesn't actually need the rendered data until H-Blank.
 	// So in between that time, we can let these functions block the other thread
 	// and then only block this thread for the remaining time difference.
-	if (enableMultithreading)
+	//
+	// But if multithreading is DISABLED, then we defer our pixel reading until
+	// H-Blank, and let that logic determine whether a pixel read is needed or not.
+	// This can save us some time in cases where games don't require the 3D layer
+	// for this particular frame.
+	if (isPBOSupported)
 	{
-		isReadPixelsWorking = true;
-		oglReadPixelsTask.execute(execReadPixelsTask, &bufferIndex);
+		if(!BEGINGL()) return;
+		
+		pboBufferIndex = (pboBufferIndex + 1) % 2;
+		bufferIndex = pboBufferIndex;
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[pboBufferIndex]);
+		glReadPixels(0, 0, 256, 192, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		
+		ENDGL();
+		
+		if (enableMultithreading)
+		{
+			isReadPixelsWorking = true;
+			oglReadPixelsTask.execute(execReadPixelsTask, &bufferIndex);
+		}
+		else
+		{
+			pboHasNewData[pboBufferIndex] = true;
+		}
 	}
 	else
 	{
-		execReadPixelsTask(&bufferIndex);
+		if (enableMultithreading)
+		{
+			isReadPixelsWorking = true;
+			oglReadPixelsTask.execute(execReadPixelsTask, &bufferIndex);
+		}
+		else
+		{
+			gpuScreen3DHasNewData = true;
+		}
 	}
 }
 
@@ -1484,6 +1526,19 @@ static u8* OGLGetLineData(u8 lineNumber)
 	{
 		oglReadPixelsTask.finish();
 		isReadPixelsWorking = false;
+	}
+	
+	// If we're doing a pixel read on this thread and we have new rendered data,
+	// then do the pixel read now.
+	if (pboHasNewData[pboBufferIndex])
+	{
+		execReadPixelsTask(&pboBufferIndex);
+		pboHasNewData[pboBufferIndex] = false;
+	}
+	else if (gpuScreen3DHasNewData)
+	{
+		execReadPixelsTask(NULL);
+		gpuScreen3DHasNewData = false;
 	}
 	
 	return ( gfx3d_convertedScreen + (lineNumber << (8+2)) );
