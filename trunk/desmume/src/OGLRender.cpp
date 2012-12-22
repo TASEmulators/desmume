@@ -136,6 +136,9 @@ static GLint uniformHasTexture;
 static GLint uniformTextureBlendingMode;
 static GLint uniformWBuffer;
 
+static u16 currentToonTable16[32];
+static bool toonTableNeedsUpdate = true;
+
 static bool hasTexture = false;
 static TexCacheItem* currTexture = NULL;
 
@@ -692,13 +695,11 @@ static char OGLInit(void)
 		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
-
+		glBindTexture(GL_TEXTURE_1D, 0);
+		
 		// Restore Toon table
-		u32 rgbToonTable[32];
-		for(int i=0;i<32;i++)
-			rgbToonTable[i] = RGB15TO32_NOALPHA(gfx3d.renderState.u16ToonTable[i]);
-		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rgbToonTable[0]);
-		gfx3d.state.invalidateToon = false;
+		memcpy(currentToonTable16, gfx3d.renderState.u16ToonTable, sizeof(currentToonTable16));
+		toonTableNeedsUpdate = true;
 	}
 	else
 	{
@@ -1066,7 +1067,23 @@ static void SetupPolygonRender(POLY *thePoly)
 		if(isShaderSupported)
 		{
 			int _envModes[4] = {0, 1, (2 + gfx3d.renderState.shading), 0};
-			glUniform1i(uniformTextureBlendingMode, _envModes[currentPolyAttr.polygonMode]);
+			GLint texBlendMode = _envModes[currentPolyAttr.polygonMode];
+			
+			glUniform1i(uniformTextureBlendingMode, texBlendMode);
+			
+			if ( toonTableNeedsUpdate && (texBlendMode == 2 || texBlendMode == 3) )
+			{
+				u32 newToonTable[32];
+				for(int i=0;i<32;i++)
+					newToonTable[i] = RGB15TO32_NOALPHA(currentToonTable16[i]);
+				
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
+				glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, newToonTable);
+				glBindTexture(GL_TEXTURE_1D, 0);
+				
+				toonTableNeedsUpdate = false;
+			}
 		}
 		else
 		{
@@ -1259,23 +1276,13 @@ static void OGLRender()
 
 	if(isShaderSupported)
 	{
-		//NOTE: this toon invalidation logic is hopelessly buggy.
-		//it may sometimes fail. it would be better to always recreate this data.
-		//but, that may be slow. since the cost of uploading that texture is huge in opengl (relative to rasterizer).
-		//someone please study it.
-		//here is a suggestion: it may make sense to memcmp the toon tables and upload only when it actually changes
-		if (gfx3d.renderState.invalidateToon)
+		// Update the toon table if it changed.
+		if (memcmp(currentToonTable16, gfx3d.renderState.u16ToonTable, sizeof(currentToonTable16)))
 		{
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
-
-			u32 rgbToonTable[32];
-			for(int i=0;i<32;i++)
-				rgbToonTable[i] = RGB15TO32_NOALPHA(gfx3d.renderState.u16ToonTable[i]);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, &rgbToonTable[0]);
-			gfx3d.state.invalidateToon = false;
+			memcpy(currentToonTable16, gfx3d.renderState.u16ToonTable, sizeof(currentToonTable16));
+			toonTableNeedsUpdate = true;
 		}
-
+		
 		glUniform1i(uniformWBuffer, gfx3d.renderState.wbuffer);
 	}
 
