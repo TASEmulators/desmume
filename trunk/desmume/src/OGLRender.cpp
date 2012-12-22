@@ -1080,7 +1080,6 @@ static void SetupPolygonRender(POLY *thePoly)
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
 				glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, newToonTable);
-				glBindTexture(GL_TEXTURE_1D, 0);
 				
 				toonTableNeedsUpdate = false;
 			}
