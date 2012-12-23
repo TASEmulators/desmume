@@ -135,6 +135,8 @@ static GLint uniformTexScale;
 static GLint uniformHasTexture;
 static GLint uniformTextureBlendingMode;
 static GLint uniformWBuffer;
+static GLint uniformEnableAlphaTest;
+static GLint uniformAlphaTestRef;
 
 static u16 currentToonTable16[32];
 static bool toonTableNeedsUpdate = true;
@@ -470,9 +472,11 @@ static void OGLReset()
 		{
 			glUniform1f(uniformPolyAlpha, 1.0f);
 			glUniform2f(uniformTexScale, 1.0f, 1.0f);
-			glUniform1i(uniformHasTexture, 0);
+			glUniform1i(uniformHasTexture, GL_FALSE);
 			glUniform1i(uniformTextureBlendingMode, 0);
 			glUniform1i(uniformWBuffer, 0);
+			glUniform1i(uniformEnableAlphaTest, GL_TRUE);
+			glUniform1f(uniformAlphaTestRef, 0.0f);
 			
 			ENDGL();
 		}
@@ -545,8 +549,6 @@ static void expandFreeTextures()
 
 static char OGLInit(void)
 {
-	GLint loc = 0;
-
 	if(!oglrender_init)
 		return 0;
 	if(!oglrender_init())
@@ -554,29 +556,22 @@ static char OGLInit(void)
 
 	if(!BEGINGL())
 		return 0;
-
-	for (u8 i = 0; i < 255; i++)
-		material_8bit_to_float[i] = (GLfloat)(i<<2)/255.f;
-
-	extString = (char*)glGetString(GL_EXTENSIONS);
-
-	expandFreeTextures();
-
-	glPixelStorei(GL_PACK_ALIGNMENT,8);
-
-	xglEnable		(GL_NORMALIZE);
-	xglEnable		(GL_DEPTH_TEST);
-	glEnable		(GL_TEXTURE_1D);
-	glEnable		(GL_TEXTURE_2D);
-
-	glAlphaFunc		(GL_GREATER, 0);
-	xglEnable		(GL_ALPHA_TEST);
-
+	
 	glViewport(0, 0, 256, 192);
 	if (glGetError() != GL_NO_ERROR)
 		return 0;
+	
+	extString = (char*)glGetString(GL_EXTENSIONS);
 
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (u8 i = 0; i < 255; i++)
+		material_8bit_to_float[i] = (GLfloat)(i<<2)/255.f;
+	
+	expandFreeTextures();
+	
+	// Maintain our own vertex index buffer for vertex batching and primitive
+	// conversions. Such conversions are necessary since OpenGL deprecates
+	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
+	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
 
 #ifndef __APPLE__
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
@@ -624,42 +619,8 @@ static char OGLInit(void)
 #if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
-
-	/* Create the shaders */
-	createShaders();
-
-	/* Assign the texture units : 0 for main textures, 1 for toon table */
-	/* Also init the locations for some variables in the shaders */
-	if(isShaderSupported)
-	{
-		loc = glGetUniformLocation(shaderProgram, "tex2d");
-		glUniform1i(loc, 0);
-
-		loc = glGetUniformLocation(shaderProgram, "toonTable");
-		glUniform1i(loc, 1);
-		
-		uniformPolyAlpha = glGetUniformLocation(shaderProgram, "polyAlpha");
-		uniformTexScale = glGetUniformLocation(shaderProgram, "texScale");
-		uniformHasTexture = glGetUniformLocation(shaderProgram, "hasTexture");
-		uniformTextureBlendingMode = glGetUniformLocation(shaderProgram, "texBlending");
-		uniformWBuffer = glGetUniformLocation(shaderProgram, "oglWBuffer");
-	}
-
-	//we want to use alpha destination blending so we can track the last-rendered alpha value
-	if(glBlendFuncSeparate != NULL)
-	{
-		if (glBlendEquationSeparate != NULL)
-		{
-			// test: new super mario brothers renders the stormclouds at the beginning 
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-			glBlendEquationSeparate( GL_FUNC_ADD, GL_MAX );
-		}
-		else
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
-		
-	}
 	
-	// VBO
+	// VBO Setup
 	isVBOSupported = (strstr(extString, "GL_ARB_vertex_buffer_object") == NULL)?false:true;
 	if (isVBOSupported)
 	{
@@ -667,7 +628,7 @@ static char OGLInit(void)
 		glGenBuffersARB(1, &vboTexCoordID);
 	}
 	
-	// PBO
+	// PBO Setup
 	isPBOSupported = (strstr(extString, "GL_ARB_pixel_buffer_object") == NULL)?false:true;
 	if (isPBOSupported)
 	{
@@ -686,9 +647,36 @@ static char OGLInit(void)
 	{
 		gpuScreen3DHasNewData = false;
 	}
-
+	
+	// Render State Setup (common to both shaders and fixed-function pipeline)
+	xglEnable(GL_DEPTH_TEST);
+	glPixelStorei(GL_PACK_ALIGNMENT, 8);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	//we want to use alpha destination blending so we can track the last-rendered alpha value
+	if(glBlendFuncSeparate != NULL)
+	{
+		if (glBlendEquationSeparate != NULL)
+		{
+			// test: new super mario brothers renders the stormclouds at the beginning 
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+			glBlendEquationSeparate( GL_FUNC_ADD, GL_MAX );
+		}
+		else
+		{
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+		}
+	}
+	
+	// Shader Setup
+	createShaders();
 	if(isShaderSupported)
 	{
+		// The toon table is a special 1D texture where each pixel corresponds
+		// to a specific color in the toon table.
+		//
+		// Set up the toon table and assign it to texture unit 1 (main textures
+		// will be on texture unit 0).
 		glGenTextures (1, &oglToonTableTextureID);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
@@ -697,12 +685,32 @@ static char OGLInit(void)
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
 		glBindTexture(GL_TEXTURE_1D, 0);
 		
-		// Restore Toon table
 		memcpy(currentToonTable16, gfx3d.renderState.u16ToonTable, sizeof(currentToonTable16));
 		toonTableNeedsUpdate = true;
+		
+		// Set up shader uniforms
+		GLint uniformTex2DSampler = glGetUniformLocation(shaderProgram, "tex2d");
+		glUniform1i(uniformTex2DSampler, 0);
+		GLint uniformToonTable = glGetUniformLocation(shaderProgram, "toonTable");
+		glUniform1i(uniformToonTable, 1);
+		
+		uniformPolyAlpha = glGetUniformLocation(shaderProgram, "polyAlpha");
+		uniformTexScale = glGetUniformLocation(shaderProgram, "texScale");
+		uniformHasTexture = glGetUniformLocation(shaderProgram, "hasTexture");
+		uniformTextureBlendingMode = glGetUniformLocation(shaderProgram, "texBlending");
+		uniformWBuffer = glGetUniformLocation(shaderProgram, "oglWBuffer");
+		uniformEnableAlphaTest = glGetUniformLocation(shaderProgram, "enableAlphaTest");
+		uniformAlphaTestRef = glGetUniformLocation(shaderProgram, "alphaTestRef");
 	}
 	else
 	{
+		// Set up fixed-function pipeline render states.
+		xglEnable(GL_NORMALIZE);
+		glEnable(GL_TEXTURE_1D);
+		glEnable(GL_TEXTURE_2D);
+		glAlphaFunc(GL_GREATER, 0);
+		xglEnable(GL_ALPHA_TEST);
+		
 		// Map the vertex list's colors with 4 floats per color. This is being done
 		// because OpenGL needs 4-colors per vertex to support translucency. (The DS
 		// uses 3-colors per vertex, and adds alpha through the poly, so we can't
@@ -710,7 +718,7 @@ static char OGLInit(void)
 		color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
 	}
 
-	// FBO
+	// FBO Setup
 	isFBOSupported = (strstr(extString, "GL_ARB_framebuffer_object") == NULL)?false:true;
 	if (isFBOSupported)
 	{
@@ -763,14 +771,7 @@ static char OGLInit(void)
 
 	ENDGL();
 	
-	// Maintain our own vertex index buffer for vertex batching and primitive
-	// conversions. Such conversions are necessary since OpenGL deprecates
-	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
-	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
-	
-	OGLReset();
-	
-	// Set up multithreading
+	// Multithreading Setup
 	isReadPixelsWorking = false;
 
 	if (CommonSettings.num_cores > 1)
@@ -789,6 +790,9 @@ static char OGLInit(void)
 	{
 		enableMultithreading = false;
 	}
+	
+	// Initialization finished -- reset the renderer
+	OGLReset();
 
 	return 1;
 }
@@ -904,13 +908,13 @@ static void setTexture(unsigned int format, unsigned int texpal)
 {
 	if (format == 0 || currentTexParams.texFormat == TEXMODE_NONE)
 	{
-		if(isShaderSupported && hasTexture) { glUniform1i(uniformHasTexture, 0); hasTexture = false; }
+		if(isShaderSupported && hasTexture) { glUniform1i(uniformHasTexture, GL_FALSE); hasTexture = false; }
 		return;
 	}
 
 	if(isShaderSupported)
 	{
-		if(!hasTexture) { glUniform1i(uniformHasTexture, 1); hasTexture = true; }
+		if(!hasTexture) { glUniform1i(uniformHasTexture, GL_TRUE); hasTexture = true; }
 		glActiveTexture(GL_TEXTURE0);
 	}
 
@@ -1085,38 +1089,49 @@ static void SetupPolygonRender(POLY *thePoly)
 
 static void Control()
 {
-	if (gfx3d.renderState.enableTexturing)
+	if (isShaderSupported)
 	{
-		if (isShaderSupported)
+		if (gfx3d.renderState.enableTexturing)
 		{
-			glUniform1i(uniformHasTexture, 1);
+			glUniform1i(uniformHasTexture, GL_TRUE);
 		}
 		else
 		{
-			glEnable(GL_TEXTURE_2D);
+			glUniform1i(uniformHasTexture, GL_FALSE);
 		}
+		
+		if(gfx3d.renderState.enableAlphaTest)
+		{
+			glUniform1i(uniformEnableAlphaTest, GL_TRUE);
+		}
+		else
+		{
+			glUniform1i(uniformEnableAlphaTest, GL_FALSE);
+		}
+		
+		glUniform1f(uniformAlphaTestRef, divide5bitBy31LUT[gfx3d.renderState.alphaTestRef]);
 	}
 	else
 	{
-		if (isShaderSupported)
+		if (gfx3d.renderState.enableTexturing)
 		{
-			glUniform1i(uniformHasTexture, 0);
+			glEnable(GL_TEXTURE_2D);
 		}
 		else
 		{
 			glDisable(GL_TEXTURE_2D);
 		}
+		
+		if(gfx3d.renderState.enableAlphaTest && (gfx3d.renderState.alphaTestRef > 0))
+		{
+			glAlphaFunc(GL_GEQUAL, divide5bitBy31LUT[gfx3d.renderState.alphaTestRef]);
+		}
+		else
+		{
+			glAlphaFunc(GL_GREATER, 0);
+		}
 	}
 	
-	if(gfx3d.renderState.enableAlphaTest && (gfx3d.renderState.alphaTestRef > 0))
-	{
-		glAlphaFunc(GL_GEQUAL, divide5bitBy31LUT[gfx3d.renderState.alphaTestRef]);
-	}
-	else
-	{
-		glAlphaFunc(GL_GREATER, 0);
-	}
-
 	if(gfx3d.renderState.enableAlphaBlending)
 	{
 		glEnable(GL_BLEND);

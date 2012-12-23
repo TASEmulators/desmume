@@ -47,56 +47,76 @@ const char *vertexShader = {"\
 const char *fragmentShader = {"\
 	uniform sampler1D toonTable; \n\
 	uniform sampler2D tex2d; \n\
-	uniform int hasTexture; \n\
+	uniform bool hasTexture; \n\
 	uniform int texBlending; \n\
 	uniform int oglWBuffer; \n\
+	uniform bool enableAlphaTest; \n\
+	uniform float alphaTestRef; \n\
+	\n\
 	varying vec4 pos; \n\
 	varying vec4 vtxColor; \n\
+	\n\
 	void main() \n\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
 		vec4 flagColor; \n\
-		\
-		if(hasTexture != 0) \n\
+		\n\
+		if(hasTexture) \n\
 		{ \n\
 			texColor = texture2D(tex2d, gl_TexCoord[0].st); \n\
 		} \n\
+		\n\
 		flagColor = texColor; \n\
+		\n\
 		if(texBlending == 0) \n\
 		{ \n\
 			flagColor = vtxColor * texColor; \n\
 		} \n\
-		else \n\
-			if(texBlending == 1) \n\
+		else if(texBlending == 1) \n\
+		{ \n\
+			if (texColor.a == 0.0 || !hasTexture) \n\
 			{ \n\
-				if (texColor.a == 0.0 || hasTexture == 0) \n\
-					flagColor.rgb = vtxColor.rgb;\n\
-				else \n\
-					if (texColor.a == 1.0) \n\
-						flagColor.rgb = texColor.rgb;\n\
-					else \n\
-					flagColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a;\n\
-				flagColor.a = vtxColor.a; \n\
+				flagColor.rgb = vtxColor.rgb; \n\
+			} \n\
+			else if (texColor.a == 1.0) \n\
+			{ \n\
+				flagColor.rgb = texColor.rgb; \n\
 			} \n\
 			else \n\
-				if(texBlending == 2) \n\
-				{ \n\
-					vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
-					flagColor.rgb = texColor.rgb * toonColor.rgb;\n\
-					flagColor.a = texColor.a * vtxColor.a;\n\
-				} \n\
-				else \n\
-					if(texBlending == 3) \n\
-					{ \n\
-						vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
-						flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
-						flagColor.a = texColor.a * vtxColor.a; \n\
-					} \n\
+			{ \n\
+				flagColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a;\n\
+			} \n\
+			\n\
+			flagColor.a = vtxColor.a; \n\
+		} \n\
+		else if(texBlending == 2) \n\
+		{ \n\
+			vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
+			flagColor.rgb = texColor.rgb * toonColor.rgb;\n\
+			flagColor.a = texColor.a * vtxColor.a;\n\
+		} \n\
+		else if(texBlending == 3) \n\
+		{ \n\
+			vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
+			flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
+			flagColor.a = texColor.a * vtxColor.a; \n\
+		} \n\
+		\n\
+		if (flagColor.a == 0.0 || (enableAlphaTest && flagColor.a < alphaTestRef)) \n\
+		{ \n\
+			discard; \n\
+		} \n\
+		\n\
 		if (oglWBuffer == 1) \n\
+		{ \n\
 			// TODO \n\
 			gl_FragDepth = (pos.z / pos.w) * 0.5 + 0.5; \n\
+		} \n\
 		else \n\
+		{ \n\
 			gl_FragDepth = (pos.z / pos.w) * 0.5 + 0.5; \n\
+		} \n\
+		\n\
 		gl_FragColor = flagColor; \n\
 	} \n\
 "};
