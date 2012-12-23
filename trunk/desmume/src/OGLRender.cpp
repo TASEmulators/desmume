@@ -718,16 +718,16 @@ static char OGLInit(void)
 		glGenTextures (2, &oglClearImageTextureID[0]);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
@@ -739,9 +739,6 @@ static char OGLInit(void)
 
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers);
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, oglClearImageTextureID[0], 0);
-
-		//glDrawBuffer(GL_NONE);
-		//glReadBuffer(GL_NONE);
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, oglClearImageTextureID[1], 0);
 		
 		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT)==GL_FRAMEBUFFER_COMPLETE_EXT)
@@ -1227,34 +1224,29 @@ static void oglClearImageFBO()
 				oglClearImageColor[dd] = RGB15TO32(col,255*(col>>15));
 				
 				u16 depth = clearDepth[adr] & 0x7FFF;
-
 				oglClearImageDepth[dd] = (float)gfx3d_extendDepth_15_to_24(depth) / (float)0x00FFFFFF;
+				
 				dd++;
 			}
+			
 			dd-=256*2;
 		}
-
-		// color
+		
+		// Upload color pixels and depth buffer
 		glActiveTexture(GL_TEXTURE2);
+		
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0,  GL_RGBA, GL_UNSIGNED_BYTE, &oglClearImageColor[0]);
-
-		// depth
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, oglClearImageColor);
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, &oglClearImageDepth[0]);
-
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192, GL_DEPTH_COMPONENT, GL_FLOAT, oglClearImageDepth);
+		
 		glActiveTexture(GL_TEXTURE0);
 	}
 	
-
-	// color & depth
+	// Copy the clear image to the main framebuffer
 	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, oglClearImageBuffers);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
-	glBlitFramebufferEXT(0,0,256,192,0,0,256,192,GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT,GL_LINEAR);
-
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, 0);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
-
+	glBlitFramebufferEXT(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
 static void OGLRender()
