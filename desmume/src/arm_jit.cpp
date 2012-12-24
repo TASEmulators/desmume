@@ -479,7 +479,7 @@ static GPVar bb_profiler_entry;
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) imm = 31; \
 	c.sar(rhs, imm); \
-	c.sets(rcf.r8Lo());
+	imm==31?c.sets(rcf.r8Lo()):c.setc(rcf.r8Lo());
 
 #define ROR_IMM \
 	JIT_COMMENT("ROR_IMM"); \
