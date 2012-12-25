@@ -109,11 +109,11 @@ static bool isShaderSupported = false;
 // ClearImage/Rear-plane (FBO)
 static GLenum oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
 static GLuint oglClearImageBuffers = 0;
-static u32 *oglClearImageColor = NULL;
-static float *oglClearImageDepth = NULL;
+static GLushort *oglClearImageColor = NULL;
+static GLuint *oglClearImageDepth = NULL;
 static u16 *oglClearImageColorTemp = NULL;
 static u16 *oglClearImageDepthTemp = NULL;
-static u32 oglClearImageScrollOld = 0;
+static u16 oglClearImageScrollOld = 0;
 
 // VBO
 static GLuint vboVertexID;
@@ -148,6 +148,7 @@ static GLfloat *color4fBuffer = NULL;
 static GLushort *vertIndexBuffer = NULL;
 
 static CACHE_ALIGN GLfloat material_8bit_to_float[255] = {0};
+static CACHE_ALIGN GLuint dsDepthToD24S8_LUT[32768] = {0};
 static const GLfloat divide5bitBy31LUT[32] =	{0.0, 0.03225806451613, 0.06451612903226, 0.09677419354839,
 												 0.1290322580645, 0.1612903225806, 0.1935483870968, 0.2258064516129,
 												 0.258064516129, 0.2903225806452, 0.3225806451613, 0.3548387096774,
@@ -495,8 +496,8 @@ static void OGLReset()
 
 	if (isFBOSupported)
 	{
-		memset(oglClearImageColor, 0, 256*192*sizeof(u32));
-		memset(oglClearImageDepth, 0, 256*192*sizeof(float));
+		memset(oglClearImageColor, 0, 256*192*sizeof(GLushort));
+		memset(oglClearImageDepth, 0, 256*192*sizeof(GLuint));
 		memset(oglClearImageColorTemp, 0, 256*192*sizeof(u16));
 		memset(oglClearImageDepthTemp, 0, 256*192*sizeof(u16));
 		oglClearImageScrollOld = 0;
@@ -565,6 +566,9 @@ static char OGLInit(void)
 
 	for (u8 i = 0; i < 255; i++)
 		material_8bit_to_float[i] = (GLfloat)(i<<2)/255.f;
+	
+	for (unsigned int i = 0; i < 32768; i++)
+		dsDepthToD24S8_LUT[i] = (GLuint)DS_DEPTH15TO24(i) << 8;
 	
 	expandFreeTextures();
 	
@@ -719,7 +723,11 @@ static char OGLInit(void)
 	}
 
 	// FBO Setup
-	isFBOSupported = (strstr(extString, "GL_ARB_framebuffer_object") == NULL)?false:true;
+	isFBOSupported = ( (strstr(extString, "GL_ARB_framebuffer_object") == NULL) &&
+					   (strstr(extString, "GL_EXT_framebuffer_object") == NULL ||
+					    strstr(extString, "GL_EXT_framebuffer_blit") == NULL ||
+					    strstr(extString, "GL_EXT_packed_depth_stencil") == NULL) ) ? false: true;
+	
 	if (isFBOSupported)
 	{
 		// ClearImage/Rear-plane
@@ -740,11 +748,10 @@ static char OGLInit(void)
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 256, 192, 0,  GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, 256, 192, 0,  GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
+		
 		// FBO - init
 		glGenFramebuffersEXT(1, &oglClearImageBuffers);
-
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, oglClearImageBuffers);
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, oglClearImageTextureID[0], 0);
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, oglClearImageTextureID[1], 0);
@@ -759,9 +766,9 @@ static char OGLInit(void)
 
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
-		oglClearImageColor = new u32[256*192];
+		oglClearImageColor = new GLushort[256*192];
 		oglClearImageColorTemp = new u16[256*192];
-		oglClearImageDepth = new float[256*192];
+		oglClearImageDepth = new GLuint[256*192];
 		oglClearImageDepthTemp = new u16[256*192];
 	}
 	else
@@ -1203,21 +1210,23 @@ static void GL_ReadFramebuffer()
 	}
 }
 
-// TODO: optimize
 // Tested:	Sonic Chronicles Dark Brotherhood
 //			The Chronicles of Narnia - The Lion, The Witch and The Wardrobe
 //			Harry Potter and the Order of the Phoenix
 static void oglClearImageFBO()
 {
-	if (!isFBOSupported) return;
-	//printf("enableClearImage\n");
+	if (!isFBOSupported)
+	{
+		return;
+	}
+	
 	u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
 	u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
 	u16 scroll = T1ReadWord(MMU.ARM9_REG,0x356); //CLRIMAGE_OFFSET
 
-	if ((oglClearImageScrollOld != scroll)||
-		(memcmp(clearImage, oglClearImageColorTemp, 256*192*2) != 0) ||
-			(memcmp(clearDepth, oglClearImageDepthTemp, 256*192*2) != 0))
+	if (oglClearImageScrollOld != scroll ||
+		memcmp(clearImage, oglClearImageColorTemp, 256*192*2) ||
+		memcmp(clearDepth, oglClearImageDepthTemp, 256*192*2) )
 	{
 		oglClearImageScrollOld = scroll;
 		memcpy(oglClearImageColorTemp, clearImage, 256*192*2);
@@ -1225,21 +1234,19 @@ static void oglClearImageFBO()
 		
 		u16 xscroll = scroll&0xFF;
 		u16 yscroll = (scroll>>8)&0xFF;
-
-		u32 dd = 256*192-256;
-		for(int iy=0;iy<192;iy++) 
+		unsigned int dd = 256*192-256;
+		
+		for(unsigned int iy=0;iy<192;iy++) 
 		{
-			int y = ((iy + yscroll)&255)<<8;
-			for(int ix=0;ix<256;ix++)
+			unsigned int y = ((iy + yscroll)&255)<<8;
+			
+			for(unsigned int ix=0;ix<256;ix++)
 			{
-				int x = (ix + xscroll)&255;
-				int adr = y + x;
+				unsigned int x = (ix + xscroll)&255;
+				unsigned int adr = y + x;
 				
-				u16 col = clearImage[adr];
-				oglClearImageColor[dd] = RGB15TO32(col,255*(col>>15));
-				
-				u16 depth = clearDepth[adr] & 0x7FFF;
-				oglClearImageDepth[dd] = (float)gfx3d_extendDepth_15_to_24(depth) / (float)0x00FFFFFF;
+				oglClearImageColor[dd] = clearImage[adr];
+				oglClearImageDepth[dd] = dsDepthToD24S8_LUT[clearDepth[adr] & 0x7FFF];
 				
 				dd++;
 			}
@@ -1251,9 +1258,9 @@ static void oglClearImageFBO()
 		glActiveTexture(GL_TEXTURE2);
 		
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[0]);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, oglClearImageColor);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, oglClearImageColor);
 		glBindTexture(GL_TEXTURE_2D, oglClearImageTextureID[1]);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192, GL_DEPTH_COMPONENT, GL_FLOAT, oglClearImageDepth);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, oglClearImageDepth);
 		
 		glActiveTexture(GL_TEXTURE0);
 	}
