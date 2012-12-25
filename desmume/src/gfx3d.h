@@ -110,14 +110,8 @@ inline u32 RGB15TO6665(u16 col, u8 alpha5)
 
 #define GFX3D_5TO6(x) ((x)?(((x)<<1)+1):0)
 
-inline u32 gfx3d_extendDepth_15_to_24(u32 depth)
-{
-	//formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
-	//return (depth*0x200)+((depth+1)>>15)*0x01FF;
-	//I think this might be slightly faster
-	if(depth==0x7FFF) return 0x00FFFFFF;
-	else return depth<<9;
-}
+// 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
+#define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[depth & 0x7FFF] )
 
 // POLYGON ATTRIBUTES - BIT LOCATIONS
 enum
@@ -696,6 +690,7 @@ extern GFX3D gfx3d;
 extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 extern CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
+extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const int material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];

@@ -1223,10 +1223,9 @@ void SoftRasterizerEngine::initFramebuffer(const int width, const int height, co
 				
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
-				u32 depth = clearDepth[adr];
+				u16 depth = clearDepth[adr];
 				dst->fogged = BIT15(depth);
-				//TODO - might consider a lookup table for this
-				dst->depth = gfx3d_extendDepth_15_to_24(depth&0x7FFF);
+				dst->depth = DS_DEPTH15TO24(depth);
 
 				dstColor++;
 				dst++;

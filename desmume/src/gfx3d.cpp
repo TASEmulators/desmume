@@ -253,6 +253,7 @@ CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 CACHE_ALIGN u8 mixTable555[32][32][32];
+CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
 CACHE_ALIGN const int material_5bit_to_31bit[] = {
@@ -435,6 +436,9 @@ static void makeTables() {
 	{
 		color_15bit_to_24bit_reverse[i] = RGB15TO24_BITLOGIC_REVERSE((u16)i);
 		color_15bit_to_16bit_reverse[i] = (((i & 0x001F) << 11) | (material_5bit_to_6bit[(i & 0x03E0) >> 5] << 5) | ((i & 0x7C00) >> 10));
+		
+		// 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
+		dsDepthExtend_15bit_to_24bit[i] = (i*0x200)+((i+1)>>15)*0x01FF;
 	}
 
 	for (int i = 0; i < 65536; i++)
@@ -555,7 +559,7 @@ void gfx3d_reset()
 
 	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
 
-	gfx3d.state.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
+	gfx3d.state.clearDepth = DS_DEPTH15TO24(0x7FFF);
 	
 	clInd2 = 0;
 	isSwapBuffers = FALSE;
@@ -1643,8 +1647,7 @@ void gfx3d_glFogOffset (u32 v)
 
 void gfx3d_glClearDepth(u32 v)
 {
-	v &= 0x7FFF;
-	gfx3d.state.clearDepth = gfx3d_extendDepth_15_to_24(v);
+	gfx3d.state.clearDepth = DS_DEPTH15TO24(v);
 }
 
 // Ignored for now
