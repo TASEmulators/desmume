@@ -138,11 +138,13 @@ static GLint uniformWBuffer;
 static GLint uniformEnableAlphaTest;
 static GLint uniformAlphaTestRef;
 
+static GLuint oglToonTableTextureID;
 static u16 currentToonTable16[32];
 static bool toonTableNeedsUpdate = true;
 
 static bool hasTexture = false;
 static TexCacheItem* currTexture = NULL;
+static std::queue<GLuint> freeTextureIds;
 
 static GLfloat *color4fBuffer = NULL;
 static GLushort *vertIndexBuffer = NULL;
@@ -295,33 +297,6 @@ static void xglDepthFunc(GLenum func) {
 	glDepthFunc(oldfunc=func);
 }
 
-static void xglPolygonMode(GLenum face,GLenum mode) {
-	static GLenum oldmodes[2] = {-1,-1};
-	switch(face) {
-		case GL_FRONT: if(oldmodes[0]==mode) return; else glPolygonMode(GL_FRONT,oldmodes[0]=mode); return;
-		case GL_BACK: if(oldmodes[1]==mode) return; else glPolygonMode(GL_BACK,oldmodes[1]=mode); return;
-		case GL_FRONT_AND_BACK: if(oldmodes[0]==mode && oldmodes[1]==mode) return; else glPolygonMode(GL_FRONT_AND_BACK,oldmodes[0]=oldmodes[1]=mode);
-	}
-}
-
-#if 0
-#ifdef _WIN32
-static void xglUseProgram(GLuint program) {
-	if(!glUseProgram) return;
-	static GLuint oldprogram = -1;
-	if(oldprogram==program) return;
-	glUseProgram(oldprogram=program);
-} 
-#else
-#if 0 /* not used */
-static void xglUseProgram(GLuint program) {
-	(void)program;
-	return;
-}
-#endif
-#endif
-#endif
-
 static void xglDepthMask (GLboolean flag) {
 	static GLboolean oldflag = -1;
 	if(oldflag==flag) return;
@@ -359,10 +334,6 @@ static void _xglDisable(GLenum cap) {
 #define xglDisable(cap) {\
 	CTASSERT((cap-0x0B00)<0x100); \
 	_xglDisable(cap); }
-
-static std::queue<GLuint> freeTextureIds;
-
-GLenum			oglToonTableTextureID;
 
 #define NOSHADERS(s)					{ isShaderSupported = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(%s)\n", s); return; }
 
@@ -822,13 +793,15 @@ static void OGLClose()
 	if(isShaderSupported)
 	{
 		glUseProgram(0);
-
+		
 		glDetachShader(shaderProgram, vertexShaderID);
 		glDetachShader(shaderProgram, fragmentShaderID);
 
 		glDeleteProgram(shaderProgram);
 		glDeleteShader(vertexShaderID);
 		glDeleteShader(fragmentShaderID);
+		
+		glDeleteTextures(1, &oglToonTableTextureID);
 
 		isShaderSupported = false;
 	}
@@ -847,8 +820,6 @@ static void OGLClose()
 		freeTextureIds.pop();
 		glDeleteTextures(1,&temp);
 	}
-	//glDeleteTextures(MAX_TEXTURE, &oglTempTextureID[0]);
-	glDeleteTextures(1, &oglToonTableTextureID);
 
 	if (isVBOSupported)
 	{
@@ -939,7 +910,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 			currTexture->texid = (u64)freeTextureIds.front();
 			freeTextureIds.pop();
 
-						glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
+			glBindTexture(GL_TEXTURE_2D,(GLuint)currTexture->texid);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -973,7 +944,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 static void SetupPolygonRender(POLY *thePoly)
 {
-	bool enableDepthWrite = true;
+	GLboolean enableDepthWrite = GL_TRUE;
 	
 	// Get polygon info
 	currentPolyAttr = thePoly->getAttributes();
@@ -1000,7 +971,7 @@ static void SetupPolygonRender(POLY *thePoly)
 	}
 	
 	// Set up rendering states
-	xglDepthFunc (depthFuncMode);
+	xglDepthFunc(depthFuncMode);
 
 	// Cull face
 	if (cullingMode == 0)
@@ -1013,16 +984,20 @@ static void SetupPolygonRender(POLY *thePoly)
 		glCullFace(cullingMode);
 	}
 
-	if(currentPolyAttr.isTranslucent)
-		enableDepthWrite = currentPolyAttr.enableAlphaDepthWrite;
+	if(currentPolyAttr.isTranslucent && !currentPolyAttr.enableAlphaDepthWrite)
+	{
+		enableDepthWrite = GL_FALSE;
+	}
 
 	//handle shadow polys
 	if(currentPolyAttr.polygonMode == 3)
 	{
 		xglEnable(GL_STENCIL_TEST);
-		if(currentPolyAttr.polygonID == 0) {
-			enableDepthWrite = false;
-			if(stencilStateSet!=0) {
+		if(currentPolyAttr.polygonID == 0)
+		{
+			enableDepthWrite = GL_FALSE;
+			if(stencilStateSet != 0)
+			{
 				stencilStateSet = 0;
 				//when the polyID is zero, we are writing the shadow mask.
 				//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
@@ -1031,9 +1006,12 @@ static void SetupPolygonRender(POLY *thePoly)
 				glStencilOp(GL_KEEP,GL_REPLACE,GL_KEEP);
 				glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 			}
-		} else {
-			enableDepthWrite = true;
-			if(stencilStateSet!=1) {
+		}
+		else
+		{
+			enableDepthWrite = GL_TRUE;
+			if(stencilStateSet != 1)
+			{
 				stencilStateSet = 1;
 				//when the polyid is nonzero, we are drawing the shadow poly.
 				//only draw the shadow poly where the stencilbuf==1.
@@ -1043,7 +1021,9 @@ static void SetupPolygonRender(POLY *thePoly)
 				glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 			}
 		}
-	} else {
+	}
+	else
+	{
 		xglEnable(GL_STENCIL_TEST);
 		if(currentPolyAttr.isTranslucent)
 		{
@@ -1052,9 +1032,9 @@ static void SetupPolygonRender(POLY *thePoly)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 		}
-		else
-		if(stencilStateSet!=2) {
-			stencilStateSet=2;	
+		else if(stencilStateSet != 2)
+		{
+			stencilStateSet = 2;	
 			glStencilFunc(GL_ALWAYS,64,255);
 			glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
@@ -1074,13 +1054,9 @@ static void SetupPolygonRender(POLY *thePoly)
 			
 			if ( toonTableNeedsUpdate && (texBlendMode == 2 || texBlendMode == 3) )
 			{
-				u32 newToonTable[32];
-				for(int i=0;i<32;i++)
-					newToonTable[i] = RGB15TO32_NOALPHA(currentToonTable16[i]);
-				
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
-				glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, newToonTable);
+				glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, currentToonTable16);
 				
 				toonTableNeedsUpdate = false;
 			}
@@ -1091,7 +1067,7 @@ static void SetupPolygonRender(POLY *thePoly)
 		}
 	}
 
-	xglDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
+	xglDepthMask(enableDepthWrite);
 }
 
 static void Control()
@@ -1343,12 +1319,12 @@ static void OGLRender()
 		{
 			if (!isShaderSupported)
 			{
-				glBindBufferARB(GL_ARRAY_BUFFER, 0);
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 				glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
 			}
 			
-			glBindBufferARB(GL_ARRAY_BUFFER, vboVertexID);
-			glBufferDataARB(GL_ARRAY_BUFFER, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW);
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+			glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
 			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
 			glVertexPointer(4, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 			
@@ -1381,7 +1357,10 @@ static void OGLRender()
 
 			//a very macro-level state caching approach:
 			//these are the only things which control the GPU rendering state.
-			if(lastPolyAttr != poly->polyAttr || lastTexParams != poly->texParam || lastTexPalette != poly->texPalette || i == 0)
+			if(lastPolyAttr != poly->polyAttr ||
+			   lastTexParams != poly->texParam ||
+			   lastTexPalette != poly->texPalette ||
+			   i == 0)
 			{
 				lastPolyAttr	= poly->polyAttr;
 				lastTexParams	= poly->texParam;
@@ -1511,7 +1490,7 @@ static void OGLRender()
 		
 		if (isVBOSupported)
 		{
-			glBindBufferARB(GL_ARRAY_BUFFER, 0);
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		}
 		
 		glDisableClientState(GL_VERTEX_ARRAY);
