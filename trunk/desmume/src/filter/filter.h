@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2011 DeSmuME team
+Copyright (C) 2009-2012 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ void RenderLQ2X (SSurface Src, SSurface Dst);
 void RenderLQ2XS (SSurface Src, SSurface Dst);
 void RenderHQ2X (SSurface Src, SSurface Dst);
 void RenderHQ4X (SSurface Src, SSurface Dst);
+void RenderHQ4XS (SSurface Src, SSurface Dst);
 void RenderHQ2XS (SSurface Src, SSurface Dst);
 void Render2xSaI (SSurface Src, SSurface Dst);
 void RenderSuper2xSaI (SSurface Src, SSurface Dst);
