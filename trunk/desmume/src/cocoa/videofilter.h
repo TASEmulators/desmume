@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string>
 #include <pthread.h>
-#include "types.h"
 #include "../filter/filter.h"
 
 
@@ -46,32 +45,48 @@ enum VideoFilterTypeID
 	VideoFilterTypeID_EPX,
 	VideoFilterTypeID_EPXPlus,
 	VideoFilterTypeID_EPX1_5X,
-	VideoFilterTypeID_EPXPlus1_5X
+	VideoFilterTypeID_EPXPlus1_5X,
+	VideoFilterTypeID_HQ4XS,
+	
+	VideoFilterTypeIDCount // Make sure this one is always last
 };
 
-// VIDEO FILTER TYPE STRINGS
-#define VIDEOFILTERTYPE_NONE_STRING					"None"
-#define VIDEOFILTERTYPE_LQ2X_STRING					"LQ2X"
-#define VIDEOFILTERTYPE_LQ2XS_STRING				"LQ2XS"
-#define VIDEOFILTERTYPE_HQ2X_STRING					"HQ2X"
-#define VIDEOFILTERTYPE_HQ2XS_STRING				"HQ2XS"
-#define VIDEOFILTERTYPE_HQ4X_STRING					"HQ4X"
-#define VIDEOFILTERTYPE_2XSAI_STRING				"2xSaI"
-#define VIDEOFILTERTYPE_SUPER_2XSAI_STRING			"Super 2xSaI"
-#define VIDEOFILTERTYPE_SUPER_EAGLE_STRING			"Super Eagle"
-#define VIDEOFILTERTYPE_SCANLINE_STRING				"Scanline"
-#define VIDEOFILTERTYPE_BILINEAR_STRING				"Bilinear"
-#define VIDEOFILTERTYPE_NEAREST_2X_STRING			"Nearest 2x"
-#define VIDEOFILTERTYPE_NEAREST_1_5X_STRING			"Nearest 1.5x"
-#define VIDEOFILTERTYPE_NEAREST_PLUS_1_5X_STRING	"Nearest+ 1.5x"
-#define VIDEOFILTERTYPE_EPX_STRING					"EPX"
-#define VIDEOFILTERTYPE_EPX_PLUS_STRING				"EPX+"
-#define VIDEOFILTERTYPE_EPX_1_5X_STRING				"EPX 1.5x"
-#define VIDEOFILTERTYPE_EPX_PLUS_1_5X_STRING		"EPX+ 1.5x"
-#define VIDEOFILTERTYPE_UNKNOWN_STRING				"Unknown"
+#define VIDEOFILTERTYPE_UNKNOWN_STRING "Unknown"
 
 typedef void (*VideoFilterCallback)(SSurface Src, SSurface Dst);
 
+typedef struct
+{
+	VideoFilterTypeID typeID;
+	const char *typeString;
+	VideoFilterCallback filterFunction;
+	unsigned int scaleMultiply;
+	unsigned int scaleDivide;
+} VideoFilterAttributes;
+
+// Attributes list of known video filters, indexed using VideoFilterTypeID.
+const VideoFilterAttributes VideoFilterAttributesList[] = {
+	{VideoFilterTypeID_None,			"None",				NULL,							1,	1},
+	{VideoFilterTypeID_LQ2X,			"LQ2X",				&RenderLQ2X,					2,	1},
+	{VideoFilterTypeID_LQ2XS,			"LQ2XS",			&RenderLQ2XS,					2,	1},
+	{VideoFilterTypeID_HQ2X,			"HQ2X",				&RenderHQ2X,					2,	1},
+	{VideoFilterTypeID_HQ2XS,			"HQ2XS",			&RenderHQ2XS,					2,	1},
+	{VideoFilterTypeID_HQ4X,			"HQ4X",				&RenderHQ4X,					4,	1},
+	{VideoFilterTypeID_2xSaI,			"2xSaI",			&Render2xSaI,					2,	1},
+	{VideoFilterTypeID_Super2xSaI,		"Super 2xSaI",		&RenderSuper2xSaI,				2,	1},
+	{VideoFilterTypeID_SuperEagle,		"Super Eagle",		&RenderSuperEagle,				2,	1},
+	{VideoFilterTypeID_Scanline,		"Scanline",			&RenderScanline,				2,	1},
+	{VideoFilterTypeID_Bilinear,		"Bilinear",			&RenderBilinear,				2,	1},
+	{VideoFilterTypeID_Nearest2X,		"Nearest 2x",		&RenderNearest2X,				2,	1},
+	{VideoFilterTypeID_Nearest1_5X,		"Nearest 1.5x",		&RenderNearest_1Point5x,		3,	2},
+	{VideoFilterTypeID_NearestPlus1_5X,	"Nearest+ 1.5x",	&RenderNearestPlus_1Point5x,	3,	2},
+	{VideoFilterTypeID_EPX,				"EPX",				&RenderEPX,						2,	1},
+	{VideoFilterTypeID_EPXPlus,			"EPX+",				&RenderEPXPlus,					2,	1},
+	{VideoFilterTypeID_EPX1_5X,			"EPX 1.5x",			&RenderEPX_1Point5x,			3,	2},
+	{VideoFilterTypeID_EPXPlus1_5X,		"EPX+ 1.5x",		&RenderEPXPlus_1Point5x,		3,	2},
+	{VideoFilterTypeID_HQ4XS,			"HQ4XS",			&RenderHQ4XS,					4,	1} };
+
+// Parameters struct for IPC
 typedef struct
 {
 	SSurface srcSurface;
@@ -146,10 +161,13 @@ public:
 	VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID, unsigned int numberThreads);
 	~VideoFilter();
 	
-	bool SetSourceSize(unsigned int width, unsigned int height);
-	bool ChangeFilter(VideoFilterTypeID typeID);
+	bool SetSourceSize(const unsigned int width, const unsigned int height);
+	bool ChangeFilterByID(const VideoFilterTypeID typeID);
+	bool ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr);
 	uint32_t* RunFilter();
-	static const char* GetTypeStringByID(VideoFilterTypeID typeID);
+	
+	static void RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const unsigned int srcWidth, const unsigned int srcHeight, const VideoFilterTypeID typeID);
+	static const char* GetTypeStringByID(const VideoFilterTypeID typeID);
 	
 	VideoFilterTypeID GetTypeID();
 	const char* GetTypeString();

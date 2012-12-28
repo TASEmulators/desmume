@@ -46,6 +46,7 @@
 	}
 	
 	vf = new VideoFilter((unsigned int)theSize.width, (unsigned int)theSize.height, typeID, numThreads);
+	currentFilterType = typeID;
 	
 	return self;
 }
@@ -73,10 +74,18 @@
 {
 	BOOL result = NO;
 	
-	bool cResult = vf->ChangeFilter(typeID);
-	if (cResult)
+	if (typeID == currentFilterType)
 	{
 		result = YES;
+	}
+	else
+	{
+		bool cResult = vf->ChangeFilterByID(typeID);
+		if (cResult)
+		{
+			result = YES;
+			currentFilterType = typeID;
+		}
 	}
 	
 	return result;

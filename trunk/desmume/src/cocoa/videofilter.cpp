@@ -572,7 +572,7 @@ VideoFilter::~VideoFilter()
 		A bool that reports if the resizing was successful. A value of true means success,
 		while a value of false means failure.
  ********************************************************************************************/
-bool VideoFilter::SetSourceSize(unsigned int width, unsigned int height)
+bool VideoFilter::SetSourceSize(const unsigned int width, const unsigned int height)
 {
 	bool result = false;
 	
@@ -612,15 +612,15 @@ bool VideoFilter::SetSourceSize(unsigned int width, unsigned int height)
 	
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
-	result = this->ChangeFilter(this->GetTypeID());
+	result = this->ChangeFilterByID(this->GetTypeID());
 	
 	return result;
 }
 
 /********************************************************************************************
-	ChangeFilter()
+	ChangeFilterByID()
 
-	Changes the video filter type.
+	Changes the video filter type using a VideoFilterTypeID.
 
 	Takes:
 		typeID - The type ID of the video filter. See the VideoFilterTypeID
@@ -630,143 +630,62 @@ bool VideoFilter::SetSourceSize(unsigned int width, unsigned int height)
 		A bool that reports if the filter change was successful. A value of true means
 		success, while a value of false means failure.
  ********************************************************************************************/
-bool VideoFilter::ChangeFilter(VideoFilterTypeID typeID)
+bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 {
 	bool result = false;
+	
+	if (typeID >= VideoFilterTypeIDCount)
+	{
+		return result;
+	}
+	
+	return this->ChangeFilterByAttributes(&VideoFilterAttributesList[typeID]);
+}
+
+/********************************************************************************************
+	ChangeFilterByAttributes()
+
+	Changes the video filter type using video filter attributes.
+
+	Takes:
+		vfAttr - The video filter's attributes.
+
+	Returns:
+		A bool that reports if the filter change was successful. A value of true means
+		success, while a value of false means failure.
+ ********************************************************************************************/
+bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
+{
+	bool result = false;
+	
+	if (vfAttr == NULL)
+	{
+		return result;
+	}
 	
 	pthread_mutex_lock(&this->_mutexSrc);
 	const unsigned int srcWidth = this->_srcSurfaceMaster->Width;
 	const unsigned int srcHeight = this->_srcSurfaceMaster->Height;
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
-	unsigned int destWidth = srcWidth;
-	unsigned int destHeight = srcHeight;
-	const char *typeString = VideoFilter::GetTypeStringByID(typeID);
-	VideoFilterCallback filterCallback = NULL;
-	
-	switch (typeID)
-	{
-		case VideoFilterTypeID_None:
-			break;
-			
-		case VideoFilterTypeID_LQ2X:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderLQ2X;
-			break;
-			
-		case VideoFilterTypeID_LQ2XS:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderLQ2XS;
-			break;
-			
-		case VideoFilterTypeID_HQ2X:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderHQ2X;
-			break;
-			
-		case VideoFilterTypeID_HQ2XS:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderHQ2XS;
-			break;
-			
-		case VideoFilterTypeID_HQ4X:
-			destWidth = srcWidth * 4;
-			destHeight = srcHeight * 4;
-			filterCallback = &RenderHQ4X;
-			break;
-			
-		case VideoFilterTypeID_2xSaI:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &Render2xSaI;
-			break;
-			
-		case VideoFilterTypeID_Super2xSaI:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderSuper2xSaI;
-			break;
-			
-		case VideoFilterTypeID_SuperEagle:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderSuperEagle;
-			break;
-			
-		case VideoFilterTypeID_Scanline:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderScanline;
-			break;
-			
-		case VideoFilterTypeID_Bilinear:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderBilinear;
-			break;
-			
-		case VideoFilterTypeID_Nearest2X:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderNearest2X;
-			break;
-			
-		case VideoFilterTypeID_Nearest1_5X:
-			destWidth = srcWidth * 3 / 2;
-			destHeight = srcHeight * 3 / 2;
-			filterCallback = &RenderNearest_1Point5x;
-			break;
-			
-		case VideoFilterTypeID_NearestPlus1_5X:
-			destWidth = srcWidth * 3 / 2;
-			destHeight = srcHeight * 3 / 2;
-			filterCallback = &RenderNearestPlus_1Point5x;
-			break;
-			
-		case VideoFilterTypeID_EPX:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderEPX;
-			break;
-			
-		case VideoFilterTypeID_EPXPlus:
-			destWidth = srcWidth * 2;
-			destHeight = srcHeight * 2;
-			filterCallback = &RenderEPXPlus;
-			break;
-			
-		case VideoFilterTypeID_EPX1_5X:
-			destWidth = srcWidth * 3 / 2;
-			destHeight = srcHeight * 3 / 2;
-			filterCallback = &RenderEPX_1Point5x;
-			break;
-			
-		case VideoFilterTypeID_EPXPlus1_5X:
-			destWidth = srcWidth * 3 / 2;
-			destHeight = srcHeight * 3 / 2;
-			filterCallback = &RenderEPXPlus_1Point5x;
-			break;
-			
-		default:
-			break;
-	}
+	const VideoFilterTypeID typeID = vfAttr->typeID;
+	const unsigned int dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
+	const unsigned int dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
+	const char *typeString = vfAttr->typeString;
+	const VideoFilterCallback filterCallback = vfAttr->filterFunction;
 	
 	pthread_mutex_lock(&this->_mutexDest);
 	
-	uint32_t *newSurfaceBuffer = (uint32_t *)calloc(destWidth * destHeight, sizeof(uint32_t));
+	uint32_t *newSurfaceBuffer = (uint32_t *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
 	if (newSurfaceBuffer == NULL)
 	{
 		return result;
 	}
 	
 	this->_filterCallback = filterCallback;
-	this->_destSurfaceMaster->Width = destWidth;
-	this->_destSurfaceMaster->Height = destHeight;
-	this->_destSurfaceMaster->Pitch = destWidth * 2;
+	this->_destSurfaceMaster->Width = dstWidth;
+	this->_destSurfaceMaster->Height = dstHeight;
+	this->_destSurfaceMaster->Pitch = dstWidth * 2;
 	
 	free(this->_destSurfaceMaster->Surface);
 	this->_destSurfaceMaster->Surface = (unsigned char*)newSurfaceBuffer;
@@ -854,6 +773,59 @@ uint32_t* VideoFilter::RunFilter()
 }
 
 /********************************************************************************************
+	RunFilterCustom() - STATIC
+
+	Runs the pixels from srcBuffer through the video filter, and then stores the
+	resulting pixels into dstBuffer.
+
+	Takes:
+		srcBuffer - A pointer to the source pixel buffer. The caller is responsible
+			for ensuring that this buffer is valid. Also note that certain video filters
+			may do out-of-bounds reads, so the caller is responsible for overallocating
+			this buffer in order to avoid crashing on certain platforms.
+		
+		dstBuffer - A pointer to the destination pixel buffer. The caller is responsible
+			for ensuring that this buffer is valid and large enough to store all of the
+			destination pixels.
+		
+		srcWidth - The source surface width in pixels.
+		
+		srcHeight - The source surface height in pixels.
+		
+		typeID - The type ID of the video filter. See the VideoFilterTypeID
+			enumeration for possible values.
+
+	Returns:
+		Nothing.
+ ********************************************************************************************/
+void VideoFilter::RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer,
+								  const unsigned int srcWidth, const unsigned int srcHeight,
+								  const VideoFilterTypeID typeID)
+{
+	if (typeID >= VideoFilterTypeIDCount)
+	{
+		return;
+	}
+	
+	const VideoFilterAttributes *vfAttr = &VideoFilterAttributesList[typeID];
+	const unsigned int dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
+	const unsigned int dstHeight = dstWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
+	const VideoFilterCallback filterFunction = vfAttr->filterFunction;
+	
+	SSurface srcSurface = {(unsigned char *)srcBuffer, srcWidth*2, srcWidth, srcHeight};
+	SSurface dstSurface = {(unsigned char *)dstBuffer, dstWidth*2, dstWidth, dstHeight};
+	
+	if (filterFunction == NULL)
+	{
+		memcpy(dstBuffer, srcBuffer, dstWidth * dstHeight * sizeof(uint32_t));
+	}
+	else
+	{
+		filterFunction(srcSurface, dstSurface);
+	}
+}
+
+/********************************************************************************************
 	GetTypeStringByID() - STATIC
 
 	Returns a C-string representation of the passed in video filter type.
@@ -866,89 +838,14 @@ uint32_t* VideoFilter::RunFilter()
 		A C-string that represents the video filter type. If typeID is invalid,
 		this method returns the string "Unknown".
  ********************************************************************************************/
-const char* VideoFilter::GetTypeStringByID(VideoFilterTypeID typeID)
+const char* VideoFilter::GetTypeStringByID(const VideoFilterTypeID typeID)
 {
-	const char *typeString = "Unknown";
-	
-	switch (typeID)
+	if (typeID >= VideoFilterTypeIDCount)
 	{
-		case VideoFilterTypeID_None:
-			typeString = VIDEOFILTERTYPE_NONE_STRING;
-			break;
-			
-		case VideoFilterTypeID_LQ2X:
-			typeString = VIDEOFILTERTYPE_LQ2X_STRING;
-			break;
-			
-		case VideoFilterTypeID_LQ2XS:
-			typeString = VIDEOFILTERTYPE_LQ2XS_STRING;
-			break;
-			
-		case VideoFilterTypeID_HQ2X:
-			typeString = VIDEOFILTERTYPE_HQ2X_STRING;
-			break;
-			
-		case VideoFilterTypeID_HQ2XS:
-			typeString = VIDEOFILTERTYPE_HQ2XS_STRING;
-			break;
-			
-		case VideoFilterTypeID_HQ4X:
-			typeString = VIDEOFILTERTYPE_HQ4X_STRING;
-			break;
-			
-		case VideoFilterTypeID_2xSaI:
-			typeString = VIDEOFILTERTYPE_2XSAI_STRING;
-			break;
-			
-		case VideoFilterTypeID_Super2xSaI:
-			typeString = VIDEOFILTERTYPE_SUPER_2XSAI_STRING;
-			break;
-			
-		case VideoFilterTypeID_SuperEagle:
-			typeString = VIDEOFILTERTYPE_SUPER_EAGLE_STRING;
-			break;
-			
-		case VideoFilterTypeID_Scanline:
-			typeString = VIDEOFILTERTYPE_SCANLINE_STRING;
-			break;
-			
-		case VideoFilterTypeID_Bilinear:
-			typeString = VIDEOFILTERTYPE_BILINEAR_STRING;
-			break;
-			
-		case VideoFilterTypeID_Nearest2X:
-			typeString = VIDEOFILTERTYPE_NEAREST_2X_STRING;
-			break;
-			
-		case VideoFilterTypeID_Nearest1_5X:
-			typeString = VIDEOFILTERTYPE_NEAREST_1_5X_STRING;
-			break;
-			
-		case VideoFilterTypeID_NearestPlus1_5X:
-			typeString = VIDEOFILTERTYPE_NEAREST_PLUS_1_5X_STRING;
-			break;
-			
-		case VideoFilterTypeID_EPX:
-			typeString = VIDEOFILTERTYPE_EPX_STRING;
-			break;
-			
-		case VideoFilterTypeID_EPXPlus:
-			typeString = VIDEOFILTERTYPE_EPX_PLUS_STRING;
-			break;
-			
-		case VideoFilterTypeID_EPX1_5X:
-			typeString = VIDEOFILTERTYPE_EPX_1_5X_STRING;
-			break;
-			
-		case VideoFilterTypeID_EPXPlus1_5X:
-			typeString = VIDEOFILTERTYPE_EPX_PLUS_1_5X_STRING;
-			break;
-			
-		default:
-			break;
+		return VIDEOFILTERTYPE_UNKNOWN_STRING;
 	}
 	
-	return typeString;
+	return VideoFilterAttributesList[typeID].typeString;
 }
 
 /********************************************************************************************
@@ -963,7 +860,7 @@ VideoFilterTypeID VideoFilter::GetTypeID()
 	return typeID;
 }
 
-void VideoFilter::SetTypeID(VideoFilterTypeID typeID)
+void VideoFilter::SetTypeID(const VideoFilterTypeID typeID)
 {
 	pthread_mutex_lock(&this->_mutexTypeID);
 	this->_typeID = typeID;
