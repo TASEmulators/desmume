@@ -31,6 +31,7 @@
 @interface CocoaVideoFilter : NSObject
 {
 	VideoFilter *vf;
+	VideoFilterTypeID currentFilterType;
 }
 
 - (id) initWithSize:(NSSize)theSize;
