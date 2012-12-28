@@ -3267,7 +3267,7 @@ DEFINE_LUA_FUNCTION(gui_gdscreenshot, "[whichScreen='both']")
 	{
 		for(int x = curGuiData.xMin; x < curGuiData.xMax; x++)
 		{
-			*ptr++ = 255 - Src[4*x+3];
+			*ptr++ = 0 /* (255 - Src[4*x+3]) / 2 */; // alpha (0-127, 0=opaque, 127=transparent)
 			*ptr++ = Src[4*x+2];
 			*ptr++ = Src[4*x+1];
 			*ptr++ = Src[4*x+0];
