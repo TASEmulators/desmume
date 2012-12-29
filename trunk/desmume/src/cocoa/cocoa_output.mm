@@ -931,6 +931,10 @@ GPU3DInterface *core3DList[] = {
 	{
 		NDS_3D_ChangeCore(CORE3DLIST_SWRASTERIZE);
 	}
+	else if ([self render3DRenderingEngine] == CORE3DLIST_OPENGL)
+	{
+		NDS_3D_ChangeCore(CORE3DLIST_OPENGL);
+	}
 	
 	pthread_mutex_unlock(self.mutexProducer);
 }
@@ -1384,7 +1388,14 @@ GPU3DInterface *core3DList[] = {
 	spinlockVideoFilterType = OS_SPINLOCK_INIT;
 	spinlockVfSrcBuffer = OS_SPINLOCK_INIT;
 	
-	vf = [[CocoaVideoFilter alloc] initWithSize:frameSize typeID:VideoFilterTypeID_None numberThreads:2];
+	if ([[NSProcessInfo processInfo] activeProcessorCount] >= 2)
+	{
+		vf = [[CocoaVideoFilter alloc] initWithSize:frameSize typeID:VideoFilterTypeID_None numberThreads:2];
+	}
+	else
+	{
+		vf = [[CocoaVideoFilter alloc] initWithSize:frameSize typeID:VideoFilterTypeID_None numberThreads:0];
+	}
 	
 	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
 	[property setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];

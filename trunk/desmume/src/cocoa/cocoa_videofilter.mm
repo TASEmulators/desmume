@@ -24,17 +24,17 @@
 
 - (id)init
 {
-	return [self initWithSize:NSMakeSize(1, 1) typeID:VideoFilterTypeID_None numberThreads:1];
+	return [self initWithSize:NSMakeSize(1, 1) typeID:VideoFilterTypeID_None numberThreads:0];
 }
 
 - (id) initWithSize:(NSSize)theSize
 {
-	return [self initWithSize:theSize typeID:VideoFilterTypeID_None numberThreads:1];
+	return [self initWithSize:theSize typeID:VideoFilterTypeID_None numberThreads:0];
 }
 
 - (id) initWithSize:(NSSize)theSize typeID:(VideoFilterTypeID)typeID
 {
-	return [self initWithSize:theSize typeID:typeID numberThreads:1];
+	return [self initWithSize:theSize typeID:typeID numberThreads:0];
 }
 
 - (id) initWithSize:(NSSize)theSize typeID:(VideoFilterTypeID)typeID numberThreads:(NSUInteger)numThreads
