@@ -21,8 +21,10 @@
 
 #include <stdlib.h>
 #include <string>
+#include <vector>
 #include <pthread.h>
 #include "../filter/filter.h"
+#include "../utils/task.h"
 
 
 // VIDEO FILTER TYPES
@@ -53,13 +55,13 @@ enum VideoFilterTypeID
 
 #define VIDEOFILTERTYPE_UNKNOWN_STRING "Unknown"
 
-typedef void (*VideoFilterCallback)(SSurface Src, SSurface Dst);
+typedef void (*VideoFilterFunc)(SSurface Src, SSurface Dst);
 
 typedef struct
 {
 	VideoFilterTypeID typeID;
 	const char *typeString;
-	VideoFilterCallback filterFunction;
+	VideoFilterFunc filterFunction;
 	unsigned int scaleMultiply;
 	unsigned int scaleDivide;
 } VideoFilterAttributes;
@@ -91,16 +93,14 @@ typedef struct
 {
 	SSurface srcSurface;
 	SSurface destSurface;
-	VideoFilterCallback filterCallback;
-	
-	bool exitThread;
-	pthread_mutex_t mutexThreadExecute;
-	pthread_cond_t condThreadExecute;
-	pthread_cond_t *condThreadFinish;
-	pthread_mutex_t *mutexThreadFinish;
-	bool *isFilterRunning;
-	
+	VideoFilterFunc filterFunction;
 } VideoFilterThreadParam;
+
+typedef struct
+{
+	Task *task;
+	VideoFilterThreadParam param;
+} VideoFilterThread;
 
 /********************************************************************************************
 	VideoFilter - C++ CLASS
@@ -127,23 +127,16 @@ typedef struct
 class VideoFilter
 {
 private:
-	VideoFilterTypeID _typeID;
-	std::string _typeString;
-	SSurface *_srcSurfaceMaster;
-	SSurface *_destSurfaceMaster;
-	SSurface *_srcSurfaceThread;
-	SSurface *_destSurfaceThread;
-	uint32_t *_srcSurfaceBufferMaster;
-	VideoFilterCallback _filterCallback;
+	VideoFilterTypeID _vfTypeID;
+	std::string _vfTypeString;
+	
+	SSurface _vfSrcSurface;
+	SSurface _vfDstSurface;
+	uint32_t *_vfSrcSurfacePixBuffer;
+	VideoFilterFunc _vfFunc;
+	std::vector<VideoFilterThread> _vfThread;
+	
 	bool _isFilterRunning;
-	
-	unsigned int _threadCount;
-	pthread_t *_vfThread;
-	VideoFilterThreadParam *_vfThreadParam;
-	pthread_cond_t *_condVFThreadFinish;
-	pthread_mutex_t *_mutexVFThreadFinish;
-	bool *_isFilterRunningThread;
-	
 	pthread_mutex_t _mutexSrc;
 	pthread_mutex_t _mutexDest;
 	pthread_mutex_t _mutexTypeID;
@@ -155,9 +148,6 @@ private:
 	void SetTypeString(std::string typeString);
 	
 public:
-	VideoFilter();
-	VideoFilter(unsigned int srcWidth, unsigned int srcHeight);
-	VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID);
 	VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID, unsigned int numberThreads);
 	~VideoFilter();
 	
@@ -179,6 +169,6 @@ public:
 	unsigned int GetDestHeight();
 };
 
-static void* RunVideoFilterThread(void *arg);
+static void* RunVideoFilterTask(void *arg);
 
 #endif
