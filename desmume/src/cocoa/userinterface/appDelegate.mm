@@ -19,6 +19,7 @@
 #import "appDelegate.h"
 #import "emuWindowDelegate.h"
 #import "preferencesWindowDelegate.h"
+#import "troubleshootingWindowDelegate.h"
 #import "cheatWindowDelegate.h"
 #import "displayView.h"
 #import "inputPrefsView.h"
@@ -38,12 +39,15 @@
 @dynamic dummyObject;
 @synthesize mainWindow;
 @synthesize prefWindow;
+@synthesize troubleshootingWindow;
 @synthesize cheatListWindow;
 @synthesize migrationWindow;
 @synthesize prefGeneralView;
 @synthesize mLoadStateSlot;
 @synthesize mSaveStateSlot;
 @synthesize inputPrefsView;
+@synthesize troubleshootingSupportRequestView;
+@synthesize troubleshootingBugReportView;
 @synthesize fileMigrationList;
 @synthesize aboutWindowController;
 @synthesize emuWindowController;
@@ -94,7 +98,7 @@
 {
 	EmuWindowDelegate *mainWindowDelegate = [mainWindow delegate];
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
-	CheatWindowDelegate *cheatWindowDelegate = [cheatListWindow delegate];
+	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatListWindow delegate];
 	
 	// Determine if we're running on Intel or PPC.
 #if defined(__i386__) || defined(__x86_64__)
@@ -121,7 +125,10 @@
 	NSString *buildInfoStr = @"Build Info:";
 	buildInfoStr = [[buildInfoStr stringByAppendingString:[CocoaDSUtil appInternalVersionString]] stringByAppendingString:[CocoaDSUtil appCompilerDetailString]];
 	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nBuild Date: "] stringByAppendingString:@__DATE__];
+	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
+	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nOperating System: "] stringByAppendingString:[CocoaDSUtil operatingSystemString]];
 	
+	NSFont *aboutTextFilesFont = [NSFont fontWithName:@"Monaco" size:10];
 	NSMutableDictionary *aboutWindowProperties = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_README ofType:@""], @"readMePath",
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_COPYING ofType:@""], @"licensePath",
@@ -129,6 +136,7 @@
 												  [[NSBundle mainBundle] pathForResource:@FILENAME_CHANGELOG ofType:@""], @"changeLogPath",
 												  descriptionStr, @"descriptionString",
 												  buildInfoStr, @"buildInfoString",
+												  aboutTextFilesFont, @"aboutTextFilesFont",
 												  nil];
 	
 	[aboutWindowController setContent:aboutWindowProperties];
@@ -307,9 +315,22 @@
 	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@STRING_DESMUME_FORUM_SITE]];
 }
 
+- (IBAction) supportRequest:(id)sender
+{
+	TroubleshootingWindowDelegate *troubleshootingWindowDelegate = [troubleshootingWindow delegate];
+	
+	[troubleshootingWindowDelegate switchViewByID:TROUBLESHOOTING_TECH_SUPPORT_VIEW_ID];
+	[troubleshootingWindow setTitle:NSSTRING_TITLE_TECH_SUPPORT_WINDOW_TITLE];
+	[troubleshootingWindow makeKeyAndOrderFront:sender];
+}
+
 - (IBAction) bugReport:(id)sender
 {
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@STRING_DESMUME_BUG_SITE]];
+	TroubleshootingWindowDelegate *troubleshootingWindowDelegate = [troubleshootingWindow delegate];
+	
+	[troubleshootingWindowDelegate switchViewByID:TROUBLESHOOTING_BUG_REPORT_VIEW_ID];
+	[troubleshootingWindow setTitle:NSSTRING_TITLE_BUG_REPORT_WINDOW_TITLE];
+	[troubleshootingWindow makeKeyAndOrderFront:sender];
 }
 
 - (void) setupSlotMenuItems

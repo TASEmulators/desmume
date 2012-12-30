@@ -19,7 +19,8 @@
 #define STRING_DESMUME_WEBSITE						"http://desmume.org"
 #define STRING_DESMUME_SHORT_DESCRIPTION			"Nintendo DS Emulator"
 #define STRING_DESMUME_FORUM_SITE					"http://forums.desmume.org/index.php"
-#define STRING_DESMUME_BUG_SITE						"http://sourceforge.net/tracker/?group_id=164579&atid=832291"
+#define STRING_DESMUME_TECH_SUPPORT_SITE			"http://forums.desmume.org/viewforum.php?id=4"
+#define STRING_DESMUME_BUG_REPORT_SITE				"http://sourceforge.net/tracker/?group_id=164579&atid=832291"
 
 // User Interface Localized Strings
 #define NSSTRING_TITLE_OPEN_ROM_PANEL				NSLocalizedString(@"Open ROM", nil)
@@ -50,6 +51,13 @@
 #define NSSTRING_TITLE_SPEED_1X						NSLocalizedString(@"Speed 1x", nil)
 #define NSSTRING_TITLE_SPEED_2X						NSLocalizedString(@"Speed 2x", nil)
 #define NSSTRING_TITLE_SLOT_NUMBER					NSLocalizedString(@"Slot %d", nil)
+
+#define NSSTRING_TITLE_TECH_SUPPORT_WINDOW_TITLE	NSLocalizedString(@"Support Request Form", nil)
+#define NSSTRING_TITLE_BUG_REPORT_WINDOW_TITLE		NSLocalizedString(@"Bug Report Form", nil)
+#define NSSTRING_TITLE_GO_TECH_SUPPORT_WEBPAGE_TITLE	NSLocalizedString(@"Go to Tech Support Webpage", nil)
+#define NSSTRING_TITLE_GO_BUG_REPORT_WEBPAGE_TITLE	NSLocalizedString(@"Go to Bug Report Webpage", nil)
+#define NSSTRING_HELP_COPY_PASTE_TECH_SUPPORT		NSLocalizedString(@"Please copy-paste the above information into our tech support webpage. This will ensure the fastest response time from us.", nil)
+#define NSSTRING_HELP_COPY_PASTE_BUG_REPORT			NSLocalizedString(@"Please copy-paste the above information into our bug report webpage. This will ensure the fastest response time from us.", nil)
 
 #define NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI	NSLocalizedString(@"A critical file is missing. DeSmuME will now quit.", nil)
 #define NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC	NSLocalizedString(@"The file \"DefaultUserPrefs.plist\" is missing. Please reinstall DeSmuME.", nil)

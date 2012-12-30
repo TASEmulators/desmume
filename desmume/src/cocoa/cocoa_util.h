@@ -46,6 +46,9 @@
 + (NSString *) appInternalNameAndVersionString;
 + (NSString *) appCompilerDetailString;
 
++ (NSString *) operatingSystemString;
++ (NSString *) modelIdentifierString;
+
 @end
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
