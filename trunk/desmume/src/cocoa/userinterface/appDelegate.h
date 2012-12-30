@@ -38,10 +38,13 @@
 	
     NSWindow *mainWindow;
 	NSWindow *prefWindow;
+	NSWindow *troubleshootingWindow;
 	NSWindow *cheatListWindow;
 	NSWindow *migrationWindow;
 	NSView *prefGeneralView;
 	InputPrefsView *inputPrefsView;
+	NSView *troubleshootingSupportRequestView;
+	NSView *troubleshootingBugReportView;
 	
 	NSMenu *mLoadStateSlot;
 	NSMenu *mSaveStateSlot;
@@ -66,12 +69,15 @@
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet NSWindow *mainWindow;
 @property (readonly) IBOutlet NSWindow *prefWindow;
+@property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSWindow *cheatListWindow;
 @property (readonly) IBOutlet NSWindow *migrationWindow;
 @property (readonly) IBOutlet NSView *prefGeneralView;
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;
 @property (readonly) IBOutlet InputPrefsView *inputPrefsView;
+@property (readonly) IBOutlet NSView *troubleshootingSupportRequestView;
+@property (readonly) IBOutlet NSView *troubleshootingBugReportView;
 
 @property (readonly) IBOutlet NSBox *boxGeneralInfo;
 @property (readonly) IBOutlet NSBox *boxTitles;
@@ -93,6 +99,7 @@
 // Help Menu
 - (IBAction) launchWebsite:(id)sender;
 - (IBAction) launchForums:(id)sender;
+- (IBAction) supportRequest:(id)sender;
 - (IBAction) bugReport:(id)sender;
 
 - (void) setupSlotMenuItems;

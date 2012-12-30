@@ -201,6 +201,11 @@ static NSMutableDictionary *saveTypeValues = nil;
 	
 	[self.bindings setValue:[self.header objectForKey:@"romInternalName"] forKey:@"romInternalName"];
 	[self.bindings setValue:[self.header objectForKey:@"romSerial"] forKey:@"romSerial"];
+	
+	NSString *romNameAndSerialInfoString = @"Name: ";
+	romNameAndSerialInfoString = [romNameAndSerialInfoString stringByAppendingString:[self.header objectForKey:@"romInternalName"]];
+	romNameAndSerialInfoString = [[romNameAndSerialInfoString stringByAppendingString:@"\nSerial: "] stringByAppendingString:[self.header objectForKey:@"romSerial"]];
+	[self.bindings setValue:romNameAndSerialInfoString forKey:@"romNameAndSerialInfo"];
 }
 
 - (BOOL) loadData:(NSURL *)theURL
@@ -477,9 +482,14 @@ static NSMutableDictionary *saveTypeValues = nil;
 {
 	NSImage *iconImage = [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"AppIcon_DeSmuME" ofType:@"icns"]] autorelease];
 	
+	NSString *romNameAndSerialInfoString = @"Name: ";
+	romNameAndSerialInfoString = [romNameAndSerialInfoString stringByAppendingString:NSSTRING_STATUS_NO_ROM_LOADED];
+	romNameAndSerialInfoString = [[romNameAndSerialInfoString stringByAppendingString:@"\nSerial: "] stringByAppendingString:NSSTRING_STATUS_NO_ROM_LOADED];
+	
 	return [NSMutableDictionary dictionaryWithObjectsAndKeys:
 			NSSTRING_STATUS_NO_ROM_LOADED, @"romInternalName",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"romSerial",
+			romNameAndSerialInfoString, @"romNameAndSerialInfo",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"bannerJapanese",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"bannerEnglish",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"bannerFrench",

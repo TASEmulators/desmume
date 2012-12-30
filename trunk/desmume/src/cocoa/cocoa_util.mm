@@ -20,6 +20,8 @@
 #import "cocoa_globals.h"
 #import "types.h"
 
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #include "../version.h"
 
 #undef BOOL
@@ -145,6 +147,37 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 + (NSString *) appCompilerDetailString
 {
 	return [NSString stringWithCString:EMU_DESMUME_COMPILER_DETAIL() encoding:NSUTF8StringEncoding];
+}
+
++ (NSString *) operatingSystemString
+{
+	NSDictionary *systemDict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
+	
+	NSString *productString = (NSString *)[systemDict objectForKey:@"ProductName"];
+	NSString *versionString = (NSString *)[systemDict objectForKey:@"ProductVersion"];
+	NSString *buildString = (NSString *)[systemDict objectForKey:@"ProductBuildVersion"];
+	
+	return [[[[[productString stringByAppendingString:@" v"] stringByAppendingString:versionString] stringByAppendingString:@" ("] stringByAppendingString:buildString] stringByAppendingString:@")"];
+}
+
++ (NSString *) modelIdentifierString
+{
+	NSString *modelIdentifierStr = @"";
+	size_t stringLength = 0;
+	char *modelCString = NULL;
+	
+	sysctlbyname("hw.model", NULL, &stringLength, NULL, 0);
+	if (stringLength == 0)
+	{
+		return modelIdentifierStr;
+	}
+	
+	modelCString = (char *)malloc(stringLength * sizeof(char));
+	sysctlbyname("hw.model", modelCString, &stringLength, NULL, 0);
+	modelIdentifierStr = [NSString stringWithCString:modelCString encoding:NSUTF8StringEncoding];
+	free(modelCString);
+	
+	return modelIdentifierStr;
 }
 
 @end
