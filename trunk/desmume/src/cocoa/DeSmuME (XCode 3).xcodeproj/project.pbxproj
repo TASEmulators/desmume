@@ -577,6 +577,10 @@
 		AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		ABA03570169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
+		ABA03571169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
+		ABA03572169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
+		ABA03573169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABAD0F7315ACE7A00000EC47 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		ABAD0F7415ACE7A00000EC47 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
 		ABAD0F7515ACE7A00000EC47 /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
@@ -915,6 +919,8 @@
 		AB901BE31420707D00348EEC /* Norwegian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE41420708200348EEC /* Romanian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB9971CE134EDA0800531BA7 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
+		ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = troubleshootingWindowDelegate.h; sourceTree = "<group>"; };
+		ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = troubleshootingWindowDelegate.mm; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1395,12 +1401,14 @@
 				AB3ACB6C14C2361100D7D192 /* emuWindowDelegate.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3ACB6B14C2361100D7D192 /* displayView.mm */,
 				AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -2489,6 +2497,7 @@
 				AB2F3C3715CF9C6000858373 /* scanline.cpp in Sources */,
 				AB2F3C3815CF9C6000858373 /* coreaudiosound.cpp in Sources */,
 				AB2F3C3915CF9C6000858373 /* ringbuffer.cpp in Sources */,
+				ABA03571169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2627,6 +2636,7 @@
 				ABBCE2F215ACB29100A2C965 /* OperandX86X64.cpp in Sources */,
 				ABBCE2F315ACB29100A2C965 /* Platform.cpp in Sources */,
 				ABBCE2F615ACB29100A2C965 /* Util.cpp in Sources */,
+				ABA03572169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2765,6 +2775,7 @@
 				ABBCE2E215ACB29100A2C965 /* OperandX86X64.cpp in Sources */,
 				ABBCE2E315ACB29100A2C965 /* Platform.cpp in Sources */,
 				ABBCE2E615ACB29100A2C965 /* Util.cpp in Sources */,
+				ABA03570169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2889,6 +2900,7 @@
 				ABAD102D15ACE7A00000EC47 /* scanline.cpp in Sources */,
 				ABAD102E15ACE7A00000EC47 /* coreaudiosound.cpp in Sources */,
 				ABAD102F15ACE7A00000EC47 /* ringbuffer.cpp in Sources */,
+				ABA03573169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

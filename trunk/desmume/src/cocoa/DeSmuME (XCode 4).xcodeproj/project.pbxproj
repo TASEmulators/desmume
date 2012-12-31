@@ -547,6 +547,8 @@
 		ABEFCF62141AB82A000CC0CD /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF5E141AB82A000CC0CD /* AppIcon_DeSmuME.icns */; };
 		ABEFCF63141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF5F141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns */; };
 		ABEFCF64141AB82A000CC0CD /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF60141AB82A000CC0CD /* AppIcon_SaveState.icns */; };
+		ABF2B9FB16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
+		ABF2B9FC16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		ABFE150714C92FF5005D6699 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */; };
 		ABFE150814C92FF5005D6699 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FB14C92FF5005D6699 /* bilinear.cpp */; };
 		ABFE150914C92FF5005D6699 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FC14C92FF5005D6699 /* epx.cpp */; };
@@ -933,6 +935,8 @@
 		ABEFCF5E141AB82A000CC0CD /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		ABEFCF5F141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		ABEFCF60141AB82A000CC0CD /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = troubleshootingWindowDelegate.h; sourceTree = "<group>"; };
+		ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = troubleshootingWindowDelegate.mm; sourceTree = "<group>"; };
 		ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = 2xsai.cpp; sourceTree = "<group>"; };
 		ABFE14FB14C92FF5005D6699 /* bilinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bilinear.cpp; sourceTree = "<group>"; };
 		ABFE14FC14C92FF5005D6699 /* epx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = epx.cpp; sourceTree = "<group>"; };
@@ -1128,12 +1132,14 @@
 				AB3ACB6C14C2361100D7D192 /* emuWindowDelegate.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3ACB6B14C2361100D7D192 /* displayView.mm */,
 				AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
 			);
 			path = userinterface;
 			sourceTree = "<group>";
@@ -2052,6 +2058,7 @@
 				AB796DD115CDD20F00C59155 /* OperandX86X64.cpp in Sources */,
 				AB796DD615CDD20F00C59155 /* Platform.cpp in Sources */,
 				AB796DE515CDD20F00C59155 /* Util.cpp in Sources */,
+				ABF2B9FC16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2190,6 +2197,7 @@
 				AB796DD415CDD20F00C59155 /* OperandX86X64.cpp in Sources */,
 				AB796DD915CDD20F00C59155 /* Platform.cpp in Sources */,
 				AB796DE815CDD20F00C59155 /* Util.cpp in Sources */,
+				ABF2B9FB16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -46,8 +46,6 @@
 @synthesize mLoadStateSlot;
 @synthesize mSaveStateSlot;
 @synthesize inputPrefsView;
-@synthesize troubleshootingSupportRequestView;
-@synthesize troubleshootingBugReportView;
 @synthesize fileMigrationList;
 @synthesize aboutWindowController;
 @synthesize emuWindowController;
@@ -125,8 +123,8 @@
 	NSString *buildInfoStr = @"Build Info:";
 	buildInfoStr = [[buildInfoStr stringByAppendingString:[CocoaDSUtil appInternalVersionString]] stringByAppendingString:[CocoaDSUtil appCompilerDetailString]];
 	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nBuild Date: "] stringByAppendingString:@__DATE__];
-	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
 	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nOperating System: "] stringByAppendingString:[CocoaDSUtil operatingSystemString]];
+	buildInfoStr = [[buildInfoStr stringByAppendingString:@"\nModel Identifier: "] stringByAppendingString:[CocoaDSUtil modelIdentifierString]];
 	
 	NSFont *aboutTextFilesFont = [NSFont fontWithName:@"Monaco" size:10];
 	NSMutableDictionary *aboutWindowProperties = [NSMutableDictionary dictionaryWithObjectsAndKeys:

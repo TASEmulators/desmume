@@ -43,8 +43,6 @@
 	NSWindow *migrationWindow;
 	NSView *prefGeneralView;
 	InputPrefsView *inputPrefsView;
-	NSView *troubleshootingSupportRequestView;
-	NSView *troubleshootingBugReportView;
 	
 	NSMenu *mLoadStateSlot;
 	NSMenu *mSaveStateSlot;
@@ -76,8 +74,6 @@
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;
 @property (readonly) IBOutlet InputPrefsView *inputPrefsView;
-@property (readonly) IBOutlet NSView *troubleshootingSupportRequestView;
-@property (readonly) IBOutlet NSView *troubleshootingBugReportView;
 
 @property (readonly) IBOutlet NSBox *boxGeneralInfo;
 @property (readonly) IBOutlet NSBox *boxTitles;
