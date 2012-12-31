@@ -67,7 +67,7 @@
 
 - (IBAction) continueToFinalForm:(id)sender
 {
-	static const NSString *unspecifiedStr = @"Unspecified"; // Do not expose localized version for this NSString -- we want this to be in English
+	static NSString *unspecifiedStr = @"Unspecified"; // Do not expose localized version for this NSString -- we want this to be in English
 	
 	// Force end of editing of any text fields.
 	[window makeFirstResponder:nil];
