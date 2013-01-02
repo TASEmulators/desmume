@@ -19,27 +19,33 @@
 
 /* Vertex shader */
 const char *vertexShader = {"\
+	attribute vec4 inPosition; \n\
+	attribute vec2 inTexCoord0; \n\
+	attribute vec3 inColor; \n\
+	\n\
 	uniform float polyAlpha; \n\
 	uniform vec2 texScale; \n\
-	varying vec4 pos; \n\
+	\n\
+	varying vec4 vtxPosition; \n\
+	varying vec2 vtxTexCoord; \n\
 	varying vec4 vtxColor; \n\
+	\n\
 	void main() \n\
 	{ \n\
+		// Keep the projection matrix as a placeholder in case we need to use one in the future. \n\
 		mat4 projectionMtx	= mat4(	vec4(1.0, 0.0, 0.0, 0.0), \n\
 									vec4(0.0, 1.0, 0.0, 0.0), \n\
 									vec4(0.0, 0.0, 1.0, 0.0), \n\
 									vec4(0.0, 0.0, 0.0, 1.0));\n\
 		\n\
-		mat4 texScaleMtx	= mat4(	vec4(texScale.x,        0.0, 0.0, 0.0), \n\
-									vec4(       0.0, texScale.y, 0.0, 0.0), \n\
-									vec4(       0.0,        0.0, 1.0, 0.0), \n\
-									vec4(       0.0,        0.0, 0.0, 1.0)); \n\
+		mat2 texScaleMtx	= mat2(	vec2(texScale.x,        0.0), \n\
+									vec2(       0.0, texScale.y)); \n\
 		\n\
-		vtxColor = vec4(gl_Color.rgb * 4.0, polyAlpha); \n\
-		gl_Position = projectionMtx * gl_Vertex; \n\
-		gl_TexCoord[0] = texScaleMtx * gl_MultiTexCoord0; \n\
-		gl_FrontColor = vtxColor; \n\
-		pos = gl_Position; \n\
+		vtxPosition = projectionMtx * inPosition; \n\
+		vtxTexCoord = texScaleMtx * inTexCoord0; \n\
+		vtxColor = vec4(inColor * 4.0, polyAlpha); \n\
+		\n\
+		gl_Position = vtxPosition; \n\
 	} \n\
 "};
 
@@ -53,7 +59,8 @@ const char *fragmentShader = {"\
 	uniform bool enableAlphaTest; \n\
 	uniform float alphaTestRef; \n\
 	\n\
-	varying vec4 pos; \n\
+	varying vec4 vtxPosition; \n\
+	varying vec2 vtxTexCoord; \n\
 	varying vec4 vtxColor; \n\
 	\n\
 	void main() \n\
@@ -63,7 +70,7 @@ const char *fragmentShader = {"\
 		\n\
 		if(hasTexture) \n\
 		{ \n\
-			texColor = texture2D(tex2d, gl_TexCoord[0].st); \n\
+			texColor = texture2D(tex2d, vtxTexCoord); \n\
 		} \n\
 		\n\
 		flagColor = texColor; \n\
@@ -110,11 +117,11 @@ const char *fragmentShader = {"\
 		if (oglWBuffer == 1) \n\
 		{ \n\
 			// TODO \n\
-			gl_FragDepth = (pos.z / pos.w) * 0.5 + 0.5; \n\
+			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
-			gl_FragDepth = (pos.z / pos.w) * 0.5 + 0.5; \n\
+			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		\n\
 		gl_FragColor = flagColor; \n\
