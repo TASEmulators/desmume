@@ -77,6 +77,13 @@ static void ENDGL() {
 #include "texcache.h"
 #include "utils/task.h"
 
+enum OGLVertexAttributeID
+{
+	OGLVertexAttributeID_Position = 0,
+	OGLVertexAttributeID_TexCoord0 = 8,
+	OGLVertexAttributeID_Color = 3,
+};
+
 static DS_ALIGN(16) u8  GPU_screen3D			[256*192*4];
 static bool gpuScreen3DHasNewData = false;
 
@@ -422,7 +429,11 @@ static void createShaders()
 
 	glAttachShader(shaderProgram, vertexShaderID);
 	glAttachShader(shaderProgram, fragmentShaderID);
-
+	
+	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_Position, "inPosition");
+	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
+	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_Color, "inColor");
+	
 	glLinkProgram(shaderProgram);
 	PROGRAM_COMPCHECK(shaderProgram, vertexShaderID, fragmentShaderID);
 
@@ -1311,40 +1322,63 @@ static void OGLRender()
 		bool needVertexUpload = true;
 		
 		// Assign vertex attributes based on which OpenGL features we have.
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glEnableClientState(GL_COLOR_ARRAY);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		
-		if (isVBOSupported)
+		if (isShaderSupported && isVBOSupported)
 		{
-			if (!isShaderSupported)
-			{
-				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-				glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
-			}
+			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+			glEnableVertexAttribArray(OGLVertexAttributeID_Color);
 			
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
 			glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
-			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-			glVertexPointer(4, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
-			
-			if (isShaderSupported)
-			{
-				glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
-			}
+			glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
+			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
+			glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
 		}
 		else
 		{
-			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
-			glVertexPointer(4, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
-			
 			if (isShaderSupported)
 			{
-				glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(VERT), &gfx3d.vertlist->list[0].color);
+				glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+				glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+				glEnableVertexAttribArray(OGLVertexAttributeID_Color);
+				
+				if (isVBOSupported)
+				{
+					glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+					glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
+					glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
+					glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
+					glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+				}
+				else
+				{
+					glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
+					glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
+					glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), &gfx3d.vertlist->list[0].color);
+				}
 			}
 			else
 			{
-				glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+				glEnableClientState(GL_COLOR_ARRAY);
+				glEnableClientState(GL_VERTEX_ARRAY);
+				
+				if (isVBOSupported)
+				{
+					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+					
+					glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+					glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
+					glVertexPointer(4, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
+					glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
+				}
+				else
+				{
+					glVertexPointer(4, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].coord);
+					glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), &gfx3d.vertlist->list[0].texcoord);
+					glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
+				}
 			}
 		}
 		
@@ -1488,14 +1522,28 @@ static void OGLRender()
 			}
 		}
 		
-		if (isVBOSupported)
+		if (isShaderSupported)
 		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			if (isVBOSupported)
+			{
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			}
+			
+			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
+			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+			glDisableVertexAttribArray(OGLVertexAttributeID_Color);
 		}
-		
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_COLOR_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		else
+		{
+			if (isVBOSupported)
+			{
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			}
+			
+			glDisableClientState(GL_VERTEX_ARRAY);
+			glDisableClientState(GL_COLOR_ARRAY);
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		}
 	}
 	
 	//needs to happen before endgl because it could free some textureids for expired cache items
