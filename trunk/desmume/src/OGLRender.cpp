@@ -232,6 +232,7 @@ OGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
 OGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
 OGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
 OGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
+OGLEXT(PFNGLBUFFERSUBDATAPROC,glBufferSubDataARB)
 OGLEXT(PFNGLMAPBUFFERPROC,glMapBufferARB)
 OGLEXT(PFNGLUNMAPBUFFERPROC,glUnmapBufferARB)
 // FBO
@@ -614,6 +615,7 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
 	INITOGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
 	INITOGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
+	INITOGLEXT(PFNGLBUFFERSUBDATAPROC,glBufferSubDataARB)
 	INITOGLEXT(PFNGLMAPBUFFERPROC,glMapBufferARB)
 	INITOGLEXT(PFNGLUNMAPBUFFERPROC,glUnmapBufferARB)
 	// FBO
@@ -645,6 +647,9 @@ static char OGLInit(void)
 	if (isVBOSupported)
 	{
 		glGenBuffersARB(1, &vboVertexID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, VERTLIST_SIZE * sizeof(VERT), gfx3d.vertlist, GL_STREAM_DRAW_ARB);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 	
 	// PBO Setup
@@ -1385,7 +1390,7 @@ static void OGLRender()
 		if (isVAOSupported)
 		{
 			glBindVertexArray(vaoMainStatesID);
-			glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
+			glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
 		}
 		else
 		{
@@ -1398,7 +1403,7 @@ static void OGLRender()
 				if (isVBOSupported)
 				{
 					glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-					glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
+					glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
 					glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 					glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
 					glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
@@ -1422,7 +1427,7 @@ static void OGLRender()
 					glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
 					
 					glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-					glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
+					glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
 					glVertexPointer(4, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 					glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
 				}
