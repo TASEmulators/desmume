@@ -54,6 +54,14 @@ static void ENDGL() {
 #ifdef __APPLE__
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
+	
+	// We're not exactly committing to OpenGL 3.2 Core Profile just yet, so redefine APPLE
+	// extensions for VAO as a temporary measure.
+	#ifdef GL_APPLE_vertex_array_object
+		#define glGenVertexArrays(a, b)		glGenVertexArraysAPPLE(a, b)
+		#define glBindVertexArray(a)		glBindVertexArrayAPPLE(a)
+		#define glDeleteVertexArrays(a, b)	glDeleteVertexArraysAPPLE(a, b)
+	#endif
 #else
 	#include <GL/gl.h>
 	#include <GL/glext.h>
@@ -77,15 +85,13 @@ static void ENDGL() {
 #include "texcache.h"
 #include "utils/task.h"
 
+
 enum OGLVertexAttributeID
 {
 	OGLVertexAttributeID_Position = 0,
 	OGLVertexAttributeID_TexCoord0 = 8,
 	OGLVertexAttributeID_Color = 3,
 };
-
-static DS_ALIGN(16) u8  GPU_screen3D			[256*192*4];
-static bool gpuScreen3DHasNewData = false;
 
 static const GLenum map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const GLint texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
@@ -112,6 +118,7 @@ static bool isVBOSupported = false;
 static bool isPBOSupported = false;
 static bool isFBOSupported = false;
 static bool isShaderSupported = false;
+static bool isVAOSupported = false;
 
 // ClearImage/Rear-plane (FBO)
 static GLenum oglClearImageTextureID[2] = {0};	// 0 - image, 1 - depth
@@ -124,7 +131,6 @@ static u16 oglClearImageScrollOld = 0;
 
 // VBO
 static GLuint vboVertexID;
-static GLuint vboTexCoordID;
 
 // PBO
 static GLuint pboRenderDataID[2];
@@ -149,13 +155,22 @@ static GLuint oglToonTableTextureID;
 static u16 currentToonTable16[32];
 static bool toonTableNeedsUpdate = true;
 
+// VAO
+static GLuint vaoMainStatesID;
+
+// Textures
 static bool hasTexture = false;
 static TexCacheItem* currTexture = NULL;
 static std::queue<GLuint> freeTextureIds;
 
+// Client-side Buffers
 static GLfloat *color4fBuffer = NULL;
 static GLushort *vertIndexBuffer = NULL;
 
+static DS_ALIGN(16) u8 GPU_screen3D[256 * 192 * sizeof(u32)];
+static bool gpuScreen3DHasNewData = false;
+
+// Lookup Tables
 static CACHE_ALIGN GLfloat material_8bit_to_float[255] = {0};
 static CACHE_ALIGN GLuint dsDepthToD24S8_LUT[32768] = {0};
 static const GLfloat divide5bitBy31LUT[32] =	{0.0, 0.03225806451613, 0.06451612903226, 0.09677419354839,
@@ -203,6 +218,15 @@ OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
 OGLEXT(PFNGLUNIFORM1FPROC,glUniform1f)
 OGLEXT(PFNGLUNIFORM2FPROC,glUniform2f)
+// Generic vertex attributes
+OGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation)
+OGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray)
+OGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray)
+OGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer)
+// VAO
+OGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
+OGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
+OGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
 // VBO and PBO
 OGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
 OGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
@@ -404,7 +428,8 @@ static void createShaders()
 
 	if ((strstr(extString, "GL_ARB_shader_objects") == NULL) ||
 		(strstr(extString, "GL_ARB_vertex_shader") == NULL) ||
-		(strstr(extString, "GL_ARB_fragment_shader") == NULL))
+		(strstr(extString, "GL_ARB_fragment_shader") == NULL) ||
+		(strstr(extString, "GL_ARB_vertex_program") == NULL) )
 		NOSHADERS("Shaders aren't supported by your system.");
 
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
@@ -575,6 +600,15 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
+	// Generic vertex attributes
+	INITOGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation)
+	INITOGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray)
+	INITOGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray)
+	INITOGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer)
+	// VAO
+	INITOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
+	INITOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
+	INITOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
 	// VBO and PBO
 	INITOGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
 	INITOGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
@@ -607,15 +641,14 @@ static char OGLInit(void)
 #endif
 	
 	// VBO Setup
-	isVBOSupported = (strstr(extString, "GL_ARB_vertex_buffer_object") == NULL)?false:true;
+	isVBOSupported = (strstr(extString, "GL_ARB_vertex_buffer_object") == NULL) ? false : true;
 	if (isVBOSupported)
 	{
 		glGenBuffersARB(1, &vboVertexID);
-		glGenBuffersARB(1, &vboTexCoordID);
 	}
 	
 	// PBO Setup
-	isPBOSupported = (strstr(extString, "GL_ARB_pixel_buffer_object") == NULL)?false:true;
+	isPBOSupported = (strstr(extString, "GL_ARB_pixel_buffer_object") == NULL) ? false : true;
 	if (isPBOSupported)
 	{
 		glGenBuffersARB(2, pboRenderDataID);
@@ -703,12 +736,33 @@ static char OGLInit(void)
 		// simply reference the colors+alpha from just the vertices themselves.)
 		color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
 	}
+	
+	// VAO Setup
+	isVAOSupported = ( (isVBOSupported && isShaderSupported) &&
+					   (strstr(extString, "GL_ARB_vertex_array_object") == NULL ||
+						strstr(extString, "GL_APPLE_vertex_array_object") == NULL) ) ? false : true;
+	if (isVAOSupported)
+	{
+		glGenVertexArrays(1, &vaoMainStatesID);
+		glBindVertexArray(vaoMainStatesID);
+		
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
+		
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
+		glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+		
+		glBindVertexArray(0);
+	}
 
 	// FBO Setup
 	isFBOSupported = ( (strstr(extString, "GL_ARB_framebuffer_object") == NULL) &&
 					   (strstr(extString, "GL_EXT_framebuffer_object") == NULL ||
 					    strstr(extString, "GL_EXT_framebuffer_blit") == NULL ||
-					    strstr(extString, "GL_EXT_packed_depth_stencil") == NULL) ) ? false: true;
+					    strstr(extString, "GL_EXT_packed_depth_stencil") == NULL) ) ? false : true;
 	
 	if (isFBOSupported)
 	{
@@ -821,6 +875,12 @@ static void OGLClose()
 		delete [] color4fBuffer;
 		color4fBuffer = NULL;
 	}
+	
+	if (isVAOSupported)
+	{
+		glDeleteVertexArrays(1, &vaoMainStatesID);
+		isVAOSupported = false;
+	}
 
 	//kill the tex cache to free all the texture ids
 	TexCache_Reset();
@@ -835,7 +895,6 @@ static void OGLClose()
 	if (isVBOSupported)
 	{
 		glDeleteBuffersARB(1, &vboVertexID);
-		glDeleteBuffersARB(1, &vboTexCoordID);
 	}
 	
 	if (isPBOSupported)
@@ -1322,17 +1381,10 @@ static void OGLRender()
 		bool needVertexUpload = true;
 		
 		// Assign vertex attributes based on which OpenGL features we have.
-		if (isShaderSupported && isVBOSupported)
+		if (isVAOSupported)
 		{
-			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-			
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+			glBindVertexArray(vaoMainStatesID);
 			glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist, GL_STREAM_DRAW_ARB);
-			glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
-			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-			glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
 		}
 		else
 		{
@@ -1522,27 +1574,35 @@ static void OGLRender()
 			}
 		}
 		
-		if (isShaderSupported)
+		// Disable vertex attributes.
+		if (isVAOSupported)
 		{
-			if (isVBOSupported)
-			{
-				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			}
-			
-			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glDisableVertexAttribArray(OGLVertexAttributeID_Color);
+			glBindVertexArray(0);
 		}
 		else
 		{
-			if (isVBOSupported)
+			if (isShaderSupported)
 			{
-				glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+				if (isVBOSupported)
+				{
+					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+				}
+				
+				glDisableVertexAttribArray(OGLVertexAttributeID_Position);
+				glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+				glDisableVertexAttribArray(OGLVertexAttributeID_Color);
 			}
-			
-			glDisableClientState(GL_VERTEX_ARRAY);
-			glDisableClientState(GL_COLOR_ARRAY);
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+			else
+			{
+				if (isVBOSupported)
+				{
+					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+				}
+				
+				glDisableClientState(GL_VERTEX_ARRAY);
+				glDisableClientState(GL_COLOR_ARRAY);
+				glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+			}
 		}
 	}
 	
