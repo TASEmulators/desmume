@@ -2075,9 +2075,16 @@ static void gfx3d_doFlush()
 	gfx3d.state.wbuffer = BIT1(gfx3d.state.activeFlushCommand);
 
 	gfx3d.renderState = gfx3d.state;
-
+	
+	// Override render states per user settings
 	if(!CommonSettings.GFX3D_Texture)
 		gfx3d.renderState.enableTexturing = false;
+	
+	if(!CommonSettings.GFX3D_EdgeMark)
+		gfx3d.renderState.enableEdgeMarking = false;
+	
+	if(!CommonSettings.GFX3D_Fog)
+		gfx3d.renderState.enableFog = false;
 	
 	gfx3d.state.activeFlushCommand = gfx3d.state.pendingFlushCommand;
 

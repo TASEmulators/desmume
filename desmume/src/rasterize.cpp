@@ -1325,7 +1325,7 @@ void SoftRasterizerEngine::framebufferProcess()
 	// - the edges are completely sharp/opaque on the very brief title screen intro,
 	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 	// - the character edges in-level are clearly transparent, and also show well through shield powerups.
-	if(gfx3d.renderState.enableEdgeMarking && CommonSettings.GFX3D_EdgeMark)
+	if(gfx3d.renderState.enableEdgeMarking)
 	{ 
 		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
 		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
@@ -1398,7 +1398,7 @@ void SoftRasterizerEngine::framebufferProcess()
 		}
 	}
 
-	if(gfx3d.renderState.enableFog && CommonSettings.GFX3D_Fog)
+	if(gfx3d.renderState.enableFog)
 	{
 		u32 r = GFX3D_5TO6((gfx3d.renderState.fogColor)&0x1F);
 		u32 g = GFX3D_5TO6((gfx3d.renderState.fogColor>>5)&0x1F);
@@ -1610,7 +1610,7 @@ static void SoftRastRender()
 	mainSoftRasterizer.height = 192;
 
 	//setup fog variables (but only if fog is enabled)
-	if(gfx3d.renderState.enableFog && CommonSettings.GFX3D_Fog)
+	if(gfx3d.renderState.enableFog)
 		mainSoftRasterizer.updateFogTable();
 	
 	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.renderState.enableClearImage?true:false);
