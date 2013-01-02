@@ -49,18 +49,36 @@ void hq4x_32_def(u32* dst0, u32* dst1, u32* dst2, u32* dst3,
 		unsigned char mask;
 
 		u32 c[9];
-
+		
 		c[1] = src0[0];
 		c[4] = src1[0];
 		c[7] = src2[0];
-
-		c[0] = src0[-1];
-		c[3] = src1[-1];
-		c[6] = src2[-1];
-
-		c[2] = src0[1];
-		c[5] = src1[1];
-		c[8] = src2[1];
+		
+		if (i > 0)
+		{
+			c[0] = src0[-1];
+			c[3] = src1[-1];
+			c[6] = src2[-1];
+		}
+		else
+		{
+			c[0] = src0[0];
+			c[3] = src1[0];
+			c[6] = src2[0];
+		}
+		
+		if (i < count-1)
+		{
+			c[2] = src0[1];
+			c[5] = src1[1];
+			c[8] = src2[1];
+		}
+		else
+		{
+			c[2] = src0[0];
+			c[5] = src1[0];
+			c[8] = src2[0];
+		}
 
 		mask = 0;
 
@@ -128,13 +146,31 @@ void hq4xS_32_def(u32* dst0, u32* dst1, u32* dst2, u32* dst3,
 		c[4] = src1[0];
 		c[7] = src2[0];
 		
-		c[0] = src0[-1];
-		c[3] = src1[-1];
-		c[6] = src2[-1];
+		if (i > 0)
+		{
+			c[0] = src0[-1];
+			c[3] = src1[-1];
+			c[6] = src2[-1];
+		}
+		else
+		{
+			c[0] = src0[0];
+			c[3] = src1[0];
+			c[6] = src2[0];
+		}
 		
-		c[2] = src0[1];
-		c[5] = src1[1];
-		c[8] = src2[1];
+		if (i < count-1)
+		{
+			c[2] = src0[1];
+			c[5] = src1[1];
+			c[8] = src2[1];
+		}
+		else
+		{
+			c[2] = src0[0];
+			c[5] = src1[0];
+			c[8] = src2[0];
+		}
 		
 		mask = 0;
 		// hq4xS dynamic edge detection:
