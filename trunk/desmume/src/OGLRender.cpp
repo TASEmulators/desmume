@@ -738,9 +738,10 @@ static char OGLInit(void)
 	}
 	
 	// VAO Setup
-	isVAOSupported = ( (isVBOSupported && isShaderSupported) &&
-					   (strstr(extString, "GL_ARB_vertex_array_object") == NULL ||
-						strstr(extString, "GL_APPLE_vertex_array_object") == NULL) ) ? false : true;
+	isVAOSupported = ( !isVBOSupported ||
+					   !isShaderSupported ||
+					   strstr(extString, "GL_ARB_vertex_array_object") == NULL ||
+					   strstr(extString, "GL_APPLE_vertex_array_object") == NULL ) ? false : true;
 	if (isVAOSupported)
 	{
 		glGenVertexArrays(1, &vaoMainStatesID);
