@@ -124,6 +124,7 @@
 	
 	BOOL isVBOSupported;
 	BOOL isShadersSupported;
+	BOOL isVAOSupported;
 	
 	DisplayViewDelegate *dispViewDelegate;
 	GLint glTexRenderStyle;
@@ -131,15 +132,16 @@
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
 	
-	GLuint mainDisplayTexIndex;
-	GLuint touchDisplayTexIndex;
-	GLuint vboTexCoordID;
+	GLuint displayTexID;
 	GLuint vboVertexID;
+	GLuint vboTexCoordID;
 	GLuint vboElementID;
 	
 	GLuint vertexShaderID;
 	GLuint fragmentShaderID;
 	GLuint shaderProgram;
+	
+	GLuint vaoMainStatesID;
 	
 	GLint uniformAngleDegrees;
 	GLint uniformScalar;
@@ -148,6 +150,9 @@
 	GLint *vtxBuffer;
 	GLfloat *texCoordBuffer;
 	GLubyte *vtxIndexBuffer;
+	GLsizei vtxElementCount;
+	
+	unsigned int vtxBufferOffset;
 }
 
 - (void) drawVideoFrame;
