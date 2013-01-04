@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #import "cocoa_globals.h"
 #import "types.h"
 
+#include <Accelerate/Accelerate.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include "../version.h"
@@ -343,7 +344,9 @@ FORCEINLINE uint32_t RGB888ToRGBA8888(const uint32_t color24)
 
 	Takes:
 		srcBuffer - Pointer to the source 16-bit RGBA5551 pixel buffer.
+		
 		destBuffer - Pointer to the destination 32-bit RGBA8888 pixel buffer.
+		
 		numberPixels - The number of pixels to copy.
 
 	Returns:
@@ -365,13 +368,15 @@ void RGBA5551ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *
 }
 
 /********************************************************************************************
-	RGBA5551ToRGBA8888Buffer()
+	RGB888ToRGBA8888Buffer()
 
 	Copies a 24-bit RGB888 pixel buffer into a 32-bit RGBA8888 pixel buffer.
 
 	Takes:
 		srcBuffer - Pointer to the source 24-bit RGB888 pixel buffer.
+		
 		destBuffer - Pointer to the destination 32-bit RGBA8888 pixel buffer.
+		
 		numberPixels - The number of pixels to copy.
 
 	Returns:
@@ -399,7 +404,9 @@ void RGB888ToRGBA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__
 
 	Takes:
 		normalBounds - The rectangular bounds of the normal 2D surface.
+		
 		scalar - The scalar used to transform the 2D surface.
+		
 		angleDegrees - The rotation angle, in degrees, to transform the 2D surface.
 
 	Returns:
@@ -412,80 +419,120 @@ void RGB888ToRGBA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__
  ********************************************************************************************/
 NSSize GetTransformedBounds(NSSize normalBounds, double scalar, double angleDegrees)
 {
+	const double angleRadians = angleDegrees * (M_PI/180.0);
+	
+	// The points are as follows:
+	//
+	// (x[3], y[3])    (x[2], y[2])
+	//
+	//
+	//
+	// (x[0], y[0])    (x[1], y[1])
+	
+	// Do our scale and rotate transformations.
+#ifdef __ACCELERATE__
+	
+	// Note that although we only need to calculate 3 points, we include 4 points
+	// here because Accelerate prefers 16-byte alignment.
+	double x[] = {0.0, normalBounds.width, normalBounds.width, 0.0};
+	double y[] = {0.0, 0.0, normalBounds.height, normalBounds.height};
+	
+	cblas_drot(4, x, 1, y, 1, scalar * cos(angleRadians), scalar * sin(angleRadians));
+	
+#else // Keep a C-version of this transformation for reference purposes.
+	
+	const double w = scalar * normalBounds.width;
+	const double h = scalar * normalBounds.height;
+	const double d = hypot(w, h);
+	const double dAngle = atan2(h, w);
+	
+	const double px = w * cos(angleRadians);
+	const double py = w * sin(angleRadians);
+	const double qx = d * cos(dAngle + angleRadians);
+	const double qy = d * sin(dAngle + angleRadians);
+	const double rx = h * cos((M_PI/2.0) + angleRadians);
+	const double ry = h * sin((M_PI/2.0) + angleRadians);
+	
+	const double x[] = {0.0, px, qx, rx};
+	const double y[] = {0.0, py, qy, ry};
+	
+#endif
+	
+	// Determine the transformed width, which is dependent on the location of
+	// the x-coordinate of point (x[2], y[2]).
 	NSSize transformBounds = {0.0, 0.0};
 	
-	double angleRadians = angleDegrees * (M_PI/180.0);
-	double w = scalar * normalBounds.width;
-	double h = scalar * normalBounds.height;
-	double d = hypot(w, h);
-	double dAngle = atan2(h, w);
-	
-	double px = d * cos(dAngle + angleRadians);
-	double py = d * sin(dAngle + angleRadians);
-	double qx = h * cos((M_PI/2.0) + angleRadians);
-	double qy = h * sin((M_PI/2.0) + angleRadians);
-	double rx = w * cos(angleRadians);
-	double ry = w * sin(angleRadians);
-	
-	double transformWidth = px;
-	double transformHeight = py;
-	
-	// Determine the transform width, which is dependent on the location of
-	// the x-coordinate of point p.
-	if (px > 0.0)
+	if (x[2] > 0.0)
 	{
-		transformWidth = px;
-		if (px < qx)
+		if (x[2] < x[3])
 		{
-			transformWidth = qx - rx;
+			transformBounds.width = x[3] - x[1];
 		}
-		else if (px < rx)
+		else if (x[2] < x[1])
 		{
-			transformWidth = rx - qx;
+			transformBounds.width = x[1] - x[3];
+		}
+		else
+		{
+			transformBounds.width = x[2];
 		}
 	}
-	else if (px < 0.0)
+	else if (x[2] < 0.0)
 	{
-		transformWidth = -px;
-		if (px > qx)
+		if (x[2] > x[3])
 		{
-			transformWidth = -(qx - rx);
+			transformBounds.width = -(x[3] - x[1]);
 		}
-		else if (px > rx)
+		else if (x[2] > x[1])
 		{
-			transformWidth = -(rx - qx);
+			transformBounds.width = -(x[1] - x[3]);
 		}
+		else
+		{
+			transformBounds.width = -x[2];
+		}
+	}
+	else
+	{
+		transformBounds.width = abs(x[1] - x[3]);
 	}
 	
-	// Determine the transform height, which is dependent on the location of
-	// the y-coordinate of point p.
-	if (py > 0.0)
+	// Determine the transformed height, which is dependent on the location of
+	// the y-coordinate of point (x[2], y[2]).
+	if (y[2] > 0.0)
 	{
-		transformHeight = py;
-		if (py < qy)
+		if (y[2] < y[3])
 		{
-			transformHeight = qy - ry;
+			transformBounds.height = y[3] - y[1];
 		}
-		else if (py < ry)
+		else if (y[2] < y[1])
 		{
-			transformHeight = ry - qy;
+			transformBounds.height = y[1] - y[3];
+		}
+		else
+		{
+			transformBounds.height = y[2];
 		}
 	}
-	else if (py < 0.0)
+	else if (y[2] < 0.0)
 	{
-		transformHeight = -py;
-		if (py > qy)
+		if (y[2] > y[3])
 		{
-			transformHeight = -(qy - ry);
+			transformBounds.height = -(y[3] - y[1]);
 		}
-		else if (py > ry)
+		else if (y[2] > y[1])
 		{
-			transformHeight = -(ry - qy);
+			transformBounds.height = -(y[1] - y[3]);
+		}
+		else
+		{
+			transformBounds.height = -y[2];
 		}
 	}
-	
-	transformBounds.width = transformWidth;
-	transformBounds.height = transformHeight;
+	else
+	{
+		transformBounds.height = abs(y[3] - y[1]);
+	}
 	
 	return transformBounds;
 }
@@ -498,8 +545,11 @@ NSSize GetTransformedBounds(NSSize normalBounds, double scalar, double angleDegr
 
 	Takes:
 		normalBoundsWidth - The rectangular width of the normal 2D surface.
+		
 		normalBoundsHeight - The rectangular height of the normal 2D surface.
+		
 		keepInBoundsWidth - The rectangular width of the keep in 2D surface.
+		
 		keepInBoundsHeight - The rectangular height of the keep in 2D surface.
 
 	Returns:
@@ -512,35 +562,10 @@ NSSize GetTransformedBounds(NSSize normalBounds, double scalar, double angleDegr
  ********************************************************************************************/
 double GetMaxScalarInBounds(double normalBoundsWidth, double normalBoundsHeight, double keepInBoundsWidth, double keepInBoundsHeight)
 {
-	double maxX;
-	double maxY;
-	double maxS;
+	const double maxX = (normalBoundsWidth <= 0.0) ? 0.0 : keepInBoundsWidth / normalBoundsWidth;
+	const double maxY = (normalBoundsHeight <= 0.0) ? 0.0 : keepInBoundsHeight / normalBoundsHeight;
 	
-	if (normalBoundsWidth <= 0.0)
-	{
-		maxX = 0.0;
-	}
-	else
-	{
-		maxX = keepInBoundsWidth / normalBoundsWidth;
-	}
-	
-	if (normalBoundsHeight <= 0.0)
-	{
-		maxY = 0.0;
-	}
-	else
-	{
-		maxY = keepInBoundsHeight / normalBoundsHeight;
-	}
-	
-	maxS = maxY;
-	if (maxX < maxY)
-	{
-		maxS = maxX;
-	}
-	
-	return maxS;
+	return (maxX <= maxY) ? maxX : maxY;
 }
 
 /********************************************************************************************
@@ -550,9 +575,13 @@ double GetMaxScalarInBounds(double normalBoundsWidth, double normalBoundsHeight,
 
 	Takes:
 		transformedPt - A point as it exists on a 2D transformed surface.
+		
 		normalBounds - The rectangular bounds of the normal 2D surface.
+		
 		transformedBounds - The rectangular bounds of the transformed 2D surface.
+		
 		scalar - The scalar used on the transformed 2D surface.
+		
 		angleDegrees - The rotation angle, in degrees, of the transformed 2D surface.
 
 	Returns:
@@ -563,29 +592,21 @@ double GetMaxScalarInBounds(double normalBoundsWidth, double normalBoundsHeight,
  ********************************************************************************************/
 NSPoint GetNormalPointFromTransformedPoint(NSPoint transformedPt, NSSize normalBounds, NSSize transformBounds, double scalar, double angleDegrees)
 {
-	double angleRadians = angleDegrees * (M_PI/180.0);
-	double transformedX = 0.0;
-	double transformedY = 0.0;
-	
-	double r = 0.0;
-	double theta = 0.0;
-	
-	double normalizedAngle = 0.0;
-	double normalizedX = 0.0;
-	double normalizedY = 0.0;
-	NSPoint normalizedPt = {transformedPt.x, transformedPt.y};
+	const double angleRadians = angleDegrees * (M_PI/180.0);
 	
 	// Get the coordinates of the transformed point and translate the coordinate
 	// system so that the origin becomes the center.
-	transformedX = transformedPt.x - (transformBounds.width / 2.0);
-	transformedY = transformedPt.y - (transformBounds.height / 2.0);
+	const double transformedX = transformedPt.x - (transformBounds.width / 2.0);
+	const double transformedY = transformedPt.y - (transformBounds.height / 2.0);
 	
 	// Perform rect-polar conversion.
 	
 	// Get the radius r with respect to the origin.
-	r = hypot(transformedX, transformedY);
+	const double r = hypot(transformedX, transformedY);
 	
 	// Get the angle theta with respect to the origin.
+	double theta = 0.0;
+	
 	if (transformedX == 0.0)
 	{
 		if (transformedY > 0.0)
@@ -613,13 +634,12 @@ NSPoint GetNormalPointFromTransformedPoint(NSPoint transformedPt, NSSize normalB
 	// Get the normalized angle and use it to rotate about the origin.
 	// Then do polar-rect conversion and translate back to transformed coordinates
 	// with a 0 degree rotation.
-	normalizedAngle = theta - angleRadians;
-	normalizedX = (r * cos(normalizedAngle)) + (normalBounds.width * scalar / 2.0);
-	normalizedY = (r * sin(normalizedAngle)) + (normalBounds.height * scalar / 2.0);
+	const double normalizedAngle = theta - angleRadians;
+	const double normalizedX = (r * cos(normalizedAngle)) + (normalBounds.width * scalar / 2.0);
+	const double normalizedY = (r * sin(normalizedAngle)) + (normalBounds.height * scalar / 2.0);
 	
 	// Scale the location to get a one-to-one correlation to normal coordinates.
-	normalizedPt.x = (CGFloat)(normalizedX / scalar);
-	normalizedPt.y = (CGFloat)(normalizedY / scalar);
+	const NSPoint normalizedPt = { (CGFloat)(normalizedX / scalar), (CGFloat)(normalizedY / scalar) };
 	
 	return normalizedPt;
 }
