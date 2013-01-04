@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 #ifndef MACOSX_10_4_COMPATIBILITY_H
 #define MACOSX_10_4_COMPATIBILITY_H
 
-// Taken from NSObjCRuntime.h of the Mac OS X 10.5 SDK.
-// Defines NSInteger and NSUInteger for Mac OS X 10.4 and earlier.
+// Taken from NSObjCRuntime.h of the Mac OS X v10.5 SDK.
+// Defines NSInteger and NSUInteger for Mac OS X v10.4 and earlier.
 #ifndef NSINTEGER_DEFINED
 #define NSINTEGER_DEFINED 1
 typedef int NSInteger;
@@ -29,14 +29,20 @@ typedef unsigned int NSUInteger;
 #define NSUIntegerMax   ULONG_MAX	
 #endif
 
-// Taken from CIVector.h of the Mac OS X 10.5 SDK.
-// Defines CGFloat for Mac OS X 10.4 and earlier.
+// Taken from CIVector.h of the Mac OS X v10.5 SDK.
+// Defines CGFloat for Mac OS X v10.4 and earlier.
 #ifndef CGFLOAT_DEFINED
 #define CGFLOAT_DEFINED 1
 typedef float CGFloat;
 #define CGFLOAT_MIN FLT_MIN
 #define CGFLOAT_MAX FLT_MAX
 #define CGFLOAT_IS_DOUBLE 0
+#endif
+
+// Overrides for GL_EXT_framebuffer_blit (not available in Mac OS X v10.4)
+#if !defined(GL_ARB_framebuffer_object) || !defined(GL_EXT_framebuffer_blit)
+#define GL_READ_FRAMEBUFFER_EXT 0x8CA8
+#define glBlitFramebufferEXT(a, b, c, d, e, f, g, h, i, j)
 #endif
 
 #endif // MACOSX_10_4_COMPATIBILITY_H

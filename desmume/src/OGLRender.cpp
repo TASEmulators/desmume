@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -52,8 +52,13 @@ static void ENDGL() {
 	#include <GL/glext.h>
 #else
 #ifdef __APPLE__
+	#include <AvailabilityMacros.h>
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
+	
+	#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4
+		#include "cocoa/macosx_10_4_compat.h"
+	#endif
 	
 	// We're not exactly committing to OpenGL 3.2 Core Profile just yet, so redefine APPLE
 	// extensions for VAO as a temporary measure.
@@ -427,11 +432,15 @@ static void createShaders()
 		glGetShaderInfoLog == NULL)
 		NOSHADERS("Shaders aren't supported by your system.");*/
 
+#if !defined(GL_ARB_shader_objects) || !defined(GL_ARB_vertex_shader) || !defined(GL_ARB_fragment_shader) || !defined(GL_ARB_vertex_program)
+	NOSHADERS("Shaders aren't supported by your system.");
+#else
 	if ((strstr(extString, "GL_ARB_shader_objects") == NULL) ||
 		(strstr(extString, "GL_ARB_vertex_shader") == NULL) ||
 		(strstr(extString, "GL_ARB_fragment_shader") == NULL) ||
 		(strstr(extString, "GL_ARB_vertex_program") == NULL) )
 		NOSHADERS("Shaders aren't supported by your system.");
+#endif
 
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	if(!vertexShaderID)
@@ -643,7 +652,11 @@ static char OGLInit(void)
 #endif
 	
 	// VBO Setup
+#if !defined(GL_ARB_vertex_buffer_object)
+	isVBOSupported = false;
+#else
 	isVBOSupported = (strstr(extString, "GL_ARB_vertex_buffer_object") == NULL) ? false : true;
+#endif
 	if (isVBOSupported)
 	{
 		glGenBuffersARB(1, &vboVertexID);
@@ -653,7 +666,11 @@ static char OGLInit(void)
 	}
 	
 	// PBO Setup
+#if !defined(GL_ARB_pixel_buffer_object)
+	isPBOSupported = false;
+#else
 	isPBOSupported = (strstr(extString, "GL_ARB_pixel_buffer_object") == NULL) ? false : true;
+#endif
 	if (isPBOSupported)
 	{
 		glGenBuffersARB(2, pboRenderDataID);
@@ -743,10 +760,14 @@ static char OGLInit(void)
 	}
 	
 	// VAO Setup
+#if !defined(GL_ARB_vertex_array_object) && !defined(GL_APPLE_vertex_array_object)
+	isVAOSupported = false;
+#else
 	isVAOSupported = ( !isVBOSupported ||
 					   !isShaderSupported ||
 					  (strstr(extString, "GL_ARB_vertex_array_object") == NULL &&
 					   strstr(extString, "GL_APPLE_vertex_array_object") == NULL) ) ? false : true;
+#endif
 	if (isVAOSupported)
 	{
 		glGenVertexArrays(1, &vaoMainStatesID);
@@ -765,11 +786,15 @@ static char OGLInit(void)
 	}
 
 	// FBO Setup
-	isFBOSupported = ( (strstr(extString, "GL_ARB_framebuffer_object") == NULL) &&
-					   (strstr(extString, "GL_EXT_framebuffer_object") == NULL ||
-					    strstr(extString, "GL_EXT_framebuffer_blit") == NULL ||
-					    strstr(extString, "GL_EXT_packed_depth_stencil") == NULL) ) ? false : true;
-	
+#if ( !defined(GL_ARB_framebuffer_object) ) && ( !defined(GL_EXT_framebuffer_object) || \
+												 !defined(GL_EXT_framebuffer_blit) || \
+												 !defined(GL_EXT_packed_depth_stencil) )
+	isFBOSupported = false;
+#else
+	isFBOSupported = ( (strstr(extString, "GL_ARB_framebuffer_object") == NULL) && (strstr(extString, "GL_EXT_framebuffer_object") == NULL ||
+																					strstr(extString, "GL_EXT_framebuffer_blit") == NULL ||
+																					strstr(extString, "GL_EXT_packed_depth_stencil") == NULL) ) ? false : true;
+#endif
 	if (isFBOSupported)
 	{
 		// ClearImage/Rear-plane

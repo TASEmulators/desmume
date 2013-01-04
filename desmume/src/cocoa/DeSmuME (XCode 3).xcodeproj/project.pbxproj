@@ -577,6 +577,10 @@
 		AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB97C554169646D1002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
+		AB97D5E516964F3B002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
+		AB97D60916964F48002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
+		AB97D60C16964F54002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
 		ABA03570169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABA03571169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABA03572169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
@@ -822,9 +826,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
-		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
-		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB00E87D14205EBC00DE561F /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -918,6 +922,7 @@
 		AB901BE21420707800348EEC /* Chinese */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE31420707D00348EEC /* Norwegian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE41420708200348EEC /* Romanian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AB97C553169646D1002AC11B /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		AB9971CE134EDA0800531BA7 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
 		ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = troubleshootingWindowDelegate.h; sourceTree = "<group>"; };
 		ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = troubleshootingWindowDelegate.mm; sourceTree = "<group>"; };
@@ -1212,6 +1217,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB97D60C16964F54002AC11B /* Accelerate.framework in Frameworks */,
 				AB2F3C3B15CF9C6000858373 /* AppKit.framework in Frameworks */,
 				AB2F3C3C15CF9C6000858373 /* AudioUnit.framework in Frameworks */,
 				AB2F3C3D15CF9C6000858373 /* Cocoa.framework in Frameworks */,
@@ -1226,6 +1232,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB97C554169646D1002AC11B /* Accelerate.framework in Frameworks */,
 				AB711F771481C35F009011C8 /* AppKit.framework in Frameworks */,
 				AB711F751481C35F009011C8 /* AudioUnit.framework in Frameworks */,
 				AB711F741481C35F009011C8 /* Cocoa.framework in Frameworks */,
@@ -1240,6 +1247,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB97D5E516964F3B002AC11B /* Accelerate.framework in Frameworks */,
 				AB73AA291507C9F500A310C8 /* AppKit.framework in Frameworks */,
 				AB73AA2A1507C9F500A310C8 /* AudioUnit.framework in Frameworks */,
 				AB73AA2B1507C9F500A310C8 /* Cocoa.framework in Frameworks */,
@@ -1254,6 +1262,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB97D60916964F48002AC11B /* Accelerate.framework in Frameworks */,
 				ABAD103F15ACE7A00000EC47 /* AppKit.framework in Frameworks */,
 				ABAD104015ACE7A00000EC47 /* AudioUnit.framework in Frameworks */,
 				ABAD104115ACE7A00000EC47 /* Cocoa.framework in Frameworks */,
@@ -1309,6 +1318,7 @@
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AB97C553169646D1002AC11B /* Accelerate.framework */,
 				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
 				ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,

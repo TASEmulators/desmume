@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2007 Jeff Bland
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -50,9 +50,7 @@ volatile bool execute = true;
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3DRasterize,
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
 &gpu3Dgl,
-#endif
 NULL
 };
 
@@ -176,7 +174,7 @@ bool OSXOpenGLRendererInit()
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFAOffScreen,
+		NSOpenGLPFAAccelerated,
 		(NSOpenGLPixelFormatAttribute)0
 	};
 
@@ -238,13 +236,10 @@ bool OSXOpenGLRendererInit()
 	{
 		[context makeCurrentContext];
 		
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4 
 		oglrender_init = &OSXOpenGLRendererInit;
-		//NDS_3D_SetDriver(CORE3DLIST_OPENGL);
-		NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
-#else
-		NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
-#endif
+		NDS_3D_SetDriver(CORE3DLIST_OPENGL);
+		//NDS_3D_SetDriver(CORE3DLIST_SWRASTERIZE);
+		
 		if(!gpu3D->NDS_3D_Init())
 			[CocoaDSUtil quickDialogUsingTitle:NSLocalizedString(@"Error", nil) message:NSLocalizedString(@"Unable to initialize OpenGL components", nil)];
 	}
