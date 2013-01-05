@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,14 +30,15 @@
 
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize;
+- (void) doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
 
 @property (retain) DisplayViewDelegate *dispViewDelegate;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
+- (void) doTransformView:(DisplayOutputTransformData *)transformData;
 - (void) doRedraw;
-- (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
+- (void) doDisplayModeChanged:(NSInteger)displayModeID;
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
@@ -80,7 +81,7 @@
 @property (assign) double rotation;
 @property (assign) BOOL useBilinearOutput;
 @property (assign) BOOL useVerticalSync;
-@property (assign) NSInteger displayType;
+@property (assign) NSInteger displayMode;
 @property (assign) NSInteger displayOrientation;
 @property (assign) NSInteger displayOrder;
 @property (readonly) NSMutableDictionary *bindings;
@@ -113,7 +114,7 @@
 	NSBitmapImageRep *currentImageRep;
 }
 
-- (NSBitmapImageRep *) bitmapImageRep:(const void *)videoFrameData imageSize:(NSSize)imageSize;
+- (NSBitmapImageRep *) bitmapImageRep:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)imageWidth height:(const NSInteger)imageHeight;
 
 @end
 
@@ -127,6 +128,8 @@
 	BOOL isVAOSupported;
 	
 	DisplayViewDelegate *dispViewDelegate;
+	NSInteger lastDisplayMode;
+	NSInteger currentDisplayOrientation;
 	GLint glTexRenderStyle;
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
@@ -150,15 +153,14 @@
 	GLint *vtxBuffer;
 	GLfloat *texCoordBuffer;
 	GLubyte *vtxIndexBuffer;
-	GLsizei vtxElementCount;
 	
 	unsigned int vtxBufferOffset;
 }
 
 - (void) drawVideoFrame;
-- (void) uploadDisplayTextures:(const GLvoid *)textureData textureSize:(NSSize)textureSize;
-- (void) renderDisplay;
-- (void) updateDisplayVertices;
+- (void) uploadDisplayTextures:(const GLvoid *)textureData width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
+- (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
+- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID;
 
 @end
 

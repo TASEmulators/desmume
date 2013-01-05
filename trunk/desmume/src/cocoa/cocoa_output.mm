@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ GPU3DInterface *core3DList[] = {
 @synthesize isStateChanged;
 @synthesize frameCount;
 @synthesize frameData;
+@synthesize frameAttributesData;
 @synthesize property;
 @synthesize mutexProducer;
 @synthesize mutexConsume;
@@ -60,6 +61,7 @@ GPU3DInterface *core3DList[] = {
 	isStateChanged = NO;
 	frameCount = 0;
 	frameData = nil;
+	frameAttributesData = nil;
 	
 	property = [[NSMutableDictionary alloc] init];
 	[property setValue:[NSDate date] forKey:@"outputTime"];
@@ -85,6 +87,7 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	self.frameData = nil;
+	self.frameAttributesData = nil;
 	[property release];
 	
 	pthread_mutex_destroy(mutexConsume);
@@ -107,7 +110,7 @@ GPU3DInterface *core3DList[] = {
 	switch (message)
 	{
 		case MESSAGE_EMU_FRAME_PROCESSED:
-			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0]];
+			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0] attributes:[messageComponents objectAtIndex:1]];
 			break;
 			
 		default:
@@ -116,10 +119,11 @@ GPU3DInterface *core3DList[] = {
 	}
 }
 
-- (void) handleEmuFrameProcessed:(NSData *)theData
+- (void) handleEmuFrameProcessed:(NSData *)mainData attributes:(NSData *)attributesData
 {
 	self.frameCount++;
-	self.frameData = theData;
+	self.frameData = mainData;
+	self.frameAttributesData = attributesData;
 }
 
 @end
@@ -353,7 +357,7 @@ GPU3DInterface *core3DList[] = {
 	switch (message)
 	{
 		case MESSAGE_EMU_FRAME_PROCESSED:
-			[self handleEmuFrameProcessed:nil];
+			[self handleEmuFrameProcessed:nil attributes:nil];
 			break;
 			
 		case MESSAGE_SET_AUDIO_PROCESS_METHOD:
@@ -386,47 +390,47 @@ GPU3DInterface *core3DList[] = {
 	}
 }
 
-- (void) handleEmuFrameProcessed:(NSData *)theData
+- (void) handleEmuFrameProcessed:(NSData *)mainData attributes:(NSData *)attributesData
 {
 	SPU_Emulate_user();
 	
-	[super handleEmuFrameProcessed:theData];
+	[super handleEmuFrameProcessed:mainData attributes:attributesData];
 }
 
 - (void) handleSetVolume:(NSData *)volumeData
 {
-	const float *vol = (float *)[volumeData bytes];
-	[self setVolume:*vol];
+	const float vol = *(float *)[volumeData bytes];
+	[self setVolume:vol];
 }
 
 - (void) handleSetAudioOutputEngine:(NSData *)methodIdData
 {
-	const NSInteger *methodID = (NSInteger *)[methodIdData bytes];
-	[self setAudioOutputEngine:*methodID];
+	const NSInteger methodID = *(NSInteger *)[methodIdData bytes];
+	[self setAudioOutputEngine:methodID];
 }
 
 - (void) handleSetSpuAdvancedLogic:(NSData *)stateData
 {
-	const BOOL *theState = (BOOL *)[stateData bytes];
-	[self setSpuAdvancedLogic:*theState];
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setSpuAdvancedLogic:theState];
 }
 
 - (void) handleSetSpuSyncMode:(NSData *)modeIdData
 {
-	const NSInteger *modeID = (NSInteger *)[modeIdData bytes];
-	[self setSpuSyncMode:*modeID];
+	const NSInteger modeID = *(NSInteger *)[modeIdData bytes];
+	[self setSpuSyncMode:modeID];
 }
 
 - (void) handleSetSpuSyncMethod:(NSData *)methodIdData
 {
-	const NSInteger *methodID = (NSInteger *)[methodIdData bytes];
-	[self setSpuSyncMethod:*methodID];
+	const NSInteger methodID = *(NSInteger *)[methodIdData bytes];
+	[self setSpuSyncMethod:methodID];
 }
 
 - (void) handleSetSpuInterpolationMode:(NSData *)modeIdData
 {
-	const NSInteger *modeID = (NSInteger *)[modeIdData bytes];
-	[self setSpuInterpolationMode:*modeID];
+	const NSInteger modeID = *(NSInteger *)[modeIdData bytes];
+	[self setSpuInterpolationMode:modeID];
 }
 
 @end
@@ -435,7 +439,7 @@ GPU3DInterface *core3DList[] = {
 
 @synthesize gpuStateFlags;
 @dynamic delegate;
-@dynamic displayType;
+@dynamic displayMode;
 @dynamic frameSize;
 @synthesize mutexRender3D;
 
@@ -462,7 +466,8 @@ GPU3DInterface *core3DList[] = {
 	spinlockRender3DThreads = OS_SPINLOCK_INIT;
 	spinlockRender3DLineHack = OS_SPINLOCK_INIT;
 	
-	displayType = DS_DISPLAY_TYPE_COMBO;
+	delegate = nil;
+	displayMode = DS_DISPLAY_TYPE_COMBO;
 	frameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT * 2);
 	
 	gpuStateFlags =	GPUSTATE_MAIN_GPU_MASK |
@@ -478,10 +483,6 @@ GPU3DInterface *core3DList[] = {
 	GPUSTATE_SUB_BG3_MASK |
 	GPUSTATE_SUB_OBJ_MASK;
 	
-	frameCount = 0;
-	frameData = nil;
-	delegate = nil;
-	
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateMainGPU"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateMainBG0"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateMainBG1"];
@@ -494,7 +495,7 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateSubBG2"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateSubBG3"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"gpuStateSubOBJ"];
-	[property setValue:[NSNumber numberWithInteger:displayType] forKey:@"displayMode"];
+	[property setValue:[NSNumber numberWithInteger:displayMode] forKey:@"displayMode"];
 	[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
 	[property setValue:[NSNumber numberWithInteger:CORE3DLIST_NULL] forKey:@"render3DRenderingEngine"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"render3DHighPrecisionColorInterpolation"];
@@ -702,12 +703,12 @@ GPU3DInterface *core3DList[] = {
 	return flags;
 }
 
-- (void) setDisplayType:(NSInteger)dispType
+- (void) setDisplayMode:(NSInteger)displayModeID
 {
 	NSString *newDispString = nil;
 	NSSize newFrameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT);
 	
-	switch (dispType)
+	switch (displayModeID)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
 			newDispString = NSSTRING_DISPLAYMODE_MAIN;
@@ -728,20 +729,20 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	OSSpinLockLock(&spinlockDisplayType);
-	displayType = dispType;
+	displayMode = displayModeID;
 	frameSize = newFrameSize;
-	[property setValue:[NSNumber numberWithInteger:dispType] forKey:@"displayMode"];
+	[property setValue:[NSNumber numberWithInteger:displayModeID] forKey:@"displayMode"];
 	[property setValue:newDispString forKey:@"displayModeString"];
 	OSSpinLockUnlock(&spinlockDisplayType);
 }
 
-- (NSInteger) displayType
+- (NSInteger) displayMode
 {
 	OSSpinLockLock(&spinlockDisplayType);
-	NSInteger dispType = displayType;
+	NSInteger displayModeID = displayMode;
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
-	return dispType;
+	return displayModeID;
 }
 
 - (NSSize) frameSize
@@ -977,29 +978,36 @@ GPU3DInterface *core3DList[] = {
 - (void) doCoreEmuFrame
 {
 	NSData *gpuData = nil;
-	NSInteger dispType = self.displayType;
+	NSInteger displayModeID = [self displayMode];
+	NSSize displayFrameSize = [self frameSize];
 	
 	// Here, we copy the raw GPU data from the emulation core.
 	// 
 	// The core data contains the GPU pixels from both the main and touch screens. So
 	// depending on the display type, we copy only the pixels from the respective screen.
-	if (dispType == DS_DISPLAY_TYPE_MAIN)
+	if (displayModeID == DS_DISPLAY_TYPE_MAIN)
 	{
 		gpuData = [[NSData alloc] initWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES];
 	}
-	else if(dispType == DS_DISPLAY_TYPE_TOUCH)
+	else if(displayModeID == DS_DISPLAY_TYPE_TOUCH)
 	{
 		gpuData = [[NSData alloc] initWithBytes:(GPU_screen + GPU_SCREEN_SIZE_BYTES) length:GPU_SCREEN_SIZE_BYTES];
 	}
-	else if(dispType == DS_DISPLAY_TYPE_COMBO)
+	else if(displayModeID == DS_DISPLAY_TYPE_COMBO)
 	{
 		gpuData = [[NSData alloc] initWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES * 2];
 	}
 	
-	[CocoaDSUtil messageSendOneWayWithData:self.receivePort msgID:MESSAGE_EMU_FRAME_PROCESSED data:gpuData];
+	DisplaySrcPixelAttributes attr = {displayModeID, (unsigned int)displayFrameSize.width, (unsigned int)displayFrameSize.height};
+	NSData *attributesData = [[NSData alloc] initWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)];
+	
+	NSArray *messageComponents = [[NSArray alloc] initWithObjects:gpuData, attributesData, nil];
+	[CocoaDSUtil messageSendOneWayWithMessageComponents:self.receivePort msgID:MESSAGE_EMU_FRAME_PROCESSED array:messageComponents];
 	
 	// Now that we've finished sending the GPU data, release the local copy.
 	[gpuData release];
+	[attributesData release];
+	[messageComponents release];
 }
 
 - (void)handlePortMessage:(NSPortMessage *)portMessage
@@ -1010,7 +1018,7 @@ GPU3DInterface *core3DList[] = {
 	switch (message)
 	{
 		case MESSAGE_EMU_FRAME_PROCESSED:
-			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0]];
+			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0] attributes:[messageComponents objectAtIndex:1]];
 			break;
 			
 		case MESSAGE_SET_GPU_STATE_FLAGS:
@@ -1018,7 +1026,7 @@ GPU3DInterface *core3DList[] = {
 			break;
 			
 		case MESSAGE_CHANGE_DISPLAY_TYPE:
-			[self handleChangeDisplayType:[messageComponents objectAtIndex:0]];
+			[self handleChangeDisplayMode:[messageComponents objectAtIndex:0]];
 			break;
 			
 		case MESSAGE_SET_RENDER3D_METHOD:
@@ -1075,97 +1083,97 @@ GPU3DInterface *core3DList[] = {
 	}
 }
 
-- (void) handleEmuFrameProcessed:(NSData *)theData
+- (void) handleEmuFrameProcessed:(NSData *)mainData attributes:(NSData *)attributesData
 {
-	[super handleEmuFrameProcessed:theData];
+	[super handleEmuFrameProcessed:mainData attributes:attributesData];
 }
 
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData
 {
-	const NSInteger *flags = (NSInteger *)[flagsData bytes];
-	self.gpuStateFlags = (UInt32)*flags;
-	[self handleEmuFrameProcessed:self.frameData];
+	const NSInteger flags = *(NSInteger *)[flagsData bytes];
+	self.gpuStateFlags = (UInt32)flags;
+	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
 }
 
-- (void) handleChangeDisplayType:(NSData *)displayTypeIdData
+- (void) handleChangeDisplayMode:(NSData *)displayModeData
 {
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayTypeChanged:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayModeChanged:)])
 	{
 		return;
 	}
 	
-	const NSInteger *theType = (NSInteger *)[displayTypeIdData bytes];
-	self.displayType = *theType;
-	[delegate doDisplayTypeChanged:*theType];
+	const NSInteger displayModeID = *(NSInteger *)[displayModeData bytes];
+	self.displayMode = displayModeID;
+	[delegate doDisplayModeChanged:displayModeID];
 }
 
 - (void) handleSetRender3DRenderingEngine:(NSData *)methodIdData
 {
-	const NSInteger *methodID = (NSInteger *)[methodIdData bytes];
-	[self setRender3DRenderingEngine:*methodID];
+	const NSInteger methodID = *(NSInteger *)[methodIdData bytes];
+	[self setRender3DRenderingEngine:methodID];
 }
 
 - (void) handleSetRender3DHighPrecisionColorInterpolation:(NSData *)stateData
 {
-	const BOOL *theState = (BOOL *)[stateData bytes];
-	[self setRender3DHighPrecisionColorInterpolation:*theState];
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setRender3DHighPrecisionColorInterpolation:theState];
 }
 
 - (void) handleSetRender3DEdgeMarking:(NSData *)stateData
 {
-	const BOOL *theState = (BOOL *)[stateData bytes];
-	[self setRender3DEdgeMarking:*theState];
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setRender3DEdgeMarking:theState];
 }
 
 - (void) handleSetRender3DFog:(NSData *)stateData
 {
-	const BOOL *theState = (BOOL *)[stateData bytes];
-	[self setRender3DFog:*theState];
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setRender3DFog:theState];
 }
 
 - (void) handleSetRender3DTextures:(NSData *)stateData
 {
-	const BOOL *theState = (BOOL *)[stateData bytes];
-	[self setRender3DTextures:*theState];
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setRender3DTextures:theState];
 }
 
 - (void) handleSetRender3DDepthComparisonThreshold:(NSData *)thresholdData
 {
-	const NSUInteger *threshold = (NSUInteger *)[thresholdData bytes];
-	[self setRender3DDepthComparisonThreshold:*threshold];
+	const NSUInteger threshold = *(NSUInteger *)[thresholdData bytes];
+	[self setRender3DDepthComparisonThreshold:threshold];
 }
 
 - (void) handleSetRender3DThreads:(NSData *)numberThreadsData
 {
-	const NSUInteger *numberThreads = (NSUInteger *)[numberThreadsData bytes];
-	[self setRender3DThreads:*numberThreads];
+	const NSUInteger numberThreads = *(NSUInteger *)[numberThreadsData bytes];
+	[self setRender3DThreads:numberThreads];
 }
 
 - (void) handleSetRender3DLineHack:(NSData *)stateData
 {
-	const BOOL *theState = (BOOL *)[stateData bytes];
-	[self setRender3DLineHack:*theState];
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setRender3DLineHack:theState];
 }
 
 - (void) handleSetViewToBlack
 {
-	[self fillVideoFrameWithColor:0];
+	[self fillVideoFrameWithColor:0x8000];
 }
 
 - (void) handleSetViewToWhite
 {
-	[self fillVideoFrameWithColor:255];
+	[self fillVideoFrameWithColor:0xFFFF];
 }
 
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
 {
 	NSString *fileURLString = [[NSString alloc] initWithData:fileURLStringData encoding:NSUTF8StringEncoding];
 	NSURL *fileURL = [NSURL URLWithString:fileURLString];
-	NSBitmapImageFileType *fileType = (NSBitmapImageFileType *)[fileTypeData bytes];	
+	NSBitmapImageFileType fileType = *(NSBitmapImageFileType *)[fileTypeData bytes];	
 	
 	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
 							  fileURL, @"fileURL", 
-							  [NSNumber numberWithInteger:(NSInteger)*fileType], @"fileType",
+							  [NSNumber numberWithInteger:(NSInteger)fileType], @"fileType",
 							  [self image], @"screenshotImage",
 							  nil];
 	
@@ -1188,22 +1196,35 @@ GPU3DInterface *core3DList[] = {
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
 }
 
-- (void) fillVideoFrameWithColor:(UInt8)colorValue
+- (void) fillVideoFrameWithColor:(UInt16)colorValue
 {
-	UInt16 *gpuBytes = (UInt16 *)malloc(GPU_SCREEN_SIZE_BYTES * 2);
+	NSData *gpuData = nil;
+	NSInteger displayModeID = [self displayMode];
+	NSSize displayFrameSize = [self frameSize];
+	size_t numberBytes = GPU_SCREEN_SIZE_BYTES * 2;
+	
+	if (displayModeID == DS_DISPLAY_TYPE_MAIN || displayModeID == DS_DISPLAY_TYPE_TOUCH)
+	{
+		numberBytes = GPU_SCREEN_SIZE_BYTES;
+	}
+	
+	UInt16 *gpuBytes = (UInt16 *)malloc(numberBytes);
 	if (gpuBytes == NULL)
 	{
 		return;
 	}
 	
-	memset(gpuBytes, colorValue, GPU_SCREEN_SIZE_BYTES * 2);
-	
-	NSData *gpuData = [[[NSData alloc] initWithBytes:gpuBytes length:GPU_SCREEN_SIZE_BYTES * 2] autorelease];
+	const UInt16 colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
+	memset_pattern16(gpuBytes, colorValuePattern, numberBytes);
+	gpuData = [[[NSData alloc] initWithBytes:gpuBytes length:numberBytes] autorelease];
 	
 	free(gpuBytes);
 	gpuBytes = nil;
 	
-	[self handleEmuFrameProcessed:gpuData];
+	DisplaySrcPixelAttributes attr = {displayModeID, (unsigned int)displayFrameSize.width, (unsigned int)displayFrameSize.height};
+	NSData *attributesData = [[[NSData alloc] initWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)] autorelease];
+	
+	[self handleEmuFrameProcessed:gpuData attributes:attributesData];
 }
 
 - (NSImage *) image
@@ -1384,9 +1405,10 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	videoDelegate = nil;
+	lastDisplayMode = DS_DISPLAY_TYPE_COMBO;
 	
 	spinlockVideoFilterType = OS_SPINLOCK_INIT;
-	spinlockVfSrcBuffer = OS_SPINLOCK_INIT;
+	spinlockVFBuffers = OS_SPINLOCK_INIT;
 	
 	if ([[NSProcessInfo processInfo] activeProcessorCount] >= 2)
 	{
@@ -1443,18 +1465,11 @@ GPU3DInterface *core3DList[] = {
 	return theDelegate;
 }
 
-- (void) setDisplayType:(NSInteger)dispType
-{
-	[super setDisplayType:dispType];
-	
-	OSSpinLockLock(&spinlockVfSrcBuffer);
-	[vf setSourceSize:self.frameSize];
-	OSSpinLockUnlock(&spinlockVfSrcBuffer);
-}
-
 - (void) setVfType:(NSInteger)videoFilterTypeID
 {
+	OSSpinLockLock(&spinlockVFBuffers);
 	[vf changeFilter:(VideoFilterTypeID)videoFilterTypeID];
+	OSSpinLockUnlock(&spinlockVFBuffers);
 	
 	OSSpinLockLock(&spinlockVideoFilterType);
 	[property setValue:[NSNumber numberWithInteger:videoFilterTypeID] forKey:@"videoFilterType"];
@@ -1488,11 +1503,15 @@ GPU3DInterface *core3DList[] = {
 	switch (message)
 	{
 		case MESSAGE_EMU_FRAME_PROCESSED:
-			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0]];
+			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0] attributes:[messageComponents objectAtIndex:1]];
 			break;
 			
 		case MESSAGE_RESIZE_VIEW:
 			[self handleResizeView:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_TRANSFORM_VIEW:
+			[self handleTransformView:[messageComponents objectAtIndex:0]];
 			break;
 			
 		case MESSAGE_REDRAW_VIEW:
@@ -1525,39 +1544,43 @@ GPU3DInterface *core3DList[] = {
 	}
 }
 
-- (void) handleEmuFrameProcessed:(NSData *)theData
+- (void) handleEmuFrameProcessed:(NSData *)mainData attributes:(NSData *)attributesData
 {
-	if (theData == nil)
+	if (mainData == nil || attributesData == nil)
 	{
 		return;
 	}
 	
-	NSSize destSize = [vf destSize];
-	size_t dataSize = (size_t)destSize.width * (size_t)destSize.height * sizeof(UInt32);
-	if ([vf typeID] == VideoFilterTypeID_None)
-	{
-		destSize = self.frameSize;
-		dataSize = (size_t)destSize.width * (size_t)destSize.height * sizeof(UInt16);
-	}
+	const DisplaySrcPixelAttributes attr = *(DisplaySrcPixelAttributes *)[attributesData bytes];
+	const NSInteger displayModeID = attr.displayModeID;
 	
 	// Tell the video delegate to process the video frame with our copied GPU data.
+	OSSpinLockLock(&spinlockVFBuffers);
+	
+	if (lastDisplayMode != displayModeID)
+	{
+		const NSSize newSrcSize = NSMakeSize((CGFloat)attr.width, (CGFloat)attr.height);
+		[vf setSourceSize:newSrcSize];
+		lastDisplayMode = displayModeID;
+	}
+	
+	const NSInteger destWidth = (NSInteger)[vf destSize].width;
+	const NSInteger destHeight = (NSInteger)[vf destSize].height;
+	
 	if ([vf typeID] == VideoFilterTypeID_None)
 	{
-		[videoDelegate doProcessVideoFrame:[theData bytes] frameSize:self.frameSize];
+		[videoDelegate doProcessVideoFrame:[mainData bytes] displayMode:displayModeID width:destWidth height:destHeight];
 	}
 	else
 	{
-		NSSize srcSize = [vf srcSize];
-		
-		OSSpinLockLock(&spinlockVfSrcBuffer);
-		RGBA5551ToRGBA8888Buffer((const uint16_t *)[theData bytes], (uint32_t *)[vf srcBufferPtr], ((unsigned int)srcSize.width * (unsigned int)srcSize.height));
-		OSSpinLockUnlock(&spinlockVfSrcBuffer);
-		
-		UInt32 *vfDestBuffer = [vf runFilter];
-		[videoDelegate doProcessVideoFrame:vfDestBuffer frameSize:[vf destSize]];
+		RGBA5551ToRGBA8888Buffer((const uint16_t *)[mainData bytes], (uint32_t *)[vf srcBufferPtr], [mainData length] / sizeof(UInt16));
+		const UInt32 *vfDestBuffer = [vf runFilter];
+		[videoDelegate doProcessVideoFrame:vfDestBuffer displayMode:displayModeID width:destWidth height:destHeight];
 	}
+	
+	OSSpinLockUnlock(&spinlockVFBuffers);
 		
-	[super handleEmuFrameProcessed:theData];
+	[super handleEmuFrameProcessed:mainData attributes:attributesData];
 }
 
 - (void) handleResizeView:(NSData *)rectData
@@ -1567,8 +1590,18 @@ GPU3DInterface *core3DList[] = {
 		return;
 	}
 	
-	const NSRect *resizeRect = (NSRect *)[rectData bytes];
-	[videoDelegate doResizeView:*resizeRect];
+	const NSRect resizeRect = *(NSRect *)[rectData bytes];
+	[videoDelegate doResizeView:resizeRect];
+}
+
+- (void) handleTransformView:(NSData *)transformData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doTransformView:)])
+	{
+		return;
+	}
+	
+	[videoDelegate doTransformView:(DisplayOutputTransformData *)[transformData bytes]];
 }
 
 - (void) handleRedrawView
@@ -1588,8 +1621,8 @@ GPU3DInterface *core3DList[] = {
 		return;
 	}
 	
-	const NSInteger *theOrientation = (NSInteger *)[displayOrientationIdData bytes];
-	[videoDelegate doDisplayOrientationChanged:*theOrientation];
+	const NSInteger theOrientation = *(NSInteger *)[displayOrientationIdData bytes];
+	[videoDelegate doDisplayOrientationChanged:theOrientation];
 }
 
 - (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData
@@ -1599,8 +1632,8 @@ GPU3DInterface *core3DList[] = {
 		return;
 	}
 	
-	const NSInteger *theOrder = (NSInteger *)[displayOrderIdData bytes];
-	[videoDelegate doDisplayOrderChanged:*theOrder];
+	const NSInteger theOrder = *(NSInteger *)[displayOrderIdData bytes];
+	[videoDelegate doDisplayOrderChanged:theOrder];
 }
 
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData
@@ -1610,9 +1643,9 @@ GPU3DInterface *core3DList[] = {
 		return;
 	}
 	
-	const BOOL *theState = (BOOL *)[bilinearStateData bytes];
-	[videoDelegate doBilinearOutputChanged:*theState];
-	[self handleEmuFrameProcessed:self.frameData];
+	const BOOL theState = *(BOOL *)[bilinearStateData bytes];
+	[videoDelegate doBilinearOutputChanged:theState];
+	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
 }
 
 - (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData
@@ -1622,8 +1655,8 @@ GPU3DInterface *core3DList[] = {
 		return;
 	}
 	
-	const BOOL *theState = (BOOL *)[verticalSyncStateData bytes];
-	[videoDelegate doVerticalSyncChanged:*theState];
+	const BOOL theState = *(BOOL *)[verticalSyncStateData bytes];
+	[videoDelegate doVerticalSyncChanged:theState];
 }
 
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData
@@ -1633,10 +1666,10 @@ GPU3DInterface *core3DList[] = {
 		return;
 	}
 	
-	const NSInteger *theType = (NSInteger *)[videoFilterTypeIdData bytes];
-	[self setVfType:*theType];
-	[videoDelegate doVideoFilterChanged:*theType frameSize:[vf destSize]];
-	[self handleEmuFrameProcessed:self.frameData];
+	const NSInteger theType = *(NSInteger *)[videoFilterTypeIdData bytes];
+	[self setVfType:theType];
+	[videoDelegate doVideoFilterChanged:theType frameSize:[vf destSize]];
+	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
 }
 
 @end
@@ -1651,7 +1684,7 @@ void HandleMessageEchoResponse(NSPortMessage *portMessage)
 	[sendDate release];
 }
 
-void SetGPULayerState(int displayType, unsigned int i, bool state)
+void SetGPULayerState(int gpuType, unsigned int i, bool state)
 {
 	GPU *theGpu = NULL;
 	
@@ -1661,7 +1694,7 @@ void SetGPULayerState(int displayType, unsigned int i, bool state)
 		return;
 	}
 	
-	switch (displayType)
+	switch (gpuType)
 	{
 		case DS_GPU_TYPE_MAIN:
 			theGpu = SubScreen.gpu;
@@ -1693,7 +1726,7 @@ void SetGPULayerState(int displayType, unsigned int i, bool state)
 	}
 }
 
-bool GetGPULayerState(int displayType, unsigned int i)
+bool GetGPULayerState(int gpuType, unsigned int i)
 {
 	bool result = false;
 	
@@ -1703,7 +1736,7 @@ bool GetGPULayerState(int displayType, unsigned int i)
 		return result;
 	}
 	
-	switch (displayType)
+	switch (gpuType)
 	{
 		case DS_GPU_TYPE_MAIN:
 			if (SubScreen.gpu != nil)
@@ -1733,9 +1766,9 @@ bool GetGPULayerState(int displayType, unsigned int i)
 	return result;
 }
 
-void SetGPUDisplayState(int displayType, bool state)
+void SetGPUDisplayState(int gpuType, bool state)
 {
-	switch (displayType)
+	switch (gpuType)
 	{
 		case DS_GPU_TYPE_MAIN:
 			CommonSettings.showGpu.sub = state;
@@ -1755,11 +1788,11 @@ void SetGPUDisplayState(int displayType, bool state)
 	}
 }
 
-bool GetGPUDisplayState(int displayType)
+bool GetGPUDisplayState(int gpuType)
 {
 	bool result = false;
 	
-	switch (displayType)
+	switch (gpuType)
 	{
 		case DS_GPU_TYPE_MAIN:
 			result = CommonSettings.showGpu.sub;

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -352,6 +352,7 @@ enum
 	
 	// Video Messages
 	MESSAGE_RESIZE_VIEW,
+	MESSAGE_TRANSFORM_VIEW,
 	MESSAGE_REDRAW_VIEW,
 	MESSAGE_SET_GPU_STATE_FLAGS,
 	MESSAGE_CHANGE_DISPLAY_TYPE,

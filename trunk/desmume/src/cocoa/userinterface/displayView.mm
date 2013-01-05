@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 @dynamic rotation;
 @dynamic useBilinearOutput;
 @dynamic useVerticalSync;
-@dynamic displayType;
+@dynamic displayMode;
 @dynamic displayOrientation;
 @dynamic displayOrder;
 @synthesize bindings;
@@ -216,6 +216,16 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	OSSpinLockLock(&spinlockScale);
 	[bindings setValue:[NSNumber numberWithDouble:s] forKey:@"scale"];
 	OSSpinLockUnlock(&spinlockScale);
+	
+	DisplayOutputTransformData transformData	= { s,
+												    [self rotation],
+												    0.0,
+												    0.0,
+												    0.0 };
+	
+	[CocoaDSUtil messageSendOneWayWithData:[self sendPortDisplay]
+									 msgID:MESSAGE_TRANSFORM_VIEW
+									  data:[NSData dataWithBytes:&transformData length:sizeof(DisplayOutputTransformData)]];
 }
 
 - (double) scale
@@ -232,6 +242,16 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	OSSpinLockLock(&spinlockRotation);
 	[bindings setValue:[NSNumber numberWithDouble:angleDegrees] forKey:@"rotation"];
 	OSSpinLockUnlock(&spinlockRotation);
+	
+	DisplayOutputTransformData transformData	= { [self scale],
+												    angleDegrees,
+												    0.0,
+												    0.0,
+												    0.0 };
+	
+	[CocoaDSUtil messageSendOneWayWithData:[self sendPortDisplay]
+									 msgID:MESSAGE_TRANSFORM_VIEW
+									  data:[NSData dataWithBytes:&transformData length:sizeof(DisplayOutputTransformData)]];
 }
 
 - (double) rotation
@@ -279,12 +299,12 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	return theState;
 }
 
-- (void) setDisplayType:(NSInteger)theType
+- (void) setDisplayMode:(NSInteger)displayModeID
 {
 	NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 	NSString *modeString = @"Unknown";
 	
-	switch (theType)
+	switch (displayModeID)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
 			modeString = NSSTRING_DISPLAYMODE_MAIN;
@@ -313,7 +333,8 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	OSSpinLockLock(&spinlockDisplayType);
-	[bindings setValue:[NSNumber numberWithInteger:theType] forKey:@"displayMode"];
+	NSInteger oldMode = [[bindings valueForKey:@"displayMode"] integerValue];
+	[bindings setValue:[NSNumber numberWithInteger:displayModeID] forKey:@"displayMode"];
 	[bindings setValue:modeString forKey:@"displayModeString"];
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
@@ -321,16 +342,24 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	normalSize = newDisplaySize;
 	OSSpinLockUnlock(&spinlockNormalSize);
 	
-	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_CHANGE_DISPLAY_TYPE integerValue:theType];
+	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_CHANGE_DISPLAY_TYPE integerValue:displayModeID];
+	
+	// If the display mode swaps between Main Only and Touch Only, the view will not resize to implicitly
+	// redraw the view. So when swapping between these two display modes, explicitly tell the view to redraw.
+	if ( (oldMode == DS_DISPLAY_TYPE_MAIN && displayModeID == DS_DISPLAY_TYPE_TOUCH) ||
+		 (oldMode == DS_DISPLAY_TYPE_TOUCH && displayModeID == DS_DISPLAY_TYPE_MAIN) )
+	{
+		[view setNeedsDisplay:YES];
+	}
 }
 
-- (NSInteger) displayType
+- (NSInteger) displayMode
 {
 	OSSpinLockLock(&spinlockDisplayType);
-	NSInteger theType = [[bindings valueForKey:@"displayMode"] integerValue];
+	NSInteger displayModeID = [[bindings valueForKey:@"displayMode"] integerValue];
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
-	return theType;
+	return displayModeID;
 }
 
 - (void) setDisplayOrientation:(NSInteger)theOrientation
@@ -339,7 +368,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	[bindings setValue:[NSNumber numberWithInteger:theOrientation] forKey:@"displayOrientation"];
 	OSSpinLockUnlock(&spinlockDisplayOrientation);
 	
-	if ([self displayType] == DS_DISPLAY_TYPE_COMBO)
+	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
 	{
 		NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 		
@@ -474,7 +503,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, [self normalSize], [[self view] bounds].size, [self scale], viewAngle);
 	
 	// Normalize the touch location to the DS.
-	if ([self displayType] == DS_DISPLAY_TYPE_COMBO)
+	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
 	{
 		NSInteger theOrientation = [self displayOrientation];
 		NSInteger theOrder = [self displayOrder];
@@ -576,9 +605,9 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed
 {
 	BOOL isHandled = NO;
-	NSInteger dispType = [self displayType];
+	NSInteger displayModeID = [self displayMode];
 	
-	if (self.cdsController == nil || (dispType != DS_DISPLAY_TYPE_TOUCH && dispType != DS_DISPLAY_TYPE_COMBO))
+	if (self.cdsController == nil || (displayModeID != DS_DISPLAY_TYPE_TOUCH && displayModeID != DS_DISPLAY_TYPE_COMBO))
 	{
 		return isHandled;
 	}
@@ -633,9 +662,9 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	[view doInitVideoOutput:properties];
 }
 
-- (void) doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
+- (void) doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
-	[view doProcessVideoFrame:videoFrameData frameSize:frameSize];
+	[view doProcessVideoFrame:videoFrameData displayMode:displayModeID width:frameWidth height:frameHeight];
 }
 
 - (void) doResizeView:(NSRect)rect
@@ -648,6 +677,16 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	[view doResizeView:rect];
 }
 
+- (void) doTransformView:(DisplayOutputTransformData *)transformData
+{
+	if (view == nil || ![view respondsToSelector:@selector(doTransformView:)])
+	{
+		return;
+	}
+	
+	[view doTransformView:transformData];
+}
+
 - (void) doRedraw
 {
 	if (view == nil || ![view respondsToSelector:@selector(doRedraw)])
@@ -658,14 +697,14 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	[view doRedraw];
 }
 
-- (void) doDisplayTypeChanged:(NSInteger)displayTypeID
+- (void) doDisplayModeChanged:(NSInteger)displayModeID
 {
-	if (view == nil || ![view respondsToSelector:@selector(doDisplayTypeChanged:)])
+	if (view == nil || ![view respondsToSelector:@selector(doDisplayModeChanged:)])
 	{
 		return;
 	}
 	
-	[view doDisplayTypeChanged:displayTypeID];
+	[view doDisplayModeChanged:displayModeID];
 }
 
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID
@@ -766,24 +805,22 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	[CocoaDSUtil messageSendOneWayWithRect:dispViewDelegate.sendPortDisplay msgID:MESSAGE_RESIZE_VIEW rect:rect];
 }
 
-- (NSBitmapImageRep *) bitmapImageRep:(const void *)videoFrameData imageSize:(NSSize)imageSize
+- (NSBitmapImageRep *) bitmapImageRep:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)imageWidth height:(const NSInteger)imageHeight
 {
 	if (videoFrameData == nil)
 	{
 		return nil;
 	}
 	
-	NSUInteger w = (NSUInteger)imageSize.width;
-	NSUInteger h = (NSUInteger)imageSize.height;
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-																	  pixelsWide:w
-																	  pixelsHigh:h
+																	  pixelsWide:imageWidth
+																	  pixelsHigh:imageHeight
 																   bitsPerSample:8
 																 samplesPerPixel:4
 																		hasAlpha:YES
 																		isPlanar:NO
 																  colorSpaceName:NSCalibratedRGBColorSpace
-																	 bytesPerRow:w * 4
+																	 bytesPerRow:imageWidth * 4
 																	bitsPerPixel:32];
 	
 	if(!imageRep)
@@ -792,10 +829,10 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	RGBA5551ToRGBA8888Buffer((const uint16_t *)videoFrameData, bitmapData, (w * h));
+	RGBA5551ToRGBA8888Buffer((const uint16_t *)videoFrameData, bitmapData, (imageWidth * imageHeight));
 	
 #ifdef __BIG_ENDIAN__
-	uint32_t *bitmapDataEnd = bitmapData + (w * h);
+	uint32_t *bitmapDataEnd = bitmapData + (imageWidth * imageHeight);
 	while (bitmapData < bitmapDataEnd)
 	{
 		*bitmapData++ = CFSwapInt32LittleToHost(*bitmapData);
@@ -913,10 +950,10 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	currentImageRep = nil;
 }
 
-- (void)doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
+- (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
 	// Render the frame in an NSBitmapImageRep
-	NSBitmapImageRep *newImageRep = [self bitmapImageRep:videoFrameData imageSize:frameSize];
+	NSBitmapImageRep *newImageRep = [self bitmapImageRep:videoFrameData displayMode:displayModeID width:frameWidth height:frameHeight];
 	if (newImageRep == nil)
 	{
 		return;
@@ -951,6 +988,8 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	dispViewDelegate = nil;
+	lastDisplayMode = DS_DISPLAY_TYPE_COMBO;
+	currentDisplayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	glTexRenderStyle = GL_LINEAR;
 	
@@ -964,7 +1003,6 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	texCoordBuffer = new GLfloat[2 * 8];
 	vtxIndexBuffer = new GLubyte[12];
 	vtxBufferOffset = 0;
-	vtxElementCount = 12;
 	
 	// Create a new context for the OpenGL-based emulated 3D renderer
 	NSOpenGLPixelFormatAttribute attrs[] =
@@ -1067,42 +1105,10 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	NSRect oldFrame = [self frame];
 	[super setFrame:rect];
 	
-	GLfloat angleDegrees = (GLfloat)[dispViewDelegate rotation];
-	GLfloat s = (GLfloat)[dispViewDelegate scale];
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
-	glViewport(0, 0, rect.size.width, rect.size.height);
-	glClear(GL_COLOR_BUFFER_BIT);
-	
-	if (isShadersSupported)
-	{
-		glUniform2f(uniformViewSize, rect.size.width, rect.size.height);
-		glUniform1f(uniformAngleDegrees, angleDegrees);
-		glUniform1f(uniformScalar, s);
-	}
-	else
-	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-rect.size.width/2, -rect.size.width/2 + rect.size.width, -rect.size.height/2, -rect.size.height/2 + rect.size.height, -1.0, 1.0);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef(CLOCKWISE_DEGREES(angleDegrees), 0.0f, 0.0f, 1.0f);
-		glScalef(s, s, 1.0f);
-	}
-	
-	CGLUnlockContext(cglDisplayContext);
-	
-	if (rect.size.width == oldFrame.size.width && rect.size.height == oldFrame.size.height)
-	{
-		[CocoaDSUtil messageSendOneWay:dispViewDelegate.sendPortDisplay msgID:MESSAGE_REDRAW_VIEW];
-	}
-	else
+	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
 		[CocoaDSUtil messageSendOneWayWithRect:dispViewDelegate.sendPortDisplay msgID:MESSAGE_RESIZE_VIEW rect:rect];
+		[self setNeedsDisplay:YES];
 	}
 }
 
@@ -1245,7 +1251,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	CGLFlushDrawable(cglDisplayContext);
 }
 
-- (void) uploadDisplayTextures:(const GLvoid *)textureData textureSize:(NSSize)textureSize
+- (void) uploadDisplayTextures:(const GLvoid *)textureData width:(const GLsizei)texWidth height:(const GLsizei)texHeight
 {
 	if (textureData == NULL)
 	{
@@ -1253,11 +1259,11 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)textureSize.width, (GLsizei)textureSize.height, GL_RGBA, glTexPixelFormat, textureData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, glTexPixelFormat, textureData);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-- (void) renderDisplay
+- (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID
 {
 	GLubyte *elementPointer = NULL;
 	
@@ -1311,6 +1317,25 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	// Perform the render.
+	if (lastDisplayMode != displayModeID)
+	{
+		lastDisplayMode = displayModeID;
+		[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
+		
+		if (isVBOSupported)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
+	}
+	
+	GLsizei vtxElementCount = 6;
+	if (displayModeID == DS_DISPLAY_TYPE_COMBO)
+	{
+		vtxElementCount = 12;
+	}
+	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
 	glDrawElements(GL_TRIANGLES, vtxElementCount, GL_UNSIGNED_BYTE, elementPointer);
@@ -1348,18 +1373,15 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 }
 
-- (void) updateDisplayVertices
+- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID
 {
-	NSInteger displayType = [dispViewDelegate displayType];
 	GLint w = (GLint)GPU_DISPLAY_WIDTH;
 	GLint h = (GLint)GPU_DISPLAY_HEIGHT;
 	
-	if (displayType == DS_DISPLAY_TYPE_COMBO)
+	if (displayModeID == DS_DISPLAY_TYPE_COMBO)
 	{
-		NSInteger displayOrientation = [dispViewDelegate displayOrientation];
-		
 		// displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST
-		if (displayOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
+		if (displayOrientationID == DS_DISPLAY_ORIENTATION_VERTICAL)
 		{
 			vtxBuffer[0]	= -w/2;		vtxBuffer[1]		= h;		// Top display, top left
 			vtxBuffer[2]	= w/2;		vtxBuffer[3]		= h;		// Top display, top right
@@ -1371,7 +1393,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 			vtxBuffer[12]	= w/2;		vtxBuffer[13]		= -h;		// Bottom display, bottom right
 			vtxBuffer[14]	= -w/2;		vtxBuffer[15]		= -h;		// Bottom display, bottom left
 		}
-		else // displayOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL
+		else // displayOrientationID == DS_DISPLAY_ORIENTATION_HORIZONTAL
 		{
 			vtxBuffer[0]	= -w;		vtxBuffer[1]		= h/2;		// Left display, top left
 			vtxBuffer[2]	= 0;		vtxBuffer[3]		= h/2;		// Left display, top right
@@ -1388,7 +1410,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		memcpy(vtxBuffer + (2 * 8), vtxBuffer + (1 * 8), sizeof(GLint) * (1 * 8));
 		memcpy(vtxBuffer + (3 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (1 * 8));
 	}
-	else // displayType == DS_DISPLAY_TYPE_MAIN || displayType == DS_DISPLAY_TYPE_TOUCH
+	else // displayModeID == DS_DISPLAY_TYPE_MAIN || displayModeID == DS_DISPLAY_TYPE_TOUCH
 	{
 		vtxBuffer[0]	= -w/2;		vtxBuffer[1]		= h/2;		// First display, top left
 		vtxBuffer[2]	= w/2;		vtxBuffer[3]		= h/2;		// First display, top right
@@ -1507,13 +1529,13 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	// No init needed, so do nothing.
 }
 
-- (void)doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize
+- (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
 	CGLLockContext(cglDisplayContext);
 	
 	CGLSetCurrentContext(cglDisplayContext);
-	[self uploadDisplayTextures:videoFrameData textureSize:frameSize];
-	[self renderDisplay];
+	[self uploadDisplayTextures:videoFrameData width:frameWidth height:frameHeight];
+	[self renderDisplayUsingDisplayMode:displayModeID];
 	[self drawVideoFrame];
 	
 	CGLUnlockContext(cglDisplayContext);
@@ -1521,7 +1543,47 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 
 - (void)doResizeView:(NSRect)rect
 {
-	// Do nothing
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	
+	glViewport(0, 0, rect.size.width, rect.size.height);
+	
+	if (isShadersSupported)
+	{
+		glUniform2f(uniformViewSize, rect.size.width, rect.size.height);
+	}
+	else
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-rect.size.width/2, -rect.size.width/2 + rect.size.width, -rect.size.height/2, -rect.size.height/2 + rect.size.height, -1.0, 1.0);
+	}
+	
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (void) doTransformView:(DisplayOutputTransformData *)transformData
+{
+	GLfloat angleDegrees = (GLfloat)transformData->rotation;
+	GLfloat s = (GLfloat)transformData->scale;
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	
+	if (isShadersSupported)
+	{
+		glUniform1f(uniformAngleDegrees, angleDegrees);
+		glUniform1f(uniformScalar, s);
+	}
+	else
+	{
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glRotatef(CLOCKWISE_DEGREES(angleDegrees), 0.0f, 0.0f, 1.0f);
+		glScalef(s, s, 1.0f);
+	}
+	
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doRedraw
@@ -1529,24 +1591,16 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	CGLLockContext(cglDisplayContext);
 	
 	CGLSetCurrentContext(cglDisplayContext);
-	[self renderDisplay];
+	[self renderDisplayUsingDisplayMode:lastDisplayMode];
 	[self drawVideoFrame];
 	
 	CGLUnlockContext(cglDisplayContext);
 }
 
-- (void)doDisplayTypeChanged:(NSInteger)displayTypeID
+- (void)doDisplayModeChanged:(NSInteger)displayModeID
 {
-	if (displayTypeID == DS_DISPLAY_TYPE_COMBO)
-	{
-		vtxElementCount = 12;
-	}
-	else
-	{
-		vtxElementCount = 6;
-	}
-	
-	[self updateDisplayVertices];
+	lastDisplayMode = displayModeID;
+	[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
@@ -1581,7 +1635,8 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID
 {
-	[self updateDisplayVertices];
+	currentDisplayOrientation = displayOrientationID;
+	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:displayOrientationID];
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
@@ -1617,9 +1672,9 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	
-	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
+	if (lastDisplayMode == DS_DISPLAY_TYPE_COMBO)
 	{
-		[self renderDisplay];
+		[self renderDisplayUsingDisplayMode:lastDisplayMode];
 		[self drawVideoFrame];
 	}
 	
@@ -1667,28 +1722,28 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		}
 	}
 	
-	GLfloat w = (GLfloat)(videoFilterDestSize.width / potW);
-	GLfloat h = (GLfloat)(videoFilterDestSize.height / potH);
+	GLfloat s = (GLfloat)(videoFilterDestSize.width / potW);
+	GLfloat t = (GLfloat)(videoFilterDestSize.height / potH);
 	
 	// Set up texture coordinates
-	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
+	if ([dispViewDelegate displayMode] == DS_DISPLAY_TYPE_COMBO)
 	{
 		texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	=   0.0f;
-		texCoordBuffer[2]	=    w;		texCoordBuffer[3]	=   0.0f;
-		texCoordBuffer[4]	=    w;		texCoordBuffer[5]	= h/2.0f;
-		texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= h/2.0f;
+		texCoordBuffer[2]	=    s;		texCoordBuffer[3]	=   0.0f;
+		texCoordBuffer[4]	=    s;		texCoordBuffer[5]	= t/2.0f;
+		texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= t/2.0f;
 		
-		texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= h/2.0f;
-		texCoordBuffer[10]	=    w;		texCoordBuffer[11]	= h/2.0f;
-		texCoordBuffer[12]	=    w;		texCoordBuffer[13]	=      h;
-		texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      h;
+		texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= t/2.0f;
+		texCoordBuffer[10]	=    s;		texCoordBuffer[11]	= t/2.0f;
+		texCoordBuffer[12]	=    s;		texCoordBuffer[13]	=      t;
+		texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      t;
 	}
-	else // displayType == DS_DISPLAY_TYPE_MAIN || displayType == DS_DISPLAY_TYPE_TOUCH
+	else // displayMode == DS_DISPLAY_TYPE_MAIN || displayMode == DS_DISPLAY_TYPE_TOUCH
 	{
 		texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	= 0.0f;
-		texCoordBuffer[2]	=    w;		texCoordBuffer[3]	= 0.0f;
-		texCoordBuffer[4]	=    w;		texCoordBuffer[5]	=    h;
-		texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	=    h;
+		texCoordBuffer[2]	=    s;		texCoordBuffer[3]	= 0.0f;
+		texCoordBuffer[4]	=    s;		texCoordBuffer[5]	=    t;
+		texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	=    t;
 		
 		memcpy(texCoordBuffer + (1 * 8), texCoordBuffer + (0 * 8), sizeof(GLfloat) * (1 * 8));
 	}
