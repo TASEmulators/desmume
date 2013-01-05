@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,11 +23,28 @@
 #import "cocoa_util.h"
 
 
+typedef struct
+{
+	double	scale;
+	double	rotation;		// Angle is in degrees
+	double	translationX;
+	double	translationY;
+	double	translationZ;
+} DisplayOutputTransformData;
+
+typedef struct
+{
+	NSInteger displayModeID;
+	unsigned int width;			// Measured in pixels
+	unsigned int height;		// Measured in pixels
+} DisplaySrcPixelAttributes;
+
 @interface CocoaDSOutput : CocoaDSThread
 {
 	BOOL isStateChanged;
 	NSUInteger frameCount;
 	NSData *frameData;
+	NSData *frameAttributesData;
 	NSMutableDictionary *property;
 	
 	pthread_mutex_t *mutexProducer;
@@ -37,12 +54,13 @@
 @property (assign) BOOL isStateChanged;
 @property (assign) NSUInteger frameCount;
 @property (retain) NSData *frameData;
+@property (retain) NSData *frameAttributesData;
 @property (readonly) NSMutableDictionary *property;
 @property (assign) pthread_mutex_t *mutexProducer;
 @property (readonly) pthread_mutex_t *mutexConsume;
 
 - (void) doCoreEmuFrame;
-- (void) handleEmuFrameProcessed:(NSData *)theData;
+- (void) handleEmuFrameProcessed:(NSData *)mainData attributes:(NSData *)attributesData;
 
 @end
 
@@ -95,7 +113,7 @@
 @protocol CocoaDSDisplayDelegate <NSObject>
 
 @required
-- (void) doDisplayTypeChanged:(NSInteger)displayTypeID;
+- (void) doDisplayModeChanged:(NSInteger)displayModeID;
 
 @property (retain) NSPort *sendPortDisplay;
 @property (assign) BOOL isHudEnabled;
@@ -107,10 +125,11 @@
 
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doProcessVideoFrame:(const void *)videoFrameData frameSize:(NSSize)frameSize;
+- (void) doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
+- (void) doTransformView:(DisplayOutputTransformData *)transformData;
 - (void) doRedraw;
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
@@ -125,7 +144,7 @@
 {
 	UInt32 gpuStateFlags;
 	id <CocoaDSDisplayDelegate> delegate;
-	NSInteger displayType;
+	NSInteger displayMode;
 	NSSize frameSize;
 	
 	pthread_mutex_t *mutexRender3D;
@@ -144,7 +163,7 @@
 
 @property (assign) UInt32 gpuStateFlags;
 @property (retain) id <CocoaDSDisplayDelegate> delegate;
-@property (assign) NSInteger displayType;
+@property (assign) NSInteger displayMode;
 @property (readonly) NSSize frameSize;
 @property (readonly) pthread_mutex_t *mutexRender3D;
 
@@ -166,7 +185,7 @@
 - (BOOL) render3DLineHack;
 
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData;
-- (void) handleChangeDisplayType:(NSData *)displayTypeIdData;
+- (void) handleChangeDisplayMode:(NSData *)displayModeData;
 - (void) handleSetRender3DRenderingEngine:(NSData *)methodIdData;
 - (void) handleSetRender3DHighPrecisionColorInterpolation:(NSData *)stateData;
 - (void) handleSetRender3DEdgeMarking:(NSData *)stateData;
@@ -180,7 +199,7 @@
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
-- (void) fillVideoFrameWithColor:(UInt8)colorValue;
+- (void) fillVideoFrameWithColor:(UInt16)colorValue;
 
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
@@ -196,15 +215,17 @@
 {
 	CocoaVideoFilter *vf;
 	id <CocoaDSDisplayVideoDelegate> videoDelegate;
+	NSInteger lastDisplayMode;
 		
 	OSSpinLock spinlockVideoFilterType;
-	OSSpinLock spinlockVfSrcBuffer;
+	OSSpinLock spinlockVFBuffers;
 }
 
 @property (retain) id <CocoaDSDisplayVideoDelegate> delegate;
 @property (assign) CocoaVideoFilter *vf;
 
 - (void) handleResizeView:(NSData *)rectData;
+- (void) handleTransformView:(NSData *)transformData;
 - (void) handleRedrawView;
 - (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
 - (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
@@ -220,10 +241,10 @@ extern "C"
 #endif
 
 void HandleMessageEchoResponse(NSPortMessage *portMessage);
-void SetGPULayerState(int displayType, unsigned int i, bool state);
-bool GetGPULayerState(int displayType, unsigned int i);
-void SetGPUDisplayState(int displayType, bool state);
-bool GetGPUDisplayState(int displayType);
+void SetGPULayerState(int gpuType, unsigned int i, bool state);
+bool GetGPULayerState(int gpuType, unsigned int i);
+void SetGPUDisplayState(int gpuType, bool state);
+bool GetGPUDisplayState(int gpuType);
 
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),

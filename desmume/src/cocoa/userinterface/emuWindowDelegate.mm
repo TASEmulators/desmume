@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -151,11 +151,9 @@
 
 - (void) setContentScalar:(double)s
 {
-	[dispViewDelegate setScale:s];
-	
 	// Resize the window when contentScalar changes.
-	NSSize drawBounds = [dispViewDelegate normalSize];
-	[self resizeWithTransform:drawBounds scalar:s rotation:[dispViewDelegate rotation]];
+	// No need to set the view's scale here since window resizing will implicitly change it.
+	[self resizeWithTransform:[dispViewDelegate normalSize] scalar:s rotation:[dispViewDelegate rotation]];
 }
 
 - (void) setContentRotation:(double)angleDegrees
@@ -174,25 +172,21 @@
 	[dispViewDelegate setRotation:newAngleDegrees];
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
-	NSSize drawBounds = minDisplayViewSize;
-	NSSize minContentSize = GetTransformedBounds(drawBounds, 1.0, CLOCKWISE_DEGREES(newAngleDegrees));
+	NSSize minContentSize = GetTransformedBounds(minDisplayViewSize, 1.0, CLOCKWISE_DEGREES(newAngleDegrees));
 	minContentSize.height += statusBarHeight;
 	[window setContentMinSize:minContentSize];
 	
 	// Resize the window.
-	NSSize oldBounds = [window frame].size;
+	const NSSize oldBounds = [window frame].size;
 	[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:newAngleDegrees];
-	NSSize newBounds = [window frame].size;
+	const NSSize newBounds = [window frame].size;
 	
 	// If the window size didn't change, it is possible that the old and new rotation angles
 	// are 180 degrees offset from each other. In this case, we'll need to force the
 	// display view to update itself.
 	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 	{
-		NSRect newContentFrame = [[window contentView] bounds];
-		newContentFrame.origin.y = statusBarHeight;
-		newContentFrame.size.height -= statusBarHeight;
-		[displayView setFrame:newContentFrame];
+		[displayView setNeedsDisplay:YES];
 	}
 }
 
@@ -202,26 +196,27 @@
 	angleDegrees = CLOCKWISE_DEGREES(angleDegrees);
 	
 	// Get the maximum scalar size within drawBounds. Constrain scalar to maxScalar if necessary.
-	NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, angleDegrees);
-	double maxScalar = [self maxContentScalar:checkSize];
+	const NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, angleDegrees);
+	const double maxScalar = [self maxContentScalar:checkSize];
 	if (scalar > maxScalar)
 	{
 		scalar = maxScalar;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
-	NSSize transformedBounds = GetTransformedBounds(normalBounds, scalar, angleDegrees);
+	const NSSize transformedBounds = GetTransformedBounds(normalBounds, scalar, angleDegrees);
 	
 	// Get the center of the content view in screen coordinates.
-	NSRect windowContentRect = [[window contentView] bounds];
-	double translationX = (windowContentRect.size.width - transformedBounds.width) / 2.0;
-	double translationY = ((windowContentRect.size.height - statusBarHeight) - transformedBounds.height) / 2.0;
+	const NSRect windowContentRect = [[window contentView] bounds];
+	const double translationX = (windowContentRect.size.width - transformedBounds.width) / 2.0;
+	const double translationY = ((windowContentRect.size.height - statusBarHeight) - transformedBounds.height) / 2.0;
 	
 	// Resize the window.
-	NSRect windowFrame = [window frame];
-	NSRect newFrame = [window frameRectForContentRect:NSMakeRect(windowFrame.origin.x + translationX, windowFrame.origin.y + translationY, transformedBounds.width, transformedBounds.height + statusBarHeight)];
+	const NSRect windowFrame = [window frame];
+	const NSRect newFrame = [window frameRectForContentRect:NSMakeRect(windowFrame.origin.x + translationX, windowFrame.origin.y + translationY, transformedBounds.width, transformedBounds.height + statusBarHeight)];
 	[window setFrame:newFrame display:YES animate:NO];
 	
+	// Return the actual scale used for the view (may be constrained).
 	return scalar;
 }
 
@@ -229,13 +224,11 @@
 {
 	// Determine the maximum scale based on the visible screen size (which
 	// doesn't include the menu bar or dock).
-	NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
-	NSRect windowFrame = [window frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBounds.width, contentBounds.height + statusBarHeight)];
+	const NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
+	const NSRect windowFrame = [window frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBounds.width, contentBounds.height + statusBarHeight)];
+	const NSSize visibleScreenBounds = { (screenFrame.size.width - (windowFrame.size.width - contentBounds.width)), (screenFrame.size.height - (windowFrame.size.height - contentBounds.height)) };
 	
-	NSSize visibleScreenBounds = { (screenFrame.size.width - (windowFrame.size.width - contentBounds.width)), (screenFrame.size.height - (windowFrame.size.height - contentBounds.height)) };
-	double maxS = GetMaxScalarInBounds(contentBounds.width, contentBounds.height, visibleScreenBounds.width, visibleScreenBounds.height);
-	
-	return maxS;
+	return GetMaxScalarInBounds(contentBounds.width, contentBounds.height, visibleScreenBounds.width, visibleScreenBounds.height);
 }
 
 - (void) setVolume:(float)vol
@@ -297,7 +290,7 @@
 {
 	isMinSizeNormal = theState;
 	
-	if ([dispViewDelegate displayType] == DS_DISPLAY_TYPE_COMBO)
+	if ([dispViewDelegate displayMode] == DS_DISPLAY_TYPE_COMBO)
 	{
 		if ([dispViewDelegate displayOrientation] == DS_DISPLAY_ORIENTATION_HORIZONTAL)
 		{
@@ -899,13 +892,27 @@
 
 - (IBAction) changeDisplayMode:(id)sender
 {
-	[dispViewDelegate setDisplayType:[CocoaDSUtil getIBActionSenderTag:sender]];
+	NSInteger newDisplayModeID = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (newDisplayModeID == [dispViewDelegate displayMode])
+	{
+		return;
+	}
+	
+	[dispViewDelegate setDisplayMode:newDisplayModeID];
 	[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:[dispViewDelegate rotation]];
 }
 
 - (IBAction) changeDisplayOrientation:(id)sender
 {
-	[dispViewDelegate setDisplayOrientation:[CocoaDSUtil getIBActionSenderTag:sender]];
+	NSInteger newDisplayOrientation = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (newDisplayOrientation == [dispViewDelegate displayOrientation])
+	{
+		return;
+	}
+	
+	[dispViewDelegate setDisplayOrientation:newDisplayOrientation];
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	[self resizeWithTransform:[dispViewDelegate normalSize] scalar:[dispViewDelegate scale] rotation:[dispViewDelegate rotation]];
 }
@@ -1723,7 +1730,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([dispViewDelegate displayType] == [theItem tag])
+			if ([dispViewDelegate displayMode] == [theItem tag])
 			{
 				[(NSMenuItem*)theItem setState:NSOnState];
 			}
@@ -1873,7 +1880,6 @@
 	const NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, [dispViewDelegate rotation]);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - statusBarHeight);
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
-	[dispViewDelegate setScale:maxS];
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
 	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkSize.width * maxS, (checkSize.height * maxS) + statusBarHeight);
@@ -1892,7 +1898,7 @@
 	{
 		return;
 	}
-		
+	
 	const NSSize normalBounds = [dispViewDelegate normalSize];
 	const double r = [dispViewDelegate rotation];
 	
@@ -2040,7 +2046,7 @@
 	// Set the display settings per user preferences.
 	double displayScalar = (double)([[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Size"] / 100.0);
 	double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
-	[dispViewDelegate setDisplayType:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]];
+	[dispViewDelegate setDisplayMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]];
 	[dispViewDelegate setDisplayOrientation:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]];
 	[dispViewDelegate setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]];
 	[self setContentScalar:displayScalar];
