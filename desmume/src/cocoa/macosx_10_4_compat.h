@@ -39,10 +39,4 @@ typedef float CGFloat;
 #define CGFLOAT_IS_DOUBLE 0
 #endif
 
-// Overrides for GL_EXT_framebuffer_blit (not available in Mac OS X v10.4)
-#if !defined(GL_ARB_framebuffer_object) || !defined(GL_EXT_framebuffer_blit)
-#define GL_READ_FRAMEBUFFER_EXT 0x8CA8
-#define glBlitFramebufferEXT(a, b, c, d, e, f, g, h, i, j)
-#endif
-
 #endif // MACOSX_10_4_COMPATIBILITY_H

@@ -50,14 +50,16 @@ static void ENDGL() {
 	#include <windows.h>
 	#include <GL/gl.h>
 	#include <GL/glext.h>
-#else
-#ifdef __APPLE__
+#elif defined(__APPLE__)
 	#include <AvailabilityMacros.h>
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 	
-	#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_4
-		#include "cocoa/macosx_10_4_compat.h"
+	// Overrides for GL_EXT_framebuffer_blit (not available in Mac OS X v10.4)
+	#if !defined(GL_ARB_framebuffer_object) && !defined(GL_EXT_framebuffer_blit)
+		#define GL_READ_FRAMEBUFFER_EXT GL_FRAMEBUFFER_EXT
+		#define GL_DRAW_FRAMEBUFFER_EXT GL_FRAMEBUFFER_EXT
+		#define glBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
 	#endif
 	
 	// We're not exactly committing to OpenGL 3.2 Core Profile just yet, so redefine APPLE
@@ -72,9 +74,8 @@ static void ENDGL() {
 	#include <GL/glext.h>
 	/* This is a workaround needed to compile against nvidia GL headers */
 	#ifndef GL_ALPHA_BLEND_EQUATION_ATI
-	#undef GL_VERSION_1_3
+		#undef GL_VERSION_1_3
 	#endif
-#endif
 #endif
 
 #include "types.h"
