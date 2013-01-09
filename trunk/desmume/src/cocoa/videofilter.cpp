@@ -41,7 +41,7 @@ VideoFilter::VideoFilter(unsigned int srcWidth = 1,
 	_vfTypeID = typeID;
 	
 	pthread_mutex_init(&_mutexSrc, NULL);
-	pthread_mutex_init(&_mutexDest, NULL);
+	pthread_mutex_init(&_mutexDst, NULL);
 	pthread_mutex_init(&_mutexTypeID, NULL);
 	pthread_mutex_init(&_mutexTypeString, NULL);
 	pthread_cond_init(&_condRunning, NULL);
@@ -52,7 +52,7 @@ VideoFilter::VideoFilter(unsigned int srcWidth = 1,
 	for (unsigned int i = 0; i < numberThreads; i++)
 	{
 		_vfThread[i].param.srcSurface = _vfSrcSurface;
-		_vfThread[i].param.destSurface = _vfDstSurface;
+		_vfThread[i].param.dstSurface = _vfDstSurface;
 		_vfThread[i].param.filterFunction = NULL;
 		
 		_vfThread[i].task = new Task;
@@ -79,17 +79,17 @@ VideoFilter::~VideoFilter()
 	_vfThread.clear();
 	
 	// Destroy everything else
-	pthread_mutex_lock(&this->_mutexDest);
+	pthread_mutex_lock(&this->_mutexDst);
 	
 	while (this->_isFilterRunning)
 	{
-		pthread_cond_wait(&this->_condRunning, &this->_mutexDest);
+		pthread_cond_wait(&this->_condRunning, &this->_mutexDst);
 	}
 	
 	free(_vfDstSurface.Surface);
 	_vfDstSurface.Surface = NULL;
 	
-	pthread_mutex_unlock(&_mutexDest);
+	pthread_mutex_unlock(&_mutexDst);
 	
 	pthread_mutex_lock(&_mutexSrc);
 	
@@ -100,7 +100,7 @@ VideoFilter::~VideoFilter()
 	pthread_mutex_unlock(&_mutexSrc);
 	
 	pthread_mutex_destroy(&_mutexSrc);
-	pthread_mutex_destroy(&_mutexDest);
+	pthread_mutex_destroy(&_mutexDst);
 	pthread_mutex_destroy(&_mutexTypeID);
 	pthread_mutex_destroy(&_mutexTypeString);
 	pthread_cond_destroy(&_condRunning);
@@ -225,7 +225,7 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 	const char *typeString = vfAttr->typeString;
 	const VideoFilterFunc filterFunction = vfAttr->filterFunction;
 	
-	pthread_mutex_lock(&this->_mutexDest);
+	pthread_mutex_lock(&this->_mutexDst);
 	
 	uint32_t *newSurfaceBuffer = (uint32_t *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
 	if (newSurfaceBuffer == NULL)
@@ -246,20 +246,20 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 	
 	for (unsigned int i = 0; i < threadCount; i++)
 	{
-		SSurface &threadDstSurface = this->_vfThread[i].param.destSurface;
+		SSurface &threadDstSurface = this->_vfThread[i].param.dstSurface;
 		threadDstSurface = this->_vfDstSurface;
 		threadDstSurface.Height /= threadCount;
 		
 		if (i > 0)
 		{
-			SSurface &prevThreadDstSurface = this->_vfThread[i - 1].param.destSurface;
+			SSurface &prevThreadDstSurface = this->_vfThread[i - 1].param.dstSurface;
 			threadDstSurface.Surface = (unsigned char *)((uint32_t *)prevThreadDstSurface.Surface + (prevThreadDstSurface.Width * prevThreadDstSurface.Height));
 		}
 		
 		this->_vfThread[i].param.filterFunction = this->_vfFunc;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDest);
+	pthread_mutex_unlock(&this->_mutexDst);
 	
 	this->SetTypeID(typeID);
 	this->SetTypeString(typeString);
@@ -283,7 +283,7 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
  ********************************************************************************************/
 uint32_t* VideoFilter::RunFilter()
 {
-	pthread_mutex_lock(&this->_mutexDest);
+	pthread_mutex_lock(&this->_mutexDst);
 	
 	this->_isFilterRunning = true;
 	uint32_t *destBufPtr = (uint32_t *)this->_vfDstSurface.Surface;
@@ -302,7 +302,7 @@ uint32_t* VideoFilter::RunFilter()
 		{
 			for (unsigned int i = 0; i < threadCount; i++)
 			{
-				this->_vfThread[i].task->execute(RunVideoFilterTask, &this->_vfThread[i].param);
+				this->_vfThread[i].task->execute(&RunVideoFilterTask, &this->_vfThread[i].param);
 			}
 			
 			for (unsigned int i = 0; i < threadCount; i++)
@@ -320,7 +320,7 @@ uint32_t* VideoFilter::RunFilter()
 	
 	this->_isFilterRunning = false;
 	pthread_cond_signal(&this->_condRunning);
-	pthread_mutex_unlock(&this->_mutexDest);
+	pthread_mutex_unlock(&this->_mutexDst);
 	
 	return destBufPtr;
 }
@@ -362,7 +362,7 @@ void VideoFilter::RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32
 	
 	const VideoFilterAttributes *vfAttr = &VideoFilterAttributesList[typeID];
 	const unsigned int dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-	const unsigned int dstHeight = dstWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
+	const unsigned int dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
 	const VideoFilterFunc filterFunction = vfAttr->filterFunction;
 	
 	SSurface srcSurface = {(unsigned char *)srcBuffer, srcWidth*2, srcWidth, srcHeight};
@@ -450,11 +450,11 @@ uint32_t* VideoFilter::GetSrcBufferPtr()
 	return ptr;
 }
 
-uint32_t* VideoFilter::GetDestBufferPtr()
+uint32_t* VideoFilter::GetDstBufferPtr()
 {
-	pthread_mutex_lock(&this->_mutexDest);
+	pthread_mutex_lock(&this->_mutexDst);
 	uint32_t *ptr = (uint32_t *)this->_vfDstSurface.Surface;
-	pthread_mutex_unlock(&this->_mutexDest);
+	pthread_mutex_unlock(&this->_mutexDst);
 	
 	return ptr;
 }
@@ -477,20 +477,20 @@ unsigned int VideoFilter::GetSrcHeight()
 	return height;
 }
 
-unsigned int VideoFilter::GetDestWidth()
+unsigned int VideoFilter::GetDstWidth()
 {
-	pthread_mutex_lock(&this->_mutexDest);
+	pthread_mutex_lock(&this->_mutexDst);
 	unsigned int width = this->_vfDstSurface.Width;
-	pthread_mutex_unlock(&this->_mutexDest);
+	pthread_mutex_unlock(&this->_mutexDst);
 	
 	return width;
 }
 
-unsigned int VideoFilter::GetDestHeight()
+unsigned int VideoFilter::GetDstHeight()
 {
-	pthread_mutex_lock(&this->_mutexDest);
+	pthread_mutex_lock(&this->_mutexDst);
 	unsigned int height = this->_vfDstSurface.Height;
-	pthread_mutex_unlock(&this->_mutexDest);
+	pthread_mutex_unlock(&this->_mutexDst);
 	
 	return height;
 }
@@ -500,7 +500,7 @@ static void* RunVideoFilterTask(void *arg)
 {
 	VideoFilterThreadParam *param = (VideoFilterThreadParam *)arg;
 	
-	param->filterFunction(param->srcSurface, param->destSurface);
+	param->filterFunction(param->srcSurface, param->dstSurface);
 	
 	return NULL;
 }

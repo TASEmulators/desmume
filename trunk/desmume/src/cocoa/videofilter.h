@@ -69,11 +69,11 @@ typedef struct
 // Attributes list of known video filters, indexed using VideoFilterTypeID.
 const VideoFilterAttributes VideoFilterAttributesList[] = {
 	{VideoFilterTypeID_None,			"None",				NULL,							1,	1},
-	{VideoFilterTypeID_LQ2X,			"LQ2X",				&RenderLQ2X,					2,	1},
-	{VideoFilterTypeID_LQ2XS,			"LQ2XS",			&RenderLQ2XS,					2,	1},
-	{VideoFilterTypeID_HQ2X,			"HQ2X",				&RenderHQ2X,					2,	1},
-	{VideoFilterTypeID_HQ2XS,			"HQ2XS",			&RenderHQ2XS,					2,	1},
-	{VideoFilterTypeID_HQ4X,			"HQ4X",				&RenderHQ4X,					4,	1},
+	{VideoFilterTypeID_LQ2X,			"LQ2x",				&RenderLQ2X,					2,	1},
+	{VideoFilterTypeID_LQ2XS,			"LQ2xS",			&RenderLQ2XS,					2,	1},
+	{VideoFilterTypeID_HQ2X,			"HQ2x",				&RenderHQ2X,					2,	1},
+	{VideoFilterTypeID_HQ2XS,			"HQ2xS",			&RenderHQ2XS,					2,	1},
+	{VideoFilterTypeID_HQ4X,			"HQ4x",				&RenderHQ4X,					4,	1},
 	{VideoFilterTypeID_2xSaI,			"2xSaI",			&Render2xSaI,					2,	1},
 	{VideoFilterTypeID_Super2xSaI,		"Super 2xSaI",		&RenderSuper2xSaI,				2,	1},
 	{VideoFilterTypeID_SuperEagle,		"Super Eagle",		&RenderSuperEagle,				2,	1},
@@ -86,13 +86,13 @@ const VideoFilterAttributes VideoFilterAttributesList[] = {
 	{VideoFilterTypeID_EPXPlus,			"EPX+",				&RenderEPXPlus,					2,	1},
 	{VideoFilterTypeID_EPX1_5X,			"EPX 1.5x",			&RenderEPX_1Point5x,			3,	2},
 	{VideoFilterTypeID_EPXPlus1_5X,		"EPX+ 1.5x",		&RenderEPXPlus_1Point5x,		3,	2},
-	{VideoFilterTypeID_HQ4XS,			"HQ4XS",			&RenderHQ4XS,					4,	1} };
+	{VideoFilterTypeID_HQ4XS,			"HQ4xS",			&RenderHQ4XS,					4,	1} };
 
 // Parameters struct for IPC
 typedef struct
 {
 	SSurface srcSurface;
-	SSurface destSurface;
+	SSurface dstSurface;
 	VideoFilterFunc filterFunction;
 } VideoFilterThreadParam;
 
@@ -118,7 +118,7 @@ typedef struct
 	   and then stores the resulting pixels into the destination buffer in RGBA8888
 	   format.
 	6. At this point, the destination buffer pixels can be used. RunFilter() returns
-	   a pointer to the destination buffer. Alternatively, GetDestBufferPtr() can be
+	   a pointer to the destination buffer. Alternatively, GetDstBufferPtr() can be
 	   used to get the pointer.
  
 	Thread Safety:
@@ -138,7 +138,7 @@ private:
 	
 	bool _isFilterRunning;
 	pthread_mutex_t _mutexSrc;
-	pthread_mutex_t _mutexDest;
+	pthread_mutex_t _mutexDst;
 	pthread_mutex_t _mutexTypeID;
 	pthread_mutex_t _mutexTypeString;
 	pthread_cond_t _condRunning;
@@ -162,11 +162,11 @@ public:
 	VideoFilterTypeID GetTypeID();
 	const char* GetTypeString();
 	uint32_t* GetSrcBufferPtr();
-	uint32_t* GetDestBufferPtr();
+	uint32_t* GetDstBufferPtr();
 	unsigned int GetSrcWidth();
 	unsigned int GetSrcHeight();
-	unsigned int GetDestWidth();
-	unsigned int GetDestHeight();
+	unsigned int GetDstWidth();
+	unsigned int GetDstHeight();
 };
 
 static void* RunVideoFilterTask(void *arg);
