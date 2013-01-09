@@ -150,6 +150,8 @@
 #define GPU_DISPLAY_COLOR_DEPTH						sizeof(UInt16)
 #define GPU_SCREEN_SIZE_BYTES						(GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * GPU_DISPLAY_COLOR_DEPTH) // The numbers are: 256px width, 192px height, 16bit color depth
 
+#define DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO		(21.0/46.0) // Based on the official DS specification: 21mm/46mm
+
 #define WINDOW_STATUS_BAR_HEIGHT					24		// Height of an emulation window status bar in pixels.
 
 #define SPEED_SCALAR_QUARTER						0.25	// Speed scalar for quarter execution speed.

@@ -119,8 +119,8 @@
 
 - (NSBitmapImageRep *) bitmapImageRep
 {
-	NSUInteger w = (NSUInteger)vf->GetDestWidth();
-	NSUInteger h = (NSUInteger)vf->GetDestHeight();
+	NSUInteger w = (NSUInteger)vf->GetDstWidth();
+	NSUInteger h = (NSUInteger)vf->GetDstHeight();
 	
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		 pixelsWide:w
@@ -167,9 +167,9 @@
 	return (UInt32 *)vf->GetSrcBufferPtr();
 }
 
-- (UInt32 *) destBufferPtr
+- (UInt32 *) dstBufferPtr
 {
-	return (UInt32 *)vf->GetDestBufferPtr();
+	return (UInt32 *)vf->GetDstBufferPtr();
 }
 
 - (NSSize) srcSize
@@ -179,7 +179,7 @@
 
 - (NSSize) destSize
 {
-	return NSMakeSize((CGFloat)vf->GetDestWidth(), (CGFloat)vf->GetDestHeight());
+	return NSMakeSize((CGFloat)vf->GetDstWidth(), (CGFloat)vf->GetDstHeight());
 }
 
 + (NSString *) typeStringByID:(VideoFilterTypeID)typeID

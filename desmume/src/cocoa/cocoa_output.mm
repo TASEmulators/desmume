@@ -1738,14 +1738,14 @@ bool GetGPULayerState(int gpuType, unsigned int i)
 	
 	switch (gpuType)
 	{
-		case DS_GPU_TYPE_MAIN:
+		case DS_GPU_TYPE_SUB:
 			if (SubScreen.gpu != nil)
 			{
 				result = CommonSettings.dispLayers[SubScreen.gpu->core][i];
 			}
 			break;
 			
-		case DS_GPU_TYPE_SUB:
+		case DS_GPU_TYPE_MAIN:
 			if (MainScreen.gpu != nil)
 			{
 				result = CommonSettings.dispLayers[MainScreen.gpu->core][i];
@@ -1770,11 +1770,11 @@ void SetGPUDisplayState(int gpuType, bool state)
 {
 	switch (gpuType)
 	{
-		case DS_GPU_TYPE_MAIN:
+		case DS_GPU_TYPE_SUB:
 			CommonSettings.showGpu.sub = state;
 			break;
 			
-		case DS_GPU_TYPE_SUB:
+		case DS_GPU_TYPE_MAIN:
 			CommonSettings.showGpu.main = state;
 			break;
 			
@@ -1794,11 +1794,11 @@ bool GetGPUDisplayState(int gpuType)
 	
 	switch (gpuType)
 	{
-		case DS_GPU_TYPE_MAIN:
+		case DS_GPU_TYPE_SUB:
 			result = CommonSettings.showGpu.sub;
 			break;
 			
-		case DS_GPU_TYPE_SUB:
+		case DS_GPU_TYPE_MAIN:
 			result = CommonSettings.showGpu.main;
 			break;
 			

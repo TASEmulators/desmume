@@ -45,7 +45,7 @@
 - (VideoFilterTypeID) typeID;
 - (NSString *) typeString;
 - (UInt32 *) srcBufferPtr;
-- (UInt32 *) destBufferPtr;
+- (UInt32 *) dstBufferPtr;
 - (NSSize) srcSize;
 - (NSSize) destSize;
 + (NSString *) typeStringByID:(VideoFilterTypeID)typeID;
