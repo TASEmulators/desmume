@@ -5,22 +5,22 @@
 // Zlib - See COPYING file in this package.
 
 // [Guard]
-#ifndef _ASMJIT_H
-#define _ASMJIT_H
+#ifndef _ASMJIT_ASMJIT_H
+#define _ASMJIT_ASMJIT_H
 
 //! @mainpage
 //!
-//! @brief AsmJit is complete x86/x64 JIT Assembler for C++ language
+//! @brief AsmJit is a complete x86/x64 JIT Assembler for C++ language.
 //! 
 //! It supports FPU, MMX, 3dNow, SSE, SSE2, SSE3 and SSE4 intrinsics, powerful
 //! compiler that helps to write portable functions for 32-bit (x86) and 64-bit
 //! (x64) architectures. AsmJit can be used to create functions at runtime that
 //! can be called from existing (but also generated) C/C++ code.
 //!
-//! AsmJit is crossplatform library that supports various compilers and
+//! AsmJit is a cross-platform library that supports various compilers and
 //! operating systems. Currently only limitation is x86 (32-bit) or x64 (64-bit)
 //! processor. Currently tested operating systems are Windows (32-bit and 64-bit),
-//! Linux (32-bit and 64-bit) and MacOSX (32-bit).
+//! Linux (32-bit and 64-bit) and MacOSX (32-bit and 64-bit).
 //!
 //! @section AsmJit_Main_Introduction Introduction
 //!
@@ -51,13 +51,12 @@
 //! @section AsmJit_Main_Configuration Configuration, Definitions and Utilities
 //!
 //! - @ref AsmJit_Config "Configuration" - Macros used to configure AsmJit.
-//! - @ref AsmJit_Util "Utilities" - Utilities and helper classes.
 //!
 //! @section AsmJit_Main_HomePage AsmJit Homepage
 //!
 //! - http://code.google.com/p/asmjit/
 //!
-//! @section AsmJit_Main_X86X64Resources External X86/X64 Assembler Resources
+//! @section AsmJit_Main_ResourcesX86 External X86/X64 Assembler Resources
 //! - http://www.agner.org/optimize/
 //! - http://www.mark.masmcode.com/ (Assembler Tips)
 //! - http://avisynth.org/mediawiki/Filter_SDK/Assembler_optimizing (Optimizing)
@@ -140,7 +139,7 @@
 //! Contains classes related to @c AsmJit::Compiler that can be used
 //! to generate code using high-level constructs.
 //!
-//! - See @c AsmJit::Compiler class for high level code generation 
+//! - See @c Compiler class for high level code generation 
 //!   documentation - calling conventions, function declaration
 //!   and variables management.
 
@@ -211,12 +210,12 @@
 //! // Now you are able to get specific features.
 //!
 //! // Processor has SSE2
-//! if (i->features & CPU_FEATURE_SSE2)
+//! if (i->features & kX86FeatureSse2)
 //! {
 //!   // your code...
 //! }
 //! // Processor has MMX
-//! else if (i->features & CPU_FEATURE__MMX)
+//! else if (i->features & kX86Feature_MMX)
 //! {
 //!   // your code...
 //! }
@@ -250,12 +249,11 @@
 //! a.setLogger(&logger);
 //! @endcode
 //!
-//! You can see that logging goes through @c AsmJit::Assembler. If you are
-//! using @c AsmJit::Compiler and you want to log messages in correct assembler
-//! order, you should look at @c AsmJit::Compiler::comment() method. It allows 
-//! you to insert text message into @c AsmJit::Emittable list and 
-//! @c AsmJit::Compiler will send your message to @c AsmJit::Assembler in 
-//! correct order.
+//! You can see that logging goes through @c Assembler. If you are using 
+//! @c Compiler and you want to log messages in correct assembler order,
+//! you should look at @ref Compiler::comment() method. It allows  you to 
+//! insert text message into items stream so the @c Compiler is able to
+//! send messages to @ref Assembler in correct order.
 //!
 //! @sa @c AsmJit::Logger, @c AsmJit::FileLogger.
 
@@ -281,7 +279,7 @@
 //! free mechanism. It internally uses larger chunks of memory to make
 //! allocation fast and effective.
 //!
-//! Using @c AsmJit::VirtualMemory::alloc() is crossplatform way how to 
+//! Using @c AsmJit::VirtualMemory::alloc() is cross-platform way how to 
 //! allocate this kind of memory without worrying about operating system 
 //! and it's API. Each memory block that is no longer needed should be 
 //! freed by @c AsmJit::VirtualMemory::free() method. If you want better
@@ -289,12 +287,6 @@
 //! @c AsmJit::MemoryManager class.
 //!
 //! @sa @c AsmJit::VirtualMemory, @ AsmJit::MemoryManager.
-
-
-//! @defgroup AsmJit_Util Utilities and helper classes.
-//!
-//! Contains some helper classes that's used by AsmJit library.
-
 
 
 //! @addtogroup AsmJit_Config
@@ -332,21 +324,19 @@
 //!
 //! There are not other namespaces used in AsmJit library.
 
+// ----------------------------------------------------------------------------
+// [Dependencies - Core]
+// ----------------------------------------------------------------------------
 
-// [Includes]
-#include "Build.h"
-#include "Assembler.h"
-#include "CodeGenerator.h"
-#include "Compiler.h"
-#include "CpuInfo.h"
-#include "Defs.h"
-#include "Logger.h"
-#include "MemoryManager.h"
-#include "MemoryMarker.h"
-#include "Operand.h"
-#include "Platform.h"
-#include "Util.h"
+#include "core.h"
 
+// ----------------------------------------------------------------------------
+// [Dependencies - X86 / X64]
+// ----------------------------------------------------------------------------
+
+#if defined(ASMJIT_X86) || defined(ASMJIT_X64)
+#include "x86.h"
+#endif // ASMJIT_X86 || ASMJIT_X64
 
 // [Guard]
-#endif // _ASMJIT_H
+#endif // _ASMJIT_ASMJIT_H

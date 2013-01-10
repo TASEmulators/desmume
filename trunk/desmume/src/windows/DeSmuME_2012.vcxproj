@@ -25,36 +25,41 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Template|Win32">
-      <Configuration>Template</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Template|x64">
-      <Configuration>Template</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>DeSmuME_VS2010</ProjectName>
+    <ProjectName>DeSmuME_VS2012</ProjectName>
     <ProjectGuid>{9F5F72A1-D3A5-4918-B460-E076B16D10A9}</ProjectGuid>
     <RootNamespace>DeSmuME</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|x64'" Label="Configuration" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
@@ -71,9 +76,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Template|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
@@ -88,55 +90,44 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\__bins\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\__bins\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">$(SolutionDir)\__bins\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)\__bins\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)\__bins\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(SolutionDir)\__bins\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Template|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Template|x64'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Template|x64'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)_x64_release</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)_x64_debug</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(ProjectName)_x64_dev+</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)_release</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)_debug</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">$(ProjectName)_dev+</TargetName>
+    <_ProjectFileVersion>11.0.50727.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)\__bins\</OutDir>
+    <IntDir>$(SolutionDir)\.VS2012\$(Configuration)\$(Platform)\</IntDir>
+    <TargetName>$(ProjectName)_debug</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)\__bins\</OutDir>
+    <IntDir>$(SolutionDir)\.VS2012\$(Configuration)\$(Platform)\</IntDir>
+    <TargetName>$(ProjectName)_x64_debug</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)\__bins\</OutDir>
+    <IntDir>$(SolutionDir)\.VS2012\$(Configuration)\$(Platform)\</IntDir>
+    <TargetName>$(ProjectName)_release</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)\__bins\</OutDir>
+    <IntDir>$(SolutionDir)\.VS2012\$(Configuration)\$(Platform)\</IntDir>
+    <TargetName>$(ProjectName)_x64_release</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">
+    <OutDir>$(SolutionDir)\__bins\</OutDir>
+    <IntDir>$(SolutionDir)\.VS2012\$(Configuration)\$(Platform)\</IntDir>
+    <TargetName>$(ProjectName)_dev+</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">
+    <OutDir>$(SolutionDir)\__bins\</OutDir>
+    <IntDir>$(SolutionDir)\.VS2012\$(Configuration)\$(Platform)\</IntDir>
+    <TargetName>$(ProjectName)_x64_dev+</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
       <Command>defaultconfig\SubWCRev.bat</Command>
     </PreBuildEvent>
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
@@ -153,100 +144,16 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;libelf_libdwarf-vc8-Win32.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_debug.exe</OutputFile>
-      <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
-      <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>lua51.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
-    </Link>
-    <Manifest>
-      <AdditionalManifestFiles>DeSmuME_x86.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
-    </Manifest>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <PreBuildEvent>
-      <Command>defaultconfig\SubWCRev.bat</Command>
-    </PreBuildEvent>
-    <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OmitFramePointers>true</OmitFramePointers>
-      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>true</StringPooling>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <StructMemberAlignment>Default</StructMemberAlignment>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Fast</FloatingPointModel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>Cdecl</CallingConvention>
-      <CompileAs>Default</CompileAs>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(ProjectName)_release.exe</OutputFile>
-      <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
-      <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OptimizeReferences>true</OptimizeReferences>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
-    </Link>
-    <Manifest>
-      <AdditionalManifestFiles>DeSmuME_x86.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
-    </Manifest>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">
-    <PreBuildEvent>
-      <Command>defaultconfig\SubWCRev.bat</Command>
-    </PreBuildEvent>
-    <ClCompile>
-      <Optimization>Full</Optimization>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OmitFramePointers>true</OmitFramePointers>
-      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>true</StringPooling>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <StructMemberAlignment>Default</StructMemberAlignment>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Fast</FloatingPointModel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>Cdecl</CallingConvention>
-      <CompileAs>Default</CompileAs>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(ProjectName)_dev+.exe</OutputFile>
-      <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
-      <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OptimizeReferences>true</OptimizeReferences>
-      <LinkTimeCodeGeneration>
-      </LinkTimeCodeGeneration>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
+      <DataExecutionPrevention />
     </Link>
     <Manifest>
       <AdditionalManifestFiles>DeSmuME_x86.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -260,6 +167,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
@@ -276,32 +184,28 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;libelf_libdwarf-vc8-x64.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_debug.exe</OutputFile>
-      <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
-      <DelayLoadDLLs>wpcap.dll;lua51.dll</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>lua51.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
+      <DataExecutionPrevention />
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>DeSmuME_x64.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
     </Manifest>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
       <Command>defaultconfig\SubWCRev.bat</Command>
     </PreBuildEvent>
-    <Midl>
-      <TargetEnvironment>X64</TargetEnvironment>
-    </Midl>
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -321,22 +225,107 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(ProjectName)_x64_release.exe</OutputFile>
-      <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
-      <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
+      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;libelf_libdwarf-vc8-Win32.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(ProjectName)_release.exe</OutputFile>
+      <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>lua51.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
+      <DataExecutionPrevention />
+      <Profile>false</Profile>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>DeSmuME_x86.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PreBuildEvent>
+      <Command>defaultconfig\SubWCRev.bat</Command>
+    </PreBuildEvent>
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <WarningLevel>Level1</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;libelf_libdwarf-vc8-x64.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(ProjectName)_x64_release.exe</OutputFile>
+      <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>lua51.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
       <TargetMachine>MachineX64</TargetMachine>
+      <Profile>false</Profile>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>DeSmuME_x64.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">
+    <PreBuildEvent>
+      <Command>defaultconfig\SubWCRev.bat</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <WarningLevel>Level1</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;libelf_libdwarf-vc8-Win32.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(ProjectName)_dev+.exe</OutputFile>
+      <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>lua51.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration />
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <Profile>false</Profile>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>DeSmuME_x86.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">
@@ -347,6 +336,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -366,21 +356,19 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;libelf_libdwarf-vc8-x64.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_dev+.exe</OutputFile>
-      <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
-      <DelayLoadDLLs>wpcap.dll;lua51.dll</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>lua51.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
-      <LinkTimeCodeGeneration>
-      </LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration />
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
+      <DataExecutionPrevention />
       <TargetMachine>MachineX64</TargetMachine>
+      <Profile>false</Profile>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>DeSmuME_x64.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -388,17 +376,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
-    <ClCompile Include="..\addons\slot2_piano.cpp" />
-    <ClCompile Include="..\addons\slot1_none.cpp" />
-    <ClCompile Include="..\addons\slot1_r4.cpp" />
-    <ClCompile Include="..\addons\slot1_retail.cpp" />
-    <ClCompile Include="..\addons\slot1_retail_nand.cpp" />
-    <ClCompile Include="..\addons\slot2_mpcf.cpp" />
-    <ClCompile Include="..\addons\slot2_paddle.cpp" />
     <ClCompile Include="..\aggdraw.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
-    <ClCompile Include="..\armcpu.cpp" />
     <ClCompile Include="..\arm_jit.cpp" />
+    <ClCompile Include="..\armcpu.cpp" />
     <ClCompile Include="..\bios.cpp" />
     <ClCompile Include="..\cheatSystem.cpp" />
     <ClCompile Include="..\commandline.cpp">
@@ -413,13 +394,6 @@
     <ClCompile Include="..\driver.cpp" />
     <ClCompile Include="..\emufile.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
-    <ClCompile Include="..\filter\2xsai.cpp" />
-    <ClCompile Include="..\filter\bilinear.cpp" />
-    <ClCompile Include="..\filter\epx.cpp" />
-    <ClCompile Include="..\filter\hq2x.cpp" />
-    <ClCompile Include="..\filter\hq4x.cpp" />
-    <ClCompile Include="..\filter\lq2x.cpp" />
-    <ClCompile Include="..\filter\scanline.cpp" />
     <ClCompile Include="..\firmware.cpp" />
     <ClCompile Include="..\fs-windows.cpp" />
     <ClCompile Include="..\gfx3d.cpp" />
@@ -443,6 +417,55 @@
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
+    <ClCompile Include="..\version.cpp" />
+    <ClCompile Include="..\wifi.cpp" />
+    <ClCompile Include="..\addons\slot1_none.cpp" />
+    <ClCompile Include="..\addons\slot1_r4.cpp" />
+    <ClCompile Include="..\addons\slot1_retail.cpp" />
+    <ClCompile Include="..\addons\slot1_retail_nand.cpp" />
+    <ClCompile Include="..\addons\slot2_expMemory.cpp" />
+    <ClCompile Include="..\addons\slot2_gbagame.cpp" />
+    <ClCompile Include="..\addons\slot2_guitarGrip.cpp" />
+    <ClCompile Include="..\addons\slot2_mpcf.cpp" />
+    <ClCompile Include="..\addons\slot2_none.cpp" />
+    <ClCompile Include="..\addons\slot2_paddle.cpp" />
+    <ClCompile Include="..\addons\slot2_piano.cpp" />
+    <ClCompile Include="..\addons\slot2_rumblepak.cpp" />
+    <ClCompile Include="..\gdbstub\gdbstub.cpp" />
+    <ClCompile Include="..\utils\ConvertUTF.c" />
+    <ClCompile Include="..\utils\datetime.cpp" />
+    <ClCompile Include="..\utils\dlditool.cpp" />
+    <ClCompile Include="..\utils\emufat.cpp" />
+    <ClCompile Include="..\utils\guid.cpp" />
+    <ClCompile Include="..\utils\md5.cpp" />
+    <ClCompile Include="..\utils\task.cpp" />
+    <ClCompile Include="..\utils\vfat.cpp" />
+    <ClCompile Include="..\utils\xstring.cpp" />
+    <ClCompile Include="..\utils\decrypt\crc.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">$(IntDir)decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(IntDir)decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)decrypt\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)decrypt\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\utils\decrypt\decrypt.cpp" />
+    <ClCompile Include="..\utils\decrypt\header.cpp" />
+    <ClCompile Include="..\utils\libfat\cache.cpp" />
+    <ClCompile Include="..\utils\libfat\directory.cpp" />
+    <ClCompile Include="..\utils\libfat\disc.cpp" />
+    <ClCompile Include="..\utils\libfat\fatdir.cpp" />
+    <ClCompile Include="..\utils\libfat\fatfile.cpp" />
+    <ClCompile Include="..\utils\libfat\file_allocation_table.cpp" />
+    <ClCompile Include="..\utils\libfat\filetime.cpp" />
+    <ClCompile Include="..\utils\libfat\libfat.cpp" />
+    <ClCompile Include="..\utils\libfat\libfat_public_api.cpp" />
+    <ClCompile Include="..\utils\libfat\lock.cpp" />
+    <ClCompile Include="..\utils\libfat\partition.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinystr.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinyxml.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinyxmlerror.cpp" />
+    <ClCompile Include="..\utils\tinyxml\tinyxmlparser.cpp" />
     <ClCompile Include="..\utils\AsmJit\core\assembler.cpp" />
     <ClCompile Include="..\utils\AsmJit\core\assert.cpp" />
     <ClCompile Include="..\utils\AsmJit\core\buffer.cpp" />
@@ -472,50 +495,6 @@
     <ClCompile Include="..\utils\AsmJit\x86\x86func.cpp" />
     <ClCompile Include="..\utils\AsmJit\x86\x86operand.cpp" />
     <ClCompile Include="..\utils\AsmJit\x86\x86util.cpp" />
-    <ClCompile Include="..\utils\datetime.cpp" />
-    <ClCompile Include="..\utils\dlditool.cpp" />
-    <ClCompile Include="..\utils\emufat.cpp" />
-    <ClCompile Include="..\utils\libfat\cache.cpp" />
-    <ClCompile Include="..\utils\libfat\directory.cpp" />
-    <ClCompile Include="..\utils\libfat\disc.cpp" />
-    <ClCompile Include="..\utils\libfat\fatdir.cpp" />
-    <ClCompile Include="..\utils\libfat\fatfile.cpp" />
-    <ClCompile Include="..\utils\libfat\filetime.cpp" />
-    <ClCompile Include="..\utils\libfat\file_allocation_table.cpp" />
-    <ClCompile Include="..\utils\libfat\libfat.cpp" />
-    <ClCompile Include="..\utils\libfat\libfat_public_api.cpp" />
-    <ClCompile Include="..\utils\libfat\lock.cpp" />
-    <ClCompile Include="..\utils\libfat\partition.cpp" />
-    <ClCompile Include="..\utils\tinyxml\tinystr.cpp" />
-    <ClCompile Include="..\utils\tinyxml\tinyxml.cpp" />
-    <ClCompile Include="..\utils\tinyxml\tinyxmlerror.cpp" />
-    <ClCompile Include="..\utils\tinyxml\tinyxmlparser.cpp" />
-    <ClCompile Include="..\utils\vfat.cpp" />
-    <ClCompile Include="..\version.cpp" />
-    <ClCompile Include="..\wifi.cpp" />
-    <ClCompile Include="..\addons\slot2_expMemory.cpp" />
-    <ClCompile Include="..\addons\slot2_gbagame.cpp" />
-    <ClCompile Include="..\addons\slot2_guitarGrip.cpp" />
-    <ClCompile Include="..\addons\slot2_none.cpp" />
-    <ClCompile Include="..\addons\slot2_rumblepak.cpp" />
-    <ClCompile Include="..\gdbstub\gdbstub.cpp" />
-    <ClCompile Include="..\utils\ConvertUTF.c" />
-    <ClCompile Include="..\utils\guid.cpp" />
-    <ClCompile Include="..\utils\md5.cpp" />
-    <ClCompile Include="..\utils\task.cpp" />
-    <ClCompile Include="..\utils\xstring.cpp" />
-    <ClCompile Include="..\utils\decrypt\crc.cpp">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Template|x64'">$(IntDir)\decrypt\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\utils\decrypt\decrypt.cpp" />
-    <ClCompile Include="..\utils\decrypt\header.cpp" />
     <ClCompile Include="..\metaspu\metaspu.cpp" />
     <ClCompile Include="..\metaspu\SndOut.cpp" />
     <ClCompile Include="..\metaspu\Timestretcher.cpp" />
@@ -532,6 +511,13 @@
     <ClCompile Include="..\metaspu\SoundTouch\TDStretch.cpp" />
     <ClCompile Include="..\metaspu\SoundTouch\WavFile.cpp" />
     <ClCompile Include="..\wxdlg\wxdlg3dViewer.cpp" />
+    <ClCompile Include="..\filter\2xsai.cpp" />
+    <ClCompile Include="..\filter\bilinear.cpp" />
+    <ClCompile Include="..\filter\epx.cpp" />
+    <ClCompile Include="..\filter\hq2x.cpp" />
+    <ClCompile Include="..\filter\hq4x.cpp" />
+    <ClCompile Include="..\filter\lq2x.cpp" />
+    <ClCompile Include="..\filter\scanline.cpp" />
     <ClCompile Include="AboutBox.cpp" />
     <ClCompile Include="aviout.cpp" />
     <ClCompile Include="cheatsWin.cpp" />
@@ -539,54 +525,43 @@
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
+    <ClCompile Include="FirmConfig.cpp" />
+    <ClCompile Include="gbaslot_config.cpp" />
+    <ClCompile Include="hotkey.cpp" />
+    <ClCompile Include="importSave.cpp" />
+    <ClCompile Include="inputdx.cpp" />
+    <ClCompile Include="luaconsole.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="mic.cpp" />
+    <ClCompile Include="ogl.cpp" />
+    <ClCompile Include="OpenArchive.cpp" />
+    <ClCompile Include="pathsettings.cpp" />
+    <ClCompile Include="recentroms.cpp" />
+    <ClCompile Include="replay.cpp" />
+    <ClCompile Include="slot1_config.cpp" />
+    <ClCompile Include="snddx.cpp" />
+    <ClCompile Include="throttle.cpp" />
+    <ClCompile Include="winutil.cpp" />
+    <ClCompile Include="File_Extractor\fex\Binary_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\blargg_common.cpp" />
+    <ClCompile Include="File_Extractor\fex\blargg_errors.cpp" />
+    <ClCompile Include="File_Extractor\fex\Data_Reader.cpp" />
+    <ClCompile Include="File_Extractor\fex\fex.cpp" />
+    <ClCompile Include="File_Extractor\fex\File_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Gzip_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Gzip_Reader.cpp" />
+    <ClCompile Include="File_Extractor\fex\Rar_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Zip7_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Zip_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Zlib_Inflater.cpp" />
     <ClCompile Include="File_Extractor\7z_C\7zAlloc.c" />
     <ClCompile Include="File_Extractor\7z_C\7zBuf.c" />
     <ClCompile Include="File_Extractor\7z_C\7zBuf2.c" />
     <ClCompile Include="File_Extractor\7z_C\7zCrc.c" />
     <ClCompile Include="File_Extractor\7z_C\7zCrcOpt.c" />
     <ClCompile Include="File_Extractor\7z_C\7zDec.c" />
-    <ClCompile Include="File_Extractor\7z_C\7zDecode.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zExtract.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zFile.c" />
-    <ClCompile Include="File_Extractor\7z_C\7zHeader.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zIn.c" />
-    <ClCompile Include="File_Extractor\7z_C\7zItem.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zStream.c" />
     <ClCompile Include="File_Extractor\7z_C\Alloc.c" />
     <ClCompile Include="File_Extractor\7z_C\Bcj2.c" />
@@ -609,18 +584,6 @@
     <ClCompile Include="File_Extractor\7z_C\Ppmd7Dec.c" />
     <ClCompile Include="File_Extractor\7z_C\Ppmd7Enc.c" />
     <ClCompile Include="File_Extractor\7z_C\Threads.c" />
-    <ClCompile Include="File_Extractor\fex\Binary_Extractor.cpp" />
-    <ClCompile Include="File_Extractor\fex\blargg_common.cpp" />
-    <ClCompile Include="File_Extractor\fex\blargg_errors.cpp" />
-    <ClCompile Include="File_Extractor\fex\Data_Reader.cpp" />
-    <ClCompile Include="File_Extractor\fex\fex.cpp" />
-    <ClCompile Include="File_Extractor\fex\File_Extractor.cpp" />
-    <ClCompile Include="File_Extractor\fex\Gzip_Extractor.cpp" />
-    <ClCompile Include="File_Extractor\fex\Gzip_Reader.cpp" />
-    <ClCompile Include="File_Extractor\fex\Rar_Extractor.cpp" />
-    <ClCompile Include="File_Extractor\fex\Zip7_Extractor.cpp" />
-    <ClCompile Include="File_Extractor\fex\Zip_Extractor.cpp" />
-    <ClCompile Include="File_Extractor\fex\Zlib_Inflater.cpp" />
     <ClCompile Include="File_Extractor\unrar\archive.cpp" />
     <ClCompile Include="File_Extractor\unrar\arcread.cpp" />
     <ClCompile Include="File_Extractor\unrar\coder.cpp" />
@@ -640,23 +603,6 @@
     <ClCompile Include="File_Extractor\unrar\unrar.cpp" />
     <ClCompile Include="File_Extractor\unrar\unrar_misc.cpp" />
     <ClCompile Include="File_Extractor\unrar\unrar_open.cpp" />
-    <ClCompile Include="FirmConfig.cpp" />
-    <ClCompile Include="gbaslot_config.cpp" />
-    <ClCompile Include="hotkey.cpp" />
-    <ClCompile Include="importSave.cpp" />
-    <ClCompile Include="inputdx.cpp" />
-    <ClCompile Include="luaconsole.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="mic.cpp" />
-    <ClCompile Include="ogl.cpp" />
-    <ClCompile Include="OpenArchive.cpp" />
-    <ClCompile Include="pathsettings.cpp" />
-    <ClCompile Include="recentroms.cpp" />
-    <ClCompile Include="replay.cpp" />
-    <ClCompile Include="snddx.cpp" />
-    <ClCompile Include="slot1_config.cpp" />
-    <ClCompile Include="throttle.cpp" />
-    <ClCompile Include="winutil.cpp" />
     <ClCompile Include="disView.cpp" />
     <ClCompile Include="ginfo.cpp" />
     <ClCompile Include="IORegView.cpp" />
@@ -673,8 +619,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h" />
-    <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\arm_jit.h" />
+    <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\bios.h" />
     <ClInclude Include="..\bits.h" />
     <ClInclude Include="..\cheatSystem.h" />
@@ -684,22 +630,16 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
-    <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\FIFO.h" />
-    <ClInclude Include="..\filter\filter.h" />
-    <ClInclude Include="..\filter\hq2x.h" />
-    <ClInclude Include="..\filter\hq4x.h" />
-    <ClInclude Include="..\filter\interp.h" />
-    <ClInclude Include="..\filter\lq2x.h" />
     <ClInclude Include="..\firmware.h" />
     <ClInclude Include="..\fs.h" />
     <ClInclude Include="..\gfx3d.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />
-    <ClInclude Include="..\instructions.h" />
     <ClInclude Include="..\instruction_attributes.h" />
+    <ClInclude Include="..\instructions.h" />
     <ClInclude Include="..\lua-engine.h" />
     <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\mc.h" />
@@ -723,9 +663,43 @@
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\types.h" />
+    <ClInclude Include="..\version.h" />
+    <ClInclude Include="..\wifi.h" />
+    <ClInclude Include="..\utils\xstring.h" />
+    <ClInclude Include="..\gdbstub.h" />
+    <ClInclude Include="..\utils\ConvertUTF.h" />
+    <ClInclude Include="..\utils\datetime.h" />
+    <ClInclude Include="..\utils\emufat.h" />
+    <ClInclude Include="..\utils\guid.h" />
+    <ClInclude Include="..\utils\md5.h" />
+    <ClInclude Include="..\utils\task.h" />
+    <ClInclude Include="..\utils\valuearray.h" />
+    <ClInclude Include="..\utils\vfat.h" />
+    <ClInclude Include="..\utils\decrypt\crc.h" />
+    <ClInclude Include="..\utils\decrypt\decrypt.h" />
+    <ClInclude Include="..\utils\decrypt\header.h" />
+    <ClInclude Include="..\utils\libfat\bit_ops.h" />
+    <ClInclude Include="..\utils\libfat\cache.h" />
+    <ClInclude Include="..\utils\libfat\common.h" />
+    <ClInclude Include="..\utils\libfat\directory.h" />
+    <ClInclude Include="..\utils\libfat\disc.h" />
+    <ClInclude Include="..\utils\libfat\disc_io.h" />
+    <ClInclude Include="..\utils\libfat\fat.h" />
+    <ClInclude Include="..\utils\libfat\fatdir.h" />
+    <ClInclude Include="..\utils\libfat\fatfile.h" />
+    <ClInclude Include="..\utils\libfat\file_allocation_table.h" />
+    <ClInclude Include="..\utils\libfat\filetime.h" />
+    <ClInclude Include="..\utils\libfat\libfat_pc.h" />
+    <ClInclude Include="..\utils\libfat\libfat_public_api.h" />
+    <ClInclude Include="..\utils\libfat\lock.h" />
+    <ClInclude Include="..\utils\libfat\mem_allocate.h" />
+    <ClInclude Include="..\utils\libfat\partition.h" />
+    <ClInclude Include="..\utils\tinyxml\tinystr.h" />
+    <ClInclude Include="..\utils\tinyxml\tinyxml.h" />
     <ClInclude Include="..\utils\AsmJit\asmjit.h" />
     <ClInclude Include="..\utils\AsmJit\config.h" />
     <ClInclude Include="..\utils\AsmJit\core.h" />
+    <ClInclude Include="..\utils\AsmJit\x86.h" />
     <ClInclude Include="..\utils\AsmJit\core\apibegin.h" />
     <ClInclude Include="..\utils\AsmJit\core\apiend.h" />
     <ClInclude Include="..\utils\AsmJit\core\assembler.h" />
@@ -751,7 +725,6 @@
     <ClInclude Include="..\utils\AsmJit\core\stringutil.h" />
     <ClInclude Include="..\utils\AsmJit\core\virtualmemory.h" />
     <ClInclude Include="..\utils\AsmJit\core\zonememory.h" />
-    <ClInclude Include="..\utils\AsmJit\x86.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86assembler.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86compiler.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86compilercontext.h" />
@@ -762,40 +735,6 @@
     <ClInclude Include="..\utils\AsmJit\x86\x86func.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86operand.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86util.h" />
-    <ClInclude Include="..\utils\datetime.h" />
-    <ClInclude Include="..\utils\emufat.h" />
-    <ClInclude Include="..\utils\emufat_types.h" />
-    <ClInclude Include="..\utils\libfat\bit_ops.h" />
-    <ClInclude Include="..\utils\libfat\cache.h" />
-    <ClInclude Include="..\utils\libfat\common.h" />
-    <ClInclude Include="..\utils\libfat\directory.h" />
-    <ClInclude Include="..\utils\libfat\disc.h" />
-    <ClInclude Include="..\utils\libfat\disc_io.h" />
-    <ClInclude Include="..\utils\libfat\fat.h" />
-    <ClInclude Include="..\utils\libfat\fatdir.h" />
-    <ClInclude Include="..\utils\libfat\fatfile.h" />
-    <ClInclude Include="..\utils\libfat\filetime.h" />
-    <ClInclude Include="..\utils\libfat\file_allocation_table.h" />
-    <ClInclude Include="..\utils\libfat\libfat_pc.h" />
-    <ClInclude Include="..\utils\libfat\libfat_public_api.h" />
-    <ClInclude Include="..\utils\libfat\lock.h" />
-    <ClInclude Include="..\utils\libfat\mem_allocate.h" />
-    <ClInclude Include="..\utils\libfat\partition.h" />
-    <ClInclude Include="..\utils\tinyxml\tinystr.h" />
-    <ClInclude Include="..\utils\tinyxml\tinyxml.h" />
-    <ClInclude Include="..\utils\vfat.h" />
-    <ClInclude Include="..\version.h" />
-    <ClInclude Include="..\wifi.h" />
-    <ClInclude Include="..\utils\xstring.h" />
-    <ClInclude Include="..\gdbstub.h" />
-    <ClInclude Include="..\utils\ConvertUTF.h" />
-    <ClInclude Include="..\utils\guid.h" />
-    <ClInclude Include="..\utils\md5.h" />
-    <ClInclude Include="..\utils\task.h" />
-    <ClInclude Include="..\utils\valuearray.h" />
-    <ClInclude Include="..\utils\decrypt\crc.h" />
-    <ClInclude Include="..\utils\decrypt\decrypt.h" />
-    <ClInclude Include="..\utils\decrypt\header.h" />
     <ClInclude Include="..\metaspu\metaspu.h" />
     <ClInclude Include="..\metaspu\SndOut.h" />
     <ClInclude Include="..\metaspu\win32\Dialogs.h" />
@@ -811,79 +750,17 @@
     <ClInclude Include="..\metaspu\SoundTouch\TDStretch.h" />
     <ClInclude Include="..\metaspu\SoundTouch\WavFile.h" />
     <ClInclude Include="..\wxdlg\wxdlg3dViewer.h" />
+    <ClInclude Include="..\filter\filter.h" />
+    <ClInclude Include="..\filter\hq2x.h" />
+    <ClInclude Include="..\filter\hq4x.h" />
+    <ClInclude Include="..\filter\interp.h" />
+    <ClInclude Include="..\filter\lq2x.h" />
     <ClInclude Include="AboutBox.h" />
     <ClInclude Include="aviout.h" />
     <ClInclude Include="cheatsWin.h" />
     <ClInclude Include="colorctrl.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
-    <ClInclude Include="FEX_Interface.h" />
-    <ClInclude Include="File_Extractor\7z_C\7z.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zAlloc.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zBuf.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zCrc.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zDecode.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zExtract.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zFile.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zHeader.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zIn.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zItem.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zTypes.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zVersion.h" />
-    <ClInclude Include="File_Extractor\7z_C\Alloc.h" />
-    <ClInclude Include="File_Extractor\7z_C\Bcj2.h" />
-    <ClInclude Include="File_Extractor\7z_C\Bra.h" />
-    <ClInclude Include="File_Extractor\7z_C\CpuArch.h" />
-    <ClInclude Include="File_Extractor\7z_C\Delta.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzFind.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzFindMt.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzHash.h" />
-    <ClInclude Include="File_Extractor\7z_C\Lzma2Dec.h" />
-    <ClInclude Include="File_Extractor\7z_C\Lzma2Enc.h" />
-    <ClInclude Include="File_Extractor\7z_C\Lzma86.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzmaDec.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzmaEnc.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzmaLib.h" />
-    <ClInclude Include="File_Extractor\7z_C\LzmaTypes.h" />
-    <ClInclude Include="File_Extractor\7z_C\MtCoder.h" />
-    <ClInclude Include="File_Extractor\7z_C\Ppmd.h" />
-    <ClInclude Include="File_Extractor\7z_C\Ppmd7.h" />
-    <ClInclude Include="File_Extractor\7z_C\RotateDefs.h" />
-    <ClInclude Include="File_Extractor\7z_C\Threads.h" />
-    <ClInclude Include="File_Extractor\7z_C\Types.h" />
-    <ClInclude Include="File_Extractor\fex\Binary_Extractor.h" />
-    <ClInclude Include="File_Extractor\fex\blargg_common.h" />
-    <ClInclude Include="File_Extractor\fex\blargg_config.h" />
-    <ClInclude Include="File_Extractor\fex\blargg_endian.h" />
-    <ClInclude Include="File_Extractor\fex\blargg_errors.h" />
-    <ClInclude Include="File_Extractor\fex\blargg_source.h" />
-    <ClInclude Include="File_Extractor\fex\Data_Reader.h" />
-    <ClInclude Include="File_Extractor\fex\fex.h" />
-    <ClInclude Include="File_Extractor\fex\File_Extractor.h" />
-    <ClInclude Include="File_Extractor\fex\Gzip_Extractor.h" />
-    <ClInclude Include="File_Extractor\fex\Gzip_Reader.h" />
-    <ClInclude Include="File_Extractor\fex\Rar_Extractor.h" />
-    <ClInclude Include="File_Extractor\fex\Zip7_Extractor.h" />
-    <ClInclude Include="File_Extractor\fex\Zip_Extractor.h" />
-    <ClInclude Include="File_Extractor\fex\Zlib_Inflater.h" />
-    <ClInclude Include="File_Extractor\unrar\archive.hpp" />
-    <ClInclude Include="File_Extractor\unrar\array.hpp" />
-    <ClInclude Include="File_Extractor\unrar\coder.hpp" />
-    <ClInclude Include="File_Extractor\unrar\compress.hpp" />
-    <ClInclude Include="File_Extractor\unrar\encname.hpp" />
-    <ClInclude Include="File_Extractor\unrar\getbits.hpp" />
-    <ClInclude Include="File_Extractor\unrar\headers.hpp" />
-    <ClInclude Include="File_Extractor\unrar\model.hpp" />
-    <ClInclude Include="File_Extractor\unrar\rar.hpp" />
-    <ClInclude Include="File_Extractor\unrar\rarvm.hpp" />
-    <ClInclude Include="File_Extractor\unrar\rawread.hpp" />
-    <ClInclude Include="File_Extractor\unrar\suballoc.hpp" />
-    <ClInclude Include="File_Extractor\unrar\unicode.hpp" />
-    <ClInclude Include="File_Extractor\unrar\unpack.hpp" />
-    <ClInclude Include="File_Extractor\unrar\unrar.h" />
-    <ClInclude Include="filter\hq2x.h" />
-    <ClInclude Include="filter\interp.h" />
-    <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="gbaslot_config.h" />
     <ClInclude Include="hotkey.h" />
@@ -895,8 +772,8 @@
     <ClInclude Include="recentroms.h" />
     <ClInclude Include="replay.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="snddx.h" />
     <ClInclude Include="slot1_config.h" />
+    <ClInclude Include="snddx.h" />
     <ClInclude Include="throttle.h" />
     <ClInclude Include="winpcap.h" />
     <ClInclude Include="winutil.h" />
@@ -916,12 +793,9 @@
     <ClInclude Include="tileView.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\filter\hq4x.dat" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
-    <None Include="..\utils\AsmJit\COPYING.txt" />
-    <None Include="bitmap1.bmp" />
-    <None Include="DeSmuME.ico" />
+    <None Include="..\filter\hq4x.dat" />
     <CustomBuild Include="directx\directx.7z">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat directx\directx.7z .libs\directx*
 </Command>
@@ -966,38 +840,64 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\glib-vc8.tag;%(Outputs)</Outputs>
     </CustomBuild>
+    <CustomBuild Include="libelf_libdwarf\libelf_libdwarf.7z">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
+    </CustomBuild>
     <CustomBuild Include="lua\lua.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Template|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">.libs\lua.tag;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\lua.tag;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Template|x64'">.libs\lua.tag;</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Template|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\lua.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\lua.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\lua.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\lua.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\lua.tag;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\lua.tag;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="wx\wx.7z">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat wx\wx.7z .libs\wx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat wx\wx.7z .libs\wx*</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\wx.tag;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat wx\wx.7z .libs\wx*
@@ -1008,19 +908,26 @@
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat wx\wx.7z .libs\wx*</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\wx.tag;%(Outputs)</Outputs>
     </CustomBuild>
-    <None Include="File_Extractor\7z_C\7zC.txt" />
-    <None Include="File_Extractor\7z_C\changes.txt" />
-    <None Include="File_Extractor\7z_C\lzma.txt" />
-    <None Include="File_Extractor\7z_C\readme.txt" />
-    <None Include="File_Extractor\unrar\changes.txt" />
-    <None Include="File_Extractor\unrar\license.txt" />
-    <None Include="File_Extractor\unrar\readme.txt" />
-    <None Include="File_Extractor\unrar\technote.txt" />
-    <None Include="File_Extractor\unrar\whatsnew.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\utils\AsmJit\COPYING.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="bitmap1.bmp" />
+    <Image Include="DeSmuME.ico" />
+    <Image Include="bitmaps\IDB_FRAMEADVANCE.bmp" />
+    <Image Include="bitmaps\IDB_OPEN.bmp" />
+    <Image Include="bitmaps\IDB_PAUSE.bmp" />
+    <Image Include="bitmaps\IDB_PLAY.bmp" />
+    <Image Include="bitmaps\IDB_RESET.bmp" />
+    <Image Include="bitmaps\IDB_ROTATECCW.bmp" />
+    <Image Include="bitmaps\IDB_ROTATECW.bmp" />
+    <Image Include="bitmaps\IDB_STOP.bmp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />

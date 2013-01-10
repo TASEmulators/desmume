@@ -64,6 +64,12 @@
     <Filter Include="Windows\fex\unrar">
       <UniqueIdentifier>{24398c49-4650-412e-b46f-4725ad4f5b11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\utils\AsmJit\core">
+      <UniqueIdentifier>{82c38db3-d06d-44b5-a9a4-be3c002d0db0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\AsmJit\x86">
+      <UniqueIdentifier>{0d620905-0dcf-47a4-bac2-91f307aa9994}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp">
@@ -480,45 +486,6 @@
     <ClCompile Include="importSave.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\AssemblerX86X64.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\CodeGenerator.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\Compiler.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\CompilerX86X64.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\CpuInfo.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\Defs.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\DefsX86X64.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\Logger.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\MemoryManager.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\MemoryMarker.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\OperandX86X64.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\Platform.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\AsmJit\Util.cpp">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClCompile>
     <ClCompile Include="..\arm_jit.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -719,6 +686,93 @@
     </ClCompile>
     <ClCompile Include="File_Extractor\unrar\crc.cpp">
       <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\assembler.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\assert.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\buffer.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compiler.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compilercontext.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compilerfunc.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compileritem.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\context.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\cpuinfo.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\defs.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\func.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\logger.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\memorymanager.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\memorymarker.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\operand.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\stringbuilder.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\stringutil.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\virtualmemory.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\zonememory.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86assembler.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compiler.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compilercontext.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compilerfunc.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compileritem.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86cpuinfo.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86defs.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86func.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86operand.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86util.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1122,69 +1176,6 @@
     <ClInclude Include="importSave.h">
       <Filter>Windows</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\ApiBegin.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\ApiEnd.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\AsmJit.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Assembler.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\AssemblerX86X64.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Build.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\CodeGenerator.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Compiler.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\CompilerX86X64.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Config.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\CpuInfo.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Defs.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\DefsX86X64.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Logger.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\MemoryManager.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\MemoryMarker.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Operand.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\OperandX86X64.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Platform.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Util.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\Util_p.h">
-      <Filter>Core\utils\AsmJit</Filter>
-    </ClInclude>
     <ClInclude Include="..\arm_jit.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -1386,6 +1377,123 @@
     <ClInclude Include="FEX_Interface.h">
       <Filter>Windows</Filter>
     </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\asmjit.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\config.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\apibegin.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\apiend.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\assembler.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\assert.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\buffer.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\build.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compiler.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compilercontext.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compilerfunc.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compileritem.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\context.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\cpuinfo.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\defs.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\func.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\intutil.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\lock.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\logger.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\memorymanager.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\memorymarker.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\operand.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\podvector.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\stringbuilder.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\stringutil.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\virtualmemory.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\zonememory.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86assembler.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compiler.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compilercontext.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compilerfunc.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compileritem.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86cpuinfo.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86defs.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86func.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86operand.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86util.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\instruction_tabdef.inc">
@@ -1402,12 +1510,6 @@
     </None>
     <None Include="..\filter\hq4x.dat">
       <Filter>Core\filter</Filter>
-    </None>
-    <None Include="..\utils\AsmJit\COPYING.txt">
-      <Filter>Core\utils\AsmJit</Filter>
-    </None>
-    <None Include="..\utils\AsmJit\README.txt">
-      <Filter>Core\utils\AsmJit</Filter>
     </None>
     <None Include="File_Extractor\7z_C\7zC.txt">
       <Filter>Windows\fex\7z</Filter>
@@ -1435,6 +1537,9 @@
     </None>
     <None Include="File_Extractor\unrar\whatsnew.txt">
       <Filter>Windows\fex\unrar</Filter>
+    </None>
+    <None Include="..\utils\AsmJit\COPYING.txt">
+      <Filter>Core\utils\AsmJit</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
