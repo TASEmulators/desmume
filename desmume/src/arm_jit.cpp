@@ -178,7 +178,7 @@ static u8 recompile_counts[(1<<26)/16];
 DS_ALIGN(4096) static u8 scratchpad[1<<25];
 static u8 *scratchptr;
 
-struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
+struct ASMJIT_API StaticCodeGenerator : public Context
 {
 	StaticCodeGenerator()
 	{
@@ -198,7 +198,7 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 		if(size == 0)
 		{
 			*dest = NULL;
-			return ERROR_NO_FUNCTION;
+			return kErrorNoFunction;
 		}
 		if(size > (uintptr_t)(scratchpad+sizeof(scratchpad)-scratchptr))
 		{
@@ -206,13 +206,13 @@ struct ASMJIT_API StaticCodeGenerator : public CodeGenerator
 			arm_jit_reset(1);
 			// If arm_jit_reset didn't involve recompiling op_cmp, we could keep the current function.
 			*dest = NULL;
-			return ERROR_NONE;
+			return kErrorOk;
 		}
 		void *p = scratchptr;
 		size = assembler->relocCode(p);
 		scratchptr += size;
 		*dest = p;
-		return ERROR_NONE;
+		return kErrorOk;
 	}
 };
 
@@ -3977,7 +3977,7 @@ static void emit_branch(int cond, Label to)
 		c.add(x, offsetof(armcpu_t,cond_table) + cond);
 		c.test(byte_ptr(bb_cpu, x), 1);
 #else
-		c.test(byte_ptr_abs((void*)(arm_cond_table + cond), x, kScale1Times), 1);
+		c.test(byte_ptr_abs((void*)(arm_cond_table + cond), x, kScaleNone), 1);
 #endif
 		c.unuse(x);
 		c.jz(to);
