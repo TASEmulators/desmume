@@ -327,58 +327,6 @@
 		AB0E770414C5635800EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB0E770514C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB0E770614C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
-		AB18132A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130915D1FB4B007A6CC3 /* AssemblerX86X64.cpp */; };
-		AB18132B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130C15D1FB4B007A6CC3 /* CodeGenerator.cpp */; };
-		AB18132C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130E15D1FB4B007A6CC3 /* Compiler.cpp */; };
-		AB18132D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131015D1FB4B007A6CC3 /* CompilerX86X64.cpp */; };
-		AB18132F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131415D1FB4B007A6CC3 /* CpuInfo.cpp */; };
-		AB18133015D1FB4B007A6CC3 /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131615D1FB4B007A6CC3 /* Defs.cpp */; };
-		AB18133115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131815D1FB4B007A6CC3 /* DefsX86X64.cpp */; };
-		AB18133215D1FB4B007A6CC3 /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131A15D1FB4B007A6CC3 /* Logger.cpp */; };
-		AB18133315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131C15D1FB4B007A6CC3 /* MemoryManager.cpp */; };
-		AB18133415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131E15D1FB4B007A6CC3 /* MemoryMarker.cpp */; };
-		AB18133515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132115D1FB4B007A6CC3 /* OperandX86X64.cpp */; };
-		AB18133615D1FB4B007A6CC3 /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132315D1FB4B007A6CC3 /* Platform.cpp */; };
-		AB18133915D1FB4B007A6CC3 /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132715D1FB4B007A6CC3 /* Util.cpp */; };
-		AB18133A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130915D1FB4B007A6CC3 /* AssemblerX86X64.cpp */; };
-		AB18133B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130C15D1FB4B007A6CC3 /* CodeGenerator.cpp */; };
-		AB18133C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130E15D1FB4B007A6CC3 /* Compiler.cpp */; };
-		AB18133D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131015D1FB4B007A6CC3 /* CompilerX86X64.cpp */; };
-		AB18133F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131415D1FB4B007A6CC3 /* CpuInfo.cpp */; };
-		AB18134015D1FB4B007A6CC3 /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131615D1FB4B007A6CC3 /* Defs.cpp */; };
-		AB18134115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131815D1FB4B007A6CC3 /* DefsX86X64.cpp */; };
-		AB18134215D1FB4B007A6CC3 /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131A15D1FB4B007A6CC3 /* Logger.cpp */; };
-		AB18134315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131C15D1FB4B007A6CC3 /* MemoryManager.cpp */; };
-		AB18134415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131E15D1FB4B007A6CC3 /* MemoryMarker.cpp */; };
-		AB18134515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132115D1FB4B007A6CC3 /* OperandX86X64.cpp */; };
-		AB18134615D1FB4B007A6CC3 /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132315D1FB4B007A6CC3 /* Platform.cpp */; };
-		AB18134915D1FB4B007A6CC3 /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132715D1FB4B007A6CC3 /* Util.cpp */; };
-		AB18134A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130915D1FB4B007A6CC3 /* AssemblerX86X64.cpp */; };
-		AB18134B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130C15D1FB4B007A6CC3 /* CodeGenerator.cpp */; };
-		AB18134C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130E15D1FB4B007A6CC3 /* Compiler.cpp */; };
-		AB18134D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131015D1FB4B007A6CC3 /* CompilerX86X64.cpp */; };
-		AB18134F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131415D1FB4B007A6CC3 /* CpuInfo.cpp */; };
-		AB18135015D1FB4B007A6CC3 /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131615D1FB4B007A6CC3 /* Defs.cpp */; };
-		AB18135115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131815D1FB4B007A6CC3 /* DefsX86X64.cpp */; };
-		AB18135215D1FB4B007A6CC3 /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131A15D1FB4B007A6CC3 /* Logger.cpp */; };
-		AB18135315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131C15D1FB4B007A6CC3 /* MemoryManager.cpp */; };
-		AB18135415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131E15D1FB4B007A6CC3 /* MemoryMarker.cpp */; };
-		AB18135515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132115D1FB4B007A6CC3 /* OperandX86X64.cpp */; };
-		AB18135615D1FB4B007A6CC3 /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132315D1FB4B007A6CC3 /* Platform.cpp */; };
-		AB18135915D1FB4B007A6CC3 /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132715D1FB4B007A6CC3 /* Util.cpp */; };
-		AB18135A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130915D1FB4B007A6CC3 /* AssemblerX86X64.cpp */; };
-		AB18135B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130C15D1FB4B007A6CC3 /* CodeGenerator.cpp */; };
-		AB18135C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18130E15D1FB4B007A6CC3 /* Compiler.cpp */; };
-		AB18135D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131015D1FB4B007A6CC3 /* CompilerX86X64.cpp */; };
-		AB18135F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131415D1FB4B007A6CC3 /* CpuInfo.cpp */; };
-		AB18136015D1FB4B007A6CC3 /* Defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131615D1FB4B007A6CC3 /* Defs.cpp */; };
-		AB18136115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131815D1FB4B007A6CC3 /* DefsX86X64.cpp */; };
-		AB18136215D1FB4B007A6CC3 /* Logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131A15D1FB4B007A6CC3 /* Logger.cpp */; };
-		AB18136315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131C15D1FB4B007A6CC3 /* MemoryManager.cpp */; };
-		AB18136415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18131E15D1FB4B007A6CC3 /* MemoryMarker.cpp */; };
-		AB18136515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132115D1FB4B007A6CC3 /* OperandX86X64.cpp */; };
-		AB18136615D1FB4B007A6CC3 /* Platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132315D1FB4B007A6CC3 /* Platform.cpp */; };
-		AB18136915D1FB4B007A6CC3 /* Util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18132715D1FB4B007A6CC3 /* Util.cpp */; };
 		AB18136D15D1FB73007A6CC3 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */; };
 		AB18136E15D1FB73007A6CC3 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */; };
 		AB18136F15D1FB73007A6CC3 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */; };
@@ -919,6 +867,209 @@
 		ABF4008014B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABF4008114B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
 		ABF4008214B4F1C000578AE7 /* sndOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */; };
+		ABF50BAF169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50BB0169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50BB1169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50BB2169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50BB3169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50BB4169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50BB5169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50BB6169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50BB7169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50BB8169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50BB9169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50BBA169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50BBB169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50BBC169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50BBD169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50BBE169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50BBF169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50BC0169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50BC1169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50BC2169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50BC3169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50BC4169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50BC5169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50BC6169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50BC7169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50BC8169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50BC9169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50BCA169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50BCB169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
+		ABF50BCC169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50BCD169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50BCE169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50BCF169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50BD0169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50BD1169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50BD2169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50BD3169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50BD4169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50BD5169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50BD6169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50BD7169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50BD8169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50BD9169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50BDA169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50BDB169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50BDC169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50BDD169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50BDE169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50BDF169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50BE0169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50BE1169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50BE2169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50BE3169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50BE4169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50BE5169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50BE6169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50BE7169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50BE8169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
+		ABF50BE9169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50BEA169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50BEB169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50BEC169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50BED169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50BEE169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50BEF169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50BF0169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50BF1169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50BF2169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50BF3169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50BF4169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50BF5169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50BF6169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50BF7169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50BF8169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50BF9169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50BFA169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50BFB169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50BFC169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50BFD169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50BFE169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50BFF169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50C00169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50C01169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50C02169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50C03169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50C04169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50C05169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
+		ABF50C06169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50C07169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50C08169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50C09169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50C0A169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50C0B169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50C0C169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50C0D169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50C0E169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50C0F169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50C10169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50C11169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50C12169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50C13169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50C14169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50C15169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50C16169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50C17169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50C18169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50C19169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50C1A169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50C1B169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50C1C169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50C1D169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50C1E169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50C1F169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50C20169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50C21169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50C22169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
+		ABF50C23169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50C24169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50C25169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50C26169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50C27169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50C28169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50C29169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50C2A169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50C2B169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50C2C169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50C2D169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50C2E169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50C2F169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50C30169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50C31169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50C32169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50C33169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50C34169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50C35169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50C36169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50C37169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50C38169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50C39169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50C3A169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50C3B169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50C3C169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50C3D169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50C3E169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50C3F169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
+		ABF50C40169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50C41169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50C42169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50C43169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50C44169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50C45169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50C46169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50C47169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50C48169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50C49169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50C4A169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50C4B169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50C4C169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50C4D169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50C4E169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50C4F169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50C50169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50C51169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50C52169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50C53169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50C54169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50C55169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50C56169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50C57169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50C58169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50C59169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50C5A169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50C5B169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50C5C169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
+		ABF50C5D169F61540018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B70169F61540018C08D /* assembler.cpp */; };
+		ABF50C5E169F61540018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B72169F61540018C08D /* assert.cpp */; };
+		ABF50C5F169F61540018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B74169F61540018C08D /* buffer.cpp */; };
+		ABF50C60169F61540018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B77169F61540018C08D /* compiler.cpp */; };
+		ABF50C61169F61540018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B79169F61540018C08D /* compilercontext.cpp */; };
+		ABF50C62169F61540018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7B169F61540018C08D /* compilerfunc.cpp */; };
+		ABF50C63169F61540018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7D169F61540018C08D /* compileritem.cpp */; };
+		ABF50C64169F61540018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B7F169F61540018C08D /* context.cpp */; };
+		ABF50C65169F61540018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B81169F61540018C08D /* cpuinfo.cpp */; };
+		ABF50C66169F61540018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B83169F61540018C08D /* defs.cpp */; };
+		ABF50C67169F61540018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B85169F61540018C08D /* func.cpp */; };
+		ABF50C68169F61540018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B89169F61540018C08D /* logger.cpp */; };
+		ABF50C69169F61540018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8B169F61540018C08D /* memorymanager.cpp */; };
+		ABF50C6A169F61540018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8D169F61540018C08D /* memorymarker.cpp */; };
+		ABF50C6B169F61540018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B8F169F61540018C08D /* operand.cpp */; };
+		ABF50C6C169F61540018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B92169F61540018C08D /* stringbuilder.cpp */; };
+		ABF50C6D169F61540018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B94169F61540018C08D /* stringutil.cpp */; };
+		ABF50C6E169F61540018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B96169F61540018C08D /* virtualmemory.cpp */; };
+		ABF50C6F169F61540018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B98169F61540018C08D /* zonememory.cpp */; };
+		ABF50C70169F61540018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9B169F61540018C08D /* x86assembler.cpp */; };
+		ABF50C71169F61540018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9D169F61540018C08D /* x86compiler.cpp */; };
+		ABF50C72169F61540018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50B9F169F61540018C08D /* x86compilercontext.cpp */; };
+		ABF50C73169F61540018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */; };
+		ABF50C74169F61540018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA3169F61540018C08D /* x86compileritem.cpp */; };
+		ABF50C75169F61540018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */; };
+		ABF50C76169F61540018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA7169F61540018C08D /* x86defs.cpp */; };
+		ABF50C77169F61540018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BA9169F61540018C08D /* x86func.cpp */; };
+		ABF50C78169F61540018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAB169F61540018C08D /* x86operand.cpp */; };
+		ABF50C79169F61540018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50BAD169F61540018C08D /* x86util.cpp */; };
 		ABFE4242143E32F0009A3CCE /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		ABFE4251143E32F0009A3CCE /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD0E135B8ACE00E977B3 /* addons.cpp */; };
 		ABFE4252143E32F0009A3CCE /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD10135B8ACE00E977B3 /* arm_instructions.cpp */; };
@@ -1239,40 +1390,6 @@
 		AB0A0EA914AAF77000E83E91 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../../ChangeLog; sourceTree = SOURCE_ROOT; };
 		AB0A0EAA14AAF77000E83E91 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB0A0EAB14AAF77000E83E91 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../README; sourceTree = SOURCE_ROOT; };
-		AB18130515D1FB4B007A6CC3 /* ApiBegin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApiBegin.h; sourceTree = "<group>"; };
-		AB18130615D1FB4B007A6CC3 /* ApiEnd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApiEnd.h; sourceTree = "<group>"; };
-		AB18130715D1FB4B007A6CC3 /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
-		AB18130815D1FB4B007A6CC3 /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
-		AB18130915D1FB4B007A6CC3 /* AssemblerX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AssemblerX86X64.cpp; sourceTree = "<group>"; };
-		AB18130A15D1FB4B007A6CC3 /* AssemblerX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AssemblerX86X64.h; sourceTree = "<group>"; };
-		AB18130B15D1FB4B007A6CC3 /* Build.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Build.h; sourceTree = "<group>"; };
-		AB18130C15D1FB4B007A6CC3 /* CodeGenerator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CodeGenerator.cpp; sourceTree = "<group>"; };
-		AB18130D15D1FB4B007A6CC3 /* CodeGenerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CodeGenerator.h; sourceTree = "<group>"; };
-		AB18130E15D1FB4B007A6CC3 /* Compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Compiler.cpp; sourceTree = "<group>"; };
-		AB18130F15D1FB4B007A6CC3 /* Compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Compiler.h; sourceTree = "<group>"; };
-		AB18131015D1FB4B007A6CC3 /* CompilerX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompilerX86X64.cpp; sourceTree = "<group>"; };
-		AB18131115D1FB4B007A6CC3 /* CompilerX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompilerX86X64.h; sourceTree = "<group>"; };
-		AB18131215D1FB4B007A6CC3 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
-		AB18131415D1FB4B007A6CC3 /* CpuInfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CpuInfo.cpp; sourceTree = "<group>"; };
-		AB18131515D1FB4B007A6CC3 /* CpuInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CpuInfo.h; sourceTree = "<group>"; };
-		AB18131615D1FB4B007A6CC3 /* Defs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Defs.cpp; sourceTree = "<group>"; };
-		AB18131715D1FB4B007A6CC3 /* Defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Defs.h; sourceTree = "<group>"; };
-		AB18131815D1FB4B007A6CC3 /* DefsX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefsX86X64.cpp; sourceTree = "<group>"; };
-		AB18131915D1FB4B007A6CC3 /* DefsX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DefsX86X64.h; sourceTree = "<group>"; };
-		AB18131A15D1FB4B007A6CC3 /* Logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logger.cpp; sourceTree = "<group>"; };
-		AB18131B15D1FB4B007A6CC3 /* Logger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Logger.h; sourceTree = "<group>"; };
-		AB18131C15D1FB4B007A6CC3 /* MemoryManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryManager.cpp; sourceTree = "<group>"; };
-		AB18131D15D1FB4B007A6CC3 /* MemoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryManager.h; sourceTree = "<group>"; };
-		AB18131E15D1FB4B007A6CC3 /* MemoryMarker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MemoryMarker.cpp; sourceTree = "<group>"; };
-		AB18131F15D1FB4B007A6CC3 /* MemoryMarker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryMarker.h; sourceTree = "<group>"; };
-		AB18132015D1FB4B007A6CC3 /* Operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Operand.h; sourceTree = "<group>"; };
-		AB18132115D1FB4B007A6CC3 /* OperandX86X64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OperandX86X64.cpp; sourceTree = "<group>"; };
-		AB18132215D1FB4B007A6CC3 /* OperandX86X64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OperandX86X64.h; sourceTree = "<group>"; };
-		AB18132315D1FB4B007A6CC3 /* Platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Platform.cpp; sourceTree = "<group>"; };
-		AB18132415D1FB4B007A6CC3 /* Platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Platform.h; sourceTree = "<group>"; };
-		AB18132715D1FB4B007A6CC3 /* Util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Util.cpp; sourceTree = "<group>"; };
-		AB18132815D1FB4B007A6CC3 /* Util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Util.h; sourceTree = "<group>"; };
-		AB18132915D1FB4B007A6CC3 /* Util_p.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Util_p.h; sourceTree = "<group>"; };
 		AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_jit.cpp; path = ../arm_jit.cpp; sourceTree = SOURCE_ROOT; };
 		AB18137115D1FB8F007A6CC3 /* arm_jit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_jit.h; path = ../arm_jit.h; sourceTree = SOURCE_ROOT; };
 		AB18137215D1FBA6007A6CC3 /* instruction_attributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = instruction_attributes.h; path = ../instruction_attributes.h; sourceTree = SOURCE_ROOT; };
@@ -1329,6 +1446,74 @@
 		ABEFD81C14BB9E65004DB9DC /* Icon_VolumeTwoThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeTwoThird_16x16.png; path = images/Icon_VolumeTwoThird_16x16.png; sourceTree = "<group>"; };
 		ABF4007614B4F19200578AE7 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
 		ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sndOSX.cpp; sourceTree = "<group>"; };
+		ABF50B69169F61540018C08D /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
+		ABF50B6A169F61540018C08D /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
+		ABF50B6B169F61540018C08D /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
+		ABF50B6C169F61540018C08D /* x86.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86.h; sourceTree = "<group>"; };
+		ABF50B6E169F61540018C08D /* apibegin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apibegin.h; sourceTree = "<group>"; };
+		ABF50B6F169F61540018C08D /* apiend.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apiend.h; sourceTree = "<group>"; };
+		ABF50B70169F61540018C08D /* assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = assembler.cpp; sourceTree = "<group>"; };
+		ABF50B71169F61540018C08D /* assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = assembler.h; sourceTree = "<group>"; };
+		ABF50B72169F61540018C08D /* assert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = assert.cpp; sourceTree = "<group>"; };
+		ABF50B73169F61540018C08D /* assert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = assert.h; sourceTree = "<group>"; };
+		ABF50B74169F61540018C08D /* buffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = buffer.cpp; sourceTree = "<group>"; };
+		ABF50B75169F61540018C08D /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = buffer.h; sourceTree = "<group>"; };
+		ABF50B76169F61540018C08D /* build.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = build.h; sourceTree = "<group>"; };
+		ABF50B77169F61540018C08D /* compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compiler.cpp; sourceTree = "<group>"; };
+		ABF50B78169F61540018C08D /* compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
+		ABF50B79169F61540018C08D /* compilercontext.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compilercontext.cpp; sourceTree = "<group>"; };
+		ABF50B7A169F61540018C08D /* compilercontext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compilercontext.h; sourceTree = "<group>"; };
+		ABF50B7B169F61540018C08D /* compilerfunc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compilerfunc.cpp; sourceTree = "<group>"; };
+		ABF50B7C169F61540018C08D /* compilerfunc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compilerfunc.h; sourceTree = "<group>"; };
+		ABF50B7D169F61540018C08D /* compileritem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compileritem.cpp; sourceTree = "<group>"; };
+		ABF50B7E169F61540018C08D /* compileritem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compileritem.h; sourceTree = "<group>"; };
+		ABF50B7F169F61540018C08D /* context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = context.cpp; sourceTree = "<group>"; };
+		ABF50B80169F61540018C08D /* context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = context.h; sourceTree = "<group>"; };
+		ABF50B81169F61540018C08D /* cpuinfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpuinfo.cpp; sourceTree = "<group>"; };
+		ABF50B82169F61540018C08D /* cpuinfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cpuinfo.h; sourceTree = "<group>"; };
+		ABF50B83169F61540018C08D /* defs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = defs.cpp; sourceTree = "<group>"; };
+		ABF50B84169F61540018C08D /* defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defs.h; sourceTree = "<group>"; };
+		ABF50B85169F61540018C08D /* func.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = func.cpp; sourceTree = "<group>"; };
+		ABF50B86169F61540018C08D /* func.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = func.h; sourceTree = "<group>"; };
+		ABF50B87169F61540018C08D /* intutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = intutil.h; sourceTree = "<group>"; };
+		ABF50B88169F61540018C08D /* lock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lock.h; sourceTree = "<group>"; };
+		ABF50B89169F61540018C08D /* logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logger.cpp; sourceTree = "<group>"; };
+		ABF50B8A169F61540018C08D /* logger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logger.h; sourceTree = "<group>"; };
+		ABF50B8B169F61540018C08D /* memorymanager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memorymanager.cpp; sourceTree = "<group>"; };
+		ABF50B8C169F61540018C08D /* memorymanager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memorymanager.h; sourceTree = "<group>"; };
+		ABF50B8D169F61540018C08D /* memorymarker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memorymarker.cpp; sourceTree = "<group>"; };
+		ABF50B8E169F61540018C08D /* memorymarker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memorymarker.h; sourceTree = "<group>"; };
+		ABF50B8F169F61540018C08D /* operand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = operand.cpp; sourceTree = "<group>"; };
+		ABF50B90169F61540018C08D /* operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = operand.h; sourceTree = "<group>"; };
+		ABF50B91169F61540018C08D /* podvector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = podvector.h; sourceTree = "<group>"; };
+		ABF50B92169F61540018C08D /* stringbuilder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stringbuilder.cpp; sourceTree = "<group>"; };
+		ABF50B93169F61540018C08D /* stringbuilder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stringbuilder.h; sourceTree = "<group>"; };
+		ABF50B94169F61540018C08D /* stringutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stringutil.cpp; sourceTree = "<group>"; };
+		ABF50B95169F61540018C08D /* stringutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stringutil.h; sourceTree = "<group>"; };
+		ABF50B96169F61540018C08D /* virtualmemory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = virtualmemory.cpp; sourceTree = "<group>"; };
+		ABF50B97169F61540018C08D /* virtualmemory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = virtualmemory.h; sourceTree = "<group>"; };
+		ABF50B98169F61540018C08D /* zonememory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = zonememory.cpp; sourceTree = "<group>"; };
+		ABF50B99169F61540018C08D /* zonememory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zonememory.h; sourceTree = "<group>"; };
+		ABF50B9B169F61540018C08D /* x86assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86assembler.cpp; sourceTree = "<group>"; };
+		ABF50B9C169F61540018C08D /* x86assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86assembler.h; sourceTree = "<group>"; };
+		ABF50B9D169F61540018C08D /* x86compiler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86compiler.cpp; sourceTree = "<group>"; };
+		ABF50B9E169F61540018C08D /* x86compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86compiler.h; sourceTree = "<group>"; };
+		ABF50B9F169F61540018C08D /* x86compilercontext.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86compilercontext.cpp; sourceTree = "<group>"; };
+		ABF50BA0169F61540018C08D /* x86compilercontext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86compilercontext.h; sourceTree = "<group>"; };
+		ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86compilerfunc.cpp; sourceTree = "<group>"; };
+		ABF50BA2169F61540018C08D /* x86compilerfunc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86compilerfunc.h; sourceTree = "<group>"; };
+		ABF50BA3169F61540018C08D /* x86compileritem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86compileritem.cpp; sourceTree = "<group>"; };
+		ABF50BA4169F61540018C08D /* x86compileritem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86compileritem.h; sourceTree = "<group>"; };
+		ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86cpuinfo.cpp; sourceTree = "<group>"; };
+		ABF50BA6169F61540018C08D /* x86cpuinfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86cpuinfo.h; sourceTree = "<group>"; };
+		ABF50BA7169F61540018C08D /* x86defs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86defs.cpp; sourceTree = "<group>"; };
+		ABF50BA8169F61540018C08D /* x86defs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86defs.h; sourceTree = "<group>"; };
+		ABF50BA9169F61540018C08D /* x86func.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86func.cpp; sourceTree = "<group>"; };
+		ABF50BAA169F61540018C08D /* x86func.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86func.h; sourceTree = "<group>"; };
+		ABF50BAB169F61540018C08D /* x86operand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86operand.cpp; sourceTree = "<group>"; };
+		ABF50BAC169F61540018C08D /* x86operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86operand.h; sourceTree = "<group>"; };
+		ABF50BAD169F61540018C08D /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
+		ABF50BAE169F61540018C08D /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
 		ABF95B4714B4F4FC007912B8 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
 		ABFE42CD143E3398009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABFE42CF143E3398009A3CCE /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1844,40 +2029,12 @@
 		AB18130415D1FB4B007A6CC3 /* AsmJit */ = {
 			isa = PBXGroup;
 			children = (
-				AB18130915D1FB4B007A6CC3 /* AssemblerX86X64.cpp */,
-				AB18130C15D1FB4B007A6CC3 /* CodeGenerator.cpp */,
-				AB18130E15D1FB4B007A6CC3 /* Compiler.cpp */,
-				AB18131015D1FB4B007A6CC3 /* CompilerX86X64.cpp */,
-				AB18131415D1FB4B007A6CC3 /* CpuInfo.cpp */,
-				AB18131615D1FB4B007A6CC3 /* Defs.cpp */,
-				AB18131815D1FB4B007A6CC3 /* DefsX86X64.cpp */,
-				AB18131A15D1FB4B007A6CC3 /* Logger.cpp */,
-				AB18131C15D1FB4B007A6CC3 /* MemoryManager.cpp */,
-				AB18131E15D1FB4B007A6CC3 /* MemoryMarker.cpp */,
-				AB18132115D1FB4B007A6CC3 /* OperandX86X64.cpp */,
-				AB18132315D1FB4B007A6CC3 /* Platform.cpp */,
-				AB18132715D1FB4B007A6CC3 /* Util.cpp */,
-				AB18130515D1FB4B007A6CC3 /* ApiBegin.h */,
-				AB18130615D1FB4B007A6CC3 /* ApiEnd.h */,
-				AB18130715D1FB4B007A6CC3 /* AsmJit.h */,
-				AB18130815D1FB4B007A6CC3 /* Assembler.h */,
-				AB18130A15D1FB4B007A6CC3 /* AssemblerX86X64.h */,
-				AB18130B15D1FB4B007A6CC3 /* Build.h */,
-				AB18130D15D1FB4B007A6CC3 /* CodeGenerator.h */,
-				AB18130F15D1FB4B007A6CC3 /* Compiler.h */,
-				AB18131115D1FB4B007A6CC3 /* CompilerX86X64.h */,
-				AB18131215D1FB4B007A6CC3 /* Config.h */,
-				AB18131515D1FB4B007A6CC3 /* CpuInfo.h */,
-				AB18131715D1FB4B007A6CC3 /* Defs.h */,
-				AB18131915D1FB4B007A6CC3 /* DefsX86X64.h */,
-				AB18131B15D1FB4B007A6CC3 /* Logger.h */,
-				AB18131D15D1FB4B007A6CC3 /* MemoryManager.h */,
-				AB18131F15D1FB4B007A6CC3 /* MemoryMarker.h */,
-				AB18132015D1FB4B007A6CC3 /* Operand.h */,
-				AB18132215D1FB4B007A6CC3 /* OperandX86X64.h */,
-				AB18132415D1FB4B007A6CC3 /* Platform.h */,
-				AB18132815D1FB4B007A6CC3 /* Util.h */,
-				AB18132915D1FB4B007A6CC3 /* Util_p.h */,
+				ABF50B6D169F61540018C08D /* core */,
+				ABF50B9A169F61540018C08D /* x86 */,
+				ABF50B69169F61540018C08D /* AsmJit.h */,
+				ABF50B6A169F61540018C08D /* Config.h */,
+				ABF50B6B169F61540018C08D /* core.h */,
+				ABF50B6C169F61540018C08D /* x86.h */,
 			);
 			path = AsmJit;
 			sourceTree = "<group>";
@@ -1920,6 +2077,84 @@
 				AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */,
 			);
 			name = userinterface;
+			sourceTree = "<group>";
+		};
+		ABF50B6D169F61540018C08D /* core */ = {
+			isa = PBXGroup;
+			children = (
+				ABF50B70169F61540018C08D /* assembler.cpp */,
+				ABF50B72169F61540018C08D /* assert.cpp */,
+				ABF50B74169F61540018C08D /* buffer.cpp */,
+				ABF50B77169F61540018C08D /* compiler.cpp */,
+				ABF50B79169F61540018C08D /* compilercontext.cpp */,
+				ABF50B7B169F61540018C08D /* compilerfunc.cpp */,
+				ABF50B7D169F61540018C08D /* compileritem.cpp */,
+				ABF50B7F169F61540018C08D /* context.cpp */,
+				ABF50B81169F61540018C08D /* cpuinfo.cpp */,
+				ABF50B83169F61540018C08D /* defs.cpp */,
+				ABF50B85169F61540018C08D /* func.cpp */,
+				ABF50B89169F61540018C08D /* logger.cpp */,
+				ABF50B8B169F61540018C08D /* memorymanager.cpp */,
+				ABF50B8D169F61540018C08D /* memorymarker.cpp */,
+				ABF50B8F169F61540018C08D /* operand.cpp */,
+				ABF50B92169F61540018C08D /* stringbuilder.cpp */,
+				ABF50B94169F61540018C08D /* stringutil.cpp */,
+				ABF50B96169F61540018C08D /* virtualmemory.cpp */,
+				ABF50B98169F61540018C08D /* zonememory.cpp */,
+				ABF50B6E169F61540018C08D /* apibegin.h */,
+				ABF50B6F169F61540018C08D /* apiend.h */,
+				ABF50B71169F61540018C08D /* assembler.h */,
+				ABF50B73169F61540018C08D /* assert.h */,
+				ABF50B75169F61540018C08D /* buffer.h */,
+				ABF50B76169F61540018C08D /* build.h */,
+				ABF50B78169F61540018C08D /* compiler.h */,
+				ABF50B7A169F61540018C08D /* compilercontext.h */,
+				ABF50B7C169F61540018C08D /* compilerfunc.h */,
+				ABF50B7E169F61540018C08D /* compileritem.h */,
+				ABF50B80169F61540018C08D /* context.h */,
+				ABF50B82169F61540018C08D /* cpuinfo.h */,
+				ABF50B84169F61540018C08D /* defs.h */,
+				ABF50B86169F61540018C08D /* func.h */,
+				ABF50B87169F61540018C08D /* intutil.h */,
+				ABF50B88169F61540018C08D /* lock.h */,
+				ABF50B8A169F61540018C08D /* logger.h */,
+				ABF50B8C169F61540018C08D /* memorymanager.h */,
+				ABF50B8E169F61540018C08D /* memorymarker.h */,
+				ABF50B90169F61540018C08D /* operand.h */,
+				ABF50B91169F61540018C08D /* podvector.h */,
+				ABF50B93169F61540018C08D /* stringbuilder.h */,
+				ABF50B95169F61540018C08D /* stringutil.h */,
+				ABF50B97169F61540018C08D /* virtualmemory.h */,
+				ABF50B99169F61540018C08D /* zonememory.h */,
+			);
+			path = core;
+			sourceTree = "<group>";
+		};
+		ABF50B9A169F61540018C08D /* x86 */ = {
+			isa = PBXGroup;
+			children = (
+				ABF50B9B169F61540018C08D /* x86assembler.cpp */,
+				ABF50B9D169F61540018C08D /* x86compiler.cpp */,
+				ABF50B9F169F61540018C08D /* x86compilercontext.cpp */,
+				ABF50BA1169F61540018C08D /* x86compilerfunc.cpp */,
+				ABF50BA3169F61540018C08D /* x86compileritem.cpp */,
+				ABF50BA5169F61540018C08D /* x86cpuinfo.cpp */,
+				ABF50BA7169F61540018C08D /* x86defs.cpp */,
+				ABF50BA9169F61540018C08D /* x86func.cpp */,
+				ABF50BAB169F61540018C08D /* x86operand.cpp */,
+				ABF50BAD169F61540018C08D /* x86util.cpp */,
+				ABF50B9C169F61540018C08D /* x86assembler.h */,
+				ABF50B9E169F61540018C08D /* x86compiler.h */,
+				ABF50BA0169F61540018C08D /* x86compilercontext.h */,
+				ABF50BA2169F61540018C08D /* x86compilerfunc.h */,
+				ABF50BA4169F61540018C08D /* x86compileritem.h */,
+				ABF50BA6169F61540018C08D /* x86cpuinfo.h */,
+				ABF50BA8169F61540018C08D /* x86defs.h */,
+				ABF50BAA169F61540018C08D /* x86func.h */,
+				ABF50BAC169F61540018C08D /* x86operand.h */,
+				ABF50BAE169F61540018C08D /* x86util.h */,
+			);
+			path = x86;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -2681,21 +2916,37 @@
 				ABE2411014BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
 				ABD0A5681501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
 				ABD0A5691501AC5C0074A094 /* ringbuffer.cpp in Sources */,
-				AB18135A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */,
-				AB18135B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */,
-				AB18135C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */,
-				AB18135D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */,
-				AB18135F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */,
-				AB18136015D1FB4B007A6CC3 /* Defs.cpp in Sources */,
-				AB18136115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */,
-				AB18136215D1FB4B007A6CC3 /* Logger.cpp in Sources */,
-				AB18136315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */,
-				AB18136415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */,
-				AB18136515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */,
-				AB18136615D1FB4B007A6CC3 /* Platform.cpp in Sources */,
-				AB18136915D1FB4B007A6CC3 /* Util.cpp in Sources */,
 				AB18137015D1FB73007A6CC3 /* arm_jit.cpp in Sources */,
 				AB1816B715D216F2007A6CC3 /* OGLRender.cpp in Sources */,
+				ABF50BE9169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50BEA169F61540018C08D /* assert.cpp in Sources */,
+				ABF50BEB169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50BEC169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50BED169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50BEE169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50BEF169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50BF0169F61540018C08D /* context.cpp in Sources */,
+				ABF50BF1169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50BF2169F61540018C08D /* defs.cpp in Sources */,
+				ABF50BF3169F61540018C08D /* func.cpp in Sources */,
+				ABF50BF4169F61540018C08D /* logger.cpp in Sources */,
+				ABF50BF5169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50BF6169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50BF7169F61540018C08D /* operand.cpp in Sources */,
+				ABF50BF8169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50BF9169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50BFA169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50BFB169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50BFC169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50BFD169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50BFE169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50BFF169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50C00169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50C01169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50C02169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50C03169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50C04169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50C05169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2805,21 +3056,37 @@
 				ABE2411614BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
 				ABD0A56C1501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
 				ABD0A56D1501AC5C0074A094 /* ringbuffer.cpp in Sources */,
-				AB18132A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */,
-				AB18132B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */,
-				AB18132C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */,
-				AB18132D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */,
-				AB18132F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */,
-				AB18133015D1FB4B007A6CC3 /* Defs.cpp in Sources */,
-				AB18133115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */,
-				AB18133215D1FB4B007A6CC3 /* Logger.cpp in Sources */,
-				AB18133315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */,
-				AB18133415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */,
-				AB18133515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */,
-				AB18133615D1FB4B007A6CC3 /* Platform.cpp in Sources */,
-				AB18133915D1FB4B007A6CC3 /* Util.cpp in Sources */,
 				AB18136D15D1FB73007A6CC3 /* arm_jit.cpp in Sources */,
 				AB1816B415D216D6007A6CC3 /* OGLRender.cpp in Sources */,
+				ABF50C40169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50C41169F61540018C08D /* assert.cpp in Sources */,
+				ABF50C42169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50C43169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50C44169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50C45169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50C46169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50C47169F61540018C08D /* context.cpp in Sources */,
+				ABF50C48169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50C49169F61540018C08D /* defs.cpp in Sources */,
+				ABF50C4A169F61540018C08D /* func.cpp in Sources */,
+				ABF50C4B169F61540018C08D /* logger.cpp in Sources */,
+				ABF50C4C169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50C4D169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50C4E169F61540018C08D /* operand.cpp in Sources */,
+				ABF50C4F169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50C50169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50C51169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50C52169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50C53169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50C54169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50C55169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50C56169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50C57169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50C58169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50C59169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50C5A169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50C5B169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50C5C169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2929,21 +3196,37 @@
 				ABE2410414BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
 				ABD0A5661501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
 				ABD0A5671501AC5C0074A094 /* ringbuffer.cpp in Sources */,
-				AB18133A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */,
-				AB18133B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */,
-				AB18133C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */,
-				AB18133D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */,
-				AB18133F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */,
-				AB18134015D1FB4B007A6CC3 /* Defs.cpp in Sources */,
-				AB18134115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */,
-				AB18134215D1FB4B007A6CC3 /* Logger.cpp in Sources */,
-				AB18134315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */,
-				AB18134415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */,
-				AB18134515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */,
-				AB18134615D1FB4B007A6CC3 /* Platform.cpp in Sources */,
-				AB18134915D1FB4B007A6CC3 /* Util.cpp in Sources */,
 				AB18136E15D1FB73007A6CC3 /* arm_jit.cpp in Sources */,
 				AB751A681696535D00AFA00D /* OGLRender.cpp in Sources */,
+				ABF50BAF169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50BB0169F61540018C08D /* assert.cpp in Sources */,
+				ABF50BB1169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50BB2169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50BB3169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50BB4169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50BB5169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50BB6169F61540018C08D /* context.cpp in Sources */,
+				ABF50BB7169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50BB8169F61540018C08D /* defs.cpp in Sources */,
+				ABF50BB9169F61540018C08D /* func.cpp in Sources */,
+				ABF50BBA169F61540018C08D /* logger.cpp in Sources */,
+				ABF50BBB169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50BBC169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50BBD169F61540018C08D /* operand.cpp in Sources */,
+				ABF50BBE169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50BBF169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50BC0169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50BC1169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50BC2169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50BC3169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50BC4169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50BC5169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50BC6169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50BC7169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50BC8169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50BC9169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50BCA169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50BCB169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3054,6 +3337,35 @@
 				AB18153D15D212B4007A6CC3 /* coreaudiosound.cpp in Sources */,
 				AB18153E15D212B4007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB1816B615D216EC007A6CC3 /* OGLRender.cpp in Sources */,
+				ABF50C23169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50C24169F61540018C08D /* assert.cpp in Sources */,
+				ABF50C25169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50C26169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50C27169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50C28169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50C29169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50C2A169F61540018C08D /* context.cpp in Sources */,
+				ABF50C2B169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50C2C169F61540018C08D /* defs.cpp in Sources */,
+				ABF50C2D169F61540018C08D /* func.cpp in Sources */,
+				ABF50C2E169F61540018C08D /* logger.cpp in Sources */,
+				ABF50C2F169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50C30169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50C31169F61540018C08D /* operand.cpp in Sources */,
+				ABF50C32169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50C33169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50C34169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50C35169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50C36169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50C37169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50C38169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50C39169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50C3A169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50C3B169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50C3C169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50C3D169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50C3E169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50C3F169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3163,6 +3475,35 @@
 				AB1815D815D21469007A6CC3 /* video_output_view_legacy.mm in Sources */,
 				AB1815D915D21469007A6CC3 /* coreaudiosound.cpp in Sources */,
 				AB1815DA15D21469007A6CC3 /* ringbuffer.cpp in Sources */,
+				ABF50C5D169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50C5E169F61540018C08D /* assert.cpp in Sources */,
+				ABF50C5F169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50C60169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50C61169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50C62169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50C63169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50C64169F61540018C08D /* context.cpp in Sources */,
+				ABF50C65169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50C66169F61540018C08D /* defs.cpp in Sources */,
+				ABF50C67169F61540018C08D /* func.cpp in Sources */,
+				ABF50C68169F61540018C08D /* logger.cpp in Sources */,
+				ABF50C69169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50C6A169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50C6B169F61540018C08D /* operand.cpp in Sources */,
+				ABF50C6C169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50C6D169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50C6E169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50C6F169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50C70169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50C71169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50C72169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50C73169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50C74169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50C75169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50C76169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50C77169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50C78169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50C79169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3283,6 +3624,35 @@
 				AB18167F15D214F2007A6CC3 /* coreaudiosound.cpp in Sources */,
 				AB18168015D214F2007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB1816B815D216F5007A6CC3 /* OGLRender.cpp in Sources */,
+				ABF50BCC169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50BCD169F61540018C08D /* assert.cpp in Sources */,
+				ABF50BCE169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50BCF169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50BD0169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50BD1169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50BD2169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50BD3169F61540018C08D /* context.cpp in Sources */,
+				ABF50BD4169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50BD5169F61540018C08D /* defs.cpp in Sources */,
+				ABF50BD6169F61540018C08D /* func.cpp in Sources */,
+				ABF50BD7169F61540018C08D /* logger.cpp in Sources */,
+				ABF50BD8169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50BD9169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50BDA169F61540018C08D /* operand.cpp in Sources */,
+				ABF50BDB169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50BDC169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50BDD169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50BDE169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50BDF169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50BE0169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50BE1169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50BE2169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50BE3169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50BE4169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50BE5169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50BE6169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50BE7169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50BE8169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3392,21 +3762,37 @@
 				ABE2410A14BE3169006EA2D5 /* video_output_view_legacy.mm in Sources */,
 				ABD0A56A1501AC5C0074A094 /* coreaudiosound.cpp in Sources */,
 				ABD0A56B1501AC5C0074A094 /* ringbuffer.cpp in Sources */,
-				AB18134A15D1FB4B007A6CC3 /* AssemblerX86X64.cpp in Sources */,
-				AB18134B15D1FB4B007A6CC3 /* CodeGenerator.cpp in Sources */,
-				AB18134C15D1FB4B007A6CC3 /* Compiler.cpp in Sources */,
-				AB18134D15D1FB4B007A6CC3 /* CompilerX86X64.cpp in Sources */,
-				AB18134F15D1FB4B007A6CC3 /* CpuInfo.cpp in Sources */,
-				AB18135015D1FB4B007A6CC3 /* Defs.cpp in Sources */,
-				AB18135115D1FB4B007A6CC3 /* DefsX86X64.cpp in Sources */,
-				AB18135215D1FB4B007A6CC3 /* Logger.cpp in Sources */,
-				AB18135315D1FB4B007A6CC3 /* MemoryManager.cpp in Sources */,
-				AB18135415D1FB4B007A6CC3 /* MemoryMarker.cpp in Sources */,
-				AB18135515D1FB4B007A6CC3 /* OperandX86X64.cpp in Sources */,
-				AB18135615D1FB4B007A6CC3 /* Platform.cpp in Sources */,
-				AB18135915D1FB4B007A6CC3 /* Util.cpp in Sources */,
 				AB18136F15D1FB73007A6CC3 /* arm_jit.cpp in Sources */,
 				AB1813A615D1FD88007A6CC3 /* OGLRender.cpp in Sources */,
+				ABF50C06169F61540018C08D /* assembler.cpp in Sources */,
+				ABF50C07169F61540018C08D /* assert.cpp in Sources */,
+				ABF50C08169F61540018C08D /* buffer.cpp in Sources */,
+				ABF50C09169F61540018C08D /* compiler.cpp in Sources */,
+				ABF50C0A169F61540018C08D /* compilercontext.cpp in Sources */,
+				ABF50C0B169F61540018C08D /* compilerfunc.cpp in Sources */,
+				ABF50C0C169F61540018C08D /* compileritem.cpp in Sources */,
+				ABF50C0D169F61540018C08D /* context.cpp in Sources */,
+				ABF50C0E169F61540018C08D /* cpuinfo.cpp in Sources */,
+				ABF50C0F169F61540018C08D /* defs.cpp in Sources */,
+				ABF50C10169F61540018C08D /* func.cpp in Sources */,
+				ABF50C11169F61540018C08D /* logger.cpp in Sources */,
+				ABF50C12169F61540018C08D /* memorymanager.cpp in Sources */,
+				ABF50C13169F61540018C08D /* memorymarker.cpp in Sources */,
+				ABF50C14169F61540018C08D /* operand.cpp in Sources */,
+				ABF50C15169F61540018C08D /* stringbuilder.cpp in Sources */,
+				ABF50C16169F61540018C08D /* stringutil.cpp in Sources */,
+				ABF50C17169F61540018C08D /* virtualmemory.cpp in Sources */,
+				ABF50C18169F61540018C08D /* zonememory.cpp in Sources */,
+				ABF50C19169F61540018C08D /* x86assembler.cpp in Sources */,
+				ABF50C1A169F61540018C08D /* x86compiler.cpp in Sources */,
+				ABF50C1B169F61540018C08D /* x86compilercontext.cpp in Sources */,
+				ABF50C1C169F61540018C08D /* x86compilerfunc.cpp in Sources */,
+				ABF50C1D169F61540018C08D /* x86compileritem.cpp in Sources */,
+				ABF50C1E169F61540018C08D /* x86cpuinfo.cpp in Sources */,
+				ABF50C1F169F61540018C08D /* x86defs.cpp in Sources */,
+				ABF50C20169F61540018C08D /* x86func.cpp in Sources */,
+				ABF50C21169F61540018C08D /* x86operand.cpp in Sources */,
+				ABF50C22169F61540018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
