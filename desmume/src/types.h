@@ -98,16 +98,16 @@
 
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
-#define ASMJIT_CALL_CONV CALL_CONV_GCCFASTCALL
+#define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
 #elif defined (__i386__) && !defined(__clang__)
 #define FASTCALL __attribute__((regparm(3)))
-#define ASMJIT_CALL_CONV CALL_CONV_GCCREGPARM_3
+#define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define FASTCALL
-#define ASMJIT_CALL_CONV CALL_CONV_DEFAULT
+#define ASMJIT_CALL_CONV kX86FuncConvDefault
 #else
 #define FASTCALL
-#define ASMJIT_CALL_CONV CALL_CONV_DEFAULT
+#define ASMJIT_CALL_CONV kX86FuncConvDefault
 #endif
 
 #ifdef _MSC_VER
