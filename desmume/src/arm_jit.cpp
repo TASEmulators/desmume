@@ -35,7 +35,7 @@
 #include "Disassembler.h"
 #include "MMU.h"
 #include "MMU_timing.h"
-#include "utils/AsmJit/asmjit.h"
+#include "utils/AsmJit/AsmJit.h"
 #include "arm_jit.h"
 #include "bios.h"
 

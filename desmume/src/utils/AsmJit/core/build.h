@@ -9,7 +9,7 @@
 #define _ASMJIT_CORE_BUILD_H
 
 // [Include]
-#include "../config.h"
+#include "../Config.h"
 
 #if defined(ASMJIT_EXPORTS)
 # if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
