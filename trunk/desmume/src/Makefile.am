@@ -95,7 +95,7 @@ libdesmume_a_SOURCES = \
 if HAVE_JIT
 libdesmume_a_SOURCES += \
 	arm_jit.cpp arm_jit.h instruction_attributes.h \
-	utils/AsmJit/asmjit.h \
+	utils/AsmJit/AsmJit.h \
 	utils/AsmJit/config.h \
 	utils/AsmJit/core.h \
 	utils/AsmJit/x86.h \
