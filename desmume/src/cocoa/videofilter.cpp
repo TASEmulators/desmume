@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 #include "videofilter.h"
+#include <string.h>
 
 // Parameters for Scanline filter
 int scanline_filter_a = 0;
@@ -327,10 +328,12 @@ uint32_t* VideoFilter::RunFilter()
 
 /********************************************************************************************
 	RunFilterCustom() - STATIC
-
+	
 	Runs the pixels from srcBuffer through the video filter, and then stores the
-	resulting pixels into dstBuffer.
-
+	resulting pixels into dstBuffer. This function is useful for when your source or
+	destination buffers are already established, or when you want to run a filter once
+	without having to instantiate a new filter object.
+	
 	Takes:
 		srcBuffer - A pointer to the source pixel buffer. The caller is responsible
 			for ensuring that this buffer is valid. Also note that certain video filters
@@ -347,7 +350,7 @@ uint32_t* VideoFilter::RunFilter()
 		
 		typeID - The type ID of the video filter. See the VideoFilterTypeID
 			enumeration for possible values.
-
+	
 	Returns:
 		Nothing.
  ********************************************************************************************/
@@ -355,16 +358,23 @@ void VideoFilter::RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32
 								  const unsigned int srcWidth, const unsigned int srcHeight,
 								  const VideoFilterTypeID typeID)
 {
-	if (typeID >= VideoFilterTypeIDCount)
+	// Parameter check
+	if (srcBuffer == NULL ||
+		dstBuffer == NULL ||
+		srcWidth == 0 ||
+		srcHeight == 0 ||
+		typeID >= VideoFilterTypeIDCount)
 	{
 		return;
 	}
 	
+	// Get the filter attributes
 	const VideoFilterAttributes *vfAttr = &VideoFilterAttributesList[typeID];
 	const unsigned int dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
 	const unsigned int dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
 	const VideoFilterFunc filterFunction = vfAttr->filterFunction;
 	
+	// Assign the surfaces and run the filter
 	SSurface srcSurface = {(unsigned char *)srcBuffer, srcWidth*2, srcWidth, srcHeight};
 	SSurface dstSurface = {(unsigned char *)dstBuffer, dstWidth*2, dstWidth, dstHeight};
 	

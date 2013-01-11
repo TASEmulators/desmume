@@ -19,6 +19,7 @@
 #ifndef _VIDEOFILTER_
 #define _VIDEOFILTER_
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string>
 #include <vector>
