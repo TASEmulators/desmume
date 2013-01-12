@@ -996,6 +996,7 @@ static void OpenNdsDialog()
             g_free(recentData.app_name);
             g_free(recentData.app_exec);
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+            Launch();
         }
 
         g_free(sPath);
@@ -1020,6 +1021,7 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
     ret = Open(romname);
     if (ret > 0) {
         gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        Launch();
     } else {
         gtk_recent_manager_remove_item(recent_manager, uri, NULL);
         GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
