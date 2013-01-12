@@ -116,6 +116,7 @@ static void About();
 static void ToggleMenuVisible(GtkToggleAction *action);
 static void ToggleStatusbarVisible(GtkToggleAction *action);
 static void ToggleToolbarVisible(GtkToggleAction *action);
+static void ToggleFullscreen (GtkToggleAction *action);
 static void ToggleAudio (GtkToggleAction *action);
 #ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action);
@@ -247,6 +248,7 @@ static const char *ui_description =
 "        <menuitem action='view_menu'/>"
 "        <menuitem action='view_toolbar'/>"
 "        <menuitem action='view_statusbar'/>"
+"        <menuitem action='fullscreen'/>"
 "      </menu>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
@@ -316,7 +318,8 @@ static const GtkToggleActionEntry toggle_entries[] = {
     { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
     { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
     { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE},
-    { "orient_swapscreens", NULL, "S_wap screens", NULL, NULL, G_CALLBACK(ToggleSwapScreens), FALSE}
+    { "orient_swapscreens", NULL, "S_wap screens", "space", NULL, G_CALLBACK(ToggleSwapScreens), FALSE},
+    { "fullscreen", NULL, "Fullscreen", "<Ctrl>f", NULL, G_CALLBACK(ToggleFullscreen), FALSE},
 };
 
 static const GtkRadioActionEntry interpolation_entries[] = {
@@ -341,9 +344,9 @@ enum orientation_enum {
 };
 
 static const GtkRadioActionEntry orientation_entries[] = {
-    { "orient_vertical",   NULL, "_Vertical",   NULL, NULL, ORIENT_VERTICAL },
-    { "orient_horizontal", NULL, "_Horizontal", NULL, NULL, ORIENT_HORIZONTAL },
-    { "orient_single",     NULL, "_Single screen", NULL, NULL, ORIENT_SINGLE },
+    { "orient_vertical",   NULL, "_Vertical",   "<Ctrl>1", NULL, ORIENT_VERTICAL },
+    { "orient_horizontal", NULL, "_Horizontal", "<Ctrl>2", NULL, ORIENT_HORIZONTAL },
+    { "orient_single",     NULL, "_Single screen", "<Ctrl>0", NULL, ORIENT_SINGLE },
 };
 
 struct screen_size_t {
@@ -654,6 +657,31 @@ static void ToggleStatusbarVisible(GtkToggleAction *action)
       gtk_widget_hide(pStatusBar);
 }
 
+static void ToggleFullscreen(GtkToggleAction *action)
+{
+  GtkWidget *pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
+  GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
+  if (gtk_toggle_action_get_active(action) == TRUE)
+  {
+    gtk_widget_hide(pMenuBar);
+    gtk_widget_hide(pToolBar);
+    gtk_widget_hide(pStatusBar);
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_menu"), FALSE);
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+    gtk_window_fullscreen(GTK_WINDOW(pWindow));
+  }
+  else
+  {
+    gtk_widget_show(pMenuBar);
+    gtk_widget_show(pToolBar);
+    gtk_widget_show(pStatusBar);
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_menu"), TRUE);
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_toolbar"), TRUE);
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_statusbar"), TRUE);
+    gtk_window_unfullscreen(GTK_WINDOW(pWindow));
+  }
+}
 
 
 static int Open(const char *filename)
