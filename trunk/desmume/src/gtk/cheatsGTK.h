@@ -1,4 +1,4 @@
-/* desmume.h - this file is part of DeSmuME
+/* cheatsGtk.h - this file is part of DeSmuME
  *
  * Copyright (C) 2006,2007 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
