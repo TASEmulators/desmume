@@ -2177,6 +2177,12 @@ common_gtk_main( class configured_features *my_config)
 
     gtk_action_group_add_actions(action_group, action_entries, G_N_ELEMENTS(action_entries), NULL);
     gtk_action_group_add_toggle_actions(action_group, toggle_entries, G_N_ELEMENTS(toggle_entries), NULL);
+    /* Update audio toggle status */
+    if (my_config->disable_sound) {
+        GtkAction *action = gtk_action_group_get_action(action_group, "enableaudio");
+        if (action)
+            gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
+    }
     desmume_gtk_menu_emulation_layers(action_group);
     desmume_gtk_menu_file_saveload_slot(action_group);
     desmume_gtk_menu_tools(action_group);
