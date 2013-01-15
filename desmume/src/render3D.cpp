@@ -17,23 +17,62 @@
 */
 
 #include "render3D.h"
+#include "gfx3d.h"
+#include "texcache.h"
 
 int cur3DCore = GPU3D_NULL;
 
-static void NDS_nullFunc1		(void){}
-static char NDS_nullFunc2		(void){ return 1; }
-
 GPU3DInterface gpu3DNull = { 
 	"None",
-	NDS_nullFunc2, //NDS_3D_Init
-	NDS_nullFunc1, //NDS_3D_Reset
-	NDS_nullFunc1, //NDS_3D_Close
-	NDS_nullFunc1, //NDS_3D_Render
-	NDS_nullFunc1, //NDS_3D_VramReconfigureSignal
-	0
+	Default3D_Init,
+	Default3D_Reset,
+	Default3D_Close,
+	Default3D_Render,
+	Default3D_RenderFinish,
+	Default3D_VramReconfigureSignal
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;
+static bool default3DAlreadyClearedLayer = false;
+
+char Default3D_Init()
+{
+	default3DAlreadyClearedLayer = false;
+	
+	return 1;
+}
+
+void Default3D_Reset()
+{
+	default3DAlreadyClearedLayer = false;
+	
+	TexCache_Reset();
+}
+
+void Default3D_Close()
+{
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+	default3DAlreadyClearedLayer = false;
+}
+
+void Default3D_Render()
+{
+	if (!default3DAlreadyClearedLayer)
+	{
+		memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+		default3DAlreadyClearedLayer = true;
+	}
+}
+
+void Default3D_RenderFinish()
+{
+	// Do nothing
+}
+
+void Default3D_VramReconfigureSignal()
+{
+	TexCache_Invalidate();
+}
 
 void NDS_3D_SetDriver (int core3DIndex)
 {

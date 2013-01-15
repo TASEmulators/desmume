@@ -67,7 +67,7 @@ static u8 decal_table[32][64][64];
 static u8 index_lookup_table[65];
 static u8 index_start_table[8];
 
-
+static bool softRastHasNewData = false;
 
 ////optimized float floor useful in limited cases
 ////from http://www.stereopsis.com/FPU.html#convert
@@ -1073,7 +1073,7 @@ static SoftRasterizerEngine mainSoftRasterizer;
 static Task rasterizerUnitTask[_MAX_CORES];
 static RasterizerUnit<true> rasterizerUnit[_MAX_CORES];
 static RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
-static int rasterizerCores;
+static unsigned int rasterizerCores;
 static bool rasterizerUnitTasksInited = false;
 
 static void* execRasterizerUnit(void* arg)
@@ -1085,6 +1085,12 @@ static void* execRasterizerUnit(void* arg)
 
 static char SoftRastInit(void)
 {
+	char result = Default3D_Init();
+	if (result == 0)
+	{
+		return result;
+	}
+	
 	if(!rasterizerUnitTasksInited)
 	{
 		rasterizerUnitTasksInited = true;
@@ -1095,7 +1101,7 @@ static char SoftRastInit(void)
 		rasterizerCores = CommonSettings.num_cores;
 		if (rasterizerCores > _MAX_CORES) 
 			rasterizerCores = _MAX_CORES;
-		if(CommonSettings.num_cores == 1)
+		if(CommonSettings.num_cores <= 1)
 		{
 			rasterizerCores = 1;
 			rasterizerUnit[0].SLI_MASK = 0;
@@ -1146,22 +1152,44 @@ static char SoftRastInit(void)
 	TexCache_Reset();
 
 	printf("SoftRast Initialized with cores=%d\n",rasterizerCores);
-	return 1;
+	return result;
 }
 
-static void SoftRastReset() {
-	TexCache_Reset();
+static void SoftRastReset()
+{
+	if (rasterizerCores > 1)
+	{
+		for(unsigned int i = 0; i < rasterizerCores; i++)
+		{
+			rasterizerUnitTask[i].finish();
+		}
+	}
+	
+	softRastHasNewData = false;
+	
+	Default3D_Reset();
 }
 
 static void SoftRastClose()
 {
-	for(int i=0; i<_MAX_CORES; i++)
-		rasterizerUnitTask[i].shutdown();
+	if (rasterizerCores > 1)
+	{
+		for(unsigned int i = 0; i < rasterizerCores; i++)
+		{
+			rasterizerUnitTask[i].finish();
+			rasterizerUnitTask[i].shutdown();
+		}
+	}
+	
 	rasterizerUnitTasksInited = false;
+	softRastHasNewData = false;
+	
+	Default3D_Close();
 }
 
-static void SoftRastVramReconfigureSignal() {
-	TexCache_Invalidate();
+static void SoftRastVramReconfigureSignal()
+{
+	Default3D_VramReconfigureSignal();
 }
 
 static void SoftRastConvertFramebuffer()
@@ -1622,24 +1650,44 @@ static void SoftRastRender()
 	mainSoftRasterizer.performCoordAdjustment(true);
 	mainSoftRasterizer.setupTextures(true);
 
-
-	if(rasterizerCores==1)
+	softRastHasNewData = true;
+	
+	if (rasterizerCores > 1)
 	{
-		rasterizerUnit[0].mainLoop<false>(&mainSoftRasterizer);
+		for(unsigned int i = 0; i < rasterizerCores; i++)
+		{
+			rasterizerUnitTask[i].execute(&execRasterizerUnit, (void *)i);
+		}
 	}
 	else
 	{
-		for(int i=0;i<rasterizerCores;i++) rasterizerUnitTask[i].execute(execRasterizerUnit,(void*)i);
-		for(int i=0;i<rasterizerCores;i++) rasterizerUnitTask[i].finish();
+		rasterizerUnit[0].mainLoop<false>(&mainSoftRasterizer);
 	}
+}
 
+static void SoftRastRenderFinish()
+{
+	if (!softRastHasNewData)
+	{
+		return;
+	}
+	
+	if (rasterizerCores > 1)
+	{
+		for(unsigned int i = 0; i < rasterizerCores; i++)
+		{
+			rasterizerUnitTask[i].finish();
+		}
+	}
+	
 	TexCache_EvictFrame();
-
-
+	
 	mainSoftRasterizer.framebufferProcess();
-
+	
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 	SoftRastConvertFramebuffer();
+	
+	softRastHasNewData = false;
 }
 
 GPU3DInterface gpu3DRasterize = {
@@ -1648,7 +1696,7 @@ GPU3DInterface gpu3DRasterize = {
 	SoftRastReset,
 	SoftRastClose,
 	SoftRastRender,
-	SoftRastVramReconfigureSignal,
-	NULL
+	SoftRastRenderFinish,
+	SoftRastVramReconfigureSignal
 };
 
