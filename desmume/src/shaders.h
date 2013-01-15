@@ -51,10 +51,12 @@ const char *vertexShader = {"\
 
 /* Fragment shader */
 const char *fragmentShader = {"\
-	uniform sampler1D toonTable; \n\
-	uniform sampler2D tex2d; \n\
+	uniform sampler2D texMainRender; \n\
+	uniform sampler1D texToonTable; \n\
+	uniform int polyID; \n\
 	uniform bool hasTexture; \n\
-	uniform int texBlending; \n\
+	uniform int polygonMode; \n\
+	uniform int toonShadingMode; \n\
 	uniform int oglWBuffer; \n\
 	uniform bool enableAlphaTest; \n\
 	uniform float alphaTestRef; \n\
@@ -67,19 +69,20 @@ const char *fragmentShader = {"\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
 		vec4 flagColor; \n\
+		float flagDepth; \n\
 		\n\
 		if(hasTexture) \n\
 		{ \n\
-			texColor = texture2D(tex2d, vtxTexCoord); \n\
+			texColor = texture2D(texMainRender, vtxTexCoord); \n\
 		} \n\
 		\n\
 		flagColor = texColor; \n\
 		\n\
-		if(texBlending == 0) \n\
+		if(polygonMode == 0) \n\
 		{ \n\
 			flagColor = vtxColor * texColor; \n\
 		} \n\
-		else if(texBlending == 1) \n\
+		else if(polygonMode == 1) \n\
 		{ \n\
 			if (texColor.a == 0.0 || !hasTexture) \n\
 			{ \n\
@@ -96,17 +99,27 @@ const char *fragmentShader = {"\
 			\n\
 			flagColor.a = vtxColor.a; \n\
 		} \n\
-		else if(texBlending == 2) \n\
+		else if(polygonMode == 2) \n\
 		{ \n\
-			vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
-			flagColor.rgb = texColor.rgb * toonColor.rgb;\n\
-			flagColor.a = texColor.a * vtxColor.a;\n\
+			if (toonShadingMode == 0) \n\
+			{ \n\
+				vec3 toonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb); \n\
+				flagColor.rgb = texColor.rgb * toonColor.rgb;\n\
+				flagColor.a = texColor.a * vtxColor.a;\n\
+			} \n\
+			else \n\
+			{ \n\
+				vec3 toonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb); \n\
+				flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
+				flagColor.a = texColor.a * vtxColor.a; \n\
+			} \n\
 		} \n\
-		else if(texBlending == 3) \n\
+		else if(polygonMode == 3) \n\
 		{ \n\
-			vec3 toonColor = vec3(texture1D(toonTable, vtxColor.r).rgb); \n\
-			flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
-			flagColor.a = texColor.a * vtxColor.a; \n\
+			if (polyID != 0) \n\
+			{ \n\
+				flagColor = vtxColor; \n\
+			} \n\
 		} \n\
 		\n\
 		if (flagColor.a == 0.0 || (enableAlphaTest && flagColor.a < alphaTestRef)) \n\
@@ -117,14 +130,15 @@ const char *fragmentShader = {"\
 		if (oglWBuffer == 1) \n\
 		{ \n\
 			// TODO \n\
-			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
-			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		\n\
 		gl_FragColor = flagColor; \n\
+		gl_FragDepth = flagDepth; \n\
 	} \n\
 "};
 
