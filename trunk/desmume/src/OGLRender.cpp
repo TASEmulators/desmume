@@ -117,8 +117,7 @@ enum OGLTextureUnitID
 
 // Multithreading States
 static bool enableMultithreading = false;
-static bool isReadPixelsWorking = false;
-static Task oglReadPixelsTask;
+static Task oglReadPixelsTask[2];
 
 // Polygon Info
 static GLfloat polyAlpha = 1.0f;
@@ -498,42 +497,52 @@ static void OGLInitShaders(const char *oglExtensionString)
 
 static void OGLReset()
 {
+	gpuScreen3DHasNewData[0] = false;
+	gpuScreen3DHasNewData[1] = false;
+	
+	if (enableMultithreading)
+	{
+		for (unsigned int i = 0; i < 2; i++)
+		{
+			oglReadPixelsTask[i].finish();
+		}
+	}
+	
+	if(!BEGINGL())
+		return;
+	
+	glFinish();
+	
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		memset(GPU_screen3D[i], 0, sizeof(GPU_screen3D[i]));
+	}
+	
 	if(isShaderSupported)
 	{
 		hasTexture = false;
 		
-		if(BEGINGL())
-		{
-			glUniform1i(uniformPolyID, 0);
-			glUniform1f(uniformPolyAlpha, 1.0f);
-			glUniform2f(uniformTexScale, 1.0f, 1.0f);
-			glUniform1i(uniformHasTexture, GL_FALSE);
-			glUniform1i(uniformPolygonMode, 0);
-			glUniform1i(uniformToonShadingMode, 0);
-			glUniform1i(uniformWBuffer, 0);
-			glUniform1i(uniformEnableAlphaTest, GL_TRUE);
-			glUniform1f(uniformAlphaTestRef, 0.0f);
-			
-			ENDGL();
-		}
+		glUniform1i(uniformPolyID, 0);
+		glUniform1f(uniformPolyAlpha, 1.0f);
+		glUniform2f(uniformTexScale, 1.0f, 1.0f);
+		glUniform1i(uniformHasTexture, GL_FALSE);
+		glUniform1i(uniformPolygonMode, 0);
+		glUniform1i(uniformToonShadingMode, 0);
+		glUniform1i(uniformWBuffer, 0);
+		glUniform1i(uniformEnableAlphaTest, GL_TRUE);
+		glUniform1f(uniformAlphaTestRef, 0.0f);
 	}
 	else
 	{
 		memset(color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
 	}
 	
-	TexCache_Reset();
-	if (currTexture) 
-		delete currTexture;
-	currTexture = NULL;
-	
-	for (unsigned int i = 0; i < 2; i++)
-	{
-		memset(GPU_screen3D[i], 0, sizeof(GPU_screen3D[i]));
-		gpuScreen3DHasNewData[i] = false;
-	}
+	ENDGL();
 	
 	memset(vertIndexBuffer, 0, VERT_INDEX_BUFFER_SIZE * sizeof(GLushort));
+	currTexture = NULL;
+	
+	Default3D_Reset();
 }
 
 //static class OGLTexCacheUser : public ITexCacheUser
@@ -636,13 +645,25 @@ static bool OGLIsMinimumVersionSupported(const char *oglVersionString)
 
 static char OGLInit(void)
 {
+	char result = 0;
+	
 	if(!oglrender_init)
-		return 0;
+		return result;
 	if(!oglrender_init())
-		return 0;
+		return result;
+	
+	result = Default3D_Init();
+	if (result == 0)
+	{
+		return result;
+	}
 
 	if(!BEGINGL())
-		return 0;
+	{
+		INFO("OpenGL: Could not initialize -- BEGINGL() failed.");
+		result = 0;
+		return result;
+	}
 	
 	// Get OpenGL info
 	const char *oglVendorString = (const char *)glGetString(GL_VENDOR);
@@ -655,12 +676,9 @@ static char OGLInit(void)
 			 OGL_MINIMUM_GPU_VERSION_REQUIRED_MAJOR, OGL_MINIMUM_GPU_VERSION_REQUIRED_MINOR, OGL_MINIMUM_GPU_VERSION_REQUIRED_REVISION,
 			 oglVersionString, oglVendorString, oglRendererString);
 		
-		return 0;
+		result = 0;
+		return result;
 	}
-	
-	glViewport(0, 0, 256, 192);
-	if (glGetError() != GL_NO_ERROR)
-		return 0;
 	
 	const char *oglExtensionString = (const char *)glGetString(GL_EXTENSIONS);
 
@@ -936,8 +954,6 @@ static char OGLInit(void)
 	ENDGL();
 	
 	// Multithreading Setup
-	isReadPixelsWorking = false;
-
 	if (CommonSettings.num_cores > 1)
 	{
 #ifdef _WINDOWS
@@ -947,7 +963,11 @@ static char OGLInit(void)
 		enableMultithreading = false;
 #else
 		enableMultithreading = true;
-		oglReadPixelsTask.start(false);
+		
+		for (unsigned int i = 0; i < 2; i++)
+		{
+			oglReadPixelsTask[i].start(false);
+		}
 #endif
 	}
 	else
@@ -960,27 +980,28 @@ static char OGLInit(void)
 	INFO("OpenGL: Initialized successfully.\n[GPU Info - Version: %s, Vendor: %s, Renderer: %s]\n",
 		 oglVersionString, oglVendorString, oglRendererString);
 
-	return 1;
+	return result;
 }
 
 static void OGLClose()
 {
-	if (enableMultithreading)
-	{
-		oglReadPixelsTask.finish();
-		oglReadPixelsTask.shutdown();
-		isReadPixelsWorking = false;
-	}
-	
 	gpuScreen3DHasNewData[0] = false;
 	gpuScreen3DHasNewData[1] = false;
 	
-	delete [] vertIndexBuffer;
-	vertIndexBuffer = NULL;
+	if (enableMultithreading)
+	{
+		for (unsigned int i = 0; i < 2; i++)
+		{
+			oglReadPixelsTask[i].finish();
+			oglReadPixelsTask[i].shutdown();
+		}
+	}
 	
 	if(!BEGINGL())
 		return;
-
+	
+	glFinish();
+	
 	if(isShaderSupported)
 	{
 		glUseProgram(0);
@@ -992,6 +1013,8 @@ static void OGLClose()
 		glDeleteShader(vertexShaderID);
 		glDeleteShader(fragmentShaderID);
 		
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
+		glBindTexture(GL_TEXTURE_1D, 0);
 		glDeleteTextures(1, &texToonTableID);
 
 		isShaderSupported = false;
@@ -1004,27 +1027,20 @@ static void OGLClose()
 	
 	if (isVAOSupported)
 	{
+		glBindVertexArray(0);
 		glDeleteVertexArrays(1, &vaoMainStatesID);
 		isVAOSupported = false;
 	}
 
-	//kill the tex cache to free all the texture ids
-	TexCache_Reset();
-
-	while(!freeTextureIds.empty())
-	{
-		GLuint temp = freeTextureIds.front();
-		freeTextureIds.pop();
-		glDeleteTextures(1,&temp);
-	}
-
 	if (isVBOSupported)
 	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		glDeleteBuffersARB(1, &vboVertexID);
 	}
 	
 	if (isPBOSupported)
 	{
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 		glDeleteBuffersARB(2, pboRenderDataID);
 		pboRenderBuffer[0] = NULL;
 		pboRenderBuffer[1] = NULL;
@@ -1033,14 +1049,36 @@ static void OGLClose()
 	// FBO
 	if (isFBOSupported)
 	{
+		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		
 		glDeleteFramebuffersEXT(1, &fboClearImageID);
 		glDeleteTextures(1, &texClearImageColorID);
 		glDeleteTextures(1, &texClearImageDepthStencilID);
 	}
-
+	
+	//kill the tex cache to free all the texture ids
+	TexCache_Reset();
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	while(!freeTextureIds.empty())
+	{
+		GLuint temp = freeTextureIds.front();
+		freeTextureIds.pop();
+		glDeleteTextures(1,&temp);
+	}
+	
+	glFinish();
+	
 	ENDGL();
+	
+	delete [] vertIndexBuffer;
+	vertIndexBuffer = NULL;
+	
+	Default3D_Close();
 }
 
 static void texDeleteCallback(TexCacheItem* item)
@@ -1318,14 +1356,13 @@ static void GL_ReadFramebuffer()
 {
 	static unsigned int bufferIndex = 0;
 	
-	if (enableMultithreading && isReadPixelsWorking)
-	{
-		oglReadPixelsTask.finish();
-		isReadPixelsWorking = false;
-	}
-	
 	bufferIndex = (bufferIndex + 1) & 0x01;
 	gpuScreen3DBufferIndex = bufferIndex;
+	
+	if (enableMultithreading)
+	{
+		oglReadPixelsTask[bufferIndex].finish();
+	}
 	
 	if (isPBOSupported)
 	{
@@ -1353,14 +1390,12 @@ static void GL_ReadFramebuffer()
 	// H-Blank, and let that logic determine whether a pixel read is needed or not.
 	// This can save us some time in cases where games don't require the 3D layer
 	// for this particular frame.
+	
+	gpuScreen3DHasNewData[bufferIndex] = true;
+	
 	if (enableMultithreading)
 	{
-		isReadPixelsWorking = true;
-		oglReadPixelsTask.execute(&execReadPixelsTask, &bufferIndex);
-	}
-	else
-	{
-		gpuScreen3DHasNewData[bufferIndex] = true;
+		oglReadPixelsTask[bufferIndex].execute(&execReadPixelsTask, &bufferIndex);
 	}
 }
 
@@ -1738,27 +1773,26 @@ static void OGLRender()
 
 static void OGLVramReconfigureSignal()
 {
-	TexCache_Invalidate();
+	Default3D_VramReconfigureSignal();
 }
 
-static u8* OGLGetLineData(u8 lineNumber)
+static void OGLRenderFinish()
 {
 	// If OpenGL is still reading back pixels on a separate thread, wait for it to finish.
-	if (isReadPixelsWorking)
-	{
-		oglReadPixelsTask.finish();
-		isReadPixelsWorking = false;
-	}
-	
-	// If we're doing a pixel read on this thread and we have new rendered data,
-	// then do the pixel read now.
+	// Otherwise, just do the pixel read now.
 	if (gpuScreen3DHasNewData[gpuScreen3DBufferIndex])
 	{
-		execReadPixelsTask(&gpuScreen3DBufferIndex);
+		if (enableMultithreading)
+		{
+			oglReadPixelsTask[gpuScreen3DBufferIndex].finish();
+		}
+		else
+		{
+			execReadPixelsTask(&gpuScreen3DBufferIndex);
+		}
+		
 		gpuScreen3DHasNewData[gpuScreen3DBufferIndex] = false;
 	}
-	
-	return ( gfx3d_convertedScreen + (lineNumber << (8+2)) );
 }
 
 GPU3DInterface gpu3Dgl = {
@@ -1767,6 +1801,6 @@ GPU3DInterface gpu3Dgl = {
 	OGLReset,
 	OGLClose,
 	OGLRender,
-	OGLVramReconfigureSignal,
-	OGLGetLineData
+	OGLRenderFinish,
+	OGLVramReconfigureSignal
 };

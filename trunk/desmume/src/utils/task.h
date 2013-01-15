@@ -16,6 +16,7 @@
 */
 
 #ifndef _TASK_H_
+#define _TASK_H_
 
 //Sort of like a single-thread thread pool.
 //You hand it a worker function and then call finish() to synch with its completion

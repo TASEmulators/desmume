@@ -489,6 +489,8 @@ void gfx3d_init()
 
 void gfx3d_reset()
 {
+	gpu3D->NDS_3D_RenderFinish();
+	
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max_verts = 0;
 #endif
@@ -2183,13 +2185,12 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	drawPending = FALSE;
 
-	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
-	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
+	if(!CommonSettings.showGpu.main)
 	{
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
 		return;
 	}
-
+	
 	gpu3D->NDS_3D_Render();
 }
 
@@ -2301,14 +2302,8 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 
 void gfx3d_GetLineData(int line, u8** dst)
 {
-	if (gpu3D->NDS_3D_GetLineData == NULL)
-	{
-		*dst = gfx3d_convertedScreen+((line)<<(8+2));
-	}
-	else
-	{
-		*dst = gpu3D->NDS_3D_GetLineData(line);
-	}
+	gpu3D->NDS_3D_RenderFinish();
+	*dst = gfx3d_convertedScreen+((line)<<(8+2));
 }
 
 void gfx3d_GetLineData15bpp(int line, u16** dst)
