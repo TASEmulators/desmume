@@ -148,7 +148,11 @@ void* Task::Impl::finish()
 	if(spinlock) 
 		while(!bWorkDone) 
 			Sleep(0);
-	else WaitForSingleObject(workDone,INFINITE); 
+	else
+	{
+		if(!bWorkDone)
+			WaitForSingleObject(workDone,INFINITE); 
+	}
 	return param;
 }
 
