@@ -330,7 +330,7 @@ static u8 MM3x3ind = 0;
 // Data for vertex submission
 static CACHE_ALIGN s16		s16coord[4] = {0, 0, 0, 0};
 static char		coordind = 0;
-static u32 vtxFormat = 0;
+static u32 vtxFormat = GFX3D_TRIANGLES;
 static BOOL inBegin = FALSE;
 
 // Data for basic transforms
@@ -519,7 +519,7 @@ void gfx3d_reset()
 	mode = 0;
 	s16coord[0] = s16coord[1] = s16coord[2] = s16coord[3] = 0;
 	coordind = 0;
-	vtxFormat = 0;
+	vtxFormat = GFX3D_TRIANGLES;
 	memset(trans, 0, sizeof(trans));
 	transind = 0;
 	memset(scale, 0, sizeof(scale));
@@ -634,9 +634,9 @@ static void SetVertex()
 	//TODO - viewport transform?
 
 	int continuation = 0;
-	if(vtxFormat==2 && !tempVertInfo.first)
+	if(vtxFormat==GFX3D_TRIANGLE_STRIP && !tempVertInfo.first)
 		continuation = 2;
-	else if(vtxFormat==3 && !tempVertInfo.first)
+	else if(vtxFormat==GFX3D_QUAD_STRIP && !tempVertInfo.first)
 		continuation = 2;
 
 	//record the vertex
@@ -675,7 +675,7 @@ static void SetVertex()
 	{
 		polygonListCompleted = 2;
 		switch(vtxFormat) {
-			case 0: //GL_TRIANGLES
+			case GFX3D_TRIANGLES:
 				if(tempVertInfo.count!=3)
 					break;
 				polygonListCompleted = 1;
@@ -687,7 +687,7 @@ static void SetVertex()
 				polylist->list[polylist->count].type = 3;
 				tempVertInfo.count = 0;
 				break;
-			case 1: //GL_QUADS
+			case GFX3D_QUADS:
 				if(tempVertInfo.count!=4)
 					break;
 				polygonListCompleted = 1;
@@ -699,7 +699,7 @@ static void SetVertex()
 				polylist->list[polylist->count].type = 4;
 				tempVertInfo.count = 0;
 				break;
-			case 2: //GL_TRIANGLE_STRIP
+			case GFX3D_TRIANGLE_STRIP:
 				if(tempVertInfo.count!=3)
 					break;
 				polygonListCompleted = 1;
@@ -722,7 +722,7 @@ static void SetVertex()
 				tempVertInfo.first = false;
 				tempVertInfo.count = 2;
 				break;
-			case 3: //GL_QUAD_STRIP
+			case GFX3D_QUAD_STRIP:
 				if(tempVertInfo.count!=4)
 					break;
 				polygonListCompleted = 1;

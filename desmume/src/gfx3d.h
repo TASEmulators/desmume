@@ -113,6 +113,16 @@ inline u32 RGB15TO6665(u16 col, u8 alpha5)
 // 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[depth & 0x7FFF] )
 
+// POLYGON PRIMITIVE TYPES
+enum
+{
+	GFX3D_TRIANGLES			= 0,
+	GFX3D_QUADS				= 1,
+	GFX3D_TRIANGLE_STRIP	= 2,
+	GFX3D_QUAD_STRIP		= 3,
+	GFX3D_LINE				= 4
+};
+
 // POLYGON ATTRIBUTES - BIT LOCATIONS
 enum
 {
@@ -257,7 +267,7 @@ struct POLY {
 		else type = 3;
 	}
 	
-	u8 getAttributeEnableLightFlags()
+	u8 getAttributeEnableLightFlags() const
 	{
 		return ((polyAttr & (POLYGON_ATTR_ENABLE_LIGHT0_MASK |
 							 POLYGON_ATTR_ENABLE_LIGHT1_MASK |
@@ -265,83 +275,83 @@ struct POLY {
 							 POLYGON_ATTR_ENABLE_LIGHT3_MASK)) >> POLYGON_ATTR_ENABLE_LIGHT0_BIT);
 	}
 	
-	bool getAttributeEnableLight0()
+	bool getAttributeEnableLight0() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT0_MASK) > 0);
 	}
 	
-	bool getAttributeEnableLight1()
+	bool getAttributeEnableLight1() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT1_MASK) > 0);
 	}
 	
-	bool getAttributeEnableLight2()
+	bool getAttributeEnableLight2() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT2_MASK) > 0);
 	}
 	
-	bool getAttributeEnableLight3()
+	bool getAttributeEnableLight3() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT3_MASK) > 0);
 	}
 	
-	u8 getAttributePolygonMode()
+	u8 getAttributePolygonMode() const
 	{
 		return ((polyAttr & POLYGON_ATTR_MODE_MASK) >> POLYGON_ATTR_MODE_BIT);
 	}
 	
-	u8 getAttributeEnableFaceCullingFlags()
+	u8 getAttributeEnableFaceCullingFlags() const
 	{
 		return ((polyAttr & (POLYGON_ATTR_ENABLE_BACK_SURFACE_MASK |
 							 POLYGON_ATTR_ENABLE_FRONT_SURFACE_MASK)) >> POLYGON_ATTR_ENABLE_BACK_SURFACE_BIT);
 	}
 	
-	bool getAttributeEnableBackSurface()
+	bool getAttributeEnableBackSurface() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_BACK_SURFACE_MASK) > 0);
 	}
 	
-	bool getAttributeEnableFrontSurface()
+	bool getAttributeEnableFrontSurface() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_FRONT_SURFACE_MASK) > 0);
 	}
 	
-	bool getAttributeEnableAlphaDepthWrite()
+	bool getAttributeEnableAlphaDepthWrite() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_MASK) > 0);
 	}
 	
-	bool getAttributeEnableRenderOnFarPlaneIntersect()
+	bool getAttributeEnableRenderOnFarPlaneIntersect() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_MASK) > 0);
 	}
 	
-	bool getAttributeEnableOneDotRender()
+	bool getAttributeEnableOneDotRender() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_MASK) > 0);
 	}
 	
-	bool getAttributeEnableDepthTest()
+	bool getAttributeEnableDepthTest() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_DEPTH_TEST_MASK) > 0);
 	}
 	
-	bool getAttributeEnableFog()
+	bool getAttributeEnableFog() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ENABLE_FOG_MASK) > 0);
 	}
 	
-	u8 getAttributeAlpha()
+	u8 getAttributeAlpha() const
 	{
 		return ((polyAttr & POLYGON_ATTR_ALPHA_MASK) >> POLYGON_ATTR_ALPHA_BIT);
 	}
 	
-	u8 getAttributePolygonID()
+	u8 getAttributePolygonID() const
 	{
 		return ((polyAttr & POLYGON_ATTR_POLYGON_ID_MASK) >> POLYGON_ATTR_POLYGON_ID_BIT);
 	}
 	
-	PolygonAttributes getAttributes()
+	PolygonAttributes getAttributes() const
 	{
 		PolygonAttributes theAttr;
 		
@@ -368,57 +378,57 @@ struct POLY {
 		return theAttr;
 	}
 	
-	u16 getTexParamVRAMOffset()
+	u16 getTexParamVRAMOffset() const
 	{
 		return ((texParam & TEXTURE_PARAM_VRAM_OFFSET_MASK) >> TEXTURE_PARAM_VRAM_OFFSET_BIT);
 	}
 	
-	bool getTexParamEnableRepeatS()
+	bool getTexParamEnableRepeatS() const
 	{
 		return ((texParam & TEXTURE_PARAM_ENABLE_REPEAT_S_MASK) > 0);
 	}
 	
-	bool getTexParamEnableRepeatT()
+	bool getTexParamEnableRepeatT() const
 	{
 		return ((texParam & TEXTURE_PARAM_ENABLE_REPEAT_T_MASK) > 0);
 	}
 	
-	bool getTexParamEnableMirroredRepeatS()
+	bool getTexParamEnableMirroredRepeatS() const
 	{
 		return ((texParam & TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_S_MASK) > 0);
 	}
 	
-	bool getTexParamEnableMirroredRepeatT()
+	bool getTexParamEnableMirroredRepeatT() const
 	{
 		return ((texParam & TEXTURE_PARAM_ENABLE_MIRRORED_REPEAT_T_MASK) > 0);
 	}
 	
-	u8 getTexParamSizeS()
+	u8 getTexParamSizeS() const
 	{
 		return ((texParam & TEXTURE_PARAM_SIZE_S_MASK) >> TEXTURE_PARAM_SIZE_S_BIT);
 	}
 	
-	u8 getTexParamSizeT()
+	u8 getTexParamSizeT() const
 	{
 		return ((texParam & TEXTURE_PARAM_SIZE_T_MASK) >> TEXTURE_PARAM_SIZE_T_BIT);
 	}
 	
-	u8 getTexParamTexFormat()
+	u8 getTexParamTexFormat() const
 	{
 		return ((texParam & TEXTURE_PARAM_FORMAT_MASK) >> TEXTURE_PARAM_FORMAT_BIT);
 	}
 	
-	bool getTexParamEnableTransparentColor0()
+	bool getTexParamEnableTransparentColor0() const
 	{
 		return ((texParam & TEXTURE_PARAM_ENABLE_TRANSPARENT_COLOR0_MASK) > 0);
 	}
 	
-	u8 getTexParamCoordTransformMode()
+	u8 getTexParamCoordTransformMode() const
 	{
 		return ((texParam & TEXTURE_PARAM_COORD_TRANSFORM_MODE_MASK) >> TEXTURE_PARAM_COORD_TRANSFORM_MODE_BIT);
 	}
 	
-	PolygonTexParams getTexParams()
+	PolygonTexParams getTexParams() const
 	{
 		PolygonTexParams theTexParams;
 		
@@ -436,17 +446,17 @@ struct POLY {
 		return theTexParams;
 	}
 	
-	bool isWireframe()
+	bool isWireframe() const
 	{
 		return (this->getAttributeAlpha() == 0);
 	}
 	
-	bool isOpaque()
+	bool isOpaque() const
 	{
 		return (this->getAttributeAlpha() == 31);
 	}
 	
-	bool isTranslucent()
+	bool isTranslucent() const
 	{
 		// First, check if the polygon is wireframe or opaque.
 		// If neither, then it must be translucent.
