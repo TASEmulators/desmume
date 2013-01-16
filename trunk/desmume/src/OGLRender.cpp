@@ -692,7 +692,7 @@ static char OGLInit(void)
 	
 	// Maintain our own vertex index buffer for vertex batching and primitive
 	// conversions. Such conversions are necessary since OpenGL deprecates
-	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
+	// primitives like GFX3D_QUADS and GFX3D_QUAD_STRIP in later versions.
 	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
 
 #ifndef __APPLE__
@@ -1088,7 +1088,7 @@ static void texDeleteCallback(TexCacheItem* item)
 		currTexture = NULL;
 }
 
-static void SetupTexture(POLY *thePoly)
+static void SetupTexture(const POLY *thePoly)
 {
 	PolygonTexParams params = thePoly->getTexParams();
 	
@@ -1173,7 +1173,7 @@ static void SetupTexture(POLY *thePoly)
 	}
 }
 
-static void SetupPolygon(POLY *thePoly)
+static void SetupPolygon(const POLY *thePoly)
 {
 	static unsigned int lastTexBlendMode = 0;
 	static int lastStencilState = -1;
@@ -1307,7 +1307,7 @@ static void SetupPolygon(POLY *thePoly)
 	}
 }
 
-static void SetupViewport(POLY *thePoly)
+static void SetupViewport(const POLY *thePoly)
 {
 	VIEWPORT viewport;
 	viewport.decode(thePoly->viewport);
@@ -1474,9 +1474,6 @@ static void HandleClearImage()
 
 static void OGLRender()
 {
-	static const GLenum frm[]	= {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_STRIP, GL_QUAD_STRIP,
-								   GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
-	
 	if(!BEGINGL()) return;
 
 	Control();
@@ -1591,11 +1588,20 @@ static void OGLRender()
 			}
 		}
 		
+		// Map GFX3D_QUADS and GFX3D_QUAD_STRIP to GL_TRIANGLES since we will convert them.
+		//
+		// Also map GFX3D_TRIANGLE_STRIP to GL_TRIANGLES. This is okay since this is actually
+		// how the POLY struct stores triangle strip vertices, which is in sets of 3 vertices
+		// each. This redefinition is necessary since uploading more than 3 indices at a time
+		// will cause glDrawElements() to draw the triangle strip incorrectly.
+		static const GLenum oglPrimitiveType[]	= {GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES,
+												   GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP};
+		
 		// Render all polygons
 		for(unsigned int i = 0; i < polyCount; i++)
 		{
-			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
-			polyPrimitive = frm[poly->vtxFormat];
+			const POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist.list[i]];
+			polyPrimitive = oglPrimitiveType[poly->vtxFormat];
 			polyType = poly->type;
 
 			// Set up the polygon if it changed
@@ -1625,14 +1631,14 @@ static void OGLRender()
 			{
 				for(unsigned int j = 0; j < polyType; j++)
 				{
-					GLushort vertIndex = poly->vertIndexes[j];
+					const GLushort vertIndex = poly->vertIndexes[j];
 					
 					// While we're looping through our vertices, add each vertex index to
-					// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
-					// here to convert them to GL_TRIANGLES, which are much easier to work with
-					// and won't be deprecated in future OpenGL versions.
+					// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+					// vertices here to convert them to GL_TRIANGLES, which are much easier
+					// to work with and won't be deprecated in future OpenGL versions.
 					vertIndexBuffer[vertIndexCount++] = vertIndex;
-					if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+					if (poly->vtxFormat == GFX3D_QUADS || poly->vtxFormat == GFX3D_QUAD_STRIP)
 					{
 						if (j == 2)
 						{
@@ -1649,8 +1655,8 @@ static void OGLRender()
 			{
 				for(unsigned int j = 0; j < polyType; j++)
 				{
-					GLushort vertIndex = poly->vertIndexes[j];
-					GLushort colorIndex = vertIndex * 4;
+					const GLushort vertIndex = poly->vertIndexes[j];
+					const GLushort colorIndex = vertIndex * 4;
 					
 					// Consolidate the vertex color and the poly alpha to our internal color buffer
 					// so that OpenGL can use it.
@@ -1660,12 +1666,12 @@ static void OGLRender()
 					color4fBuffer[colorIndex+2] = material_8bit_to_float[vert->color[2]];
 					color4fBuffer[colorIndex+3] = polyAlpha;
 					
-					// While we're looping through our vertices, add each vertex index to
-					// a buffer. For GL_QUADS and GL_QUAD_STRIP, we also add additional vertices
-					// here to convert them to GL_TRIANGLES, which are much easier to work with
-					// and won't be deprecated in future OpenGL versions.
+					// While we're looping through our vertices, add each vertex index to a
+					// buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+					// vertices here to convert them to GL_TRIANGLES, which are much easier
+					// to work with and won't be deprecated in future OpenGL versions.
 					vertIndexBuffer[vertIndexCount++] = vertIndex;
-					if (polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
+					if (poly->vtxFormat == GFX3D_QUADS || poly->vtxFormat == GFX3D_QUAD_STRIP)
 					{
 						if (j == 2)
 						{
@@ -1686,16 +1692,16 @@ static void OGLRender()
 			// the same and we're not drawing a line loop or line strip.
 			if (i+1 < polyCount)
 			{
-				POLY *nextPoly = &gfx3d.polylist->list[gfx3d.indexlist.list[i+1]];
+				const POLY *nextPoly = &gfx3d.polylist->list[gfx3d.indexlist.list[i+1]];
 				
 				if (lastPolyAttr == nextPoly->polyAttr &&
 					lastTexParams == nextPoly->texParam &&
 					lastTexPalette == nextPoly->texPalette &&
-					polyPrimitive == frm[nextPoly->vtxFormat] &&
+					polyPrimitive == oglPrimitiveType[nextPoly->vtxFormat] &&
 					polyPrimitive != GL_LINE_LOOP &&
 					polyPrimitive != GL_LINE_STRIP &&
-					frm[nextPoly->vtxFormat] != GL_LINE_LOOP &&
-					frm[nextPoly->vtxFormat] != GL_LINE_STRIP)
+					oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_LOOP &&
+					oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_STRIP)
 				{
 					needVertexUpload = false;
 				}
@@ -1706,23 +1712,12 @@ static void OGLRender()
 			{
 				// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
 				// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
-				// drawing more accurate this way, but it also allows GL_QUADS and
-				// GL_QUAD_STRIP primitives to properly draw as wireframe without the
+				// drawing more accurate this way, but it also allows GFX3D_QUADS and
+				// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
 				// extra diagonal line.
 				if (poly->isWireframe())
 				{
 					polyPrimitive = GL_LINE_LOOP;
-				}
-				else if (polyPrimitive == GL_TRIANGLE_STRIP || polyPrimitive == GL_QUADS || polyPrimitive == GL_QUAD_STRIP)
-				{
-					// Redefine GL_QUADS and GL_QUAD_STRIP as GL_TRIANGLES since we converted them.
-					//
-					// Also redefine GL_TRIANGLE_STRIP as GL_TRIANGLES. This is okay since this
-					// is actually how the POLY struct stores triangle strip vertices, which is
-					// in sets of 3 vertices each. This redefinition is necessary since uploading
-					// more than 3 indices at a time will cause glDrawElements() to draw the
-					// triangle strip incorrectly.
-					polyPrimitive = GL_TRIANGLES;
 				}
 				
 				// Upload the vertices to the framebuffer.
