@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2418,6 +2418,8 @@ SFORMAT SF_GFX3D[]={
 //-------------savestate
 void gfx3d_savestate(EMUFILE* os)
 {
+	gpu3D->NDS_3D_RenderFinish();
+	
 	//version
 	write32le(4,os);
 

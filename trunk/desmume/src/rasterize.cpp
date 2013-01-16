@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2012 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1073,7 +1073,7 @@ static SoftRasterizerEngine mainSoftRasterizer;
 static Task rasterizerUnitTask[_MAX_CORES];
 static RasterizerUnit<true> rasterizerUnit[_MAX_CORES];
 static RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
-static unsigned int rasterizerCores;
+static unsigned int rasterizerCores = 0;
 static bool rasterizerUnitTasksInited = false;
 
 static void* execRasterizerUnit(void* arg)
@@ -1629,6 +1629,15 @@ void _HACK_Viewer_ExecUnit(SoftRasterizerEngine* engine)
 
 static void SoftRastRender()
 {
+	// Force threads to finish before rendering with new data
+	if (rasterizerCores > 1)
+	{
+		for(unsigned int i = 0; i < rasterizerCores; i++)
+		{
+			rasterizerUnitTask[i].finish();
+		}
+	}
+	
 	mainSoftRasterizer.polylist = gfx3d.polylist;
 	mainSoftRasterizer.vertlist = gfx3d.vertlist;
 	mainSoftRasterizer.indexlist = &gfx3d.indexlist;

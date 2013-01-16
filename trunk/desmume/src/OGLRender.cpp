@@ -1036,6 +1036,7 @@ static void OGLClose()
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		glDeleteBuffersARB(1, &vboVertexID);
+		isVBOSupported = false;
 	}
 	
 	if (isPBOSupported)
@@ -1044,6 +1045,7 @@ static void OGLClose()
 		glDeleteBuffersARB(2, pboRenderDataID);
 		pboRenderBuffer[0] = NULL;
 		pboRenderBuffer[1] = NULL;
+		isPBOSupported = false;
 	}
 	
 	// FBO
@@ -1056,6 +1058,8 @@ static void OGLClose()
 		glDeleteFramebuffersEXT(1, &fboClearImageID);
 		glDeleteTextures(1, &texClearImageColorID);
 		glDeleteTextures(1, &texClearImageDepthStencilID);
+		
+		isFBOSupported = false;
 	}
 	
 	//kill the tex cache to free all the texture ids
@@ -1070,6 +1074,9 @@ static void OGLClose()
 		freeTextureIds.pop();
 		glDeleteTextures(1,&temp);
 	}
+	
+	hasTexture = false;
+	currTexture = NULL;
 	
 	glFinish();
 	
