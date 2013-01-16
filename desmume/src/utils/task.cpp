@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@ public:
 	void init();
 
 	//the work function that shall be executed
-	TWork work;
-	void* param;
+	TWork workFunc;
+	void* workFuncParam;
 
 	HANDLE incomingWork, workDone, hThread;
 	volatile bool bIncomingWork, bWorkDone, bKill;
@@ -67,7 +67,7 @@ Task::Impl::~Impl()
 }
 
 Task::Impl::Impl()
-	: work(NULL)
+	: workFunc(NULL)
 	, bIncomingWork(false)
 	, bWorkDone(true)
 	, bKill(false)
@@ -96,10 +96,10 @@ void Task::Impl::taskProc()
 		
 		bIncomingWork = false; 
 		//execute the work
-		param = work(param);
+		workFuncParam = workFunc(workFuncParam);
 		//signal completion
-		if(!spinlock) SetEvent(workDone); 
 		bWorkDone = true;
+		if(!spinlock) SetEvent(workDone);
 	}
 }
 
@@ -134,8 +134,8 @@ void Task::Impl::shutdown()
 void Task::Impl::execute(const TWork &work, void* param) 
 {
 	//setup the work
-	this->work = work;
-	this->param = param;
+	this->workFunc = work;
+	this->workFuncParam = param;
 	bWorkDone = false;
 	//signal it to start
 	if(!spinlock) SetEvent(incomingWork); 
@@ -145,15 +145,18 @@ void Task::Impl::execute(const TWork &work, void* param)
 void* Task::Impl::finish()
 {
 	//just wait for the work to be done
-	if(spinlock) 
-		while(!bWorkDone) 
+	if(spinlock)
+	{
+		while(!bWorkDone)
 			Sleep(0);
+	}
 	else
 	{
-		if(!bWorkDone)
-			WaitForSingleObject(workDone,INFINITE); 
+		while(!bWorkDone)
+			WaitForSingleObject(workDone, INFINITE);
 	}
-	return param;
+	
+	return workFuncParam;
 }
 
 #else
@@ -174,8 +177,8 @@ public:
 
 	pthread_mutex_t mutex;
 	pthread_cond_t condWork;
-	TWork work;
-	void *param;
+	TWork workFunc;
+	void *workFuncParam;
 	void *ret;
 	bool exitThread;
 };
@@ -187,17 +190,17 @@ static void* taskProc(void *arg)
 	do {
 		pthread_mutex_lock(&ctx->mutex);
 
-		while (ctx->work == NULL && !ctx->exitThread) {
+		while (ctx->workFunc == NULL && !ctx->exitThread) {
 			pthread_cond_wait(&ctx->condWork, &ctx->mutex);
 		}
 
-		if (ctx->work != NULL) {
-			ctx->ret = ctx->work(ctx->param);
+		if (ctx->workFunc != NULL) {
+			ctx->ret = ctx->workFunc(ctx->workFuncParam);
 		} else {
 			ctx->ret = NULL;
 		}
 
-		ctx->work = NULL;
+		ctx->workFunc = NULL;
 		pthread_cond_signal(&ctx->condWork);
 
 		pthread_mutex_unlock(&ctx->mutex);
@@ -210,8 +213,8 @@ static void* taskProc(void *arg)
 Task::Impl::Impl()
 {
 	_isThreadRunning = false;
-	work = NULL;
-	param = NULL;
+	workFunc = NULL;
+	workFuncParam = NULL;
 	ret = NULL;
 	exitThread = false;
 
@@ -235,8 +238,8 @@ void Task::Impl::start(bool spinlock)
 		return;
 	}
 
-	this->work = NULL;
-	this->param = NULL;
+	this->workFunc = NULL;
+	this->workFuncParam = NULL;
 	this->ret = NULL;
 	this->exitThread = false;
 	pthread_create(&this->_thread, NULL, &taskProc, this);
@@ -254,8 +257,8 @@ void Task::Impl::execute(const TWork &work, void *param)
 		return;
 	}
 
-	this->work = work;
-	this->param = param;
+	this->workFunc = work;
+	this->workFuncParam = param;
 	pthread_cond_signal(&this->condWork);
 
 	pthread_mutex_unlock(&this->mutex);
@@ -272,7 +275,7 @@ void* Task::Impl::finish()
 		return returnValue;
 	}
 
-	while (this->work != NULL) {
+	while (this->workFunc != NULL) {
 		pthread_cond_wait(&this->condWork, &this->mutex);
 	}
 
@@ -292,7 +295,7 @@ void Task::Impl::shutdown()
 		return;
 	}
 
-	this->work = NULL;
+	this->workFunc = NULL;
 	this->exitThread = true;
 	pthread_cond_signal(&this->condWork);
 
