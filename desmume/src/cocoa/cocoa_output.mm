@@ -465,6 +465,7 @@ GPU3DInterface *core3DList[] = {
 	spinlockRender3DDepthComparisonThreshold = OS_SPINLOCK_INIT;
 	spinlockRender3DThreads = OS_SPINLOCK_INIT;
 	spinlockRender3DLineHack = OS_SPINLOCK_INIT;
+	spinlockRender3DMultisample = OS_SPINLOCK_INIT;
 	
 	delegate = nil;
 	displayMode = DS_DISPLAY_TYPE_COMBO;
@@ -505,6 +506,7 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithInteger:0] forKey:@"render3DDepthComparisonThreshold"];
 	[property setValue:[NSNumber numberWithInteger:0] forKey:@"render3DThreads"];
 	[property setValue:[NSNumber numberWithBool:YES] forKey:@"render3DLineHack"];
+	[property setValue:[NSNumber numberWithBool:NO] forKey:@"render3DMultisample"];
 	
 	return self;
 }
@@ -975,6 +977,32 @@ GPU3DInterface *core3DList[] = {
 	return state;
 }
 
+- (void) setRender3DMultisample:(BOOL)state
+{
+	OSSpinLockLock(&spinlockRender3DMultisample);
+	[property setValue:[NSNumber numberWithBool:state] forKey:@"render3DMultisample"];
+	OSSpinLockUnlock(&spinlockRender3DMultisample);
+	
+	bool cState = false;
+	if (state)
+	{
+		cState = true;
+	}
+	
+	pthread_mutex_lock(self.mutexProducer);
+	CommonSettings.GFX3D_Renderer_Multisample = cState;
+	pthread_mutex_unlock(self.mutexProducer);
+}
+
+- (BOOL) render3DMultisample
+{
+	OSSpinLockLock(&spinlockRender3DMultisample);
+	BOOL state = [(NSNumber *)[property valueForKey:@"render3DMultisample"] boolValue];
+	OSSpinLockUnlock(&spinlockRender3DMultisample);
+	
+	return state;
+}
+
 - (void) doCoreEmuFrame
 {
 	NSData *gpuData = nil;
@@ -1059,6 +1087,10 @@ GPU3DInterface *core3DList[] = {
 			
 		case MESSAGE_SET_RENDER3D_LINE_HACK:
 			[self handleSetRender3DLineHack:[messageComponents objectAtIndex:0]];
+			break;
+			
+		case MESSAGE_SET_RENDER3D_MULTISAMPLE:
+			[self handleSetRender3DMultisample:[messageComponents objectAtIndex:0]];
 			break;
 			
 		case MESSAGE_SET_VIEW_TO_BLACK:
@@ -1153,6 +1185,12 @@ GPU3DInterface *core3DList[] = {
 {
 	const BOOL theState = *(BOOL *)[stateData bytes];
 	[self setRender3DLineHack:theState];
+}
+
+- (void) handleSetRender3DMultisample:(NSData *)stateData
+{
+	const BOOL theState = *(BOOL *)[stateData bytes];
+	[self setRender3DMultisample:theState];
 }
 
 - (void) handleSetViewToBlack

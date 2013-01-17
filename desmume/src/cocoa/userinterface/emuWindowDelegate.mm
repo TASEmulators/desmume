@@ -984,6 +984,11 @@
 	[dispViewDelegate setRender3DLineHack:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
 }
 
+- (IBAction) change3DRenderMultisample:(id)sender
+{
+	[dispViewDelegate setRender3DMultisample:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
+}
+
 - (IBAction) hudDisable:(id)sender
 {
 	if ([dispViewDelegate isHudEnabled])
@@ -2075,6 +2080,7 @@
 	[[self dispViewDelegate] setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
 	[[self dispViewDelegate] setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
 	[[self dispViewDelegate] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
+	[[self dispViewDelegate] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
 }
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
@@ -2113,6 +2119,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"render3DDepthComparisonThreshold"] integerValue] forKey:@"Render3D_DepthComparisonThreshold"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"render3DThreads"] integerValue] forKey:@"Render3D_Threads"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DLineHack"] boolValue] forKey:@"Render3D_LineHack"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DMultisample"] boolValue] forKey:@"Render3D_Multisample"];
 }
 
 - (IBAction) writeDefaultsEmulationSettings:(id)sender

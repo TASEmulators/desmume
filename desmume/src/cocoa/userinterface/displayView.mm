@@ -171,6 +171,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	[bindings setValue:[NSNumber numberWithInteger:0] forKey:@"render3DDepthComparisonThreshold"];
 	[bindings setValue:[NSNumber numberWithInteger:0] forKey:@"render3DThreads"];
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"render3DLineHack"];
+	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"render3DMultisample"];
 	
     return self;
 }
@@ -469,6 +470,12 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 {
 	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DLineHack"];
 	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_LINE_HACK boolValue:state];
+}
+
+- (void) setRender3DMultisample:(BOOL)state
+{
+	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DMultisample"];
+	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_MULTISAMPLE boolValue:state];
 }
 
 - (void) setViewToBlack

@@ -159,6 +159,7 @@ typedef struct
 	OSSpinLock spinlockRender3DDepthComparisonThreshold;
 	OSSpinLock spinlockRender3DThreads;
 	OSSpinLock spinlockRender3DLineHack;
+	OSSpinLock spinlockRender3DMultisample;
 }
 
 @property (assign) UInt32 gpuStateFlags;
@@ -183,6 +184,8 @@ typedef struct
 - (NSUInteger) render3DThreads;
 - (void) setRender3DLineHack:(BOOL)state;
 - (BOOL) render3DLineHack;
+- (void) setRender3DMultisample:(BOOL)state;
+- (BOOL) render3DMultisample;
 
 - (void) handleChangeGpuStateFlags:(NSData *)flagsData;
 - (void) handleChangeDisplayMode:(NSData *)displayModeData;
@@ -194,6 +197,7 @@ typedef struct
 - (void) handleSetRender3DDepthComparisonThreshold:(NSData *)thresholdData;
 - (void) handleSetRender3DThreads:(NSData *)numberThreadsData;
 - (void) handleSetRender3DLineHack:(NSData *)stateData;
+- (void) handleSetRender3DMultisample:(NSData *)stateData;
 - (void) handleSetViewToBlack;
 - (void) handleSetViewToWhite;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;

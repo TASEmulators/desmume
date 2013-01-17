@@ -95,6 +95,7 @@
 - (void) setRender3DDepthComparisonThreshold:(NSUInteger)threshold;
 - (void) setRender3DThreads:(NSUInteger)numberThreads;
 - (void) setRender3DLineHack:(BOOL)state;
+- (void) setRender3DMultisample:(BOOL)state;
 - (void) setViewToBlack;
 - (void) setViewToWhite;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
