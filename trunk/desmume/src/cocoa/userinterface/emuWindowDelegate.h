@@ -200,6 +200,7 @@
 - (IBAction) change3DRenderDepthComparisonThreshold:(id)sender;
 - (IBAction) change3DRenderThreads:(id)sender;
 - (IBAction) change3DRenderLineHack:(id)sender;
+- (IBAction) change3DRenderMultisample:(id)sender;
 
 - (void) setShowStatusBar:(BOOL)showStatusBar;
 
