@@ -28,7 +28,8 @@
 #include "OGLRender.h"
 #include "debug.h"
 
-#define VERT_INDEX_BUFFER_SIZE 8192
+#define OGLRENDER_MAX_MULTISAMPLES	16
+#define VERT_INDEX_BUFFER_SIZE		8192
 
 bool (*oglrender_init)() = NULL;
 bool (*oglrender_beginOpenGL)() = NULL;
@@ -126,6 +127,7 @@ static GLfloat polyAlpha = 1.0f;
 static bool isVBOSupported = false;
 static bool isPBOSupported = false;
 static bool isFBOSupported = false;
+static bool isMultisampledFBOSupported = false;
 static bool isShaderSupported = false;
 static bool isVAOSupported = false;
 
@@ -140,6 +142,12 @@ static u32 *__restrict pboRenderBuffer[2] = {NULL, NULL};
 static GLuint texClearImageColorID;
 static GLuint texClearImageDepthStencilID;
 static GLuint fboClearImageID;
+
+// Multisampled FBO
+static GLuint rboMultisampleColorID;
+static GLuint rboMultisampleDepthStencilID;
+static GLuint fboMultisampleRenderID;
+static GLuint selectedRenderingFBO = 0;
 
 // Shader states
 static GLuint vertexShaderID;
@@ -324,6 +332,15 @@ static void* execReadPixelsTask(void *arg)
 	}
 	else
 	{
+		// Downsample the multisampled FBO to the main framebuffer
+		if (selectedRenderingFBO == fboMultisampleRenderID)
+		{
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, selectedRenderingFBO);
+			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+			glBlitFramebufferEXT(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		}
+		
 		glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, pixBuffer);
 	}
 	
@@ -383,99 +400,143 @@ static void _xglDisable(GLenum cap) {
 	CTASSERT((cap-0x0B00)<0x100); \
 	_xglDisable(cap); }
 
-#define NOSHADERS(s)					{ isShaderSupported = false; INFO("%s\nOpenGL: Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n", s); return; }
-
-#define SHADER_COMPCHECK(s, t)				{ \
-	GLint status = GL_TRUE; \
-	glGetShaderiv(s, GL_COMPILE_STATUS, &status); \
-	if(status != GL_TRUE) \
-	{ \
-		GLint logSize; \
-		GLchar *log; \
-		glGetShaderiv(s, GL_INFO_LOG_LENGTH, &logSize); \
-		log = new GLchar[logSize]; \
-		glGetShaderInfoLog(s, logSize, &logSize, log); \
-		INFO("OpenGL: SEVERE - FAILED TO COMPILE SHADER : %s\n", log); \
-		delete[] log; \
-		if(s)glDeleteShader(s); \
-		NOSHADERS("OpenGL: Failed to compile the "t" shader."); \
-	} \
+static bool OGLValidateShaderCompile(GLuint theShader)
+{
+	bool isCompileValid = false;
+	GLint status = GL_FALSE;
+	
+	glGetShaderiv(theShader, GL_COMPILE_STATUS, &status);
+	if(status == GL_TRUE)
+	{
+		isCompileValid = true;
+	}
+	else
+	{
+		GLint logSize;
+		GLchar *log = NULL;
+		
+		glGetShaderiv(theShader, GL_INFO_LOG_LENGTH, &logSize);
+		log = new GLchar[logSize];
+		glGetShaderInfoLog(theShader, logSize, &logSize, log);
+		
+		INFO("OpenGL: SEVERE - FAILED TO COMPILE SHADER : %s\n", log);
+		delete[] log;
+	}
+	
+	return isCompileValid;
 }
 
-#define PROGRAM_COMPCHECK(p, s1, s2)	{ \
-	GLint status = GL_TRUE; \
-	glGetProgramiv(p, GL_LINK_STATUS, &status); \
-	if(status != GL_TRUE) \
-	{ \
-		GLint logSize; \
-		GLchar *log; \
-		glGetProgramiv(p, GL_INFO_LOG_LENGTH, &logSize); \
-		log = new GLchar[logSize]; \
-		glGetProgramInfoLog(p, logSize, &logSize, log); \
-		INFO("OpenGL: SEVERE - FAILED TO LINK SHADER PROGRAM : %s\n", log); \
-		delete[] log; \
-		if(s1)glDeleteShader(s1); \
-		if(s2)glDeleteShader(s2); \
-		NOSHADERS("OpenGL: Failed to link the shader program."); \
-	} \
+static bool OGLValidateShaderProgramLink(GLuint theProgram)
+{
+	bool isLinkValid = false;
+	GLint status = GL_FALSE;
+	
+	glGetProgramiv(theProgram, GL_LINK_STATUS, &status);
+	if(status == GL_TRUE)
+	{
+		isLinkValid = true;
+	}
+	else
+	{
+		GLint logSize;
+		GLchar *log = NULL;
+		
+		glGetProgramiv(theProgram, GL_INFO_LOG_LENGTH, &logSize);
+		log = new GLchar[logSize];
+		glGetProgramInfoLog(theProgram, logSize, &logSize, log);
+		
+		INFO("OpenGL: SEVERE - FAILED TO LINK SHADER PROGRAM : %s\n", log);
+		delete[] log;
+	}
+	
+	return isLinkValid;
 }
 
 /* Shaders init */
 
-static void OGLInitShaders(const char *oglExtensionString)
+static bool OGLInitShaders(const char *oglExtensionString)
 {
-	isShaderSupported = true;
-
-#ifdef HAVE_LIBOSMESA
-	NOSHADERS("OpenGL: Shaders aren't supported by OSMesa.");
-#endif
-
-	/* This check is just plain wrong. */
-	/* It will always pass if you've OpenGL 2.0 or later, */
-	/* even if your GFX card doesn't support shaders. */
-/*	if (glCreateShader == NULL ||  //use ==NULL instead of !func to avoid always true warnings for some systems
-		glShaderSource == NULL ||
-		glCompileShader == NULL ||
-		glCreateProgram == NULL ||
-		glAttachShader == NULL ||
-		glLinkProgram == NULL ||
-		glUseProgram == NULL ||
-		glGetShaderInfoLog == NULL)
-		NOSHADERS("Shaders aren't supported by your system.");*/
-
 #if !defined(GL_ARB_shader_objects)		|| \
 	!defined(GL_ARB_vertex_shader)		|| \
 	!defined(GL_ARB_fragment_shader)	|| \
 	!defined(GL_ARB_vertex_program)
 	
-	NOSHADERS("OpenGL: Shaders are unsupported.");
+	bool isFeatureSupported = false;
 #else
-	if ((strstr(oglExtensionString, "GL_ARB_shader_objects") == NULL) ||
-		(strstr(oglExtensionString, "GL_ARB_vertex_shader") == NULL) ||
-		(strstr(oglExtensionString, "GL_ARB_fragment_shader") == NULL) ||
-		(strstr(oglExtensionString, "GL_ARB_vertex_program") == NULL) )
-		NOSHADERS("OpenGL: Shaders are unsupported.");
+	bool isFeatureSupported =  (strstr(oglExtensionString, "GL_ARB_shader_objects") == NULL ||
+								strstr(oglExtensionString, "GL_ARB_vertex_shader") == NULL ||
+								strstr(oglExtensionString, "GL_ARB_fragment_shader") == NULL ||
+								strstr(oglExtensionString, "GL_ARB_vertex_program") == NULL) ? false : true;
 #endif
+	
+#ifdef HAVE_LIBOSMESA
+	isFeatureSupported = false;
+	INFO("%s\nOpenGL: Shaders aren't supported by OSMesa.\n");
+	
+#endif
+	
+	if (!isFeatureSupported)
+	{
+		INFO("OpenGL: Shaders are unsupported. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		return isFeatureSupported;
+	}
 
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	if(!vertexShaderID)
-		NOSHADERS("OpenGL: Failed to create the vertex shader.");
+	{
+		INFO("%s\nOpenGL: Failed to create the vertex shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
 
 	glShaderSource(vertexShaderID, 1, (const GLchar**)&vertexShader, NULL);
 	glCompileShader(vertexShaderID);
-	SHADER_COMPCHECK(vertexShaderID, "vertex");
+	if (!OGLValidateShaderCompile(vertexShaderID))
+	{
+		INFO("%s\nOpenGL: Failed to compile the vertex shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		glDeleteShader(vertexShaderID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
 
 	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!fragmentShaderID)
-		NOSHADERS("OpenGL: Failed to create the fragment shader.");
+	{
+		INFO("%s\nOpenGL: Failed to create the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		glDeleteShader(vertexShaderID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
 
 	glShaderSource(fragmentShaderID, 1, (const GLchar**)&fragmentShader, NULL);
 	glCompileShader(fragmentShaderID);
-	SHADER_COMPCHECK(fragmentShaderID, "fragment");
+	if (!OGLValidateShaderCompile(fragmentShaderID))
+	{
+		INFO("%s\nOpenGL: Failed to compile the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
 
 	shaderProgram = glCreateProgram();
 	if(!shaderProgram)
-		NOSHADERS("OpenGL: Failed to create the shader program.");
+	{
+		INFO("%s\nOpenGL: Failed to create the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
 
 	glAttachShader(shaderProgram, vertexShaderID);
 	glAttachShader(shaderProgram, fragmentShaderID);
@@ -485,12 +546,169 @@ static void OGLInitShaders(const char *oglExtensionString)
 	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_Color, "inColor");
 	
 	glLinkProgram(shaderProgram);
-	PROGRAM_COMPCHECK(shaderProgram, vertexShaderID, fragmentShaderID);
-
+	if (!OGLValidateShaderProgramLink(shaderProgram))
+	{
+		INFO("OpenGL: Failed to link the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		glDetachShader(shaderProgram, vertexShaderID);
+		glDetachShader(shaderProgram, fragmentShaderID);
+		glDeleteProgram(shaderProgram);
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
+	
 	glValidateProgram(shaderProgram);
 	glUseProgram(shaderProgram);
 
 	INFO("OpenGL: Successfully created shaders.\n");
+	
+	return isFeatureSupported;
+}
+
+static bool OGLInitFBOs(const char *oglExtensionString)
+{
+	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
+#if	!defined(GL_EXT_framebuffer_object)		|| \
+	!defined(GL_EXT_framebuffer_blit)		|| \
+	!defined(GL_EXT_packed_depth_stencil)
+	
+	bool isFeatureSupported = false;
+#else
+	bool isFeatureSupported = (strstr(oglExtensionString, "GL_EXT_framebuffer_object") == NULL ||
+							   strstr(oglExtensionString, "GL_EXT_framebuffer_blit") == NULL ||
+							   strstr(oglExtensionString, "GL_EXT_packed_depth_stencil") == NULL) ? false : true;
+#endif
+	if (!isFeatureSupported)
+	{
+		INFO("OpenGL: FBOs are unsupported. Some emulation features will be disabled.\n");
+		return isFeatureSupported;
+	}
+	
+	// Set up FBO render targets
+	glGenTextures(1, &texClearImageColorID);
+	glGenTextures(1, &texClearImageDepthStencilID);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
+	
+	glBindTexture(GL_TEXTURE_2D, texClearImageColorID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glBindTexture(GL_TEXTURE_2D, texClearImageDepthStencilID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, 256, 192, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
+	
+	glActiveTexture(GL_TEXTURE0);
+	
+	// Set up FBOs
+	glGenFramebuffersEXT(1, &fboClearImageID);
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboClearImageID);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, texClearImageColorID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, texClearImageDepthStencilID, 0);
+	
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
+		
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glDeleteFramebuffersEXT(1, &fboClearImageID);
+		glDeleteTextures(1, &texClearImageColorID);
+		glDeleteTextures(1, &texClearImageDepthStencilID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	INFO("OpenGL: Successfully created FBOs.\n");
+	
+	return isFeatureSupported;
+}
+
+static bool OGLInitMultisampledFBO(const char *oglExtensionString)
+{
+	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
+#if	!defined(GL_EXT_framebuffer_object)			|| \
+	!defined(GL_EXT_framebuffer_multisample)	|| \
+	!defined(GL_EXT_framebuffer_blit)			|| \
+	!defined(GL_EXT_packed_depth_stencil)
+	
+	bool isFeatureSupported = false;
+#else
+	bool isFeatureSupported = (strstr(oglExtensionString, "GL_EXT_framebuffer_object") == NULL ||
+							   strstr(oglExtensionString, "GL_EXT_framebuffer_multisample") == NULL ||
+							   strstr(oglExtensionString, "GL_EXT_framebuffer_blit") == NULL ||
+							   strstr(oglExtensionString, "GL_EXT_packed_depth_stencil") == NULL) ? false : true;
+#endif
+	if (!isFeatureSupported)
+	{
+		INFO("OpenGL: Multisampled FBOs are unsupported. Multisample antialiasing will be disabled.\n");
+		return isFeatureSupported;
+	}
+	
+	// Check the maximum number of samples that the GPU supports and use that.
+	// Since our target resolution is only 256x192 pixels, using the most samples
+	// possible is the best thing to do.
+	GLint maxSamples = 0;
+	glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
+	
+	if (maxSamples < 2)
+	{
+		INFO("OpenGL: GPU does not support at least 2x multisampled FBOs. Multisample antialiasing will be disabled.\n");
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
+	else if (maxSamples > OGLRENDER_MAX_MULTISAMPLES)
+	{
+		maxSamples = OGLRENDER_MAX_MULTISAMPLES;
+	}
+
+	// Set up FBO render targets
+	glGenRenderbuffersEXT(1, &rboMultisampleColorID);
+	glGenRenderbuffersEXT(1, &rboMultisampleDepthStencilID);
+	
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboMultisampleColorID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, 256, 192);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboMultisampleDepthStencilID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_DEPTH24_STENCIL8_EXT, 256, 192);
+	
+	// Set up multisampled rendering FBO
+	glGenFramebuffersEXT(1, &fboMultisampleRenderID);
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboMultisampleRenderID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, rboMultisampleColorID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboMultisampleDepthStencilID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboMultisampleDepthStencilID);
+	
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		INFO("OpenGL: Failed to create multisampled FBO. Multisample antialiasing will be disabled.\n");
+		
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glDeleteFramebuffersEXT(1, &fboMultisampleRenderID);
+		glDeleteRenderbuffersEXT(1, &rboMultisampleColorID);
+		glDeleteRenderbuffersEXT(1, &rboMultisampleDepthStencilID);
+		
+		isFeatureSupported = false;
+		return isFeatureSupported;
+	}
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	INFO("OpenGL: Successfully created multisampled FBO.\n");
+	
+	return isFeatureSupported;
 }
 
 //=================================================
@@ -808,7 +1026,7 @@ static char OGLInit(void)
 	}
 	
 	// Shader Setup
-	OGLInitShaders(oglExtensionString);
+	isShaderSupported = OGLInitShaders(oglExtensionString);
 	if(isShaderSupported)
 	{
 		// The toon table is a special 1D texture where each pixel corresponds
@@ -887,69 +1105,10 @@ static char OGLInit(void)
 	}
 
 	// FBO Setup
-	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
-#if	!defined(GL_EXT_framebuffer_object)		|| \
-	!defined(GL_EXT_framebuffer_blit)		|| \
-	!defined(GL_EXT_packed_depth_stencil)
+	isFBOSupported = OGLInitFBOs(oglExtensionString);
 	
-	isFBOSupported = false;
-#else
-	isFBOSupported = (strstr(oglExtensionString, "GL_EXT_framebuffer_object") == NULL ||
-					  strstr(oglExtensionString, "GL_EXT_framebuffer_blit") == NULL ||
-					  strstr(oglExtensionString, "GL_EXT_packed_depth_stencil") == NULL) ? false : true;
-#endif
-	if (isFBOSupported)
-	{
-		// Set up FBO render targets
-		glGenTextures(1, &texClearImageColorID);
-		glGenTextures(1, &texClearImageDepthStencilID);
-		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
-		
-		glBindTexture(GL_TEXTURE_2D, texClearImageColorID);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		
-		glBindTexture(GL_TEXTURE_2D, texClearImageDepthStencilID);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, 256, 192, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
-		
-		glActiveTexture(GL_TEXTURE0);
-		
-		// Set up FBOs
-		glGenFramebuffersEXT(1, &fboClearImageID);
-		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboClearImageID);
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, texClearImageColorID, 0);
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, texClearImageDepthStencilID, 0);
-		
-		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) == GL_FRAMEBUFFER_COMPLETE_EXT)
-		{
-			INFO("OpenGL: Successfully created FBOs.\n");
-		}
-		else
-		{
-			INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
-			isFBOSupported = false;
-			
-			glDeleteFramebuffersEXT(1, &fboClearImageID);
-			glDeleteTextures(1, &texClearImageColorID);
-			glDeleteTextures(1, &texClearImageDepthStencilID);
-		}
-		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	}
-	else
-	{
-		INFO("OpenGL: FBOs are unsupported. Some emulation features will be disabled.\n");
-	}
+	// Multisampled FBO Setup
+	isMultisampledFBOSupported = OGLInitMultisampledFBO(oglExtensionString);
 
 	ENDGL();
 	
@@ -1060,6 +1219,17 @@ static void OGLClose()
 		glDeleteTextures(1, &texClearImageDepthStencilID);
 		
 		isFBOSupported = false;
+	}
+	
+	if (isMultisampledFBOSupported)
+	{
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glDeleteFramebuffersEXT(1, &fboMultisampleRenderID);
+		glDeleteRenderbuffersEXT(1, &rboMultisampleColorID);
+		glDeleteRenderbuffersEXT(1, &rboMultisampleDepthStencilID);
+		
+		selectedRenderingFBO = 0;
+		isMultisampledFBOSupported = false;
 	}
 	
 	//kill the tex cache to free all the texture ids
@@ -1357,6 +1527,17 @@ static void Control()
 	{
 		glDisable(GL_BLEND);
 	}
+	
+	if (isMultisampledFBOSupported && CommonSettings.GFX3D_Renderer_Multisample)
+	{
+		selectedRenderingFBO = fboMultisampleRenderID;
+	}
+	else
+	{
+		selectedRenderingFBO = 0;
+	}
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, selectedRenderingFBO);
 }
 
 static void GL_ReadFramebuffer()
@@ -1374,6 +1555,15 @@ static void GL_ReadFramebuffer()
 	if (isPBOSupported)
 	{
 		if(!BEGINGL()) return;
+		
+		// Downsample the multisampled FBO to the main framebuffer
+		if (selectedRenderingFBO == fboMultisampleRenderID)
+		{
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, selectedRenderingFBO);
+			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+			glBlitFramebufferEXT(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		}
 		
 		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
 		glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, 0);
@@ -1476,7 +1666,7 @@ static void HandleClearImage()
 	// Copy the clear image to the main framebuffer
 	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, fboClearImageID);
 	glBlitFramebufferEXT(0, 0, pixelsPerLine, lineCount, 0, 0, pixelsPerLine, lineCount, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, selectedRenderingFBO);
 }
 
 static void OGLRender()
