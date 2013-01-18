@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -180,6 +180,41 @@
 - (NSSize) destSize
 {
 	return NSMakeSize((CGFloat)vf->GetDstWidth(), (CGFloat)vf->GetDstHeight());
+}
+
+- (VideoFilterParamType) filterParameterType:(VideoFilterParamID)paramID
+{
+	return vf->GetFilterParameterType(paramID);
+}
+
+- (int) filterParameteri:(VideoFilterParamID)paramID
+{
+	return vf->GetFilterParameteri(paramID);
+}
+
+- (unsigned int) filterParameterui:(VideoFilterParamID)paramID
+{
+	return vf->GetFilterParameterui(paramID);
+}
+
+- (float) filterParameterf:(VideoFilterParamID)paramID
+{
+	return vf->GetFilterParameterf(paramID);
+}
+
+- (void) setFilterParameter:(VideoFilterParamID)paramID intValue:(int)value
+{
+	vf->SetFilterParameteri(paramID, value);
+}
+
+- (void) setFilterParameter:(VideoFilterParamID)paramID uintValue:(unsigned int)value
+{
+	vf->SetFilterParameterui(paramID, value);
+}
+
+- (void) setFilterParameter:(VideoFilterParamID)paramID floatValue:(float)value
+{
+	vf->SetFilterParameterf(paramID, value);
 }
 
 + (NSString *) typeStringByID:(VideoFilterTypeID)typeID

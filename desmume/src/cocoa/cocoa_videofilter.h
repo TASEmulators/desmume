@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -48,6 +48,13 @@
 - (UInt32 *) dstBufferPtr;
 - (NSSize) srcSize;
 - (NSSize) destSize;
+- (VideoFilterParamType) filterParameterType:(VideoFilterParamID)paramID;
+- (int) filterParameteri:(VideoFilterParamID)paramID;
+- (unsigned int) filterParameterui:(VideoFilterParamID)paramID;
+- (float) filterParameterf:(VideoFilterParamID)paramID;
+- (void) setFilterParameter:(VideoFilterParamID)paramID intValue:(int)value;
+- (void) setFilterParameter:(VideoFilterParamID)paramID uintValue:(unsigned int)value;
+- (void) setFilterParameter:(VideoFilterParamID)paramID floatValue:(float)value;
 + (NSString *) typeStringByID:(VideoFilterTypeID)typeID;
 
 @end

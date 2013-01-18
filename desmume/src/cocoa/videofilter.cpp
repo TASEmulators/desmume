@@ -25,6 +25,20 @@ int scanline_filter_b = 2;
 int scanline_filter_c = 2;
 int scanline_filter_d = 4;
 
+// 
+typedef struct
+{
+	void *index;
+	VideoFilterParamType type;
+} _VideoFilterParamAttributes;
+
+static const _VideoFilterParamAttributes _VideoFilterParamAttributesList[] = {
+	{&scanline_filter_a,	VF_INT},
+	{&scanline_filter_b,	VF_INT},
+	{&scanline_filter_c,	VF_INT},
+	{&scanline_filter_d,	VF_INT},
+};
+
 /********************************************************************************************
 	CLASS CONSTRUCTORS
  ********************************************************************************************/
@@ -80,6 +94,7 @@ VideoFilter::~VideoFilter()
 	_vfThread.clear();
 	
 	// Destroy everything else
+	pthread_mutex_lock(&_mutexSrc);
 	pthread_mutex_lock(&this->_mutexDst);
 	
 	while (this->_isFilterRunning)
@@ -91,8 +106,6 @@ VideoFilter::~VideoFilter()
 	_vfDstSurface.Surface = NULL;
 	
 	pthread_mutex_unlock(&_mutexDst);
-	
-	pthread_mutex_lock(&_mutexSrc);
 	
 	free(_vfSrcSurfacePixBuffer);
 	_vfSrcSurfacePixBuffer = NULL;
@@ -284,12 +297,11 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
  ********************************************************************************************/
 uint32_t* VideoFilter::RunFilter()
 {
+	pthread_mutex_lock(&this->_mutexSrc);
 	pthread_mutex_lock(&this->_mutexDst);
 	
 	this->_isFilterRunning = true;
 	uint32_t *destBufPtr = (uint32_t *)this->_vfDstSurface.Surface;
-	
-	pthread_mutex_lock(&this->_mutexSrc);
 	
 	if (this->_vfFunc == NULL)
 	{
@@ -317,11 +329,11 @@ uint32_t* VideoFilter::RunFilter()
 		}
 	}
 	
-	pthread_mutex_unlock(&this->_mutexSrc);
-	
 	this->_isFilterRunning = false;
 	pthread_cond_signal(&this->_condRunning);
+	
 	pthread_mutex_unlock(&this->_mutexDst);
+	pthread_mutex_unlock(&this->_mutexSrc);
 	
 	return destBufPtr;
 }
@@ -503,6 +515,188 @@ unsigned int VideoFilter::GetDstHeight()
 	pthread_mutex_unlock(&this->_mutexDst);
 	
 	return height;
+}
+
+VideoFilterParamType VideoFilter::GetFilterParameterType(VideoFilterParamID paramID)
+{
+	return _VideoFilterParamAttributesList[paramID].type;
+}
+
+int VideoFilter::GetFilterParameteri(VideoFilterParamID paramID)
+{
+	int value = 0;
+	
+	pthread_mutex_lock(&this->_mutexDst);
+	
+	switch (_VideoFilterParamAttributesList[paramID].type)
+	{
+		case VF_INT:
+			value = (int)(*((int *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		case VF_UINT:
+			value = (int)(*((unsigned int *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		case VF_FLOAT:
+			value = (int)(*((float *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		default:
+			break;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDst);
+	
+	return value;
+}
+
+unsigned int VideoFilter::GetFilterParameterui(VideoFilterParamID paramID)
+{
+	unsigned int value = 0;
+	
+	pthread_mutex_lock(&this->_mutexDst);
+	
+	switch (_VideoFilterParamAttributesList[paramID].type)
+	{
+		case VF_INT:
+			value = (unsigned int)(*((int *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		case VF_UINT:
+			value = (unsigned int)(*((unsigned int *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		case VF_FLOAT:
+			value = (unsigned int)(*((float *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		default:
+			break;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDst);
+	
+	return value;
+}
+
+float VideoFilter::GetFilterParameterf(VideoFilterParamID paramID)
+{
+	float value = 0.0f;
+	
+	pthread_mutex_lock(&this->_mutexDst);
+	
+	switch (_VideoFilterParamAttributesList[paramID].type)
+	{
+		case VF_INT:
+			value = (float)(*((int *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		case VF_UINT:
+			value = (float)(*((unsigned int *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		case VF_FLOAT:
+			value = (float)(*((float *)_VideoFilterParamAttributesList[paramID].index));
+			break;
+			
+		default:
+			break;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDst);
+	
+	return value;
+}
+
+void VideoFilter::SetFilterParameteri(VideoFilterParamID paramID, int value)
+{
+	if (paramID >= VideoFilterParamIDCount)
+	{
+		return;
+	}
+	
+	pthread_mutex_lock(&this->_mutexDst);
+	
+	switch (_VideoFilterParamAttributesList[paramID].type)
+	{
+		case VF_INT:
+			*((int *)_VideoFilterParamAttributesList[paramID].index) = (int)value;
+			break;
+			
+		case VF_UINT:
+			*((unsigned int *)_VideoFilterParamAttributesList[paramID].index) = (unsigned int)value;
+			break;
+			
+		case VF_FLOAT:
+			*((float *)_VideoFilterParamAttributesList[paramID].index) = (float)value;
+			break;
+			
+		default:
+			break;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDst);
+}
+
+void VideoFilter::SetFilterParameterui(VideoFilterParamID paramID, unsigned int value)
+{
+	if (paramID >= VideoFilterParamIDCount)
+	{
+		return;
+	}
+	
+	pthread_mutex_lock(&this->_mutexDst);
+	
+	switch (_VideoFilterParamAttributesList[paramID].type)
+	{
+		case VF_INT:
+			*((int *)_VideoFilterParamAttributesList[paramID].index) = (int)value;
+			break;
+			
+		case VF_UINT:
+			*((unsigned int *)_VideoFilterParamAttributesList[paramID].index) = (unsigned int)value;
+			break;
+			
+		case VF_FLOAT:
+			*((float *)_VideoFilterParamAttributesList[paramID].index) = (float)value;
+			break;
+			
+		default:
+			break;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDst);
+}
+
+void VideoFilter::SetFilterParameterf(VideoFilterParamID paramID, float value)
+{
+	if (paramID >= VideoFilterParamIDCount)
+	{
+		return;
+	}
+	
+	pthread_mutex_lock(&this->_mutexDst);
+	
+	switch (_VideoFilterParamAttributesList[paramID].type)
+	{
+		case VF_INT:
+			*((int *)_VideoFilterParamAttributesList[paramID].index) = (int)value;
+			break;
+			
+		case VF_UINT:
+			*((unsigned int *)_VideoFilterParamAttributesList[paramID].index) = (unsigned int)value;
+			break;
+			
+		case VF_FLOAT:
+			*((float *)_VideoFilterParamAttributesList[paramID].index) = (float)value;
+			break;
+			
+		default:
+			break;
+	}
+	
+	pthread_mutex_unlock(&this->_mutexDst);
 }
 
 // Task function for multithreaded filtering

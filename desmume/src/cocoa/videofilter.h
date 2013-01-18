@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,10 @@
 #include "../utils/task.h"
 
 
+#define VIDEOFILTERTYPE_UNKNOWN_STRING "Unknown"
+
+typedef void (*VideoFilterFunc)(SSurface Src, SSurface Dst);
+
 // VIDEO FILTER TYPES
 enum VideoFilterTypeID
 {
@@ -53,10 +57,6 @@ enum VideoFilterTypeID
 	
 	VideoFilterTypeIDCount // Make sure this one is always last
 };
-
-#define VIDEOFILTERTYPE_UNKNOWN_STRING "Unknown"
-
-typedef void (*VideoFilterFunc)(SSurface Src, SSurface Dst);
 
 typedef struct
 {
@@ -88,6 +88,26 @@ const VideoFilterAttributes VideoFilterAttributesList[] = {
 	{VideoFilterTypeID_EPX1_5X,			"EPX 1.5x",			&RenderEPX_1Point5x,			3,	2},
 	{VideoFilterTypeID_EPXPlus1_5X,		"EPX+ 1.5x",		&RenderEPXPlus_1Point5x,		3,	2},
 	{VideoFilterTypeID_HQ4XS,			"HQ4xS",			&RenderHQ4XS,					4,	1} };
+
+// VIDEO FILTER PARAMETER DATA TYPES
+enum VideoFilterParamType
+{
+	VF_INT = 0,
+	VF_UINT,
+	VF_FLOAT
+};
+
+// VIDEO FILTER PARAMETERS
+// These tokens are used with the (Get/Set)FilterParameter family of methods.
+enum VideoFilterParamID
+{
+	VF_PARAM_SCANLINE_A = 0,	// Must always start at 0
+	VF_PARAM_SCANLINE_B,
+	VF_PARAM_SCANLINE_C,
+	VF_PARAM_SCANLINE_D,
+	
+	VideoFilterParamIDCount		// Make sure this one is always last
+};
 
 // Parameters struct for IPC
 typedef struct
@@ -168,6 +188,13 @@ public:
 	unsigned int GetSrcHeight();
 	unsigned int GetDstWidth();
 	unsigned int GetDstHeight();
+	VideoFilterParamType GetFilterParameterType(VideoFilterParamID paramID);
+	int GetFilterParameteri(VideoFilterParamID paramID);
+	unsigned int GetFilterParameterui(VideoFilterParamID paramID);
+	float GetFilterParameterf(VideoFilterParamID paramID);
+	void SetFilterParameteri(VideoFilterParamID paramID, int value);
+	void SetFilterParameterui(VideoFilterParamID paramID, unsigned int value);
+	void SetFilterParameterf(VideoFilterParamID paramID, float value);
 };
 
 static void* RunVideoFilterTask(void *arg);
