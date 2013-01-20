@@ -6143,7 +6143,14 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 				cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
 				for(i = 0, d = alldevs; d != NULL; i++, d = d->next)
 				{
-					ComboBox_AddString(cur, d->description);
+					char buf[256] = {0};
+					// on x64 description is empty
+					if (d->description[0] == 0)
+						strcpy(buf, d->name);
+					else
+						strcpy(buf, d->description);
+
+					ComboBox_AddString(cur, buf);
 				}
 				ComboBox_SetCurSel(cur, CommonSettings.wifi.infraBridgeAdapter);
 			}

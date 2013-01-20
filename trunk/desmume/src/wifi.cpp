@@ -2046,7 +2046,14 @@ static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index)
 	pcap_if_t *curr = alldevs;
 
 	for(int i = 0; i < index; i++)
+	{
+		if (curr->next == NULL) 
+		{
+			CommonSettings.wifi.infraBridgeAdapter = i;
+			break;
+		}
 		curr = curr->next;
+	}
 
 	WIFI_LOG(2, "SoftAP: using %s as device.\n", curr->PCAP_DEVICE_NAME);
 
@@ -2064,7 +2071,7 @@ bool SoftAP_Init()
 	
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *alldevs;
-	int ret;
+	int ret = 0;
 
 	ret = driver->PCAP_findalldevs(&alldevs, errbuf);
 	if (ret == -1 || alldevs == NULL)
