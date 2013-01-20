@@ -23,44 +23,37 @@
 //(re: new super mario brothers renders the stormclouds at the beginning)
 //!!! fixed on rev.3996
 
+#include "OGLRender.h"
+
+#include <stdlib.h>
+#include <string.h>
 #include <queue>
 
-#include "OGLRender.h"
+#include "types.h"
 #include "debug.h"
+#include "gfx3d.h"
+#include "MMU.h"
+#include "NDSSystem.h"
+#include "shaders.h"
+#include "texcache.h"
+#include "utils/task.h"
 
-#define OGLRENDER_MAX_MULTISAMPLES	16
-#define VERT_INDEX_BUFFER_SIZE		8192
-
-bool (*oglrender_init)() = NULL;
-bool (*oglrender_beginOpenGL)() = NULL;
-void (*oglrender_endOpenGL)() = NULL;
-
-static bool BEGINGL() {
-	if(oglrender_beginOpenGL) 
-		return oglrender_beginOpenGL();
-	else return true;
-}
-
-static void ENDGL() {
-	if(oglrender_endOpenGL) 
-		oglrender_endOpenGL();
-}
 
 #if defined(_WIN32) && !defined(WXPORT)
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
 	#include <GL/glext.h>
+	
+	#define OGLEXT(procPtr, func)		procPtr func = NULL;
+	#define INITOGLEXT(procPtr, func)	func = (procPtr)wglGetProcAddress(#func);
 #elif defined(__APPLE__)
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 	
-	// Overrides for GL_EXT_framebuffer_blit (not available in Mac OS X v10.4)
-	#if !defined(GL_ARB_framebuffer_object) && !defined(GL_EXT_framebuffer_blit)
-		#define GL_READ_FRAMEBUFFER_EXT GL_FRAMEBUFFER_EXT
-		#define GL_DRAW_FRAMEBUFFER_EXT GL_FRAMEBUFFER_EXT
-		#define glBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
-	#endif
+	// Ignore dynamic linking on Apple OS
+	#define OGLEXT(procPtr, func)
+	#define INITOGLEXT(procPtr, func)
 	
 	// We're not exactly committing to OpenGL 3.2 Core Profile just yet, so redefine APPLE
 	// extensions as a temporary measure.
@@ -72,35 +65,74 @@ static void ENDGL() {
 #else
 	#include <GL/gl.h>
 	#include <GL/glext.h>
+	#include <GL/glx.h>
+	
 	/* This is a workaround needed to compile against nvidia GL headers */
 	#ifndef GL_ALPHA_BLEND_EQUATION_ATI
 		#undef GL_VERSION_1_3
 	#endif
+	
+	#define OGLEXT(procPtr, func)		procPtr func = NULL;
+	#define INITOGLEXT(procPtr, func)	func = (procPtr)glXGetProcAddress((const GLubyte *) #func);
+#endif
+
+// Define tokens that exist as Core in OpenGL v3.0 but as extensions in v2.1
+#if !defined(GL_VERSION_3_0)
+	#if !defined(GL_ARB_framebuffer_object)
+		#if defined(GL_EXT_framebuffer_object)
+			#define GL_FRAMEBUFFER				GL_FRAMEBUFFER_EXT
+			#define GL_RENDERBUFFER				GL_RENDERBUFFER_EXT
+			#define GL_FRAMEBUFFER_COMPLETE		GL_FRAMEBUFFER_COMPLETE_EXT
+			#define GL_COLOR_ATTACHMENT0		GL_COLOR_ATTACHMENT0_EXT
+			#define GL_DEPTH_ATTACHMENT			GL_DEPTH_ATTACHMENT_EXT
+			#define GL_STENCIL_ATTACHMENT		GL_STENCIL_ATTACHMENT_EXT
+		#endif
+
+		#if defined(GL_EXT_packed_depth_stencil)
+			#define GL_DEPTH24_STENCIL8			GL_DEPTH24_STENCIL8_EXT
+			#define GL_DEPTH_STENCIL			GL_DEPTH_STENCIL_EXT
+			#define GL_UNSIGNED_INT_24_8		GL_UNSIGNED_INT_24_8_EXT
+		#endif
+
+		#if defined(GL_EXT_framebuffer_blit)
+			#define GL_READ_FRAMEBUFFER			GL_READ_FRAMEBUFFER_EXT
+			#define GL_DRAW_FRAMEBUFFER			GL_DRAW_FRAMEBUFFER_EXT
+		#endif
+
+		#if defined(GL_EXT_framebuffer_multisample)
+			#define GL_MAX_SAMPLES				GL_MAX_SAMPLES_EXT
+		#endif
+	#endif
 #endif
 
 // Check minimum OpenGL header version
-#if !defined(GL_VERSION_2_0)
-	#error OpenGL requires v2.0 headers or later.
+#if !defined(GL_VERSION_2_1)
+	#if defined(GL_VERSION_2_0)
+		#warning Using OpenGL v2.0 headers with v2.1 overrides. Some features will be disabled.
+
+		#if !defined(GL_ARB_framebuffer_object)
+			// Overrides for GL_EXT_framebuffer_blit
+			#if !defined(GL_EXT_framebuffer_blit)
+				#define GL_READ_FRAMEBUFFER		GL_FRAMEBUFFER
+				#define GL_DRAW_FRAMEBUFFER		GL_FRAMEBUFFER
+				#define glBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
+			#endif
+			
+			// Overrides for GL_EXT_framebuffer_multisample
+			#if !defined(GL_EXT_framebuffer_multisample)
+				#define GL_MAX_SAMPLES 0
+				#define glRenderbufferStorageMultisampleEXT(target, samples, internalformat, width, height)
+			#endif
+		#endif
+		
+		// Overrides for GL_ARB_pixel_buffer_object
+		#if !defined(GL_PIXEL_PACK_BUFFER) && defined(GL_PIXEL_PACK_BUFFER_ARB)
+			#define GL_PIXEL_PACK_BUFFER GL_PIXEL_PACK_BUFFER_ARB
+		#endif
+	#else
+		#error OpenGL requires v2.1 headers or later.
+	#endif
 #endif
-
-// Define minimum OpenGL version for GPU
-#define OGL_MINIMUM_GPU_VERSION_REQUIRED_MAJOR		1
-#define OGL_MINIMUM_GPU_VERSION_REQUIRED_MINOR		2
-#define OGL_MINIMUM_GPU_VERSION_REQUIRED_REVISION	0
-
-#include "types.h"
-#include "debug.h"
-#include "MMU.h"
-#include "bits.h"
-#include "matrix.h"
-#include "NDSSystem.h"
-#include "OGLRender.h"
-#include "gfx3d.h"
-
-#include "shaders.h"
-#include "texcache.h"
-#include "utils/task.h"
-
 
 enum OGLVertexAttributeID
 {
@@ -123,7 +155,13 @@ static Task oglReadPixelsTask[2];
 // Polygon Info
 static GLfloat polyAlpha = 1.0f;
 
+// GPU's OpenGL Version
+static unsigned int oglVersionMajor = 0;
+static unsigned int oglVersionMinor = 0;
+static unsigned int oglVersionRevision = 0;
+
 // OpenGL Feature Support
+static GLint oglTexMirroredRepeatMode = GL_REPEAT;
 static bool isVBOSupported = false;
 static bool isPBOSupported = false;
 static bool isFBOSupported = false;
@@ -196,77 +234,154 @@ static const GLfloat divide5bitBy31LUT[32] =	{0.0, 0.03225806451613, 0.064516129
 												 0.7741935483871, 0.8064516129032, 0.8387096774194, 0.8709677419355,
 												 0.9032258064516, 0.9354838709677, 0.9677419354839, 1.0};
 
+// Function Pointers
+bool (*oglrender_init)() = NULL;
+bool (*oglrender_beginOpenGL)() = NULL;
+void (*oglrender_endOpenGL)() = NULL;
+
+static bool BEGINGL() {
+	if(oglrender_beginOpenGL) 
+		return oglrender_beginOpenGL();
+	else return true;
+}
+
+static void ENDGL() {
+	if(oglrender_endOpenGL) 
+		oglrender_endOpenGL();
+}
+
 //------------------------------------------------------------
 
-#define OGLEXT(x,y) x y = 0;
+// Textures
+OGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture)
 
-#ifdef _WIN32
-#define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
-#elif !defined(__APPLE__)
-#include <GL/glx.h>
-#define INITOGLEXT(x,y) y = (x)glXGetProcAddress((const GLubyte *) #y);
-#endif
+// Blending
+OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
+OGLEXT(PFNGLBLENDEQUATIONSEPARATEEXTPROC, glBlendEquationSeparateEXT)
 
-#ifndef __APPLE__
-OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
-//zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
-typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, const GLchar **source, GLsizei *length);
-OGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
-OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
-OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
-OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
-OGLEXT(PFNGLDETACHSHADERPROC,glDetachShader)
-OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
-OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
-OGLEXT(PFNGLGETSHADERIVPROC,glGetShaderiv)
-OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
-OGLEXT(PFNGLDELETESHADERPROC,glDeleteShader)
-OGLEXT(PFNGLDELETEPROGRAMPROC,glDeleteProgram)
-OGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
-OGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
-OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
-OGLEXT(PFNGLBLENDFUNCSEPARATEPROC,glBlendFuncSeparate)
-OGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC,glBlendEquationSeparate)
-OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
-OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
-OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
-OGLEXT(PFNGLUNIFORM1FPROC,glUniform1f)
-OGLEXT(PFNGLUNIFORM2FPROC,glUniform2f)
+// Shaders
+OGLEXT(PFNGLCREATESHADERPROC, glCreateShader)
+OGLEXT(PFNGLSHADERSOURCEPROC, glShaderSource)
+OGLEXT(PFNGLCOMPILESHADERPROC, glCompileShader)
+OGLEXT(PFNGLCREATEPROGRAMPROC, glCreateProgram)
+OGLEXT(PFNGLATTACHSHADERPROC, glAttachShader)
+OGLEXT(PFNGLDETACHSHADERPROC, glDetachShader)
+OGLEXT(PFNGLLINKPROGRAMPROC, glLinkProgram)
+OGLEXT(PFNGLUSEPROGRAMPROC, glUseProgram)
+OGLEXT(PFNGLGETSHADERIVPROC, glGetShaderiv)
+OGLEXT(PFNGLGETSHADERINFOLOGPROC, glGetShaderInfoLog)
+OGLEXT(PFNGLDELETESHADERPROC, glDeleteShader)
+OGLEXT(PFNGLDELETEPROGRAMPROC, glDeleteProgram)
+OGLEXT(PFNGLGETPROGRAMIVPROC, glGetProgramiv)
+OGLEXT(PFNGLGETPROGRAMINFOLOGPROC, glGetProgramInfoLog)
+OGLEXT(PFNGLVALIDATEPROGRAMPROC, glValidateProgram)
+OGLEXT(PFNGLGETUNIFORMLOCATIONPROC, glGetUniformLocation)
+OGLEXT(PFNGLUNIFORM1IPROC, glUniform1i)
+OGLEXT(PFNGLUNIFORM1IVPROC, glUniform1iv)
+OGLEXT(PFNGLUNIFORM1FPROC, glUniform1f)
+OGLEXT(PFNGLUNIFORM2FPROC, glUniform2f)
+
 // Generic vertex attributes
 OGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation)
 OGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray)
 OGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray)
 OGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer)
+
 // VAO
 OGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
 OGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
 OGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
-// VBO and PBO
-OGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
-OGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
-OGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
-OGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
-OGLEXT(PFNGLBUFFERSUBDATAPROC,glBufferSubDataARB)
-OGLEXT(PFNGLMAPBUFFERPROC,glMapBufferARB)
-OGLEXT(PFNGLUNMAPBUFFERPROC,glUnmapBufferARB)
-// FBO
-OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT)
-OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT)
-OGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC,glFramebufferRenderbufferEXT)
-OGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC,glFramebufferTexture2DEXT)
-OGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC,glCheckFramebufferStatusEXT)
-OGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC,glDeleteFramebuffersEXT)
-OGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT)
-// Multisampled FBO
-OGLEXT(PFNGLGENRENDERBUFFERSEXTPROC,glGenRenderbuffersEXT)
-OGLEXT(PFNGLBINDRENDERBUFFEREXTPROC,glBindRenderbufferEXT)
-OGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC,glRenderbufferStorageMultisampleEXT)
-OGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC,glDeleteRenderbuffersEXT)
-#endif
 
-#if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
-OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
-#endif
+// VBO and PBO
+OGLEXT(PFNGLGENBUFFERSARBPROC, glGenBuffersARB)
+OGLEXT(PFNGLDELETEBUFFERSARBPROC, glDeleteBuffersARB)
+OGLEXT(PFNGLBINDBUFFERARBPROC, glBindBufferARB)
+OGLEXT(PFNGLBUFFERDATAARBPROC, glBufferDataARB)
+OGLEXT(PFNGLBUFFERSUBDATAARBPROC, glBufferSubDataARB)
+OGLEXT(PFNGLMAPBUFFERARBPROC, glMapBufferARB)
+OGLEXT(PFNGLUNMAPBUFFERARBPROC, glUnmapBufferARB)
+
+// FBO
+OGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC, glGenFramebuffersEXT)
+OGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC, glBindFramebufferEXT)
+OGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC, glFramebufferRenderbufferEXT)
+OGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC, glFramebufferTexture2DEXT)
+OGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC, glCheckFramebufferStatusEXT)
+OGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC, glDeleteFramebuffersEXT)
+OGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC, glBlitFramebufferEXT)
+
+// Multisampled FBO
+OGLEXT(PFNGLGENRENDERBUFFERSEXTPROC, glGenRenderbuffersEXT)
+OGLEXT(PFNGLBINDRENDERBUFFEREXTPROC, glBindRenderbufferEXT)
+OGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC, glRenderbufferStorageMultisampleEXT)
+OGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
+
+static void OGLInitFunctions(const char *oglExtensionString)
+{
+	// Textures
+	INITOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture)
+	
+	// Blending
+	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
+	INITOGLEXT(PFNGLBLENDEQUATIONSEPARATEEXTPROC, glBlendEquationSeparateEXT)
+	
+	// Shaders
+	INITOGLEXT(PFNGLCREATESHADERPROC, glCreateShader)
+	INITOGLEXT(PFNGLSHADERSOURCEPROC, glShaderSource)
+	INITOGLEXT(PFNGLCOMPILESHADERPROC, glCompileShader)
+	INITOGLEXT(PFNGLCREATEPROGRAMPROC, glCreateProgram)
+	INITOGLEXT(PFNGLATTACHSHADERPROC, glAttachShader)
+	INITOGLEXT(PFNGLDETACHSHADERPROC, glDetachShader)
+	INITOGLEXT(PFNGLLINKPROGRAMPROC, glLinkProgram)
+	INITOGLEXT(PFNGLUSEPROGRAMPROC, glUseProgram)
+	INITOGLEXT(PFNGLGETSHADERIVPROC, glGetShaderiv)
+	INITOGLEXT(PFNGLGETSHADERINFOLOGPROC, glGetShaderInfoLog)
+	INITOGLEXT(PFNGLDELETESHADERPROC, glDeleteShader)
+	INITOGLEXT(PFNGLDELETEPROGRAMPROC, glDeleteProgram)
+	INITOGLEXT(PFNGLGETPROGRAMIVPROC, glGetProgramiv)
+	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC, glGetProgramInfoLog)
+	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC, glValidateProgram)
+	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC, glGetUniformLocation)
+	INITOGLEXT(PFNGLUNIFORM1IPROC, glUniform1i)
+	INITOGLEXT(PFNGLUNIFORM1IVPROC, glUniform1iv)
+	INITOGLEXT(PFNGLUNIFORM1FPROC, glUniform1f)
+	INITOGLEXT(PFNGLUNIFORM2FPROC, glUniform2f)
+	
+	// Generic vertex attributes
+	INITOGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation)
+	INITOGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray)
+	INITOGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray)
+	INITOGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer)
+	
+	// VAO
+	INITOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
+	INITOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
+	INITOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
+	
+	// VBO and PBO
+	INITOGLEXT(PFNGLGENBUFFERSARBPROC, glGenBuffersARB)
+	INITOGLEXT(PFNGLDELETEBUFFERSARBPROC, glDeleteBuffersARB)
+	INITOGLEXT(PFNGLBINDBUFFERARBPROC, glBindBufferARB)
+	INITOGLEXT(PFNGLBUFFERDATAARBPROC, glBufferDataARB)
+	INITOGLEXT(PFNGLBUFFERSUBDATAARBPROC, glBufferSubDataARB)
+	INITOGLEXT(PFNGLMAPBUFFERARBPROC, glMapBufferARB)
+	INITOGLEXT(PFNGLUNMAPBUFFERARBPROC, glUnmapBufferARB)
+	
+	// FBO
+	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC, glGenFramebuffersEXT)
+	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC, glBindFramebufferEXT)
+	INITOGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC, glFramebufferRenderbufferEXT)
+	INITOGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC, glFramebufferTexture2DEXT)
+	INITOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC, glCheckFramebufferStatusEXT)
+	INITOGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC, glDeleteFramebuffersEXT)
+	INITOGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC, glBlitFramebufferEXT)
+	
+	// Multisampled FBO
+	INITOGLEXT(PFNGLGENRENDERBUFFERSEXTPROC, glGenRenderbuffersEXT)
+	INITOGLEXT(PFNGLBINDRENDERBUFFEREXTPROC, glBindRenderbufferEXT)
+	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC, glRenderbufferStorageMultisampleEXT)
+	INITOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
+}
 
 static FORCEINLINE u32 BGRA8888_32_To_RGBA6665_32Rev(const u32 srcPix)
 {
@@ -324,26 +439,26 @@ static void* execReadPixelsTask(void *arg)
 	
 	if (isPBOSupported)
 	{
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER, pboRenderDataID[bufferIndex]);
 		
-		pboRenderBuffer[bufferIndex] = (u32 *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+		pboRenderBuffer[bufferIndex] = (u32 *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 		if (pboRenderBuffer[bufferIndex] != NULL)
 		{
 			memcpy(pixBuffer, pboRenderBuffer[bufferIndex], 256 * 192 * sizeof(u32));
-			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER);
 		}
 		
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER, 0);
 	}
 	else
 	{
 		// Downsample the multisampled FBO to the main framebuffer
 		if (selectedRenderingFBO == fboMultisampleRenderID)
 		{
-			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, selectedRenderingFBO);
-			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER, selectedRenderingFBO);
+			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
 			glBlitFramebufferEXT(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		}
 		
 		glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, pixBuffer);
@@ -457,8 +572,6 @@ static bool OGLValidateShaderProgramLink(GLuint theProgram)
 	return isLinkValid;
 }
 
-/* Shaders init */
-
 static bool OGLInitShaders(const char *oglExtensionString)
 {
 #if !defined(GL_ARB_shader_objects)		|| \
@@ -477,7 +590,6 @@ static bool OGLInitShaders(const char *oglExtensionString)
 #ifdef HAVE_LIBOSMESA
 	isFeatureSupported = false;
 	INFO("%s\nOpenGL: Shaders aren't supported by OSMesa.\n");
-	
 #endif
 	
 	if (!isFeatureSupported)
@@ -567,8 +679,117 @@ static bool OGLInitShaders(const char *oglExtensionString)
 	
 	glValidateProgram(shaderProgram);
 	glUseProgram(shaderProgram);
-
+	
+	// Set up shader uniforms
+	GLint uniformTexSampler = glGetUniformLocation(shaderProgram, "texMainRender");
+	glUniform1i(uniformTexSampler, 0);
+	
+	uniformTexSampler = glGetUniformLocation(shaderProgram, "texToonTable");
+	glUniform1i(uniformTexSampler, OGLTextureUnitID_ToonTable);
+	
+	uniformPolyID				= glGetUniformLocation(shaderProgram, "polyID");
+	uniformPolyAlpha			= glGetUniformLocation(shaderProgram, "polyAlpha");
+	uniformTexScale				= glGetUniformLocation(shaderProgram, "texScale");
+	uniformHasTexture			= glGetUniformLocation(shaderProgram, "hasTexture");
+	uniformPolygonMode			= glGetUniformLocation(shaderProgram, "polygonMode");
+	uniformToonShadingMode		= glGetUniformLocation(shaderProgram, "toonShadingMode");
+	uniformWBuffer				= glGetUniformLocation(shaderProgram, "oglWBuffer");
+	uniformEnableAlphaTest		= glGetUniformLocation(shaderProgram, "enableAlphaTest");
+	uniformAlphaTestRef			= glGetUniformLocation(shaderProgram, "alphaTestRef");
+	
+	// The toon table is a special 1D texture where each pixel corresponds
+	// to a specific color in the toon table.
+	glGenTextures(1, &texToonTableID);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
+	
+	glBindTexture(GL_TEXTURE_1D, texToonTableID);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_1D, 0);
+	
+	glActiveTexture(GL_TEXTURE0);
+	
+	memset(currentToonTable16, 0, sizeof(currentToonTable16));
+	toonTableNeedsUpdate = true;
+	
 	INFO("OpenGL: Successfully created shaders.\n");
+	
+	return isFeatureSupported;
+}
+
+static bool OGLInitVBOs(const char *oglExtensionString)
+{
+	bool isFeatureSupported = (strstr(oglExtensionString, "GL_ARB_vertex_buffer_object") == NULL) ? false : true;
+	
+	if (!isFeatureSupported)
+	{
+		return isFeatureSupported;
+	}
+	
+	glGenBuffersARB(1, &vboVertexID);
+	glBindBufferARB(GL_ARRAY_BUFFER, vboVertexID);
+	glBufferDataARB(GL_ARRAY_BUFFER, VERTLIST_SIZE * sizeof(VERT), gfx3d.vertlist, GL_STREAM_DRAW);
+	glBindBufferARB(GL_ARRAY_BUFFER, 0);
+	
+	return isFeatureSupported;
+}
+
+static bool OGLInitPBOs(const char *oglExtensionString)
+{
+#if	!defined(GL_ARB_pixel_buffer_object) && !defined(GL_EXT_pixel_buffer_object)
+	bool isFeatureSupported = false;
+#else
+	bool isFeatureSupported = ( strstr(oglExtensionString, "GL_ARB_vertex_buffer_object") == NULL ||
+							   (strstr(oglExtensionString, "GL_ARB_pixel_buffer_object") == NULL &&
+							    strstr(oglExtensionString, "GL_EXT_pixel_buffer_object") == NULL) ) ? false : true;
+#endif
+	if (!isFeatureSupported)
+	{
+		return isFeatureSupported;
+	}
+	
+	glGenBuffersARB(2, pboRenderDataID);
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER, pboRenderDataID[i]);
+		glBufferDataARB(GL_PIXEL_PACK_BUFFER, 256 * 192 * sizeof(u32), NULL, GL_STREAM_READ);
+		pboRenderBuffer[i] = NULL;
+	}
+	
+	glBindBufferARB(GL_PIXEL_PACK_BUFFER, 0);
+	
+	return isFeatureSupported;
+}
+
+static bool OGLInitVAOs(const char *oglExtensionString, bool shaderSupport)
+{
+#if !defined(GL_ARB_vertex_array_object) && !defined(GL_APPLE_vertex_array_object)
+	bool isFeatureSupported = false;
+#else
+	bool isFeatureSupported = ( !shaderSupport ||
+							    strstr(oglExtensionString, "GL_ARB_vertex_buffer_object") == NULL ||
+							   (strstr(oglExtensionString, "GL_ARB_vertex_array_object") == NULL &&
+								strstr(oglExtensionString, "GL_APPLE_vertex_array_object") == NULL) ) ? false : true;
+#endif
+	if (!isFeatureSupported)
+	{
+		return isFeatureSupported;
+	}
+	
+	glGenVertexArrays(1, &vaoMainStatesID);
+	glBindVertexArray(vaoMainStatesID);
+	
+	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+	glEnableVertexAttribArray(OGLVertexAttributeID_Color);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER, vboVertexID);
+	glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
+	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
+	glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
+	
+	glBindVertexArray(0);
 	
 	return isFeatureSupported;
 }
@@ -611,22 +832,22 @@ static bool OGLInitFBOs(const char *oglExtensionString)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, 256, 192, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 256, 192, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	
 	glActiveTexture(GL_TEXTURE0);
 	
 	// Set up FBOs
 	glGenFramebuffersEXT(1, &fboClearImageID);
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboClearImageID);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, texClearImageColorID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, texClearImageDepthStencilID, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, fboClearImageID);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texClearImageColorID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texClearImageDepthStencilID, 0);
 	
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
 		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffersEXT(1, &fboClearImageID);
 		glDeleteTextures(1, &texClearImageColorID);
 		glDeleteTextures(1, &texClearImageDepthStencilID);
@@ -635,7 +856,7 @@ static bool OGLInitFBOs(const char *oglExtensionString)
 		return isFeatureSupported;
 	}
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 	INFO("OpenGL: Successfully created FBOs.\n");
 	
 	return isFeatureSupported;
@@ -666,7 +887,7 @@ static bool OGLInitMultisampledFBO(const char *oglExtensionString)
 	// Since our target resolution is only 256x192 pixels, using the most samples
 	// possible is the best thing to do.
 	GLint maxSamples = 0;
-	glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
+	glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
 	
 	if (maxSamples < 2)
 	{
@@ -684,24 +905,24 @@ static bool OGLInitMultisampledFBO(const char *oglExtensionString)
 	glGenRenderbuffersEXT(1, &rboMultisampleColorID);
 	glGenRenderbuffersEXT(1, &rboMultisampleDepthStencilID);
 	
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboMultisampleColorID);
-	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, 256, 192);
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboMultisampleDepthStencilID);
-	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_DEPTH24_STENCIL8_EXT, 256, 192);
+	glBindRenderbufferEXT(GL_RENDERBUFFER, rboMultisampleColorID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, maxSamples, GL_RGBA, 256, 192);
+	glBindRenderbufferEXT(GL_RENDERBUFFER, rboMultisampleDepthStencilID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, maxSamples, GL_DEPTH24_STENCIL8, 256, 192);
 	
 	// Set up multisampled rendering FBO
 	glGenFramebuffersEXT(1, &fboMultisampleRenderID);
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboMultisampleRenderID);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, rboMultisampleColorID);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboMultisampleDepthStencilID);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboMultisampleDepthStencilID);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, fboMultisampleRenderID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rboMultisampleColorID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboMultisampleDepthStencilID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboMultisampleDepthStencilID);
 	
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to create multisampled FBO. Multisample antialiasing will be disabled.\n");
 		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffersEXT(1, &fboMultisampleRenderID);
 		glDeleteRenderbuffersEXT(1, &rboMultisampleColorID);
 		glDeleteRenderbuffersEXT(1, &rboMultisampleDepthStencilID);
@@ -710,10 +931,99 @@ static bool OGLInitMultisampledFBO(const char *oglExtensionString)
 		return isFeatureSupported;
 	}
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 	INFO("OpenGL: Successfully created multisampled FBO.\n");
 	
 	return isFeatureSupported;
+}
+
+static bool OGLInitMultithreading(unsigned int coreCount)
+{
+	bool result = false;
+	
+	if (coreCount > 1)
+	{
+#ifdef _WINDOWS
+		// Windows doesn't seem like multithreading on the same OpenGL
+		// context, so we're disabling this on Windows for now.
+		// Someone please research.
+		result = false;
+#else
+		result = true;
+		
+		for (unsigned int i = 0; i < 2; i++)
+		{
+			oglReadPixelsTask[i].start(false);
+		}
+#endif
+	}
+	else
+	{
+		result = false;
+	}
+	
+	return result;
+}
+
+static bool OGLInitRenderStates(const char *oglExtensionString, bool shaderSupport)
+{
+	bool result = true;
+	
+	bool isTexMirroredRepeatSupported = (strstr(oglExtensionString, "GL_ARB_texture_mirrored_repeat") == NULL) ? false : true;
+	bool isBlendFuncSeparateSupported = (strstr(oglExtensionString, "GL_EXT_blend_func_separate") == NULL) ? false : true;
+	bool isBlendEquationSeparateSupported = (strstr(oglExtensionString, "GL_EXT_blend_equation_separate") == NULL) ? false : true;
+	
+	// Blending Support
+	if (isBlendFuncSeparateSupported)
+	{
+		if (isBlendEquationSeparateSupported)
+		{
+			// we want to use alpha destination blending so we can track the last-rendered alpha value
+			// test: new super mario brothers renders the stormclouds at the beginning
+			glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+			glBlendEquationSeparateEXT(GL_FUNC_ADD, GL_MAX);
+		}
+		else
+		{
+			glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+		}
+	}
+	else
+	{
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	
+	// Mirrored Repeat Mode Support
+	if (isTexMirroredRepeatSupported)
+	{
+		oglTexMirroredRepeatMode = GL_MIRRORED_REPEAT;
+	}
+	else
+	{
+		oglTexMirroredRepeatMode = GL_REPEAT;
+	}
+	
+	// Always enable depth test, and control using glDepthMask().
+	glEnable(GL_DEPTH_TEST);
+	
+	// If shaders aren't supported, fall back to changing states in legacy mode.
+	if(!shaderSupport)
+	{
+		// Set up fixed-function pipeline render states.
+		glEnable(GL_NORMALIZE);
+		glEnable(GL_TEXTURE_1D);
+		glEnable(GL_TEXTURE_2D);
+		glAlphaFunc(GL_GREATER, 0);
+		glEnable(GL_ALPHA_TEST);
+		
+		// Map the vertex list's colors with 4 floats per color. This is being done
+		// because OpenGL needs 4-colors per vertex to support translucency. (The DS
+		// uses 3-colors per vertex, and adds alpha through the poly, so we can't
+		// simply reference the colors+alpha from just the vertices themselves.)
+		color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
+	}
+	
+	return result;
 }
 
 //=================================================
@@ -762,7 +1072,7 @@ static void OGLReset()
 	
 	ENDGL();
 	
-	memset(vertIndexBuffer, 0, VERT_INDEX_BUFFER_SIZE * sizeof(GLushort));
+	memset(vertIndexBuffer, 0, OGLRENDER_VERT_INDEX_BUFFER_SIZE * sizeof(GLushort));
 	currTexture = NULL;
 	
 	Default3D_Reset();
@@ -810,14 +1120,30 @@ static void expandFreeTextures()
 		freeTextureIds.push(oglTempTextureID[i]);
 }
 
-static bool OGLIsMinimumVersionSupported(const char *oglVersionString)
+static bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision)
 {
 	bool result = false;
+	
+	if ( (oglVersionMajor > checkVersionMajor) ||
+		 (oglVersionMajor >= checkVersionMajor && oglVersionMinor > checkVersionMinor) ||
+		 (oglVersionMajor >= checkVersionMajor && oglVersionMinor >= checkVersionMinor && oglVersionRevision >= checkVersionRevision) )
+	{
+		result = true;
+	}
+	
+	return result;
+}
+
+static void OGLGetGPUVersion(const char *oglVersionString,
+							 unsigned int *versionMajor,
+							 unsigned int *versionMinor,
+							 unsigned int *versionRevision)
+{
 	size_t versionStringLength = 0;
 	
 	if (oglVersionString == NULL)
 	{
-		return result;
+		return;
 	}
 	
 	// First, check for the dot in the revision string. There should be at
@@ -825,7 +1151,7 @@ static bool OGLIsMinimumVersionSupported(const char *oglVersionString)
 	const char *versionStrEnd = strstr(oglVersionString, ".");
 	if (versionStrEnd == NULL)
 	{
-		return result;
+		return;
 	}
 	
 	// Next, check for the space before the vendor-specific info (if present).
@@ -853,17 +1179,23 @@ static bool OGLIsMinimumVersionSupported(const char *oglVersionString)
 	
 	sscanf(versionSubstring, "%u.%u.%u", &major, &minor, &revision);
 	
-	if ( (major > OGL_MINIMUM_GPU_VERSION_REQUIRED_MAJOR) ||
-		 (major >= OGL_MINIMUM_GPU_VERSION_REQUIRED_MAJOR && minor > OGL_MINIMUM_GPU_VERSION_REQUIRED_MINOR) ||
-		 (major >= OGL_MINIMUM_GPU_VERSION_REQUIRED_MAJOR && minor >= OGL_MINIMUM_GPU_VERSION_REQUIRED_MINOR && revision >= OGL_MINIMUM_GPU_VERSION_REQUIRED_REVISION) )
-	{
-		result = true;
-	}
-	
 	free(versionSubstring);
 	versionSubstring = NULL;
 	
-	return result;
+	if (versionMajor != NULL)
+	{
+		*versionMajor = major;
+	}
+	
+	if (versionMinor != NULL)
+	{
+		*versionMinor = minor;
+	}
+	
+	if (versionRevision != NULL)
+	{
+		*versionRevision = revision;
+	}
 }
 
 static char OGLInit(void)
@@ -889,260 +1221,57 @@ static char OGLInit(void)
 	}
 	
 	// Get OpenGL info
+	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
 	const char *oglVendorString = (const char *)glGetString(GL_VENDOR);
 	const char *oglRendererString = (const char *)glGetString(GL_RENDERER);
-	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
+	const char *oglExtensionString = (const char *)glGetString(GL_EXTENSIONS);
 	
-	if (!OGLIsMinimumVersionSupported(oglVersionString))
+	// Check the GPU's OpenGL version
+	OGLGetGPUVersion(oglVersionString, &oglVersionMajor, &oglVersionMinor, &oglVersionRevision);
+	
+	if (!IsVersionSupported(OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MAJOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MINOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_REVISION))
 	{
 		INFO("OpenGL: GPU does not support OpenGL v%u.%u.%u or later.\n[GPU Info - Version: %s, Vendor: %s, Renderer: %s]\n",
-			 OGL_MINIMUM_GPU_VERSION_REQUIRED_MAJOR, OGL_MINIMUM_GPU_VERSION_REQUIRED_MINOR, OGL_MINIMUM_GPU_VERSION_REQUIRED_REVISION,
+			 OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MAJOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MINOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_REVISION,
 			 oglVersionString, oglVendorString, oglRendererString);
 		
 		result = 0;
 		return result;
 	}
 	
-	const char *oglExtensionString = (const char *)glGetString(GL_EXTENSIONS);
-
+	// Initialize OpenGL functions
+	OGLInitFunctions(oglExtensionString);
+	
+	// Initialize tables
 	for (u8 i = 0; i < 255; i++)
 		material_8bit_to_float[i] = (GLfloat)(i<<2)/255.f;
 	
 	for (unsigned int i = 0; i < 32768; i++)
 		dsDepthToD24S8_LUT[i] = (GLuint)DS_DEPTH15TO24(i) << 8;
 	
-	expandFreeTextures();
-	
 	// Maintain our own vertex index buffer for vertex batching and primitive
 	// conversions. Such conversions are necessary since OpenGL deprecates
-	// primitives like GFX3D_QUADS and GFX3D_QUAD_STRIP in later versions.
-	vertIndexBuffer = new GLushort[VERT_INDEX_BUFFER_SIZE];
-
-#ifndef __APPLE__
-	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
-	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
-	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
-	INITOGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
-	INITOGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
-	INITOGLEXT(PFNGLDETACHSHADERPROC,glDetachShader)
-	INITOGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
-	INITOGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
-	INITOGLEXT(PFNGLGETSHADERIVPROC,glGetShaderiv)
-	INITOGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
-	INITOGLEXT(PFNGLDELETESHADERPROC,glDeleteShader)
-	INITOGLEXT(PFNGLDELETEPROGRAMPROC,glDeleteProgram)
-	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
-	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
-	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
-	// Generic vertex attributes
-	INITOGLEXT(PFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation)
-	INITOGLEXT(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray)
-	INITOGLEXT(PFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray)
-	INITOGLEXT(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer)
-	// VAO
-	INITOGLEXT(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)
-	INITOGLEXT(PFNGLDELETEVERTEXARRAYSPROC, glDeleteVertexArrays)
-	INITOGLEXT(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray)
-	// VBO and PBO
-	INITOGLEXT(PFNGLGENBUFFERSPROC,glGenBuffersARB)
-	INITOGLEXT(PFNGLDELETEBUFFERSPROC,glDeleteBuffersARB)
-	INITOGLEXT(PFNGLBINDBUFFERPROC,glBindBufferARB)
-	INITOGLEXT(PFNGLBUFFERDATAPROC,glBufferDataARB)
-	INITOGLEXT(PFNGLBUFFERSUBDATAPROC,glBufferSubDataARB)
-	INITOGLEXT(PFNGLMAPBUFFERPROC,glMapBufferARB)
-	INITOGLEXT(PFNGLUNMAPBUFFERPROC,glUnmapBufferARB)
-	// FBO
-	INITOGLEXT(PFNGLGENFRAMEBUFFERSEXTPROC,glGenFramebuffersEXT)
-	INITOGLEXT(PFNGLBINDFRAMEBUFFEREXTPROC,glBindFramebufferEXT)
-	INITOGLEXT(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC,glFramebufferRenderbufferEXT)
-	INITOGLEXT(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC,glFramebufferTexture2DEXT)
-	INITOGLEXT(PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC,glCheckFramebufferStatusEXT)
-	INITOGLEXT(PFNGLDELETEFRAMEBUFFERSEXTPROC,glDeleteFramebuffersEXT)
-	INITOGLEXT(PFNGLBLITFRAMEBUFFEREXTPROC,glBlitFramebufferEXT)
-	// Multisampled FBO
-	INITOGLEXT(PFNGLGENRENDERBUFFERSEXTPROC,glGenRenderbuffersEXT)
-	INITOGLEXT(PFNGLBINDRENDERBUFFEREXTPROC,glBindRenderbufferEXT)
-	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC,glRenderbufferStorageMultisampleEXT)
-	INITOGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC,glDeleteRenderbuffersEXT)
-#ifdef HAVE_LIBOSMESA
-	glBlendFuncSeparate = NULL;
-#else
-	INITOGLEXT(PFNGLBLENDFUNCSEPARATEPROC,glBlendFuncSeparate)
-	INITOGLEXT(PFNGLBLENDEQUATIONSEPARATEPROC,glBlendEquationSeparate)
-#endif
-	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
-	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
-	INITOGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
-	INITOGLEXT(PFNGLUNIFORM1FPROC,glUniform1f)
-	INITOGLEXT(PFNGLUNIFORM2FPROC,glUniform2f)
-#endif
-#if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
-	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
-#endif
+	// primitives like GL_QUADS and GL_QUAD_STRIP in later versions.
+	vertIndexBuffer = new GLushort[OGLRENDER_VERT_INDEX_BUFFER_SIZE];
 	
-	// VBO Setup
-#if !defined(GL_ARB_vertex_buffer_object)
-	isVBOSupported = false;
-#else
-	isVBOSupported = (strstr(oglExtensionString, "GL_ARB_vertex_buffer_object") == NULL) ? false : true;
-#endif
-	if (isVBOSupported)
-	{
-		glGenBuffersARB(1, &vboVertexID);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, VERTLIST_SIZE * sizeof(VERT), gfx3d.vertlist, GL_STREAM_DRAW_ARB);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	}
-	
-	// PBO Setup
-	// Note that GL_ARB_pixel_buffer_object and GL_EXT_pixel_buffer_object have equivalent
-	// tokens, so we'll just use the ARB tokens from here on out.
-#if !defined(GL_ARB_pixel_buffer_object) && !defined(GL_EXT_pixel_buffer_object)
-	isPBOSupported = false;
-#else
-	isPBOSupported = (strstr(oglExtensionString, "GL_ARB_pixel_buffer_object") == NULL) ? false : true;
-#endif
-	if (isPBOSupported)
-	{
-		glGenBuffersARB(2, pboRenderDataID);
-		for (unsigned int i = 0; i < 2; i++)
-		{
-			glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[i]);
-			glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, 256 * 192 * sizeof(u32), NULL, GL_STREAM_READ_ARB);
-			pboRenderBuffer[i] = NULL;
-		}
-		
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-	}
-	
-	// Render State Setup (common to both shaders and fixed-function pipeline)
-	xglEnable(GL_DEPTH_TEST);
-	glPixelStorei(GL_PACK_ALIGNMENT, 8);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	//we want to use alpha destination blending so we can track the last-rendered alpha value
-	if(glBlendFuncSeparate != NULL)
-	{
-		if (glBlendEquationSeparate != NULL)
-		{
-			// test: new super mario brothers renders the stormclouds at the beginning 
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-			glBlendEquationSeparate( GL_FUNC_ADD, GL_MAX );
-		}
-		else
-		{
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
-		}
-	}
-	
-	// Shader Setup
+	// OpenGL Feature Setup
+	isVBOSupported = OGLInitVBOs(oglExtensionString);
+	isPBOSupported = OGLInitPBOs(oglExtensionString);
 	isShaderSupported = OGLInitShaders(oglExtensionString);
-	if(isShaderSupported)
-	{
-		// The toon table is a special 1D texture where each pixel corresponds
-		// to a specific color in the toon table.
-		glGenTextures (1, &texToonTableID);
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
-		
-		glBindTexture(GL_TEXTURE_1D, texToonTableID);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
-		glBindTexture(GL_TEXTURE_1D, 0);
-		
-		glActiveTexture(GL_TEXTURE0);
-		
-		memset(currentToonTable16, 0, sizeof(currentToonTable16));
-		toonTableNeedsUpdate = true;
-		
-		// Set up shader uniforms
-		GLint uniformTexSampler = glGetUniformLocation(shaderProgram, "texMainRender");
-		glUniform1i(uniformTexSampler, 0);
-		
-		uniformTexSampler = glGetUniformLocation(shaderProgram, "texToonTable");
-		glUniform1i(uniformTexSampler, OGLTextureUnitID_ToonTable);
-				
-		uniformPolyID				= glGetUniformLocation(shaderProgram, "polyID");
-		uniformPolyAlpha			= glGetUniformLocation(shaderProgram, "polyAlpha");
-		uniformTexScale				= glGetUniformLocation(shaderProgram, "texScale");
-		uniformHasTexture			= glGetUniformLocation(shaderProgram, "hasTexture");
-		uniformPolygonMode			= glGetUniformLocation(shaderProgram, "polygonMode");
-		uniformToonShadingMode		= glGetUniformLocation(shaderProgram, "toonShadingMode");
-		uniformWBuffer				= glGetUniformLocation(shaderProgram, "oglWBuffer");
-		uniformEnableAlphaTest		= glGetUniformLocation(shaderProgram, "enableAlphaTest");
-		uniformAlphaTestRef			= glGetUniformLocation(shaderProgram, "alphaTestRef");
-	}
-	else
-	{
-		// Set up fixed-function pipeline render states.
-		xglEnable(GL_NORMALIZE);
-		glEnable(GL_TEXTURE_1D);
-		glEnable(GL_TEXTURE_2D);
-		glAlphaFunc(GL_GREATER, 0);
-		xglEnable(GL_ALPHA_TEST);
-		
-		// Map the vertex list's colors with 4 floats per color. This is being done
-		// because OpenGL needs 4-colors per vertex to support translucency. (The DS
-		// uses 3-colors per vertex, and adds alpha through the poly, so we can't
-		// simply reference the colors+alpha from just the vertices themselves.)
-		color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
-	}
-	
-	// VAO Setup
-#if !defined(GL_ARB_vertex_array_object) && !defined(GL_APPLE_vertex_array_object)
-	isVAOSupported = false;
-#else
-	isVAOSupported = ( !isVBOSupported ||
-					   !isShaderSupported ||
-					  (strstr(oglExtensionString, "GL_ARB_vertex_array_object") == NULL &&
-					   strstr(oglExtensionString, "GL_APPLE_vertex_array_object") == NULL) ) ? false : true;
-#endif
-	if (isVAOSupported)
-	{
-		glGenVertexArrays(1, &vaoMainStatesID);
-		glBindVertexArray(vaoMainStatesID);
-		
-		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		glEnableVertexAttribArray(OGLVertexAttributeID_Color);
-		
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
-		glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
-		
-		glBindVertexArray(0);
-	}
-
-	// FBO Setup
+	isVAOSupported = OGLInitVAOs(oglExtensionString, isShaderSupported);
 	isFBOSupported = OGLInitFBOs(oglExtensionString);
-	
-	// Multisampled FBO Setup
 	isMultisampledFBOSupported = OGLInitMultisampledFBO(oglExtensionString);
-
+	
+	// Render State Setup
+	OGLInitRenderStates(oglExtensionString, isShaderSupported);
+	
+	// Texture Setup
+	expandFreeTextures();
+	
 	ENDGL();
 	
 	// Multithreading Setup
-	if (CommonSettings.num_cores > 1)
-	{
-#ifdef _WINDOWS
-		// Windows doesn't seem like multithreading on the same OpenGL
-		// context, so we're disabling this on Windows for now.
-		// Someone please research.
-		enableMultithreading = false;
-#else
-		enableMultithreading = true;
-		
-		for (unsigned int i = 0; i < 2; i++)
-		{
-			oglReadPixelsTask[i].start(false);
-		}
-#endif
-	}
-	else
-	{
-		enableMultithreading = false;
-	}
+	enableMultithreading = OGLInitMultithreading(CommonSettings.num_cores);
 	
 	// Initialization finished -- reset the renderer
 	OGLReset();
@@ -1164,6 +1293,8 @@ static void OGLClose()
 			oglReadPixelsTask[i].finish();
 			oglReadPixelsTask[i].shutdown();
 		}
+		
+		enableMultithreading = false;
 	}
 	
 	if(!BEGINGL())
@@ -1203,14 +1334,14 @@ static void OGLClose()
 
 	if (isVBOSupported)
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER, 0);
 		glDeleteBuffersARB(1, &vboVertexID);
 		isVBOSupported = false;
 	}
 	
 	if (isPBOSupported)
 	{
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER, 0);
 		glDeleteBuffersARB(2, pboRenderDataID);
 		pboRenderBuffer[0] = NULL;
 		pboRenderBuffer[1] = NULL;
@@ -1222,7 +1353,7 @@ static void OGLClose()
 	{
 		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		
 		glDeleteFramebuffersEXT(1, &fboClearImageID);
 		glDeleteTextures(1, &texClearImageColorID);
@@ -1233,7 +1364,7 @@ static void OGLClose()
 	
 	if (isMultisampledFBOSupported)
 	{
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffersEXT(1, &fboMultisampleRenderID);
 		glDeleteRenderbuffersEXT(1, &rboMultisampleColorID);
 		glDeleteRenderbuffersEXT(1, &rboMultisampleDepthStencilID);
@@ -1333,8 +1464,8 @@ static void SetupTexture(const POLY *thePoly)
 			
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? oglTexMirroredRepeatMode : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? oglTexMirroredRepeatMode : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
 				currTexture->sizeX, currTexture->sizeY, 0, 
@@ -1547,7 +1678,7 @@ static void Control()
 		selectedRenderingFBO = 0;
 	}
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, selectedRenderingFBO);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, selectedRenderingFBO);
 }
 
 static void GL_ReadFramebuffer()
@@ -1569,15 +1700,15 @@ static void GL_ReadFramebuffer()
 		// Downsample the multisampled FBO to the main framebuffer
 		if (selectedRenderingFBO == fboMultisampleRenderID)
 		{
-			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, selectedRenderingFBO);
-			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER, selectedRenderingFBO);
+			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
 			glBlitFramebufferEXT(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		}
 		
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pboRenderDataID[bufferIndex]);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER, pboRenderDataID[bufferIndex]);
 		glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER, 0);
 		
 		ENDGL();
 	}
@@ -1667,16 +1798,16 @@ static void HandleClearImage()
 		glBindTexture(GL_TEXTURE_2D, texClearImageColorID);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pixelsPerLine, lineCount, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, oglClearImageColor);
 		glBindTexture(GL_TEXTURE_2D, texClearImageDepthStencilID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pixelsPerLine, lineCount, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, oglClearImageDepth);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pixelsPerLine, lineCount, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, oglClearImageDepth);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		
 		glActiveTexture(GL_TEXTURE0);
 	}
 	
 	// Copy the clear image to the main framebuffer
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, fboClearImageID);
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, fboClearImageID);
 	glBlitFramebufferEXT(0, 0, pixelsPerLine, lineCount, 0, 0, pixelsPerLine, lineCount, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, selectedRenderingFBO);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, selectedRenderingFBO);
 }
 
 static void OGLRender()
@@ -1745,7 +1876,7 @@ static void OGLRender()
 		if (isVAOSupported)
 		{
 			glBindVertexArray(vaoMainStatesID);
-			glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
+			glBufferSubDataARB(GL_ARRAY_BUFFER, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
 		}
 		else
 		{
@@ -1757,8 +1888,8 @@ static void OGLRender()
 				
 				if (isVBOSupported)
 				{
-					glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-					glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
+					glBindBufferARB(GL_ARRAY_BUFFER, vboVertexID);
+					glBufferSubDataARB(GL_ARRAY_BUFFER, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
 					glVertexAttribPointer(OGLVertexAttributeID_Position, 4, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 					glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
 					glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), (const GLvoid *)offsetof(VERT, color));
@@ -1778,11 +1909,11 @@ static void OGLRender()
 				
 				if (isVBOSupported)
 				{
-					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					glBindBufferARB(GL_ARRAY_BUFFER, 0);
 					glColorPointer(4, GL_FLOAT, 0, color4fBuffer);
 					
-					glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-					glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
+					glBindBufferARB(GL_ARRAY_BUFFER, vboVertexID);
+					glBufferSubDataARB(GL_ARRAY_BUFFER, 0, sizeof(VERT) * gfx3d.vertlist->count, gfx3d.vertlist);
 					glVertexPointer(4, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, coord));
 					glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), (const GLvoid *)offsetof(VERT, texcoord));
 				}
@@ -1944,7 +2075,7 @@ static void OGLRender()
 			{
 				if (isVBOSupported)
 				{
-					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					glBindBufferARB(GL_ARRAY_BUFFER, 0);
 				}
 				
 				glDisableVertexAttribArray(OGLVertexAttributeID_Position);
@@ -1955,7 +2086,7 @@ static void OGLRender()
 			{
 				if (isVBOSupported)
 				{
-					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					glBindBufferARB(GL_ARRAY_BUFFER, 0);
 				}
 				
 				glDisableClientState(GL_VERTEX_ARRAY);

@@ -20,14 +20,20 @@
 #ifndef OGLRENDER_H
 #define OGLRENDER_H
 
-#include "common.h"
-#include <algorithm>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "debug.h"
 #include "render3D.h"
+
+// Define minimum required OpenGL version for GPU (Legacy Renderer)
+#define OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MAJOR		1
+#define OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MINOR		2
+#define OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_REVISION	0
+
+// Define minimum required OpenGL version for GPU (Modern Renderer)
+#define OGLRENDER_MINIMUM_GPU_VERSION_REQUIRED_MAJOR			3
+#define OGLRENDER_MINIMUM_GPU_VERSION_REQUIRED_MINOR			0
+#define OGLRENDER_MINIMUM_GPU_VERSION_REQUIRED_REVISION			0
+
+#define OGLRENDER_MAX_MULTISAMPLES			16
+#define OGLRENDER_VERT_INDEX_BUFFER_SIZE	8192
 
 extern GPU3DInterface gpu3Dgl;
 
