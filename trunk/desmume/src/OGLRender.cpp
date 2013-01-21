@@ -223,7 +223,7 @@ static bool gpuScreen3DHasNewData[2] = {false, false};
 static unsigned int gpuScreen3DBufferIndex = 0;
 
 // Lookup Tables
-static CACHE_ALIGN GLfloat material_8bit_to_float[255] = {0};
+static CACHE_ALIGN GLfloat material_8bit_to_float[256] = {0};
 static CACHE_ALIGN GLuint dsDepthToD24S8_LUT[32768] = {0};
 static const GLfloat divide5bitBy31LUT[32] =	{0.0, 0.03225806451613, 0.06451612903226, 0.09677419354839,
 												 0.1290322580645, 0.1612903225806, 0.1935483870968, 0.2258064516129,
@@ -1026,6 +1026,22 @@ static bool OGLInitRenderStates(const char *oglExtensionString, bool shaderSuppo
 	return result;
 }
 
+static void OGLInitTables()
+{
+	static bool needTableInit = true;
+	
+	if (needTableInit)
+	{
+		for (unsigned int i = 0; i < 256; i++)
+			material_8bit_to_float[i] = (GLfloat)(i * 4) / 255.0f;
+		
+		for (unsigned int i = 0; i < 32768; i++)
+			dsDepthToD24S8_LUT[i] = (GLuint)DS_DEPTH15TO24(i) << 8;
+		
+		needTableInit = false;
+	}
+}
+
 //=================================================
 
 static void OGLReset()
@@ -1231,7 +1247,7 @@ static char OGLInit(void)
 	
 	if (!IsVersionSupported(OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MAJOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MINOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_REVISION))
 	{
-		INFO("OpenGL: GPU does not support OpenGL v%u.%u.%u or later.\n[GPU Info - Version: %s, Vendor: %s, Renderer: %s]\n",
+		INFO("OpenGL: GPU does not support OpenGL v%u.%u.%u or later. Disabling 3D renderer.\n[GPU Info - Version: %s, Vendor: %s, Renderer: %s]\n",
 			 OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MAJOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_MINOR, OGLRENDER_LEGACY_MINIMUM_GPU_VERSION_REQUIRED_REVISION,
 			 oglVersionString, oglVendorString, oglRendererString);
 		
@@ -1243,11 +1259,7 @@ static char OGLInit(void)
 	OGLInitFunctions(oglExtensionString);
 	
 	// Initialize tables
-	for (u8 i = 0; i < 255; i++)
-		material_8bit_to_float[i] = (GLfloat)(i<<2)/255.f;
-	
-	for (unsigned int i = 0; i < 32768; i++)
-		dsDepthToD24S8_LUT[i] = (GLuint)DS_DEPTH15TO24(i) << 8;
+	OGLInitTables();
 	
 	// Maintain our own vertex index buffer for vertex batching and primitive
 	// conversions. Such conversions are necessary since OpenGL deprecates
