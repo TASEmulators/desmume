@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -797,118 +797,118 @@
     <None Include="..\thumb_tabdef.inc" />
     <None Include="..\filter\hq4x.dat" />
     <CustomBuild Include="directx\directx.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat directx\directx.7z .libs\directx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat directx\directx.7z .libs\directx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\directx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat directx\directx.7z .libs\directx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat directx\directx.7z .libs\directx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\directx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat directx\directx.7z .libs\directx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat directx\directx.7z .libs\directx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\directx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat directx\directx.7z .libs\directx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat directx\directx.7z .libs\directx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\directx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat directx\directx.7z .libs\directx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat directx\directx.7z .libs\directx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\directx.tag;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="glib-2.20.1\glib-2.20.1.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\glib-vc8.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\glib-vc8.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\glib-vc8.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\glib-vc8.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\glib-vc8.tag;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="libelf_libdwarf\libelf_libdwarf.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">call un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\libelf_libdwarf.tag;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="lua\lua.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\lua.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\lua.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\lua.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\lua.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\lua.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\lua.tag;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="wx\wx.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">un7z_and_touch.bat wx\wx.7z .libs\wx*
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\wx.tag;%(Outputs)</Outputs>
