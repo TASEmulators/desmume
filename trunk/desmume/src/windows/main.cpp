@@ -2299,7 +2299,7 @@ class WinDriver : public BaseDriver
 
 		hostent* he = gethostbyname(hostname);
 		unsigned long ipaddr;
-		if (he == NULL)
+		if (he == NULL || he->h_addr_list[0] == NULL)
 			ipaddr = 0x0100007F; // 127.0.0.1
 		else
 			ipaddr = *(unsigned long*)he->h_addr_list[0];
