@@ -253,7 +253,7 @@ static void ENDGL() {
 //------------------------------------------------------------
 
 // Textures
-OGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture)
+OGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
 
 // Blending
 OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
@@ -319,7 +319,7 @@ OGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 static void OGLInitFunctions(const char *oglExtensionString)
 {
 	// Textures
-	INITOGLEXT(PFNGLACTIVETEXTUREPROC, glActiveTexture)
+	INITOGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
 	
 	// Blending
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
@@ -700,7 +700,7 @@ static bool OGLInitShaders(const char *oglExtensionString)
 	// The toon table is a special 1D texture where each pixel corresponds
 	// to a specific color in the toon table.
 	glGenTextures(1, &texToonTableID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
+	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ToonTable);
 	
 	glBindTexture(GL_TEXTURE_1D, texToonTableID);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -708,7 +708,7 @@ static bool OGLInitShaders(const char *oglExtensionString)
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_1D, 0);
 	
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	memset(currentToonTable16, 0, sizeof(currentToonTable16));
 	toonTableNeedsUpdate = true;
@@ -817,7 +817,7 @@ static bool OGLInitFBOs(const char *oglExtensionString)
 	glGenTextures(1, &texClearImageColorID);
 	glGenTextures(1, &texClearImageDepthStencilID);
 	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
+	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ClearImage);
 	
 	glBindTexture(GL_TEXTURE_2D, texClearImageColorID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -834,7 +834,7 @@ static bool OGLInitFBOs(const char *oglExtensionString)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 256, 192, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	// Set up FBOs
 	glGenFramebuffersEXT(1, &fboClearImageID);
@@ -1325,8 +1325,9 @@ static void OGLClose()
 		glDeleteShader(vertexShaderID);
 		glDeleteShader(fragmentShaderID);
 		
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
+		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ToonTable);
 		glBindTexture(GL_TEXTURE_1D, 0);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
 		glDeleteTextures(1, &texToonTableID);
 
 		isShaderSupported = false;
@@ -1363,8 +1364,9 @@ static void OGLClose()
 	// FBO
 	if (isFBOSupported)
 	{
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
+		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ClearImage);
 		glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
 		glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 		
 		glDeleteFramebuffersEXT(1, &fboClearImageID);
@@ -1388,7 +1390,6 @@ static void OGLClose()
 	//kill the tex cache to free all the texture ids
 	TexCache_Reset();
 	
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	while(!freeTextureIds.empty())
@@ -1428,7 +1429,6 @@ static void SetupTexture(const POLY *thePoly)
 		if (hasTexture)
 		{
 			hasTexture = false;
-			glActiveTexture(GL_TEXTURE0);
 			
 			if (isShaderSupported)
 			{
@@ -1447,7 +1447,6 @@ static void SetupTexture(const POLY *thePoly)
 	if (!hasTexture)
 	{
 		hasTexture = true;
-		glActiveTexture(GL_TEXTURE0);
 		
 		if (isShaderSupported)
 		{
@@ -1621,10 +1620,10 @@ static void SetupPolygon(const POLY *thePoly)
 			// Update the toon table if necessary
 			if (toonTableNeedsUpdate && attr.polygonMode == 2)
 			{
-				glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
+				glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ToonTable);
 				glBindTexture(GL_TEXTURE_1D, texToonTableID);
 				glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, currentToonTable16);
-				glActiveTexture(GL_TEXTURE0);
+				glActiveTextureARB(GL_TEXTURE0_ARB);
 				
 				toonTableNeedsUpdate = false;
 			}
@@ -1805,7 +1804,7 @@ static void HandleClearImage()
 		}
 		
 		// Upload color pixels and depth buffer
-		glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ClearImage);
+		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ClearImage);
 		
 		glBindTexture(GL_TEXTURE_2D, texClearImageColorID);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pixelsPerLine, lineCount, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, oglClearImageColor);
@@ -1813,7 +1812,7 @@ static void HandleClearImage()
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pixelsPerLine, lineCount, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, oglClearImageDepth);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTextureARB(GL_TEXTURE0_ARB);
 	}
 	
 	// Copy the clear image to the main framebuffer
