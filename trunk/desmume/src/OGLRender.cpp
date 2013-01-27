@@ -253,7 +253,9 @@ static void ENDGL() {
 //------------------------------------------------------------
 
 // Textures
+#if !defined(GLX_H)
 OGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
+#endif
 
 // Blending
 OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
@@ -319,7 +321,9 @@ OGLEXT(PFNGLDELETERENDERBUFFERSEXTPROC, glDeleteRenderbuffersEXT)
 static void OGLInitFunctions(const char *oglExtensionString)
 {
 	// Textures
+	#if !defined(GLX_H)
 	INITOGLEXT(PFNGLACTIVETEXTUREARBPROC, glActiveTextureARB)
+	#endif
 	
 	// Blending
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC, glBlendFuncSeparateEXT)
