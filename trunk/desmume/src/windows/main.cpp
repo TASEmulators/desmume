@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2012 DeSmuME team
+	Copyright (C) 2006-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -80,6 +80,7 @@
 #include "aggdraw.h"
 #include "agg2d.h"
 #include "winutil.h"
+#include "ogl.h"
 
 //tools and dialogs
 #include "pathsettings.h"
@@ -300,6 +301,7 @@ BOOL Mic_Init_Physical();
 
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
+DWORD dwMainThread;
 HMENU mainMenu = NULL; //Holds handle to the main DeSmuME menu
 CToolBar* MainWindowToolbar;
 
@@ -819,13 +821,18 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 //-----window style handling----
 const u32 DISPMETHOD_DDRAW_HW = 1;
 const u32 DISPMETHOD_DDRAW_SW = 2;
+const u32 DISPMETHOD_OPENGL = 3;
 
 const u32 DWS_NORMAL = 0;
 const u32 DWS_ALWAYSONTOP = 1;
 const u32 DWS_LOCKDOWN = 2;
 const u32 DWS_FULLSCREEN = 4;
-const u32 DWS_DDRAW_SW = 8;
-const u32 DWS_VSYNC = 16;
+const u32 DWS_VSYNC = 8;
+const u32 DWS_DDRAW_SW = 16;
+const u32 DWS_DDRAW_HW = 32;
+const u32 DWS_OPENGL = 64;
+const u32 DWS_DISPMETHODS =  (DWS_DDRAW_SW|DWS_DDRAW_HW|DWS_OPENGL);
+const u32 DWS_FILTER = 128;
 
 static u32 currWindowStyle = DWS_NORMAL;
 static void SetStyle(u32 dws)
@@ -1394,6 +1401,222 @@ static void DD_FillRect(LPDIRECTDRAWSURFACE7 surf, int left, int top, int right,
 	surf->Blt(&r,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&fx);
 }
 
+struct GLDISPLAY
+{
+	HGLRC privateContext;
+	bool init;
+
+	GLDISPLAY()
+		: init(false)
+	{
+	}
+
+	bool initialize()
+	{
+		//do we need to use another HDC?
+		if(init) return true;
+		init = initContext(MainWindow->getHWnd(),&privateContext);
+		return init;
+	}
+
+	void kill()
+	{
+		if(!init) return;
+		wglDeleteContext(privateContext);
+		init = false;
+	}
+
+	bool begin()
+	{
+		DWORD myThread = GetCurrentThreadId();
+		//if(myThread != dwMainThread) //single threading differences not needed right now
+		{
+			if(!init)
+			{
+				if(!initialize()) return false;
+			}
+			HWND hwnd = MainWindow->getHWnd();
+			HDC dc = GetDC(hwnd);
+			wglMakeCurrent(dc,privateContext);
+			return true;
+		}
+
+		//we can render no problem in this thread (i hope)
+		return true;
+	}
+
+	void showPage()
+	{
+			HWND hwnd = MainWindow->getHWnd();
+			HDC dc = GetDC(hwnd);
+			SwapBuffers(dc);
+	}
+} gldisplay;
+
+#include <GL/gl.h>
+#include <GL/glext.h>
+static void OGL_DoDisplay()
+{
+	if(!gldisplay.begin()) return;
+
+	static GLuint tex = 0;
+	if(tex == 0)
+		glGenTextures(1,&tex);
+
+	glBindTexture(GL_TEXTURE_2D,tex);
+	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_BGRA,GL_UNSIGNED_BYTE,video.finalBuffer());
+
+	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
+	//but we need to make sure this is clamped for when filtering is selected
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
+
+	if(GetStyle()&DWS_FILTER)
+	{
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	}
+
+	glEnable(GL_TEXTURE_2D);
+
+	RECT rc;
+	HWND hwnd = MainWindow->getHWnd();
+	GetClientRect(hwnd,&rc);
+	int width = rc.right - rc.left;
+	int height = rc.bottom - rc.top;
+	
+	glDisable(GL_LIGHTING);
+
+	glViewport(0,0,width,height);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0f, (float)width, (float)height, 0.0f, -100.0f, 100.0f);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	RECT dr[] = {MainScreenRect, SubScreenRect, GapRect};
+	for(int i=0;i<2;i++) //dont change gap rect, for some reason
+	{
+		ScreenToClient(hwnd,(LPPOINT)&dr[i].left);
+		ScreenToClient(hwnd,(LPPOINT)&dr[i].right);
+	}
+
+
+
+	//clear entire area, for cases where the screen is maximized
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	//use clear+scissor for gap
+	if(video.screengap > 0)
+	{
+		//adjust client rect into scissor rect (0,0 at bottomleft)
+		dr[2].bottom = height - dr[2].bottom;
+		dr[2].top = height - dr[2].top;
+		glScissor(dr[2].left,dr[2].bottom,dr[2].right-dr[2].left,dr[2].top-dr[2].bottom);
+		
+		u32 color_rev = (u32)ScreenGapColor;
+		int r = (color_rev>>0)&0xFF;
+		int g = (color_rev>>8)&0xFF;
+		int b = (color_rev>>16)&0xFF;
+		glClearColor(r/255.0f,g/255.0f,b/255.0f,1);
+		glEnable(GL_SCISSOR_TEST);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glDisable(GL_SCISSOR_TEST);
+	}
+
+
+	RECT srcRects [2];
+
+	if(video.swap == 0)
+	{
+		srcRects[0] = MainScreenSrcRect;
+		srcRects[1] = SubScreenSrcRect;
+		if(osd) osd->swapScreens = false;
+	}
+	else if(video.swap == 1)
+	{
+		srcRects[0] = SubScreenSrcRect;
+		srcRects[1] = MainScreenSrcRect;
+		if(osd) osd->swapScreens = true;
+	}
+	else if(video.swap == 2)
+	{
+		srcRects[0] = (MainScreen.offset) ? SubScreenSrcRect : MainScreenSrcRect;
+		srcRects[1] = (MainScreen.offset) ? MainScreenSrcRect : SubScreenSrcRect;
+		if(osd) osd->swapScreens = (MainScreen.offset != 0);
+	}
+	else if(video.swap == 3)
+	{
+		srcRects[0] = (MainScreen.offset) ? MainScreenSrcRect : SubScreenSrcRect;
+		srcRects[1] = (MainScreen.offset) ? SubScreenSrcRect : MainScreenSrcRect;
+		if(osd) osd->swapScreens = (SubScreen.offset != 0);
+	}
+
+	//printf("%d,%d %dx%d  -- %d,%d %dx%d\n",
+	//	srcRects[0].left,srcRects[0].top, srcRects[0].right-srcRects[0].left, srcRects[0].bottom-srcRects[0].top,
+	//	srcRects[1].left,srcRects[1].top, srcRects[1].right-srcRects[1].left, srcRects[1].bottom-srcRects[1].top
+	//	);
+
+
+	//draw two screens
+	glBegin(GL_QUADS);
+
+		for(int i=0;i<2;i++)
+		{
+
+			//none of this makes any goddamn sense. dont even try.
+			int idx = i;
+			int ofs = 0;
+			switch(video.rotation)
+			{
+			case 0:
+				break;
+			case 90:
+				ofs = 3;
+				idx = 1-i;
+				std::swap(srcRects[idx].right,srcRects[idx].bottom);
+				std::swap(srcRects[idx].left,srcRects[idx].top);
+				break;
+			case 180:
+				idx = 1-i;
+				ofs = 2;
+				break;
+			case 270:
+				std::swap(srcRects[idx].right,srcRects[idx].bottom);
+				std::swap(srcRects[idx].left,srcRects[idx].top);
+				ofs = 1;
+				break;
+			}
+			float u1 = srcRects[idx].left/256.0f;
+			float u2 = srcRects[idx].right/256.0f;
+			float v1 = srcRects[idx].top/384.0f;
+			float v2 = srcRects[idx].bottom/384.0f;
+			float u[] = {u1,u2,u2,u1};
+			float v[] = {v1,v1,v2,v2};
+
+			glTexCoord2f(u[(ofs+0)%4],v[(ofs+0)%4]);
+			glVertex2i(dr[i].left,dr[i].top);
+			glTexCoord2f(u[(ofs+1)%4],v[(ofs+1)%4]);
+			glVertex2i(dr[i].right,dr[i].top);
+			glTexCoord2f(u[(ofs+2)%4],v[(ofs+2)%4]);
+			glVertex2i(dr[i].right,dr[i].bottom);
+			glTexCoord2f(u[(ofs+3)%4],v[(ofs+3)%4]);
+			glVertex2i(dr[i].left,dr[i].bottom);
+		}
+
+	glEnd();
+
+	gldisplay.showPage();
+}
+
 //the directdraw final presentation portion of display, including rotating
 static void DD_DoDisplay()
 {
@@ -1590,7 +1813,18 @@ static void DoDisplay(bool firstTime)
 		aggDraw.hud->clear();
 	}
 	
-	DD_DoDisplay();
+	bool hw = (GetStyle()&DWS_DDRAW_HW)!=0;
+	bool sw = (GetStyle()&DWS_DDRAW_SW)!=0;
+	if(hw || sw)
+	{
+		gldisplay.kill();
+		DD_DoDisplay();
+	}
+	else
+	{
+		//other cases..?
+		OGL_DoDisplay();
+	}
 }
 
 void displayProc()
@@ -2531,6 +2765,8 @@ int _main()
 	//7zip initialization
 	InitDecoder();
 
+	dwMainThread = GetCurrentThreadId();
+
 #ifdef HAVE_WX
 	wxInitialize();
 #endif
@@ -2564,7 +2800,6 @@ int _main()
 #endif
 //	struct configured_features my_config;
 
-	extern bool windows_opengl_init();
 	oglrender_init = windows_opengl_init;
 
 
@@ -2598,6 +2833,10 @@ int _main()
 	int dispMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
 	if(dispMethod == DISPMETHOD_DDRAW_SW)
 		style |= DWS_DDRAW_SW;
+	if(dispMethod == DISPMETHOD_DDRAW_HW)
+		style |= DWS_DDRAW_HW;
+	if(dispMethod == DISPMETHOD_OPENGL)
+		style |= DWS_OPENGL;
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
@@ -3289,8 +3528,8 @@ void SetRotate(HWND hwnd, int rot, bool user)
 		case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
 	}
 
-	MainWindowToolbar->ChangeButtonID(6, ccwid);
-	MainWindowToolbar->ChangeButtonID(7, cwid);
+	MainWindowToolbar->ChangeButtonID(4, ccwid);
+	MainWindowToolbar->ChangeButtonID(5, cwid);
 
 	WritePrivateProfileInt("Video","Window Rotate",video.rotation,IniName);
 	if(user)
@@ -4121,8 +4360,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_VSYNC, (GetStyle()&DWS_VSYNC)!=0);
-			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_SW)==0);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_HW)!=0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, (GetStyle()&DWS_OPENGL)!=0);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, (GetStyle()&DWS_FILTER)!=0);
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
@@ -4173,18 +4414,19 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindowToolbar->AppendButton(IDM_PAUSE, IDB_PLAY, 0, false);
 			MainWindowToolbar->AppendSeparator();
 
-			int cwid, ccwid;
-			DWORD rotstate = (video.layout == 0) ? TBSTATE_ENABLED : 0;
-			switch (video.rotation)
-			{
-				case 0: cwid = IDC_ROTATE90; ccwid = IDC_ROTATE270; break;
-				case 90: cwid = IDC_ROTATE180; ccwid = IDC_ROTATE0; break;
-				case 180: cwid = IDC_ROTATE270; ccwid = IDC_ROTATE90; break;
-				case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
-			}
+			//zero 03-feb-2013 - this isnt necessary, since the SetRotate function gets called eventually
+			//int cwid, ccwid;
+			//switch (video.rotation)
+			//{
+			//	case 0: cwid = IDC_ROTATE90; ccwid = IDC_ROTATE270; break;
+			//	case 90: cwid = IDC_ROTATE180; ccwid = IDC_ROTATE0; break;
+			//	case 180: cwid = IDC_ROTATE270; ccwid = IDC_ROTATE90; break;
+			//	case 270: cwid = IDC_ROTATE0; ccwid = IDC_ROTATE180; break;
+			//}
 
-			MainWindowToolbar->AppendButton(ccwid, IDB_ROTATECCW, rotstate, false);
-			MainWindowToolbar->AppendButton(cwid, IDB_ROTATECW, rotstate, false);
+			DWORD rotstate = (video.layout == 0) ? TBSTATE_ENABLED : 0;
+			MainWindowToolbar->AppendButton(0, IDB_ROTATECCW, rotstate, false);
+			MainWindowToolbar->AppendButton(0, IDB_ROTATECW, rotstate, false);
 
 			//we WANT it to be hard to do these operations. accidents would be bad. lets not use these buttons
 			//MainWindowToolbar->AppendSeparator();
@@ -4982,7 +5224,6 @@ DOKEYDOWN:
 
 		case IDM_IMPORTBACKUPMEMORY:
 			{
-				OPENFILENAME ofn;
 				NDS_Pause();
 				if (!importSave(hwnd, hAppInst))
 					MessageBox(hwnd,"Save was not successfully imported", "Error", MB_OK | MB_ICONERROR);
@@ -5328,7 +5569,7 @@ DOKEYDOWN:
 		case ID_DISPLAYMETHOD_DIRECTDRAWHW:
 			{
 				Lock lock (win_backbuffer_sync);
-				SetStyle(GetStyle()&~DWS_DDRAW_SW);
+				SetStyle((GetStyle()&~DWS_DISPMETHODS) | DWS_DDRAW_HW);
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
 				ddraw.createSurfaces(hwnd);
 			}
@@ -5337,9 +5578,26 @@ DOKEYDOWN:
 		case ID_DISPLAYMETHOD_DIRECTDRAWSW:
 			{
 				Lock lock (win_backbuffer_sync);
-				SetStyle(GetStyle()|DWS_DDRAW_SW);
+				SetStyle((GetStyle()&~DWS_DISPMETHODS) | DWS_DDRAW_SW);
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_SW, IniName);
 				ddraw.createSurfaces(hwnd);
+			}
+			break;
+
+		case ID_DISPLAYMETHOD_OPENGL:
+			{
+				Lock lock (win_backbuffer_sync);
+				SetStyle((GetStyle()&~DWS_DISPMETHODS) | DWS_OPENGL);
+				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_OPENGL, IniName);
+				ddraw.createSurfaces(hwnd);
+			}
+			break;
+
+		case ID_DISPLAYMETHOD_FILTER:
+			{
+				Lock lock (win_backbuffer_sync);
+				SetStyle((GetStyle()^DWS_FILTER));
+				WritePrivateProfileInt("Video","Display Method Filter", (GetStyle()^DWS_FILTER)?1:0, IniName);
 			}
 			break;
 
@@ -6617,11 +6875,9 @@ bool DDRAW::release()
 {
 	if (!handle) return true;
 	
-	if (clip !=NULL) 
-		clip->Release();
-
-	if (surface.primary != NULL)
-		surface.primary->Release();
+	if (clip != NULL)  clip->Release();
+	if (surface.back != NULL) surface.back->Release();
+	if (surface.primary != NULL) surface.primary->Release();
 
 	if (FAILED(handle->Release())) return false;
 	return true;
@@ -6631,9 +6887,14 @@ bool DDRAW::createSurfaces(HWND hwnd)
 {
 	if (!handle) return true;
 
-	if (clip) clip->Release();
-	if (surface.back) surface.back->Release();
-	if (surface.primary) surface.primary->Release();
+	if (clip) { clip->Release(); clip = NULL; }
+	if (surface.back) { surface.back->Release(); surface.back = NULL; }
+	if (surface.primary) { surface.primary->Release();  surface.primary = NULL; }
+
+	bool hw = (GetStyle()&DWS_DDRAW_HW)!=0;
+	bool sw = (GetStyle()&DWS_DDRAW_SW)!=0;
+
+	if(!hw && !sw) return true;
 
 	// primary
 	memset(&surfDesc, 0, sizeof(surfDesc));
@@ -6648,7 +6909,7 @@ bool DDRAW::createSurfaces(HWND hwnd)
 	surfDescBack.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 	surfDescBack.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
 	
-	if(GetStyle()&DWS_DDRAW_SW)
+	if(sw)
 		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
 	else
 		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;

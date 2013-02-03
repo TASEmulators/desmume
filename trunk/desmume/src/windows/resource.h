@@ -905,9 +905,12 @@
 #define ID_FILTRI_HQ4X                  40092
 #define ID_40093                        40093
 #define IDM_SLOT1                       40097
+#define ID_DISPLAYMETHOD_OPENGL         40102
 #define IDM_FILE_IMPORT_DB              40103
 #define IDM_AUTODETECTSAVETYPE_INTERNAL 40104
+#define ID_DISPLAYMETHOD_OPENGL_FILTER  40104
 #define IDM_AUTODETECTSAVETYPE_FROMDATABASE 40105
+#define ID_DISPLAYMETHOD_FILTER         40106
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK8b                   44720
 #define IDC_LABEL_UP                    50000
@@ -1011,7 +1014,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40102
+#define _APS_NEXT_COMMAND_VALUE         40106
 #define _APS_NEXT_CONTROL_VALUE         1054
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2009 DeSmuME team
+	Copyright (C) 2006-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,11 +20,14 @@
 #include "../debug.h"
 #include <gl/gl.h>
 #include <gl/glext.h>
+#include <GL/wglext.h>
 #include "console.h"
 #include "CWindow.h"
+#include "OGLRender.h"
 
 extern WINCLASS	*MainWindow;
 
+static HWND hwndFake;
 static bool oglAlreadyInit = false;
 
 int CheckHardwareSupport(HDC hdc)
@@ -44,19 +47,51 @@ int CheckHardwareSupport(HDC hdc)
    return -1; // check error
 }
 
+bool initContext(HWND hwnd, HGLRC *hRC)
+{
+	int pixelFormat;
+
+	*hRC = NULL;
+
+	HDC oglDC = GetDC (hwnd);
+
+static PIXELFORMATDESCRIPTOR pfd = 
+{ 0, 0, PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0 };
+
+	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
+	if (pixelFormat == 0)
+		return false;
+
+	if(!SetPixelFormat(oglDC, pixelFormat, &pfd))
+		return false;
+
+	*hRC = wglCreateContext(oglDC);
+	if (!hRC)
+		return false;
+
+	return true;
+}
+
+static HGLRC main_hRC;
+
+static bool _begin()
+{
+	HDC oglDC = GetDC (NULL);
+
+	if(!wglMakeCurrent(oglDC, main_hRC))
+		return false;
+
+	return true;
+}
+
 bool windows_opengl_init()
 {
-	HDC						oglDC = NULL;
-	HGLRC					hRC = NULL;
-	int						pixelFormat;
-	PIXELFORMATDESCRIPTOR	pfd;
-	int						res;
-	char					*opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
+	static const char *opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
 
 	if(oglAlreadyInit == true) return true;
 
-	oglDC = GetDC (MainWindow->getHWnd());
-
+  GLuint PixelFormat;
+  static PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
@@ -67,28 +102,21 @@ bool windows_opengl_init()
 	pfd.cAlphaBits = 8;
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE ;
+  HDC hDC = GetDC(NULL);
+  PixelFormat = ChoosePixelFormat(hDC, &pfd);
+  SetPixelFormat(hDC, PixelFormat, &pfd);
+  main_hRC = wglCreateContext(hDC);
+  wglMakeCurrent(hDC, main_hRC);
 
-	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
-	if (pixelFormat == 0)
-		return false;
-
-	if(!SetPixelFormat(oglDC, pixelFormat, &pfd))
-		return false;
-
-	hRC = wglCreateContext(oglDC);
-	if (!hRC)
-		return false;
-
-	if(!wglMakeCurrent(oglDC, hRC))
-		return false;
-
-	res=CheckHardwareSupport(oglDC);
+	int res = CheckHardwareSupport(hDC);
 	if (res>=0&&res<=2) 
 			INFO("OpenGL mode: %s\n",opengl_modes[res]); 
 		else 
 			INFO("OpenGL mode: uknown\n");
 
 	oglAlreadyInit = true;
+
+	oglrender_beginOpenGL = _begin;
 
 	return true;
 }
