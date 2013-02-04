@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #ifndef RENDER3D_H
 #define RENDER3D_H
 
+#include "gfx3d.h"
 #include "types.h"
 
 //not using this right now
@@ -72,6 +73,40 @@ void Default3D_VramReconfigureSignal();
 
 void NDS_3D_SetDriver (int core3DIndex);
 bool NDS_3D_ChangeCore(int newCore);
+
+enum Render3DErrorCode
+{
+	RENDER3DERROR_NOERR = 0
+};
+
+typedef int Render3DError;
+
+class Render3D
+{
+protected:
+	virtual Render3DError BeginRender(const GFX3D_State *renderState);
+	virtual Render3DError PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError DoRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError PostRender();
+	virtual Render3DError EndRender(const u64 frameCount);
+	
+	virtual Render3DError UpdateClearImage(const u16 *__restrict colorBuffer, const u16 *__restrict depthBuffer, const u8 clearStencil, const u8 xScroll, const u8 yScroll);
+	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
+	
+	virtual Render3DError ClearFramebuffer(const GFX3D_State *renderState);
+	virtual Render3DError ClearUsingImage() const;
+	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil) const;
+	
+	virtual Render3DError SetupPolygon(const POLY *thePoly);
+	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
+	virtual Render3DError SetupViewport(const POLY *thePoly);
+	
+public:
+	virtual Render3DError Reset();
+	virtual Render3DError Render(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, const u64 frameCount);
+	virtual Render3DError RenderFinish();
+	virtual Render3DError VramReconfigureSignal();
+};
 
 #endif
  
