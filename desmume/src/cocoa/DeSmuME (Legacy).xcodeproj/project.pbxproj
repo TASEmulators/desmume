@@ -1236,7 +1236,6 @@
 		AB06CD02135B8ACE00E977B3 /* ROMReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ROMReader.h; path = ../ROMReader.h; sourceTree = SOURCE_ROOT; };
 		AB06CD03135B8ACE00E977B3 /* rtc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rtc.h; path = ../rtc.h; sourceTree = SOURCE_ROOT; };
 		AB06CD04135B8ACE00E977B3 /* saves.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = saves.h; path = ../saves.h; sourceTree = SOURCE_ROOT; };
-		AB06CD05135B8ACE00E977B3 /* shaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = shaders.h; path = ../shaders.h; sourceTree = SOURCE_ROOT; };
 		AB06CD06135B8ACE00E977B3 /* slot1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = slot1.h; path = ../slot1.h; sourceTree = SOURCE_ROOT; };
 		AB06CD07135B8ACE00E977B3 /* sndsdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sndsdl.h; path = ../sndsdl.h; sourceTree = SOURCE_ROOT; };
 		AB06CD08135B8ACE00E977B3 /* SPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPU.h; path = ../SPU.h; sourceTree = SOURCE_ROOT; };
@@ -1804,7 +1803,6 @@
 				AB06CD02135B8ACE00E977B3 /* ROMReader.h */,
 				AB06CD03135B8ACE00E977B3 /* rtc.h */,
 				AB06CD04135B8ACE00E977B3 /* saves.h */,
-				AB06CD05135B8ACE00E977B3 /* shaders.h */,
 				AB06CD06135B8ACE00E977B3 /* slot1.h */,
 				AB06CD07135B8ACE00E977B3 /* sndsdl.h */,
 				AB06CD08135B8ACE00E977B3 /* SPU.h */,

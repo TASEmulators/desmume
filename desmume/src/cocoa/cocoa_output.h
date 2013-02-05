@@ -250,6 +250,7 @@ bool GetGPULayerState(int gpuType, unsigned int i);
 void SetGPUDisplayState(int gpuType, bool state);
 bool GetGPUDisplayState(int gpuType);
 
+void RequestOpenGLRenderer_3_2(bool request_3_2);
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),
 								void (*endOGLFunction)());

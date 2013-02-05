@@ -48,6 +48,7 @@
 
 + (NSString *) operatingSystemString;
 + (NSString *) modelIdentifierString;
++ (BOOL) OSVersionCheckMajor:(NSUInteger)checkMajor minor:(NSUInteger)checkMinor revision:(NSUInteger)checkRevision;
 
 @end
 

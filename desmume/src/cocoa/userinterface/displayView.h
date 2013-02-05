@@ -124,6 +124,7 @@
 	CGLContextObj cglDisplayContext;
 	NSOpenGLContext *oglRendererContext;
 	
+	BOOL useContext_3_2;
 	BOOL isVBOSupported;
 	BOOL isShadersSupported;
 	BOOL isVAOSupported;
@@ -158,6 +159,8 @@
 	unsigned int vtxBufferOffset;
 }
 
+- (void) setupOpenGL_Legacy;
+- (void) setupOpenGL_3_2;
 - (void) drawVideoFrame;
 - (void) uploadDisplayTextures:(const GLvoid *)textureData width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
@@ -170,7 +173,7 @@ extern "C"
 {
 #endif
 
-static GLint SetupShaders(GLuint *vShaderID, GLuint *fShaderID, GLuint *programID);
+GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, const char *vertShaderProgram, GLuint *fragShaderID, const char *fragShaderProgram);
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();
 void OSXOpenGLRendererEnd();
