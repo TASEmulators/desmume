@@ -48,6 +48,7 @@
 #include "../addons.h"
 #include "../GPU_osd.h"
 #include "../OGLRender.h"
+#include "../OGLRender_3_2.h"
 #include "../rasterize.h"
 #include "../gfx3d.h"
 #include "../render3D.h"
@@ -466,8 +467,9 @@ SoundInterface_struct *SNDCoreList[] = {
 
 GPU3DInterface *core3DList[] = {
 	&gpu3DNull,
-	&gpu3Dgl,
+	&gpu3Dgl_3_2,
 	&gpu3DRasterize,
+	&gpu3DglOld,
 	NULL
 };
 
@@ -2765,6 +2767,11 @@ int _main()
 	InitDecoder();
 
 	dwMainThread = GetCurrentThreadId();
+
+	//enable opengl 3.2 driver in this port
+	OGLLoadEntryPoints_3_2_Func = OGLLoadEntryPoints_3_2;
+	OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
+
 
 #ifdef HAVE_WX
 	wxInitialize();
@@ -5949,13 +5956,31 @@ DOKEYDOWN:
   return DefWindowProc (hwnd, message, wParam, lParam);
 }
 
-void Change3DCoreWithFallbackAndSave(int newCore, int fallbackCore)
+void Change3DCoreWithFallbackAndSave(int newCore)
 {
-	if(!NDS_3D_ChangeCore(newCore) && newCore != fallbackCore)
-		NDS_3D_ChangeCore(fallbackCore);
+	if(newCore == GPU3D_OPENGL_OLD)
+		goto TRY_OGL;
+
+	if(newCore == GPU3D_SWRAST)
+		goto TRY_SWRAST;
+
+	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_3_2))
+		goto TRY_OGL;
+	goto DONE;
+
+TRY_OGL:
+	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_OLD))
+		goto TRY_SWRAST;
+	goto DONE;
+
+TRY_SWRAST:
+	NDS_3D_ChangeCore(GPU3D_SWRAST);
+	
+DONE:
 	int gpu3dSaveValue = ((cur3DCore != GPU3D_NULL) ? cur3DCore : GPU3D_NULL_SAVED);
 	WritePrivateProfileInt("3D", "Renderer", gpu3dSaveValue, IniName);
 }
+
 LRESULT CALLBACK HUDFontSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 {
 	switch(msg)

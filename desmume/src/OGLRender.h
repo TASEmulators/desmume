@@ -355,6 +355,8 @@ class TexCacheItem;
 class OpenGLRenderer;
 
 extern GPU3DInterface gpu3Dgl;
+extern GPU3DInterface gpu3DglOld;
+extern GPU3DInterface gpu3Dgl_3_2;
 
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.

@@ -762,6 +762,9 @@
     <ClCompile Include="tileView.cpp">
       <Filter>Windows\tools</Filter>
     </ClCompile>
+    <ClCompile Include="..\OGLRender_3_2.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1282,6 +1285,9 @@
     </ClInclude>
     <ClInclude Include="tileView.h">
       <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OGLRender_3_2.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

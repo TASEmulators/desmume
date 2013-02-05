@@ -2769,6 +2769,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\OGLRender_3_2.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\OGLRender_3_2.h"
+			>
+		</File>
+		<File
 			RelativePath="..\path.cpp"
 			>
 		</File>

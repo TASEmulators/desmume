@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -406,6 +406,7 @@
     <ClCompile Include="..\movie.cpp" />
     <ClCompile Include="..\NDSSystem.cpp" />
     <ClCompile Include="..\OGLRender.cpp" />
+    <ClCompile Include="..\OGLRender_3_2.cpp" />
     <ClCompile Include="..\path.cpp" />
     <ClCompile Include="..\rasterize.cpp" />
     <ClCompile Include="..\readwrite.cpp" />
@@ -650,6 +651,7 @@
     <ClInclude Include="..\movie.h" />
     <ClInclude Include="..\NDSSystem.h" />
     <ClInclude Include="..\OGLRender.h" />
+    <ClInclude Include="..\OGLRender_3_2.h" />
     <ClInclude Include="..\path.h" />
     <ClInclude Include="..\rasterize.h" />
     <ClInclude Include="..\readwrite.h" />
