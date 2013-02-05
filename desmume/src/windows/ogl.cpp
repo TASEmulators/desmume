@@ -47,38 +47,46 @@ int CheckHardwareSupport(HDC hdc)
    return -1; // check error
 }
 
-bool initContext(HWND hwnd, HGLRC *hRC)
+bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc)
 {
-	int pixelFormat;
-
 	*hRC = NULL;
+	*hdc = NULL;
 
 	HDC oglDC = GetDC (hwnd);
 
-static PIXELFORMATDESCRIPTOR pfd = 
-{ 0, 0, PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0 };
-
-	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
-	if (pixelFormat == 0)
-		return false;
-
-	if(!SetPixelFormat(oglDC, pixelFormat, &pfd))
-		return false;
+	GLuint PixelFormat;
+  static PIXELFORMATDESCRIPTOR pfd;
+	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_SUPPORT_OPENGL;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 24;
+	pfd.cDepthBits = 24;
+	pfd.cAlphaBits = 8;
+	pfd.cStencilBits = 8;
+	pfd.iLayerType = PFD_MAIN_PLANE ;
+  PixelFormat = ChoosePixelFormat(oglDC, &pfd);
+  SetPixelFormat(oglDC, PixelFormat, &pfd);
 
 	*hRC = wglCreateContext(oglDC);
 	if (!hRC)
+	{
+		DeleteObject(oglDC);
 		return false;
+	}
+
+	*hdc = oglDC;
 
 	return true;
 }
 
 static HGLRC main_hRC;
+static HDC main_hDC;
 
 static bool _begin()
 {
-	HDC oglDC = GetDC (NULL);
-
-	if(!wglMakeCurrent(oglDC, main_hRC))
+	if(!wglMakeCurrent(main_hDC, main_hRC))
 		return false;
 
 	return true;
@@ -95,20 +103,20 @@ bool windows_opengl_init()
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
-	pfd.dwFlags =  PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.dwFlags = PFD_SUPPORT_OPENGL;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cColorBits = 24;
 	pfd.cDepthBits = 24;
 	pfd.cAlphaBits = 8;
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE ;
-  HDC hDC = GetDC(NULL);
-  PixelFormat = ChoosePixelFormat(hDC, &pfd);
-  SetPixelFormat(hDC, PixelFormat, &pfd);
-  main_hRC = wglCreateContext(hDC);
-  wglMakeCurrent(hDC, main_hRC);
+  main_hDC = GetDC(NULL);
+  PixelFormat = ChoosePixelFormat(main_hDC, &pfd);
+  SetPixelFormat(main_hDC, PixelFormat, &pfd);
+  main_hRC = wglCreateContext(main_hDC);
+  wglMakeCurrent(main_hDC, main_hRC);
 
-	int res = CheckHardwareSupport(hDC);
+	int res = CheckHardwareSupport(main_hDC);
 	if (res>=0&&res<=2) 
 			INFO("OpenGL mode: %s\n",opengl_modes[res]); 
 		else 

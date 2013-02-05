@@ -1404,6 +1404,7 @@ static void DD_FillRect(LPDIRECTDRAWSURFACE7 surf, int left, int top, int right,
 struct GLDISPLAY
 {
 	HGLRC privateContext;
+	HDC privateDC;
 	bool init;
 
 	GLDISPLAY()
@@ -1415,7 +1416,7 @@ struct GLDISPLAY
 	{
 		//do we need to use another HDC?
 		if(init) return true;
-		init = initContext(MainWindow->getHWnd(),&privateContext);
+		init = initContext(MainWindow->getHWnd(),&privateContext, &privateDC);
 		return init;
 	}
 
@@ -1423,6 +1424,9 @@ struct GLDISPLAY
 	{
 		if(!init) return;
 		wglDeleteContext(privateContext);
+		DeleteObject(privateDC);
+		privateDC = NULL;
+		privateContext = NULL;
 		init = false;
 	}
 
@@ -1435,9 +1439,7 @@ struct GLDISPLAY
 			{
 				if(!initialize()) return false;
 			}
-			HWND hwnd = MainWindow->getHWnd();
-			HDC dc = GetDC(hwnd);
-			wglMakeCurrent(dc,privateContext);
+			wglMakeCurrent(privateDC,privateContext);
 			return true;
 		}
 
@@ -1447,9 +1449,7 @@ struct GLDISPLAY
 
 	void showPage()
 	{
-			HWND hwnd = MainWindow->getHWnd();
-			HDC dc = GetDC(hwnd);
-			SwapBuffers(dc);
+			SwapBuffers(privateDC);
 	}
 } gldisplay;
 

@@ -18,4 +18,4 @@
 #pragma once
 
 bool windows_opengl_init();
-bool initContext(HWND hwnd, HGLRC *hRC);
+bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc);
