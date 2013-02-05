@@ -774,6 +774,9 @@
     <ClCompile Include="..\utils\AsmJit\x86\x86util.cpp">
       <Filter>Core\utils\AsmJit\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\OGLRender_3_2.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1493,6 +1496,9 @@
     </ClInclude>
     <ClInclude Include="..\utils\AsmJit\x86\x86util.h">
       <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OGLRender_3_2.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

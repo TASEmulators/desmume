@@ -451,9 +451,9 @@ void HK_FrameAdvanceKeyDown(int, bool justPressed) { FrameAdvance(true); }
 void HK_FrameAdvanceKeyUp(int) { FrameAdvance(false); }
 
 void HK_ToggleRasterizer(int, bool justPressed) { 
-	if(cur3DCore == GPU3D_OPENGL)
+	if(cur3DCore == GPU3D_OPENGL_OLD || cur3DCore == GPU3D_OPENGL_3_2)
 		cur3DCore = GPU3D_SWRAST;
-	else cur3DCore = GPU3D_OPENGL;
+	else cur3DCore = GPU3D_OPENGL_3_2;
 
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 }

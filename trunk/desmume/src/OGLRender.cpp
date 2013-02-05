@@ -486,6 +486,7 @@ static void texDeleteCallback(TexCacheItem *item)
 	_OGLRenderer->DeleteTexture(item);
 }
 
+template<bool require_profile, bool enable_3_2>
 static char OGLInit(void)
 {
 	char result = 0;
@@ -528,10 +529,19 @@ static char OGLInit(void)
 	}
 	
 	// Create new OpenGL rendering object
-	if (OGLLoadEntryPoints_3_2_Func != NULL && OGLCreateRenderer_3_2_Func != NULL)
+	if(enable_3_2)
 	{
-		OGLLoadEntryPoints_3_2_Func();
-		OGLCreateRenderer_3_2_Func(&_OGLRenderer);
+		if (OGLLoadEntryPoints_3_2_Func != NULL && OGLCreateRenderer_3_2_Func != NULL)
+		{
+			OGLLoadEntryPoints_3_2_Func();
+			OGLLoadEntryPoints_Legacy(); //zero 04-feb-2013 - this seems to be necessary as well
+			OGLCreateRenderer_3_2_Func(&_OGLRenderer);
+		}
+		else 
+		{
+			if(require_profile)
+				return 0;
+		}
 	}
 	
 	// If the renderer doesn't initialize with OpenGL v3.2 or higher, fall back
@@ -667,9 +677,32 @@ static void OGLRenderFinish()
 	ENDGL();
 }
 
+//automatically select 3.2 or old profile depending on whether 3.2 is available
 GPU3DInterface gpu3Dgl = {
 	"OpenGL",
-	OGLInit,
+	OGLInit<false,false>,
+	OGLReset,
+	OGLClose,
+	OGLRender,
+	OGLRenderFinish,
+	OGLVramReconfigureSignal
+};
+
+//forcibly use old profile
+GPU3DInterface gpu3DglOld = {
+	"OpenGL",
+	OGLInit<true,false>,
+	OGLReset,
+	OGLClose,
+	OGLRender,
+	OGLRenderFinish,
+	OGLVramReconfigureSignal
+};
+
+//forcibly use new profile
+GPU3DInterface gpu3Dgl_3_2 = {
+	"OpenGL 3.2",
+	OGLInit<true,true>,
 	OGLReset,
 	OGLClose,
 	OGLRender,
