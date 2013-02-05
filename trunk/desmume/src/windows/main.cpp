@@ -1596,10 +1596,10 @@ static void OGL_DoDisplay()
 				ofs = 1;
 				break;
 			}
-			float u1 = srcRects[idx].left/256.0f;
-			float u2 = srcRects[idx].right/256.0f;
-			float v1 = srcRects[idx].top/384.0f;
-			float v2 = srcRects[idx].bottom/384.0f;
+			float u1 = srcRects[idx].left/(float)video.width;
+			float u2 = srcRects[idx].right/(float)video.width;
+			float v1 = srcRects[idx].top/(float)video.height;
+			float v2 = srcRects[idx].bottom/(float)video.height;
 			float u[] = {u1,u2,u2,u1};
 			float v[] = {v1,v1,v2,v2};
 
