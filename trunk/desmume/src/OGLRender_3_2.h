@@ -71,11 +71,10 @@ protected:
 	virtual Render3DError SetupShaderIO();
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
+	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount);
+	virtual Render3DError DisableVertexAttributes();
+	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
-	
-	virtual Render3DError BeginRender(const GFX3D_State *renderState);
-	virtual Render3DError PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
-	virtual Render3DError PostRender();
 	
 	virtual Render3DError ClearUsingImage() const;
 	
