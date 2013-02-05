@@ -1433,17 +1433,16 @@ struct GLDISPLAY
 	bool begin()
 	{
 		DWORD myThread = GetCurrentThreadId();
-		//if(myThread != dwMainThread) //single threading differences not needed right now
-		{
-			if(!init)
-			{
-				if(!initialize()) return false;
-			}
-			wglMakeCurrent(privateDC,privateContext);
-			return true;
-		}
 
-		//we can render no problem in this thread (i hope)
+		//always use another context for display logic
+		//1. if this is a single threaded process (3d rendering and display in the main thread) then alternating contexts is benign
+		//2. if this is a multi threaded process (3d rendernig and display in other threads) then the display needs some context
+
+		if(!init)
+		{
+			if(!initialize()) return false;
+		}
+		wglMakeCurrent(privateDC,privateContext);
 		return true;
 	}
 
