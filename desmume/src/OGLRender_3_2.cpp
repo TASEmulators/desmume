@@ -513,6 +513,39 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 	}
 }
 
+Render3DError OpenGLRenderer_3_2::EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount)
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	glBindVertexArray(OGLRef.vaoMainStatesID);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::DisableVertexAttributes()
+{
+	glBindVertexArray(0);
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::SelectRenderingFramebuffer()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	if (this->isMultisampledFBOSupported)
+	{
+		OGLRef.selectedRenderingFBO = CommonSettings.GFX3D_Renderer_Multisample ? OGLRef.fboMultisampleRenderID : OGLRef.fboFinalOutputID;
+		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
+		
+		const GLenum drawBufferList = {GL_COLOR_ATTACHMENT0};
+		glDrawBuffers(1, &drawBufferList);
+	}
+	
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_3_2::DownsampleFBO()
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -526,89 +559,6 @@ Render3DError OpenGLRenderer_3_2::DownsampleFBO()
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboFinalOutputID);
 	glBlitFramebuffer(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboFinalOutputID);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D_State *renderState)
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	glUniform1i(OGLRef.uniformEnableAlphaTest, renderState->enableAlphaTest ? GL_TRUE : GL_FALSE);
-	glUniform1f(OGLRef.uniformAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
-	glUniform1i(OGLRef.uniformToonShadingMode, renderState->shading);
-	glUniform1i(OGLRef.uniformWBuffer, renderState->wbuffer);
-	
-	if(renderState->enableAlphaBlending)
-	{
-		glEnable(GL_BLEND);
-	}
-	else
-	{
-		glDisable(GL_BLEND);
-	}
-	
-	if (this->isMultisampledFBOSupported)
-	{
-		OGLRef.selectedRenderingFBO = CommonSettings.GFX3D_Renderer_Multisample ? OGLRef.fboMultisampleRenderID : OGLRef.fboFinalOutputID;
-		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-		
-		const GLenum drawBufferList = {GL_COLOR_ATTACHMENT0};
-		glDrawBuffers(1, &drawBufferList);
-	}
-	
-	glDepthMask(GL_TRUE);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	const unsigned int polyCount = polyList->count;
-	unsigned int vertIndexCount = 0;
-	
-	// Set up vertices
-	for(unsigned int i = 0; i < polyCount; i++)
-	{
-		const POLY *poly = &polyList->list[indexList->list[i]];
-		const unsigned int polyType = poly->type;
-		
-		for(unsigned int j = 0; j < polyType; j++)
-		{
-			const GLushort vertIndex = poly->vertIndexes[j];
-			
-			// While we're looping through our vertices, add each vertex index to
-			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
-			// vertices here to convert them to GL_TRIANGLES, which are much easier
-			// to work with and won't be deprecated in future OpenGL versions.
-			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-			if (poly->vtxFormat == GFX3D_QUADS || poly->vtxFormat == GFX3D_QUAD_STRIP)
-			{
-				if (j == 2)
-				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
-				}
-				else if (j == 3)
-				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
-				}
-			}
-		}
-	}
-	
-	// Assign vertex attributes
-	glBindVertexArray(OGLRef.vaoMainStatesID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::PostRender()
-{
-	// Disable vertex attributes
-	glBindVertexArray(0);
 	
 	return OGLERROR_NOERR;
 }
