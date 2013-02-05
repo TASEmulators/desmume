@@ -22,14 +22,17 @@
 #import "cocoa_util.h"
 #include "sndOSX.h"
 
-#include <OpenGL/OpenGL.h>
-
 #include "../NDSSystem.h"
 #include "../GPU.h"
-#include "../OGLRender.h"
 #include "../rasterize.h"
 #include "../SPU.h"
 #include "../metaspu/metaspu.h"
+
+#ifdef MAC_OS_X_VERSION_10_7
+#include "../OGLRender_3_2.h"
+#else
+#include "../OGLRender.h"
+#endif
 
 #undef BOOL
 
@@ -1849,6 +1852,25 @@ bool GetGPUDisplayState(int gpuType)
 	}
 	
 	return result;
+}
+
+void RequestOpenGLRenderer_3_2(bool request_3_2)
+{
+#ifdef OGLRENDER_3_2_H
+	if (request_3_2)
+	{
+		OGLLoadEntryPoints_3_2_Func = &OGLLoadEntryPoints_3_2;
+		OGLCreateRenderer_3_2_Func = &OGLCreateRenderer_3_2;
+	}
+	else
+	{
+		OGLLoadEntryPoints_3_2_Func = NULL;
+		OGLCreateRenderer_3_2_Func = NULL;
+	}
+#else
+	OGLLoadEntryPoints_3_2_Func = NULL;
+	OGLCreateRenderer_3_2_Func = NULL;
+#endif
 }
 
 void SetOpenGLRendererFunctions(bool (*initFunction)(),

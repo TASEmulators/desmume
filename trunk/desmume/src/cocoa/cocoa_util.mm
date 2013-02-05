@@ -181,6 +181,29 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	return modelIdentifierStr;
 }
 
++ (BOOL) OSVersionCheckMajor:(NSUInteger)checkMajor minor:(NSUInteger)checkMinor revision:(NSUInteger)checkRevision
+{
+	BOOL result = NO;
+	
+	NSDictionary *systemDict = [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"];
+	NSString *versionString = (NSString *)[systemDict objectForKey:@"ProductVersion"];
+	const char *versionCString = [versionString cStringUsingEncoding:NSUTF8StringEncoding];
+	
+	unsigned int OSMajor = 0;
+	unsigned int OSMinor = 0;
+	unsigned int OSRevision = 0;
+	sscanf(versionCString, "%u.%u.%u", &OSMajor, &OSMinor, &OSRevision);
+	
+	if ((OSMajor > checkMajor) ||
+		(OSMajor >= checkMajor && OSMinor > checkMinor) ||
+		(OSMajor >= checkMajor && OSMinor >= checkMinor && OSRevision >= checkRevision) )
+	{
+		result = YES;
+	}
+	
+	return result;
+}
+
 @end
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4

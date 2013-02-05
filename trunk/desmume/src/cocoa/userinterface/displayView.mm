@@ -39,13 +39,13 @@
 #undef BOOL
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
-const char *vShader = {"\
+const char *vShader_100 = {"\
 	attribute vec2 inPosition; \n\
 	attribute vec2 inTexCoord0; \n\
 	\n\
-	uniform vec2 viewSize;\n\
-	uniform float scalar;\n\
-	uniform float angleDegrees;\n\
+	uniform vec2 viewSize; \n\
+	uniform float scalar; \n\
+	uniform float angleDegrees; \n\
 	\n\
 	varying vec2 vtxTexCoord; \n\
 	\n\
@@ -53,8 +53,8 @@ const char *vShader = {"\
 	{ \n\
 		float angleRadians = radians(angleDegrees); \n\
 		\n\
-		mat2 projection	= mat2(	vec2(2.0/viewSize.x, 0.0), \n\
-								vec2(0.0, 2.0/viewSize.y));\n\
+		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
+								vec2(           0.0, 2.0/viewSize.y)); \n\
 		\n\
 		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
 								vec2(sin(angleRadians),  cos(angleRadians))); \n\
@@ -63,20 +63,18 @@ const char *vShader = {"\
 								vec2(   0.0, scalar)); \n\
 		\n\
 		vtxTexCoord = inTexCoord0; \n\
-		gl_Position = vec4(projection * rotation * scale * inPosition, 1.0, 1.0);\n\
+		gl_Position = vec4(projection * rotation * scale * inPosition, 1.0, 1.0); \n\
 	} \n\
-	"};
+"};
 
 // FRAGMENT SHADER FOR DISPLAY OUTPUT
-const char *fShader = {"\
-	uniform sampler2D tex;\n\
-	\n\
+const char *fShader_100 = {"\
 	varying vec2 vtxTexCoord; \n\
+	uniform sampler2D tex; \n\
 	\n\
 	void main() \n\
 	{ \n\
-		vec4 color = texture2D(tex, vtxTexCoord);\n\
-		gl_FragColor = color;\n\
+		gl_FragColor = texture2D(tex, vtxTexCoord); \n\
 	} \n\
 "};
 
@@ -1012,6 +1010,19 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	vtxBufferOffset = 0;
 	
 	// Create a new context for the OpenGL-based emulated 3D renderer
+#ifdef MAC_OS_X_VERSION_10_7
+	NSOpenGLPixelFormatAttribute attrs[] = {
+		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFAAccelerated,
+		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+		(NSOpenGLPixelFormatAttribute)0
+	};
+	
+	useContext_3_2 = [CocoaDSUtil OSVersionCheckMajor:10 minor:7 revision:0] ? YES : NO;
+#else
 	NSOpenGLPixelFormatAttribute attrs[] =
 	{
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
@@ -1019,8 +1030,19 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFAAccelerated,
+		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0
 	};
+	
+	useContext_3_2 = NO;
+#endif
+	// If we're not using a 3.2 Core Profile context, then remove that
+	// requirement from the pixel format.
+	if (!useContext_3_2)
+	{
+		attrs[9] = (NSOpenGLPixelFormatAttribute)0;
+		attrs[10] = (NSOpenGLPixelFormatAttribute)0;
+	}
 	
 	NSOpenGLPixelFormat *tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 	if (tempPixelFormat == nil)
@@ -1031,22 +1053,26 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 	}
 	
-	NSOpenGLPixelBuffer *tempPixelBuffer = [[NSOpenGLPixelBuffer alloc]
-											initWithTextureTarget:GL_TEXTURE_2D
-											textureInternalFormat:GL_BGRA
-											textureMaxMipMapLevel:0
-											pixelsWide:GPU_DISPLAY_WIDTH
-											pixelsHigh:GPU_DISPLAY_HEIGHT*2];
-	
 	NSOpenGLContext *newOGLRendererContext = [[NSOpenGLContext alloc] initWithFormat:tempPixelFormat shareContext:nil];
-	[newOGLRendererContext setPixelBuffer:tempPixelBuffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:[[self openGLContext] currentVirtualScreen]];
-	
 	[tempPixelFormat release];
-	[tempPixelBuffer release];
+	
+	if (!useContext_3_2)
+	{
+		NSOpenGLPixelBuffer *tempPixelBuffer = [[NSOpenGLPixelBuffer alloc]
+												initWithTextureTarget:GL_TEXTURE_2D
+												textureInternalFormat:GL_BGRA
+												textureMaxMipMapLevel:0
+												pixelsWide:GPU_DISPLAY_WIDTH
+												pixelsHigh:GPU_DISPLAY_HEIGHT*2];
+		
+		[newOGLRendererContext setPixelBuffer:tempPixelBuffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:[[self openGLContext] currentVirtualScreen]];
+		[tempPixelBuffer release];
+	}
 	
 	oglRendererContext = newOGLRendererContext;
 	OSXOpenGLRendererContext = (CGLContextObj)[oglRendererContext CGLContextObj];
 	
+	RequestOpenGLRenderer_3_2(useContext_3_2);
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
 							   &OSXOpenGLRendererBegin,
 							   &OSXOpenGLRendererEnd);
@@ -1149,22 +1175,23 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
 	vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
 	
+	[self setupOpenGL_Legacy];
+}
+
+- (void) setupOpenGL_Legacy
+{
 	// Check the OpenGL capabilities for this renderer
 	const GLubyte *glExtString = glGetString(GL_EXTENSIONS);
 	BOOL isPBOSupported	= gluCheckExtension((const GLubyte *)"GL_ARB_pixel_buffer_object", glExtString);
 	
-	// Enable OS X's multithreaded OpenGL engine if both VBOs and PBOs are supported.
-	//
-	// If these aren't supported, then multithreading may result in a substantial
-	// performance penalty.
-	if (isVBOSupported && isPBOSupported)
-	{
-		CGLEnable(cglDisplayContext, kCGLCEMPEngine);
-		CGLEnable(OSXOpenGLRendererContext, kCGLCEMPEngine);
-	}
-	
 	// Set up textures
 	glGenTextures(1, &displayTexID);
+	glBindTexture(GL_TEXTURE_2D, displayTexID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	// Set up VBOs
 	isVBOSupported = gluCheckExtension((const GLubyte *)"GL_ARB_vertex_buffer_object", glExtString);
@@ -1186,13 +1213,13 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	// Set up shaders
-	isShadersSupported	= ( gluCheckExtension((const GLubyte *)"GL_ARB_shader_objects", glExtString) &&
-						    gluCheckExtension((const GLubyte *)"GL_ARB_vertex_shader", glExtString) &&
-						    gluCheckExtension((const GLubyte *)"GL_ARB_fragment_shader", glExtString) &&
-						    gluCheckExtension((const GLubyte *)"GL_ARB_vertex_program", glExtString) );
+	isShadersSupported	= (gluCheckExtension((const GLubyte *)"GL_ARB_shader_objects", glExtString) &&
+						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_shader", glExtString) &&
+						   gluCheckExtension((const GLubyte *)"GL_ARB_fragment_shader", glExtString) &&
+						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_program", glExtString) );
 	if (isShadersSupported)
 	{
-		GLint shaderStatus = SetupShaders(&vertexShaderID, &fragmentShaderID, &shaderProgram);
+		GLint shaderStatus = SetupShaders(&shaderProgram, &vertexShaderID, vShader_100, &fragmentShaderID, fShader_100);
 		if (shaderStatus == GL_TRUE)
 		{
 			glUseProgram(shaderProgram);
@@ -1212,10 +1239,10 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	}
 	
 	// Set up VAO
-	isVAOSupported	=  isVBOSupported &&
-					   isShadersSupported &&
-					  (gluCheckExtension((const GLubyte *)"GL_ARB_vertex_array_object", glExtString) ||
-					   gluCheckExtension((const GLubyte *)"GL_APPLE_vertex_array_object", glExtString) );
+	isVAOSupported	= ( isVBOSupported &&
+					    isShadersSupported &&
+					   (gluCheckExtension((const GLubyte *)"GL_ARB_vertex_array_object", glExtString) ||
+						gluCheckExtension((const GLubyte *)"GL_APPLE_vertex_array_object", glExtString) ) );
 	if (isVAOSupported)
 	{
 		glGenVertexArrays(1, &vaoMainStatesID);
@@ -1244,7 +1271,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	{
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_LIGHTING);
-		glDisable(GL_FOG);		
+		glDisable(GL_FOG);
 		glEnable(GL_TEXTURE_2D);
 	}
 	
@@ -1773,42 +1800,42 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 
 @end
 
-static GLint SetupShaders(GLuint *vShaderID, GLuint *fShaderID, GLuint *programID)
+GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, const char *vertShaderProgram, GLuint *fragShaderID, const char *fragShaderProgram)
 {
 	GLint shaderStatus = GL_TRUE;
 	
-	*vShaderID = glCreateShader(GL_VERTEX_SHADER);
-	if (*vShaderID == 0)
+	*vertShaderID = glCreateShader(GL_VERTEX_SHADER);
+	if (*vertShaderID == 0)
 	{
 		NSLog(@"OpenGL Error - Failed to create vertex shader.");
 		return shaderStatus;
 	}
 	
-	glShaderSource(*vShaderID, 1, (const GLchar **)&vShader, NULL);
-	glCompileShader(*vShaderID);
-	glGetShaderiv(*vShaderID, GL_COMPILE_STATUS, &shaderStatus);
+	glShaderSource(*vertShaderID, 1, (const GLchar **)&vertShaderProgram, NULL);
+	glCompileShader(*vertShaderID);
+	glGetShaderiv(*vertShaderID, GL_COMPILE_STATUS, &shaderStatus);
 	if (shaderStatus == GL_FALSE)
 	{
-		glDeleteShader(*vShaderID);
+		glDeleteShader(*vertShaderID);
 		NSLog(@"OpenGL Error - Failed to compile vertex shader.");
 		return shaderStatus;
 	}
 	
-	*fShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-	if (*fShaderID == 0)
+	*fragShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	if (*fragShaderID == 0)
 	{
-		glDeleteShader(*vShaderID);
+		glDeleteShader(*vertShaderID);
 		NSLog(@"OpenGL Error - Failed to create fragment shader.");
 		return shaderStatus;
 	}
 	
-	glShaderSource(*fShaderID, 1, (const GLchar **)&fShader, NULL);
-	glCompileShader(*fShaderID);
-	glGetShaderiv(*fShaderID, GL_COMPILE_STATUS, &shaderStatus);
+	glShaderSource(*fragShaderID, 1, (const GLchar **)&fragShaderProgram, NULL);
+	glCompileShader(*fragShaderID);
+	glGetShaderiv(*fragShaderID, GL_COMPILE_STATUS, &shaderStatus);
 	if (shaderStatus == GL_FALSE)
 	{
-		glDeleteShader(*vShaderID);
-		glDeleteShader(*fShaderID);
+		glDeleteShader(*vertShaderID);
+		glDeleteShader(*fragShaderID);
 		NSLog(@"OpenGL Error - Failed to compile fragment shader.");
 		return shaderStatus;
 	}
@@ -1816,14 +1843,14 @@ static GLint SetupShaders(GLuint *vShaderID, GLuint *fShaderID, GLuint *programI
 	*programID = glCreateProgram();
 	if (*programID == 0)
 	{
-		glDeleteShader(*vShaderID);
-		glDeleteShader(*fShaderID);
+		glDeleteShader(*vertShaderID);
+		glDeleteShader(*fragShaderID);
 		NSLog(@"OpenGL Error - Failed to create shader program.");
 		return shaderStatus;
 	}
 	
-	glAttachShader(*programID, *vShaderID);
-	glAttachShader(*programID, *fShaderID);
+	glAttachShader(*programID, *vertShaderID);
+	glAttachShader(*programID, *fragShaderID);
 	
 	glBindAttribLocation(*programID, OGLVertexAttributeID_Position, "inPosition");
 	glBindAttribLocation(*programID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
@@ -1833,8 +1860,8 @@ static GLint SetupShaders(GLuint *vShaderID, GLuint *fShaderID, GLuint *programI
 	if (shaderStatus == GL_FALSE)
 	{
 		glDeleteProgram(*programID);
-		glDeleteShader(*vShaderID);
-		glDeleteShader(*fShaderID);
+		glDeleteShader(*vertShaderID);
+		glDeleteShader(*fragShaderID);
 		NSLog(@"OpenGL Error - Failed to link shader program.");
 		return shaderStatus;
 	}
