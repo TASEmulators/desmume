@@ -36,7 +36,7 @@
 
 @optional
 - (void) doResizeView:(NSRect)rect;
-- (void) doTransformView:(DisplayOutputTransformData *)transformData;
+- (void) doTransformView:(const DisplayOutputTransformData *)transformData;
 - (void) doRedraw;
 - (void) doDisplayModeChanged:(NSInteger)displayModeID;
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
@@ -130,7 +130,6 @@
 	DisplayViewDelegate *dispViewDelegate;
 	NSInteger lastDisplayMode;
 	NSInteger currentDisplayOrientation;
-	GLint glTexRenderStyle;
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
@@ -150,9 +149,9 @@
 	GLint uniformScalar;
 	GLint uniformViewSize;
 	
-	GLint *vtxBuffer;
-	GLfloat *texCoordBuffer;
-	GLubyte *vtxIndexBuffer;
+	GLint vtxBuffer[4 * 8];
+	GLfloat texCoordBuffer[2 * 8];
+	GLubyte vtxIndexBuffer[12];
 	
 	unsigned int vtxBufferOffset;
 }
@@ -162,6 +161,7 @@
 - (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
 - (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID;
+- (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t;
 
 @end
 
@@ -170,7 +170,7 @@ extern "C"
 {
 #endif
 
-GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, const char *vertShaderProgram, GLuint *fragShaderID, const char *fragShaderProgram);
+GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, GLuint *fragShaderID, const char *vertShaderProgram, const char *fragShaderProgram);
 
 #ifdef __cplusplus
 }
