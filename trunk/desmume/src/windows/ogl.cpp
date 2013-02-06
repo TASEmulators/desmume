@@ -98,8 +98,8 @@ bool windows_opengl_init()
 
 	if(oglAlreadyInit == true) return true;
 
-  GLuint PixelFormat;
-  static PIXELFORMATDESCRIPTOR pfd;
+	GLuint PixelFormat;
+	static PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
@@ -109,18 +109,21 @@ bool windows_opengl_init()
 	pfd.cDepthBits = 24;
 	pfd.cAlphaBits = 8;
 	pfd.cStencilBits = 8;
-	pfd.iLayerType = PFD_MAIN_PLANE ;
-  main_hDC = GetDC(NULL);
-  PixelFormat = ChoosePixelFormat(main_hDC, &pfd);
-  SetPixelFormat(main_hDC, PixelFormat, &pfd);
-  main_hRC = wglCreateContext(main_hDC);
-  wglMakeCurrent(main_hDC, main_hRC);
+	pfd.iLayerType = PFD_MAIN_PLANE;
+
+	HWND fakeWindow = CreateWindow("EDIT", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+	main_hDC = GetDC(fakeWindow);
+	PixelFormat = ChoosePixelFormat(main_hDC, &pfd);
+	SetPixelFormat(main_hDC, PixelFormat, &pfd);
+	main_hRC = wglCreateContext(main_hDC);
+	wglMakeCurrent(main_hDC, main_hRC);
 
 	int res = CheckHardwareSupport(main_hDC);
 	if (res>=0&&res<=2) 
-			INFO("WGL OpenGL mode: %s\n",opengl_modes[res]); 
-		else 
-			INFO("WGL OpenGL mode: uknown\n");
+		INFO("WGL OpenGL mode: %s\n",opengl_modes[res]); 
+	else 
+		INFO("WGL OpenGL mode: uknown\n");
 
 	oglAlreadyInit = true;
 
