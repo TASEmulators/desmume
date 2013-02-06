@@ -39,7 +39,7 @@
 {
 	struct NDS_fw_config_data *data;
 	struct NDS_fw_config_data *internalData;
-	NSInteger birth_year;
+	NSUInteger birth_year;
 	pthread_mutex_t mutex;
 }
 

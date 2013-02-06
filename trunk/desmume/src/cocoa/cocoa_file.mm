@@ -958,7 +958,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	}
 	
 	NSString *romFileName = [[romURL path] lastPathComponent];
-	NSString *fileExt = [NSString stringWithFormat:@"ds%d", slotNumber];
+	NSString *fileExt = [NSString stringWithFormat:@"ds%ld", (unsigned long)slotNumber];
 	
 	return [[romFileName stringByDeletingPathExtension] stringByAppendingPathExtension:fileExt];
 }

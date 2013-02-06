@@ -48,7 +48,7 @@
 	
 	if (theCode == nil)
 	{
-		deviceCode = [[NSString stringWithFormat:@"0x%08X", rand()] retain];
+		deviceCode = [[NSString stringWithFormat:@"0x%08X", arc4random()] retain];
 	}
 	else
 	{
@@ -497,7 +497,7 @@
 		case NSRightMouseDragged:
 		case NSOtherMouseDragged:
 			input = (CocoaDSInput *)[self.inputs valueForKey:@"NSEventMouse"];
-			elementCode = [NSString stringWithFormat:@"%i", [event buttonNumber]];
+			elementCode = [NSString stringWithFormat:@"%li", (long)[event buttonNumber]];
 			break;
 			
 		default:

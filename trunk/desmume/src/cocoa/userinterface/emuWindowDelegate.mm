@@ -1319,7 +1319,7 @@
 				
 				[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
 				[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
-				[cheatWindowBindings setValue:[NSString stringWithFormat:@"%d", [dbList count]] forKey:@"cheatDBItemCount"];
+				[cheatWindowBindings setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[dbList count]] forKey:@"cheatDBItemCount"];
 			}
 			else
 			{

@@ -119,7 +119,7 @@
 	self.untitledCount++;
 	if (self.untitledCount > 1)
 	{
-		untitledString = [NSString stringWithFormat:@"Untitled %d", self.untitledCount];
+		untitledString = [NSString stringWithFormat:@"Untitled %ld", (unsigned long)self.untitledCount];
 	}
 	else
 	{

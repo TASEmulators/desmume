@@ -219,7 +219,7 @@ static NSDictionary *hidUsageTable = nil;
 	NSString *elementCode = nil;
 	if (altElementCode == nil)
 	{
-		elementCode = [NSString stringWithFormat:@"0x%04X/0x%04X", elementUsagePage, elementUsage];
+		elementCode = [NSString stringWithFormat:@"0x%04lX/0x%04lX", (long)elementUsagePage, (long)elementUsage];
 	}
 	else
 	{
@@ -235,16 +235,16 @@ static NSDictionary *hidUsageTable = nil;
 		{
 			if (elementUsagePage == kHIDPage_Button)
 			{
-				elementName = [NSString stringWithFormat:@"Button %i", elementUsage];
+				elementName = [NSString stringWithFormat:@"Button %li", (long)elementUsage];
 			}
 			else if (elementUsagePage == kHIDPage_VendorDefinedStart)
 			{
-				elementName = [NSString stringWithFormat:@"VendorDefined %i", elementUsage];
+				elementName = [NSString stringWithFormat:@"VendorDefined %li", (long)elementUsage];
 			}
 			else
 			{
-				NSDictionary *elementUsagePageDict = (NSDictionary *)[hidUsageTable valueForKey:[NSString stringWithFormat:@"0x%04X", elementUsagePage]];
-				elementName = (NSString *)[elementUsagePageDict valueForKey:[NSString stringWithFormat:@"0x%04X", elementUsage]];
+				NSDictionary *elementUsagePageDict = (NSDictionary *)[hidUsageTable valueForKey:[NSString stringWithFormat:@"0x%04lX", (long)elementUsagePage]];
+				elementName = (NSString *)[elementUsagePageDict valueForKey:[NSString stringWithFormat:@"0x%04lX", (long)elementUsage]];
 			}
 		}
 		else
@@ -363,8 +363,8 @@ static NSDictionary *hidUsageTable = nil;
 		NSInteger upperThreshold = (((logicalMax - logicalMin) * 2) / 3) + logicalMin;
 		NSNumber *onState = [NSNumber numberWithBool:YES];
 		NSNumber *offState = [NSNumber numberWithBool:NO];
-		NSString *elementCodeLowerThreshold = [NSString stringWithFormat:@"0x%04X/0x%04X/LowerThreshold", elementUsagePage, elementUsage];
-		NSString *elementCodeUpperThreshold = [NSString stringWithFormat:@"0x%04X/0x%04X/UpperThreshold", elementUsagePage, elementUsage];
+		NSString *elementCodeLowerThreshold = [NSString stringWithFormat:@"0x%04lX/0x%04lX/LowerThreshold", (long)elementUsagePage, (long)elementUsage];
+		NSString *elementCodeUpperThreshold = [NSString stringWithFormat:@"0x%04lX/0x%04lX/UpperThreshold", (long)elementUsagePage, (long)elementUsage];
 		
 		if (logicalValue <= lowerThreshold)
 		{
@@ -410,18 +410,18 @@ static NSDictionary *hidUsageTable = nil;
 	
 	NSNumber *onState = [NSNumber numberWithBool:YES];
 	NSNumber *offState = [NSNumber numberWithBool:NO];
-	NSString *elementCodeFourWayUp = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-FourDirection", elementUsagePage, elementUsage, 0];
-	NSString *elementCodeFourWayRight = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-FourDirection", elementUsagePage, elementUsage, 1];
-	NSString *elementCodeFourWayDown = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-FourDirection", elementUsagePage, elementUsage, 2];
-	NSString *elementCodeFourWayLeft = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-FourDirection", elementUsagePage, elementUsage, 3];
-	NSString *elementCodeEightWayUp = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 0];
-	NSString *elementCodeEightWayUpRight = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 1];
-	NSString *elementCodeEightWayRight = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 2];
-	NSString *elementCodeEightWayDownRight = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 3];
-	NSString *elementCodeEightWayDown = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 4];
-	NSString *elementCodeEightWayDownLeft = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 5];
-	NSString *elementCodeEightWayLeft = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 6];
-	NSString *elementCodeEightWayUpLeft = [NSString stringWithFormat:@"0x%04X/0x%04X/%d-EightDirection", elementUsagePage, elementUsage, 7];
+	NSString *elementCodeFourWayUp = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, 0];
+	NSString *elementCodeFourWayRight = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, 1];
+	NSString *elementCodeFourWayDown = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, 2];
+	NSString *elementCodeFourWayLeft = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, 3];
+	NSString *elementCodeEightWayUp = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 0];
+	NSString *elementCodeEightWayUpRight = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 1];
+	NSString *elementCodeEightWayRight = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 2];
+	NSString *elementCodeEightWayDownRight = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 3];
+	NSString *elementCodeEightWayDown = [NSString stringWithFormat:@"0x%04lXX/0x%04lX/%d-EightDirection",(long) (long)elementUsagePage, (long)elementUsage, 4];
+	NSString *elementCodeEightWayDownLeft = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 5];
+	NSString *elementCodeEightWayLeft = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 6];
+	NSString *elementCodeEightWayUpLeft = [NSString stringWithFormat:@"0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, 7];
 	
 	if (logicalMax == 3)
 	{

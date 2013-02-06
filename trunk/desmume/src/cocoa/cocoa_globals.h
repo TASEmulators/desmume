@@ -50,7 +50,7 @@
 #define NSSTRING_TITLE_SHOW_STATUS_BAR				NSLocalizedString(@"Show Status Bar", nil)
 #define NSSTRING_TITLE_SPEED_1X						NSLocalizedString(@"Speed 1x", nil)
 #define NSSTRING_TITLE_SPEED_2X						NSLocalizedString(@"Speed 2x", nil)
-#define NSSTRING_TITLE_SLOT_NUMBER					NSLocalizedString(@"Slot %d", nil)
+#define NSSTRING_TITLE_SLOT_NUMBER					NSLocalizedString(@"Slot %ld", nil)
 
 #define NSSTRING_TITLE_TECH_SUPPORT_WINDOW_TITLE	NSLocalizedString(@"Support Request Form", nil)
 #define NSSTRING_TITLE_BUG_REPORT_WINDOW_TITLE		NSLocalizedString(@"Bug Report Form", nil)

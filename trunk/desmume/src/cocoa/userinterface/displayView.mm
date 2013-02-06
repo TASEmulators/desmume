@@ -597,7 +597,7 @@ enum OGLVertexAttributeID
 	
 	if (keyPressed && [theEvent window] != nil && [[[theEvent window] delegate] respondsToSelector:@selector(setStatus:)])
 	{
-		[[[theEvent window] delegate] setStatus:[NSString stringWithFormat:@"Keyboard:%i", [theEvent keyCode]]];
+		[(EmuWindowDelegate *)[[theEvent window] delegate] setStatus:[NSString stringWithFormat:@"Keyboard:%i", [theEvent keyCode]]];
 	}
 	
 	isHandled = [self.cdsController setStateWithInput:inputAttributes];
@@ -619,8 +619,8 @@ enum OGLVertexAttributeID
 	// and finally to DS touchscreen coordinates.
 	NSPoint touchLoc = [self dsPointFromEvent:theEvent];
 	
-	NSString *elementCode = [NSString stringWithFormat:@"%i", [theEvent buttonNumber]];
-	NSString *elementName = [NSString stringWithFormat:@"Button %i", [theEvent buttonNumber]];
+	NSString *elementCode = [NSString stringWithFormat:@"%li", (long)[theEvent buttonNumber]];
+	NSString *elementName = [NSString stringWithFormat:@"Button %li", (long)[theEvent buttonNumber]];
 	
 	switch ([theEvent buttonNumber])
 	{
@@ -652,7 +652,7 @@ enum OGLVertexAttributeID
 	
 	if (buttonPressed && [theEvent window] != nil && [[[theEvent window] delegate] respondsToSelector:@selector(setStatus:)])
 	{
-		[[[theEvent window] delegate] setStatus:[NSString stringWithFormat:@"Mouse:%i X:%i Y:%i", [theEvent buttonNumber], (NSInteger)(touchLoc.x), (NSInteger)(touchLoc.y)]];
+		[(EmuWindowDelegate *)[[theEvent window] delegate] setStatus:[NSString stringWithFormat:@"Mouse:%li X:%li Y:%li", (long)[theEvent buttonNumber], (long)(touchLoc.x), (long)(touchLoc.y)]];
 	}
 	
 	isHandled = [self.cdsController setStateWithInput:inputAttributes];
