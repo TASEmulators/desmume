@@ -135,5 +135,8 @@ void CloseConsole() {
 
 void printlog(const char *fmt, ...)
 {
-	printf(fmt);
+	va_list args;
+	va_start (args, fmt);
+	vprintf (fmt, args);
+	va_end (args);
 }
