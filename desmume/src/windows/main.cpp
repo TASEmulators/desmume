@@ -5953,7 +5953,7 @@ DOKEYDOWN:
 			}
 			return 0;
 	}
-  return DefWindowProc (hwnd, message, wParam, lParam);
+	return DefWindowProc (hwnd, message, wParam, lParam);
 }
 
 void Change3DCoreWithFallbackAndSave(int newCore)
@@ -5965,6 +5965,12 @@ void Change3DCoreWithFallbackAndSave(int newCore)
 
 	if(newCore == GPU3D_SWRAST)
 		goto TRY_SWRAST;
+
+	if(newCore == GPU3D_NULL)
+	{
+		NDS_3D_ChangeCore(GPU3D_NULL);
+		goto DONE;
+	}
 
 	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_3_2))
 	{
