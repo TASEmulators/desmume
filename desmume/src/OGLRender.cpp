@@ -505,7 +505,7 @@ static char OGLInit(void)
 
 	if(!BEGINGL())
 	{
-		INFO("OpenGL: Could not initialize -- BEGINGL() failed.\n");
+		INFO("OpenGL<%s,%s>: Could not initialize -- BEGINGL() failed.\n",require_profile?"force":"auto",enable_3_2?"3_2":"old");
 		result = 0;
 		return result;
 	}
@@ -690,7 +690,7 @@ GPU3DInterface gpu3Dgl = {
 
 //forcibly use old profile
 GPU3DInterface gpu3DglOld = {
-	"OpenGL",
+	"OpenGL Old",
 	OGLInit<true,false>,
 	OGLReset,
 	OGLClose,

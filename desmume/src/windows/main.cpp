@@ -5958,19 +5958,27 @@ DOKEYDOWN:
 
 void Change3DCoreWithFallbackAndSave(int newCore)
 {
+	printf("Attempting change to 3d core to: %s\n",core3DList[newCore]->name);
+
 	if(newCore == GPU3D_OPENGL_OLD)
-		goto TRY_OGL;
+		goto TRY_OGL_OLD;
 
 	if(newCore == GPU3D_SWRAST)
 		goto TRY_SWRAST;
 
 	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_3_2))
-		goto TRY_OGL;
+	{
+		printf("falling back to 3d core: %s\n",core3DList[GPU3D_OPENGL_OLD]->name);
+		goto TRY_OGL_OLD;
+	}
 	goto DONE;
 
-TRY_OGL:
+TRY_OGL_OLD:
 	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_OLD))
+	{
+		printf("falling back to 3d core: %s\n",core3DList[GPU3D_SWRAST]->name);
 		goto TRY_SWRAST;
+	}
 	goto DONE;
 
 TRY_SWRAST:

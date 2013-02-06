@@ -118,9 +118,9 @@ bool windows_opengl_init()
 
 	int res = CheckHardwareSupport(main_hDC);
 	if (res>=0&&res<=2) 
-			INFO("OpenGL mode: %s\n",opengl_modes[res]); 
+			INFO("WGL OpenGL mode: %s\n",opengl_modes[res]); 
 		else 
-			INFO("OpenGL mode: uknown\n");
+			INFO("WGL OpenGL mode: uknown\n");
 
 	oglAlreadyInit = true;
 
