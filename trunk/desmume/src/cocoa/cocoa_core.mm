@@ -49,6 +49,7 @@ volatile bool execute = true;
 
 @dynamic emulationFlags;
 @synthesize emuFlagAdvancedBusLevelTiming;
+@synthesize emuFlagRigorousTiming;
 @synthesize emuFlagUseExternalBios;
 @synthesize emuFlagEmulateBiosInterrupts;
 @synthesize emuFlagPatchDelayLoop;
@@ -80,6 +81,7 @@ static BOOL isCoreStarted = NO;
 	
 	emulationFlags = EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK;
 	emuFlagAdvancedBusLevelTiming = YES;
+	emuFlagRigorousTiming = NO;
 	emuFlagUseExternalBios = NO;
 	emuFlagEmulateBiosInterrupts = NO;
 	emuFlagPatchDelayLoop = NO;
@@ -377,6 +379,17 @@ static BOOL isCoreStarted = NO;
 	{
 		self.emuFlagAdvancedBusLevelTiming = NO;
 		CommonSettings.advanced_timing = false;
+	}
+	
+	if (theFlags & EMULATION_RIGOROUS_TIMING_MASK)
+	{
+		self.emuFlagRigorousTiming = YES;
+		CommonSettings.rigorous_timing = true;
+	}
+	else
+	{
+		self.emuFlagRigorousTiming = NO;
+		CommonSettings.rigorous_timing = false;
 	}
 	
 	if (theFlags & EMULATION_ENSATA_MASK)

@@ -680,7 +680,7 @@ enum OGLVertexAttributeID
 	[view doResizeView:rect];
 }
 
-- (void) doTransformView:(DisplayOutputTransformData *)transformData
+- (void) doTransformView:(const DisplayOutputTransformData *)transformData
 {
 	if (view == nil || ![view respondsToSelector:@selector(doTransformView:)])
 	{
@@ -994,7 +994,6 @@ enum OGLVertexAttributeID
 	lastDisplayMode = DS_DISPLAY_TYPE_COMBO;
 	currentDisplayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	glTexRenderStyle = GL_LINEAR;
 	
 	UInt32 w = GetNearestPositivePOT((UInt32)GPU_DISPLAY_WIDTH);
 	UInt32 h = GetNearestPositivePOT((UInt32)(GPU_DISPLAY_HEIGHT * 2.0));
@@ -1002,9 +1001,6 @@ enum OGLVertexAttributeID
 	glTexBackSize = NSMakeSize(w, h);
 	cglDisplayContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
 	
-	vtxBuffer = new GLint[4 * 8];
-	texCoordBuffer = new GLfloat[2 * 8];
-	vtxIndexBuffer = new GLubyte[12];
 	vtxBufferOffset = 0;
 	
     return self;
@@ -1038,15 +1034,6 @@ enum OGLVertexAttributeID
 	
 	CGLSetCurrentContext(prevContext);
 	
-	delete [] vtxBuffer;
-	vtxBuffer = NULL;
-	
-	delete [] texCoordBuffer;
-	texCoordBuffer = NULL;
-	
-	delete [] vtxIndexBuffer;
-	vtxIndexBuffer = NULL;
-	
 	free(glTexBack);
 	glTexBack = NULL;
 	
@@ -1074,26 +1061,8 @@ enum OGLVertexAttributeID
 
 - (void)prepareOpenGL
 {
-	// Set up initial display vertices
-	vtxBuffer[0]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[1]	= GPU_DISPLAY_HEIGHT;	// Top display, top left
-	vtxBuffer[2]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[3]	= GPU_DISPLAY_HEIGHT;	// Top display, top right
-	vtxBuffer[4]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[5]	= 0;					// Top display, bottom right
-	vtxBuffer[6]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[7]	= 0;					// Top display, bottom left
-	
-	vtxBuffer[8]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[9]	= 0;					// Bottom display, top left
-	vtxBuffer[10]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[11]	= 0;					// Bottom display, top right
-	vtxBuffer[12]	=  GPU_DISPLAY_WIDTH/2;		vtxBuffer[13]	= -GPU_DISPLAY_HEIGHT;	// Bottom display, bottom right
-	vtxBuffer[14]	= -GPU_DISPLAY_WIDTH/2;		vtxBuffer[15]	= -GPU_DISPLAY_HEIGHT;	// Bottom display, bottom left
-	
-	memcpy(vtxBuffer + (2 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (2 * 8));
-	
-	// Set up initial texture coordinates
-	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	= 0.0f;
-	texCoordBuffer[2]	= 1.0f;		texCoordBuffer[3]	= 0.0f;
-	texCoordBuffer[4]	= 1.0f;		texCoordBuffer[5]	= 1.0f;
-	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= 1.0f;
-	
-	memcpy(texCoordBuffer + (1 * 8), texCoordBuffer + (0 * 8), sizeof(GLfloat) * (1 * 8));
+	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:currentDisplayOrientation];
+	[self updateTexCoordS:1.0f T:2.0f];
 	
 	// Set up initial vertex elements
 	vtxIndexBuffer[0]	= 0;	vtxIndexBuffer[1]	= 1;	vtxIndexBuffer[2]	= 2;
@@ -1145,7 +1114,7 @@ enum OGLVertexAttributeID
 						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_program", glExtString) );
 	if (isShadersSupported)
 	{
-		GLint shaderStatus = SetupShaders(&shaderProgram, &vertexShaderID, vShader_100, &fragmentShaderID, fShader_100);
+		GLint shaderStatus = SetupShaders(&shaderProgram, &vertexShaderID, &fragmentShaderID, vShader_100, fShader_100);
 		if (shaderStatus == GL_TRUE)
 		{
 			glUseProgram(shaderProgram);
@@ -1289,7 +1258,7 @@ enum OGLVertexAttributeID
 	}
 	
 	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? 12 : 6;
-	GLubyte *elementPointer = isVBOSupported ? NULL : vtxIndexBuffer;
+	GLubyte *elementPointer = isVBOSupported ? 0 : vtxIndexBuffer;
 	
 	if (displayModeID == DS_DISPLAY_TYPE_TOUCH)
 	{
@@ -1335,8 +1304,8 @@ enum OGLVertexAttributeID
 
 - (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID
 {
-	GLint w = (GLint)GPU_DISPLAY_WIDTH;
-	GLint h = (GLint)GPU_DISPLAY_HEIGHT;
+	const GLint w = (GLint)GPU_DISPLAY_WIDTH;
+	const GLint h = (GLint)GPU_DISPLAY_HEIGHT;
 	
 	if (displayModeID == DS_DISPLAY_TYPE_COMBO)
 	{
@@ -1380,6 +1349,19 @@ enum OGLVertexAttributeID
 		memcpy(vtxBuffer + (1 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (1 * 8));	// Second display
 		memcpy(vtxBuffer + (2 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (2 * 8));	// Second display
 	}
+}
+
+- (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t
+{
+	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	=   0.0f;
+	texCoordBuffer[2]	=    s;		texCoordBuffer[3]	=   0.0f;
+	texCoordBuffer[4]	=    s;		texCoordBuffer[5]	= t/2.0f;
+	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= t/2.0f;
+	
+	texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= t/2.0f;
+	texCoordBuffer[10]	=    s;		texCoordBuffer[11]	= t/2.0f;
+	texCoordBuffer[12]	=    s;		texCoordBuffer[13]	=      t;
+	texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      t;
 }
 
 - (void)keyDown:(NSEvent *)theEvent
@@ -1522,10 +1504,10 @@ enum OGLVertexAttributeID
 	CGLUnlockContext(cglDisplayContext);
 }
 
-- (void) doTransformView:(DisplayOutputTransformData *)transformData
+- (void) doTransformView:(const DisplayOutputTransformData *)transformData
 {
-	GLfloat angleDegrees = (GLfloat)transformData->rotation;
-	GLfloat s = (GLfloat)transformData->scale;
+	const GLfloat angleDegrees = (GLfloat)transformData->rotation;
+	const GLfloat s = (GLfloat)transformData->scale;
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
@@ -1562,32 +1544,28 @@ enum OGLVertexAttributeID
 	lastDisplayMode = displayModeID;
 	[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
 	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
 	if (isVBOSupported)
 	{
+		CGLLockContext(cglDisplayContext);
+		CGLSetCurrentContext(cglDisplayContext);
+		
 		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		
+		CGLUnlockContext(cglDisplayContext);
 	}
-	
-	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doBilinearOutputChanged:(BOOL)useBilinear
 {
-	glTexRenderStyle = GL_NEAREST;
-	if (useBilinear)
-	{
-		glTexRenderStyle = GL_LINEAR;
-	}
+	const GLint textureFilter = useBilinear ? GL_LINEAR : GL_NEAREST;
 	
 	CGLLockContext(cglDisplayContext);
 	
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glTexRenderStyle);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glTexRenderStyle);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureFilter);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	CGLUnlockContext(cglDisplayContext);
@@ -1598,17 +1576,17 @@ enum OGLVertexAttributeID
 	currentDisplayOrientation = displayOrientationID;
 	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:displayOrientationID];
 	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
 	if (isVBOSupported)
 	{
+		CGLLockContext(cglDisplayContext);
+		CGLSetCurrentContext(cglDisplayContext);
+		
 		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		
+		CGLUnlockContext(cglDisplayContext);
 	}
-	
-	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID
@@ -1643,12 +1621,7 @@ enum OGLVertexAttributeID
 
 - (void)doVerticalSyncChanged:(BOOL)useVerticalSync
 {
-	GLint swapInt = 0;
-	
-	if (useVerticalSync)
-	{
-		swapInt = 1;
-	}
+	const GLint swapInt = useVerticalSync ? 1 : 0;
 	
 	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
 }
@@ -1671,8 +1644,8 @@ enum OGLVertexAttributeID
 	
 	// Convert textures to Power-of-Two to support older GPUs
 	// Example: Radeon X1600M on the 2006 MacBook Pro
-	uint32_t potW = GetNearestPositivePOT((uint32_t)videoFilterDestSize.width);
-	uint32_t potH = GetNearestPositivePOT((uint32_t)videoFilterDestSize.height);
+	const uint32_t potW = GetNearestPositivePOT((uint32_t)videoFilterDestSize.width);
+	const uint32_t potH = GetNearestPositivePOT((uint32_t)videoFilterDestSize.height);
 	
 	if (glTexBackSize.width != potW || glTexBackSize.height != potH)
 	{
@@ -1689,17 +1662,7 @@ enum OGLVertexAttributeID
 	
 	const GLfloat s = (GLfloat)videoFilterDestSize.width / (GLfloat)potW;
 	const GLfloat t = (GLfloat)videoFilterDestSize.height / (GLfloat)potH;
-	
-	// Set up texture coordinates
-	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	=   0.0f;
-	texCoordBuffer[2]	=    s;		texCoordBuffer[3]	=   0.0f;
-	texCoordBuffer[4]	=    s;		texCoordBuffer[5]	= t/2.0f;
-	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= t/2.0f;
-	
-	texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= t/2.0f;
-	texCoordBuffer[10]	=    s;		texCoordBuffer[11]	= t/2.0f;
-	texCoordBuffer[12]	=    s;		texCoordBuffer[13]	=      t;
-	texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      t;
+	[self updateTexCoordS:s T:t];
 	
 	CGLLockContext(cglDisplayContext);
 	
@@ -1719,7 +1682,7 @@ enum OGLVertexAttributeID
 
 @end
 
-GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, const char *vertShaderProgram, GLuint *fragShaderID, const char *fragShaderProgram)
+GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, GLuint *fragShaderID, const char *vertShaderProgram, const char *fragShaderProgram)
 {
 	GLint shaderStatus = GL_TRUE;
 	

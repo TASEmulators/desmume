@@ -384,6 +384,11 @@
 		emuFlags |= EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK;
 	}
 	
+	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_RigorousTiming"])
+	{
+		emuFlags |= EMULATION_RIGOROUS_TIMING_MASK;
+	}
+	
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseExternalBIOSImages"])
 	{
 		emuFlags |= EMULATION_USE_EXTERNAL_BIOS_MASK;

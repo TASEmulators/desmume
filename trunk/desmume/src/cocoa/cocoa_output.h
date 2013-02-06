@@ -129,7 +129,7 @@ typedef struct
 
 @optional
 - (void) doResizeView:(NSRect)rect;
-- (void) doTransformView:(DisplayOutputTransformData *)transformData;
+- (void) doTransformView:(const DisplayOutputTransformData *)transformData;
 - (void) doRedraw;
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
