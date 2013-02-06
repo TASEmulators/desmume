@@ -43,7 +43,7 @@ CoreAudioSound::CoreAudioSound(size_t bufferSamples, size_t sampleSize)
 	}
 	
 	error = OpenAComponent(comp, &_au);
-	if (comp == NULL)
+	if (error != noErr || comp == NULL)
 	{
 		return;
 	}

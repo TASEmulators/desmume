@@ -1463,11 +1463,17 @@ GPU3DInterface *core3DList[] = {
 	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
 	[property setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];
 	
+	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
+							   &OSXOpenGLRendererBegin,
+							   &OSXOpenGLRendererEnd);
+	
 	return self;
 }
 
 - (void)dealloc
 {
+	DestroyOpenGLRenderer();
+	
 	[vf release];
 	
 	[super dealloc];
@@ -1852,6 +1858,119 @@ bool GetGPUDisplayState(int gpuType)
 	}
 	
 	return result;
+}
+
+CGLContextObj OSXOpenGLRendererContext = NULL;
+CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
+
+bool OSXOpenGLRendererInit()
+{
+	static bool isContextAlreadyCreated = false;
+	
+	if (!isContextAlreadyCreated)
+	{
+		isContextAlreadyCreated = CreateOpenGLRenderer();
+	}
+	
+	return true;
+}
+
+bool OSXOpenGLRendererBegin()
+{
+	CGLSetCurrentContext(OSXOpenGLRendererContext);
+	
+	return true;
+}
+
+void OSXOpenGLRendererEnd()
+{
+	
+}
+
+bool CreateOpenGLRenderer()
+{
+	bool result = false;
+	bool useContext_3_2 = false;
+	CGLPixelFormatObj cglPixFormat = NULL;
+	CGLContextObj newContext = NULL;
+	CGLPBufferObj newPBuffer = NULL;
+	GLint virtualScreenCount = 0;
+	
+	CGLPixelFormatAttribute attrs[] = {
+		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
+		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
+		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
+		kCGLPFAStencilSize, (CGLPixelFormatAttribute)8,
+		kCGLPFAAccelerated,
+		(CGLPixelFormatAttribute)0, (CGLPixelFormatAttribute)0,
+		(CGLPixelFormatAttribute)0
+	};
+
+#ifdef MAC_OS_X_VERSION_10_7
+	// If we can support a 3.2 Core Profile context, then request that in our
+	// pixel format attributes.
+	useContext_3_2 = [CocoaDSUtil OSVersionCheckMajor:10 minor:7 revision:0] ? true : false;
+	if (useContext_3_2)
+	{
+		attrs[9] = kCGLPFAOpenGLProfile;
+		attrs[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
+	}
+#endif
+	
+	CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
+	if (cglPixFormat == NULL)
+	{
+		// Remove the HW rendering requirement and try again. Note that this will
+		// result in SW rendering, which will cause a substantial speed hit.
+		attrs[8] = (CGLPixelFormatAttribute)0;
+		CGLChoosePixelFormat(attrs, &cglPixFormat, &virtualScreenCount);
+		if (cglPixFormat == NULL)
+		{
+			return result;
+		}
+	}
+	
+	CGLCreateContext(cglPixFormat, NULL, &newContext);
+	CGLReleasePixelFormat(cglPixFormat);
+	
+	// Create a PBuffer for legacy contexts since the availability of FBOs
+	// is not guaranteed.
+	if (!useContext_3_2)
+	{
+		CGLCreatePBuffer(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
+		
+		if (newPBuffer == NULL)
+		{
+			CGLReleaseContext(newContext);
+			return result;
+		}
+		else
+		{
+			GLint virtualScreenID = 0;
+			
+			CGLGetVirtualScreen(newContext, &virtualScreenID);
+			CGLSetPBuffer(newContext, newPBuffer, 0, 0, virtualScreenID);
+		}
+	}
+	
+	RequestOpenGLRenderer_3_2(useContext_3_2);
+	OSXOpenGLRendererContext = newContext;
+	OSXOpenGLRendererPBuffer = newPBuffer;
+	
+	result = true;
+	return result;
+}
+
+void DestroyOpenGLRenderer()
+{
+	if (OSXOpenGLRendererContext == NULL)
+	{
+		return;
+	}
+	
+	CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
+	CGLReleaseContext(OSXOpenGLRendererContext);
+	OSXOpenGLRendererContext = NULL;
 }
 
 void RequestOpenGLRenderer_3_2(bool request_3_2)
