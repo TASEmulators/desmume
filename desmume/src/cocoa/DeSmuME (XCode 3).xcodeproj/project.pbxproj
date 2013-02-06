@@ -819,64 +819,6 @@
 		ABF50AD4169F5FDA0018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB4169F5FDA0018C08D /* x86func.cpp */; };
 		ABF50AD5169F5FDA0018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB6169F5FDA0018C08D /* x86operand.cpp */; };
 		ABF50AD6169F5FDA0018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB8169F5FDA0018C08D /* x86util.cpp */; };
-		ABF50AD7169F5FDA0018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7B169F5FDA0018C08D /* assembler.cpp */; };
-		ABF50AD8169F5FDA0018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7D169F5FDA0018C08D /* assert.cpp */; };
-		ABF50AD9169F5FDA0018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7F169F5FDA0018C08D /* buffer.cpp */; };
-		ABF50ADA169F5FDA0018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A82169F5FDA0018C08D /* compiler.cpp */; };
-		ABF50ADB169F5FDA0018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A84169F5FDA0018C08D /* compilercontext.cpp */; };
-		ABF50ADC169F5FDA0018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A86169F5FDA0018C08D /* compilerfunc.cpp */; };
-		ABF50ADD169F5FDA0018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A88169F5FDA0018C08D /* compileritem.cpp */; };
-		ABF50ADE169F5FDA0018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A8A169F5FDA0018C08D /* context.cpp */; };
-		ABF50ADF169F5FDA0018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A8C169F5FDA0018C08D /* cpuinfo.cpp */; };
-		ABF50AE0169F5FDA0018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A8E169F5FDA0018C08D /* defs.cpp */; };
-		ABF50AE1169F5FDA0018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A90169F5FDA0018C08D /* func.cpp */; };
-		ABF50AE2169F5FDA0018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A94169F5FDA0018C08D /* logger.cpp */; };
-		ABF50AE3169F5FDA0018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A96169F5FDA0018C08D /* memorymanager.cpp */; };
-		ABF50AE4169F5FDA0018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A98169F5FDA0018C08D /* memorymarker.cpp */; };
-		ABF50AE5169F5FDA0018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A9A169F5FDA0018C08D /* operand.cpp */; };
-		ABF50AE6169F5FDA0018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A9D169F5FDA0018C08D /* stringbuilder.cpp */; };
-		ABF50AE7169F5FDA0018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A9F169F5FDA0018C08D /* stringutil.cpp */; };
-		ABF50AE8169F5FDA0018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA1169F5FDA0018C08D /* virtualmemory.cpp */; };
-		ABF50AE9169F5FDA0018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA3169F5FDA0018C08D /* zonememory.cpp */; };
-		ABF50AEA169F5FDA0018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA6169F5FDA0018C08D /* x86assembler.cpp */; };
-		ABF50AEB169F5FDA0018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA8169F5FDA0018C08D /* x86compiler.cpp */; };
-		ABF50AEC169F5FDA0018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AAA169F5FDA0018C08D /* x86compilercontext.cpp */; };
-		ABF50AED169F5FDA0018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AAC169F5FDA0018C08D /* x86compilerfunc.cpp */; };
-		ABF50AEE169F5FDA0018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AAE169F5FDA0018C08D /* x86compileritem.cpp */; };
-		ABF50AEF169F5FDA0018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB0169F5FDA0018C08D /* x86cpuinfo.cpp */; };
-		ABF50AF0169F5FDA0018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB2169F5FDA0018C08D /* x86defs.cpp */; };
-		ABF50AF1169F5FDA0018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB4169F5FDA0018C08D /* x86func.cpp */; };
-		ABF50AF2169F5FDA0018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB6169F5FDA0018C08D /* x86operand.cpp */; };
-		ABF50AF3169F5FDA0018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB8169F5FDA0018C08D /* x86util.cpp */; };
-		ABF50AF4169F5FDA0018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7B169F5FDA0018C08D /* assembler.cpp */; };
-		ABF50AF5169F5FDA0018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7D169F5FDA0018C08D /* assert.cpp */; };
-		ABF50AF6169F5FDA0018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7F169F5FDA0018C08D /* buffer.cpp */; };
-		ABF50AF7169F5FDA0018C08D /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A82169F5FDA0018C08D /* compiler.cpp */; };
-		ABF50AF8169F5FDA0018C08D /* compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A84169F5FDA0018C08D /* compilercontext.cpp */; };
-		ABF50AF9169F5FDA0018C08D /* compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A86169F5FDA0018C08D /* compilerfunc.cpp */; };
-		ABF50AFA169F5FDA0018C08D /* compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A88169F5FDA0018C08D /* compileritem.cpp */; };
-		ABF50AFB169F5FDA0018C08D /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A8A169F5FDA0018C08D /* context.cpp */; };
-		ABF50AFC169F5FDA0018C08D /* cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A8C169F5FDA0018C08D /* cpuinfo.cpp */; };
-		ABF50AFD169F5FDA0018C08D /* defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A8E169F5FDA0018C08D /* defs.cpp */; };
-		ABF50AFE169F5FDA0018C08D /* func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A90169F5FDA0018C08D /* func.cpp */; };
-		ABF50AFF169F5FDA0018C08D /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A94169F5FDA0018C08D /* logger.cpp */; };
-		ABF50B00169F5FDA0018C08D /* memorymanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A96169F5FDA0018C08D /* memorymanager.cpp */; };
-		ABF50B01169F5FDA0018C08D /* memorymarker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A98169F5FDA0018C08D /* memorymarker.cpp */; };
-		ABF50B02169F5FDA0018C08D /* operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A9A169F5FDA0018C08D /* operand.cpp */; };
-		ABF50B03169F5FDA0018C08D /* stringbuilder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A9D169F5FDA0018C08D /* stringbuilder.cpp */; };
-		ABF50B04169F5FDA0018C08D /* stringutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A9F169F5FDA0018C08D /* stringutil.cpp */; };
-		ABF50B05169F5FDA0018C08D /* virtualmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA1169F5FDA0018C08D /* virtualmemory.cpp */; };
-		ABF50B06169F5FDA0018C08D /* zonememory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA3169F5FDA0018C08D /* zonememory.cpp */; };
-		ABF50B07169F5FDA0018C08D /* x86assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA6169F5FDA0018C08D /* x86assembler.cpp */; };
-		ABF50B08169F5FDA0018C08D /* x86compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AA8169F5FDA0018C08D /* x86compiler.cpp */; };
-		ABF50B09169F5FDA0018C08D /* x86compilercontext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AAA169F5FDA0018C08D /* x86compilercontext.cpp */; };
-		ABF50B0A169F5FDA0018C08D /* x86compilerfunc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AAC169F5FDA0018C08D /* x86compilerfunc.cpp */; };
-		ABF50B0B169F5FDA0018C08D /* x86compileritem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AAE169F5FDA0018C08D /* x86compileritem.cpp */; };
-		ABF50B0C169F5FDA0018C08D /* x86cpuinfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB0169F5FDA0018C08D /* x86cpuinfo.cpp */; };
-		ABF50B0D169F5FDA0018C08D /* x86defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB2169F5FDA0018C08D /* x86defs.cpp */; };
-		ABF50B0E169F5FDA0018C08D /* x86func.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB4169F5FDA0018C08D /* x86func.cpp */; };
-		ABF50B0F169F5FDA0018C08D /* x86operand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB6169F5FDA0018C08D /* x86operand.cpp */; };
-		ABF50B10169F5FDA0018C08D /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50AB8169F5FDA0018C08D /* x86util.cpp */; };
 		ABF50B11169F5FDA0018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7B169F5FDA0018C08D /* assembler.cpp */; };
 		ABF50B12169F5FDA0018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7D169F5FDA0018C08D /* assert.cpp */; };
 		ABF50B13169F5FDA0018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7F169F5FDA0018C08D /* buffer.cpp */; };
@@ -2680,35 +2622,6 @@
 				AB2F3C3815CF9C6000858373 /* coreaudiosound.cpp in Sources */,
 				AB2F3C3915CF9C6000858373 /* ringbuffer.cpp in Sources */,
 				ABA03571169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */,
-				ABF50AD7169F5FDA0018C08D /* assembler.cpp in Sources */,
-				ABF50AD8169F5FDA0018C08D /* assert.cpp in Sources */,
-				ABF50AD9169F5FDA0018C08D /* buffer.cpp in Sources */,
-				ABF50ADA169F5FDA0018C08D /* compiler.cpp in Sources */,
-				ABF50ADB169F5FDA0018C08D /* compilercontext.cpp in Sources */,
-				ABF50ADC169F5FDA0018C08D /* compilerfunc.cpp in Sources */,
-				ABF50ADD169F5FDA0018C08D /* compileritem.cpp in Sources */,
-				ABF50ADE169F5FDA0018C08D /* context.cpp in Sources */,
-				ABF50ADF169F5FDA0018C08D /* cpuinfo.cpp in Sources */,
-				ABF50AE0169F5FDA0018C08D /* defs.cpp in Sources */,
-				ABF50AE1169F5FDA0018C08D /* func.cpp in Sources */,
-				ABF50AE2169F5FDA0018C08D /* logger.cpp in Sources */,
-				ABF50AE3169F5FDA0018C08D /* memorymanager.cpp in Sources */,
-				ABF50AE4169F5FDA0018C08D /* memorymarker.cpp in Sources */,
-				ABF50AE5169F5FDA0018C08D /* operand.cpp in Sources */,
-				ABF50AE6169F5FDA0018C08D /* stringbuilder.cpp in Sources */,
-				ABF50AE7169F5FDA0018C08D /* stringutil.cpp in Sources */,
-				ABF50AE8169F5FDA0018C08D /* virtualmemory.cpp in Sources */,
-				ABF50AE9169F5FDA0018C08D /* zonememory.cpp in Sources */,
-				ABF50AEA169F5FDA0018C08D /* x86assembler.cpp in Sources */,
-				ABF50AEB169F5FDA0018C08D /* x86compiler.cpp in Sources */,
-				ABF50AEC169F5FDA0018C08D /* x86compilercontext.cpp in Sources */,
-				ABF50AED169F5FDA0018C08D /* x86compilerfunc.cpp in Sources */,
-				ABF50AEE169F5FDA0018C08D /* x86compileritem.cpp in Sources */,
-				ABF50AEF169F5FDA0018C08D /* x86cpuinfo.cpp in Sources */,
-				ABF50AF0169F5FDA0018C08D /* x86defs.cpp in Sources */,
-				ABF50AF1169F5FDA0018C08D /* x86func.cpp in Sources */,
-				ABF50AF2169F5FDA0018C08D /* x86operand.cpp in Sources */,
-				ABF50AF3169F5FDA0018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3144,35 +3057,6 @@
 				ABAD102E15ACE7A00000EC47 /* coreaudiosound.cpp in Sources */,
 				ABAD102F15ACE7A00000EC47 /* ringbuffer.cpp in Sources */,
 				ABA03573169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */,
-				ABF50AF4169F5FDA0018C08D /* assembler.cpp in Sources */,
-				ABF50AF5169F5FDA0018C08D /* assert.cpp in Sources */,
-				ABF50AF6169F5FDA0018C08D /* buffer.cpp in Sources */,
-				ABF50AF7169F5FDA0018C08D /* compiler.cpp in Sources */,
-				ABF50AF8169F5FDA0018C08D /* compilercontext.cpp in Sources */,
-				ABF50AF9169F5FDA0018C08D /* compilerfunc.cpp in Sources */,
-				ABF50AFA169F5FDA0018C08D /* compileritem.cpp in Sources */,
-				ABF50AFB169F5FDA0018C08D /* context.cpp in Sources */,
-				ABF50AFC169F5FDA0018C08D /* cpuinfo.cpp in Sources */,
-				ABF50AFD169F5FDA0018C08D /* defs.cpp in Sources */,
-				ABF50AFE169F5FDA0018C08D /* func.cpp in Sources */,
-				ABF50AFF169F5FDA0018C08D /* logger.cpp in Sources */,
-				ABF50B00169F5FDA0018C08D /* memorymanager.cpp in Sources */,
-				ABF50B01169F5FDA0018C08D /* memorymarker.cpp in Sources */,
-				ABF50B02169F5FDA0018C08D /* operand.cpp in Sources */,
-				ABF50B03169F5FDA0018C08D /* stringbuilder.cpp in Sources */,
-				ABF50B04169F5FDA0018C08D /* stringutil.cpp in Sources */,
-				ABF50B05169F5FDA0018C08D /* virtualmemory.cpp in Sources */,
-				ABF50B06169F5FDA0018C08D /* zonememory.cpp in Sources */,
-				ABF50B07169F5FDA0018C08D /* x86assembler.cpp in Sources */,
-				ABF50B08169F5FDA0018C08D /* x86compiler.cpp in Sources */,
-				ABF50B09169F5FDA0018C08D /* x86compilercontext.cpp in Sources */,
-				ABF50B0A169F5FDA0018C08D /* x86compilerfunc.cpp in Sources */,
-				ABF50B0B169F5FDA0018C08D /* x86compileritem.cpp in Sources */,
-				ABF50B0C169F5FDA0018C08D /* x86cpuinfo.cpp in Sources */,
-				ABF50B0D169F5FDA0018C08D /* x86defs.cpp in Sources */,
-				ABF50B0E169F5FDA0018C08D /* x86func.cpp in Sources */,
-				ABF50B0F169F5FDA0018C08D /* x86operand.cpp in Sources */,
-				ABF50B10169F5FDA0018C08D /* x86util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

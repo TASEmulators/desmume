@@ -64,6 +64,8 @@
 		AB1B9E661501A78000464647 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E601501A78000464647 /* ringbuffer.cpp */; };
 		AB1F468413A0ADE400B80DE6 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB1F469813A0AE2F00B80DE6 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
+		AB23567416C2F6F400DA782E /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */; };
+		AB23567516C2FAD800DA782E /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
 		AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
 		AB350B6A1478A5B3007165AC /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
 		AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
@@ -672,6 +674,7 @@
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = SOURCE_ROOT; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = SOURCE_ROOT; };
 		AB1B9E621501A78000464647 /* ringbuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ringbuffer.h; sourceTree = SOURCE_ROOT; };
+		AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = macosx_10_5_compat.cpp; sourceTree = "<group>"; };
 		AB350B681478A5B3007165AC /* cocoa_hid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_hid.h; sourceTree = "<group>"; };
 		AB350B691478A5B3007165AC /* cocoa_hid.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_hid.mm; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -1095,6 +1098,7 @@
 				ABB3C63A1501BB8300E0C22E /* openemu */,
 				AB3ACB6514C2361100D7D192 /* userinterface */,
 				AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */,
+				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
 				AB1B9E601501A78000464647 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
@@ -2219,6 +2223,8 @@
 				AB40568E169F5DCC0016AC3E /* x86func.cpp in Sources */,
 				AB405691169F5DCC0016AC3E /* x86operand.cpp in Sources */,
 				AB405694169F5DCC0016AC3E /* x86util.cpp in Sources */,
+				AB23567416C2F6F400DA782E /* macosx_10_5_compat.cpp in Sources */,
+				AB23567516C2FAD800DA782E /* OGLRender_3_2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2614,15 +2620,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				SDKROOT = macosx10.5;
 			};
 			name = Debug;
 		};
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					PUBLIC_RELEASE,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				SDKROOT = macosx10.5;
 			};
 			name = Release;
 		};

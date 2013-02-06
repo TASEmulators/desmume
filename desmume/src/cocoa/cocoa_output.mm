@@ -28,6 +28,8 @@
 #include "../SPU.h"
 #include "../metaspu/metaspu.h"
 
+#include <OpenGL/OpenGL.h>
+
 #ifdef MAC_OS_X_VERSION_10_7
 #include "../OGLRender_3_2.h"
 #else
