@@ -254,7 +254,7 @@
 - (NSDate *) birthday
 {
 	pthread_mutex_lock(&mutex);
-	NSDate *theBirthday = [NSDate dateWithString:[NSString stringWithFormat:@"%d-%d-%d 12:00:00 +0000", birth_year, data->birth_month, data->birth_day]];
+	NSDate *theBirthday = [NSDate dateWithString:[NSString stringWithFormat:@"%ld-%ld-%ld 12:00:00 +0000", (unsigned long)birth_year, (unsigned long)data->birth_month, (unsigned long)data->birth_day]];
 	pthread_mutex_unlock(&mutex);
 	
 	return theBirthday;

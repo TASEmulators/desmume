@@ -360,9 +360,9 @@
 		slotNumberKey = 0;
 	}
 	
-	NSMenuItem *mItem = [menu addItemWithTitle:[NSString stringWithFormat:NSSTRING_TITLE_SLOT_NUMBER, slotNumber]
+	NSMenuItem *mItem = [menu addItemWithTitle:[NSString stringWithFormat:NSSTRING_TITLE_SLOT_NUMBER, (unsigned long)slotNumber]
 										action:nil
-								 keyEquivalent:[NSString stringWithFormat:@"%d", slotNumberKey]];
+								 keyEquivalent:[NSString stringWithFormat:@"%ld", (unsigned long)slotNumberKey]];
 	
 	[mItem setTarget:[mainWindow delegate]];
 	

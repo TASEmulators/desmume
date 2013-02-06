@@ -119,8 +119,8 @@
 - (BOOL) handleMouseDown:(NSEvent *)mouseEvent
 {
 	BOOL isHandled = NO;
-	NSString *elementCode = [NSString stringWithFormat:@"%i", [mouseEvent buttonNumber]];
-	NSString *elementName = [NSString stringWithFormat:@"Button %i", [mouseEvent buttonNumber]];
+	NSString *elementCode = [NSString stringWithFormat:@"%li", (long)[mouseEvent buttonNumber]];
+	NSString *elementName = [NSString stringWithFormat:@"Button %li", (long)[mouseEvent buttonNumber]];
 	
 	switch ([mouseEvent buttonNumber])
 	{
