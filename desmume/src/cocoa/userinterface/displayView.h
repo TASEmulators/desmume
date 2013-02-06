@@ -122,9 +122,7 @@
 @interface OpenGLDisplayView : NSOpenGLView <DisplayViewDelegate>
 {
 	CGLContextObj cglDisplayContext;
-	NSOpenGLContext *oglRendererContext;
 	
-	BOOL useContext_3_2;
 	BOOL isVBOSupported;
 	BOOL isShadersSupported;
 	BOOL isVAOSupported;
@@ -160,9 +158,8 @@
 }
 
 - (void) setupOpenGL_Legacy;
-- (void) setupOpenGL_3_2;
 - (void) drawVideoFrame;
-- (void) uploadDisplayTextures:(const GLvoid *)textureData width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
+- (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
 - (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID;
 
@@ -174,9 +171,6 @@ extern "C"
 #endif
 
 GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, const char *vertShaderProgram, GLuint *fragShaderID, const char *fragShaderProgram);
-bool OSXOpenGLRendererInit();
-bool OSXOpenGLRendererBegin();
-void OSXOpenGLRendererEnd();
 
 #ifdef __cplusplus
 }

@@ -85,8 +85,6 @@ enum OGLVertexAttributeID
 };
 
 
-CGLContextObj OSXOpenGLRendererContext = NULL;
-
 @implementation DisplayViewDelegate
 
 @synthesize view;
@@ -348,7 +346,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	if ( (oldMode == DS_DISPLAY_TYPE_MAIN && displayModeID == DS_DISPLAY_TYPE_TOUCH) ||
 		 (oldMode == DS_DISPLAY_TYPE_TOUCH && displayModeID == DS_DISPLAY_TYPE_MAIN) )
 	{
-		[view setNeedsDisplay:YES];
+		[CocoaDSUtil messageSendOneWay:self.sendPortDisplay msgID:MESSAGE_REDRAW_VIEW];
 	}
 }
 
@@ -1009,82 +1007,11 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	vtxIndexBuffer = new GLubyte[12];
 	vtxBufferOffset = 0;
 	
-	// Create a new context for the OpenGL-based emulated 3D renderer
-#ifdef MAC_OS_X_VERSION_10_7
-	NSOpenGLPixelFormatAttribute attrs[] = {
-		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
-		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
-		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFAAccelerated,
-		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
-		(NSOpenGLPixelFormatAttribute)0
-	};
-	
-	useContext_3_2 = [CocoaDSUtil OSVersionCheckMajor:10 minor:7 revision:0] ? YES : NO;
-#else
-	NSOpenGLPixelFormatAttribute attrs[] =
-	{
-		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
-		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
-		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFAAccelerated,
-		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
-		(NSOpenGLPixelFormatAttribute)0
-	};
-	
-	useContext_3_2 = NO;
-#endif
-	// If we're not using a 3.2 Core Profile context, then remove that
-	// requirement from the pixel format.
-	if (!useContext_3_2)
-	{
-		attrs[9] = (NSOpenGLPixelFormatAttribute)0;
-		attrs[10] = (NSOpenGLPixelFormatAttribute)0;
-	}
-	
-	NSOpenGLPixelFormat *tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-	if (tempPixelFormat == nil)
-	{
-		// Remove the HW rendering requirement and try again. Note that this will
-		// result in SW rendering, which will cause a substantial speed hit.
-		attrs[8] = (NSOpenGLPixelFormatAttribute)0;
-		tempPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-	}
-	
-	NSOpenGLContext *newOGLRendererContext = [[NSOpenGLContext alloc] initWithFormat:tempPixelFormat shareContext:nil];
-	[tempPixelFormat release];
-	
-	if (!useContext_3_2)
-	{
-		NSOpenGLPixelBuffer *tempPixelBuffer = [[NSOpenGLPixelBuffer alloc]
-												initWithTextureTarget:GL_TEXTURE_2D
-												textureInternalFormat:GL_BGRA
-												textureMaxMipMapLevel:0
-												pixelsWide:GPU_DISPLAY_WIDTH
-												pixelsHigh:GPU_DISPLAY_HEIGHT*2];
-		
-		[newOGLRendererContext setPixelBuffer:tempPixelBuffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:[[self openGLContext] currentVirtualScreen]];
-		[tempPixelBuffer release];
-	}
-	
-	oglRendererContext = newOGLRendererContext;
-	OSXOpenGLRendererContext = (CGLContextObj)[oglRendererContext CGLContextObj];
-	
-	RequestOpenGLRenderer_3_2(useContext_3_2);
-	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
-							   &OSXOpenGLRendererBegin,
-							   &OSXOpenGLRendererEnd);
-	
     return self;
 }
 
 - (void)dealloc
 {
-	[oglRendererContext release];
-	OSXOpenGLRendererContext = NULL;
-	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
 	
@@ -1182,7 +1109,6 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 {
 	// Check the OpenGL capabilities for this renderer
 	const GLubyte *glExtString = glGetString(GL_EXTENSIONS);
-	BOOL isPBOSupported	= gluCheckExtension((const GLubyte *)"GL_ARB_pixel_buffer_object", glExtString);
 	
 	// Set up textures
 	glGenTextures(1, &displayTexID);
@@ -1285,22 +1211,22 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	CGLFlushDrawable(cglDisplayContext);
 }
 
-- (void) uploadDisplayTextures:(const GLvoid *)textureData width:(const GLsizei)texWidth height:(const GLsizei)texHeight
+- (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight
 {
 	if (textureData == NULL)
 	{
 		return;
 	}
 	
+	const GLint lineOffset = (displayModeID == DS_DISPLAY_TYPE_TOUCH) ? texHeight : 0;
+	
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, glTexPixelFormat, textureData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, lineOffset, texWidth, texHeight, GL_RGBA, glTexPixelFormat, textureData);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID
 {
-	GLubyte *elementPointer = NULL;
-	
 	// Assign vertex attributes based on which OpenGL features we have.
 	if (isVAOSupported)
 	{
@@ -1322,7 +1248,6 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 			{
 				glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, vtxBuffer);
 				glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, texCoordBuffer);
-				elementPointer = vtxIndexBuffer;
 			}
 			
 			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
@@ -1342,7 +1267,6 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 			{
 				glTexCoordPointer(2, GL_FLOAT, 0, texCoordBuffer);
 				glVertexPointer(2, GL_INT, 0, vtxBuffer);
-				elementPointer = vtxIndexBuffer;
 			}
 			
 			glEnableClientState(GL_VERTEX_ARRAY);
@@ -1364,10 +1288,12 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		}
 	}
 	
-	GLsizei vtxElementCount = 6;
-	if (displayModeID == DS_DISPLAY_TYPE_COMBO)
+	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? 12 : 6;
+	GLubyte *elementPointer = isVBOSupported ? NULL : vtxIndexBuffer;
+	
+	if (displayModeID == DS_DISPLAY_TYPE_TOUCH)
 	{
-		vtxElementCount = 12;
+		elementPointer += vtxElementCount;
 	}
 	
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -1568,7 +1494,7 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 	CGLLockContext(cglDisplayContext);
 	
 	CGLSetCurrentContext(cglDisplayContext);
-	[self uploadDisplayTextures:videoFrameData width:frameWidth height:frameHeight];
+	[self uploadDisplayTextures:videoFrameData displayMode:displayModeID width:frameWidth height:frameHeight];
 	[self renderDisplayUsingDisplayMode:displayModeID];
 	[self drawVideoFrame];
 	
@@ -1738,6 +1664,11 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	}
 	
+	if ([dispViewDelegate displayMode] != DS_DISPLAY_TYPE_COMBO)
+	{
+		videoFilterDestSize.height = (uint32_t)videoFilterDestSize.height * 2;
+	}
+	
 	// Convert textures to Power-of-Two to support older GPUs
 	// Example: Radeon X1600M on the 2006 MacBook Pro
 	uint32_t potW = GetNearestPositivePOT((uint32_t)videoFilterDestSize.width);
@@ -1756,31 +1687,19 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 		}
 	}
 	
-	GLfloat s = (GLfloat)(videoFilterDestSize.width / potW);
-	GLfloat t = (GLfloat)(videoFilterDestSize.height / potH);
+	const GLfloat s = (GLfloat)videoFilterDestSize.width / (GLfloat)potW;
+	const GLfloat t = (GLfloat)videoFilterDestSize.height / (GLfloat)potH;
 	
 	// Set up texture coordinates
-	if ([dispViewDelegate displayMode] == DS_DISPLAY_TYPE_COMBO)
-	{
-		texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	=   0.0f;
-		texCoordBuffer[2]	=    s;		texCoordBuffer[3]	=   0.0f;
-		texCoordBuffer[4]	=    s;		texCoordBuffer[5]	= t/2.0f;
-		texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= t/2.0f;
-		
-		texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= t/2.0f;
-		texCoordBuffer[10]	=    s;		texCoordBuffer[11]	= t/2.0f;
-		texCoordBuffer[12]	=    s;		texCoordBuffer[13]	=      t;
-		texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      t;
-	}
-	else // displayMode == DS_DISPLAY_TYPE_MAIN || displayMode == DS_DISPLAY_TYPE_TOUCH
-	{
-		texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	= 0.0f;
-		texCoordBuffer[2]	=    s;		texCoordBuffer[3]	= 0.0f;
-		texCoordBuffer[4]	=    s;		texCoordBuffer[5]	=    t;
-		texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	=    t;
-		
-		memcpy(texCoordBuffer + (1 * 8), texCoordBuffer + (0 * 8), sizeof(GLfloat) * (1 * 8));
-	}
+	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	=   0.0f;
+	texCoordBuffer[2]	=    s;		texCoordBuffer[3]	=   0.0f;
+	texCoordBuffer[4]	=    s;		texCoordBuffer[5]	= t/2.0f;
+	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= t/2.0f;
+	
+	texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= t/2.0f;
+	texCoordBuffer[10]	=    s;		texCoordBuffer[11]	= t/2.0f;
+	texCoordBuffer[12]	=    s;		texCoordBuffer[13]	=      t;
+	texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      t;
 	
 	CGLLockContext(cglDisplayContext);
 	
@@ -1869,21 +1788,4 @@ GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, const char *vertShad
 	glValidateProgram(*programID);
 	
 	return shaderStatus;
-}
-
-bool OSXOpenGLRendererInit()
-{
-	return true;
-}
-
-bool OSXOpenGLRendererBegin()
-{
-	CGLSetCurrentContext(OSXOpenGLRendererContext);
-	
-	return true;
-}
-
-void OSXOpenGLRendererEnd()
-{
-	
 }

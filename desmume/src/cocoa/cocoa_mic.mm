@@ -179,7 +179,7 @@ static CocoaDSMic *masterMic = nil;
 
 - (UInt8) generateWhiteNoiseSample
 {
-	return (UInt8)(rand() & 0xFF);
+	return (UInt8)(arc4random() & 0xFF);
 }
 
 - (void) fillWithNullSamples

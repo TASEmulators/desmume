@@ -250,6 +250,12 @@ bool GetGPULayerState(int gpuType, unsigned int i);
 void SetGPUDisplayState(int gpuType, bool state);
 bool GetGPUDisplayState(int gpuType);
 
+bool OSXOpenGLRendererInit();
+bool OSXOpenGLRendererBegin();
+void OSXOpenGLRendererEnd();
+
+bool CreateOpenGLRenderer();
+void DestroyOpenGLRenderer();
 void RequestOpenGLRenderer_3_2(bool request_3_2);
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),
