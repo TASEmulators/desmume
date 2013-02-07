@@ -123,9 +123,7 @@
 {
 	CGLContextObj cglDisplayContext;
 	
-	BOOL isVBOSupported;
-	BOOL isShadersSupported;
-	BOOL isVAOSupported;
+	BOOL isShaderSupported;
 	
 	DisplayViewDelegate *dispViewDelegate;
 	NSInteger lastDisplayMode;
