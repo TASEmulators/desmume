@@ -111,7 +111,10 @@ bool windows_opengl_init()
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
-	HWND fakeWindow = CreateWindow("EDIT", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	//make a fake, invisible window, to render into. it's unclear yet how well this works, but i refuse to give up yet on making opengl render headless without relying on PBO and the like.
+	//the width and height of this window must be lager than 256,192 for some reason, to give old crappy opengl profiles room to render into
+	//if we ever support 3d upscaling, this would have to be changed. perhaps we could re-initialize the video system to use an appropriate window size
+	HWND fakeWindow = CreateWindow("EDIT", 0, 0, 0, 0, 512, 512, 0, 0, 0, 0);
 
 	main_hDC = GetDC(fakeWindow);
 	PixelFormat = ChoosePixelFormat(main_hDC, &pfd);
