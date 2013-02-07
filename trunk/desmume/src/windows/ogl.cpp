@@ -103,6 +103,10 @@ static HWND main_hWND;
 
 static bool _begin()
 {
+	//wglMakeCurrent is slow in some environments. so, check if the desired context is already current
+	if(wglGetCurrentContext() == main_hRC)
+		return true;
+
 	if(!wglMakeCurrent(main_hDC, main_hRC))
 		return false;
 
@@ -126,7 +130,7 @@ static bool makeBootstrapContext()
 
 	//it seems we may have to specify some non-zero win
 	int width, height;
-	width = height = 64; //something safe, but irrelevant
+	width = height = 512; //something safe, but irrelevant. just to be super-safe, lets try making it big enough for the pbuffer we'll make eventually
 	HWND fakeWindow = CreateWindow("EDIT", 0, 0, 0, 0, width, height, 0, 0, 0, 0);
 	main_hWND = fakeWindow;
 
@@ -227,6 +231,9 @@ bool windows_opengl_init()
 	main_hRC = hGlRc;
 	oglAlreadyInit = true;
 	oglrender_beginOpenGL = _begin;
+	
+	//use the new pbuffer context for further extension interrogation in shared opengl init
+	_begin();
 
 	return true;
 }

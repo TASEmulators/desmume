@@ -1444,7 +1444,9 @@ struct GLDISPLAY
 		{
 			if(!initialize()) return false;
 		}
-		wglMakeCurrent(privateDC,privateContext);
+
+		if(wglGetCurrentContext() != privateContext)
+			wglMakeCurrent(privateDC,privateContext);
 		return true;
 	}
 
