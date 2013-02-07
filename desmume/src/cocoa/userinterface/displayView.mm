@@ -28,21 +28,10 @@
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 
-// We're not exactly committing to OpenGL 3.2 Core Profile just yet, so redefine APPLE
-// extensions for VAO as a temporary measure.
-#ifdef GL_APPLE_vertex_array_object
-	#define glGenVertexArrays(a, b)		glGenVertexArraysAPPLE(a, b)
-	#define glBindVertexArray(a)		glBindVertexArrayAPPLE(a)
-	#define glDeleteVertexArrays(a, b)	glDeleteVertexArraysAPPLE(a, b)
-#endif
-
 #undef BOOL
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
 const char *vShader_100 = {"\
-	attribute vec2 inPosition; \n\
-	attribute vec2 inTexCoord0; \n\
-	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
@@ -62,8 +51,8 @@ const char *vShader_100 = {"\
 		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
 								vec2(   0.0, scalar)); \n\
 		\n\
-		vtxTexCoord = inTexCoord0; \n\
-		gl_Position = vec4(projection * rotation * scale * inPosition, 1.0, 1.0); \n\
+		vtxTexCoord = gl_MultiTexCoord0; \n\
+		gl_Position = vec4(projection * rotation * scale * gl_Vertex, 1.0, 1.0); \n\
 	} \n\
 "};
 
@@ -1013,11 +1002,16 @@ enum OGLVertexAttributeID
 	
 	glDeleteTextures(1, &displayTexID);
 	
+	if (isVAOSupported)
+	{
+		glDeleteVertexArraysAPPLE(1, &vaoMainStatesID);
+	}
+	
 	if (isVBOSupported)
 	{
-		glDeleteBuffers(1, &vboVertexID);
-		glDeleteBuffers(1, &vboTexCoordID);
-		glDeleteBuffers(1, &vboElementID);
+		glDeleteBuffersARB(1, &vboVertexID);
+		glDeleteBuffersARB(1, &vboTexCoordID);
+		glDeleteBuffersARB(1, &vboElementID);
 	}
 	
 	if (isShadersSupported)
@@ -1092,19 +1086,19 @@ enum OGLVertexAttributeID
 	isVBOSupported = gluCheckExtension((const GLubyte *)"GL_ARB_vertex_buffer_object", glExtString);
 	if (isVBOSupported)
 	{
-		glGenBuffers(1, &vboVertexID);
-		glGenBuffers(1, &vboTexCoordID);
-		glGenBuffers(1, &vboElementID);
+		glGenBuffersARB(1, &vboVertexID);
+		glGenBuffersARB(1, &vboTexCoordID);
+		glGenBuffersARB(1, &vboElementID);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * (2 * 8), vtxBuffer, GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (2 * 8), texCoordBuffer, GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), vtxBuffer, GL_STATIC_DRAW_ARB);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), texCoordBuffer, GL_STATIC_DRAW_ARB);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
+		glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW_ARB);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 	}
 	
 	// Set up shaders
@@ -1136,23 +1130,23 @@ enum OGLVertexAttributeID
 	// Set up VAO
 	isVAOSupported	= ( isVBOSupported &&
 					    isShadersSupported &&
-					   (gluCheckExtension((const GLubyte *)"GL_ARB_vertex_array_object", glExtString) ||
-						gluCheckExtension((const GLubyte *)"GL_APPLE_vertex_array_object", glExtString) ) );
+					    gluCheckExtension((const GLubyte *)"GL_APPLE_vertex_array_object", glExtString) );
 	if (isVAOSupported)
 	{
-		glGenVertexArrays(1, &vaoMainStatesID);
-		glBindVertexArray(vaoMainStatesID);
+		glGenVertexArraysAPPLE(1, &vaoMainStatesID);
+		glBindVertexArrayAPPLE(vaoMainStatesID);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
-		glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glVertexPointer(2, GL_INT, 0, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+		glTexCoordPointer(2, GL_FLOAT, 0, 0);
 		
-		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
 		
-		glBindVertexArray(0);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		
+		glBindVertexArrayAPPLE(0);
 	}
 	
 	// Render State Setup (common to both shaders and fixed-function pipeline)
@@ -1199,48 +1193,26 @@ enum OGLVertexAttributeID
 	// Assign vertex attributes based on which OpenGL features we have.
 	if (isVAOSupported)
 	{
-		glBindVertexArray(vaoMainStatesID);
+		glBindVertexArrayAPPLE(vaoMainStatesID);
 	}
 	else
 	{
-		if (isShadersSupported)
+		if (isVBOSupported)
 		{
-			if (isVBOSupported)
-			{
-				glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-				glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
-				glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-				glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
-			}
-			else
-			{
-				glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, vtxBuffer);
-				glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, texCoordBuffer);
-			}
-			
-			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+			glVertexPointer(2, GL_INT, 0, 0);
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+			glTexCoordPointer(2, GL_FLOAT, 0, 0);
+			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
 		}
 		else
 		{
-			if (isVBOSupported)
-			{
-				glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-				glVertexPointer(2, GL_INT, 0, 0);
-				glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-				glTexCoordPointer(2, GL_FLOAT, 0, 0);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboElementID);
-			}
-			else
-			{
-				glTexCoordPointer(2, GL_FLOAT, 0, texCoordBuffer);
-				glVertexPointer(2, GL_INT, 0, vtxBuffer);
-			}
-			
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glVertexPointer(2, GL_INT, 0, vtxBuffer);
+			glTexCoordPointer(2, GL_FLOAT, 0, texCoordBuffer);
 		}
+		
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
 	
 	// Perform the render.
@@ -1251,9 +1223,9 @@ enum OGLVertexAttributeID
 		
 		if (isVBOSupported)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+			glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		}
 	}
 	
@@ -1273,31 +1245,17 @@ enum OGLVertexAttributeID
 	// Disable vertex attributes.
 	if (isVAOSupported)
 	{
-		glBindVertexArray(0);
+		glBindVertexArrayAPPLE(0);
 	}
 	else
 	{
-		if (isShadersSupported)
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		
+		if (isVBOSupported)
 		{
-			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			
-			if (isVBOSupported)
-			{
-				glBindBuffer(GL_ARRAY_BUFFER, 0);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			}
-		}
-		else
-		{
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glDisableClientState(GL_VERTEX_ARRAY);
-			
-			if (isVBOSupported)
-			{
-				glBindBuffer(GL_ARRAY_BUFFER, 0);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			}
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 		}
 	}
 }
@@ -1549,9 +1507,9 @@ enum OGLVertexAttributeID
 		CGLLockContext(cglDisplayContext);
 		CGLSetCurrentContext(cglDisplayContext);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		
 		CGLUnlockContext(cglDisplayContext);
 	}
@@ -1581,9 +1539,9 @@ enum OGLVertexAttributeID
 		CGLLockContext(cglDisplayContext);
 		CGLSetCurrentContext(cglDisplayContext);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		
 		CGLUnlockContext(cglDisplayContext);
 	}
@@ -1605,9 +1563,9 @@ enum OGLVertexAttributeID
 	
 	if (isVBOSupported)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, vboVertexID);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 	
 	if (lastDisplayMode == DS_DISPLAY_TYPE_COMBO)
@@ -1672,9 +1630,9 @@ enum OGLVertexAttributeID
 	
 	if (isVBOSupported)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, vboTexCoordID);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 	
 	CGLUnlockContext(cglDisplayContext);
@@ -1733,9 +1691,6 @@ GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, GLuint *fragShaderID
 	
 	glAttachShader(*programID, *vertShaderID);
 	glAttachShader(*programID, *fragShaderID);
-	
-	glBindAttribLocation(*programID, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(*programID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	
 	glLinkProgram(*programID);
 	glGetProgramiv(*programID, GL_LINK_STATUS, &shaderStatus);
