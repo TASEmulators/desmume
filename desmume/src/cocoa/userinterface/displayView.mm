@@ -32,6 +32,9 @@
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
 const char *vShader_100 = {"\
+	attribute vec2 inPosition; \n\
+	attribute vec2 inTexCoord0; \n\
+	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
@@ -51,8 +54,8 @@ const char *vShader_100 = {"\
 		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
 								vec2(   0.0, scalar)); \n\
 		\n\
-		vtxTexCoord = gl_MultiTexCoord0; \n\
-		gl_Position = vec4(projection * rotation * scale * gl_Vertex, 1.0, 1.0); \n\
+		vtxTexCoord = inTexCoord0; \n\
+		gl_Position = vec4(projection * rotation * scale * inPosition, 1.0, 1.0); \n\
 	} \n\
 "};
 
@@ -1002,19 +1005,12 @@ enum OGLVertexAttributeID
 	
 	glDeleteTextures(1, &displayTexID);
 	
-	if (isVAOSupported)
-	{
-		glDeleteVertexArraysAPPLE(1, &vaoMainStatesID);
-	}
+	glDeleteVertexArraysAPPLE(1, &vaoMainStatesID);
+	glDeleteBuffersARB(1, &vboVertexID);
+	glDeleteBuffersARB(1, &vboTexCoordID);
+	glDeleteBuffersARB(1, &vboElementID);
 	
-	if (isVBOSupported)
-	{
-		glDeleteBuffersARB(1, &vboVertexID);
-		glDeleteBuffersARB(1, &vboTexCoordID);
-		glDeleteBuffersARB(1, &vboElementID);
-	}
-	
-	if (isShadersSupported)
+	if (isShaderSupported)
 	{
 		glUseProgram(0);
 		
@@ -1082,31 +1078,16 @@ enum OGLVertexAttributeID
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	// Set up VBOs
-	isVBOSupported = gluCheckExtension((const GLubyte *)"GL_ARB_vertex_buffer_object", glExtString);
-	if (isVBOSupported)
-	{
-		glGenBuffersARB(1, &vboVertexID);
-		glGenBuffersARB(1, &vboTexCoordID);
-		glGenBuffersARB(1, &vboElementID);
-		
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), vtxBuffer, GL_STATIC_DRAW_ARB);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), texCoordBuffer, GL_STATIC_DRAW_ARB);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
-		glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW_ARB);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-	}
-	
-	// Set up shaders
-	isShadersSupported	= (gluCheckExtension((const GLubyte *)"GL_ARB_shader_objects", glExtString) &&
+	// Set up shaders (but disable on PowerPC, since it doesn't seem to work there)
+#if defined(__i386__) || defined(__x86_64__)
+	isShaderSupported	= (gluCheckExtension((const GLubyte *)"GL_ARB_shader_objects", glExtString) &&
 						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_shader", glExtString) &&
 						   gluCheckExtension((const GLubyte *)"GL_ARB_fragment_shader", glExtString) &&
 						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_program", glExtString) );
-	if (isShadersSupported)
+#else
+	isShaderSupported	= false;
+#endif
+	if (isShaderSupported)
 	{
 		GLint shaderStatus = SetupShaders(&shaderProgram, &vertexShaderID, &fragmentShaderID, vShader_100, fShader_100);
 		if (shaderStatus == GL_TRUE)
@@ -1123,31 +1104,53 @@ enum OGLVertexAttributeID
 		}
 		else
 		{
-			isShadersSupported = false;
+			isShaderSupported = false;
 		}
 	}
 	
+	// Set up VBOs
+	glGenBuffersARB(1, &vboVertexID);
+	glGenBuffersARB(1, &vboTexCoordID);
+	glGenBuffersARB(1, &vboElementID);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), vtxBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), texCoordBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	
 	// Set up VAO
-	isVAOSupported	= ( isVBOSupported &&
-					    isShadersSupported &&
-					    gluCheckExtension((const GLubyte *)"GL_APPLE_vertex_array_object", glExtString) );
-	if (isVAOSupported)
+	glGenVertexArraysAPPLE(1, &vaoMainStatesID);
+	glBindVertexArrayAPPLE(vaoMainStatesID);
+	
+	if (isShaderSupported)
 	{
-		glGenVertexArraysAPPLE(1, &vaoMainStatesID);
-		glBindVertexArrayAPPLE(vaoMainStatesID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
 		
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+	}
+	else
+	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
 		glVertexPointer(2, GL_INT, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, 0);
-		
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		
-		glBindVertexArrayAPPLE(0);
 	}
+	
+	glBindVertexArrayAPPLE(0);
 	
 	// Render State Setup (common to both shaders and fixed-function pipeline)
 	glDisable(GL_BLEND);
@@ -1156,7 +1159,7 @@ enum OGLVertexAttributeID
 	glDisable(GL_STENCIL_TEST);
 	
 	// Set up fixed-function pipeline render states.
-	if (!isShadersSupported)
+	if (!isShaderSupported)
 	{
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_LIGHTING);
@@ -1190,74 +1193,30 @@ enum OGLVertexAttributeID
 
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID
 {
-	// Assign vertex attributes based on which OpenGL features we have.
-	if (isVAOSupported)
-	{
-		glBindVertexArrayAPPLE(vaoMainStatesID);
-	}
-	else
-	{
-		if (isVBOSupported)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-			glVertexPointer(2, GL_INT, 0, 0);
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-			glTexCoordPointer(2, GL_FLOAT, 0, 0);
-			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
-		}
-		else
-		{
-			glVertexPointer(2, GL_INT, 0, vtxBuffer);
-			glTexCoordPointer(2, GL_FLOAT, 0, texCoordBuffer);
-		}
-		
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	}
+	// Enable vertex attributes
+	glBindVertexArrayAPPLE(vaoMainStatesID);
 	
-	// Perform the render.
+	// Perform the render
 	if (lastDisplayMode != displayModeID)
 	{
 		lastDisplayMode = displayModeID;
 		[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
 		
-		if (isVBOSupported)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-			glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		}
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 	
 	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? 12 : 6;
-	GLubyte *elementPointer = isVBOSupported ? 0 : vtxIndexBuffer;
-	
-	if (displayModeID == DS_DISPLAY_TYPE_TOUCH)
-	{
-		elementPointer += vtxElementCount;
-	}
+	const GLubyte *elementPointer = !(displayModeID == DS_DISPLAY_TYPE_TOUCH) ? 0 : (GLubyte *)(vtxElementCount * sizeof(GLubyte));
 	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
 	glDrawElements(GL_TRIANGLES, vtxElementCount, GL_UNSIGNED_BYTE, elementPointer);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	// Disable vertex attributes.
-	if (isVAOSupported)
-	{
-		glBindVertexArrayAPPLE(0);
-	}
-	else
-	{
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_VERTEX_ARRAY);
-		
-		if (isVBOSupported)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-		}
-	}
+	// Disable vertex attributes
+	glBindVertexArrayAPPLE(0);
 }
 
 - (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID
@@ -1448,7 +1407,7 @@ enum OGLVertexAttributeID
 	
 	glViewport(0, 0, rect.size.width, rect.size.height);
 	
-	if (isShadersSupported)
+	if (isShaderSupported)
 	{
 		glUniform2f(uniformViewSize, rect.size.width, rect.size.height);
 	}
@@ -1470,7 +1429,7 @@ enum OGLVertexAttributeID
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	if (isShadersSupported)
+	if (isShaderSupported)
 	{
 		glUniform1f(uniformAngleDegrees, angleDegrees);
 		glUniform1f(uniformScalar, s);
@@ -1502,17 +1461,14 @@ enum OGLVertexAttributeID
 	lastDisplayMode = displayModeID;
 	[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
 	
-	if (isVBOSupported)
-	{
-		CGLLockContext(cglDisplayContext);
-		CGLSetCurrentContext(cglDisplayContext);
-		
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		
-		CGLUnlockContext(cglDisplayContext);
-	}
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doBilinearOutputChanged:(BOOL)useBilinear
@@ -1534,17 +1490,14 @@ enum OGLVertexAttributeID
 	currentDisplayOrientation = displayOrientationID;
 	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:displayOrientationID];
 	
-	if (isVBOSupported)
-	{
-		CGLLockContext(cglDisplayContext);
-		CGLSetCurrentContext(cglDisplayContext);
-		
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		
-		CGLUnlockContext(cglDisplayContext);
-	}
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID
@@ -1561,12 +1514,9 @@ enum OGLVertexAttributeID
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	if (isVBOSupported)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	}
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	if (lastDisplayMode == DS_DISPLAY_TYPE_COMBO)
 	{
@@ -1628,12 +1578,9 @@ enum OGLVertexAttributeID
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, glTexPixelFormat, glTexBack);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	if (isVBOSupported)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	}
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	CGLUnlockContext(cglDisplayContext);
 }
@@ -1691,6 +1638,9 @@ GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, GLuint *fragShaderID
 	
 	glAttachShader(*programID, *vertShaderID);
 	glAttachShader(*programID, *fragShaderID);
+	
+	glBindAttribLocation(*programID, OGLVertexAttributeID_Position, "inPosition");
+	glBindAttribLocation(*programID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	
 	glLinkProgram(*programID);
 	glGetProgramiv(*programID, GL_LINK_STATUS, &shaderStatus);
