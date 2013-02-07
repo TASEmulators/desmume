@@ -18,17 +18,33 @@
 #define WIN32_LEAN_AND_MEAN
 #include "../common.h"
 #include "../debug.h"
+
+//in case we ever need glew
+//#define GLEW_STATIC
+//#include <GL/glew.c> //yeah, build the file here.
+//#include <GL/glew.h>
+//#include <GL/wglew.h>
+
+#include "OGLRender.h"
+
 #include <gl/gl.h>
 #include <gl/glext.h>
 #include <GL/wglext.h>
 #include "console.h"
 #include "CWindow.h"
-#include "OGLRender.h"
 
 extern WINCLASS	*MainWindow;
 
 static HWND hwndFake;
 static bool oglAlreadyInit = false;
+
+static void check_init_glew()
+{
+	static bool initialized = false;
+	if(initialized) return;
+	initialized = true;
+//	glewInit();
+}
 
 int CheckHardwareSupport(HDC hdc)
 {
@@ -83,6 +99,7 @@ bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc)
 
 static HGLRC main_hRC;
 static HDC main_hDC;
+static HWND main_hWND;
 
 static bool _begin()
 {
@@ -92,14 +109,10 @@ static bool _begin()
 	return true;
 }
 
-bool windows_opengl_init()
+static bool makeBootstrapContext()
 {
-	static const char *opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
-
-	if(oglAlreadyInit == true) return true;
-
-	GLuint PixelFormat;
-	static PIXELFORMATDESCRIPTOR pfd;
+	//not sure how relevant all this is, since it is just a context for bootstrapping, but we may as well make it as normal as we can, just to be safe
+	PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
@@ -111,25 +124,108 @@ bool windows_opengl_init()
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
-	//make a fake, invisible window, to render into. it's unclear yet how well this works, but i refuse to give up yet on making opengl render headless without relying on PBO and the like.
-	//the width and height of this window must be lager than 256,192 for some reason, to give old crappy opengl profiles room to render into
-	//if we ever support 3d upscaling, this would have to be changed. perhaps we could re-initialize the video system to use an appropriate window size
-	HWND fakeWindow = CreateWindow("EDIT", 0, 0, 0, 0, 512, 512, 0, 0, 0, 0);
+	//it seems we may have to specify some non-zero win
+	int width, height;
+	width = height = 64; //something safe, but irrelevant
+	HWND fakeWindow = CreateWindow("EDIT", 0, 0, 0, 0, width, height, 0, 0, 0, 0);
+	main_hWND = fakeWindow;
 
 	main_hDC = GetDC(fakeWindow);
-	PixelFormat = ChoosePixelFormat(main_hDC, &pfd);
+	GLuint PixelFormat = ChoosePixelFormat(main_hDC, &pfd);
 	SetPixelFormat(main_hDC, PixelFormat, &pfd);
 	main_hRC = wglCreateContext(main_hDC);
 	wglMakeCurrent(main_hDC, main_hRC);
 
+	//report info on the driver we found
+	static const char *opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
 	int res = CheckHardwareSupport(main_hDC);
 	if (res>=0&&res<=2) 
 		INFO("WGL OpenGL mode: %s\n",opengl_modes[res]); 
 	else 
 		INFO("WGL OpenGL mode: uknown\n");
 
-	oglAlreadyInit = true;
+	return true;
+}
 
+bool windows_opengl_init()
+{
+	if(oglAlreadyInit) return true;
+
+	if(!makeBootstrapContext())
+	{
+		printf("GL bootstrap context failed\n");
+		return false;
+	}
+
+	//thx will perone
+
+	PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
+	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
+	PFNWGLCREATEPBUFFERARBPROC wglCreatePbufferARB = (PFNWGLCREATEPBUFFERARBPROC)wglGetProcAddress("wglCreatePbufferARB");
+	PFNWGLGETPBUFFERDCARBPROC wglGetPbufferDCARB = (PFNWGLGETPBUFFERDCARBPROC)wglGetProcAddress("wglGetPbufferDCARB");
+	PFNWGLQUERYPBUFFERARBPROC wglQueryPbufferARB = (PFNWGLQUERYPBUFFERARBPROC)wglGetProcAddress("wglQueryPbufferARB");
+	PFNWGLDESTROYPBUFFERARBPROC wglDestroyPbufferARB = (PFNWGLDESTROYPBUFFERARBPROC)wglGetProcAddress("wglDestroyPbufferARB");
+	PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB = (PFNWGLRELEASEPBUFFERDCARBPROC)wglGetProcAddress("wglReleasePbufferDCARB");
+	PFNWGLBINDTEXIMAGEARBPROC wglBindTexImageARB = (PFNWGLBINDTEXIMAGEARBPROC)wglGetProcAddress("wglBindTexImageARB");
+	PFNWGLRELEASETEXIMAGEARBPROC wglReleaseTexImageARB = (PFNWGLRELEASETEXIMAGEARBPROC)wglGetProcAddress("wglReleaseTexImageARB");
+
+	if(!wglCreatePbufferARB)
+	{
+		printf("no PBuffer support on this video driver. sorry!");
+		return false;
+	}
+
+	int intAttrs[32] ={
+		WGL_RED_BITS_ARB,8,
+		WGL_GREEN_BITS_ARB,8,
+		WGL_BLUE_BITS_ARB,8,
+		WGL_ALPHA_BITS_ARB,8,
+		WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE,
+		WGL_BIND_TO_TEXTURE_RGBA_ARB, GL_TRUE,
+		WGL_SUPPORT_OPENGL_ARB,GL_TRUE,
+		WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
+		WGL_DOUBLE_BUFFER_ARB,GL_FALSE,
+		0};
+
+	//setup pixel format
+	UINT numFormats;
+	int pixelFormat;
+	if(!wglChoosePixelFormatARB(main_hDC, intAttrs, NULL, 1, &pixelFormat, &numFormats) || numFormats == 0)
+	{
+		printf("problem finding pixel format in wglChoosePixelFormatARB\n");
+		return false;
+	}
+
+	//pbuf attributes
+	int pbuf_width = 256;  //try 192 later, but i think it has to be square
+	int pbuf_height = 256;
+	static const int pbuf_attributes[]= {
+		WGL_TEXTURE_FORMAT_ARB,  WGL_TEXTURE_RGBA_ARB,
+		WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_2D_ARB,
+		0};
+
+	HPBUFFERARB pbuffer = wglCreatePbufferARB(main_hDC, pixelFormat, pbuf_width, pbuf_height, pbuf_attributes);
+	HDC hdc = wglGetPbufferDCARB(pbuffer);
+	HGLRC hGlRc = wglCreateContext(hdc);		
+
+	//doublecheck dimensions
+	int width, height;
+	wglQueryPbufferARB(pbuffer, WGL_PBUFFER_WIDTH_ARB, &width);
+	wglQueryPbufferARB(pbuffer, WGL_PBUFFER_HEIGHT_ARB, &height);
+	if(width != pbuf_height || height != pbuf_height)
+	{
+		printf("wglCreatePbufferARB created some wrongly sized nonsense\n");
+		return false;
+	}
+
+	//cleanup the bootstrap context
+	wglDeleteContext(main_hRC);
+	DeleteObject(main_hDC);
+	DestroyWindow(main_hWND);
+
+	main_hDC = hdc;
+	main_hRC = hGlRc;
+	oglAlreadyInit = true;
 	oglrender_beginOpenGL = _begin;
 
 	return true;
