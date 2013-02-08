@@ -37,6 +37,7 @@ typedef struct
 
 static OGLVersion _OGLDriverVersion = {0, 0, 0};
 static OpenGLRenderer *_OGLRenderer = NULL;
+static bool isIntel965 = false;
 
 // Lookup Tables
 CACHE_ALIGN GLfloat material_8bit_to_float[256] = {0};
@@ -272,7 +273,7 @@ static const char *fragmentShader_100 = {"\
 	void main() \n\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
-		vec4 flagColor; \n\
+		vec4 fragColor; \n\
 		float flagDepth; \n\
 		\n\
 		if(hasTexture) \n\
@@ -280,69 +281,70 @@ static const char *fragmentShader_100 = {"\
 			texColor = texture2D(texMainRender, vtxTexCoord); \n\
 		} \n\
 		\n\
-		flagColor = texColor; \n\
+		fragColor = texColor; \n\
 		\n\
 		if(polygonMode == 0) \n\
 		{ \n\
-			flagColor = vtxColor * texColor; \n\
+			fragColor = vtxColor * texColor; \n\
 		} \n\
 		else if(polygonMode == 1) \n\
 		{ \n\
 			if (texColor.a == 0.0 || !hasTexture) \n\
 			{ \n\
-				flagColor.rgb = vtxColor.rgb; \n\
+				fragColor.rgb = vtxColor.rgb; \n\
 			} \n\
 			else if (texColor.a == 1.0) \n\
 			{ \n\
-				flagColor.rgb = texColor.rgb; \n\
+				fragColor.rgb = texColor.rgb; \n\
 			} \n\
 			else \n\
 			{ \n\
-				flagColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a;\n\
+				fragColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a;\n\
 			} \n\
 			\n\
-			flagColor.a = vtxColor.a; \n\
+			fragColor.a = vtxColor.a; \n\
 		} \n\
 		else if(polygonMode == 2) \n\
 		{ \n\
 			if (toonShadingMode == 0) \n\
 			{ \n\
 				vec3 toonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb); \n\
-				flagColor.rgb = texColor.rgb * toonColor.rgb;\n\
-				flagColor.a = texColor.a * vtxColor.a;\n\
+				fragColor.rgb = texColor.rgb * toonColor.rgb;\n\
+				fragColor.a = texColor.a * vtxColor.a;\n\
 			} \n\
 			else \n\
 			{ \n\
 				vec3 toonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb); \n\
-				flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
-				flagColor.a = texColor.a * vtxColor.a; \n\
+				fragColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
+				fragColor.a = texColor.a * vtxColor.a; \n\
 			} \n\
 		} \n\
 		else if(polygonMode == 3) \n\
 		{ \n\
 			if (polyID != 0) \n\
 			{ \n\
-				flagColor = vtxColor; \n\
+				fragColor = vtxColor; \n\
 			} \n\
 		} \n\
 		\n\
-		if (flagColor.a == 0.0 || (enableAlphaTest && flagColor.a < alphaTestRef)) \n\
+		if (fragColor.a == 0.0 || (enableAlphaTest && fragColor.a < alphaTestRef)) \n\
 		{ \n\
 			discard; \n\
 		} \n\
 		\n\
+		#ifdef WANT_DEPTHLOGIC \n\
 		if (oglWBuffer == 1) \n\
 		{ \n\
 			// TODO \n\
-			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
-			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
+		#endif //WANT_DEPTHLOGIC \n\
 		\n\
-		gl_FragColor = flagColor; \n\
-		gl_FragDepth = flagDepth; \n\
+		gl_FragColor = fragColor; \n\
 	} \n\
 "};
 
@@ -514,6 +516,9 @@ static char OGLInit(void)
 	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
 	const char *oglVendorString = (const char *)glGetString(GL_VENDOR);
 	const char *oglRendererString = (const char *)glGetString(GL_RENDERER);
+
+	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965"))
+		isIntel965 = true;
 	
 	// Check the driver's OpenGL version
 	OGLGetDriverVersion(oglVersionString, &_OGLDriverVersion.major, &_OGLDriverVersion.minor, &_OGLDriverVersion.revision);
@@ -1093,7 +1098,15 @@ Render3DError OpenGLRenderer_1_2::CreateShaders(const std::string *vertexShaderP
 	}
 	
 	const char *vertexShaderProgramChar = vertexShaderProgram->c_str();
-	glShaderSource(OGLRef.vertexShaderID, 1, (const GLchar **)&vertexShaderProgramChar, NULL);
+	const char* sources[] = { "#define WANT_DEPTHLOGIC\n", vertexShaderProgramChar };
+
+	//not only does this hardware not work, it flat-out freezes the system.
+	//the problem is due to writing gl_FragDepth (it seems theres no way to successfully use it)
+	//so, we disable that feature. it still works pretty well.
+	if(isIntel965)
+		sources[0] = "";
+
+	glShaderSource(OGLRef.vertexShaderID, 2, (const GLchar **)sources, NULL);
 	glCompileShader(OGLRef.vertexShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexShaderID))
 	{

@@ -48,19 +48,19 @@ static void check_init_glew()
 
 int CheckHardwareSupport(HDC hdc)
 {
-   int PixelFormat = GetPixelFormat(hdc);
-   PIXELFORMATDESCRIPTOR pfd;
+	int PixelFormat = GetPixelFormat(hdc);
+	PIXELFORMATDESCRIPTOR pfd;
 
-   DescribePixelFormat(hdc,PixelFormat,sizeof(PIXELFORMATDESCRIPTOR),&pfd);
-   if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
-      return 0; // Software acceleration OpenGL
+	DescribePixelFormat(hdc,PixelFormat,sizeof(PIXELFORMATDESCRIPTOR),&pfd);
+	if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
+		return 0; // Software acceleration OpenGL
 
-   else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && (pfd.dwFlags & PFD_GENERIC_ACCELERATED))
-      return 1; // Half hardware acceleration OpenGL (MCD driver)
+	else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && (pfd.dwFlags & PFD_GENERIC_ACCELERATED))
+		return 1; // Half hardware acceleration OpenGL (MCD driver)
 
-   else if ( !(pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
-      return 2; // Full hardware acceleration OpenGL
-   return -1; // check error
+	else if ( !(pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
+		return 2; // Full hardware acceleration OpenGL
+	return -1; // check error
 }
 
 bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc)
@@ -172,6 +172,7 @@ bool windows_opengl_init()
 	PFNWGLRELEASEPBUFFERDCARBPROC wglReleasePbufferDCARB = (PFNWGLRELEASEPBUFFERDCARBPROC)wglGetProcAddress("wglReleasePbufferDCARB");
 	PFNWGLBINDTEXIMAGEARBPROC wglBindTexImageARB = (PFNWGLBINDTEXIMAGEARBPROC)wglGetProcAddress("wglBindTexImageARB");
 	PFNWGLRELEASETEXIMAGEARBPROC wglReleaseTexImageARB = (PFNWGLRELEASETEXIMAGEARBPROC)wglGetProcAddress("wglReleaseTexImageARB");
+  PFNWGLGETPIXELFORMATATTRIBIVARBPROC wglGetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)wglGetProcAddress("wglGetPixelFormatAttribivARB");
 
 	if(!wglCreatePbufferARB)
 	{
@@ -180,10 +181,13 @@ bool windows_opengl_init()
 	}
 
 	int intAttrs[32] ={
+		WGL_COLOR_BITS_ARB,24,
 		WGL_RED_BITS_ARB,8,
 		WGL_GREEN_BITS_ARB,8,
 		WGL_BLUE_BITS_ARB,8,
 		WGL_ALPHA_BITS_ARB,8,
+		WGL_DEPTH_BITS_ARB,24,
+		WGL_STENCIL_BITS_ARB,8,
 		WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE,
 		WGL_SUPPORT_OPENGL_ARB,GL_TRUE,
 		WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
@@ -202,10 +206,7 @@ bool windows_opengl_init()
 	//pbuf attributes
 	int pbuf_width = 256;  //try 192 later, but i think it has to be square
 	int pbuf_height = 256;
-	static const int pbuf_attributes[]= {
-		WGL_TEXTURE_FORMAT_ARB,  WGL_TEXTURE_RGBA_ARB,
-		WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_2D_ARB,
-		0};
+	static const int pbuf_attributes[]= {0};
 
 	HPBUFFERARB pbuffer = wglCreatePbufferARB(main_hDC, pixelFormat, pbuf_width, pbuf_height, pbuf_attributes);
 	HDC hdc = wglGetPbufferDCARB(pbuffer);
