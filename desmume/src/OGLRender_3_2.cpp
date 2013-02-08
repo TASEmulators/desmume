@@ -123,36 +123,36 @@ static const char *fragmentShader_150 = {"\
 	void main() \n\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
-		vec4 flagColor; \n\
-		float flagDepth; \n\
+		vec4 fragColor; \n\
+		float fragDepth; \n\
 		\n\
 		if(hasTexture) \n\
 		{ \n\
 			texColor = texture(texMainRender, vtxTexCoord); \n\
 		} \n\
 		\n\
-		flagColor = texColor; \n\
+		fragColor = texColor; \n\
 		\n\
 		if(polygonMode == 0) \n\
 		{ \n\
-			flagColor = vtxColor * texColor; \n\
+			fragColor = vtxColor * texColor; \n\
 		} \n\
 		else if(polygonMode == 1) \n\
 		{ \n\
 			if (texColor.a == 0.0 || !hasTexture) \n\
 			{ \n\
-				flagColor.rgb = vtxColor.rgb; \n\
+				fragColor.rgb = vtxColor.rgb; \n\
 			} \n\
 			else if (texColor.a == 1.0) \n\
 			{ \n\
-				flagColor.rgb = texColor.rgb; \n\
+				fragColor.rgb = texColor.rgb; \n\
 			} \n\
 			else \n\
 			{ \n\
-				flagColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a; \n\
+				fragColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a; \n\
 			} \n\
 			\n\
-			flagColor.a = vtxColor.a; \n\
+			fragColor.a = vtxColor.a; \n\
 		} \n\
 		else if(polygonMode == 2) \n\
 		{ \n\
@@ -160,24 +160,24 @@ static const char *fragmentShader_150 = {"\
 			\n\
 			if (toonShadingMode == 0) \n\
 			{ \n\
-				flagColor.rgb = texColor.rgb * toonColor.rgb; \n\
+				fragColor.rgb = texColor.rgb * toonColor.rgb; \n\
 			} \n\
 			else \n\
 			{ \n\
-				flagColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
+				fragColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
 			} \n\
 			\n\
-			flagColor.a = texColor.a * vtxColor.a; \n\
+			fragColor.a = texColor.a * vtxColor.a; \n\
 		} \n\
 		else if(polygonMode == 3) \n\
 		{ \n\
 			if (polyID != 0) \n\
 			{ \n\
-				flagColor = vtxColor; \n\
+				fragColor = vtxColor; \n\
 			} \n\
 		} \n\
 		\n\
-		if (flagColor.a == 0.0 || (enableAlphaTest && flagColor.a < alphaTestRef)) \n\
+		if (fragColor.a == 0.0 || (enableAlphaTest && fragColor.a < alphaTestRef)) \n\
 		{ \n\
 			discard; \n\
 		} \n\
@@ -185,15 +185,15 @@ static const char *fragmentShader_150 = {"\
 		if (oglWBuffer == 1) \n\
 		{ \n\
 			// TODO \n\
-			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			fragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
-			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			fragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		\n\
-		outFragColor = flagColor; \n\
-		gl_FragDepth = flagDepth; \n\
+		outFragColor = fragColor; \n\
+		gl_FragDepth = fragDepth; \n\
 	} \n\
 "};
 
@@ -220,10 +220,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	// Load shader programs
-	const std::string vertexShaderProgram = vertexShader_150;
-	const std::string fragmentShaderProgram = fragmentShader_150;
-	
 	// Get OpenGL extensions
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
@@ -231,23 +227,26 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	// Initialize OpenGL
 	this->InitTables();
 	
+	// Load and create shaders. Return on any error, since v3.2 Core Profile makes shaders mandatory.
 	this->isShaderSupported	= true;
+	
+	std::string vertexShaderProgram;
+	std::string fragmentShaderProgram;
+	error = this->LoadShaderPrograms(&vertexShaderProgram, &fragmentShaderProgram);
+	if (error != OGLERROR_NOERR)
+	{
+		this->isShaderSupported = false;
+		return error;
+	}
+	
 	error = this->CreateShaders(&vertexShaderProgram, &fragmentShaderProgram);
 	if (error != OGLERROR_NOERR)
 	{
 		this->isShaderSupported = false;
-		
-		if (error == OGLERROR_SHADER_CREATE_ERROR)
-		{
-			// Return on OGLERROR_SHADER_CREATE_ERROR, since a v2.0 driver should be able to
-			// support shaders.
-			return error;
-		}
+		return error;
 	}
-	else
-	{
-		this->CreateToonTable();
-	}
+	
+	this->CreateToonTable();
 	
 	this->isVBOSupported = true;
 	this->CreateVBOs();
@@ -258,19 +257,14 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->isVAOSupported = true;
 	this->CreateVAOs();
 	
+	// Load and create FBOs. Return on any error, since v3.2 Core Profile makes FBOs mandatory.
 	this->isFBOSupported = true;
 	error = this->CreateFBOs();
 	if (error != OGLERROR_NOERR)
 	{
 		OGLRef.fboFinalOutputID = 0;
 		this->isFBOSupported = false;
-		
-		if (error == OGLERROR_FBO_CREATE_ERROR)
-		{
-			// Return on OGLERROR_FBO_CREATE_ERROR, since a v3.0 driver should be able to
-			// support FBOs.
-			return error;
-		}
+		return error;
 	}
 	
 	this->isMultisampledFBOSupported = true;
@@ -487,6 +481,14 @@ void OpenGLRenderer_3_2::DestroyVAOs()
 	glDeleteVertexArrays(1, &this->ref->vaoMainStatesID);
 	
 	this->isVAOSupported = false;
+}
+
+Render3DError OpenGLRenderer_3_2::LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram)
+{
+	*outVertexShaderProgram = std::string(vertexShader_150);
+	*outFragmentShaderProgram = std::string(fragmentShader_150);
+	
+	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_3_2::SetupShaderIO()

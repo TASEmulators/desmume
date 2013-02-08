@@ -274,7 +274,6 @@ static const char *fragmentShader_100 = {"\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
 		vec4 fragColor; \n\
-		float flagDepth; \n\
 		\n\
 		if(hasTexture) \n\
 		{ \n\
@@ -599,7 +598,10 @@ static char OGLInit(void)
 	error = _OGLRenderer->InitExtensions();
 	if (error != OGLERROR_NOERR)
 	{
-		if (IsVersionSupported(2, 0, 0) && error == OGLERROR_SHADER_CREATE_ERROR)
+		if ( IsVersionSupported(2, 0, 0) &&
+			(error == OGLERROR_SHADER_CREATE_ERROR ||
+			 error == OGLERROR_VERTEX_SHADER_PROGRAM_LOAD_ERROR ||
+			 error == OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR) )
 		{
 			INFO("OpenGL: Shaders are not working, even though they should be. Disabling 3D renderer.\n");
 			result = 0;
@@ -884,10 +886,6 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	// Load shader programs
-	const std::string vertexShaderProgram = vertexShader_100;
-	const std::string fragmentShaderProgram = fragmentShader_100;
-	
 	// Get OpenGL extensions
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
@@ -902,19 +900,30 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	
 	if (this->isShaderSupported)
 	{
-		error = this->CreateShaders(&vertexShaderProgram, &fragmentShaderProgram);
-		if (error != OGLERROR_NOERR)
+		std::string vertexShaderProgram;
+		std::string fragmentShaderProgram;
+		
+		error = this->LoadShaderPrograms(&vertexShaderProgram, &fragmentShaderProgram);
+		if (error == OGLERROR_NOERR)
 		{
-			this->isShaderSupported = false;
-			
-			if (error == OGLERROR_SHADER_CREATE_ERROR)
+			error = this->CreateShaders(&vertexShaderProgram, &fragmentShaderProgram);
+			if (error != OGLERROR_NOERR)
 			{
-				return error;
+				this->isShaderSupported = false;
+				
+				if (error == OGLERROR_SHADER_CREATE_ERROR)
+				{
+					return error;
+				}
+			}
+			else
+			{
+				this->CreateToonTable();
 			}
 		}
 		else
 		{
-			this->CreateToonTable();
+			this->isShaderSupported = false;
 		}
 	}
 	else
@@ -1075,6 +1084,23 @@ void OpenGLRenderer_1_2::DestroyPBOs()
 	this->isPBOSupported = false;
 }
 
+Render3DError OpenGLRenderer_1_2::LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram)
+{
+	outVertexShaderProgram->clear();
+	outFragmentShaderProgram->clear();
+	
+	//not only does this hardware not work, it flat-out freezes the system.
+	//the problem is due to writing gl_FragDepth (it seems theres no way to successfully use it)
+	//so, we disable that feature. it still works pretty well.
+	if(isIntel965)
+		*outFragmentShaderProgram = std::string("#define WANT_DEPTHLOGIC\n");
+	
+	*outVertexShaderProgram += std::string(vertexShader_100);
+	*outFragmentShaderProgram += std::string(fragmentShader_100);
+	
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_1_2::SetupShaderIO()
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -1098,15 +1124,7 @@ Render3DError OpenGLRenderer_1_2::CreateShaders(const std::string *vertexShaderP
 	}
 	
 	const char *vertexShaderProgramChar = vertexShaderProgram->c_str();
-	const char* sources[] = { "#define WANT_DEPTHLOGIC\n", vertexShaderProgramChar };
-
-	//not only does this hardware not work, it flat-out freezes the system.
-	//the problem is due to writing gl_FragDepth (it seems theres no way to successfully use it)
-	//so, we disable that feature. it still works pretty well.
-	if(isIntel965)
-		sources[0] = "";
-
-	glShaderSource(OGLRef.vertexShaderID, 2, (const GLchar **)sources, NULL);
+	glShaderSource(OGLRef.vertexShaderID, 1, (const GLchar **)&vertexShaderProgramChar, NULL);
 	glCompileShader(OGLRef.vertexShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexShaderID))
 	{
@@ -2749,10 +2767,6 @@ Render3DError OpenGLRenderer_2_0::InitExtensions()
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	// Load shader programs
-	const std::string vertexShaderProgram = std::string(vertexShader_100);
-	const std::string fragmentShaderProgram = std::string(fragmentShader_100);
-	
 	// Get OpenGL extensions
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
@@ -2760,23 +2774,26 @@ Render3DError OpenGLRenderer_2_0::InitExtensions()
 	// Initialize OpenGL
 	this->InitTables();
 	
+	// Load and create shaders. Return on any error, since a v2.0 driver will assume that shaders are available.
 	this->isShaderSupported	= true;
+	
+	std::string vertexShaderProgram;
+	std::string fragmentShaderProgram;
+	error = this->LoadShaderPrograms(&vertexShaderProgram, &fragmentShaderProgram);
+	if (error != OGLERROR_NOERR)
+	{
+		this->isShaderSupported = false;
+		return error;
+	}
+	
 	error = this->CreateShaders(&vertexShaderProgram, &fragmentShaderProgram);
 	if (error != OGLERROR_NOERR)
 	{
 		this->isShaderSupported = false;
-		
-		if (error == OGLERROR_SHADER_CREATE_ERROR)
-		{
-			// Return on OGLERROR_SHADER_CREATE_ERROR, since a v2.0 driver should be able to
-			// support shaders.
-			return error;
-		}
+		return error;
 	}
-	else
-	{
-		this->CreateToonTable();
-	}
+	
+	this->CreateToonTable();
 	
 	this->isVBOSupported = true;
 	this->CreateVBOs();
