@@ -279,6 +279,7 @@ enum OGLTextureUnitID
 enum OGLErrorCode
 {
 	OGLERROR_NOERR = RENDER3DERROR_NOERR,
+	
 	OGLERROR_FEATURE_UNSUPPORTED,
 	OGLERROR_VBO_UNSUPPORTED,
 	OGLERROR_PBO_UNSUPPORTED,
@@ -287,7 +288,10 @@ enum OGLErrorCode
 	OGLERROR_FBO_UNSUPPORTED,
 	OGLERROR_MULTISAMPLED_FBO_UNSUPPORTED,
 	
+	OGLERROR_VERTEX_SHADER_PROGRAM_LOAD_ERROR,
+	OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR,
 	OGLERROR_SHADER_CREATE_ERROR,
+	
 	OGLERROR_FBO_CREATE_ERROR
 };
 
@@ -436,6 +440,7 @@ protected:
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
 	
+	virtual Render3DError LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram) = 0;
 	virtual Render3DError SetupShaderIO() = 0;
 	virtual Render3DError CreateToonTable() = 0;
 	virtual Render3DError DestroyToonTable() = 0;
@@ -508,6 +513,7 @@ protected:
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitTables();
 	
+	virtual Render3DError LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram);
 	virtual Render3DError SetupShaderIO();
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();

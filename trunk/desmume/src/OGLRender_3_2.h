@@ -68,6 +68,7 @@ protected:
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
 	
+	virtual Render3DError LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram);
 	virtual Render3DError SetupShaderIO();
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
