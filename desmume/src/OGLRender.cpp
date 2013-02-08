@@ -347,14 +347,14 @@ static const char *fragmentShader_100 = {"\
 	} \n\
 "};
 
-FORCEINLINE u32 BGRA8888_32_To_RGBA6665_32Rev(const u32 srcPix)
+FORCEINLINE u32 BGRA8888_32_To_RGBA6665_32(const u32 srcPix)
 {
 	const u32 dstPix = (srcPix >> 2) & 0x3F3F3F3F;
 	
-	return	 (dstPix & 0x0000FF00) >> 8 |		// R
-			 (dstPix & 0x00FF0000) >> 8 |		// G
-			 (dstPix & 0xFF000000) >> 8 |		// B
-			((dstPix >> 1) & 0x000000FF) << 24;	// A
+	return	 (dstPix & 0x0000FF00) << 16 |		// R
+			 (dstPix & 0x00FF0000)       |		// G
+			 (dstPix & 0xFF000000) >> 16 |		// B
+			((dstPix >> 1) & 0x000000FF);		// A
 }
 
 FORCEINLINE u32 BGRA8888_32Rev_To_RGBA6665_32Rev(const u32 srcPix)
@@ -819,7 +819,7 @@ void OpenGLRenderer::ConvertFramebuffer(const u32 *__restrict srcBuffer, u32 *ds
 			// Use the correct endian format since OpenGL uses the native endian of
 			// the architecture it is running on.
 #ifdef WORDS_BIGENDIAN
-			*dst++ = BGRA8888_32_To_RGBA6665_32Rev(srcBuffer[i]);
+			*dst++ = BGRA8888_32_To_RGBA6665_32(srcBuffer[i]);
 #else
 			*dst++ = BGRA8888_32Rev_To_RGBA6665_32Rev(srcBuffer[i]);
 #endif
