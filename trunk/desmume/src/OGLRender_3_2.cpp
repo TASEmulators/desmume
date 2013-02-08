@@ -513,13 +513,13 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 	}
 }
 
-Render3DError OpenGLRenderer_3_2::EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount)
+Render3DError OpenGLRenderer_3_2::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glBindVertexArray(OGLRef.vaoMainStatesID);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 	
 	return OGLERROR_NOERR;
 }
