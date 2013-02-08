@@ -71,7 +71,7 @@ protected:
 	virtual Render3DError SetupShaderIO();
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount);
+	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();

@@ -828,19 +828,6 @@ OpenGLRenderer_1_2::OpenGLRenderer_1_2()
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
 	isVAOSupported = false;
-	toonTableNeedsUpdate = true;
-	doubleBufferIndex = 0;
-	clearImageStencilValue = 0;
-	
-	// Toon Table Buffer
-	memset(currentToonTable16, 0, sizeof(currentToonTable16));
-	
-	// Client-side Post-Render Buffer
-	for (unsigned int i = 0; i < 2; i++)
-	{
-		gpuScreen3DHasNewData[i] = false;
-		memset(GPU_screen3D[i], 0, sizeof(GPU_screen3D[i]));
-	}
 	
 	// Init OpenGL rendering states
 	ref = new OGLRenderRef;
@@ -1369,6 +1356,8 @@ void OpenGLRenderer_1_2::DestroyMultisampledFBO()
 
 Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
 {
+	OGLRenderRef &OGLRef = *this->ref;
+	
 	bool isTexMirroredRepeatSupported = this->IsExtensionPresent(oglExtensionSet, "GL_ARB_texture_mirrored_repeat");
 	bool isBlendFuncSeparateSupported = this->IsExtensionPresent(oglExtensionSet, "GL_EXT_blend_func_separate");
 	bool isBlendEquationSeparateSupported = this->IsExtensionPresent(oglExtensionSet, "GL_EXT_blend_equation_separate");
@@ -1394,31 +1383,16 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 	}
 	
 	// Mirrored Repeat Mode Support
-	this->ref->stateTexMirroredRepeat = isTexMirroredRepeatSupported ? GL_MIRRORED_REPEAT : GL_REPEAT;
+	OGLRef.stateTexMirroredRepeat = isTexMirroredRepeatSupported ? GL_MIRRORED_REPEAT : GL_REPEAT;
 	
 	// Always enable depth test, and control using glDepthMask().
 	glEnable(GL_DEPTH_TEST);
 	
-	// If shaders aren't supported, fall back to changing states in legacy mode.
-	if(!this->isShaderSupported)
-	{
-		// Set up fixed-function pipeline render states.
-		glEnable(GL_NORMALIZE);
-		glEnable(GL_TEXTURE_1D);
-		glEnable(GL_TEXTURE_2D);
-		glAlphaFunc(GL_GREATER, 0);
-		glEnable(GL_ALPHA_TEST);
-		
-		// Map the vertex list's colors with 4 floats per color. This is being done
-		// because OpenGL needs 4-colors per vertex to support translucency. (The DS
-		// uses 3-colors per vertex, and adds alpha through the poly, so we can't
-		// simply reference the colors+alpha from just the vertices themselves.)
-		this->ref->color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
-	}
-	else
-	{
-		this->ref->color4fBuffer = NULL;
-	}
+	// Map the vertex list's colors with 4 floats per color. This is being done
+	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
+	// uses 3-colors per vertex, and adds alpha through the poly, so we can't
+	// simply reference the colors+alpha from just the vertices by themselves.)
+	OGLRef.color4fBuffer = this->isShaderSupported ? NULL : new GLfloat[VERTLIST_SIZE * 4];
 	
 	return OGLERROR_NOERR;
 }
@@ -1583,7 +1557,7 @@ Render3DError OpenGLRenderer_1_2::ExpandFreeTextures()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, unsigned int *outIndexCount)
+Render3DError OpenGLRenderer_1_2::SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, unsigned int *outIndexCount)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	const unsigned int polyCount = polyList->count;
@@ -1604,16 +1578,16 @@ Render3DError OpenGLRenderer_1_2::SetupVertices(const VERTLIST *vertList, const 
 				// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
-				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+				outIndexBuffer[vertIndexCount++] = vertIndex;
 				if (poly->vtxFormat == GFX3D_QUADS || poly->vtxFormat == GFX3D_QUAD_STRIP)
 				{
 					if (j == 2)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+						outIndexBuffer[vertIndexCount++] = vertIndex;
 					}
 					else if (j == 3)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+						outIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
 					}
 				}
 			}
@@ -1639,16 +1613,16 @@ Render3DError OpenGLRenderer_1_2::SetupVertices(const VERTLIST *vertList, const 
 				// buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 				// vertices here to convert them to GL_TRIANGLES, which are much easier
 				// to work with and won't be deprecated in future OpenGL versions.
-				OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+				outIndexBuffer[vertIndexCount++] = vertIndex;
 				if (poly->vtxFormat == GFX3D_QUADS || poly->vtxFormat == GFX3D_QUAD_STRIP)
 				{
 					if (j == 2)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+						outIndexBuffer[vertIndexCount++] = vertIndex;
 					}
 					else if (j == 3)
 					{
-						OGLRef.vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+						outIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
 					}
 				}
 			}
@@ -1660,7 +1634,7 @@ Render3DError OpenGLRenderer_1_2::SetupVertices(const VERTLIST *vertList, const 
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount)
+Render3DError OpenGLRenderer_1_2::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1668,7 +1642,7 @@ Render3DError OpenGLRenderer_1_2::EnableVertexAttributes(const VERTLIST *vertLis
 	{
 		glBindVertexArray(OGLRef.vaoMainStatesID);
 		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * vertList->count, vertList);
-		glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+		glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 	}
 	else
 	{
@@ -1790,21 +1764,18 @@ Render3DError OpenGLRenderer_1_2::DownsampleFBO()
 
 Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 {
-	static unsigned int bufferIndex = 0;
-	
-	bufferIndex = (bufferIndex + 1) & 0x01;
-	this->doubleBufferIndex = bufferIndex;
+	const unsigned int i = this->doubleBufferIndex;
 	
 	if (this->isPBOSupported)
 	{
 		this->DownsampleFBO();
 		
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, this->ref->pboRenderDataID[bufferIndex]);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, this->ref->pboRenderDataID[i]);
 		glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 		glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 	}
 	
-	this->gpuScreen3DHasNewData[bufferIndex] = true;
+	this->gpuScreen3DHasNewData[i] = true;
 	
 	return OGLERROR_NOERR;
 }
@@ -1823,6 +1794,7 @@ Render3DError OpenGLRenderer_1_2::DeleteTexture(const TexCacheItem *item)
 Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 {
 	OGLRenderRef &OGLRef = *this->ref;
+	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
 	
 	this->SelectRenderingFramebuffer();
 	
@@ -1861,6 +1833,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 
 Render3DError OpenGLRenderer_1_2::PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
+	OGLRenderRef &OGLRef = *this->ref;
 	unsigned int vertIndexCount = 0;
 	
 	if (!this->isShaderSupported)
@@ -1869,8 +1842,8 @@ Render3DError OpenGLRenderer_1_2::PreRender(const GFX3D_State *renderState, cons
 		glLoadIdentity();
 	}
 	
-	this->SetupVertices(vertList, polyList, indexList, &vertIndexCount);
-	this->EnableVertexAttributes(vertList, vertIndexCount);
+	this->SetupVertices(vertList, polyList, indexList, OGLRef.vertIndexBuffer, &vertIndexCount);
+	this->EnableVertexAttributes(vertList, OGLRef.vertIndexBuffer, vertIndexCount);
 	
 	return OGLERROR_NOERR;
 }
@@ -1882,10 +1855,7 @@ Render3DError OpenGLRenderer_1_2::DoRender(const GFX3D_State *renderState, const
 	u32 lastTexPalette = 0;
 	u32 lastPolyAttr = 0;
 	u32 lastViewport = 0xFFFFFFFF;
-	unsigned int polyCount = polyList->count;
-	unsigned int vertIndexCount = 0;
-	GLenum polyPrimitive = 0;
-	bool needVertexUpload = true;
+	const unsigned int polyCount = polyList->count;
 	GLushort *indexBufferPtr = this->isVBOSupported ? 0 : OGLRef.vertIndexBuffer;
 	
 	// Map GFX3D_QUADS and GFX3D_QUAD_STRIP to GL_TRIANGLES since we will convert them.
@@ -1899,11 +1869,9 @@ Render3DError OpenGLRenderer_1_2::DoRender(const GFX3D_State *renderState, const
 	
 	static const unsigned int indexIncrementLUT[] = {3, 6, 3, 6, 3, 4, 3, 4};
 	
-	// Render all polygons
 	for(unsigned int i = 0; i < polyCount; i++)
 	{
 		const POLY *poly = &polyList->list[indexList->list[i]];
-		polyPrimitive = oglPrimitiveType[poly->vtxFormat];
 		
 		// Set up the polygon if it changed
 		if(lastPolyAttr != poly->polyAttr || i == 0)
@@ -1927,47 +1895,17 @@ Render3DError OpenGLRenderer_1_2::DoRender(const GFX3D_State *renderState, const
 			this->SetupViewport(poly);
 		}
 		
-		vertIndexCount += indexIncrementLUT[poly->vtxFormat];
-		needVertexUpload = true;
+		// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
+		// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
+		// drawing more accurate this way, but it also allows GFX3D_QUADS and
+		// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
+		// extra diagonal line.
+		const GLenum polyPrimitive = !poly->isWireframe() ? oglPrimitiveType[poly->vtxFormat] : GL_LINE_LOOP;
 		
-		// Look ahead to the next polygon to see if we can simply buffer the indices
-		// instead of uploading them now. We can buffer if all polygon states remain
-		// the same and we're not drawing a line loop or line strip.
-		if (i+1 < polyCount)
-		{
-			const POLY *nextPoly = &polyList->list[indexList->list[i+1]];
-			
-			if (lastPolyAttr == nextPoly->polyAttr &&
-				lastTexParams == nextPoly->texParam &&
-				lastTexPalette == nextPoly->texPalette &&
-				polyPrimitive == oglPrimitiveType[nextPoly->vtxFormat] &&
-				polyPrimitive != GL_LINE_LOOP &&
-				polyPrimitive != GL_LINE_STRIP &&
-				oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_LOOP &&
-				oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_STRIP)
-			{
-				needVertexUpload = false;
-			}
-		}
-		
-		// Upload the vertices if necessary.
-		if (needVertexUpload)
-		{
-			// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
-			// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
-			// drawing more accurate this way, but it also allows GFX3D_QUADS and
-			// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
-			// extra diagonal line.
-			if (poly->isWireframe())
-			{
-				polyPrimitive = GL_LINE_LOOP;
-			}
-			
-			// Upload the vertices to the framebuffer.
-			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-			indexBufferPtr += vertIndexCount;
-			vertIndexCount = 0;
-		}
+		// Render the polygon
+		const unsigned int vertIndexCount = indexIncrementLUT[poly->vtxFormat];
+		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+		indexBufferPtr += vertIndexCount;
 	}
 	
 	return OGLERROR_NOERR;
@@ -2358,6 +2296,9 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		memset(this->GPU_screen3D[i], 0, sizeof(this->GPU_screen3D[i]));
 	}
 	
+	memset(currentToonTable16, 0, sizeof(currentToonTable16));
+	this->toonTableNeedsUpdate = true;
+	
 	if(this->isShaderSupported)
 	{
 		glUniform1f(OGLRef.uniformPolyAlpha, 1.0f);
@@ -2372,11 +2313,19 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	}
 	else
 	{
+		glEnable(GL_NORMALIZE);
+		glEnable(GL_TEXTURE_1D);
+		glEnable(GL_TEXTURE_2D);
+		glAlphaFunc(GL_GREATER, 0);
+		glEnable(GL_ALPHA_TEST);
+		
 		memset(OGLRef.color4fBuffer, 0, VERTLIST_SIZE * 4 * sizeof(GLfloat));
 	}
 	
 	memset(OGLRef.vertIndexBuffer, 0, OGLRENDER_VERT_INDEX_BUFFER_COUNT * sizeof(GLushort));
 	this->currTexture = NULL;
+	this->doubleBufferIndex = 0;
+	this->clearImageStencilValue = 0;
 	
 	return OGLERROR_NOERR;
 }
@@ -2520,6 +2469,8 @@ Render3DError OpenGLRenderer_1_3::UploadClearImage(const GLushort *clearImageCol
 
 Render3DError OpenGLRenderer_1_4::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
 {
+	OGLRenderRef &OGLRef = *this->ref;
+	
 	bool isBlendEquationSeparateSupported = this->IsExtensionPresent(oglExtensionSet, "GL_EXT_blend_equation_separate");
 	
 	// Blending Support
@@ -2536,31 +2487,16 @@ Render3DError OpenGLRenderer_1_4::InitFinalRenderStates(const std::set<std::stri
 	}
 	
 	// Mirrored Repeat Mode Support
-	this->ref->stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
+	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
 	
 	// Always enable depth test, and control using glDepthMask().
 	glEnable(GL_DEPTH_TEST);
 	
-	// If shaders aren't supported, fall back to changing states in legacy mode.
-	if(!this->isShaderSupported)
-	{
-		// Set up fixed-function pipeline render states.
-		glEnable(GL_NORMALIZE);
-		glEnable(GL_TEXTURE_1D);
-		glEnable(GL_TEXTURE_2D);
-		glAlphaFunc(GL_GREATER, 0);
-		glEnable(GL_ALPHA_TEST);
-		
-		// Map the vertex list's colors with 4 floats per color. This is being done
-		// because OpenGL needs 4-colors per vertex to support translucency. (The DS
-		// uses 3-colors per vertex, and adds alpha through the poly, so we can't
-		// simply reference the colors+alpha from just the vertices themselves.)
-		this->ref->color4fBuffer = new GLfloat[VERTLIST_SIZE * 4];
-	}
-	else
-	{
-		this->ref->color4fBuffer = NULL;
-	}
+	// Map the vertex list's colors with 4 floats per color. This is being done
+	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
+	// uses 3-colors per vertex, and adds alpha through the poly, so we can't
+	// simply reference the colors+alpha from just the vertices by themselves.)
+	OGLRef.color4fBuffer = this->isShaderSupported ? NULL : new GLfloat[VERTLIST_SIZE * 4];
 	
 	return OGLERROR_NOERR;
 }
@@ -2661,7 +2597,7 @@ Render3DError OpenGLRenderer_1_5::CreateVAOs()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_5::EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount)
+Render3DError OpenGLRenderer_1_5::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -2669,14 +2605,14 @@ Render3DError OpenGLRenderer_1_5::EnableVertexAttributes(const VERTLIST *vertLis
 	{
 		glBindVertexArray(OGLRef.vaoMainStatesID);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 	}
 	else
 	{
 		if (this->isShaderSupported)
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboIndexID);
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 			
 			glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboVertexID);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
@@ -2696,7 +2632,7 @@ Render3DError OpenGLRenderer_1_5::EnableVertexAttributes(const VERTLIST *vertLis
 			glEnableClientState(GL_VERTEX_ARRAY);
 			
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboIndexID);
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 			
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			glColorPointer(4, GL_FLOAT, 0, OGLRef.color4fBuffer);
@@ -2741,20 +2677,18 @@ Render3DError OpenGLRenderer_1_5::DisableVertexAttributes()
 
 Render3DError OpenGLRenderer_1_5::ReadBackPixels()
 {
-	static unsigned int bufferIndex = 0;
-	bufferIndex = (bufferIndex + 1) & 0x01;
-	this->doubleBufferIndex = bufferIndex;
+	const unsigned int i = this->doubleBufferIndex;
 	
 	if (this->isPBOSupported)
 	{
 		this->DownsampleFBO();
 		
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, this->ref->pboRenderDataID[bufferIndex]);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, this->ref->pboRenderDataID[i]);
 		glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
 	}
 	
-	this->gpuScreen3DHasNewData[bufferIndex] = true;
+	this->gpuScreen3DHasNewData[i] = true;
 	
 	return OGLERROR_NOERR;
 }
@@ -2921,7 +2855,7 @@ Render3DError OpenGLRenderer_2_0::InitExtensions()
 
 Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
 {
-	this->ref->color4fBuffer = NULL;
+	OGLRenderRef &OGLRef = *this->ref;
 	
 	// we want to use alpha destination blending so we can track the last-rendered alpha value
 	// test: new super mario brothers renders the stormclouds at the beginning
@@ -2930,15 +2864,20 @@ Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::stri
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
 	glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 	
+	// Mirrored Repeat Mode Support
+	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
+	
 	// Always enable depth test, and control using glDepthMask().
 	glEnable(GL_DEPTH_TEST);
+	
+	// Ignore our color buffer since we'll transfer the polygon alpha through a uniform.
+	OGLRef.color4fBuffer = NULL;
 	
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, unsigned int *outIndexCount)
+Render3DError OpenGLRenderer_2_0::SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, unsigned int *outIndexCount)
 {
-	OGLRenderRef &OGLRef = *this->ref;
 	const unsigned int polyCount = polyList->count;
 	unsigned int vertIndexCount = 0;
 	
@@ -2955,16 +2894,16 @@ Render3DError OpenGLRenderer_2_0::SetupVertices(const VERTLIST *vertList, const 
 			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
-			OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+			outIndexBuffer[vertIndexCount++] = vertIndex;
 			if (poly->vtxFormat == GFX3D_QUADS || poly->vtxFormat == GFX3D_QUAD_STRIP)
 			{
 				if (j == 2)
 				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = vertIndex;
+					outIndexBuffer[vertIndexCount++] = vertIndex;
 				}
 				else if (j == 3)
 				{
-					OGLRef.vertIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
+					outIndexBuffer[vertIndexCount++] = poly->vertIndexes[0];
 				}
 			}
 		}
@@ -2975,7 +2914,7 @@ Render3DError OpenGLRenderer_2_0::SetupVertices(const VERTLIST *vertList, const 
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount)
+Render3DError OpenGLRenderer_2_0::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -2983,12 +2922,12 @@ Render3DError OpenGLRenderer_2_0::EnableVertexAttributes(const VERTLIST *vertLis
 	{
 		glBindVertexArray(OGLRef.vaoMainStatesID);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 	}
 	else
 	{
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboIndexID);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), OGLRef.vertIndexBuffer);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboVertexID);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
@@ -3027,6 +2966,7 @@ Render3DError OpenGLRenderer_2_0::DisableVertexAttributes()
 Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
 {
 	OGLRenderRef &OGLRef = *this->ref;
+	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
 	
 	this->SelectRenderingFramebuffer();
 	
@@ -3051,10 +2991,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
 
 Render3DError OpenGLRenderer_2_0::PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
+	OGLRenderRef &OGLRef = *this->ref;
 	unsigned int vertIndexCount = 0;
 	
-	this->SetupVertices(vertList, polyList, indexList, &vertIndexCount);
-	this->EnableVertexAttributes(vertList, vertIndexCount);
+	this->SetupVertices(vertList, polyList, indexList, OGLRef.vertIndexBuffer, &vertIndexCount);
+	this->EnableVertexAttributes(vertList, OGLRef.vertIndexBuffer, vertIndexCount);
 	
 	return OGLERROR_NOERR;
 }
@@ -3229,17 +3170,15 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY *thePoly, bool enableT
 
 Render3DError OpenGLRenderer_2_1::ReadBackPixels()
 {
-	static unsigned int bufferIndex = 0;	
-	bufferIndex = (bufferIndex + 1) & 0x01;
-	this->doubleBufferIndex = bufferIndex;
+	const unsigned int i = this->doubleBufferIndex;
 	
 	this->DownsampleFBO();
 	
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, this->ref->pboRenderDataID[bufferIndex]);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, this->ref->pboRenderDataID[i]);
 	glReadPixels(0, 0, 256, 192, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 	
-	this->gpuScreen3DHasNewData[bufferIndex] = true;
+	this->gpuScreen3DHasNewData[i] = true;
 	
 	return OGLERROR_NOERR;
 }

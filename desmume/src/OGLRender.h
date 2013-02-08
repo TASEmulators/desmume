@@ -446,8 +446,8 @@ protected:
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError ExpandFreeTextures() = 0;
-	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, unsigned int *outIndexCount) = 0;
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount) = 0;
+	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, unsigned int *outIndexCount) = 0;
+	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount) = 0;
 	virtual Render3DError DisableVertexAttributes() = 0;
 	virtual Render3DError SelectRenderingFramebuffer() = 0;
 	virtual Render3DError DownsampleFBO() = 0;
@@ -518,8 +518,8 @@ protected:
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError ExpandFreeTextures();
-	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, unsigned int *outIndexCount);
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount);
+	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, unsigned int *outIndexCount);
+	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
@@ -579,7 +579,7 @@ protected:
 	virtual void DestroyPBOs();
 	virtual Render3DError CreateVAOs();
 	
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount);
+	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError ReadBackPixels();
 		
@@ -595,8 +595,8 @@ protected:
 	virtual Render3DError InitExtensions();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	
-	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, unsigned int *outIndexCount);
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const unsigned int vertIndexCount);
+	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, unsigned int *outIndexCount);
+	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
