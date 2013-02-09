@@ -2431,6 +2431,11 @@ int MenuInit()
 	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
 #endif
 
+	//zero 09-feb-2013 - all the translations are out of date. this is dumb. lets just take out the translations. you cant expect translations in a project with our staff size using our tech
+	HMENU langMenu = GetSubMenuByIdOfFirstChild(configMenu,IDC_LANGENGLISH);
+	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,langMenu),MF_BYPOSITION);
+	
+
 	return 1;
 }
 
@@ -2961,8 +2966,10 @@ int _main()
 	//default the firmware settings, they may get changed later
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
 
-	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
-	SetLanguage(atoi(text));
+	//GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
+	//SetLanguage(atoi(text));
+	//zero 09-feb-2013 - all the translations are out of date. this is dumb. lets just take out the translations. you cant expect translations in a project with our staff size using our tech
+	SetLanguage(LANGUAGE_ENGLISH);
 
 	//hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL)); //Now that we have a hotkey system we down need the Accel table.  Not deleting just yet though
 
