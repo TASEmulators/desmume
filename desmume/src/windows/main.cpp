@@ -1511,11 +1511,12 @@ static void OGL_DoDisplay()
 		ScreenToClient(hwnd,(LPPOINT)&dr[i].right);
 	}
 
-
-
 	//clear entire area, for cases where the screen is maximized
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	glDisable(GL_LIGHTING);
+	glDisable(GL_DEPTH_TEST);
 
 	//use clear+scissor for gap
 	if(video.screengap > 0)

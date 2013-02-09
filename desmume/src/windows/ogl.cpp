@@ -71,19 +71,18 @@ bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc)
 	HDC oglDC = GetDC (hwnd);
 
 	GLuint PixelFormat;
-  static PIXELFORMATDESCRIPTOR pfd;
+	static PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
-	pfd.dwFlags = PFD_SUPPORT_OPENGL;
+	pfd.dwFlags = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cColorBits = 24;
-	pfd.cDepthBits = 24;
 	pfd.cAlphaBits = 8;
-	pfd.cStencilBits = 8;
-	pfd.iLayerType = PFD_MAIN_PLANE ;
-  PixelFormat = ChoosePixelFormat(oglDC, &pfd);
-  SetPixelFormat(oglDC, PixelFormat, &pfd);
+	pfd.iLayerType = PFD_MAIN_PLANE;
+	PixelFormat = ChoosePixelFormat(oglDC, &pfd);
+	SetPixelFormat(oglDC, PixelFormat, &pfd);
+	printf("GL display context pixel format: %d\n",PixelFormat);
 
 	*hRC = wglCreateContext(oglDC);
 	if (!hRC)
@@ -123,8 +122,8 @@ static bool makeBootstrapContext()
 	pfd.dwFlags = PFD_SUPPORT_OPENGL;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cColorBits = 24;
-	pfd.cDepthBits = 24;
 	pfd.cAlphaBits = 8;
+	pfd.cDepthBits = 24;
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
