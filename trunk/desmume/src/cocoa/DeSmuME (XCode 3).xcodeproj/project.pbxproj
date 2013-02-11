@@ -1348,7 +1348,6 @@
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
-				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -1364,7 +1363,6 @@
 				ABD0A5361501AA5A0074A094 /* coreaudiosound.h */,
 				ABD0A5371501AA5A0074A094 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
-				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
@@ -1938,11 +1936,13 @@
 				ABFE150014C92FF5005D6699 /* hq4x.cpp */,
 				ABFE150414C92FF5005D6699 /* lq2x.cpp */,
 				ABFE150614C92FF5005D6699 /* scanline.cpp */,
+				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
 				ABFE14FD14C92FF5005D6699 /* filter.h */,
 				ABFE14FF14C92FF5005D6699 /* hq2x.h */,
 				ABFE150214C92FF5005D6699 /* hq4x.h */,
 				ABFE150314C92FF5005D6699 /* interp.h */,
 				ABFE150514C92FF5005D6699 /* lq2x.h */,
+				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
 			);
 			name = filter;
 			path = ../filter;
