@@ -16,12 +16,14 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
 
 #import "cocoa_util.h"
 
+@class NSImage;
+@class NSBitmapImageRep;
 
 typedef struct
 {

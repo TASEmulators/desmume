@@ -81,7 +81,7 @@
 	
 	NSArray *imageRepArray = [videoFilterImage representations];
 	const NSBitmapImageRep *imageRep = [imageRepArray objectAtIndex:0];
-	RGB888ToRGBA8888Buffer((const uint32_t *)[imageRep bitmapData], (uint32_t *)[videoFilter srcBufferPtr], (64 * 64));
+	RGBA8888ForceOpaqueBuffer((const uint32_t *)[imageRep bitmapData], (uint32_t *)[videoFilter srcBufferPtr], (64 * 64));
 	[videoFilterImage release];
 	
 	BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
@@ -118,7 +118,7 @@
 		}
 	}
 	
-	RGB888ToRGBA8888Buffer((const uint32_t *)[videoFilter runFilter], (uint32_t *)[bilinearVideoFilter srcBufferPtr], (vfWidth * vfHeight));
+	RGBA8888ForceOpaqueBuffer((const uint32_t *)[videoFilter runFilter], (uint32_t *)[bilinearVideoFilter srcBufferPtr], (vfWidth * vfHeight));
 	[bindings setObject:[bilinearVideoFilter image] forKey:@"VideoFilterPreviewImage"];	
 		
 	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
@@ -501,7 +501,7 @@
 		}
 	}
 	
-	RGB888ToRGBA8888Buffer((const uint32_t *)[videoFilter runFilter], (uint32_t *)[bilinearVideoFilter srcBufferPtr], (vfWidth * vfHeight));
+	RGBA8888ForceOpaqueBuffer((const uint32_t *)[videoFilter runFilter], (uint32_t *)[bilinearVideoFilter srcBufferPtr], (vfWidth * vfHeight));
 	NSBitmapImageRep *newPreviewImageRep = [bilinearVideoFilter bitmapImageRep];
 	
 	NSImage *videoFilterPreviewImage = [bindings objectForKey:@"VideoFilterPreviewImage"];

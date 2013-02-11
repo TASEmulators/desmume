@@ -22,6 +22,12 @@
 
 #import "cocoa_output.h"
 
+enum OGLVertexAttributeID
+{
+	OGLVertexAttributeID_Position = 0,
+	OGLVertexAttributeID_TexCoord0 = 8
+};
+
 @class DisplayViewDelegate;
 @class CocoaDSController;
 
@@ -154,22 +160,16 @@
 	unsigned int vtxBufferOffset;
 }
 
-- (void) setupOpenGL_Legacy;
+- (void) setupOpenGL;
+- (void) shutdownOpenGL;
+- (void) setupShaderIO;
+- (BOOL) setupShadersWithVertexProgram:(const char *)vertShaderProgram fragmentProgram:(const char *)fragShaderProgram;
 - (void) drawVideoFrame;
+- (void) uploadVertices;
+- (void) uploadTexCoords;
 - (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
 - (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID;
 - (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t;
 
 @end
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, GLuint *fragShaderID, const char *vertShaderProgram, const char *fragShaderProgram);
-
-#ifdef __cplusplus
-}
-#endif

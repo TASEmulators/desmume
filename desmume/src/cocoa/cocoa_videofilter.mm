@@ -139,7 +139,7 @@
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	RGB888ToRGBA8888Buffer((const uint32_t *)[self runFilter], bitmapData, (w * h));
+	RGBA8888ForceOpaqueBuffer((const uint32_t *)[self runFilter], bitmapData, (w * h));
 	
 #ifdef __BIG_ENDIAN__
 	uint32_t *bitmapDataEnd = bitmapData + (w * h);

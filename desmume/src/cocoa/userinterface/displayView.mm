@@ -24,14 +24,14 @@
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
-#include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
 #include <OpenGL/glu.h>
 
 #undef BOOL
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
-const char *vShader_100 = {"\
+const char *vertexProgram_100 = {"\
 	attribute vec2 inPosition; \n\
 	attribute vec2 inTexCoord0; \n\
 	\n\
@@ -60,7 +60,7 @@ const char *vShader_100 = {"\
 "};
 
 // FRAGMENT SHADER FOR DISPLAY OUTPUT
-const char *fShader_100 = {"\
+const char *fragmentProgram_100 = {"\
 	varying vec2 vtxTexCoord; \n\
 	uniform sampler2D tex; \n\
 	\n\
@@ -69,12 +69,6 @@ const char *fShader_100 = {"\
 		gl_FragColor = texture2D(tex, vtxTexCoord); \n\
 	} \n\
 "};
-
-enum OGLVertexAttributeID
-{
-	OGLVertexAttributeID_Position = 0,
-	OGLVertexAttributeID_TexCoord0 = 8,
-};
 
 
 @implementation DisplayViewDelegate
@@ -824,7 +818,7 @@ enum OGLVertexAttributeID
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	RGBA5551ToRGBA8888Buffer((const uint16_t *)videoFrameData, bitmapData, (imageWidth * imageHeight));
+	RGB555ToRGBA8888Buffer((const uint16_t *)videoFrameData, bitmapData, (imageWidth * imageHeight));
 	
 #ifdef __BIG_ENDIAN__
 	uint32_t *bitmapDataEnd = bitmapData + (imageWidth * imageHeight);
@@ -1003,24 +997,7 @@ enum OGLVertexAttributeID
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	glDeleteTextures(1, &displayTexID);
-	
-	glDeleteVertexArraysAPPLE(1, &vaoMainStatesID);
-	glDeleteBuffersARB(1, &vboVertexID);
-	glDeleteBuffersARB(1, &vboTexCoordID);
-	glDeleteBuffersARB(1, &vboElementID);
-	
-	if (isShaderSupported)
-	{
-		glUseProgram(0);
-		
-		glDetachShader(shaderProgram, vertexShaderID);
-		glDetachShader(shaderProgram, fragmentShaderID);
-		
-		glDeleteProgram(shaderProgram);
-		glDeleteShader(vertexShaderID);
-		glDeleteShader(fragmentShaderID);
-	}
+	[self shutdownOpenGL];
 	
 	CGLSetCurrentContext(prevContext);
 	
@@ -1061,10 +1038,10 @@ enum OGLVertexAttributeID
 	vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
 	vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
 	
-	[self setupOpenGL_Legacy];
+	[self setupOpenGL];
 }
 
-- (void) setupOpenGL_Legacy
+- (void) setupOpenGL
 {
 	// Check the OpenGL capabilities for this renderer
 	const GLubyte *glExtString = glGetString(GL_EXTENSIONS);
@@ -1089,8 +1066,8 @@ enum OGLVertexAttributeID
 #endif
 	if (isShaderSupported)
 	{
-		GLint shaderStatus = SetupShaders(&shaderProgram, &vertexShaderID, &fragmentShaderID, vShader_100, fShader_100);
-		if (shaderStatus == GL_TRUE)
+		BOOL isShaderSetUp = [self setupShadersWithVertexProgram:vertexProgram_100 fragmentProgram:fragmentProgram_100];
+		if (isShaderSetUp)
 		{
 			glUseProgram(shaderProgram);
 			
@@ -1172,9 +1149,123 @@ enum OGLVertexAttributeID
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+- (void) shutdownOpenGL
+{
+	glDeleteTextures(1, &displayTexID);
+	
+	glDeleteVertexArraysAPPLE(1, &vaoMainStatesID);
+	glDeleteBuffersARB(1, &vboVertexID);
+	glDeleteBuffersARB(1, &vboTexCoordID);
+	glDeleteBuffersARB(1, &vboElementID);
+	
+	if (isShaderSupported)
+	{
+		glUseProgram(0);
+		
+		glDetachShader(shaderProgram, vertexShaderID);
+		glDetachShader(shaderProgram, fragmentShaderID);
+		
+		glDeleteProgram(shaderProgram);
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+	}
+}
+
+- (void) setupShaderIO
+{
+	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_Position, "inPosition");
+	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
+}
+
+- (BOOL) setupShadersWithVertexProgram:(const char *)vertShaderProgram fragmentProgram:(const char *)fragShaderProgram
+{
+	BOOL result = NO;
+	GLint shaderStatus = GL_TRUE;
+	
+	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+	if (vertexShaderID == 0)
+	{
+		NSLog(@"OpenGL Error - Failed to create vertex shader.");
+		return result;
+	}
+	
+	glShaderSource(vertexShaderID, 1, (const GLchar **)&vertShaderProgram, NULL);
+	glCompileShader(vertexShaderID);
+	glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &shaderStatus);
+	if (shaderStatus == GL_FALSE)
+	{
+		glDeleteShader(vertexShaderID);
+		NSLog(@"OpenGL Error - Failed to compile vertex shader.");
+		return result;
+	}
+	
+	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	if (fragmentShaderID == 0)
+	{
+		glDeleteShader(vertexShaderID);
+		NSLog(@"OpenGL Error - Failed to create fragment shader.");
+		return result;
+	}
+	
+	glShaderSource(fragmentShaderID, 1, (const GLchar **)&fragShaderProgram, NULL);
+	glCompileShader(fragmentShaderID);
+	glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &shaderStatus);
+	if (shaderStatus == GL_FALSE)
+	{
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+		NSLog(@"OpenGL Error - Failed to compile fragment shader.");
+		return result;
+	}
+	
+	shaderProgram = glCreateProgram();
+	if (shaderProgram == 0)
+	{
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+		NSLog(@"OpenGL Error - Failed to create shader program.");
+		return result;
+	}
+	
+	glAttachShader(shaderProgram, vertexShaderID);
+	glAttachShader(shaderProgram, fragmentShaderID);
+	
+	[self setupShaderIO];
+	
+	glLinkProgram(shaderProgram);
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &shaderStatus);
+	if (shaderStatus == GL_FALSE)
+	{
+		glDeleteProgram(shaderProgram);
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+		NSLog(@"OpenGL Error - Failed to link shader program.");
+		return result;
+	}
+	
+	glValidateProgram(shaderProgram);
+	
+	result = YES;
+	return result;
+}
+
 - (void) drawVideoFrame
 {
 	CGLFlushDrawable(cglDisplayContext);
+}
+
+- (void) uploadVertices
+{
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+}
+
+- (void) uploadTexCoords
+{
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 }
 
 - (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight
@@ -1201,10 +1292,7 @@ enum OGLVertexAttributeID
 	{
 		lastDisplayMode = displayModeID;
 		[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
-		
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		[self uploadVertices];
 	}
 	
 	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? 12 : 6;
@@ -1391,8 +1479,8 @@ enum OGLVertexAttributeID
 - (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
 	CGLLockContext(cglDisplayContext);
-	
 	CGLSetCurrentContext(cglDisplayContext);
+	
 	[self uploadDisplayTextures:videoFrameData displayMode:displayModeID width:frameWidth height:frameHeight];
 	[self renderDisplayUsingDisplayMode:displayModeID];
 	[self drawVideoFrame];
@@ -1421,7 +1509,7 @@ enum OGLVertexAttributeID
 	CGLUnlockContext(cglDisplayContext);
 }
 
-- (void) doTransformView:(const DisplayOutputTransformData *)transformData
+- (void)doTransformView:(const DisplayOutputTransformData *)transformData
 {
 	const GLfloat angleDegrees = (GLfloat)transformData->rotation;
 	const GLfloat s = (GLfloat)transformData->scale;
@@ -1448,8 +1536,8 @@ enum OGLVertexAttributeID
 - (void)doRedraw
 {
 	CGLLockContext(cglDisplayContext);
-	
 	CGLSetCurrentContext(cglDisplayContext);
+	
 	[self renderDisplayUsingDisplayMode:lastDisplayMode];
 	[self drawVideoFrame];
 	
@@ -1464,9 +1552,7 @@ enum OGLVertexAttributeID
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	[self uploadVertices];
 	
 	CGLUnlockContext(cglDisplayContext);
 }
@@ -1476,6 +1562,7 @@ enum OGLVertexAttributeID
 	const GLint textureFilter = useBilinear ? GL_LINEAR : GL_NEAREST;
 	
 	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
 	
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureFilter);
@@ -1493,9 +1580,7 @@ enum OGLVertexAttributeID
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	[self uploadVertices];
 	
 	CGLUnlockContext(cglDisplayContext);
 }
@@ -1514,9 +1599,7 @@ enum OGLVertexAttributeID
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	[self uploadVertices];
 	
 	if (lastDisplayMode == DS_DISPLAY_TYPE_COMBO)
 	{
@@ -1530,7 +1613,6 @@ enum OGLVertexAttributeID
 - (void)doVerticalSyncChanged:(BOOL)useVerticalSync
 {
 	const GLint swapInt = useVerticalSync ? 1 : 0;
-	
 	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
 }
 
@@ -1573,87 +1655,15 @@ enum OGLVertexAttributeID
 	[self updateTexCoordS:s T:t];
 	
 	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
 	
 	glBindTexture(GL_TEXTURE_2D, displayTexID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, glTexPixelFormat, glTexBack);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	[self uploadTexCoords];
 	
 	CGLUnlockContext(cglDisplayContext);
 }
 
 @end
-
-GLint SetupShaders(GLuint *programID, GLuint *vertShaderID, GLuint *fragShaderID, const char *vertShaderProgram, const char *fragShaderProgram)
-{
-	GLint shaderStatus = GL_TRUE;
-	
-	*vertShaderID = glCreateShader(GL_VERTEX_SHADER);
-	if (*vertShaderID == 0)
-	{
-		NSLog(@"OpenGL Error - Failed to create vertex shader.");
-		return shaderStatus;
-	}
-	
-	glShaderSource(*vertShaderID, 1, (const GLchar **)&vertShaderProgram, NULL);
-	glCompileShader(*vertShaderID);
-	glGetShaderiv(*vertShaderID, GL_COMPILE_STATUS, &shaderStatus);
-	if (shaderStatus == GL_FALSE)
-	{
-		glDeleteShader(*vertShaderID);
-		NSLog(@"OpenGL Error - Failed to compile vertex shader.");
-		return shaderStatus;
-	}
-	
-	*fragShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-	if (*fragShaderID == 0)
-	{
-		glDeleteShader(*vertShaderID);
-		NSLog(@"OpenGL Error - Failed to create fragment shader.");
-		return shaderStatus;
-	}
-	
-	glShaderSource(*fragShaderID, 1, (const GLchar **)&fragShaderProgram, NULL);
-	glCompileShader(*fragShaderID);
-	glGetShaderiv(*fragShaderID, GL_COMPILE_STATUS, &shaderStatus);
-	if (shaderStatus == GL_FALSE)
-	{
-		glDeleteShader(*vertShaderID);
-		glDeleteShader(*fragShaderID);
-		NSLog(@"OpenGL Error - Failed to compile fragment shader.");
-		return shaderStatus;
-	}
-	
-	*programID = glCreateProgram();
-	if (*programID == 0)
-	{
-		glDeleteShader(*vertShaderID);
-		glDeleteShader(*fragShaderID);
-		NSLog(@"OpenGL Error - Failed to create shader program.");
-		return shaderStatus;
-	}
-	
-	glAttachShader(*programID, *vertShaderID);
-	glAttachShader(*programID, *fragShaderID);
-	
-	glBindAttribLocation(*programID, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(*programID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-	
-	glLinkProgram(*programID);
-	glGetProgramiv(*programID, GL_LINK_STATUS, &shaderStatus);
-	if (shaderStatus == GL_FALSE)
-	{
-		glDeleteProgram(*programID);
-		glDeleteShader(*vertShaderID);
-		glDeleteShader(*fragShaderID);
-		NSLog(@"OpenGL Error - Failed to link shader program.");
-		return shaderStatus;
-	}
-	
-	glValidateProgram(*programID);
-	
-	return shaderStatus;
-}

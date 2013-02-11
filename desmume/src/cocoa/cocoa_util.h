@@ -16,7 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
 	#include "macosx_10_4_compat.h"
@@ -93,10 +93,10 @@ extern "C"
 {
 #endif
 
-uint32_t RGBA5551ToRGBA8888(const uint16_t color16);
-uint32_t RGBA8888ToRGB888(const uint32_t color24);
-void RGBA5551ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels);
-void RGB888ToRGBA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels);
+uint32_t RGB555ToRGBA8888(const uint16_t color16);
+uint32_t RGBA8888ForceOpaque(const uint32_t color32);
+void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels);
+void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels);
 NSSize GetTransformedBounds(NSSize normalBounds, double scalar, double angleDegrees);
 double GetMaxScalarInBounds(double normalBoundsWidth, double normalBoundsHeight, double keepInBoundsWidth, double keepInBoundsHeight);
 NSPoint GetNormalPointFromTransformedPoint(NSPoint transformedPt, NSSize normalBounds, NSSize transformBounds, double scalar, double angleDegrees);

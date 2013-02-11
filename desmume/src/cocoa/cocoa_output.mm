@@ -28,13 +28,14 @@
 #include "../SPU.h"
 #include "../metaspu/metaspu.h"
 
-#include <OpenGL/OpenGL.h>
-
 #ifdef MAC_OS_X_VERSION_10_7
 #include "../OGLRender_3_2.h"
 #else
 #include "../OGLRender.h"
 #endif
+
+#import <Cocoa/Cocoa.h>
+#include <OpenGL/OpenGL.h>
 
 #undef BOOL
 
@@ -1320,7 +1321,7 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	RGBA5551ToRGBA8888Buffer((const uint16_t *)[self.frameData bytes], bitmapData, (w * h));
+	RGB555ToRGBA8888Buffer((const uint16_t *)[self.frameData bytes], bitmapData, (w * h));
 	
 #ifdef __BIG_ENDIAN__
 	uint32_t *bitmapDataEnd = bitmapData + (w * h);
@@ -1622,7 +1623,7 @@ GPU3DInterface *core3DList[] = {
 	}
 	else
 	{
-		RGBA5551ToRGBA8888Buffer((const uint16_t *)[mainData bytes], (uint32_t *)[vf srcBufferPtr], [mainData length] / sizeof(UInt16));
+		RGB555ToRGBA8888Buffer((const uint16_t *)[mainData bytes], (uint32_t *)[vf srcBufferPtr], [mainData length] / sizeof(UInt16));
 		const UInt32 *vfDestBuffer = [vf runFilter];
 		[videoDelegate doProcessVideoFrame:vfDestBuffer displayMode:displayModeID width:destWidth height:destHeight];
 	}
@@ -1973,6 +1974,7 @@ void DestroyOpenGLRenderer()
 	CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
 	CGLReleaseContext(OSXOpenGLRendererContext);
 	OSXOpenGLRendererContext = NULL;
+	OSXOpenGLRendererPBuffer = NULL;
 }
 
 void RequestOpenGLRenderer_3_2(bool request_3_2)
