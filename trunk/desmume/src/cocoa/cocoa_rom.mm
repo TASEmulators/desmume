@@ -571,14 +571,14 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 	iconClutPtr = (uint16_t *)&MMU.CART_ROM[iconOffset + 0x220] + 1;
 	iconPixPtr = (uint32_t *)&MMU.CART_ROM[iconOffset + 0x20];
 	
-	// Setup the 4-bit color CLUT.
+	// Setup the 4-bit CLUT.
 	//
-	// The actual color values are stored with the ROM icon data in RGBA5551 format.
+	// The actual color values are stored with the ROM icon data in RGB555 format.
 	// We convert these color values and store them in the CLUT as RGBA8888 values.
 	//
 	// The first entry always represents the alpha, so we can just ignore it.
 	clut[0] = 0x00000000;
-	RGBA5551ToRGBA8888Buffer(iconClutPtr, &clut[1], 15);
+	RGB555ToRGBA8888Buffer(iconClutPtr, &clut[1], 15);
 	
 	// Load the image from the icon pixel data.
 	//

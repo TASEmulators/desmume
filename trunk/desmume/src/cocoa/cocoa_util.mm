@@ -19,6 +19,7 @@
 #import "cocoa_util.h"
 #import "cocoa_globals.h"
 #import "types.h"
+#import <Cocoa/Cocoa.h>
 
 #include <Accelerate/Accelerate.h>
 #include <sys/types.h>
@@ -320,12 +321,12 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 @end
 
 /********************************************************************************************
-	RGBA5551ToRGBA8888() - INLINE
+	RGB555ToRGBA8888() - INLINE
 
-	Converts a color from 16-bit RGBA5551 format into 32-bit RGBA8888 format.
+	Converts a color from 15-bit RGB555 format into 32-bit RGBA8888 format.
 
 	Takes:
-		color16 - The pixel in 16-bit RGBA5551 format.
+		color16 - The pixel in 15-bit RGB555 format.
 
 	Returns:
 		A 32-bit unsigned integer containing the RGBA8888 formatted color.
@@ -333,7 +334,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	Details:
 		The input and output pixels are expected to have little-endian byte order.
  ********************************************************************************************/
-FORCEINLINE uint32_t RGBA5551ToRGBA8888(const uint16_t color16)
+FORCEINLINE uint32_t RGB555ToRGBA8888(const uint16_t color16)
 {
 	return	((color16 & 0x001F) << 3) |
 			((color16 & 0x03E0) << 6) |
@@ -342,31 +343,31 @@ FORCEINLINE uint32_t RGBA5551ToRGBA8888(const uint16_t color16)
 }
 
 /********************************************************************************************
-	RGB888ToRGBA8888() - INLINE
+	RGBA8888ForceOpaque() - INLINE
 
-	Converts a color from 24-bit RGB888 format into 32-bit RGBA8888 format.
-
+	Forces the alpha channel of a 32-bit RGBA8888 color to a value of 0xFF.
+	
 	Takes:
-		color24 - The pixel in 24-bit RGB888 format.
-
+		color32 - The pixel in 32-bit RGBA8888 format.
+	
 	Returns:
 		A 32-bit unsigned integer containing the RGBA8888 formatted color.
-
+	
 	Details:
 		The input and output pixels are expected to have little-endian byte order.
  ********************************************************************************************/
-FORCEINLINE uint32_t RGB888ToRGBA8888(const uint32_t color24)
+FORCEINLINE uint32_t RGBA8888ForceOpaque(const uint32_t color32)
 {
-	return color24 | 0xFF000000;
+	return color32 | 0xFF000000;
 }
 
 /********************************************************************************************
-	RGBA5551ToRGBA8888Buffer()
+	RGB555ToRGBA8888Buffer()
 
-	Copies a 16-bit RGBA5551 pixel buffer into a 32-bit RGBA8888 pixel buffer.
+	Copies a 15-bit RGB555 pixel buffer into a 32-bit RGBA8888 pixel buffer.
 
 	Takes:
-		srcBuffer - Pointer to the source 16-bit RGBA5551 pixel buffer.
+		srcBuffer - Pointer to the source 15-bit RGB555 pixel buffer.
 		
 		destBuffer - Pointer to the destination 32-bit RGBA8888 pixel buffer.
 		
@@ -380,23 +381,24 @@ FORCEINLINE uint32_t RGB888ToRGBA8888(const uint32_t color24)
 		Also, it is the caller's responsibility to ensure that the source and destination
 		buffers are large enough to accomodate the requested number of pixels.
  ********************************************************************************************/
-void RGBA5551ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels)
+void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels)
 {
 	const uint32_t *__restrict__ destBufferEnd = destBuffer + numberPixels;
 	
 	while (destBuffer < destBufferEnd)
 	{
-		*destBuffer++ = RGBA5551ToRGBA8888(*srcBuffer++);
+		*destBuffer++ = RGB555ToRGBA8888(*srcBuffer++);
 	}
 }
 
 /********************************************************************************************
-	RGB888ToRGBA8888Buffer()
+	RGBA8888ForceOpaqueBuffer()
 
-	Copies a 24-bit RGB888 pixel buffer into a 32-bit RGBA8888 pixel buffer.
+	Copies a 32-bit RGBA8888 pixel buffer into another 32-bit RGBA8888 pixel buffer.
+	The pixels in the destination buffer will have an alpha value of 0xFF.
 
 	Takes:
-		srcBuffer - Pointer to the source 24-bit RGB888 pixel buffer.
+		srcBuffer - Pointer to the source 32-bit RGBA8888 pixel buffer.
 		
 		destBuffer - Pointer to the destination 32-bit RGBA8888 pixel buffer.
 		
@@ -410,13 +412,13 @@ void RGBA5551ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *
 		Also, it is the caller's responsibility to ensure that the source and destination
 		buffers are large enough to accomodate the requested number of pixels.
  ********************************************************************************************/
-void RGB888ToRGBA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels)
+void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels)
 {
 	const uint32_t *__restrict__ destBufferEnd = destBuffer + numberPixels;
 	
 	while (destBuffer < destBufferEnd)
 	{
-		*destBuffer++ = RGB888ToRGBA8888(*srcBuffer++);
+		*destBuffer++ = RGBA8888ForceOpaque(*srcBuffer++);
 	}
 }
 
