@@ -16,9 +16,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Cocoa/Cocoa.h>
-#include "videofilter.h"
+#import <Foundation/Foundation.h>
+#include "../filter/videofilter.h"
 
+@class NSImage;
+@class NSBitmapImageRep;
 
 /********************************************************************************************
 	CocoaVideoFilter - OBJECTIVE-C CLASS

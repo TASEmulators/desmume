@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 #include <pthread.h>
-#include "../filter/filter.h"
+#include "filter.h"
 #include "../utils/task.h"
 
 
