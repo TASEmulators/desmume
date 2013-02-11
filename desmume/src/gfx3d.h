@@ -69,9 +69,9 @@
 		
 //produce a 32bpp color from a DS RGB16
 #ifdef WORDS_BIGENDIAN
-	#define RGB16TO32(col,alpha) ( alpha | (((col & 0x7C00)>>7)<<8) | (((col & 0x03E0)>>2)<<16) | (((col & 0x001F)<<3)<<24) )
+	#define RGB16TO32(col,alpha) ( (alpha) | ((((col) & 0x7C00)>>7)<<8) | ((((col) & 0x03E0)>>2)<<16) | ((((col) & 0x001F)<<3)<<24) )
 #else
-	#define RGB16TO32(col,alpha) ( (alpha<<24) | (((col & 0x7C00)>>7)<<16) | (((col & 0x03E0)>>2)<<8) | ((col & 0x001F)<<3) )
+	#define RGB16TO32(col,alpha) ( ((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x03E0)>>2)<<8) | (((col) & 0x001F)<<3) )
 #endif
 
 //produce a 32bpp color from a ds RGB15, using a table
@@ -79,16 +79,16 @@
 
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
 #ifdef WORDS_BIGENDIAN
-	#define RGB15TO32(col,alpha8) ( alpha8 | color_15bit_to_24bit[col&0x7FFF] )
+	#define RGB15TO32(col,alpha8) ( (alpha8) | color_15bit_to_24bit[(col)&0x7FFF] )
 #else
-	#define RGB15TO32(col,alpha8) ( (alpha8<<24) | color_15bit_to_24bit[col&0x7FFF] )
+	#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[(col)&0x7FFF] )
 #endif
 
 //produce a 5555 32bit color from a ds RGB15 plus an 5bit alpha
 #ifdef WORDS_BIGENDIAN
-	#define RGB15TO5555(col,alpha5) ( alpha5 | (((col & 0x7C00)>>10)<<8) | (((col & 0x03E0)>>5)<<16) | ((col & 0x001F)<<24) )
+	#define RGB15TO5555(col,alpha5) ( (alpha5) | ((((col) & 0x7C00)>>10)<<8) | ((((col) & 0x03E0)>>5)<<16) | (((col) & 0x001F)<<24) )
 #else
-	#define RGB15TO5555(col,alpha5) ( (alpha5<<24) | (((col & 0x7C00)>>10)<<16) | (((col & 0x03E0)>>5)<<8) | (col & 0x001F) )
+	#define RGB15TO5555(col,alpha5) ( ((alpha5)<<24) | ((((col) & 0x7C00)>>10)<<16) | ((((col) & 0x03E0)>>5)<<8) | ((col) & 0x001F) )
 #endif
 
 //produce a 6665 32bit color from a ds RGB15 plus an 5bit alpha
@@ -108,28 +108,28 @@ inline u32 RGB15TO6665(u16 col, u8 alpha5)
 }
 
 //produce a 24bpp color from a ds RGB15, using a table
-#define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[col&0x7FFF] )
+#define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[(col)&0x7FFF] )
 
 //produce a 16bpp color from a ds RGB15, using a table
-#define RGB15TO16_REVERSE(col) ( color_15bit_to_16bit_reverse[col&0x7FFF] )
+#define RGB15TO16_REVERSE(col) ( color_15bit_to_16bit_reverse[(col)&0x7FFF] )
 
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, not using a table (but using other tables)
 #ifdef WORDS_BIGENDIAN
-	#define RGB15TO32_DIRECT(col,alpha8) ( alpha8 | (material_5bit_to_8bit[((col)>>10)&0x1F] << 8) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<16) | (material_5bit_to_8bit[(col)&0x1F]<<24) )
+	#define RGB15TO32_DIRECT(col,alpha8) ( (alpha8) | (material_5bit_to_8bit[((col)>>10)&0x1F] << 8) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<16) | (material_5bit_to_8bit[(col)&0x1F]<<24) )
 #else
 	#define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
 #endif
 
 //produce a 15bpp color from individual 5bit components
-#define R5G5B5TORGB15(r,g,b) ( r | (g<<5) | (b<<10) )
+#define R5G5B5TORGB15(r,g,b) ( (r) | ((g)<<5) | ((b)<<10) )
 
 //produce a 16bpp color from individual 5bit components
-#define R6G6B6TORGB15(r,g,b) ( (r>>1) | ((g&0x3E)<<4) | ((b&0x3E)<<9) )
+#define R6G6B6TORGB15(r,g,b) ( ((r)>>1) | (((g)&0x3E)<<4) | (((b)&0x3E)<<9) )
 
 #define GFX3D_5TO6(x) ((x)?(((x)<<1)+1):0)
 
 // 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
-#define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[depth & 0x7FFF] )
+#define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
 // POLYGON PRIMITIVE TYPES
 enum
