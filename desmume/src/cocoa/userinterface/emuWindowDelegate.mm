@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,16 +17,11 @@
 */
 
 #import "emuWindowDelegate.h"
-#import "cheatWindowDelegate.h"
+#import "EmuControllerDelegate.h"
 #import "displayView.h"
 
 #import "cocoa_globals.h"
-#import "cocoa_core.h"
-#import "cocoa_cheat.h"
 #import "cocoa_file.h"
-#import "cocoa_firmware.h"
-#import "cocoa_output.h"
-#import "cocoa_rom.h"
 #import "cocoa_util.h"
 
 #undef BOOL
@@ -36,32 +31,16 @@
 
 @dynamic dummyObject;
 @synthesize window;
-@synthesize saveFileMigrationSheet;
-@synthesize saveStatePrecloseSheet;
 @synthesize displayView;
-@synthesize exportRomSavePanelAccessoryView;
 @synthesize saveScreenshotPanelAccessoryView;
-@synthesize currentRom;
-@synthesize cdsSpeaker;
-@synthesize cdsCheats;
 
 @synthesize dispViewDelegate;
-@synthesize cheatWindowDelegate;
-@synthesize romInfoPanelController;
-@synthesize firmwarePanelController;
-@synthesize cdsCoreController;
-@synthesize cdsDisplayController;
-@synthesize cdsSoundController;
-@synthesize emuWindowController;
-@synthesize cheatWindowController;
-@synthesize cheatListController;
-@synthesize cheatDatabaseController;
 
-@synthesize isSheetControllingExecution;
-@synthesize isShowingSaveStateSheet;
-@synthesize isShowingFileMigrationSheet;
+@synthesize cdsDisplayController;
+@synthesize emuControlController;
+@synthesize emuWindowController;
+
 @dynamic isMinSizeNormal;
-@synthesize selectedRomSaveTypeID;
 
 @synthesize bindings;
 
@@ -81,43 +60,14 @@
 		return self;
 	}
 	
-	iconExecute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]];
-	iconPause = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]];
-	iconSpeedNormal = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed1x_420x420" ofType:@"png"]];
-	iconSpeedDouble = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed2x_420x420" ofType:@"png"]];
-	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
-	iconVolumeTwoThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeTwoThird_16x16" ofType:@"png"]];
-	iconVolumeOneThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeOneThird_16x16" ofType:@"png"]];
-	iconVolumeMute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]];
-	
 	dispViewDelegate = nil;
-	currentRom = nil;
-	cdsSpeaker = nil;
-	dummyCheatList = nil;
-	isRomLoading = NO;
-	isSheetControllingExecution = NO;
-	isShowingSaveStateSheet = NO;
-	isShowingFileMigrationSheet = NO;
 	isShowingStatusBar = YES;
 	statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
 	isMinSizeNormal = YES;
 	screenshotFileFormat = NSTIFFFileType;
-	currentEmuSaveStateURL = nil;
-	selectedExportRomSaveID = 0;
-	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
 	
-	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
-	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isRomLoaded"];
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isShowingStatusBar"];
-	[bindings setValue:[NSNumber numberWithFloat:MAX_VOLUME] forKey:@"volume"];
-	[bindings setObject:iconVolumeFull forKey:@"volumeIconImage"];
-	[bindings setValue:NSSTRING_STATUS_READY forKey:@"status"];
-	
-	[[NSNotificationCenter defaultCenter] addObserver:self
-											 selector:@selector(loadRomDidFinish:)
-												 name:@"org.desmume.DeSmuME.loadRomDidFinish"
-											   object:nil];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(saveScreenshotAsFinish:)
@@ -131,20 +81,8 @@
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	
-	[iconExecute release];
-	[iconPause release];
-	[iconSpeedNormal release];
-	[iconSpeedDouble release];
-	[iconVolumeFull release];
-	[iconVolumeTwoThird release];
-	[iconVolumeOneThird release];
-	[iconVolumeMute release];
-	[bindings release];
-	
 	[self setDispViewDelegate:nil];
-	[self setCdsCheats:nil];
-	[self setCdsSpeaker:nil];
-	[self setCurrentRom:nil];
+	[bindings release];
 	
 	[super dealloc];
 }
@@ -231,61 +169,6 @@
 	return GetMaxScalarInBounds(contentBounds.width, contentBounds.height, visibleScreenBounds.width, visibleScreenBounds.height);
 }
 
-- (void) setVolume:(float)vol
-{
-	[bindings setValue:[NSNumber numberWithFloat:vol] forKey:@"volume"];
-	
-	// Update the icon.
-	NSImage *currentImage = [bindings valueForKey:@"volumeIconImage"];
-	NSImage *newImage = nil;
-	if (vol <= 0.0f)
-	{
-		newImage = iconVolumeMute;
-	}
-	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
-	{
-		newImage = iconVolumeOneThird;
-	}
-	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
-	{
-		newImage = iconVolumeTwoThird;
-	}
-	else
-	{
-		newImage = iconVolumeFull;
-	}
-	
-	if (newImage != currentImage)
-	{
-		[bindings setObject:newImage forKey:@"volumeIconImage"];
-	}
-}
-
-- (float) volume
-{
-	return [(NSNumber *)[bindings valueForKey:@"volume"] floatValue];
-}
-
-- (void) setIsRomLoaded:(BOOL)theState
-{
-	[bindings setValue:[NSNumber numberWithBool:theState] forKey:@"isRomLoaded"];
-}
-
-- (BOOL) isRomLoaded
-{
-	return [(NSNumber *)[bindings valueForKey:@"isRomLoaded"] boolValue];
-}
-
-- (void) setStatus:(NSString *)theString
-{
-	[bindings setValue:theString forKey:@"status"];
-}
-
-- (NSString *) status
-{
-	return (NSString *)[bindings valueForKey:@"status"];
-}
-
 - (void) setIsMinSizeNormal:(BOOL)theState
 {
 	isMinSizeNormal = theState;
@@ -326,534 +209,9 @@
 	return isMinSizeNormal;
 }
 
-- (IBAction) openRom:(id)sender
-{
-	if (isRomLoading)
-	{
-		return;
-	}
-	
-	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
-	
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setResolvesAliases:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:NSSTRING_TITLE_OPEN_ROM_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_DS, @FILE_EXT_ROM_GBA, nil]; 
-	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	buttonClicked = [panel runModal];
-#else
-	buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
-	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
-	{
-		selectedFile = [[panel URLs] lastObject];
-		if(selectedFile == nil)
-		{
-			return;
-		}
-	}
-	else
-	{
-		return;
-	}
-	
-	[self handleLoadRom:selectedFile];
-}
-
-- (IBAction) closeRom:(id)sender
-{
-	[self handleUnloadRom:REASONFORCLOSE_NORMAL romToLoad:nil];
-}
-
-- (IBAction) openEmuSaveState:(id)sender
-{
-	BOOL result = NO;
-	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
-	
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setResolvesAliases:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:NSSTRING_TITLE_OPEN_STATE_FILE_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
-	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	buttonClicked = [panel runModal];
-#else
-	buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
-	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
-	{
-		selectedFile = [[panel URLs] lastObject];
-		if(selectedFile == nil)
-		{
-			return;
-		}
-	}
-	else
-	{
-		return;
-	}
-	
-	[self pauseCore];
-	
-	result = [CocoaDSFile loadState:selectedFile];
-	if (result == NO)
-	{
-		[self setStatus:NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
-		[self restoreCoreState];
-		return;
-	}
-	
-	currentEmuSaveStateURL = selectedFile;
-	[currentEmuSaveStateURL retain];
-	[window setDocumentEdited:YES];
-	
-	[self restoreCoreState];
-	[self setStatus:NSSTRING_STATUS_SAVESTATE_LOADED];
-}
-
-- (IBAction) saveEmuSaveState:(id)sender
-{
-	BOOL result = NO;
-	
-	if ([window isDocumentEdited] && currentEmuSaveStateURL != nil)
-	{
-		[self pauseCore];
-		
-		result = [CocoaDSFile saveState:currentEmuSaveStateURL];
-		if (result == NO)
-		{
-			[self setStatus:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
-			return;
-		}
-		
-		[window setDocumentEdited:YES];
-		
-		[self restoreCoreState];
-		[self setStatus:NSSTRING_STATUS_SAVESTATE_SAVED];
-	}
-	else
-	{
-		[self saveEmuSaveStateAs:sender];
-	}
-}
-
-- (IBAction) saveEmuSaveStateAs:(id)sender
-{
-	BOOL result = NO;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSSavePanel *panel = [NSSavePanel savePanel];
-	
-	[panel setCanCreateDirectories:YES];
-	[panel setTitle:NSSTRING_TITLE_SAVE_STATE_FILE_PANEL];
-	
-	// The NSSavePanel method -(void)setRequiredFileType:
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_SAVE_STATE, nil];
-	[panel setAllowedFileTypes:fileTypes];
-#else
-	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
-#endif
-	
-	buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
-	{
-		[self pauseCore];
-		
-		NSURL *saveFileURL = [panel URL];
-		
-		result = [CocoaDSFile saveState:saveFileURL];
-		if (result == NO)
-		{
-			[self setStatus:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
-			return;
-		}
-		
-		currentEmuSaveStateURL = saveFileURL;
-		[currentEmuSaveStateURL retain];
-		[window setDocumentEdited:YES];
-		
-		[self restoreCoreState];
-		[self setStatus:NSSTRING_STATUS_SAVESTATE_SAVED];
-	}
-}
-
-- (IBAction) revertEmuSaveState:(id)sender
-{
-	BOOL result = NO;
-	
-	if ([window isDocumentEdited] && currentEmuSaveStateURL != nil)
-	{
-		[self pauseCore];
-		
-		result = [CocoaDSFile loadState:currentEmuSaveStateURL];
-		if (result == NO)
-		{
-			[self setStatus:NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED];
-			return;
-		}
-		
-		[window setDocumentEdited:YES];
-		
-		[self restoreCoreState];
-		[self setStatus:NSSTRING_STATUS_SAVESTATE_REVERTED];
-	}
-}
-
-- (IBAction) loadEmuSaveStateSlot:(id)sender
-{
-	BOOL result = NO;
-	NSInteger i = [CocoaDSUtil getIBActionSenderTag:sender];
-	
-	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
-	if (saveStatePath == nil)
-	{
-		// Should throw an error message here...
-		return;
-	}
-	
-	if (i < 0 || i > MAX_SAVESTATE_SLOTS)
-	{
-		return;
-	}
-	
-	NSURL *currentRomURL = [[self currentRom] fileURL];
-	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(i + 1)];
-	if (fileName == nil)
-	{
-		return;
-	}
-	
-	[self pauseCore];
-	
-	result = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	if (result == NO)
-	{
-		[self setStatus:NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
-	}
-	
-	[self restoreCoreState];
-	[self setStatus:NSSTRING_STATUS_SAVESTATE_LOADED];
-}
-
-- (IBAction) saveEmuSaveStateSlot:(id)sender
-{
-	BOOL result = NO;
-	NSInteger i = [CocoaDSUtil getIBActionSenderTag:sender];
-	
-	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
-	if (saveStatePath == nil)
-	{
-		[self setStatus:NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH];
-		return;
-	}
-	
-	result = [CocoaDSFile createUserAppSupportDirectory:@"States"];
-	if (result == NO)
-	{
-		[self setStatus:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
-		return;
-	}
-	
-	if (i < 0 || i > MAX_SAVESTATE_SLOTS)
-	{
-		return;
-	}
-	
-	NSURL *currentRomURL = [[self currentRom] fileURL];
-	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(i + 1)];
-	if (fileName == nil)
-	{
-		return;
-	}
-	
-	[self pauseCore];
-	
-	result = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	if (result == NO)
-	{
-		[self setStatus:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
-		return;
-	}
-	
-	[self restoreCoreState];
-	[self setStatus:NSSTRING_STATUS_SAVESTATE_SAVED];
-}
-
-- (IBAction) importRomSave:(id)sender
-{
-	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
-	
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setResolvesAliases:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:NSSTRING_TITLE_IMPORT_ROM_SAVE_PANEL];
-	NSArray *fileTypes = [NSArray arrayWithObjects:@FILE_EXT_ROM_SAVE_RAW, @FILE_EXT_ACTION_REPLAY_SAVE, nil];
-	
-	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
-	// is deprecated in Mac OS X v10.6.
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
-	buttonClicked = [panel runModal];
-#else
-	buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
-#endif
-	
-	if (buttonClicked == NSFileHandlingPanelOKButton)
-	{
-		selectedFile = [[panel URLs] lastObject];
-		if(selectedFile == nil)
-		{
-			return;
-		}
-	}
-	else
-	{
-		return;
-	}
-	
-	BOOL result = [CocoaDSFile importRomSave:selectedFile];
-	if (!result)
-	{
-		[self setStatus:NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
-		return;
-	}
-	
-	[self setStatus:NSSTRING_STATUS_ROM_SAVE_IMPORTED];
-}
-
-- (IBAction) exportRomSave:(id)sender
-{
-	[self pauseCore];
-	
-	BOOL result = NO;
-	NSInteger buttonClicked;
-	NSSavePanel *panel = [NSSavePanel savePanel];
-	[panel setTitle:NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL];
-	[panel setCanCreateDirectories:YES];
-	[panel setAccessoryView:exportRomSavePanelAccessoryView];
-	
-	//save it
-	buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
-	{
-		NSURL *romSaveURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
-		if (romSaveURL != nil)
-		{
-			result = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:romSaveURL fileType:selectedExportRomSaveID];
-			if (result == NO)
-			{
-				[self setStatus:NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
-				return;
-			}
-			
-			[self setStatus:NSSTRING_STATUS_ROM_SAVE_EXPORTED];
-		}
-	}
-	
-	[self restoreCoreState];
-}
-
-- (IBAction) selectExportRomSaveFormat:(id)sender
-{
-	selectedExportRomSaveID = [CocoaDSUtil getIBActionSenderTag:sender];
-}
-
 - (IBAction)copy:(id)sender
 {
 	[dispViewDelegate copyToPasteboard];
-}
-
-// Emulation Menu
-- (IBAction) executeCoreToggle:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore coreState] == CORESTATE_PAUSE)
-	{
-		if ([self isRomLoaded])
-		{
-			[self executeCore];
-		}
-	}
-	else
-	{
-		[self pauseCore];
-	}
-}
-
-- (IBAction) resetCore:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([self isRomLoaded])
-	{
-		[self setStatus:NSSTRING_STATUS_EMULATOR_RESETTING];
-		[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isWorking"];
-		[window displayIfNeeded];
-		
-		[cdsCore reset];
-		if ([cdsCore coreState] == CORESTATE_PAUSE)
-		{
-			[[self dispViewDelegate] setViewToWhite];
-		}
-		
-		[self setStatus:NSSTRING_STATUS_EMULATOR_RESET];
-		[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
-		[window displayIfNeeded];
-	}
-}
-
-- (IBAction) speedLimitDisable:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore isSpeedLimitEnabled])
-	{
-		[cdsCore setIsSpeedLimitEnabled:NO];
-		[self setStatus:NSSTRING_STATUS_SPEED_LIMIT_DISABLED];
-	}
-	else
-	{
-		[cdsCore setIsSpeedLimitEnabled:YES];
-		[self setStatus:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
-	}
-}
-
-- (IBAction) toggleAutoFrameSkip:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore isFrameSkipEnabled])
-	{
-		[cdsCore setIsFrameSkipEnabled:NO];
-		[self setStatus:NSSTRING_STATUS_AUTO_FRAME_SKIP_DISABLED];
-	}
-	else
-	{
-		[cdsCore setIsFrameSkipEnabled:YES];
-		[self setStatus:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
-	}
-}
-
-- (IBAction) changeRomSaveType:(id)sender
-{
-	NSInteger saveTypeID = [CocoaDSUtil getIBActionSenderTag:sender];
-	[self setSelectedRomSaveTypeID:saveTypeID];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore changeRomSaveType:saveTypeID];
-}
-
-- (IBAction) cheatsDisable:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore isCheatingEnabled])
-	{
-		[cdsCore setIsCheatingEnabled:NO];
-		[self setStatus:NSSTRING_STATUS_CHEATS_DISABLED];
-	}
-	else
-	{
-		[cdsCore setIsCheatingEnabled:YES];
-		[self setStatus:NSSTRING_STATUS_CHEATS_ENABLED];
-	}
-}
-
-// View Menu
-
-- (IBAction) changeCoreSpeed:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	[cdsCore setSpeedScalar:(CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f];
-}
-
-- (IBAction) changeCoreEmuFlags:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSUInteger flags = [cdsCore emulationFlags];
-	
-	NSInteger flagBit = [CocoaDSUtil getIBActionSenderTag:sender];
-	if (flagBit < 0)
-	{
-		return;
-	}
-	
-	BOOL flagState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
-	if (flagState)
-	{
-		flags |= (1 << flagBit);
-	}
-	else
-	{
-		flags &= ~(1 << flagBit);
-	}
-	
-	[cdsCore setEmulationFlags:flags];
-}
-
-- (IBAction) changeFirmwareSettings:(id)sender
-{
-	// Force end of editing of any text fields.
-	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsFirmware] update];
-}
-
-- (IBAction) changeVolume:(id)sender
-{
-	float vol = [self volume];
-	[self setVolume:vol];
-	[self setStatus:[NSString stringWithFormat:NSSTRING_STATUS_VOLUME, vol]];
-	[CocoaDSUtil messageSendOneWayWithFloat:[cdsSpeaker receivePort] msgID:MESSAGE_SET_VOLUME floatValue:vol];
-}
-
-- (IBAction) changeAudioEngine:(id)sender
-{
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_AUDIO_PROCESS_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
-}
-
-- (IBAction) changeSpuAdvancedLogic:(id)sender
-{
-	[CocoaDSUtil messageSendOneWayWithBool:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_ADVANCED_LOGIC boolValue:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
-- (IBAction) changeSpuInterpolationMode:(id)sender
-{
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_INTERPOLATION_MODE integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
-}
-
-- (IBAction) changeSpuSyncMode:(id)sender
-{
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_MODE integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
-}
-
-- (IBAction) changeSpuSyncMethod:(id)sender
-{
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeScale:(id)sender
@@ -927,79 +285,19 @@
 	[dispViewDelegate setVideoFilterType:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
-- (IBAction) change3DRenderMethod:(id)sender
-{
-	[dispViewDelegate setRender3DRenderingEngine:[CocoaDSUtil getIBActionSenderTag:sender]];
-}
-
-- (IBAction) change3DRenderHighPrecisionColorInterpolation:(id)sender
-{
-	[dispViewDelegate setRender3DHighPrecisionColorInterpolation:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
-- (IBAction) change3DRenderEdgeMarking:(id)sender
-{
-	[dispViewDelegate setRender3DEdgeMarking:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
-- (IBAction) change3DRenderFog:(id)sender
-{
-	[dispViewDelegate setRender3DFog:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
-- (IBAction) change3DRenderTextures:(id)sender
-{
-	[dispViewDelegate setRender3DTextures:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
-- (IBAction) change3DRenderDepthComparisonThreshold:(id)sender
-{
-	NSInteger threshold = 0;
-	
-	if ([sender respondsToSelector:@selector(integerValue)])
-	{
-		threshold = [sender integerValue];
-		if (threshold < 0)
-		{
-			return;
-		}
-	}
-	
-	[dispViewDelegate setRender3DDepthComparisonThreshold:(NSUInteger)threshold];
-}
-
-- (IBAction) change3DRenderThreads:(id)sender
-{
-	NSInteger numberThreads = [CocoaDSUtil getIBActionSenderTag:sender];
-	if (numberThreads < 0)
-	{
-		return;
-	}
-	
-	[dispViewDelegate setRender3DThreads:(NSUInteger)numberThreads];
-}
-
-- (IBAction) change3DRenderLineHack:(id)sender
-{
-	[dispViewDelegate setRender3DLineHack:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
-- (IBAction) change3DRenderMultisample:(id)sender
-{
-	[dispViewDelegate setRender3DMultisample:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
-}
-
 - (IBAction) hudDisable:(id)sender
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	
 	if ([dispViewDelegate isHudEnabled])
 	{
 		[dispViewDelegate setIsHudEnabled:NO];
-		[self setStatus:NSSTRING_STATUS_HUD_DISABLED];
+		[emuControl setStatusText:NSSTRING_STATUS_HUD_DISABLED];
 	}
 	else
 	{
 		[dispViewDelegate setIsHudEnabled:YES];
-		[self setStatus:NSSTRING_STATUS_HUD_ENABLED];
+		[emuControl setStatusText:NSSTRING_STATUS_HUD_ENABLED];
 	}
 }
 
@@ -1093,7 +391,9 @@
 
 - (IBAction) saveScreenshotAs:(id)sender
 {
-	[self pauseCore];
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	
+	[emuControl pauseCore];
 	
 	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
 	NSSavePanel *panel = [NSSavePanel savePanel];
@@ -1109,12 +409,13 @@
 	}
 	else
 	{
-		[self restoreCoreState];
+		[emuControl restoreCoreState];
 	}
 }
 
 - (void) saveScreenshotAsFinish:(NSNotification *)aNotification
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	NSURL *fileURL = (NSURL *)[[aNotification userInfo] valueForKey:@"fileURL"];
 	NSBitmapImageFileType fileType = (NSBitmapImageFileType)[(NSNumber *)[[aNotification userInfo] valueForKey:@"fileType"] integerValue];
 	NSImage *screenshotImage = (NSImage *)[[aNotification userInfo] valueForKey:@"screenshotImage"];
@@ -1125,567 +426,15 @@
 		[CocoaDSUtil quickDialogUsingTitle:NSSTRING_ERROR_TITLE_LEGACY message:NSSTRING_ERROR_SCREENSHOT_FAILED_LEGACY];
 	}
 	
-	[self restoreCoreState];
-}
-
-- (IBAction) toggleGPUState:(id)sender
-{
-	NSInteger i = [CocoaDSUtil getIBActionSenderTag:sender];
-	UInt32 flags = [dispViewDelegate gpuStateFlags];
-	
-	flags ^= (1 << i);
-	
-	[dispViewDelegate setGpuStateFlags:flags];
-}
-
-- (BOOL) handleLoadRom:(NSURL *)fileURL
-{
-	BOOL result = NO;
-	
-	if (isRomLoading)
-	{
-		return result;
-	}
-	
-	if ([self isRomLoaded])
-	{
-		BOOL closeResult = [self handleUnloadRom:REASONFORCLOSE_OPEN romToLoad:fileURL];
-		if ([self isShowingSaveStateSheet])
-		{
-			return result;
-		}
-		
-		if (![self isShowingSaveStateSheet] && closeResult == NO)
-		{
-			return result;
-		}
-	}
-	
-	// Check for the v0.9.7 ROM Save File
-	if ([CocoaDSFile romSaveExistsWithRom:fileURL] && ![CocoaDSFile romSaveExists:fileURL])
-	{
-		SEL endSheetSelector = @selector(didEndFileMigrationSheet:returnCode:contextInfo:);
-		
-		[fileURL retain];
-		[self setIsSheetControllingExecution:YES];
-		[self setIsShowingFileMigrationSheet:YES];
-		
-		[NSApp beginSheet:saveFileMigrationSheet
-		   modalForWindow:window
-            modalDelegate:self
-		   didEndSelector:endSheetSelector
-			  contextInfo:fileURL];
-	}
-	else
-	{
-		result = [self loadRom:fileURL];
-	}
-	
-	return result;
-}
-
-- (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL
-{
-	BOOL result = NO;
-	
-	if (isRomLoading || ![self isRomLoaded])
-	{
-		return result;
-	}
-	
-	[self pauseCore];
-	
-	if ([window isDocumentEdited] && currentEmuSaveStateURL != nil)
-	{
-		SEL endSheetSelector = @selector(didEndSaveStateSheet:returnCode:contextInfo:);
-		
-		switch (reasonID)
-		{
-			case REASONFORCLOSE_OPEN:
-				[romURL retain];
-				endSheetSelector = @selector(didEndSaveStateSheetOpen:returnCode:contextInfo:);
-				break;	
-				
-			case REASONFORCLOSE_TERMINATE:
-				endSheetSelector = @selector(didEndSaveStateSheetTerminate:returnCode:contextInfo:);
-				break;
-				
-			default:
-				break;
-		}
-		
-		[currentEmuSaveStateURL retain];
-		[self setIsSheetControllingExecution:YES];
-		[self setIsShowingSaveStateSheet:YES];
-		
-		[NSApp beginSheet:saveStatePrecloseSheet
-		   modalForWindow:window
-            modalDelegate:self
-		   didEndSelector:endSheetSelector
-			  contextInfo:romURL];
-	}
-	else
-	{
-		result = [self unloadRom];
-	}
-	
-	return result;
-}
-
-- (BOOL) loadRom:(NSURL *)romURL
-{
-	BOOL result = NO;
-	
-	if (romURL == nil)
-	{
-		return result;
-	}
-	
-	[self setStatus:NSSTRING_STATUS_ROM_LOADING];
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isWorking"];
-	[window displayIfNeeded];
-	
-	// Need to pause the core before loading the ROM.
-	[self pauseCore];
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setDynaRec];
-	
-	CocoaDSRom *newRom = [[[CocoaDSRom alloc] init] autorelease];
-	if (newRom != nil)
-	{
-		isRomLoading = YES;
-		[romURL retain];
-		[newRom setSaveType:selectedRomSaveTypeID];
-		[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
-		[romURL release];
-	}
-	
-	result = YES;
-	
-	return result;
-}
-
-- (void) loadRomDidFinish:(NSNotification *)aNotification
-{
-	CocoaDSRom *theRom = [aNotification object];
-	NSDictionary *userInfo = [aNotification userInfo];
-	BOOL didLoad = [(NSNumber *)[userInfo valueForKey:@"DidLoad"] boolValue];
-	
-	if (theRom == nil || ![theRom isDataLoaded] || !didLoad)
-	{
-		// If ROM loading fails, restore the core state, but only if a ROM is already loaded.
-		if([self isRomLoaded])
-		{
-			[self restoreCoreState];
-		}
-		
-		[self setStatus:NSSTRING_STATUS_ROM_LOADING_FAILED];
-		[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
-		
-		isRomLoading = NO;
-		return;
-	}
-	
-	// Set the core's ROM to our newly allocated ROM object.
-	[self setCurrentRom:theRom];
-	[romInfoPanelController setContent:[theRom bindings]];
-	
-	// If the ROM has an associated cheat file, load it now.
-	NSString *cheatsPath = [[CocoaDSFile fileURLFromRomURL:[theRom fileURL] toKind:@"Cheat"] path];
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	CocoaDSCheatManager *newCheatList = [[[CocoaDSCheatManager alloc] initWithCore:cdsCore fileURL:[NSURL fileURLWithPath:cheatsPath]] autorelease];
-	if (newCheatList != nil)
-	{
-		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
-		
-		[CocoaDSCheatManager setMasterCheatList:newCheatList];
-		[cheatListController setContent:[newCheatList list]];
-		[self setCdsCheats:newCheatList];
-		[cheatWindowBindings setValue:newCheatList forKey:@"cheatList"];
-		
-		NSString *filePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
-		if (filePath != nil)
-		{
-			NSURL *fileURL = [NSURL fileURLWithPath:filePath];
-			NSInteger error = 0;
-			NSMutableArray *dbList = [[self cdsCheats] cheatListFromDatabase:fileURL errorCode:&error];
-			if (dbList != nil)
-			{
-				[cheatDatabaseController setContent:dbList];
-				
-				NSString *titleString = [[self cdsCheats] dbTitle];
-				NSString *dateString = [[self cdsCheats] dbDate];
-				
-				[cheatWindowBindings setValue:titleString forKey:@"cheatDBTitle"];
-				[cheatWindowBindings setValue:dateString forKey:@"cheatDBDate"];
-				[cheatWindowBindings setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[dbList count]] forKey:@"cheatDBItemCount"];
-			}
-			else
-			{
-				[cheatWindowBindings setValue:@"---" forKey:@"cheatDBItemCount"];
-				
-				switch (error)
-				{
-					case CHEATEXPORT_ERROR_FILE_NOT_FOUND:
-						NSLog(@"R4 Cheat Database read failed! Could not load the database file!");
-						[cheatWindowBindings setValue:@"Database not loaded." forKey:@"cheatDBTitle"];
-						[cheatWindowBindings setValue:@"CANNOT LOAD FILE" forKey:@"cheatDBDate"];
-						break;
-						
-					case CHEATEXPORT_ERROR_WRONG_FILE_FORMAT:
-						NSLog(@"R4 Cheat Database read failed! Wrong file format!");
-						[cheatWindowBindings setValue:@"Database load error." forKey:@"cheatDBTitle"];
-						[cheatWindowBindings setValue:@"FAILED TO LOAD FILE" forKey:@"cheatDBDate"];
-						break;
-						
-					case CHEATEXPORT_ERROR_SERIAL_NOT_FOUND:
-						NSLog(@"R4 Cheat Database read failed! Could not find the serial number for this game in the database!");
-						[cheatWindowBindings setValue:@"ROM not found in database." forKey:@"cheatDBTitle"];
-						[cheatWindowBindings setValue:@"ROM not found." forKey:@"cheatDBDate"];
-						break;
-						
-					case CHEATEXPORT_ERROR_EXPORT_FAILED:
-						NSLog(@"R4 Cheat Database read failed! Could not read the database file!");
-						[cheatWindowBindings setValue:@"Database read error." forKey:@"cheatDBTitle"];
-						[cheatWindowBindings setValue:@"CANNOT READ FILE" forKey:@"cheatDBDate"];
-						break;
-						
-					default:
-						break;
-				}
-			}
-		}
-		
-		[cheatWindowDelegate setCdsCheats:newCheatList];
-		[[cheatWindowDelegate cdsCheatSearch] setCdsCore:cdsCore];
-		[cheatWindowDelegate setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE];
-	}
-	
-	// Add the last loaded ROM to the Recent ROMs list.
-	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[theRom fileURL]];
-	
-	// Update the UI to indicate that a ROM has indeed been loaded.
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-	[window setRepresentedFilename:[[theRom fileURL] path]];
-#else
-	[window setRepresentedURL:[theRom fileURL]];
-#endif
-	[[window standardWindowButton:NSWindowDocumentIconButton] setImage:[theRom icon]];
-	
-	NSString *newWindowTitle = [theRom internalName];
-	[window setTitle:newWindowTitle];
-	
-	[dispViewDelegate setViewToWhite];
-	[self setStatus:NSSTRING_STATUS_ROM_LOADED];
-	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
-	[self setIsRomLoaded:YES];
-	[window displayIfNeeded];
-	isRomLoading = NO;
-	
-	// After the ROM loading is complete, send an execute message to the Cocoa DS per
-	// user preferences.
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"General_ExecuteROMOnLoad"])
-	{
-		[self executeCore];
-	}
-}
-
-- (BOOL) unloadRom
-{
-	BOOL result = NO;
-	
-	[currentEmuSaveStateURL release];
-	currentEmuSaveStateURL = nil;
-	[window setDocumentEdited:NO];
-	
-	// Save the ROM's cheat list before unloading.
-	[[self cdsCheats] save];
-	
-	// Update the UI to indicate that the ROM has started the process of unloading.
-	[self setStatus:NSSTRING_STATUS_ROM_UNLOADING];
-	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
-	[cheatListController setContent:nil];
-	[cheatWindowDelegate resetSearch:nil];
-	[cheatWindowDelegate setCdsCheats:nil];
-	[cheatDatabaseController setContent:nil];
-	
-	NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
-	[cheatWindowBindings setValue:@"No ROM loaded." forKey:@"cheatDBTitle"];
-	[cheatWindowBindings setValue:@"No ROM loaded." forKey:@"cheatDBDate"];
-	[cheatWindowBindings setValue:@"---" forKey:@"cheatDBItemCount"];
-	[cheatWindowBindings setValue:nil forKey:@"cheatList"];
-	
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"isWorking"];
-	[window displayIfNeeded];
-	
-	// Unload the ROM.
-	[self setCurrentRom:nil];
-	
-	// Release the current cheat list and assign the empty list.
-	[self setCdsCheats:nil];
-	if (dummyCheatList == nil)
-	{
-		dummyCheatList = [[CocoaDSCheatManager alloc] init];
-	}
-	[CocoaDSCheatManager setMasterCheatList:dummyCheatList];
-	
-	// Update the UI to indicate that the ROM has finished unloading.
-#if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
-	[window setRepresentedFilename:nil];
-#else
-	[window setRepresentedURL:nil];
-#endif
-	
-	NSString *newWindowTitle = (NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
-	[window setTitle:newWindowTitle];
-	
-	[dispViewDelegate setViewToBlack];
-	[self setStatus:NSSTRING_STATUS_ROM_UNLOADED];
-	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"isWorking"];
-	[self setIsRomLoaded:NO];
-	[window displayIfNeeded];
-	
-	result = YES;
-	
-	return result;
-}
-
-- (void) executeCore
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setCoreState:CORESTATE_EXECUTE];
-}
-
-- (void) pauseCore
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setCoreState:CORESTATE_PAUSE];
-}
-
-- (void) restoreCoreState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore restoreCoreState];
+	[emuControl restoreCoreState];
 }
 
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)theItem
 {
 	BOOL enable = YES;
     SEL theAction = [theItem action];
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if (theAction == @selector(importRomSave:) ||
-		theAction == @selector(exportRomSave:))
-    {
-		if (![self isRomLoaded])
-		{
-			enable = NO;
-		}
-    }
-    else if (theAction == @selector(executeCoreToggle:))
-    {
-		if (![self isRomLoaded] ||
-			![cdsCore masterExecute] ||
-			[self isSheetControllingExecution])
-		{
-			enable = NO;
-		}
-		
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([cdsCore coreState] == CORESTATE_PAUSE)
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_EXECUTE_CONTROL];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_PAUSE_CONTROL];
-			}
-		}
-		else if ([(id)theItem isMemberOfClass:[NSToolbarItem class]])
-		{
-			if ([cdsCore coreState] == CORESTATE_PAUSE)
-			{
-				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_EXECUTE_CONTROL];
-				[(NSToolbarItem*)theItem setImage:iconExecute];
-			}
-			else
-			{
-				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_PAUSE_CONTROL];
-				[(NSToolbarItem*)theItem setImage:iconPause];
-			}
-		}
-    }
-	else if (theAction == @selector(executeCore) ||
-			 theAction == @selector(pauseCore))
-    {
-		if (![self isRomLoaded] ||
-			![cdsCore masterExecute] ||
-			[self isSheetControllingExecution])
-		{
-			enable = NO;
-		}
-    }
-	else if (theAction == @selector(resetCore:))
-	{
-		if (![self isRomLoaded] || [self isSheetControllingExecution])
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(_openRecentDocument:))
-	{
-		if ([self isShowingSaveStateSheet])
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(openRom:))
-	{
-		if (isRomLoading || [self isShowingSaveStateSheet])
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(closeRom:))
-	{
-		if (![self isRomLoaded] || isRomLoading || [self isShowingSaveStateSheet])
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(loadEmuSaveStateSlot:))
-	{
-		if (![self isRomLoaded] || [self isShowingSaveStateSheet])
-		{
-			enable = NO;
-		}
-		else if (![CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(saveEmuSaveStateSlot:))
-	{
-		if (![self isRomLoaded] || [self isShowingSaveStateSheet])
-		{
-			enable = NO;
-		}
-		
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
-		}
-	}
-	else if (theAction == @selector(changeCoreSpeed:))
-	{
-		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
-		
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([theItem tag] == -1)
-			{
-				if (speedScalar == (NSInteger)(SPEED_SCALAR_HALF * 100.0) ||
-					speedScalar == (NSInteger)(SPEED_SCALAR_NORMAL * 100.0) ||
-					speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0))
-				{
-					[(NSMenuItem*)theItem setState:NSOffState];
-				}
-				else
-				{
-					[(NSMenuItem*)theItem setState:NSOnState];
-				}
-			}
-			else if (speedScalar == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
-		}
-		else if ([(id)theItem isMemberOfClass:[NSToolbarItem class]])
-		{
-			if (speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0))
-			{
-				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_SPEED_1X];
-				[(NSToolbarItem*)theItem setTag:100];
-				[(NSToolbarItem*)theItem setImage:iconSpeedNormal];
-			}
-			else
-			{
-				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_SPEED_2X];
-				[(NSToolbarItem*)theItem setTag:200];
-				[(NSToolbarItem*)theItem setImage:iconSpeedDouble];
-			}
-		}
-	}
-	else if (theAction == @selector(speedLimitDisable:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([cdsCore isSpeedLimitEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_SPEED_LIMIT];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_SPEED_LIMIT];
-			}
-		}
-	}
-	else if (theAction == @selector(toggleAutoFrameSkip:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([cdsCore isFrameSkipEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_AUTO_FRAME_SKIP];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_AUTO_FRAME_SKIP];
-			}
-		}
-	}
-	else if (theAction == @selector(cheatsDisable:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([cdsCore isCheatingEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_CHEATS];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_CHEATS];
-			}
-		}
-	}
-	else if (theAction == @selector(changeRomSaveType:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([self selectedRomSaveTypeID] == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
-		}
-	}
-	else if (theAction == @selector(changeScale:))
+	if (theAction == @selector(changeScale:))
 	{
 		NSInteger viewScale = (NSInteger)([dispViewDelegate scale] * 100.0);
 		
@@ -1773,38 +522,6 @@
 			}
 		}
 	}
-	else if (theAction == @selector(openEmuSaveState:) ||
-			 theAction == @selector(saveEmuSaveState:) ||
-			 theAction == @selector(saveEmuSaveStateAs:))
-	{
-		if (![self isRomLoaded] || [self isShowingSaveStateSheet])
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(revertEmuSaveState:))
-	{
-		if (![self isRomLoaded] ||
-			[self isShowingSaveStateSheet] ||
-			currentEmuSaveStateURL == nil)
-		{
-			enable = NO;
-		}
-	}
-	else if (theAction == @selector(toggleGPUState:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([dispViewDelegate gpuStateByBit:[theItem tag]])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
-		}
-	}
 	else if (theAction == @selector(hudDisable:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
@@ -1853,21 +570,8 @@
 
 - (void)windowDidBecomeMain:(NSNotification *)notification
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([self isRomLoaded])
-	{
-		[romInfoPanelController setContent:[[self currentRom] bindings]];
-	}
-	else
-	{
-		[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
-	}
-
-	[firmwarePanelController setContent:[cdsCore cdsFirmware]];
 	[emuWindowController setContent:[self bindings]];
 	[cdsDisplayController setContent:[dispViewDelegate bindings]];
-	[cdsSoundController setContent:[cdsSpeaker property]];
 }
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
@@ -1926,9 +630,10 @@
 - (BOOL)windowShouldClose:(id)sender
 {
 	BOOL shouldClose = YES;
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
 	// If no ROM is loaded, terminate the application.
-	if (![self isRomLoaded])
+	if ([emuControl currentRom] == nil)
 	{
 		[NSApp terminate:sender];
 	}
@@ -1936,111 +641,10 @@
 	else
 	{
 		shouldClose = NO;
-		[self closeRom:nil];
+		[emuControl closeRom:nil];
 	}
 	
 	return shouldClose;
-}
-
-- (IBAction) closeMigrationSheet:(id)sender
-{
-	NSWindow *sheet = [(NSControl *)sender window];
-	NSInteger code = [(NSControl *)sender tag];
-	
-    [NSApp endSheet:sheet returnCode:code];
-}
-
-- (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	NSURL *romURL = (NSURL *)contextInfo;
-	NSURL *romSaveURL = [CocoaDSFile romSaveURLFromRomURL:romURL];
-	
-    [sheet orderOut:self];	
-	
-	switch (returnCode)
-	{
-		case NSOKButton:
-			[CocoaDSFile moveFileToCurrentDirectory:romSaveURL];
-			break;
-			
-		default:
-			break;
-	}
-	
-	[self setIsSheetControllingExecution:NO];
-	[self setIsShowingFileMigrationSheet:NO];
-	
-	[self loadRom:romURL];
-	
-	// We retained this when we initially put up the sheet, so we need to release it now.
-	[romURL release];
-}
-
-- (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	BOOL result = NO;
-	
-	[sheet orderOut:self];
-	
-	switch (returnCode)
-	{
-		case NSCancelButton: // Cancel
-			[self restoreCoreState];
-			[self setIsSheetControllingExecution:NO];
-			[self setIsShowingSaveStateSheet:NO];
-			return;
-			break;
-		
-		case COCOA_DIALOG_DEFAULT: // Save
-			result = [CocoaDSFile saveState:currentEmuSaveStateURL];
-			if (result == NO)
-			{
-				// Throw an error here...
-				return;
-			}
-			break;
-		
-		case COCOA_DIALOG_OPTION: // Don't Save
-			break;
-		
-		default:
-			break;
-	}
-	
-	[self unloadRom];
-	
-	[self setIsSheetControllingExecution:NO];
-	[self setIsShowingSaveStateSheet:NO];
-	
-	// We retained this when we initially put up the sheet, so we need to release it now.
-	[currentEmuSaveStateURL release];
-	currentEmuSaveStateURL = nil;
-}
-
-- (void) didEndSaveStateSheetOpen:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
-	
-	NSURL *romURL = (NSURL *)contextInfo;
-	[self handleLoadRom:romURL];
-	[romURL release];
-}
-
-- (void) didEndSaveStateSheetTerminate:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
-{
-	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
-	
-	if (returnCode == NSCancelButton)
-	{
-		[NSApp replyToApplicationShouldTerminate:NO];
-	}
-	else
-	{
-		if (currentEmuSaveStateURL == nil)
-		{
-			[NSApp replyToApplicationShouldTerminate:YES];
-		}
-	}
 }
 
 - (void) setupUserDefaults
@@ -2057,30 +661,10 @@
 	[self setContentScalar:displayScalar];
 	[self setContentRotation:displayRotation];
 	
-	// Set the SPU settings per user preferences.
-	[self setVolume:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[[self cdsSpeaker] setVolume:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[[self cdsSpeaker] setAudioOutputEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
-	[[self cdsSpeaker] setSpuAdvancedLogic:[[NSUserDefaults standardUserDefaults] boolForKey:@"SPU_AdvancedLogic"]];
-	[[self cdsSpeaker] setSpuInterpolationMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
-	[[self cdsSpeaker] setSpuSyncMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
-	[[self cdsSpeaker] setSpuSyncMethod:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
-	
 	// Setup the window display view per user preferences.
 	[[self dispViewDelegate] setVideoFilterType:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
 	[[self dispViewDelegate] setUseBilinearOutput:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"]];
 	[[self dispViewDelegate] setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
-	
-	// Set the 3D rendering options per user preferences.
-	[[self dispViewDelegate] setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
-	[[self dispViewDelegate] setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
-	[[self dispViewDelegate] setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
-	[[self dispViewDelegate] setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
-	[[self dispViewDelegate] setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
-	[[self dispViewDelegate] setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
-	[[self dispViewDelegate] setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
-	[[self dispViewDelegate] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
-	[[self dispViewDelegate] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
 }
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
@@ -2102,67 +686,6 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"videoFilterType"] integerValue] forKey:@"DisplayView_VideoFilter"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"useBilinearOutput"] boolValue] forKey:@"DisplayView_UseBilinearOutput"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"useVerticalSync"] boolValue] forKey:@"DisplayView_UseVerticalSync"];
-}
-
-- (IBAction) writeDefaults3DRenderingSettings:(id)sender
-{
-	NSMutableDictionary *dispViewBindings = (NSMutableDictionary *)[cdsDisplayController content];
-	
-	// Force end of editing of any text fields.
-	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
-	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"render3DRenderingEngine"] integerValue] forKey:@"Render3D_RenderingEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DHighPrecisionColorInterpolation"] boolValue] forKey:@"Render3D_HighPrecisionColorInterpolation"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DEdgeMarking"] boolValue] forKey:@"Render3D_EdgeMarking"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DFog"] boolValue] forKey:@"Render3D_Fog"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DTextures"] boolValue] forKey:@"Render3D_Textures"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"render3DDepthComparisonThreshold"] integerValue] forKey:@"Render3D_DepthComparisonThreshold"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[dispViewBindings valueForKey:@"render3DThreads"] integerValue] forKey:@"Render3D_Threads"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DLineHack"] boolValue] forKey:@"Render3D_LineHack"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[dispViewBindings valueForKey:@"render3DMultisample"] boolValue] forKey:@"Render3D_Multisample"];
-}
-
-- (IBAction) writeDefaultsEmulationSettings:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSDictionary *firmwareDict = [(CocoaDSFirmware *)[firmwarePanelController content] dataDictionary];
-	
-	// Force end of editing of any text fields.
-	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagRigorousTiming] forKey:@"Emulation_RigorousTiming"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore cpuEmulationEngine] forKey:@"Emulation_CPUEmulationEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalBios] forKey:@"Emulation_UseExternalBIOSImages"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateBiosInterrupts] forKey:@"Emulation_BIOSEmulateSWI"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagPatchDelayLoop] forKey:@"Emulation_BIOSPatchDelayLoopSWI"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalFirmware] forKey:@"Emulation_UseExternalFirmwareImage"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagFirmwareBoot] forKey:@"Emulation_FirmwareBoot"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Nickname"] forKey:@"FirmwareConfig_Nickname"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Message"] forKey:@"FirmwareConfig_Message"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"FavoriteColor"] forKey:@"FirmwareConfig_FavoriteColor"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Birthday"] forKey:@"FirmwareConfig_Birthday"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Language"] forKey:@"FirmwareConfig_Language"];
-}
-
-- (IBAction) writeDefaultsSoundSettings:(id)sender
-{
-	NSMutableDictionary *speakerBindings = (NSMutableDictionary *)[cdsSoundController content];
-	
-	[[NSUserDefaults standardUserDefaults] setFloat:[[speakerBindings valueForKey:@"volume"] floatValue] forKey:@"Sound_Volume"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"audioOutputEngine"] integerValue] forKey:@"Sound_AudioOutputEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[speakerBindings valueForKey:@"spuAdvancedLogic"] boolValue] forKey:@"SPU_AdvancedLogic"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuInterpolationMode"] integerValue] forKey:@"SPU_InterpolationMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMode"] integerValue] forKey:@"SPU_SyncMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMethod"] integerValue] forKey:@"SPU_SyncMethod"];
-}
-
-- (void)controlTextDidEndEditing:(NSNotification *)aNotification
-{
-	[self change3DRenderDepthComparisonThreshold:[aNotification object]];
 }
 
 @end

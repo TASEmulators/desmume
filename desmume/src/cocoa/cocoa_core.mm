@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,10 +19,12 @@
 #import "cocoa_core.h"
 #import "cocoa_input.h"
 #import "cocoa_firmware.h"
+#import "cocoa_GPU.h"
 #import "cocoa_globals.h"
 #import "cocoa_output.h"
 #import "cocoa_rom.h"
 #import "cocoa_util.h"
+
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
@@ -38,6 +40,7 @@ volatile bool execute = true;
 
 @dynamic cdsController;
 @synthesize cdsFirmware;
+@synthesize cdsGPU;
 @synthesize cdsOutputList;
 
 @dynamic masterExecute;
@@ -77,6 +80,7 @@ static BOOL isCoreStarted = NO;
 	
 	cdsController = nil;
 	cdsFirmware = nil;
+	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
 	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
 	
 	emulationFlags = EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK;
@@ -120,6 +124,8 @@ static BOOL isCoreStarted = NO;
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
 	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
+	[cdsGPU setMutexProducer:mutexCoreExecute];
+	
 	return self;
 }
 
@@ -155,6 +161,8 @@ static BOOL isCoreStarted = NO;
 	
 	self.cdsController = nil;
 	self.cdsFirmware = nil;
+	self.cdsGPU = nil;
+	
 	[self removeAllOutputs];
 	[cdsOutputList release];
 	
@@ -201,30 +209,14 @@ static BOOL isCoreStarted = NO;
 - (void) setMasterExecute:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockMasterExecute);
-	
-	if (theState)
-	{
-		execute = true;
-	}
-	else
-	{
-		execute = false;
-	}
-	
+	execute = theState ? true : false;
 	OSSpinLockUnlock(&spinlockMasterExecute);
 }
 
 - (BOOL) masterExecute
 {
-	BOOL theState = NO;
-	
 	OSSpinLockLock(&spinlockMasterExecute);
-	
-	if (execute)
-	{
-		theState = YES;
-	}
-		
+	const BOOL theState = execute ? YES : NO;
 	OSSpinLockUnlock(&spinlockMasterExecute);
 	
 	return theState;
@@ -282,16 +274,9 @@ static BOOL isCoreStarted = NO;
 
 - (BOOL) isFrameSkipEnabled
 {
-	BOOL theState = NO;
-	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	bool cState = threadParam.isFrameSkipEnabled;
+	const BOOL theState = threadParam.isFrameSkipEnabled ? YES : NO;
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
-	if (cState)
-	{
-		theState = YES;
-	}
 	
 	return theState;
 }
@@ -307,7 +292,7 @@ static BOOL isCoreStarted = NO;
 - (CGFloat) speedScalar
 {
 	OSSpinLockLock(&spinlockExecutionChange);
-	CGFloat scalar = speedScalar;
+	const CGFloat scalar = speedScalar;
 	OSSpinLockUnlock(&spinlockExecutionChange);
 	
 	return scalar;
@@ -324,7 +309,7 @@ static BOOL isCoreStarted = NO;
 - (BOOL) isSpeedLimitEnabled
 {
 	OSSpinLockLock(&spinlockExecutionChange);
-	BOOL enabled = isSpeedLimitEnabled;
+	const BOOL enabled = isSpeedLimitEnabled;
 	OSSpinLockUnlock(&spinlockExecutionChange);
 	
 	return enabled;
@@ -333,30 +318,14 @@ static BOOL isCoreStarted = NO;
 - (void) setIsCheatingEnabled:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockCheatEnableFlag);
-	
-	if (theState)
-	{
-		CommonSettings.cheatsDisable = false;
-	}
-	else
-	{
-		CommonSettings.cheatsDisable = true;
-	}
-	
+	CommonSettings.cheatsDisable = theState ? false : true;
 	OSSpinLockUnlock(&spinlockCheatEnableFlag);
 }
 
 - (BOOL) isCheatingEnabled
 {
-	BOOL theState = YES;
-	
 	OSSpinLockLock(&spinlockCheatEnableFlag);
-	
-	if (CommonSettings.cheatsDisable)
-	{
-		theState = NO;
-	}
-	
+	BOOL theState = CommonSettings.cheatsDisable ? NO : YES;
 	OSSpinLockUnlock(&spinlockCheatEnableFlag);
 	
 	return theState;
@@ -475,7 +444,7 @@ static BOOL isCoreStarted = NO;
 - (NSUInteger) emulationFlags
 {
 	OSSpinLockLock(&spinlockEmulationFlags);
-	NSUInteger theFlags = emulationFlags;
+	const NSUInteger theFlags = emulationFlags;
 	OSSpinLockUnlock(&spinlockEmulationFlags);
 	
 	return theFlags;
@@ -483,21 +452,19 @@ static BOOL isCoreStarted = NO;
 
 - (void) setCpuEmulationEngine:(NSInteger)engineID
 {
+	OSSpinLockLock(&spinlockCPUEmulationEngine);
 #if defined(__i386__) || defined(__x86_64__)
-	OSSpinLockLock(&spinlockCPUEmulationEngine);
 	cpuEmulationEngine = engineID;
-	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
 #else
-	OSSpinLockLock(&spinlockCPUEmulationEngine);
 	cpuEmulationEngine = CPU_EMULATION_ENGINE_INTERPRETER;
-	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
 #endif
+	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
 }
 
 - (NSInteger) cpuEmulationEngine
 {
 	OSSpinLockLock(&spinlockCPUEmulationEngine);
-	NSInteger engineID = cpuEmulationEngine;
+	const NSInteger engineID = cpuEmulationEngine;
 	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
 	
 	return engineID;
@@ -524,7 +491,7 @@ static BOOL isCoreStarted = NO;
 - (NSInteger) coreState
 {
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	NSInteger theState = threadParam.state;
+	const NSInteger theState = threadParam.state;
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
 	return theState;
@@ -654,16 +621,10 @@ static BOOL isCoreStarted = NO;
  ********************************************************************************************/
 - (void) setDynaRec
 {
-	NSInteger engineID = [self cpuEmulationEngine];
-	bool useDynaRec = false;
-	
-	if (engineID == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER)
-	{
-		useDynaRec = true;
-	}
+	const NSInteger engineID = [self cpuEmulationEngine];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	CommonSettings.use_jit = useDynaRec;
+	CommonSettings.use_jit = (engineID == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 }
 

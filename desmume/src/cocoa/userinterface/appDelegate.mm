@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 #import "appDelegate.h"
+#import "EmuControllerDelegate.h"
 #import "emuWindowDelegate.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
@@ -31,6 +32,7 @@
 #import "cocoa_hid.h"
 #import "cocoa_input.h"
 #import "cocoa_mic.h"
+#import "cocoa_rom.h"
 #import "cocoa_util.h"
 
 
@@ -48,6 +50,9 @@
 @synthesize inputPrefsView;
 @synthesize fileMigrationList;
 @synthesize aboutWindowController;
+@synthesize emuControlController;
+@synthesize cdsSoundController;
+@synthesize romInfoPanelController;
 @synthesize emuWindowController;
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
@@ -68,7 +73,7 @@
 {
 	BOOL result = NO;
 	NSURL *fileURL = [NSURL fileURLWithPath:filename];
-	EmuWindowDelegate *mainWindowDelegate = [mainWindow delegate];
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if (cdsCore == nil)
@@ -79,8 +84,8 @@
 	NSString *fileKind = [CocoaDSFile fileKindByURL:fileURL];
 	if ([fileKind isEqualToString:@"ROM"])
 	{
-		result = [mainWindowDelegate handleLoadRom:fileURL];
-		if ([mainWindowDelegate isShowingSaveStateSheet] || [mainWindowDelegate isShowingFileMigrationSheet])
+		result = [emuControl handleLoadRom:fileURL];
+		if ([emuControl isShowingSaveStateDialog] || [emuControl isShowingFileMigrationDialog])
 		{
 			// Just reply YES if a sheet is showing, even if the ROM hasn't actually been loaded yet.
 			// This will prevent the error dialog from showing, which is the intended behavior in
@@ -94,6 +99,7 @@
 
 - (void)applicationWillFinishLaunching:(NSNotification *)notification
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	EmuWindowDelegate *mainWindowDelegate = [mainWindow delegate];
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
 	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatListWindow delegate];
@@ -113,6 +119,7 @@
 		return;
 	}
 	
+	[[emuControl windowList] addObject:mainWindow];
 	[CocoaDSFile setupAllFilePaths];
 	
 	// Setup the About window.
@@ -155,6 +162,8 @@
 	[self setRomInfoPanelBoxTitleColors];
 	
 	// Set up all the object controllers according to our default windows.
+	[cdsSoundController setContent:nil];
+	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[emuWindowController setContent:[mainWindowDelegate bindings]];
 	[prefWindowController setContent:[prefWindowDelegate bindings]];
 	[cheatWindowController setContent:[cheatWindowDelegate bindings]];
@@ -196,7 +205,7 @@
 	// Init the DS speakers.
 	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
 	[newCore addOutput:newSpeaker];
-	[mainWindowDelegate setCdsSpeaker:newSpeaker];
+	[emuControl setCdsSpeaker:newSpeaker];
 	
 	// Start the core thread.
 	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newCore withObject:nil];
@@ -226,11 +235,12 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	EmuWindowDelegate *mainWindowDelegate = [mainWindow delegate];
 	
 	// Load a new ROM on launch per user preferences.
 	BOOL loadROMOnLaunch = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_AutoloadROMOnLaunch"];
-	if (loadROMOnLaunch && ![mainWindowDelegate isRomLoaded])
+	if (loadROMOnLaunch && [emuControl currentRom] == nil)
 	{
 		NSInteger autoloadRomOption = [[NSUserDefaults standardUserDefaults] integerForKey:@"General_AutoloadROMOption"];
 		NSURL *autoloadRomURL = nil;
@@ -250,7 +260,7 @@
 		
 		if (autoloadRomURL != nil)
 		{
-			[mainWindowDelegate handleLoadRom:autoloadRomURL];
+			[emuControl handleLoadRom:autoloadRomURL];
 		}
 	}
 	
@@ -273,14 +283,14 @@
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
-	EmuWindowDelegate *mainWindowDelegate = [mainWindow delegate];
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
 	// If a file needs to be saved, give the user a chance to save it
 	// before quitting.
-	BOOL didRomClose = [mainWindowDelegate handleUnloadRom:REASONFORCLOSE_TERMINATE romToLoad:nil];
+	BOOL didRomClose = [emuControl handleUnloadRom:REASONFORCLOSE_TERMINATE romToLoad:nil];
 	if (!didRomClose)
 	{
-		if ([mainWindowDelegate isShowingSaveStateSheet])
+		if ([emuControl isShowingSaveStateDialog])
 		{
 			return NSTerminateLater;
 		}
@@ -353,6 +363,7 @@
 
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	NSUInteger slotNumberKey = slotNumber;
 	
 	if (slotNumber == 10)
@@ -364,13 +375,14 @@
 										action:nil
 								 keyEquivalent:[NSString stringWithFormat:@"%ld", (unsigned long)slotNumberKey]];
 	
-	[mItem setTarget:[mainWindow delegate]];
+	[mItem setTarget:emuControl];
 	
 	return mItem;
 }
 
 - (void) setupUserDefaults
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	EmuWindowDelegate *mainWindowDelegate = [mainWindow delegate];
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
 	NSMutableDictionary *prefBindings = [prefWindowDelegate bindings];
@@ -447,6 +459,7 @@
 	CocoaDSFirmware *newFirmware = [[[CocoaDSFirmware alloc] initWithDictionary:newFWDict] autorelease];
 	[cdsCore setCdsFirmware:newFirmware];
 	[newFirmware update];
+	[emuControl setCdsFirmware:newFirmware];
 	
 	// Setup the ARM7 BIOS, ARM9 BIOS, and firmware image paths per user preferences.
 	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
@@ -532,6 +545,7 @@
 	[prefWindowDelegate updateVolumeIcon:nil];
 	
 	[mainWindowDelegate setupUserDefaults];
+	[emuControl setupUserDefaults];
 }
 
 - (void) updateInputDisplayFields

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #import "cocoa_util.h"
 
 #include "../NDSSystem.h"
+#include "../MMU.h"
 #include "../mc.h"
 #undef BOOL
 
@@ -31,7 +32,7 @@
 @synthesize header;
 @synthesize bindings;
 @synthesize fileURL;
-@synthesize isDataLoaded;
+@dynamic isDataLoaded;
 @synthesize saveType;
 
 static NSMutableDictionary *saveTypeValues = nil;
@@ -87,7 +88,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	}
 	
 	fileURL = nil;
-	isDataLoaded = NO;
 	saveType = saveTypeID;
 	
 	xmlCurrentRom = nil;
@@ -104,10 +104,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 - (void)dealloc
 {
-	if (isDataLoaded)
+	if ([self isDataLoaded])
 	{
 		NDS_FreeROM();
-		isDataLoaded = NO;
 	}
 	
 	[xmlElementStack release];
@@ -117,6 +116,11 @@ static NSMutableDictionary *saveTypeValues = nil;
 	[fileURL release];
 	
 	[super dealloc];
+}
+
+- (BOOL) isDataLoaded
+{
+	return (MMU.CART_ROM != MMU.UNUSED_RAM);
 }
 
 - (void) initHeader
@@ -222,7 +226,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	}
 	
 	fileURL = [theURL copy];
-	isDataLoaded = YES;
 	[self initHeader];
 	
 	NSString *advscDBPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];

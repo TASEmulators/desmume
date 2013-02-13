@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Jeff Bland
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include <pthread.h>
 #include "../SPU.h"
+#undef BOOL
 
 #define SNDCORE_OSX 58325 //hopefully this is unique number
 
