@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 */
 
 #import "displayView.h"
-#import "emuWindowDelegate.h"
+#import "EmuControllerDelegate.h"
 
 #import "cocoa_input.h"
 #import "cocoa_globals.h"
@@ -80,7 +80,6 @@ const char *fragmentProgram_100 = {"\
 @synthesize isHudEnabled;
 @synthesize isHudEditingModeEnabled;
 @dynamic normalSize;
-@dynamic gpuStateFlags;
 @dynamic scale;
 @dynamic rotation;
 @dynamic useBilinearOutput;
@@ -123,20 +122,6 @@ const char *fragmentProgram_100 = {"\
 	isHudEnabled = NO;
 	isHudEditingModeEnabled = NO;
 	
-	UInt32 gpuStateFlags =	GPUSTATE_MAIN_GPU_MASK |
-	GPUSTATE_MAIN_BG0_MASK |
-	GPUSTATE_MAIN_BG1_MASK |
-	GPUSTATE_MAIN_BG2_MASK |
-	GPUSTATE_MAIN_BG3_MASK |
-	GPUSTATE_MAIN_OBJ_MASK |
-	GPUSTATE_SUB_GPU_MASK |
-	GPUSTATE_SUB_BG0_MASK |
-	GPUSTATE_SUB_BG1_MASK |
-	GPUSTATE_SUB_BG2_MASK |
-	GPUSTATE_SUB_BG3_MASK |
-	GPUSTATE_SUB_OBJ_MASK;
-	
-	[bindings setValue:[NSNumber numberWithInt:gpuStateFlags] forKey:@"GpuStateFlags"];
 	[bindings setValue:[NSNumber numberWithDouble:1.0] forKey:@"scale"];
 	[bindings setValue:[NSNumber numberWithDouble:0.0] forKey:@"rotation"];
 	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"useBilinearOutput"];
@@ -145,15 +130,6 @@ const char *fragmentProgram_100 = {"\
 	[bindings setValue:@"Combo" forKey:@"displayModeString"];
 	[bindings setValue:[NSNumber numberWithInteger:VideoFilterTypeID_None] forKey:@"videoFilterType"];
 	[bindings setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];
-	[bindings setValue:[NSNumber numberWithInteger:CORE3DLIST_NULL] forKey:@"render3DRenderingEngine"];
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"render3DHighPrecisionColorInterpolation"];
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"render3DEdgeMarking"];
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"render3DFog"];
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"render3DTextures"];
-	[bindings setValue:[NSNumber numberWithInteger:0] forKey:@"render3DDepthComparisonThreshold"];
-	[bindings setValue:[NSNumber numberWithInteger:0] forKey:@"render3DThreads"];
-	[bindings setValue:[NSNumber numberWithBool:YES] forKey:@"render3DLineHack"];
-	[bindings setValue:[NSNumber numberWithBool:NO] forKey:@"render3DMultisample"];
 	
     return self;
 }
@@ -174,24 +150,6 @@ const char *fragmentProgram_100 = {"\
 	OSSpinLockUnlock(&spinlockNormalSize);
 	
 	return theSize;
-}
-
-- (void) setGpuStateFlags:(UInt32)flags
-{
-	OSSpinLockLock(&spinlockGpuStateFlags);
-	[bindings setValue:[NSNumber numberWithInt:flags] forKey:@"GpuStateFlags"];
-	OSSpinLockUnlock(&spinlockGpuStateFlags);
-	
-	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_SET_GPU_STATE_FLAGS integerValue:flags];
-}
-
-- (UInt32) gpuStateFlags
-{
-	OSSpinLockLock(&spinlockGpuStateFlags);
-	UInt32 flags = [[bindings valueForKey:@"GpuStateFlags"] intValue];
-	OSSpinLockUnlock(&spinlockGpuStateFlags);
-	
-	return flags;
 }
 
 - (void) setScale:(double)s
@@ -406,60 +364,6 @@ const char *fragmentProgram_100 = {"\
 	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:theType];
 }
 
-- (void) setRender3DRenderingEngine:(NSInteger)methodID
-{
-	[bindings setValue:[NSNumber numberWithInteger:methodID] forKey:@"render3DRenderingEngine"];
-	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_METHOD integerValue:methodID];
-}
-
-- (void) setRender3DHighPrecisionColorInterpolation:(BOOL)state
-{
-	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DHighPrecisionColorInterpolation"];
-	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_HIGH_PRECISION_COLOR_INTERPOLATION boolValue:state];
-}
-
-- (void) setRender3DEdgeMarking:(BOOL)state
-{
-	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DEdgeMarking"];
-	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_EDGE_MARKING boolValue:state];
-}
-
-- (void) setRender3DFog:(BOOL)state
-{
-	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DFog"];
-	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_FOG boolValue:state];
-}
-
-- (void) setRender3DTextures:(BOOL)state
-{
-	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DTextures"];
-	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_TEXTURES boolValue:state];
-}
-
-- (void) setRender3DDepthComparisonThreshold:(NSUInteger)threshold
-{
-	[bindings setValue:[NSNumber numberWithInteger:threshold] forKey:@"render3DDepthComparisonThreshold"];
-	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_DEPTH_COMPARISON_THRESHOLD integerValue:threshold];
-}
-
-- (void) setRender3DThreads:(NSUInteger)numberThreads
-{
-	[bindings setValue:[NSNumber numberWithInteger:numberThreads] forKey:@"render3DThreads"];
-	[CocoaDSUtil messageSendOneWayWithInteger:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_THREADS integerValue:numberThreads];
-}
-
-- (void) setRender3DLineHack:(BOOL)state
-{
-	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DLineHack"];
-	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_LINE_HACK boolValue:state];
-}
-
-- (void) setRender3DMultisample:(BOOL)state
-{
-	[bindings setValue:[NSNumber numberWithBool:state] forKey:@"render3DMultisample"];
-	[CocoaDSUtil messageSendOneWayWithBool:self.sendPortDisplay msgID:MESSAGE_SET_RENDER3D_MULTISAMPLE boolValue:state];
-}
-
 - (void) setViewToBlack
 {
 	[CocoaDSUtil messageSendOneWay:self.sendPortDisplay msgID:MESSAGE_SET_VIEW_TO_BLACK];
@@ -549,19 +453,6 @@ const char *fragmentProgram_100 = {"\
 	[CocoaDSUtil messageSendOneWay:self.sendPortDisplay msgID:MESSAGE_COPY_TO_PASTEBOARD];
 }
 
-- (BOOL) gpuStateByBit:(UInt32)stateBit
-{
-	BOOL result = NO;
-	UInt32 flags = [self gpuStateFlags];
-	
-	if (flags & (1 << stateBit))
-	{
-		result = YES;
-	}
-	
-	return result;
-}
-
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
 {
 	BOOL isHandled = NO;
@@ -581,9 +472,9 @@ const char *fragmentProgram_100 = {"\
 									 [NSNumber numberWithBool:keyPressed], @"on",
 									 nil];
 	
-	if (keyPressed && [theEvent window] != nil && [[[theEvent window] delegate] respondsToSelector:@selector(setStatus:)])
+	if (keyPressed && [theEvent window] != nil && [[[theEvent window] delegate] respondsToSelector:@selector(setStatusText:)])
 	{
-		[(EmuWindowDelegate *)[[theEvent window] delegate] setStatus:[NSString stringWithFormat:@"Keyboard:%i", [theEvent keyCode]]];
+		[(EmuControllerDelegate *)[[theEvent window] delegate] setStatusText:[NSString stringWithFormat:@"Keyboard:%i", [theEvent keyCode]]];
 	}
 	
 	isHandled = [self.cdsController setStateWithInput:inputAttributes];
@@ -636,9 +527,9 @@ const char *fragmentProgram_100 = {"\
 									 [NSNumber numberWithFloat:touchLoc.y], @"pointY",
 									 nil];
 	
-	if (buttonPressed && [theEvent window] != nil && [[[theEvent window] delegate] respondsToSelector:@selector(setStatus:)])
+	if (buttonPressed && [theEvent window] != nil && [[[theEvent window] delegate] respondsToSelector:@selector(setStatusText:)])
 	{
-		[(EmuWindowDelegate *)[[theEvent window] delegate] setStatus:[NSString stringWithFormat:@"Mouse:%li X:%li Y:%li", (long)[theEvent buttonNumber], (long)(touchLoc.x), (long)(touchLoc.y)]];
+		[(EmuControllerDelegate *)[[theEvent window] delegate] setStatusText:[NSString stringWithFormat:@"Mouse:%li X:%li Y:%li", (long)[theEvent buttonNumber], (long)(touchLoc.x), (long)(touchLoc.y)]];
 	}
 	
 	isHandled = [self.cdsController setStateWithInput:inputAttributes];

@@ -70,6 +70,11 @@
 		AB350B6A1478A5B3007165AC /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
 		AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB350D3B147A1D93007165AC /* HID_usage_strings.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB350D3A147A1D93007165AC /* HID_usage_strings.plist */; };
+		AB3A655E16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */; };
+		AB3A655F16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */; };
+		AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
+		AB3A656216CC5438001F5D4A /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
+		AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
 		AB3ACB7214C2361100D7D192 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
 		AB3ACB7314C2361100D7D192 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
 		AB3ACB7414C2361100D7D192 /* displayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6B14C2361100D7D192 /* displayView.mm */; };
@@ -679,6 +684,10 @@
 		AB350B691478A5B3007165AC /* cocoa_hid.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_hid.mm; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		AB350D38147A1D8D007165AC /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = English; path = translations/English.lproj/HID_usage_strings.plist; sourceTree = "<group>"; };
+		AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmuControllerDelegate.h; sourceTree = "<group>"; };
+		AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = EmuControllerDelegate.mm; sourceTree = "<group>"; };
+		AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_GPU.mm; sourceTree = "<group>"; };
+		AB3A656416CC5442001F5D4A /* cocoa_GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_GPU.h; sourceTree = "<group>"; };
 		AB3ACB6614C2361100D7D192 /* appDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = appDelegate.h; sourceTree = "<group>"; };
 		AB3ACB6714C2361100D7D192 /* appDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = appDelegate.mm; sourceTree = "<group>"; };
 		AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cheatWindowDelegate.h; sourceTree = "<group>"; };
@@ -1106,6 +1115,7 @@
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
 				ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */,
 				AB9971CE134EDA0800531BA7 /* cocoa_globals.h */,
+				AB3A656416CC5442001F5D4A /* cocoa_GPU.h */,
 				AB350B681478A5B3007165AC /* cocoa_hid.h */,
 				ABD103FF1346652500AF11D1 /* cocoa_input.h */,
 				ABD9A46313DB99B300777194 /* cocoa_mic.h */,
@@ -1120,6 +1130,7 @@
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
 				ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */,
+				AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */,
 				AB350B691478A5B3007165AC /* cocoa_hid.mm */,
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				ABD9A46413DB99B300777194 /* cocoa_mic.mm */,
@@ -1224,6 +1235,7 @@
 				AB3ACB6614C2361100D7D192 /* appDelegate.h */,
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
 				AB3ACB6A14C2361100D7D192 /* displayView.h */,
+				AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */,
 				AB3ACB6C14C2361100D7D192 /* emuWindowDelegate.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
@@ -1231,6 +1243,7 @@
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3ACB6B14C2361100D7D192 /* displayView.mm */,
+				AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */,
 				AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
@@ -2225,6 +2238,8 @@
 				AB405694169F5DCC0016AC3E /* x86util.cpp in Sources */,
 				AB23567416C2F6F400DA782E /* macosx_10_5_compat.cpp in Sources */,
 				AB23567516C2FAD800DA782E /* OGLRender_3_2.cpp in Sources */,
+				AB3A655F16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
+				AB3A656216CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2381,6 +2396,8 @@
 				AB405690169F5DCC0016AC3E /* x86operand.cpp in Sources */,
 				AB405693169F5DCC0016AC3E /* x86util.cpp in Sources */,
 				AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */,
+				AB3A655E16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
+				AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2525,6 +2542,7 @@
 				AB405692169F5DCC0016AC3E /* x86operand.cpp in Sources */,
 				AB405695169F5DCC0016AC3E /* x86util.cpp in Sources */,
 				AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */,
+				AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

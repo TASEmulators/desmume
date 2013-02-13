@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 @class InputPrefsView;
 @class CocoaHIDManager;
+@class EmuControllerDelegate;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -29,8 +30,12 @@
 #endif
 {
 	NSObject *dummyObject;
+	
 	NSArrayController *fileMigrationList;
 	NSObjectController *aboutWindowController;
+	NSObjectController *emuControlController;
+	NSObjectController *cdsSoundController;
+	NSObjectController *romInfoPanelController;
 	NSObjectController *emuWindowController;
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
@@ -59,8 +64,12 @@
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
+
 @property (readonly) IBOutlet NSArrayController *fileMigrationList;
 @property (readonly) IBOutlet NSObjectController *aboutWindowController;
+@property (readonly) IBOutlet NSObjectController *emuControlController;
+@property (readonly) IBOutlet NSObjectController *cdsSoundController;
+@property (readonly) IBOutlet NSObjectController *romInfoPanelController;
 @property (readonly) IBOutlet NSObjectController *emuWindowController;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;

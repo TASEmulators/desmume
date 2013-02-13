@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -82,7 +82,6 @@ enum OGLVertexAttributeID
 @property (retain) NSPort *sendPortInput;
 @property (retain) CocoaDSController *cdsController;
 @property (readonly) NSSize normalSize;
-@property (assign) UInt32 gpuStateFlags;
 @property (assign) double scale;
 @property (assign) double rotation;
 @property (assign) BOOL useBilinearOutput;
@@ -93,20 +92,10 @@ enum OGLVertexAttributeID
 @property (readonly) NSMutableDictionary *bindings;
 
 - (void) setVideoFilterType:(NSInteger)theType;
-- (void) setRender3DRenderingEngine:(NSInteger)methodID;
-- (void) setRender3DHighPrecisionColorInterpolation:(BOOL)state;
-- (void) setRender3DEdgeMarking:(BOOL)state;
-- (void) setRender3DFog:(BOOL)state;
-- (void) setRender3DTextures:(BOOL)state;
-- (void) setRender3DDepthComparisonThreshold:(NSUInteger)threshold;
-- (void) setRender3DThreads:(NSUInteger)numberThreads;
-- (void) setRender3DLineHack:(BOOL)state;
-- (void) setRender3DMultisample:(BOOL)state;
 - (void) setViewToBlack;
 - (void) setViewToWhite;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
 - (void) copyToPasteboard;
-- (BOOL) gpuStateByBit:(UInt32)stateBit;
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
 - (NSPoint) convertPointToDS:(NSPoint)clickLoc;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
