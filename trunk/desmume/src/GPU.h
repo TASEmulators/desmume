@@ -120,7 +120,7 @@ typedef union
 
 enum BlendFunc
 {
-	None, Blend, Increase, Decrease
+	NoBlend, Blend, Increase, Decrease
 };
 
 
