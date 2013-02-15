@@ -234,7 +234,7 @@
 
 - (IBAction) changeRotationRelative:(id)sender
 {
-	double angleDegrees = [dispViewDelegate rotation] + (double)[CocoaDSUtil getIBActionSenderTag:sender];
+	const double angleDegrees = [dispViewDelegate rotation] + (double)[CocoaDSUtil getIBActionSenderTag:sender];
 	[self setContentRotation:angleDegrees];
 }
 
@@ -250,7 +250,7 @@
 
 - (IBAction) changeDisplayMode:(id)sender
 {
-	NSInteger newDisplayModeID = [CocoaDSUtil getIBActionSenderTag:sender];
+	const NSInteger newDisplayModeID = [CocoaDSUtil getIBActionSenderTag:sender];
 	
 	if (newDisplayModeID == [dispViewDelegate displayMode])
 	{
@@ -263,7 +263,7 @@
 
 - (IBAction) changeDisplayOrientation:(id)sender
 {
-	NSInteger newDisplayOrientation = [CocoaDSUtil getIBActionSenderTag:sender];
+	const NSInteger newDisplayOrientation = [CocoaDSUtil getIBActionSenderTag:sender];
 	
 	if (newDisplayOrientation == [dispViewDelegate displayOrientation])
 	{
@@ -336,14 +336,7 @@
 
 - (IBAction) toggleStatusBar:(id)sender
 {
-	if (isShowingStatusBar)
-	{
-		[self setShowStatusBar:NO];
-	}
-	else
-	{
-		[self setShowStatusBar:YES];
-	}
+	[self setShowStatusBar:(isShowingStatusBar) ? NO : YES];
 }
 
 - (void) setShowStatusBar:(BOOL)showStatusBar
@@ -395,14 +388,12 @@
 	
 	[emuControl pauseCore];
 	
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
 	NSSavePanel *panel = [NSSavePanel savePanel];
-	
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL];
 	[panel setAccessoryView:saveScreenshotPanelAccessoryView];
 	
-	buttonClicked = [panel runModal];
+	const NSInteger buttonClicked = [panel runModal];
 	if(buttonClicked == NSOKButton)
 	{
 		[dispViewDelegate requestScreenshot:[panel URL] fileType:screenshotFileFormat];
@@ -420,7 +411,7 @@
 	NSBitmapImageFileType fileType = (NSBitmapImageFileType)[(NSNumber *)[[aNotification userInfo] valueForKey:@"fileType"] integerValue];
 	NSImage *screenshotImage = (NSImage *)[[aNotification userInfo] valueForKey:@"screenshotImage"];
 	
-	BOOL fileSaved = [CocoaDSFile saveScreenshot:fileURL bitmapData:[[screenshotImage representations] objectAtIndex:0] fileType:fileType];
+	const BOOL fileSaved = [CocoaDSFile saveScreenshot:fileURL bitmapData:[[screenshotImage representations] objectAtIndex:0] fileType:fileType];
 	if (!fileSaved)
 	{
 		[CocoaDSUtil quickDialogUsingTitle:NSSTRING_ERROR_TITLE_LEGACY message:NSSTRING_ERROR_SCREENSHOT_FAILED_LEGACY];
@@ -432,22 +423,15 @@
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)theItem
 {
 	BOOL enable = YES;
-    SEL theAction = [theItem action];
+    const SEL theAction = [theItem action];
 	
 	if (theAction == @selector(changeScale:))
 	{
-		NSInteger viewScale = (NSInteger)([dispViewDelegate scale] * 100.0);
+		const NSInteger viewScale = (NSInteger)([dispViewDelegate scale] * 100.0);
 		
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if (viewScale == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:(viewScale == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(changeRotation:))
@@ -484,84 +468,42 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([dispViewDelegate displayMode] == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:([dispViewDelegate displayMode] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(changeDisplayOrientation:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([dispViewDelegate displayOrientation] == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:([dispViewDelegate displayOrientation] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(changeDisplayOrder:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([dispViewDelegate displayOrder] == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:([dispViewDelegate displayOrder] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(hudDisable:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([dispViewDelegate isHudEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_HUD];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_HUD];
-			}
+			[(NSMenuItem*)theItem setTitle:([dispViewDelegate isHudEnabled]) ? NSSTRING_TITLE_DISABLE_HUD : NSSTRING_TITLE_ENABLE_HUD];
 		}
 	}
 	else if (theAction == @selector(toggleStatusBar:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if (isShowingStatusBar)
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_HIDE_STATUS_BAR];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_SHOW_STATUS_BAR];
-			}
+			[(NSMenuItem*)theItem setTitle:(isShowingStatusBar) ? NSSTRING_TITLE_HIDE_STATUS_BAR : NSSTRING_TITLE_SHOW_STATUS_BAR];
 		}
 	}
 	else if (theAction == @selector(toggleKeepMinDisplaySizeAtNormal:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if (isMinSizeNormal)
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:(isMinSizeNormal) ? NSOnState : NSOffState];
 		}
 	}
 	
@@ -576,9 +518,6 @@
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
 {
-	NSSize finalSize = frameSize;	
-	const NSSize normalBounds = [dispViewDelegate normalSize];
-	
 	// Get a content Rect so that we can make our comparison.
 	// This will be based on the proposed frameSize.
 	const NSRect frameRect = NSMakeRect(0.0f, 0.0f, frameSize.width, frameSize.height);
@@ -586,17 +525,16 @@
 	
 	// Find the maximum scalar we can use for the display view, bounded by the
 	// content Rect.
-	const NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, [dispViewDelegate rotation]);
+	const NSSize checkSize = GetTransformedBounds([dispViewDelegate normalSize], 1.0, [dispViewDelegate rotation]);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - statusBarHeight);
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
 	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkSize.width * maxS, (checkSize.height * maxS) + statusBarHeight);
-	NSRect finalFrameRect = [sender frameRectForContentRect:finalContentRect];
+	const NSRect finalFrameRect = [sender frameRectForContentRect:finalContentRect];
 	
 	// Set the final size based on our new frame Rect.
-	finalSize.width = finalFrameRect.size.width;
-	finalSize.height = finalFrameRect.size.height;
+	const NSSize finalSize = {finalFrameRect.size.width, finalFrameRect.size.height};
 	
 	return finalSize;
 }
@@ -608,11 +546,8 @@
 		return;
 	}
 	
-	const NSSize normalBounds = [dispViewDelegate normalSize];
-	const double r = [dispViewDelegate rotation];
-	
 	// Get the max scalar within the window's current content bounds.
-	const NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, r);
+	const NSSize checkSize = GetTransformedBounds([dispViewDelegate normalSize], 1.0, [dispViewDelegate rotation]);
 	NSSize contentBounds = [[window contentView] bounds].size;
 	contentBounds.height -= statusBarHeight;
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
@@ -653,8 +588,8 @@
 	[self setShowStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
 	// Set the display settings per user preferences.
-	double displayScalar = (double)([[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Size"] / 100.0);
-	double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
+	const double displayScalar = (double)([[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Size"] / 100.0);
+	const double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
 	[dispViewDelegate setDisplayMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]];
 	[dispViewDelegate setDisplayOrientation:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]];
 	[dispViewDelegate setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]];

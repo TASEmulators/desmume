@@ -243,9 +243,8 @@
 	}
 	
 	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
 	[panel setResolvesAliases:YES];
@@ -257,9 +256,9 @@
 	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
-	buttonClicked = [panel runModal];
+	const NSInteger buttonClicked = [panel runModal];
 #else
-	buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
 #endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
@@ -269,13 +268,9 @@
 		{
 			return;
 		}
+		
+		[self handleLoadRom:selectedFile];
 	}
-	else
-	{
-		return;
-	}
-	
-	[self handleLoadRom:selectedFile];
 }
 
 - (IBAction) closeRom:(id)sender
@@ -285,11 +280,9 @@
 
 - (IBAction) openEmuSaveState:(id)sender
 {
-	BOOL result = NO;
 	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
 	[panel setResolvesAliases:YES];
@@ -301,9 +294,9 @@
 	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
-	buttonClicked = [panel runModal];
+	const NSInteger buttonClicked = [panel runModal];
 #else
-	buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
 #endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
@@ -321,35 +314,34 @@
 	
 	[self pauseCore];
 	
-	result = [CocoaDSFile loadState:selectedFile];
-	if (result == NO)
+	const BOOL isStateLoaded = [CocoaDSFile loadState:selectedFile];
+	if (!isStateLoaded)
 	{
 		[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
 		[self restoreCoreState];
 		return;
 	}
 	
-	[self setCurrentSaveStateURL:selectedFile];
-	[self restoreCoreState];
-	[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADED];
-	
 	isSaveStateEdited = YES;
 	for (NSWindow *theWindow in windowList)
 	{
 		[theWindow setDocumentEdited:isSaveStateEdited];
 	}
+	
+	[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADED];
+	[self restoreCoreState];
+	
+	[self setCurrentSaveStateURL:selectedFile];
 }
 
 - (IBAction) saveEmuSaveState:(id)sender
 {
-	BOOL result = NO;
-	
 	if (isSaveStateEdited && [self currentSaveStateURL] != nil)
 	{
 		[self pauseCore];
 		
-		result = [CocoaDSFile saveState:[self currentSaveStateURL]];
-		if (result == NO)
+		const BOOL isStateSaved = [CocoaDSFile saveState:[self currentSaveStateURL]];
+		if (!isStateSaved)
 		{
 			[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 			return;
@@ -361,8 +353,8 @@
 			[theWindow setDocumentEdited:isSaveStateEdited];
 		}
 		
-		[self restoreCoreState];
 		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
+		[self restoreCoreState];
 	}
 	else
 	{
@@ -372,10 +364,7 @@
 
 - (IBAction) saveEmuSaveStateAs:(id)sender
 {
-	BOOL result = NO;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
 	NSSavePanel *panel = [NSSavePanel savePanel];
-	
 	[panel setCanCreateDirectories:YES];
 	[panel setTitle:NSSTRING_TITLE_SAVE_STATE_FILE_PANEL];
 	
@@ -388,63 +377,61 @@
 	[panel setRequiredFileType:@FILE_EXT_SAVE_STATE];
 #endif
 	
-	buttonClicked = [panel runModal];
+	const NSInteger buttonClicked = [panel runModal];
 	if(buttonClicked == NSOKButton)
 	{
-		[self pauseCore];
-		
 		NSURL *saveFileURL = [panel URL];
 		
-		result = [CocoaDSFile saveState:saveFileURL];
-		if (result == NO)
+		[self pauseCore];
+		
+		const BOOL isStateSaved = [CocoaDSFile saveState:saveFileURL];
+		if (!isStateSaved)
 		{
 			[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 			return;
 		}
 		
-		[self setCurrentSaveStateURL:saveFileURL];
-		[self restoreCoreState];
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
-		
 		isSaveStateEdited = YES;
 		for (NSWindow *theWindow in windowList)
 		{
 			[theWindow setDocumentEdited:isSaveStateEdited];
 		}
+		
+		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
+		[self restoreCoreState];
+		
+		[self setCurrentSaveStateURL:saveFileURL];
 	}
 }
 
 - (IBAction) revertEmuSaveState:(id)sender
 {
-	BOOL result = NO;
-	
-	if (isSaveStateEdited && [self currentSaveStateURL] != nil)
+	if (!isSaveStateEdited || [self currentSaveStateURL] == nil)
 	{
-		[self pauseCore];
-		
-		result = [CocoaDSFile loadState:[self currentSaveStateURL]];
-		if (result == NO)
-		{
-			[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED];
-			return;
-		}
-		
-		isSaveStateEdited = YES;
-		for (NSWindow *theWindow in windowList)
-		{
-			[theWindow setDocumentEdited:isSaveStateEdited];
-		}
-		
-		[self restoreCoreState];
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTED];
+		return;
 	}
+	
+	[self pauseCore];
+	
+	const BOOL isStateLoaded = [CocoaDSFile loadState:[self currentSaveStateURL]];
+	if (!isStateLoaded)
+	{
+		[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTING_FAILED];
+		return;
+	}
+	
+	isSaveStateEdited = YES;
+	for (NSWindow *theWindow in windowList)
+	{
+		[theWindow setDocumentEdited:isSaveStateEdited];
+	}
+	
+	[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTED];
+	[self restoreCoreState];
 }
 
 - (IBAction) loadEmuSaveStateSlot:(id)sender
 {
-	BOOL result = NO;
-	NSInteger i = [CocoaDSUtil getIBActionSenderTag:sender];
-	
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
@@ -452,13 +439,14 @@
 		return;
 	}
 	
-	if (i < 0 || i > MAX_SAVESTATE_SLOTS)
+	const NSInteger slotNumber = [CocoaDSUtil getIBActionSenderTag:sender];
+	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
 	}
 	
 	NSURL *currentRomURL = [[self currentRom] fileURL];
-	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(i + 1)];
+	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
 	if (fileName == nil)
 	{
 		return;
@@ -466,21 +454,14 @@
 	
 	[self pauseCore];
 	
-	result = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	if (result == NO)
-	{
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
-	}
+	const BOOL isStateLoaded = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
+	[self setStatusText:(isStateLoaded) ? NSSTRING_STATUS_SAVESTATE_LOADED : NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
 	
 	[self restoreCoreState];
-	[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADED];
 }
 
 - (IBAction) saveEmuSaveStateSlot:(id)sender
 {
-	BOOL result = NO;
-	NSInteger i = [CocoaDSUtil getIBActionSenderTag:sender];
-	
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
@@ -488,20 +469,21 @@
 		return;
 	}
 	
-	result = [CocoaDSFile createUserAppSupportDirectory:@"States"];
-	if (result == NO)
+	const BOOL isDirectoryCreated = [CocoaDSFile createUserAppSupportDirectory:@"States"];
+	if (!isDirectoryCreated)
 	{
 		[self setStatusText:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
 		return;
 	}
 	
-	if (i < 0 || i > MAX_SAVESTATE_SLOTS)
+	const NSInteger slotNumber = [CocoaDSUtil getIBActionSenderTag:sender];
+	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
 	}
 	
 	NSURL *currentRomURL = [[self currentRom] fileURL];
-	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(i + 1)];
+	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
 	if (fileName == nil)
 	{
 		return;
@@ -509,23 +491,17 @@
 	
 	[self pauseCore];
 	
-	result = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	if (result == NO)
-	{
-		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
-		return;
-	}
+	const BOOL isStateSaved = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
+	[self setStatusText:(isStateSaved) ? NSSTRING_STATUS_SAVESTATE_SAVED : NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 	
 	[self restoreCoreState];
-	[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
 }
 
 - (IBAction) importRomSave:(id)sender
 {
 	NSURL *selectedFile = nil;
-	NSInteger buttonClicked = NSFileHandlingPanelCancelButton;
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
 	[panel setResolvesAliases:YES];
@@ -537,9 +513,9 @@
 	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 	[panel setAllowedFileTypes:fileTypes];
-	buttonClicked = [panel runModal];
+	const NSInteger buttonClicked = [panel runModal];
 #else
-	buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
 #endif
 	
 	if (buttonClicked == NSFileHandlingPanelOKButton)
@@ -549,47 +525,29 @@
 		{
 			return;
 		}
+		
+		const BOOL isRomSaveImported = [CocoaDSFile importRomSave:selectedFile];
+		[self setStatusText:(isRomSaveImported) ? NSSTRING_STATUS_ROM_SAVE_IMPORTED : NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
 	}
-	else
-	{
-		return;
-	}
-	
-	BOOL result = [CocoaDSFile importRomSave:selectedFile];
-	if (!result)
-	{
-		[self setStatusText:NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
-		return;
-	}
-	
-	[self setStatusText:NSSTRING_STATUS_ROM_SAVE_IMPORTED];
 }
 
 - (IBAction) exportRomSave:(id)sender
 {
 	[self pauseCore];
 	
-	BOOL result = NO;
-	NSInteger buttonClicked;
 	NSSavePanel *panel = [NSSavePanel savePanel];
 	[panel setTitle:NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL];
 	[panel setCanCreateDirectories:YES];
 	[panel setAccessoryView:exportRomSavePanelAccessoryView];
 	
-	buttonClicked = [panel runModal];
+	const NSInteger buttonClicked = [panel runModal];
 	if(buttonClicked == NSOKButton)
 	{
 		NSURL *romSaveURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
 		if (romSaveURL != nil)
 		{
-			result = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:romSaveURL fileType:selectedExportRomSaveID];
-			if (result == NO)
-			{
-				[self setStatusText:NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
-				return;
-			}
-			
-			[self setStatusText:NSSTRING_STATUS_ROM_SAVE_EXPORTED];
+			const BOOL isRomSaveExported = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:romSaveURL fileType:selectedExportRomSaveID];
+			[self setStatusText:(isRomSaveExported) ? NSSTRING_STATUS_ROM_SAVE_EXPORTED : NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
 		}
 	}
 	
@@ -620,34 +578,36 @@
 
 - (IBAction) resetCore:(id)sender
 {
+	if ([self currentRom] == nil)
+	{
+		return;
+	}
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if ([self currentRom] != nil)
+	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
+	[self setIsWorking:YES];
+	
+	for (NSWindow *theWindow in windowList)
 	{
-		[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
-		[self setIsWorking:YES];
-		
+		[theWindow displayIfNeeded];
+	}
+	
+	[cdsCore reset];
+	if ([cdsCore coreState] == CORESTATE_PAUSE)
+	{
 		for (NSWindow *theWindow in windowList)
 		{
-			[theWindow displayIfNeeded];
+			[[(EmuWindowDelegate *)[theWindow delegate] dispViewDelegate] setViewToWhite];
 		}
-		
-		[cdsCore reset];
-		if ([cdsCore coreState] == CORESTATE_PAUSE)
-		{
-			for (NSWindow *theWindow in windowList)
-			{
-				[[(EmuWindowDelegate *)[theWindow delegate] dispViewDelegate] setViewToWhite];
-			}
-		}
-		
-		[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
-		[self setIsWorking:NO];
-		
-		for (NSWindow *theWindow in windowList)
-		{
-			[theWindow displayIfNeeded];
-		}
+	}
+	
+	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
+	[self setIsWorking:NO];
+	
+	for (NSWindow *theWindow in windowList)
+	{
+		[theWindow displayIfNeeded];
 	}
 }
 
@@ -711,7 +671,6 @@
 - (IBAction) changeCoreSpeed:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
 	[cdsCore setSpeedScalar:(CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f];
 }
 
@@ -750,7 +709,7 @@
 
 - (IBAction) changeVolume:(id)sender
 {
-	float vol = [self currentVolumeValue];
+	const float vol = [self currentVolumeValue];
 	[self setCurrentVolumeValue:vol];
 	[self setStatusText:[NSString stringWithFormat:NSSTRING_STATUS_VOLUME, vol]];
 	[CocoaDSUtil messageSendOneWayWithFloat:[cdsSpeaker receivePort] msgID:MESSAGE_SET_VOLUME floatValue:vol];
@@ -924,13 +883,13 @@
 	
 	if ([self currentRom] != nil)
 	{
-		BOOL closeResult = [self handleUnloadRom:REASONFORCLOSE_OPEN romToLoad:fileURL];
+		const BOOL closeResult = [self handleUnloadRom:REASONFORCLOSE_OPEN romToLoad:fileURL];
 		if ([self isShowingSaveStateDialog])
 		{
 			return result;
 		}
 		
-		if (![self isShowingFileMigrationDialog] && closeResult == NO)
+		if (![self isShowingFileMigrationDialog] && !closeResult)
 		{
 			return result;
 		}
@@ -987,7 +946,6 @@
 				break;
 		}
 		
-		[currentSaveStateURL retain];
 		[self setIsUserInterfaceBlockingExecution:YES];
 		[self setIsShowingSaveStateDialog:YES];
 		
@@ -1047,7 +1005,7 @@
 {
 	CocoaDSRom *theRom = [aNotification object];
 	NSDictionary *userInfo = [aNotification userInfo];
-	BOOL didLoad = [(NSNumber *)[userInfo valueForKey:@"DidLoad"] boolValue];
+	const BOOL didLoad = [(NSNumber *)[userInfo valueForKey:@"DidLoad"] boolValue];
 	
 	if (theRom == nil || ![theRom isDataLoaded] || !didLoad)
 	{
@@ -1174,8 +1132,7 @@
 {
 	BOOL result = NO;
 	
-	[currentSaveStateURL release];
-	currentSaveStateURL = nil;
+	[self setCurrentSaveStateURL:nil];
 	
 	isSaveStateEdited = NO;
 	for (NSWindow *theWindow in windowList)
@@ -1341,7 +1298,7 @@
 - (IBAction) closeSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
-	NSInteger code = [(NSControl *)sender tag];
+	const NSInteger code = [(NSControl *)sender tag];
 	
     [NSApp endSheet:sheet returnCode:code];
 }
@@ -1373,8 +1330,6 @@
 
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
-	BOOL result = NO;
-	
 	[sheet orderOut:self];
 	
 	switch (returnCode)
@@ -1387,13 +1342,16 @@
 			break;
 			
 		case COCOA_DIALOG_DEFAULT: // Save
-			result = [CocoaDSFile saveState:[self currentSaveStateURL]];
-			if (result == NO)
+		{
+			const BOOL isStateSaved = [CocoaDSFile saveState:[self currentSaveStateURL]];
+			if (!isStateSaved)
 			{
 				// Throw an error here...
+				[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
 				return;
 			}
 			break;
+		}
 			
 		case COCOA_DIALOG_OPTION: // Don't Save
 			break;
@@ -1405,9 +1363,6 @@
 	[self unloadRom];
 	[self setIsUserInterfaceBlockingExecution:NO];
 	[self setIsShowingSaveStateDialog:NO];
-	
-	// We retained this when we initially put up the sheet, so we need to release it now.
-	[self setCurrentSaveStateURL:nil];
 }
 
 - (void) didEndSaveStateSheetOpen:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -1439,7 +1394,7 @@
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)theItem
 {
 	BOOL enable = YES;
-    SEL theAction = [theItem action];
+    const SEL theAction = [theItem action];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if (theAction == @selector(importRomSave:) ||
@@ -1452,8 +1407,8 @@
     }
     else if (theAction == @selector(executeCoreToggle:))
     {
-		if ([self currentRom] == nil ||
-			![cdsCore masterExecute] ||
+		if (![cdsCore masterExecute] ||
+			[self currentRom] == nil ||
 			[self isUserInterfaceBlockingExecution])
 		{
 			enable = NO;
@@ -1487,8 +1442,8 @@
 	else if (theAction == @selector(executeCore) ||
 			 theAction == @selector(pauseCore))
     {
-		if ([self currentRom] == nil ||
-			![cdsCore masterExecute] ||
+		if (![cdsCore masterExecute] ||
+			[self currentRom] == nil ||
 			[self isShowingSaveStateDialog])
 		{
 			enable = NO;
@@ -1524,11 +1479,7 @@
 	}
 	else if (theAction == @selector(loadEmuSaveStateSlot:))
 	{
-		if ([self currentRom] == nil || [self isShowingSaveStateDialog])
-		{
-			enable = NO;
-		}
-		else if (![CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
+		if ([self currentRom] == nil || [self isShowingSaveStateDialog] || ![CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
 		{
 			enable = NO;
 		}
