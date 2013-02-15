@@ -53,6 +53,8 @@
 
 #include "addons.h"
 
+#include "filter/videofilter.h"
+
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
@@ -81,6 +83,8 @@
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
+extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
+VideoFilter video(256, 384, VideoFilterTypeID_HQ2XS, 4);
 
 enum {
     MAIN_BG_0 = 0,
@@ -237,9 +241,31 @@ static const char *ui_description =
 "        <separator/>"
 "        <menuitem action='orient_swapscreens'/>"
 "      </menu>"
+"      <menu action='PriInterpolationMenu'>"
+"        <menuitem action='pri_interp_none'/>"
+"        <menuitem action='pri_interp_nearest2x'/>"
+"        <menuitem action='pri_interp_lq2x'/>"
+"        <menuitem action='pri_interp_lq2xs'/>"
+"        <menuitem action='pri_interp_hq2x'/>"
+"        <menuitem action='pri_interp_hq4x'/>"
+"        <menuitem action='pri_interp_hq2xs'/>"
+"        <menuitem action='pri_interp_2xsai'/>"
+"        <menuitem action='pri_interp_super2xsai'/>"
+"        <menuitem action='pri_interp_supereagle'/>"
+"        <menuitem action='pri_interp_scanline'/>"
+"        <menuitem action='pri_interp_bilinear'/>"
+"        <menuitem action='pri_interp_epx'/>"
+"        <menuitem action='pri_interp_epxplus'/>"
+"        <menuitem action='pri_interp_epx_1point5x'/>"
+"        <menuitem action='pri_interp_epxplus_1point5x'/>"
+"        <menuitem action='pri_interp_nearest_1point5x'/>"
+"        <menuitem action='pri_interp_nearestplus_1point5x'/>"
+"      </menu>"
 "      <menu action='InterpolationMenu'>"
 "        <menuitem action='interp_nearest'/>"
+"        <menuitem action='interp_tiles'/>"
 "        <menuitem action='interp_bilinear'/>"
+"        <menuitem action='interp_hyper'/>"
 "      </menu>"
 "      <menuitem action='gap'/>"
 "      <menuitem action='editctrls'/>"
@@ -300,7 +326,8 @@ static const GtkActionEntry action_entries[] = {
       { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
       { "RotationMenu", NULL, "_Rotation" },
       { "OrientationMenu", NULL, "_Orientation" },
-      { "InterpolationMenu", NULL, "_Interpolation" },
+      { "PriInterpolationMenu", NULL, "Primary _Interpolation" },
+      { "InterpolationMenu", NULL, "Secondary _Interpolation" },
       { "ViewMenu", NULL, "_View" },
 
     { "ToolsMenu", NULL, "_Tools" },
@@ -322,9 +349,32 @@ static const GtkToggleActionEntry toggle_entries[] = {
     { "fullscreen", NULL, "Fullscreen", "<Ctrl>f", NULL, G_CALLBACK(ToggleFullscreen), FALSE},
 };
 
+static const GtkRadioActionEntry pri_interpolation_entries[] = {
+    { "pri_interp_none", NULL, VideoFilterAttributesList[VideoFilterTypeID_None].typeString, NULL, NULL, VideoFilterTypeID_None},
+    { "pri_interp_nearest2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest2X].typeString, NULL, NULL, VideoFilterTypeID_Nearest2X},
+    { "pri_interp_lq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2X].typeString, NULL, NULL, VideoFilterTypeID_LQ2X},
+    { "pri_interp_lq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2XS].typeString, NULL, NULL, VideoFilterTypeID_LQ2XS},
+    { "pri_interp_hq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2X].typeString, NULL, NULL, VideoFilterTypeID_HQ2X},
+    { "pri_interp_hq4x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4X].typeString, NULL, NULL, VideoFilterTypeID_HQ4X},
+    { "pri_interp_hq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2XS].typeString, NULL, NULL, VideoFilterTypeID_HQ2XS},
+    { "pri_interp_2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_2xSaI].typeString, NULL, NULL, VideoFilterTypeID_2xSaI},
+    { "pri_interp_super2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_Super2xSaI].typeString, NULL, NULL, VideoFilterTypeID_Super2xSaI},
+    { "pri_interp_supereagle", NULL, VideoFilterAttributesList[VideoFilterTypeID_SuperEagle].typeString, NULL, NULL, VideoFilterTypeID_SuperEagle},
+    { "pri_interp_scanline", NULL, VideoFilterAttributesList[VideoFilterTypeID_Scanline].typeString, NULL, NULL, VideoFilterTypeID_Scanline},
+    { "pri_interp_bilinear", NULL, VideoFilterAttributesList[VideoFilterTypeID_Bilinear].typeString, NULL, NULL, VideoFilterTypeID_Bilinear},
+    { "pri_interp_epx", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPX].typeString, NULL, NULL, VideoFilterTypeID_EPX},
+    { "pri_interp_epxplus", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPXPlus].typeString, NULL, NULL, VideoFilterTypeID_EPXPlus},
+    { "pri_interp_epx_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPX1_5X].typeString, NULL, NULL, VideoFilterTypeID_EPX1_5X},
+    { "pri_interp_epxplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPXPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_EPXPlus1_5X},
+    { "pri_interp_nearest_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest1_5X].typeString, NULL, NULL, VideoFilterTypeID_Nearest1_5X},
+    { "pri_interp_nearestplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_NearestPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_NearestPlus1_5X},
+};
+
 static const GtkRadioActionEntry interpolation_entries[] = {
-    { "interp_nearest", NULL, "_Nearest", NULL, NULL, 0},
-    { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, 1},
+    { "interp_nearest", NULL, "_Nearest", NULL, NULL, GDK_INTERP_NEAREST},
+    { "interp_tiles", NULL, "_Tiles", NULL, NULL, GDK_INTERP_TILES},
+    { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, GDK_INTERP_BILINEAR},
+    { "interp_hyper", NULL, "_Hyper", NULL, NULL, GDK_INTERP_HYPER},
 };
 
 static const GtkRadioActionEntry rotation_entries[] = {
@@ -582,7 +632,7 @@ joinThread_gdb( void *thread_handle) {
 uint SPUMode = SPUMODE_DUALASYNC;
 uint Frameskip = 0;
 bool autoframeskip = false;
-GdkInterpType Interpolation = GDK_INTERP_BILINEAR;
+GdkInterpType Interpolation = GDK_INTERP_NEAREST;
 
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
@@ -1094,6 +1144,7 @@ static void UpdateDrawingAreaAspect()
         }
     }
 
+    video.SetSourceSize(W, H);
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
 }
 
@@ -1125,7 +1176,7 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
 }
 
 
-static inline void gpu_screen_to_rgb(guchar * rgb, int size)
+static inline void gpu_screen_to_rgb(guchar * rgb, int size, int pixelsize)
 {
     gint rot = nds_screen.rotation_angle;
     gint height, width;
@@ -1135,7 +1186,6 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
     width = screen_size[nds_screen.orientation].width;
     height = screen_size[nds_screen.orientation].height;
 
-    memset(rgb, 0, size);
     for (gint i = 0; i < width; i++) {
         for (gint j = 0; j < height; j++) {
             gint row = j, col = i;
@@ -1150,12 +1200,12 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
             gpu_pixel = *((u16 *) & GPU_screen[(col + row * 256) << 1]);
 
             if (rot == 0 || rot == 180)
-                offset = i * 3 + j * 3 * width;
+                offset = i * pixelsize + j * pixelsize * width;
             else
-                offset = j * 3 + (width - i - 1) * 3 * height;
+                offset = j * pixelsize + (width - i - 1) * pixelsize * height;
 
             if (rot == 90 || rot == 180)
-                offset = size - offset - 3;
+                offset = size - offset - pixelsize;
               
             *(rgb + offset + 0) = ((gpu_pixel >> 0) & 0x1f) << 3;
             *(rgb + offset + 1) = ((gpu_pixel >> 5) & 0x1f) << 3;
@@ -1168,7 +1218,6 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
     GdkPixbuf *resizedPixbuf, *drawPixbuf;
-    guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
     cairo_t *cr;
     GdkWindow *window;
 
@@ -1242,16 +1291,28 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 
     osd->update();
     DrawHUD();
-    gpu_screen_to_rgb(rgb, imgW*imgH*SCREEN_BYTES_PER_PIXEL);
-    drawPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 
-            FALSE, 8, imgW, imgH, imgW*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
 
-    if ((hratio != 1.0) || (vratio != 1.0)) {
-        resizedPixbuf = gdk_pixbuf_scale_simple (drawPixbuf, hratio*imgW, vratio*imgH,
-                Interpolation);
-        g_object_unref(drawPixbuf);
-        drawPixbuf = resizedPixbuf;
+    gpu_screen_to_rgb((u8*)video.GetSrcBufferPtr(), imgW*imgH*4, 4);
+    
+    u32* fbuf = video.RunFilter();
+    int dstW = video.GetDstWidth();
+    int dstH = video.GetDstHeight();
+    //Convert to 24-bit
+    guchar dsurf24[dstW*dstH*SCREEN_BYTES_PER_PIXEL];
+    gint k=0;
+    for (gint i=0; i<dstW*dstH; i++)
+    {
+      *(u32*) &(dsurf24[k]) = fbuf[i];
+      k+=3;
     }
+    
+    drawPixbuf = gdk_pixbuf_new_from_data(dsurf24, GDK_COLORSPACE_RGB, 
+            FALSE, 8, dstW, dstH, dstW*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
+
+    resizedPixbuf = gdk_pixbuf_scale_simple(drawPixbuf, hratio*imgW, vratio*imgH,
+                Interpolation);
+    g_object_unref(drawPixbuf);
+    drawPixbuf = resizedPixbuf;
 
     cr = gdk_cairo_create(widget->window);
     gdk_cairo_set_source_pixbuf(cr, drawPixbuf, 0, 0);
@@ -1694,7 +1755,7 @@ static void Printscreen()
         H = screen_size[nds_screen.orientation].width;
     }
 
-    gpu_screen_to_rgb(rgb, W*H*SCREEN_BYTES_PER_PIXEL);
+    gpu_screen_to_rgb(rgb, W*H*SCREEN_BYTES_PER_PIXEL, 3);
     screenshot = gdk_pixbuf_new_from_data(rgb,
                           GDK_COLORSPACE_RGB,
                           FALSE,
@@ -1775,10 +1836,15 @@ static void SelectFirmwareFile()
 }
 #endif
 
+static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
+{
+    uint filter = gtk_radio_action_get_current_value(current) ;
+    video.ChangeFilterByID((VideoFilterTypeID)filter);
+}
+
 static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
 {
-    uint i = gtk_radio_action_get_current_value(current) ;
-    Interpolation = (i == 0 ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR);
+    Interpolation = (GdkInterpType)gtk_radio_action_get_current_value(current);
 }
 
 static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
@@ -2219,7 +2285,9 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
             my_config->savetype, G_CALLBACK(changesavetype), NULL);
     gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
-            1, G_CALLBACK(Modify_Interpolation), NULL);
+            GDK_INTERP_NEAREST, G_CALLBACK(Modify_Interpolation), NULL);
+    gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
+            VideoFilterTypeID_HQ2XS, G_CALLBACK(Modify_PriInterpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
             0, G_CALLBACK(Modify_SPUMode), NULL);
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
@@ -2348,6 +2416,12 @@ common_gtk_main( class configured_features *my_config)
     if (my_config->timeout > 0) {
         g_timeout_add_seconds(my_config->timeout, timeout_exit_cb, GINT_TO_POINTER(my_config->timeout));
     }
+
+    /* Video filter parameters */
+    video.SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
+    video.SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
+    video.SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
+    video.SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
 
     /* Main loop */
     gtk_main();

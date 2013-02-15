@@ -18,6 +18,12 @@ desmume_SOURCES = \
 	../driver.h ../driver.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
 	cheatsGTK.h cheatsGTK.cpp \
+	../filter/hq2x.cpp ../filter/hq2x.h \
+	../filter/hq4x.cpp ../filter/hq4x.h \
+	../filter/2xsai.cpp ../filter/bilinear.cpp \
+	../filter/epx.cpp ../filter/lq2x.cpp \
+	../filter/scanline.cpp \
+	../filter/videofilter.cpp ../filter/videofilter.h \
 	main.cpp main.h
 desmume_LDADD = ../libdesmume.a \
 	$(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS) $(LIBSOUNDTOUCH_LIBS)
