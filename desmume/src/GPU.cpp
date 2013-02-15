@@ -607,7 +607,7 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 			switch(FUNC) {
 				case Increase: final = currentFadeInColors[final&0x7FFF]; break;
 				case Decrease: final = currentFadeOutColors[final&0x7FFF]; break;
-				case None: 
+				case NoBlend: 
 				case Blend:
 					break;
 			}
@@ -622,7 +622,7 @@ template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
 FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 {
 	//no further analysis for no special effects. on backdrops. just draw it.
-	if(FUNC==None && BACKDROP) return true;
+	if(FUNC==NoBlend && BACKDROP) return true;
 
 	//blend backdrop with what?? this doesn't make sense
 	if(FUNC==Blend && BACKDROP) return true;
@@ -652,7 +652,7 @@ FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 		case Blend: if(blend2[bg_under]) color = blend(color,HostReadWord(currDst, x<<1)); break;
 		case Increase: color = currentFadeInColors[color]; break;
 		case Decrease: color = currentFadeOutColors[color]; break;
-		case None: break;
+		case NoBlend: break;
 	}
 	return true;
 }
@@ -685,7 +685,7 @@ static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u
 
 		//only when blend color effect is selected, ordinarily opaque sprites are blended with the color effect params
 		case Blend: forceBlendingForNormal = true; break;
-		case None: break;
+		case NoBlend: break;
 		}
 
 	//this inspects the layer beneath the sprite to see if the current blend flags make it a candidate for blending
@@ -722,11 +722,11 @@ FORCEINLINE void GPU::setFinalColorBG(u16 color, const u32 x)
 	const int test = BACKDROP?FUNCNUM:setFinalColorBck_funcNum;
 	switch(test)
 	{
-		case 0: draw = _master_setFinalBGColor<BACKDROP,None,false>(color,x); break;
+		case 0: draw = _master_setFinalBGColor<BACKDROP,NoBlend,false>(color,x); break;
 		case 1: draw = _master_setFinalBGColor<BACKDROP,Blend,false>(color,x); break;
 		case 2: draw = _master_setFinalBGColor<BACKDROP,Increase,false>(color,x); break;
 		case 3: draw = _master_setFinalBGColor<BACKDROP,Decrease,false>(color,x); break;
-		case 4: draw = _master_setFinalBGColor<BACKDROP,None,true>(color,x); break;
+		case 4: draw = _master_setFinalBGColor<BACKDROP,NoBlend,true>(color,x); break;
 		case 5: draw = _master_setFinalBGColor<BACKDROP,Blend,true>(color,x); break;
 		case 6: draw = _master_setFinalBGColor<BACKDROP,Increase,true>(color,x); break;
 		case 7: draw = _master_setFinalBGColor<BACKDROP,Decrease,true>(color,x); break;
@@ -745,11 +745,11 @@ FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
 {
 	switch(setFinalColor3d_funcNum)
 	{
-	case 0x0: _master_setFinal3dColor<None,false>(dstX,srcX); break;
+	case 0x0: _master_setFinal3dColor<NoBlend,false>(dstX,srcX); break;
 	case 0x1: _master_setFinal3dColor<Blend,false>(dstX,srcX); break;
 	case 0x2: _master_setFinal3dColor<Increase,false>(dstX,srcX); break;
 	case 0x3: _master_setFinal3dColor<Decrease,false>(dstX,srcX); break;
-	case 0x4: _master_setFinal3dColor<None,true>(dstX,srcX); break;
+	case 0x4: _master_setFinal3dColor<NoBlend,true>(dstX,srcX); break;
 	case 0x5: _master_setFinal3dColor<Blend,true>(dstX,srcX); break;
 	case 0x6: _master_setFinal3dColor<Increase,true>(dstX,srcX); break;
 	case 0x7: _master_setFinal3dColor<Decrease,true>(dstX,srcX); break;
@@ -760,11 +760,11 @@ FORCEINLINE void setFinalColorSpr(GPU* gpu, u8 *dst, u16 color, u8 alpha, u8 typ
 {
 	switch(gpu->setFinalColorSpr_funcNum)
 	{
-	case 0x0: _master_setFinalOBJColor<None,false>(gpu, dst, color, alpha, type, x); break;
+	case 0x0: _master_setFinalOBJColor<NoBlend,false>(gpu, dst, color, alpha, type, x); break;
 	case 0x1: _master_setFinalOBJColor<Blend,false>(gpu, dst, color, alpha, type, x); break;
 	case 0x2: _master_setFinalOBJColor<Increase,false>(gpu, dst, color, alpha, type, x); break;
 	case 0x3: _master_setFinalOBJColor<Decrease,false>(gpu, dst, color, alpha, type, x); break;
-	case 0x4: _master_setFinalOBJColor<None,true>(gpu, dst, color, alpha, type, x); break;
+	case 0x4: _master_setFinalOBJColor<NoBlend,true>(gpu, dst, color, alpha, type, x); break;
 	case 0x5: _master_setFinalOBJColor<Blend,true>(gpu, dst, color, alpha, type, x); break;
 	case 0x6: _master_setFinalOBJColor<Increase,true>(gpu, dst, color, alpha, type, x); break;
 	case 0x7: _master_setFinalOBJColor<Decrease,true>(gpu, dst, color, alpha, type, x); break;
