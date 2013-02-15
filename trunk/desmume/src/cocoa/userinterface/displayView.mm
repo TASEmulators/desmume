@@ -107,7 +107,6 @@ const char *fragmentProgram_100 = {"\
 	
 	view = nil;
 	spinlockNormalSize = OS_SPINLOCK_INIT;
-	spinlockGpuStateFlags = OS_SPINLOCK_INIT;
 	spinlockScale = OS_SPINLOCK_INIT;
 	spinlockRotation = OS_SPINLOCK_INIT;
 	spinlockUseBilinearOutput = OS_SPINLOCK_INIT;

@@ -68,7 +68,6 @@ enum OGLVertexAttributeID
 	NSMutableDictionary *bindings;
 	
 	OSSpinLock spinlockNormalSize;
-	OSSpinLock spinlockGpuStateFlags;
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
 	OSSpinLock spinlockUseBilinearOutput;
