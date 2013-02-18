@@ -4194,7 +4194,6 @@ static void TwiddleLayer(UINT ctlid, int core, int layer)
 
 }
 
-
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -4667,6 +4666,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_SYSKEYDOWN:
 DOKEYDOWN:
 		{
+			static bool reenter = false;
+
+			if(reenter) break;
+
+			reenter = true;
+
 			if(message == WM_SYSKEYDOWN && wParam==VK_RETURN && !(lParam&0x40000000))
 			{
 				if(IsZoomed(hwnd))
@@ -4678,8 +4683,12 @@ DOKEYDOWN:
 				int modifiers = GetModifiers(wParam);
 				wParam = PurgeModifiers(wParam);
 				if(!HandleKeyMessage(wParam,lParam, modifiers))
+				{
+					reenter = false;
 					return 0;
+				}
 			}
+			reenter = false;
 			break;
 		}
 	case WM_KEYUP:
