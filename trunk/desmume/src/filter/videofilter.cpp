@@ -20,10 +20,10 @@
 #include <string.h>
 
 // Parameters for Scanline filter
-int _scanline_filter_a = 0;
-int _scanline_filter_b = 2;
-int _scanline_filter_c = 2;
-int _scanline_filter_d = 4;
+int scanline_filter_a = 0;
+int scanline_filter_b = 2;
+int scanline_filter_c = 2;
+int scanline_filter_d = 4;
 
 // 
 typedef struct
@@ -33,10 +33,10 @@ typedef struct
 } _VideoFilterParamAttributes;
 
 static const _VideoFilterParamAttributes _VideoFilterParamAttributesList[] = {
-	{&_scanline_filter_a,	VF_INT},
-	{&_scanline_filter_b,	VF_INT},
-	{&_scanline_filter_c,	VF_INT},
-	{&_scanline_filter_d,	VF_INT},
+	{&scanline_filter_a,	VF_INT},
+	{&scanline_filter_b,	VF_INT},
+	{&scanline_filter_c,	VF_INT},
+	{&scanline_filter_d,	VF_INT},
 };
 
 /********************************************************************************************

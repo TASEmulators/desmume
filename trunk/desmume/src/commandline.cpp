@@ -28,7 +28,7 @@
 #include "NDSSystem.h"
 #include "utils/xstring.h"
 
-int scanline_filter_a = 0, scanline_filter_b = 2, scanline_filter_c = 2, scanline_filter_d = 4;
+int _scanline_filter_a = 0, _scanline_filter_b = 2, _scanline_filter_c = 2, _scanline_filter_d = 4;
 int _commandline_linux_nojoy = 0;
 
 CommandLine::CommandLine()
@@ -91,10 +91,10 @@ void CommandLine::loadCommonOptions()
 		{ "bios-swi", 0, 0, G_OPTION_ARG_INT, &_bios_swi, "Uses SWI from the provided bios files", "BIOS_SWI"},
 		{ "spu-advanced", 0, 0, G_OPTION_ARG_INT, &_spu_advanced, "Uses advanced SPU capture functions", "SPU_ADVANCED"},
 		{ "num-cores", 0, 0, G_OPTION_ARG_INT, &_num_cores, "Override numcores detection and use this many", "NUM_CORES"},
-		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (topleft) (default 0)", "SCANLINE_FILTER_A"},
-		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (topright) (default 2)", "SCANLINE_FILTER_B"},
-		{ "scanline-filter-c", 0, 0, G_OPTION_ARG_INT, &scanline_filter_c, "Intensity of fadeout for scanlines filter (bottomleft) (default 2)", "SCANLINE_FILTER_C"},
-		{ "scanline-filter-d", 0, 0, G_OPTION_ARG_INT, &scanline_filter_d, "Intensity of fadeout for scanlines filter (bottomright) (default 4)", "SCANLINE_FILTER_D"},
+		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_a, "Intensity of fadeout for scanlines filter (topleft) (default 0)", "SCANLINE_FILTER_A"},
+		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_b, "Intensity of fadeout for scanlines filter (topright) (default 2)", "SCANLINE_FILTER_B"},
+		{ "scanline-filter-c", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_c, "Intensity of fadeout for scanlines filter (bottomleft) (default 2)", "SCANLINE_FILTER_C"},
+		{ "scanline-filter-d", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_d, "Intensity of fadeout for scanlines filter (bottomright) (default 4)", "SCANLINE_FILTER_D"},
 		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
 		{ "advanced-timing", 0, 0, G_OPTION_ARG_INT, &_advanced_timing, "Use advanced BUS-level timing (default 1)", "ADVANCED_TIMING"},
 		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
