@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 */
 
 #import "preferencesWindowDelegate.h"
-#import "displayView.h"
+#import "EmuControllerDelegate.h"
 
 #import "cocoa_core.h"
 #import "cocoa_cheat.h"
@@ -35,7 +35,7 @@
 @synthesize window;
 @synthesize firmwareConfigSheet;
 @synthesize cdsCoreController;
-@synthesize emuWindowController;
+@synthesize emuController;
 @synthesize prefWindowController;
 @synthesize cheatWindowController;
 @synthesize cheatDatabaseController;
@@ -320,7 +320,7 @@
 	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"R4Cheat_DatabasePath"];
 	[bindings setValue:[selectedFile lastPathComponent] forKey:@"R4CheatDatabaseName"];
 	
-	const BOOL isRomLoaded = [(NSNumber *)[(NSMutableDictionary *)[emuWindowController content] valueForKey:@"isRomLoaded"] boolValue];
+	const BOOL isRomLoaded = [(EmuControllerDelegate *)[emuController content] currentRom] != nil;
 	NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
 	CocoaDSCheatManager *cdsCheats = (CocoaDSCheatManager *)[cheatWindowBindings valueForKey:@"cheatList"];
 	

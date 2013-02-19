@@ -77,8 +77,6 @@
 		AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3A656016CC5438001F5D4A /* cocoa_GPU.mm */; };
 		AB3ACB7214C2361100D7D192 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
 		AB3ACB7314C2361100D7D192 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
-		AB3ACB7414C2361100D7D192 /* displayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6B14C2361100D7D192 /* displayView.mm */; };
-		AB3ACB7514C2361100D7D192 /* emuWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */; };
 		AB3ACB7614C2361100D7D192 /* inputPrefsView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */; };
 		AB3ACB7714C2361100D7D192 /* preferencesWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */; };
 		AB3ACC3E14C24D5400D7D192 /* AUTHORS in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3814C24D5400D7D192 /* AUTHORS */; };
@@ -360,8 +358,6 @@
 		AB796D5415CDCBA200C59155 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
 		AB796D5515CDCBA200C59155 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
 		AB796D5615CDCBA200C59155 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
-		AB796D5715CDCBA200C59155 /* displayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6B14C2361100D7D192 /* displayView.mm */; };
-		AB796D5815CDCBA200C59155 /* emuWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */; };
 		AB796D5915CDCBA200C59155 /* inputPrefsView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */; };
 		AB796D5A15CDCBA200C59155 /* preferencesWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */; };
 		AB796D5B15CDCBA200C59155 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */; };
@@ -382,6 +378,10 @@
 		AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB796D6C15CDCBA200C59155 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB80E04D142BC4A800A52038 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
+		AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */; };
+		AB8967DA16D2ED0700F826F1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */; };
+		AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
+		AB8967DE16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
 		AB901BDE1420706100348EEC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB901BDD1420706100348EEC /* Localizable.strings */; };
 		AB91D46B13BD013800462471 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
@@ -692,10 +692,6 @@
 		AB3ACB6714C2361100D7D192 /* appDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = appDelegate.mm; sourceTree = "<group>"; };
 		AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cheatWindowDelegate.h; sourceTree = "<group>"; };
 		AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cheatWindowDelegate.mm; sourceTree = "<group>"; };
-		AB3ACB6A14C2361100D7D192 /* displayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = displayView.h; sourceTree = "<group>"; };
-		AB3ACB6B14C2361100D7D192 /* displayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = displayView.mm; sourceTree = "<group>"; };
-		AB3ACB6C14C2361100D7D192 /* emuWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = emuWindowDelegate.h; sourceTree = "<group>"; };
-		AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = emuWindowDelegate.mm; sourceTree = "<group>"; };
 		AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = inputPrefsView.h; sourceTree = "<group>"; };
 		AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = inputPrefsView.mm; sourceTree = "<group>"; };
 		AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = preferencesWindowDelegate.h; sourceTree = "<group>"; };
@@ -791,6 +787,9 @@
 		AB80E050142BC4FA00A52038 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
 		AB817A34143EE2DB00A7DFE9 /* videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = videofilter.h; sourceTree = "<group>"; };
 		AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = videofilter.cpp; sourceTree = "<group>"; };
+		AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayWindowController.h; sourceTree = "<group>"; };
+		AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayWindowController.mm; sourceTree = "<group>"; };
+		AB8967DC16D2ED2700F826F1 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/DisplayWindow.xib; sourceTree = "<group>"; };
 		AB901BDF1420706B00348EEC /* Japanese */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Japanese; path = translations/Japanese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE01420706F00348EEC /* French */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = French; path = translations/French.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE11420707400348EEC /* Italian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Italian; path = translations/Italian.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1202,6 +1201,7 @@
 			children = (
 				ABC2ECD613B1C87000FAAA2A /* Images */,
 				AB00E87C14205EBC00DE561F /* MainMenu.xib */,
+				AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */,
 				AB350D3A147A1D93007165AC /* HID_usage_strings.plist */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 				AB02791814415E4C0075E58C /* Info (Debug).plist */,
@@ -1234,17 +1234,15 @@
 			children = (
 				AB3ACB6614C2361100D7D192 /* appDelegate.h */,
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
-				AB3ACB6A14C2361100D7D192 /* displayView.h */,
+				AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */,
 				AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */,
-				AB3ACB6C14C2361100D7D192 /* emuWindowDelegate.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
-				AB3ACB6B14C2361100D7D192 /* displayView.mm */,
+				AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */,
 				AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */,
-				AB3ACB6D14C2361100D7D192 /* emuWindowDelegate.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
@@ -1903,6 +1901,7 @@
 				AB3ACC4114C24D5400D7D192 /* README in Resources */,
 				AB3ACC4314C24D5400D7D192 /* README.MAC in Resources */,
 				AB75226E14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
+				AB8967DE16D2ED2700F826F1 /* DisplayWindow.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1981,6 +1980,7 @@
 				AB796CEB15CDCBA200C59155 /* README in Resources */,
 				AB796CEC15CDCBA200C59155 /* README.MAC in Resources */,
 				AB796CED15CDCBA200C59155 /* AppIcon_FirmwareConfig.icns in Resources */,
+				AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2192,8 +2192,6 @@
 				AB0F291D14BE6F4A009ABC6F /* OGLRender.cpp in Sources */,
 				AB3ACB7214C2361100D7D192 /* appDelegate.mm in Sources */,
 				AB3ACB7314C2361100D7D192 /* cheatWindowDelegate.mm in Sources */,
-				AB3ACB7414C2361100D7D192 /* displayView.mm in Sources */,
-				AB3ACB7514C2361100D7D192 /* emuWindowDelegate.mm in Sources */,
 				AB3ACB7614C2361100D7D192 /* inputPrefsView.mm in Sources */,
 				AB3ACB7714C2361100D7D192 /* preferencesWindowDelegate.mm in Sources */,
 				ABFE150714C92FF5005D6699 /* 2xsai.cpp in Sources */,
@@ -2240,6 +2238,7 @@
 				AB23567516C2FAD800DA782E /* OGLRender_3_2.cpp in Sources */,
 				AB3A655F16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
 				AB3A656216CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
+				AB8967DA16D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2351,8 +2350,6 @@
 				AB796D5415CDCBA200C59155 /* cocoa_videofilter.mm in Sources */,
 				AB796D5515CDCBA200C59155 /* appDelegate.mm in Sources */,
 				AB796D5615CDCBA200C59155 /* cheatWindowDelegate.mm in Sources */,
-				AB796D5715CDCBA200C59155 /* displayView.mm in Sources */,
-				AB796D5815CDCBA200C59155 /* emuWindowDelegate.mm in Sources */,
 				AB796D5915CDCBA200C59155 /* inputPrefsView.mm in Sources */,
 				AB796D5A15CDCBA200C59155 /* preferencesWindowDelegate.mm in Sources */,
 				AB796D5B15CDCBA200C59155 /* 2xsai.cpp in Sources */,
@@ -2398,6 +2395,7 @@
 				AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */,
 				AB3A655E16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
 				AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
+				AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2571,6 +2569,14 @@
 				AB350D38147A1D8D007165AC /* English */,
 			);
 			name = HID_usage_strings.plist;
+			sourceTree = "<group>";
+		};
+		AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AB8967DC16D2ED2700F826F1 /* English */,
+			);
+			name = DisplayWindow.xib;
 			sourceTree = "<group>";
 		};
 		AB901BDD1420706100348EEC /* Localizable.strings */ = {

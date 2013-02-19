@@ -117,7 +117,6 @@ typedef struct
 @required
 - (void) doDisplayModeChanged:(NSInteger)displayModeID;
 
-@property (retain) NSPort *sendPortDisplay;
 @property (assign) BOOL isHudEnabled;
 @property (assign) BOOL isHudEditingModeEnabled;
 

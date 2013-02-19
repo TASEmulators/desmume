@@ -43,7 +43,7 @@
 
 - (id)init
 {
-	self = [super init];
+	self = [super initWithAutoreleaseInterval:0.1];
 	if (self == nil)
 	{
 		return self;
@@ -65,17 +65,8 @@
 
 - (void)dealloc
 {
-	// Exit the thread.
-	if (self.thread != nil)
-	{
-		self.threadExit = YES;
-		
-		// Wait until the thread has shut down.
-		while (self.thread != nil)
-		{
-			[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-		}
-	}
+	// Force the thread to exit now so that we can safely release other resources.
+	[self forceThreadExit];
 	
 	self.frameData = nil;
 	self.frameAttributesData = nil;
@@ -474,7 +465,6 @@
 	if (theDelegate != nil)
 	{
 		[theDelegate retain];
-		[theDelegate setSendPortDisplay:self.receivePort];
 	}
 	
 	[delegate release];
@@ -822,7 +812,6 @@
 	if (theDelegate != nil)
 	{
 		[theDelegate retain];
-		[theDelegate setSendPortDisplay:self.receivePort];
 	}
 	
 	[videoDelegate release];

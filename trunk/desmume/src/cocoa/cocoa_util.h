@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -67,14 +67,15 @@
 	NSPort *receivePort;	
 }
 
-@property (retain) NSThread *thread;
+@property (assign) NSThread *thread;
 @property (assign) BOOL threadExit;
 @property (assign) NSTimeInterval autoreleaseInterval;
-@property (retain) NSPort *sendPort;
-@property (readonly) NSPort *receivePort;
+@property (assign) NSPort *sendPort;
+@property (assign) NSPort *receivePort;
 
 - (id) initWithAutoreleaseInterval:(NSTimeInterval)interval;
 - (void) runThread:(id)object;
+- (void) forceThreadExit;
 
 @end
 
