@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 	NSWindow *window;
 	NSWindow *firmwareConfigSheet;
 	NSObjectController *cdsCoreController;
-	NSObjectController *emuWindowController;
+	NSObjectController *emuController;
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
 	NSArrayController *cheatDatabaseController;
@@ -64,7 +64,7 @@
 @property (readonly) IBOutlet NSWindow *window;
 @property (readonly) IBOutlet NSWindow *firmwareConfigSheet;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet NSObjectController *emuWindowController;
+@property (readonly) IBOutlet NSObjectController *emuController;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;

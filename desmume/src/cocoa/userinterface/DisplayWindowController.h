@@ -1,0 +1,163 @@
+/*
+	Copyright (C) 2013 DeSmuME team
+
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
+
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#import <Cocoa/Cocoa.h>
+#include <OpenGL/OpenGL.h>
+#include <libkern/OSAtomic.h>
+
+#import "cocoa_output.h"
+
+@class CocoaDSController;
+@class EmuControllerDelegate;
+
+
+@interface DisplayView : NSView <CocoaDSDisplayVideoDelegate>
+{
+	CocoaDSController *cdsController;
+	
+	// Display thread
+	BOOL isHudEnabled;
+	BOOL isHudEditingModeEnabled;
+	
+	// OpenGL context
+	NSOpenGLContext *context;
+	CGLContextObj cglDisplayContext;
+	
+	NSInteger lastDisplayMode;
+	NSInteger currentDisplayOrientation;
+	GLenum glTexPixelFormat;
+	GLvoid *glTexBack;
+	NSSize glTexBackSize;
+	
+	GLuint displayTexID;
+	GLuint vboVertexID;
+	GLuint vboTexCoordID;
+	GLuint vboElementID;
+	GLuint vaoMainStatesID;
+	GLuint vertexShaderID;
+	GLuint fragmentShaderID;
+	GLuint shaderProgram;
+	
+	GLint uniformAngleDegrees;
+	GLint uniformScalar;
+	GLint uniformViewSize;
+	
+	GLint vtxBuffer[4 * 8];
+	GLfloat texCoordBuffer[2 * 8];
+	GLubyte vtxIndexBuffer[12];
+	
+	BOOL isShaderSupported;
+	unsigned int vtxBufferOffset;
+}
+
+@property (retain) CocoaDSController *cdsController;
+
+- (void) startupOpenGL;
+- (void) shutdownOpenGL;
+- (void) setupShaderIO;
+- (BOOL) setupShadersWithVertexProgram:(const char *)vertShaderProgram fragmentProgram:(const char *)fragShaderProgram;
+- (void) drawVideoFrame;
+- (void) uploadVertices;
+- (void) uploadTexCoords;
+- (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
+- (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
+- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID;
+- (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t;
+
+- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
+- (NSPoint) convertPointToDS:(NSPoint)clickLoc;
+- (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
+- (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
+- (void) clearToBlack;
+- (void) clearToWhite;
+- (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
+
+@end
+
+@interface DisplayWindowController : NSWindowController
+{
+	DisplayView *view;
+	NSView *saveScreenshotPanelAccessoryView;
+	
+	EmuControllerDelegate *emuControl;
+	CocoaDSDisplayVideo *cdsVideoOutput;
+	
+	NSSize _normalSize;
+	double _displayScale;
+	double _displayRotation;
+	BOOL _useBilinearOutput;
+	BOOL _useVerticalSync;
+	NSInteger _displayMode;
+	NSInteger _displayOrientation;
+	NSInteger _displayOrder;
+	NSInteger _videoFilterType;
+	NSInteger screenshotFileFormat;
+	
+	NSSize _minDisplayViewSize;
+	BOOL _isMinSizeNormal;
+	NSUInteger _statusBarHeight;
+	
+	OSSpinLock spinlockNormalSize;
+	OSSpinLock spinlockScale;
+	OSSpinLock spinlockRotation;
+	OSSpinLock spinlockUseBilinearOutput;
+	OSSpinLock spinlockUseVerticalSync;
+	OSSpinLock spinlockDisplayMode;
+	OSSpinLock spinlockDisplayOrientation;
+	OSSpinLock spinlockDisplayOrder;
+	OSSpinLock spinlockVideoFilterType;
+}
+
+@property (readonly) IBOutlet DisplayView *view;
+@property (readonly) IBOutlet NSView *saveScreenshotPanelAccessoryView;
+
+@property (retain) EmuControllerDelegate *emuControl;
+@property (assign) CocoaDSDisplayVideo *cdsVideoOutput;
+
+@property (readonly) NSSize normalSize;
+@property (assign) double displayScale;
+@property (assign) double displayRotation;
+@property (assign) BOOL useBilinearOutput;
+@property (assign) BOOL useVerticalSync;
+@property (assign) NSInteger displayMode;
+@property (assign) NSInteger displayOrientation;
+@property (assign) NSInteger displayOrder;
+@property (assign) NSInteger videoFilterType;
+@property (assign) NSInteger screenshotFileFormat;
+@property (assign) BOOL isMinSizeNormal;
+@property (assign) BOOL isShowingStatusBar;
+
+- (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
+
+- (void) setCdsController:(CocoaDSController *)theController;
+- (void) setupUserDefaults;
+- (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees;
+- (double) maxContentScalar:(NSSize)contentBounds;
+
+- (IBAction) copy:(id)sender;
+- (IBAction) changeVolume:(id)sender;
+- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
+- (IBAction) toggleStatusBar:(id)sender;
+
+- (IBAction) executeCoreToggle:(id)sender;
+- (IBAction) resetCore:(id)sender;
+- (IBAction) changeCoreSpeed:(id)sender;
+- (IBAction) openRom:(id)sender;
+- (IBAction) changeRotationRelative:(id)sender;
+- (IBAction) saveScreenshotAs:(id)sender;
+
+@end

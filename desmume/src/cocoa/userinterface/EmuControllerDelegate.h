@@ -16,12 +16,15 @@
  */
 
 #import <Cocoa/Cocoa.h>
+#include <libkern/OSAtomic.h>
 
 @class CocoaDSRom;
 @class CocoaDSFirmware;
+@class CocoaDSOutput;
 @class CocoaDSSpeaker;
 @class CocoaDSCheatManager;
 @class CheatWindowDelegate;
+@class DisplayWindowController;
 
 
 @interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations>
@@ -68,7 +71,11 @@
 	NSImage *iconSpeedNormal;
 	NSImage *iconSpeedDouble;
 	
+	DisplayWindowController *mainWindow;
 	NSMutableArray *windowList;
+	
+	OSSpinLock spinlockFirmware;
+	OSSpinLock spinlockSpeaker;
 }
 
 @property (assign) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
@@ -88,6 +95,15 @@
 @property (readonly) IBOutlet NSWindow *saveFileMigrationSheet;
 @property (readonly) IBOutlet NSWindow *saveStatePrecloseSheet;
 @property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
+
+@property (readonly) NSImage *iconExecute;
+@property (readonly) NSImage *iconPause;
+@property (readonly) NSImage *iconSpeedNormal;
+@property (readonly) NSImage *iconSpeedDouble;
+
+@property (readonly) BOOL masterExecuteFlag;
+@property (readonly) NSInteger executionState;
+@property (readonly) CGFloat speedScalar;
 
 @property (assign) BOOL isWorking;
 @property (assign) BOOL isRomLoading;
@@ -110,10 +126,13 @@
 @property (assign) BOOL render3DLineHack;
 @property (assign) BOOL render3DMultisample;
 
+@property (retain) DisplayWindowController *mainWindow;
 @property (readonly) NSMutableArray *windowList;
 
 // File Menu
+- (IBAction) newDisplayWindow:(id)sender;
 - (IBAction) openRom:(id)sender;
+- (IBAction) closeWindow:(id)sender;
 - (IBAction) closeRom:(id)sender;
 - (IBAction) openEmuSaveState:(id)sender;
 - (IBAction) saveEmuSaveState:(id)sender;
@@ -125,6 +144,9 @@
 - (IBAction) exportRomSave:(id)sender;
 - (IBAction) selectExportRomSaveFormat:(id)sender;
 
+// Edit Menu
+- (IBAction) copy:(id)sender;
+
 // Emulation Menu
 - (IBAction) speedLimitDisable:(id)sender;
 - (IBAction) toggleAutoFrameSkip:(id)sender;
@@ -133,21 +155,21 @@
 - (IBAction) resetCore:(id)sender;
 - (IBAction) changeRomSaveType:(id)sender;
 
+// View Menu
+- (IBAction) changeScale:(id)sender;
+- (IBAction) changeRotation:(id)sender;
+- (IBAction) changeRotationRelative:(id)sender;
+- (IBAction) changeDisplayMode:(id)sender;
+- (IBAction) changeDisplayOrientation:(id)sender;
+- (IBAction) changeDisplayOrder:(id)sender;
+- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
+- (IBAction) toggleStatusBar:(id)sender;
+- (IBAction) toggleToolbarShown:(id)sender;
+- (IBAction) runToolbarCustomizationPalette:(id)sender;
+
 // Tools Menu
 - (IBAction) toggleGPUState:(id)sender;
-
-// Window Menu
-- (IBAction) newDisplayWindow:(id)sender;
-
-- (BOOL) handleLoadRom:(NSURL *)fileURL;
-- (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;
-- (BOOL) loadRom:(NSURL *)romURL;
-- (void) loadRomDidFinish:(NSNotification *)aNotification;
-- (BOOL) unloadRom;
-
-- (void) executeCore;
-- (void) pauseCore;
-- (void) restoreCoreState;
+- (IBAction) saveScreenshotAs:(id)sender;
 
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) changeCoreEmuFlags:(id)sender;
@@ -159,15 +181,35 @@
 - (IBAction) changeSpuSyncMode:(id)sender;
 - (IBAction) changeSpuSyncMethod:(id)sender;
 
+// Misc IBActions
+- (IBAction) writeDefaultsDisplayRotation:(id)sender;
+- (IBAction) writeDefaultsHUDSettings:(id)sender;
+- (IBAction) writeDefaultsDisplayVideoSettings:(id)sender;
+- (IBAction) writeDefaults3DRenderingSettings:(id)sender;
+- (IBAction) writeDefaultsEmulationSettings:(id)sender;
+- (IBAction) writeDefaultsSoundSettings:(id)sender;
+
 - (IBAction) closeSheet:(id)sender;
+
+- (BOOL) handleLoadRom:(NSURL *)fileURL;
+- (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;
+- (BOOL) loadRom:(NSURL *)romURL;
+- (void) loadRomDidFinish:(NSNotification *)aNotification;
+- (BOOL) unloadRom;
+
+- (void) addOutputToCore:(CocoaDSOutput *)theOutput;
+- (void) removeOutputFromCore:(CocoaDSOutput *)theOutput;
+- (void) executeCore;
+- (void) pauseCore;
+- (void) restoreCoreState;
+
 - (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheetOpen:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheetTerminate:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
+- (void) updateAllWindowTitles;
 - (void) setupUserDefaults;
-- (IBAction) writeDefaults3DRenderingSettings:(id)sender;
-- (IBAction) writeDefaultsEmulationSettings:(id)sender;
-- (IBAction) writeDefaultsSoundSettings:(id)sender;
+
 
 @end

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -48,6 +48,8 @@
 #define NSSTRING_TITLE_ENABLE_HUD					NSLocalizedString(@"Enable HUD", nil)
 #define NSSTRING_TITLE_HIDE_STATUS_BAR				NSLocalizedString(@"Hide Status Bar", nil)
 #define NSSTRING_TITLE_SHOW_STATUS_BAR				NSLocalizedString(@"Show Status Bar", nil)
+#define NSSTRING_TITLE_HIDE_TOOLBAR					NSLocalizedString(@"Hide Toolbar", nil)
+#define NSSTRING_TITLE_SHOW_TOOLBAR					NSLocalizedString(@"Show Toolbar", nil)
 #define NSSTRING_TITLE_SPEED_1X						NSLocalizedString(@"Speed 1x", nil)
 #define NSSTRING_TITLE_SPEED_2X						NSLocalizedString(@"Speed 2x", nil)
 #define NSSTRING_TITLE_SLOT_NUMBER					NSLocalizedString(@"Slot %ld", nil)

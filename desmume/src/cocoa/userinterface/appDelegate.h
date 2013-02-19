@@ -36,12 +36,10 @@
 	NSObjectController *emuControlController;
 	NSObjectController *cdsSoundController;
 	NSObjectController *romInfoPanelController;
-	NSObjectController *emuWindowController;
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
 	NSObjectController *cdsCoreController;
 	
-    NSWindow *mainWindow;
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
 	NSWindow *cheatListWindow;
@@ -70,11 +68,9 @@
 @property (readonly) IBOutlet NSObjectController *emuControlController;
 @property (readonly) IBOutlet NSObjectController *cdsSoundController;
 @property (readonly) IBOutlet NSObjectController *romInfoPanelController;
-@property (readonly) IBOutlet NSObjectController *emuWindowController;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet NSWindow *mainWindow;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSWindow *cheatListWindow;

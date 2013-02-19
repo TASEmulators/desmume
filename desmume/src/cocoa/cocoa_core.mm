@@ -66,7 +66,7 @@ volatile bool execute = true;
 @dynamic arm7ImageURL;
 @dynamic firmwareImageURL;
 
-@synthesize mutexCoreExecute;
+@dynamic mutexCoreExecute;
 
 static BOOL isCoreStarted = NO;
 
@@ -94,8 +94,6 @@ static BOOL isCoreStarted = NO;
 	emuFlagDebugConsole = NO;
 	emuFlagEmulateEnsata = NO;
 	
-	mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(mutexCoreExecute, NULL);
 	spinlockMasterExecute = OS_SPINLOCK_INIT;
 	spinlockCdsController = OS_SPINLOCK_INIT;
 	spinlockExecutionChange = OS_SPINLOCK_INIT;
@@ -119,12 +117,13 @@ static BOOL isCoreStarted = NO;
 	threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
 	
 	threadParam.exitThread = false;
-	threadParam.mutexCoreExecute = mutexCoreExecute;
+	pthread_mutex_init(&threadParam.mutexCoreExecute, NULL);
+	pthread_mutex_init(&threadParam.mutexOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
 	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
-	[cdsGPU setMutexProducer:mutexCoreExecute];
+	[cdsGPU setMutexProducer:self.mutexCoreExecute];
 	
 	return self;
 }
@@ -155,16 +154,15 @@ static BOOL isCoreStarted = NO;
 	pthread_mutex_destroy(&threadParam.mutexThreadExecute);
 	pthread_cond_destroy(&threadParam.condThreadExecute);
 	
-	pthread_mutex_destroy(self.mutexCoreExecute);
-	free(self.mutexCoreExecute);
-	mutexCoreExecute = nil;
-	
 	self.cdsController = nil;
 	self.cdsFirmware = nil;
 	self.cdsGPU = nil;
 	
 	[self removeAllOutputs];
 	[cdsOutputList release];
+	
+	pthread_mutex_destroy(&threadParam.mutexOutputList);
+	pthread_mutex_destroy(&threadParam.mutexCoreExecute);
 	
 	[super dealloc];
 }
@@ -337,7 +335,7 @@ static BOOL isCoreStarted = NO;
 	emulationFlags = theFlags;
 	OSSpinLockUnlock(&spinlockEmulationFlags);
 	
-	pthread_mutex_lock(self.mutexCoreExecute);
+	pthread_mutex_lock(&threadParam.mutexCoreExecute);
 	
 	if (theFlags & EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK)
 	{
@@ -438,7 +436,7 @@ static BOOL isCoreStarted = NO;
 		CommonSettings.DebugConsole = false;
 	}
 	
-	pthread_mutex_unlock(self.mutexCoreExecute);
+	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
 }
 
 - (NSUInteger) emulationFlags
@@ -548,6 +546,11 @@ static BOOL isCoreStarted = NO;
 	return [NSURL fileURLWithPath:[NSString stringWithCString:CommonSettings.Firmware encoding:NSUTF8StringEncoding]];
 }
 
+- (pthread_mutex_t *) mutexCoreExecute
+{
+	return &threadParam.mutexCoreExecute;
+}
+
 - (void) setEjectCardFlag
 {
 	if (nds.cardEjected)
@@ -572,9 +575,9 @@ static BOOL isCoreStarted = NO;
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID
 {
-	pthread_mutex_lock(self.mutexCoreExecute);
+	pthread_mutex_lock(&threadParam.mutexCoreExecute);
 	[CocoaDSRom changeRomSaveType:saveTypeID];
-	pthread_mutex_unlock(self.mutexCoreExecute);
+	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
 }
 
 - (void) changeExecutionSpeed
@@ -648,18 +651,24 @@ static BOOL isCoreStarted = NO;
 
 - (void) addOutput:(CocoaDSOutput *)theOutput
 {
+	pthread_mutex_lock(&threadParam.mutexOutputList);
 	theOutput.mutexProducer = self.mutexCoreExecute;
 	[self.cdsOutputList addObject:theOutput];
+	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
 
 - (void) removeOutput:(CocoaDSOutput *)theOutput
 {
+	pthread_mutex_lock(&threadParam.mutexOutputList);
 	[self.cdsOutputList removeObject:theOutput];
+	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
 
 - (void) removeAllOutputs
 {
+	pthread_mutex_lock(&threadParam.mutexOutputList);
 	[self.cdsOutputList removeAllObjects];
+	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
 
 - (void) runThread:(id)object
@@ -709,9 +718,9 @@ static void* RunCoreThread(void *arg)
 		NDS_endProcessingInput();
 		
 		// Execute the frame and increment the frame counter.
-		pthread_mutex_lock(param->mutexCoreExecute);
+		pthread_mutex_lock(&param->mutexCoreExecute);
 		NDS_exec<false>();
-		pthread_mutex_unlock(param->mutexCoreExecute);
+		pthread_mutex_unlock(&param->mutexCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
 		if (!execute)
@@ -727,6 +736,7 @@ static void* RunCoreThread(void *arg)
 			param->frameCount++;
 		}
 		
+		pthread_mutex_lock(&param->mutexOutputList);
 		for(CocoaDSOutput *cdsOutput in cdsOutputList)
 		{
 			if (param->framesToSkip > 0 && [cdsOutput isMemberOfClass:[CocoaDSDisplay class]])
@@ -736,6 +746,7 @@ static void* RunCoreThread(void *arg)
 			
 			[cdsOutput doCoreEmuFrame];
 		}
+		pthread_mutex_unlock(&param->mutexOutputList);
 		
 		// Determine the number of frames to skip based on how much time "debt"
 		// we owe on timeBudget.

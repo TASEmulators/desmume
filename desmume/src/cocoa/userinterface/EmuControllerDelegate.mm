@@ -16,8 +16,7 @@
  */
 
 #import "EmuControllerDelegate.h"
-#import "emuWindowDelegate.h"
-#import "displayView.h"
+#import "DisplayWindowController.h"
 #import "cheatWindowDelegate.h"
 
 #import "cocoa_globals.h"
@@ -50,6 +49,15 @@
 @synthesize saveStatePrecloseSheet;
 @synthesize exportRomSavePanelAccessoryView;
 
+@synthesize iconExecute;
+@synthesize iconPause;
+@synthesize iconSpeedNormal;
+@synthesize iconSpeedDouble;
+
+@dynamic masterExecuteFlag;
+@dynamic executionState;
+@dynamic speedScalar;
+
 @synthesize isWorking;
 @synthesize isRomLoading;
 @synthesize statusText;
@@ -73,6 +81,7 @@
 @dynamic render3DLineHack;
 @dynamic render3DMultisample;
 
+@synthesize mainWindow;
 @synthesize windowList;
 
 
@@ -84,6 +93,10 @@
 		return nil;
 	}
 	
+	spinlockFirmware = OS_SPINLOCK_INIT;
+	spinlockSpeaker = OS_SPINLOCK_INIT;
+	
+	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
 	
 	currentRom = nil;
@@ -148,56 +161,99 @@
 	[self setCurrentVolumeIcon:nil];
 	
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
+	[cdsSoundController setContent:nil];
+	[firmwarePanelController setContent:nil];
 	
+	[self setMainWindow:nil];
 	[windowList release];
 	
 	[super dealloc];
 }
 
+#pragma mark Dynamic Property Methods
+
 - (void) setCdsFirmware:(CocoaDSFirmware *)theFirmware
 {
-	if (theFirmware == nil)
+	OSSpinLockLock(&spinlockFirmware);
+	
+	if (theFirmware == cdsFirmware)
 	{
-		if (cdsFirmware != nil)
-		{
-			[cdsFirmware release];
-			cdsFirmware = nil;
-		}
-	}
-	else
-	{
-		cdsFirmware = [theFirmware retain];
+		OSSpinLockUnlock(&spinlockFirmware);
+		return;
 	}
 	
-	[firmwarePanelController setContent:cdsFirmware];
+	if (theFirmware != nil)
+	{
+		[theFirmware retain];
+	}
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setCdsFirmware:theFirmware];
+	[firmwarePanelController setContent:theFirmware];
+	
+	[cdsFirmware release];
+	cdsFirmware = theFirmware;
+	
+	OSSpinLockUnlock(&spinlockFirmware);
 }
 
 - (CocoaDSFirmware *) cdsFirmware
 {
-	return cdsFirmware;
+	OSSpinLockLock(&spinlockFirmware);
+	CocoaDSFirmware *theFirmware = cdsFirmware;
+	OSSpinLockUnlock(&spinlockFirmware);
+	
+	return theFirmware;
 }
 
 - (void) setCdsSpeaker:(CocoaDSSpeaker *)theSpeaker
 {
-	if (theSpeaker == nil)
+	OSSpinLockLock(&spinlockSpeaker);
+	
+	if (theSpeaker == cdsSpeaker)
 	{
-		if (cdsSpeaker != nil)
-		{
-			[cdsSpeaker release];
-			cdsSpeaker = nil;
-		}
-	}
-	else
-	{
-		cdsSpeaker = [theSpeaker retain];
+		OSSpinLockUnlock(&spinlockSpeaker);
+		return;
 	}
 	
-	[cdsSoundController setContent:[cdsSpeaker property]];
+	if (theSpeaker != nil)
+	{
+		[theSpeaker retain];
+	}
+	
+	[cdsSoundController setContent:[theSpeaker property]];
+	
+	[cdsSpeaker release];
+	cdsSpeaker = theSpeaker;
+	
+	OSSpinLockUnlock(&spinlockSpeaker);
 }
 
 - (CocoaDSSpeaker *) cdsSpeaker
 {
-	return cdsSpeaker;
+	OSSpinLockLock(&spinlockSpeaker);
+	CocoaDSSpeaker *theSpeaker = cdsSpeaker;
+	OSSpinLockUnlock(&spinlockSpeaker);
+	
+	return theSpeaker;
+}
+
+- (BOOL) masterExecuteFlag
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore masterExecute];
+}
+
+- (NSInteger) executionState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore coreState];
+}
+
+- (CGFloat) speedScalar
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore speedScalar];
 }
 
 - (void) setCurrentVolumeValue:(float)vol
@@ -233,6 +289,148 @@
 - (float) currentVolumeValue
 {
 	return currentVolumeValue;
+}
+
+- (void) setRender3DRenderingEngine:(NSInteger)engineID
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DRenderingEngine:engineID];
+}
+
+- (NSInteger) render3DRenderingEngine
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DRenderingEngine];
+}
+
+- (void) setRender3DHighPrecisionColorInterpolation:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DHighPrecisionColorInterpolation:theState];
+}
+
+- (BOOL) render3DHighPrecisionColorInterpolation
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DHighPrecisionColorInterpolation];
+}
+
+- (void) setRender3DEdgeMarking:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DEdgeMarking:theState];
+}
+
+- (BOOL) render3DEdgeMarking
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DEdgeMarking];
+}
+
+- (void) setRender3DFog:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DFog:theState];
+}
+
+- (BOOL) render3DFog
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DFog];
+}
+
+- (void) setRender3DTextures:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DTextures:theState];
+}
+
+- (BOOL) render3DTextures
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DTextures];
+}
+
+- (void) setRender3DDepthComparisonThreshold:(NSInteger)threshold
+{
+	if (threshold < 0)
+	{
+		return;
+	}
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DDepthComparisonThreshold:(NSUInteger)threshold];
+}
+
+- (NSInteger) render3DDepthComparisonThreshold
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DDepthComparisonThreshold];
+}
+
+- (void) setRender3DThreads:(NSInteger)threadCount
+{
+	if (threadCount < 0)
+	{
+		return;
+	}
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DThreads:(NSUInteger)threadCount];
+}
+
+- (NSInteger) render3DThreads
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DThreads];
+}
+
+- (void) setRender3DLineHack:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DLineHack:theState];
+}
+
+- (BOOL) render3DLineHack
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DLineHack];
+}
+
+- (void) setRender3DMultisample:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore.cdsGPU setRender3DMultisample:theState];
+}
+
+- (BOOL) render3DMultisample
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [cdsCore.cdsGPU render3DMultisample];
+}
+
+#pragma mark IBActions
+
+- (IBAction) newDisplayWindow:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
+	[windowList addObject:newWindowController];
+	[newWindowController setCdsController:[cdsCore cdsController]];
+	
+	[self updateAllWindowTitles];
+	[newWindowController showWindow:self];
+	[[newWindowController window] makeKeyAndOrderFront:self];
+	[[newWindowController window] makeMainWindow];
+	
+	if ([self currentRom] == nil)
+	{
+		[[newWindowController view] clearToBlack];
+	}
+	else
+	{
+		[[newWindowController view] setNeedsDisplay:YES];
+	}
 }
 
 - (IBAction) openRom:(id)sender
@@ -271,6 +469,11 @@
 		
 		[self handleLoadRom:selectedFile];
 	}
+}
+
+- (IBAction) closeWindow:(id)sender
+{
+	[[mainWindow window] performClose:sender];
 }
 
 - (IBAction) closeRom:(id)sender
@@ -323,9 +526,9 @@
 	}
 	
 	isSaveStateEdited = YES;
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow setDocumentEdited:isSaveStateEdited];
+		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_SAVESTATE_LOADED];
@@ -348,9 +551,9 @@
 		}
 		
 		isSaveStateEdited = YES;
-		for (NSWindow *theWindow in windowList)
+		for (DisplayWindowController *windowController in windowList)
 		{
-			[theWindow setDocumentEdited:isSaveStateEdited];
+			[[windowController window] setDocumentEdited:isSaveStateEdited];
 		}
 		
 		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
@@ -392,9 +595,9 @@
 		}
 		
 		isSaveStateEdited = YES;
-		for (NSWindow *theWindow in windowList)
+		for (DisplayWindowController *windowController in windowList)
 		{
-			[theWindow setDocumentEdited:isSaveStateEdited];
+			[[windowController window] setDocumentEdited:isSaveStateEdited];
 		}
 		
 		[self setStatusText:NSSTRING_STATUS_SAVESTATE_SAVED];
@@ -421,9 +624,9 @@
 	}
 	
 	isSaveStateEdited = YES;
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow setDocumentEdited:isSaveStateEdited];
+		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_SAVESTATE_REVERTED];
@@ -559,6 +762,11 @@
 	selectedExportRomSaveID = [CocoaDSUtil getIBActionSenderTag:sender];
 }
 
+- (IBAction) copy:(id)sender
+{
+	[mainWindow copy:sender];
+}
+
 - (IBAction) executeCoreToggle:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -588,26 +796,26 @@
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
 	[self setIsWorking:YES];
 	
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow displayIfNeeded];
+		[[windowController window] displayIfNeeded];
 	}
 	
 	[cdsCore reset];
 	if ([cdsCore coreState] == CORESTATE_PAUSE)
 	{
-		for (NSWindow *theWindow in windowList)
+		for (DisplayWindowController *windowController in windowList)
 		{
-			[[(EmuWindowDelegate *)[theWindow delegate] dispViewDelegate] setViewToWhite];
+			[[windowController view] clearToWhite];
 		}
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
 	[self setIsWorking:NO];
 	
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow displayIfNeeded];
+		[[windowController window] displayIfNeeded];
 	}
 }
 
@@ -641,6 +849,40 @@
 		[cdsCore setIsFrameSkipEnabled:YES];
 		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
 	}
+}
+
+- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
+{
+	[mainWindow toggleKeepMinDisplaySizeAtNormal:sender];
+}
+
+- (IBAction) toggleStatusBar:(id)sender
+{
+	[mainWindow toggleStatusBar:sender];
+}
+
+- (IBAction) toggleToolbarShown:(id)sender
+{
+	[[mainWindow window] toggleToolbarShown:sender];
+}
+
+- (IBAction) runToolbarCustomizationPalette:(id)sender
+{
+	[[mainWindow window] runToolbarCustomizationPalette:sender];
+}
+
+- (IBAction) saveScreenshotAs:(id)sender
+{
+	[mainWindow saveScreenshotAs:sender];
+}
+
+- (IBAction) toggleGPUState:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	const NSInteger bitNumber = [CocoaDSUtil getIBActionSenderTag:sender];
+	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
+	
+	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
 }
 
 - (IBAction) changeRomSaveType:(id)sender
@@ -740,137 +982,141 @@
 	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
-- (void) setRender3DRenderingEngine:(NSInteger)engineID
+- (IBAction) changeScale:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DRenderingEngine:engineID];
+	[mainWindow setDisplayScale:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
 }
 
-- (NSInteger) render3DRenderingEngine
+- (IBAction) changeRotation:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DRenderingEngine];
+	// Get the rotation value from the sender.
+	if ([sender isMemberOfClass:[NSSlider class]])
+	{
+		[mainWindow setDisplayRotation:[(NSSlider *)sender doubleValue]];
+	}
+	else
+	{
+		[mainWindow setDisplayRotation:(double)[CocoaDSUtil getIBActionSenderTag:sender]];
+	}
 }
 
-- (void) setRender3DHighPrecisionColorInterpolation:(BOOL)theState
+- (IBAction) changeRotationRelative:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DHighPrecisionColorInterpolation:theState];
+	const double angleDegrees = [mainWindow displayRotation] + (double)[CocoaDSUtil getIBActionSenderTag:sender];
+	[mainWindow setDisplayRotation:angleDegrees];
 }
 
-- (BOOL) render3DHighPrecisionColorInterpolation
+- (IBAction) changeDisplayMode:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DHighPrecisionColorInterpolation];
-}
-
-- (void) setRender3DEdgeMarking:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DEdgeMarking:theState];
-}
-
-- (BOOL) render3DEdgeMarking
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DEdgeMarking];
-}
-
-- (void) setRender3DFog:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DFog:theState];
-}
-
-- (BOOL) render3DFog
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DFog];
-}
-
-- (void) setRender3DTextures:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DTextures:theState];
-}
-
-- (BOOL) render3DTextures
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DTextures];
-}
-
-- (void) setRender3DDepthComparisonThreshold:(NSInteger)threshold
-{
-	if (threshold < 0)
+	const NSInteger newDisplayModeID = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (newDisplayModeID == [mainWindow displayMode])
 	{
 		return;
 	}
 	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DDepthComparisonThreshold:(NSUInteger)threshold];
+	[mainWindow setDisplayMode:newDisplayModeID];
 }
 
-- (NSInteger) render3DDepthComparisonThreshold
+- (IBAction) changeDisplayOrientation:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DDepthComparisonThreshold];
-}
-
-- (void) setRender3DThreads:(NSInteger)threadCount
-{
-	if (threadCount < 0)
+	const NSInteger newDisplayOrientation = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (newDisplayOrientation == [mainWindow displayOrientation])
 	{
 		return;
 	}
 	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DThreads:(NSUInteger)threadCount];
+	[mainWindow setDisplayOrientation:newDisplayOrientation];
 }
 
-- (NSInteger) render3DThreads
+- (IBAction) changeDisplayOrder:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DThreads];
+	[mainWindow setDisplayOrder:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
-- (void) setRender3DLineHack:(BOOL)theState
+- (IBAction) writeDefaultsDisplayRotation:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DLineHack:theState];
+	[[NSUserDefaults standardUserDefaults] setDouble:[mainWindow displayRotation] forKey:@"DisplayView_Rotation"];
 }
 
-- (BOOL) render3DLineHack
+- (IBAction) writeDefaultsHUDSettings:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DLineHack];
+	// TODO: Not implemented.
 }
 
-- (void) setRender3DMultisample:(BOOL)theState
+- (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DMultisample:theState];
+	[[NSUserDefaults standardUserDefaults] setInteger:[mainWindow videoFilterType] forKey:@"DisplayView_VideoFilter"];
+	[[NSUserDefaults standardUserDefaults] setBool:[mainWindow useBilinearOutput] forKey:@"DisplayView_UseBilinearOutput"];
+	[[NSUserDefaults standardUserDefaults] setBool:[mainWindow useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
 }
 
-- (BOOL) render3DMultisample
+- (IBAction) writeDefaults3DRenderingSettings:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DMultisample];
-}
-
-- (IBAction) toggleGPUState:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	const NSInteger bitNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
 	
-	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
+	// Force end of editing of any text fields.
+	[[(NSControl *)sender window] makeFirstResponder:nil];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DRenderingEngine] forKey:@"Render3D_RenderingEngine"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DHighPrecisionColorInterpolation] forKey:@"Render3D_HighPrecisionColorInterpolation"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DEdgeMarking] forKey:@"Render3D_EdgeMarking"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DFog] forKey:@"Render3D_Fog"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DTextures] forKey:@"Render3D_Textures"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DDepthComparisonThreshold] forKey:@"Render3D_DepthComparisonThreshold"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DThreads] forKey:@"Render3D_Threads"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DLineHack] forKey:@"Render3D_LineHack"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DMultisample] forKey:@"Render3D_Multisample"];
 }
 
-- (IBAction) newDisplayWindow:(id)sender
+- (IBAction) writeDefaultsEmulationSettings:(id)sender
 {
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	NSDictionary *firmwareDict = [(CocoaDSFirmware *)[firmwarePanelController content] dataDictionary];
 	
+	// Force end of editing of any text fields.
+	[[(NSControl *)sender window] makeFirstResponder:nil];
+	
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagRigorousTiming] forKey:@"Emulation_RigorousTiming"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore cpuEmulationEngine] forKey:@"Emulation_CPUEmulationEngine"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalBios] forKey:@"Emulation_UseExternalBIOSImages"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateBiosInterrupts] forKey:@"Emulation_BIOSEmulateSWI"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagPatchDelayLoop] forKey:@"Emulation_BIOSPatchDelayLoopSWI"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalFirmware] forKey:@"Emulation_UseExternalFirmwareImage"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagFirmwareBoot] forKey:@"Emulation_FirmwareBoot"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
+	
+	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Nickname"] forKey:@"FirmwareConfig_Nickname"];
+	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Message"] forKey:@"FirmwareConfig_Message"];
+	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"FavoriteColor"] forKey:@"FirmwareConfig_FavoriteColor"];
+	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Birthday"] forKey:@"FirmwareConfig_Birthday"];
+	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Language"] forKey:@"FirmwareConfig_Language"];
 }
+
+- (IBAction) writeDefaultsSoundSettings:(id)sender
+{
+	NSMutableDictionary *speakerBindings = (NSMutableDictionary *)[cdsSoundController content];
+	
+	[[NSUserDefaults standardUserDefaults] setFloat:[[speakerBindings valueForKey:@"volume"] floatValue] forKey:@"Sound_Volume"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"audioOutputEngine"] integerValue] forKey:@"Sound_AudioOutputEngine"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[speakerBindings valueForKey:@"spuAdvancedLogic"] boolValue] forKey:@"SPU_AdvancedLogic"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuInterpolationMode"] integerValue] forKey:@"SPU_InterpolationMode"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMode"] integerValue] forKey:@"SPU_SyncMode"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMethod"] integerValue] forKey:@"SPU_SyncMethod"];
+}
+
+- (IBAction) closeSheet:(id)sender
+{
+	NSWindow *sheet = [(NSControl *)sender window];
+	const NSInteger code = [(NSControl *)sender tag];
+	
+    [NSApp endSheet:sheet returnCode:code];
+}
+
+#pragma mark Class Methods
 
 - (BOOL) handleLoadRom:(NSURL *)fileURL
 {
@@ -903,7 +1149,7 @@
 		[self setIsShowingFileMigrationDialog:YES];
 		
 		[NSApp beginSheet:saveFileMigrationSheet
-		   modalForWindow:(NSWindow *)[windowList objectAtIndex:0]
+		   modalForWindow:[[windowList objectAtIndex:0] window]
             modalDelegate:self
 		   didEndSelector:@selector(didEndFileMigrationSheet:returnCode:contextInfo:)
 			  contextInfo:fileURL];
@@ -950,7 +1196,7 @@
 		[self setIsShowingSaveStateDialog:YES];
 		
 		[NSApp beginSheet:saveStatePrecloseSheet
-		   modalForWindow:(NSWindow *)[windowList objectAtIndex:0]
+		   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
             modalDelegate:self
 		   didEndSelector:endSheetSelector
 			  contextInfo:romURL];
@@ -975,9 +1221,9 @@
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADING];
 	[self setIsWorking:YES];
 	
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow displayIfNeeded];
+		[[windowController window] displayIfNeeded];
 	}
 	
 	// Need to pause the core before loading the ROM.
@@ -1101,23 +1347,20 @@
 	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[theRom fileURL]];
 	
 	// Update the UI to indicate that a ROM has indeed been loaded.
-	for (NSWindow *theWindow in windowList)
+	[self updateAllWindowTitles];
+	
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow setRepresentedURL:[theRom fileURL]];
-		[[theWindow standardWindowButton:NSWindowDocumentIconButton] setImage:[theRom icon]];
-		
-		NSString *newWindowTitle = [theRom internalName];
-		[theWindow setTitle:newWindowTitle];
-		[[(EmuWindowDelegate *)[theWindow delegate] dispViewDelegate] setViewToWhite];
+		[[windowController view] clearToWhite];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
 	[self setIsWorking:NO];
 	[self setIsRomLoading:NO];
 	
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow displayIfNeeded];
+		[[windowController window] displayIfNeeded];
 	}
 	
 	// After the ROM loading is complete, send an execute message to the Cocoa DS per
@@ -1135,9 +1378,9 @@
 	[self setCurrentSaveStateURL:nil];
 	
 	isSaveStateEdited = NO;
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow setDocumentEdited:isSaveStateEdited];
+		[[windowController window] setDocumentEdited:isSaveStateEdited];
 	}
 	
 	// Save the ROM's cheat list before unloading.
@@ -1159,9 +1402,9 @@
 	
 	[self setIsWorking:YES];
 	
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow displayIfNeeded];
+		[[windowController window] displayIfNeeded];
 	}
 	
 	// Unload the ROM.
@@ -1177,25 +1420,36 @@
 	[CocoaDSCheatManager setMasterCheatList:dummyCheatList];
 	
 	// Update the UI to indicate that the ROM has finished unloading.
-	for (NSWindow *theWindow in windowList)
+	[self updateAllWindowTitles];
+	
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow setRepresentedURL:nil];
-		NSString *newWindowTitle = (NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
-		[theWindow setTitle:newWindowTitle];
-		[[(EmuWindowDelegate *)[theWindow delegate] dispViewDelegate] setViewToBlack];
+		[[windowController view] clearToBlack];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];
 	[self setIsWorking:NO];
 	
-	for (NSWindow *theWindow in windowList)
+	for (DisplayWindowController *windowController in windowList)
 	{
-		[theWindow displayIfNeeded];
+		[[windowController window] displayIfNeeded];
 	}
 	
 	result = YES;
 	
 	return result;
+}
+
+- (void) addOutputToCore:(CocoaDSOutput *)theOutput
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore addOutput:theOutput];
+}
+
+- (void) removeOutputFromCore:(CocoaDSOutput *)theOutput
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore removeOutput:theOutput];
 }
 
 - (void) executeCore
@@ -1214,93 +1468,6 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore restoreCoreState];
-}
-
-- (void) setupUserDefaults
-{
-	// Set the SPU settings per user preferences.
-	[self setCurrentVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[[self cdsSpeaker] setVolume:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
-	[[self cdsSpeaker] setAudioOutputEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
-	[[self cdsSpeaker] setSpuAdvancedLogic:[[NSUserDefaults standardUserDefaults] boolForKey:@"SPU_AdvancedLogic"]];
-	[[self cdsSpeaker] setSpuInterpolationMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
-	[[self cdsSpeaker] setSpuSyncMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
-	[[self cdsSpeaker] setSpuSyncMethod:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
-	
-	// Set the 3D rendering options per user preferences.
-	[self setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
-	[self setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
-	[self setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
-	[self setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
-	[self setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
-	[self setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
-	[self setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
-	[self setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
-	[self setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
-}
-
-- (IBAction) writeDefaults3DRenderingSettings:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	// Force end of editing of any text fields.
-	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DRenderingEngine] forKey:@"Render3D_RenderingEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DHighPrecisionColorInterpolation] forKey:@"Render3D_HighPrecisionColorInterpolation"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DEdgeMarking] forKey:@"Render3D_EdgeMarking"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DFog] forKey:@"Render3D_Fog"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DTextures] forKey:@"Render3D_Textures"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DDepthComparisonThreshold] forKey:@"Render3D_DepthComparisonThreshold"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DThreads] forKey:@"Render3D_Threads"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DLineHack] forKey:@"Render3D_LineHack"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DMultisample] forKey:@"Render3D_Multisample"];
-}
-
-- (IBAction) writeDefaultsEmulationSettings:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSDictionary *firmwareDict = [(CocoaDSFirmware *)[firmwarePanelController content] dataDictionary];
-	
-	// Force end of editing of any text fields.
-	[[(NSControl *)sender window] makeFirstResponder:nil];
-	
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagRigorousTiming] forKey:@"Emulation_RigorousTiming"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore cpuEmulationEngine] forKey:@"Emulation_CPUEmulationEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalBios] forKey:@"Emulation_UseExternalBIOSImages"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateBiosInterrupts] forKey:@"Emulation_BIOSEmulateSWI"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagPatchDelayLoop] forKey:@"Emulation_BIOSPatchDelayLoopSWI"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalFirmware] forKey:@"Emulation_UseExternalFirmwareImage"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagFirmwareBoot] forKey:@"Emulation_FirmwareBoot"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagEmulateEnsata] forKey:@"Emulation_EmulateEnsata"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagDebugConsole] forKey:@"Emulation_UseDebugConsole"];
-	
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Nickname"] forKey:@"FirmwareConfig_Nickname"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Message"] forKey:@"FirmwareConfig_Message"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"FavoriteColor"] forKey:@"FirmwareConfig_FavoriteColor"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Birthday"] forKey:@"FirmwareConfig_Birthday"];
-	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Language"] forKey:@"FirmwareConfig_Language"];
-}
-
-- (IBAction) writeDefaultsSoundSettings:(id)sender
-{
-	NSMutableDictionary *speakerBindings = (NSMutableDictionary *)[cdsSoundController content];
-	
-	[[NSUserDefaults standardUserDefaults] setFloat:[[speakerBindings valueForKey:@"volume"] floatValue] forKey:@"Sound_Volume"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"audioOutputEngine"] integerValue] forKey:@"Sound_AudioOutputEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[speakerBindings valueForKey:@"spuAdvancedLogic"] boolValue] forKey:@"SPU_AdvancedLogic"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuInterpolationMode"] integerValue] forKey:@"SPU_InterpolationMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMode"] integerValue] forKey:@"SPU_SyncMode"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMethod"] integerValue] forKey:@"SPU_SyncMethod"];
-}
-
-- (IBAction) closeSheet:(id)sender
-{
-	NSWindow *sheet = [(NSControl *)sender window];
-	const NSInteger code = [(NSControl *)sender tag];
-	
-    [NSApp endSheet:sheet returnCode:code];
 }
 
 - (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -1390,6 +1557,73 @@
 		}
 	}
 }
+
+- (void) updateAllWindowTitles
+{
+	if ([windowList count] < 1)
+	{
+		return;
+	}
+	
+	NSString *romName = nil;
+	NSURL *repURL = nil;
+	NSImage *titleIcon = nil;
+	
+	if ([self currentRom] == nil)
+	{
+		romName = (NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
+	}
+	else
+	{
+		romName = [currentRom internalName];
+		repURL = [currentRom fileURL];
+		titleIcon = [currentRom icon];
+	}
+	
+	if ([windowList count] > 1)
+	{
+		for (DisplayWindowController *windowController in windowList)
+		{
+			NSString *newWindowTitle = [romName stringByAppendingFormat:@":%ld", (unsigned long)([windowList indexOfObject:windowController] + 1)];
+			
+			[[windowController window] setTitle:newWindowTitle];
+			[[windowController window] setRepresentedURL:repURL];
+			[[[windowController window] standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
+		}
+	}
+	else
+	{
+		NSWindow *theWindow = [[windowList objectAtIndex:0] window];
+		[theWindow setTitle:romName];
+		[theWindow setRepresentedURL:repURL];
+		[[theWindow standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
+	}
+}
+
+- (void) setupUserDefaults
+{
+	// Set the SPU settings per user preferences.
+	[self setCurrentVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
+	[[self cdsSpeaker] setVolume:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
+	[[self cdsSpeaker] setAudioOutputEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Sound_AudioOutputEngine"]];
+	[[self cdsSpeaker] setSpuAdvancedLogic:[[NSUserDefaults standardUserDefaults] boolForKey:@"SPU_AdvancedLogic"]];
+	[[self cdsSpeaker] setSpuInterpolationMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_InterpolationMode"]];
+	[[self cdsSpeaker] setSpuSyncMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"]];
+	[[self cdsSpeaker] setSpuSyncMethod:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
+	
+	// Set the 3D rendering options per user preferences.
+	[self setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
+	[self setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
+	[self setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
+	[self setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
+	[self setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
+	[self setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
+	[self setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
+	[self setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
+	[self setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
+}
+
+#pragma mark NSUserInterfaceValidations Protocol
 
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)theItem
 {
@@ -1635,9 +1869,99 @@
 			}
 		}
 	}
+	else if (theAction == @selector(changeScale:))
+	{
+		const NSInteger viewScale = (NSInteger)([mainWindow displayScale] * 100.0);
+		
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:(viewScale == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeRotation:))
+	{
+		NSInteger viewRotation = (NSInteger)([mainWindow displayRotation]);
+		
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			if ([theItem tag] == -1)
+			{
+				if (viewRotation == 0 ||
+					viewRotation == 90 ||
+					viewRotation == 180 ||
+					viewRotation == 270)
+				{
+					[(NSMenuItem*)theItem setState:NSOffState];
+				}
+				else
+				{
+					[(NSMenuItem*)theItem setState:NSOnState];
+				}
+			}
+			else if (viewRotation == [theItem tag])
+			{
+				[(NSMenuItem*)theItem setState:NSOnState];
+			}
+			else
+			{
+				[(NSMenuItem*)theItem setState:NSOffState];
+			}
+		}
+	}
+	else if (theAction == @selector(changeDisplayMode:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([mainWindow displayMode] == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeDisplayOrientation:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([mainWindow displayOrientation] == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeDisplayOrder:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([mainWindow displayOrder] == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(hudDisable:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setTitle:([[mainWindow view] isHudEnabled]) ? NSSTRING_TITLE_DISABLE_HUD : NSSTRING_TITLE_ENABLE_HUD];
+		}
+	}
+	else if (theAction == @selector(toggleStatusBar:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setTitle:([mainWindow isShowingStatusBar]) ? NSSTRING_TITLE_HIDE_STATUS_BAR : NSSTRING_TITLE_SHOW_STATUS_BAR];
+		}
+	}
+	else if (theAction == @selector(toggleKeepMinDisplaySizeAtNormal:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([mainWindow isMinSizeNormal]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleToolbarShown:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setTitle:([[[mainWindow window] toolbar] isVisible]) ? NSSTRING_TITLE_HIDE_TOOLBAR : NSSTRING_TITLE_SHOW_TOOLBAR];
+		}
+	}
 	
 	return enable;
 }
+
+#pragma mark NSControl Delegate Methods
 
 - (void)controlTextDidEndEditing:(NSNotification *)aNotification
 {

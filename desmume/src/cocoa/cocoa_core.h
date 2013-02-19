@@ -37,7 +37,8 @@ typedef struct
 	unsigned int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
 	bool exitThread;
-	pthread_mutex_t *mutexCoreExecute;
+	pthread_mutex_t mutexCoreExecute;
+	pthread_mutex_t mutexOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;
 } CoreThreadParam;
@@ -68,7 +69,6 @@ typedef struct
 	BOOL emuFlagEmulateEnsata;
 	NSInteger cpuEmulationEngine;
 	
-	pthread_mutex_t *mutexCoreExecute;
 	OSSpinLock spinlockCdsController;
 	OSSpinLock spinlockMasterExecute;
 	OSSpinLock spinlockExecutionChange;
