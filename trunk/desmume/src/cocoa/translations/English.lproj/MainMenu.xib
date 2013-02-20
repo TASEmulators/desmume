@@ -13,7 +13,6 @@
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
 			<integer value="81"/>
-			<integer value="3786"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -15062,7 +15061,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<nil key="NSViewClass"/>
 				<string key="NSWindowContentMaxSize">{1.79769e+308, 1.79769e+308}</string>
 				<object class="NSView" key="NSWindowView" id="729561310">
-					<reference key="NSNextResponder"/>
+					<nil key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -15963,7 +15962,6 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{284, 560}</string>
-					<reference key="NSSuperview"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{1.79769e+308, 1.79769e+308}</string>
@@ -20172,6 +20170,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 					<string>mainWindow.useBilinearOutput</string>
 					<string>mainWindow.useVerticalSync</string>
 					<string>mainWindow.screenshotFileFormat</string>
+					<string>selectedExportRomSaveID</string>
 				</object>
 				<string key="NSObjectClassName">EmuControllerDelegate</string>
 				<object class="_NSManagedProxy" key="_NSManagedProxy"/>
@@ -27416,30 +27415,6 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
-						<string key="label">selectExportRomSaveFormat:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="98187887"/>
-					</object>
-					<int key="connectionID">6720</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">selectExportRomSaveFormat:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="839916386"/>
-					</object>
-					<int key="connectionID">6721</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">selectExportRomSaveFormat:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="472661265"/>
-					</object>
-					<int key="connectionID">6722</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
 						<string key="label">changeCoreEmuFlags:</string>
 						<reference key="source" ref="231770064"/>
 						<reference key="destination" ref="858194736"/>
@@ -29236,6 +29211,22 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<reference key="destination" ref="349158443"/>
 					</object>
 					<int key="connectionID">7000</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">selectedTag: selection.selectedExportRomSaveID</string>
+						<reference key="source" ref="996525585"/>
+						<reference key="destination" ref="258098641"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="996525585"/>
+							<reference key="NSDestination" ref="258098641"/>
+							<string key="NSLabel">selectedTag: selection.selectedExportRomSaveID</string>
+							<string key="NSBinding">selectedTag</string>
+							<string key="NSKeyPath">selection.selectedExportRomSaveID</string>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">7001</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -46650,7 +46641,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">7000</int>
+			<int key="maxID">7001</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
