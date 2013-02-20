@@ -49,7 +49,6 @@
 	NSView *exportRomSavePanelAccessoryView;
 	
 	BOOL isSaveStateEdited;
-	NSInteger selectedExportRomSaveID;
 	
 	BOOL isWorking;
 	BOOL isRomLoading;
@@ -60,6 +59,7 @@
 	BOOL isShowingFileMigrationDialog;
 	BOOL isUserInterfaceBlockingExecution;
 	NSURL *currentSaveStateURL;
+	NSInteger selectedExportRomSaveID;
 	NSInteger selectedRomSaveTypeID;
 	
 	NSImage *iconVolumeFull;
@@ -114,6 +114,7 @@
 @property (assign) BOOL isShowingFileMigrationDialog;
 @property (assign) BOOL isUserInterfaceBlockingExecution;
 @property (retain) NSURL *currentSaveStateURL;
+@property (assign) NSInteger selectedExportRomSaveID;
 @property (assign) NSInteger selectedRomSaveTypeID;
 
 @property (assign) NSInteger render3DRenderingEngine;
@@ -142,7 +143,6 @@
 - (IBAction) saveEmuSaveStateSlot:(id)sender;
 - (IBAction) importRomSave:(id)sender;
 - (IBAction) exportRomSave:(id)sender;
-- (IBAction) selectExportRomSaveFormat:(id)sender;
 
 // Edit Menu
 - (IBAction) copy:(id)sender;

@@ -69,6 +69,7 @@
 @synthesize isUserInterfaceBlockingExecution;
 
 @synthesize currentSaveStateURL;
+@synthesize selectedExportRomSaveID;
 @synthesize selectedRomSaveTypeID;
 
 @dynamic render3DRenderingEngine;
@@ -110,8 +111,8 @@
 	isUserInterfaceBlockingExecution = NO;
 	
 	currentSaveStateURL = nil;
-	selectedExportRomSaveID = 0;
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
+	selectedExportRomSaveID = 0;
 	
 	iconExecute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]];
 	iconPause = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]];
@@ -749,17 +750,12 @@
 		NSURL *romSaveURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
 		if (romSaveURL != nil)
 		{
-			const BOOL isRomSaveExported = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:romSaveURL fileType:selectedExportRomSaveID];
+			const BOOL isRomSaveExported = [CocoaDSFile exportRomSaveToURL:[panel URL] romSaveURL:romSaveURL fileType:[self selectedExportRomSaveID]];
 			[self setStatusText:(isRomSaveExported) ? NSSTRING_STATUS_ROM_SAVE_EXPORTED : NSSTRING_STATUS_ROM_SAVE_EXPORT_FAILED];
 		}
 	}
 	
 	[self restoreCoreState];
-}
-
-- (IBAction) selectExportRomSaveFormat:(id)sender
-{
-	selectedExportRomSaveID = [CocoaDSUtil getIBActionSenderTag:sender];
 }
 
 - (IBAction) copy:(id)sender
