@@ -56,7 +56,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
 				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -238,7 +238,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -428,7 +428,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -1992,6 +1992,14 @@
 			</File>
 			<File
 				RelativePath=".\snddx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\sndxa2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\sndxa2.h"
 				>
 			</File>
 			<File

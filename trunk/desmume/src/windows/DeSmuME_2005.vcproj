@@ -446,7 +446,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501;FASTBUILD"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -899,6 +899,14 @@
 			</File>
 			<File
 				RelativePath=".\snddx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\sndxa2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\sndxa2.h"
 				>
 			</File>
 			<File

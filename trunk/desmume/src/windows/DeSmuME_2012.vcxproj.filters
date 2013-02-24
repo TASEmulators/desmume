@@ -765,6 +765,9 @@
     <ClCompile Include="..\OGLRender_3_2.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="sndxa2.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1288,6 +1291,9 @@
     </ClInclude>
     <ClInclude Include="..\OGLRender_3_2.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="sndxa2.h">
+      <Filter>Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
