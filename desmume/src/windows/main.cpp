@@ -439,14 +439,14 @@ u32 glock = 0;
 // set is externed to scanline.cpp.
 // TODO: When videofilter.cpp becomes Windows-friendly, remove the second set of
 // variables, as they will no longer be necessary at that point.
-int _scanline_filter_a;
-int _scanline_filter_b;
-int _scanline_filter_c;
-int _scanline_filter_d;
-extern int scanline_filter_a;
-extern int scanline_filter_b;
-extern int scanline_filter_c;
-extern int scanline_filter_d;
+extern int _scanline_filter_a;
+extern int _scanline_filter_b;
+extern int _scanline_filter_c;
+extern int _scanline_filter_d;
+int scanline_filter_a = 0;
+int scanline_filter_b = 2;
+int scanline_filter_c = 2;
+int scanline_filter_d = 4;
 
 BOOL finished = FALSE;
 bool romloaded = false;
@@ -2951,10 +2951,10 @@ int _main()
     //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
     //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
     //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
-	_scanline_filter_a = scanline_filter_a;
-	_scanline_filter_b = scanline_filter_b;
-	_scanline_filter_c = scanline_filter_c;
-	_scanline_filter_d = scanline_filter_d;
+	scanline_filter_a = _scanline_filter_a;
+	scanline_filter_b = _scanline_filter_b;
+	scanline_filter_c = _scanline_filter_c;
+	scanline_filter_d = _scanline_filter_d;
 
 	Desmume_InitOnce();
 	aggDraw.hud->setFont(fonts_list[GetPrivateProfileInt("Display","HUD Font", font_Nums-1, IniName)].name);
