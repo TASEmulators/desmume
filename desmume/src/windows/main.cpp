@@ -72,6 +72,7 @@
 #include "throttle.h"
 #include "hotkey.h"
 #include "snddx.h"
+#include "sndxa2.h"
 #include "commandline.h"
 #include "FEX_Interface.h"
 #include "OpenArchive.h"
@@ -475,6 +476,7 @@ int sndvolume=100;
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
 	&SNDDIRECTX,
+    &SNDXAUDIO2,
 	NULL
 };
 
@@ -3366,6 +3368,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 {
 //	testelf();
 
+    CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS))== TIMERR_NOERROR)
 	{
@@ -3942,7 +3946,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 		}
 
 		// don't pull down menu with Alt or F10 if it is a hotkey, unless no game is running
-		if(romloaded && ((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey) && !GetAsyncKeyState(VK_F4)))
+		if(romloaded && ((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey)))
 			return 0;
 
 		return 1;
@@ -4687,6 +4691,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//since the user has used a gamepad,
 			//send some fake input to keep the screensaver from running
 			PreventScreensaver();
+			//do not trigger twice on alt/f10 hotkeys
+			if(PurgeModifiers(wParam) == VK_MENU || PurgeModifiers(wParam) == VK_F10)
+				break;
 			goto DOKEYDOWN;
 	case WM_SYSKEYDOWN:
 DOKEYDOWN:
