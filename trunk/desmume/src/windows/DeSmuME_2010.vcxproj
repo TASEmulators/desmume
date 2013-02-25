@@ -266,7 +266,7 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -309,7 +309,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -354,7 +354,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -387,6 +387,11 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Template|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
