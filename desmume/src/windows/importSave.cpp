@@ -1,6 +1,6 @@
 /*
 Copyright 2006 Theo Berkau
-Copyright (C) 2006-2012 DeSmuME team
+Copyright (C) 2006-2013 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -53,23 +53,18 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 						EnableWindow(GetDlgItem(hDlg, IDC_IMP_AUTO_ADVANSCENE), false);
 					}
 					else
-						strcpy(buf, save_names[sv]);
+						strcpy(buf, save_types[sv].descr);
 				SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_ADVANSCENE), buf);
 			}
 			else
 				EnableWindow(GetDlgItem(hDlg, IDC_IMP_AUTO_ADVANSCENE), false);
 
-			SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), save_names[MMU_new.backupDevice.info.type]);
+			SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), save_types[MMU_new.backupDevice.info.type].descr);
 			SendDlgItemMessage(hDlg, IDC_IMP_AUTO_CURRENT, BM_SETCHECK, true, 0);
 
 			for (u8 i = 1; i <= MAX_SAVE_TYPES; i++) 
 			{
-				u32 ss = save_types[i][1] * 8 / 1024;
-				if (ss >= 1024)
-					sprintf(buf, "%i Mbit", ss / 1024);
-				else
-					sprintf(buf, "%i Kbit", ss);
-				SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_ADDSTRING, 0, (LPARAM)buf);
+				SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_ADDSTRING, 0, (LPARAM)save_types[i].descr);
 			}
 			SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_SETCURSEL, MMU_new.backupDevice.info.type, 0);
 
@@ -87,7 +82,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 				{
 					char sizeS[30] = {0};
 					memset(&sizeS[0], 0, sizeof(size));
-					u32 ss = save_types[fileSaveType+1][1] * 8 / 1024;
+					u32 ss = save_types[fileSaveType+1].size * 8 / 1024;
 					if (ss >= 1024)
 						sprintf(sizeS, "%i Mbit", ss / 1024);
 					else
@@ -107,11 +102,20 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 		}
 			
 		return false;
-		
+
 		case WM_COMMAND:
 		{
 			switch(LOWORD(wParam))
 			{
+				case IDC_IMP_MANUAL_SIZE:
+
+					//when the user changes the desired size, automatically select manual radiobutton option
+					if(HIWORD(wParam) == CBN_SELCHANGE)
+					{
+						CheckRadioButton(hDlg,IDC_IMP_AUTO_CURRENT,IDC_IMP_MANUAL,IDC_IMP_MANUAL);
+					}
+					break;
+
 				case IDOK:
 				{
 					u32 res = 0;
@@ -175,7 +179,7 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	u32 res = DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_IMPORT_SAVE_SIZE), hwnd, (DLGPROC)ImportSizeSelect_Proc);
 	if (res < MAX_SAVE_TYPES)
 	{
-		res = NDS_ImportSave(ImportSavFName, save_types[res+1][1]);
+		res = NDS_ImportSave(ImportSavFName, save_types[res+1].size);
 		if (res)
 		{
 			printf("Save was successfully imported\n");

@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -87,38 +87,23 @@ static const u32 saveSizes[] = {512,			// 4k
 static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
 //the lookup table from user save types to save parameters
-const int save_types[][2] = {
-        {MC_TYPE_AUTODETECT,1},
-        {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
-        {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
-        {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
-        {MC_TYPE_FRAM,MC_SIZE_256KBITS},
-        {MC_TYPE_FLASH,MC_SIZE_2MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_4MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_8MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_16MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_32MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_64MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_128MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_256MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_512MBITS}
+const SAVE_TYPE save_types[] = {
+	{"Autodetect", MC_TYPE_AUTODETECT,1},
+	{"EEPROM 4kbit",MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
+	{"EEPROM 64kbit",MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
+	{"EEPROM 512kbit",MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
+	{"FRAM 256kbit",MC_TYPE_FRAM,MC_SIZE_256KBITS},
+	{"FLASH 2Mbit",MC_TYPE_FLASH,MC_SIZE_2MBITS},
+	{"FLASH 4Mbit",MC_TYPE_FLASH,MC_SIZE_4MBITS},
+	{"FLASH 8Mbit",MC_TYPE_FLASH,MC_SIZE_8MBITS},
+	{"FLASH 16Mbit",MC_TYPE_FLASH,MC_SIZE_16MBITS},
+	{"FLASH 32Mbit",MC_TYPE_FLASH,MC_SIZE_32MBITS},
+	{"FLASH 64Mbit",MC_TYPE_FLASH,MC_SIZE_64MBITS},
+	{"FLASH 128Mbit",MC_TYPE_FLASH,MC_SIZE_128MBITS},
+	{"FLASH 256Mbit",MC_TYPE_FLASH,MC_SIZE_256MBITS},
+	{"FLASH 512Mbit",MC_TYPE_FLASH,MC_SIZE_512MBITS}
 };
 
-const char *save_names[] = {
-		"EEPROM 4kbit",
-		"EEPROM 64kbit",
-		"EEPROM 512kbit",
-		"FRAM 256kbit",
-		"FLASH 2Mbit",
-		"FLASH 4Mbit",
-		"FLASH 8Mbit",
-		"FLASH 16Mbit",
-		"FLASH 32Mbit",
-		"FLASH 64Mbit",
-		"FLASH 128Mbit",
-		"FLASH 256Mbit",
-		"FLASH 512Mbit"
-};
 
 //forces the currently selected backup type to be current
 //(can possibly be used to repair poorly chosen save types discovered late in gameplay i.e. pokemon gamers)
@@ -422,8 +407,8 @@ void BackupDevice::reset()
 	if(state == DETECTING && CommonSettings.manualBackupType != MC_TYPE_AUTODETECT)
 	{
 		state = RUNNING;
-		int savetype = save_types[CommonSettings.manualBackupType][0];
-		int savesize = save_types[CommonSettings.manualBackupType][1];
+		int savetype = save_types[CommonSettings.manualBackupType].media_type;
+		int savesize = save_types[CommonSettings.manualBackupType].size;
 		ensure((u32)savesize); //expand properly if necessary
 		resize(savesize); //truncate if necessary
 		addr_size = addr_size_for_old_save_type(savetype);
@@ -440,7 +425,7 @@ u8 BackupDevice::searchFileSaveType(u32 size)
 {
 	for (u8 i = 1; i < MAX_SAVE_TYPES; i++)
 	{
-		if (size == save_types[i][1])
+		if (size == save_types[i].size)
 			return (i-1);
 	}
 	return 0xFF;
@@ -896,8 +881,8 @@ static u32 no_gba_fillLeft(u32 size)
 {
 	for (u32 i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
-		if (size <= (u32)save_types[i][1])
-			return (size + (save_types[i][1] - size));
+		if (size <= (u32)save_types[i].size)
+			return (size + (save_types[i].size - size));
 	}
 	return size;
 }
@@ -1053,7 +1038,7 @@ void BackupDevice::loadfile()
 				info.type = advsc.getSaveType();
 				if (info.type != 0xFF && info.type != 0xFE)
 				{
-					u32 adv_size = save_types[info.type+1][1];
+					u32 adv_size = save_types[info.type+1].size;
 					if (info.size > adv_size)
 						info.size = adv_size;
 					else
@@ -1190,8 +1175,8 @@ void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
 			u32 res = searchFileSaveType(size);
 			if (res != 0xFF) type = (res + 1); // +1 - skip autodetect
 		}
-		int savetype = save_types[type][0];
-		int savesize = save_types[type][1];
+		int savetype = save_types[type].media_type;
+		int savesize = save_types[type].size;
 		addr_size = addr_size_for_old_save_type(savetype);
 		if((u32)savesize<size) size = savesize;
 		resize(savesize);
@@ -1350,7 +1335,7 @@ bool BackupDevice::load_movie(EMUFILE* is) {
 
 void BackupDevice::forceManualBackupType()
 {
-	addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType][1]);
+	addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType].size);
 	state = RUNNING;
 }
 
