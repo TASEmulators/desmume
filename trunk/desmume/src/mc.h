@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -225,8 +225,14 @@ u8 fw_transfer(memory_chip_t *mc, u8 data);
 void backup_setManualBackupType(int type);
 void backup_forceManualBackupType();
 
-extern const char *save_names[];
-extern const int save_types[][2];
+struct SAVE_TYPE
+{
+	const char* descr;
+	int media_type;
+	int size;
+};
+
+extern const SAVE_TYPE save_types[];
 
 #endif /*__FW_H__*/
 

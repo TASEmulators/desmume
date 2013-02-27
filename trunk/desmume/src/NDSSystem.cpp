@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -598,7 +598,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 				printf("None");
 			else
 			{
-				printf("%s", save_names[sv]);
+				printf("%s", save_types[sv].descr);
 				if (CommonSettings.autodetectBackupMethod == 1)
 					backup_setManualBackupType(sv+1);
 			}
