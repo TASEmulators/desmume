@@ -267,11 +267,6 @@ struct armcpu_t
 
 #if defined(_M_X64) || defined(__x86_64__)
 	u8 cond_table[16*16];
-
-	armcpu_t()
-	{
-		memcpy(&cond_table[0], &arm_cond_table[0], sizeof(arm_cond_table));
-	}
 #endif
 
 #ifdef GDB_STUB
