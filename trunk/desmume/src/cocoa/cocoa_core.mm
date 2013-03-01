@@ -710,7 +710,7 @@ static void* RunCoreThread(void *arg)
 		
 		// Get the user's input, execute a single emulation frame, and generate
 		// the frame output.
-		[(CocoaDSController *)param->cdsController update];
+		[(CocoaDSController *)param->cdsController flush];
 		
 		NDS_beginProcessingInput();
 		// Shouldn't need to do any special processing steps in between.

@@ -17,6 +17,7 @@
 
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
+#import "InputManager.h"
 
 #import "cocoa_file.h"
 #import "cocoa_input.h"
@@ -508,11 +509,6 @@ enum OGLVertexAttributeID
 
 #pragma mark Class Methods
 
-- (void) setCdsController:(CocoaDSController *)theController
-{
-	[view setCdsController:theController];
-}
-
 - (void) setupUserDefaults
 {
 	// Set the display window per user preferences.
@@ -639,14 +635,14 @@ enum OGLVertexAttributeID
 	[self setIsShowingStatusBar:([self isShowingStatusBar]) ? NO : YES];
 }
 
-- (IBAction) executeCoreToggle:(id)sender
+- (IBAction) toggleExecutePause:(id)sender
 {
-	[emuControl executeCoreToggle:sender];
+	[emuControl toggleExecutePause:sender];
 }
 
-- (IBAction) resetCore:(id)sender
+- (IBAction) reset:(id)sender
 {
-	[emuControl resetCore:sender];
+	[emuControl reset:sender];
 }
 
 - (IBAction) changeCoreSpeed:(id)sender
@@ -705,6 +701,7 @@ enum OGLVertexAttributeID
 {
 	[emuControl setMainWindow:self];
 	[view setNextResponder:[self window]];
+	[[view inputManager] setHidInputTarget:view];
 }
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
@@ -783,7 +780,7 @@ enum OGLVertexAttributeID
 	BOOL enable = YES;
     const SEL theAction = [theItem action];
 	
-	if (theAction == @selector(executeCoreToggle:))
+	if (theAction == @selector(toggleExecutePause:))
     {
 		if (![emuControl masterExecuteFlag] ||
 			[emuControl currentRom] == nil ||
@@ -803,7 +800,7 @@ enum OGLVertexAttributeID
 			[theItem setImage:[emuControl iconPause]];
 		}
     }
-	else if (theAction == @selector(resetCore:))
+	else if (theAction == @selector(reset:))
 	{
 		if ([emuControl currentRom] == nil || [emuControl isUserInterfaceBlockingExecution])
 		{
@@ -843,7 +840,7 @@ enum OGLVertexAttributeID
 #pragma mark -
 @implementation DisplayView
 
-@synthesize cdsController;
+@synthesize inputManager;
 @synthesize isHudEnabled;
 @synthesize isHudEditingModeEnabled;
 
@@ -884,7 +881,7 @@ enum OGLVertexAttributeID
 	glTexBackSize = NSMakeSize(w, h);
 	vtxBufferOffset = 0;
 	
-	cdsController = nil;
+	inputManager = nil;
 	
 	return self;
 }
@@ -899,7 +896,7 @@ enum OGLVertexAttributeID
 	free(glTexBack);
 	glTexBack = NULL;
 	
-	[self setCdsController:nil];
+	[self setInputManager:nil];
 	[context clearDrawable];
 	[context release];
 	
@@ -1309,33 +1306,60 @@ enum OGLVertexAttributeID
 	return touchLoc;
 }
 
+#pragma mark InputHIDManagerTarget Protocol
+- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue
+{
+	BOOL isHandled = NO;
+	std::string inputStr;
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	
+	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue);
+	
+	const size_t inputCount = inputList.size();
+	
+	for (unsigned int i = 0; i < inputCount; i++)
+	{
+		const InputAttributes &inputAttr = inputList[i];
+		
+		if (inputAttr.inputState == INPUT_ATTRIBUTE_STATE_ON)
+		{
+			inputStr = inputAttr.deviceName + ":" + inputAttr.elementName;
+			break;
+		}
+	}
+	
+	if (!inputStr.empty())
+	{
+		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr.c_str() encoding:NSUTF8StringEncoding]];
+	}
+	
+	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputList];
+	
+	if (cmdList.empty())
+	{
+		return isHandled;
+	}
+	
+	[inputManager dispatchCommandList:&cmdList];
+	
+	isHandled = YES;
+	return isHandled;
+}
+
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
 {
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
-	if (self.cdsController == nil)
-	{
-		return isHandled;
-	}
-	
-	NSString *elementName = [NSString stringWithFormat:@"%d", [theEvent keyCode]];
-	NSString *elementCode = elementName;
-	NSDictionary *inputAttributes = [NSDictionary dictionaryWithObjectsAndKeys:
-									 @"NSEventKeyboard", @"deviceCode",
-									 @"Keyboard", @"deviceName",
-									 elementCode, @"elementCode",
-									 elementName, @"elementName",
-									 [NSNumber numberWithBool:keyPressed], @"on",
-									 nil];
+	const InputAttributes inputAttr = InputManagerEncodeKeyboardInput([theEvent keyCode], keyPressed);
 	
 	if (keyPressed && [theEvent window] != nil)
 	{
-		[[windowController emuControl] setStatusText:[NSString stringWithFormat:@"Keyboard:%i", [theEvent keyCode]]];
+		std::string inputStr = inputAttr.deviceName + ":" + inputAttr.elementName;
+		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr.c_str() encoding:NSUTF8StringEncoding]];
 	}
 	
-	isHandled = [self.cdsController setStateWithInput:inputAttributes];
-	
+	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];
 	return isHandled;
 }
 
@@ -1345,7 +1369,7 @@ enum OGLVertexAttributeID
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	const NSInteger displayModeID = [windowController displayMode];
 	
-	if (self.cdsController == nil || (displayModeID != DS_DISPLAY_TYPE_TOUCH && displayModeID != DS_DISPLAY_TYPE_COMBO))
+	if (displayModeID != DS_DISPLAY_TYPE_TOUCH && displayModeID != DS_DISPLAY_TYPE_COMBO)
 	{
 		return isHandled;
 	}
@@ -1354,44 +1378,18 @@ enum OGLVertexAttributeID
 	// and finally to DS touchscreen coordinates.
 	NSPoint touchLoc = [self dsPointFromEvent:theEvent];
 	
-	NSString *elementCode = [NSString stringWithFormat:@"%li", (long)[theEvent buttonNumber]];
-	NSString *elementName = [NSString stringWithFormat:@"Button %li", (long)[theEvent buttonNumber]];
-	
-	switch ([theEvent buttonNumber])
-	{
-		case kCGMouseButtonLeft:
-			elementName = @"Primary Button";
-			break;
-			
-		case kCGMouseButtonRight:
-			elementName = @"Secondary Button";
-			break;
-			
-		case kCGMouseButtonCenter:
-			elementName = @"Center Button";
-			break;
-			
-		default:
-			break;
-	}
-	
-	NSDictionary *inputAttributes = [NSDictionary dictionaryWithObjectsAndKeys:
-									 @"NSEventMouse", @"deviceCode",
-									 @"Mouse", @"deviceName",
-									 elementCode, @"elementCode",
-									 elementName, @"elementName",
-									 [NSNumber numberWithBool:buttonPressed], @"on",
-									 [NSNumber numberWithFloat:touchLoc.x], @"pointX",
-									 [NSNumber numberWithFloat:touchLoc.y], @"pointY",
-									 nil];
+	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([theEvent buttonNumber], touchLoc, buttonPressed);
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		[[windowController emuControl] setStatusText:[NSString stringWithFormat:@"Mouse:%li X:%li Y:%li", (long)[theEvent buttonNumber], (long)(touchLoc.x), (long)(touchLoc.y)]];
+		char inputCoordBuf[256] = {0};
+		snprintf(inputCoordBuf, 256, " X:%i Y:%i", (int)inputAttr.floatValue[0], (int)inputAttr.floatValue[1]);
+		
+		std::string inputStr = inputAttr.deviceName + ":" + inputAttr.elementName + std::string(inputCoordBuf);
+		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr.c_str() encoding:NSUTF8StringEncoding]];
 	}
 	
-	isHandled = [self.cdsController setStateWithInput:inputAttributes];
-	
+	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];
 	return isHandled;
 }
 

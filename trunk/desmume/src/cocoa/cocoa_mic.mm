@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ static CocoaDSMic *masterMic = nil;
 @synthesize writePosition;
 @synthesize fillCount;
 @synthesize needsActivate;
-@synthesize mode;
+@dynamic mode;
 
 - (id)init
 {
@@ -73,7 +73,12 @@ static CocoaDSMic *masterMic = nil;
 	[super dealloc];
 }
 
-- (void) mode:(NSInteger)theMode
+- (NSInteger) mode
+{
+	return mode;
+}
+
+- (void) setMode:(NSInteger)theMode
 {
 	switch (theMode)
 	{
@@ -100,6 +105,8 @@ static CocoaDSMic *masterMic = nil;
 		default:
 			break;
 	}
+	
+	mode = theMode;
 }
 
 - (void) clear

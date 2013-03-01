@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@
 @implementation InputPrefsView
 
 @synthesize prefWindow;
-@synthesize configInput;
-@synthesize cdsController;
+@synthesize inputManager;
+@dynamic configInputTargetID;
 
 - (id)initWithFrame:(NSRect)frame
 {
@@ -39,44 +39,239 @@
     }
 	
 	lastConfigButton = nil;
-	configInput = 0;
+	configInputTargetID = 0;
 	configInputList = [[NSMutableDictionary alloc] initWithCapacity:32];
-	keyNameTable = [[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KeyNames" ofType:@"plist"]];
-	cdsController = nil;
 	
-	[[NSNotificationCenter defaultCenter] addObserver:self
-											 selector:@selector(handleHIDInput:)
-												 name:@"org.desmume.DeSmuME.hidInputDetected"
-											   object:nil];
+	displayStringBindings = [[NSDictionary alloc] initWithObjectsAndKeys:
+							 @"Input_Up",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_UP],
+							 @"Input_Down",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_DOWN],
+							 @"Input_Left",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_LEFT],
+							 @"Input_Right",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_RIGHT],
+							 @"Input_A",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_A],
+							 @"Input_B",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_B],
+							 @"Input_X",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_X],
+							 @"Input_Y",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_Y],
+							 @"Input_L",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_L],
+							 @"Input_R",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_R],
+							 @"Input_Start",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_START],
+							 @"Input_Select",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SELECT],
+							 @"Input_Microphone",	[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SIM_MIC],
+							 @"Input_Lid",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_LID],
+							 @"Input_Debug",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_DEBUG],
+							 @"Input_SpeedHalf",	[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SPEED_HALF],
+							 @"Input_SpeedDouble",	[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SPEED_DOUBLE],
+							 @"Input_HUD",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_TOGGLE_HUD],
+							 @"Input_Execute",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_EXECUTE],
+							 @"Input_Pause",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_PAUSE],
+							 @"Input_Reset",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_RESET],
+							 @"Input_Touch",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_TOUCH],
+							 nil];
+	
+	commandTagMap[PREF_INPUT_BUTTON_UP]				= "Up";
+	commandTagMap[PREF_INPUT_BUTTON_DOWN]			= "Down";
+	commandTagMap[PREF_INPUT_BUTTON_LEFT]			= "Left";
+	commandTagMap[PREF_INPUT_BUTTON_RIGHT]			= "Right";
+	commandTagMap[PREF_INPUT_BUTTON_A]				= "A";
+	commandTagMap[PREF_INPUT_BUTTON_B]				= "B";
+	commandTagMap[PREF_INPUT_BUTTON_X]				= "X";
+	commandTagMap[PREF_INPUT_BUTTON_Y]				= "Y";
+	commandTagMap[PREF_INPUT_BUTTON_L]				= "L";
+	commandTagMap[PREF_INPUT_BUTTON_R]				= "R";
+	commandTagMap[PREF_INPUT_BUTTON_START]			= "Start";
+	commandTagMap[PREF_INPUT_BUTTON_SELECT]			= "Select";
+	commandTagMap[PREF_INPUT_BUTTON_SIM_MIC]		= "Microphone";
+	commandTagMap[PREF_INPUT_BUTTON_LID]			= "Lid";
+	commandTagMap[PREF_INPUT_BUTTON_DEBUG]			= "Debug";
+	commandTagMap[PREF_INPUT_BUTTON_SPEED_HALF]		= "Speed Half";
+	commandTagMap[PREF_INPUT_BUTTON_SPEED_DOUBLE]	= "Speed Double";
+	commandTagMap[PREF_INPUT_BUTTON_TOGGLE_HUD]		= "HUD";
+	commandTagMap[PREF_INPUT_BUTTON_EXECUTE]		= "Execute";
+	commandTagMap[PREF_INPUT_BUTTON_PAUSE]			= "Pause";
+	commandTagMap[PREF_INPUT_BUTTON_RESET]			= "Reset";
+	commandTagMap[PREF_INPUT_BUTTON_TOUCH]			= "Touch";
 	
     return self;
 }
 
 - (void)dealloc
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:self];
-	
 	[configInputList release];
-	[keyNameTable release];
+	[displayStringBindings release];
 	
 	[super dealloc];
 }
 
+#pragma mark Dynamic Properties
+- (void) setConfigInputTargetID:(NSInteger)targetID
+{
+	if (targetID == 0)
+	{
+		[lastConfigButton setState:NSOffState];
+		lastConfigButton = nil;
+	}
+	
+	configInputTargetID = targetID;
+	[[self inputManager] setHidInputTarget:(targetID == 0) ? nil : self];
+}
+
+- (NSInteger) configInputTargetID
+{
+	return configInputTargetID;
+}
+
+#pragma mark Class Methods
+
+- (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
+{
+	BOOL isHandled = NO;
+	
+	if ([self configInputTargetID] == 0)
+	{
+		return isHandled;
+	}
+	
+	std::string commandTag = commandTagMap[[self configInputTargetID]];
+	if (commandTag.empty())
+	{
+		return isHandled;
+	}
+	
+	InputAttributes inputAttr = InputManagerEncodeKeyboardInput([theEvent keyCode], keyPressed);
+	[inputManager addMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
+	[inputManager writeUserDefaultsMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
+	
+	NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
+	NSString *displayBinding = (NSString *)[displayStringBindings valueForKey:[NSString stringWithFormat:@"%i", [self configInputTargetID]]];
+	[prefWindowBindings setValue:[self parseMappingDisplayString:commandTag.c_str()] forKey:displayBinding];
+	
+	[self setConfigInputTargetID:0];
+	
+	isHandled = YES;
+	return isHandled;
+}
+
+- (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed
+{
+	BOOL isHandled = NO;
+	
+	if ([self configInputTargetID] == 0)
+	{
+		return isHandled;
+	}
+	
+	std::string commandTag = commandTagMap[[self configInputTargetID]];
+	if (commandTag.empty())
+	{
+		return isHandled;
+	}
+	
+	InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([mouseEvent buttonNumber], NSMakePoint(0.0f, 0.0f), buttonPressed);
+	[inputManager addMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
+	[inputManager writeUserDefaultsMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
+	
+	NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
+	NSString *displayBinding = (NSString *)[displayStringBindings valueForKey:[NSString stringWithFormat:@"%i", [self configInputTargetID]]];
+	[prefWindowBindings setValue:[self parseMappingDisplayString:commandTag.c_str()] forKey:displayBinding];
+	
+	[self setConfigInputTargetID:0];
+	
+	isHandled = YES;
+	return isHandled;
+}
+
+- (NSString *) parseMappingDisplayString:(const char *)commandTag
+{
+	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
+	NSArray *mappingList = (NSArray *)[userMappings valueForKey:[NSString stringWithCString:commandTag encoding:NSUTF8StringEncoding]];
+	NSDictionary *mapping = (NSDictionary *)[mappingList objectAtIndex:0];
+	NSString *deviceName = (NSString *)[mapping valueForKey:@"deviceName"];
+	NSString *elementName = (NSString *)[mapping valueForKey:@"elementName"];
+	
+	NSString *displayString = [NSString stringWithString:deviceName];
+	displayString = [displayString stringByAppendingString:@": "];
+	displayString = [displayString stringByAppendingString:elementName];
+	
+	return displayString;
+}
+
+#pragma mark InputHIDManagerTarget Protocol
+- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue
+{
+	BOOL isHandled = NO;
+	
+	if ([self configInputTargetID] == 0)
+	{
+		ClearHIDQueue(hidQueue);
+		return isHandled;
+	}
+	
+	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue);
+	const size_t inputCount = inputList.size();
+	
+	for (unsigned int i = 0; i < inputCount; i++)
+	{
+		const InputAttributes &inputAttr = inputList[i];
+		const std::string inputKey = inputAttr.deviceCode + ":" + inputAttr.elementCode;
+		NSString *inputKeyStr = [NSString stringWithCString:inputKey.c_str() encoding:NSUTF8StringEncoding];
+		NSDate *inputOnDate = [configInputList valueForKey:inputKeyStr];
+		
+		if (inputAttr.inputState == INPUT_ATTRIBUTE_STATE_ON)
+		{
+			if (inputOnDate == nil)
+			{
+				[configInputList setValue:[NSDate date] forKey:inputKeyStr];
+			}
+		}
+		else
+		{
+			if (inputOnDate != nil)
+			{
+				if (([inputOnDate timeIntervalSinceNow] * -1.0) < INPUT_HOLD_TIME)
+				{
+					// If the button isn't held for at least INPUT_HOLD_TIME seconds, then reject the input.
+					[configInputList setValue:nil forKey:inputKeyStr];
+				}
+				else
+				{
+					std::string commandTag = commandTagMap[[self configInputTargetID]];
+					if (commandTag.empty())
+					{
+						continue;
+					}
+					
+					// Add the input mapping.
+					[inputManager addMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
+					[inputManager writeUserDefaultsMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
+					
+					NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
+					NSString *displayBinding = (NSString *)[displayStringBindings valueForKey:[NSString stringWithFormat:@"%i", [self configInputTargetID]]];
+					[prefWindowBindings setValue:[self parseMappingDisplayString:commandTag.c_str()] forKey:displayBinding];
+					
+					[self setConfigInputTargetID:0];
+					break;
+				}
+			}
+		}
+	}
+	
+	isHandled = YES;
+	return isHandled;
+}
+
+#pragma mark NSResponder Methods
+
 - (void)keyDown:(NSEvent *)theEvent
 {
-	NSString *elementCode = [NSString stringWithFormat:@"%d", [theEvent keyCode]];
-	NSString *elementName = (NSString *)[keyNameTable valueForKey:elementCode];
-	
-	if (configInput != 0)
+	BOOL isHandled = [self handleKeyboardEvent:theEvent keyPressed:YES];
+	if (!isHandled)
 	{
-		[self addMappingById:configInput deviceCode:@"NSEventKeyboard" deviceName:@"Keyboard" elementCode:elementCode elementName:elementName];
-		[self inputButtonCancelConfig];
+		[super keyDown:theEvent];
 	}
 }
 
 - (void)mouseDown:(NSEvent *)theEvent
 {
-	BOOL isHandled = [self handleMouseDown:theEvent];
+	BOOL isHandled = [self handleMouseButtonEvent:theEvent buttonPressed:YES];
 	if (!isHandled)
 	{
 		[super mouseDown:theEvent];
@@ -90,7 +285,7 @@
 
 - (void)rightMouseDown:(NSEvent *)theEvent
 {
-	BOOL isHandled = [self handleMouseDown:theEvent];
+	BOOL isHandled = [self handleMouseButtonEvent:theEvent buttonPressed:YES];
 	if (!isHandled)
 	{
 		[super rightMouseDown:theEvent];
@@ -104,7 +299,7 @@
 
 - (void)otherMouseDown:(NSEvent *)theEvent
 {
-	BOOL isHandled = [self handleMouseDown:theEvent];
+	BOOL isHandled = [self handleMouseButtonEvent:theEvent buttonPressed:YES];
 	if (!isHandled)
 	{
 		[super otherMouseDown:theEvent];
@@ -114,263 +309,6 @@
 - (void)otherMouseDragged:(NSEvent *)theEvent
 {
 	[self otherMouseDown:theEvent];
-}
-
-- (BOOL) handleMouseDown:(NSEvent *)mouseEvent
-{
-	BOOL isHandled = NO;
-	NSString *elementCode = [NSString stringWithFormat:@"%li", (long)[mouseEvent buttonNumber]];
-	NSString *elementName = [NSString stringWithFormat:@"Button %li", (long)[mouseEvent buttonNumber]];
-	
-	switch ([mouseEvent buttonNumber])
-	{
-		case kCGMouseButtonLeft:
-			elementName = @"Primary Button";
-			break;
-			
-		case kCGMouseButtonRight:
-			elementName = @"Secondary Button";
-			break;
-			
-		case kCGMouseButtonCenter:
-			elementName = @"Center Button";
-			break;
-			
-		default:
-			break;
-	}
-	
-	if (configInput != 0)
-	{
-		[self addMappingById:configInput deviceCode:@"NSEventMouse" deviceName:@"Mouse" elementCode:elementCode elementName:elementName];
-		[self inputButtonCancelConfig];
-		isHandled = YES;
-	}
-	
-	return isHandled;
-}
-
-- (void) addMappingById:(NSInteger)dsControlID deviceCode:(NSString *)deviceCode deviceName:(NSString *)deviceName elementCode:(NSString *)elementCode elementName:(NSString *)elementName
-{
-	NSString *dsControlKey = nil;
-	NSString *displayBindingsKey = nil;
-	
-	switch (dsControlID)
-	{
-		case PREF_INPUT_BUTTON_UP:
-			dsControlKey = @"Up";
-			displayBindingsKey = @"Input_Up";
-			break;
-			
-		case PREF_INPUT_BUTTON_DOWN:
-			dsControlKey = @"Down";
-			displayBindingsKey = @"Input_Down";
-			break;
-			
-		case PREF_INPUT_BUTTON_LEFT:
-			dsControlKey = @"Left";
-			displayBindingsKey = @"Input_Left";
-			break;
-			
-		case PREF_INPUT_BUTTON_RIGHT:
-			dsControlKey = @"Right";
-			displayBindingsKey = @"Input_Right";
-			break;
-			
-		case PREF_INPUT_BUTTON_A:
-			dsControlKey = @"A";
-			displayBindingsKey = @"Input_A";
-			break;
-			
-		case PREF_INPUT_BUTTON_B:
-			dsControlKey = @"B";
-			displayBindingsKey = @"Input_B";
-			break;
-			
-		case PREF_INPUT_BUTTON_X:
-			dsControlKey = @"X";
-			displayBindingsKey = @"Input_X";
-			break;
-			
-		case PREF_INPUT_BUTTON_Y:
-			dsControlKey = @"Y";
-			displayBindingsKey = @"Input_Y";
-			break;
-			
-		case PREF_INPUT_BUTTON_L:
-			dsControlKey = @"L";
-			displayBindingsKey = @"Input_L";
-			break;
-			
-		case PREF_INPUT_BUTTON_R:
-			dsControlKey = @"R";
-			displayBindingsKey = @"Input_R";
-			break;
-			
-		case PREF_INPUT_BUTTON_START:
-			dsControlKey = @"Start";
-			displayBindingsKey = @"Input_Start";
-			break;
-			
-		case PREF_INPUT_BUTTON_SELECT:
-			dsControlKey = @"Select";
-			displayBindingsKey = @"Input_Select";
-			break;
-			
-		case PREF_INPUT_BUTTON_SIM_MIC:
-			dsControlKey = @"Microphone";
-			displayBindingsKey = @"Input_Microphone";
-			break;
-			
-		case PREF_INPUT_BUTTON_LID:
-			dsControlKey = @"Lid";
-			displayBindingsKey = @"Input_Lid";
-			break;
-			
-		case PREF_INPUT_BUTTON_DEBUG:
-			dsControlKey = @"Debug";
-			displayBindingsKey = @"Input_Debug";
-			break;
-			
-		case PREF_INPUT_BUTTON_SPEED_HALF:
-			dsControlKey = @"Speed Half";
-			displayBindingsKey = @"Input_SpeedHalf";
-			break;
-			
-		case PREF_INPUT_BUTTON_SPEED_DOUBLE:
-			dsControlKey = @"Speed Double";
-			displayBindingsKey = @"Input_SpeedDouble";
-			break;
-			
-		case PREF_INPUT_BUTTON_TOGGLE_HUD:
-			dsControlKey = @"HUD";
-			displayBindingsKey = @"Input_HUD";
-			break;
-			
-		case PREF_INPUT_BUTTON_EXECUTE:
-			dsControlKey = @"Execute";
-			displayBindingsKey = @"Input_Execute";
-			break;
-			
-		case PREF_INPUT_BUTTON_PAUSE:
-			dsControlKey = @"Pause";
-			displayBindingsKey = @"Input_Pause";
-			break;
-			
-		case PREF_INPUT_BUTTON_RESET:
-			dsControlKey = @"Reset";
-			displayBindingsKey = @"Input_Reset";
-			break;
-			
-		case PREF_INPUT_BUTTON_TOUCH:
-			dsControlKey = @"Touch";
-			break;
-			
-		default:
-			return;
-			break;
-	}
-	
-	if (dsControlKey != nil)
-	{
-		[self addMappingByKey:dsControlKey deviceCode:deviceCode deviceName:deviceName elementCode:elementCode elementName:elementName];
-		if (dsControlID != PREF_INPUT_BUTTON_TOUCH)
-		{
-			NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
-			[prefWindowBindings setValue:[self parseMappingDisplayString:dsControlKey] forKey:displayBindingsKey];
-		}
-	}
-}
-
-- (void) addMappingByKey:(NSString *)dsControlKey deviceCode:(NSString *)deviceCode deviceName:(NSString *)deviceName elementCode:(NSString *)elementCode elementName:(NSString *)elementName
-{
-	if (deviceCode == nil || elementCode == nil)
-	{
-		return;
-	}
-	
-	if (deviceName == nil)
-	{
-		deviceName = deviceCode;
-	}
-	
-	if (elementName == nil)
-	{
-		elementName = elementCode;
-	}
-	
-	BOOL useDeviceValues = NO;
-	if ([deviceCode isEqualToString:@"NSEventMouse"])
-	{
-		useDeviceValues = YES;
-	}
-	
-	NSDictionary *deviceInfo = [NSDictionary dictionaryWithObjectsAndKeys:
-								deviceCode, @"deviceCode",
-								deviceName, @"deviceName",
-								elementCode, @"elementCode",
-								elementName, @"elementName",
-								[NSNumber numberWithBool:useDeviceValues], @"useDeviceValues",
-								nil];
-	
-	[self addMappingByKey:dsControlKey deviceInfo:deviceInfo];
-}
-
-- (void) addMappingByKey:(NSString *)dsControlKey deviceInfo:(NSDictionary *)deviceInfo
-{
-	[cdsController addMapping:dsControlKey deviceInfo:deviceInfo];
-	
-	NSMutableDictionary *tempUserMappings = [NSMutableDictionary dictionaryWithDictionary:[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"]];
-	[tempUserMappings setValue:[NSArray arrayWithObject:deviceInfo] forKey:dsControlKey];
-	[[NSUserDefaults standardUserDefaults] setValue:tempUserMappings forKey:@"Input_ControllerMappings"];
-}
-
-- (NSString *) parseMappingDisplayString:(NSString *)keyString
-{
-	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
-	NSArray *mappingList = (NSArray *)[userMappings valueForKey:keyString];
-	NSDictionary *mapping = (NSDictionary *)[mappingList objectAtIndex:0];
-	NSString *deviceName = (NSString *)[mapping valueForKey:@"deviceName"];
-	NSString *elementName = (NSString *)[mapping valueForKey:@"elementName"];
-
-	NSString *displayString = [NSString stringWithString:deviceName];
-	displayString = [displayString stringByAppendingString:@": "];
-	displayString = [displayString stringByAppendingString:elementName];
-	
-	return displayString;
-}
-
-- (IBAction) inputButtonSet:(id)sender
-{
-	NSButton *theButton = (NSButton *)sender;
-	
-	if (configInput && lastConfigButton != theButton)
-	{
-		[lastConfigButton setState:NSOffState];
-	}
-	
-	if ([theButton state] == NSOnState)
-	{
-		lastConfigButton = theButton;
-		[configInputList removeAllObjects];
-		configInput = [theButton tag];
-	}
-	else
-	{
-		[self inputButtonCancelConfig];
-	}
-
-}
-
-- (void) inputButtonCancelConfig
-{
-	if (lastConfigButton != nil)
-	{
-		[lastConfigButton setState:NSOffState];
-		lastConfigButton = nil;
-	}
-	
-	configInput = 0;
 }
 
 - (BOOL)acceptsFirstResponder
@@ -388,56 +326,26 @@
 	return YES;
 }
 
-- (void) handleHIDInput:(NSNotification *)aNotification
+#pragma mark IBAction Methods
+
+- (IBAction) inputButtonSet:(id)sender
 {
-	if (configInput == 0)
+	NSButton *theButton = (NSButton *)sender;
+	
+	if ([self configInputTargetID] != 0 && lastConfigButton != theButton)
 	{
-		return;
+		[lastConfigButton setState:NSOffState];
 	}
 	
-	NSArray *inputPropertiesList = (NSArray *)[aNotification object];
-	BOOL inputOn = NO;
-	
-	for (NSDictionary *inputProperties in inputPropertiesList)
+	if ([theButton state] == NSOnState)
 	{
-		NSNumber *onState = (NSNumber *)[inputProperties valueForKey:@"on"];
-		if (onState != nil)
-		{
-			NSString *deviceCode = (NSString *)[inputProperties valueForKey:@"deviceCode"];
-			NSString *elementCode = (NSString *)[inputProperties valueForKey:@"elementCode"];
-			NSString *deviceElementCode = [[deviceCode stringByAppendingString:@":"] stringByAppendingString:elementCode];
-			NSDate *inputOnDate = [configInputList valueForKey:deviceElementCode];
-			
-			inputOn = [onState boolValue];
-			if (inputOn)
-			{
-				if (inputOnDate == nil)
-				{
-					[configInputList setValue:[NSDate date] forKey:deviceElementCode];
-				}
-			}
-			else
-			{
-				if (inputOnDate != nil)
-				{
-					if (([inputOnDate timeIntervalSinceNow] * -1.0) < INPUT_HOLD_TIME)
-					{
-						// If the button isn't held for at least INPUT_HOLD_TIME seconds, then reject the input.
-						[configInputList setValue:nil forKey:deviceElementCode];
-					}
-					else
-					{
-						// Add the input mapping.
-						NSString *deviceName = (NSString *)[inputProperties valueForKey:@"deviceName"];
-						NSString *elementName = (NSString *)[inputProperties valueForKey:@"elementName"];
-						
-						[self addMappingById:configInput deviceCode:deviceCode deviceName:deviceName elementCode:elementCode elementName:elementName];
-						[self inputButtonCancelConfig];
-						break;
-					}
-				}
-			}
-		}
+		lastConfigButton = theButton;
+		[configInputList removeAllObjects];
+		[self setConfigInputTargetID:[theButton tag]];
+	}
+	else
+	{
+		[self setConfigInputTargetID:0];
 	}
 }
 

@@ -19,8 +19,7 @@
 #import <Cocoa/Cocoa.h>
 
 @class InputPrefsView;
-@class CocoaHIDManager;
-@class EmuControllerDelegate;
+@class InputManager;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -39,6 +38,7 @@
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
 	NSObjectController *cdsCoreController;
+	InputManager *inputManager;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
@@ -56,7 +56,6 @@
 	NSBox *boxFileSystem;
 	NSBox *boxMisc;
 	
-	CocoaHIDManager *hidManager;
 	BOOL migrationFilesPresent;
 	BOOL isAppRunningOnIntel;
 }
@@ -71,6 +70,7 @@
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
+@property (readonly) IBOutlet InputManager *inputManager;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSWindow *cheatListWindow;
@@ -86,7 +86,6 @@
 @property (readonly) IBOutlet NSBox *boxFileSystem;
 @property (readonly) IBOutlet NSBox *boxMisc;
 
-@property (retain) CocoaHIDManager *hidManager;
 @property (assign) BOOL migrationFilesPresent;
 @property (assign) BOOL isAppRunningOnIntel;
 

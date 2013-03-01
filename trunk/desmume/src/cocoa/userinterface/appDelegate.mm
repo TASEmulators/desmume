@@ -28,7 +28,6 @@
 #import "cocoa_file.h"
 #import "cocoa_firmware.h"
 #import "cocoa_globals.h"
-#import "cocoa_hid.h"
 #import "cocoa_input.h"
 #import "cocoa_mic.h"
 #import "cocoa_rom.h"
@@ -54,6 +53,7 @@
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
 @synthesize cheatWindowController;
+@synthesize inputManager;
 
 @synthesize boxGeneralInfo;
 @synthesize boxTitles;
@@ -61,7 +61,6 @@
 @synthesize boxFileSystem;
 @synthesize boxMisc;
 
-@synthesize hidManager;
 @synthesize migrationFilesPresent;
 @synthesize isAppRunningOnIntel;
 
@@ -168,9 +167,6 @@
 	// Builder because we're assuming an arbitrary number of slot items.
 	[self setupSlotMenuItems];
 	
-	// Setup the HID Input manager.
-	[self setHidManager:[[[CocoaHIDManager alloc] init] autorelease]];
-	
 	// Init the DS emulation core.
 	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
 	[cdsCoreController setContent:newCore];
@@ -179,7 +175,6 @@
 	CocoaDSMic *newMic = [[[CocoaDSMic alloc] init] autorelease];
 	CocoaDSController *newController = [[[CocoaDSController alloc] initWithMic:newMic] autorelease];
 	[newCore setCdsController:newController];
-	[inputPrefsView setCdsController:newController];
 	
 	// Init the DS speakers.
 	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
@@ -511,6 +506,7 @@
 	[prefWindowDelegate updateVolumeIcon:nil];
 	
 	[emuControl setupUserDefaults];
+	[inputManager addMappingsUsingUserDefaults];
 }
 
 - (void) updateInputDisplayFields
@@ -523,27 +519,27 @@
 		return;
 	}
 	
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Up"] forKey:@"Input_Up"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Down"] forKey:@"Input_Down"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Left"] forKey:@"Input_Left"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Right"] forKey:@"Input_Right"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"A"] forKey:@"Input_A"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"B"] forKey:@"Input_B"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"X"] forKey:@"Input_X"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Y"] forKey:@"Input_Y"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"L"] forKey:@"Input_L"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"R"] forKey:@"Input_R"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Start"] forKey:@"Input_Start"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Select"] forKey:@"Input_Select"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Microphone"] forKey:@"Input_Microphone"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Lid"] forKey:@"Input_Lid"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Debug"] forKey:@"Input_Debug"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Speed Half"] forKey:@"Input_SpeedHalf"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Speed Double"] forKey:@"Input_SpeedDouble"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"HUD"] forKey:@"Input_HUD"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Execute"] forKey:@"Input_Execute"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Pause"] forKey:@"Input_Pause"];
-	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:@"Reset"] forKey:@"Input_Reset"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Up"] forKey:@"Input_Up"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Down"] forKey:@"Input_Down"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Left"] forKey:@"Input_Left"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Right"] forKey:@"Input_Right"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"A"] forKey:@"Input_A"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"B"] forKey:@"Input_B"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"X"] forKey:@"Input_X"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Y"] forKey:@"Input_Y"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"L"] forKey:@"Input_L"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"R"] forKey:@"Input_R"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Start"] forKey:@"Input_Start"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Select"] forKey:@"Input_Select"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Microphone"] forKey:@"Input_Microphone"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Lid"] forKey:@"Input_Lid"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Debug"] forKey:@"Input_Debug"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Speed Half"] forKey:@"Input_SpeedHalf"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Speed Double"] forKey:@"Input_SpeedDouble"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"HUD"] forKey:@"Input_HUD"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Execute"] forKey:@"Input_Execute"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Pause"] forKey:@"Input_Pause"];
+	[prefBindings setValue:[inputPrefsView parseMappingDisplayString:"Reset"] forKey:@"Input_Reset"];
 }
 
 - (IBAction) showMigrationWindow:(id)sender

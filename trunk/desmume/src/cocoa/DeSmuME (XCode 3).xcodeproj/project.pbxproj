@@ -251,7 +251,6 @@
 		AB2F3C2015CF9C6000858373 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		AB2F3C2115CF9C6000858373 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		AB2F3C2215CF9C6000858373 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
-		AB2F3C2315CF9C6000858373 /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
 		AB2F3C2415CF9C6000858373 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		AB2F3C2515CF9C6000858373 /* cocoa_mic.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* cocoa_mic.mm */; };
 		AB2F3C2615CF9C6000858373 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
@@ -288,6 +287,10 @@
 		AB3ACC4614C24D5400D7D192 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
 		AB3ACC4714C24D5400D7D192 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
 		AB3ACC4914C24D5400D7D192 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
+		AB5A795816D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
+		AB5A795916D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
+		AB5A795A16D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
+		AB5A795B16D5A56000ED84B7 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5A795716D5A56000ED84B7 /* InputManager.mm */; };
 		AB6A187C16C9951C00384EED /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */; };
 		AB6A187D16C9951C00384EED /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */; };
 		AB6A187E16C9951C00384EED /* EmuControllerDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */; };
@@ -410,7 +413,6 @@
 		AB711F6D1481C35F009011C8 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		AB711F6E1481C35F009011C8 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
 		AB711F701481C35F009011C8 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
-		AB711F721481C35F009011C8 /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
 		AB711F741481C35F009011C8 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		AB711F751481C35F009011C8 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */; };
 		AB711F761481C35F009011C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
@@ -572,7 +574,6 @@
 		AB73AA0E1507C9F500A310C8 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		AB73AA0F1507C9F500A310C8 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		AB73AA101507C9F500A310C8 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
-		AB73AA111507C9F500A310C8 /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
 		AB73AA121507C9F500A310C8 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		AB73AA131507C9F500A310C8 /* cocoa_mic.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* cocoa_mic.mm */; };
 		AB73AA141507C9F500A310C8 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
@@ -764,7 +765,6 @@
 		ABAD101615ACE7A00000EC47 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		ABAD101715ACE7A00000EC47 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		ABAD101815ACE7A00000EC47 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
-		ABAD101915ACE7A00000EC47 /* cocoa_hid.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB350B691478A5B3007165AC /* cocoa_hid.mm */; };
 		ABAD101A15ACE7A00000EC47 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		ABAD101B15ACE7A00000EC47 /* cocoa_mic.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* cocoa_mic.mm */; };
 		ABAD101C15ACE7A00000EC47 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
@@ -949,8 +949,6 @@
 		AB279D5716A4E6DE00ECC692 /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
 		AB279D5816A4E6DE00ECC692 /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
 		AB2F3C4515CF9C6000858373 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB350B681478A5B3007165AC /* cocoa_hid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_hid.h; sourceTree = "<group>"; };
-		AB350B691478A5B3007165AC /* cocoa_hid.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_hid.mm; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		AB350D38147A1D8D007165AC /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = English; path = translations/English.lproj/HID_usage_strings.plist; sourceTree = "<group>"; };
 		AB3ACB6614C2361100D7D192 /* appDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = appDelegate.h; sourceTree = "<group>"; };
@@ -970,6 +968,8 @@
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB58F32B1364F44B0074C376 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
+		AB5A795616D5A56000ED84B7 /* InputManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputManager.h; sourceTree = "<group>"; };
+		AB5A795716D5A56000ED84B7 /* InputManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputManager.mm; sourceTree = "<group>"; };
 		AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
 		AB6A187A16C9951C00384EED /* EmuControllerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmuControllerDelegate.h; sourceTree = "<group>"; };
 		AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = EmuControllerDelegate.mm; sourceTree = "<group>"; };
@@ -1371,7 +1371,6 @@
 				ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */,
 				AB9971CE134EDA0800531BA7 /* cocoa_globals.h */,
 				AB6A198116CAD66900384EED /* cocoa_GPU.h */,
-				AB350B681478A5B3007165AC /* cocoa_hid.h */,
 				ABD103FF1346652500AF11D1 /* cocoa_input.h */,
 				ABD9A46313DB99B300777194 /* cocoa_mic.h */,
 				AB3E34C7134AF4500056477A /* cocoa_output.h */,
@@ -1386,7 +1385,6 @@
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
 				ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */,
 				AB6A198216CAD66900384EED /* cocoa_GPU.mm */,
-				AB350B691478A5B3007165AC /* cocoa_hid.mm */,
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				ABD9A46413DB99B300777194 /* cocoa_mic.mm */,
 				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
@@ -1492,6 +1490,7 @@
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
 				AB700DDC16CDE4C300FBD336 /* DisplayWindowController.h */,
 				AB6A187A16C9951C00384EED /* EmuControllerDelegate.h */,
+				AB5A795616D5A56000ED84B7 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
@@ -1499,6 +1498,7 @@
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */,
 				AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */,
+				AB5A795716D5A56000ED84B7 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
@@ -2614,7 +2614,6 @@
 				AB2F3C2015CF9C6000858373 /* cocoa_core.mm in Sources */,
 				AB2F3C2115CF9C6000858373 /* cocoa_file.mm in Sources */,
 				AB2F3C2215CF9C6000858373 /* cocoa_firmware.mm in Sources */,
-				AB2F3C2315CF9C6000858373 /* cocoa_hid.mm in Sources */,
 				AB2F3C2415CF9C6000858373 /* cocoa_input.mm in Sources */,
 				AB2F3C2515CF9C6000858373 /* cocoa_mic.mm in Sources */,
 				AB2F3C2615CF9C6000858373 /* cocoa_output.mm in Sources */,
@@ -2650,6 +2649,7 @@
 				AB6A187C16C9951C00384EED /* EmuControllerDelegate.mm in Sources */,
 				AB6A198316CAD66900384EED /* cocoa_GPU.mm in Sources */,
 				AB700DDF16CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
+				AB5A795B16D5A56000ED84B7 /* InputManager.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2742,7 +2742,6 @@
 				AB711F471481C35F009011C8 /* cocoa_core.mm in Sources */,
 				AB711F4E1481C35F009011C8 /* cocoa_file.mm in Sources */,
 				AB711F601481C35F009011C8 /* cocoa_firmware.mm in Sources */,
-				AB711F721481C35F009011C8 /* cocoa_hid.mm in Sources */,
 				AB711F461481C35F009011C8 /* cocoa_input.mm in Sources */,
 				AB711F5E1481C35F009011C8 /* cocoa_mic.mm in Sources */,
 				AB711F4C1481C35F009011C8 /* cocoa_output.mm in Sources */,
@@ -2807,6 +2806,7 @@
 				AB6A187E16C9951C00384EED /* EmuControllerDelegate.mm in Sources */,
 				AB6A198516CAD66900384EED /* cocoa_GPU.mm in Sources */,
 				AB700DE116CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
+				AB5A795916D5A56000ED84B7 /* InputManager.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2898,7 +2898,6 @@
 				AB73AA0E1507C9F500A310C8 /* cocoa_core.mm in Sources */,
 				AB73AA0F1507C9F500A310C8 /* cocoa_file.mm in Sources */,
 				AB73AA101507C9F500A310C8 /* cocoa_firmware.mm in Sources */,
-				AB73AA111507C9F500A310C8 /* cocoa_hid.mm in Sources */,
 				AB73AA121507C9F500A310C8 /* cocoa_input.mm in Sources */,
 				AB73AA131507C9F500A310C8 /* cocoa_mic.mm in Sources */,
 				AB73AA141507C9F500A310C8 /* cocoa_output.mm in Sources */,
@@ -2964,6 +2963,7 @@
 				AB6A187F16C9951C00384EED /* EmuControllerDelegate.mm in Sources */,
 				AB6A198616CAD66900384EED /* cocoa_GPU.mm in Sources */,
 				AB700DDE16CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
+				AB5A795A16D5A56000ED84B7 /* InputManager.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3055,7 +3055,6 @@
 				ABAD101615ACE7A00000EC47 /* cocoa_core.mm in Sources */,
 				ABAD101715ACE7A00000EC47 /* cocoa_file.mm in Sources */,
 				ABAD101815ACE7A00000EC47 /* cocoa_firmware.mm in Sources */,
-				ABAD101915ACE7A00000EC47 /* cocoa_hid.mm in Sources */,
 				ABAD101A15ACE7A00000EC47 /* cocoa_input.mm in Sources */,
 				ABAD101B15ACE7A00000EC47 /* cocoa_mic.mm in Sources */,
 				ABAD101C15ACE7A00000EC47 /* cocoa_output.mm in Sources */,
@@ -3091,6 +3090,7 @@
 				AB6A187D16C9951C00384EED /* EmuControllerDelegate.mm in Sources */,
 				AB6A198416CAD66900384EED /* cocoa_GPU.mm in Sources */,
 				AB700DE016CDE4C300FBD336 /* DisplayWindowController.mm in Sources */,
+				AB5A795816D5A56000ED84B7 /* InputManager.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

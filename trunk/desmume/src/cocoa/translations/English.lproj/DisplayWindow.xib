@@ -12,7 +12,7 @@
 		</object>
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
-			<integer value="5"/>
+			<integer value="4"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -634,27 +634,11 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
-						<string key="label">executeCoreToggle:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="298859108"/>
-					</object>
-					<int key="connectionID">59</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
 						<string key="label">openRom:</string>
 						<reference key="source" ref="1001"/>
 						<reference key="destination" ref="127287125"/>
 					</object>
 					<int key="connectionID">60</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">resetCore:</string>
-						<reference key="source" ref="1001"/>
-						<reference key="destination" ref="281439290"/>
-					</object>
-					<int key="connectionID">61</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -802,6 +786,22 @@
 						</object>
 					</object>
 					<int key="connectionID">106</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">reset:</string>
+						<reference key="source" ref="1001"/>
+						<reference key="destination" ref="281439290"/>
+					</object>
+					<int key="connectionID">107</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">toggleExecutePause:</string>
+						<reference key="source" ref="1001"/>
+						<reference key="destination" ref="298859108"/>
+					</object>
+					<int key="connectionID">108</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -1137,7 +1137,7 @@
 					<boolean value="YES"/>
 					<string>{3.40282e+38, 3.40282e+38}</string>
 					<string>{256, 408}</string>
-					<string>{{1056, 575}, {616, 0}}</string>
+					<string>{{1136, 494}, {616, 227}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -1190,7 +1190,7 @@
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">106</int>
+			<int key="maxID">108</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -1214,10 +1214,10 @@
 							<string>changeRotationRelative:</string>
 							<string>changeVolume:</string>
 							<string>copy:</string>
-							<string>executeCoreToggle:</string>
 							<string>openRom:</string>
-							<string>resetCore:</string>
+							<string>reset:</string>
 							<string>saveScreenshotAs:</string>
+							<string>toggleExecutePause:</string>
 							<string>toggleKeepMinDisplaySizeAtNormal:</string>
 							<string>toggleStatusBar:</string>
 						</object>
@@ -1243,10 +1243,10 @@
 							<string>changeRotationRelative:</string>
 							<string>changeVolume:</string>
 							<string>copy:</string>
-							<string>executeCoreToggle:</string>
 							<string>openRom:</string>
-							<string>resetCore:</string>
+							<string>reset:</string>
 							<string>saveScreenshotAs:</string>
+							<string>toggleExecutePause:</string>
 							<string>toggleKeepMinDisplaySizeAtNormal:</string>
 							<string>toggleStatusBar:</string>
 						</object>
@@ -1269,19 +1269,19 @@
 								<string key="candidateClassName">id</string>
 							</object>
 							<object class="IBActionInfo">
-								<string key="name">executeCoreToggle:</string>
-								<string key="candidateClassName">id</string>
-							</object>
-							<object class="IBActionInfo">
 								<string key="name">openRom:</string>
 								<string key="candidateClassName">id</string>
 							</object>
 							<object class="IBActionInfo">
-								<string key="name">resetCore:</string>
+								<string key="name">reset:</string>
 								<string key="candidateClassName">id</string>
 							</object>
 							<object class="IBActionInfo">
 								<string key="name">saveScreenshotAs:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleExecutePause:</string>
 								<string key="candidateClassName">id</string>
 							</object>
 							<object class="IBActionInfo">

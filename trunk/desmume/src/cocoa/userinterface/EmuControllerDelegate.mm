@@ -17,6 +17,7 @@
 
 #import "EmuControllerDelegate.h"
 #import "DisplayWindowController.h"
+#import "InputManager.h"
 #import "cheatWindowDelegate.h"
 
 #import "cocoa_globals.h"
@@ -25,11 +26,14 @@
 #import "cocoa_file.h"
 #import "cocoa_firmware.h"
 #import "cocoa_GPU.h"
+#import "cocoa_input.h"
 #import "cocoa_output.h"
 #import "cocoa_rom.h"
 
 
 @implementation EmuControllerDelegate
+
+@synthesize inputManager;
 
 @synthesize currentRom;
 @dynamic cdsFirmware;
@@ -414,10 +418,9 @@
 
 - (IBAction) newDisplayWindow:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
 	[windowList addObject:newWindowController];
-	[newWindowController setCdsController:[cdsCore cdsController]];
+	[[newWindowController view] setInputManager:[self inputManager]];
 	
 	[self updateAllWindowTitles];
 	[newWindowController showWindow:self];
@@ -636,69 +639,14 @@
 
 - (IBAction) loadEmuSaveStateSlot:(id)sender
 {
-	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
-	if (saveStatePath == nil)
-	{
-		// Should throw an error message here...
-		return;
-	}
-	
 	const NSInteger slotNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
-	{
-		return;
-	}
-	
-	NSURL *currentRomURL = [[self currentRom] fileURL];
-	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
-	if (fileName == nil)
-	{
-		return;
-	}
-	
-	[self pauseCore];
-	
-	const BOOL isStateLoaded = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	[self setStatusText:(isStateLoaded) ? NSSTRING_STATUS_SAVESTATE_LOADED : NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
-	
-	[self restoreCoreState];
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:slotNumber];
 }
 
 - (IBAction) saveEmuSaveStateSlot:(id)sender
 {
-	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
-	if (saveStatePath == nil)
-	{
-		[self setStatusText:NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH];
-		return;
-	}
-	
-	const BOOL isDirectoryCreated = [CocoaDSFile createUserAppSupportDirectory:@"States"];
-	if (!isDirectoryCreated)
-	{
-		[self setStatusText:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
-		return;
-	}
-	
 	const NSInteger slotNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
-	{
-		return;
-	}
-	
-	NSURL *currentRomURL = [[self currentRom] fileURL];
-	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
-	if (fileName == nil)
-	{
-		return;
-	}
-	
-	[self pauseCore];
-	
-	const BOOL isStateSaved = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
-	[self setStatusText:(isStateSaved) ? NSSTRING_STATUS_SAVESTATE_SAVED : NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
-	
-	[self restoreCoreState];
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:slotNumber];
 }
 
 - (IBAction) importRomSave:(id)sender
@@ -758,93 +706,24 @@
 	[self restoreCoreState];
 }
 
-- (IBAction) copy:(id)sender
+- (IBAction) toggleExecutePause:(id)sender
 {
-	[mainWindow copy:sender];
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
 }
 
-- (IBAction) executeCoreToggle:(id)sender
+- (IBAction) reset:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore coreState] == CORESTATE_PAUSE)
-	{
-		if ([self currentRom] != nil)
-		{
-			[self executeCore];
-		}
-	}
-	else
-	{
-		[self pauseCore];
-	}
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
 }
 
-- (IBAction) resetCore:(id)sender
+- (IBAction) toggleSpeedLimiter:(id)sender
 {
-	if ([self currentRom] == nil)
-	{
-		return;
-	}
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
-	[self setIsWorking:YES];
-	
-	for (DisplayWindowController *windowController in windowList)
-	{
-		[[windowController window] displayIfNeeded];
-	}
-	
-	[cdsCore reset];
-	if ([cdsCore coreState] == CORESTATE_PAUSE)
-	{
-		for (DisplayWindowController *windowController in windowList)
-		{
-			[[windowController view] clearToWhite];
-		}
-	}
-	
-	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
-	[self setIsWorking:NO];
-	
-	for (DisplayWindowController *windowController in windowList)
-	{
-		[[windowController window] displayIfNeeded];
-	}
-}
-
-- (IBAction) speedLimitDisable:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore isSpeedLimitEnabled])
-	{
-		[cdsCore setIsSpeedLimitEnabled:NO];
-		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_DISABLED];
-	}
-	else
-	{
-		[cdsCore setIsSpeedLimitEnabled:YES];
-		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
-	}
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
 }
 
 - (IBAction) toggleAutoFrameSkip:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore isFrameSkipEnabled])
-	{
-		[cdsCore setIsFrameSkipEnabled:NO];
-		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_DISABLED];
-	}
-	else
-	{
-		[cdsCore setIsFrameSkipEnabled:YES];
-		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
-	}
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
 }
 
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
@@ -874,11 +753,8 @@
 
 - (IBAction) toggleGPUState:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	const NSInteger bitNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
-	
-	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:bitNumber];
 }
 
 - (IBAction) changeRomSaveType:(id)sender
@@ -890,20 +766,9 @@
 	[cdsCore changeRomSaveType:saveTypeID];
 }
 
-- (IBAction) cheatsDisable:(id)sender
+- (IBAction) toggleCheats:(id)sender
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	
-	if ([cdsCore isCheatingEnabled])
-	{
-		[cdsCore setIsCheatingEnabled:NO];
-		[self setStatusText:NSSTRING_STATUS_CHEATS_DISABLED];
-	}
-	else
-	{
-		[cdsCore setIsCheatingEnabled:YES];
-		[self setStatusText:NSSTRING_STATUS_CHEATS_ENABLED];
-	}
+	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
 }
 
 - (IBAction) changeCoreSpeed:(id)sender
@@ -1113,6 +978,226 @@
 }
 
 #pragma mark Class Methods
+
+- (void) cmdUpdateDSController:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	NSUInteger controlID = (NSUInteger)cmdAttr.commandID;
+	BOOL theState = (cmdAttr.inputState == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	
+	if (controlID == DSControllerState_Touch)
+	{
+		NSPoint touchLoc = NSMakePoint(cmdAttr.floatValue[0], cmdAttr.floatValue[1]);
+		[[cdsCore cdsController] setTouchState:theState location:touchLoc];
+	}
+	else
+	{
+		[[cdsCore cdsController] setControllerState:theState controlID:controlID];
+	}
+}
+
+- (void) cmdLoadEmuSaveStateSlot:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
+	if (saveStatePath == nil)
+	{
+		// Should throw an error message here...
+		return;
+	}
+	
+	const NSInteger slotNumber = cmdAttr.integerValue[0];
+	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
+	{
+		return;
+	}
+	
+	NSURL *currentRomURL = [[self currentRom] fileURL];
+	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
+	if (fileName == nil)
+	{
+		return;
+	}
+	
+	[self pauseCore];
+	
+	const BOOL isStateLoaded = [CocoaDSFile loadState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
+	[self setStatusText:(isStateLoaded) ? NSSTRING_STATUS_SAVESTATE_LOADED : NSSTRING_STATUS_SAVESTATE_LOADING_FAILED];
+	
+	[self restoreCoreState];
+}
+
+- (void) cmdSaveEmuSaveStateSlot:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
+	if (saveStatePath == nil)
+	{
+		[self setStatusText:NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH];
+		return;
+	}
+	
+	const BOOL isDirectoryCreated = [CocoaDSFile createUserAppSupportDirectory:@"States"];
+	if (!isDirectoryCreated)
+	{
+		[self setStatusText:NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY];
+		return;
+	}
+	
+	const NSInteger slotNumber = cmdAttr.integerValue[0];
+	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
+	{
+		return;
+	}
+	
+	NSURL *currentRomURL = [[self currentRom] fileURL];
+	NSString *fileName = [CocoaDSFile saveSlotFileName:currentRomURL slotNumber:(NSUInteger)(slotNumber + 1)];
+	if (fileName == nil)
+	{
+		return;
+	}
+	
+	[self pauseCore];
+	
+	const BOOL isStateSaved = [CocoaDSFile saveState:[NSURL fileURLWithPath:[saveStatePath stringByAppendingPathComponent:fileName]]];
+	[self setStatusText:(isStateSaved) ? NSSTRING_STATUS_SAVESTATE_SAVED : NSSTRING_STATUS_SAVESTATE_SAVING_FAILED];
+	
+	[self restoreCoreState];
+}
+
+- (void) cmdCopyScreen:(NSValue *)cmdAttrValue
+{
+	[mainWindow copy:nil];
+}
+
+- (void) cmdToggleSpeedScalar:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	CGFloat speedScalar = cmdAttr.floatValue[0];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setSpeedScalar:speedScalar];
+}
+
+- (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	if ([cdsCore isSpeedLimitEnabled])
+	{
+		[cdsCore setIsSpeedLimitEnabled:NO];
+		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_DISABLED];
+	}
+	else
+	{
+		[cdsCore setIsSpeedLimitEnabled:YES];
+		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
+	}
+}
+
+- (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	if ([cdsCore isFrameSkipEnabled])
+	{
+		[cdsCore setIsFrameSkipEnabled:NO];
+		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_DISABLED];
+	}
+	else
+	{
+		[cdsCore setIsFrameSkipEnabled:YES];
+		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
+	}
+}
+
+- (void) cmdToggleCheats:(NSValue *)cmdAttrValue
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	if ([cdsCore isCheatingEnabled])
+	{
+		[cdsCore setIsCheatingEnabled:NO];
+		[self setStatusText:NSSTRING_STATUS_CHEATS_DISABLED];
+	}
+	else
+	{
+		[cdsCore setIsCheatingEnabled:YES];
+		[self setStatusText:NSSTRING_STATUS_CHEATS_ENABLED];
+	}
+}
+
+- (void) cmdToggleExecutePause:(NSValue *)cmdAttrValue
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	if ([cdsCore coreState] == CORESTATE_PAUSE)
+	{
+		if ([self currentRom] != nil)
+		{
+			[self executeCore];
+		}
+	}
+	else
+	{
+		[self pauseCore];
+	}
+}
+
+- (void) cmdReset:(NSValue *)cmdAttrValue
+{
+	if ([self currentRom] == nil)
+	{
+		return;
+	}
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
+	[self setIsWorking:YES];
+	
+	for (DisplayWindowController *windowController in windowList)
+	{
+		[[windowController window] displayIfNeeded];
+	}
+	
+	[cdsCore reset];
+	if ([cdsCore coreState] == CORESTATE_PAUSE)
+	{
+		for (DisplayWindowController *windowController in windowList)
+		{
+			[[windowController view] clearToWhite];
+		}
+	}
+	
+	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
+	[self setIsWorking:NO];
+	
+	for (DisplayWindowController *windowController in windowList)
+	{
+		[[windowController window] displayIfNeeded];
+	}
+}
+
+- (void) cmdToggleGPUState:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	const NSInteger bitNumber = cmdAttr.integerValue[0];
+	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
+	
+	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
+}
 
 - (BOOL) handleLoadRom:(NSURL *)fileURL
 {
@@ -1635,7 +1720,7 @@
 			enable = NO;
 		}
     }
-    else if (theAction == @selector(executeCoreToggle:))
+    else if (theAction == @selector(toggleExecutePause:))
     {
 		if (![cdsCore masterExecute] ||
 			[self currentRom] == nil ||
@@ -1679,7 +1764,7 @@
 			enable = NO;
 		}
     }
-	else if (theAction == @selector(resetCore:))
+	else if (theAction == @selector(reset:))
 	{
 		if ([self currentRom] == nil || [self isUserInterfaceBlockingExecution])
 		{
@@ -1777,7 +1862,7 @@
 			}
 		}
 	}
-	else if (theAction == @selector(speedLimitDisable:))
+	else if (theAction == @selector(toggleSpeedLimiter:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
