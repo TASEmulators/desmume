@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,32 +17,31 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#import "InputManager.h"
 
 @class CocoaDSController;
 
 
-@interface InputPrefsView : NSView
+@interface InputPrefsView : NSView <InputHIDManagerTarget>
 {
 	NSWindow *prefWindow;
+	InputManager *inputManager;
 	NSButton *lastConfigButton;
-	NSInteger configInput;
+	NSInteger configInputTargetID;
 	NSMutableDictionary *configInputList;
-	NSDictionary *keyNameTable;
 	
-	CocoaDSController *cdsController;
+	std::tr1::unordered_map<NSInteger, std::string> commandTagMap; // Key = Command ID, Value = Command Tag
+	NSDictionary *displayStringBindings;
 }
 
 @property (readonly) IBOutlet NSWindow *prefWindow;
-@property (assign) NSInteger configInput;
-@property (retain) CocoaDSController *cdsController;
+@property (readonly) IBOutlet InputManager *inputManager;
+@property (assign) NSInteger configInputTargetID;
 
-- (BOOL) handleMouseDown:(NSEvent *)mouseEvent;
-- (void) addMappingById:(NSInteger)dsControlID deviceCode:(NSString *)deviceCode deviceName:(NSString *)deviceName elementCode:(NSString *)elementCode elementName:(NSString *)elementName;
-- (void) addMappingByKey:(NSString *)dsControlKey deviceCode:(NSString *)deviceCode deviceName:(NSString *)deviceName elementCode:(NSString *)elementCode elementName:(NSString *)elementName;
-- (void) addMappingByKey:(NSString *)dsControlKey deviceInfo:(NSDictionary *)deviceInfo;
-- (NSString *) parseMappingDisplayString:(NSString *)keyString;
+- (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
+- (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed;
+- (NSString *) parseMappingDisplayString:(const char *)commandTag;
+
 - (IBAction) inputButtonSet:(id)sender;
-- (void) inputButtonCancelConfig;
-- (void) handleHIDInput:(NSNotification *)aNotification;
 
 @end

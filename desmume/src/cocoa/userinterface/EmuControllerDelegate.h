@@ -18,6 +18,7 @@
 #import <Cocoa/Cocoa.h>
 #include <libkern/OSAtomic.h>
 
+@class InputManager;
 @class CocoaDSRom;
 @class CocoaDSFirmware;
 @class CocoaDSOutput;
@@ -29,6 +30,8 @@
 
 @interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations>
 {
+	InputManager *inputManager;
+	
 	CocoaDSRom *currentRom;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSSpeaker *cdsSpeaker;
@@ -77,6 +80,8 @@
 	OSSpinLock spinlockFirmware;
 	OSSpinLock spinlockSpeaker;
 }
+
+@property (readonly) IBOutlet InputManager *inputManager;
 
 @property (assign) CocoaDSRom *currentRom; // Don't rely on autorelease since the emulator doesn't support concurrent unloading
 @property (retain) CocoaDSFirmware *cdsFirmware;
@@ -144,15 +149,12 @@
 - (IBAction) importRomSave:(id)sender;
 - (IBAction) exportRomSave:(id)sender;
 
-// Edit Menu
-- (IBAction) copy:(id)sender;
-
 // Emulation Menu
-- (IBAction) speedLimitDisable:(id)sender;
+- (IBAction) toggleSpeedLimiter:(id)sender;
 - (IBAction) toggleAutoFrameSkip:(id)sender;
-- (IBAction) cheatsDisable:(id)sender;
-- (IBAction) executeCoreToggle:(id)sender;
-- (IBAction) resetCore:(id)sender;
+- (IBAction) toggleCheats:(id)sender;
+- (IBAction) toggleExecutePause:(id)sender;
+- (IBAction) reset:(id)sender;
 - (IBAction) changeRomSaveType:(id)sender;
 
 // View Menu
@@ -190,6 +192,21 @@
 - (IBAction) writeDefaultsSoundSettings:(id)sender;
 
 - (IBAction) closeSheet:(id)sender;
+
+- (void) cmdUpdateDSController:(NSValue *)cmdAttrValue;
+
+- (void) cmdLoadEmuSaveStateSlot:(NSValue *)cmdAttrValue;
+- (void) cmdSaveEmuSaveStateSlot:(NSValue *)cmdAttrValue;
+
+- (void) cmdCopyScreen:(NSValue *)cmdAttrValue;
+
+- (void) cmdToggleSpeedScalar:(NSValue *)cmdAttrValue;
+- (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue;
+- (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue;
+- (void) cmdToggleCheats:(NSValue *)cmdAttrValue;
+- (void) cmdToggleExecutePause:(NSValue *)cmdAttrValue;
+- (void) cmdReset:(NSValue *)cmdAttrValue;
+- (void) cmdToggleGPUState:(NSValue *)cmdAttrValue;
 
 - (BOOL) handleLoadRom:(NSURL *)fileURL;
 - (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;

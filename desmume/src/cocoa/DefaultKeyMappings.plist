@@ -229,10 +229,6 @@
 			<string>-</string>
 			<key>floatValue</key>
 			<string>0.5</string>
-			<key>selector</key>
-			<string>toggleHoldSpeedHalf:</string>
-			<key>paramType</key>
-			<string>floatValue</string>
 		</dict>
 	</array>
 	<key>Speed Double</key>
@@ -248,10 +244,6 @@
 			<string>=</string>
 			<key>floatValue</key>
 			<integer>2</integer>
-			<key>selector</key>
-			<string>toggleHoldSpeedDouble:</string>
-			<key>paramType</key>
-			<string>floatValue</string>
 		</dict>
 	</array>
 	<key>HUD</key>
@@ -265,8 +257,6 @@
 			<string>4</string>
 			<key>elementName</key>
 			<string>H</string>
-			<key>selector</key>
-			<string>toggleHoldHUD</string>
 		</dict>
 	</array>
 	<key>Execute</key>
@@ -280,8 +270,6 @@
 			<string>117</string>
 			<key>elementName</key>
 			<string>Forward Delete</string>
-			<key>selector</key>
-			<string>execute</string>
 		</dict>
 	</array>
 	<key>Pause</key>
@@ -295,8 +283,6 @@
 			<string>119</string>
 			<key>elementName</key>
 			<string>End</string>
-			<key>selector</key>
-			<string>pause</string>
 		</dict>
 	</array>
 	<key>Reset</key>
@@ -310,8 +296,6 @@
 			<string>121</string>
 			<key>elementName</key>
 			<string>Page Down</string>
-			<key>selector</key>
-			<string>reset</string>
 		</dict>
 	</array>
 	<key>Mute</key>
@@ -325,8 +309,6 @@
 			<string>71</string>
 			<key>elementName</key>
 			<string>Numpad Clear</string>
-			<key>selector</key>
-			<string>mute</string>
 		</dict>
 	</array>
 </dict>

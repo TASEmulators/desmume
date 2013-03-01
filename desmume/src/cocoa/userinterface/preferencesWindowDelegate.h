@@ -17,8 +17,8 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#import "inputPrefsView.h"
 
-@class InputPrefsView;
 @class CocoaVideoFilter;
 
 

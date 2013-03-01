@@ -19,15 +19,16 @@
 #include <OpenGL/OpenGL.h>
 #include <libkern/OSAtomic.h>
 
+#import "InputManager.h"
 #import "cocoa_output.h"
 
 @class CocoaDSController;
 @class EmuControllerDelegate;
 
 
-@interface DisplayView : NSView <CocoaDSDisplayVideoDelegate>
+@interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
 {
-	CocoaDSController *cdsController;
+	InputManager *inputManager;
 	
 	// Display thread
 	BOOL isHudEnabled;
@@ -64,7 +65,7 @@
 	unsigned int vtxBufferOffset;
 }
 
-@property (retain) CocoaDSController *cdsController;
+@property (retain) InputManager *inputManager;
 
 - (void) startupOpenGL;
 - (void) shutdownOpenGL;
@@ -143,7 +144,6 @@
 
 - (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
 
-- (void) setCdsController:(CocoaDSController *)theController;
 - (void) setupUserDefaults;
 - (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees;
 - (double) maxContentScalar:(NSSize)contentBounds;
@@ -153,8 +153,8 @@
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
 - (IBAction) toggleStatusBar:(id)sender;
 
-- (IBAction) executeCoreToggle:(id)sender;
-- (IBAction) resetCore:(id)sender;
+- (IBAction) toggleExecutePause:(id)sender;
+- (IBAction) reset:(id)sender;
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) openRom:(id)sender;
 - (IBAction) changeRotationRelative:(id)sender;

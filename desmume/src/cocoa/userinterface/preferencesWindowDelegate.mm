@@ -761,6 +761,16 @@
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
 	[prefWindowController setContent:bindings];
+	
+	if ([viewInput configInputTargetID] != 0)
+	{
+		[[viewInput inputManager] setHidInputTarget:viewInput];
+	}
+}
+
+- (void)windowWillClose:(NSNotification *)notification
+{
+	[viewInput setConfigInputTargetID:0];
 }
 
 @end
