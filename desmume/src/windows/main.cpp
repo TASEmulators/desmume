@@ -2433,7 +2433,7 @@ int MenuInit()
 		mm.fMask = MIIM_TYPE | MIIM_ID;
 		mm.fType = MFT_STRING;
 		mm.wID = IDC_SAVETYPE+i+1;
-		mm.dwTypeData = (LPSTR)save_names[i];
+		mm.dwTypeData = (LPSTR)save_types[i].descr;
 
 		MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
 	}
