@@ -1433,7 +1433,7 @@ struct GLDISPLAY
 	{
 		//do we need to use another HDC?
 		if(init) return true;
-		init = initContext(MainWindow->getHWnd(),&privateContext, &privateDC);
+		init = initContext(MainWindow->getHWnd(),&privateContext);
 		return init;
 	}
 
@@ -1441,8 +1441,6 @@ struct GLDISPLAY
 	{
 		if(!init) return;
 		wglDeleteContext(privateContext);
-		DeleteObject(privateDC);
-		privateDC = NULL;
 		privateContext = NULL;
 		init = false;
 	}
@@ -1460,9 +1458,16 @@ struct GLDISPLAY
 			if(!initialize()) return false;
 		}
 
-		if(wglGetCurrentContext() != privateContext)
-			wglMakeCurrent(privateDC,privateContext);
+		privateDC = GetDC(MainWindow->getHWnd());
+		wglMakeCurrent(privateDC,privateContext);
 		return true;
+	}
+
+	void end()
+	{
+		wglMakeCurrent(NULL,privateContext);
+		ReleaseDC(MainWindow->getHWnd(),privateDC);
+		privateDC = NULL;
 	}
 
 	void showPage()
@@ -1634,6 +1639,8 @@ static void OGL_DoDisplay()
 	glEnd();
 
 	gldisplay.showPage();
+
+	gldisplay.end();
 }
 
 //the directdraw final presentation portion of display, including rotating

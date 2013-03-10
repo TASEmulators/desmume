@@ -63,10 +63,9 @@ int CheckHardwareSupport(HDC hdc)
 	return -1; // check error
 }
 
-bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc)
+bool initContext(HWND hwnd, HGLRC *hRC)
 {
 	*hRC = NULL;
-	*hdc = NULL;
 
 	HDC oglDC = GetDC (hwnd);
 
@@ -91,7 +90,7 @@ bool initContext(HWND hwnd, HGLRC *hRC, HDC *hdc)
 		return false;
 	}
 
-	*hdc = oglDC;
+	wglMakeCurrent(NULL,NULL);
 
 	return true;
 }
