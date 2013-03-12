@@ -144,7 +144,6 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @interface InputManager : NSObject
 {
 	EmuControllerDelegate *emuControl;
-	NSOutlineView *inputPrefsOutlineView;
 	id<InputHIDManagerTarget> hidInputTarget;
 	InputHIDManager *hidManager;
 	NSMutableDictionary *inputMappings;
@@ -155,7 +154,6 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 }
 
 @property (readonly) IBOutlet EmuControllerDelegate *emuControl;
-@property (readonly) IBOutlet NSOutlineView *inputPrefsOutlineView;
 @property (retain) id<InputHIDManagerTarget> hidInputTarget;
 @property (retain) NSMutableDictionary *inputMappings;
 

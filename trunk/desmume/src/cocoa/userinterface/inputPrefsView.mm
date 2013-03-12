@@ -372,7 +372,7 @@
 					buttonImage = (NSImage *)[inputPrefProperties valueForKey:@"UNKNOWN COMMAND"];
 				}
 				
-				[outCell setTitle:commandTag];
+				[outCell setTitle:NSLocalizedString(commandTag, nil)];
 				[outCell setImage:buttonImage];
 			}
 			else
@@ -483,7 +483,7 @@
 		if ([item isKindOfClass:[NSArray class]])
 		{
 			const unsigned long inputCount = (unsigned long)[(NSArray *)item count];
-			return [NSString stringWithFormat:(inputCount != 1) ? @"%ld Inputs Mapped" : @"%ld Input Mapped", inputCount];
+			return [NSString stringWithFormat:(inputCount != 1) ? NSSTRING_INPUTPREF_NUM_INPUTS_MAPPED_PLURAL : NSSTRING_INPUTPREF_NUM_INPUTS_MAPPED, inputCount];
 		}
 		else if ([item isKindOfClass:[NSDictionary class]])
 		{
@@ -626,13 +626,12 @@
 	const NSInteger rowNumber = [outlineView clickedRow];
 	
 	NSDictionary *deviceInfo = (NSDictionary *)[outlineView itemAtRow:rowNumber];
-	[inputManager removeMappingUsingDeviceCode:[(NSString *)[deviceInfo valueForKey:@"deviceCode"] cStringUsingEncoding:NSUTF8StringEncoding] elementCode:[(NSString *)[deviceInfo valueForKey:@"elementCode"] cStringUsingEncoding:NSUTF8StringEncoding]];
-	
 	NSMutableArray *inputList = (NSMutableArray *)[outlineView parentForItem:deviceInfo];
-	[inputList removeObject:deviceInfo];
+	
+	[inputManager removeMappingUsingDeviceCode:[(NSString *)[deviceInfo valueForKey:@"deviceCode"] cStringUsingEncoding:NSUTF8StringEncoding] elementCode:[(NSString *)[deviceInfo valueForKey:@"elementCode"] cStringUsingEncoding:NSUTF8StringEncoding]];
+	[inputManager writeDefaultsInputMappings];
 	
 	[outlineView reloadItem:inputList reloadChildren:YES];
-	[inputManager writeDefaultsInputMappings];
 }
 
 - (IBAction) changeSpeed:(id)sender
