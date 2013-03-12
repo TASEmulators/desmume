@@ -105,7 +105,6 @@
 - (void) setupSlotMenuItems;
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber;
 - (void) setupUserDefaults;
-- (void) updateInputDisplayFields;
 - (IBAction) showMigrationWindow:(id)sender;
 - (IBAction) handleMigrationWindow:(id)sender;
 - (void) setRomInfoPanelBoxTitleColors;

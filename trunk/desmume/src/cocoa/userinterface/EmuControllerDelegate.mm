@@ -118,6 +118,10 @@
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
 	selectedExportRomSaveID = 0;
 	
+	lastSetSpeedScalar = 1.0f;
+	isSoundMuted = NO;
+	lastSetVolumeValue = MAX_VOLUME;
+	
 	iconExecute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]];
 	iconPause = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]];
 	iconSpeedNormal = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed1x_420x420" ofType:@"png"]];
@@ -275,14 +279,20 @@
 	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
 	{
 		newImage = iconVolumeOneThird;
+		isSoundMuted = NO;
+		lastSetVolumeValue = vol;
 	}
 	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
 	{
 		newImage = iconVolumeTwoThird;
+		isSoundMuted = NO;
+		lastSetVolumeValue = vol;
 	}
 	else
 	{
 		newImage = iconVolumeFull;
+		isSoundMuted = NO;
+		lastSetVolumeValue = vol;
 	}
 	
 	if (newImage != currentImage)
@@ -639,14 +649,12 @@
 
 - (IBAction) loadEmuSaveStateSlot:(id)sender
 {
-	const NSInteger slotNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:slotNumber];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) saveEmuSaveStateSlot:(id)sender
 {
-	const NSInteger slotNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:slotNumber];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) importRomSave:(id)sender
@@ -708,22 +716,22 @@
 
 - (IBAction) toggleExecutePause:(id)sender
 {
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) reset:(id)sender
 {
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) toggleSpeedLimiter:(id)sender
 {
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) toggleAutoFrameSkip:(id)sender
 {
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
@@ -753,8 +761,7 @@
 
 - (IBAction) toggleGPUState:(id)sender
 {
-	const NSInteger bitNumber = [CocoaDSUtil getIBActionSenderTag:sender];
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:bitNumber];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) changeRomSaveType:(id)sender
@@ -768,13 +775,15 @@
 
 - (IBAction) toggleCheats:(id)sender
 {
-	[inputManager dispatchCommandUsingIBAction:_cmd tag:0];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) changeCoreSpeed:(id)sender
 {
+	CGFloat newSpeedScalar = (CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setSpeedScalar:(CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f];
+	[cdsCore setSpeedScalar:newSpeedScalar];
+	lastSetSpeedScalar = newSpeedScalar;
 }
 
 - (IBAction) changeCoreEmuFlags:(id)sender
@@ -985,13 +994,17 @@
 	[cmdAttrValue getValue:&cmdAttr];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSUInteger controlID = (NSUInteger)cmdAttr.commandID;
-	BOOL theState = (cmdAttr.inputState == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const NSUInteger controlID = cmdAttr.intValue[0];
+	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
 	
 	if (controlID == DSControllerState_Touch)
 	{
-		NSPoint touchLoc = NSMakePoint(cmdAttr.floatValue[0], cmdAttr.floatValue[1]);
+		const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
 		[[cdsCore cdsController] setTouchState:theState location:touchLoc];
+	}
+	else if (controlID == DSControllerState_Microphone)
+	{
+		[[cdsCore cdsController] setMicrophoneState:theState inputMode:cmdAttr.intValue[1]];
 	}
 	else
 	{
@@ -1004,6 +1017,11 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
@@ -1011,7 +1029,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = cmdAttr.integerValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1037,6 +1055,11 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
 	NSString *saveStatePath = [[CocoaDSFile saveStateURL] path];
 	if (saveStatePath == nil)
 	{
@@ -1051,7 +1074,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = cmdAttr.integerValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1077,18 +1100,26 @@
 	[mainWindow copy:nil];
 }
 
-- (void) cmdToggleSpeedScalar:(NSValue *)cmdAttrValue
+- (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	CGFloat speedScalar = cmdAttr.floatValue[0];
-	
+	const float speedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setSpeedScalar:speedScalar];
+	
+	[cdsCore setSpeedScalar:(cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) ? lastSetSpeedScalar : speedScalar];
 }
 
 - (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue
 {
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if ([cdsCore isSpeedLimitEnabled])
@@ -1105,6 +1136,14 @@
 
 - (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue
 {
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if ([cdsCore isFrameSkipEnabled])
@@ -1121,6 +1160,14 @@
 
 - (void) cmdToggleCheats:(NSValue *)cmdAttrValue
 {
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if ([cdsCore isCheatingEnabled])
@@ -1137,14 +1184,19 @@
 
 - (void) cmdToggleExecutePause:(NSValue *)cmdAttrValue
 {
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	{
+		return;
+	}
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if ([cdsCore coreState] == CORESTATE_PAUSE)
 	{
-		if ([self currentRom] != nil)
-		{
-			[self executeCore];
-		}
+		[self executeCore];
 	}
 	else
 	{
@@ -1154,7 +1206,10 @@
 
 - (void) cmdReset:(NSValue *)cmdAttrValue
 {
-	if ([self currentRom] == nil)
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
 	{
 		return;
 	}
@@ -1187,13 +1242,46 @@
 	}
 }
 
+- (void) cmdToggleMute:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
+	float vol = 0.0f;
+	
+	if (isSoundMuted)
+	{
+		isSoundMuted = NO;
+		vol = lastSetVolumeValue;
+		[self setStatusText:@"Sound unmuted."];
+	}
+	else
+	{
+		isSoundMuted = YES;
+		[self setStatusText:@"Sound muted."];
+	}
+
+	[self setCurrentVolumeValue:vol];
+	[CocoaDSUtil messageSendOneWayWithFloat:[cdsSpeaker receivePort] msgID:MESSAGE_SET_VOLUME floatValue:vol];
+}
+
 - (void) cmdToggleGPUState:(NSValue *)cmdAttrValue
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	const NSInteger bitNumber = cmdAttr.integerValue[0];
+	const NSInteger bitNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : cmdAttr.intValue[0];
 	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
 	
 	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
@@ -1837,13 +1925,9 @@
 					[(NSMenuItem*)theItem setState:NSOnState];
 				}
 			}
-			else if (speedScalar == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
 			else
 			{
-				[(NSMenuItem*)theItem setState:NSOffState];
+				[(NSMenuItem*)theItem setState:(speedScalar == [theItem tag]) ? NSOnState : NSOffState];
 			}
 		}
 		else if ([(id)theItem isMemberOfClass:[NSToolbarItem class]])
@@ -1866,56 +1950,28 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([cdsCore isSpeedLimitEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_SPEED_LIMIT];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_SPEED_LIMIT];
-			}
+			[(NSMenuItem*)theItem setTitle:([cdsCore isSpeedLimitEnabled]) ? NSSTRING_TITLE_DISABLE_SPEED_LIMIT : NSSTRING_TITLE_ENABLE_SPEED_LIMIT];
 		}
 	}
 	else if (theAction == @selector(toggleAutoFrameSkip:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([cdsCore isFrameSkipEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_AUTO_FRAME_SKIP];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_AUTO_FRAME_SKIP];
-			}
+			[(NSMenuItem*)theItem setTitle:([cdsCore isFrameSkipEnabled]) ? NSSTRING_TITLE_DISABLE_AUTO_FRAME_SKIP : NSSTRING_TITLE_ENABLE_AUTO_FRAME_SKIP];
 		}
 	}
-	else if (theAction == @selector(cheatsDisable:))
+	else if (theAction == @selector(toggleCheats:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([cdsCore isCheatingEnabled])
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_DISABLE_CHEATS];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_ENABLE_CHEATS];
-			}
+			[(NSMenuItem*)theItem setTitle:([cdsCore isCheatingEnabled]) ? NSSTRING_TITLE_DISABLE_CHEATS : NSSTRING_TITLE_ENABLE_CHEATS];
 		}
 	}
 	else if (theAction == @selector(changeRomSaveType:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([self selectedRomSaveTypeID] == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:([self selectedRomSaveTypeID] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(openEmuSaveState:) ||
@@ -1940,14 +1996,7 @@
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([cdsCore.cdsGPU gpuStateByBit:[theItem tag]])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:NSOffState];
-			}
+			[(NSMenuItem*)theItem setState:([cdsCore.cdsGPU gpuStateByBit:[theItem tag]]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(changeScale:))
@@ -1979,13 +2028,9 @@
 					[(NSMenuItem*)theItem setState:NSOnState];
 				}
 			}
-			else if (viewRotation == [theItem tag])
-			{
-				[(NSMenuItem*)theItem setState:NSOnState];
-			}
 			else
 			{
-				[(NSMenuItem*)theItem setState:NSOffState];
+				[(NSMenuItem*)theItem setState:(viewRotation == [theItem tag]) ? NSOnState : NSOffState];
 			}
 		}
 	}

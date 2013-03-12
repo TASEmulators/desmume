@@ -21,27 +21,72 @@
 
 @class CocoaDSController;
 
+@interface InputPrefProperties : NSObject
+{
+	NSString *commandTag;
+	NSImage *icon;
+	NSWindow *settingsSheet;
+}
 
-@interface InputPrefsView : NSView <InputHIDManagerTarget>
+@property (retain) NSString *commandTag;
+@property (retain) NSImage *icon;
+@property (retain) NSWindow *settingsSheet;
+
+- (id) initWithCommandTag:(NSString *)theCommandTag icon:(NSImage *)theIcon sheet:(NSWindow *)theSheet;
+
+@end
+
+#pragma mark -
+
+@interface InputPrefsView : NSView <InputHIDManagerTarget, NSOutlineViewDelegate, NSOutlineViewDataSource>
 {
 	NSWindow *prefWindow;
+	NSOutlineView *inputPrefOutlineView;
+	NSObjectController *inputSettingsController;
+	
+	NSWindow *inputSettingsMicrophone;
+	NSWindow *inputSettingsTouch;
+	NSWindow *inputSettingsLoadStateSlot;
+	NSWindow *inputSettingsSaveStateSlot;
+	NSWindow *inputSettingsSetSpeedLimit;
+	NSWindow *inputSettingsGPUState;
+	
 	InputManager *inputManager;
-	NSButton *lastConfigButton;
-	NSInteger configInputTargetID;
+	NSString *configInputTargetID;
 	NSMutableDictionary *configInputList;
 	
-	std::tr1::unordered_map<NSInteger, std::string> commandTagMap; // Key = Command ID, Value = Command Tag
-	NSDictionary *displayStringBindings;
+	NSDictionary *inputPrefProperties;
+	NSDictionary *inputSettingsMappings;
+	NSArray *commandTagList;
 }
 
 @property (readonly) IBOutlet NSWindow *prefWindow;
+@property (readonly) IBOutlet NSOutlineView *inputPrefOutlineView;
+@property (readonly) IBOutlet NSObjectController *inputSettingsController;
+
+@property (readonly) IBOutlet NSWindow *inputSettingsMicrophone;
+@property (readonly) IBOutlet NSWindow *inputSettingsTouch;
+@property (readonly) IBOutlet NSWindow *inputSettingsLoadStateSlot;
+@property (readonly) IBOutlet NSWindow *inputSettingsSaveStateSlot;
+@property (readonly) IBOutlet NSWindow *inputSettingsSetSpeedLimit;
+@property (readonly) IBOutlet NSWindow *inputSettingsGPUState;
+
 @property (readonly) IBOutlet InputManager *inputManager;
-@property (assign) NSInteger configInputTargetID;
+@property (retain) NSString *configInputTargetID;
+
+- (void) initSettingsSheets;
+- (NSString *) commandTagFromInputList:(NSArray *)inputList;
 
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed;
-- (NSString *) parseMappingDisplayString:(const char *)commandTag;
+- (BOOL) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(NSString *)commandTag;
+- (void) setMappingUsingDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo;
+- (void) didEndSettingsSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
-- (IBAction) inputButtonSet:(id)sender;
+- (IBAction) setInputAdd:(id)sender;
+- (IBAction) removeInput:(id)sender;
+- (IBAction) changeSpeed:(id)sender;
+- (IBAction) showSettingsSheet:(id)sender;
+- (IBAction) closeSettingsSheet:(id)sender;
 
 @end
