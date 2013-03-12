@@ -65,6 +65,10 @@
 	NSInteger selectedExportRomSaveID;
 	NSInteger selectedRomSaveTypeID;
 	
+	CGFloat lastSetSpeedScalar;
+	BOOL isSoundMuted;
+	float lastSetVolumeValue;
+	
 	NSImage *iconVolumeFull;
 	NSImage *iconVolumeTwoThird;
 	NSImage *iconVolumeOneThird;
@@ -200,7 +204,7 @@
 
 - (void) cmdCopyScreen:(NSValue *)cmdAttrValue;
 
-- (void) cmdToggleSpeedScalar:(NSValue *)cmdAttrValue;
+- (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue;
 - (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue;
 - (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue;
 - (void) cmdToggleCheats:(NSValue *)cmdAttrValue;

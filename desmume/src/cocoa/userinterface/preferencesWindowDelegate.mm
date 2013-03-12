@@ -377,12 +377,6 @@
 	}
 }
 
-- (IBAction) selectSoundInputMode:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsController setSoundInputMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"Input_AudioInputMode"]];
-}
-
 - (IBAction) selectDisplayMode:(id)sender
 {
 	const NSInteger displayMode = [(NSMenuItem *)sender tag];
@@ -762,7 +756,7 @@
 {
 	[prefWindowController setContent:bindings];
 	
-	if ([viewInput configInputTargetID] != 0)
+	if ([viewInput configInputTargetID] != nil)
 	{
 		[[viewInput inputManager] setHidInputTarget:viewInput];
 	}
@@ -770,7 +764,7 @@
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-	[viewInput setConfigInputTargetID:0];
+	[viewInput setConfigInputTargetID:nil];
 }
 
 @end

@@ -23,9 +23,9 @@
 #include <string>
 #include <vector>
 
-#define INPUT_HANDLER_MAX_ATTRIBUTE_VALUES 4
+#define INPUT_HANDLER_STRING_LENGTH 256
 
-enum
+enum InputAttributeState
 {
 	INPUT_ATTRIBUTE_STATE_OFF = 0,
 	INPUT_ATTRIBUTE_STATE_ON,
@@ -46,38 +46,41 @@ enum
 
 typedef struct
 {
-	std::string deviceName;
-	std::string deviceCode;
-	std::string elementName;
-	std::string elementCode;
+	char deviceName[INPUT_HANDLER_STRING_LENGTH];
+	char deviceCode[INPUT_HANDLER_STRING_LENGTH];
+	char elementName[INPUT_HANDLER_STRING_LENGTH];
+	char elementCode[INPUT_HANDLER_STRING_LENGTH];
 	
-	NSInteger inputState;
-	
-	NSInteger integerValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
-	CGFloat floatValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
-	id object[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
+	InputAttributeState state;		// The input state that is sent on command dispatch
+	int32_t intCoordX;				// The X-coordinate as an int for commands that require a location
+	int32_t intCoordY;				// The Y-coordinate as an int for commands that require a location
+	float floatCoordX;				// The X-coordinate as a float for commands that require a location
+	float floatCoordY;				// The Y-coordinate as a float for commands that require a location
+	float scalar;					// A scalar value for commands that require a scalar
+	id sender;						// An object for commands that require an object
 } InputAttributes;
 
 typedef struct
 {
-	SEL selector;
-	NSInteger commandID;
-	NSInteger inputState;
+	char tag[INPUT_HANDLER_STRING_LENGTH];	// A string identifier for these attributes
+	SEL selector;					// The selector that is called on command dispatch
+	int32_t intValue[4];			// Context dependent int values
+	float floatValue[4];			// Context dependent float values
+	id object[4];					// Context dependent objects
 	
-	NSInteger integerValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
-	BOOL useIntegerInputValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
+	bool useInputForIntCoord;		// The command will prefer the input device's int coordinate
+	bool useInputForFloatCoord;		// The command will prefer the input device's float coordinate
+	bool useInputForScalar;			// The command will prefer the input device's scalar
+	bool useInputForSender;			// The command will prefer the input device's sender
 	
-	CGFloat floatValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
-	BOOL useFloatInputValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
-	
-	id object[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
-	BOOL useObjectInputValue[INPUT_HANDLER_MAX_ATTRIBUTE_VALUES];
+	InputAttributes input;			// The input device's attributes
 } CommandAttributes;
 
 typedef std::vector<InputAttributes> InputAttributesList;
 typedef std::vector<CommandAttributes> CommandAttributesList;
-typedef std::tr1::unordered_map<std::string, std::string> CommandTagMap; // Key = Input key in deviceCode:elementCode format, Value = Command Tag
+typedef std::tr1::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
+typedef std::tr1::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
 
 #pragma mark -
 @interface InputHIDDevice : NSObject
@@ -141,36 +144,58 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @interface InputManager : NSObject
 {
 	EmuControllerDelegate *emuControl;
+	NSOutlineView *inputPrefsOutlineView;
 	id<InputHIDManagerTarget> hidInputTarget;
 	InputHIDManager *hidManager;
-		
-	CommandTagMap commandMap;
-	CommandAttributesMap commandMasterList;
+	NSMutableDictionary *inputMappings;
+	
+	InputCommandMap commandMap;
+	CommandAttributesMap defaultCommandAttributes;
+	CommandSelectorMap commandSelector;
 }
 
-@property (assign) IBOutlet EmuControllerDelegate *emuControl;
+@property (readonly) IBOutlet EmuControllerDelegate *emuControl;
+@property (readonly) IBOutlet NSOutlineView *inputPrefsOutlineView;
 @property (retain) id<InputHIDManagerTarget> hidInputTarget;
+@property (retain) NSMutableDictionary *inputMappings;
 
 - (void) addMappingsUsingUserDefaults;
-- (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandTag:(const char *)commandTag;
-- (void) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(const char *)commandTag;
-- (void) addMappingUsingInputList:(const InputAttributesList *)inputList commandTag:(const char *)commandTag;
-- (void) addMappingForIBAction:(const SEL)theSelector commandTag:(const char *)commandTag;
-- (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandTag:(const char *)commandTag;
+- (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingUsingInputList:(const InputAttributesList *)inputList commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingForIBAction:(const SEL)theSelector commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandAttributes:(const CommandAttributes *)cmdAttr;
 
 - (void) removeMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
-- (void) removeAllMappingsOfCommandTag:(const char *)commandTag;
+- (void) removeAllMappingsForCommandTag:(const char *)commandTag;
 
 - (CommandAttributesList) generateCommandListUsingInputList:(const InputAttributesList *)inputList;
 - (void) dispatchCommandList:(const CommandAttributesList *)cmdList;
 - (BOOL) dispatchCommandUsingInputAttributes:(const InputAttributes *)inputAttr;
-- (BOOL) dispatchCommandUsingIBAction:(const SEL)theSelector tag:(const NSInteger)tagValue;
+- (BOOL) dispatchCommandUsingIBAction:(const SEL)theSelector sender:(id)sender;
 
-- (void) writeUserDefaultsMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(const char *)commandTag;
+- (void) writeDefaultsInputMappings;
+- (SEL) selectorOfCommandTag:(const char *)commandTag;
+- (CommandAttributes) defaultCommandAttributesForCommandTag:(const char *)commandTag;
+
+- (CommandAttributes) mappedCommandAttributesOfDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
+- (void) setMappedCommandAttributes:(const CommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
+- (void) updateInputSettingsSummaryInDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo commandTag:(const char *)commandTag;
+
+CommandAttributes NewDefaultCommandAttributes(const char *commandTag);
+CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const SEL theSelector);
+CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NSUInteger controlID);
+void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr, NSDictionary *deviceInfo);
+
+NSDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
+														NSString *deviceCode,
+														NSString *deviceName,
+														NSString *elementCode,
+														NSString *elementName);
 
 InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue);
 InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BOOL keyPressed);
 InputAttributes InputManagerEncodeMouseButtonInput(const NSInteger buttonNumber, const NSPoint touchLoc, BOOL buttonPressed);
-InputAttributes InputManagerEncodeIBAction(const SEL theSelector, const NSInteger tagValue);
+InputAttributes InputManagerEncodeIBAction(const SEL theSelector, id sender);
 
 @end

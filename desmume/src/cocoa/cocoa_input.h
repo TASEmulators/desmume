@@ -57,9 +57,9 @@ enum
 
 - (id) initWithMic:(CocoaDSMic *)theMic;
 
-- (void) setSoundInputMode:(NSInteger)inputMode;
-- (void) setControllerState:(BOOL)theState controlID:(NSUInteger)controlID;
-- (void) setTouchState:(BOOL)theState location:(NSPoint)theLocation;
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
+- (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
+- (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode;
 - (void) flush;
 
 @end

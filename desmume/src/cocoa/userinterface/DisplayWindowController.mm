@@ -75,6 +75,15 @@ enum OGLVertexAttributeID
 	OGLVertexAttributeID_TexCoord0 = 8
 };
 
+#ifndef MAC_OS_X_VERSION_10_7
+// In Mac OS X, strnlen() is unsupported prior to v10.7, so define it here.
+static size_t strnlen(const char *s, size_t n)
+{
+	const char *p = (const char *)memchr(s, 0, n);
+	return(p ? p-s : n);
+}
+#endif // MAC_OS_X_VERSION_10_7
+
 @implementation DisplayWindowController
 
 @synthesize emuControl;
@@ -1310,10 +1319,11 @@ enum OGLVertexAttributeID
 - (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue
 {
 	BOOL isHandled = NO;
-	std::string inputStr;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
 	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue);
+	char inputStr[INPUT_HANDLER_STRING_LENGTH*2];
+	memset(inputStr, '\0', INPUT_HANDLER_STRING_LENGTH*2);
 	
 	const size_t inputCount = inputList.size();
 	
@@ -1321,16 +1331,18 @@ enum OGLVertexAttributeID
 	{
 		const InputAttributes &inputAttr = inputList[i];
 		
-		if (inputAttr.inputState == INPUT_ATTRIBUTE_STATE_ON)
+		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
 		{
-			inputStr = inputAttr.deviceName + ":" + inputAttr.elementName;
+			strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
+			strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
+			strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
 			break;
 		}
 	}
 	
-	if (!inputStr.empty())
+	if (strnlen(inputStr, INPUT_HANDLER_STRING_LENGTH*2) != 0)
 	{
-		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr.c_str() encoding:NSUTF8StringEncoding]];
+		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
 	}
 	
 	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputList];
@@ -1355,8 +1367,12 @@ enum OGLVertexAttributeID
 	
 	if (keyPressed && [theEvent window] != nil)
 	{
-		std::string inputStr = inputAttr.deviceName + ":" + inputAttr.elementName;
-		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr.c_str() encoding:NSUTF8StringEncoding]];
+		char inputStr[INPUT_HANDLER_STRING_LENGTH*2];
+		strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
+		
+		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];
@@ -1383,10 +1399,15 @@ enum OGLVertexAttributeID
 	if (buttonPressed && [theEvent window] != nil)
 	{
 		char inputCoordBuf[256] = {0};
-		snprintf(inputCoordBuf, 256, " X:%i Y:%i", (int)inputAttr.floatValue[0], (int)inputAttr.floatValue[1]);
+		snprintf(inputCoordBuf, 256, " X:%i Y:%i", (int)inputAttr.intCoordX, (int)inputAttr.intCoordY);
 		
-		std::string inputStr = inputAttr.deviceName + ":" + inputAttr.elementName + std::string(inputCoordBuf);
-		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr.c_str() encoding:NSUTF8StringEncoding]];
+		char inputStr[INPUT_HANDLER_STRING_LENGTH*2];
+		strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputStr, inputCoordBuf, INPUT_HANDLER_STRING_LENGTH*2);
+		
+		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];

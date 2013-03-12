@@ -62,14 +62,7 @@
 	[super dealloc];
 }
 
-- (void) setSoundInputMode:(NSInteger)inputMode
-{
-	OSSpinLockLock(&spinlockControllerState);
-	self.cdsMic.mode = inputMode;
-	OSSpinLockUnlock(&spinlockControllerState);
-}
-
-- (void) setControllerState:(BOOL)theState controlID:(NSUInteger)controlID 
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID 
 {
 	if (controlID >= DSControllerState_StatesCount)
 	{
@@ -81,11 +74,19 @@
 	OSSpinLockUnlock(&spinlockControllerState);
 }
 
-- (void) setTouchState:(BOOL)theState location:(NSPoint)theLocation
+- (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation
 {
 	OSSpinLockLock(&spinlockControllerState);
 	controllerState[DSControllerState_Touch] = (theState) ? true : false;
 	touchLocation = theLocation;
+	OSSpinLockUnlock(&spinlockControllerState);
+}
+
+- (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode
+{
+	OSSpinLockLock(&spinlockControllerState);
+	controllerState[DSControllerState_Microphone] = (theState) ? true : false;
+	self.cdsMic.mode = inputMode;
 	OSSpinLockUnlock(&spinlockControllerState);
 }
 
@@ -140,15 +141,15 @@
 	{
 		if (micMode == MICMODE_NONE)
 		{
-			[self.cdsMic fillWithNullSamples];
+			[cdsMic fillWithNullSamples];
 		}
 		else if (micMode == MICMODE_INTERNAL_NOISE)
 		{
-			[self.cdsMic fillWithInternalNoise];
+			[cdsMic fillWithInternalNoise];
 		}
 		else if (micMode == MICMODE_WHITE_NOISE)
 		{
-			[self.cdsMic fillWithWhiteNoise];
+			[cdsMic fillWithWhiteNoise];
 		}
 		else if (micMode == MICMODE_SOUND_FILE)
 		{

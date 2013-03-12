@@ -21,12 +21,61 @@
 
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
+#import "cocoa_util.h"
 
 #define INPUT_HOLD_TIME		0.1		// Time in seconds to hold a button in its on state when mapping an input.
+
+@implementation InputPrefProperties
+
+@synthesize commandTag;
+@synthesize icon;
+@synthesize settingsSheet;
+
+- (id)init
+{
+	return [self initWithCommandTag:@"" icon:nil sheet:nil];
+}
+
+- (id) initWithCommandTag:(NSString *)theCommandTag icon:(NSImage *)theIcon sheet:(NSWindow *)theSheet
+{
+	self = [super init];
+    if (self == nil)
+	{
+		return self;
+    }
+	
+	commandTag = [theCommandTag retain];
+	icon = [theIcon retain];
+	settingsSheet = [theSheet retain];
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	[self setCommandTag:nil];
+	[self setIcon:nil];
+	[self setSettingsSheet:nil];
+	
+	[super dealloc];
+}
+
+@end
+
+
+#pragma mark -
 
 @implementation InputPrefsView
 
 @synthesize prefWindow;
+@synthesize inputPrefOutlineView;
+@synthesize inputSettingsController;
+@synthesize inputSettingsMicrophone;
+@synthesize inputSettingsTouch;
+@synthesize inputSettingsLoadStateSlot;
+@synthesize inputSettingsSaveStateSlot;
+@synthesize inputSettingsSetSpeedLimit;
+@synthesize inputSettingsGPUState;
 @synthesize inputManager;
 @dynamic configInputTargetID;
 
@@ -38,57 +87,34 @@
 		return self;
     }
 	
-	lastConfigButton = nil;
-	configInputTargetID = 0;
-	configInputList = [[NSMutableDictionary alloc] initWithCapacity:32];
+	configInputTargetID = nil;
+	configInputList = [[NSMutableDictionary alloc] initWithCapacity:128];
 	
-	displayStringBindings = [[NSDictionary alloc] initWithObjectsAndKeys:
-							 @"Input_Up",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_UP],
-							 @"Input_Down",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_DOWN],
-							 @"Input_Left",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_LEFT],
-							 @"Input_Right",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_RIGHT],
-							 @"Input_A",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_A],
-							 @"Input_B",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_B],
-							 @"Input_X",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_X],
-							 @"Input_Y",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_Y],
-							 @"Input_L",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_L],
-							 @"Input_R",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_R],
-							 @"Input_Start",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_START],
-							 @"Input_Select",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SELECT],
-							 @"Input_Microphone",	[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SIM_MIC],
-							 @"Input_Lid",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_LID],
-							 @"Input_Debug",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_DEBUG],
-							 @"Input_SpeedHalf",	[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SPEED_HALF],
-							 @"Input_SpeedDouble",	[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_SPEED_DOUBLE],
-							 @"Input_HUD",			[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_TOGGLE_HUD],
-							 @"Input_Execute",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_EXECUTE],
-							 @"Input_Pause",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_PAUSE],
-							 @"Input_Reset",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_RESET],
-							 @"Input_Touch",		[NSString stringWithFormat:@"%i", PREF_INPUT_BUTTON_TOUCH],
-							 nil];
+	inputPrefProperties = [[NSDictionary alloc] initWithObjectsAndKeys:
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"UNKNOWN COMMAND",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowUp_420x420" ofType:@"png"]] autorelease],			@"Up",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowDown_420x420" ofType:@"png"]] autorelease],			@"Down",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowLeft_420x420" ofType:@"png"]] autorelease],			@"Left",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowRight_420x420" ofType:@"png"]] autorelease],			@"Right",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonA_420x420" ofType:@"png"]] autorelease],			@"A",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonB_420x420" ofType:@"png"]] autorelease],			@"B",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonX_420x420" ofType:@"png"]] autorelease],			@"X",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonY_420x420" ofType:@"png"]] autorelease],			@"Y",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonL_420x420" ofType:@"png"]] autorelease],			@"L",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonR_420x420" ofType:@"png"]] autorelease],			@"R",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonStart_420x420" ofType:@"png"]] autorelease],		@"Start",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Select",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Microphone_420x420" ofType:@"png"]] autorelease],			@"Microphone",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ShowHUD_420x420" ofType:@"png"]] autorelease],			@"HUD",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]] autorelease],				@"Pause",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute/Pause",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Reset_420x420" ofType:@"png"]] autorelease],				@"Reset",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Touch",
+						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]] autorelease],			@"Mute/Unmute",
+						   nil];
 	
-	commandTagMap[PREF_INPUT_BUTTON_UP]				= "Up";
-	commandTagMap[PREF_INPUT_BUTTON_DOWN]			= "Down";
-	commandTagMap[PREF_INPUT_BUTTON_LEFT]			= "Left";
-	commandTagMap[PREF_INPUT_BUTTON_RIGHT]			= "Right";
-	commandTagMap[PREF_INPUT_BUTTON_A]				= "A";
-	commandTagMap[PREF_INPUT_BUTTON_B]				= "B";
-	commandTagMap[PREF_INPUT_BUTTON_X]				= "X";
-	commandTagMap[PREF_INPUT_BUTTON_Y]				= "Y";
-	commandTagMap[PREF_INPUT_BUTTON_L]				= "L";
-	commandTagMap[PREF_INPUT_BUTTON_R]				= "R";
-	commandTagMap[PREF_INPUT_BUTTON_START]			= "Start";
-	commandTagMap[PREF_INPUT_BUTTON_SELECT]			= "Select";
-	commandTagMap[PREF_INPUT_BUTTON_SIM_MIC]		= "Microphone";
-	commandTagMap[PREF_INPUT_BUTTON_LID]			= "Lid";
-	commandTagMap[PREF_INPUT_BUTTON_DEBUG]			= "Debug";
-	commandTagMap[PREF_INPUT_BUTTON_SPEED_HALF]		= "Speed Half";
-	commandTagMap[PREF_INPUT_BUTTON_SPEED_DOUBLE]	= "Speed Double";
-	commandTagMap[PREF_INPUT_BUTTON_TOGGLE_HUD]		= "HUD";
-	commandTagMap[PREF_INPUT_BUTTON_EXECUTE]		= "Execute";
-	commandTagMap[PREF_INPUT_BUTTON_PAUSE]			= "Pause";
-	commandTagMap[PREF_INPUT_BUTTON_RESET]			= "Reset";
-	commandTagMap[PREF_INPUT_BUTTON_TOUCH]			= "Touch";
+	commandTagList = [[[NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]] valueForKey:@"CommandTagList"] retain];
 	
     return self;
 }
@@ -96,102 +122,163 @@
 - (void)dealloc
 {
 	[configInputList release];
-	[displayStringBindings release];
+	[inputPrefProperties release];
+	[inputSettingsMappings release];
+	[commandTagList release];
 	
 	[super dealloc];
 }
 
 #pragma mark Dynamic Properties
-- (void) setConfigInputTargetID:(NSInteger)targetID
+- (void) setConfigInputTargetID:(NSString *)targetID
 {
-	if (targetID == 0)
+	if (targetID == nil)
 	{
-		[lastConfigButton setState:NSOffState];
-		lastConfigButton = nil;
+		[configInputTargetID release];
 	}
 	
-	configInputTargetID = targetID;
-	[[self inputManager] setHidInputTarget:(targetID == 0) ? nil : self];
+	configInputTargetID = [targetID retain];
+	[[self inputManager] setHidInputTarget:(targetID == nil) ? nil : self];
 }
 
-- (NSInteger) configInputTargetID
+- (NSString *) configInputTargetID
 {
 	return configInputTargetID;
 }
 
 #pragma mark Class Methods
 
+- (void) initSettingsSheets
+{
+	inputSettingsMappings = [[NSDictionary alloc] initWithObjectsAndKeys:
+							 inputSettingsMicrophone,		@"Microphone",
+							 inputSettingsTouch,			@"Touch",
+							 inputSettingsLoadStateSlot,	@"Load State Slot",
+							 inputSettingsSaveStateSlot,	@"Save State Slot",
+							 inputSettingsSetSpeedLimit,	@"Set Speed",
+							 inputSettingsGPUState,			@"Enable/Disable GPU State",
+							 nil];
+}
+
+- (NSString *) commandTagFromInputList:(NSArray *)inputList
+{
+	NSString *commandTag = nil;
+	if (inputList == nil)
+	{
+		return commandTag;
+	}
+	
+	NSDictionary *inputMappings = [inputManager inputMappings];
+	for (NSString *tag in inputMappings)
+	{
+		if (inputList == [inputMappings valueForKey:tag])
+		{
+			commandTag = tag;
+			break;
+		}
+	}
+	
+	return commandTag;
+}
+
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
 {
-	BOOL isHandled = NO;
-	
-	if ([self configInputTargetID] == 0)
-	{
-		return isHandled;
-	}
-	
-	std::string commandTag = commandTagMap[[self configInputTargetID]];
-	if (commandTag.empty())
-	{
-		return isHandled;
-	}
-	
-	InputAttributes inputAttr = InputManagerEncodeKeyboardInput([theEvent keyCode], keyPressed);
-	[inputManager addMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
-	[inputManager writeUserDefaultsMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
-	
-	NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
-	NSString *displayBinding = (NSString *)[displayStringBindings valueForKey:[NSString stringWithFormat:@"%i", [self configInputTargetID]]];
-	[prefWindowBindings setValue:[self parseMappingDisplayString:commandTag.c_str()] forKey:displayBinding];
-	
-	[self setConfigInputTargetID:0];
-	
-	isHandled = YES;
-	return isHandled;
+	const InputAttributes inputAttr = InputManagerEncodeKeyboardInput([theEvent keyCode], keyPressed);
+	return [self addMappingUsingInputAttributes:&inputAttr commandTag:[self configInputTargetID]];
 }
 
 - (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed
 {
-	BOOL isHandled = NO;
-	
-	if ([self configInputTargetID] == 0)
-	{
-		return isHandled;
-	}
-	
-	std::string commandTag = commandTagMap[[self configInputTargetID]];
-	if (commandTag.empty())
-	{
-		return isHandled;
-	}
-	
-	InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([mouseEvent buttonNumber], NSMakePoint(0.0f, 0.0f), buttonPressed);
-	[inputManager addMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
-	[inputManager writeUserDefaultsMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
-	
-	NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
-	NSString *displayBinding = (NSString *)[displayStringBindings valueForKey:[NSString stringWithFormat:@"%i", [self configInputTargetID]]];
-	[prefWindowBindings setValue:[self parseMappingDisplayString:commandTag.c_str()] forKey:displayBinding];
-	
-	[self setConfigInputTargetID:0];
-	
-	isHandled = YES;
-	return isHandled;
+	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([mouseEvent buttonNumber], NSMakePoint(0.0f, 0.0f), buttonPressed);
+	return [self addMappingUsingInputAttributes:&inputAttr commandTag:[self configInputTargetID]];
 }
 
-- (NSString *) parseMappingDisplayString:(const char *)commandTag
+- (BOOL) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(NSString *)commandTag
 {
-	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
-	NSArray *mappingList = (NSArray *)[userMappings valueForKey:[NSString stringWithCString:commandTag encoding:NSUTF8StringEncoding]];
-	NSDictionary *mapping = (NSDictionary *)[mappingList objectAtIndex:0];
-	NSString *deviceName = (NSString *)[mapping valueForKey:@"deviceName"];
-	NSString *elementName = (NSString *)[mapping valueForKey:@"elementName"];
+	BOOL didMap = NO;
 	
-	NSString *displayString = [NSString stringWithString:deviceName];
-	displayString = [displayString stringByAppendingString:@": "];
-	displayString = [displayString stringByAppendingString:elementName];
+	if (commandTag == nil)
+	{
+		return didMap;
+	}
 	
-	return displayString;
+	const char *cmdTag = [commandTag cStringUsingEncoding:NSUTF8StringEncoding];
+	if (cmdTag == NULL)
+	{
+		return didMap;
+	}
+	
+	// Add the input mapping.
+	const CommandAttributes cmdAttr = [inputManager defaultCommandAttributesForCommandTag:cmdTag];
+	[inputManager addMappingUsingInputAttributes:inputAttr commandAttributes:&cmdAttr];
+	[inputManager writeDefaultsInputMappings];
+	
+	// Deselect the row of the command tag.
+	NSDictionary *inputMappings = [inputManager inputMappings];
+	NSArray *mappingList = (NSArray *)[inputMappings valueForKey:[self configInputTargetID]];
+	const NSInteger rowNumber = [inputPrefOutlineView rowForItem:mappingList];
+	if (rowNumber != -1)
+	{
+		[inputPrefOutlineView deselectRow:rowNumber];
+	}
+	
+	// Update all expanded command tags.
+	for (NSString *tag in inputMappings)
+	{
+		NSArray *inputList = (NSArray *)[inputMappings valueForKey:tag];
+		if ([inputPrefOutlineView isItemExpanded:inputList])
+		{
+			[inputPrefOutlineView reloadItem:inputList reloadChildren:YES];
+		}
+	}
+	
+	[self setConfigInputTargetID:nil];
+	
+	didMap = YES;
+	return didMap;
+}
+
+- (void) setMappingUsingDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo
+{
+	if (deviceInfo == nil)
+	{
+		return;
+	}
+	
+	NSString *deviceCode = (NSString *)[deviceInfo valueForKey:@"deviceCode"];
+	NSString *elementCode = (NSString *)[deviceInfo valueForKey:@"elementCode"];
+	const char *devCode = [deviceCode cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *elCode = [elementCode cStringUsingEncoding:NSUTF8StringEncoding];
+	
+	CommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:devCode elementCode:elCode];
+	UpdateCommandAttributesWithDeviceInfoDictionary(&cmdAttr, deviceInfo);
+	[inputManager updateInputSettingsSummaryInDeviceInfoDictionary:deviceInfo commandTag:cmdAttr.tag];
+	[inputManager setMappedCommandAttributes:&cmdAttr deviceCode:devCode elementCode:elCode];
+	[inputManager writeDefaultsInputMappings];
+}
+
+- (void) didEndSettingsSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+    [sheet orderOut:self];
+	
+	NSOutlineView *outlineView = (NSOutlineView *)contextInfo;
+	NSMutableDictionary *deviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	
+	switch (returnCode)
+	{
+		case NSCancelButton:
+			break;
+			
+		case NSOKButton:
+			[self setMappingUsingDeviceInfoDictionary:deviceInfo];
+			[outlineView reloadItem:deviceInfo reloadChildren:NO];
+			break;
+			
+		default:
+			break;
+	}
+	
+	[inputSettingsController setContent:nil];
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -199,7 +286,7 @@
 {
 	BOOL isHandled = NO;
 	
-	if ([self configInputTargetID] == 0)
+	if ([self configInputTargetID] == nil)
 	{
 		ClearHIDQueue(hidQueue);
 		return isHandled;
@@ -211,11 +298,15 @@
 	for (unsigned int i = 0; i < inputCount; i++)
 	{
 		const InputAttributes &inputAttr = inputList[i];
-		const std::string inputKey = inputAttr.deviceCode + ":" + inputAttr.elementCode;
-		NSString *inputKeyStr = [NSString stringWithCString:inputKey.c_str() encoding:NSUTF8StringEncoding];
+		char inputKey[INPUT_HANDLER_STRING_LENGTH*2];
+		strlcpy(inputKey, inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputKey, ":", INPUT_HANDLER_STRING_LENGTH*2);
+		strlcat(inputKey, inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH*2);
+		
+		NSString *inputKeyStr = [NSString stringWithCString:inputKey encoding:NSUTF8StringEncoding];
 		NSDate *inputOnDate = [configInputList valueForKey:inputKeyStr];
 		
-		if (inputAttr.inputState == INPUT_ATTRIBUTE_STATE_ON)
+		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
 		{
 			if (inputOnDate == nil)
 			{
@@ -233,21 +324,7 @@
 				}
 				else
 				{
-					std::string commandTag = commandTagMap[[self configInputTargetID]];
-					if (commandTag.empty())
-					{
-						continue;
-					}
-					
-					// Add the input mapping.
-					[inputManager addMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
-					[inputManager writeUserDefaultsMappingUsingInputAttributes:&inputAttr commandTag:commandTag.c_str()];
-					
-					NSMutableDictionary *prefWindowBindings = [(PreferencesWindowDelegate *)[prefWindow delegate] bindings];
-					NSString *displayBinding = (NSString *)[displayStringBindings valueForKey:[NSString stringWithFormat:@"%i", [self configInputTargetID]]];
-					[prefWindowBindings setValue:[self parseMappingDisplayString:commandTag.c_str()] forKey:displayBinding];
-					
-					[self setConfigInputTargetID:0];
+					isHandled = [self addMappingUsingInputAttributes:&inputAttr commandTag:[self configInputTargetID]];
 					break;
 				}
 			}
@@ -256,6 +333,199 @@
 	
 	isHandled = YES;
 	return isHandled;
+}
+
+#pragma mark NSOutlineViewDelegate Protocol
+
+- (BOOL)selectionShouldChangeInOutlineView:(NSOutlineView *)outlineView
+{
+	return NO;
+}
+
+- (BOOL)outlineView:(NSOutlineView *)outlineView shouldTrackCell:(NSCell *)cell forTableColumn:(NSTableColumn *)tableColumn item:(id)item
+{
+	if ([(NSString *)[tableColumn identifier] isEqualToString:@"InputCommandTagColumn"] ||
+		[(NSString *)[tableColumn identifier] isEqualToString:@"InputSettingsColumn"] ||
+		[(NSString *)[tableColumn identifier] isEqualToString:@"RemoveInputColumn"])
+	{
+		return YES;
+	}
+	
+	return NO;
+}
+
+- (NSCell *)outlineView:(NSOutlineView *)outlineView dataCellForTableColumn:(NSTableColumn *)tableColumn item:(id)item
+{
+	NSString *columnID = (NSString *)[tableColumn identifier];
+	NSCell *outCell = [tableColumn dataCellForRow:[outlineView rowForItem:item]];
+	
+	if ([columnID isEqualToString:@"InputCommandTagColumn"])
+	{
+		if ([item isKindOfClass:[NSArray class]])
+		{
+			NSString *commandTag = [self commandTagFromInputList:item];
+			if (commandTag != nil)
+			{
+				NSImage *buttonImage = (NSImage *)[inputPrefProperties valueForKey:commandTag];
+				if (buttonImage == nil)
+				{
+					buttonImage = (NSImage *)[inputPrefProperties valueForKey:@"UNKNOWN COMMAND"];
+				}
+				
+				[outCell setTitle:commandTag];
+				[outCell setImage:buttonImage];
+			}
+			else
+			{
+				outCell = [[[NSCell alloc] init] autorelease];
+			}
+		}
+		else
+		{
+			outCell = [[[NSCell alloc] init] autorelease];
+		}
+	}
+	else if ([columnID isEqualToString:@"InputDeviceColumn"])
+	{
+		NSFont *newFont = [[NSFontManager sharedFontManager] fontWithFamily:[[outCell font] familyName]
+																	 traits:([item isKindOfClass:[NSArray class]]) ? NSBoldFontMask : 0
+																	 weight:0
+																	   size:[[outCell font] pointSize]];
+		[outCell setFont:newFont];
+	}
+	else if ([columnID isEqualToString:@"InputSettingsSummaryColumn"])
+	{
+		NSFont *newFont = [[NSFontManager sharedFontManager] fontWithFamily:[[outCell font] familyName]
+																	 traits:([item isKindOfClass:[NSArray class]]) ? NSBoldFontMask : 0
+																	 weight:0
+																	   size:[[outCell font] pointSize]];
+		[outCell setFont:newFont];
+	}
+	else if ([columnID isEqualToString:@"InputSettingsColumn"])
+	{
+		if ([item isKindOfClass:[NSDictionary class]])
+		{
+			NSString *commandTag = [self commandTagFromInputList:[outlineView parentForItem:item]];
+			NSWindow *theSheet = (NSWindow *)[inputSettingsMappings valueForKey:commandTag];
+			[outCell setEnabled:(theSheet == nil) ? NO : YES];
+		}
+		else
+		{
+			outCell = [[[NSCell alloc] init] autorelease];
+		}
+	}
+	else if ([columnID isEqualToString:@"RemoveInputColumn"])
+	{
+		if (![item isKindOfClass:[NSDictionary class]])
+		{
+			outCell = [[[NSCell alloc] init] autorelease];
+		}
+	}
+	
+	return outCell;
+}
+
+#pragma mark NSOutlineViewDataSource Protocol
+- (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
+{
+	if (item == nil)
+	{
+		NSString *commandTag = [commandTagList objectAtIndex:index];
+		return [[inputManager inputMappings] valueForKey:commandTag];
+	}
+	else if ([item isKindOfClass:[NSArray class]])
+	{
+		return [(NSArray *)item objectAtIndex:index];
+	}
+	
+	return nil;
+}
+
+- (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item
+{
+	if ([item isKindOfClass:[NSArray class]])
+	{
+		return YES;
+	}
+	
+	return NO;
+}
+
+- (NSInteger)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item
+{
+	NSInteger numberChildren = 0;
+	
+	if (item == nil)
+	{
+		numberChildren = [commandTagList count];
+	}
+	else if ([item isKindOfClass:[NSArray class]])
+	{
+		numberChildren = [(NSArray *)item count];
+	}
+	
+	return numberChildren;
+}
+
+- (id)outlineView:(NSOutlineView *)outlineView objectValueForTableColumn:(NSTableColumn *)tableColumn byItem:(id)item
+{
+	NSString *columnID = (NSString *)[tableColumn identifier];
+	
+	if ([columnID isEqualToString:@"InputCommandTagColumn"])
+	{
+		if ([item isKindOfClass:[NSDictionary class]])
+		{
+			return nil;
+		}
+	}
+	else if ([columnID isEqualToString:@"InputDeviceColumn"])
+	{
+		if ([item isKindOfClass:[NSArray class]])
+		{
+			const unsigned long inputCount = (unsigned long)[(NSArray *)item count];
+			return [NSString stringWithFormat:(inputCount != 1) ? @"%ld Inputs Mapped" : @"%ld Input Mapped", inputCount];
+		}
+		else if ([item isKindOfClass:[NSDictionary class]])
+		{
+			return [item valueForKey:@"deviceInfoSummary"];
+		}
+		
+		return @"";
+	}
+	else if ([columnID isEqualToString:@"InputSettingsSummaryColumn"])
+	{
+		NSString *settingsSummary = @"";
+		
+		if ([item isKindOfClass:[NSDictionary class]])
+		{
+			settingsSummary = [item valueForKey:@"inputSettingsSummary"];
+		}
+		
+		return settingsSummary;
+	}
+	else if ([columnID isEqualToString:@"InputSettingsColumn"])
+	{
+		return nil;
+	}
+	else if ([columnID isEqualToString:@"RemoveInputColumn"])
+	{
+		return nil;
+	}
+	
+	return item;
+}
+
+- (id)outlineView:(NSOutlineView *)outlineView persistentObjectForItem:(id)item
+{
+	return [self commandTagFromInputList:item];
+}
+
+- (id)outlineView:(NSOutlineView *)outlineView itemForPersistentObject:(id)object
+{
+	NSString *commandTag = (NSString *)object;
+	NSArray *inputList = (NSArray *)[[inputManager inputMappings] valueForKey:commandTag];
+	
+	return inputList;
 }
 
 #pragma mark NSResponder Methods
@@ -328,25 +598,81 @@
 
 #pragma mark IBAction Methods
 
-- (IBAction) inputButtonSet:(id)sender
+- (IBAction) setInputAdd:(id)sender
 {
-	NSButton *theButton = (NSButton *)sender;
+	NSOutlineView *outlineView = (NSOutlineView *)sender;
+	const NSInteger rowNumber = [outlineView clickedRow];
 	
-	if ([self configInputTargetID] != 0 && lastConfigButton != theButton)
-	{
-		[lastConfigButton setState:NSOffState];
-	}
+	[configInputList removeAllObjects];
 	
-	if ([theButton state] == NSOnState)
+	if ([outlineView isRowSelected:rowNumber])
 	{
-		lastConfigButton = theButton;
-		[configInputList removeAllObjects];
-		[self setConfigInputTargetID:[theButton tag]];
+		[outlineView deselectRow:rowNumber];
+		[self setConfigInputTargetID:nil];
 	}
 	else
 	{
-		[self setConfigInputTargetID:0];
+		[outlineView selectRowIndexes:[NSIndexSet indexSetWithIndex:rowNumber] byExtendingSelection:NO];
+		
+		NSArray *inputList = (NSArray *)[outlineView itemAtRow:rowNumber];
+		[self setConfigInputTargetID:[self commandTagFromInputList:inputList]];
+		[prefWindow makeFirstResponder:self];
 	}
+}
+
+- (IBAction) removeInput:(id)sender
+{
+	NSOutlineView *outlineView = (NSOutlineView *)sender;
+	const NSInteger rowNumber = [outlineView clickedRow];
+	
+	NSDictionary *deviceInfo = (NSDictionary *)[outlineView itemAtRow:rowNumber];
+	[inputManager removeMappingUsingDeviceCode:[(NSString *)[deviceInfo valueForKey:@"deviceCode"] cStringUsingEncoding:NSUTF8StringEncoding] elementCode:[(NSString *)[deviceInfo valueForKey:@"elementCode"] cStringUsingEncoding:NSUTF8StringEncoding]];
+	
+	NSMutableArray *inputList = (NSMutableArray *)[outlineView parentForItem:deviceInfo];
+	[inputList removeObject:deviceInfo];
+	
+	[outlineView reloadItem:inputList reloadChildren:YES];
+	[inputManager writeDefaultsInputMappings];
+}
+
+- (IBAction) changeSpeed:(id)sender
+{
+	NSMutableDictionary *deviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	if (deviceInfo != nil)
+	{
+		const float speedScalar = (float)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
+		[deviceInfo setObject:[NSNumber numberWithFloat:speedScalar] forKey:@"floatValue0"];
+	}
+}
+
+- (IBAction) showSettingsSheet:(id)sender
+{
+	NSOutlineView *outlineView = (NSOutlineView *)sender;
+	const NSInteger rowNumber = [outlineView clickedRow];
+	
+	NSMutableDictionary *item = (NSMutableDictionary *)[outlineView itemAtRow:rowNumber];
+	NSString *commandTag = [self commandTagFromInputList:[outlineView parentForItem:item]];
+	NSWindow *theSheet = (NSWindow *)[inputSettingsMappings valueForKey:commandTag];
+	
+	if (theSheet == nil)
+	{
+		return;
+	}
+	
+	[inputSettingsController setContent:item];
+	
+	[NSApp beginSheet:theSheet
+	   modalForWindow:prefWindow
+		modalDelegate:self
+	   didEndSelector:@selector(didEndSettingsSheet:returnCode:contextInfo:)
+		  contextInfo:outlineView];
+}
+
+- (IBAction) closeSettingsSheet:(id)sender
+{
+	NSWindow *sheet = [(NSControl *)sender window];
+	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
+    [NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 @end

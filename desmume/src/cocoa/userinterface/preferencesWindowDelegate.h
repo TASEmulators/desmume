@@ -97,8 +97,6 @@
 - (IBAction) chooseCheatDatabase:(id)sender;
 - (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 
-- (IBAction) selectSoundInputMode:(id)sender;
-
 - (IBAction) selectDisplayMode:(id)sender;
 - (IBAction) selectDisplaySize:(id)sender;
 - (IBAction) selectDisplayRotation:(id)sender;
