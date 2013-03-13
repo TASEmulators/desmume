@@ -1198,6 +1198,10 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 		// Look up the command attributes using the input key.
 		const std::string inputKey	= std::string(inputAttr.deviceCode) + ":" + std::string(inputAttr.elementCode);
 		CommandAttributes cmdAttr	= commandMap[inputKey];
+		if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+		{
+			continue;
+		}
 		
 		cmdAttr.input = inputAttr; // Copy the input state to the command attributes.
 		cmdList.push_back(cmdAttr); // Add the command attributes to the list.
@@ -1234,6 +1238,10 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	// Look up the command key using the input key.
 	const std::string inputKey	= std::string(inputAttr->deviceCode) + ":" + std::string(inputAttr->elementCode);
 	CommandAttributes cmdAttr	= commandMap[inputKey];
+	if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+	{
+		return didCommandDispatch;
+	}
 	
 	// Copy the input state to the command attributes.
 	cmdAttr.input = *inputAttr;
