@@ -739,7 +739,7 @@ static void* RunCoreThread(void *arg)
 		pthread_mutex_lock(&param->mutexOutputList);
 		for(CocoaDSOutput *cdsOutput in cdsOutputList)
 		{
-			if (param->framesToSkip > 0 && [cdsOutput isMemberOfClass:[CocoaDSDisplay class]])
+			if (param->framesToSkip > 0 && [cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 			{
 				continue;
 			}
