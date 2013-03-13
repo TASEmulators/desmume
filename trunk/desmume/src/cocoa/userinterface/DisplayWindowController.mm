@@ -75,14 +75,6 @@ enum OGLVertexAttributeID
 	OGLVertexAttributeID_TexCoord0 = 8
 };
 
-#ifndef MAC_OS_X_VERSION_10_7
-// In Mac OS X, strnlen() is unsupported prior to v10.7, so define it here.
-static size_t strnlen(const char *s, size_t n)
-{
-	const char *p = (const char *)memchr(s, 0, n);
-	return(p ? p-s : n);
-}
-#endif // MAC_OS_X_VERSION_10_7
 
 @implementation DisplayWindowController
 
@@ -1340,13 +1332,12 @@ static size_t strnlen(const char *s, size_t n)
 		}
 	}
 	
-	if (strnlen(inputStr, INPUT_HANDLER_STRING_LENGTH*2) != 0)
+	if (inputStr[0] != '\0' && inputStr[0] != ':')
 	{
 		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
 	}
 	
 	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputList];
-	
 	if (cmdList.empty())
 	{
 		return isHandled;

@@ -64,15 +64,6 @@ extern "C"
 
 #endif // !__LP64__ || MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 
-#ifndef MAC_OS_X_VERSION_10_7
-// In Mac OS X, strnlen() is unsupported prior to v10.7, so define it here.
-static size_t strnlen(const char *s, size_t n)
-{
-	const char *p = (const char *)memchr(s, 0, n);
-	return(p ? p-s : n);
-}
-#endif // MAC_OS_X_VERSION_10_7
-
 #pragma mark -
 @implementation InputHIDDevice
 
@@ -1199,8 +1190,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 		
 		// All inputs require a device code and element code for mapping. If one or both are
 		// not present, reject the input.
-		if (strnlen(inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH) == 0 ||
-			strnlen(inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH) == 0)
+		if (inputAttr.deviceCode[0] == '\0' || inputAttr.elementCode[0] == '\0')
 		{
 			continue;
 		}
@@ -1236,8 +1226,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	
 	// All inputs require a device code and element code for mapping. If one or both are
 	// not present, reject the input.
-	if (strnlen(inputAttr->deviceCode, INPUT_HANDLER_STRING_LENGTH) == 0 ||
-		strnlen(inputAttr->elementCode, INPUT_HANDLER_STRING_LENGTH) == 0)
+	if (inputAttr->deviceCode[0] == '\0' || inputAttr->elementCode[0] == '\0')
 	{
 		return didCommandDispatch;
 	}
@@ -1555,8 +1544,7 @@ InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue)
 		size_t hidInputCount = hidInputList.size();
 		for (unsigned int i = 0; i < hidInputCount; i++)
 		{
-			if (strnlen(hidInputList[i].deviceCode, INPUT_HANDLER_STRING_LENGTH) == 0 ||
-				strnlen(hidInputList[i].elementCode, INPUT_HANDLER_STRING_LENGTH) == 0)
+			if (hidInputList[i].deviceCode[0] == '\0' || hidInputList[i].elementCode[0] == '\0')
 			{
 				continue;
 			}
