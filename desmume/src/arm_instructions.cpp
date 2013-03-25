@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -6236,6 +6236,8 @@ TEMPLATE static u32 FASTCALL OP_BKPT(const u32 i)
 		else
 			PC = 0x0000000C
 	*/
+
+	/*
 	static u32 last_bkpt = 0xFFFFFFFF;
 	if(i != last_bkpt)
 		printf("ARM OP_BKPT triggered\n");
@@ -6243,6 +6245,19 @@ TEMPLATE static u32 FASTCALL OP_BKPT(const u32 i)
 
 	//this is not 100% correctly emulated, but it does the job
 	cpu->next_instruction = cpu->instruct_adr;
+	return 4;
+	*/
+
+	printf("ARM OP_BKPT triggered\n");
+	Status_Reg tmp = cpu->CPSR;
+	armcpu_switchMode(cpu, ABT);				// enter abt mode
+	cpu->R[14] = cpu->instruct_adr + 4;
+	cpu->SPSR = tmp;							// save old CPSR as new SPSR
+	cpu->CPSR.bits.T = 0;						// handle as ARM32 code
+	cpu->CPSR.bits.I = 1;
+	cpu->changeCPSR();
+	cpu->R[15] = cpu->intVector + 0x0C;
+	cpu->next_instruction = cpu->R[15];
 	return 4;
 }
 
