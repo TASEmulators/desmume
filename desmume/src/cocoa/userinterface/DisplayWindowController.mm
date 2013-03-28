@@ -210,9 +210,9 @@ enum OGLVertexAttributeID
 	NSWindow *theWindow = [self window];
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
-	NSSize minContentSize = GetTransformedBounds(_minDisplayViewSize, 1.0, CLOCKWISE_DEGREES(newAngleDegrees));
+	CGSize minContentSize = GetTransformedBounds(_minDisplayViewSize.width, _minDisplayViewSize.height, 1.0, CLOCKWISE_DEGREES(newAngleDegrees));
 	minContentSize.height += _statusBarHeight;
-	[theWindow setContentMinSize:minContentSize];
+	[theWindow setContentMinSize:NSMakeSize(minContentSize.width, minContentSize.height)];
 	
 	// Resize the window.
 	const NSSize oldBounds = [theWindow frame].size;
@@ -457,9 +457,9 @@ enum OGLVertexAttributeID
 	}
 	
 	// Set the minimum content size, keeping the display rotation in mind.
-	NSSize transformedMinSize = GetTransformedBounds(_minDisplayViewSize, 1.0, CLOCKWISE_DEGREES([self displayRotation]));
+	CGSize transformedMinSize = GetTransformedBounds(_minDisplayViewSize.width, _minDisplayViewSize.height, 1.0, CLOCKWISE_DEGREES([self displayRotation]));
 	transformedMinSize.height += _statusBarHeight;
-	[[self window] setContentMinSize:transformedMinSize];
+	[[self window] setContentMinSize:NSMakeSize(transformedMinSize.width, transformedMinSize.height)];
 }
 
 - (BOOL) isMinSizeNormal
@@ -534,15 +534,15 @@ enum OGLVertexAttributeID
 	angleDegrees = CLOCKWISE_DEGREES(angleDegrees);
 	
 	// Get the maximum scalar size within drawBounds. Constrain scalar to maxScalar if necessary.
-	const NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, angleDegrees);
-	const double maxScalar = [self maxContentScalar:checkSize];
+	const CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, angleDegrees);
+	const double maxScalar = [self maxScalarForContentBoundsWidth:checkSize.width height:checkSize.height];
 	if (scalar > maxScalar)
 	{
 		scalar = maxScalar;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
-	const NSSize transformedBounds = GetTransformedBounds(normalBounds, scalar, angleDegrees);
+	const CGSize transformedBounds = GetTransformedBounds(normalBounds.width, normalBounds.height, scalar, angleDegrees);
 	
 	// Get the center of the content view in screen coordinates.
 	const NSRect windowContentRect = [[theWindow contentView] bounds];
@@ -558,15 +558,15 @@ enum OGLVertexAttributeID
 	return scalar;
 }
 
-- (double) maxContentScalar:(NSSize)contentBounds
+- (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight
 {
 	// Determine the maximum scale based on the visible screen size (which
 	// doesn't include the menu bar or dock).
 	const NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
-	const NSRect windowFrame = [[self window] frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBounds.width, contentBounds.height + _statusBarHeight)];
-	const NSSize visibleScreenBounds = { (screenFrame.size.width - (windowFrame.size.width - contentBounds.width)), (screenFrame.size.height - (windowFrame.size.height - contentBounds.height)) };
+	const NSRect windowFrame = [[self window] frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBoundsWidth, contentBoundsHeight + _statusBarHeight)];
+	const NSSize visibleScreenBounds = { (screenFrame.size.width - (windowFrame.size.width - contentBoundsWidth)), (screenFrame.size.height - (windowFrame.size.height - contentBoundsHeight)) };
 	
-	return GetMaxScalarInBounds(contentBounds.width, contentBounds.height, visibleScreenBounds.width, visibleScreenBounds.height);
+	return GetMaxScalarInBounds(contentBoundsWidth, contentBoundsHeight, visibleScreenBounds.width, visibleScreenBounds.height);
 }
 
 - (void) saveScreenshotAsFinish:(NSNotification *)aNotification
@@ -609,7 +609,7 @@ enum OGLVertexAttributeID
 		[self setIsMinSizeNormal:YES];
 		
 		// Set the minimum content size, keeping the display rotation in mind.
-		NSSize transformedMinSize = GetTransformedBounds(_minDisplayViewSize, 1.0, CLOCKWISE_DEGREES([self displayRotation]));
+		CGSize transformedMinSize = GetTransformedBounds(_minDisplayViewSize.width, _minDisplayViewSize.height, 1.0, CLOCKWISE_DEGREES([self displayRotation]));
 		transformedMinSize.height += _statusBarHeight;
 		
 		// Resize the window if it's smaller than the minimum content size.
@@ -618,7 +618,7 @@ enum OGLVertexAttributeID
 		{
 			// Prepare to resize.
 			NSRect oldFrameRect = [theWindow frame];
-			windowContentRect.size = transformedMinSize;
+			windowContentRect.size = NSMakeSize(transformedMinSize.width, transformedMinSize.height);
 			NSRect newFrameRect = [theWindow frameRectForContentRect:windowContentRect];
 			
 			// Keep the window centered when expanding the size.
@@ -714,7 +714,8 @@ enum OGLVertexAttributeID
 	
 	// Find the maximum scalar we can use for the display view, bounded by the
 	// content Rect.
-	const NSSize checkSize = GetTransformedBounds([self normalSize], 1.0, [self displayRotation]);
+	const NSSize normalBounds = [self normalSize];
+	const CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, [self displayRotation]);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
 	
@@ -729,7 +730,8 @@ enum OGLVertexAttributeID
 - (void)windowDidResize:(NSNotification *)notification
 {
 	// Get the max scalar within the window's current content bounds.
-	const NSSize checkSize = GetTransformedBounds([self normalSize], 1.0, [self displayRotation]);
+	const NSSize normalBounds = [self normalSize];
+	const CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, [self displayRotation]);
 	NSSize contentBounds = [[[self window] contentView] bounds].size;
 	contentBounds.height -= _statusBarHeight;
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
@@ -1265,7 +1267,13 @@ enum OGLVertexAttributeID
 		viewAngle = CLOCKWISE_DEGREES(viewAngle);
 	}
 	
-	NSPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc, [windowController normalSize], [self bounds].size, [windowController displayScale], viewAngle);
+	const NSSize normalBounds = [windowController normalSize];
+	const NSSize transformBounds = [self bounds].size;
+	CGPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc.x, clickLoc.y,
+														  normalBounds.width, normalBounds.height,
+														  transformBounds.width, transformBounds.height,
+														  [windowController displayScale],
+														  viewAngle);
 	
 	// Normalize the touch location to the DS.
 	if ([windowController displayMode] == DS_DISPLAY_TYPE_COMBO)
@@ -1304,7 +1312,7 @@ enum OGLVertexAttributeID
 		touchLoc.y = (GPU_DISPLAY_HEIGHT - 1);
 	}
 	
-	return touchLoc;
+	return NSMakePoint(touchLoc.x, touchLoc.y);
 }
 
 #pragma mark InputHIDManagerTarget Protocol

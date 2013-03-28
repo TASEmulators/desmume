@@ -17,7 +17,7 @@
 
 #import "cocoa_GPU.h"
 #import "cocoa_globals.h"
-#import "cocoa_util.h"
+#include "utilities.h"
 
 #include "../NDSSystem.h"
 #include "../GPU.h"
@@ -717,7 +717,7 @@ bool CreateOpenGLRenderer()
 #ifdef MAC_OS_X_VERSION_10_7
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = [CocoaDSUtil OSVersionCheckMajor:10 minor:7 revision:0] ? true : false;
+	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
 	if (useContext_3_2)
 	{
 		attrs[9] = kCGLPFAOpenGLProfile;
@@ -789,16 +789,11 @@ void RequestOpenGLRenderer_3_2(bool request_3_2)
 	{
 		OGLLoadEntryPoints_3_2_Func = &OGLLoadEntryPoints_3_2;
 		OGLCreateRenderer_3_2_Func = &OGLCreateRenderer_3_2;
+		return;
 	}
-	else
-	{
-		OGLLoadEntryPoints_3_2_Func = NULL;
-		OGLCreateRenderer_3_2_Func = NULL;
-	}
-#else
+#endif
 	OGLLoadEntryPoints_3_2_Func = NULL;
 	OGLCreateRenderer_3_2_Func = NULL;
-#endif
 }
 
 void SetOpenGLRendererFunctions(bool (*initFunction)(),

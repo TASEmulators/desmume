@@ -17,6 +17,7 @@
 */
 
 #import <Foundation/Foundation.h>
+#include "utilities.h"
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
 	#include "macosx_10_4_compat.h"
@@ -48,7 +49,6 @@
 
 + (NSString *) operatingSystemString;
 + (NSString *) modelIdentifierString;
-+ (BOOL) OSVersionCheckMajor:(NSUInteger)checkMajor minor:(NSUInteger)checkMinor revision:(NSUInteger)checkRevision;
 
 @end
 
@@ -88,21 +88,3 @@
 - (void)postNotificationOnMainThreadName:(NSString *)aName object:(id)anObject userInfo:(NSDictionary *)aUserInfo;
 
 @end
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-uint32_t RGB555ToRGBA8888(const uint16_t color16);
-uint32_t RGBA8888ForceOpaque(const uint32_t color32);
-void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels);
-void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels);
-NSSize GetTransformedBounds(NSSize normalBounds, double scalar, double angleDegrees);
-double GetMaxScalarInBounds(double normalBoundsWidth, double normalBoundsHeight, double keepInBoundsWidth, double keepInBoundsHeight);
-NSPoint GetNormalPointFromTransformedPoint(NSPoint transformedPt, NSSize normalBounds, NSSize transformBounds, double scalar, double angleDegrees);
-uint32_t GetNearestPositivePOT(uint32_t value);
-
-#ifdef __cplusplus
-}
-#endif

@@ -736,6 +736,13 @@
 		AB1816B615D216EC007A6CC3 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
 		AB1816B715D216F2007A6CC3 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
 		AB1816B815D216F5007A6CC3 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
+		AB2F5B031704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
+		AB2F5B041704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
+		AB2F5B051704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
+		AB2F5B061704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
+		AB2F5B071704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
+		AB2F5B081704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
+		AB2F5B091704EE0100E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F5B021704EE0100E28885 /* utilities.c */; };
 		AB3AD16C14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
@@ -1310,6 +1317,8 @@
 		AB18155715D212B4007A6CC3 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1815F315D21469007A6CC3 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB18169615D214F2007A6CC3 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB2F5B011704EE0100E28885 /* utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
+		AB2F5B021704EE0100E28885 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
 		AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
@@ -1539,6 +1548,7 @@
 			isa = PBXGroup;
 			children = (
 				ABC3ADEC14B7DC6E00D5B13D /* userinterface */,
+				AB2F5B021704EE0100E28885 /* utilities.c */,
 				ABD0A5621501AC5C0074A094 /* coreaudiosound.cpp */,
 				ABD0A5631501AC5C0074A094 /* ringbuffer.cpp */,
 				ABF4007E14B4F1C000578AE7 /* sndOSX.cpp */,
@@ -1554,6 +1564,7 @@
 				ABD0A5651501AC5C0074A094 /* ringbuffer.h */,
 				ABE240FB14BE3169006EA2D5 /* screen_state_legacy.h */,
 				AB06CB49135B8A4D00E977B3 /* sndOSX.h */,
+				AB2F5B011704EE0100E28885 /* utilities.h */,
 				ABE240FD14BE3169006EA2D5 /* video_output_view_legacy.h */,
 				ABE240FC14BE3169006EA2D5 /* screen_state_legacy.m */,
 				ABBF052F14B5436E00E505A0 /* cocoa_file.mm */,
@@ -2859,6 +2870,7 @@
 				ABF50C03169F61540018C08D /* x86func.cpp in Sources */,
 				ABF50C04169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50C05169F61540018C08D /* x86util.cpp in Sources */,
+				AB2F5B051704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2999,6 +3011,7 @@
 				ABF50C5A169F61540018C08D /* x86func.cpp in Sources */,
 				ABF50C5B169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50C5C169F61540018C08D /* x86util.cpp in Sources */,
+				AB2F5B081704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3139,6 +3152,7 @@
 				ABF50BC9169F61540018C08D /* x86func.cpp in Sources */,
 				ABF50BCA169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50BCB169F61540018C08D /* x86util.cpp in Sources */,
+				AB2F5B031704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3249,6 +3263,7 @@
 				AB18153D15D212B4007A6CC3 /* coreaudiosound.cpp in Sources */,
 				AB18153E15D212B4007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB1816B615D216EC007A6CC3 /* OGLRender.cpp in Sources */,
+				AB2F5B071704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3359,6 +3374,7 @@
 				AB1815D915D21469007A6CC3 /* coreaudiosound.cpp in Sources */,
 				AB1815DA15D21469007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB4F981716C30117000E90EA /* OGLRender.cpp in Sources */,
+				AB2F5B091704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3479,6 +3495,7 @@
 				AB18167F15D214F2007A6CC3 /* coreaudiosound.cpp in Sources */,
 				AB18168015D214F2007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB1816B815D216F5007A6CC3 /* OGLRender.cpp in Sources */,
+				AB2F5B041704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3619,6 +3636,7 @@
 				ABF50C20169F61540018C08D /* x86func.cpp in Sources */,
 				ABF50C21169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50C22169F61540018C08D /* x86util.cpp in Sources */,
+				AB2F5B061704EE0100E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,8 +17,10 @@
 
 #include "coreaudiosound.h"
 #include "cocoa_globals.h"
+#include "utilities.h"
 
-CoreAudioSound::CoreAudioSound(size_t bufferSamples, size_t sampleSize)
+
+CoreAudioOutput::CoreAudioOutput(size_t bufferSamples, size_t sampleSize)
 {
 	OSStatus error = noErr;
 	
@@ -29,28 +31,73 @@ CoreAudioSound::CoreAudioSound(size_t bufferSamples, size_t sampleSize)
 	_volume = 1.0f;
 	
 	// Create a new audio unit
-	ComponentDescription desc;
-	desc.componentType = kAudioUnitType_Output;
-	desc.componentSubType = kAudioUnitSubType_DefaultOutput;
-	desc.componentManufacturer = kAudioUnitManufacturer_Apple;
-	desc.componentFlags = 0;
-	desc.componentFlagsMask = 0;
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		AudioComponentDescription audioDesc;
+		audioDesc.componentType = kAudioUnitType_Output;
+		audioDesc.componentSubType = kAudioUnitSubType_DefaultOutput;
+		audioDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+		audioDesc.componentFlags = 0;
+		audioDesc.componentFlagsMask = 0;
+		
+		AudioComponent audioComponent = AudioComponentFindNext(NULL, &audioDesc);
+		if (audioComponent == NULL)
+		{
+			return;
+		}
+		
+		error = AudioComponentInstanceNew(audioComponent, &_au);
+		if (error != noErr)
+		{
+			return;
+		}
+	}
+	else
+	{
+		ComponentDescription audioDesc;
+		audioDesc.componentType = kAudioUnitType_Output;
+		audioDesc.componentSubType = kAudioUnitSubType_DefaultOutput;
+		audioDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+		audioDesc.componentFlags = 0;
+		audioDesc.componentFlagsMask = 0;
+		
+		Component audioComponent = FindNextComponent(NULL, &audioDesc);
+		if (audioComponent == NULL)
+		{
+			return;
+		}
+		
+		error = OpenAComponent(audioComponent, &_au);
+		if (error != noErr)
+		{
+			return;
+		}
+	}
+#else
+	ComponentDescription audioDesc;
+	audioDesc.componentType = kAudioUnitType_Output;
+	audioDesc.componentSubType = kAudioUnitSubType_DefaultOutput;
+	audioDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+	audioDesc.componentFlags = 0;
+	audioDesc.componentFlagsMask = 0;
 	
-	Component comp = FindNextComponent(NULL, &desc);
-	if (comp == NULL)
+	Component audioComponent = FindNextComponent(NULL, &audioDesc);
+	if (audioComponent == NULL)
 	{
 		return;
 	}
 	
-	error = OpenAComponent(comp, &_au);
-	if (error != noErr || comp == NULL)
+	error = OpenAComponent(audioComponent, &_au);
+	if (error != noErr)
 	{
 		return;
 	}
+#endif
 	
 	// Set the render callback
 	AURenderCallbackStruct callback;
-	callback.inputProc = &RenderCallback;
+	callback.inputProc = &CoreAudioOutputRenderCallback;
 	callback.inputProcRefCon = _buffer;
 	
 	error = AudioUnitSetProperty(_au,
@@ -66,22 +113,22 @@ CoreAudioSound::CoreAudioSound(size_t bufferSamples, size_t sampleSize)
 	}
 	
 	// Set up the audio unit for audio streaming
-	AudioStreamBasicDescription audio_format;
-	audio_format.mSampleRate = SPU_SAMPLE_RATE;
-	audio_format.mFormatID = kAudioFormatLinearPCM;
-	audio_format.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagsNativeEndian | kLinearPCMFormatFlagIsPacked;
-	audio_format.mBytesPerPacket = SPU_SAMPLE_SIZE;
-	audio_format.mFramesPerPacket = 1;
-	audio_format.mBytesPerFrame = SPU_SAMPLE_SIZE;
-	audio_format.mChannelsPerFrame = SPU_NUMBER_CHANNELS;
-	audio_format.mBitsPerChannel = SPU_SAMPLE_RESOLUTION;
+	AudioStreamBasicDescription outputFormat;
+	outputFormat.mSampleRate = SPU_SAMPLE_RATE;
+	outputFormat.mFormatID = kAudioFormatLinearPCM;
+	outputFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagsNativeEndian | kLinearPCMFormatFlagIsPacked;
+	outputFormat.mBytesPerPacket = SPU_SAMPLE_SIZE;
+	outputFormat.mFramesPerPacket = 1;
+	outputFormat.mBytesPerFrame = SPU_SAMPLE_SIZE;
+	outputFormat.mChannelsPerFrame = SPU_NUMBER_CHANNELS;
+	outputFormat.mBitsPerChannel = SPU_SAMPLE_RESOLUTION;
 	
 	error = AudioUnitSetProperty(_au,
 								 kAudioUnitProperty_StreamFormat,
 								 kAudioUnitScope_Input,
 								 0,
-								 &audio_format,
-								 sizeof(audio_format) );
+								 &outputFormat,
+								 sizeof(outputFormat) );
 	
 	if(error != noErr)
 	{
@@ -96,7 +143,7 @@ CoreAudioSound::CoreAudioSound(size_t bufferSamples, size_t sampleSize)
 	}
 }
 
-CoreAudioSound::~CoreAudioSound()
+CoreAudioOutput::~CoreAudioOutput()
 {
 	OSSpinLockLock(_spinlockAU);
 	
@@ -104,6 +151,18 @@ CoreAudioSound::~CoreAudioSound()
 	{
 		AudioOutputUnitStop(_au);
 		AudioUnitUninitialize(_au);
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+		if (IsOSXVersionSupported(10, 6, 0))
+		{
+			AudioComponentInstanceDispose(_au);
+		}
+		else
+		{
+			CloseComponent(_au);
+		}
+#else
+		CloseComponent(_au);
+#endif
 		_au = NULL;
 	}
 	
@@ -116,12 +175,12 @@ CoreAudioSound::~CoreAudioSound()
 	_spinlockAU = NULL;
 }
 
-RingBuffer* CoreAudioSound::getBuffer()
+RingBuffer* CoreAudioOutput::getBuffer() const
 {
 	return this->_buffer;
 }
 
-void CoreAudioSound::start()
+void CoreAudioOutput::start()
 {
 	this->clearBuffer();
 	
@@ -131,7 +190,7 @@ void CoreAudioSound::start()
 	OSSpinLockUnlock(this->_spinlockAU);
 }
 
-void CoreAudioSound::stop()
+void CoreAudioOutput::stop()
 {
 	OSSpinLockLock(this->_spinlockAU);
 	AudioOutputUnitStop(this->_au);
@@ -140,41 +199,41 @@ void CoreAudioSound::stop()
 	this->clearBuffer();
 }
 
-void CoreAudioSound::writeToBuffer(const void *buffer, size_t numberBytes)
+void CoreAudioOutput::writeToBuffer(const void *buffer, size_t numberBytes)
 {
 	this->getBuffer()->write(buffer, numberBytes);
 }
 
-void CoreAudioSound::clearBuffer()
+void CoreAudioOutput::clearBuffer()
 {
 	this->_buffer->clear();
 }
 
-void CoreAudioSound::mute()
+void CoreAudioOutput::mute()
 {
 	OSSpinLockLock(this->_spinlockAU);
 	AudioUnitSetParameter(this->_au, kHALOutputParam_Volume, kAudioUnitScope_Global, 0, 0.0f, 0);
 	OSSpinLockUnlock(this->_spinlockAU);
 }
 
-void CoreAudioSound::unmute()
+void CoreAudioOutput::unmute()
 {
 	OSSpinLockLock(this->_spinlockAU);
 	AudioUnitSetParameter(this->_au, kHALOutputParam_Volume, kAudioUnitScope_Global, 0, this->_volume, 0);
 	OSSpinLockUnlock(this->_spinlockAU);
 }
 
-size_t CoreAudioSound::getAvailableSamples()
+size_t CoreAudioOutput::getAvailableSamples() const
 {
 	return this->_buffer->getAvailableElements();
 }
 
-float CoreAudioSound::getVolume()
+float CoreAudioOutput::getVolume() const
 {
 	return this->_volume;
 }
 
-void CoreAudioSound::setVolume(float vol)
+void CoreAudioOutput::setVolume(float vol)
 {
 	this->_volume = vol;
 	
@@ -183,12 +242,12 @@ void CoreAudioSound::setVolume(float vol)
 	OSSpinLockUnlock(this->_spinlockAU);
 }
 
-OSStatus RenderCallback(void *inRefCon,
-						AudioUnitRenderActionFlags *ioActionFlags,
-						const AudioTimeStamp *inTimeStamp,
-						UInt32 inBusNumber,
-						UInt32 inNumberFrames,
-						AudioBufferList *ioData)
+OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
+									   AudioUnitRenderActionFlags *ioActionFlags,
+									   const AudioTimeStamp *inTimeStamp,
+									   UInt32 inBusNumber,
+									   UInt32 inNumberFrames,
+									   AudioBufferList *ioData)
 {
 	RingBuffer *__restrict__ audioBuffer = (RingBuffer *)inRefCon;
 	UInt8 *__restrict__ playbackBuffer = (UInt8 *)ioData->mBuffers[0].mData;
