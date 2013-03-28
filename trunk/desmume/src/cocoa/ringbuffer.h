@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,15 +35,15 @@ private:
 	size_t _writePosition;
 	
 public:
-	RingBuffer(size_t numberElements, size_t newBufferElementSize);
+	RingBuffer(const size_t numberElements, const size_t newBufferElementSize);
 	~RingBuffer();
 	
 	void clear();
 	size_t read(void *__restrict__ destBuffer, size_t requestedNumberBytes);
 	size_t write(const void *__restrict__ srcBuffer, size_t requestedNumberBytes);
-	size_t getBufferFillSize();
-	size_t getAvailableElements();
-	size_t getElementSize();
+	size_t getBufferFillSize() const;
+	size_t getAvailableElements() const;
+	size_t getElementSize() const;
 };
 
 #endif

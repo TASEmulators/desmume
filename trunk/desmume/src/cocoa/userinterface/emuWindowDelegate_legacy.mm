@@ -120,9 +120,9 @@
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
 	NSSize drawBounds = minDisplayViewSize;
-	NSSize minContentSize = GetTransformedBounds(drawBounds, 1.0, CLOCKWISE_DEGREES(newAngleDegrees));
+	CGSize minContentSize = GetTransformedBounds(drawBounds.width, drawBounds.height, 1.0, CLOCKWISE_DEGREES(newAngleDegrees));
 	minContentSize.height += statusBarHeight;
-	[window setContentMinSize:minContentSize];
+	[window setContentMinSize:NSMakeSize(minContentSize.width, minContentSize.height)];
 	
 	// Resize the window.
 	NSSize oldBounds = [window frame].size;
@@ -144,15 +144,15 @@
 	angleDegrees = CLOCKWISE_DEGREES(angleDegrees);
 	
 	// Get the maximum scalar size within drawBounds. Constrain scalar to maxScalar if necessary.
-	NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, angleDegrees);
-	double maxScalar = [self maxContentScalar:checkSize];
+	CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, angleDegrees);
+	double maxScalar = [self maxContentScalar:NSMakeSize(checkSize.width, checkSize.height)];
 	if (scalar > maxScalar)
 	{
 		scalar = maxScalar;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
-	NSSize transformedBounds = GetTransformedBounds(normalBounds, scalar, angleDegrees);
+	CGSize transformedBounds = GetTransformedBounds(normalBounds.width, normalBounds.height, scalar, angleDegrees);
 	
 	// Get the center of the content view in screen coordinates.
 	NSRect windowContentRect = [[window contentView] bounds];
@@ -729,9 +729,9 @@
 	}
 	
 	// Set the minimum content size, keeping the display rotation in mind.
-	NSSize transformedMinSize = GetTransformedBounds(minDisplayViewSize, 1.0, CLOCKWISE_DEGREES([displayView rotation]));
+	CGSize transformedMinSize = GetTransformedBounds(minDisplayViewSize.width, minDisplayViewSize.height, 1.0, CLOCKWISE_DEGREES([displayView rotation]));
 	transformedMinSize.height += statusBarHeight;
-	[window setContentMinSize:transformedMinSize];
+	[window setContentMinSize:NSMakeSize(transformedMinSize.width, transformedMinSize.height)];
 	
 	// Resize the window if it's smaller than the minimum content size.
 	NSRect windowContentRect = [window contentRectForFrameRect:[window frame]];
@@ -739,7 +739,7 @@
 	{
 		// Prepare to resize.
 		NSRect oldFrameRect = [window frame];
-		windowContentRect.size = transformedMinSize;
+		windowContentRect.size = NSMakeSize(transformedMinSize.width, transformedMinSize.height);
 		NSRect newFrameRect = [window frameRectForContentRect:windowContentRect];
 		
 		// Keep the window centered when expanding the size.
@@ -975,7 +975,7 @@
 	double r = [displayView rotation];
 	
 	// Get the max scalar within the window's current content bounds.
-	NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, r);
+	CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, r);
 	NSSize contentBounds = [[window contentView] bounds].size;
 	contentBounds.height -= statusBarHeight;
 	double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
@@ -1002,7 +1002,7 @@
 	
 	// Find the maximum scalar we can use for the display view, bounded by the
 	// content Rect.
-	const NSSize checkSize = GetTransformedBounds(normalBounds, 1.0, [displayView rotation]);
+	const CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, [displayView rotation]);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - statusBarHeight);
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
 	[displayView setScale:maxS];

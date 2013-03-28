@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Jeff Bland
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 
 // Global sound playback manager
-static CoreAudioSound *coreAudioPlaybackManager = NULL;
+static CoreAudioOutput *coreAudioPlaybackManager = NULL;
 static pthread_mutex_t *mutexAudioSampleReadWrite = NULL;
 pthread_mutex_t *mutexAudioEmulateCore = NULL;
 
@@ -51,16 +51,9 @@ SoundInterface_struct *SNDCoreList[] = {
 
 int SNDOSXInit(int buffer_size)
 {
-	if (coreAudioPlaybackManager != NULL)
-	{
-		CoreAudioSound *oldcoreAudioPlaybackManager = coreAudioPlaybackManager;
-		coreAudioPlaybackManager = new CoreAudioSound(buffer_size / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
-		delete oldcoreAudioPlaybackManager;
-	}
-	else
-	{
-		coreAudioPlaybackManager = new CoreAudioSound(buffer_size / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
-	}
+	CoreAudioOutput *oldcoreAudioPlaybackManager = coreAudioPlaybackManager;
+	coreAudioPlaybackManager = new CoreAudioOutput(buffer_size / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
+	delete oldcoreAudioPlaybackManager;
 	
 	if (mutexAudioSampleReadWrite == NULL)
 	{
@@ -95,65 +88,73 @@ int SNDOSXReset()
 
 void SNDOSXUpdateAudio(s16 *buffer, u32 num_samples)
 {
-	if (coreAudioPlaybackManager != NULL)
+	if (coreAudioPlaybackManager == NULL)
 	{
-		coreAudioPlaybackManager->writeToBuffer(buffer, coreAudioPlaybackManager->getBuffer()->getElementSize() * (size_t)num_samples);
+		return;
 	}
+	
+	coreAudioPlaybackManager->writeToBuffer(buffer, coreAudioPlaybackManager->getBuffer()->getElementSize() * (size_t)num_samples);
 }
 
 u32 SNDOSXGetAudioSpace()
 {
-	u32 availableSamples = 0;
-	
-	if (coreAudioPlaybackManager != NULL)
+	if (coreAudioPlaybackManager == NULL)
 	{
-		availableSamples = (u32)coreAudioPlaybackManager->getAvailableSamples();
+		return 0;
 	}
 	
-	return availableSamples;
+	return (u32)coreAudioPlaybackManager->getAvailableSamples();
 }
 
 void SNDOSXMuteAudio()
 {
-	if (coreAudioPlaybackManager != NULL)
+	if (coreAudioPlaybackManager == NULL)
 	{
-		coreAudioPlaybackManager->mute();
+		return;
 	}
+	
+	coreAudioPlaybackManager->mute();
 }
 
 void SNDOSXUnMuteAudio()
 {
-	if (coreAudioPlaybackManager != NULL)
+	if (coreAudioPlaybackManager == NULL)
 	{
-		coreAudioPlaybackManager->unmute();
+		return;
 	}
+	
+	coreAudioPlaybackManager->unmute();
 }
 
 void SNDOSXSetVolume(int volume)
 {
-	if (coreAudioPlaybackManager != NULL)
+	if (coreAudioPlaybackManager == NULL)
 	{
-		float newVolumeScalar = (float)volume / 100.0f;
-		
-		if(volume > 100)
-		{
-			newVolumeScalar = 1.0f;
-		}
-		else if(volume < 0)
-		{
-			newVolumeScalar = 0.0f;
-		}
-		
-		coreAudioPlaybackManager->setVolume(newVolumeScalar);
+		return;
 	}
+	
+	float newVolumeScalar = (float)volume / 100.0f;
+	
+	if(volume > 100)
+	{
+		newVolumeScalar = 1.0f;
+	}
+	else if(volume < 0)
+	{
+		newVolumeScalar = 0.0f;
+	}
+	
+	coreAudioPlaybackManager->setVolume(newVolumeScalar);
 }
 
 void SNDOSXClearBuffer()
 {
-	if (coreAudioPlaybackManager != NULL)
+	if (coreAudioPlaybackManager == NULL)
 	{
-		coreAudioPlaybackManager->clearBuffer();
+		return;
 	}
+	
+	coreAudioPlaybackManager->clearBuffer();
 }
 
 void SNDOSXFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)

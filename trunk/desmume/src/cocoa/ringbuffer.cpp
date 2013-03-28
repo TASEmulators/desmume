@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #include <libkern/OSAtomic.h>
 
 
-RingBuffer::RingBuffer(size_t numberElements, size_t newBufferElementSize)
+RingBuffer::RingBuffer(const size_t numberElements, const size_t newBufferElementSize)
 {
 	_buffer = (uint8_t *)calloc(numberElements + 1, newBufferElementSize);
 	_bufferSize = (numberElements + 1) * newBufferElementSize;
@@ -176,17 +176,17 @@ size_t RingBuffer::write(const void *__restrict__ srcBuffer, size_t requestedNum
 	return requestedNumberBytes;
 }
 
-size_t RingBuffer::getBufferFillSize()
+size_t RingBuffer::getBufferFillSize() const
 {
 	return (size_t)this->_bufferFillSize;
 }
 
-size_t RingBuffer::getAvailableElements()
+size_t RingBuffer::getAvailableElements() const
 {
 	return ((this->_bufferSize - this->_bufferFillSize) / this->_elementSize) - 1;
 }
 
-size_t RingBuffer::getElementSize()
+size_t RingBuffer::getElementSize() const
 {
 	return this->_elementSize;
 }

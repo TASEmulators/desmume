@@ -135,7 +135,7 @@
 	}
 	
 	UInt32 *bitmapData = (UInt32 *)[imageRep bitmapData];
-	RGBA5551ToRGBA8888Buffer((const uint16_t *)color_data, (uint32_t *)bitmapData, (w * h));
+	RGB555ToRGBA8888Buffer((const uint16_t *)color_data, (uint32_t *)bitmapData, (w * h));
 	
 #ifdef __BIG_ENDIAN__
 	UInt32 *bitmapDataEnd = bitmapData + (w * h);

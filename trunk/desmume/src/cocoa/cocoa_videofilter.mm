@@ -17,8 +17,8 @@
 */
 
 #import "cocoa_videofilter.h"
-#import "cocoa_util.h"
 #import <Cocoa/Cocoa.h>
+#include "utilities.h"
 
 @implementation CocoaVideoFilter
 

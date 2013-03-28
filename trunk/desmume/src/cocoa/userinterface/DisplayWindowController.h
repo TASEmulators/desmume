@@ -146,7 +146,7 @@
 
 - (void) setupUserDefaults;
 - (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees;
-- (double) maxContentScalar:(NSSize)contentBounds;
+- (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 
 - (IBAction) copy:(id)sender;
 - (IBAction) changeVolume:(id)sender;

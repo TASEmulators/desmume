@@ -130,7 +130,7 @@ bool OSXOpenGLRendererInit()
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
 
 #ifdef HAVE_JIT
-	CommonSettings.use_jit = true;
+	CommonSettings.use_jit = false;
 #endif
 	
 	//Firmware setup

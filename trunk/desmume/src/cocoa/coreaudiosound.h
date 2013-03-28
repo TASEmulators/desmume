@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include <libkern/OSAtomic.h>
 #include "ringbuffer.h"
 
-class CoreAudioSound
+class CoreAudioOutput
 {
 private:
 	AudioUnit _au;
@@ -33,26 +33,26 @@ private:
 	float _volume;
 	
 public:
-	CoreAudioSound(size_t bufferSamples, size_t sampleSize);
-	~CoreAudioSound();
+	CoreAudioOutput(size_t bufferSamples, size_t sampleSize);
+	~CoreAudioOutput();
 	
 	void start();
 	void stop();
 	void writeToBuffer(const void *buffer, size_t numberBytes);
 	void clearBuffer();
-	size_t getAvailableSamples();
-	RingBuffer* getBuffer();
+	size_t getAvailableSamples() const;
+	RingBuffer* getBuffer() const;
 	void mute();
 	void unmute();
-	float getVolume();
+	float getVolume() const;
 	void setVolume(float vol);
 };
 
-OSStatus RenderCallback(void *inRefCon,
-						AudioUnitRenderActionFlags *ioActionFlags,
-						const AudioTimeStamp *inTimeStamp,
-						UInt32 inBusNumber,
-						UInt32 inNumberFrames,
-						AudioBufferList *ioData);
+OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
+									   AudioUnitRenderActionFlags *ioActionFlags,
+									   const AudioTimeStamp *inTimeStamp,
+									   UInt32 inBusNumber,
+									   UInt32 inNumberFrames,
+									   AudioBufferList *ioData);
 
 #endif

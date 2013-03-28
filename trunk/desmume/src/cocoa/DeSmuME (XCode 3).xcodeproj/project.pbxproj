@@ -234,6 +234,10 @@
 		AB2F3C3F15CF9C6000858373 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB2F3C4015CF9C6000858373 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB2F3C4115CF9C6000858373 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		AB2F56F01704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
+		AB2F56F11704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
+		AB2F56F21704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
+		AB2F56F31704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
 		AB3ACB7814C2361100D7D192 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
 		AB3ACB7914C2361100D7D192 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
 		AB3ACB7C14C2361100D7D192 /* inputPrefsView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */; };
@@ -922,6 +926,8 @@
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
 		AB2F3C4515CF9C6000858373 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB2F56EE1704C86900E28885 /* utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
+		AB2F56EF1704C86900E28885 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		AB350D38147A1D8D007165AC /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = English; path = translations/English.lproj/HID_usage_strings.plist; sourceTree = "<group>"; };
 		AB3ACB6614C2361100D7D192 /* appDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = appDelegate.h; sourceTree = "<group>"; };
@@ -1356,6 +1362,7 @@
 			isa = PBXGroup;
 			children = (
 				AB3ACB6514C2361100D7D192 /* userinterface */,
+				AB2F56EF1704C86900E28885 /* utilities.c */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
@@ -1374,6 +1381,7 @@
 				ABD0A5361501AA5A0074A094 /* coreaudiosound.h */,
 				ABD0A5371501AA5A0074A094 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
+				AB2F56EE1704C86900E28885 /* utilities.h */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
 				ABD104121346652500AF11D1 /* cocoa_core.mm */,
 				AB58F32C1364F44B0074C376 /* cocoa_file.mm */,
@@ -2641,6 +2649,7 @@
 				AB4C4C5016F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C5116F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C5216F55C64002E07CD /* WavFile.cpp in Sources */,
+				AB2F56F11704C86900E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2797,6 +2806,7 @@
 				AB4C4C4616F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C4716F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C4816F55C64002E07CD /* WavFile.cpp in Sources */,
+				AB2F56F01704C86900E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2953,6 +2963,7 @@
 				AB4C4C6416F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C6516F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C6616F55C64002E07CD /* WavFile.cpp in Sources */,
+				AB2F56F31704C86900E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3079,6 +3090,7 @@
 				AB4C4C5A16F55C64002E07CD /* sse_optimized.cpp in Sources */,
 				AB4C4C5B16F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C5C16F55C64002E07CD /* WavFile.cpp in Sources */,
+				AB2F56F21704C86900E28885 /* utilities.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
