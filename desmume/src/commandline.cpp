@@ -51,6 +51,7 @@ CommandLine::CommandLine()
 , _slot1_fat_dir(NULL)
 #ifdef HAVE_JIT
 , _cpu_mode(-1)
+, _jit_size(-1)
 #endif
 , _console_type(NULL)
 , depth_threshold(-1)
@@ -103,6 +104,7 @@ void CommandLine::loadCommonOptions()
 		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },
 #ifdef HAVE_JIT
 		{ "cpu-mode", 0, 0, G_OPTION_ARG_INT, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
+		{ "jit-size", 0, 0, G_OPTION_ARG_INT, &_jit_size, "ARM JIT block size: 1..100 (1 - accuracy, 100 - faster) (default 100)", NULL},
 #endif
 #ifndef _MSC_VER
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
@@ -146,6 +148,13 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
 #ifdef HAVE_JIT
 	if(_cpu_mode != -1) CommonSettings.use_jit = (_cpu_mode==1);
+	if(_jit_size != -1) 
+	{
+		if ((_jit_size < 1) || (_jit_size > 100)) 
+			CommonSettings.jit_max_block_size = 100;
+		else
+			CommonSettings.jit_max_block_size = _jit_size;
+	}
 #endif
 	if(depth_threshold != -1)
 		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
@@ -235,6 +244,9 @@ bool CommandLine::validate()
 #ifdef HAVE_JIT
 	if (_cpu_mode < -1 || _cpu_mode > 1) {
 		g_printerr("Invalid cpu mode emulation (0 - interpreter, 1 - dynarec)\n");
+	}
+	if (_jit_size < 1 || _jit_size > 100) {
+		g_printerr("Invalid jit block size [1..100]. set to 100\n");
 	}
 #endif
 

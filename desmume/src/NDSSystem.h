@@ -490,6 +490,7 @@ extern struct TCommonSettings {
 		, GFX3D_LineHack(true)
 		, GFX3D_Zelda_Shadow_Depth_Hack(0)
 		, GFX3D_Renderer_Multisample(false)
+		, jit_max_block_size(100)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
 		, PatchSWI3(false)
@@ -571,6 +572,7 @@ extern struct TCommonSettings {
 	FAST_ALIGN bool advanced_timing;
 
 	bool use_jit;
+	u32	jit_max_block_size;
 	
 	struct _Wifi {
 		int mode;

@@ -92,6 +92,7 @@ private:
 	int _advanced_timing;
 #ifdef HAVE_JIT
 	int _cpu_mode;
+	int _jit_size;
 #endif
 	char* _slot1;
 	char *_slot1_fat_dir;
