@@ -2214,7 +2214,7 @@ static void call_ldm_stm(GpVar adr, u32 bitmask, bool store, int dir)
 		ctx->setReturn(bb_cycles);
 	}
 	else
-		c.mov(bb_cycles, 1);
+		bb_constant_cycles++;
 }
 
 static int op_bx(Mem srcreg, bool blx, bool test_thumb);
@@ -4148,9 +4148,7 @@ static u32 compile_basicblock()
 	JIT_COMMENT("total cycles (block)");
 
 	if (bb_constant_cycles > 0)
-	{
 		c.add(bb_total_cycles, bb_constant_cycles);
-	}
 
 #if (PROFILER_JIT_LEVEL > 1)
 	JIT_COMMENT("*** profiler - cycles");
@@ -4163,7 +4161,7 @@ static u32 compile_basicblock()
 
 	c.ret(bb_total_cycles);
 #if LOG_JIT
-	fprintf(stderr, "cycles %d%s\n", constant_cycles, has_variable_cycles ? " + variable" : "");
+	fprintf(stderr, "cycles %d%s\n", bb_constant_cycles, has_variable_cycles ? " + variable" : "");
 #endif
 	c.endFunc();
 
