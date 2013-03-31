@@ -39,7 +39,6 @@
 #include "arm_jit.h"
 #include "bios.h"
 
-#define MAX_JIT_BLOCK_SIZE 100
 #define LOG_JIT_LEVEL 0
 #define PROFILER_JIT_LEVEL 0
 
@@ -4084,7 +4083,7 @@ static u32 compile_basicblock()
 
 		u32 cycles = instr_cycles(opcode);
 
-		bEndBlock = (i >= (MAX_JIT_BLOCK_SIZE - 1)) || instr_is_branch(opcode);
+		bEndBlock = (i >= (CommonSettings.jit_max_block_size - 1)) || instr_is_branch(opcode);
 		
 #if LOG_JIT
 		if (instr_is_conditional(opcode) && (cycles > 1) || (cycles == 0))
@@ -4215,6 +4214,7 @@ void arm_jit_reset(bool enable)
 	scratchptr = scratchpad;
 #endif
 	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
+	printf("JIT max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
 
 	if (enable)
 	{

@@ -2940,6 +2940,16 @@ int _main()
 		GetPrivateProfileString("Scripting", str, "", &Recent_Scripts[i][0], 1024, IniName);
 	}
 
+#ifdef HAVE_JIT
+	//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
+	//id rather have people discover a bonus speedhack than discover new bugs in a new version
+	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", false, IniName);
+	CommonSettings.jit_max_block_size = GetPrivateProfileInt("Emulation", "JitSize", 100, IniName);
+	if ((CommonSettings.jit_max_block_size < 1) || (CommonSettings.jit_max_block_size > 100)) 
+		CommonSettings.jit_max_block_size = 100;
+#else
+	CommonSettings.use_jit = false;
+#endif
 
 	//i think we should override the ini file with anything from the commandline
 	CommandLine cmdline;
@@ -3244,15 +3254,7 @@ int _main()
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", false, IniName);
 
-#ifdef HAVE_JIT
-	//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
-	//id rather have people discover a bonus speedhack than discover new bugs in a new version
-	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", false, IniName);
-#else
-	CommonSettings.use_jit = false;
-#endif
-
-  video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
+	video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
 
 	/* Read the firmware settings from the init file */
