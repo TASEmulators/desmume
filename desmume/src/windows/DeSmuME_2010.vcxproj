@@ -25,14 +25,6 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Template|Win32">
-      <Configuration>Template</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Template|x64">
-      <Configuration>Template</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>DeSmuME_VS2010</ProjectName>
@@ -47,7 +39,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|x64'" Label="Configuration" />
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'" Label="Configuration">
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
@@ -55,6 +47,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration" />
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
@@ -70,9 +63,6 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Template|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -119,12 +109,6 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" />
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Template|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Template|x64'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Template|x64'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)_x64_release</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)_x64_debug</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(ProjectName)_x64_dev+</TargetName>
@@ -386,16 +370,6 @@
       <AdditionalManifestFiles>DeSmuME_x64.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
     </Manifest>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Template|x64'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
     <ClCompile Include="..\addons\slot2_piano.cpp" />
@@ -522,8 +496,6 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">$(IntDir)\decrypt\</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\decrypt\</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">$(IntDir)\decrypt\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Template|x64'">$(IntDir)\decrypt\</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\utils\decrypt\decrypt.cpp" />
     <ClCompile Include="..\utils\decrypt\header.cpp" />
@@ -560,43 +532,35 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zExtract.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zFile.c" />
     <ClCompile Include="File_Extractor\7z_C\7zHeader.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zIn.c" />
     <ClCompile Include="File_Extractor\7z_C\7zItem.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zStream.c" />
     <ClCompile Include="File_Extractor\7z_C\Alloc.c" />
@@ -996,15 +960,9 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\lua.tag;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Template|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">.libs\lua.tag;</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\lua.tag;</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Template|x64'">.libs\lua.tag;</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Template|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="wx\wx.7z">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
