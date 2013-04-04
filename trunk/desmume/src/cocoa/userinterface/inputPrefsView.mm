@@ -138,6 +138,11 @@
 	{
 		NSDictionary *profileDict = [defaultProfileList objectAtIndex:i];
 		NSString *profileName = (NSString *)[profileDict valueForKey:@"Name"];
+		if (profileName == nil)
+		{
+			profileName = @"";
+		}
+		
 		NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:profileName
 																	 action:@selector(profileSelect:)
 															  keyEquivalent:@""] autorelease];
@@ -164,6 +169,11 @@
 		{
 			NSDictionary *profileDict = [savedProfilesList objectAtIndex:i];
 			NSString *profileName = (NSString *)[profileDict valueForKey:@"Name"];
+			if (profileName == nil)
+			{
+				profileName = @"";
+			}
+			
 			NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:profileName
 																		 action:@selector(profileSelect:)
 																  keyEquivalent:@""] autorelease];
@@ -281,7 +291,13 @@
 		return;
 	}
 	
-	[[inputProfileMenu selectedItem] setTitle:(NSString *)[selectedProfile valueForKey:@"Name"]];
+	NSString *profileName = (NSString *)[selectedProfile valueForKey:@"Name"];
+	if (profileName == nil)
+	{
+		profileName = @"";
+	}
+	
+	[[inputProfileMenu selectedItem] setTitle:profileName];
 	[[NSUserDefaults standardUserDefaults] setObject:savedProfilesList forKey:@"Input_SavedProfiles"];
 }
 
