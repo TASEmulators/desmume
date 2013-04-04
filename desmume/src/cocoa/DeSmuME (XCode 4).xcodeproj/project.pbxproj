@@ -10,6 +10,9 @@
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		AB00E87B14205EAE00DE561F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87914205EAE00DE561F /* InfoPlist.strings */; };
 		AB00E87E14205EBC00DE561F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87C14205EBC00DE561F /* MainMenu.xib */; };
+		AB01005E170D07B000D70FBE /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB01005D170D07B000D70FBE /* InputProfileController.mm */; };
+		AB01005F170D07B000D70FBE /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB01005D170D07B000D70FBE /* InputProfileController.mm */; };
+		AB010060170D07B000D70FBE /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB01005D170D07B000D70FBE /* InputProfileController.mm */; };
 		AB02475C13886BF300E9F9AB /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		AB0F290214BE6E68009ABC6F /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */; };
 		AB0F290314BE6E68009ABC6F /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */; };
@@ -630,6 +633,8 @@
 		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB00E87D14205EBC00DE561F /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		AB00E89114205ECC00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AB01005C170D07AF00D70FBE /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
+		AB01005D170D07B000D70FBE /* InputProfileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputProfileController.mm; sourceTree = "<group>"; };
 		AB02475B13886BF300E9F9AB /* KeyNames.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = KeyNames.plist; sourceTree = "<group>"; };
 		AB02791814415E4C0075E58C /* Info (Debug).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Debug).plist"; sourceTree = "<group>"; };
 		AB0A0D1914AACA9600E83E91 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
@@ -1243,6 +1248,7 @@
 				AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */,
 				AB29B32F16D4BEBF000EF671 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
+				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
@@ -1251,6 +1257,7 @@
 				AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */,
 				AB29B33016D4BEBF000EF671 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
+				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
 			);
@@ -2247,6 +2254,7 @@
 				AB8967DA16D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
 				AB29B33216D4BEBF000EF671 /* InputManager.mm in Sources */,
 				AB82445C1704AE9A00B8EE20 /* utilities.c in Sources */,
+				AB01005F170D07B000D70FBE /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2405,6 +2413,7 @@
 				AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
 				AB29B33116D4BEBF000EF671 /* InputManager.mm in Sources */,
 				AB82445B1704AE9A00B8EE20 /* utilities.c in Sources */,
+				AB01005E170D07B000D70FBE /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2551,6 +2560,7 @@
 				AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */,
 				AB3A656316CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 				AB82445D1704AE9A00B8EE20 /* utilities.c in Sources */,
+				AB010060170D07B000D70FBE /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

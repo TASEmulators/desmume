@@ -788,6 +788,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @synthesize emuControl;
 @dynamic hidInputTarget;
 @synthesize inputMappings;
+@synthesize commandTagList;
+@synthesize commandIcon;
 
 static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
 
@@ -812,7 +814,33 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	}
 	
 	hidManager = [[InputHIDManager alloc] initWithInputManager:self];
-	inputMappings = [[NSMutableDictionary dictionaryWithCapacity:128] retain];
+	inputMappings = [[NSMutableDictionary alloc] initWithCapacity:128];
+	commandTagList = [[[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]] valueForKey:@"CommandTagList"];
+	
+	// Initialize the icons associated with each command.
+	commandIcon = [[NSDictionary alloc] initWithObjectsAndKeys:
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"UNKNOWN COMMAND",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowUp_420x420" ofType:@"png"]] autorelease],			@"Up",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowDown_420x420" ofType:@"png"]] autorelease],			@"Down",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowLeft_420x420" ofType:@"png"]] autorelease],			@"Left",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowRight_420x420" ofType:@"png"]] autorelease],			@"Right",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonA_420x420" ofType:@"png"]] autorelease],			@"A",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonB_420x420" ofType:@"png"]] autorelease],			@"B",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonX_420x420" ofType:@"png"]] autorelease],			@"X",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonY_420x420" ofType:@"png"]] autorelease],			@"Y",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonL_420x420" ofType:@"png"]] autorelease],			@"L",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonR_420x420" ofType:@"png"]] autorelease],			@"R",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonStart_420x420" ofType:@"png"]] autorelease],		@"Start",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Select",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Microphone_420x420" ofType:@"png"]] autorelease],			@"Microphone",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ShowHUD_420x420" ofType:@"png"]] autorelease],			@"HUD",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]] autorelease],				@"Pause",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute/Pause",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Reset_420x420" ofType:@"png"]] autorelease],				@"Reset",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Touch",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]] autorelease],			@"Mute/Unmute",
+				   nil];
 	
 	// Initialize the selectors used for each command tag. (Do this in code rather than in an external file.)
 	commandSelector["Up"]						= @selector(cmdUpdateDSController:);
@@ -921,7 +949,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	[self addMappingForIBAction:@selector(reset:) commandAttributes:&cmdReset];
 	[self addMappingForIBAction:@selector(toggleGPUState:) commandAttributes:&cmdToggleGPUState];
 	
-	[self addMappingsUsingUserDefaults];
+	[self setMappingsWithMappings:[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"]];
 	
 	return self;
 }
@@ -929,7 +957,9 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 - (void)dealloc
 {	
 	[hidManager release];
-	[self setInputMappings:nil];
+	[inputMappings release];
+	[commandTagList release];
+	[commandIcon release];
 	
 	[super dealloc];
 }
@@ -948,54 +978,26 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 
 #pragma mark Class Methods
 
-- (void) addMappingsUsingUserDefaults
+- (void) setMappingsWithMappings:(NSDictionary *)mappings
 {
-	// Check to see if the DefaultKeyMappings.plist files exists.
-	NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
-	if (defaultKeyMappingsDict == nil)
+	if (mappings == nil || commandTagList == nil)
 	{
 		return;
 	}
 	
-	NSDictionary *defaultMappings = [defaultKeyMappingsDict valueForKey:@"DefaultInputMappings"];
-	if (defaultMappings == nil)
-	{
-		return;
-	}
-	
-	NSArray *commandTagList = [defaultKeyMappingsDict valueForKey:@"CommandTagList"];
-	if (commandTagList == nil)
-	{
-		return;
-	}
-	
-	// At this point, we need to check every key in the user's preference file and make sure that all the keys
-	// exist. The keys that must exist are all listed in the DefaultKeyMappings.plist file.
-	BOOL userMappingsDidChange = NO;
-	NSMutableDictionary *tempUserMappings = [NSMutableDictionary dictionaryWithDictionary:[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"]];
-	
+	// Add the input mappings, filling in missing data as needed.
 	for (NSString *commandTag in commandTagList)
 	{
-		if ([tempUserMappings objectForKey:commandTag] == nil)
+		NSArray *deviceInfoList = (NSArray *)[mappings valueForKey:commandTag];
+		
+		if ([[self inputMappings] valueForKey:commandTag] == nil)
 		{
-			[tempUserMappings setValue:[defaultMappings valueForKey:commandTag] forKey:commandTag];
-			userMappingsDidChange = YES;
+			[[self inputMappings] setObject:[NSMutableArray arrayWithCapacity:4] forKey:commandTag];
 		}
-	}
-	
-	// If we had to add a missing key, then we need to copy our temporary dictionary back to the
-	// user's preferences file.
-	if (userMappingsDidChange)
-	{
-		[[NSUserDefaults standardUserDefaults] setObject:tempUserMappings forKey:@"Input_ControllerMappings"];
-	}
-	
-	// Finally, add all the input mappings per user defaults.
-	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
-	for (NSString *commandTag in commandTagList)
-	{
-		NSArray *deviceInfoList = (NSArray *)[userMappings valueForKey:commandTag];
-		[[self inputMappings] setObject:[NSMutableArray arrayWithCapacity:2] forKey:commandTag];
+		else
+		{
+			[self removeAllMappingsForCommandTag:[commandTag cStringUsingEncoding:NSUTF8StringEncoding]];
+		}
 		
 		for(NSDictionary *deviceInfo in deviceInfoList)
 		{
@@ -1264,6 +1266,26 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 - (void) writeDefaultsInputMappings
 {
 	[[NSUserDefaults standardUserDefaults] setObject:[self inputMappings] forKey:@"Input_ControllerMappings"];
+}
+
+- (NSString *) commandTagFromInputList:(NSArray *)inputList
+{
+	NSString *commandTag = nil;
+	if (inputList == nil)
+	{
+		return commandTag;
+	}
+	
+	for (NSString *tag in inputMappings)
+	{
+		if (inputList == [inputMappings valueForKey:tag])
+		{
+			commandTag = tag;
+			break;
+		}
+	}
+	
+	return commandTag;
 }
 
 - (SEL) selectorOfCommandTag:(const char *)commandTag

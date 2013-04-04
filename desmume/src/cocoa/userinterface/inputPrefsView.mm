@@ -17,114 +17,67 @@
 */
 
 #import "inputPrefsView.h"
+#import "InputProfileController.h"
 #import "preferencesWindowDelegate.h"
 
 #import "cocoa_globals.h"
-#import "cocoa_input.h"
 #import "cocoa_util.h"
 
 #define INPUT_HOLD_TIME		0.1		// Time in seconds to hold a button in its on state when mapping an input.
 
-@implementation InputPrefProperties
-
-@synthesize commandTag;
-@synthesize icon;
-@synthesize settingsSheet;
-
-- (id)init
-{
-	return [self initWithCommandTag:@"" icon:nil sheet:nil];
-}
-
-- (id) initWithCommandTag:(NSString *)theCommandTag icon:(NSImage *)theIcon sheet:(NSWindow *)theSheet
-{
-	self = [super init];
-    if (self == nil)
-	{
-		return self;
-    }
-	
-	commandTag = [theCommandTag retain];
-	icon = [theIcon retain];
-	settingsSheet = [theSheet retain];
-	
-	return self;
-}
-
-- (void)dealloc
-{
-	[self setCommandTag:nil];
-	[self setIcon:nil];
-	[self setSettingsSheet:nil];
-	
-	[super dealloc];
-}
-
-@end
-
-
-#pragma mark -
 
 @implementation InputPrefsView
 
+@synthesize dummyObject;
 @synthesize prefWindow;
+@synthesize inputProfileMenu;
+@synthesize inputProfilePreviousButton;
+@synthesize inputProfileNextButton;
 @synthesize inputPrefOutlineView;
 @synthesize inputSettingsController;
+@synthesize inputProfileController;
 @synthesize inputSettingsMicrophone;
 @synthesize inputSettingsTouch;
 @synthesize inputSettingsLoadStateSlot;
 @synthesize inputSettingsSaveStateSlot;
 @synthesize inputSettingsSetSpeedLimit;
 @synthesize inputSettingsGPUState;
+@synthesize inputProfileSheet;
+@synthesize inputProfileRenameSheet;
 @synthesize inputManager;
 @dynamic configInputTargetID;
 
 - (id)initWithFrame:(NSRect)frame
 {
-    self = [super initWithFrame:frame];
+	self = [super initWithFrame:frame];
     if (self == nil)
 	{
 		return self;
     }
 	
+	NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
+	NSArray *defaultProfileList = [defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
+	_defaultProfileListCount = [defaultProfileList count];
+	
+	NSArray *userDefaultsSavedProfilesList = (NSArray *)[[NSUserDefaults standardUserDefaults] arrayForKey:@"Input_SavedProfiles"];
+	savedProfilesList = [[NSMutableArray alloc] initWithCapacity:32];
+	
+	for (NSDictionary *savedProfile in userDefaultsSavedProfilesList)
+	{
+		[savedProfilesList addObject:[NSMutableDictionary dictionaryWithDictionary:savedProfile]];
+	}
+	
 	configInputTargetID = nil;
 	configInputList = [[NSMutableDictionary alloc] initWithCapacity:128];
-	
-	inputPrefProperties = [[NSDictionary alloc] initWithObjectsAndKeys:
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"UNKNOWN COMMAND",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowUp_420x420" ofType:@"png"]] autorelease],			@"Up",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowDown_420x420" ofType:@"png"]] autorelease],			@"Down",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowLeft_420x420" ofType:@"png"]] autorelease],			@"Left",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ArrowRight_420x420" ofType:@"png"]] autorelease],			@"Right",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonA_420x420" ofType:@"png"]] autorelease],			@"A",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonB_420x420" ofType:@"png"]] autorelease],			@"B",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonX_420x420" ofType:@"png"]] autorelease],			@"X",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonY_420x420" ofType:@"png"]] autorelease],			@"Y",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonL_420x420" ofType:@"png"]] autorelease],			@"L",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonR_420x420" ofType:@"png"]] autorelease],			@"R",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonStart_420x420" ofType:@"png"]] autorelease],		@"Start",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Select",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Microphone_420x420" ofType:@"png"]] autorelease],			@"Microphone",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ShowHUD_420x420" ofType:@"png"]] autorelease],			@"HUD",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]] autorelease],				@"Pause",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute/Pause",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Reset_420x420" ofType:@"png"]] autorelease],				@"Reset",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Touch",
-						   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]] autorelease],			@"Mute/Unmute",
-						   nil];
-	
-	commandTagList = [[[NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]] valueForKey:@"CommandTagList"] retain];
-	
+		
     return self;
 }
 
 - (void)dealloc
 {
 	[configInputList release];
-	[inputPrefProperties release];
 	[inputSettingsMappings release];
-	[commandTagList release];
+	[savedProfilesList release];
 	
 	[super dealloc];
 }
@@ -160,25 +113,70 @@
 							 nil];
 }
 
-- (NSString *) commandTagFromInputList:(NSArray *)inputList
+- (void) populateInputProfileMenu
 {
-	NSString *commandTag = nil;
-	if (inputList == nil)
+	NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
+	NSArray *defaultProfileList = [defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
+	if (defaultKeyMappingsDict == nil || defaultProfileList == nil)
 	{
-		return commandTag;
+		return;
 	}
 	
-	NSDictionary *inputMappings = [inputManager inputMappings];
-	for (NSString *tag in inputMappings)
+	// We're going to populate this menu from scratch, so remove all existing profile items.
+	NSMenu *profileMenu = [inputProfileMenu menu];
+	NSInteger menuItemCount = [profileMenu numberOfItems] - 2;
+	for (NSInteger i = 0; i < menuItemCount; i++)
 	{
-		if (inputList == [inputMappings valueForKey:tag])
+		[profileMenu removeItemAtIndex:i];
+	}
+	
+	// Need this to keep track of profile indexes.
+	NSInteger profileIndex = 0;
+	
+	// Add the menu items for the default profiles.
+	for (NSUInteger i = 0; i < _defaultProfileListCount; i++)
+	{
+		NSDictionary *profileDict = [defaultProfileList objectAtIndex:i];
+		NSString *profileName = (NSString *)[profileDict valueForKey:@"Name"];
+		NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:profileName
+																	 action:@selector(profileSelect:)
+															  keyEquivalent:@""] autorelease];
+		[newProfileMenuItem setTag:profileIndex];
+		[newProfileMenuItem setTarget:self];
+		
+		[profileMenu insertItem:newProfileMenuItem atIndex:profileIndex];
+		profileIndex++;
+	}
+	
+	// Add a separator item in between default profiles and user saved profiles.
+	[[inputProfileMenu menu] insertItem:[NSMenuItem separatorItem] atIndex:profileIndex];
+	
+	// Add the menu items for the user saved profiles.
+	if ([savedProfilesList count] < 1)
+	{
+		[inputProfileMenu insertItemWithTitle:NSSTRING_INPUTPREF_NO_SAVED_PROFILES atIndex:profileIndex+1];
+		NSMenuItem *noSavedConfigItem = [inputProfileMenu itemAtIndex:profileIndex+1];
+		[noSavedConfigItem setEnabled:NO];
+	}
+	else
+	{
+		for (NSUInteger i = 0; i < [savedProfilesList count]; i++)
 		{
-			commandTag = tag;
-			break;
+			NSDictionary *profileDict = [savedProfilesList objectAtIndex:i];
+			NSString *profileName = (NSString *)[profileDict valueForKey:@"Name"];
+			NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:profileName
+																		 action:@selector(profileSelect:)
+																  keyEquivalent:@""] autorelease];
+			[newProfileMenuItem setTag:profileIndex];
+			[newProfileMenuItem setTarget:self];
+			
+			[profileMenu insertItem:newProfileMenuItem atIndex:profileIndex+1];
+			profileIndex++;
 		}
 	}
 	
-	return commandTag;
+	[inputProfileMenu selectItemAtIndex:0];
+	[self profileSelect:[inputProfileMenu itemAtIndex:0]];
 }
 
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
@@ -257,6 +255,36 @@
 	[inputManager writeDefaultsInputMappings];
 }
 
+- (BOOL) doesProfileNameExist:(NSString *)profileName
+{
+	BOOL doesExist = NO;
+	
+	for (NSMutableDictionary *savedProfile in savedProfilesList)
+	{
+		NSString *savedProfileName = (NSString *)[savedProfile valueForKey:@"Name"];
+		if ([savedProfileName isEqualToString:profileName])
+		{
+			doesExist = YES;
+			break;
+		}
+	}
+	
+	return doesExist;
+}
+
+- (void) updateSelectedProfileName
+{
+	NSInteger profileID = [inputProfileMenu indexOfSelectedItem];
+	NSMutableDictionary *selectedProfile = (NSMutableDictionary *)[inputProfileController content];
+	if (profileID < (NSInteger)_defaultProfileListCount || selectedProfile == nil)
+	{
+		return;
+	}
+	
+	[[inputProfileMenu selectedItem] setTitle:(NSString *)[selectedProfile valueForKey:@"Name"]];
+	[[NSUserDefaults standardUserDefaults] setObject:savedProfilesList forKey:@"Input_SavedProfiles"];
+}
+
 - (void) didEndSettingsSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
 {
     [sheet orderOut:self];
@@ -279,6 +307,16 @@
 	}
 	
 	[inputSettingsController setContent:nil];
+}
+
+- (void) didEndProfileSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+	[sheet orderOut:self];
+}
+
+- (void) didEndProfileRenameSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+	[sheet orderOut:self];
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -363,13 +401,13 @@
 	{
 		if ([item isKindOfClass:[NSArray class]])
 		{
-			NSString *commandTag = [self commandTagFromInputList:item];
+			NSString *commandTag = [inputManager commandTagFromInputList:item];
 			if (commandTag != nil)
 			{
-				NSImage *buttonImage = (NSImage *)[inputPrefProperties valueForKey:commandTag];
+				NSImage *buttonImage = (NSImage *)[[inputManager commandIcon] valueForKey:commandTag];
 				if (buttonImage == nil)
 				{
-					buttonImage = (NSImage *)[inputPrefProperties valueForKey:@"UNKNOWN COMMAND"];
+					buttonImage = (NSImage *)[[inputManager commandIcon] valueForKey:@"UNKNOWN COMMAND"];
 				}
 				
 				[outCell setTitle:NSLocalizedString(commandTag, nil)];
@@ -405,7 +443,7 @@
 	{
 		if ([item isKindOfClass:[NSDictionary class]])
 		{
-			NSString *commandTag = [self commandTagFromInputList:[outlineView parentForItem:item]];
+			NSString *commandTag = [inputManager commandTagFromInputList:[outlineView parentForItem:item]];
 			NSWindow *theSheet = (NSWindow *)[inputSettingsMappings valueForKey:commandTag];
 			[outCell setEnabled:(theSheet == nil) ? NO : YES];
 		}
@@ -430,7 +468,7 @@
 {
 	if (item == nil)
 	{
-		NSString *commandTag = [commandTagList objectAtIndex:index];
+		NSString *commandTag = [[inputManager commandTagList] objectAtIndex:index];
 		return [[inputManager inputMappings] valueForKey:commandTag];
 	}
 	else if ([item isKindOfClass:[NSArray class]])
@@ -457,7 +495,7 @@
 	
 	if (item == nil)
 	{
-		numberChildren = [commandTagList count];
+		numberChildren = [[inputManager commandTagList] count];
 	}
 	else if ([item isKindOfClass:[NSArray class]])
 	{
@@ -517,7 +555,7 @@
 
 - (id)outlineView:(NSOutlineView *)outlineView persistentObjectForItem:(id)item
 {
-	return [self commandTagFromInputList:item];
+	return [inputManager commandTagFromInputList:item];
 }
 
 - (id)outlineView:(NSOutlineView *)outlineView itemForPersistentObject:(id)object
@@ -615,7 +653,7 @@
 		[outlineView selectRowIndexes:[NSIndexSet indexSetWithIndex:rowNumber] byExtendingSelection:NO];
 		
 		NSArray *inputList = (NSArray *)[outlineView itemAtRow:rowNumber];
-		[self setConfigInputTargetID:[self commandTagFromInputList:inputList]];
+		[self setConfigInputTargetID:[inputManager commandTagFromInputList:inputList]];
 		[prefWindow makeFirstResponder:self];
 	}
 }
@@ -650,7 +688,7 @@
 	const NSInteger rowNumber = [outlineView clickedRow];
 	
 	NSMutableDictionary *item = (NSMutableDictionary *)[outlineView itemAtRow:rowNumber];
-	NSString *commandTag = [self commandTagFromInputList:[outlineView parentForItem:item]];
+	NSString *commandTag = [inputManager commandTagFromInputList:[outlineView parentForItem:item]];
 	NSWindow *theSheet = (NSWindow *)[inputSettingsMappings valueForKey:commandTag];
 	
 	if (theSheet == nil)
@@ -674,4 +712,186 @@
     [NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
+- (IBAction) profileNew:(id)sender
+{
+	static NSUInteger untitledCount = 1;
+	NSString *newProfileName = (untitledCount == 1) ? @"Untitled" : [NSString stringWithFormat:@"Untitled %ld", (unsigned long)untitledCount];
+	
+	while([self doesProfileNameExist:newProfileName])
+	{
+		newProfileName = [NSString stringWithFormat:@"Untitled %ld", (unsigned long)++untitledCount];
+	}
+	
+	NSMutableDictionary *newProfile = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+									   newProfileName, @"Name",
+									   [NSNumber numberWithBool:NO], @"IsDefaultType",
+									   [[[NSMutableDictionary alloc] initWithDictionary:[inputManager inputMappings] copyItems:YES] autorelease], @"Mappings",
+									   nil];
+	
+	[savedProfilesList addObject:newProfile];
+	
+	NSInteger profileIndex = _defaultProfileListCount + [savedProfilesList count] - 1;
+	NSMenu *profileMenu = [inputProfileMenu menu];
+	NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:newProfileName
+																 action:@selector(profileSelect:)
+														  keyEquivalent:@""] autorelease];
+	[newProfileMenuItem setTag:profileIndex];
+	[newProfileMenuItem setTarget:self];
+	
+	[profileMenu insertItem:newProfileMenuItem atIndex:profileIndex+1];
+	
+	// Remove the "no items" menu item when the first profile is saved.
+	if ([savedProfilesList count] == 1)
+	{
+		[inputProfileMenu removeItemAtIndex:profileIndex+2];
+	}
+	
+	[inputProfileMenu selectItemAtIndex:profileIndex+1];
+	[self profileSelect:newProfileMenuItem];
+	[[NSUserDefaults standardUserDefaults] setObject:savedProfilesList forKey:@"Input_SavedProfiles"];
+	
+	// Give the user a chance to name the new profile.
+	[self profileRename:nil];
+}
+
+- (IBAction) profileView:(id)sender
+{
+	[NSApp beginSheet:inputProfileSheet
+	   modalForWindow:prefWindow
+		modalDelegate:self
+	   didEndSelector:@selector(didEndProfileSheet:returnCode:contextInfo:)
+		  contextInfo:nil];
+}
+
+- (IBAction) profileApply:(id)sender
+{
+	NSMutableDictionary *selectedProfile = (NSMutableDictionary *)[inputProfileController content];
+	NSMutableDictionary *profileMappings = (NSMutableDictionary *)[selectedProfile valueForKey:@"Mappings"];
+	
+	if (profileMappings != nil)
+	{
+		// Use setMappingsWithMappings: instead of replacing the input mappings
+		// completely since we need to keep this particular pointer address for
+		// the inputMappings dictionary. If we don't do this, the outline view
+		// will desync.
+		[inputManager setMappingsWithMappings:profileMappings];
+		[inputPrefOutlineView reloadData];
+		[inputManager writeDefaultsInputMappings];
+	}
+}
+
+- (IBAction) profileRename:(id)sender
+{
+	[NSApp beginSheet:inputProfileRenameSheet
+	   modalForWindow:prefWindow
+		modalDelegate:self
+	   didEndSelector:@selector(didEndProfileRenameSheet:returnCode:contextInfo:)
+		  contextInfo:nil];
+}
+
+- (IBAction) profileSave:(id)sender
+{
+	NSMutableDictionary *selectedProfile = (NSMutableDictionary *)[inputProfileController content];
+	if (selectedProfile == nil)
+	{
+		return;
+	}
+	
+	[selectedProfile setValue:[[[NSMutableDictionary alloc] initWithDictionary:[inputManager inputMappings] copyItems:YES] autorelease] forKey:@"Mappings"];
+	[[NSUserDefaults standardUserDefaults] setObject:savedProfilesList forKey:@"Input_SavedProfiles"];
+}
+
+- (IBAction) profileDelete:(id)sender
+{
+	NSMutableDictionary *selectedProfile = (NSMutableDictionary *)[inputProfileController content];
+	if (selectedProfile == nil)
+	{
+		return;
+	}
+	
+	NSInteger profileIndex = [inputProfileMenu indexOfSelectedItem] - 1;
+	NSMenu *profileMenu = [inputProfileMenu menu];
+	
+	[profileMenu removeItemAtIndex:[inputProfileMenu indexOfSelectedItem]];
+	[savedProfilesList removeObjectAtIndex:(profileIndex - _defaultProfileListCount)];
+	[inputProfileMenu selectItemAtIndex:0];
+	
+	// Add the "no items" menu item if there are no profiles saved.
+	if ([savedProfilesList count] < 1)
+	{
+		NSMenuItem *noSavedConfigItem = [[[NSMenuItem alloc] initWithTitle:NSSTRING_INPUTPREF_NO_SAVED_PROFILES
+																	 action:NULL
+															  keyEquivalent:@""] autorelease];
+		[noSavedConfigItem setEnabled:NO];
+		[profileMenu insertItem:noSavedConfigItem atIndex:profileIndex+1];
+	}
+	else // Update the profile indices in the menu tags.
+	{
+		for (NSUInteger i = 0; i < [savedProfilesList count]; i++)
+		{
+			[[profileMenu itemAtIndex:_defaultProfileListCount+i+1] setTag:_defaultProfileListCount+i];
+		}
+	}
+	
+	[self profileSelect:[inputProfileMenu itemAtIndex:0]];
+	[[NSUserDefaults standardUserDefaults] setObject:savedProfilesList forKey:@"Input_SavedProfiles"];
+}
+
+- (IBAction) profileSelect:(id)sender
+{
+	NSInteger profileID = [CocoaDSUtil getIBActionSenderTag:sender];
+	NSArray *profileList = nil;
+	
+	if (profileID < 0 || profileID >= (NSInteger)(_defaultProfileListCount + [savedProfilesList count]))
+	{
+		return;
+	}
+	
+	if (profileID < (NSInteger)_defaultProfileListCount) // Select one of the default profiles
+	{
+		NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
+		profileList = [defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
+	}
+	else // Select one of the saved configs
+	{
+		profileList = savedProfilesList;
+	}
+	
+	[inputProfilePreviousButton setTag:profileID-1];
+	[inputProfilePreviousButton setEnabled:(profileID > 0) ? YES : NO];
+	[inputProfileNextButton setTag:profileID+1];
+	[inputProfileNextButton setEnabled:(profileID < ((NSInteger)_defaultProfileListCount + (NSInteger)[savedProfilesList count] - 1)) ? YES : NO];
+	
+	if (![sender isMemberOfClass:[NSMenuItem class]])
+	{
+		[inputProfileMenu selectItemAtIndex:(profileID < (NSInteger)_defaultProfileListCount) ? profileID : profileID+1];
+	}
+	
+	[inputProfileController setContent:[profileList objectAtIndex:(profileID < (NSInteger)_defaultProfileListCount) ? profileID : (profileID - _defaultProfileListCount)]];
+	[[inputProfileController profileOutlineView] reloadData];
+	[[inputProfileController profileOutlineView] expandItem:nil expandChildren:YES];
+}
+
+- (IBAction) closeProfileSheet:(id)sender
+{
+	NSWindow *sheet = [(NSControl *)sender window];
+	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
+	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+- (IBAction) closeProfileRenameSheet:(id)sender
+{
+	NSWindow *sheet = [(NSControl *)sender window];
+	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
+	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+#pragma mark NSControl Delegate Methods
+
+- (void)controlTextDidEndEditing:(NSNotification *)aNotification
+{
+	// Called when the profile view sheet changes the profile name
+	[self updateSelectedProfileName];
+}
+		  
 @end

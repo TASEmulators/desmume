@@ -147,6 +147,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	id<InputHIDManagerTarget> hidInputTarget;
 	InputHIDManager *hidManager;
 	NSMutableDictionary *inputMappings;
+	NSArray *commandTagList;
+	NSDictionary *commandIcon;
 	
 	InputCommandMap commandMap;
 	CommandAttributesMap defaultCommandAttributes;
@@ -155,9 +157,11 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 @property (readonly) IBOutlet EmuControllerDelegate *emuControl;
 @property (retain) id<InputHIDManagerTarget> hidInputTarget;
-@property (retain) NSMutableDictionary *inputMappings;
+@property (readonly) NSMutableDictionary *inputMappings;
+@property (readonly) NSArray *commandTagList;
+@property (readonly) NSDictionary *commandIcon;
 
-- (void) addMappingsUsingUserDefaults;
+- (void) setMappingsWithMappings:(NSDictionary *)mappings;
 - (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandAttributes:(const CommandAttributes *)cmdAttr;
 - (void) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandAttributes:(const CommandAttributes *)cmdAttr;
 - (void) addMappingUsingInputList:(const InputAttributesList *)inputList commandAttributes:(const CommandAttributes *)cmdAttr;
@@ -173,6 +177,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 - (BOOL) dispatchCommandUsingIBAction:(const SEL)theSelector sender:(id)sender;
 
 - (void) writeDefaultsInputMappings;
+- (NSString *) commandTagFromInputList:(NSArray *)inputList;
 - (SEL) selectorOfCommandTag:(const char *)commandTag;
 - (CommandAttributes) defaultCommandAttributesForCommandTag:(const char *)commandTag;
 
