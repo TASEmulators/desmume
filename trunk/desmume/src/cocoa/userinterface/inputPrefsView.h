@@ -19,24 +19,8 @@
 #import <Cocoa/Cocoa.h>
 #import "InputManager.h"
 
-@class CocoaDSController;
+@class InputProfileController;
 
-@interface InputPrefProperties : NSObject
-{
-	NSString *commandTag;
-	NSImage *icon;
-	NSWindow *settingsSheet;
-}
-
-@property (retain) NSString *commandTag;
-@property (retain) NSImage *icon;
-@property (retain) NSWindow *settingsSheet;
-
-- (id) initWithCommandTag:(NSString *)theCommandTag icon:(NSImage *)theIcon sheet:(NSWindow *)theSheet;
-
-@end
-
-#pragma mark -
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface InputPrefsView : NSView <InputHIDManagerTarget, NSOutlineViewDelegate, NSOutlineViewDataSource>
@@ -44,10 +28,17 @@
 @interface InputPrefsView : NSView <InputHIDManagerTarget>
 #endif
 {
+	NSObject *dummyObject;
 	NSWindow *prefWindow;
+	NSPopUpButton *inputProfileMenu;
+	NSButton *inputProfilePreviousButton;
+	NSButton *inputProfileNextButton;
 	NSOutlineView *inputPrefOutlineView;
 	NSObjectController *inputSettingsController;
+	InputProfileController *inputProfileController;
 	
+	NSWindow *inputProfileSheet;
+	NSWindow *inputProfileRenameSheet;
 	NSWindow *inputSettingsMicrophone;
 	NSWindow *inputSettingsTouch;
 	NSWindow *inputSettingsLoadStateSlot;
@@ -59,15 +50,23 @@
 	NSString *configInputTargetID;
 	NSMutableDictionary *configInputList;
 	
-	NSDictionary *inputPrefProperties;
 	NSDictionary *inputSettingsMappings;
-	NSArray *commandTagList;
+	
+	NSUInteger _defaultProfileListCount;
+	NSMutableArray *savedProfilesList;
 }
 
+@property (readonly) IBOutlet NSObject *dummyObject;
 @property (readonly) IBOutlet NSWindow *prefWindow;
+@property (readonly) IBOutlet NSPopUpButton *inputProfileMenu;
+@property (readonly) IBOutlet NSButton *inputProfilePreviousButton;
+@property (readonly) IBOutlet NSButton *inputProfileNextButton;
 @property (readonly) IBOutlet NSOutlineView *inputPrefOutlineView;
 @property (readonly) IBOutlet NSObjectController *inputSettingsController;
+@property (readonly) IBOutlet InputProfileController *inputProfileController;
 
+@property (readonly) IBOutlet NSWindow *inputProfileSheet;
+@property (readonly) IBOutlet NSWindow *inputProfileRenameSheet;
 @property (readonly) IBOutlet NSWindow *inputSettingsMicrophone;
 @property (readonly) IBOutlet NSWindow *inputSettingsTouch;
 @property (readonly) IBOutlet NSWindow *inputSettingsLoadStateSlot;
@@ -79,18 +78,32 @@
 @property (retain) NSString *configInputTargetID;
 
 - (void) initSettingsSheets;
-- (NSString *) commandTagFromInputList:(NSArray *)inputList;
+- (void) populateInputProfileMenu;
 
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed;
 - (BOOL) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(NSString *)commandTag;
 - (void) setMappingUsingDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo;
+- (BOOL) doesProfileNameExist:(NSString *)profileName;
+- (void) updateSelectedProfileName;
 - (void) didEndSettingsSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
+- (void) didEndProfileSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
+- (void) didEndProfileRenameSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 - (IBAction) setInputAdd:(id)sender;
 - (IBAction) removeInput:(id)sender;
 - (IBAction) changeSpeed:(id)sender;
 - (IBAction) showSettingsSheet:(id)sender;
 - (IBAction) closeSettingsSheet:(id)sender;
+
+- (IBAction) profileNew:(id)sender;
+- (IBAction) profileView:(id)sender;
+- (IBAction) profileApply:(id)sender;
+- (IBAction) profileRename:(id)sender;
+- (IBAction) profileSave:(id)sender;
+- (IBAction) profileDelete:(id)sender;
+- (IBAction) profileSelect:(id)sender;
+- (IBAction) closeProfileSheet:(id)sender;
+- (IBAction) closeProfileRenameSheet:(id)sender;
 
 @end

@@ -203,6 +203,8 @@
 	[self setupUserDefaults];
 	
 	[inputPrefsView initSettingsSheets];
+	[inputPrefsView populateInputProfileMenu];
+	[[inputPrefsView inputProfileMenu] selectItemAtIndex:0];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification

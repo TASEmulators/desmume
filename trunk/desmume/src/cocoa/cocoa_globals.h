@@ -104,6 +104,8 @@
 #define NSSTRING_INPUTPREF_NUM_INPUTS_MAPPED		NSLocalizedString(@"%ld Input Mapped", nil)
 #define NSSTRING_INPUTPREF_NUM_INPUTS_MAPPED_PLURAL	NSLocalizedString(@"%ld Inputs Mapped", nil)
 
+#define NSSTRING_INPUTPREF_NO_SAVED_PROFILES		NSLocalizedString(@"No saved profiles.", nil)
+
 #define NSSTRING_INPUTPREF_USE_DEVICE_COORDINATES	NSLocalizedString(@"Use Device Coordinates", nil)
 #define NSSTRING_INPUTPREF_MIC_NONE					NSLocalizedString(@"None", nil)
 #define NSSTRING_INPUTPREF_MIC_INTERNAL_NOISE		NSLocalizedString(@"Internal Noise Samples", nil)

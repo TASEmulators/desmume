@@ -52,6 +52,10 @@
 		AB0F29C714BE7213009ABC6F /* Icon_RotateCW_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */; };
 		AB0F29C814BE7213009ABC6F /* Icon_ShowHUD_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */; };
 		AB0F29C914BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
+		AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
+		AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
+		AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
+		AB213D48170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB2F3B7D15CF9C6000858373 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		AB2F3B7E15CF9C6000858373 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
 		AB2F3B7F15CF9C6000858373 /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
@@ -925,6 +929,8 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB213D43170CB141006DDB0F /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
+		AB213D44170CB141006DDB0F /* InputProfileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputProfileController.mm; sourceTree = "<group>"; };
 		AB2F3C4515CF9C6000858373 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB2F56EE1704C86900E28885 /* utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
 		AB2F56EF1704C86900E28885 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
@@ -1494,6 +1500,7 @@
 				AB6A187A16C9951C00384EED /* EmuControllerDelegate.h */,
 				AB5A795616D5A56000ED84B7 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
+				AB213D43170CB141006DDB0F /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
@@ -1502,6 +1509,7 @@
 				AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */,
 				AB5A795716D5A56000ED84B7 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
+				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
 			);
@@ -2650,6 +2658,7 @@
 				AB4C4C5116F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C5216F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F11704C86900E28885 /* utilities.c in Sources */,
+				AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2807,6 +2816,7 @@
 				AB4C4C4716F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C4816F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F01704C86900E28885 /* utilities.c in Sources */,
+				AB213D48170CB141006DDB0F /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2964,6 +2974,7 @@
 				AB4C4C6516F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C6616F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F31704C86900E28885 /* utilities.c in Sources */,
+				AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3091,6 +3102,7 @@
 				AB4C4C5B16F55C64002E07CD /* TDStretch.cpp in Sources */,
 				AB4C4C5C16F55C64002E07CD /* WavFile.cpp in Sources */,
 				AB2F56F21704C86900E28885 /* utilities.c in Sources */,
+				AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
