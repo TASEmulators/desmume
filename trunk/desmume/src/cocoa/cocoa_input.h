@@ -18,8 +18,8 @@
 
 #import <Cocoa/Cocoa.h>
 #include <libkern/OSAtomic.h>
-
-@class CocoaDSMic;
+#include "mic_ext.h"
+#undef BOOL
 
 enum
 {
@@ -46,20 +46,21 @@ enum
 
 @interface CocoaDSController : NSObject
 {
-	CocoaDSMic *cdsMic;
+	NSInteger micMode;
 	NSPoint touchLocation;
 	bool controllerState[DSControllerState_StatesCount];
+	AudioSampleBlockGenerator *selectedAudioFileGenerator;
 	
 	OSSpinLock spinlockControllerState;
 }
 
-@property (retain) CocoaDSMic *cdsMic;
-
-- (id) initWithMic:(CocoaDSMic *)theMic;
+@property (assign) NSInteger micMode;
+@property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
 - (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode;
+- (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) flush;
 
 @end

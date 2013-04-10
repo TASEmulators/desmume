@@ -1004,7 +1004,14 @@
 	}
 	else if (controlID == DSControllerState_Microphone)
 	{
-		[[cdsCore cdsController] setMicrophoneState:theState inputMode:cmdAttr.intValue[1]];
+		const NSInteger micMode = cmdAttr.intValue[1];
+		[[cdsCore cdsController] setMicrophoneState:theState inputMode:micMode];
+		
+		const float sineWaveFrequency = cmdAttr.floatValue[0];
+		[[cdsCore cdsController] setSineWaveGeneratorFrequency:sineWaveFrequency];
+		
+		NSString *audioFilePath = cmdAttr.object[0];
+		[[cdsCore cdsController] setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 	}
 	else
 	{
@@ -1637,6 +1644,18 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore restoreCoreState];
+}
+
+- (AudioSampleBlockGenerator *) selectedAudioFileGenerator
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [[cdsCore cdsController] selectedAudioFileGenerator];
+}
+
+- (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)theGenerator
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setSelectedAudioFileGenerator:theGenerator];
 }
 
 - (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo

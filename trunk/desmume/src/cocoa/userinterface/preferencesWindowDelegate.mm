@@ -24,7 +24,6 @@
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
 #import "cocoa_file.h"
-#import "cocoa_mic.h"
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 

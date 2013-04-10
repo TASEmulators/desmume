@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -175,11 +175,6 @@ CoreAudioOutput::~CoreAudioOutput()
 	_spinlockAU = NULL;
 }
 
-RingBuffer* CoreAudioOutput::getBuffer() const
-{
-	return this->_buffer;
-}
-
 void CoreAudioOutput::start()
 {
 	this->clearBuffer();
@@ -199,9 +194,15 @@ void CoreAudioOutput::stop()
 	this->clearBuffer();
 }
 
-void CoreAudioOutput::writeToBuffer(const void *buffer, size_t numberBytes)
+void CoreAudioOutput::writeToBuffer(const void *buffer, size_t numberSampleFrames)
 {
-	this->getBuffer()->write(buffer, numberBytes);
+	size_t availableSampleFrames = this->_buffer->getAvailableElements();
+	if (availableSampleFrames < numberSampleFrames)
+	{
+		this->_buffer->drop(numberSampleFrames - availableSampleFrames);
+	}
+	
+	this->_buffer->write(buffer, numberSampleFrames);
 }
 
 void CoreAudioOutput::clearBuffer()
@@ -251,13 +252,12 @@ OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
 {
 	RingBuffer *__restrict__ audioBuffer = (RingBuffer *)inRefCon;
 	UInt8 *__restrict__ playbackBuffer = (UInt8 *)ioData->mBuffers[0].mData;
-	const size_t totalReadSize = inNumberFrames * audioBuffer->getElementSize();
-	const size_t bytesRead = audioBuffer->read(playbackBuffer, totalReadSize);
+	const size_t framesRead = audioBuffer->read(playbackBuffer, inNumberFrames);
 	
 	// Pad any remaining samples.
-	if (bytesRead < totalReadSize)
+	if (framesRead < inNumberFrames)
 	{
-		memset(playbackBuffer + bytesRead, 0, totalReadSize - bytesRead);
+		memset(playbackBuffer + (framesRead * SPU_SAMPLE_SIZE), 0, (inNumberFrames - framesRead) * SPU_SAMPLE_SIZE);
 	}
 	
 	// Copy to other channels.
