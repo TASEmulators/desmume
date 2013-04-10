@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <libkern/OSAtomic.h>
 #include "ringbuffer.h"
 
+
 class CoreAudioOutput
 {
 private:
@@ -38,10 +39,9 @@ public:
 	
 	void start();
 	void stop();
-	void writeToBuffer(const void *buffer, size_t numberBytes);
+	void writeToBuffer(const void *buffer, size_t numberSampleFrames);
 	void clearBuffer();
 	size_t getAvailableSamples() const;
-	RingBuffer* getBuffer() const;
 	void mute();
 	void unmute();
 	float getVolume() const;

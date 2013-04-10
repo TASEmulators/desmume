@@ -23,6 +23,9 @@
 #include <string>
 #include <vector>
 
+#include "mic_ext.h"
+#undef BOOL
+
 #define INPUT_HANDLER_STRING_LENGTH 256
 
 enum InputAttributeState
@@ -33,7 +36,6 @@ enum InputAttributeState
 };
 
 @class EmuControllerDelegate;
-@class CocoaDSController;
 @class InputManager;
 @class InputHIDManager;
 
@@ -81,6 +83,7 @@ typedef std::vector<CommandAttributes> CommandAttributesList;
 typedef std::tr1::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
+typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
 
 #pragma mark -
 @interface InputHIDDevice : NSObject
@@ -153,6 +156,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	InputCommandMap commandMap;
 	CommandAttributesMap defaultCommandAttributes;
 	CommandSelectorMap commandSelector;
+	AudioFileSampleGeneratorMap audioFileGenerators;
 }
 
 @property (readonly) IBOutlet EmuControllerDelegate *emuControl;
@@ -185,16 +189,20 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 - (void) setMappedCommandAttributes:(const CommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
 - (void) updateInputSettingsSummaryInDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo commandTag:(const char *)commandTag;
 
+- (OSStatus) loadAudioFileUsingPath:(NSString *)filePath;
+- (AudioSampleBlockGenerator *) audioFileGeneratorFromFilePath:(NSString *)filePath;
+- (void) updateAudioFileGenerators;
+
 CommandAttributes NewDefaultCommandAttributes(const char *commandTag);
 CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const SEL theSelector);
 CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NSUInteger controlID);
 void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr, NSDictionary *deviceInfo);
 
-NSDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
-														NSString *deviceCode,
-														NSString *deviceName,
-														NSString *elementCode,
-														NSString *elementName);
+NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
+															   NSString *deviceCode,
+															   NSString *deviceName,
+															   NSString *elementCode,
+															   NSString *elementName);
 
 InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue);
 InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BOOL keyPressed);

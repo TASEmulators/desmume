@@ -17,9 +17,7 @@
 */
 
 #import "cocoa_input.h"
-
 #import "cocoa_globals.h"
-#import "cocoa_mic.h"
 
 #include "../NDSSystem.h"
 #undef BOOL
@@ -27,14 +25,10 @@
 
 @implementation CocoaDSController
 
-@synthesize cdsMic;
+@synthesize micMode;
+@synthesize selectedAudioFileGenerator;
 
 - (id)init
-{
-	return [self initWithMic:nil];
-}
-
-- (id) initWithMic:(CocoaDSMic *)theMic
 {
 	self = [super init];
 	if (self == nil)
@@ -47,9 +41,9 @@
 		controllerState[i] = false;
 	}
 	
-	spinlockControllerState = OS_SPINLOCK_INIT;
-	
-	cdsMic = [theMic retain];
+	spinlockControllerState = OS_SPINLOCK_INIT;	
+	micMode = MICMODE_NONE;
+	selectedAudioFileGenerator = NULL;
 	touchLocation = NSMakePoint(0.0f, 0.0f);
 	
 	return self;
@@ -57,8 +51,6 @@
 
 - (void)dealloc
 {
-	self.cdsMic = nil;
-	
 	[super dealloc];
 }
 
@@ -86,17 +78,22 @@
 {
 	OSSpinLockLock(&spinlockControllerState);
 	controllerState[DSControllerState_Microphone] = (theState) ? true : false;
-	self.cdsMic.mode = inputMode;
+	micMode = inputMode;
 	OSSpinLockUnlock(&spinlockControllerState);
+}
+
+- (void) setSineWaveGeneratorFrequency:(const double)freq
+{
+	sineWaveGenerator.setFrequency(freq);
 }
 
 - (void) flush
 {
 	OSSpinLockLock(&spinlockControllerState);
 	
-	NSPoint theLocation = touchLocation;
-	NSInteger micMode = cdsMic.mode;
-	bool flushedStates[DSControllerState_StatesCount] = {0};
+	const NSPoint theLocation = touchLocation;
+	const NSInteger theMicMode = micMode;
+	static bool flushedStates[DSControllerState_StatesCount] = {0};
 	
 	for (unsigned int i = 0; i < DSControllerState_StatesCount; i++)
 	{
@@ -105,8 +102,8 @@
 	
 	OSSpinLockUnlock(&spinlockControllerState);
 	
-	bool isTouchDown = flushedStates[DSControllerState_Touch];
-	bool isMicPressed = flushedStates[DSControllerState_Microphone];
+	const bool isTouchDown = flushedStates[DSControllerState_Touch];
+	const bool isMicPressed = flushedStates[DSControllerState_Microphone];
 	
 	// Setup the DS pad.
 	NDS_setPad(flushedStates[DSControllerState_Right],
@@ -135,26 +132,65 @@
 	}
 	
 	// Setup the DS mic.
-	NDS_setMic(isMicPressed);
-	
-	if (isMicPressed)
+	AudioGenerator *selectedGenerator = &nullSampleGenerator;
+	switch (theMicMode)
 	{
-		if (micMode == MICMODE_NONE)
+		case MICMODE_INTERNAL_NOISE:
+			selectedGenerator = &internalNoiseGenerator;
+			break;
+			
+		case MICMODE_WHITE_NOISE:
+			selectedGenerator = &whiteNoiseGenerator;
+			break;
+			
+		case MICMODE_SINE_WAVE:
+			selectedGenerator = &sineWaveGenerator;
+			break;
+			
+		case MICMODE_AUDIO_FILE:
+			if (selectedAudioFileGenerator != NULL)
+			{
+				selectedGenerator = selectedAudioFileGenerator;
+			}
+			break;
+			
+		default:
+			break;
+	}
+	
+	NDS_setMic(isMicPressed);
+	if (!isMicPressed)
+	{
+		selectedGenerator = &nullSampleGenerator;
+		
+		internalNoiseGenerator.setSamplePosition(0);
+		sineWaveGenerator.setCyclePosition(0.0);
+		
+		if (selectedAudioFileGenerator != NULL)
 		{
-			[cdsMic fillWithNullSamples];
+			selectedAudioFileGenerator->setSamplePosition(0);
 		}
-		else if (micMode == MICMODE_INTERNAL_NOISE)
+	}
+	
+	static const bool useBufferedSource = false;
+	Mic_SetUseBufferedSource(useBufferedSource);
+	if (useBufferedSource)
+	{
+		static u8 generatedSampleBuffer[(size_t)(MIC_MAX_BUFFER_SAMPLES + 0.5)] = {0};
+		static const size_t requestedSamples = MIC_MAX_BUFFER_SAMPLES;
+		
+		const size_t availableSamples = micInputBuffer.getAvailableElements();
+		if (availableSamples < requestedSamples)
 		{
-			[cdsMic fillWithInternalNoise];
+			micInputBuffer.drop(requestedSamples - availableSamples);
 		}
-		else if (micMode == MICMODE_WHITE_NOISE)
-		{
-			[cdsMic fillWithWhiteNoise];
-		}
-		else if (micMode == MICMODE_SOUND_FILE)
-		{
-			// TODO: Need to implement. Does nothing for now.
-		}
+		
+		selectedGenerator->generateSampleBlock(requestedSamples, generatedSampleBuffer);
+		micInputBuffer.write(generatedSampleBuffer, requestedSamples);
+	}
+	else
+	{
+		Mic_SetSelectedDirectSampleGenerator(selectedGenerator);
 	}
 }
 

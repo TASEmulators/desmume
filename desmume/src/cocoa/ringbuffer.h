@@ -26,11 +26,11 @@ class RingBuffer
 {
 private:
 	uint8_t *_buffer;
-	uint8_t *_bufferEnd;
 	size_t _bufferSize;
-	size_t _numElements;
+	
+	size_t _elementCapacity;
 	size_t _elementSize;
-	int32_t _bufferFillSize; // need to use int32_t for OSAtomicAdd32Barrier()
+	int32_t _elementFillCount; // need to use int32_t for OSAtomicAdd32Barrier()
 	size_t _readPosition;
 	size_t _writePosition;
 	
@@ -39,11 +39,14 @@ public:
 	~RingBuffer();
 	
 	void clear();
-	size_t read(void *__restrict__ destBuffer, size_t requestedNumberBytes);
-	size_t write(const void *__restrict__ srcBuffer, size_t requestedNumberBytes);
-	size_t getBufferFillSize() const;
+	size_t read(void *__restrict__ destBuffer, size_t requestedNumberElements);
+	size_t write(const void *__restrict__ srcBuffer, size_t requestedNumberElements);
+	size_t drop(size_t requestedNumberElements);
 	size_t getAvailableElements() const;
+	size_t getElementCapacity() const;
 	size_t getElementSize() const;
+	bool isEmpty() const;
+	bool isFull() const;
 };
 
 #endif

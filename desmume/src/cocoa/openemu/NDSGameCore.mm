@@ -19,8 +19,8 @@
 #import "cocoa_globals.h"
 #import "cocoa_file.h"
 #import "cocoa_firmware.h"
+#import "cocoa_input.h"
 #import "cocoa_core.h"
-#import "cocoa_mic.h"
 #import "cocoa_output.h"
 #import "OESoundInterface.h"
 #import "OENDSSystemResponderClient.h"
@@ -32,8 +32,9 @@
 
 @implementation NDSGameCore
 
+@synthesize cdsController;
 @synthesize firmware;
-@synthesize microphone;
+@synthesize micMode;
 @dynamic displayMode;
 
 - (id)init
@@ -45,20 +46,37 @@
 	}
 	
 	// Set up input handling
-	input = (bool *)calloc(sizeof(bool), OENDSButtonCount);
-	isTouchPressed = false;
 	touchLocation.x = 0;
 	touchLocation.y = 0;
-	microphone = [[CocoaDSMic alloc] init];
-	microphone.mode = MICMODE_INTERNAL_NOISE;
+	micMode = MICMODE_INTERNAL_NOISE;
+	
+	inputID[OENDSButtonUp]			= DSControllerState_Up;
+	inputID[OENDSButtonDown]		= DSControllerState_Down;
+	inputID[OENDSButtonLeft]		= DSControllerState_Left;
+	inputID[OENDSButtonRight]		= DSControllerState_Right;
+	inputID[OENDSButtonA]			= DSControllerState_A;
+	inputID[OENDSButtonB]			= DSControllerState_B;
+	inputID[OENDSButtonX]			= DSControllerState_X;
+	inputID[OENDSButtonY]			= DSControllerState_Y;
+	inputID[OENDSButtonL]			= DSControllerState_L;
+	inputID[OENDSButtonR]			= DSControllerState_R;
+	inputID[OENDSButtonStart]		= DSControllerState_Start;
+	inputID[OENDSButtonSelect]		= DSControllerState_Select;
+	inputID[OENDSButtonMicrophone]	= DSControllerState_Microphone;
+	inputID[OENDSButtonLid]			= DSControllerState_Lid;
+	inputID[OENDSButtonDebug]		= DSControllerState_Debug;
 	
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
 	CommonSettings.use_jit = false;
 	[CocoaDSCore startupCore];
 	
+	// Set up the DS controller
+	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
+	[cdsController setMicMode:MICMODE_INTERNAL_NOISE];
+	
 	// Set up the DS firmware using the internal firmware
-	firmware = [[CocoaDSFirmware alloc] init];
+	firmware = [[[[CocoaDSFirmware alloc] init] retain] autorelease];
 	[firmware update];
 	
 	// Set up the 3D renderer
@@ -103,14 +121,12 @@
 
 - (void)dealloc
 {
-	self.microphone = nil;
-	free(input);
-	
 	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	NDS_3D_ChangeCore(CORE3DLIST_NULL);
 	[CocoaDSCore shutdownCore];
 	
-	self.firmware = nil;
+	[self setCdsController:nil];
+	[self setFirmware:nil];
 	
 	[super dealloc];
 }
@@ -175,7 +191,7 @@
 
 - (void)executeFrame
 {
-	[self updateNDSController];
+	[cdsController flush];
 	
 	NDS_beginProcessingInput();
 	NDS_endProcessingInput();
@@ -282,36 +298,35 @@
 	return [self audioSampleRate];
 }
 
-
 #pragma mark Input
 
 - (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
-	input[button] = true;
+	[cdsController setControllerState:YES controlID:inputID[button]];
 }
 
 - (oneway void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
-	input[button] = false;
+	[cdsController setControllerState:NO controlID:inputID[button]];
 }
 
 - (oneway void)didTouchScreenPoint:(OEIntPoint)aPoint
 {
-	bool touchPressed = false;
+	BOOL isTouchPressed = NO;
 	NSInteger dispMode = [self displayMode];
 	
 	switch (dispMode)
 	{
 		case DS_DISPLAY_TYPE_MAIN:
-			touchPressed = false; // Reject touch input if showing only the main screen.
+			isTouchPressed = NO; // Reject touch input if showing only the main screen.
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
-			touchPressed = true;
+			isTouchPressed = YES;
 			break;
 			
 		case DS_DISPLAY_TYPE_COMBO:
-			touchPressed = true;
+			isTouchPressed = YES;
 			aPoint.y -= GPU_DISPLAY_HEIGHT; // Normalize the y-coordinate to the DS.
 			break;
 			
@@ -339,65 +354,13 @@
 		aPoint.y = (GPU_DISPLAY_HEIGHT - 1);
 	}
 	
-	isTouchPressed = touchPressed;
-	touchLocation = aPoint;
+	touchLocation = NSMakePoint(aPoint.x, aPoint.y);
+	[cdsController setTouchState:isTouchPressed location:touchLocation];
 }
 
 - (oneway void)didReleaseTouch
 {
-	isTouchPressed = false;
-}
-
-- (void) updateNDSController
-{
-	// Setup the DS pad.
-	NDS_setPad(input[OENDSButtonRight],
-			   input[OENDSButtonLeft],
-			   input[OENDSButtonDown],
-			   input[OENDSButtonUp],
-			   input[OENDSButtonSelect],
-			   input[OENDSButtonStart],
-			   input[OENDSButtonB],
-			   input[OENDSButtonA],
-			   input[OENDSButtonY],
-			   input[OENDSButtonX],
-			   input[OENDSButtonL],
-			   input[OENDSButtonR],
-			   input[OENDSButtonDebug],
-			   input[OENDSButtonLid]);
-	
-	// Setup the DS touch pad.
-	if (isTouchPressed)
-	{
-		NDS_setTouchPos((u16)touchLocation.x, (u16)touchLocation.y);
-	}
-	else
-	{
-		NDS_releaseTouch();
-	}
-	
-	// Setup the DS mic.
-	NDS_setMic(input[OENDSButtonMicrophone]);
-	
-	if (input[OENDSButtonMicrophone])
-	{
-		if (self.microphone.mode == MICMODE_NONE)
-		{
-			[self.microphone fillWithNullSamples];
-		}
-		else if (self.microphone.mode == MICMODE_INTERNAL_NOISE)
-		{
-			[self.microphone fillWithInternalNoise];
-		}
-		else if (self.microphone.mode == MICMODE_WHITE_NOISE)
-		{
-			[self.microphone fillWithWhiteNoise];
-		}
-		else if (self.microphone.mode == MICMODE_SOUND_FILE)
-		{
-			// TODO: Need to implement. Does nothing for now.
-		}
-	}
+	[cdsController setTouchState:NO location:touchLocation];
 }
 
 - (NSTrackingAreaOptions)mouseTrackingOptions

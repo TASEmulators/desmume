@@ -23,6 +23,8 @@
 #import "cocoa_input.h"
 #import "cocoa_util.h"
 
+#include <AudioToolbox/AudioToolbox.h>
+
 /*
  Get the symbols for UpdateSystemActivity().
  
@@ -893,6 +895,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	
 	CommandAttributes cmdDSControlMic			= NewCommandAttributesForDSControl("Microphone", DSControllerState_Microphone);
 	cmdDSControlMic.intValue[1] = MICMODE_INTERNAL_NOISE;
+	cmdDSControlMic.floatValue[0] = 250.0f;
 	
 	CommandAttributes cmdLoadEmuSaveStateSlot	= NewCommandAttributesForSelector("Load State Slot", commandSelector["Load State Slot"]);
 	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);	
@@ -1014,15 +1017,17 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 			}
 			
 			// Copy all command attributes into a new deviceInfo dictionary.
-			NSDictionary *newDeviceInfo = DeviceInfoDictionaryWithCommandAttributes(&cmdAttr,
-																					[deviceInfo valueForKey:@"deviceCode"],
-																					[deviceInfo valueForKey:@"deviceName"],
-																					[deviceInfo valueForKey:@"elementCode"],
-																					[deviceInfo valueForKey:@"elementName"]);
+			NSMutableDictionary *newDeviceInfo = DeviceInfoDictionaryWithCommandAttributes(&cmdAttr,
+																						   [deviceInfo valueForKey:@"deviceCode"],
+																						   [deviceInfo valueForKey:@"deviceName"],
+																						   [deviceInfo valueForKey:@"elementCode"],
+																						   [deviceInfo valueForKey:@"elementName"]);
 			
 			[self addMappingUsingDeviceInfoDictionary:newDeviceInfo commandAttributes:&cmdAttr];
 		}
 	}
+	
+	[self updateAudioFileGenerators];
 }
 
 - (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceInfo commandAttributes:(const CommandAttributes *)cmdAttr
@@ -1064,11 +1069,11 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 		return;
 	}
 	
-	NSDictionary *deviceInfo = DeviceInfoDictionaryWithCommandAttributes(cmdAttr,
-																		 [NSString stringWithCString:inputAttr->deviceCode encoding:NSUTF8StringEncoding],
-																		 [NSString stringWithCString:inputAttr->deviceName encoding:NSUTF8StringEncoding],
-																		 [NSString stringWithCString:inputAttr->elementCode encoding:NSUTF8StringEncoding],
-																		 [NSString stringWithCString:inputAttr->elementName encoding:NSUTF8StringEncoding]);
+	NSMutableDictionary *deviceInfo = DeviceInfoDictionaryWithCommandAttributes(cmdAttr,
+																				[NSString stringWithCString:inputAttr->deviceCode encoding:NSUTF8StringEncoding],
+																				[NSString stringWithCString:inputAttr->deviceName encoding:NSUTF8StringEncoding],
+																				[NSString stringWithCString:inputAttr->elementCode encoding:NSUTF8StringEncoding],
+																				[NSString stringWithCString:inputAttr->elementName encoding:NSUTF8StringEncoding]);
 	
 	[self addMappingUsingDeviceInfoDictionary:deviceInfo commandAttributes:cmdAttr];
 }
@@ -1119,8 +1124,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	[self removeMappingUsingDeviceCode:deviceCode elementCode:elementCode];
 	
 	// Map the input.
-	const std::string inputKey = std::string(deviceCode) + ":" + std::string(elementCode);
-	commandMap[inputKey] = *cmdAttr;
+	[self setMappedCommandAttributes:cmdAttr deviceCode:deviceCode elementCode:elementCode];
 }
 
 - (void) removeMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode
@@ -1131,12 +1135,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	}
 	
 	const std::string inputKey = std::string(deviceCode) + ":" + std::string(elementCode);
-	
-	InputCommandMap::iterator it = commandMap.find(inputKey);
-	if (it != commandMap.end())
-	{
-		commandMap.erase(it);
-	}
+	commandMap.erase(inputKey);
 	
 	for (NSString *inputCommandTag in inputMappings)
 	{
@@ -1312,7 +1311,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 
 - (void) updateInputSettingsSummaryInDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo commandTag:(const char *)commandTag
 {
-	NSString *inputSummary = @"";
+	NSString *inputSummary = nil;
 	
 	if (strncmp(commandTag, "Touch", INPUT_HANDLER_STRING_LENGTH) == 0)
 	{
@@ -1341,12 +1340,20 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 				inputSummary = NSSTRING_INPUTPREF_MIC_INTERNAL_NOISE;
 				break;
 				
-			case MICMODE_SOUND_FILE:
-				inputSummary = @"Sound File:";
+			case MICMODE_AUDIO_FILE:
+				inputSummary = (NSString *)[deviceInfo valueForKey:@"object1"];
+				if (inputSummary == nil)
+				{
+					inputSummary = NSSTRING_INPUTPREF_MIC_AUDIO_FILE_NONE_SELECTED;
+				}
 				break;
 				
 			case MICMODE_WHITE_NOISE:
 				inputSummary = NSSTRING_INPUTPREF_MIC_WHITE_NOISE;
+				break;
+				
+			case MICMODE_SINE_WAVE:
+				inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_MIC_SINE_WAVE, [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue]];
 				break;
 				
 			case MICMODE_PHYSICAL:
@@ -1430,7 +1437,169 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 		}
 	}
 	
+	if (inputSummary == nil)
+	{
+		inputSummary = @"";
+	}
+	
 	[deviceInfo setObject:inputSummary forKey:@"inputSettingsSummary"];
+}
+
+- (OSStatus) loadAudioFileUsingPath:(NSString *)filePath
+{
+	OSStatus error = noErr;
+	
+	if (filePath == nil)
+	{
+		error = 1;
+		return error;
+	}
+	
+	// Check if the audio file is already loaded. If it is, don't load it again.
+	std::string filePathStr = std::string([filePath cStringUsingEncoding:NSUTF8StringEncoding]);
+	for (AudioFileSampleGeneratorMap::iterator it=audioFileGenerators.begin(); it!=audioFileGenerators.end(); ++it)
+	{
+		if (it->first.find(filePathStr) != std::string::npos)
+		{
+			return error;
+		}
+	}
+	
+	// Open the audio file using the file URL.
+	NSURL *fileURL = [NSURL fileURLWithPath:filePath isDirectory:NO];
+	if (fileURL == nil)
+	{
+		error = 1;
+		return error;
+	}
+	
+	ExtAudioFileRef audioFile;
+	error = ExtAudioFileOpenURL((CFURLRef)fileURL, &audioFile);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	// Create an ASBD of the DS mic audio format.
+	AudioStreamBasicDescription outputFormat;
+	outputFormat.mSampleRate = MIC_SAMPLE_RATE;
+	outputFormat.mFormatID = kAudioFormatLinearPCM;
+	outputFormat.mFormatFlags = kAudioFormatFlagIsPacked;
+	outputFormat.mBytesPerPacket = 1;
+	outputFormat.mFramesPerPacket = 1;
+	outputFormat.mBytesPerFrame = 1;
+	outputFormat.mChannelsPerFrame = 1;
+	outputFormat.mBitsPerChannel = 8;
+	
+	error = ExtAudioFileSetProperty(audioFile, kExtAudioFileProperty_ClientDataFormat, sizeof(outputFormat), &outputFormat);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	SInt64 fileLengthFrames = 0;
+	UInt32 propertySize = sizeof(fileLengthFrames);
+	
+	error = ExtAudioFileGetProperty(audioFile, kExtAudioFileProperty_FileLengthFrames, &propertySize, &fileLengthFrames);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	// Create a new audio file generator.
+	audioFileGenerators[filePathStr] = AudioSampleBlockGenerator();
+	AudioSampleBlockGenerator &theGenerator = audioFileGenerators[filePathStr];
+	u8 *buffer = theGenerator.allocate(fileLengthFrames);
+	
+	// Read the audio file and fill the generator's buffer.
+	const size_t convertBufferSize = 32 * 1024;
+	AudioBufferList convertedData;
+	convertedData.mNumberBuffers = 1;
+	convertedData.mBuffers[0].mNumberChannels = outputFormat.mChannelsPerFrame;
+	convertedData.mBuffers[0].mDataByteSize = convertBufferSize;
+	convertedData.mBuffers[0].mData = buffer;
+	
+	UInt32 readFrames = convertBufferSize;
+	while (readFrames > 0)
+	{
+		ExtAudioFileRead(audioFile, &readFrames, &convertedData);
+		buffer += readFrames;
+		convertedData.mBuffers[0].mData = buffer;
+	}
+	
+	// Close the audio file.
+	ExtAudioFileDispose(audioFile);
+	
+	// Convert the audio buffer to 7-bit unsigned PCM.
+	buffer = theGenerator.getBuffer();
+	for (SInt64 i = 0; i < fileLengthFrames; i++)
+	{
+		*(buffer+i) >>= 1;
+	}
+	
+	return error;
+}
+
+- (AudioSampleBlockGenerator *) audioFileGeneratorFromFilePath:(NSString *)filePath
+{
+	BOOL isAudioFileLoaded = NO;
+	
+	if (filePath == nil)
+	{
+		return NULL;
+	}
+	
+	std::string filePathStr = std::string([filePath cStringUsingEncoding:NSUTF8StringEncoding]);
+	for (AudioFileSampleGeneratorMap::iterator it=audioFileGenerators.begin(); it!=audioFileGenerators.end(); ++it)
+	{
+		if (it->first.find(filePathStr) != std::string::npos)
+		{
+			isAudioFileLoaded = YES;
+			break;
+		}
+	}
+	
+	return (isAudioFileLoaded) ? &audioFileGenerators[filePathStr] : NULL;
+}
+
+- (void) updateAudioFileGenerators
+{
+	NSMutableArray *inputList = (NSMutableArray *)[inputMappings valueForKey:@"Microphone"];
+	
+	// Load any unloaded audio files
+	for (NSMutableArray *deviceInfo in inputList)
+	{
+		NSString *filePath = (NSString *)[deviceInfo valueForKey:@"object0"];
+		[self loadAudioFileUsingPath:filePath];
+	}
+	
+	// Unload any orphaned audio files
+	for (AudioFileSampleGeneratorMap::iterator it=audioFileGenerators.begin(); it!=audioFileGenerators.end(); ++it)
+	{
+		BOOL didFindKey = NO;
+		NSString *audioGeneratorKey = [NSString stringWithCString:it->first.c_str() encoding:NSUTF8StringEncoding];
+		
+		for (NSMutableDictionary *deviceInfo in inputList)
+		{
+			NSString *deviceAudioFilePath = (NSString *)[deviceInfo valueForKey:@"object0"];
+			if ([audioGeneratorKey isEqualToString:deviceAudioFilePath])
+			{
+				didFindKey = YES;
+				break;
+			}
+		}
+		
+		if (!didFindKey)
+		{
+			AudioSampleBlockGenerator *selectedGenerator = [emuControl selectedAudioFileGenerator];
+			if (selectedGenerator == &it->second)
+			{
+				[emuControl setSelectedAudioFileGenerator:NULL];
+			}
+			
+			audioFileGenerators.erase(it);
+		}
+	}
 }
 
 CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
@@ -1447,10 +1616,10 @@ CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
 	cmdAttr.floatValue[1]			= 0;
 	cmdAttr.floatValue[2]			= 0;
 	cmdAttr.floatValue[3]			= 0;
-	cmdAttr.object[0]				= 0;
-	cmdAttr.object[1]				= 0;
-	cmdAttr.object[2]				= 0;
-	cmdAttr.object[3]				= 0;
+	cmdAttr.object[0]				= nil;
+	cmdAttr.object[1]				= nil;
+	cmdAttr.object[2]				= nil;
+	cmdAttr.object[3]				= nil;
 	
 	cmdAttr.useInputForIntCoord		= false;
 	cmdAttr.useInputForFloatCoord	= false;
@@ -1472,6 +1641,7 @@ CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const
 {
 	CommandAttributes cmdAttr = NewCommandAttributesForSelector(commandTag, @selector(cmdUpdateDSController:));
 	cmdAttr.intValue[0] = controlID;
+	cmdAttr.floatValue[0] = 250.0f;
 	
 	return cmdAttr;
 }
@@ -1491,6 +1661,10 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	NSNumber *floatValue1			= (NSNumber *)[deviceInfo valueForKey:@"floatValue1"];
 	NSNumber *floatValue2			= (NSNumber *)[deviceInfo valueForKey:@"floatValue2"];
 	NSNumber *floatValue3			= (NSNumber *)[deviceInfo valueForKey:@"floatValue3"];
+	NSObject *object0				= [deviceInfo valueForKey:@"object0"];
+	NSObject *object1				= [deviceInfo valueForKey:@"object1"];
+	NSObject *object2				= [deviceInfo valueForKey:@"object2"];
+	NSObject *object3				= [deviceInfo valueForKey:@"object3"];
 	NSNumber *useInputForIntCoord	= (NSNumber *)[deviceInfo valueForKey:@"useInputForIntCoord"];
 	NSNumber *useInputForFloatCoord	= (NSNumber *)[deviceInfo valueForKey:@"useInputForFloatCoord"];
 	NSNumber *useInputForScalar		= (NSNumber *)[deviceInfo valueForKey:@"useInputForScalar"];
@@ -1503,18 +1677,23 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	if (floatValue0 != nil)				cmdAttr->floatValue[0] = [floatValue0 floatValue];
 	if (floatValue1 != nil)				cmdAttr->floatValue[1] = [floatValue1 floatValue];
 	if (floatValue2 != nil)				cmdAttr->floatValue[2] = [floatValue2 floatValue];
-	if (floatValue3 != nil)				cmdAttr->floatValue[3] = [floatValue3 floatValue];
+	if (floatValue3 != nil)				cmdAttr->floatValue[3] = [floatValue3 floatValue];				
 	if (useInputForIntCoord != nil)		cmdAttr->useInputForIntCoord = [useInputForIntCoord boolValue];
 	if (useInputForFloatCoord != nil)	cmdAttr->useInputForFloatCoord = [useInputForFloatCoord boolValue];
 	if (useInputForScalar != nil)		cmdAttr->useInputForScalar = [useInputForScalar boolValue];
 	if (useInputForSender != nil)		cmdAttr->useInputForSender = [useInputForSender boolValue];
+	
+	cmdAttr->object[0] = object0;
+	cmdAttr->object[1] = object1;
+	cmdAttr->object[2] = object2;
+	cmdAttr->object[3] = object3;
 }
 
-NSDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
-														NSString *deviceCode,
-														NSString *deviceName,
-														NSString *elementCode,
-														NSString *elementName)
+NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
+															   NSString *deviceCode,
+															   NSString *deviceName,
+															   NSString *elementCode,
+															   NSString *elementName)
 {
 	if (cmdAttr == NULL ||
 		deviceCode == nil ||
@@ -1527,26 +1706,34 @@ NSDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes 
 	
 	NSString *deviceInfoSummary = [[deviceName stringByAppendingString:@": "] stringByAppendingString:elementName];
 	
-	return [NSDictionary dictionaryWithObjectsAndKeys:
-			deviceCode,													@"deviceCode",
-			deviceName,													@"deviceName",
-			elementCode,												@"elementCode",
-			elementName,												@"elementName",
-			deviceInfoSummary,											@"deviceInfoSummary",
-			@"",														@"inputSettingsSummary",
-			[NSNumber numberWithInt:cmdAttr->intValue[0]],				@"intValue0",
-			[NSNumber numberWithInt:cmdAttr->intValue[1]],				@"intValue1",
-			[NSNumber numberWithInt:cmdAttr->intValue[2]],				@"intValue2",
-			[NSNumber numberWithInt:cmdAttr->intValue[3]],				@"intValue3",
-			[NSNumber numberWithFloat:cmdAttr->floatValue[0]],			@"floatValue0",
-			[NSNumber numberWithFloat:cmdAttr->floatValue[1]],			@"floatValue1",
-			[NSNumber numberWithFloat:cmdAttr->floatValue[2]],			@"floatValue2",
-			[NSNumber numberWithFloat:cmdAttr->floatValue[3]],			@"floatValue3",
-			[NSNumber numberWithBool:cmdAttr->useInputForIntCoord],		@"useInputForIntCoord",
-			[NSNumber numberWithBool:cmdAttr->useInputForFloatCoord],	@"useInputForFloatCoord",
-			[NSNumber numberWithBool:cmdAttr->useInputForScalar],		@"useInputForScalar",
-			[NSNumber numberWithBool:cmdAttr->useInputForSender],		@"useInputForSender",
-			nil];
+	NSMutableDictionary *newDeviceInfo = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+										  deviceCode,													@"deviceCode",
+										  deviceName,													@"deviceName",
+										  elementCode,													@"elementCode",
+										  elementName,													@"elementName",
+										  deviceInfoSummary,											@"deviceInfoSummary",
+										  @"",															@"inputSettingsSummary",
+										  [NSNumber numberWithInt:cmdAttr->intValue[0]],				@"intValue0",
+										  [NSNumber numberWithInt:cmdAttr->intValue[1]],				@"intValue1",
+										  [NSNumber numberWithInt:cmdAttr->intValue[2]],				@"intValue2",
+										  [NSNumber numberWithInt:cmdAttr->intValue[3]],				@"intValue3",
+										  [NSNumber numberWithFloat:cmdAttr->floatValue[0]],			@"floatValue0",
+										  [NSNumber numberWithFloat:cmdAttr->floatValue[1]],			@"floatValue1",
+										  [NSNumber numberWithFloat:cmdAttr->floatValue[2]],			@"floatValue2",
+										  [NSNumber numberWithFloat:cmdAttr->floatValue[3]],			@"floatValue3",
+										  [NSNumber numberWithBool:cmdAttr->useInputForIntCoord],		@"useInputForIntCoord",
+										  [NSNumber numberWithBool:cmdAttr->useInputForFloatCoord],		@"useInputForFloatCoord",
+										  [NSNumber numberWithBool:cmdAttr->useInputForScalar],			@"useInputForScalar",
+										  [NSNumber numberWithBool:cmdAttr->useInputForSender],			@"useInputForSender",
+										  nil];
+	
+	// Set the object references last since these could be nil.
+	[newDeviceInfo setValue:cmdAttr->object[0] forKey:@"object0"];
+	[newDeviceInfo setValue:cmdAttr->object[1] forKey:@"object1"];
+	[newDeviceInfo setValue:cmdAttr->object[2] forKey:@"object2"];
+	[newDeviceInfo setValue:cmdAttr->object[3] forKey:@"object3"];
+	
+	return newDeviceInfo;
 }
 
 InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue)

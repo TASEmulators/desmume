@@ -93,7 +93,7 @@ void SNDOSXUpdateAudio(s16 *buffer, u32 num_samples)
 		return;
 	}
 	
-	coreAudioPlaybackManager->writeToBuffer(buffer, coreAudioPlaybackManager->getBuffer()->getElementSize() * (size_t)num_samples);
+	coreAudioPlaybackManager->writeToBuffer(buffer, num_samples);
 }
 
 u32 SNDOSXGetAudioSpace()

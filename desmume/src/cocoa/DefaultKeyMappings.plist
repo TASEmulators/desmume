@@ -256,7 +256,9 @@
 						<key>inputSettingsSummary</key>
 						<string>Internal Noise Samples</string>
 						<key>intValue1</key>
-						<string>1</string>
+						<integer>1</integer>
+						<key>floatValue0</key>
+						<real>250</real>
 					</dict>
 				</array>
 				<key>Lid</key>
@@ -371,7 +373,7 @@
 						<key>inputSettingsSummary</key>
 						<string>0.50x Speed</string>
 						<key>floatValue0</key>
-						<string>0.5</string>
+						<real>0.5</real>
 					</dict>
 					<dict>
 						<key>deviceInfoSummary</key>

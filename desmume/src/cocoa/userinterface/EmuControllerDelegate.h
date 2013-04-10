@@ -26,7 +26,7 @@
 @class CocoaDSCheatManager;
 @class CheatWindowDelegate;
 @class DisplayWindowController;
-
+class AudioSampleBlockGenerator;
 
 @interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations>
 {
@@ -223,6 +223,9 @@
 - (void) executeCore;
 - (void) pauseCore;
 - (void) restoreCoreState;
+
+- (AudioSampleBlockGenerator *) selectedAudioFileGenerator;
+- (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)theGenerator;
 
 - (void) didEndFileMigrationSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;

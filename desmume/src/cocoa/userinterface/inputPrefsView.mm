@@ -46,6 +46,7 @@
 @synthesize inputProfileRenameSheet;
 @synthesize inputManager;
 @dynamic configInputTargetID;
+@synthesize inputSettingsInEdit;
 
 - (id)initWithFrame:(NSRect)frame
 {
@@ -69,6 +70,7 @@
 	
 	configInputTargetID = nil;
 	configInputList = [[NSMutableDictionary alloc] initWithCapacity:128];
+	inputSettingsInEdit = nil;
 		
     return self;
 }
@@ -221,6 +223,12 @@
 	[inputManager addMappingUsingInputAttributes:inputAttr commandAttributes:&cmdAttr];
 	[inputManager writeDefaultsInputMappings];
 	
+	// If we're dealing with a Microphone command, update the audio file generators list.
+	if ([commandTag isEqualToString:@"Microphone"])
+	{
+		[inputManager updateAudioFileGenerators];
+	}
+	
 	// Deselect the row of the command tag.
 	NSDictionary *inputMappings = [inputManager inputMappings];
 	NSArray *mappingList = (NSArray *)[inputMappings valueForKey:[self configInputTargetID]];
@@ -263,6 +271,12 @@
 	[inputManager updateInputSettingsSummaryInDeviceInfoDictionary:deviceInfo commandTag:cmdAttr.tag];
 	[inputManager setMappedCommandAttributes:&cmdAttr deviceCode:devCode elementCode:elCode];
 	[inputManager writeDefaultsInputMappings];
+	
+	// If we're dealing with a Microphone command, update the audio file generators list.
+	if (strncmp(cmdAttr.tag, "Microphone", INPUT_HANDLER_STRING_LENGTH) == 0)
+	{
+		[inputManager updateAudioFileGenerators];
+	}
 }
 
 - (BOOL) doesProfileNameExist:(NSString *)profileName
@@ -306,7 +320,8 @@
     [sheet orderOut:self];
 	
 	NSOutlineView *outlineView = (NSOutlineView *)contextInfo;
-	NSMutableDictionary *deviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	NSMutableDictionary *deviceInfoInEdit = [self inputSettingsInEdit];
 	
 	switch (returnCode)
 	{
@@ -314,8 +329,9 @@
 			break;
 			
 		case NSOKButton:
-			[self setMappingUsingDeviceInfoDictionary:deviceInfo];
-			[outlineView reloadItem:deviceInfo reloadChildren:NO];
+			[deviceInfoInEdit setDictionary:editedDeviceInfo];
+			[self setMappingUsingDeviceInfoDictionary:deviceInfoInEdit];
+			[outlineView reloadItem:deviceInfoInEdit reloadChildren:NO];
 			break;
 			
 		default:
@@ -323,6 +339,7 @@
 	}
 	
 	[inputSettingsController setContent:nil];
+	[self setInputSettingsInEdit:nil];
 }
 
 - (void) didEndProfileSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -553,6 +570,10 @@
 		if ([item isKindOfClass:[NSDictionary class]])
 		{
 			settingsSummary = [item valueForKey:@"inputSettingsSummary"];
+			if (settingsSummary == nil)
+			{
+				settingsSummary = @"";
+			}
 		}
 		
 		return settingsSummary;
@@ -680,12 +701,18 @@
 	const NSInteger rowNumber = [outlineView clickedRow];
 	
 	NSDictionary *deviceInfo = (NSDictionary *)[outlineView itemAtRow:rowNumber];
-	NSMutableArray *inputList = (NSMutableArray *)[outlineView parentForItem:deviceInfo];
+	NSArray *inputList = (NSArray *)[outlineView parentForItem:deviceInfo];
 	
 	[inputManager removeMappingUsingDeviceCode:[(NSString *)[deviceInfo valueForKey:@"deviceCode"] cStringUsingEncoding:NSUTF8StringEncoding] elementCode:[(NSString *)[deviceInfo valueForKey:@"elementCode"] cStringUsingEncoding:NSUTF8StringEncoding]];
 	[inputManager writeDefaultsInputMappings];
 	
 	[outlineView reloadItem:inputList reloadChildren:YES];
+	
+	// If we're dealing with a Microphone command, update the audio file generators list.
+	if ([[inputManager commandTagFromInputList:inputList] isEqualToString:@"Microphone"])
+	{
+		[inputManager updateAudioFileGenerators];
+	}
 }
 
 - (IBAction) changeSpeed:(id)sender
@@ -703,8 +730,8 @@
 	NSOutlineView *outlineView = (NSOutlineView *)sender;
 	const NSInteger rowNumber = [outlineView clickedRow];
 	
-	NSMutableDictionary *item = (NSMutableDictionary *)[outlineView itemAtRow:rowNumber];
-	NSString *commandTag = [inputManager commandTagFromInputList:[outlineView parentForItem:item]];
+	[self setInputSettingsInEdit:(NSMutableDictionary *)[outlineView itemAtRow:rowNumber]];
+	NSString *commandTag = [inputManager commandTagFromInputList:[outlineView parentForItem:[self inputSettingsInEdit]]];
 	NSWindow *theSheet = (NSWindow *)[inputSettingsMappings valueForKey:commandTag];
 	
 	if (theSheet == nil)
@@ -712,7 +739,7 @@
 		return;
 	}
 	
-	[inputSettingsController setContent:item];
+	[inputSettingsController setContent:[NSMutableDictionary dictionaryWithDictionary:[self inputSettingsInEdit]]];
 	
 	[NSApp beginSheet:theSheet
 	   modalForWindow:prefWindow
@@ -746,7 +773,7 @@
 	
 	[savedProfilesList addObject:newProfile];
 	
-	NSInteger profileIndex = _defaultProfileListCount + [savedProfilesList count] - 1;
+	const NSInteger profileIndex = _defaultProfileListCount + [savedProfilesList count] - 1;
 	NSMenu *profileMenu = [inputProfileMenu menu];
 	NSMenuItem *newProfileMenuItem = [[[NSMenuItem alloc] initWithTitle:newProfileName
 																 action:@selector(profileSelect:)
@@ -825,7 +852,7 @@
 		return;
 	}
 	
-	NSInteger profileIndex = [inputProfileMenu indexOfSelectedItem] - 1;
+	const NSInteger profileIndex = [inputProfileMenu indexOfSelectedItem] - 1;
 	NSMenu *profileMenu = [inputProfileMenu menu];
 	
 	[profileMenu removeItemAtIndex:[inputProfileMenu indexOfSelectedItem]];
@@ -855,7 +882,7 @@
 
 - (IBAction) profileSelect:(id)sender
 {
-	NSInteger profileID = [CocoaDSUtil getIBActionSenderTag:sender];
+	const NSInteger profileID = [CocoaDSUtil getIBActionSenderTag:sender];
 	NSArray *profileList = nil;
 	
 	if (profileID < 0 || profileID >= (NSInteger)(_defaultProfileListCount + [savedProfilesList count]))
@@ -900,6 +927,71 @@
 	NSWindow *sheet = [(NSControl *)sender window];
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
 	[NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+- (IBAction) audioFileChoose:(id)sender
+{
+	NSURL *selectedFileURL = nil;
+	
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setCanChooseDirectories:NO];
+	[panel setCanChooseFiles:YES];
+	[panel setResolvesAliases:YES];
+	[panel setAllowsMultipleSelection:NO];
+	[panel setTitle:@"Select Audio File"];
+	NSArray *fileTypes = [NSArray arrayWithObjects:
+						  @"3gp",
+						  @"3g2",
+						  @"aac",
+						  @"adts",
+						  @"ac3",
+						  @"aifc",
+						  @"aiff",
+						  @"aif",
+						  @"amr",
+						  @"caf",
+						  @"mpeg",
+						  @"mpa",
+						  @"mp1",
+						  @"mp2",
+						  @"mp3",
+						  @"mp4",
+						  @"m4a",
+						  @"snd",
+						  @"au",
+						  @"sd2",
+						  @"wav",
+						  nil];
+	
+	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
+	// is deprecated in Mac OS X v10.6.
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
+	[panel setAllowedFileTypes:fileTypes];
+	const NSInteger buttonClicked = [panel runModal];
+#else
+	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+#endif
+	
+	if (buttonClicked == NSFileHandlingPanelOKButton)
+	{
+		selectedFileURL = [[panel URLs] lastObject];
+		if(selectedFileURL == nil)
+		{
+			return;
+		}
+		
+		NSString *selectedFilePath = [selectedFileURL path];
+		NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+		[editedDeviceInfo setValue:selectedFilePath forKey:@"object0"];
+		[editedDeviceInfo setValue:[selectedFilePath lastPathComponent] forKey:@"object1"];
+	}
+}
+
+- (IBAction) audioFileChooseNone:(id)sender
+{
+	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	[editedDeviceInfo setValue:nil forKey:@"object0"];
+	[editedDeviceInfo setValue:nil forKey:@"object1"];
 }
 
 #pragma mark NSControl Delegate Methods

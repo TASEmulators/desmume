@@ -109,7 +109,9 @@
 #define NSSTRING_INPUTPREF_USE_DEVICE_COORDINATES	NSLocalizedString(@"Use Device Coordinates", nil)
 #define NSSTRING_INPUTPREF_MIC_NONE					NSLocalizedString(@"None", nil)
 #define NSSTRING_INPUTPREF_MIC_INTERNAL_NOISE		NSLocalizedString(@"Internal Noise Samples", nil)
+#define NSSTRING_INPUTPREF_MIC_AUDIO_FILE_NONE_SELECTED	NSLocalizedString(@"No audio file selected.", nil)
 #define NSSTRING_INPUTPREF_MIC_WHITE_NOISE			NSLocalizedString(@"White Noise", nil)
+#define NSSTRING_INPUTPREF_MIC_SINE_WAVE			NSLocalizedString(@"%1.1f Hz Sine Wave", nil)
 #define NSSTRING_INPUTPREF_SPEED_SCALAR				NSLocalizedString(@"%1.2fx Speed", nil)
 #define NSSTRING_INPUTPREF_GPU_STATE_ALL_MAIN		NSLocalizedString(@"Main GPU - All Layers", nil)
 #define NSSTRING_INPUTPREF_GPU_STATE_ALL_SUB		NSLocalizedString(@"Sub GPU - All Layers", nil)
@@ -205,10 +207,8 @@
 #define ROMINFO_GAME_CODE_LENGTH					4
 #define ROMINFO_GAME_BANNER_LENGTH					128
 
-#define MIC_NULL_SAMPLE_VALUE						0
 #define MIC_SAMPLE_RATE								16000
-#define MIC_MAX_BUFFER_SAMPLES						320
-#define MIC_BUFFER_SIZE								(sizeof(UInt8) * MIC_MAX_BUFFER_SAMPLES)
+#define MIC_MAX_BUFFER_SAMPLES						(MIC_SAMPLE_RATE / DS_FRAMES_PER_SECOND)
 
 #define COCOA_DIALOG_CANCEL							0
 #define COCOA_DIALOG_DEFAULT						1
@@ -461,7 +461,8 @@ enum
 {
 	MICMODE_NONE = 0,
 	MICMODE_INTERNAL_NOISE,
-	MICMODE_SOUND_FILE,
+	MICMODE_AUDIO_FILE,
 	MICMODE_WHITE_NOISE,
-	MICMODE_PHYSICAL
+	MICMODE_PHYSICAL,
+	MICMODE_SINE_WAVE
 };

@@ -23,14 +23,15 @@
 
 RingBuffer::RingBuffer(const size_t numberElements, const size_t newBufferElementSize)
 {
-	_buffer = (uint8_t *)calloc(numberElements + 1, newBufferElementSize);
-	_bufferSize = (numberElements + 1) * newBufferElementSize;
-	_numElements = numberElements;
+	_elementCapacity = numberElements;
 	_elementSize = newBufferElementSize;
 	
-	_readPosition = newBufferElementSize - 1;
-	_writePosition = newBufferElementSize;
-	_bufferFillSize = 0;
+	_buffer = (uint8_t *)calloc(numberElements + 2, newBufferElementSize);
+	_bufferSize = (numberElements + 2) * newBufferElementSize;
+	
+	_readPosition = 0;
+	_writePosition = 1;
+	_elementFillCount = 0;
 }
 
 RingBuffer::~RingBuffer()
@@ -41,58 +42,66 @@ RingBuffer::~RingBuffer()
 
 void RingBuffer::clear()
 {
-	this->_readPosition = this->_elementSize - 1;
-	this->_writePosition = this->_elementSize;
-	this->_bufferFillSize = 0;
+	this->_readPosition = 0;
+	this->_writePosition = 1;
+	this->_elementFillCount = 0;
 	memset(_buffer, 0, this->_bufferSize);
 }
 
-size_t RingBuffer::read(void *__restrict__ destBuffer, size_t requestedNumberBytes)
+size_t RingBuffer::read(void *__restrict__ destBuffer, size_t requestedNumberElements)
 {
 	if (destBuffer == NULL)
 	{
 		return 0;
 	}
 	
-	size_t hiBufferAvailable = 0;
-	size_t loBufferAvailable = 0;
+	size_t hiElementsAvailable = 0;
+	size_t loElementsAvailable = 0;
 	
 	const uint8_t *__restrict__ inputData = this->_buffer;
 	size_t inputDataReadPos = this->_readPosition;
 	const size_t inputDataWritePos = this->_writePosition;
-	const size_t inputDataSize = this->_bufferSize;
+	const size_t inputDataSize = this->_elementCapacity + 2;
 	
 	// Check buffer availability
 	if (inputDataReadPos < inputDataWritePos)
 	{
-		hiBufferAvailable = inputDataWritePos - inputDataReadPos - 1;
+		hiElementsAvailable = inputDataWritePos - inputDataReadPos - 1;
 	}
 	else if (inputDataReadPos > inputDataWritePos)
 	{
-		hiBufferAvailable = inputDataSize - inputDataReadPos - 1;
-		loBufferAvailable = inputDataWritePos;
-	}
-	
-	// Bounds check for buffer overrun
-	if (requestedNumberBytes > hiBufferAvailable + loBufferAvailable)
-	{
-		requestedNumberBytes = hiBufferAvailable + loBufferAvailable;
-		requestedNumberBytes -= requestedNumberBytes % this->_elementSize;
-	}
-	
-	// Copy ring buffer to destination buffer
-	if (requestedNumberBytes <= hiBufferAvailable)
-	{
-		memcpy(destBuffer, inputData + inputDataReadPos + 1, requestedNumberBytes);
+		hiElementsAvailable = inputDataSize - inputDataReadPos - 1;
+		loElementsAvailable = inputDataWritePos;
 	}
 	else
 	{
-		memcpy(destBuffer, inputData + inputDataReadPos + 1, hiBufferAvailable);
-		memcpy((uint8_t *)destBuffer + hiBufferAvailable, inputData, requestedNumberBytes - hiBufferAvailable);
+		return requestedNumberElements;
+	}
+	
+	// Bounds check for buffer overrun
+	if (requestedNumberElements > hiElementsAvailable + loElementsAvailable)
+	{
+		requestedNumberElements = hiElementsAvailable + loElementsAvailable;
+	}
+	
+	if (requestedNumberElements == 0)
+	{
+		return requestedNumberElements;
+	}
+	
+	// Copy ring buffer to destination buffer
+	if (requestedNumberElements <= hiElementsAvailable)
+	{
+		memcpy(destBuffer, inputData + ((inputDataReadPos + 1) * this->_elementSize), requestedNumberElements * this->_elementSize);
+	}
+	else
+	{
+		memcpy(destBuffer, inputData + ((inputDataReadPos + 1) * this->_elementSize), hiElementsAvailable * this->_elementSize);
+		memcpy((uint8_t *)destBuffer + (hiElementsAvailable * this->_elementSize), inputData, (requestedNumberElements - hiElementsAvailable) * this->_elementSize);
 	}
 	
 	// Advance the read position
-	inputDataReadPos += requestedNumberBytes;
+	inputDataReadPos += requestedNumberElements;
 	if (inputDataReadPos >= inputDataSize)
 	{
 		inputDataReadPos -= inputDataSize;
@@ -101,92 +110,149 @@ size_t RingBuffer::read(void *__restrict__ destBuffer, size_t requestedNumberByt
 	this->_readPosition = inputDataReadPos;
 	
 	// Decrease the fill size now that we're done reading.
-	OSAtomicAdd32Barrier(-(int32_t)requestedNumberBytes, &this->_bufferFillSize);
+	OSAtomicAdd32Barrier(-(int32_t)requestedNumberElements, &this->_elementFillCount);
 	
-	return requestedNumberBytes;
+	return requestedNumberElements;
 }
 
-size_t RingBuffer::write(const void *__restrict__ srcBuffer, size_t requestedNumberBytes)
+size_t RingBuffer::write(const void *__restrict__ srcBuffer, size_t requestedNumberElements)
 {
 	if (srcBuffer == NULL)
 	{
 		return 0;
 	}
 	
-	size_t hiBufferAvailable = 0;
-	size_t loBufferAvailable = 0;
+	size_t hiElementsAvailable = 0;
+	size_t loElementsAvailable = 0;
 	
 	uint8_t *__restrict__ inputData = this->_buffer;
 	const size_t inputDataReadPos = this->_readPosition;
 	size_t inputDataWritePos = this->_writePosition;
-	const size_t inputDataSize = this->_bufferSize;
+	const size_t inputDataSize = this->_elementCapacity + 2;
 	
 	// Check buffer availability.
-	if (inputDataWritePos >= inputDataReadPos)
+	if (inputDataWritePos > inputDataReadPos)
 	{
-		hiBufferAvailable = inputDataSize - inputDataWritePos;
-		loBufferAvailable = inputDataReadPos;
-		
-		// Subtract one element's worth of bytes
-		if (loBufferAvailable > 0)
-		{
-			loBufferAvailable -= 1;
-		}
-		else
-		{
-			hiBufferAvailable -= 1;
-		}
+		hiElementsAvailable = inputDataSize - inputDataWritePos;
+		loElementsAvailable = (inputDataReadPos > 0) ? inputDataReadPos - 1 : 0;
 	}
-	else // (inputDataWritePos < inputDataReadPos)
+	else if (inputDataWritePos < inputDataReadPos)
 	{
-		hiBufferAvailable = inputDataReadPos - inputDataWritePos - 1;
-	}
-	
-	// Bounds check for buffer overrun
-	if (requestedNumberBytes > hiBufferAvailable + loBufferAvailable)
-	{
-		requestedNumberBytes = hiBufferAvailable + loBufferAvailable;
-		requestedNumberBytes -= requestedNumberBytes % this->_elementSize;
-	}
-	
-	// Increase the fill size before writing anything.
-	OSAtomicAdd32Barrier((int32_t)requestedNumberBytes, &this->_bufferFillSize);
-	
-	// Copy source buffer to ring buffer.
-	if (requestedNumberBytes <= hiBufferAvailable)
-	{
-		memcpy(inputData + inputDataWritePos, srcBuffer, requestedNumberBytes);
+		hiElementsAvailable = inputDataReadPos - inputDataWritePos - 1;
 	}
 	else
 	{
-		memcpy(inputData + inputDataWritePos, srcBuffer, hiBufferAvailable);
-		memcpy(inputData, (uint8_t *)srcBuffer + hiBufferAvailable, requestedNumberBytes - hiBufferAvailable);
-		
+		return requestedNumberElements;
+	}
+	
+	// Bounds check for buffer overrun
+	if (requestedNumberElements > hiElementsAvailable + loElementsAvailable)
+	{
+		requestedNumberElements = hiElementsAvailable + loElementsAvailable;
+	}
+	
+	if (requestedNumberElements == 0)
+	{
+		return requestedNumberElements;
+	}
+	
+	// Increase the fill size before writing anything.
+	OSAtomicAdd32Barrier((int32_t)requestedNumberElements, &this->_elementFillCount);
+	
+	// Copy source buffer to ring buffer.
+	if (requestedNumberElements <= hiElementsAvailable)
+	{
+		memcpy(inputData + (inputDataWritePos * this->_elementSize), srcBuffer, requestedNumberElements * this->_elementSize);
+	}
+	else
+	{
+		memcpy(inputData + (inputDataWritePos * this->_elementSize), srcBuffer, hiElementsAvailable * this->_elementSize);
+		memcpy(inputData, (uint8_t *)srcBuffer + (hiElementsAvailable * this->_elementSize), (requestedNumberElements - hiElementsAvailable) * this->_elementSize);
 	}
 	
 	// Advance the write position.
-	inputDataWritePos += requestedNumberBytes;
-	if (inputDataWritePos >= inputDataSize)
+	inputDataWritePos += requestedNumberElements;
+	if (inputDataWritePos > inputDataSize)
 	{
 		inputDataWritePos -= inputDataSize;
 	}
 	
 	this->_writePosition = inputDataWritePos;
-		
-	return requestedNumberBytes;
+	
+	return requestedNumberElements;
 }
 
-size_t RingBuffer::getBufferFillSize() const
+size_t RingBuffer::drop(size_t requestedNumberElements)
 {
-	return (size_t)this->_bufferFillSize;
+	size_t hiElementsAvailable = 0;
+	size_t loElementsAvailable = 0;
+	
+	size_t inputDataReadPos = this->_readPosition;
+	const size_t inputDataWritePos = this->_writePosition;
+	const size_t inputDataSize = this->_elementCapacity + 2;
+	
+	// Check buffer availability
+	if (inputDataReadPos < inputDataWritePos)
+	{
+		hiElementsAvailable = inputDataWritePos - inputDataReadPos - 1;
+	}
+	else if (inputDataReadPos > inputDataWritePos)
+	{
+		hiElementsAvailable = inputDataSize - inputDataReadPos - 1;
+		loElementsAvailable = inputDataWritePos;
+	}
+	else
+	{
+		return requestedNumberElements;
+	}
+	
+	// Bounds check for buffer overrun
+	if (requestedNumberElements > hiElementsAvailable + loElementsAvailable)
+	{
+		requestedNumberElements = hiElementsAvailable + loElementsAvailable;
+	}
+	
+	if (requestedNumberElements == 0)
+	{
+		return requestedNumberElements;
+	}
+	
+	// Advance the read position
+	inputDataReadPos += requestedNumberElements;
+	if (inputDataReadPos >= inputDataSize)
+	{
+		inputDataReadPos -= inputDataSize;
+	}
+	
+	this->_readPosition = inputDataReadPos;
+	
+	// Decrease the fill size now that we're done reading.
+	OSAtomicAdd32Barrier(-(int32_t)requestedNumberElements, &this->_elementFillCount);
+	
+	return requestedNumberElements;
 }
 
 size_t RingBuffer::getAvailableElements() const
 {
-	return ((this->_bufferSize - this->_bufferFillSize) / this->_elementSize) - 1;
+	return (this->_elementCapacity - this->_elementFillCount);
+}
+
+size_t RingBuffer::getElementCapacity() const
+{
+	return this->_elementCapacity;
 }
 
 size_t RingBuffer::getElementSize() const
 {
 	return this->_elementSize;
+}
+
+bool RingBuffer::isEmpty() const
+{
+	return (this->_elementFillCount == 0);
+}
+
+bool RingBuffer::isFull() const
+{
+	return ((size_t)this->_elementFillCount >= this->_elementCapacity);
 }

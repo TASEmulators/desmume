@@ -49,6 +49,7 @@
 	InputManager *inputManager;
 	NSString *configInputTargetID;
 	NSMutableDictionary *configInputList;
+	NSMutableDictionary *inputSettingsInEdit;
 	
 	NSDictionary *inputSettingsMappings;
 	
@@ -76,6 +77,7 @@
 
 @property (readonly) IBOutlet InputManager *inputManager;
 @property (retain) NSString *configInputTargetID;
+@property (retain) NSMutableDictionary *inputSettingsInEdit;
 
 - (void) initSettingsSheets;
 - (void) populateInputProfileMenu;
@@ -105,5 +107,8 @@
 - (IBAction) profileSelect:(id)sender;
 - (IBAction) closeProfileSheet:(id)sender;
 - (IBAction) closeProfileRenameSheet:(id)sender;
+
+- (IBAction) audioFileChoose:(id)sender;
+- (IBAction) audioFileChooseNone:(id)sender;
 
 @end

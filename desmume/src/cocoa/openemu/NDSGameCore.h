@@ -17,27 +17,29 @@
 
 #import <Cocoa/Cocoa.h>
 #import <OpenEmuBase/OEGameCore.h>
+#import "OENDSSystemResponderClient.h"
 #include <libkern/OSAtomic.h>
 
 @class CocoaDSFirmware;
-@class CocoaDSMic;
+@class CocoaDSController;
 
 
 @interface NDSGameCore : OEGameCore
 {
-	bool *input;
-	bool isTouchPressed;
-	OEIntPoint touchLocation;
+	NSPoint touchLocation;
+	CocoaDSController *cdsController;
 	CocoaDSFirmware *firmware;
-	CocoaDSMic *microphone;
+	NSInteger micMode;
 	NSInteger displayMode;
 	OEIntRect displayRect;
+	NSInteger inputID[OENDSButtonCount]; // Key = OpenEmu's input ID, Value = DeSmuME's input ID
 	
 	OSSpinLock spinlockDisplayMode;
 }
 
+@property (retain) CocoaDSController *cdsController;
 @property (retain) CocoaDSFirmware *firmware;
-@property (retain) CocoaDSMic *microphone;
+@property (assign) NSInteger micMode;
 @property (assign) NSInteger displayMode;
 
 @end
