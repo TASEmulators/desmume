@@ -37,7 +37,7 @@
 		<string>openemu.system.nds</string>
 	</array>
 	<key>SUFeedURL</key>
-	<string>http://openemu.org/update/desmume_appcast.xml</string>
+	<string>http://openemu.org/updater/desmume_appcast.xml</string>
 	<key>SUEnableAutomaticChecks</key>
 	<string>1</string>
 </dict>
