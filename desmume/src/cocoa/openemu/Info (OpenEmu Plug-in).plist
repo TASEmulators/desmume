@@ -23,7 +23,7 @@
 	<key>CSResourcesFileMapped</key>
 	<string>yes</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2012 DeSmuME Team. All rights reserved.</string>
+	<string>Copyright © 2012-2013 DeSmuME Team. All rights reserved.</string>
 	<key>NSPrincipalClass</key>
 	<string>OEGameCoreController</string>
 	<key>OEGameCoreClass</key>
@@ -36,5 +36,9 @@
 	<array>
 		<string>openemu.system.nds</string>
 	</array>
+	<key>SUFeedURL</key>
+	<string>http://openemu.org/update/desmume_appcast.xml</string>
+	<key>SUEnableAutomaticChecks</key>
+	<string>1</string>
 </dict>
 </plist>
