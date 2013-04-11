@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,27 +19,31 @@
 #import <OpenEmuBase/OEGameCore.h>
 #import "OENDSSystemResponderClient.h"
 #include <libkern/OSAtomic.h>
+#include <pthread.h>
 
-@class CocoaDSFirmware;
 @class CocoaDSController;
+@class CocoaDSGPU;
+@class CocoaDSFirmware;
 
 
 @interface NDSGameCore : OEGameCore
 {
 	NSPoint touchLocation;
 	CocoaDSController *cdsController;
-	CocoaDSFirmware *firmware;
-	NSInteger micMode;
+	CocoaDSGPU *cdsGPU;
+	CocoaDSFirmware *cdsFirmware;
 	NSInteger displayMode;
 	OEIntRect displayRect;
+	OEIntSize displayAspectRatio;
 	NSInteger inputID[OENDSButtonCount]; // Key = OpenEmu's input ID, Value = DeSmuME's input ID
 	
 	OSSpinLock spinlockDisplayMode;
+	pthread_mutex_t mutexCoreExecute;
 }
 
 @property (retain) CocoaDSController *cdsController;
-@property (retain) CocoaDSFirmware *firmware;
-@property (assign) NSInteger micMode;
+@property (retain) CocoaDSGPU *cdsGPU;
+@property (retain) CocoaDSFirmware *cdsFirmware;
 @property (assign) NSInteger displayMode;
 
 @end

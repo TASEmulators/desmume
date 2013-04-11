@@ -180,6 +180,9 @@
 		AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
+		AB5785F817175F16002C5FC7 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
+		AB5785F9171760D2002C5FC7 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
+		AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */; };
 		AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		AB64987C13ECC73800EE7DD2 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */; };
 		AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
@@ -412,9 +415,7 @@
 		ABB3C66A1501BF8A00E0C22E /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */; };
 		ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
-		ABB3C6711501C04F00E0C22E /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
-		ABB3C6741501C04F00E0C22E /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		ABB3C6751501C04F00E0C22E /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
 		ABB3C6761501C04F00E0C22E /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		ABB3C6771501C04F00E0C22E /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
@@ -614,7 +615,6 @@
 		ABE6702D1415DE6C00E8E4C9 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
 		ABE6702E1415DE6C00E8E4C9 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
 		ABE7F53E13EE1C7900FD3A71 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
-		ABE9EEE81501C65700D3FB19 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC4076A1501C2EF00782D0E /* OpenEmuBase.framework */; };
 		ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		ABE9EEEB1501C78700D3FB19 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		ABEFCF61141AB82A000CC0CD /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF5D141AB82A000CC0CD /* AppIcon_ROMSave.icns */; };
@@ -788,6 +788,7 @@
 		AB405676169F5DCC0016AC3E /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
 		AB405677169F5DCC0016AC3E /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenEmuBase.framework; path = openemu/OpenEmuBase.framework; sourceTree = "<group>"; };
 		AB58F32B1364F44B0074C376 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
 		AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
@@ -857,7 +858,6 @@
 		ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeMute_16x16.png; path = images/Icon_VolumeMute_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeOneThird_16x16.png; path = images/Icon_VolumeOneThird_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeTwoThird_16x16.png; path = images/Icon_VolumeTwoThird_16x16.png; sourceTree = "<group>"; };
-		ABC4076A1501C2EF00782D0E /* OpenEmuBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenEmuBase.framework; path = /Applications/OpenEmu.app/Contents/Frameworks/OpenEmuBase.framework; sourceTree = "<group>"; };
 		ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
@@ -1117,7 +1117,7 @@
 				ABB3C6671501BF8A00E0C22E /* Foundation.framework in Frameworks */,
 				ABB3C6691501BF8A00E0C22E /* OpenGL.framework in Frameworks */,
 				ABB3C66A1501BF8A00E0C22E /* libz.dylib in Frameworks */,
-				ABE9EEE81501C65700D3FB19 /* OpenEmuBase.framework in Frameworks */,
+				AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1186,7 +1186,7 @@
 		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				ABC4076A1501C2EF00782D0E /* OpenEmuBase.framework */,
+				AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */,
 			);
 			name = "Other Frameworks";
 			sourceTree = "<group>";
@@ -2443,9 +2443,7 @@
 				ABE9EEEB1501C78700D3FB19 /* fs-linux.cpp in Sources */,
 				ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */,
 				ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */,
-				ABB3C6711501C04F00E0C22E /* cocoa_core.mm in Sources */,
 				ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */,
-				ABB3C6741501C04F00E0C22E /* cocoa_output.mm in Sources */,
 				ABB3C6751501C04F00E0C22E /* cocoa_rom.mm in Sources */,
 				ABB3C6761501C04F00E0C22E /* cocoa_util.mm in Sources */,
 				ABB3C6771501C04F00E0C22E /* cocoa_videofilter.mm in Sources */,
@@ -2583,6 +2581,8 @@
 				ABD10AEC1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD10AED17160C9300B5729D /* ringbuffer.cpp in Sources */,
 				ABD10AEE17160CDD00B5729D /* cocoa_input.mm in Sources */,
+				AB5785F817175F16002C5FC7 /* cocoa_core.mm in Sources */,
+				AB5785F9171760D2002C5FC7 /* cocoa_output.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2656,7 +2656,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SYSTEM_APPS_DIR)/OpenEmu.app/Contents/Frameworks\"",
+					"\"$(SRCROOT)/openemu\"",
 				);
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
@@ -2672,7 +2672,7 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SYSTEM_APPS_DIR)/OpenEmu.app/Contents/Frameworks\"",
+					"\"$(SRCROOT)/openemu\"",
 				);
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
