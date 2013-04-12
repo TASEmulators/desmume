@@ -40,6 +40,7 @@
 	
 	NSInteger lastDisplayMode;
 	NSInteger currentDisplayOrientation;
+	GLfloat currentGapScalar;
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
@@ -76,7 +77,7 @@
 - (void) uploadTexCoords;
 - (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
 - (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
-- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID;
+- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID gap:(const GLfloat)gapScalar;
 - (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t;
 
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
@@ -105,6 +106,7 @@
 	NSInteger _displayMode;
 	NSInteger _displayOrientation;
 	NSInteger _displayOrder;
+	double _displayGap;
 	NSInteger _videoFilterType;
 	NSInteger screenshotFileFormat;
 	
@@ -120,6 +122,7 @@
 	OSSpinLock spinlockDisplayMode;
 	OSSpinLock spinlockDisplayOrientation;
 	OSSpinLock spinlockDisplayOrder;
+	OSSpinLock spinlockDisplayGap;
 	OSSpinLock spinlockVideoFilterType;
 }
 
@@ -137,6 +140,7 @@
 @property (assign) NSInteger displayMode;
 @property (assign) NSInteger displayOrientation;
 @property (assign) NSInteger displayOrder;
+@property (assign) double displayGap;
 @property (assign) NSInteger videoFilterType;
 @property (assign) NSInteger screenshotFileFormat;
 @property (assign) BOOL isMinSizeNormal;

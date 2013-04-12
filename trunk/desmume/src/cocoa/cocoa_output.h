@@ -134,6 +134,7 @@ typedef struct
 - (void) doRedraw;
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
 - (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
+- (void) doDisplayGapChanged:(float)displayGapScalar;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
 - (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID frameSize:(NSSize)videoFilterDestSize;
@@ -186,6 +187,7 @@ typedef struct
 - (void) handleRedrawView;
 - (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
 - (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
+- (void) handleChangeDisplayGap:(NSData *)displayGapScalarData;
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData;
 - (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData;
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData;

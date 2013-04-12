@@ -892,6 +892,10 @@
 			[self handleChangeDisplayOrder:[messageComponents objectAtIndex:0]];
 			break;
 			
+		case MESSAGE_CHANGE_DISPLAY_GAP:
+			[self handleChangeDisplayGap:[messageComponents objectAtIndex:0]];
+			break;
+			
 		case MESSAGE_CHANGE_BILINEAR_OUTPUT:
 			[self handleChangeBilinearOutput:[messageComponents objectAtIndex:0]];
 			break;
@@ -1000,6 +1004,17 @@
 	
 	const NSInteger theOrder = *(NSInteger *)[displayOrderIdData bytes];
 	[videoDelegate doDisplayOrderChanged:theOrder];
+}
+
+- (void) handleChangeDisplayGap:(NSData *)displayGapScalarData
+{
+	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doDisplayGapChanged:)])
+	{
+		return;
+	}
+	
+	const float gapScalar = *(float *)[displayGapScalarData bytes];
+	[videoDelegate doDisplayGapChanged:gapScalar];
 }
 
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData
