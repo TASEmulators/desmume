@@ -168,6 +168,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) changeDisplayMode:(id)sender;
 - (IBAction) changeDisplayOrientation:(id)sender;
 - (IBAction) changeDisplayOrder:(id)sender;
+- (IBAction) changeDisplayGap:(id)sender;
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
 - (IBAction) toggleStatusBar:(id)sender;
 - (IBAction) toggleToolbarShown:(id)sender;
@@ -189,6 +190,7 @@ class AudioSampleBlockGenerator;
 
 // Misc IBActions
 - (IBAction) writeDefaultsDisplayRotation:(id)sender;
+- (IBAction) writeDefaultsDisplayGap:(id)sender;
 - (IBAction) writeDefaultsHUDSettings:(id)sender;
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender;
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;

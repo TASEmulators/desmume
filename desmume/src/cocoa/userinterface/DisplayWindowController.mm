@@ -91,6 +91,7 @@ enum OGLVertexAttributeID
 @dynamic displayMode;
 @dynamic displayOrientation;
 @dynamic displayOrder;
+@dynamic displayGap;
 @dynamic videoFilterType;
 @synthesize screenshotFileFormat;
 @dynamic isMinSizeNormal;
@@ -116,17 +117,19 @@ enum OGLVertexAttributeID
 	spinlockDisplayMode = OS_SPINLOCK_INIT;
 	spinlockDisplayOrientation = OS_SPINLOCK_INIT;
 	spinlockDisplayOrder = OS_SPINLOCK_INIT;
+	spinlockDisplayGap = OS_SPINLOCK_INIT;
 	spinlockVideoFilterType = OS_SPINLOCK_INIT;
 	
 	screenshotFileFormat = NSTIFFFileType;
 	
-	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
-	_isMinSizeNormal = YES;
-	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
-	
-	// These need to be initialized since these have dependencies on each other.
+	// These need to be initialized first since there are dependencies on these.
+	_displayGap = 0.0;
 	_displayMode = DS_DISPLAY_TYPE_COMBO;
 	_displayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
+	
+	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*_displayGap));
+	_isMinSizeNormal = YES;
+	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	
 	// Setup default values per user preferences.
 	[self setupUserDefaults];
@@ -303,18 +306,21 @@ enum OGLVertexAttributeID
 			break;
 			
 		case DS_DISPLAY_TYPE_COMBO:
+		{
+			const double gapScalar = [self displayGap];
 			modeString = NSSTRING_DISPLAYMODE_COMBO;
 			
 			if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
 			{
-				newDisplaySize.height *= 2;
+				newDisplaySize.height = newDisplaySize.height * 2.0 + (DS_DISPLAY_GAP * gapScalar);
 			}
 			else
 			{
-				newDisplaySize.width *= 2;
+				newDisplaySize.width = newDisplaySize.width * 2.0 + (DS_DISPLAY_GAP * gapScalar);
 			}
 			
 			break;
+		}
 			
 		default:
 			break;
@@ -360,15 +366,16 @@ enum OGLVertexAttributeID
 	
 	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
 	{
+		const double gapScalar = [self displayGap];
 		NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 		
 		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
 		{
-			newDisplaySize.height *= 2;
+			newDisplaySize.height = newDisplaySize.height * 2.0 + (DS_DISPLAY_GAP * gapScalar);
 		}
 		else
 		{
-			newDisplaySize.width *= 2;
+			newDisplaySize.width = newDisplaySize.width * 2.0 + (DS_DISPLAY_GAP * gapScalar);
 		}
 		
 		OSSpinLockLock(&spinlockNormalSize);
@@ -409,6 +416,45 @@ enum OGLVertexAttributeID
 	return theOrder;
 }
 
+- (void) setDisplayGap:(double)gapScalar
+{
+	OSSpinLockLock(&spinlockDisplayGap);
+	_displayGap = gapScalar;
+	OSSpinLockUnlock(&spinlockDisplayGap);
+	
+	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
+	{
+		NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
+		
+		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
+		{
+			newDisplaySize.height = newDisplaySize.height * 2.0 + (DS_DISPLAY_GAP * gapScalar);
+		}
+		else
+		{
+			newDisplaySize.width = newDisplaySize.width * 2.0 + (DS_DISPLAY_GAP * gapScalar);
+		}
+		
+		OSSpinLockLock(&spinlockNormalSize);
+		_normalSize = newDisplaySize;
+		OSSpinLockUnlock(&spinlockNormalSize);
+		
+		[self setIsMinSizeNormal:[self isMinSizeNormal]];
+		[self resizeWithTransform:[self normalSize] scalar:[self displayScale] rotation:[self displayRotation]];
+	}
+	
+	[CocoaDSUtil messageSendOneWayWithFloat:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_GAP floatValue:(float)gapScalar];
+}
+
+- (double) displayGap
+{
+	OSSpinLockLock(&spinlockDisplayGap);
+	const double gapScalar = _displayGap;
+	OSSpinLockUnlock(&spinlockDisplayGap);
+	
+	return gapScalar;
+}
+
 - (void) setVideoFilterType:(NSInteger)typeID
 {
 	OSSpinLockLock(&spinlockVideoFilterType);
@@ -429,19 +475,23 @@ enum OGLVertexAttributeID
 
 - (void) setIsMinSizeNormal:(BOOL)theState
 {
+	OSSpinLockLock(&spinlockDisplayGap);
+	const double gapScalar = _displayGap;
+	OSSpinLockUnlock(&spinlockDisplayGap);
+	
 	_isMinSizeNormal = theState;
 	
 	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
 	{
 		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_HORIZONTAL)
 		{
-			_minDisplayViewSize.width = GPU_DISPLAY_WIDTH * 2;
+			_minDisplayViewSize.width = GPU_DISPLAY_WIDTH*2.0 + (DS_DISPLAY_GAP*gapScalar);
 			_minDisplayViewSize.height = GPU_DISPLAY_HEIGHT;
 		}
 		else
 		{
 			_minDisplayViewSize.width = GPU_DISPLAY_WIDTH;
-			_minDisplayViewSize.height = GPU_DISPLAY_HEIGHT * 2;
+			_minDisplayViewSize.height = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*gapScalar);
 		}
 	}
 	else
@@ -516,6 +566,7 @@ enum OGLVertexAttributeID
 	[self setIsShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
 	// Set the display settings per user preferences.
+	[self setDisplayGap:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0)];
 	[self setDisplayMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]];
 	[self setDisplayOrientation:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]];
 	[self setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]];
@@ -876,10 +927,11 @@ enum OGLVertexAttributeID
 	
 	lastDisplayMode = DS_DISPLAY_TYPE_COMBO;
 	currentDisplayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
+	currentGapScalar = 0.0f;
 	glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	
 	UInt32 w = GetNearestPositivePOT((UInt32)GPU_DISPLAY_WIDTH);
-	UInt32 h = GetNearestPositivePOT((UInt32)(GPU_DISPLAY_HEIGHT * 2.0));
+	UInt32 h = GetNearestPositivePOT((UInt32)(GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*currentGapScalar)));
 	glTexBack = (GLvoid *)calloc(w * h, sizeof(UInt16));
 	glTexBackSize = NSMakeSize(w, h);
 	vtxBufferOffset = 0;
@@ -910,7 +962,7 @@ enum OGLVertexAttributeID
 
 - (void) startupOpenGL
 {
-	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:currentDisplayOrientation];
+	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:currentDisplayOrientation gap:currentGapScalar];
 	[self updateTexCoordS:1.0f T:2.0f];
 	
 	// Set up initial vertex elements
@@ -954,7 +1006,7 @@ enum OGLVertexAttributeID
 			
 			glUniform1f(uniformAngleDegrees, 0.0f);
 			glUniform1f(uniformScalar, 1.0f);
-			glUniform2f(uniformViewSize, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
+			glUniform2f(uniformViewSize, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*currentGapScalar));
 		}
 		else
 		{
@@ -1168,7 +1220,7 @@ enum OGLVertexAttributeID
 	if (lastDisplayMode != displayModeID)
 	{
 		lastDisplayMode = displayModeID;
-		[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
+		[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation gap:currentGapScalar];
 		[self uploadVertices];
 	}
 	
@@ -1184,37 +1236,38 @@ enum OGLVertexAttributeID
 	glBindVertexArrayAPPLE(0);
 }
 
-- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID
+- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID gap:(const GLfloat)gapScalar
 {
-	const GLint w = (GLint)GPU_DISPLAY_WIDTH;
-	const GLint h = (GLint)GPU_DISPLAY_HEIGHT;
+	const GLfloat w = GPU_DISPLAY_WIDTH;
+	const GLfloat h = GPU_DISPLAY_HEIGHT;
+	const GLfloat gap = DS_DISPLAY_GAP * gapScalar / 2.0;
 	
 	if (displayModeID == DS_DISPLAY_TYPE_COMBO)
 	{
 		// displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST
 		if (displayOrientationID == DS_DISPLAY_ORIENTATION_VERTICAL)
 		{
-			vtxBuffer[0]	= -w/2;		vtxBuffer[1]		= h;		// Top display, top left
-			vtxBuffer[2]	= w/2;		vtxBuffer[3]		= h;		// Top display, top right
-			vtxBuffer[4]	= w/2;		vtxBuffer[5]		= 0;		// Top display, bottom right
-			vtxBuffer[6]	= -w/2;		vtxBuffer[7]		= 0;		// Top display, bottom left
+			vtxBuffer[0]	= -w/2;			vtxBuffer[1]		= h+gap;	// Top display, top left
+			vtxBuffer[2]	= w/2;			vtxBuffer[3]		= h+gap;	// Top display, top right
+			vtxBuffer[4]	= w/2;			vtxBuffer[5]		= gap;		// Top display, bottom right
+			vtxBuffer[6]	= -w/2;			vtxBuffer[7]		= gap;		// Top display, bottom left
 			
-			vtxBuffer[8]	= -w/2;		vtxBuffer[9]		= 0;		// Bottom display, top left
-			vtxBuffer[10]	= w/2;		vtxBuffer[11]		= 0;		// Bottom display, top right
-			vtxBuffer[12]	= w/2;		vtxBuffer[13]		= -h;		// Bottom display, bottom right
-			vtxBuffer[14]	= -w/2;		vtxBuffer[15]		= -h;		// Bottom display, bottom left
+			vtxBuffer[8]	= -w/2;			vtxBuffer[9]		= -gap;		// Bottom display, top left
+			vtxBuffer[10]	= w/2;			vtxBuffer[11]		= -gap;		// Bottom display, top right
+			vtxBuffer[12]	= w/2;			vtxBuffer[13]		= -(h+gap);	// Bottom display, bottom right
+			vtxBuffer[14]	= -w/2;			vtxBuffer[15]		= -(h+gap);	// Bottom display, bottom left
 		}
 		else // displayOrientationID == DS_DISPLAY_ORIENTATION_HORIZONTAL
 		{
-			vtxBuffer[0]	= -w;		vtxBuffer[1]		= h/2;		// Left display, top left
-			vtxBuffer[2]	= 0;		vtxBuffer[3]		= h/2;		// Left display, top right
-			vtxBuffer[4]	= 0;		vtxBuffer[5]		= -h/2;		// Left display, bottom right
-			vtxBuffer[6]	= -w;		vtxBuffer[7]		= -h/2;		// Left display, bottom left
+			vtxBuffer[0]	= -(w+gap);		vtxBuffer[1]		= h/2;		// Left display, top left
+			vtxBuffer[2]	= -gap;			vtxBuffer[3]		= h/2;		// Left display, top right
+			vtxBuffer[4]	= -gap;			vtxBuffer[5]		= -h/2;		// Left display, bottom right
+			vtxBuffer[6]	= -(w+gap);		vtxBuffer[7]		= -h/2;		// Left display, bottom left
 			
-			vtxBuffer[8]	= 0;		vtxBuffer[9]		= h/2;		// Right display, top left
-			vtxBuffer[10]	= w;		vtxBuffer[11]		= h/2;		// Right display, top right
-			vtxBuffer[12]	= w;		vtxBuffer[13]		= -h/2;		// Right display, bottom right
-			vtxBuffer[14]	= 0;		vtxBuffer[15]		= -h/2;		// Right display, bottom left
+			vtxBuffer[8]	= gap;			vtxBuffer[9]		= h/2;		// Right display, top left
+			vtxBuffer[10]	= w+gap;		vtxBuffer[11]		= h/2;		// Right display, top right
+			vtxBuffer[12]	= w+gap;		vtxBuffer[13]		= -h/2;		// Right display, bottom right
+			vtxBuffer[14]	= gap;			vtxBuffer[15]		= -h/2;		// Right display, bottom left
 		}
 		
 		// displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
@@ -1280,14 +1333,15 @@ enum OGLVertexAttributeID
 	{
 		const NSInteger theOrientation = [windowController displayOrientation];
 		const NSInteger theOrder = [windowController displayOrder];
+		const double gap = DS_DISPLAY_GAP * [windowController displayGap];
 		
 		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL && theOrder == DS_DISPLAY_ORDER_TOUCH_FIRST)
 		{
-			touchLoc.y -= GPU_DISPLAY_HEIGHT;
+			touchLoc.y -= (GPU_DISPLAY_HEIGHT+gap);
 		}
 		else if (theOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL && theOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
 		{
-			touchLoc.x -= GPU_DISPLAY_WIDTH;
+			touchLoc.x -= (GPU_DISPLAY_WIDTH+gap);
 		}
 	}
 	
@@ -1658,7 +1712,7 @@ enum OGLVertexAttributeID
 - (void)doDisplayModeChanged:(NSInteger)displayModeID
 {
 	lastDisplayMode = displayModeID;
-	[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation];
+	[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:currentDisplayOrientation gap:currentGapScalar];
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
@@ -1686,7 +1740,7 @@ enum OGLVertexAttributeID
 - (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID
 {
 	currentDisplayOrientation = displayOrientationID;
-	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:displayOrientationID];
+	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:displayOrientationID gap:currentGapScalar];
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
@@ -1717,6 +1771,19 @@ enum OGLVertexAttributeID
 		[self renderDisplayUsingDisplayMode:lastDisplayMode];
 		[self drawVideoFrame];
 	}
+	
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (void) doDisplayGapChanged:(float)displayGapScalar
+{
+	currentGapScalar = (GLfloat)displayGapScalar;
+	[self updateDisplayVerticesUsingDisplayMode:lastDisplayMode orientation:currentDisplayOrientation gap:(GLfloat)displayGapScalar];
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	
+	[self uploadVertices];
 	
 	CGLUnlockContext(cglDisplayContext);
 }
