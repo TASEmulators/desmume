@@ -1308,9 +1308,9 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(c.imul(hi,lhs,rhs), H, H, 1, 1,
 	return 1;
 #else
 #define OP_SMxxW_(x, accum, flags) \
-	GpVar hi = c.newGpVar(kX86VarTypeGpd); \
 	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
 	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar hi = c.newGpVar(kX86VarTypeGpd); \
 	c.xor_(hi, hi); \
 	c.movsx(lhs, reg_pos_ptr##x(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
