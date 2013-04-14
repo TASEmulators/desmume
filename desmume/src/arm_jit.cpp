@@ -700,7 +700,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			bb_constant_cycles += 2; \
+			c.add(bb_total_cycles, 2); \
 			return 1; \
 		} \
 		SET_NZCV(!symmetric); \
@@ -712,7 +712,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 			GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
 			c.mov(tmp, reg_ptr(15)); \
 			c.mov(cpu_ptr(next_instruction), tmp); \
-			bb_constant_cycles += 2; \
+			c.add(bb_total_cycles, 2); \
 		} \
 	} \
 	return 1;
@@ -728,7 +728,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 		if(REG_POS(i,12)==15) \
 		{ \
 			S_DST_R15; \
-			bb_constant_cycles += 2; \
+			c.add(bb_total_cycles, 2); \
 			return 1; \
 		} \
 		SET_NZCV(1); \
@@ -739,7 +739,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 		{ \
 			GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
 			c.mov(cpu_ptr(next_instruction), lhs); \
-			bb_constant_cycles += 2; \
+			c.add(bb_total_cycles, 2); \
 		} \
 	} \
 	return 1;
@@ -763,7 +763,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		bb_constant_cycles += 2; \
+		c.add(bb_total_cycles, 2); \
 		return 1; \
 	} \
 	SET_NZC; \
@@ -1097,7 +1097,7 @@ static int OP_MOV_IMM_VAL(const u32 i) { OP_MOV(IMM_VAL); }
 	if(REG_POS(i,12)==15) \
 	{ \
 		S_DST_R15; \
-		bb_constant_cycles += 2; \
+		c.add(bb_total_cycles, 2); \
 		return 1; \
 	} \
 	if(!rhs_is_imm) \
@@ -4116,8 +4116,14 @@ static u32 compile_basicblock()
 			if(cycles == 0)
 			{
 				JIT_COMMENT("variable cycles");
-				c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), bb_cycles.r64(), kScaleNone));
+				c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), bb_cycles.r64(), kScaleNone, -1));
 			}
+			else
+				if (cycles > 1)
+				{
+					JIT_COMMENT("cycles (%d)", cycles);
+					c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), -1));
+				}
 			c.bind(skip);
 		}
 		else
