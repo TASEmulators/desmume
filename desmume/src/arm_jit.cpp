@@ -1308,15 +1308,15 @@ static int OP_SMLAL_T_T(const u32 i) { OP_MULxy_(c.imul(hi,lhs,rhs), H, H, 1, 1,
 	return 1;
 #else
 #define OP_SMxxW_(x, accum, flags) \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
 	GpVar hi = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+	c.xor_(hi, hi); \
 	c.movsx(lhs, reg_pos_ptr##x(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
-	c.imul(hi, lhs, rhs);  \
-	c.shr(lhs, 16); \
-	c.shl(hi, 16); \
-	c.or_(lhs, hi); \
+	c.imul(hi, lhs, rhs); \
+	c.mov(lhs.r16(), hi.r16()); \
+	c.ror(lhs, 16); \
 	if (accum) c.add(lhs, reg_pos_ptr(12)); \
 	c.mov(reg_pos_ptr(16), lhs); \
 	if (flags) { SET_Q; } \
@@ -4173,7 +4173,7 @@ static u32 compile_basicblock()
 	ArmOpCompiled f = (ArmOpCompiled)c.make();
 	if(c.getError())
 	{
-		fprintf(stderr, "JIT error: %s\n", getErrorString(c.getError()));
+		fprintf(stderr, "JIT error at %s%c-%08X: %s\n", bb_thumb?"THUMB":"ARM", PROCNUM?'7':'9', start_adr, getErrorString(c.getError()));
 		f = op_decode[PROCNUM][bb_thumb];
 	}
 #if LOG_JIT
