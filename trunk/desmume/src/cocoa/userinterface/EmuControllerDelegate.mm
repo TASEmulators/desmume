@@ -49,6 +49,7 @@
 @synthesize cheatListController;
 @synthesize cheatDatabaseController;
 
+@synthesize slot1ManagerWindow;
 @synthesize saveFileMigrationSheet;
 @synthesize saveStatePrecloseSheet;
 @synthesize exportRomSavePanelAccessoryView;
@@ -485,6 +486,11 @@
 	}
 }
 
+- (IBAction) loadRecentRom:(id)sender
+{
+	// Dummy selector, used for UI validation only.
+}
+
 - (IBAction) closeWindow:(id)sender
 {
 	[[mainWindow window] performClose:sender];
@@ -910,6 +916,41 @@
 	[mainWindow setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
 }
 
+- (IBAction) chooseSlot1R4Directory:(id)sender
+{
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setCanChooseDirectories:YES];
+	[panel setCanChooseFiles:NO];
+	[panel setResolvesAliases:YES];
+	[panel setAllowsMultipleSelection:NO];
+	[panel setTitle:@"Select R4 Directory"];
+	NSArray *fileTypes = [NSArray arrayWithObjects:nil];
+	
+	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
+	// is deprecated in Mac OS X v10.6.
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+	[panel setAllowedFileTypes:fileTypes];
+	[panel beginSheetModalForWindow:slot1ManagerWindow
+				  completionHandler:^(NSInteger result) {
+					  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
+				  } ];
+#else
+	[panel beginSheetForDirectory:nil
+							 file:nil
+							types:fileTypes
+				   modalForWindow:slot1ManagerWindow
+					modalDelegate:self
+				   didEndSelector:@selector(didEndChooseSlot1R4Directory:returnCode:contextInfo:)
+					  contextInfo:nil];
+#endif
+}
+
+- (IBAction) slot1Eject:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore slot1Eject];
+}
+
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
 {
 	[[NSUserDefaults standardUserDefaults] setDouble:[mainWindow displayRotation] forKey:@"DisplayView_Rotation"];
@@ -974,6 +1015,14 @@
 	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"FavoriteColor"] forKey:@"FirmwareConfig_FavoriteColor"];
 	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Birthday"] forKey:@"FirmwareConfig_Birthday"];
 	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Language"] forKey:@"FirmwareConfig_Language"];
+}
+
+- (IBAction) writeDefaultsSlot1Settings:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore slot1DeviceType] forKey:@"EmulationSLOT1_DeviceType"];
+	[[NSUserDefaults standardUserDefaults] setObject:[[cdsCore slot1R4URL] path] forKey:@"EmulationSLOT1_R4StoragePath"];
 }
 
 - (IBAction) writeDefaultsSoundSettings:(id)sender
@@ -1252,6 +1301,7 @@
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
 	[self setIsWorking:NO];
+	[self writeDefaultsSlot1Settings:nil];
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
@@ -1416,7 +1466,9 @@
 	[self pauseCore];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setDynaRec];
+	[cdsCore applyDynaRec];
+	[cdsCore applySlot1Device];
+	[self writeDefaultsSlot1Settings:nil];
 	
 	CocoaDSRom *newRom = [[CocoaDSRom alloc] init];
 	if (newRom != nil)
@@ -1621,6 +1673,9 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
+	
 	result = YES;
 	
 	return result;
@@ -1756,6 +1811,27 @@
 	}
 }
 
+- (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+{
+	[sheet orderOut:self];
+	
+	if (returnCode == NSCancelButton)
+	{
+		return;
+	}
+	
+	NSURL *selectedDirURL = [[sheet URLs] lastObject]; //hopefully also the first object
+	if(selectedDirURL == nil)
+	{
+		return;
+	}
+	
+	[[NSUserDefaults standardUserDefaults] setObject:[selectedDirURL path] forKey:@"EmulationSLOT1_R4StoragePath"];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setSlot1R4URL:selectedDirURL];
+}
+
 - (void) updateAllWindowTitles
 {
 	if ([windowList count] < 1)
@@ -1888,9 +1964,9 @@
 			enable = NO;
 		}
 	}
-	else if (theAction == @selector(_openRecentDocument:))
+	else if (theAction == @selector(loadRecentRom:))
 	{
-		if ([self isShowingSaveStateDialog])
+		if ([self isRomLoading] || [self isShowingSaveStateDialog])
 		{
 			enable = NO;
 		}

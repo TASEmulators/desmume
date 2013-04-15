@@ -97,6 +97,13 @@
 #define NSSTRING_STATUS_NO_ROM_LOADED				NSLocalizedString(@"No ROM loaded.", nil)
 #define NSSTRING_STATUS_SIZE_BYTES					NSLocalizedString(@"%i bytes", nil)
 
+#define NSSTRING_STATUS_EMULATION_NOT_RUNNING		NSLocalizedString(@"Emulation is not running.", nil)
+#define NSSTRING_STATUS_SLOT1_UNKNOWN_STATE			NSLocalizedString(@"Unknown state.", nil)
+#define NSSTRING_STATUS_SLOT1_NO_DEVICE				NSLocalizedString(@"No device inserted.", nil)
+#define NSSTRING_STATUS_SLOT1_RETAIL_INSERTED		NSLocalizedString(@"Retail cartridge inserted.", nil)
+#define NSSTRING_STATUS_SLOT1_RETAIL_NAND_INSERTED	NSLocalizedString(@"Retail cartridge (with NAND flash) inserted.", nil)
+#define NSSTRING_STATUS_SLOT1_R4_INSERTED			NSLocalizedString(@"R4 cartridge interface inserted.", nil)
+
 #define NSSTRING_DISPLAYMODE_MAIN					NSLocalizedString(@"Main", nil)
 #define NSSTRING_DISPLAYMODE_TOUCH					NSLocalizedString(@"Touch", nil)
 #define NSSTRING_DISPLAYMODE_COMBO					NSLocalizedString(@"Combo", nil)

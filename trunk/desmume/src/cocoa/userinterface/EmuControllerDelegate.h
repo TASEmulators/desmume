@@ -47,6 +47,7 @@ class AudioSampleBlockGenerator;
 	NSArrayController *cheatListController;
 	NSArrayController *cheatDatabaseController;
 	
+	NSWindow *slot1ManagerWindow;
 	NSWindow *saveFileMigrationSheet;
 	NSWindow *saveStatePrecloseSheet;
 	NSView *exportRomSavePanelAccessoryView;
@@ -101,6 +102,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSArrayController *cheatListController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
 
+@property (readonly) IBOutlet NSWindow *slot1ManagerWindow;
 @property (readonly) IBOutlet NSWindow *saveFileMigrationSheet;
 @property (readonly) IBOutlet NSWindow *saveStatePrecloseSheet;
 @property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
@@ -142,6 +144,7 @@ class AudioSampleBlockGenerator;
 // File Menu
 - (IBAction) newDisplayWindow:(id)sender;
 - (IBAction) openRom:(id)sender;
+- (IBAction) loadRecentRom:(id)sender;
 - (IBAction) closeWindow:(id)sender;
 - (IBAction) closeRom:(id)sender;
 - (IBAction) openEmuSaveState:(id)sender;
@@ -189,12 +192,16 @@ class AudioSampleBlockGenerator;
 - (IBAction) changeSpuSyncMethod:(id)sender;
 
 // Misc IBActions
+- (IBAction) chooseSlot1R4Directory:(id)sender;
+- (IBAction) slot1Eject:(id)sender;
+
 - (IBAction) writeDefaultsDisplayRotation:(id)sender;
 - (IBAction) writeDefaultsDisplayGap:(id)sender;
 - (IBAction) writeDefaultsHUDSettings:(id)sender;
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender;
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;
+- (IBAction) writeDefaultsSlot1Settings:(id)sender;
 - (IBAction) writeDefaultsSoundSettings:(id)sender;
 
 - (IBAction) closeSheet:(id)sender;
@@ -233,9 +240,9 @@ class AudioSampleBlockGenerator;
 - (void) didEndSaveStateSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheetOpen:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 - (void) didEndSaveStateSheetTerminate:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
+- (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 
 - (void) updateAllWindowTitles;
 - (void) setupUserDefaults;
-
 
 @end

@@ -30,6 +30,7 @@
 
 #include "../addons.h"
 #include "../NDSSystem.h"
+#include "../slot1.h"
 #undef BOOL
 
 
@@ -61,10 +62,13 @@ volatile bool execute = true;
 @synthesize emuFlagDebugConsole;
 @synthesize emuFlagEmulateEnsata;
 @dynamic cpuEmulationEngine;
+@synthesize slot1DeviceType;
+@synthesize slot1StatusText;
 
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
 @dynamic firmwareImageURL;
+@synthesize slot1R4URL;
 
 @dynamic mutexCoreExecute;
 
@@ -94,6 +98,9 @@ static BOOL isCoreStarted = NO;
 	emuFlagDebugConsole = NO;
 	emuFlagEmulateEnsata = NO;
 	
+	slot1DeviceType = NDS_SLOT1_RETAIL;
+	slot1StatusText = NSSTRING_STATUS_EMULATION_NOT_RUNNING;
+	
 	spinlockMasterExecute = OS_SPINLOCK_INIT;
 	spinlockCdsController = OS_SPINLOCK_INIT;
 	spinlockExecutionChange = OS_SPINLOCK_INIT;
@@ -104,6 +111,9 @@ static BOOL isCoreStarted = NO;
 	isSpeedLimitEnabled = YES;
 	speedScalar = SPEED_SCALAR_NORMAL;
 	prevCoreState = CORESTATE_PAUSE;
+	
+	slot1R4URL = nil;
+	_slot1R4Path = "";
 	
 	threadParam.cdsCore = self;
 	threadParam.cdsController = cdsController;
@@ -573,6 +583,15 @@ static BOOL isCoreStarted = NO;
 	return NO;
 }
 
+- (void) slot1Eject
+{
+	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	NDS_TriggerCardEjectIRQ();
+	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	
+	[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_NO_DEVICE];
+}
+
 - (void) changeRomSaveType:(NSInteger)saveTypeID
 {
 	pthread_mutex_lock(&threadParam.mutexCoreExecute);
@@ -605,7 +624,7 @@ static BOOL isCoreStarted = NO;
 }
 
 /********************************************************************************************
-	setDynaRec
+	applyDynaRec
 
 	Sets the use_jit variable for CommonSettings.
 
@@ -622,13 +641,53 @@ static BOOL isCoreStarted = NO;
 		method to set the engine at a later time, using the last cpuEmulationEngine
 		value from the user.
  ********************************************************************************************/
-- (void) setDynaRec
+- (void) applyDynaRec
 {
 	const NSInteger engineID = [self cpuEmulationEngine];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	CommonSettings.use_jit = (engineID == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+}
+
+- (BOOL) applySlot1Device
+{
+	const NSInteger deviceTypeID = [self slot1DeviceType];
+	NSString *r4Path = [[self slot1R4URL] path];
+	
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	
+	_slot1R4Path = (r4Path != nil) ? std::string([r4Path cStringUsingEncoding:NSUTF8StringEncoding]) : "";
+	slot1SetFatDir(_slot1R4Path);
+	
+	BOOL result = slot1Change((NDS_SLOT1_TYPE)deviceTypeID);
+	
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	
+	switch (deviceTypeID)
+	{
+		case NDS_SLOT1_NONE:
+			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_NO_DEVICE];
+			break;
+			
+		case NDS_SLOT1_RETAIL:
+			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_RETAIL_INSERTED];
+			break;
+			
+		case NDS_SLOT1_RETAIL_NAND:
+			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_RETAIL_NAND_INSERTED];
+			break;
+			
+		case NDS_SLOT1_R4:
+			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_R4_INSERTED];
+			break;
+			
+		default:
+			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_UNKNOWN_STATE];
+			break;
+	}
+	
+	return result;
 }
 
 - (void) restoreCoreState
@@ -639,7 +698,8 @@ static BOOL isCoreStarted = NO;
 - (void) reset
 {
 	[self setCoreState:CORESTATE_PAUSE];
-	[self setDynaRec];
+	[self applyDynaRec];
+	[self applySlot1Device];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	NDS_Reset();
@@ -673,7 +733,6 @@ static BOOL isCoreStarted = NO;
 
 - (void) runThread:(id)object
 {
-	[self setDynaRec];
 	[CocoaDSCore startupCore];
 	[super runThread:object];
 	[CocoaDSCore shutdownCore];
