@@ -107,6 +107,7 @@ typedef struct
 @property (assign) BOOL emuFlagDebugConsole;
 @property (assign) BOOL emuFlagEmulateEnsata;
 @property (assign) NSInteger cpuEmulationEngine;
+@property (assign) NSInteger maxJITBlockSize;
 @property (assign) NSInteger slot1DeviceType;
 @property (assign) NSString *slot1StatusText;
 

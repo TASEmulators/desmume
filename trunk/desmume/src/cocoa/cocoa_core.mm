@@ -62,6 +62,7 @@ volatile bool execute = true;
 @synthesize emuFlagDebugConsole;
 @synthesize emuFlagEmulateEnsata;
 @dynamic cpuEmulationEngine;
+@dynamic maxJITBlockSize;
 @synthesize slot1DeviceType;
 @synthesize slot1StatusText;
 
@@ -476,6 +477,22 @@ static BOOL isCoreStarted = NO;
 	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
 	
 	return engineID;
+}
+
+- (void) setMaxJITBlockSize:(NSInteger)blockSize
+{
+	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	CommonSettings.jit_max_block_size = (blockSize > 0) ? blockSize : 1;
+	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+}
+
+- (NSInteger) maxJITBlockSize
+{
+	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	const NSInteger blockSize = CommonSettings.jit_max_block_size;
+	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	
+	return blockSize;
 }
 
 - (void) setCoreState:(NSInteger)coreState
