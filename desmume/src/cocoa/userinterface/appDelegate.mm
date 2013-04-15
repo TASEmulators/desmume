@@ -410,6 +410,7 @@
 	
 	// Set the CPU emulation engine per user preferences.
 	[cdsCore setCpuEmulationEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_CPUEmulationEngine"]];
+	[cdsCore setMaxJITBlockSize:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_MaxJITBlockSize"]];
 	
 	// Set the SLOT-1 device settings per user preferences.
 	NSString *slot1R4Path = (NSString *)[[NSUserDefaults standardUserDefaults] objectForKey:@"EmulationSLOT1_R4StoragePath"];
