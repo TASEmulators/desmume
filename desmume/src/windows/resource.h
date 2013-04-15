@@ -431,6 +431,7 @@
 #define IDC_IMP_AUTO_FILE               1053
 #define IDC_BUTTON1                     1053
 #define IDC_IMP_AUTO_ADVANSCENE         1054
+#define IDC_JIT_BLOCK_SIZE              1054
 #define IDC_IMP_MANUAL                  1055
 #define IDC_LIST1                       1056
 #define IDC_IMP_INFO_CURRENT            1056
