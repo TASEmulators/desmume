@@ -913,6 +913,8 @@
 #define IDM_AUTODETECTSAVETYPE_FROMDATABASE 40105
 #define ID_DISPLAYMETHOD_FILTER         40106
 #define ID_LABEL_HK3b                   44670
+#define ID_LABEL_HK3c                   44671
+#define ID_LABEL_HK3d                   44672
 #define ID_LABEL_HK8b                   44720
 #define IDC_LABEL_UP                    50000
 #define IDC_LABEL_RIGHT                 50001
