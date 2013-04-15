@@ -8,10 +8,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.16 $
+// Last changed  : $Date: 2012-12-28 12:53:56 -0200 (sex, 28 dez 2012) $
+// File revision : $Revision: 3 $
 //
-// $Id: STTypes.h,v 1.16 2006/02/05 16:44:06 Olli Exp $
+// $Id: STTypes.h 162 2012-12-28 14:53:56Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -39,63 +39,25 @@
 #ifndef STTypes_H
 #define STTypes_H
 
-//#define INTEGER_SAMPLES 1
-
 typedef unsigned int    uint;
 typedef unsigned long   ulong;
 
-#ifdef __x86_64__
-typedef unsigned long long   ulongptr;
+// Patch for MinGW: on Win64 long is 32-bit
+#ifdef _WIN64
+    typedef unsigned long long ulongptr;
 #else
-typedef unsigned long   ulongptr;
+    typedef ulong ulongptr;
 #endif
 
 
-#ifdef __GNUC__
-    // In GCC, include soundtouch_config.h made by config scritps
-/* Define to 1 if you have the <inttypes.h> header file. */
-#define HAVE_INTTYPES_H 1
+// Helper macro for aligning pointer up to next 16-byte boundary
+#define SOUNDTOUCH_ALIGN_POINTER_16(x)      ( ( (ulongptr)(x) + 15 ) & ~(ulongptr)15 )
 
-/* Define to 1 if you have the `m' library (-lm). */
-#define HAVE_LIBM 1
 
-/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
-   to 0 otherwise. */
-#define HAVE_MALLOC 1
-
-/* Define to 1 if you have the <memory.h> header file. */
-#define HAVE_MEMORY_H 1
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#define HAVE_STDLIB_H 1
-
-/* Define to 1 if you have the <strings.h> header file. */
-#define HAVE_STRINGS_H 1
-
-/* Define to 1 if you have the <string.h> header file. */
-#define HAVE_STRING_H 1
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#define HAVE_SYS_STAT_H 1
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
-
-/* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
-
-/* Use Integer as Sample type */
-//#define INTEGER_SAMPLES 1
-
-/* Define as the return type of signal handlers (`int' or `void'). */
-#define RETSIGTYPE void
-
-/* Define to 1 if you have the ANSI C header files. */
-#define STDC_HEADERS 1
-
+#if (defined(__GNUC__) && !defined(ANDROID))
+    // In GCC, include soundtouch_config.h made by config scritps.
+    // Skip this in Android compilation that uses GCC but without configure scripts.
+    #include "soundtouch_config.h"
 #endif
 
 #ifndef _WINDEF_
@@ -103,79 +65,89 @@ typedef unsigned long   ulongptr;
 
     typedef int BOOL;
 
-#ifndef FALSE
     #define FALSE   0
-#endif
-
-#ifndef TRUE
     #define TRUE    1
-#endif
 
 #endif  // _WINDEF_
 
 
 namespace soundtouch
 {
-/// Activate these undef's to overrule the possible sampletype 
-/// setting inherited from some other header file:
-//#undef INTEGER_SAMPLES
-//#undef FLOAT_SAMPLES
+    /// Activate these undef's to overrule the possible sampletype 
+    /// setting inherited from some other header file:
+    //#undef SOUNDTOUCH_INTEGER_SAMPLES
+    //#undef SOUNDTOUCH_FLOAT_SAMPLES
 
-#if !(INTEGER_SAMPLES || FLOAT_SAMPLES)
-   
-    /// Choose either 32bit floating point or 16bit integer sampletype
-    /// by choosing one of the following defines, unless this selection 
-    /// has already been done in some other file.
-    ////
-    /// Notes:
-    /// - In Windows environment, choose the sample format with the
-    ///   following defines.
-    /// - In GNU environment, the floating point samples are used by 
-    ///   default, but integer samples can be chosen by giving the 
-    ///   following switch to the configure script:
-    ///       ./configure --enable-integer-samples
-    ///   However, if you still prefer to select the sample format here 
-    ///   also in GNU environment, then please #undef the INTEGER_SAMPLE
-    ///   and FLOAT_SAMPLE defines first as in comments above.
-    //#define INTEGER_SAMPLES     1    //< 16bit integer samples
-    #define FLOAT_SAMPLES       1    //< 32bit float samples
- 
- #endif
+    #if (defined(__SOFTFP__))
+        // For Android compilation: Force use of Integer samples in case that
+        // compilation uses soft-floating point emulation - soft-fp is way too slow
+        #undef  SOUNDTOUCH_FLOAT_SAMPLES
+        #define SOUNDTOUCH_INTEGER_SAMPLES      1
+    #endif
 
-    /// Define this to allow CPU-specific assembler optimizations. Notice that 
-    /// having this enabled on non-x86 platforms doesn't matter; the compiler can 
-    /// drop unsupported extensions on different platforms automatically. 
-    /// However, if you're having difficulties getting the optimized routines 
-    /// compiled with your compler (e.g. some gcc compiler versions may be picky), 
-    /// you may wish to disable the optimizations to make the library compile.
-	#if !defined(_MSC_VER) || !defined(__x86_64__)
-	#define ALLOW_OPTIMIZATIONS 1
-	#define ALLOW_NONEXACT_SIMD_OPTIMIZATION    1
-	#endif
+    #if !(SOUNDTOUCH_INTEGER_SAMPLES || SOUNDTOUCH_FLOAT_SAMPLES)
+       
+        /// Choose either 32bit floating point or 16bit integer sampletype
+        /// by choosing one of the following defines, unless this selection 
+        /// has already been done in some other file.
+        ////
+        /// Notes:
+        /// - In Windows environment, choose the sample format with the
+        ///   following defines.
+        /// - In GNU environment, the floating point samples are used by 
+        ///   default, but integer samples can be chosen by giving the 
+        ///   following switch to the configure script:
+        ///       ./configure --enable-integer-samples
+        ///   However, if you still prefer to select the sample format here 
+        ///   also in GNU environment, then please #undef the INTEGER_SAMPLE
+        ///   and FLOAT_SAMPLE defines first as in comments above.
+        //#define SOUNDTOUCH_INTEGER_SAMPLES     1    //< 16bit integer samples
+        #define SOUNDTOUCH_FLOAT_SAMPLES       1    //< 32bit float samples
+     
+    #endif
 
+    #if (_M_IX86 || __i386__ || __x86_64__ || _M_X64)
+        /// Define this to allow X86-specific assembler/intrinsic optimizations. 
+        /// Notice that library contains also usual C++ versions of each of these
+        /// these routines, so if you're having difficulties getting the optimized 
+        /// routines compiled for whatever reason, you may disable these optimizations 
+        /// to make the library compile.
+
+        #define SOUNDTOUCH_ALLOW_X86_OPTIMIZATIONS     1
+
+        /// In GNU environment, allow the user to override this setting by
+        /// giving the following switch to the configure script:
+        /// ./configure --disable-x86-optimizations
+        /// ./configure --enable-x86-optimizations=no
+        #ifdef SOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS
+            #undef SOUNDTOUCH_ALLOW_X86_OPTIMIZATIONS
+        #endif
+    #else
+        /// Always disable optimizations when not using a x86 systems.
+        #undef SOUNDTOUCH_ALLOW_X86_OPTIMIZATIONS
+
+    #endif
 
     // If defined, allows the SIMD-optimized routines to take minor shortcuts 
     // for improved performance. Undefine to require faithfully similar SIMD 
     // calculations as in normal C implementation.
-    
+    #define SOUNDTOUCH_ALLOW_NONEXACT_SIMD_OPTIMIZATION    1
 
 
-    #ifdef INTEGER_SAMPLES
+    #ifdef SOUNDTOUCH_INTEGER_SAMPLES
         // 16bit integer sample type
         typedef short SAMPLETYPE;
         // data type for sample accumulation: Use 32bit integer to prevent overflows
         typedef long  LONG_SAMPLETYPE;
 
-        #ifdef FLOAT_SAMPLES
+        #ifdef SOUNDTOUCH_FLOAT_SAMPLES
             // check that only one sample type is defined
             #error "conflicting sample types defined"
-        #endif // FLOAT_SAMPLES
+        #endif // SOUNDTOUCH_FLOAT_SAMPLES
 
-        #ifdef ALLOW_OPTIMIZATIONS
-            #if (_WIN32 || __i386__ || __x86_64__)
-                // Allow MMX optimizations
-                #define ALLOW_MMX   1
-            #endif
+        #ifdef SOUNDTOUCH_ALLOW_X86_OPTIMIZATIONS
+            // Allow MMX optimizations
+            #define SOUNDTOUCH_ALLOW_MMX   1
         #endif
 
     #else
@@ -185,17 +157,31 @@ namespace soundtouch
         // data type for sample accumulation: Use double to utilize full precision.
         typedef double LONG_SAMPLETYPE;
 
-        #ifdef ALLOW_OPTIMIZATIONS
-                // Allow 3DNow! and SSE optimizations
-            #if _WIN32
-               // #define ALLOW_3DNOW     1
-            #endif
-            #if (_WIN32 || __i386__ || __x86_64__)
-                #define ALLOW_SSE       1
-            #endif
+        #ifdef SOUNDTOUCH_ALLOW_X86_OPTIMIZATIONS
+            // Allow SSE optimizations
+            #define SOUNDTOUCH_ALLOW_SSE       1
         #endif
 
-    #endif  // INTEGER_SAMPLES
+    #endif  // SOUNDTOUCH_INTEGER_SAMPLES
+
 };
+
+// define ST_NO_EXCEPTION_HANDLING switch to disable throwing std exceptions:
+// #define ST_NO_EXCEPTION_HANDLING    1
+#ifdef ST_NO_EXCEPTION_HANDLING
+    // Exceptions disabled. Throw asserts instead if enabled.
+    #include <assert.h>
+    #define ST_THROW_RT_ERROR(x)    {assert((const char *)x);}
+#else
+    // use c++ standard exceptions
+    #include <stdexcept>
+    #define ST_THROW_RT_ERROR(x)    {throw std::runtime_error(x);}
+#endif
+
+// When this #define is active, eliminates a clicking sound when the "rate" or "pitch" 
+// parameter setting crosses from value <1 to >=1 or vice versa during processing. 
+// Default is off as such crossover is untypical case and involves a slight sound 
+// quality compromise.
+//#define SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER   1
 
 #endif
