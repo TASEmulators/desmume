@@ -68,12 +68,17 @@ void disableExtensions(uint dwDisableMask)
 }
 
 
+// DeSmuME will use a custom version of detectCPUextensions(), since the
+// latest version of the SoundTouch library uses cpuid, which is not
+// available on all compilers. - rogerman, 2013/04/15
 
 /// Checks which instruction set extensions are supported by the CPU.
 uint detectCPUextensions(void)
 {
-#ifndef __i386__
+#if !defined(__i386__) && !defined(__x86_64__)
+
     return 0; // always disable extensions on non-x86 platforms.
+
 #else
     uint res = 0;
 
@@ -81,57 +86,63 @@ uint detectCPUextensions(void)
 
     asm volatile(
         "\n\txor     %%esi, %%esi"       // clear %%esi = result register
-        // check if 'cpuid' instructions is available by toggling eflags bit 21
 
+#ifndef __x86_64__
+        // Check if 'cpuid' instructions is available by toggling eflags bit 21.
+        // Skip this for x86-64 as they always have cpuid while stack manipulation
+        // differs from 16/32bit ISA.
         "\n\tpushf"                      // save eflags to stack
-        "\n\tpop     %%eax"              // load eax from stack (with eflags)
+        "\n\tmovl    (%%esp), %%eax"     // load eax from stack (with eflags)
         "\n\tmovl    %%eax, %%ecx"       // save the original eflags values to ecx
         "\n\txor     $0x00200000, %%eax" // toggle bit 21
-        "\n\tpush    %%eax"              // store toggled eflags to stack
+        "\n\tmovl    %%eax, (%%esp)"     // store toggled eflags to stack
         "\n\tpopf"                       // load eflags from stack
         "\n\tpushf"                      // save updated eflags to stack
-        "\n\tpop     %%eax"              // load from stack
+        "\n\tmovl    (%%esp), %%eax"     // load eax from stack
+        "\n\tpopf"                       // pop stack to restore esp
         "\n\txor     %%edx, %%edx"       // clear edx for defaulting no mmx
         "\n\tcmp     %%ecx, %%eax"       // compare to original eflags values
-        "\n\tjz      end"                // jumps to 'end' if cpuid not present
+        "\n\tjz      2f"                 // jumps to 'end' if cpuid not present
+#endif // __x86_64__
 
         // cpuid instruction available, test for presence of mmx instructions
-
         "\n\tmovl    $1, %%eax"
         "\n\tcpuid"
-//        movl       $0x00800000, %edx   // force enable MMX
         "\n\ttest    $0x00800000, %%edx"
-        "\n\tjz      end"                // branch if MMX not available
+        "\n\tjz      2f"                 // branch if MMX not available
 
         "\n\tor      $0x01, %%esi"       // otherwise add MMX support bit
 
         "\n\ttest    $0x02000000, %%edx"
-        "\n\tjz      test3DNow"          // branch if SSE not available
+        "\n\tjz      1f"                 // branch if SSE not available
 
         "\n\tor      $0x08, %%esi"       // otherwise add SSE support bit
 
-    "\n\ttest3DNow:"
-        // test for precense of AMD extensions
+    "\n\t1:" // test3DNow:
+        // test for presence of AMD extensions
         "\n\tmov     $0x80000000, %%eax"
         "\n\tcpuid"
         "\n\tcmp     $0x80000000, %%eax"
-        "\n\tjbe     end"                 // branch if no AMD extensions detected
+        "\n\tjbe     2f"                 // branch if no AMD extensions detected
 
-        // test for precense of 3DNow! extension
+        // test for presence of 3DNow! extension
         "\n\tmov     $0x80000001, %%eax"
         "\n\tcpuid"
         "\n\ttest    $0x80000000, %%edx"
-        "\n\tjz      end"                  // branch if 3DNow! not detected
+        "\n\tjz      2f"                 // branch if 3DNow! not detected
 
-        "\n\tor      $0x02, %%esi"         // otherwise add 3DNow support bit
+        "\n\tor      $0x02, %%esi"       // otherwise add 3DNow support bit
 
-    "\n\tend:"
-
+    "\n\t2:" // end:
         "\n\tmov     %%esi, %0"
 
       : "=r" (res)
       : /* no inputs */
-      : "%edx", "%eax", "%ecx", "%esi" );
+#ifdef __x86_64__
+      : "%rax", "%rbx", "%rcx", "%rdx", "%rsi" ); // clobber rbx on 64-bit since cpuid will modify this
+#else
+      : "%eax",         "%ecx", "%edx", "%esi" ); // don't clobber ebx on 32-bit since some compilers will fail if you do this
+#endif
       
     return res & ~_dwDisabledISA;
 #endif
