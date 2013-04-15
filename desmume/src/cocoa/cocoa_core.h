@@ -19,6 +19,7 @@
 #import <Cocoa/Cocoa.h>
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
+#include <string>
 #import "cocoa_util.h"
 
 
@@ -56,6 +57,7 @@ typedef struct
 	NSInteger prevCoreState;
 	BOOL isSpeedLimitEnabled;
 	CGFloat speedScalar;
+	std::string _slot1R4Path;
 	
 	NSUInteger emulationFlags;
 	BOOL emuFlagAdvancedBusLevelTiming;
@@ -68,6 +70,10 @@ typedef struct
 	BOOL emuFlagDebugConsole;
 	BOOL emuFlagEmulateEnsata;
 	NSInteger cpuEmulationEngine;
+	NSInteger slot1DeviceType;
+	NSString *slot1StatusText;
+	
+	NSURL *slot1R4URL;
 	
 	OSSpinLock spinlockCdsController;
 	OSSpinLock spinlockMasterExecute;
@@ -101,10 +107,13 @@ typedef struct
 @property (assign) BOOL emuFlagDebugConsole;
 @property (assign) BOOL emuFlagEmulateEnsata;
 @property (assign) NSInteger cpuEmulationEngine;
+@property (assign) NSInteger slot1DeviceType;
+@property (assign) NSString *slot1StatusText;
 
 @property (copy) NSURL *arm9ImageURL;
 @property (copy) NSURL *arm7ImageURL;
 @property (copy) NSURL *firmwareImageURL;
+@property (retain) NSURL *slot1R4URL;
 
 @property (readonly) pthread_mutex_t *mutexCoreExecute;
 
@@ -114,10 +123,12 @@ typedef struct
 
 - (BOOL) ejectCardFlag;
 - (void) setEjectCardFlag;
+- (void) slot1Eject;
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID;
 - (void) changeExecutionSpeed;
-- (void) setDynaRec;
+- (void) applyDynaRec;
+- (BOOL) applySlot1Device;
 
 - (void) restoreCoreState;
 - (void) reset;
