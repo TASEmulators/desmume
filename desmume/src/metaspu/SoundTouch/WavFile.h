@@ -16,10 +16,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.7 $
+// Last changed  : $Date: 2012-09-01 04:57:22 -0300 (sáb, 01 set 2012) $
+// File revision : $Revision: 4 $
 //
-// $Id: WavFile.h,v 1.7 2006/02/05 16:44:06 Olli Exp $
+// $Id: WavFile.h 153 2012-09-01 07:57:22Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -92,18 +92,41 @@ typedef struct
 } WavHeader;
 
 
+/// Base class for processing WAV audio files.
+class WavFileBase
+{
+private:
+    /// Conversion working buffer;
+    char *convBuff;
+    int convBuffSize;
+
+protected:
+    WavFileBase();
+    virtual ~WavFileBase();
+
+    /// Get pointer to conversion buffer of at min. given size
+    void *getConvBuffer(int sizeByte);
+};
+
+
 /// Class for reading WAV audio files.
-class WavInFile
+class WavInFile : protected WavFileBase
 {
 private:
     /// File pointer.
     FILE *fptr;
 
+    /// Position within the audio stream
+    long position;
+
     /// Counter of how many bytes of sample data have been read from the file.
-    uint dataRead;
+    long dataRead;
 
     /// WAV header information
     WavHeader header;
+
+    /// Init the WAV file stream
+    void init();
 
     /// Read WAV file headers.
     /// \return zero if all ok, nonzero if file format is invalid.
@@ -111,7 +134,7 @@ private:
 
     /// Checks WAV file header tags.
     /// \return zero if all ok, nonzero if file format is invalid.
-    int checkCharTags();
+    int checkCharTags() const;
 
     /// Reads a single WAV file header block.
     /// \return zero if all ok, nonzero if file format is invalid.
@@ -125,12 +148,10 @@ public:
     /// throws 'runtime_error' exception.
     WavInFile(const char *filename);
 
+    WavInFile(FILE *file);
+
     /// Destructor: Closes the file.
     ~WavInFile();
-
-    /// Close the file. Notice that file is automatically closed also when the 
-    /// class instance is deleted.
-    void close();
 
     /// Rewind to beginning of the file
     void rewind();
@@ -157,12 +178,17 @@ public:
     /// Get the audio file length in milliseconds
     uint getLengthMS() const;
 
+    /// Returns how many milliseconds of audio have so far been read from the file
+    ///
+    /// \return elapsed duration in milliseconds
+    uint getElapsedMS() const;
+
     /// Reads audio samples from the WAV file. This routine works only for 8 bit samples.
     /// Reads given number of elements from the file or if end-of-file reached, as many 
     /// elements as are left in the file.
     ///
     /// \return Number of 8-bit integers read from the file.
-    int read(char *buffer, int maxElems);
+    int read(unsigned char *buffer, int maxElems);
 
     /// Reads audio samples from the WAV file to 16 bit integer format. Reads given number 
     /// of elements from the file or if end-of-file reached, as many elements as are 
@@ -176,6 +202,7 @@ public:
     /// Reads audio samples from the WAV file to floating point format, converting 
     /// sample values to range [-1,1[. Reads given number of elements from the file
     /// or if end-of-file reached, as many elements as are left in the file.
+    /// Notice that reading in float format supports 8/16/24/32bit sample formats.
     ///
     /// \return Number of elements read from the file.
     int read(float *buffer,     ///< Pointer to buffer where to read data.
@@ -191,7 +218,7 @@ public:
 
 
 /// Class for writing WAV audio files.
-class WavOutFile
+class WavOutFile : protected WavFileBase
 {
 private:
     /// Pointer to the WAV file
@@ -203,9 +230,6 @@ private:
     /// Counter of how many bytes have been written to the file so far.
     int bytesWritten;
 
-	/// number of bytes to be written before next flush.
-	int flushTime;
-
     /// Fills in WAV file header information.
     void fillInHeader(const uint sampleRate, const uint bits, const uint channels);
 
@@ -216,14 +240,6 @@ private:
     /// Writes the WAV file header.
     void writeHeader();
 
-	/// Flushes the WAV file every so often -- writes header info for the current
-	/// data length and then returns the seek position to the end of the WAV for
-	/// continued writing.  This method is called from each write() method.
-	void flush( int numElems );
-
-	/// Flush the WAVheader every 32kb written
-	static const int flushRate = 0x8000;
-
 public:
     /// Constructor: Creates a new WAV file. Throws a 'runtime_error' exception 
     /// if file creation fails.
@@ -233,13 +249,15 @@ public:
                int channels             ///< Number of channels (1=mono, 2=stereo)
                );
 
+    WavOutFile(FILE *file, int sampleRate, int bits, int channels);
+
     /// Destructor: Finalizes & closes the WAV file.
     ~WavOutFile();
 
     /// Write data to WAV file. This function works only with 8bit samples. 
     /// Throws a 'runtime_error' exception if writing to file fails.
-    void write(const char *buffer,     ///< Pointer to sample data buffer.
-               int numElems             ///< How many array items are to be written to file.
+    void write(const unsigned char *buffer, ///< Pointer to sample data buffer.
+               int numElems                 ///< How many array items are to be written to file.
                );
 
     /// Write data to WAV file. Throws a 'runtime_error' exception if writing to
@@ -253,12 +271,6 @@ public:
     void write(const float *buffer,     ///< Pointer to sample data buffer.
                int numElems             ///< How many array items are to be written to file.
                );
-
-    /// Finalize & close the WAV file. Automatically supplements the WAV file header
-    /// information according to written data etc.
-    ///
-    /// Notice that file is automatically closed also when the class instance is deleted.
-    void close();
 };
 
 #endif
