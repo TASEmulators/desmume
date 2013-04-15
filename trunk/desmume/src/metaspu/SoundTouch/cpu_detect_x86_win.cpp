@@ -41,6 +41,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "cpu_detect.h"
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 #ifndef _WIN32
 #error wrong platform - this source code file is exclusively for Win32 platform
@@ -71,60 +74,19 @@ uint detectCPUextensions(void)
 
     if (_dwDisabledISA == 0xffffffff) return 0;
 
-	//zeromus 28-oct-2009 - changed to compile on 64bits msvc
-#if (defined(_MSC_VER) && !defined(_M_X64)) || !defined(_MSC_VER)
+#ifdef _MSC_VER
+	int CPUInfo[4] = {-1};
+	__cpuid(CPUInfo, 1);
+	res |= (CPUInfo[3] & (1 << 23))?SUPPORT_MMX:0;
+	res |= (CPUInfo[3] & (1 << 25))?SUPPORT_SSE:0;
 
-    _asm 
-    {
-        ; check if 'cpuid' instructions is available by toggling eflags bit 21
-        ;
-        xor     esi, esi            ; clear esi = result register
-
-        pushfd                      ; save eflags to stack
-        pop     eax                 ; load eax from stack (with eflags)
-        mov     ecx, eax            ; save the original eflags values to ecx
-        xor     eax, 0x00200000     ; toggle bit 21
-        push    eax                 ; store toggled eflags to stack
-        popfd                       ; load eflags from stack
-        pushfd                      ; save updated eflags to stack
-        pop     eax                 ; load from stack
-        xor     edx, edx            ; clear edx for defaulting no mmx
-        cmp     eax, ecx            ; compare to original eflags values
-        jz      end                 ; jumps to 'end' if cpuid not present
-
-        ; cpuid instruction available, test for presence of mmx instructions 
-        mov     eax, 1
-        cpuid
-        test    edx, 0x00800000
-        jz      end                 ; branch if MMX not available
-
-        or      esi, SUPPORT_MMX    ; otherwise add MMX support bit
-
-        test    edx, 0x02000000
-        jz      test3DNow           ; branch if SSE not available
-
-        or      esi, SUPPORT_SSE    ; otherwise add SSE support bit
-
-    test3DNow:
-        ; test for precense of AMD extensions
-        mov     eax, 0x80000000
-        cpuid
-        cmp     eax, 0x80000000
-        jbe     end                ; branch if no AMD extensions detected
-
-        ; test for precense of 3DNow! extension
-        mov     eax, 0x80000001
-        cpuid
-        test    edx, 0x80000000
-        jz      end                 ; branch if 3DNow! not detected
-
-        or      esi, SUPPORT_3DNOW  ; otherwise add 3DNow support bit
-
-    end:
-
-        mov     res, esi
-    }
-
+	// Test 3Dnow
+	__cpuid(CPUInfo, 0x80000000);
+	if (CPUInfo[0] == 0x80000000)
+	{
+		__cpuid(CPUInfo, 0x80000001);
+		res |= (CPUInfo[3] & (1 << 31))?SUPPORT_3DNOW:0;
+	}
 #endif
 
     return res & ~_dwDisabledISA;
