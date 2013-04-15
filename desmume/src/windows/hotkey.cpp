@@ -109,6 +109,30 @@ void HK_CpuMode(int, bool justPressed)
 	osd->addLine(tmp);
 	//WritePrivateProfileInt("Emulation", "CpuMode", CommonSettings.use_jit, IniName)
 }
+
+void HK_JitBlockSizeDec(int, bool justPressed)
+{
+	if (!CommonSettings.use_jit) return;
+	if (CommonSettings.jit_max_block_size < 2) return;
+
+	CommonSettings.jit_max_block_size--;
+	char tmp[256];
+	sprintf(tmp,"JIT block size changed to: %d", CommonSettings.jit_max_block_size);
+	osd->addLine(tmp);
+	arm_jit_reset(CommonSettings.use_jit);
+}
+
+void HK_JitBlockSizeInc(int, bool justPressed)
+{
+	if (!CommonSettings.use_jit) return;
+	if (CommonSettings.jit_max_block_size > 99) return;
+
+	CommonSettings.jit_max_block_size++;
+	char tmp[256];
+	sprintf(tmp,"JIT block size changed to: %d", CommonSettings.jit_max_block_size);
+	osd->addLine(tmp);
+	arm_jit_reset(CommonSettings.use_jit);
+}
 #endif
 
 void HK_SearchCheats(int, bool justPressed) 
@@ -547,6 +571,20 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->CpuMode.name = STRW(ID_LABEL_HK3b);
 	keys->CpuMode.page = HOTKEY_PAGE_MAIN;
 	keys->CpuMode.key = VK_SCROLL;
+
+	keys->JitBlockSizeDec.handleKeyDown = HK_JitBlockSizeDec;
+	keys->JitBlockSizeDec.code = "JitBlockSizeDec";
+	keys->JitBlockSizeDec.name = STRW(ID_LABEL_HK3c);
+	keys->JitBlockSizeDec.page = HOTKEY_PAGE_MAIN;
+	keys->JitBlockSizeDec.key = VK_SUBTRACT;
+	keys->JitBlockSizeDec.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->JitBlockSizeInc.handleKeyDown = HK_JitBlockSizeInc;
+	keys->JitBlockSizeInc.code = "JitBlockSizeInc";
+	keys->JitBlockSizeInc.name = STRW(ID_LABEL_HK3d);
+	keys->JitBlockSizeInc.page = HOTKEY_PAGE_MAIN;
+	keys->JitBlockSizeInc.key = VK_ADD;
+	keys->JitBlockSizeInc.modifiers = CUSTKEY_CTRL_MASK;
 #endif
 
 	keys->FrameAdvance.handleKeyDown = HK_FrameAdvanceKeyDown;

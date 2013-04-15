@@ -77,7 +77,7 @@ struct SCustomKeys
 	SCustomKey OpenROM, ReloadROM, Reset, Pause;
 
 #ifdef HAVE_JIT
-	SCustomKey CpuMode;
+	SCustomKey CpuMode, JitBlockSizeDec, JitBlockSizeInc;
 #endif
 	SCustomKey FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, FrameLimitToggle, Microphone, IncreasePressure, DecreasePressure, ToggleStylusJitter;
 
