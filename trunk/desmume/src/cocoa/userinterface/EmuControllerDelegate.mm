@@ -878,8 +878,7 @@
 
 - (IBAction) changeRotationRelative:(id)sender
 {
-	const double angleDegrees = [mainWindow displayRotation] + (double)[CocoaDSUtil getIBActionSenderTag:sender];
-	[mainWindow setDisplayRotation:angleDegrees];
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) changeDisplayMode:(id)sender
@@ -1165,6 +1164,21 @@
 - (void) cmdCopyScreen:(NSValue *)cmdAttrValue
 {
 	[mainWindow copy:nil];
+}
+
+- (void) cmdRotateDisplayRelative:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
+	const double relativeDegrees = (cmdAttr.useInputForSender) ? (double)[CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : (double)cmdAttr.intValue[0];
+	const double angleDegrees = [mainWindow displayRotation] + relativeDegrees;
+	[mainWindow setDisplayRotation:angleDegrees];
 }
 
 - (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue

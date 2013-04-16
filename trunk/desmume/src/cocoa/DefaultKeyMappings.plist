@@ -26,6 +26,8 @@
 		<string>Load State Slot</string>
 		<string>Save State Slot</string>
 		<string>Copy Screen</string>
+		<string>Rotate Display Left</string>
+		<string>Rotate Display Right</string>
 		<string>Set Speed</string>
 		<string>Enable/Disable Speed Limiter</string>
 		<string>Enable/Disable Auto Frame Skip</string>
@@ -331,6 +333,40 @@
 				<array/>
 				<key>Copy Screen</key>
 				<array/>
+				<key>Rotate Display Left</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: [</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>33</string>
+						<key>elementName</key>
+						<string>[</string>
+						<key>intValue0</key>
+						<integer>-90</integer>
+					</dict>
+				</array>
+				<key>Rotate Display Right</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: ]</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>30</string>
+						<key>elementName</key>
+						<string>]</string>
+						<key>intValue0</key>
+						<integer>90</integer>
+					</dict>
+				</array>
 				<key>Set Speed</key>
 				<array>
 					<dict>

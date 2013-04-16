@@ -835,6 +835,8 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonStart_420x420" ofType:@"png"]] autorelease],		@"Start",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Select",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Microphone_420x420" ofType:@"png"]] autorelease],			@"Microphone",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_RotateCCW_420x420" ofType:@"png"]] autorelease],			@"Rotate Display Left",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_RotateCW_420x420" ofType:@"png"]] autorelease],			@"Rotate Display Right",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ShowHUD_420x420" ofType:@"png"]] autorelease],			@"HUD",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]] autorelease],			@"Execute",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]] autorelease],				@"Pause",
@@ -865,6 +867,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	commandSelector["Load State Slot"]			= @selector(cmdLoadEmuSaveStateSlot:);
 	commandSelector["Save State Slot"]			= @selector(cmdSaveEmuSaveStateSlot:);
 	commandSelector["Copy Screen"]				= @selector(cmdCopyScreen:);
+	commandSelector["Rotate Display Relative"]	= @selector(cmdRotateDisplayRelative:);
 	commandSelector["Set Speed"]				= @selector(cmdHoldToggleSpeedScalar:);
 	commandSelector["Enable/Disable Speed Limiter"] = @selector(cmdToggleSpeedLimiter:);
 	commandSelector["Enable/Disable Auto Frame Skip"] = @selector(cmdToggleAutoFrameSkip:);
@@ -901,6 +904,15 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);	
 	CommandAttributes cmdCopyScreen				= NewCommandAttributesForSelector("Copy Screen", commandSelector["Copy Screen"]);
 	
+	CommandAttributes cmdRotateDisplayRelative	= NewCommandAttributesForSelector("Rotate Display Relative", commandSelector["Rotate Display Relative"]);
+	cmdRotateDisplayRelative.intValue[0] = 90;
+	
+	CommandAttributes cmdRotateDisplayLeft		= NewCommandAttributesForSelector("Rotate Display Left", commandSelector["Rotate Display Relative"]);
+	cmdRotateDisplayLeft.intValue[0] = -90;
+	
+	CommandAttributes cmdRotateDisplayRight		= NewCommandAttributesForSelector("Rotate Display Right", commandSelector["Rotate Display Relative"]);
+	cmdRotateDisplayRight.intValue[0] = 90;
+	
 	CommandAttributes cmdToggleSpeed			= NewCommandAttributesForSelector("Set Speed", commandSelector["Set Speed"]);
 	cmdToggleSpeed.floatValue[0] = 1.0f;
 	
@@ -932,6 +944,8 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	defaultCommandAttributes["Load State Slot"] = cmdLoadEmuSaveStateSlot;
 	defaultCommandAttributes["Save State Slot"] = cmdSaveEmuSaveStateSlot;
 	defaultCommandAttributes["Copy Screen"]		= cmdCopyScreen;
+	defaultCommandAttributes["Rotate Display Left"] = cmdRotateDisplayLeft;
+	defaultCommandAttributes["Rotate Display Right"] = cmdRotateDisplayRight;
 	defaultCommandAttributes["Set Speed"]		= cmdToggleSpeed;
 	defaultCommandAttributes["Enable/Disable Speed Limiter"] = cmdToggleSpeedLimiter;
 	defaultCommandAttributes["Enable/Disable Auto Frame Skip"] = cmdToggleAutoFrameSkip;
@@ -945,6 +959,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	[self addMappingForIBAction:@selector(loadEmuSaveStateSlot:) commandAttributes:&cmdLoadEmuSaveStateSlot];
 	[self addMappingForIBAction:@selector(saveEmuSaveStateSlot:) commandAttributes:&cmdSaveEmuSaveStateSlot];
 	[self addMappingForIBAction:@selector(copy:) commandAttributes:&cmdCopyScreen];
+	[self addMappingForIBAction:@selector(changeRotationRelative:) commandAttributes:&cmdRotateDisplayRelative];
 	[self addMappingForIBAction:@selector(toggleSpeedLimiter:) commandAttributes:&cmdToggleSpeedLimiter];
 	[self addMappingForIBAction:@selector(toggleAutoFrameSkip:) commandAttributes:&cmdToggleAutoFrameSkip];
 	[self addMappingForIBAction:@selector(toggleCheats:) commandAttributes:&cmdToggleCheats];
