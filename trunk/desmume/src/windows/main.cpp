@@ -3061,7 +3061,6 @@ int _main()
 	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
 
 	// Slot 1 / Slot 2 (GBA slot)
-	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL, IniName);
 	cmdline.slot1_fat_dir = GetPrivateProfileStdString("Slot1", "fat_path", "");
 
 	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
@@ -3118,8 +3117,15 @@ int _main()
 		break;
 	}
 
-	slot1Change((NDS_SLOT1_TYPE)slot1_device_type);
 	addonsChangePak(addon_type);
+
+	//override slot1 type with commandline, if present
+	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL, IniName);
+	if(cmdline.slot1 != "")
+		WritePrivateProfileInt("Slot1","type",slot1_device_type,IniName);
+	else
+		slot1Change((NDS_SLOT1_TYPE)slot1_device_type);
+
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
