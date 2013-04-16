@@ -390,6 +390,7 @@
 #define IDC_ADDONS_INFO2                1035
 #define IDC_PATHIMG                     1036
 #define IDC_PIANO_DS                    1036
+#define IDC_ADDONS_INFO3                1036
 #define IDC_PATH                        1037
 #define IDC_PATHGAME                    1037
 #define IDC_PIANO_E                     1037

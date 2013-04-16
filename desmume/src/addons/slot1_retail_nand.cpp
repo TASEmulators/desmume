@@ -115,6 +115,9 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 				// ID in main mem is zero and this value needs to be
 				// zero too.
 
+				//note that even if desmume was booting from firmware, and reading this chip ID to store in main memory,
+				//this still works, since it will have read 00 originally and then read 00 to validate.
+
 				//staff of kings verifies this (it also uses the arm7 IRQ 20)
 				if(nds.cardEjected) //TODO - handle this with ejected card slot1 device (and verify using this case)
 					return 0xFFFFFFFF;
