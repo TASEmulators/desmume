@@ -277,20 +277,7 @@
 					</dict>
 				</array>
 				<key>Debug</key>
-				<array>
-					<dict>
-						<key>deviceInfoSummary</key>
-						<string>Keyboard: \</string>
-						<key>deviceCode</key>
-						<string>NSEventKeyboard</string>
-						<key>deviceName</key>
-						<string>Keyboard</string>
-						<key>elementCode</key>
-						<string>42</string>
-						<key>elementName</key>
-						<string>\</string>
-					</dict>
-				</array>
+				<array/>
 				<key>HUD</key>
 				<array>
 					<dict>
@@ -337,20 +324,7 @@
 					</dict>
 				</array>
 				<key>Mute/Unmute</key>
-				<array>
-					<dict>
-						<key>deviceInfoSummary</key>
-						<string>Keyboard: Numpad Clear</string>
-						<key>deviceCode</key>
-						<string>NSEventKeyboard</string>
-						<key>deviceName</key>
-						<string>Keyboard</string>
-						<key>elementCode</key>
-						<string>71</string>
-						<key>elementName</key>
-						<string>Numpad Clear</string>
-					</dict>
-				</array>
+				<array/>
 				<key>Load State Slot</key>
 				<array/>
 				<key>Save State Slot</key>
