@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011-2012 DeSmuME team
+	Copyright (C) 2011-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -126,6 +126,9 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			_OKbutton_slot1 = false;
 			wndConfigSlot1=CreateDialogW(hAppInst, MAKEINTRESOURCEW(Slot1_IDDs[temp_type_slot1]), 
 										dialog, (DLGPROC)Slot1_Procs[temp_type_slot1]);
+			//SetWindowPos(GetDlgItem(dialog, IDC_ADDONS_INFO),HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE);
+			//EnableWindow(GetDlgItem(dialog, IDC_ADDONS_INFO),FALSE);
+			//EnableWindow(GetDlgItem(dialog, IDC_ADDONS_INFO),TRUE);
 			if ( (temp_type_slot1 == 0) || (_OKbutton_slot1) )
 				EnableWindow(OKbutton_slot1, TRUE);
 			else
