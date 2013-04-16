@@ -1,3 +1,34 @@
+0.9.8 -> 0.9.9 (r4228-r4591-r4xxx)
+
+Yes, it's been a while since the last release, but we haven't been completely idle. There's a brand new jit cpu core which yields some impressive speedups! 
+
+General/Core:
+ !!!: add optional arm cpu jit (functioning on x86 and x64 hosts only)
+ bug: we're not going to list 70% of the emulation fixes, as is traditional.
+ bug: savestate reliability fixes related to halt states, gxstat, firmware
+ bug: lua: fix readbyterange, gdscreenshot functions
+ bug: commandline slot-1 handling straightened out
+ enh: fixes and additions to resize filter options
+
+Graphics:
+ enh: opengl 3d driver compatibility improvements
+ bug: fix giant regression from 0.9.7 that left garbage from previous frames on the screen in some games
+ bug: 3d: fix some single poly pixels
+
+Windows:
+ bug: fixes to advanscene DB import
+ bug: fix some full screen stretching bugs
+ enh: add xaudio2 output driver
+ enh: add opengl display method (as opposed to directdraw), with controllable bilinear filter
+ enh: upgrade archive handling system, lzma2 supported
+ enh: reorganize main menu quite a bit
+ enh: add rotation hotkeys, and hotkey to control mouse cursor visibility
+ enh: memory viewer improvements and fixes
+ enh: improve interface for rom eject to prevent accidents and improve usefulness (hide in slot-1 config screen)
+ 
+Cocoa:
+ TBD
+
 0.9.7 -> 0.9.8 (r3812-r4228)
 
 Yes, it's been a while since the last release, but we haven't been completely idle. There's a brand new top shelf Cocoa frontend to make life far more pleasant for OSX users, and a host of compatibility fixes.
@@ -15,7 +46,7 @@ General/Core:
  bug: fix opcode MRC and fake bios CRC16
  enh: jitter some related register and irq events to simulate pipeline effects and stimulate some race conditions to other outcomes
  enh: fake (deterministic) some tiny jitter from human's hand holding stylus; some games were accidentally depending on this
- enh: support nocash-stylep rints from arm
+ enh: support nocash-style prints from arm
  enh: add lua apis for accessing vram
  enh: platforms other than windows receive threading optimizations
  enh: provide diagnostics when system powers off (useful for homebrewers returning from main())
