@@ -234,6 +234,7 @@ SFORMAT SF_MMU[]={
 	{ "BUAZ", 1, 1,       &MMU.fw.addr_size},
 	{ "BUWE", 4, 1,       &MMU.fw.write_enable},
 	{ "BUWR", 4, 1,       &MMU.fw.writeable_buffer},
+	{ "BUDA", 1, 1,       MMU.fw.data},
 	//end memory chips
 
 	{ "MC0A", 4, 1,       &MMU.dscard[0].address},
