@@ -82,6 +82,7 @@
 	
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
+	CommonSettings.jit_max_block_size = 15;
 	CommonSettings.use_jit = true;
 	[CocoaDSCore startupCore];
 	
