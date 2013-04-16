@@ -14,6 +14,7 @@ Graphics:
  enh: opengl 3d driver compatibility improvements
  bug: fix giant regression from 0.9.7 that left garbage from previous frames on the screen in some games
  bug: 3d: fix some single poly pixels
+ bug: 3d: fix some polygon and texture coloring bugs on big-endian systems
 
 Windows:
  bug: fixes to advanscene DB import
@@ -27,7 +28,28 @@ Windows:
  enh: improve interface for rom eject to prevent accidents and improve usefulness (hide in slot-1 config screen)
  
 Cocoa:
- TBD
+ bug: fix missing display when running on OS X v10.8 Mountain Lion
+ bug: fix possible sound crash when using Dual SPU Synch/Asynch
+ bug: fix File menu items being disabled after the file migration sheet is used
+ bug: fix window resizing issues
+ bug: fix text rendering in About box
+ enh: show the icon and name of the loaded ROM
+ enh: add Support Request and Bug Report forms to the Help menu
+ enh: add more detailed info to the About box
+ enh: add OpenGL as a 3D rendering option
+ enh: add support for MSAA when using OpenGL as the 3D rendering engine
+ enh: add V-Sync option
+ enh: add Display Orientation, Display Order, and Display Separation options for Combo Display mode
+ enh: add HQ4xS filter
+ enh: completely revamp the user interface for Input Preferences
+ enh: many emulator commands may now be mapped
+ enh: add ability to map an input to user-defined touch screen coordinates
+ enh: add support for saving and applying input profiles
+ enh: add support for using an audio file for the microphone input
+ enh: add sine wave tone generator for microphone input
+ enh: add support for multiple display windows (File > New Display Window)
+ enh: add support for SLOT-1 devices (Emulation > Show SLOT-1 Manager)
+ enh: overall performance and stability improvements
 
 0.9.7 -> 0.9.8 (r3812-r4228)
 
