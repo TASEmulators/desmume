@@ -212,6 +212,7 @@ class AudioSampleBlockGenerator;
 - (void) cmdSaveEmuSaveStateSlot:(NSValue *)cmdAttrValue;
 
 - (void) cmdCopyScreen:(NSValue *)cmdAttrValue;
+- (void) cmdRotateDisplayRelative:(NSValue *)cmdAttrValue;
 
 - (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue;
 - (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue;
