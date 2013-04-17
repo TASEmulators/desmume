@@ -574,6 +574,12 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
+	// reset firmware (some games can write to it)
+	if (CommonSettings.UseExtFirmware == false)
+	{
+		NDS_CreateDummyFirmware(&CommonSettings.InternalFirmConf);
+	}
+
 	NDS_Reset();
 
 	////WE NEED TO LOAD A SAVESTATE
@@ -682,6 +688,12 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = path.GetRomName();
 	currMovieData.rtcStart = rtcstart;
+
+	// reset firmware (some games can write to it)
+	if (CommonSettings.UseExtFirmware == false)
+	{
+		NDS_CreateDummyFirmware(&CommonSettings.InternalFirmConf);
+	}
 
 	NDS_Reset();
 
