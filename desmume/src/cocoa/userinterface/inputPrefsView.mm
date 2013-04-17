@@ -56,22 +56,83 @@
 		return self;
     }
 	
+	// Note that we manually reconstruct the profile dictionaries down to the mappings since
+	// we depend on the input lists having unique pointers. In other words, since all empty
+	// NSArrays have the same pointer, we remake them into NSMutableArrays to force their
+	// pointers to be unique. The reason we do this is because commandTagFromInputList: depends
+	// on searching for unique pointers to match up command tags. If we don't do this, there
+	// will be duplicate entries in the NSOutlineViews for every empty input list.
+	
 	NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
-	NSArray *defaultProfileList = [defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
-	_defaultProfileListCount = [defaultProfileList count];
+	NSArray *internalDefaultProfilesList = (NSArray *)[defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
+	_defaultProfileListCount = [internalDefaultProfilesList count];
+	defaultProfilesList = [[NSMutableArray alloc] initWithCapacity:_defaultProfileListCount];
+	
+	for (NSDictionary *theProfile in internalDefaultProfilesList)
+	{
+		NSMutableDictionary *reconstructedProfile = [[NSMutableDictionary alloc] initWithCapacity:[theProfile count]];
+		
+		for (NSString *profileKey in theProfile)
+		{
+			if ([profileKey isEqualToString:@"Mappings"])
+			{
+				NSDictionary *profileMappings = (NSDictionary *)[theProfile objectForKey:profileKey];
+				NSMutableDictionary *reconstructedMappings = [[NSMutableDictionary alloc] initWithCapacity:[profileMappings count]];
+				
+				for (NSString *mappingKey in profileMappings)
+				{
+					NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
+					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
+					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+				}
+				
+				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
+			}
+			else
+			{
+				[reconstructedProfile setObject:[theProfile objectForKey:profileKey] forKey:profileKey];
+			}
+		}
+		
+		[defaultProfilesList addObject:[reconstructedProfile autorelease]];
+	}
 	
 	NSArray *userDefaultsSavedProfilesList = (NSArray *)[[NSUserDefaults standardUserDefaults] arrayForKey:@"Input_SavedProfiles"];
 	savedProfilesList = [[NSMutableArray alloc] initWithCapacity:32];
 	
-	for (NSDictionary *savedProfile in userDefaultsSavedProfilesList)
+	for (NSDictionary *theProfile in userDefaultsSavedProfilesList)
 	{
-		[savedProfilesList addObject:[NSMutableDictionary dictionaryWithDictionary:savedProfile]];
+		NSMutableDictionary *reconstructedProfile = [[NSMutableDictionary alloc] initWithCapacity:[theProfile count]];
+		
+		for (NSString *profileKey in theProfile)
+		{
+			if ([profileKey isEqualToString:@"Mappings"])
+			{
+				NSDictionary *profileMappings = (NSDictionary *)[theProfile objectForKey:profileKey];
+				NSMutableDictionary *reconstructedMappings = [[NSMutableDictionary alloc] initWithCapacity:[profileMappings count]];
+				
+				for (NSString *mappingKey in profileMappings)
+				{
+					NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
+					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
+					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+				}
+				
+				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
+			}
+			else
+			{
+				[reconstructedProfile setObject:[theProfile objectForKey:profileKey] forKey:profileKey];
+			}
+		}
+		
+		[savedProfilesList addObject:[reconstructedProfile autorelease]];
 	}
 	
 	configInputTargetID = nil;
 	configInputList = [[NSMutableDictionary alloc] initWithCapacity:128];
 	inputSettingsInEdit = nil;
-		
+	
     return self;
 }
 
@@ -765,10 +826,22 @@
 		newProfileName = [NSString stringWithFormat:@"Untitled %ld", (unsigned long)++untitledCount];
 	}
 	
+	// Reconstruct the mappings dictionary to use NSMutableArrays to prevent duplicate
+	// entries from showing up in the NSOutlineView.
+	NSDictionary *profileMappings = [inputManager inputMappings];
+	NSMutableDictionary *reconstructedMappings = [[NSMutableDictionary alloc] initWithCapacity:[profileMappings count]];
+	
+	for (NSString *mappingKey in profileMappings)
+	{
+		NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
+		NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
+		[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+	}
+	
 	NSMutableDictionary *newProfile = [NSMutableDictionary dictionaryWithObjectsAndKeys:
 									   newProfileName, @"Name",
 									   [NSNumber numberWithBool:NO], @"IsDefaultType",
-									   [[[NSMutableDictionary alloc] initWithDictionary:[inputManager inputMappings] copyItems:YES] autorelease], @"Mappings",
+									   [reconstructedMappings autorelease], @"Mappings",
 									   nil];
 	
 	[savedProfilesList addObject:newProfile];
@@ -882,23 +955,13 @@
 
 - (IBAction) profileSelect:(id)sender
 {
-	const NSInteger profileID = [CocoaDSUtil getIBActionSenderTag:sender];
-	NSArray *profileList = nil;
-	
+	const NSInteger profileID = [CocoaDSUtil getIBActionSenderTag:sender];	
 	if (profileID < 0 || profileID >= (NSInteger)(_defaultProfileListCount + [savedProfilesList count]))
 	{
 		return;
 	}
 	
-	if (profileID < (NSInteger)_defaultProfileListCount) // Select one of the default profiles
-	{
-		NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
-		profileList = [defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
-	}
-	else // Select one of the saved configs
-	{
-		profileList = savedProfilesList;
-	}
+	NSArray *profileList = (profileID < (NSInteger)_defaultProfileListCount) ? defaultProfilesList : savedProfilesList;
 	
 	[inputProfilePreviousButton setTag:profileID-1];
 	[inputProfilePreviousButton setEnabled:(profileID > 0) ? YES : NO];
@@ -910,7 +973,8 @@
 		[inputProfileMenu selectItemAtIndex:(profileID < (NSInteger)_defaultProfileListCount) ? profileID : profileID+1];
 	}
 	
-	[inputProfileController setContent:[profileList objectAtIndex:(profileID < (NSInteger)_defaultProfileListCount) ? profileID : (profileID - _defaultProfileListCount)]];
+	NSMutableDictionary *selectedProfile = (NSMutableDictionary *)[profileList objectAtIndex:(profileID < (NSInteger)_defaultProfileListCount) ? profileID : (profileID - _defaultProfileListCount)];
+	[inputProfileController setContent:selectedProfile];
 	[[inputProfileController profileOutlineView] reloadData];
 	[[inputProfileController profileOutlineView] expandItem:nil expandChildren:YES];
 }

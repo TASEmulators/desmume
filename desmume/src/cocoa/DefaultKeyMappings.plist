@@ -227,7 +227,7 @@
 				<array>
 					<dict>
 						<key>deviceInfoSummary</key>
-						<string>Keyboard: Primary Button</string>
+						<string>Mouse: Primary Button</string>
 						<key>deviceCode</key>
 						<string>NSEventMouse</string>
 						<key>deviceName</key>

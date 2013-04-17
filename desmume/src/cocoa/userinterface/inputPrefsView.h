@@ -54,6 +54,7 @@
 	NSDictionary *inputSettingsMappings;
 	
 	NSUInteger _defaultProfileListCount;
+	NSMutableArray *defaultProfilesList;
 	NSMutableArray *savedProfilesList;
 }
 
