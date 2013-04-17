@@ -234,7 +234,6 @@ SFORMAT SF_MMU[]={
 	{ "BUAZ", 1, 1,       &MMU.fw.addr_size},
 	{ "BUWE", 4, 1,       &MMU.fw.write_enable},
 	{ "BUWR", 4, 1,       &MMU.fw.writeable_buffer},
-	{ "BUDA", 1, 1,       MMU.fw.data},
 	//end memory chips
 
 	{ "MC0A", 4, 1,       &MMU.dscard[0].address},
@@ -275,7 +274,7 @@ SFORMAT SF_MOVIE[]={
 
 static void mmu_savestate(EMUFILE* os)
 {
-	u32 version = 7;
+	u32 version = 8;
 	write32le(version,os);
 	
 	//version 2:
@@ -300,6 +299,10 @@ static void mmu_savestate(EMUFILE* os)
 
 	//version 6:
 	MMU_new.dsi_tsc.save_state(os);
+
+	//version 8:
+	os->write32le(MMU.fw.size);
+	os->fwrite(MMU.fw.data,MMU.fw.size);
 }
 
 // TODO: integrate the new wifi state variables once everything is settled
@@ -458,11 +461,20 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 
 	MMU_new.dsi_tsc.load_state(is);
 
+	//version 6
 	if(version < 7)
 	{
 		//recover WRAMCNT from the stashed WRAMSTAT memory location
 		MMU.WRAMCNT = MMU.MMU_MEM[ARMCPU_ARM7][0x40][0x241];
 	}
+
+	if(version<8) return ok;
+
+	//version 8:
+	delete[] MMU.fw.data;
+	MMU.fw.size = is->read32le();
+	MMU.fw.data = new u8[size];
+	is->fread(MMU.fw.data,MMU.fw.size);
 
 	return ok;
 }
