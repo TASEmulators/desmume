@@ -31,7 +31,7 @@ void arm_jit_close();
 void arm_jit_sync();
 template<int PROCNUM> u32 arm_jit_compile();
 
-#ifdef _WINDOWS
+#if defined(_WINDOWS) || defined(DESMUME_COCOA)
 #define MAPPED_JIT_FUNCS
 #endif
 #ifdef MAPPED_JIT_FUNCS
