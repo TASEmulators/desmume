@@ -64,6 +64,24 @@
 @synthesize isAppRunningOnIntel;
 
 
+- (id)init
+{
+	self = [super init];
+	if(self == nil)
+	{
+		return nil;
+	}
+	
+	// Determine if we're running on Intel or PPC.
+#if defined(__i386__) || defined(__x86_64__)
+	isAppRunningOnIntel = YES;
+#else
+	isAppRunningOnIntel = NO;
+#endif
+	
+	return self;
+}
+
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
 	BOOL result = NO;
@@ -97,13 +115,6 @@
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = (PreferencesWindowDelegate *)[prefWindow delegate];
 	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatListWindow delegate];
-	
-	// Determine if we're running on Intel or PPC.
-#if defined(__i386__) || defined(__x86_64__)
-	isAppRunningOnIntel = YES;
-#else
-	isAppRunningOnIntel = NO;
-#endif
 	
 	// Create the needed directories in Application Support if they haven't already
 	// been created.
