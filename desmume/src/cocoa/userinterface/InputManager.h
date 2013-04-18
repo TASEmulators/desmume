@@ -19,7 +19,11 @@
 #include <libkern/OSAtomic.h>
 #include <IOKit/hid/IOHIDManager.h>
 
+#if defined(__ppc__) || defined(__ppc64__)
+#include <map>
+#else
 #include <tr1/unordered_map>
+#endif
 #include <string>
 #include <vector>
 
@@ -80,10 +84,18 @@ typedef struct
 
 typedef std::vector<InputAttributes> InputAttributesList;
 typedef std::vector<CommandAttributes> CommandAttributesList;
+
+#if defined(__ppc__) || defined(__ppc64__)
+typedef std::map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
+typedef std::map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
+typedef std::map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
+typedef std::map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
+#else
 typedef std::tr1::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
 typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
+#endif
 
 #pragma mark -
 @interface InputHIDDevice : NSObject
