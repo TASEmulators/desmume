@@ -793,7 +793,11 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @synthesize commandTagList;
 @synthesize commandIcon;
 
+#if defined(__ppc__) || defined(__ppc64__)
+static std::map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
+#else
 static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
+#endif
 
 - (id)init
 {
