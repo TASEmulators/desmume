@@ -51,9 +51,27 @@ using namespace AsmJit;
 #if (LOG_JIT_LEVEL > 0)
 #define LOG_JIT 1
 #define JIT_COMMENT(...) c.comment(__VA_ARGS__)
+#define printJIT(buf, val) { \
+	JIT_COMMENT("printJIT(\""##buf"\", val);"); \
+	GpVar txt = c.newGpVar(kX86VarTypeGpz); \
+	GpVar data = c.newGpVar(kX86VarTypeGpz); \
+	GpVar io = c.newGpVar(kX86VarTypeGpd); \
+	c.lea(io, dword_ptr_abs(stdout)); \
+	c.lea(txt, dword_ptr_abs(&buf)); \
+	c.mov(data, *(GpVar*)&val); \
+	X86CompilerFuncCall* prn = c.call((uintptr_t)fprintf); \
+	prn->setPrototype(ASMJIT_CALL_CONV, FuncBuilder3<void, void*, void*, u32>()); \
+	prn->setArgument(0, io); \
+	prn->setArgument(1, txt); \
+	prn->setArgument(2, data); \
+	X86CompilerFuncCall* prn_flush = c.call((uintptr_t)fflush); \
+	prn_flush->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<void, void*>()); \
+	prn_flush->setArgument(0, io); \
+}
 #else
 #define LOG_JIT 0
 #define JIT_COMMENT(...)
+#define printJIT(buf, val)
 #endif
 
 #ifdef MAPPED_JIT_FUNCS
@@ -1351,6 +1369,7 @@ static int OP_MRS_SPSR(const u32 i)
 #define OP_MSR_(reg, args, sw) \
 	GpVar operand = c.newGpVar(kX86VarTypeGpd); \
 	args; \
+	c.mov(operand, rhs); \
 	switch (((i>>16) & 0xF)) \
 	{ \
 		case 0x1:		/* bit 16 */ \
@@ -1370,7 +1389,6 @@ static int OP_MRS_SPSR(const u32 i)
 					ctx->setArgument(0, bb_cpu); \
 					ctx->setArgument(1, mode); \
 				} \
-				c.mov(operand, rhs); \
 				Mem xPSR_memB = cpu_ptr_byte(reg, 0); \
 				c.mov(xPSR_memB, operand.r8Lo()); \
 				changeCPSR; \
@@ -1385,7 +1403,6 @@ static int OP_MRS_SPSR(const u32 i)
 				c.and_(mode, 0x1F); \
 				c.cmp(mode, USR); \
 				c.je(__skip); \
-				c.mov(operand, rhs); \
 				Mem xPSR_memB = cpu_ptr_byte(reg, 1); \
 				c.shr(operand, 8); \
 				c.mov(xPSR_memB, operand.r8Lo()); \
@@ -1401,7 +1418,6 @@ static int OP_MRS_SPSR(const u32 i)
 				c.and_(mode, 0x1F); \
 				c.cmp(mode, USR); \
 				c.je(__skip); \
-				c.mov(operand, rhs); \
 				Mem xPSR_memB = cpu_ptr_byte(reg, 2); \
 				c.shr(operand, 16); \
 				c.mov(xPSR_memB, operand.r8Lo()); \
@@ -1411,7 +1427,6 @@ static int OP_MRS_SPSR(const u32 i)
 			return 1; \
 		case 0x8:		/* bit 19 */ \
 			{ \
-				c.mov(operand, rhs); \
 				Mem xPSR_memB = cpu_ptr_byte(reg, 3); \
 				c.shr(operand, 24); \
 				c.mov(xPSR_memB, operand.r8Lo()); \
@@ -1449,7 +1464,6 @@ static int OP_MRS_SPSR(const u32 i)
 		ctx->setArgument(1, mode); \
 	} \
 	/* cpu->CPSR.val = (cpu->CPSR.val & ~byte_mask) | (operand & byte_mask); */ \
-	c.mov(operand, rhs); \
 	c.mov(xPSR, xPSR_mem); \
 	c.and_(operand, byte_mask); \
 	c.and_(xPSR, ~byte_mask); \
@@ -1458,7 +1472,6 @@ static int OP_MRS_SPSR(const u32 i)
 	c.jmp(__done); \
 	/* mode == USR */ \
 	c.bind(__USR); \
-	c.mov(operand, rhs); \
 	c.mov(xPSR, xPSR_mem); \
 	c.and_(operand, byte_mask_USR); \
 	c.and_(xPSR, ~byte_mask_USR); \
