@@ -4233,10 +4233,10 @@ void arm_jit_reset(bool enable)
 	scratchptr = scratchpad;
 #endif
 	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
-	printf("JIT max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
 
 	if (enable)
 	{
+		printf("JIT: max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
 #ifdef MAPPED_JIT_FUNCS
 
 		//these pointers are allocated by asmjit and need freeing
