@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2008 shash
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,11 +24,8 @@
 #include "resource.h"
 
 #define ABOUT_TIMER_ID 110222
-#define PER_PAGE_TEAM 23
-#define SIZE_SCROLL_BUFFER PER_PAGE_TEAM + TEAM
 const char	*team[] = { 
-	"Current Team",
-	"------------",
+	"Current Team\1",
 	"Guillaume Duhamel",
 	"Normmatt",
 	"Riccardo Magliocchetti",
@@ -37,8 +34,7 @@ const char	*team[] = {
 	"rogerman",
 	"Luigi__",
 	"",
-	"Contributors",
-	"------------",
+	"Contributors\1",
 	"Allustar",
 	"amponzi",
 	"Anthony Molinaro",
@@ -64,18 +60,63 @@ const char	*team[] = {
 	"pengvado",
 	"dormito",
 	"",
-	"Honorary Nagmasters",
-	"(Thanks to our super testers!)",
-	"------------",
+	"Honorary Nagmasters\1",
+	"(Thanks to our super testers!)\1",
 	"nash679",
 	"pokefan999",
 	"dottorleo",
 };
 
-const int TEAM = ARRAY_SIZE(team);
+static HWND		gList = NULL;
+static RECT		gRc = {0};
+static s32		gPosY = 0;
+const u32		size = ARRAY_SIZE(team);
 
-u8	scroll_start;
-u8	scroll_buffer[SIZE_SCROLL_BUFFER][255];
+BOOL CALLBACK ListProc(HWND Dlg, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+
+	switch (msg)
+	{
+		case WM_PAINT:
+			{
+				PAINTSTRUCT ps = {0};
+				
+				HDC hDC = BeginPaint(Dlg, &ps);
+				HDC hdcMem = CreateCompatibleDC(hDC);
+				HBITMAP hbmMem = CreateCompatibleBitmap(hDC, gRc.right, gRc.bottom);
+				HANDLE hOld   = SelectObject(hdcMem, hbmMem);
+				SetTextAlign(hdcMem, TA_CENTER);
+				u32 x = gRc.right / 2;
+				FillRect(hdcMem, &gRc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+				SetTextColor(hdcMem, RGB(255, 0, 0));
+				for (u32 i = 0; i < size; i++)
+				{
+					s32 pos = gPosY+(i*20);
+					if (pos > gRc.bottom) break;
+					if (team[i][strlen(team[i])-1] == 1)
+					{
+						SetTextColor(hdcMem, RGB(255, 0, 0));
+						ExtTextOut(hdcMem, x, pos, ETO_CLIPPED, &gRc, team[i], strlen(team[i])-1, NULL);
+					}
+					else
+					{
+						SetTextColor(hdcMem, RGB(0, 0, 0));
+						ExtTextOut(hdcMem, x, pos, ETO_CLIPPED, &gRc, team[i], strlen(team[i]), NULL);
+					}
+					if ((i == size-1) && (pos < (s32)(gRc.top - 20))) gPosY = gRc.bottom;
+				}
+				FrameRect(hdcMem, &gRc, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+				BitBlt(hDC, 0, 0, gRc.right, gRc.bottom, hdcMem, 0, 0, SRCCOPY);
+				SelectObject(hdcMem, hOld);
+				DeleteObject(hbmMem);
+				DeleteDC(hdcMem);
+				EndPaint(Dlg, &ps);
+			}
+			return TRUE;
+	}
+	return FALSE;
+}
 
 BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lparam)
 {
@@ -99,16 +140,13 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, __TIME__, -1, wstr2, 255);
 			wcscat(wstr, wcscat(wcscat(wstr1, L" "), wstr2));
 			SetDlgItemTextW(dialog, IDC_TXT_COMPILED, wstr);
+			
+			gList = GetDlgItem(dialog, IDC_AUTHORS_LIST);
+			SetWindowLongPtr(gList, GWLP_WNDPROC, (LONG_PTR)ListProc);
+			GetClientRect(gList, &gRc);
+			gPosY = gRc.bottom;
 
-			for (int i = 0; i < SIZE_SCROLL_BUFFER; i++)
-				strcpy((char *)scroll_buffer[i], "\n");
-			for (int i = 0; i < TEAM; i++)
-			{
-				strcpy((char *)scroll_buffer[i + PER_PAGE_TEAM], team[i]);
-				strcat((char *)scroll_buffer[i + PER_PAGE_TEAM], "\n");
-			}
-			SetTimer(dialog, ABOUT_TIMER_ID, 400, (TIMERPROC) NULL);
-			scroll_start = 1;
+			SetTimer(dialog, ABOUT_TIMER_ID, 10, (TIMERPROC) NULL);
 			break;
 		}
 	
@@ -125,15 +163,8 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 
 		case WM_TIMER:
 		{
-			char buf[4096];
-			memset(buf, 0, sizeof(buf));
-			for (int i = 0; i < PER_PAGE_TEAM; i++)
-				if(i+scroll_start < SIZE_SCROLL_BUFFER)
-					strcat(buf, (char *)scroll_buffer[i + scroll_start]);
-			scroll_start++;
-			if (scroll_start >= SIZE_SCROLL_BUFFER)
-				scroll_start = 0;
-			SetDlgItemText(dialog, IDC_AUTHORS_LIST, buf);
+			gPosY--;
+			InvalidateRect(gList, &gRc, false);
 			break;
 		}
 	}
