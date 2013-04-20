@@ -19,6 +19,7 @@
 #import "appDelegate.h"
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
+#import "FileMigrationDelegate.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
 #import "cheatWindowDelegate.h"
@@ -39,12 +40,10 @@
 @synthesize prefWindow;
 @synthesize troubleshootingWindow;
 @synthesize cheatListWindow;
-@synthesize migrationWindow;
 @synthesize prefGeneralView;
 @synthesize mLoadStateSlot;
 @synthesize mSaveStateSlot;
 @synthesize inputPrefsView;
-@synthesize fileMigrationList;
 @synthesize aboutWindowController;
 @synthesize emuControlController;
 @synthesize cdsSoundController;
@@ -52,6 +51,7 @@
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
 @synthesize cheatWindowController;
+@synthesize migrationDelegate;
 @synthesize inputManager;
 
 @synthesize boxGeneralInfo;
@@ -60,7 +60,6 @@
 @synthesize boxFileSystem;
 @synthesize boxMisc;
 
-@synthesize migrationFilesPresent;
 @synthesize isAppRunningOnIntel;
 
 
@@ -220,6 +219,24 @@
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
+	// Determine if the app was run for the first time.
+	NSMutableDictionary *appFirstTimeRunDict = [[NSMutableDictionary alloc] initWithDictionary:[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"General_AppFirstTimeRun"]];
+	NSString *bundleVersionString = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+	
+	BOOL isFirstTimeRun = NO;
+	NSNumber *isFirstTimeRunNumber = (NSNumber *)[appFirstTimeRunDict valueForKey:bundleVersionString];
+	if (isFirstTimeRunNumber == nil)
+	{
+		isFirstTimeRunNumber = [NSNumber numberWithBool:isFirstTimeRun];
+	}
+	
+	isFirstTimeRun = [isFirstTimeRunNumber boolValue];
+	
+	if (appFirstTimeRunDict == nil)
+	{
+		appFirstTimeRunDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:isFirstTimeRunNumber, bundleVersionString, nil];
+	}
+	
 	// Load a new ROM on launch per user preferences.
 	const BOOL loadROMOnLaunch = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_AutoloadROMOnLaunch"];
 	if (loadROMOnLaunch && [emuControl currentRom] == nil)
@@ -251,11 +268,21 @@
 	[emuControl newDisplayWindow:nil];
 	
 	// Present the file migration window to the user (if they haven't disabled it).
-	[self setMigrationFilesPresent:NO];
-	if (![[NSUserDefaults standardUserDefaults] boolForKey:@"General_DoNotAskMigrate"])
+	if (![[NSUserDefaults standardUserDefaults] boolForKey:@"General_DoNotAskMigrate"] || !isFirstTimeRun)
 	{
-		[self showMigrationWindow:nil];
+		[migrationDelegate updateFileList];
+		if ([migrationDelegate filesPresent])
+		{
+			[[migrationDelegate window] center];
+			[[migrationDelegate window] makeKeyAndOrderFront:nil];
+		}
 	}
+	
+	// Set that the app has run for the first time.
+	isFirstTimeRun = YES;
+	[appFirstTimeRunDict setValue:[NSNumber numberWithBool:isFirstTimeRun] forKey:bundleVersionString];
+	[[NSUserDefaults standardUserDefaults] setObject:appFirstTimeRunDict forKey:@"General_AppFirstTimeRun"];
+	[appFirstTimeRunDict release];
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
@@ -519,45 +546,6 @@
 	[prefWindowDelegate updateVolumeIcon:nil];
 	
 	[emuControl setupUserDefaults];
-}
-
-- (IBAction) showMigrationWindow:(id)sender
-{
-	NSMutableArray *fileList = [CocoaDSFile completeFileList];
-	if (fileList != nil)
-	{
-		[self setMigrationFilesPresent:([fileList count] == 0) ? NO : YES];
-		if (sender == nil && ![self migrationFilesPresent])
-		{
-			return;
-		}
-	}
-	
-	[fileMigrationList setContent:fileList];
-	[migrationWindow center];
-	[migrationWindow makeKeyAndOrderFront:nil];
-}
-
-- (IBAction) handleMigrationWindow:(id)sender
-{
-	const NSInteger option = [(NSControl *)sender tag];
-	NSMutableArray *fileList = [fileMigrationList content];
-	
-	switch (option)
-	{
-		case COCOA_DIALOG_DEFAULT:
-			[CocoaDSFile copyFileListToCurrent:fileList];
-			break;
-		
-		case COCOA_DIALOG_OPTION:
-			[CocoaDSFile moveFileListToCurrent:fileList];
-			break;
-		
-		default:
-			break;
-	}
-	
-	[[(NSControl *)sender window] close];
 }
 
 - (void) setRomInfoPanelBoxTitleColors

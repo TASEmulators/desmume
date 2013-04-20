@@ -622,6 +622,10 @@
 		ABA03571169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABA03572169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABA03573169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
+		ABAAFBEA172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
+		ABAAFBEB172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
+		ABAAFBEC172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
+		ABAAFBED172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAD0F7315ACE7A00000EC47 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
 		ABAD0F7415ACE7A00000EC47 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
 		ABAD0F7515ACE7A00000EC47 /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
@@ -1015,6 +1019,8 @@
 		ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = troubleshootingWindowDelegate.mm; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
+		ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
+		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = Images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
 		ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_CodeBreaker_32x32.png; path = Images/Icon_CodeBreaker_32x32.png; sourceTree = "<group>"; };
@@ -1516,6 +1522,7 @@
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
 				AB700DDC16CDE4C300FBD336 /* DisplayWindowController.h */,
 				AB6A187A16C9951C00384EED /* EmuControllerDelegate.h */,
+				ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */,
 				AB5A795616D5A56000ED84B7 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB213D43170CB141006DDB0F /* InputProfileController.h */,
@@ -1525,6 +1532,7 @@
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */,
 				AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */,
+				ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */,
 				AB5A795716D5A56000ED84B7 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
@@ -2678,6 +2686,7 @@
 				AB2F56F11704C86900E28885 /* utilities.c in Sources */,
 				AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145241714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
+				ABAAFBEB172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2837,6 +2846,7 @@
 				AB2F56F01704C86900E28885 /* utilities.c in Sources */,
 				AB213D48170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145261714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
+				ABAAFBEA172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2996,6 +3006,7 @@
 				AB2F56F31704C86900E28885 /* utilities.c in Sources */,
 				AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145251714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
+				ABAAFBED172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3125,6 +3136,7 @@
 				AB2F56F21704C86900E28885 /* utilities.c in Sources */,
 				AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145231714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
+				ABAAFBEC172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

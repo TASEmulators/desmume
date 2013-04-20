@@ -20,6 +20,7 @@
 
 @class InputPrefsView;
 @class InputManager;
+@class FileMigrationDelegate;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -30,7 +31,6 @@
 {
 	NSObject *dummyObject;
 	
-	NSArrayController *fileMigrationList;
 	NSObjectController *aboutWindowController;
 	NSObjectController *emuControlController;
 	NSObjectController *cdsSoundController;
@@ -38,12 +38,12 @@
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
 	NSObjectController *cdsCoreController;
+	FileMigrationDelegate *migrationDelegate;
 	InputManager *inputManager;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
 	NSWindow *cheatListWindow;
-	NSWindow *migrationWindow;
 	NSView *prefGeneralView;
 	InputPrefsView *inputPrefsView;
 	
@@ -56,13 +56,11 @@
 	NSBox *boxFileSystem;
 	NSBox *boxMisc;
 	
-	BOOL migrationFilesPresent;
 	BOOL isAppRunningOnIntel;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
 
-@property (readonly) IBOutlet NSArrayController *fileMigrationList;
 @property (readonly) IBOutlet NSObjectController *aboutWindowController;
 @property (readonly) IBOutlet NSObjectController *emuControlController;
 @property (readonly) IBOutlet NSObjectController *cdsSoundController;
@@ -70,11 +68,11 @@
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
+@property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
 @property (readonly) IBOutlet InputManager *inputManager;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSWindow *cheatListWindow;
-@property (readonly) IBOutlet NSWindow *migrationWindow;
 @property (readonly) IBOutlet NSView *prefGeneralView;
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;
@@ -86,7 +84,6 @@
 @property (readonly) IBOutlet NSBox *boxFileSystem;
 @property (readonly) IBOutlet NSBox *boxMisc;
 
-@property (assign) BOOL migrationFilesPresent;
 @property (assign) BOOL isAppRunningOnIntel;
 
 // Emulation Menu
@@ -105,8 +102,6 @@
 - (void) setupSlotMenuItems;
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber;
 - (void) setupUserDefaults;
-- (IBAction) showMigrationWindow:(id)sender;
-- (IBAction) handleMigrationWindow:(id)sender;
 - (void) setRomInfoPanelBoxTitleColors;
 
 @end

@@ -2,6 +2,34 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>VersionStrings</key>
+	<array>
+		<string>0.9.6</string>
+		<string>0.9.7</string>
+		<string>0.9.8</string>
+		<string>0.9.9</string>
+	</array>
+	<key>PortStrings</key>
+	<dict>
+		<key>0.9.6</key>
+		<array>
+			<string>GTK</string>
+		</array>
+		<key>0.9.7</key>
+		<array>
+			<string>Cocoa</string>
+		</array>
+		<key>0.9.8</key>
+		<array>
+			<string>Cocoa</string>
+			<string>OpenEmu</string>
+		</array>
+		<key>0.9.9</key>
+		<array>
+			<string>Cocoa</string>
+			<string>OpenEmu</string>
+		</array>
+	</dict>
 	<key>DefaultPaths</key>
 	<dict>
 		<key>0.9.6</key>
