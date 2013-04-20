@@ -608,6 +608,8 @@
 		ABD1FF681345ACBF00AF11D1 /* vfat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */; };
 		ABD1FF691345ACBF00AF11D1 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF511345ACBF00AF11D1 /* xstring.cpp */; };
 		ABD1FF9F1345ACFA00AF11D1 /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF771345ACFA00AF11D1 /* metaspu.cpp */; };
+		ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */; };
+		ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */; };
 		ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABE5DFE5143FB1DA00835AD8 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
 		ABE6702B1415DE6C00E8E4C9 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
@@ -1042,6 +1044,8 @@
 		ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SndOut.cpp; sourceTree = "<group>"; };
 		ABD1FF7B1345ACFA00AF11D1 /* SndOut.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SndOut.h; sourceTree = "<group>"; };
 		ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timestretcher.cpp; sourceTree = "<group>"; };
+		ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
+		ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_videofilter.h; sourceTree = "<group>"; };
 		ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_videofilter.mm; sourceTree = "<group>"; };
 		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
@@ -1263,6 +1267,7 @@
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
 				AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */,
 				AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */,
+				ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */,
 				AB29B32F16D4BEBF000EF671 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
@@ -1272,6 +1277,7 @@
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */,
 				AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */,
+				ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */,
 				AB29B33016D4BEBF000EF671 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
@@ -2273,6 +2279,7 @@
 				AB01005F170D07B000D70FBE /* InputProfileController.mm in Sources */,
 				ABD10AE81715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEB1715FCDD00B5729D /* mic_ext.cpp in Sources */,
+				ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2433,6 +2440,7 @@
 				AB01005E170D07B000D70FBE /* InputProfileController.mm in Sources */,
 				ABD10AE71715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEA1715FCDD00B5729D /* mic_ext.cpp in Sources */,
+				ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

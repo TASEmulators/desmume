@@ -53,7 +53,7 @@
 + (NSString *) saveSlotFileName:(NSURL *)romURL slotNumber:(NSUInteger)slotNumber;
 + (NSString *) fileKindByURL:(NSURL *)fileURL;
 + (NSString *) fileKindByURL:(NSURL *)fileURL version:(NSString *)versionString port:(NSString *)portString;
-+ (NSString *) fileVersion:(NSURL *)fileURL;
++ (NSString *) fileVersionByURL:(NSURL *)fileURL;
 + (BOOL) fileExistsForCurrent:(NSURL *)fileURL;
 + (NSURL *) fileURLFromRomURL:(NSURL *)romURL toKind:(NSString *)fileKind;
 + (NSURL *) fileURLFromRomURL:(NSURL *)romURL toKind:(NSString *)fileKind version:(NSString *)versionString port:(NSString *)portString;

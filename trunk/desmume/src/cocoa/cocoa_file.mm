@@ -639,7 +639,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	return fileKind;
 }
 
-+ (NSString *) fileVersion:(NSURL *)fileURL
++ (NSString *) fileVersionByURL:(NSURL *)fileURL
 {
 	NSString *fileVersion = @"Unknown Version";
 	
@@ -1208,10 +1208,10 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	
 	NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
 	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
+	NSArray *versionList = [fileTypeInfoRootDict valueForKey:@"VersionStrings"];
 	NSDictionary *filePathsDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
-	NSArray *versionArray = [filePathsDict allKeys];
 	
-	for (NSString *versionKey in versionArray)
+	for (NSString *versionKey in versionList)
 	{
 		if ([currentVersion isEqualToString:versionKey])
 		{
@@ -1274,7 +1274,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		NSNumber *willMigrate = [NSNumber numberWithBool:YES];
 		NSString *filePath = [directoryPath stringByAppendingPathComponent:fileName];
 		NSURL *fileURL = [NSURL fileURLWithPath:filePath];
-		NSString *fileVersion = [CocoaDSFile fileVersion:fileURL];
+		NSString *fileVersion = [CocoaDSFile fileVersionByURL:fileURL];
 		NSString *fileKind = [CocoaDSFile fileKindByURL:fileURL];
 		
 		if (fileKind == nil ||
