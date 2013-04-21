@@ -371,7 +371,7 @@
 				<array>
 					<dict>
 						<key>deviceInfoSummary</key>
-						<string>Keyboard: -</string>
+						<string>Keyboard: - (Dash)</string>
 						<key>deviceCode</key>
 						<string>NSEventKeyboard</string>
 						<key>deviceName</key>
@@ -379,7 +379,7 @@
 						<key>elementCode</key>
 						<string>27</string>
 						<key>elementName</key>
-						<string>-</string>
+						<string>- (Dash)</string>
 						<key>inputSettingsSummary</key>
 						<string>0.50x Speed</string>
 						<key>floatValue0</key>

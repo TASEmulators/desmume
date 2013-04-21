@@ -973,8 +973,6 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	[self addMappingForIBAction:@selector(reset:) commandAttributes:&cmdReset];
 	[self addMappingForIBAction:@selector(toggleGPUState:) commandAttributes:&cmdToggleGPUState];
 	
-	[self setMappingsWithMappings:[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"]];
-	
 	return self;
 }
 
