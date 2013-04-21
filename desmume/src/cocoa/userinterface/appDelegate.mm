@@ -545,6 +545,18 @@
 	// Set the default sound volume per user preferences.
 	[prefWindowDelegate updateVolumeIcon:nil];
 	
+	// Set up the user's default input settings.
+	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
+	if (userMappings == nil)
+	{
+		NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
+		NSArray *internalDefaultProfilesList = (NSArray *)[defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
+		userMappings = [(NSDictionary *)[internalDefaultProfilesList objectAtIndex:0] valueForKey:@"Mappings"];
+	}
+	
+	[inputManager setMappingsWithMappings:userMappings];
+	
+	// Set up the rest of the emulation-related user defaults.
 	[emuControl setupUserDefaults];
 }
 
