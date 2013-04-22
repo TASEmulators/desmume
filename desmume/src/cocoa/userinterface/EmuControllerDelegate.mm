@@ -501,6 +501,22 @@
 	[self handleUnloadRom:REASONFORCLOSE_NORMAL romToLoad:nil];
 }
 
+- (IBAction) revealRomInFinder:(id)sender
+{
+	NSURL *romURL = [[self currentRom] fileURL];
+	
+	if (romURL != nil)
+	{
+		[[NSWorkspace sharedWorkspace] selectFile:[romURL path] inFileViewerRootedAtPath:@""];
+	}
+}
+
+- (IBAction) revealGameDataFolderInFinder:(id)sender
+{
+	NSURL *folderURL = [CocoaDSFile userAppSupportURL:nil version:nil];
+	[[NSWorkspace sharedWorkspace] selectFile:[folderURL path] inFileViewerRootedAtPath:@""];
+}
+
 - (IBAction) openEmuSaveState:(id)sender
 {
 	NSURL *selectedFile = nil;
@@ -1996,6 +2012,13 @@
 	else if (theAction == @selector(closeRom:))
 	{
 		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
+	else if (theAction == @selector(revealRomInFinder:))
+	{
+		if ([self currentRom] == nil || [self isRomLoading])
 		{
 			enable = NO;
 		}

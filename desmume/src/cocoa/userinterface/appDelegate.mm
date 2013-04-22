@@ -164,11 +164,6 @@
 	// colors manually here because you can't change them in Interface Builder. Boo!!!
 	[self setRomInfoPanelBoxTitleColors];
 	
-	// Set up all the object controllers according to our default windows.
-	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
-	[prefWindowController setContent:[prefWindowDelegate bindings]];
-	[cheatWindowController setContent:[cheatWindowDelegate bindings]];
-	
 	// Set the preferences window to the general view by default.
 	[prefWindowDelegate switchContentView:prefGeneralView];
 	
@@ -178,9 +173,8 @@
 	
 	// Init the DS emulation core.
 	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
-	[cdsCoreController setContent:newCore];
 	
-	// Init the DS controller and microphone.
+	// Init the DS controller.
 	CocoaDSController *newController = [[[CocoaDSController alloc] init] autorelease];
 	[newCore setCdsController:newController];
 	
@@ -206,6 +200,12 @@
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 	}
+	
+	// Set up all the object controllers.
+	[cdsCoreController setContent:newCore];
+	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
+	[prefWindowController setContent:[prefWindowDelegate bindings]];
+	[cheatWindowController setContent:[cheatWindowDelegate bindings]];
 	
 	// Setup the applications settings from the user defaults file.
 	[self setupUserDefaults];
@@ -308,13 +308,6 @@
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
 	[cdsCoreController setContent:nil];
-}
-
-- (IBAction) showSupportFolderInFinder:(id)sender
-{
-	NSURL *folderURL = [CocoaDSFile userAppSupportBaseURL];
-	
-	[[NSWorkspace sharedWorkspace] openFile:[folderURL path] withApplication:@"Finder"];
 }
 
 - (IBAction) launchWebsite:(id)sender
