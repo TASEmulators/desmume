@@ -147,6 +147,8 @@ class AudioSampleBlockGenerator;
 - (IBAction) loadRecentRom:(id)sender;
 - (IBAction) closeWindow:(id)sender;
 - (IBAction) closeRom:(id)sender;
+- (IBAction) revealRomInFinder:(id)sender;
+- (IBAction) revealGameDataFolderInFinder:(id)sender;
 - (IBAction) openEmuSaveState:(id)sender;
 - (IBAction) saveEmuSaveState:(id)sender;
 - (IBAction) saveEmuSaveStateAs:(id)sender;

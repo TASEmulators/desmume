@@ -23,28 +23,27 @@
 @interface CocoaDSGPU : NSObject
 {
 	UInt32 gpuStateFlags;
-	OSSpinLock spinlockGpuState;
-	
-	BOOL gpuStateMainGPU;
-	BOOL gpuStateMainBG0;
-	BOOL gpuStateMainBG1;
-	BOOL gpuStateMainBG2;
-	BOOL gpuStateMainBG3;
-	BOOL gpuStateMainOBJ;
-	BOOL gpuStateSubGPU;
-	BOOL gpuStateSubBG0;
-	BOOL gpuStateSubBG1;
-	BOOL gpuStateSubBG2;
-	BOOL gpuStateSubBG3;
-	BOOL gpuStateSubOBJ;
-	
 	BOOL isCPUCoreCountAuto;
 	
+	OSSpinLock spinlockGpuState;
 	pthread_mutex_t *mutexProducer;
 }
 
 @property (assign) UInt32 gpuStateFlags;
 @property (assign) pthread_mutex_t *mutexProducer;
+
+@property (assign) BOOL layerMainGPU;
+@property (assign) BOOL layerMainBG0;
+@property (assign) BOOL layerMainBG1;
+@property (assign) BOOL layerMainBG2;
+@property (assign) BOOL layerMainBG3;
+@property (assign) BOOL layerMainOBJ;
+@property (assign) BOOL layerSubGPU;
+@property (assign) BOOL layerSubBG0;
+@property (assign) BOOL layerSubBG1;
+@property (assign) BOOL layerSubBG2;
+@property (assign) BOOL layerSubBG3;
+@property (assign) BOOL layerSubOBJ;
 
 @property (assign) NSInteger render3DRenderingEngine;
 @property (assign) BOOL render3DHighPrecisionColorInterpolation;

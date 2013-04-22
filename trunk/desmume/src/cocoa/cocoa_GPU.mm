@@ -45,6 +45,19 @@ GPU3DInterface *core3DList[] = {
 @dynamic gpuStateFlags;
 @synthesize mutexProducer;
 
+@dynamic layerMainGPU;
+@dynamic layerMainBG0;
+@dynamic layerMainBG1;
+@dynamic layerMainBG2;
+@dynamic layerMainBG3;
+@dynamic layerMainOBJ;
+@dynamic layerSubGPU;
+@dynamic layerSubBG0;
+@dynamic layerSubBG1;
+@dynamic layerSubBG2;
+@dynamic layerSubBG3;
+@dynamic layerSubOBJ;
+
 @dynamic render3DRenderingEngine;
 @dynamic render3DHighPrecisionColorInterpolation;
 @dynamic render3DEdgeMarking;
@@ -80,19 +93,6 @@ GPU3DInterface *core3DList[] = {
 					  GPUSTATE_SUB_BG3_MASK |
 					  GPUSTATE_SUB_OBJ_MASK;
 	
-	gpuStateMainGPU = YES;
-	gpuStateMainBG0 = YES;
-	gpuStateMainBG1 = YES;
-	gpuStateMainBG2 = YES;
-	gpuStateMainBG3 = YES;
-	gpuStateMainOBJ = YES;
-	gpuStateSubGPU = YES;
-	gpuStateSubBG0 = YES;
-	gpuStateSubBG1 = YES;
-	gpuStateSubBG2 = YES;
-	gpuStateSubBG3 = YES;
-	gpuStateSubOBJ = YES;
-	
 	isCPUCoreCountAuto = NO;
 	
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
@@ -115,141 +115,19 @@ GPU3DInterface *core3DList[] = {
 	gpuStateFlags = flags;
 	OSSpinLockUnlock(&spinlockGpuState);
 	
-	pthread_mutex_lock(self.mutexProducer);
+	[self setLayerMainGPU:((flags & GPUSTATE_MAIN_GPU_MASK) != 0)];
+	[self setLayerMainBG0:((flags & GPUSTATE_MAIN_BG0_MASK) != 0)];
+	[self setLayerMainBG1:((flags & GPUSTATE_MAIN_BG1_MASK) != 0)];
+	[self setLayerMainBG2:((flags & GPUSTATE_MAIN_BG2_MASK) != 0)];
+	[self setLayerMainBG3:((flags & GPUSTATE_MAIN_BG3_MASK) != 0)];
+	[self setLayerMainOBJ:((flags & GPUSTATE_MAIN_OBJ_MASK) != 0)];
 	
-	if (flags & GPUSTATE_MAIN_GPU_MASK)
-	{
-		SetGPUDisplayState(DS_GPU_TYPE_MAIN, true);
-		gpuStateMainGPU = YES;
-	}
-	else
-	{
-		SetGPUDisplayState(DS_GPU_TYPE_MAIN, false);
-		gpuStateMainGPU = NO;
-	}
-	
-	if (flags & GPUSTATE_MAIN_BG0_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 0, true);
-		gpuStateMainBG0 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 0, false);
-		gpuStateMainBG0 = NO;
-	}
-	
-	if (flags & GPUSTATE_MAIN_BG1_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 1, true);
-		gpuStateMainBG1 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 1, false);
-		gpuStateMainBG1 = NO;
-	}
-	
-	if (flags & GPUSTATE_MAIN_BG2_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 2, true);
-		gpuStateMainBG2 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 2, false);
-		gpuStateMainBG2 = NO;
-	}
-	
-	if (flags & GPUSTATE_MAIN_BG3_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 3, true);
-		gpuStateMainBG3 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 3, false);
-		gpuStateMainBG3 = NO;
-	}
-	
-	if (flags & GPUSTATE_MAIN_OBJ_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 4, true);
-		gpuStateMainOBJ = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_MAIN, 4, false);
-		gpuStateMainOBJ = NO;
-	}
-	
-	if (flags & GPUSTATE_SUB_GPU_MASK)
-	{
-		SetGPUDisplayState(DS_GPU_TYPE_SUB, true);
-		gpuStateSubGPU = YES;
-	}
-	else
-	{
-		SetGPUDisplayState(DS_GPU_TYPE_SUB, false);
-		gpuStateSubGPU = NO;
-	}
-	
-	if (flags & GPUSTATE_SUB_BG0_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 0, true);
-		gpuStateSubBG0 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 0, false);
-		gpuStateSubBG0 = NO;
-	}
-	
-	if (flags & GPUSTATE_SUB_BG1_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 1, true);
-		gpuStateSubBG1 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 1, false);
-		gpuStateSubBG1 = NO;
-	}
-	
-	if (flags & GPUSTATE_SUB_BG2_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 2, true);
-		gpuStateSubBG2 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 2, false);
-		gpuStateSubBG2 = NO;
-	}
-	
-	if (flags & GPUSTATE_SUB_BG3_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 3, true);
-		gpuStateSubBG3 = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 3, false);
-		gpuStateSubBG3 = NO;
-	}
-	
-	if (flags & GPUSTATE_SUB_OBJ_MASK)
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 4, true);
-		gpuStateSubOBJ = YES;
-	}
-	else
-	{
-		SetGPULayerState(DS_GPU_TYPE_SUB, 4, false);
-		gpuStateSubOBJ = NO;
-	}
-	
-	pthread_mutex_unlock(self.mutexProducer);
+	[self setLayerSubGPU:((flags & GPUSTATE_SUB_GPU_MASK) != 0)];
+	[self setLayerSubBG0:((flags & GPUSTATE_SUB_BG0_MASK) != 0)];
+	[self setLayerSubBG1:((flags & GPUSTATE_SUB_BG1_MASK) != 0)];
+	[self setLayerSubBG2:((flags & GPUSTATE_SUB_BG2_MASK) != 0)];
+	[self setLayerSubBG3:((flags & GPUSTATE_SUB_BG3_MASK) != 0)];
+	[self setLayerSubOBJ:((flags & GPUSTATE_SUB_OBJ_MASK) != 0)];
 }
 
 - (UInt32) gpuStateFlags
@@ -387,18 +265,15 @@ GPU3DInterface *core3DList[] = {
 		numberCores = numberThreads;
 	}
 	
-	NSInteger renderingEngineID = [self render3DRenderingEngine];
+	const NSInteger renderingEngineID = [self render3DRenderingEngine];
 	
 	pthread_mutex_lock(self.mutexProducer);
 	
 	CommonSettings.num_cores = numberCores;
-	if (renderingEngineID == CORE3DLIST_SWRASTERIZE)
+	
+	if (renderingEngineID == CORE3DLIST_SWRASTERIZE || renderingEngineID == CORE3DLIST_OPENGL)
 	{
-		NDS_3D_ChangeCore(CORE3DLIST_SWRASTERIZE);
-	}
-	else if (renderingEngineID == CORE3DLIST_OPENGL)
-	{
-		NDS_3D_ChangeCore(CORE3DLIST_OPENGL);
+		NDS_3D_ChangeCore(renderingEngineID);
 	}
 	
 	pthread_mutex_unlock(self.mutexProducer);
@@ -445,15 +320,255 @@ GPU3DInterface *core3DList[] = {
 	return state;
 }
 
+- (void) setLayerMainGPU:(BOOL)gpuState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPUDisplayState(DS_GPU_TYPE_MAIN, (gpuState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (gpuState) ? (gpuStateFlags | GPUSTATE_MAIN_GPU_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_GPU_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerMainGPU
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL gpuState = GetGPUDisplayState(DS_GPU_TYPE_MAIN) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return gpuState;
+}
+
+- (void) setLayerMainBG0:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_MAIN, 0, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG0_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG0_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerMainBG0
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 0) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerMainBG1:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_MAIN, 1, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG1_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG1_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerMainBG1
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 1) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerMainBG2:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_MAIN, 2, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG2_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG2_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerMainBG2
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 2) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerMainBG3:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_MAIN, 3, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG3_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG3_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerMainBG3
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 3) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerMainOBJ:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_MAIN, 4, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_OBJ_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_OBJ_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerMainOBJ
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 4) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerSubGPU:(BOOL)gpuState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPUDisplayState(DS_GPU_TYPE_SUB, (gpuState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (gpuState) ? (gpuStateFlags | GPUSTATE_SUB_GPU_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_GPU_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerSubGPU
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL gpuState = GetGPUDisplayState(DS_GPU_TYPE_SUB) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return gpuState;
+}
+
+- (void) setLayerSubBG0:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_SUB, 0, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG0_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG0_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerSubBG0
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 0) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerSubBG1:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_SUB, 1, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG1_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG1_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerSubBG1
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 1) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerSubBG2:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_SUB, 2, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG2_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG2_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerSubBG2
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 2) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerSubBG3:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_SUB, 3, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG3_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG3_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerSubBG3
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 3) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
+- (void) setLayerSubOBJ:(BOOL)layerState
+{
+	pthread_mutex_lock(self.mutexProducer);
+	SetGPULayerState(DS_GPU_TYPE_SUB, 4, (layerState) ? true : false);
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	OSSpinLockLock(&spinlockGpuState);
+	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_OBJ_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_OBJ_MASK);
+	OSSpinLockUnlock(&spinlockGpuState);
+}
+
+- (BOOL) layerSubOBJ
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 4) ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return layerState;
+}
+
 - (BOOL) gpuStateByBit:(const UInt32)stateBit
 {
-	return (self.gpuStateFlags & (1 << stateBit)) ? YES : NO;
+	return ([self gpuStateFlags] & (1 << stateBit)) ? YES : NO;
 }
 
 - (BOOL) isGPUTypeDisplayed:(const NSInteger)theGpuType
 {
 	BOOL result = NO;
-	const UInt32 flags = self.gpuStateFlags;
+	const UInt32 flags = [self gpuStateFlags];
 	
 	switch (theGpuType)
 	{
@@ -487,7 +602,7 @@ GPU3DInterface *core3DList[] = {
 
 - (void) hideGPUType:(const NSInteger)theGpuType
 {
-	UInt32 flags = self.gpuStateFlags;
+	UInt32 flags = [self gpuStateFlags];
 	
 	switch (theGpuType)
 	{
@@ -508,12 +623,12 @@ GPU3DInterface *core3DList[] = {
 			break;
 	}
 	
-	self.gpuStateFlags = flags;
+	[self setGpuStateFlags:flags];
 }
 
 - (void) showGPUType:(const NSInteger)theGpuType
 {
-	UInt32 flags = self.gpuStateFlags;
+	UInt32 flags = [self gpuStateFlags];
 	
 	switch (theGpuType)
 	{
@@ -534,7 +649,7 @@ GPU3DInterface *core3DList[] = {
 			break;
 	}
 	
-	self.gpuStateFlags = flags;
+	[self setGpuStateFlags:flags];
 }
 
 @end
@@ -583,34 +698,34 @@ void SetGPULayerState(const int gpuType, const unsigned int i, const bool state)
 
 bool GetGPULayerState(const int gpuType, const unsigned int i)
 {
-	bool result = false;
+	bool theState = false;
 	
 	// Check bounds on the layer index.
 	if(i > 4)
 	{
-		return result;
+		return theState;
 	}
 	
 	switch (gpuType)
 	{
 		case DS_GPU_TYPE_SUB:
-			if (SubScreen.gpu != nil)
+			if (SubScreen.gpu != NULL)
 			{
-				result = CommonSettings.dispLayers[SubScreen.gpu->core][i];
+				theState = CommonSettings.dispLayers[SubScreen.gpu->core][i];
 			}
 			break;
 			
 		case DS_GPU_TYPE_MAIN:
-			if (MainScreen.gpu != nil)
+			if (MainScreen.gpu != NULL)
 			{
-				result = CommonSettings.dispLayers[MainScreen.gpu->core][i];
+				theState = CommonSettings.dispLayers[MainScreen.gpu->core][i];
 			}
 			break;
 			
 		case DS_GPU_TYPE_COMBO:
-			if (SubScreen.gpu != nil && MainScreen.gpu != nil)
+			if (SubScreen.gpu != NULL && MainScreen.gpu != NULL)
 			{
-				result = (CommonSettings.dispLayers[SubScreen.gpu->core][i] && CommonSettings.dispLayers[MainScreen.gpu->core][i]);
+				theState = (CommonSettings.dispLayers[SubScreen.gpu->core][i] && CommonSettings.dispLayers[MainScreen.gpu->core][i]);
 			}
 			break;
 			
@@ -618,7 +733,7 @@ bool GetGPULayerState(const int gpuType, const unsigned int i)
 			break;
 	}
 	
-	return result;
+	return theState;
 }
 
 void SetGPUDisplayState(const int gpuType, const bool state)
@@ -645,27 +760,27 @@ void SetGPUDisplayState(const int gpuType, const bool state)
 
 bool GetGPUDisplayState(const int gpuType)
 {
-	bool result = false;
+	bool theState = false;
 	
 	switch (gpuType)
 	{
 		case DS_GPU_TYPE_SUB:
-			result = CommonSettings.showGpu.sub;
+			theState = CommonSettings.showGpu.sub;
 			break;
 			
 		case DS_GPU_TYPE_MAIN:
-			result = CommonSettings.showGpu.main;
+			theState = CommonSettings.showGpu.main;
 			break;
 			
 		case DS_GPU_TYPE_COMBO:
-			result = (CommonSettings.showGpu.sub && CommonSettings.showGpu.main);
+			theState = (CommonSettings.showGpu.sub && CommonSettings.showGpu.main);
 			break;
 			
 		default:
 			break;
 	}
 	
-	return result;
+	return theState;
 }
 
 CGLContextObj OSXOpenGLRendererContext = NULL;

@@ -86,14 +86,6 @@
 
 @property (assign) BOOL isAppRunningOnIntel;
 
-// Emulation Menu
-
-// View Menu
-
-// Tools Menu
-- (IBAction) showSupportFolderInFinder:(id)sender;
-
-// Help Menu
 - (IBAction) launchWebsite:(id)sender;
 - (IBAction) launchForums:(id)sender;
 - (IBAction) supportRequest:(id)sender;
