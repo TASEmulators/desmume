@@ -50,6 +50,7 @@ Cocoa:
  enh: add support for multiple display windows (File > New Display Window)
  enh: add support for SLOT-1 devices (Emulation > Show SLOT-1 Manager)
  enh: overall performance and stability improvements
+ enh: miscellaneous user interface improvements
 
 0.9.7 -> 0.9.8 (r3812-r4228)
 
