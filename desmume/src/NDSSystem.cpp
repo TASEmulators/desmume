@@ -165,10 +165,12 @@ void NDS_DeInit(void) {
 	gpu3D->NDS_3D_Close();
 
 	WIFI_DeInit();
-	if (cheats)
-		delete cheats;
-	if (cheatSearch)
-		delete cheatSearch;
+	
+	delete cheats;
+	cheats = NULL;
+	
+	delete cheatSearch;
+	cheatSearch = NULL;
 
 #ifdef HAVE_JIT
 	arm_jit_close();
@@ -615,10 +617,13 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	strcat(buf, ".dsv");							// DeSmuME memory card	:)
 	MMU_new.backupDevice.load_rom(buf);
 
-	memset(buf, 0, MAX_PATH);
-	path.getpathnoext(path.CHEATS, buf);
-	strcat(buf, ".dct");							// DeSmuME cheat		:)
-	cheats->init(buf);
+	if (cheats != NULL)
+	{
+		memset(buf, 0, MAX_PATH);
+		path.getpathnoext(path.CHEATS, buf);
+		strcat(buf, ".dct");						// DeSmuME cheat		:)
+		cheats->init(buf);
+	}
 
 	NDS_Reset();
 
