@@ -1438,27 +1438,30 @@ enum OGLVertexAttributeID
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	const NSInteger displayModeID = [windowController displayMode];
 	
-	if (displayModeID != DS_DISPLAY_TYPE_TOUCH && displayModeID != DS_DISPLAY_TYPE_COMBO)
-	{
-		return isHandled;
-	}
-	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
-	NSPoint touchLoc = [self dsPointFromEvent:theEvent];
+	NSPoint touchLoc = NSMakePoint(-2.0, -2.0);
+	
+	if (displayModeID == DS_DISPLAY_TYPE_TOUCH || displayModeID == DS_DISPLAY_TYPE_COMBO)
+	{
+		touchLoc = [self dsPointFromEvent:theEvent];
+	}
 	
 	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([theEvent buttonNumber], touchLoc, buttonPressed);
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		char inputCoordBuf[256] = {0};
-		snprintf(inputCoordBuf, 256, " X:%i Y:%i", (int)inputAttr.intCoordX, (int)inputAttr.intCoordY);
-		
-		char inputStr[INPUT_HANDLER_STRING_LENGTH*2];
+		static char inputStr[INPUT_HANDLER_STRING_LENGTH*2] = {0};
 		strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
 		strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
 		strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputStr, inputCoordBuf, INPUT_HANDLER_STRING_LENGTH*2);
+		
+		if (inputAttr.intCoordX >= 0)
+		{
+			static char inputCoordBuf[64] = {0};
+			snprintf(inputCoordBuf, 64, " X:%i Y:%i", (int)inputAttr.intCoordX, (int)inputAttr.intCoordY);
+			strlcat(inputStr, inputCoordBuf, INPUT_HANDLER_STRING_LENGTH*2);
+		}
 		
 		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
 	}

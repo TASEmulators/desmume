@@ -1075,7 +1075,10 @@
 	if (controlID == DSControllerState_Touch)
 	{
 		const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
-		[[cdsCore cdsController] setTouchState:theState location:touchLoc];
+		if (touchLoc.x >= 0.0 && touchLoc.y >= 0.0)
+		{
+			[[cdsCore cdsController] setTouchState:theState location:touchLoc];
+		}
 	}
 	else if (controlID == DSControllerState_Microphone)
 	{
