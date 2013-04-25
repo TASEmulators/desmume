@@ -572,29 +572,35 @@ bool CFIRMWARE::load()
 	fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
 	{
-		char buf[0x300];
-		memset(buf, 0, 0x300);
-		if (fread(buf, 1, 0x100, fp) == 0x100)
+		fseek(fp, 0, SEEK_END);
+		if (ftell(fp) == (0x100 + 0x1D6 + 0x300))
 		{
-			printf("- loaded from %s:\n", MMU.fw.userfile);
-			memcpy(&data[0x3FE00], &buf[0], 0x100);
-			memcpy(&data[0x3FF00], &buf[0], 0x100);
-			printf("   * User settings\n");
-			memset(buf, 0, 0x100);
-			if (fread(buf, 1, 0x1D6, fp) == 0x1D6)
+			fseek(fp, 0, SEEK_SET);
+			char buf[0x301];
+			memset(buf, 0, sizeof(buf));
+			if (fread(buf, 1, 0x100, fp) == 0x100)
 			{
-				memcpy(&data[0x002A], &buf[0], 0x1D6);
-				printf("   * WiFi settings\n");
-
-				memset(buf, 0, 0x1D6);
-				if (fread(buf, 1, 0x300, fp) == 0x300)
+				printf("- loaded firmware config from %s:\n", MMU.fw.userfile);
+				memcpy(&data[0x3FE00], &buf[0], 0x100);
+				memcpy(&data[0x3FF00], &buf[0], 0x100);
+				printf("   * User settings\n");
+				memset(buf, 0, sizeof(buf));
+				if (fread(buf, 1, 0x1D6, fp) == 0x1D6)
 				{
-					memcpy(&data[0x3FA00], &buf[0], 0x300);
-					printf("   * WiFi AP settings\n");
+					memcpy(&data[0x002A], &buf[0], 0x1D6);
+					printf("   * WiFi settings\n");
+
+					memset(buf, 0, sizeof(buf));
+					if (fread(buf, 1, 0x300, fp) == 0x300)
+					{
+						memcpy(&data[0x3FA00], &buf[0], 0x300);
+						printf("   * WiFi AP settings\n");
+					}
 				}
 			}
-			
 		}
+		else
+			printf("- failed loading firmware config from %s (wrong file size)\n", MMU.fw.userfile);
 		fclose(fp);
 	}
 	printf("\n");
