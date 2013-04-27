@@ -1,4 +1,6 @@
-0.9.8 -> 0.9.9 (r4228-r4591-r4xxx)
+0.9.8 -> 1.0.0 (r4224-)
+
+0.9.8 -> 0.9.9 (r4228-r4591-r4623)
 
 Yes, it's been a while since the last release, but we haven't been completely idle. There's a brand new jit cpu core which yields some impressive speedups! 
 
