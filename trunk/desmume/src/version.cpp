@@ -109,7 +109,7 @@
 	#define DESMUME_COMPILER_DETAIL ""
 #endif
 
-#ifdef HAVE_JIT
+#if defined(HAVE_JIT) && !defined(PUBLIC_RELEASE)
 	#define DESMUME_JIT "-JIT"
 #else
 	#define DESMUME_JIT ""
