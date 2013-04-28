@@ -588,10 +588,10 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	buf[2] = gameInfo.header.gameCode[2];
 	buf[3] = gameInfo.header.gameCode[3];
 	buf[4] = 0;
-	if (advsc.checkDB(buf))
+	if (advsc.checkDB(buf, gameInfo.crc))
 	{
 		u8 sv = advsc.getSaveType();
-		printf("ADVANsCEne database:\n");
+		printf("Found in game database by %s:\n",advsc.getIdMethod());
 		printf("\t* ROM save type: ");
 		if (sv == 0xFF)
 			printf("Unknown");
