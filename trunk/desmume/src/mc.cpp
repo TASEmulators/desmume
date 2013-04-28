@@ -1340,7 +1340,7 @@ void BackupDevice::forceManualBackupType()
 }
 
 // ============================================= ADVANsCEne
-u8 ADVANsCEne::checkDB(const char *serial)
+u8 ADVANsCEne::checkDB(const char *serial, u32 crc)
 {
 	loaded = false;
 	FILE *fp = fopen(database_path, "rb");
@@ -1366,8 +1366,15 @@ u8 ADVANsCEne::checkDB(const char *serial)
 							while (true)
 							{
 								if (fread(buf, 1, 21, fp) != 21) break;
-								if (memcmp(&buf[4], serial, 4) == 0)
+
+								bool serialFound = (memcmp(&buf[4], serial, 4) == 0);
+								u32 dbcrc = LE_TO_LOCAL_32(*(u32*)(buf+8));
+								bool crcFound = (crc == dbcrc);
+
+								if(serialFound || crcFound)
 								{
+									foundAsCrc = crcFound;
+									foundAsSerial = serialFound;
 									memcpy(&crc32, &buf[8], 4);
 									//printf("%s founded: crc32=%04X, save type %02X\n", serial, crc32, buf[12]);
 									saveType = buf[12];
@@ -1386,6 +1393,8 @@ u8 ADVANsCEne::checkDB(const char *serial)
 	return false;
 }
 
+
+
 bool ADVANsCEne::getXMLConfig(const char *in_filaname)
 {
 	TiXmlDocument	*xml = NULL;
@@ -1400,13 +1409,13 @@ bool ADVANsCEne::getXMLConfig(const char *in_filaname)
 	if (!el) return false;
 	el_configuration = el->FirstChildElement("configuration");
 	if (!el_configuration) return false;
-	el = el_configuration->FirstChildElement("datName"); if (el) { datName = el->GetText(); }
-	el = el_configuration->FirstChildElement("datVersion"); if (el) { datVersion = el->GetText(); }
+	el = el_configuration->FirstChildElement("datName"); if (el) { datName = el->GetText() ? el->GetText() : ""; }
+	el = el_configuration->FirstChildElement("datVersion"); if (el) { datVersion = el->GetText() ? el->GetText() : ""; }
 	
 	el_newDat = el_configuration->FirstChildElement("newDat");
 	if (!el_newDat) return false;
-	el = el_newDat->FirstChildElement("datVersionURL"); if (el) { urlVersion = el->GetText(); }
-	el = el_newDat->FirstChildElement("datURL"); if (el) { urlDat = el->GetText(); }
+	el = el_newDat->FirstChildElement("datVersionURL"); if (el) { urlVersion = el->GetText() ? el->GetText() : ""; }
+	el = el_newDat->FirstChildElement("datURL"); if (el) { urlDat = el->GetText() ? el->GetText() : ""; }
 
 	delete xml;
 	return true;
@@ -1414,19 +1423,22 @@ bool ADVANsCEne::getXMLConfig(const char *in_filaname)
 
 u32 ADVANsCEne::convertDB(const char *in_filaname)
 {
-	const char *saveTypeNames[] = {	"Eeprom - 4 kbit",		// EEPROM 4kbit
-									"Eeprom - 64 kbit",		// EEPROM 64kbit
-									"Eeprom - 512 kbit",	// EEPROM 512kbit
-									"Fram - 256 kbit",		// FRAM 256kbit !
-									"Flash - 2 mbit",		// FLASH 2Mbit
-									"Flash - 4 mbit",		// FLASH 4Mbit
-									"Flash - 8 mbit",		// FLASH 8Mbit
-									"Flash - 16 mbit",		// FLASH 16Mbit !
-									"Flash - 32 mbit",		// FLASH 32Mbit !
-									"Flash - 64 mbit",		// FLASH 64Mbit
-									"Flash - 128 mbit",		// FLASH 128Mbit !
-									"Flash - 256 mbit",		// FLASH 256Mbit !
-									"Flash - 512 mbit"		// FLASH 512Mbit !
+	//these strings are contained in the xml file, verbatim, so they function as enum values
+	//we leave the strings here rather than pooled elsewhere to remind us that theyre part of the advanscene format.
+	const char *saveTypeNames[] = {
+		"Eeprom - 4 kbit",		// EEPROM 4kbit
+		"Eeprom - 64 kbit",		// EEPROM 64kbit
+		"Eeprom - 512 kbit",	// EEPROM 512kbit
+		"Fram - 256 kbit",		// FRAM 256kbit !
+		"Flash - 2 mbit",		// FLASH 2Mbit
+		"Flash - 4 mbit",		// FLASH 4Mbit
+		"Flash - 8 mbit",		// FLASH 8Mbit
+		"Flash - 16 mbit",		// FLASH 16Mbit !
+		"Flash - 32 mbit",		// FLASH 32Mbit !
+		"Flash - 64 mbit",		// FLASH 64Mbit
+		"Flash - 128 mbit",		// FLASH 128Mbit !
+		"Flash - 256 mbit",		// FLASH 256Mbit !
+		"Flash - 512 mbit"		// FLASH 512Mbit !
 	};
 
 	TiXmlDocument	*xml = NULL;
@@ -1442,8 +1454,8 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 	printf("Converting DB...\n");
 	if (getXMLConfig(in_filaname))
 	{
-		if (!datName) return 0;
-		if (strcmp(datName, _ADVANsCEne_BASE_NAME) != 0) return 0;
+		if (datName.size()==0) return 0;
+		if (datName != _ADVANsCEne_BASE_NAME) return 0;
 	}
 
 	fp = fopen(database_path, "wb");
@@ -1453,8 +1465,8 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 	fwrite(_ADVANsCEne_BASE_ID, 1, strlen(_ADVANsCEne_BASE_ID), fp);
 	fputc(_ADVANsCEne_BASE_VERSION_MAJOR, fp);
 	fputc(_ADVANsCEne_BASE_VERSION_MINOR, fp);
-	if (datVersion) 
-		fwrite(datVersion, 1, strlen(datVersion), fp);
+	if (datVersion.size()) 
+		fwrite(&datVersion[0], 1, datVersion.size(), fp);
 	else
 		fputc(0, fp);
 	time_t __time = time(NULL);
@@ -1472,11 +1484,22 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 	u32 count = 0;
 	while (el)
 	{
-		el_serial = el->FirstChildElement("serial");
-		if (fwrite(el_serial->GetText(), 1, 8, fp) != 8)
+		TiXmlElement* title = el->FirstChildElement("title");
+		if(title)
 		{
-			fclose(fp); return 0;
+			//just a little diagnostic
+			//printf("Importing %s\n",title->GetText());
 		}
+		else { fclose(fp); return 0; }
+
+		//zero 28-apr-2013 - serial doesnt seem to be present anymore
+		//el_serial = el->FirstChildElement("serial");
+		//if (!el_serial || fwrite(el_serial->GetText(), 1, 8, fp) != 8)
+		//{
+		//	fclose(fp); return 0;
+		//}
+		fwrite("nothere",1,8,fp);
+
 		// CRC32
 		el_crc32 = el->FirstChildElement("files"); 
 		sscanf_s(el_crc32->FirstChildElement("romCRC")->GetText(), "%x", &crc32);
@@ -1518,6 +1541,7 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 		count++;
 		el = el->NextSiblingElement("game");
 	}
+	printf("\n");
 	delete xml;
 	fclose(fp);
 	if (count > 0) 

@@ -65,12 +65,13 @@ private:
 	u8				saveType;
 	u32				crc32;
 	bool			loaded;
+	bool foundAsCrc, foundAsSerial;
 
 	// XML
-	const char		*datName;
-	const char		*datVersion;
-	const char		*urlVersion;
-	const char		*urlDat;
+	std::string datName;
+	std::string datVersion;
+	std::string	urlVersion;
+	std::string urlDat;
 	bool getXMLConfig(const char *in_filaname);
 public:
 	ADVANsCEne() :	saveType(0xFF),
@@ -83,10 +84,15 @@ public:
 	}
 	void setDatabase(const char *path) { loaded = false; strcpy(database_path, path); }
 	u32 convertDB(const char *in_filaname);
-	u8 checkDB(const char *serial);
+	u8 checkDB(const char *serial, u32 crc);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }
 	bool isLoaded() { return loaded; }
+	const char* getIdMethod() { 
+		if(foundAsCrc) return "CRC";
+		if(foundAsSerial) return "Serial";
+		return "";
+	}
 };
 
 
