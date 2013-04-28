@@ -1,6 +1,8 @@
-0.9.9 -> 1.0.0 (r4224-)
-
-0.9.8 -> 0.9.9 (r4228-r4591-r4623)
+0.9.9 -> 0.9.10 (r4623-)
+Windows:
+ bug: fixes to advanscene DB import
+ 
+0.9.8 -> 0.9.9 (r4228-r4623)
 
 Yes, it's been a while since the last release, but we haven't been completely idle. There's a brand new jit cpu core which yields some impressive speedups! 
 
@@ -19,7 +21,6 @@ Graphics:
  bug: 3d: fix some polygon and texture coloring bugs on big-endian systems
 
 Windows:
- bug: fixes to advanscene DB import
  bug: fix some full screen stretching bugs
  enh: add xaudio2 output driver
  enh: add opengl display method (as opposed to directdraw), with controllable bilinear filter
