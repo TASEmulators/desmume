@@ -1451,6 +1451,8 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 	u32				crc32 = 0;
 	u32				reserved = 0;
 
+	lastImportErrorMessage = "";
+
 	printf("Converting DB...\n");
 	if (getXMLConfig(in_filaname))
 	{
@@ -1492,13 +1494,20 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 		}
 		else { fclose(fp); return 0; }
 
-		//zero 28-apr-2013 - serial doesnt seem to be present anymore
-		//el_serial = el->FirstChildElement("serial");
-		//if (!el_serial || fwrite(el_serial->GetText(), 1, 8, fp) != 8)
-		//{
-		//	fclose(fp); return 0;
-		//}
-		fwrite("nothere",1,8,fp);
+		el_serial = el->FirstChildElement("serial");
+		
+		if(!el_serial)
+		{
+			lastImportErrorMessage = "Missing <serial> element. Did you use the right xml file? We need the RtoolDS one.";
+			fclose(fp); 
+			return 0;
+		}
+		if (fwrite(el_serial->GetText(), 1, 8, fp) != 8)
+		{
+			lastImportErrorMessage = "Error writing output file";
+			fclose(fp); return 0;
+		}
+
 
 		// CRC32
 		el_crc32 = el->FirstChildElement("files"); 

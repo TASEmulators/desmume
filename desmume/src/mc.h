@@ -73,6 +73,7 @@ private:
 	std::string	urlVersion;
 	std::string urlDat;
 	bool getXMLConfig(const char *in_filaname);
+
 public:
 	ADVANsCEne() :	saveType(0xFF),
 					crc32(0),
@@ -93,6 +94,7 @@ public:
 		if(foundAsSerial) return "Serial";
 		return "";
 	}
+	std::string lastImportErrorMessage;
 };
 
 
