@@ -240,17 +240,17 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>v0.9.9 (Debug)</string>
+	<string>v0.9.10 (Debug)</string>
 	<key>CFBundleSignature</key>
 	<string>DSmM</string>
 	<key>CFBundleVersion</key>
-	<string>0.9.9</string>
+	<string>0.9.10</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.entertainment</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>${MACOSX_DEPLOYMENT_TARGET}</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright ©2012 DeSmuME Team. All rights reserved.</string>
+	<string>Copyright ©2012-2013 DeSmuME Team. All rights reserved.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu (Legacy)</string>
 	<key>NSPrincipalClass</key>
