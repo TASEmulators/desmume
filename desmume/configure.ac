@@ -1,7 +1,7 @@
 dnl --- Package name is first argument to AC_INIT
 dnl --- Release version is second argument to AC_INIT
 
-AC_INIT(desmume, [svn])
+AC_INIT(desmume, [0.9.9])
 
 dnl -- find host architecture for some os specific libraries
 AC_CANONICAL_HOST
