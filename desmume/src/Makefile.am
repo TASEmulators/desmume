@@ -12,7 +12,7 @@ DIST_SUBDIRS = . gdbstub cli gtk gtk-glade wx
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
 	armcpu.cpp armcpu.h \
-	arm_instructions.cpp arm_instructions.h \
+	arm_instructions.cpp \
 	agg2d.h agg2d.inl \
 	bios.cpp bios.h bits.h cp15.cpp cp15.h \
 	commandline.h commandline.cpp \
@@ -23,6 +23,7 @@ libdesmume_a_SOURCES = \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
 	fs.h \
 	GPU_osd.h \
+	instructions.h \
 	mem.h mc.cpp mc.h \
 	path.cpp path.h \
 	readwrite.cpp readwrite.h \
@@ -38,7 +39,7 @@ libdesmume_a_SOURCES = \
 	SPU.cpp SPU.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
-	thumb_instructions.cpp thumb_instructions.h types.h \
+	thumb_instructions.cpp types.h \
 	shaders.h \
 	movie.cpp movie.h \
 	PACKED.h PACKED_END.h \
@@ -89,6 +90,10 @@ libdesmume_a_SOURCES = \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
+	filter/2xsai.cpp filter/bilinear.cpp filter/epx.cpp filter/filter.h \
+	filter/hq2x.cpp filter/hq2x.h filter/hq4x.cpp filter/hq4x.dat filter/hq4x.h \
+	filter/interp.h filter/lq2x.cpp filter/lq2x.h filter/scanline.cpp \
+	filter/videofilter.cpp filter/videofilter.h \
 	version.cpp version.h \
 	desmume_config.cpp desmume_config.h
 
@@ -96,7 +101,7 @@ if HAVE_JIT
 libdesmume_a_SOURCES += \
 	arm_jit.cpp arm_jit.h instruction_attributes.h \
 	utils/AsmJit/AsmJit.h \
-	utils/AsmJit/config.h \
+	utils/AsmJit/Config.h \
 	utils/AsmJit/core.h \
 	utils/AsmJit/x86.h \
 	utils/AsmJit/core/apibegin.h \
