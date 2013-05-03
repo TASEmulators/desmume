@@ -2864,6 +2864,8 @@ int _main()
 	if(GetPrivateProfileBool("Video","Window Always On Top", false, IniName)) style |= DWS_ALWAYSONTOP;
 	if(GetPrivateProfileBool("Video","Window Lockdown", false, IniName)) style |= DWS_LOCKDOWN;
 	
+	if(GetPrivateProfileBool("Video","Display Method Filter", false, IniName))
+		style |= DWS_FILTER;
 	if(GetPrivateProfileBool("Video","VSync", false, IniName))
 		style |= DWS_VSYNC;
 	int dispMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
@@ -5672,7 +5674,7 @@ DOKEYDOWN:
 			{
 				Lock lock (win_backbuffer_sync);
 				SetStyle((GetStyle()^DWS_FILTER));
-				WritePrivateProfileInt("Video","Display Method Filter", (GetStyle()^DWS_FILTER)?1:0, IniName);
+				WritePrivateProfileInt("Video","Display Method Filter", (GetStyle()&DWS_FILTER)?1:0, IniName);
 			}
 			break;
 
