@@ -131,9 +131,6 @@ enum OGLVertexAttributeID
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	
-	// Setup default values per user preferences.
-	[self setupUserDefaults];
-	
 	[[self window] setTitle:(NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
@@ -737,6 +734,7 @@ enum OGLVertexAttributeID
 
 - (void)windowDidLoad
 {
+	// Set up the video output thread.
 	cdsVideoOutput = [[CocoaDSDisplayVideo alloc] init];
 	[cdsVideoOutput setDelegate:view];
 	
@@ -746,6 +744,16 @@ enum OGLVertexAttributeID
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 	}
 	
+	// Setup default values per user preferences.
+	[self setupUserDefaults];
+	
+	// Set the video filter source size now since the proper size is needed on initialization.
+	// If we don't do this, new windows could draw incorrectly.
+	const NSSize vfSrcSize = NSMakeSize(GPU_DISPLAY_WIDTH, ([self displayMode] == DS_DISPLAY_TYPE_COMBO) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT);
+	[[cdsVideoOutput vf] setSourceSize:vfSrcSize];
+	[CocoaDSUtil messageSendOneWayWithInteger:[cdsVideoOutput receivePort] msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:[self videoFilterType]];
+	
+	// Add the video thread to the output list.
 	[emuControl addOutputToCore:cdsVideoOutput];
 }
 
@@ -1848,4 +1856,3 @@ enum OGLVertexAttributeID
 }
 
 @end
-

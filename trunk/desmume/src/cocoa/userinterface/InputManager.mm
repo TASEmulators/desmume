@@ -1520,8 +1520,17 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 		return error;
 	}
 	
+	AudioStreamBasicDescription inputFormat;
+	UInt32 propertySize = sizeof(inputFormat);
+	
+	error = ExtAudioFileGetProperty(audioFile, kExtAudioFileProperty_FileDataFormat, &propertySize, &inputFormat);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
 	SInt64 fileLengthFrames = 0;
-	UInt32 propertySize = sizeof(fileLengthFrames);
+	propertySize = sizeof(fileLengthFrames);
 	
 	error = ExtAudioFileGetProperty(audioFile, kExtAudioFileProperty_FileLengthFrames, &propertySize, &fileLengthFrames);
 	if (error != noErr)
@@ -1532,17 +1541,18 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	// Create a new audio file generator.
 	audioFileGenerators[filePathStr] = AudioSampleBlockGenerator();
 	AudioSampleBlockGenerator &theGenerator = audioFileGenerators[filePathStr];
-	u8 *buffer = theGenerator.allocate(fileLengthFrames);
+	const size_t readSize = 32 * 1024;
+	const size_t bufferSize = (size_t)((double)(outputFormat.mSampleRate / inputFormat.mSampleRate) * (double)fileLengthFrames) + readSize;
+	u8 *buffer = theGenerator.allocate(bufferSize);
 	
 	// Read the audio file and fill the generator's buffer.
-	const size_t convertBufferSize = 32 * 1024;
 	AudioBufferList convertedData;
 	convertedData.mNumberBuffers = 1;
 	convertedData.mBuffers[0].mNumberChannels = outputFormat.mChannelsPerFrame;
-	convertedData.mBuffers[0].mDataByteSize = convertBufferSize;
+	convertedData.mBuffers[0].mDataByteSize = readSize;
 	convertedData.mBuffers[0].mData = buffer;
 	
-	UInt32 readFrames = convertBufferSize;
+	UInt32 readFrames = readSize;
 	while (readFrames > 0)
 	{
 		ExtAudioFileRead(audioFile, &readFrames, &convertedData);
@@ -1555,7 +1565,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	
 	// Convert the audio buffer to 7-bit unsigned PCM.
 	buffer = theGenerator.getBuffer();
-	for (SInt64 i = 0; i < fileLengthFrames; i++)
+	for (SInt64 i = 0; i < bufferSize; i++)
 	{
 		*(buffer+i) >>= 1;
 	}
