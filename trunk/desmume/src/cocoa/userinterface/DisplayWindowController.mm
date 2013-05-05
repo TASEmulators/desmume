@@ -704,12 +704,6 @@ enum OGLVertexAttributeID
 	[emuControl openRom:sender];
 }
 
-- (IBAction) changeRotationRelative:(id)sender
-{
-	const double angleDegrees = [self displayRotation] + (double)[CocoaDSUtil getIBActionSenderTag:sender];
-	[self setDisplayRotation:angleDegrees];
-}
-
 - (IBAction) saveScreenshotAs:(id)sender
 {
 	[emuControl pauseCore];
@@ -728,6 +722,211 @@ enum OGLVertexAttributeID
 	{
 		[emuControl restoreCoreState];
 	}
+}
+
+- (IBAction) changeScale:(id)sender
+{
+	[self setDisplayScale:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
+}
+
+- (IBAction) changeRotation:(id)sender
+{
+	// Get the rotation value from the sender.
+	if ([sender isMemberOfClass:[NSSlider class]])
+	{
+		[self setDisplayRotation:[(NSSlider *)sender doubleValue]];
+	}
+	else
+	{
+		[self setDisplayRotation:(double)[CocoaDSUtil getIBActionSenderTag:sender]];
+	}
+}
+
+- (IBAction) changeRotationRelative:(id)sender
+{
+	const double angleDegrees = [self displayRotation] + (double)[CocoaDSUtil getIBActionSenderTag:sender];
+	[self setDisplayRotation:angleDegrees];
+}
+
+- (IBAction) changeDisplayMode:(id)sender
+{
+	const NSInteger newDisplayModeID = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (newDisplayModeID == [self displayMode])
+	{
+		return;
+	}
+	
+	[self setDisplayMode:newDisplayModeID];
+}
+
+- (IBAction) changeDisplayOrientation:(id)sender
+{
+	const NSInteger newDisplayOrientation = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (newDisplayOrientation == [self displayOrientation])
+	{
+		return;
+	}
+	
+	[self setDisplayOrientation:newDisplayOrientation];
+}
+
+- (IBAction) changeDisplayOrder:(id)sender
+{
+	[self setDisplayOrder:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+- (IBAction) changeDisplayGap:(id)sender
+{
+	[self setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
+}
+
+- (IBAction) writeDefaultsDisplayRotation:(id)sender
+{
+	[[NSUserDefaults standardUserDefaults] setDouble:[self displayRotation] forKey:@"DisplayView_Rotation"];
+}
+
+- (IBAction) writeDefaultsDisplayGap:(id)sender
+{
+	[[NSUserDefaults standardUserDefaults] setDouble:([self displayGap] * 100.0) forKey:@"DisplayViewCombo_Gap"];
+}
+
+- (IBAction) writeDefaultsHUDSettings:(id)sender
+{
+	// TODO: Not implemented.
+}
+
+- (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
+{
+	[[NSUserDefaults standardUserDefaults] setInteger:[self videoFilterType] forKey:@"DisplayView_VideoFilter"];
+	[[NSUserDefaults standardUserDefaults] setBool:[self useBilinearOutput] forKey:@"DisplayView_UseBilinearOutput"];
+	[[NSUserDefaults standardUserDefaults] setBool:[self useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
+}
+
+#pragma mark NSUserInterfaceValidations Protocol
+
+- (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)theItem
+{
+	BOOL enable = YES;
+    const SEL theAction = [theItem action];
+	
+	if (theAction == @selector(changeScale:))
+	{
+		const NSInteger viewScale = (NSInteger)([self displayScale] * 100.0);
+		
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:(viewScale == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeRotation:))
+	{
+		const NSInteger viewRotation = (NSInteger)[self displayRotation];
+		
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			if ([theItem tag] == -1)
+			{
+				if (viewRotation == 0 ||
+					viewRotation == 90 ||
+					viewRotation == 180 ||
+					viewRotation == 270)
+				{
+					[(NSMenuItem*)theItem setState:NSOffState];
+				}
+				else
+				{
+					[(NSMenuItem*)theItem setState:NSOnState];
+				}
+			}
+			else
+			{
+				[(NSMenuItem*)theItem setState:(viewRotation == [theItem tag]) ? NSOnState : NSOffState];
+			}
+		}
+	}
+	else if (theAction == @selector(changeDisplayMode:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([self displayMode] == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeDisplayOrientation:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([self displayOrientation] == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeDisplayOrder:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([self displayOrder] == [theItem tag]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(changeDisplayGap:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			const NSInteger gapScalar = (NSInteger)([self displayGap] * 100.0);
+			
+			if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+			{
+				if ([theItem tag] == -1)
+				{
+					if (gapScalar == 0 ||
+						gapScalar == 50 ||
+						gapScalar == 100 ||
+						gapScalar == 150 ||
+						gapScalar == 200)
+					{
+						[(NSMenuItem*)theItem setState:NSOffState];
+					}
+					else
+					{
+						[(NSMenuItem*)theItem setState:NSOnState];
+					}
+				}
+				else
+				{
+					[(NSMenuItem*)theItem setState:(gapScalar == [theItem tag]) ? NSOnState : NSOffState];
+				}
+			}
+		}
+	}
+	else if (theAction == @selector(hudDisable:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setTitle:([[self view] isHudEnabled]) ? NSSTRING_TITLE_DISABLE_HUD : NSSTRING_TITLE_ENABLE_HUD];
+		}
+	}
+	else if (theAction == @selector(toggleStatusBar:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setTitle:([self isShowingStatusBar]) ? NSSTRING_TITLE_HIDE_STATUS_BAR : NSSTRING_TITLE_SHOW_STATUS_BAR];
+		}
+	}
+	else if (theAction == @selector(toggleKeepMinDisplaySizeAtNormal:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setState:([self isMinSizeNormal]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleToolbarShown:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem*)theItem setTitle:([[[self window] toolbar] isVisible]) ? NSSTRING_TITLE_HIDE_TOOLBAR : NSSTRING_TITLE_SHOW_TOOLBAR];
+		}
+	}
+	
+	return enable;
 }
 
 #pragma mark NSWindowDelegate Protocol

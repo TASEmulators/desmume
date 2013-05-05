@@ -161,7 +161,20 @@
 - (IBAction) reset:(id)sender;
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) openRom:(id)sender;
-- (IBAction) changeRotationRelative:(id)sender;
 - (IBAction) saveScreenshotAs:(id)sender;
+
+// View Menu
+- (IBAction) changeScale:(id)sender;
+- (IBAction) changeRotation:(id)sender;
+- (IBAction) changeRotationRelative:(id)sender;
+- (IBAction) changeDisplayMode:(id)sender;
+- (IBAction) changeDisplayOrientation:(id)sender;
+- (IBAction) changeDisplayOrder:(id)sender;
+- (IBAction) changeDisplayGap:(id)sender;
+
+- (IBAction) writeDefaultsDisplayRotation:(id)sender;
+- (IBAction) writeDefaultsDisplayGap:(id)sender;
+- (IBAction) writeDefaultsHUDSettings:(id)sender;
+- (IBAction) writeDefaultsDisplayVideoSettings:(id)sender;
 
 @end

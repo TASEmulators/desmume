@@ -145,7 +145,6 @@ class AudioSampleBlockGenerator;
 - (IBAction) newDisplayWindow:(id)sender;
 - (IBAction) openRom:(id)sender;
 - (IBAction) loadRecentRom:(id)sender;
-- (IBAction) closeWindow:(id)sender;
 - (IBAction) closeRom:(id)sender;
 - (IBAction) revealRomInFinder:(id)sender;
 - (IBAction) revealGameDataFolderInFinder:(id)sender;
@@ -166,22 +165,8 @@ class AudioSampleBlockGenerator;
 - (IBAction) reset:(id)sender;
 - (IBAction) changeRomSaveType:(id)sender;
 
-// View Menu
-- (IBAction) changeScale:(id)sender;
-- (IBAction) changeRotation:(id)sender;
-- (IBAction) changeRotationRelative:(id)sender;
-- (IBAction) changeDisplayMode:(id)sender;
-- (IBAction) changeDisplayOrientation:(id)sender;
-- (IBAction) changeDisplayOrder:(id)sender;
-- (IBAction) changeDisplayGap:(id)sender;
-- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
-- (IBAction) toggleStatusBar:(id)sender;
-- (IBAction) toggleToolbarShown:(id)sender;
-- (IBAction) runToolbarCustomizationPalette:(id)sender;
-
 // Tools Menu
 - (IBAction) toggleGPUState:(id)sender;
-- (IBAction) saveScreenshotAs:(id)sender;
 
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) changeCoreEmuFlags:(id)sender;
@@ -197,10 +182,6 @@ class AudioSampleBlockGenerator;
 - (IBAction) chooseSlot1R4Directory:(id)sender;
 - (IBAction) slot1Eject:(id)sender;
 
-- (IBAction) writeDefaultsDisplayRotation:(id)sender;
-- (IBAction) writeDefaultsDisplayGap:(id)sender;
-- (IBAction) writeDefaultsHUDSettings:(id)sender;
-- (IBAction) writeDefaultsDisplayVideoSettings:(id)sender;
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;
 - (IBAction) writeDefaultsSlot1Settings:(id)sender;
