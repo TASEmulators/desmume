@@ -939,12 +939,10 @@
 	[panel setResolvesAliases:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:@"Select R4 Directory"];
-	NSArray *fileTypes = [NSArray arrayWithObjects:nil];
 	
 	// The NSOpenPanel/NSSavePanel method -(void)beginSheetForDirectory:file:types:modalForWindow:modalDelegate:didEndSelector:contextInfo
 	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel setAllowedFileTypes:fileTypes];
 	[panel beginSheetModalForWindow:slot1ManagerWindow
 				  completionHandler:^(NSInteger result) {
 					  [self didEndChooseSlot1R4Directory:panel returnCode:result contextInfo:nil];
@@ -952,7 +950,7 @@
 #else
 	[panel beginSheetForDirectory:nil
 							 file:nil
-							types:fileTypes
+							types:nil
 				   modalForWindow:slot1ManagerWindow
 					modalDelegate:self
 				   didEndSelector:@selector(didEndChooseSlot1R4Directory:returnCode:contextInfo:)
