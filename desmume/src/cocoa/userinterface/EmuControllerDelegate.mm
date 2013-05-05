@@ -491,11 +491,6 @@
 	// Dummy selector, used for UI validation only.
 }
 
-- (IBAction) closeWindow:(id)sender
-{
-	[[mainWindow window] performClose:sender];
-}
-
 - (IBAction) closeRom:(id)sender
 {
 	[self handleUnloadRom:REASONFORCLOSE_NORMAL romToLoad:nil];
@@ -756,31 +751,6 @@
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
-- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
-{
-	[mainWindow toggleKeepMinDisplaySizeAtNormal:sender];
-}
-
-- (IBAction) toggleStatusBar:(id)sender
-{
-	[mainWindow toggleStatusBar:sender];
-}
-
-- (IBAction) toggleToolbarShown:(id)sender
-{
-	[[mainWindow window] toggleToolbarShown:sender];
-}
-
-- (IBAction) runToolbarCustomizationPalette:(id)sender
-{
-	[[mainWindow window] runToolbarCustomizationPalette:sender];
-}
-
-- (IBAction) saveScreenshotAs:(id)sender
-{
-	[mainWindow saveScreenshotAs:sender];
-}
-
 - (IBAction) toggleGPUState:(id)sender
 {
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
@@ -802,10 +772,17 @@
 
 - (IBAction) changeCoreSpeed:(id)sender
 {
-	CGFloat newSpeedScalar = (CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setSpeedScalar:newSpeedScalar];
-	lastSetSpeedScalar = newSpeedScalar;
+	if ([sender isKindOfClass:[NSSlider class]])
+	{
+		lastSetSpeedScalar = [(NSSlider *)sender floatValue];
+	}
+	else
+	{
+		const CGFloat newSpeedScalar = (CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		[cdsCore setSpeedScalar:newSpeedScalar];
+		lastSetSpeedScalar = newSpeedScalar;
+	}
 }
 
 - (IBAction) changeCoreEmuFlags:(id)sender
@@ -874,63 +851,6 @@
 	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
-- (IBAction) changeScale:(id)sender
-{
-	[mainWindow setDisplayScale:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
-}
-
-- (IBAction) changeRotation:(id)sender
-{
-	// Get the rotation value from the sender.
-	if ([sender isMemberOfClass:[NSSlider class]])
-	{
-		[mainWindow setDisplayRotation:[(NSSlider *)sender doubleValue]];
-	}
-	else
-	{
-		[mainWindow setDisplayRotation:(double)[CocoaDSUtil getIBActionSenderTag:sender]];
-	}
-}
-
-- (IBAction) changeRotationRelative:(id)sender
-{
-	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
-}
-
-- (IBAction) changeDisplayMode:(id)sender
-{
-	const NSInteger newDisplayModeID = [CocoaDSUtil getIBActionSenderTag:sender];
-	
-	if (newDisplayModeID == [mainWindow displayMode])
-	{
-		return;
-	}
-	
-	[mainWindow setDisplayMode:newDisplayModeID];
-}
-
-- (IBAction) changeDisplayOrientation:(id)sender
-{
-	const NSInteger newDisplayOrientation = [CocoaDSUtil getIBActionSenderTag:sender];
-	
-	if (newDisplayOrientation == [mainWindow displayOrientation])
-	{
-		return;
-	}
-	
-	[mainWindow setDisplayOrientation:newDisplayOrientation];
-}
-
-- (IBAction) changeDisplayOrder:(id)sender
-{
-	[mainWindow setDisplayOrder:[CocoaDSUtil getIBActionSenderTag:sender]];
-}
-
-- (IBAction) changeDisplayGap:(id)sender
-{
-	[mainWindow setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
-}
-
 - (IBAction) chooseSlot1R4Directory:(id)sender
 {
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
@@ -962,28 +882,6 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore slot1Eject];
-}
-
-- (IBAction) writeDefaultsDisplayRotation:(id)sender
-{
-	[[NSUserDefaults standardUserDefaults] setDouble:[mainWindow displayRotation] forKey:@"DisplayView_Rotation"];
-}
-
-- (IBAction) writeDefaultsDisplayGap:(id)sender
-{
-	[[NSUserDefaults standardUserDefaults] setDouble:([mainWindow displayGap] * 100.0) forKey:@"DisplayViewCombo_Gap"];
-}
-
-- (IBAction) writeDefaultsHUDSettings:(id)sender
-{
-	// TODO: Not implemented.
-}
-
-- (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
-{
-	[[NSUserDefaults standardUserDefaults] setInteger:[mainWindow videoFilterType] forKey:@"DisplayView_VideoFilter"];
-	[[NSUserDefaults standardUserDefaults] setBool:[mainWindow useBilinearOutput] forKey:@"DisplayView_UseBilinearOutput"];
-	[[NSUserDefaults standardUserDefaults] setBool:[mainWindow useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
 }
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender
@@ -2147,120 +2045,6 @@
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem*)theItem setState:([cdsCore.cdsGPU gpuStateByBit:[theItem tag]]) ? NSOnState : NSOffState];
-		}
-	}
-	else if (theAction == @selector(changeScale:))
-	{
-		const NSInteger viewScale = (NSInteger)([mainWindow displayScale] * 100.0);
-		
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setState:(viewScale == [theItem tag]) ? NSOnState : NSOffState];
-		}
-	}
-	else if (theAction == @selector(changeRotation:))
-	{
-		const NSInteger viewRotation = (NSInteger)[mainWindow displayRotation];
-		
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			if ([theItem tag] == -1)
-			{
-				if (viewRotation == 0 ||
-					viewRotation == 90 ||
-					viewRotation == 180 ||
-					viewRotation == 270)
-				{
-					[(NSMenuItem*)theItem setState:NSOffState];
-				}
-				else
-				{
-					[(NSMenuItem*)theItem setState:NSOnState];
-				}
-			}
-			else
-			{
-				[(NSMenuItem*)theItem setState:(viewRotation == [theItem tag]) ? NSOnState : NSOffState];
-			}
-		}
-	}
-	else if (theAction == @selector(changeDisplayMode:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setState:([mainWindow displayMode] == [theItem tag]) ? NSOnState : NSOffState];
-		}
-	}
-	else if (theAction == @selector(changeDisplayOrientation:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setState:([mainWindow displayOrientation] == [theItem tag]) ? NSOnState : NSOffState];
-		}
-	}
-	else if (theAction == @selector(changeDisplayOrder:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setState:([mainWindow displayOrder] == [theItem tag]) ? NSOnState : NSOffState];
-		}
-	}
-	else if (theAction == @selector(changeDisplayGap:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			const NSInteger gapScalar = (NSInteger)([mainWindow displayGap] * 100.0);
-			
-			if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-			{
-				if ([theItem tag] == -1)
-				{
-					if (gapScalar == 0 ||
-						gapScalar == 50 ||
-						gapScalar == 100 ||
-						gapScalar == 150 ||
-						gapScalar == 200)
-					{
-						[(NSMenuItem*)theItem setState:NSOffState];
-					}
-					else
-					{
-						[(NSMenuItem*)theItem setState:NSOnState];
-					}
-				}
-				else
-				{
-					[(NSMenuItem*)theItem setState:(gapScalar == [theItem tag]) ? NSOnState : NSOffState];
-				}
-			}
-		}
-	}
-	else if (theAction == @selector(hudDisable:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setTitle:([[mainWindow view] isHudEnabled]) ? NSSTRING_TITLE_DISABLE_HUD : NSSTRING_TITLE_ENABLE_HUD];
-		}
-	}
-	else if (theAction == @selector(toggleStatusBar:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setTitle:([mainWindow isShowingStatusBar]) ? NSSTRING_TITLE_HIDE_STATUS_BAR : NSSTRING_TITLE_SHOW_STATUS_BAR];
-		}
-	}
-	else if (theAction == @selector(toggleKeepMinDisplaySizeAtNormal:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setState:([mainWindow isMinSizeNormal]) ? NSOnState : NSOffState];
-		}
-	}
-	else if (theAction == @selector(toggleToolbarShown:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem*)theItem setTitle:([[[mainWindow window] toolbar] isVisible]) ? NSSTRING_TITLE_HIDE_TOOLBAR : NSSTRING_TITLE_SHOW_TOOLBAR];
 		}
 	}
 	

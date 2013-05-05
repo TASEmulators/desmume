@@ -2490,9 +2490,11 @@
 				</object>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="318805510">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<string key="NSFrameSize">{400, 100}</string>
+					<reference key="NSSuperview"/>
+					<reference key="NSNextKeyView"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -15729,7 +15731,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<nil key="NSViewClass"/>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="1004755540">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -15962,6 +15964,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{194, 241}</string>
+					<reference key="NSSuperview"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -15977,7 +15980,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<nil key="NSViewClass"/>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="440584564">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -16585,6 +16588,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{204, 521}</string>
+					<reference key="NSSuperview"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -19789,7 +19793,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<nil key="NSViewClass"/>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="186498688">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -19798,6 +19802,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{30, 43}, {411, 26}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="758828478"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSSliderCell" key="NSCell" id="173171109">
 								<int key="NSCellFlags">-2080112384</int>
@@ -19820,6 +19826,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{20, 70}, {38, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="253595981"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="693364134">
 								<int key="NSCellFlags">68157504</int>
@@ -19837,6 +19845,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{412, 70}, {38, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="63577384"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="588852667">
 								<int key="NSCellFlags">68157504</int>
@@ -19854,6 +19864,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{98, 70}, {38, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="29956013"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="159905866">
 								<int key="NSCellFlags">68157504</int>
@@ -19871,6 +19883,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{177, 70}, {38, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="915606717"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="298527919">
 								<int key="NSCellFlags">68157504</int>
@@ -19888,6 +19902,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{255, 70}, {38, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="769560493"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="615451230">
 								<int key="NSCellFlags">68157504</int>
@@ -19905,6 +19921,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{335, 70}, {38, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="257257134"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="678116475">
 								<int key="NSCellFlags">68157504</int>
@@ -19922,6 +19940,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{32, 18}, {133, 19}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="633314399"/>
 							<int key="NSTag">100</int>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="181573003">
@@ -19944,6 +19964,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{203, 21}, {156, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="1049290261"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="305690556">
 								<int key="NSCellFlags">68157504</int>
@@ -19961,6 +19983,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{361, 21}, {81, 17}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="62614240">
 								<int key="NSCellFlags">68157504</int>
@@ -20042,6 +20066,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{158, 93}, {154, 18}}</string>
 							<reference key="NSSuperview" ref="186498688"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="493126882"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="835222530">
 								<int key="NSCellFlags">-2080374784</int>
@@ -20062,6 +20088,9 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{467, 128}</string>
+					<reference key="NSSuperview"/>
+					<reference key="NSWindow"/>
+					<reference key="NSNextKeyView" ref="1042414715"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -20072,13 +20101,13 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<int key="NSWindowStyleMask">279</int>
 				<int key="NSWindowBacking">2</int>
 				<string key="NSWindowRect">{{162, 281}, {213, 198}}</string>
-				<int key="NSWTFlags">-461897728</int>
+				<int key="NSWTFlags">-461896704</int>
 				<string key="NSWindowTitle">Set Rotation</string>
 				<string key="NSWindowClass">NSPanel</string>
 				<nil key="NSViewClass"/>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="856469526">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -20317,6 +20346,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{213, 198}</string>
+					<reference key="NSSuperview"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -20333,7 +20363,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<nil key="NSViewClass"/>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="751185738">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -20605,6 +20635,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{441, 133}</string>
+					<reference key="NSSuperview"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -22968,6 +22999,302 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<reference key="destination" ref="351168294"/>
 					</object>
 					<int key="connectionID">7999</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayMode:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="242781964"/>
+					</object>
+					<int key="connectionID">8204</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayMode:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="387767396"/>
+					</object>
+					<int key="connectionID">8205</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayMode:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="858728270"/>
+					</object>
+					<int key="connectionID">8206</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">runToolbarCustomizationPalette:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="237841660"/>
+					</object>
+					<int key="connectionID">8208</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">toggleToolbarShown:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="102151532"/>
+					</object>
+					<int key="connectionID">8209</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="999464348"/>
+					</object>
+					<int key="connectionID">8210</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="143439166"/>
+					</object>
+					<int key="connectionID">8211</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="610323392"/>
+					</object>
+					<int key="connectionID">8212</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="109305733"/>
+					</object>
+					<int key="connectionID">8213</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="1031000381"/>
+					</object>
+					<int key="connectionID">8214</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="196301010"/>
+					</object>
+					<int key="connectionID">8215</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="643271830"/>
+					</object>
+					<int key="connectionID">8216</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayOrder:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="795592114"/>
+					</object>
+					<int key="connectionID">8217</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayOrder:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="706134094"/>
+					</object>
+					<int key="connectionID">8218</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayOrientation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="172785222"/>
+					</object>
+					<int key="connectionID">8219</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeDisplayOrientation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="593656559"/>
+					</object>
+					<int key="connectionID">8220</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeScale:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="3654413"/>
+					</object>
+					<int key="connectionID">8221</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeScale:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="1022454120"/>
+					</object>
+					<int key="connectionID">8222</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeScale:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="226072032"/>
+					</object>
+					<int key="connectionID">8223</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeScale:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="322095617"/>
+					</object>
+					<int key="connectionID">8224</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeScale:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="579910515"/>
+					</object>
+					<int key="connectionID">8225</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="550985569"/>
+					</object>
+					<int key="connectionID">8226</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="50942823"/>
+					</object>
+					<int key="connectionID">8227</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="805134260"/>
+					</object>
+					<int key="connectionID">8228</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="931393408"/>
+					</object>
+					<int key="connectionID">8229</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotationRelative:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="897908304"/>
+					</object>
+					<int key="connectionID">8230</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotationRelative:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="689000948"/>
+					</object>
+					<int key="connectionID">8231</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="1057214667"/>
+					</object>
+					<int key="connectionID">8232</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="332275623"/>
+					</object>
+					<int key="connectionID">8233</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">toggleStatusBar:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="619434875"/>
+					</object>
+					<int key="connectionID">8234</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">toggleKeepMinDisplaySizeAtNormal:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="393099749"/>
+					</object>
+					<int key="connectionID">8235</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">writeDefaultsDisplayGap:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="881028302"/>
+					</object>
+					<int key="connectionID">8236</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">writeDefaultsDisplayRotation:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="574064879"/>
+					</object>
+					<int key="connectionID">8237</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">writeDefaultsDisplayVideoSettings:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="670018968"/>
+					</object>
+					<int key="connectionID">8238</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">writeDefaultsHUDSettings:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="448396937"/>
+					</object>
+					<int key="connectionID">8239</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">performClose:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="349158443"/>
+					</object>
+					<int key="connectionID">8240</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">saveScreenshotAs:</string>
+						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="217330860"/>
+					</object>
+					<int key="connectionID">8241</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
@@ -30106,238 +30433,6 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 					<int key="connectionID">6940</int>
 				</object>
 				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeScale:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="3654413"/>
-					</object>
-					<int key="connectionID">6941</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeScale:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="1022454120"/>
-					</object>
-					<int key="connectionID">6942</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeScale:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="226072032"/>
-					</object>
-					<int key="connectionID">6943</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeScale:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="322095617"/>
-					</object>
-					<int key="connectionID">6944</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeScale:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="579910515"/>
-					</object>
-					<int key="connectionID">6945</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">toggleKeepMinDisplaySizeAtNormal:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="393099749"/>
-					</object>
-					<int key="connectionID">6946</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">toggleStatusBar:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="619434875"/>
-					</object>
-					<int key="connectionID">6947</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">runToolbarCustomizationPalette:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="237841660"/>
-					</object>
-					<int key="connectionID">6948</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">toggleToolbarShown:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="102151532"/>
-					</object>
-					<int key="connectionID">6949</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayMode:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="242781964"/>
-					</object>
-					<int key="connectionID">6950</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayMode:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="387767396"/>
-					</object>
-					<int key="connectionID">6951</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayMode:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="858728270"/>
-					</object>
-					<int key="connectionID">6952</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayOrientation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="172785222"/>
-					</object>
-					<int key="connectionID">6953</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayOrientation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="593656559"/>
-					</object>
-					<int key="connectionID">6954</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayOrder:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="795592114"/>
-					</object>
-					<int key="connectionID">6955</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayOrder:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="706134094"/>
-					</object>
-					<int key="connectionID">6956</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotationRelative:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="897908304"/>
-					</object>
-					<int key="connectionID">6957</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotationRelative:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="689000948"/>
-					</object>
-					<int key="connectionID">6958</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="550985569"/>
-					</object>
-					<int key="connectionID">6959</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="50942823"/>
-					</object>
-					<int key="connectionID">6960</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="805134260"/>
-					</object>
-					<int key="connectionID">6961</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="931393408"/>
-					</object>
-					<int key="connectionID">6962</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="1057214667"/>
-					</object>
-					<int key="connectionID">6963</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="332275623"/>
-					</object>
-					<int key="connectionID">6964</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">writeDefaultsDisplayRotation:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="574064879"/>
-					</object>
-					<int key="connectionID">6992</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">writeDefaultsHUDSettings:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="448396937"/>
-					</object>
-					<int key="connectionID">6993</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">writeDefaultsDisplayVideoSettings:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="670018968"/>
-					</object>
-					<int key="connectionID">6994</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">saveScreenshotAs:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="217330860"/>
-					</object>
-					<int key="connectionID">6997</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">closeWindow:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="349158443"/>
-					</object>
-					<int key="connectionID">7000</int>
-				</object>
-				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
 						<string key="label">inputManager</string>
 						<reference key="source" ref="231770064"/>
@@ -30376,70 +30471,6 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<reference key="destination" ref="102998035"/>
 					</object>
 					<int key="connectionID">7013</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="999464348"/>
-					</object>
-					<int key="connectionID">7797</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="143439166"/>
-					</object>
-					<int key="connectionID">7798</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="610323392"/>
-					</object>
-					<int key="connectionID">7799</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="109305733"/>
-					</object>
-					<int key="connectionID">7800</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="1031000381"/>
-					</object>
-					<int key="connectionID">7801</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="196301010"/>
-					</object>
-					<int key="connectionID">7851</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="643271830"/>
-					</object>
-					<int key="connectionID">7852</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">writeDefaultsDisplayGap:</string>
-						<reference key="source" ref="231770064"/>
-						<reference key="destination" ref="881028302"/>
-					</object>
-					<int key="connectionID">7854</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
@@ -30520,6 +30551,14 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<reference key="destination" ref="127875562"/>
 					</object>
 					<int key="connectionID">8168</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">changeCoreSpeed:</string>
+						<reference key="source" ref="231770064"/>
+						<reference key="destination" ref="63577384"/>
+					</object>
+					<int key="connectionID">8242</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -48745,9 +48784,1965 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<reference key="dict.values" ref="0"/>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">8200</int>
+			<int key="maxID">8242</int>
 		</object>
-		<object class="IBClassDescriber" key="IBDocument.Classes"/>
+		<object class="IBClassDescriber" key="IBDocument.Classes">
+			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
+				<bool key="EncodedWithXMLCoder">YES</bool>
+				<object class="IBPartialClassDescription">
+					<string key="className">AppDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>bugReport:</string>
+							<string>launchForums:</string>
+							<string>launchWebsite:</string>
+							<string>supportRequest:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>bugReport:</string>
+							<string>launchForums:</string>
+							<string>launchWebsite:</string>
+							<string>supportRequest:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">bugReport:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">launchForums:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">launchWebsite:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">supportRequest:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>aboutWindowController</string>
+							<string>boxARMBinaries</string>
+							<string>boxFileSystem</string>
+							<string>boxGeneralInfo</string>
+							<string>boxMisc</string>
+							<string>boxTitles</string>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatListWindow</string>
+							<string>cheatWindowController</string>
+							<string>emuControlController</string>
+							<string>inputManager</string>
+							<string>inputPrefsView</string>
+							<string>mLoadStateSlot</string>
+							<string>mSaveStateSlot</string>
+							<string>migrationDelegate</string>
+							<string>prefGeneralView</string>
+							<string>prefWindow</string>
+							<string>prefWindowController</string>
+							<string>romInfoPanelController</string>
+							<string>troubleshootingWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>InputManager</string>
+							<string>InputPrefsView</string>
+							<string>NSMenu</string>
+							<string>NSMenu</string>
+							<string>FileMigrationDelegate</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>aboutWindowController</string>
+							<string>boxARMBinaries</string>
+							<string>boxFileSystem</string>
+							<string>boxGeneralInfo</string>
+							<string>boxMisc</string>
+							<string>boxTitles</string>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatListWindow</string>
+							<string>cheatWindowController</string>
+							<string>emuControlController</string>
+							<string>inputManager</string>
+							<string>inputPrefsView</string>
+							<string>mLoadStateSlot</string>
+							<string>mSaveStateSlot</string>
+							<string>migrationDelegate</string>
+							<string>prefGeneralView</string>
+							<string>prefWindow</string>
+							<string>prefWindowController</string>
+							<string>romInfoPanelController</string>
+							<string>troubleshootingWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">aboutWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxARMBinaries</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxFileSystem</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxGeneralInfo</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxMisc</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxTitles</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsCoreController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsSoundController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">emuControlController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputPrefsView</string>
+								<string key="candidateClassName">InputPrefsView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">mLoadStateSlot</string>
+								<string key="candidateClassName">NSMenu</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">mSaveStateSlot</string>
+								<string key="candidateClassName">NSMenu</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">migrationDelegate</string>
+								<string key="candidateClassName">FileMigrationDelegate</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefGeneralView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">romInfoPanelController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">troubleshootingWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/AppDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">CheatWindowDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>addToList:</string>
+							<string>applyConfiguration:</string>
+							<string>closeCheatDatabaseSheet:</string>
+							<string>removeFromList:</string>
+							<string>resetSearch:</string>
+							<string>runComparativeSearch:</string>
+							<string>runExactValueSearch:</string>
+							<string>selectAllCheatsInDatabase:</string>
+							<string>selectCheatSearchStyle:</string>
+							<string>selectCheatType:</string>
+							<string>selectNoneCheatsInDatabase:</string>
+							<string>setInternalCheatValue:</string>
+							<string>viewDatabase:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>addToList:</string>
+							<string>applyConfiguration:</string>
+							<string>closeCheatDatabaseSheet:</string>
+							<string>removeFromList:</string>
+							<string>resetSearch:</string>
+							<string>runComparativeSearch:</string>
+							<string>runExactValueSearch:</string>
+							<string>selectAllCheatsInDatabase:</string>
+							<string>selectCheatSearchStyle:</string>
+							<string>selectCheatType:</string>
+							<string>selectNoneCheatsInDatabase:</string>
+							<string>setInternalCheatValue:</string>
+							<string>viewDatabase:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">addToList:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">applyConfiguration:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeCheatDatabaseSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">removeFromList:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">resetSearch:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">runComparativeSearch:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">runExactValueSearch:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectAllCheatsInDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectCheatSearchStyle:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectCheatType:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectNoneCheatsInDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">setInternalCheatValue:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">viewDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cheatConfigBox</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatDatabaseSheet</string>
+							<string>cheatListController</string>
+							<string>cheatListTable</string>
+							<string>cheatSearchListController</string>
+							<string>cheatSearchListTable</string>
+							<string>cheatSearchView</string>
+							<string>cheatSelectedItemController</string>
+							<string>cheatWindowController</string>
+							<string>searchField</string>
+							<string>viewConfigureActionReplayCheat</string>
+							<string>viewConfigureCodeBreakerCheat</string>
+							<string>viewConfigureInternalCheat</string>
+							<string>viewConfigureNoSelection</string>
+							<string>viewSearchComparativeContinue</string>
+							<string>viewSearchComparativeStart</string>
+							<string>viewSearchExactValue</string>
+							<string>viewSearchNoSelection</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSBox</string>
+							<string>NSArrayController</string>
+							<string>NSWindow</string>
+							<string>NSArrayController</string>
+							<string>NSTableView</string>
+							<string>NSArrayController</string>
+							<string>NSTableView</string>
+							<string>NSView</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSSearchField</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cheatConfigBox</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatDatabaseSheet</string>
+							<string>cheatListController</string>
+							<string>cheatListTable</string>
+							<string>cheatSearchListController</string>
+							<string>cheatSearchListTable</string>
+							<string>cheatSearchView</string>
+							<string>cheatSelectedItemController</string>
+							<string>cheatWindowController</string>
+							<string>searchField</string>
+							<string>viewConfigureActionReplayCheat</string>
+							<string>viewConfigureCodeBreakerCheat</string>
+							<string>viewConfigureInternalCheat</string>
+							<string>viewConfigureNoSelection</string>
+							<string>viewSearchComparativeContinue</string>
+							<string>viewSearchComparativeStart</string>
+							<string>viewSearchExactValue</string>
+							<string>viewSearchNoSelection</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatConfigBox</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListTable</string>
+								<string key="candidateClassName">NSTableView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSearchListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSearchListTable</string>
+								<string key="candidateClassName">NSTableView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSearchView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSelectedItemController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">searchField</string>
+								<string key="candidateClassName">NSSearchField</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureActionReplayCheat</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureCodeBreakerCheat</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureInternalCheat</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureNoSelection</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchComparativeContinue</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchComparativeStart</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchExactValue</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchNoSelection</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/CheatWindowDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">DisplayView</string>
+					<string key="superclassName">NSView</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/DisplayView.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">DisplayWindowController</string>
+					<string key="superclassName">NSWindowController</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeCoreSpeed:</string>
+							<string>changeDisplayGap:</string>
+							<string>changeDisplayMode:</string>
+							<string>changeDisplayOrder:</string>
+							<string>changeDisplayOrientation:</string>
+							<string>changeRotation:</string>
+							<string>changeRotationRelative:</string>
+							<string>changeScale:</string>
+							<string>changeVolume:</string>
+							<string>copy:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>saveScreenshotAs:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleKeepMinDisplaySizeAtNormal:</string>
+							<string>toggleStatusBar:</string>
+							<string>writeDefaultsDisplayGap:</string>
+							<string>writeDefaultsDisplayRotation:</string>
+							<string>writeDefaultsDisplayVideoSettings:</string>
+							<string>writeDefaultsHUDSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeCoreSpeed:</string>
+							<string>changeDisplayGap:</string>
+							<string>changeDisplayMode:</string>
+							<string>changeDisplayOrder:</string>
+							<string>changeDisplayOrientation:</string>
+							<string>changeRotation:</string>
+							<string>changeRotationRelative:</string>
+							<string>changeScale:</string>
+							<string>changeVolume:</string>
+							<string>copy:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>saveScreenshotAs:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleKeepMinDisplaySizeAtNormal:</string>
+							<string>toggleStatusBar:</string>
+							<string>writeDefaultsDisplayGap:</string>
+							<string>writeDefaultsDisplayRotation:</string>
+							<string>writeDefaultsDisplayVideoSettings:</string>
+							<string>writeDefaultsHUDSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">changeCoreSpeed:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayGap:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayOrder:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayOrientation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeRotation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeRotationRelative:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeScale:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeVolume:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">copy:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">openRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">reset:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveScreenshotAs:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleExecutePause:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleKeepMinDisplaySizeAtNormal:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleStatusBar:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsDisplayGap:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsDisplayRotation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsDisplayVideoSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsHUDSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>saveScreenshotPanelAccessoryView</string>
+							<string>view</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSView</string>
+							<string>DisplayView</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>saveScreenshotPanelAccessoryView</string>
+							<string>view</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">saveScreenshotPanelAccessoryView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">view</string>
+								<string key="candidateClassName">DisplayView</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/DisplayWindowController.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">EmuControllerDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeAudioEngine:</string>
+							<string>changeCoreEmuFlags:</string>
+							<string>changeCoreSpeed:</string>
+							<string>changeFirmwareSettings:</string>
+							<string>changeRomSaveType:</string>
+							<string>changeSpuAdvancedLogic:</string>
+							<string>changeSpuInterpolationMode:</string>
+							<string>changeSpuSyncMethod:</string>
+							<string>changeSpuSyncMode:</string>
+							<string>changeVolume:</string>
+							<string>chooseSlot1R4Directory:</string>
+							<string>closeRom:</string>
+							<string>closeSheet:</string>
+							<string>exportRomSave:</string>
+							<string>importRomSave:</string>
+							<string>loadEmuSaveStateSlot:</string>
+							<string>loadRecentRom:</string>
+							<string>newDisplayWindow:</string>
+							<string>openEmuSaveState:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>revealGameDataFolderInFinder:</string>
+							<string>revealRomInFinder:</string>
+							<string>revertEmuSaveState:</string>
+							<string>saveEmuSaveState:</string>
+							<string>saveEmuSaveStateAs:</string>
+							<string>saveEmuSaveStateSlot:</string>
+							<string>slot1Eject:</string>
+							<string>toggleAutoFrameSkip:</string>
+							<string>toggleCheats:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleGPUState:</string>
+							<string>toggleSpeedLimiter:</string>
+							<string>writeDefaults3DRenderingSettings:</string>
+							<string>writeDefaultsEmulationSettings:</string>
+							<string>writeDefaultsSlot1Settings:</string>
+							<string>writeDefaultsSoundSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeAudioEngine:</string>
+							<string>changeCoreEmuFlags:</string>
+							<string>changeCoreSpeed:</string>
+							<string>changeFirmwareSettings:</string>
+							<string>changeRomSaveType:</string>
+							<string>changeSpuAdvancedLogic:</string>
+							<string>changeSpuInterpolationMode:</string>
+							<string>changeSpuSyncMethod:</string>
+							<string>changeSpuSyncMode:</string>
+							<string>changeVolume:</string>
+							<string>chooseSlot1R4Directory:</string>
+							<string>closeRom:</string>
+							<string>closeSheet:</string>
+							<string>exportRomSave:</string>
+							<string>importRomSave:</string>
+							<string>loadEmuSaveStateSlot:</string>
+							<string>loadRecentRom:</string>
+							<string>newDisplayWindow:</string>
+							<string>openEmuSaveState:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>revealGameDataFolderInFinder:</string>
+							<string>revealRomInFinder:</string>
+							<string>revertEmuSaveState:</string>
+							<string>saveEmuSaveState:</string>
+							<string>saveEmuSaveStateAs:</string>
+							<string>saveEmuSaveStateSlot:</string>
+							<string>slot1Eject:</string>
+							<string>toggleAutoFrameSkip:</string>
+							<string>toggleCheats:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleGPUState:</string>
+							<string>toggleSpeedLimiter:</string>
+							<string>writeDefaults3DRenderingSettings:</string>
+							<string>writeDefaultsEmulationSettings:</string>
+							<string>writeDefaultsSlot1Settings:</string>
+							<string>writeDefaultsSoundSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">changeAudioEngine:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeCoreEmuFlags:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeCoreSpeed:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeFirmwareSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeRomSaveType:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuAdvancedLogic:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuInterpolationMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuSyncMethod:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuSyncMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeVolume:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseSlot1R4Directory:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">exportRomSave:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">importRomSave:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">loadEmuSaveStateSlot:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">loadRecentRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">newDisplayWindow:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">openEmuSaveState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">openRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">reset:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">revealGameDataFolderInFinder:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">revealRomInFinder:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">revertEmuSaveState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveEmuSaveState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveEmuSaveStateAs:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveEmuSaveStateSlot:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">slot1Eject:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleAutoFrameSkip:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleCheats:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleExecutePause:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleGPUState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleSpeedLimiter:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaults3DRenderingSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsEmulationSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsSlot1Settings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsSoundSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatListController</string>
+							<string>cheatWindowController</string>
+							<string>cheatWindowDelegate</string>
+							<string>exportRomSavePanelAccessoryView</string>
+							<string>firmwarePanelController</string>
+							<string>inputManager</string>
+							<string>romInfoPanelController</string>
+							<string>saveFileMigrationSheet</string>
+							<string>saveStatePrecloseSheet</string>
+							<string>slot1ManagerWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSArrayController</string>
+							<string>NSArrayController</string>
+							<string>NSObjectController</string>
+							<string>CheatWindowDelegate</string>
+							<string>NSView</string>
+							<string>NSObjectController</string>
+							<string>InputManager</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatListController</string>
+							<string>cheatWindowController</string>
+							<string>cheatWindowDelegate</string>
+							<string>exportRomSavePanelAccessoryView</string>
+							<string>firmwarePanelController</string>
+							<string>inputManager</string>
+							<string>romInfoPanelController</string>
+							<string>saveFileMigrationSheet</string>
+							<string>saveStatePrecloseSheet</string>
+							<string>slot1ManagerWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsCoreController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsSoundController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowDelegate</string>
+								<string key="candidateClassName">CheatWindowDelegate</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">exportRomSavePanelAccessoryView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">firmwarePanelController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">romInfoPanelController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">saveFileMigrationSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">saveStatePrecloseSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">slot1ManagerWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/EmuControllerDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">FileMigrationDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>handleChoice:</string>
+							<string>selectAll:</string>
+							<string>selectNone:</string>
+							<string>updateAndShowWindow:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>handleChoice:</string>
+							<string>selectAll:</string>
+							<string>selectNone:</string>
+							<string>updateAndShowWindow:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">handleChoice:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectAll:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectNone:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">updateAndShowWindow:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>dummyObject</string>
+							<string>fileListController</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObject</string>
+							<string>NSArrayController</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>dummyObject</string>
+							<string>fileListController</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">dummyObject</string>
+								<string key="candidateClassName">NSObject</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">fileListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/FileMigrationDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">InputManager</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="outlets">
+						<string key="NS.key.0">emuControl</string>
+						<string key="NS.object.0">EmuControllerDelegate</string>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<string key="NS.key.0">emuControl</string>
+						<object class="IBToOneOutletInfo" key="NS.object.0">
+							<string key="name">emuControl</string>
+							<string key="candidateClassName">EmuControllerDelegate</string>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/InputManager.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">InputPrefsView</string>
+					<string key="superclassName">NSView</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>audioFileChoose:</string>
+							<string>audioFileChooseNone:</string>
+							<string>changeSpeed:</string>
+							<string>closeProfileRenameSheet:</string>
+							<string>closeProfileSheet:</string>
+							<string>closeSettingsSheet:</string>
+							<string>profileApply:</string>
+							<string>profileDelete:</string>
+							<string>profileNew:</string>
+							<string>profileRename:</string>
+							<string>profileSave:</string>
+							<string>profileSelect:</string>
+							<string>profileView:</string>
+							<string>removeInput:</string>
+							<string>setInputAdd:</string>
+							<string>showSettingsSheet:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>audioFileChoose:</string>
+							<string>audioFileChooseNone:</string>
+							<string>changeSpeed:</string>
+							<string>closeProfileRenameSheet:</string>
+							<string>closeProfileSheet:</string>
+							<string>closeSettingsSheet:</string>
+							<string>profileApply:</string>
+							<string>profileDelete:</string>
+							<string>profileNew:</string>
+							<string>profileRename:</string>
+							<string>profileSave:</string>
+							<string>profileSelect:</string>
+							<string>profileView:</string>
+							<string>removeInput:</string>
+							<string>setInputAdd:</string>
+							<string>showSettingsSheet:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">audioFileChoose:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">audioFileChooseNone:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpeed:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeProfileRenameSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeProfileSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeSettingsSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileApply:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileDelete:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileNew:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileRename:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileSave:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileSelect:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">removeInput:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">setInputAdd:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showSettingsSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>inputPrefOutlineView</string>
+							<string>inputProfileController</string>
+							<string>inputProfileMenu</string>
+							<string>inputProfileNextButton</string>
+							<string>inputProfilePreviousButton</string>
+							<string>inputProfileRenameSheet</string>
+							<string>inputProfileSheet</string>
+							<string>inputSettingsController</string>
+							<string>inputSettingsGPUState</string>
+							<string>inputSettingsLoadStateSlot</string>
+							<string>inputSettingsMicrophone</string>
+							<string>inputSettingsSaveStateSlot</string>
+							<string>inputSettingsSetSpeedLimit</string>
+							<string>inputSettingsTouch</string>
+							<string>prefWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>InputManager</string>
+							<string>NSOutlineView</string>
+							<string>InputProfileController</string>
+							<string>NSPopUpButton</string>
+							<string>NSButton</string>
+							<string>NSButton</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>inputPrefOutlineView</string>
+							<string>inputProfileController</string>
+							<string>inputProfileMenu</string>
+							<string>inputProfileNextButton</string>
+							<string>inputProfilePreviousButton</string>
+							<string>inputProfileRenameSheet</string>
+							<string>inputProfileSheet</string>
+							<string>inputSettingsController</string>
+							<string>inputSettingsGPUState</string>
+							<string>inputSettingsLoadStateSlot</string>
+							<string>inputSettingsMicrophone</string>
+							<string>inputSettingsSaveStateSlot</string>
+							<string>inputSettingsSetSpeedLimit</string>
+							<string>inputSettingsTouch</string>
+							<string>prefWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputPrefOutlineView</string>
+								<string key="candidateClassName">NSOutlineView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileController</string>
+								<string key="candidateClassName">InputProfileController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileMenu</string>
+								<string key="candidateClassName">NSPopUpButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileNextButton</string>
+								<string key="candidateClassName">NSButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfilePreviousButton</string>
+								<string key="candidateClassName">NSButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileRenameSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsGPUState</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsLoadStateSlot</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsMicrophone</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsSaveStateSlot</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsSetSpeedLimit</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsTouch</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/InputPrefsView.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">InputProfileController</string>
+					<string key="superclassName">NSObjectController</string>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>profileOutlineView</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>InputManager</string>
+							<string>NSOutlineView</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>profileOutlineView</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">profileOutlineView</string>
+								<string key="candidateClassName">NSOutlineView</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/InputProfileController.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">PreferencesWindowDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>chooseARM7BiosImage:</string>
+							<string>chooseARM9BiosImage:</string>
+							<string>chooseAdvansceneDatabase:</string>
+							<string>chooseCheatDatabase:</string>
+							<string>chooseFirmwareImage:</string>
+							<string>chooseRomForAutoload:</string>
+							<string>closeFirmwareConfigSheet:</string>
+							<string>configureInternalFirmware:</string>
+							<string>selectAutoloadRomOption:</string>
+							<string>selectDisplayMode:</string>
+							<string>selectDisplayRotation:</string>
+							<string>selectDisplaySize:</string>
+							<string>selectSPUSyncMethod:</string>
+							<string>selectSPUSyncMode:</string>
+							<string>selectVideoFilterType:</string>
+							<string>setUseBilinear:</string>
+							<string>showDisplayView:</string>
+							<string>showEmulationView:</string>
+							<string>showGeneralView:</string>
+							<string>showInputView:</string>
+							<string>showSoundView:</string>
+							<string>updateVolumeIcon:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>chooseARM7BiosImage:</string>
+							<string>chooseARM9BiosImage:</string>
+							<string>chooseAdvansceneDatabase:</string>
+							<string>chooseCheatDatabase:</string>
+							<string>chooseFirmwareImage:</string>
+							<string>chooseRomForAutoload:</string>
+							<string>closeFirmwareConfigSheet:</string>
+							<string>configureInternalFirmware:</string>
+							<string>selectAutoloadRomOption:</string>
+							<string>selectDisplayMode:</string>
+							<string>selectDisplayRotation:</string>
+							<string>selectDisplaySize:</string>
+							<string>selectSPUSyncMethod:</string>
+							<string>selectSPUSyncMode:</string>
+							<string>selectVideoFilterType:</string>
+							<string>setUseBilinear:</string>
+							<string>showDisplayView:</string>
+							<string>showEmulationView:</string>
+							<string>showGeneralView:</string>
+							<string>showInputView:</string>
+							<string>showSoundView:</string>
+							<string>updateVolumeIcon:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">chooseARM7BiosImage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseARM9BiosImage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseAdvansceneDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseCheatDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseFirmwareImage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseRomForAutoload:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeFirmwareConfigSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">configureInternalFirmware:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectAutoloadRomOption:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectDisplayMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectDisplayRotation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectDisplaySize:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectSPUSyncMethod:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectSPUSyncMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectVideoFilterType:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">setUseBilinear:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showDisplayView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showEmulationView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showGeneralView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showInputView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showSoundView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">updateVolumeIcon:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatWindowController</string>
+							<string>displayRotationField</string>
+							<string>displayRotationMenu</string>
+							<string>displayRotationMenuCustomItem</string>
+							<string>emuController</string>
+							<string>firmwareConfigSheet</string>
+							<string>prefWindowController</string>
+							<string>previewImageView</string>
+							<string>spuSyncMethodMenu</string>
+							<string>viewDisplay</string>
+							<string>viewEmulation</string>
+							<string>viewGeneral</string>
+							<string>viewInput</string>
+							<string>viewSound</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSArrayController</string>
+							<string>NSObjectController</string>
+							<string>NSTextField</string>
+							<string>NSPopUpButton</string>
+							<string>NSMenuItem</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSImageView</string>
+							<string>NSPopUpButton</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>InputPrefsView</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatWindowController</string>
+							<string>displayRotationField</string>
+							<string>displayRotationMenu</string>
+							<string>displayRotationMenuCustomItem</string>
+							<string>emuController</string>
+							<string>firmwareConfigSheet</string>
+							<string>prefWindowController</string>
+							<string>previewImageView</string>
+							<string>spuSyncMethodMenu</string>
+							<string>viewDisplay</string>
+							<string>viewEmulation</string>
+							<string>viewGeneral</string>
+							<string>viewInput</string>
+							<string>viewSound</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsCoreController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">displayRotationField</string>
+								<string key="candidateClassName">NSTextField</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">displayRotationMenu</string>
+								<string key="candidateClassName">NSPopUpButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">displayRotationMenuCustomItem</string>
+								<string key="candidateClassName">NSMenuItem</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">emuController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">firmwareConfigSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">previewImageView</string>
+								<string key="candidateClassName">NSImageView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">spuSyncMethodMenu</string>
+								<string key="candidateClassName">NSPopUpButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewDisplay</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewEmulation</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewGeneral</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewInput</string>
+								<string key="candidateClassName">InputPrefsView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSound</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/PreferencesWindowDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">TroubleshootingWindowDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>backForm:</string>
+							<string>continueToFinalForm:</string>
+							<string>copyInfoToPasteboard:</string>
+							<string>copyRomInfoToTextFields:</string>
+							<string>goToWebpage:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>backForm:</string>
+							<string>continueToFinalForm:</string>
+							<string>copyInfoToPasteboard:</string>
+							<string>copyRomInfoToTextFields:</string>
+							<string>goToWebpage:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">backForm:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">continueToFinalForm:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">copyInfoToPasteboard:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">copyRomInfoToTextFields:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">goToWebpage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>romInfoController</string>
+							<string>troubleshootingWindowController</string>
+							<string>viewBugReport</string>
+							<string>viewFinishedForm</string>
+							<string>viewSupportRequest</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>romInfoController</string>
+							<string>troubleshootingWindowController</string>
+							<string>viewBugReport</string>
+							<string>viewFinishedForm</string>
+							<string>viewSupportRequest</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">romInfoController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">troubleshootingWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewBugReport</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewFinishedForm</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSupportRequest</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/TroubleshootingWindowDelegate.h</string>
+					</object>
+				</object>
+			</object>
+		</object>
 		<int key="IBDocument.localizationMode">0</int>
 		<string key="IBDocument.TargetRuntimeIdentifier">IBCocoaFramework</string>
 		<object class="NSMutableDictionary" key="IBDocument.PluginDeclaredDependencies">
