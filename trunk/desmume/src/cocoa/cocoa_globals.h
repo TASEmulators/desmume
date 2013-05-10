@@ -46,6 +46,8 @@
 #define NSSTRING_TITLE_ENABLE_CHEATS				NSLocalizedString(@"Enable Cheats", nil)
 #define NSSTRING_TITLE_DISABLE_HUD					NSLocalizedString(@"Disable HUD", nil)
 #define NSSTRING_TITLE_ENABLE_HUD					NSLocalizedString(@"Enable HUD", nil)
+#define NSSTRING_TITLE_EXIT_FULL_SCREEN				NSLocalizedString(@"Exit Full Screen", nil)
+#define NSSTRING_TITLE_ENTER_FULL_SCREEN			NSLocalizedString(@"Enter Full Screen", nil)
 #define NSSTRING_TITLE_HIDE_STATUS_BAR				NSLocalizedString(@"Hide Status Bar", nil)
 #define NSSTRING_TITLE_SHOW_STATUS_BAR				NSLocalizedString(@"Show Status Bar", nil)
 #define NSSTRING_TITLE_HIDE_TOOLBAR					NSLocalizedString(@"Hide Toolbar", nil)

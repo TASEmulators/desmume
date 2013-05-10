@@ -1012,6 +1012,7 @@
 		ABAD104315ACE7A00000EC47 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		ABAD104515ACE7A00000EC47 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		ABBCE29715ACB1FF00A2C965 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */; };
 		ABBCE29815ACB1FF00A2C965 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */; };
 		ABBF04A614B515F300E505A0 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */; };
@@ -1227,6 +1228,7 @@
 		ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = Images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
 		ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_CodeBreaker_32x32.png; path = Images/Icon_CodeBreaker_32x32.png; sourceTree = "<group>"; };
 		ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DeSmuME_32x32.png; path = Images/Icon_DeSmuME_32x32.png; sourceTree = "<group>"; };
@@ -1536,6 +1538,7 @@
 				AB2A9A731725F00F0062C1A1 /* OpenGL.framework in Frameworks */,
 				AB2A9A741725F00F0062C1A1 /* libz.dylib in Frameworks */,
 				AB2A9A751725F00F0062C1A1 /* AudioToolbox.framework in Frameworks */,
+				ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1654,6 +1657,7 @@
 				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
 				AB213E981710D074006DDB0F /* AudioToolbox.framework */,
 				ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */,
+				ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
