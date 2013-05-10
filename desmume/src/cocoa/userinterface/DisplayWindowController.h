@@ -26,6 +26,11 @@
 @class EmuControllerDelegate;
 
 
+// Subclass NSWindow for full screen windows so that we can override some methods.
+@interface DisplayFullScreenWindow : NSWindow
+{ }
+@end
+
 @interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
 {
 	InputManager *inputManager;
@@ -38,9 +43,11 @@
 	NSOpenGLContext *context;
 	CGLContextObj cglDisplayContext;
 	
-	NSInteger lastDisplayMode;
-	NSInteger currentDisplayOrientation;
-	GLfloat currentGapScalar;
+	NSSize _currentNormalSize;
+	NSInteger _currentDisplayMode;
+	NSInteger _currentDisplayOrientation;
+	GLfloat _currentGapScalar;
+	GLfloat _currentRotation;
 	GLenum glTexPixelFormat;
 	GLvoid *glTexBack;
 	NSSize glTexBackSize;
@@ -90,13 +97,19 @@
 
 @end
 
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
+@interface DisplayWindowController : NSWindowController <NSWindowDelegate>
+#else
 @interface DisplayWindowController : NSWindowController
+#endif
 {
 	DisplayView *view;
 	NSView *saveScreenshotPanelAccessoryView;
 	
 	EmuControllerDelegate *emuControl;
 	CocoaDSDisplayVideo *cdsVideoOutput;
+	NSScreen *assignedScreen;
+	NSWindow *masterWindow;
 	
 	NSSize _normalSize;
 	double _displayScale;
@@ -113,6 +126,7 @@
 	NSSize _minDisplayViewSize;
 	BOOL _isMinSizeNormal;
 	NSUInteger _statusBarHeight;
+	BOOL _isWindowResizing;
 	
 	OSSpinLock spinlockNormalSize;
 	OSSpinLock spinlockScale;
@@ -131,6 +145,8 @@
 
 @property (retain) EmuControllerDelegate *emuControl;
 @property (assign) CocoaDSDisplayVideo *cdsVideoOutput;
+@property (assign) NSScreen *assignedScreen;
+@property (retain) NSWindow *masterWindow;
 
 @property (readonly) NSSize normalSize;
 @property (assign) double displayScale;
@@ -151,11 +167,14 @@
 - (void) setupUserDefaults;
 - (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees;
 - (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
+- (void) enterFullScreen;
+- (void) exitFullScreen;
 
 - (IBAction) copy:(id)sender;
 - (IBAction) changeVolume:(id)sender;
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
 - (IBAction) toggleStatusBar:(id)sender;
+- (IBAction) toggleFullScreenDisplay:(id)sender;
 
 - (IBAction) toggleExecutePause:(id)sender;
 - (IBAction) reset:(id)sender;
@@ -171,6 +190,9 @@
 - (IBAction) changeDisplayOrientation:(id)sender;
 - (IBAction) changeDisplayOrder:(id)sender;
 - (IBAction) changeDisplayGap:(id)sender;
+- (IBAction) toggleBilinearFilteredOutput:(id)sender;
+- (IBAction) toggleVerticalSync:(id)sender;
+- (IBAction) changeVideoFilter:(id)sender;
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender;
 - (IBAction) writeDefaultsDisplayGap:(id)sender;

@@ -430,11 +430,6 @@
 - (IBAction) newDisplayWindow:(id)sender
 {
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
-	[windowList addObject:newWindowController];
-	[[newWindowController view] setInputManager:[self inputManager]];
-	
-	[self updateAllWindowTitles];
-	[newWindowController showWindow:self];
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
 	
@@ -1796,14 +1791,14 @@
 		{
 			NSString *newWindowTitle = [romName stringByAppendingFormat:@":%ld", (unsigned long)([windowList indexOfObject:windowController] + 1)];
 			
-			[[windowController window] setTitle:newWindowTitle];
-			[[windowController window] setRepresentedURL:repURL];
-			[[[windowController window] standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
+			[[windowController masterWindow] setTitle:newWindowTitle];
+			[[windowController masterWindow] setRepresentedURL:repURL];
+			[[[windowController masterWindow] standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
 		}
 	}
 	else
 	{
-		NSWindow *theWindow = [[windowList objectAtIndex:0] window];
+		NSWindow *theWindow = [[windowList objectAtIndex:0] masterWindow];
 		[theWindow setTitle:romName];
 		[theWindow setRepresentedURL:repURL];
 		[[theWindow standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
