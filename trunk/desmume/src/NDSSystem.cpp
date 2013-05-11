@@ -578,6 +578,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	INFO("ROM crc: %08X\n", gameInfo.crc);
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
 	INFO("ROM internal name: %s\n", gameInfo.ROMname);
+	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 	
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);

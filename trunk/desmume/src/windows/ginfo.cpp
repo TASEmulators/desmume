@@ -121,6 +121,7 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	memcpy(text, (MMU.CART_ROM+0x10), 2);
 	text[2] = '\0';
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_MAKERCODE), text);
+	SetWindowText(GetDlgItem(hDlg, IDC_SDEVELOPER), getDeveloperNameByID(T1ReadWord(MMU.CART_ROM, 0x10)).c_str());
 
 	val = T1ReadByte(MMU.CART_ROM, 0x14);
 	sprintf(text, "%i kilobytes", (0x80 << val));
