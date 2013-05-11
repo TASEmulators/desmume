@@ -818,6 +818,10 @@
 		AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB7DDA6D173DC38F004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
+		AB7DDA6E173DC399004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
+		AB7DDA6F173DC39E004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
+		AB7DDA70173DC3A3004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		AB97C554169646D1002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
 		AB97D5E516964F3B002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
 		AB97D60916964F48002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
@@ -1555,6 +1559,7 @@
 				AB2F3C4015CF9C6000858373 /* OpenGL.framework in Frameworks */,
 				AB2F3C4115CF9C6000858373 /* libz.dylib in Frameworks */,
 				AB213EC41710D0A0006DDB0F /* AudioToolbox.framework in Frameworks */,
+				AB7DDA70173DC3A3004F3D07 /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1571,6 +1576,7 @@
 				AB711F761481C35F009011C8 /* OpenGL.framework in Frameworks */,
 				ABC3AFCF14B8D16700D5B13D /* libz.dylib in Frameworks */,
 				AB213E991710D074006DDB0F /* AudioToolbox.framework in Frameworks */,
+				AB7DDA6D173DC38F004F3D07 /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1587,6 +1593,7 @@
 				AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */,
 				AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */,
 				AB213EC61710D0A1006DDB0F /* AudioToolbox.framework in Frameworks */,
+				AB7DDA6E173DC399004F3D07 /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1603,6 +1610,7 @@
 				ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */,
 				ABAD104515ACE7A00000EC47 /* libz.dylib in Frameworks */,
 				AB213EC51710D0A1006DDB0F /* AudioToolbox.framework in Frameworks */,
+				AB7DDA6F173DC39E004F3D07 /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
