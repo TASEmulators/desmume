@@ -154,6 +154,8 @@ static NSMutableDictionary *saveTypeValues = nil;
 	{
 		[self.header setValue:[self title] forKey:@"gameTitle"];
 		[self.header setValue:[self code] forKey:@"gameCode"];
+		[self.header setValue:[self developerName] forKey:@"gameDeveloper"];
+		[self.header setValue:[self developerNameAndCode] forKey:@"gameDeveloperWithCode"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->makerCode] forKey:@"makerCode"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->cardSize] forKey:@"romSize"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->ARM9src] forKey:@"arm9BinaryOffset"];
@@ -173,7 +175,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 		
 		[self.bindings setValue:[self.header objectForKey:@"gameTitle"] forKey:@"gameTitle"];
 		[self.bindings setValue:[self.header objectForKey:@"gameCode"] forKey:@"gameCode"];
-		[self.bindings setValue:[NSString stringWithFormat:@"%04Xh", [[self.header objectForKey:@"makerCode"] intValue]] forKey:@"makerCode"];
+		[self.bindings setValue:[self.header objectForKey:@"gameDeveloper"] forKey:@"gameDeveloper"];
+		[self.bindings setValue:[self.header objectForKey:@"gameDeveloperWithCode"] forKey:@"gameDeveloperWithCode"];
+		[self.bindings setValue:[NSString stringWithFormat:@"0x%04X", [[self.header objectForKey:@"makerCode"] intValue]] forKey:@"makerCode"];
 		[self.bindings setValue:[NSString stringWithFormat:@"%i", [[self.header objectForKey:@"romSize"] intValue]] forKey:@"romSize"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm9BinaryOffset"] intValue]] forKey:@"arm9BinaryOffset"];
 		[self.bindings setValue:[NSString stringWithFormat:@"0x%08X", [[self.header objectForKey:@"arm9BinaryEntryAddress"] intValue]] forKey:@"arm9BinaryEntryAddress"];
@@ -298,6 +302,28 @@ static NSMutableDictionary *saveTypeValues = nil;
 - (NSString *) serial
 {
 	return [NSString stringWithCString:gameInfo.ROMserial encoding:NSUTF8StringEncoding];
+}
+
+- (NSString *) developerName
+{
+	NDS_header *ndsRomHeader = NDS_getROMHeader();
+	if (ndsRomHeader == nil)
+	{
+		return nil;
+	}
+	
+	return [NSString stringWithCString:getDeveloperNameByID(ndsRomHeader->makerCode).c_str() encoding:NSUTF8StringEncoding];
+}
+
+- (NSString *) developerNameAndCode
+{
+	NDS_header *ndsRomHeader = NDS_getROMHeader();
+	if (ndsRomHeader == nil)
+	{
+		return nil;
+	}
+	
+	return [NSString stringWithFormat:@"%s [0x%04X]", getDeveloperNameByID(ndsRomHeader->makerCode).c_str(), ndsRomHeader->makerCode];
 }
 
 - (NSImage *) icon
@@ -501,6 +527,8 @@ static NSMutableDictionary *saveTypeValues = nil;
 			NSSTRING_STATUS_NO_ROM_LOADED, @"bannerSpanish",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"gameTitle",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"gameCode",
+			NSSTRING_STATUS_NO_ROM_LOADED, @"gameDeveloper",
+			NSSTRING_STATUS_NO_ROM_LOADED, @"gameDeveloperWithCode",
 			NSSTRING_STATUS_NO_ROM_LOADED, @"makerCode",
 			[NSString stringWithFormat:NSSTRING_STATUS_NO_ROM_LOADED, 0], @"romSize",
 			[NSString stringWithFormat:@"0x%08X", 0], @"arm9BinaryOffset",

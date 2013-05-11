@@ -16222,6 +16222,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{20, 18}, {164, 19}}</string>
 							<reference key="NSSuperview" ref="440584564"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="205339011">
 								<int key="NSCellFlags">-2080374784</int>
@@ -16253,6 +16255,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{18, 14}, {129, 378}}</string>
 											<reference key="NSSuperview" ref="36717965"/>
+											<reference key="NSWindow"/>
 											<reference key="NSNextKeyView" ref="670018968"/>
 											<bool key="NSEnabled">YES</bool>
 											<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
@@ -16752,11 +16755,13 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 									</object>
 									<string key="NSFrame">{{1, 1}, {168, 402}}</string>
 									<reference key="NSSuperview" ref="197231888"/>
+									<reference key="NSWindow"/>
 									<reference key="NSNextKeyView" ref="807791156"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{17, 41}, {170, 418}}</string>
 							<reference key="NSSuperview" ref="440584564"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="36717965"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
@@ -16781,6 +16786,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{17, 485}, {169, 18}}</string>
 							<reference key="NSSuperview" ref="440584564"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="824878810"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="956793">
@@ -16805,6 +16811,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{17, 465}, {135, 18}}</string>
 							<reference key="NSSuperview" ref="440584564"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="197231888"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="523499188">
@@ -16827,6 +16834,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 					</object>
 					<string key="NSFrameSize">{204, 521}</string>
 					<reference key="NSSuperview"/>
+					<reference key="NSWindow"/>
 					<reference key="NSNextKeyView" ref="309436516"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
@@ -18964,7 +18972,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<nil key="NSViewClass"/>
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<object class="NSView" key="NSWindowView" id="928014023">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
 						<bool key="EncodedWithXMLCoder">YES</bool>
@@ -18984,6 +18992,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							</object>
 							<string key="NSFrame">{{20, 440}, {128, 128}}</string>
 							<reference key="NSSuperview" ref="928014023"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="804066475"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSImageCell" key="NSCell" id="458596636">
 								<int key="NSCellFlags">134217728</int>
@@ -19012,6 +19022,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 89}, {131, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="230413297"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="451385578">
 												<int key="NSCellFlags">68157504</int>
@@ -19029,6 +19041,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 64}, {131, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="269014171"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="490536624">
 												<int key="NSCellFlags">68157504</int>
@@ -19046,11 +19060,13 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 39}, {131, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="884821674"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="876009461">
 												<int key="NSCellFlags">68157504</int>
 												<int key="NSCellFlags2">272630784</int>
-												<string key="NSContents">Maker Code: </string>
+												<string key="NSContents">ROM Developer: </string>
 												<reference key="NSSupport" ref="745196891"/>
 												<reference key="NSControlView" ref="622516178"/>
 												<reference key="NSBackgroundColor" ref="266180242"/>
@@ -19063,6 +19079,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 14}, {131, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="963432225"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="127808067">
 												<int key="NSCellFlags">68157504</int>
@@ -19080,6 +19098,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{148, 89}, {245, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="465432565"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="688433790">
 												<int key="NSCellFlags">70254657</int>
@@ -19101,6 +19121,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{148, 64}, {245, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="622516178"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="991144778">
 												<int key="NSCellFlags">70254657</int>
@@ -19119,6 +19141,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{148, 39}, {245, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="1043465603"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="694048878">
 												<int key="NSCellFlags">70254657</int>
@@ -19137,6 +19161,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{148, 14}, {245, 17}}</string>
 											<reference key="NSSuperview" ref="122143312"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="166861586"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="741945800">
 												<int key="NSCellFlags">70254657</int>
@@ -19153,10 +19179,14 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 									</object>
 									<string key="NSFrame">{{1, 1}, {408, 116}}</string>
 									<reference key="NSSuperview" ref="804066475"/>
+									<reference key="NSWindow"/>
+									<reference key="NSNextKeyView" ref="449027388"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{153, 436}, {410, 132}}</string>
 							<reference key="NSSuperview" ref="928014023"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="122143312"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -19190,6 +19220,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 376}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="847306769"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="1041246813">
 												<int key="NSCellFlags">68157504</int>
@@ -19207,6 +19239,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 312}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="609594913"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="893283599">
 												<int key="NSCellFlags">68157504</int>
@@ -19224,6 +19258,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 248}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="620347511"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="437752317">
 												<int key="NSCellFlags">68157504</int>
@@ -19241,6 +19277,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 184}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="929974933"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="916991236">
 												<int key="NSCellFlags">68157504</int>
@@ -19258,6 +19296,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 120}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="210922923"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="917591505">
 												<int key="NSCellFlags">68157504</int>
@@ -19275,6 +19315,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 56}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="103365343"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="194924755">
 												<int key="NSCellFlags">68157504</int>
@@ -19292,6 +19334,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 334}, {186, 42}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="777906839"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="140116628">
 												<int key="NSCellFlags">69206017</int>
@@ -19310,6 +19354,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 270}, {186, 42}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="703969197"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="71709036">
 												<int key="NSCellFlags">69206017</int>
@@ -19328,6 +19374,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 206}, {186, 42}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="942114883"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="739747393">
 												<int key="NSCellFlags">69206017</int>
@@ -19346,6 +19394,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 142}, {186, 42}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="298869491"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="966085965">
 												<int key="NSCellFlags">69206017</int>
@@ -19364,6 +19414,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 78}, {186, 42}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="957943734"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="1258570">
 												<int key="NSCellFlags">69206017</int>
@@ -19382,6 +19434,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 14}, {186, 42}}</string>
 											<reference key="NSSuperview" ref="148445300"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="894439383"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="262720167">
 												<int key="NSCellFlags">69206017</int>
@@ -19398,10 +19452,14 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 									</object>
 									<string key="NSFrame">{{1, 1}, {216, 400}}</string>
 									<reference key="NSSuperview" ref="166861586"/>
+									<reference key="NSWindow"/>
+									<reference key="NSNextKeyView" ref="144411288"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{17, 16}, {218, 416}}</string>
 							<reference key="NSSuperview" ref="928014023"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="148445300"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -19435,6 +19493,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 168}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="896898293"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="842194641">
 												<int key="NSCellFlags">68157504</int>
@@ -19452,6 +19512,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 146}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="528291059"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="847695160">
 												<int key="NSCellFlags">68157504</int>
@@ -19469,6 +19531,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 124}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="354956971"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="685074766">
 												<int key="NSCellFlags">68157504</int>
@@ -19486,6 +19550,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 102}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="295271513"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="956826119">
 												<int key="NSCellFlags">68157504</int>
@@ -19503,6 +19569,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 80}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="301139924"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="638249718">
 												<int key="NSCellFlags">68157504</int>
@@ -19520,6 +19588,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 58}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="85279624"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="181865321">
 												<int key="NSCellFlags">68157504</int>
@@ -19537,6 +19607,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 36}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="417413825"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="775620613">
 												<int key="NSCellFlags">68157504</int>
@@ -19554,6 +19626,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 14}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="750166312"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="59029651">
 												<int key="NSCellFlags">68157504</int>
@@ -19571,6 +19645,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 168}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="1008479686"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="620769760">
 												<int key="NSCellFlags">70254657</int>
@@ -19588,6 +19664,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 146}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="493930442"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="880369759">
 												<int key="NSCellFlags">70254657</int>
@@ -19606,6 +19684,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 124}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="952642897"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="544600416">
 												<int key="NSCellFlags">70254657</int>
@@ -19624,6 +19704,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 102}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="296246168"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="920705841">
 												<int key="NSCellFlags">70254657</int>
@@ -19642,6 +19724,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 80}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="81903297"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="964797">
 												<int key="NSCellFlags">70254657</int>
@@ -19660,6 +19744,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 58}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="346926289"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="689844678">
 												<int key="NSCellFlags">70254657</int>
@@ -19678,6 +19764,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 36}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="286539722"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="208815616">
 												<int key="NSCellFlags">70254657</int>
@@ -19696,6 +19784,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 14}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="607397655"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="550711189"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="491545827">
 												<int key="NSCellFlags">70254657</int>
@@ -19712,10 +19802,14 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 									</object>
 									<string key="NSFrame">{{1, 1}, {324, 192}}</string>
 									<reference key="NSSuperview" ref="894439383"/>
+									<reference key="NSWindow"/>
+									<reference key="NSNextKeyView" ref="104231857"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{237, 224}, {326, 208}}</string>
 							<reference key="NSSuperview" ref="928014023"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="607397655"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -19749,6 +19843,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 80}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="717571775"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="967292265">
 												<int key="NSCellFlags">68157504</int>
@@ -19766,6 +19862,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 80}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="114632478"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="7173805">
 												<int key="NSCellFlags">70254657</int>
@@ -19784,6 +19882,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 58}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="864298381"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="345170408">
 												<int key="NSCellFlags">68157504</int>
@@ -19801,6 +19901,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 58}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="570534378"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="298806443">
 												<int key="NSCellFlags">70254657</int>
@@ -19819,6 +19921,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 36}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="892538317"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="465767443">
 												<int key="NSCellFlags">68157504</int>
@@ -19836,6 +19940,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 36}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="494523755"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="796554986">
 												<int key="NSCellFlags">70254657</int>
@@ -19854,6 +19960,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 14}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="438905439"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="789342067">
 												<int key="NSCellFlags">68157504</int>
@@ -19871,6 +19979,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 14}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="1039929003"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="117663985"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="268033081">
 												<int key="NSCellFlags">70254657</int>
@@ -19887,10 +19997,14 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 									</object>
 									<string key="NSFrame">{{1, 1}, {324, 104}}</string>
 									<reference key="NSSuperview" ref="550711189"/>
+									<reference key="NSWindow"/>
+									<reference key="NSNextKeyView" ref="719888093"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{237, 98}, {326, 120}}</string>
 							<reference key="NSSuperview" ref="928014023"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="1039929003"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -19924,6 +20038,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 36}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="378723666"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="725060640"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="924362054">
 												<int key="NSCellFlags">68157504</int>
@@ -19941,6 +20057,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 36}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="378723666"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="482954524"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="756845058">
 												<int key="NSCellFlags">70254657</int>
@@ -19959,6 +20077,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 14}, {186, 14}}</string>
 											<reference key="NSSuperview" ref="378723666"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="194338860"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="36485897">
 												<int key="NSCellFlags">68157504</int>
@@ -19976,6 +20096,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 14}, {106, 14}}</string>
 											<reference key="NSSuperview" ref="378723666"/>
+											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="698313391">
 												<int key="NSCellFlags">70254657</int>
@@ -19992,10 +20114,14 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 									</object>
 									<string key="NSFrame">{{1, 1}, {324, 60}}</string>
 									<reference key="NSSuperview" ref="117663985"/>
+									<reference key="NSWindow"/>
+									<reference key="NSNextKeyView" ref="259600999"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{237, 16}, {326, 76}}</string>
 							<reference key="NSSuperview" ref="928014023"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView" ref="378723666"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -20016,6 +20142,9 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 					</object>
 					<string key="NSFrameSize">{580, 588}</string>
+					<reference key="NSSuperview"/>
+					<reference key="NSWindow"/>
+					<reference key="NSNextKeyView" ref="405258000"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1178}}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
@@ -22962,6 +23091,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 					<string>romInternalName</string>
 					<string>romSerial</string>
 					<string>romNameAndSerialInfo</string>
+					<string>gameDeveloper</string>
+					<string>gameDeveloperWithCode</string>
 				</object>
 				<object class="_NSManagedProxy" key="_NSManagedProxy"/>
 			</object>
@@ -24520,15 +24651,15 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
-						<string key="label">value: selection.makerCode</string>
+						<string key="label">value: selection.gameDeveloperWithCode</string>
 						<reference key="source" ref="884821674"/>
 						<reference key="destination" ref="943192139"/>
 						<object class="NSNibBindingConnector" key="connector">
 							<reference key="NSSource" ref="884821674"/>
 							<reference key="NSDestination" ref="943192139"/>
-							<string key="NSLabel">value: selection.makerCode</string>
+							<string key="NSLabel">value: selection.gameDeveloperWithCode</string>
 							<string key="NSBinding">value</string>
-							<string key="NSKeyPath">selection.makerCode</string>
+							<string key="NSKeyPath">selection.gameDeveloperWithCode</string>
 							<object class="NSDictionary" key="NSOptions">
 								<bool key="EncodedWithXMLCoder">YES</bool>
 								<object class="NSArray" key="dict.sortedKeys">
@@ -24545,7 +24676,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 							<int key="NSNibBindingConnectorVersion">2</int>
 						</object>
 					</object>
-					<int key="connectionID">5583</int>
+					<int key="connectionID">8299</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
@@ -49397,9 +49528,1957 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<reference key="dict.values" ref="0"/>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">8297</int>
+			<int key="maxID">8299</int>
 		</object>
-		<object class="IBClassDescriber" key="IBDocument.Classes"/>
+		<object class="IBClassDescriber" key="IBDocument.Classes">
+			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
+				<bool key="EncodedWithXMLCoder">YES</bool>
+				<object class="IBPartialClassDescription">
+					<string key="className">AppDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>bugReport:</string>
+							<string>launchForums:</string>
+							<string>launchWebsite:</string>
+							<string>supportRequest:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>bugReport:</string>
+							<string>launchForums:</string>
+							<string>launchWebsite:</string>
+							<string>supportRequest:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">bugReport:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">launchForums:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">launchWebsite:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">supportRequest:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>aboutWindowController</string>
+							<string>boxARMBinaries</string>
+							<string>boxFileSystem</string>
+							<string>boxGeneralInfo</string>
+							<string>boxMisc</string>
+							<string>boxTitles</string>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatListWindow</string>
+							<string>cheatWindowController</string>
+							<string>emuControlController</string>
+							<string>inputManager</string>
+							<string>inputPrefsView</string>
+							<string>mLoadStateSlot</string>
+							<string>mSaveStateSlot</string>
+							<string>migrationDelegate</string>
+							<string>prefGeneralView</string>
+							<string>prefWindow</string>
+							<string>prefWindowController</string>
+							<string>romInfoPanelController</string>
+							<string>troubleshootingWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSBox</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>InputManager</string>
+							<string>InputPrefsView</string>
+							<string>NSMenu</string>
+							<string>NSMenu</string>
+							<string>FileMigrationDelegate</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>aboutWindowController</string>
+							<string>boxARMBinaries</string>
+							<string>boxFileSystem</string>
+							<string>boxGeneralInfo</string>
+							<string>boxMisc</string>
+							<string>boxTitles</string>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatListWindow</string>
+							<string>cheatWindowController</string>
+							<string>emuControlController</string>
+							<string>inputManager</string>
+							<string>inputPrefsView</string>
+							<string>mLoadStateSlot</string>
+							<string>mSaveStateSlot</string>
+							<string>migrationDelegate</string>
+							<string>prefGeneralView</string>
+							<string>prefWindow</string>
+							<string>prefWindowController</string>
+							<string>romInfoPanelController</string>
+							<string>troubleshootingWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">aboutWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxARMBinaries</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxFileSystem</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxGeneralInfo</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxMisc</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">boxTitles</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsCoreController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsSoundController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">emuControlController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputPrefsView</string>
+								<string key="candidateClassName">InputPrefsView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">mLoadStateSlot</string>
+								<string key="candidateClassName">NSMenu</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">mSaveStateSlot</string>
+								<string key="candidateClassName">NSMenu</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">migrationDelegate</string>
+								<string key="candidateClassName">FileMigrationDelegate</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefGeneralView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">romInfoPanelController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">troubleshootingWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/AppDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">CheatWindowDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>addToList:</string>
+							<string>applyConfiguration:</string>
+							<string>closeCheatDatabaseSheet:</string>
+							<string>removeFromList:</string>
+							<string>resetSearch:</string>
+							<string>runComparativeSearch:</string>
+							<string>runExactValueSearch:</string>
+							<string>selectAllCheatsInDatabase:</string>
+							<string>selectCheatSearchStyle:</string>
+							<string>selectCheatType:</string>
+							<string>selectNoneCheatsInDatabase:</string>
+							<string>setInternalCheatValue:</string>
+							<string>viewDatabase:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>addToList:</string>
+							<string>applyConfiguration:</string>
+							<string>closeCheatDatabaseSheet:</string>
+							<string>removeFromList:</string>
+							<string>resetSearch:</string>
+							<string>runComparativeSearch:</string>
+							<string>runExactValueSearch:</string>
+							<string>selectAllCheatsInDatabase:</string>
+							<string>selectCheatSearchStyle:</string>
+							<string>selectCheatType:</string>
+							<string>selectNoneCheatsInDatabase:</string>
+							<string>setInternalCheatValue:</string>
+							<string>viewDatabase:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">addToList:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">applyConfiguration:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeCheatDatabaseSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">removeFromList:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">resetSearch:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">runComparativeSearch:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">runExactValueSearch:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectAllCheatsInDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectCheatSearchStyle:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectCheatType:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectNoneCheatsInDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">setInternalCheatValue:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">viewDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cheatConfigBox</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatDatabaseSheet</string>
+							<string>cheatListController</string>
+							<string>cheatListTable</string>
+							<string>cheatSearchListController</string>
+							<string>cheatSearchListTable</string>
+							<string>cheatSearchView</string>
+							<string>cheatSelectedItemController</string>
+							<string>cheatWindowController</string>
+							<string>searchField</string>
+							<string>viewConfigureActionReplayCheat</string>
+							<string>viewConfigureCodeBreakerCheat</string>
+							<string>viewConfigureInternalCheat</string>
+							<string>viewConfigureNoSelection</string>
+							<string>viewSearchComparativeContinue</string>
+							<string>viewSearchComparativeStart</string>
+							<string>viewSearchExactValue</string>
+							<string>viewSearchNoSelection</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSBox</string>
+							<string>NSArrayController</string>
+							<string>NSWindow</string>
+							<string>NSArrayController</string>
+							<string>NSTableView</string>
+							<string>NSArrayController</string>
+							<string>NSTableView</string>
+							<string>NSView</string>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSSearchField</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cheatConfigBox</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatDatabaseSheet</string>
+							<string>cheatListController</string>
+							<string>cheatListTable</string>
+							<string>cheatSearchListController</string>
+							<string>cheatSearchListTable</string>
+							<string>cheatSearchView</string>
+							<string>cheatSelectedItemController</string>
+							<string>cheatWindowController</string>
+							<string>searchField</string>
+							<string>viewConfigureActionReplayCheat</string>
+							<string>viewConfigureCodeBreakerCheat</string>
+							<string>viewConfigureInternalCheat</string>
+							<string>viewConfigureNoSelection</string>
+							<string>viewSearchComparativeContinue</string>
+							<string>viewSearchComparativeStart</string>
+							<string>viewSearchExactValue</string>
+							<string>viewSearchNoSelection</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatConfigBox</string>
+								<string key="candidateClassName">NSBox</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListTable</string>
+								<string key="candidateClassName">NSTableView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSearchListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSearchListTable</string>
+								<string key="candidateClassName">NSTableView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSearchView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatSelectedItemController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">searchField</string>
+								<string key="candidateClassName">NSSearchField</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureActionReplayCheat</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureCodeBreakerCheat</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureInternalCheat</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewConfigureNoSelection</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchComparativeContinue</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchComparativeStart</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchExactValue</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSearchNoSelection</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/CheatWindowDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">DisplayWindowController</string>
+					<string key="superclassName">NSWindowController</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeCoreSpeed:</string>
+							<string>changeDisplayGap:</string>
+							<string>changeDisplayMode:</string>
+							<string>changeDisplayOrder:</string>
+							<string>changeDisplayOrientation:</string>
+							<string>changeRotation:</string>
+							<string>changeRotationRelative:</string>
+							<string>changeScale:</string>
+							<string>changeVideoFilter:</string>
+							<string>changeVolume:</string>
+							<string>copy:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>saveScreenshotAs:</string>
+							<string>toggleBilinearFilteredOutput:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleFullScreenDisplay:</string>
+							<string>toggleKeepMinDisplaySizeAtNormal:</string>
+							<string>toggleStatusBar:</string>
+							<string>toggleVerticalSync:</string>
+							<string>writeDefaultsDisplayGap:</string>
+							<string>writeDefaultsDisplayRotation:</string>
+							<string>writeDefaultsDisplayVideoSettings:</string>
+							<string>writeDefaultsHUDSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeCoreSpeed:</string>
+							<string>changeDisplayGap:</string>
+							<string>changeDisplayMode:</string>
+							<string>changeDisplayOrder:</string>
+							<string>changeDisplayOrientation:</string>
+							<string>changeRotation:</string>
+							<string>changeRotationRelative:</string>
+							<string>changeScale:</string>
+							<string>changeVideoFilter:</string>
+							<string>changeVolume:</string>
+							<string>copy:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>saveScreenshotAs:</string>
+							<string>toggleBilinearFilteredOutput:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleFullScreenDisplay:</string>
+							<string>toggleKeepMinDisplaySizeAtNormal:</string>
+							<string>toggleStatusBar:</string>
+							<string>toggleVerticalSync:</string>
+							<string>writeDefaultsDisplayGap:</string>
+							<string>writeDefaultsDisplayRotation:</string>
+							<string>writeDefaultsDisplayVideoSettings:</string>
+							<string>writeDefaultsHUDSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">changeCoreSpeed:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayGap:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayOrder:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeDisplayOrientation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeRotation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeRotationRelative:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeScale:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeVideoFilter:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeVolume:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">copy:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">openRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">reset:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveScreenshotAs:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleBilinearFilteredOutput:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleExecutePause:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleFullScreenDisplay:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleKeepMinDisplaySizeAtNormal:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleStatusBar:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleVerticalSync:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsDisplayGap:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsDisplayRotation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsDisplayVideoSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsHUDSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<string key="NS.key.0">saveScreenshotPanelAccessoryView</string>
+						<string key="NS.object.0">NSView</string>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<string key="NS.key.0">saveScreenshotPanelAccessoryView</string>
+						<object class="IBToOneOutletInfo" key="NS.object.0">
+							<string key="name">saveScreenshotPanelAccessoryView</string>
+							<string key="candidateClassName">NSView</string>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/DisplayWindowController.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">EmuControllerDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeAudioEngine:</string>
+							<string>changeCoreEmuFlags:</string>
+							<string>changeCoreSpeed:</string>
+							<string>changeFirmwareSettings:</string>
+							<string>changeRomSaveType:</string>
+							<string>changeSpuAdvancedLogic:</string>
+							<string>changeSpuInterpolationMode:</string>
+							<string>changeSpuSyncMethod:</string>
+							<string>changeSpuSyncMode:</string>
+							<string>changeVolume:</string>
+							<string>chooseSlot1R4Directory:</string>
+							<string>closeRom:</string>
+							<string>closeSheet:</string>
+							<string>exportRomSave:</string>
+							<string>importRomSave:</string>
+							<string>loadEmuSaveStateSlot:</string>
+							<string>loadRecentRom:</string>
+							<string>newDisplayWindow:</string>
+							<string>openEmuSaveState:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>revealGameDataFolderInFinder:</string>
+							<string>revealRomInFinder:</string>
+							<string>revertEmuSaveState:</string>
+							<string>saveEmuSaveState:</string>
+							<string>saveEmuSaveStateAs:</string>
+							<string>saveEmuSaveStateSlot:</string>
+							<string>slot1Eject:</string>
+							<string>toggleAutoFrameSkip:</string>
+							<string>toggleCheats:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleGPUState:</string>
+							<string>toggleSpeedLimiter:</string>
+							<string>writeDefaults3DRenderingSettings:</string>
+							<string>writeDefaultsEmulationSettings:</string>
+							<string>writeDefaultsSlot1Settings:</string>
+							<string>writeDefaultsSoundSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>changeAudioEngine:</string>
+							<string>changeCoreEmuFlags:</string>
+							<string>changeCoreSpeed:</string>
+							<string>changeFirmwareSettings:</string>
+							<string>changeRomSaveType:</string>
+							<string>changeSpuAdvancedLogic:</string>
+							<string>changeSpuInterpolationMode:</string>
+							<string>changeSpuSyncMethod:</string>
+							<string>changeSpuSyncMode:</string>
+							<string>changeVolume:</string>
+							<string>chooseSlot1R4Directory:</string>
+							<string>closeRom:</string>
+							<string>closeSheet:</string>
+							<string>exportRomSave:</string>
+							<string>importRomSave:</string>
+							<string>loadEmuSaveStateSlot:</string>
+							<string>loadRecentRom:</string>
+							<string>newDisplayWindow:</string>
+							<string>openEmuSaveState:</string>
+							<string>openRom:</string>
+							<string>reset:</string>
+							<string>revealGameDataFolderInFinder:</string>
+							<string>revealRomInFinder:</string>
+							<string>revertEmuSaveState:</string>
+							<string>saveEmuSaveState:</string>
+							<string>saveEmuSaveStateAs:</string>
+							<string>saveEmuSaveStateSlot:</string>
+							<string>slot1Eject:</string>
+							<string>toggleAutoFrameSkip:</string>
+							<string>toggleCheats:</string>
+							<string>toggleExecutePause:</string>
+							<string>toggleGPUState:</string>
+							<string>toggleSpeedLimiter:</string>
+							<string>writeDefaults3DRenderingSettings:</string>
+							<string>writeDefaultsEmulationSettings:</string>
+							<string>writeDefaultsSlot1Settings:</string>
+							<string>writeDefaultsSoundSettings:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">changeAudioEngine:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeCoreEmuFlags:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeCoreSpeed:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeFirmwareSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeRomSaveType:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuAdvancedLogic:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuInterpolationMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuSyncMethod:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpuSyncMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeVolume:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseSlot1R4Directory:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">exportRomSave:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">importRomSave:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">loadEmuSaveStateSlot:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">loadRecentRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">newDisplayWindow:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">openEmuSaveState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">openRom:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">reset:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">revealGameDataFolderInFinder:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">revealRomInFinder:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">revertEmuSaveState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveEmuSaveState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveEmuSaveStateAs:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">saveEmuSaveStateSlot:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">slot1Eject:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleAutoFrameSkip:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleCheats:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleExecutePause:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleGPUState:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">toggleSpeedLimiter:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaults3DRenderingSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsEmulationSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsSlot1Settings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">writeDefaultsSoundSettings:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatListController</string>
+							<string>cheatWindowController</string>
+							<string>cheatWindowDelegate</string>
+							<string>exportRomSavePanelAccessoryView</string>
+							<string>firmwarePanelController</string>
+							<string>inputManager</string>
+							<string>romInfoPanelController</string>
+							<string>saveFileMigrationSheet</string>
+							<string>saveStatePrecloseSheet</string>
+							<string>slot1ManagerWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSArrayController</string>
+							<string>NSArrayController</string>
+							<string>NSObjectController</string>
+							<string>CheatWindowDelegate</string>
+							<string>NSView</string>
+							<string>NSObjectController</string>
+							<string>InputManager</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cdsSoundController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatListController</string>
+							<string>cheatWindowController</string>
+							<string>cheatWindowDelegate</string>
+							<string>exportRomSavePanelAccessoryView</string>
+							<string>firmwarePanelController</string>
+							<string>inputManager</string>
+							<string>romInfoPanelController</string>
+							<string>saveFileMigrationSheet</string>
+							<string>saveStatePrecloseSheet</string>
+							<string>slot1ManagerWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsCoreController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsSoundController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowDelegate</string>
+								<string key="candidateClassName">CheatWindowDelegate</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">exportRomSavePanelAccessoryView</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">firmwarePanelController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">romInfoPanelController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">saveFileMigrationSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">saveStatePrecloseSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">slot1ManagerWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/EmuControllerDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">FileMigrationDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>handleChoice:</string>
+							<string>selectAll:</string>
+							<string>selectNone:</string>
+							<string>updateAndShowWindow:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>handleChoice:</string>
+							<string>selectAll:</string>
+							<string>selectNone:</string>
+							<string>updateAndShowWindow:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">handleChoice:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectAll:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectNone:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">updateAndShowWindow:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>fileListController</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSArrayController</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>fileListController</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">fileListController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/FileMigrationDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">InputManager</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="outlets">
+						<string key="NS.key.0">emuControl</string>
+						<string key="NS.object.0">EmuControllerDelegate</string>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<string key="NS.key.0">emuControl</string>
+						<object class="IBToOneOutletInfo" key="NS.object.0">
+							<string key="name">emuControl</string>
+							<string key="candidateClassName">EmuControllerDelegate</string>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/InputManager.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">InputPrefsView</string>
+					<string key="superclassName">NSView</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>audioFileChoose:</string>
+							<string>audioFileChooseNone:</string>
+							<string>changeSpeed:</string>
+							<string>closeProfileRenameSheet:</string>
+							<string>closeProfileSheet:</string>
+							<string>closeSettingsSheet:</string>
+							<string>profileApply:</string>
+							<string>profileDelete:</string>
+							<string>profileNew:</string>
+							<string>profileRename:</string>
+							<string>profileSave:</string>
+							<string>profileSelect:</string>
+							<string>profileView:</string>
+							<string>removeInput:</string>
+							<string>setInputAdd:</string>
+							<string>showSettingsSheet:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>audioFileChoose:</string>
+							<string>audioFileChooseNone:</string>
+							<string>changeSpeed:</string>
+							<string>closeProfileRenameSheet:</string>
+							<string>closeProfileSheet:</string>
+							<string>closeSettingsSheet:</string>
+							<string>profileApply:</string>
+							<string>profileDelete:</string>
+							<string>profileNew:</string>
+							<string>profileRename:</string>
+							<string>profileSave:</string>
+							<string>profileSelect:</string>
+							<string>profileView:</string>
+							<string>removeInput:</string>
+							<string>setInputAdd:</string>
+							<string>showSettingsSheet:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">audioFileChoose:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">audioFileChooseNone:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">changeSpeed:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeProfileRenameSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeProfileSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeSettingsSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileApply:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileDelete:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileNew:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileRename:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileSave:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileSelect:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">profileView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">removeInput:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">setInputAdd:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showSettingsSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>inputPrefOutlineView</string>
+							<string>inputProfileController</string>
+							<string>inputProfileMenu</string>
+							<string>inputProfileNextButton</string>
+							<string>inputProfilePreviousButton</string>
+							<string>inputProfileRenameSheet</string>
+							<string>inputProfileSheet</string>
+							<string>inputSettingsController</string>
+							<string>inputSettingsGPUState</string>
+							<string>inputSettingsLoadStateSlot</string>
+							<string>inputSettingsMicrophone</string>
+							<string>inputSettingsSaveStateSlot</string>
+							<string>inputSettingsSetSpeedLimit</string>
+							<string>inputSettingsTouch</string>
+							<string>prefWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>InputManager</string>
+							<string>NSOutlineView</string>
+							<string>InputProfileController</string>
+							<string>NSPopUpButton</string>
+							<string>NSButton</string>
+							<string>NSButton</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>inputPrefOutlineView</string>
+							<string>inputProfileController</string>
+							<string>inputProfileMenu</string>
+							<string>inputProfileNextButton</string>
+							<string>inputProfilePreviousButton</string>
+							<string>inputProfileRenameSheet</string>
+							<string>inputProfileSheet</string>
+							<string>inputSettingsController</string>
+							<string>inputSettingsGPUState</string>
+							<string>inputSettingsLoadStateSlot</string>
+							<string>inputSettingsMicrophone</string>
+							<string>inputSettingsSaveStateSlot</string>
+							<string>inputSettingsSetSpeedLimit</string>
+							<string>inputSettingsTouch</string>
+							<string>prefWindow</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputPrefOutlineView</string>
+								<string key="candidateClassName">NSOutlineView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileController</string>
+								<string key="candidateClassName">InputProfileController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileMenu</string>
+								<string key="candidateClassName">NSPopUpButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileNextButton</string>
+								<string key="candidateClassName">NSButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfilePreviousButton</string>
+								<string key="candidateClassName">NSButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileRenameSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputProfileSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsGPUState</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsLoadStateSlot</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsMicrophone</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsSaveStateSlot</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsSetSpeedLimit</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputSettingsTouch</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindow</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/InputPrefsView.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">InputProfileController</string>
+					<string key="superclassName">NSObjectController</string>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>profileOutlineView</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>InputManager</string>
+							<string>NSOutlineView</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>inputManager</string>
+							<string>profileOutlineView</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">inputManager</string>
+								<string key="candidateClassName">InputManager</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">profileOutlineView</string>
+								<string key="candidateClassName">NSOutlineView</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/InputProfileController.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">PreferencesWindowDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>chooseARM7BiosImage:</string>
+							<string>chooseARM9BiosImage:</string>
+							<string>chooseAdvansceneDatabase:</string>
+							<string>chooseCheatDatabase:</string>
+							<string>chooseFirmwareImage:</string>
+							<string>chooseRomForAutoload:</string>
+							<string>closeFirmwareConfigSheet:</string>
+							<string>configureInternalFirmware:</string>
+							<string>selectAutoloadRomOption:</string>
+							<string>selectDisplayMode:</string>
+							<string>selectDisplayRotation:</string>
+							<string>selectDisplaySize:</string>
+							<string>selectSPUSyncMethod:</string>
+							<string>selectSPUSyncMode:</string>
+							<string>selectVideoFilterType:</string>
+							<string>setUseBilinear:</string>
+							<string>showDisplayView:</string>
+							<string>showEmulationView:</string>
+							<string>showGeneralView:</string>
+							<string>showInputView:</string>
+							<string>showSoundView:</string>
+							<string>updateVolumeIcon:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>chooseARM7BiosImage:</string>
+							<string>chooseARM9BiosImage:</string>
+							<string>chooseAdvansceneDatabase:</string>
+							<string>chooseCheatDatabase:</string>
+							<string>chooseFirmwareImage:</string>
+							<string>chooseRomForAutoload:</string>
+							<string>closeFirmwareConfigSheet:</string>
+							<string>configureInternalFirmware:</string>
+							<string>selectAutoloadRomOption:</string>
+							<string>selectDisplayMode:</string>
+							<string>selectDisplayRotation:</string>
+							<string>selectDisplaySize:</string>
+							<string>selectSPUSyncMethod:</string>
+							<string>selectSPUSyncMode:</string>
+							<string>selectVideoFilterType:</string>
+							<string>setUseBilinear:</string>
+							<string>showDisplayView:</string>
+							<string>showEmulationView:</string>
+							<string>showGeneralView:</string>
+							<string>showInputView:</string>
+							<string>showSoundView:</string>
+							<string>updateVolumeIcon:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">chooseARM7BiosImage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseARM9BiosImage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseAdvansceneDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseCheatDatabase:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseFirmwareImage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">chooseRomForAutoload:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">closeFirmwareConfigSheet:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">configureInternalFirmware:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectAutoloadRomOption:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectDisplayMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectDisplayRotation:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectDisplaySize:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectSPUSyncMethod:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectSPUSyncMode:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">selectVideoFilterType:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">setUseBilinear:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showDisplayView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showEmulationView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showGeneralView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showInputView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">showSoundView:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">updateVolumeIcon:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatWindowController</string>
+							<string>displayRotationField</string>
+							<string>displayRotationMenu</string>
+							<string>displayRotationMenuCustomItem</string>
+							<string>emuController</string>
+							<string>firmwareConfigSheet</string>
+							<string>prefWindowController</string>
+							<string>previewImageView</string>
+							<string>spuSyncMethodMenu</string>
+							<string>viewDisplay</string>
+							<string>viewEmulation</string>
+							<string>viewGeneral</string>
+							<string>viewInput</string>
+							<string>viewSound</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSArrayController</string>
+							<string>NSObjectController</string>
+							<string>NSTextField</string>
+							<string>NSPopUpButton</string>
+							<string>NSMenuItem</string>
+							<string>NSObjectController</string>
+							<string>NSWindow</string>
+							<string>NSObjectController</string>
+							<string>NSImageView</string>
+							<string>NSPopUpButton</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>InputPrefsView</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>cdsCoreController</string>
+							<string>cheatDatabaseController</string>
+							<string>cheatWindowController</string>
+							<string>displayRotationField</string>
+							<string>displayRotationMenu</string>
+							<string>displayRotationMenuCustomItem</string>
+							<string>emuController</string>
+							<string>firmwareConfigSheet</string>
+							<string>prefWindowController</string>
+							<string>previewImageView</string>
+							<string>spuSyncMethodMenu</string>
+							<string>viewDisplay</string>
+							<string>viewEmulation</string>
+							<string>viewGeneral</string>
+							<string>viewInput</string>
+							<string>viewSound</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cdsCoreController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatDatabaseController</string>
+								<string key="candidateClassName">NSArrayController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">cheatWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">displayRotationField</string>
+								<string key="candidateClassName">NSTextField</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">displayRotationMenu</string>
+								<string key="candidateClassName">NSPopUpButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">displayRotationMenuCustomItem</string>
+								<string key="candidateClassName">NSMenuItem</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">emuController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">firmwareConfigSheet</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">prefWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">previewImageView</string>
+								<string key="candidateClassName">NSImageView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">spuSyncMethodMenu</string>
+								<string key="candidateClassName">NSPopUpButton</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewDisplay</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewEmulation</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewGeneral</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewInput</string>
+								<string key="candidateClassName">InputPrefsView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSound</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/PreferencesWindowDelegate.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">TroubleshootingWindowDelegate</string>
+					<string key="superclassName">NSObject</string>
+					<object class="NSMutableDictionary" key="actions">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>backForm:</string>
+							<string>continueToFinalForm:</string>
+							<string>copyInfoToPasteboard:</string>
+							<string>copyRomInfoToTextFields:</string>
+							<string>goToWebpage:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+							<string>id</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>backForm:</string>
+							<string>continueToFinalForm:</string>
+							<string>copyInfoToPasteboard:</string>
+							<string>copyRomInfoToTextFields:</string>
+							<string>goToWebpage:</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBActionInfo">
+								<string key="name">backForm:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">continueToFinalForm:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">copyInfoToPasteboard:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">copyRomInfoToTextFields:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+							<object class="IBActionInfo">
+								<string key="name">goToWebpage:</string>
+								<string key="candidateClassName">id</string>
+							</object>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="outlets">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>romInfoController</string>
+							<string>troubleshootingWindowController</string>
+							<string>viewBugReport</string>
+							<string>viewFinishedForm</string>
+							<string>viewSupportRequest</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>NSObjectController</string>
+							<string>NSObjectController</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSView</string>
+							<string>NSWindow</string>
+						</object>
+					</object>
+					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<bool key="EncodedWithXMLCoder">YES</bool>
+						<object class="NSArray" key="dict.sortedKeys">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<string>romInfoController</string>
+							<string>troubleshootingWindowController</string>
+							<string>viewBugReport</string>
+							<string>viewFinishedForm</string>
+							<string>viewSupportRequest</string>
+							<string>window</string>
+						</object>
+						<object class="NSArray" key="dict.values">
+							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="IBToOneOutletInfo">
+								<string key="name">romInfoController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">troubleshootingWindowController</string>
+								<string key="candidateClassName">NSObjectController</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewBugReport</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewFinishedForm</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">viewSupportRequest</string>
+								<string key="candidateClassName">NSView</string>
+							</object>
+							<object class="IBToOneOutletInfo">
+								<string key="name">window</string>
+								<string key="candidateClassName">NSWindow</string>
+							</object>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">./Classes/TroubleshootingWindowDelegate.h</string>
+					</object>
+				</object>
+			</object>
+		</object>
 		<int key="IBDocument.localizationMode">0</int>
 		<string key="IBDocument.TargetRuntimeIdentifier">IBCocoaFramework</string>
 		<object class="NSMutableDictionary" key="IBDocument.PluginDeclaredDependencies">
