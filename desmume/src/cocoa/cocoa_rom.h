@@ -52,6 +52,8 @@
 - (NSString *) banner:(const UInt16 *)UTF16TextBuffer;
 - (NSString *) internalName;
 - (NSString *) serial;
+- (NSString *) developerName;
+- (NSString *) developerNameWithCode;
 - (NSImage *) icon;
 - (void) handleAdvansceneDatabaseInfo;
 
