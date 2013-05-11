@@ -313,9 +313,16 @@ struct RomBanner
 
 struct GameInfo
 {
-	GameInfo()
-		: romdata(NULL)
-	{}
+	GameInfo() :	romdata(NULL),
+					crc(0),
+					romsize(0),
+					allocatedSize(0),
+					mask(0)
+	{
+		memset(&header, 0, sizeof(header));
+		memset(&ROMserial[0], 0, sizeof(ROMserial));
+		memset(&ROMname[0], 0, sizeof(ROMname));
+	}
 
 	void loadData(char* buf, int size)
 	{

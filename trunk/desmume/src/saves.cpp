@@ -64,6 +64,12 @@ static const char* magic = "DeSmuME SState\0";
 //a savestate chunk loader can set this if it wants to permit a silent failure (for compatibility)
 static bool SAV_silent_fail_flag;
 
+SFORMAT SF_NDS_HEADER[]={
+	{ "GINF", 1, sizeof(gameInfo.header), &gameInfo.header},
+	{ "GRSZ", 1, 4, &gameInfo.romsize},
+	{ 0 }
+};
+
 SFORMAT SF_ARM7[]={
 	{ "7INS", 4, 1, &NDS_ARM7.instruction },
 	{ "7INA", 4, 1, &NDS_ARM7.instruct_adr },
@@ -938,18 +944,30 @@ static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,101,mov_savestate);
 	savestate_WriteChunk(os,110,SF_WIFI);
 	savestate_WriteChunk(os,120,SF_RTC);
+	savestate_WriteChunk(os,130,SF_NDS_HEADER);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
 static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 {
 	bool ret = true;
+	bool haveInfo = false;
+	
+	u32 romsize = 0;
+	NDS_header header;
+	SFORMAT SF_HEADER[]={
+		{ "GINF", 1, sizeof(header), &header},
+		{ "GRSZ", 1, 4, &romsize},
+		{ 0 }
+	};
+	memset(&header, 0, sizeof(header));
+
 	while(totalsize > 0)
 	{
 		uint32 size;
 		u32 t;
 		if(!read32le(&t,is))  { ret=false; break; }
-		if(t == 0xFFFFFFFF) goto done;
+		if(t == 0xFFFFFFFF) break;
 		if(!read32le(&size,is))  { ret=false; break; }
 		switch(t)
 		{
@@ -970,14 +988,28 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 			case 101: if(!mov_loadstate(is, size)) ret=false; break;
 			case 110: if(!ReadStateChunk(is,SF_WIFI,size)) ret=false; break;
 			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
+			case 130: if(!ReadStateChunk(is,SF_HEADER,size)) ret=false; else haveInfo=true; break;
 			default:
-				ret=false;
-				break;
+				return false;
 		}
 		if(!ret)
 			return false;
 	}
-done:
+	if (haveInfo)
+	{
+		char buf[14] = {0};
+		memset(&buf[0], 0, sizeof(buf));
+		memcpy(buf, header.gameTile, sizeof(header.gameTile));
+		printf("Savestate info:\n");
+		printf("\tGame title: %s\n", buf);
+		printf("\tGame code: %c%c%c%c\n", header.gameCode[3], header.gameCode[2], header.gameCode[1], header.gameCode[0]);
+		printf("\tMaker code: %02X\n", header.makerCode);
+		printf("\tDevice capacity: %dMb (real size %dMb)\n", ((128 * 1024) << header.cardSize) / (1024 * 1024), romsize / (1024 * 1024));
+		printf("\tCRC16: %04Xh\n", header.CRC16);
+		printf("\tHeader CRC16: %04Xh\n", header.headerCRC16);
+
+		// TODO: compare loaded rom header with savestate
+	}
 
 	return ret;
 }
