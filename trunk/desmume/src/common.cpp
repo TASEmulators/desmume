@@ -52,3 +52,42 @@ char *removeSpecialChars(char *s)
 	*buf = 0;
 	return s;
 }
+
+// ===============================================================================
+// Message dialogs
+// ===============================================================================
+#define MSG_PRINT { \
+	va_list args; \
+	va_start (args, fmt); \
+	vprintf (fmt, args); \
+	va_end (args); \
+}
+void msgFakeInfo(const char *fmt, ...)
+{
+	MSG_PRINT;
+}
+
+bool msgFakeConfirm(const char *fmt, ...)
+{
+	MSG_PRINT;
+	return true;
+}
+
+void msgFakeError(const char *fmt, ...)
+{
+	MSG_PRINT;
+}
+
+void msgFakeWarn(const char *fmt, ...)
+{
+	MSG_PRINT;
+}
+
+msgBoxInterface msgBoxFake = {
+	msgFakeInfo,
+	msgFakeConfirm,
+	msgFakeError,
+	msgFakeWarn,
+};
+
+msgBoxInterface *msgbox = &msgBoxFake;

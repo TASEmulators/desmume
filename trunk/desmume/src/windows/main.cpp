@@ -240,6 +240,51 @@
 
 using namespace std;
 
+//====================== Message box
+#define MSG_ARG \
+	char msg_buf[1024] = {0}; \
+	{ \
+		va_list args; \
+		va_start (args, fmt); \
+		vsprintf (msg_buf, fmt, args); \
+		va_end (args); \
+	}
+void msgWndInfo(const char *fmt, ...)
+{
+	MSG_ARG;
+	printf("Info: %s\n", msg_buf);
+	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_OK | MB_ICONINFORMATION);
+}
+
+bool msgWndConfirm(const char *fmt, ...)
+{
+	MSG_ARG;
+	printf("Confirm: %s\n", msg_buf);
+	return (MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_YESNO | MB_ICONQUESTION) == IDYES);
+}
+
+void msgWndError(const char *fmt, ...)
+{
+	MSG_ARG;
+	printf("Error: %s\n", msg_buf);
+	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_OK | MB_ICONERROR);
+}
+
+void msgWndWarn(const char *fmt, ...)
+{
+	MSG_ARG;
+	printf("Warning: %s\n", msg_buf);
+	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_YESNO | MB_ICONWARNING);
+}
+
+msgBoxInterface msgBoxWnd = {
+	msgWndInfo,
+	msgWndConfirm,
+	msgWndError,
+	msgWndWarn,
+};
+//====================== Dialogs end
+
 
 #ifdef EXPERIMENTAL_WIFI_COMM
 bool bSocketsAvailable = false;
@@ -2845,6 +2890,8 @@ int _main()
 	SYSTEM_INFO systemInfo;
 	GetSystemInfo(&systemInfo);
 	CommonSettings.num_cores = systemInfo.dwNumberOfProcessors;
+
+	msgbox = &msgBoxWnd;
 
 	char text[80];
 
