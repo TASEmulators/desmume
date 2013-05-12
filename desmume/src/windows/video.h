@@ -60,6 +60,15 @@ public:
 		NUM_FILTERS,
 	};
 
+	void clear()
+	{
+		if (srcBuffer)
+		{
+			memset(srcBuffer, 0xFF, size() * 2);
+		}
+		memset(&buffer[0], 0, sizeof(buffer));
+		memset(&filteredbuffer[0], 0, sizeof(filteredbuffer));
+	}
 
 	void reset() {
 		width = 256;
