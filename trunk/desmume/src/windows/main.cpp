@@ -1898,8 +1898,9 @@ static void DoDisplay(bool firstTime)
 	}
 }
 
-void displayProc()
+void displayProc(bool force = false)
 {
+	if (!force && !execute) return;
 	g_mutex_lock(display_mutex);
 
 	//find a buffer to display
@@ -2377,6 +2378,10 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
+	video.clear();
+	osd->addFixed(100, 100, "Loading ROM...");
+	osd->addFixed(100, 120, "Please, wait...");
+	displayProc(true);
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
@@ -3936,7 +3941,7 @@ void CloseRom()
 	// (TODO: maybe NDS_Reset should do this?)
 	memset(GPU_screen, 0xFF, sizeof(GPU_screen));
 
-	InvalidateRect(MainWindow->getHWnd(), NULL, FALSE); // make sure the window refreshes with the cleared screen
+	InvalidateRect(MainWindow->getHWnd(), NULL, TRUE); // make sure the window refreshes with the cleared screen
 
 	MainWindowToolbar->EnableButton(IDM_PAUSE, false);
 	MainWindowToolbar->EnableButton(IDM_CLOSEROM, false);
@@ -4867,6 +4872,7 @@ DOKEYDOWN:
 			}
 			break;
 		}
+		displayProc(true);
 		return 0;
 	case WM_PAINT:
 		{
