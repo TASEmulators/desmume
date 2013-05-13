@@ -399,7 +399,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(hi+t, tmp);
 				}
 			break;
-			default: PROGINFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
+			default: PROGINFO("AR: ERROR unknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
 		}
 	}
 }
