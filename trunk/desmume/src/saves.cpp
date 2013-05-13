@@ -278,39 +278,6 @@ SFORMAT SF_MOVIE[]={
 	{ 0 }
 };
 
-static void mmu_savestate(EMUFILE* os)
-{
-	u32 version = 8;
-	write32le(version,os);
-	
-	//version 2:
-	MMU_new.backupDevice.save_state(os);
-	
-	//version 3:
-	MMU_new.gxstat.savestate(os);
-	for(int i=0;i<2;i++)
-		for(int j=0;j<4;j++)
-			MMU_new.dma[i][j].savestate(os);
-
-	MMU_timing.arm9codeFetch.savestate(os, version);
-	MMU_timing.arm9dataFetch.savestate(os, version);
-	MMU_timing.arm7codeFetch.savestate(os, version);
-	MMU_timing.arm7dataFetch.savestate(os, version);
-	MMU_timing.arm9codeCache.savestate(os, version);
-	MMU_timing.arm9dataCache.savestate(os, version);
-
-	//version 4:
-	MMU_new.sqrt.savestate(os);
-	MMU_new.div.savestate(os);
-
-	//version 6:
-	MMU_new.dsi_tsc.save_state(os);
-
-	//version 8:
-	os->write32le(MMU.fw.size);
-	os->fwrite(MMU.fw.data,MMU.fw.size);
-}
-
 // TODO: integrate the new wifi state variables once everything is settled
 SFORMAT SF_WIFI[]={
 	{ "W000", 4, 1, &wifiMac.powerOn},
@@ -387,6 +354,47 @@ SFORMAT SF_WIFI[]={
 
 	{ 0 }
 };
+
+extern SFORMAT SF_RTC[];
+
+static u8 reserveVal = 0;
+SFORMAT reserveChunks[] = {
+	{ "RESV", 1, 1, &reserveVal},
+	{ 0 }
+};
+
+static void mmu_savestate(EMUFILE* os)
+{
+	u32 version = 8;
+	write32le(version,os);
+	
+	//version 2:
+	MMU_new.backupDevice.save_state(os);
+	
+	//version 3:
+	MMU_new.gxstat.savestate(os);
+	for(int i=0;i<2;i++)
+		for(int j=0;j<4;j++)
+			MMU_new.dma[i][j].savestate(os);
+
+	MMU_timing.arm9codeFetch.savestate(os, version);
+	MMU_timing.arm9dataFetch.savestate(os, version);
+	MMU_timing.arm7codeFetch.savestate(os, version);
+	MMU_timing.arm7dataFetch.savestate(os, version);
+	MMU_timing.arm9codeCache.savestate(os, version);
+	MMU_timing.arm9dataCache.savestate(os, version);
+
+	//version 4:
+	MMU_new.sqrt.savestate(os);
+	MMU_new.div.savestate(os);
+
+	//version 6:
+	MMU_new.dsi_tsc.save_state(os);
+
+	//version 8:
+	os->write32le(MMU.fw.size);
+	os->fwrite(MMU.fw.data,MMU.fw.size);
+}
 
 static bool mmu_loadstate(EMUFILE* is, int size)
 {
@@ -924,8 +932,6 @@ bool savestate_save (const char *file_name)
 	} else return false;
 }
 
-extern SFORMAT SF_RTC[];
-
 static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
@@ -945,6 +951,13 @@ static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,110,SF_WIFI);
 	savestate_WriteChunk(os,120,SF_RTC);
 	savestate_WriteChunk(os,130,SF_NDS_HEADER);
+	// reserved for future versions
+	savestate_WriteChunk(os,140,reserveChunks);
+	savestate_WriteChunk(os,150,reserveChunks);
+	savestate_WriteChunk(os,160,reserveChunks);
+	savestate_WriteChunk(os,170,reserveChunks);
+	savestate_WriteChunk(os,180,reserveChunks);
+	// ============================
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
@@ -964,8 +977,8 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 
 	while(totalsize > 0)
 	{
-		uint32 size;
-		u32 t;
+		u32 size = 0;
+		u32 t = 0;
 		if(!read32le(&t,is))  { ret=false; break; }
 		if(t == 0xFFFFFFFF) break;
 		if(!read32le(&size,is))  { ret=false; break; }
@@ -989,12 +1002,23 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 			case 110: if(!ReadStateChunk(is,SF_WIFI,size)) ret=false; break;
 			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
 			case 130: if(!ReadStateChunk(is,SF_HEADER,size)) ret=false; else haveInfo=true; break;
+			// reserved for future versions
+			case 140:
+			case 150:
+			case 160:
+			case 170:
+			case 180:
+				if(!ReadStateChunk(is,reserveChunks,size)) ret=false;
+			break;
+			// ============================
+				
 			default:
 				return false;
 		}
 		if(!ret)
 			return false;
 	}
+
 	if (haveInfo)
 	{
 		char buf[14] = {0};
@@ -1008,7 +1032,8 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 		printf("\tCRC16: %04Xh\n", header.CRC16);
 		printf("\tHeader CRC16: %04Xh\n", header.headerCRC16);
 
-		// TODO: compare loaded rom header with savestate
+		if (gameInfo.romsize != romsize || memcmp(&gameInfo.header, &header, sizeof(header)) != 0)
+			msgbox->warn("The savestate you are loading does not match the ROM you are running.\nYou should find the correct ROM");
 	}
 
 	return ret;

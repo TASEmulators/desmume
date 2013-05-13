@@ -252,29 +252,29 @@ using namespace std;
 void msgWndInfo(const char *fmt, ...)
 {
 	MSG_ARG;
-	printf("Info: %s\n", msg_buf);
+	printf("[INFO] %s\n", msg_buf);
 	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_OK | MB_ICONINFORMATION);
 }
 
 bool msgWndConfirm(const char *fmt, ...)
 {
 	MSG_ARG;
-	printf("Confirm: %s\n", msg_buf);
+	printf("[CONF] %s\n", msg_buf);
 	return (MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_YESNO | MB_ICONQUESTION) == IDYES);
 }
 
 void msgWndError(const char *fmt, ...)
 {
 	MSG_ARG;
-	printf("Error: %s\n", msg_buf);
+	printf("[ERR] %s\n", msg_buf);
 	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_OK | MB_ICONERROR);
 }
 
 void msgWndWarn(const char *fmt, ...)
 {
 	MSG_ARG;
-	printf("Warning: %s\n", msg_buf);
-	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_YESNO | MB_ICONWARNING);
+	printf("[WARN] %s\n", msg_buf);
+	MessageBox(MainWindow->getHWnd(), msg_buf, EMU_DESMUME_NAME_AND_VERSION(), MB_OK | MB_ICONWARNING);
 }
 
 msgBoxInterface msgBoxWnd = {
@@ -2379,8 +2379,11 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
 	video.clear();
-	osd->addFixed(100, 100, "Loading ROM...");
-	osd->addFixed(100, 120, "Please, wait...");
+	osd->clear();
+	osd->addFixed(90, 80,  "Loading ROM.");
+	osd->addFixed(90, 100, "Please, wait...");
+	osd->addFixed(90, 192 + 80,  "Loading ROM.");
+	osd->addFixed(90, 192 + 100, "Please, wait...");
 	displayProc(true);
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
