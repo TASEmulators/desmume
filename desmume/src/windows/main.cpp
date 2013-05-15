@@ -292,6 +292,7 @@ bool bSocketsAvailable = false;
 #endif
 
 VideoInfo video;
+bool bRefreshDisplay = false;
 
 #ifdef HAVE_WX
 #include "wx/wxprec.h"
@@ -1898,9 +1899,11 @@ static void DoDisplay(bool firstTime)
 	}
 }
 
-void displayProc(bool force = false)
+void displayProc()
 {
-	if (!force && !execute) return;
+	if (!bRefreshDisplay && !execute) return;
+	bRefreshDisplay = false;
+
 	g_mutex_lock(display_mutex);
 
 	//find a buffer to display
@@ -2384,7 +2387,8 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	osd->addFixed(90, 100, "Please, wait...");
 	osd->addFixed(90, 192 + 80,  "Loading ROM.");
 	osd->addFixed(90, 192 + 100, "Please, wait...");
-	displayProc(true);
+	bRefreshDisplay = true;
+	Display();
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
@@ -3950,6 +3954,7 @@ void CloseRom()
 	MainWindowToolbar->EnableButton(IDM_CLOSEROM, false);
 	MainWindowToolbar->EnableButton(IDM_RESET, false);
 	MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PLAY);
+	bRefreshDisplay = false;
 }
 
 int GetInitialModifiers(int key) // async version for input thread
@@ -4875,7 +4880,7 @@ DOKEYDOWN:
 			}
 			break;
 		}
-		displayProc(true);
+		bRefreshDisplay = true;
 		return 0;
 	case WM_PAINT:
 		{
