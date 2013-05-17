@@ -201,9 +201,9 @@ static NSDictionary *hidUsageTable = nil;
 
 	Takes:
 		hidValueRef - The IOHIDValueRef to parse.
-		altElementCode - An NSString that overrides the default element code.
-		altElementName - An NSString that overrides the default element name.
-		altOnState - An NSNumber that overrides the default on state.
+		altElementCode - A char buffer that overrides the default element code.
+		altElementName - A char buffer that overrides the default element name.
+		altOnState - A pointer to a bool value that overrides the default on state.
 
 	Returns:
 		An InputAttributes struct with the parsed input attributes.
@@ -211,7 +211,7 @@ static NSDictionary *hidUsageTable = nil;
 	Details:
 		None.
  ********************************************************************************************/
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, NSNumber *altOnState)
+InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, bool *altOnState)
 {
 	InputAttributes inputAttr;
 	
@@ -303,7 +303,7 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char 
 		CFStringGetCString(cfDeviceName, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH, kCFStringEncodingUTF8);
 	}
 	
-	BOOL onState = (altOnState == nil) ? GetOnStateFromHIDValueRef(hidValueRef) : [altOnState boolValue];
+	bool onState = (altOnState == NULL) ? GetOnStateFromHIDValueRef(hidValueRef) : *altOnState;
 	CFIndex logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
 	NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
 	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
@@ -348,14 +348,14 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef)
 	
 	if (logicalMin == 0 && logicalMax == 1)
 	{
-		inputList.push_back(InputAttributesOfHIDValue(hidValueRef, NULL, NULL, nil));
+		inputList.push_back(InputAttributesOfHIDValue(hidValueRef, NULL, NULL, NULL));
 	}
 	else
 	{
 		NSInteger lowerThreshold = ((logicalMax - logicalMin) / 3) + logicalMin;
 		NSInteger upperThreshold = (((logicalMax - logicalMin) * 2) / 3) + logicalMin;
-		NSNumber *onState = [NSNumber numberWithBool:YES];
-		NSNumber *offState = [NSNumber numberWithBool:NO];
+		bool onState = true;
+		bool offState = false;
 		
 		char elementCodeLowerThresholdBuf[256] = {0};
 		char elementCodeUpperThresholdBuf[256] = {0};
@@ -364,18 +364,18 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef)
 		
 		if (logicalValue <= lowerThreshold)
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, onState));
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, offState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, &onState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, &offState));
 		}
 		else if (logicalValue >= upperThreshold)
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, offState));
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, onState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, &offState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, &onState));
 		}
 		else
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, offState));
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, onState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, &offState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, &offState));
 		}
 	}
 	
@@ -403,9 +403,8 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 	inputList.resize(8);
 	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
 	NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
-	
-	NSNumber *onState = [NSNumber numberWithBool:YES];
-	NSNumber *offState = [NSNumber numberWithBool:NO];
+	bool onState = true;
+	bool offState = false;
 	
 	char elementCodeFourWay[4][256];
 	for (unsigned int i = 0; i < 4; i++)
@@ -439,7 +438,7 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 	{
 		for (unsigned int i = 0; i <= (unsigned int)logicalMax; i++)
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeFourWay[i], elementNameFourWay[i], (i == (unsigned int)logicalValue) ? onState : offState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeFourWay[i], elementNameFourWay[i], (i == (unsigned int)logicalValue) ? &onState : &offState));
 		}
 	}
 	else if (logicalMax == 7)
@@ -448,7 +447,7 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 		{
 			for (unsigned int i = 0; i <= (unsigned int)logicalMax; i++)
 			{
-				inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[i], elementNameEightWay[i], (i == (unsigned int)logicalValue) ? onState : offState));
+				inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[i], elementNameEightWay[i], (i == (unsigned int)logicalValue) ? &onState : &offState));
 			}
 		}
 		else
@@ -456,66 +455,66 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 			switch (logicalValue)
 			{
 				case 0:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
 					break;
 					
 				case 1:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
 					break;
 					
 				case 2:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
 					break;
 					
 				case 3:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
 					break;
 					
 				case 4:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
 					break;
 					
 				case 5:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &onState));
 					break;
 					
 				case 6:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &onState));
 					break;
 					
 				case 7:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &onState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &onState));
 					break;
 					
 				default:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
+					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
 					break;
 			}
 		}

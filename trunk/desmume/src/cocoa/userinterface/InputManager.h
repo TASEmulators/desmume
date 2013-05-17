@@ -123,7 +123,7 @@ typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFil
 @end
 
 BOOL GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef);
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, NSNumber *altOnState);
+InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, bool *altOnState);
 InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef);
 InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool useEightDirection);
 
