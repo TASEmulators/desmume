@@ -2510,11 +2510,6 @@ int MenuInit()
 	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
 #endif
 
-	//zero 09-feb-2013 - all the translations are out of date. this is dumb. lets just take out the translations. you cant expect translations in a project with our staff size using our tech
-	HMENU langMenu = GetSubMenuByIdOfFirstChild(configMenu,IDC_LANGENGLISH);
-	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,langMenu),MF_BYPOSITION);
-	
-
 	return 1;
 }
 
@@ -2528,61 +2523,65 @@ typedef int (WINAPI *setLanguageFunc)(LANGID id);
 
 void SetLanguage(int langid)
 {
-	HMODULE kernel32 = LoadLibrary("kernel32.dll");
-	FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
-	setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
-	currLanguage = langid;
+	//zero 20-may-2013 - languages not supported anymore
 
-	switch(langid)
-	{
-	case LANGUAGE_ENGLISH:
-		currLanguageMenuItem = IDC_LANGENGLISH;
-		setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
-		break;
-	case LANGUAGE_FRENCH:
-		currLanguageMenuItem = IDC_LANGFRENCH;
-		setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
-		break;
-	case LANGUAGE_CHINESE:
-		currLanguageMenuItem = IDC_LANG_CHINESE_SIMPLIFIED;
-		setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
-		break;
-	case LANGUAGE_ITALIAN:
-		currLanguageMenuItem = IDC_LANGITALIAN;
-		setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
-		break;
-	case LANGUAGE_JAPANESE:
-		currLanguageMenuItem = IDC_LANGJAPANESE;
-		setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
-		break;
-	case LANGUAGE_SPANISH:
-		currLanguageMenuItem = IDC_LANGSPANISH;
-		setLanguage(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
-		break;
-	case LANGUAGE_KOREAN:
-		currLanguageMenuItem = IDC_LANGKOREAN;
-		setLanguage(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
-		break;
-	case LANGUAGE_BRAZILIAN:
-		currLanguageMenuItem = IDC_LANG_BRAZILIAN_PORTUGUESE;
-		setLanguage(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
-		break;
 
-	default:
-		break;
-	}
 
-	FreeLibrary(kernel32);
+	//HMODULE kernel32 = LoadLibrary("kernel32.dll");
+	//FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
+	//setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
+	//currLanguage = langid;
 
-	WritePrivateProfileInt("General", "Language", langid, IniName);
+	//switch(langid)
+	//{
+	//case LANGUAGE_ENGLISH:
+	//	currLanguageMenuItem = IDC_LANGENGLISH;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_FRENCH:
+	//	currLanguageMenuItem = IDC_LANGFRENCH;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_CHINESE:
+	//	currLanguageMenuItem = IDC_LANG_CHINESE_SIMPLIFIED;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_ITALIAN:
+	//	currLanguageMenuItem = IDC_LANGITALIAN;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_JAPANESE:
+	//	currLanguageMenuItem = IDC_LANGJAPANESE;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_SPANISH:
+	//	currLanguageMenuItem = IDC_LANGSPANISH;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_KOREAN:
+	//	currLanguageMenuItem = IDC_LANGKOREAN;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
+	//	break;
+	//case LANGUAGE_BRAZILIAN:
+	//	currLanguageMenuItem = IDC_LANG_BRAZILIAN_PORTUGUESE;
+	//	setLanguage(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
+	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
+	//	break;
+
+	//default:
+	//	break;
+	//}
+
+	//FreeLibrary(kernel32);
+
+	//WritePrivateProfileInt("General", "Language", langid, IniName);
 	InitCustomKeys(&CustomKeys);
 	LoadHotkeyConfig();
 }
