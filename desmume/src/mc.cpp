@@ -469,10 +469,13 @@ void BackupDevice::reset_command()
 				break;
 			case 3:
 				//another modern typical case..
-				//but unfortunately we select this case for spider-man 3, when what it meant to do was
-				//present the archaic 1+2 case
-				//it seems that over the hedge does this also.
+				//but unfortunately we select this case on accident sometimes when what it meant to do was present the archaic 1+2 case
+				//(the archaic 1+2 case is: specifying one address byte, and then reading the first two bytes, instead of the first one byte, as most other games would do.)
+				//so, we're gonna hack in checks for the games that are doing this
 				addr_size = 2;
+				if(!memcmp(gameInfo.header.gameCode,"AL3E",4)) addr_size = 1; //spongebob atlantis squarepantis.
+				if(!memcmp(gameInfo.header.gameCode,"AH5E",4)) addr_size = 1; //over the hedge 
+				if(!memcmp(gameInfo.header.gameCode,"AQ3E",4)) addr_size = 1; //spider-man 3
 				break;
 			case 4:
 				//a modern typical case
