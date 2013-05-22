@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <string>
+#include <stdarg.h>
 #include "common.h"
 
 char *trim(char *s, int len)
