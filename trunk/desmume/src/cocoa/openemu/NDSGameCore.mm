@@ -176,7 +176,9 @@
 
 - (void)resetEmulation
 {
+	pthread_mutex_lock(&mutexCoreExecute);
 	NDS_Reset();
+	pthread_mutex_unlock(&mutexCoreExecute);
 	execute = true;
 }
 
