@@ -500,6 +500,7 @@ bool romloaded = false;
 void SetScreenGap(int gap);
 
 bool ForceRatio = true;
+bool PadToInteger = false;
 bool SeparationBorderDrag = true;
 int ScreenGapColor = 0xFFFFFF;
 float DefaultWidth;
@@ -1093,6 +1094,65 @@ template<typename T> static void doRotate(void* dst)
 	}
 }
 
+struct DisplayLayoutInfo
+{
+	int vx,vy,vw,vh;
+	float widthScale, heightScale;
+	int bufferWidth, bufferHeight;
+};
+
+//performs aspect ratio letterboxing correction and integer clamping
+DisplayLayoutInfo CalculateDisplayLayout(RECT rcClient, bool maintainAspect, bool maintainInteger, int targetWidth, int targetHeight)
+{
+	DisplayLayoutInfo ret;
+
+	//do maths on the viewport and the native resolution and the user settings to get a display rectangle
+	SIZE sz = { rcClient.right - rcClient.left, rcClient.bottom - rcClient.top };
+	
+	float widthScale = (float)sz.cx / targetWidth;
+	float heightScale = (float)sz.cy / targetHeight;
+	if(maintainAspect)
+	{
+		if(widthScale > heightScale) widthScale = heightScale;
+		if(heightScale > widthScale) heightScale = widthScale;
+	}
+	if(maintainInteger)
+	{
+		widthScale = floorf(widthScale);
+		heightScale = floorf(heightScale);
+	}
+	ret.vw = (int)(widthScale * targetWidth);
+	ret.vh = (int)(heightScale * targetHeight);
+	ret.vx = (sz.cx - ret.vw)/2;
+	ret.vy = (sz.cy - ret.vh)/2;
+	ret.widthScale = widthScale;
+	ret.heightScale = heightScale;
+	ret.bufferWidth = sz.cx;
+	ret.bufferHeight = sz.cy;
+
+	return ret;
+}
+
+//reformulates CalculateDisplayLayout() into a format more convenient for this purpose
+RECT CalculateDisplayLayoutWrapper(RECT rcClient, int targetWidth, int targetHeight, int tbHeight, bool maximized)
+{
+	bool maintainInteger = !!PadToInteger;
+	bool maintainAspect = !!ForceRatio;
+
+	if(maintainInteger) maintainAspect = true;
+
+	//nothing to do here if maintain aspect isnt chosen
+	if(!maintainAspect) return rcClient;
+
+	RECT rc = { rcClient.left, rcClient.top + tbHeight, rcClient.right, rcClient.bottom };
+	DisplayLayoutInfo dli = CalculateDisplayLayout(rc, maintainAspect, maintainInteger, targetWidth, targetHeight);
+	rc.left = rcClient.left + dli.vx;
+	rc.top = rcClient.top + dli.vy;
+	rc.right = rc.left + dli.vw;
+	rc.bottom = rc.top + dli.vh + tbHeight;
+	return rc;
+}
+
 void UpdateWndRects(HWND hwnd)
 {
 	POINT ptClient;
@@ -1112,12 +1172,13 @@ void UpdateWndRects(HWND hwnd)
 
 	if(maximized)
 		rc = FullScreenRect;
-
+	
 	tbheight = MainWindowToolbar->GetHeight();
-
-
-	if (video.layout == 1)
+	
+	if (video.layout == 1) //horizontal
 	{
+		rc = CalculateDisplayLayoutWrapper(rc, 512, 192, tbheight, maximized);
+
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
 
@@ -1150,8 +1211,9 @@ void UpdateWndRects(HWND hwnd)
 		SubScreenRect.bottom = ptClient.y;
 	}
 	else
-	if (video.layout == 2)
+	if (video.layout == 2) //one screen
 	{
+		rc = CalculateDisplayLayoutWrapper(rc, 256, 192, tbheight, maximized);
 
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
@@ -1172,8 +1234,18 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.bottom = ptClient.y;
 	}
 	else
-	if (video.layout == 0)
+	if (video.layout == 0) //vertical
 	{
+		//apply logic to correct things if forced integer is selected
+		if((video.rotation == 90) || (video.rotation == 270))
+		{
+			rc = CalculateDisplayLayoutWrapper(rc, 384 + video.screengap, 256, tbheight, maximized);
+		}
+		else
+		{
+			rc = CalculateDisplayLayoutWrapper(rc, 256, 384 + video.screengap, tbheight, maximized);
+		}
+
 		if((video.rotation == 90) || (video.rotation == 270))
 		{
 			wndWidth = (rc.bottom - rc.top) - tbheight;
@@ -1186,6 +1258,7 @@ void UpdateWndRects(HWND hwnd)
 		}
 
 		ratio = ((float)wndHeight / (float)defHeight);
+
 		oneScreenHeight = (int)((video.height/2) * ratio);
 		gapHeight = (wndHeight - (oneScreenHeight * 2));
 
@@ -1226,6 +1299,8 @@ void UpdateWndRects(HWND hwnd)
 		}
 		else
 		{
+
+
 			// Main screen
 			ptClient.x = rc.left;
 			ptClient.y = rc.top;
@@ -2381,14 +2456,16 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 	Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
+	//since loading a rom can take a long time and happens in the main thread, forcibly display a message here so users dont think it froze
 	video.clear();
 	osd->clear();
-	osd->addFixed(90, 80,  "Loading ROM.");
-	osd->addFixed(90, 100, "Please, wait...");
-	osd->addFixed(90, 192 + 80,  "Loading ROM.");
-	osd->addFixed(90, 192 + 100, "Please, wait...");
+	osd->addFixed(70, 80,  "Loading ROM.");
+	osd->addFixed(70, 100, "Please wait...");
+	osd->addFixed(70, 192 + 80,  "Loading ROM.");
+	osd->addFixed(70, 192 + 100, "Please wait...");
 	bRefreshDisplay = true;
 	Display();
+
 	if (NDS_LoadROM(filename, physicalName, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
@@ -2938,6 +3015,7 @@ int _main()
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	video.rotation_userset =  GetPrivateProfileInt("Video","Window Rotate Set", video.rotation, IniName);
 	ForceRatio = GetPrivateProfileBool("Video","Window Force Ratio", 1, IniName);
+	PadToInteger = GetPrivateProfileBool("Video","Window Pad To Integer", 0, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	if(WndX < -10000) WndX = CW_USEDEFAULT; // fix for missing window problem
@@ -4397,6 +4475,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_LCDS_SUBGPU,  video.swap == 3);
 			//Force Maintain Ratio
 			MainWindow->checkMenu(IDC_FORCERATIO, ((ForceRatio)));
+			MainWindow->checkMenu(IDC_VIEW_PADTOINTEGER, ((PadToInteger)));
 			//Screen rotation
 			MainWindow->checkMenu(IDC_ROTATE0, ((video.rotation_userset==0)));
 			MainWindow->checkMenu(IDC_ROTATE90, ((video.rotation_userset==90)));
@@ -5941,18 +6020,18 @@ DOKEYDOWN:
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
 
-		case IDC_FORCERATIO:
-			if (ForceRatio) {
-				ForceRatio = FALSE;
-				WritePrivateProfileInt("Video","Window Force Ratio",0,IniName);
-			}
-			else {
-				ForceRatio = TRUE;
-				FixAspectRatio();
-				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
-			}
+		case IDC_VIEW_PADTOINTEGER:
+			PadToInteger = (!PadToInteger)?TRUE:FALSE;
+			WritePrivateProfileInt("Video","Window Pad To Integer",PadToInteger,IniName);
+			UpdateWndRects(hwnd);
 			break;
 
+		case IDC_FORCERATIO:
+			ForceRatio = (!ForceRatio)?TRUE:FALSE;
+			if(ForceRatio)
+				FixAspectRatio();
+			WritePrivateProfileInt("Video","Window Force Ratio",ForceRatio,IniName);
+			break;
 
 		case IDM_DEFSIZE:
 			{
