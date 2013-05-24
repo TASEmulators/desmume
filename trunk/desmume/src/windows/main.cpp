@@ -4725,18 +4725,31 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				backbuffer_invalidate = true;
 			}
 			bool fullscreen = false;
-			if(wParam==999) { fullscreen = true; wParam = WMSZ_BOTTOMRIGHT; }
-			InvalidateRect(hwnd, NULL, FALSE); UpdateWindow(hwnd);
 
-			if(windowSize)
+			InvalidateRect(hwnd, NULL, FALSE); 
+			UpdateWindow(hwnd);
+
+			if(wParam==999)
 			{
-				windowSize = 0;
-				MainWindow->checkMenu(IDC_WINDOW1X, false);
-				MainWindow->checkMenu(IDC_WINDOW1_5X, false);
-				MainWindow->checkMenu(IDC_WINDOW2X, false);
-				MainWindow->checkMenu(IDC_WINDOW2_5X, false);
-				MainWindow->checkMenu(IDC_WINDOW3X, false);
-				MainWindow->checkMenu(IDC_WINDOW4X, false);
+				//special fullscreen message
+				fullscreen = true;
+				wParam = WMSZ_BOTTOMRIGHT;
+			}
+			else
+			{
+				//handling not to be done during fullscreen:
+
+				//user specified a different size. disable the window fixed size mode
+				if(windowSize)
+				{
+					windowSize = 0;
+					MainWindow->checkMenu(IDC_WINDOW1X, false);
+					MainWindow->checkMenu(IDC_WINDOW1_5X, false);
+					MainWindow->checkMenu(IDC_WINDOW2X, false);
+					MainWindow->checkMenu(IDC_WINDOW2_5X, false);
+					MainWindow->checkMenu(IDC_WINDOW3X, false);
+					MainWindow->checkMenu(IDC_WINDOW4X, false);
+				}
 			}
 
 			RECT cRect, ncRect;
@@ -4861,9 +4874,16 @@ DOKEYDOWN:
 
 			if(message == WM_SYSKEYDOWN && wParam==VK_RETURN && !(lParam&0x40000000))
 			{
+				//having aspect ratio correction enabled during fullscreen switch causes errors to happen.
+				//90% sure this is because the aspect ratio correction calculations happens with the wrong frame/menu/nonclient properties in place.
+				//if we ToggleFullscreen before the ShowWindow() here, then the ShowWindow() will wreck the fullscreening.
+				//There might be another way to fix this, by cleverer logic choosing when to set SW_NORMAL.. but this approach of temporarily disabling the aspect ratio forcing seems to work
+				bool oldForceRatio = ForceRatio;
+				ForceRatio = false;
 				if(IsZoomed(hwnd))
-					ShowWindow(hwnd,SW_NORMAL); //maximize and fullscreen get mixed up so make sure no maximize now
+					ShowWindow(hwnd,SW_NORMAL); //maximize and fullscreen get mixed up so make sure no maximize now. IOW, alt+enter from fullscreen should never result in a maximized state
 				ToggleFullscreen();
+				ForceRatio = oldForceRatio;
 			}
 			else
 			{
