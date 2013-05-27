@@ -40,7 +40,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			{
 				
 				memset(&buf, 0, sizeof(buf));
-				u8 sv = advsc.getSaveType() + 1;
+				u8 sv = advsc.getSaveType();
 				if (sv == 0xFF)
 				{
 					strcpy(buf, "Unknown");
@@ -53,13 +53,20 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 						EnableWindow(GetDlgItem(hDlg, IDC_IMP_AUTO_ADVANSCENE), false);
 					}
 					else
-						strcpy(buf, save_types[sv].descr);
+						strcpy(buf, save_types[sv + 1].descr);
 				SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_ADVANSCENE), buf);
 			}
 			else
 				EnableWindow(GetDlgItem(hDlg, IDC_IMP_AUTO_ADVANSCENE), false);
 
-			SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), save_types[MMU_new.backupDevice.info.type+1].descr);
+			{
+				u8 type = MMU_new.backupDevice.searchFileSaveType(MMU_new.backupDevice.info.size);
+				if (type == 0xFF)
+					SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), "NA");
+				else
+					SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), save_types[type + 1].descr);
+			}
+
 			SendDlgItemMessage(hDlg, IDC_IMP_AUTO_CURRENT, BM_SETCHECK, true, 0);
 
 			for (u8 i = 1; i <= MAX_SAVE_TYPES; i++) 
