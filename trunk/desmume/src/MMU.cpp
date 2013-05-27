@@ -1274,8 +1274,6 @@ bool DSI_TSC::load_state(EMUFILE* is)
 	return true;
 }
 
-// TODO: 
-// NAND flash support (used in Made in Ore/WarioWare D.I.Y.)
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
@@ -1409,7 +1407,267 @@ u32 MMU_readFromGC()
 	return val;
 }
 
+// ====================================================================== REG_SPIxxx
+static void CalculateTouchPressure(int pressurePercent, u16 &z1, u16& z2)
+{
+	bool touch = nds.isTouch!=0;
+	if(!touch)
+	{
+		z1 = z2 = 0;
+		return;
+	}
+	int y = nds.scr_touchY;
+	int x = nds.scr_touchX;
+	float u = (x/256.0f);
+	float v = (y/192.0f);	
 
+	//these coefficients 
+
+	float fPressurePercent = pressurePercent/100.0f;
+	//z1 goes up as pressure goes up
+	{
+		float b0 = (96-80)*fPressurePercent + 80;
+		float b1 = (970-864)*fPressurePercent + 864;
+		float b2 = (192-136)*fPressurePercent + 136;
+		float b3 = (1560-1100)*fPressurePercent + 1100;
+		z1 = (u16)(int)(b0 + (b1-b0)*u + (b2-b0)*v + (b3-b2-b1+b0)*u*v);
+	}
+	
+	//z2 goes down as pressure goes up
+	{
+		float b0=(1976-2300)*fPressurePercent + 2300;
+		float b1=(2360-2600)*fPressurePercent + 2600;
+		float b2=(3840-3900)*fPressurePercent + 3900;
+		float b3=(3912-3950)*fPressurePercent + 3950;
+		z2 = (u16)(int)(b0 + (b1-b0)*u + (b2-b0)*v + (b3-b2-b1+b0)*u*v);
+	}
+
+}
+
+void FASTCALL MMU_writeToSPIData(u16 val)
+{
+	if (val !=0)
+		MMU.SPI_CMD = val;
+
+	u16 spicnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
+
+	switch ((spicnt >> 8) & 0x3)	// device
+	{
+		case 0:		// Powerman
+			if (!MMU.powerMan_CntRegWritten)
+			{
+				MMU.powerMan_CntReg = (val & 0xFF);
+				MMU.powerMan_CntRegWritten = TRUE;
+			}
+			else
+			{
+				u16 reg = MMU.powerMan_CntReg & 0x7F;
+				reg &= 0x7;
+				if(reg==5 || reg==6 || reg==7) reg = 4;
+
+				//(let's start with emulating a DS lite, since it is the more complex case)
+				if(MMU.powerMan_CntReg & 0x80)
+				{
+					//read
+					val = MMU.powerMan_Reg[reg];
+				}
+				else
+				{
+					//write
+					MMU.powerMan_Reg[reg] = (u8)val;
+
+					enum PM_Bits //from libnds
+					{
+						PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
+						PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
+						PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
+						PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
+						PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
+					};
+
+					//our totally pathetic register handling, only the one thing we've wanted so far
+					if(MMU.powerMan_Reg[0]&PM_SYSTEM_PWR)
+					{
+						printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
+						printf("Did your main() return?\n");
+						emu_halt();
+					}
+				}
+
+				MMU.powerMan_CntRegWritten = FALSE;
+			}
+		break;
+
+		case 1:	// Firmware
+			if((spicnt & 0x3) != 0)		// check SPI baudrate (must be 4mhz)
+				val = 0;
+			else
+				val = fw_transfer(&MMU.fw, (u8)val);
+		break;
+
+		case 2:	// Touch screen
+		{
+			if(nds.Is_DSI())
+			{
+				//pass data to TSC
+				val = MMU_new.dsi_tsc.write16(val);
+
+				//apply reset command if appropriate
+				if(!BIT11(MMU.SPI_CNT))
+					MMU_new.dsi_tsc.reset_command();
+				break;
+			}
+
+			int channel = (MMU.SPI_CMD&0x70)>>4;
+
+			switch(channel)
+			{
+				case TSC_MEASURE_TEMP1:
+					if(spicnt & 0x800)
+					{
+						if(partie)
+						{
+							val = ((716<<3)&0x7FF);
+							partie = 0;
+							break;
+						}
+						val = (716>>5);
+						partie = 1;
+						break;
+					}
+					val = ((716<<3)&0x7FF);
+					partie = 1;
+				break;
+
+				case TSC_MEASURE_TEMP2:
+					if(spicnt & 0x800)
+					{
+						if(partie)
+						{
+							val = ((865<<3)&0x7FF);
+							partie = 0;
+							break;
+						}
+						val = (865>>5);
+						partie = 1;
+						break;
+					}
+					val = ((865<<3)&0x7FF);
+					partie = 1;
+				break;
+
+				case TSC_MEASURE_Y:
+					//counter the number of adc touch coord reads and jitter it after a while to simulate a shaky human hand or multiple reads
+					nds.adc_jitterctr++;
+					if(nds.adc_jitterctr == 25)
+					{
+						nds.adc_jitterctr = 0;
+						if (nds.stylusJitter)
+						{
+							nds.adc_touchY ^= 16;
+							nds.adc_touchX ^= 16;
+						}
+					}
+					if(MMU.SPI_CNT&(1<<11))
+					{
+						if(partie)
+						{
+							val = (nds.adc_touchY<<3) & 0xFF;
+							partie = 0;
+							break;
+						}
+
+						val = (nds.adc_touchY>>5) & 0xFF;
+						partie = 1;
+						break;
+					}
+					val = (nds.adc_touchY<<3)&0xFF;
+					partie = 1;
+				break;
+
+				case TSC_MEASURE_Z1: //Z1
+				{
+					//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
+					//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
+					u16 scratch;
+					CalculateTouchPressure(CommonSettings.StylusPressure,val,scratch);
+
+					if(spicnt & 0x800)
+					{
+						if(partie)
+						{
+							val = ((val<<3)&0x7FF);
+							partie = 0;
+							break;
+						}
+						val = (val>>5);
+						partie = 1;
+						break;
+					}
+					val = ((val<<3)&0x7FF);
+					partie = 1;
+					break;
+				}
+
+				case TSC_MEASURE_Z2: //Z2
+				{
+					//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
+					//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
+					u16 scratch;
+					CalculateTouchPressure(CommonSettings.StylusPressure,scratch,val);
+
+					if(spicnt & 0x800)
+					{
+						if(partie)
+						{
+							val = ((val<<3)&0x7FF);
+							partie = 0;
+							break;
+						}
+						val = (val>>5);
+						partie = 1;
+						break;
+					}
+					val = ((val<<3)&0x7FF);
+					partie = 1;
+					break;
+				}
+
+				case TSC_MEASURE_X:
+					if(spicnt & 0x800)
+					{
+						if(partie)
+						{
+							val = (nds.adc_touchX << 3) & 0xFF;
+							partie = 0;
+							break;
+						}
+						val = (nds.adc_touchX>>5) & 0xFF;
+						partie = 1;
+						break;
+					}
+					val = (nds.adc_touchX<<3) & 0xFF;
+					partie = 1;
+					break;
+
+				case TSC_MEASURE_AUX:
+					if(!(val & 0x80))
+						val = (Mic_ReadSample() & 0xFF);
+					else
+						val = 0;
+				break;
+			}
+			break;
+		}
+
+		case 3 :
+		// NOTICE: Device 3 of SPI is reserved (unused and unusable)
+		break;
+	}
+
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, val & 0x00FF);
+}
+// ====================================================================== REG_SPIxxx END
 
 //does some validation on the game's choice of IF value, correcting it if necessary
 static void validateIF_arm9()
@@ -3692,7 +3950,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 				}	
      
 			case REG_GCDATAIN: return MMU_readFromGC<ARMCPU_ARM9>();
-      case REG_POWCNT1: return readreg_POWCNT1(32,adr);
+			case REG_POWCNT1: return readreg_POWCNT1(32,adr);
 			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(32,adr);
 
 			case REG_KEYINPUT:
@@ -3794,6 +4052,12 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM7));
 				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
+
+			case REG_SPIDATA:
+				// CrazyMax: 27 May 2013: BIOS write 8bit commands to flash controller
+				// (write firmware header into RAM at 0x027FF830)
+				MMU_writeToSPIData(val);
+				return;
 		}
 		MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 		return;
@@ -3810,42 +4074,6 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
-}
-
-static void CalculateTouchPressure(int pressurePercent, u16 &z1, u16& z2)
-{
-	bool touch = nds.isTouch!=0;
-	if(!touch)
-	{
-		z1 = z2 = 0;
-		return;
-	}
-	int y = nds.scr_touchY;
-	int x = nds.scr_touchX;
-	float u = (x/256.0f);
-	float v = (y/192.0f);	
-
-	//these coefficients 
-
-	float fPressurePercent = pressurePercent/100.0f;
-	//z1 goes up as pressure goes up
-	{
-		float b0 = (96-80)*fPressurePercent + 80;
-		float b1 = (970-864)*fPressurePercent + 864;
-		float b2 = (192-136)*fPressurePercent + 136;
-		float b3 = (1560-1100)*fPressurePercent + 1100;
-		z1 = (u16)(int)(b0 + (b1-b0)*u + (b2-b0)*v + (b3-b2-b1+b0)*u*v);
-	}
-	
-	//z2 goes down as pressure goes up
-	{
-		float b0=(1976-2300)*fPressurePercent + 2300;
-		float b1=(2360-2600)*fPressurePercent + 2600;
-		float b2=(3840-3900)*fPressurePercent + 3900;
-		float b3=(3912-3950)*fPressurePercent + 3950;
-		z2 = (u16)(int)(b0 + (b1-b0)*u + (b2-b0)*v + (b3-b2-b1+b0)*u*v);
-	}
-
 }
 
 //================================================= MMU ARM7 write 16
@@ -3962,229 +4190,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
 				
 			case REG_SPIDATA :
-				{
-					u16 spicnt;
-
-					if(val!=0)
-						MMU.SPI_CMD = val;
-			
-					spicnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
-
-					switch((spicnt >> 8) & 0x3)
-					{
-						case 0 :
-							{
-								if(!MMU.powerMan_CntRegWritten)
-								{
-									MMU.powerMan_CntReg = (val & 0xFF);
-									MMU.powerMan_CntRegWritten = TRUE;
-								}
-								else
-								{
-									u16 reg = MMU.powerMan_CntReg&0x7F;
-									reg &= 0x7;
-									if(reg==5 || reg==6 || reg==7) reg = 4;
-
-									//(let's start with emulating a DS lite, since it is the more complex case)
-									if(MMU.powerMan_CntReg & 0x80)
-									{
-										//read
-										val = MMU.powerMan_Reg[reg];
-									}
-									else
-									{
-										//write
-										MMU.powerMan_Reg[reg] = (u8)val;
-											
-										enum PM_Bits //from libnds
-										{
-											PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
-											PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
-											PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
-											PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
-											PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
-										};
-
-										//our totally pathetic register handling, only the one thing we've wanted so far
-										if(MMU.powerMan_Reg[0]&PM_SYSTEM_PWR) {
-											printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
-											printf("Did your main() return?\n");
-											emu_halt();
-										}
-									}
-
-									MMU.powerMan_CntRegWritten = FALSE;
-								}
-							}
-						break;
-						
-						case 1 : /* firmware memory device */
-							if((spicnt & 0x3) != 0)      /* check SPI baudrate (must be 4mhz) */
-							{
-								T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
-								break;
-							}
-							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, (u8)val));
-						return;
-						
-						case 2:
-						{
-							if(nds.Is_DSI())
-							{
-								//pass data to TSC
-								val = MMU_new.dsi_tsc.write16(val);
-								
-								//apply reset command if appropriate
-								if(!BIT11(MMU.SPI_CNT))
-									MMU_new.dsi_tsc.reset_command();
-
-								break;
-							}
-
-							int channel = (MMU.SPI_CMD&0x70)>>4;
-							//printf("%08X\n",channel);
-							switch(channel)
-							{
-								case TSC_MEASURE_TEMP1:
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((716<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (716>>5);
-										partie = 1;
-										break;
-									}
-									val = ((716<<3)&0x7FF);
-									partie = 1;
-									break;
-								case TSC_MEASURE_TEMP2:
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((865<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (865>>5);
-										partie = 1;
-										break;
-									}
-									val = ((865<<3)&0x7FF);
-									partie = 1;
-									break;
-
-								case TSC_MEASURE_Y:
-									{
-										//counter the number of adc touch coord reads and jitter it after a while to simulate a shaky human hand or multiple reads
-										nds.adc_jitterctr++;
-										if(nds.adc_jitterctr == 25)
-										{
-											nds.adc_jitterctr = 0;
-											if (nds.stylusJitter)
-											{
-												nds.adc_touchY ^= 16;
-												nds.adc_touchX ^= 16;
-											}
-										}
-										if(MMU.SPI_CNT&(1<<11))
-										{
-											if(partie)
-											{
-												val = (nds.adc_touchY<<3) & 0xFF;
-												partie = 0;
-												break;
-											}
-
-											val = (nds.adc_touchY>>5) & 0xFF;
-											partie = 1;
-											break;
-										}
-										val = (nds.adc_touchY<<3)&0xFF;
-										partie = 1;
-										break;
-									}
-								case TSC_MEASURE_Z1: //Z1
-									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
-									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
-									{
-										u16 scratch;
-										CalculateTouchPressure(CommonSettings.StylusPressure,val,scratch);
-									}
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((val<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (val>>5);
-										partie = 1;
-										break;
-									}
-									val = ((val<<3)&0x7FF);
-									partie = 1;
-									break;
-								case TSC_MEASURE_Z2: //Z2
-									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
-									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
-									{
-										u16 scratch;
-										CalculateTouchPressure(CommonSettings.StylusPressure,scratch,val);
-									}
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((val<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (val>>5);
-										partie = 1;
-										break;
-									}
-									val = ((val<<3)&0x7FF);
-									partie = 1;
-									break;
-								case TSC_MEASURE_X:
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = (nds.adc_touchX << 3) & 0xFF;
-											partie = 0;
-											break;
-										}
-										val = (nds.adc_touchX>>5) & 0xFF;
-										partie = 1;
-										break;
-									}
-									val = (nds.adc_touchX<<3) & 0xFF;
-									partie = 1;
-									break;
-								case TSC_MEASURE_AUX:
-									if(!(val & 0x80))
-										val = (Mic_ReadSample() & 0xFF);
-									else
-										val = 0;
-									break;
-							}
-							break;
-						}
-						
-						case 3 :
-						/* NOTICE: Device 3 of SPI is reserved (unused and unusable) */
-						break;
-					}
-				}
-
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, val);
+				MMU_writeToSPIData(val);
 				return;
 
 				/* NOTICE: Perhaps we have to use gbatek-like reg names instead of libnds-like ones ...*/
