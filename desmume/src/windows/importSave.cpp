@@ -59,7 +59,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			else
 				EnableWindow(GetDlgItem(hDlg, IDC_IMP_AUTO_ADVANSCENE), false);
 
-			SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), save_types[MMU_new.backupDevice.info.type].descr);
+			SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), save_types[MMU_new.backupDevice.info.type+1].descr);
 			SendDlgItemMessage(hDlg, IDC_IMP_AUTO_CURRENT, BM_SETCHECK, true, 0);
 
 			for (u8 i = 1; i <= MAX_SAVE_TYPES; i++) 
