@@ -40,7 +40,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			{
 				
 				memset(&buf, 0, sizeof(buf));
-				u8 sv = advsc.getSaveType();
+				u8 sv = advsc.getSaveType() + 1;
 				if (sv == 0xFF)
 				{
 					strcpy(buf, "Unknown");
