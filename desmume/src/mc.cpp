@@ -1035,7 +1035,7 @@ void BackupDevice::loadfile()
 		{
 			if (advsc.isLoaded())
 			{
-				info.type = advsc.getSaveType();
+				info.type = advsc.getSaveType() + 1;	// skip autodetect description in save_types[] struct
 				if (info.type != 0xFF && info.type != 0xFE)
 				{
 					u32 adv_size = save_types[info.type+1].size;

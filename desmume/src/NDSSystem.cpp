@@ -591,7 +591,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	buf[4] = 0;
 	if (advsc.checkDB(buf, gameInfo.crc))
 	{
-		u8 sv = advsc.getSaveType();
+		u8 sv = advsc.getSaveType() + 1;	// skip autodetect description in save_types[] struct
 		printf("Found in game database by %s:\n",advsc.getIdMethod());
 		printf("\t* ROM save type: ");
 		if (sv == 0xFF)
