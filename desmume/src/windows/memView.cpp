@@ -846,38 +846,42 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 
 		SetBkColor(mem_hdc, RGB(255, 255, 255));
 		SetTextColor(mem_hdc, RGB(0, 0, 0));
-
 		u8 endChar = IsDlgCheckboxChecked(wnd->hWnd, IDC_FULL_CHARS)?0xFF:0x7F;
-		text[1] = 0; bool change = false;
 
-		for(i = 0; i < 16; i++, curx+=fontsize.cx)
+		for(i = 0; i < 16; i++)
 		{
 			u8 val = T1ReadByte(memory, ((line << 4) + i));
 
-			if(wnd->sel && wnd->selAddress == (addr + i))
-			{
-				SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
-				SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-				change = true;
-			}
-			else
-				if (change)
-				{
-					SetBkColor(mem_hdc, RGB(255, 255, 255));
-					SetTextColor(mem_hdc, RGB(0, 0, 0));
-					change = false;
-				}
-
 			if((val >= 0x20) && (val <= endChar))
-				text[0] = (char)val;
+				text[i] = (char)val;
 			else
-				text[0] = '.';
-
-			TextOut(mem_hdc, curx, cury, text, 1);
+				text[i] = '.';
 		}
+		TextOut(mem_hdc, curx, cury, text, 16);
 
-		SetBkColor(mem_hdc, RGB(255, 255, 255));
-		SetTextColor(mem_hdc, RGB(0, 0, 0));
+		if (wnd->sel && ((wnd->selAddress & 0xFFFFFFF0) == addr))
+		{
+			const u8 sz[] = {1, 2, 4};
+			u8 start = (wnd->selAddress & 0x0000000F);
+
+			SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
+			SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+
+			for(i = 0; i < sz[wnd->viewMode]; i++)
+			{
+				u8 val = T1ReadByte(memory, ((line << 4) + (i+start)));
+
+				if((val >= 0x20) && (val <= endChar))
+					text[i + start] = (char)val;
+				else
+					text[i + start] = '.';
+			}
+
+			TextOut(mem_hdc, curx + (fontsize.cx * start), cury, text, sz[wnd->viewMode]);
+
+			SetBkColor(mem_hdc, RGB(255, 255, 255));
+			SetTextColor(mem_hdc, RGB(0, 0, 0));
+		}
 
 		cury += fontsize.cy;
 	}
