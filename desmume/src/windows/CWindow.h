@@ -132,6 +132,9 @@ public:
 	// Refreshes the window. Called by RefreshAllToolWindows().
 	void Refresh() { InvalidateRect(hWnd, NULL, FALSE); }
 
+	// SetFocus
+	void SetFocus() { ::SetFocus(hWnd); }
+
 	// Double-linked toolwindow list.
 	CToolWindow* prev;
 	CToolWindow* next;
