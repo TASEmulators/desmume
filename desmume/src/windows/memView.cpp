@@ -633,10 +633,12 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 		case IDC_BIG_ENDIAN:
 			wnd->Refresh();
+			wnd->SetFocus();
 			return 1;
 
 		case IDC_FULL_CHARS:
 			wnd->Refresh();
+			wnd->SetFocus();
 			return 1;
 		}
 		return 0;

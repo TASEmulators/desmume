@@ -74,7 +74,7 @@ static void WriteFirmConfig( struct NDS_fw_config_data *fw_config)
 
 BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam)
 {
-	struct NDS_fw_config_data *fw_config = &win_fw_config;
+	struct NDS_fw_config_data *fw_config = &CommonSettings.fw_config;
 	int i;
 	char temp_str[27];
 
@@ -147,7 +147,8 @@ BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 
 				WriteFirmConfig( fw_config);
 				EndDialog(dialog,0);
-				NDS_CreateDummyFirmware( fw_config);
+				if (CommonSettings.UseExtFirmware == 0)
+					NDS_CreateDummyFirmware( fw_config);
 				return 1;
 				}
 				else

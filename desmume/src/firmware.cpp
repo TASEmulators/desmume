@@ -375,14 +375,13 @@ bool CFIRMWARE::load()
 	}
 
 	memcpy(&header, data, sizeof(header));
-	if ((header.fw_identifier[0] != 'M') ||
-			(header.fw_identifier[1] != 'A') ||
-				(header.fw_identifier[2] != 'C'))
-				{
-					delete [] data;
-					fclose(fp);
-					return false;
-				}
+	if ((header.fw_identifier & 0x00FFFFFF) != 0x0043414D)
+	{
+		delete [] data;
+		data = NULL;
+		fclose(fp);
+		return false;
+	}
 
 	shift1 = ((header.shift_amounts >> 0) & 0x07);
 	shift2 = ((header.shift_amounts >> 3) & 0x07);
@@ -401,7 +400,7 @@ bool CFIRMWARE::load()
 	ARM9bootAddr = part1ram;
 	ARM7bootAddr = part2ram;
 
-	if(initKeycode(T1ReadLong(data, 0x08), 1, 0xC) == FALSE)
+	if(initKeycode(header.fw_identifier, 1, 0xC) == FALSE)
 	{
 		delete [] data;
 		fclose(fp);
@@ -423,7 +422,7 @@ bool CFIRMWARE::load()
 	data[0x1F] = 0x00;
 #endif
 
-	if(initKeycode(T1ReadLong(data, 0x08), 2, 0xC) == FALSE)
+	if(initKeycode(header.fw_identifier, 2, 0xC) == FALSE)
 	{
 		delete [] data;
 		fclose(fp);
@@ -872,8 +871,8 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	//Wifi settings CRC16
 	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
 
-	if (&CommonSettings.InternalFirmConf != user_settings)
-		memcpy(&CommonSettings.InternalFirmConf, user_settings, sizeof(struct NDS_fw_config_data));
+	if (&CommonSettings.fw_config != user_settings)
+		memcpy(&CommonSettings.fw_config, user_settings, sizeof(struct NDS_fw_config_data));
 
 	return TRUE ;
 }
