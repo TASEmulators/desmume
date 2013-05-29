@@ -318,20 +318,20 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			char addressText[9];
 			wsprintf(addressText, "%08X", wnd->address);
 			SetWindowText(gAddress, addressText);
-			SendMessage(gAddress, CB_LIMITTEXT, 8, 0);
+			//SendMessage(gAddress, CB_LIMITTEXT, 8, 0);
 			oldEditAddrProc = SetWindowLongPtr(gAddress, GWLP_WNDPROC, (LONG_PTR)EditAddrProc);
 
 			for (u16 i = 0; i < MAX_ADDRESS_SAVE; i++)
 			{
-				char hex[9] = {0};
-				char buf[9] = {0};
-
+				char hex[16] = {0};
+				char buf[16] = {0};
+				memset(&hex[0], 0, sizeof(hex));
 				sprintf(buf, "addr%03d", i);
 
-				u16 len = GetPrivateProfileString("Tools.MemoryViewer", buf, 0, &hex[0], 8, IniName);
+				u16 len = GetPrivateProfileString("Tools.MemoryViewer", buf, 0, &hex[0], 9, IniName);
 				if (!len) break;
 				
-				ComboBox_InsertString(gAddress, 0, hex);
+				ComboBox_AddString(gAddress, hex);
 			}
 
 			gAddrText = GetDlgItem(hDlg, IDC_CURRENT_ADDR);
@@ -355,8 +355,9 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			u16 num = ComboBox_GetCount(gAddress);
 			for (u16 i = 0; i < num; i++)
 			{
-				char hex[9] = {0};
-				char buf[9] = {0};
+				char hex[16] = {0};
+				char buf[16] = {0};
+				memset(&hex[0], 0, sizeof(hex));
 
 				sprintf(buf, "addr%03d", i);
 				ComboBox_GetLBText(gAddress, i, (LPCTSTR)&hex[0]);
