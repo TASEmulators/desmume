@@ -321,20 +321,20 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 		 * This would cause strange behaviour if the user could set UTF-16 but
 		 * they cannot yet.
 		 */
-		for (i = 0; i < CommonSettings.InternalFirmConf.nickname_len; i++) {
-			temp_str[i] = CommonSettings.InternalFirmConf.nickname[i];
+		for (i = 0; i < CommonSettings.fw_config.nickname_len; i++) {
+			temp_str[i] = CommonSettings.fw_config.nickname[i];
 		}
 		temp_str[i] = '\0';
 		fp->fprintf("firmNickname %s\n", temp_str);
-		for (i = 0; i < CommonSettings.InternalFirmConf.message_len; i++) {
-			temp_str[i] = CommonSettings.InternalFirmConf.message[i];
+		for (i = 0; i < CommonSettings.fw_config.message_len; i++) {
+			temp_str[i] = CommonSettings.fw_config.message[i];
 		}
 		temp_str[i] = '\0';
 		fp->fprintf("firmMessage %s\n", temp_str);
-		fp->fprintf("firmFavColour %d\n", CommonSettings.InternalFirmConf.fav_colour);
-		fp->fprintf("firmBirthMonth %d\n", CommonSettings.InternalFirmConf.birth_month);
-		fp->fprintf("firmBirthDay %d\n", CommonSettings.InternalFirmConf.birth_day);
-		fp->fprintf("firmLanguage %d\n", CommonSettings.InternalFirmConf.language);
+		fp->fprintf("firmFavColour %d\n", CommonSettings.fw_config.fav_colour);
+		fp->fprintf("firmBirthMonth %d\n", CommonSettings.fw_config.birth_month);
+		fp->fprintf("firmBirthDay %d\n", CommonSettings.fw_config.birth_day);
+		fp->fprintf("firmLanguage %d\n", CommonSettings.fw_config.language);
 	}
 
 	fp->fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
@@ -577,7 +577,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	// reset firmware (some games can write to it)
 	if (CommonSettings.UseExtFirmware == false)
 	{
-		NDS_CreateDummyFirmware(&CommonSettings.InternalFirmConf);
+		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
 
 	NDS_Reset();
@@ -692,7 +692,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 	// reset firmware (some games can write to it)
 	if (CommonSettings.UseExtFirmware == false)
 	{
-		NDS_CreateDummyFirmware(&CommonSettings.InternalFirmConf);
+		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
 
 	NDS_Reset();

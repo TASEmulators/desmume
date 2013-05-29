@@ -87,7 +87,7 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 
 	const RomBanner& banner = gameInfo.getRomBanner();
 
-	sprintf(text, "%ws", banner.titles[win_fw_config.language]);
+	sprintf(text, "%ws", banner.titles[CommonSettings.fw_config.language]);	// TODO: langID from real/fake fw
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), text);
 
 	sprintf(text, "%ws", banner.titles[0]);

@@ -50,13 +50,18 @@ public:
 
 	static std::string GetExternalFilePath();
 
+	u32 getID()
+	{
+		return header.fw_identifier;
+	}
+
 	struct HEADER
 	{
 		u16	part3_rom_gui9_addr;		// 000h
 		u16	part4_rom_wifi7_addr;		// 002h
 		u16	part34_gui_wifi_crc16;		// 004h
 		u16	part12_boot_crc16;			// 006h
-		u8	fw_identifier[4];			// 008h
+		u32	fw_identifier;				// 008h
 		u16	part1_rom_boot9_addr;		// 00Ch
 		u16	part1_ram_boot9_addr;		// 00Eh
 		u16	part2_rom_boot7_addr;		// 010h

@@ -544,9 +544,6 @@ bool staterewindingenabled = false;
 
 unsigned short windowSize = 0;
 
-/* the firmware settings */
-struct NDS_fw_config_data win_fw_config;
-
 /*const u32 gapColors[16] = {
 	Color::Gray,
 	Color::Brown,
@@ -3131,9 +3128,6 @@ int _main()
 
 	gpu_SetRotateScreen(video.rotation);
 
-	//default the firmware settings, they may get changed later
-	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
-
 	//GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
 	//SetLanguage(atoi(text));
 	//zero 09-feb-2013 - all the translations are out of date. this is dumb. lets just take out the translations. you cant expect translations in a project with our staff size using our tech
@@ -3387,11 +3381,13 @@ int _main()
 	video.setfilter(GetPrivateProfileInt("Video", "Filter", video.NONE, IniName));
 	FilterUpdate(MainWindow->getHWnd(),false);
 
-	/* Read the firmware settings from the init file */
-	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
-	win_fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
-	win_fw_config.birth_day = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
-	win_fw_config.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
+	//default the firmware settings, they may get changed later
+	NDS_FillDefaultFirmwareConfigData(&CommonSettings.fw_config);
+	// Read the firmware settings from the init file
+	CommonSettings.fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
+	CommonSettings.fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
+	CommonSettings.fw_config.birth_day = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
+	CommonSettings.fw_config.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
 
 	{
 		/*
@@ -3401,27 +3397,23 @@ int _main()
 		char temp_str[27];
 		int char_index;
 		GetPrivateProfileString("Firmware","nickName", "yopyop", temp_str, 11, IniName);
-		win_fw_config.nickname_len = strlen( temp_str);
+		CommonSettings.fw_config.nickname_len = strlen( temp_str);
 
-		if ( win_fw_config.nickname_len == 0) {
+		if (CommonSettings.fw_config.nickname_len == 0) {
 			strcpy( temp_str, "yopyop");
-			win_fw_config.nickname_len = strlen( temp_str);
+			CommonSettings.fw_config.nickname_len = strlen( temp_str);
 		}
 
-		for ( char_index = 0; char_index < win_fw_config.nickname_len; char_index++) {
-			win_fw_config.nickname[char_index] = temp_str[char_index];
+		for ( char_index = 0; char_index < CommonSettings.fw_config.nickname_len; char_index++) {
+			CommonSettings.fw_config.nickname[char_index] = temp_str[char_index];
 		}
 
 		GetPrivateProfileString("Firmware","Message", "DeSmuME makes you happy!", temp_str, 27, IniName);
-		win_fw_config.message_len = strlen( temp_str);
-		for ( char_index = 0; char_index < win_fw_config.message_len; char_index++) {
-			win_fw_config.message[char_index] = temp_str[char_index];
+		CommonSettings.fw_config.message_len = strlen( temp_str);
+		for ( char_index = 0; char_index < CommonSettings.fw_config.message_len; char_index++) {
+			CommonSettings.fw_config.message[char_index] = temp_str[char_index];
 		}
 	}
-
-	// Create the dummy firmware
-	NDS_CreateDummyFirmware( &win_fw_config);
-
 
 	if (cmdline.nds_file != "")
 	{

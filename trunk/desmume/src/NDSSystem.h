@@ -522,7 +522,7 @@ extern struct TCommonSettings {
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
-		NDS_FillDefaultFirmwareConfigData(&InternalFirmConf);
+		NDS_FillDefaultFirmwareConfigData(&fw_config);
 
 		/* WIFI mode: adhoc = 0, infrastructure = 1 */
 		wifi.mode = 1;
@@ -559,7 +559,7 @@ extern struct TCommonSettings {
 	bool UseExtFirmware;
 	char Firmware[256];
 	bool BootFromFirmware;
-	struct NDS_fw_config_data InternalFirmConf;
+	NDS_fw_config_data fw_config;
 
 	NDS_CONSOLE_TYPE ConsoleType;
 	bool DebugConsole;
