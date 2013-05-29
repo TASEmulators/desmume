@@ -479,10 +479,23 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 				wnd->selPart = 0;
 				wnd->selNewVal = 0x00000000;
 
+				// ====================== add address in list
 				if (ComboBox_GetCount(gAddress) == MAX_ADDRESS_SAVE)
 					ComboBox_DeleteString(gAddress, ComboBox_GetCount(gAddress) - 1);
 
+				// remove duplicate address
+				u16 num = ComboBox_GetCount(gAddress);
+				for (u16 i = 0; i < num; i++)
+				{
+					char hex[16] = {0};
+					ComboBox_GetLBText(gAddress, i, (LPCTSTR)&hex[0]);
+					if (strcmp(addrstr, hex) == 0)
+						ComboBox_DeleteString(gAddress, i);
+				}
+				// add to list
 				ComboBox_InsertString(gAddress, 0, addrstr);
+				ComboBox_SetText(gAddress, addrstr);
+
 
 				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, (((wnd->address - region.hardwareAddress) >> 4) & 0x000FFFFF), TRUE);
 				wnd->Refresh();
