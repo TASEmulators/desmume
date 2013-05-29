@@ -848,7 +848,7 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 
 		SetBkColor(mem_hdc, RGB(255, 255, 255));
 		SetTextColor(mem_hdc, RGB(0, 0, 0));
-		u8 endChar = IsDlgCheckboxChecked(wnd->hWnd, IDC_FULL_CHARS)?0xFF:0x7F;
+		const u8 endChar = IsDlgCheckboxChecked(wnd->hWnd, IDC_FULL_CHARS)?0xFF:0x7F;
 
 		for(i = 0; i < 16; i++)
 		{
@@ -871,12 +871,12 @@ LRESULT MemView_ViewBoxPaint(CMemView* wnd, HWND hCtl, WPARAM wParam, LPARAM lPa
 
 			for(i = 0; i < sz[wnd->viewMode]; i++)
 			{
-				u8 val = T1ReadByte(memory, ((line << 4) + (i+start)));
+				u8 val = T1ReadByte(memory, ((line << 4) + (i + start)));
 
 				if((val >= 0x20) && (val <= endChar))
-					text[i + start] = (char)val;
+					text[i] = (char)val;
 				else
-					text[i + start] = '.';
+					text[i] = '.';
 			}
 
 			TextOut(mem_hdc, curx + (fontsize.cx * start), cury, text, sz[wnd->viewMode]);
