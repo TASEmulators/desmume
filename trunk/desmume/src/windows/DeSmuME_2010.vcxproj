@@ -138,7 +138,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;File_Extractor_x86.lib;File_Extractor_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_debug.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
       <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
@@ -178,7 +178,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;File_Extractor_x86.lib;File_Extractor_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_release.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
       <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
@@ -218,7 +218,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;File_Extractor_x86.lib;File_Extractor_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-Win32.lib;zlib-vc8-Win32.lib;agg-2.5.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_dev+.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
       <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
@@ -261,7 +261,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;File_Extractor_x64.lib;File_Extractor_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_debug.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;lua51.dll</DelayLoadDLLs>
@@ -306,7 +306,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;File_Extractor_x64.lib;File_Extractor_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_release.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
       <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
@@ -351,7 +351,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;File_Extractor_x64.lib;File_Extractor_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_dev+.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;lua51.dll</DelayLoadDLLs>
@@ -520,6 +520,99 @@
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
+    <ClCompile Include="File_Extractor\7z_C\7zAlloc.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zBuf.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zBuf2.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zCrc.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zCrcOpt.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zDec.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zDecode.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zExtract.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zFile.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zHeader.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zIn.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zItem.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zStream.c" />
+    <ClCompile Include="File_Extractor\7z_C\Alloc.c" />
+    <ClCompile Include="File_Extractor\7z_C\Bcj2.c" />
+    <ClCompile Include="File_Extractor\7z_C\Bra.c" />
+    <ClCompile Include="File_Extractor\7z_C\Bra86.c" />
+    <ClCompile Include="File_Extractor\7z_C\BraIA64.c" />
+    <ClCompile Include="File_Extractor\7z_C\CpuArch.c" />
+    <ClCompile Include="File_Extractor\7z_C\Delta.c" />
+    <ClCompile Include="File_Extractor\7z_C\LzFind.c" />
+    <ClCompile Include="File_Extractor\7z_C\LzFindMt.c" />
+    <ClCompile Include="File_Extractor\7z_C\Lzma2Dec.c" />
+    <ClCompile Include="File_Extractor\7z_C\Lzma2Enc.c" />
+    <ClCompile Include="File_Extractor\7z_C\Lzma86Dec.c" />
+    <ClCompile Include="File_Extractor\7z_C\Lzma86Enc.c" />
+    <ClCompile Include="File_Extractor\7z_C\LzmaDec.c" />
+    <ClCompile Include="File_Extractor\7z_C\LzmaEnc.c" />
+    <ClCompile Include="File_Extractor\7z_C\LzmaLib.c" />
+    <ClCompile Include="File_Extractor\7z_C\MtCoder.c" />
+    <ClCompile Include="File_Extractor\7z_C\Ppmd7.c" />
+    <ClCompile Include="File_Extractor\7z_C\Ppmd7Dec.c" />
+    <ClCompile Include="File_Extractor\7z_C\Ppmd7Enc.c" />
+    <ClCompile Include="File_Extractor\7z_C\Threads.c" />
+    <ClCompile Include="File_Extractor\fex\Binary_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\blargg_common.cpp" />
+    <ClCompile Include="File_Extractor\fex\blargg_errors.cpp" />
+    <ClCompile Include="File_Extractor\fex\Data_Reader.cpp" />
+    <ClCompile Include="File_Extractor\fex\fex.cpp" />
+    <ClCompile Include="File_Extractor\fex\File_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Gzip_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Gzip_Reader.cpp" />
+    <ClCompile Include="File_Extractor\fex\Rar_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Zip7_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Zip_Extractor.cpp" />
+    <ClCompile Include="File_Extractor\fex\Zlib_Inflater.cpp" />
+    <ClCompile Include="File_Extractor\unrar\archive.cpp" />
+    <ClCompile Include="File_Extractor\unrar\arcread.cpp" />
+    <ClCompile Include="File_Extractor\unrar\coder.cpp" />
+    <ClCompile Include="File_Extractor\unrar\crc.cpp" />
+    <ClCompile Include="File_Extractor\unrar\encname.cpp" />
+    <ClCompile Include="File_Extractor\unrar\extract.cpp" />
+    <ClCompile Include="File_Extractor\unrar\getbits.cpp" />
+    <ClCompile Include="File_Extractor\unrar\model.cpp" />
+    <ClCompile Include="File_Extractor\unrar\rarvm.cpp" />
+    <ClCompile Include="File_Extractor\unrar\rarvmtbl.cpp" />
+    <ClCompile Include="File_Extractor\unrar\rawread.cpp" />
+    <ClCompile Include="File_Extractor\unrar\suballoc.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unicode.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpack.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpack15.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpack20.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unrar.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unrar_misc.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unrar_open.cpp" />
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="hotkey.cpp" />
@@ -700,6 +793,69 @@
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
     <ClInclude Include="FEX_Interface.h" />
+    <ClInclude Include="File_Extractor\7z_C\7z.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zAlloc.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zBuf.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zCrc.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zDecode.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zExtract.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zFile.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zHeader.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zIn.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zItem.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zTypes.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zVersion.h" />
+    <ClInclude Include="File_Extractor\7z_C\Alloc.h" />
+    <ClInclude Include="File_Extractor\7z_C\Bcj2.h" />
+    <ClInclude Include="File_Extractor\7z_C\Bra.h" />
+    <ClInclude Include="File_Extractor\7z_C\CpuArch.h" />
+    <ClInclude Include="File_Extractor\7z_C\Delta.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzFind.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzFindMt.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzHash.h" />
+    <ClInclude Include="File_Extractor\7z_C\Lzma2Dec.h" />
+    <ClInclude Include="File_Extractor\7z_C\Lzma2Enc.h" />
+    <ClInclude Include="File_Extractor\7z_C\Lzma86.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaDec.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaEnc.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaLib.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaTypes.h" />
+    <ClInclude Include="File_Extractor\7z_C\MtCoder.h" />
+    <ClInclude Include="File_Extractor\7z_C\Ppmd.h" />
+    <ClInclude Include="File_Extractor\7z_C\Ppmd7.h" />
+    <ClInclude Include="File_Extractor\7z_C\RotateDefs.h" />
+    <ClInclude Include="File_Extractor\7z_C\Threads.h" />
+    <ClInclude Include="File_Extractor\7z_C\Types.h" />
+    <ClInclude Include="File_Extractor\fex\Binary_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_common.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_config.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_endian.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_errors.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_source.h" />
+    <ClInclude Include="File_Extractor\fex\Data_Reader.h" />
+    <ClInclude Include="File_Extractor\fex\fex.h" />
+    <ClInclude Include="File_Extractor\fex\File_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Gzip_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Gzip_Reader.h" />
+    <ClInclude Include="File_Extractor\fex\Rar_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Zip7_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Zip_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Zlib_Inflater.h" />
+    <ClInclude Include="File_Extractor\unrar\archive.hpp" />
+    <ClInclude Include="File_Extractor\unrar\array.hpp" />
+    <ClInclude Include="File_Extractor\unrar\coder.hpp" />
+    <ClInclude Include="File_Extractor\unrar\compress.hpp" />
+    <ClInclude Include="File_Extractor\unrar\encname.hpp" />
+    <ClInclude Include="File_Extractor\unrar\getbits.hpp" />
+    <ClInclude Include="File_Extractor\unrar\headers.hpp" />
+    <ClInclude Include="File_Extractor\unrar\model.hpp" />
+    <ClInclude Include="File_Extractor\unrar\rar.hpp" />
+    <ClInclude Include="File_Extractor\unrar\rarvm.hpp" />
+    <ClInclude Include="File_Extractor\unrar\rawread.hpp" />
+    <ClInclude Include="File_Extractor\unrar\suballoc.hpp" />
+    <ClInclude Include="File_Extractor\unrar\unicode.hpp" />
+    <ClInclude Include="File_Extractor\unrar\unpack.hpp" />
+    <ClInclude Include="File_Extractor\unrar\unrar.h" />
     <ClInclude Include="filter\hq2x.h" />
     <ClInclude Include="filter\interp.h" />
     <ClInclude Include="filter\lq2x.h" />
@@ -826,28 +982,15 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\wx.tag;%(Outputs)</Outputs>
     </CustomBuild>
-    <CustomBuild Include="File_Extractor\File_Extractor.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\File_Extractor-vc9.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\File_Extractor-vc9.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\File_Extractor-vc9.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\File_Extractor-vc9.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\File_Extractor-vc9.tag;%(Outputs)</Outputs>
-    </CustomBuild>
+    <None Include="File_Extractor\7z_C\7zC.txt" />
+    <None Include="File_Extractor\7z_C\changes.txt" />
+    <None Include="File_Extractor\7z_C\lzma.txt" />
+    <None Include="File_Extractor\7z_C\readme.txt" />
+    <None Include="File_Extractor\unrar\changes.txt" />
+    <None Include="File_Extractor\unrar\license.txt" />
+    <None Include="File_Extractor\unrar\readme.txt" />
+    <None Include="File_Extractor\unrar\technote.txt" />
+    <None Include="File_Extractor\unrar\whatsnew.txt" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc" />
