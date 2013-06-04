@@ -81,7 +81,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib glib-vc8-Win32.lib lua51.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib File_Extractor_x86.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib glib-vc8-Win32.lib lua51.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\win32"
 				IgnoreDefaultLibraryNames="LIBCPMT"
@@ -175,7 +175,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib File_Extractor_x64.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs\x64;.libs"
 				DelayLoadDLLs="lua51.dll"
@@ -274,7 +274,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib File_Extractor_x86.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\win32"
 				DelayLoadDLLs="lua51.dll"
@@ -373,7 +373,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib lua-5.1.4-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib File_Extractor_x64.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib lua-5.1.4-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs\x64;.libs"
 				DelayLoadDLLs="lua51.dll"
@@ -474,7 +474,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib File_Extractor_x86.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\win32"
 				DelayLoadDLLs="lua51.dll"
@@ -576,7 +576,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib File_Extractor_x64.lib"
+				AdditionalDependencies="directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-x64.lib zlib-vc8-x64.lib agg-2.5-x64.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs\x64;.libs"
 				DelayLoadDLLs="lua51.dll"
@@ -950,6 +950,270 @@
 				>
 			</File>
 			<Filter
+				Name="File_Extractor"
+				>
+				<File
+					RelativePath=".\File_Extractor\fex\Binary_Extractor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\blargg_common.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\blargg_errors.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Data_Reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\fex.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\fex.h"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\File_Extractor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Gzip_Extractor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Gzip_Reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Rar_Extractor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Zip7_Extractor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Zip_Extractor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Zip_Extractor.h"
+					>
+				</File>
+				<File
+					RelativePath=".\File_Extractor\fex\Zlib_Inflater.cpp"
+					>
+				</File>
+				<Filter
+					Name="7-Zip"
+					>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zAlloc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zBuf.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zBuf2.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zCrc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zCrcOpt.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zDec.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zFile.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zIn.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zStream.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Alloc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Bcj2.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Bra.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Bra86.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\BraIA64.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\CpuArch.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Delta.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzFind.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzFindMt.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma2Dec.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma2Enc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma86Dec.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma86Enc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaDec.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaEnc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaLib.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\MtCoder.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Ppmd7.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Ppmd7Dec.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Ppmd7Enc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Threads.c"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="unrar"
+					>
+					<File
+						RelativePath=".\File_Extractor\unrar\archive.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\arcread.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\coder.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\crc.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\encname.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\extract.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\getbits.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\model.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\rarvm.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\rarvmtbl.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\rawread.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\suballoc.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unicode.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unpack.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unpack15.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unpack20.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unrar.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unrar_misc.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unrar_open.cpp"
+						>
+					</File>
+				</Filter>
+			</Filter>
+			<Filter
 				Name="userconfig"
 				>
 				<File
@@ -1021,70 +1285,6 @@
 							CommandLine="un7z_and_touch.bat directx\directx.7z .libs\directx*&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\directx.tag"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\File_Extractor.7z"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\File_Extractor-vc9.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\File_Extractor-vc9.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\File_Extractor-vc9.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\File_Extractor-vc9.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release FastBuild|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\File_Extractor-vc9.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release FastBuild|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat File_Extractor\File_Extractor.7z .libs\glib*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\File_Extractor-vc9.tag"
 						/>
 					</FileConfiguration>
 				</File>
