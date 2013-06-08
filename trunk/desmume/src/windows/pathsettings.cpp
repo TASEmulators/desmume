@@ -147,8 +147,10 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	CheckDlgButton(hDlg, IDC_USELASTVISIT, (path.savelastromvisit) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_ASSOCIATE, (associate) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_AUTOLOADLUA, (autoLoadLua) ? BST_CHECKED : BST_UNCHECKED);
-	CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, (int)path.imageformat());
-	CheckRadioButton(hDlg, IDC_R4TYPE1, IDC_R4TYPE2, (int)path.r4Format);
+	static const int imageFormatMap[] = { IDC_PNG, IDC_BMP };
+	static const int r4TypeMap[] = { IDC_R4TYPE1, IDC_R4TYPE2 };
+	CheckRadioButton(hDlg, IDC_PNG, IDC_BMP, imageFormatMap[(int)path.imageformat()]);
+	CheckRadioButton(hDlg, IDC_R4TYPE1, IDC_R4TYPE2, r4TypeMap[(int)path.r4Format]);
 
 // IDC_FORMATEDIT setup
 	SetDlgItemText(hDlg, IDC_FORMATEDIT, path.screenshotFormat);

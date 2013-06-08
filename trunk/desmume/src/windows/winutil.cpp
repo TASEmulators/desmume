@@ -15,29 +15,67 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common.h"
+#include "path.h"
 #include "winutil.h"
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
 #include <windef.h>
+#include <ShlObj.h>
+
 
 char IniName[MAX_PATH];
 
+char* _hack_alternateModulePath;
+
+
+static char vPath[MAX_PATH*2], *szPath;
+
 void GetINIPath()
 {   
-	char		vPath[MAX_PATH], *szPath;
-    /*if (*vPath)
-       szPath = vPath;
-    else
-    {*/
-       char *p;
-       ZeroMemory(vPath, sizeof(vPath));
-       GetModuleFileName(NULL, vPath, sizeof(vPath));
-       p = vPath + lstrlen(vPath);
-       while (p >= vPath && *p != '\\') p--;
-       if (++p >= vPath) *p = 0;
-       szPath = vPath;
-    //}
+
+	bool useModulePath = true;
+
+	//check if desmume is running from the temp directory.
+	{
+		//DebugBreak();
+		wchar_t tempPath[MAX_PATH];
+		GetTempPathW(MAX_PATH,tempPath);
+		wchar_t modulePath[MAX_PATH];
+		GetModuleFileNameW(NULL, modulePath, MAX_PATH);
+		if(!_wcsnicmp(tempPath,modulePath,wcslen(tempPath)))
+		{
+			//running from temp dir
+			
+			//decided not to warn user
+			//GetPrivateProfileBool("General","Temp Directory Warning", false, IniName))
+			//MessageBox(NULL,"You are running DeSmuME from your temp directory, probably by running straight from an archive instead of dearchiving to your disk manually......
+
+			//use an alternate path
+			useModulePath = false;
+			static char userpath[MAX_PATH];
+			SHGetFolderPath(NULL,CSIDL_LOCAL_APPDATA,NULL,0,userpath);
+			_snprintf(vPath,MAX_PATH,"%s\\%s",userpath,"DeSmuME");
+			szPath = vPath;
+			_hack_alternateModulePath = szPath;
+
+			//not so sure about this.. but lets go for it.
+			SetCurrentDirectory(userpath);
+		}
+	}
+
+
+	if(useModulePath)
+	{
+		 char *p;
+		 ZeroMemory(vPath, sizeof(vPath));
+		 GetModuleFileName(NULL, vPath, sizeof(vPath));
+		 p = vPath + lstrlen(vPath);
+		 while (p >= vPath && *p != '\\') p--;
+		 if (++p >= vPath) *p = 0;
+		 szPath = vPath;
+	}
 	if (strlen(szPath) + strlen("\\desmume.ini") < MAX_PATH)
 	{
 		sprintf(IniName, "%s\\desmume.ini",szPath);
@@ -47,6 +85,8 @@ void GetINIPath()
 	{
 		memset(IniName,0,MAX_PATH) ;
 	}
+
+	FCEUD_MakePathDirs(IniName);
 }
 
 void PreventScreensaver()
