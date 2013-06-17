@@ -566,7 +566,7 @@ static GpVar bb_profiler_entry;
 #define IMM_OFF_12 \
 	JIT_COMMENT("IMM_OFF_12"); \
 	bool rhs_is_imm = true; \
-	u32 rhs = i&0xFFF; \
+	u32 rhs = (i & 0xFFF); \
 	u32 rhs_first = rhs;
 
 // ============================================================================================= REG
@@ -1205,7 +1205,7 @@ static void MUL_Mxx_END(GpVar x, bool sign, int cycles)
 			c.adc(hi, reg_pos_ptr(16)); \
 			c.mov(reg_pos_ptr(12), lhs); \
 			c.mov(reg_pos_ptr(16), hi); \
-			c.cmp(hi, lhs); SET_NZ(0); \
+			c.or_(hi, lhs); SET_NZ(0); \
 		} \
 		else \
 		{ \
@@ -1604,7 +1604,7 @@ static u32 sub(u32 lhs, u32 rhs) { return lhs - rhs; }
 		if (PROCNUM == 0) \
 		{ \
 			GpVar thumb = c.newGpVar(kX86VarTypeGpz); \
-			c.movzx(thumb, reg_pos_ptrB(16)); \
+			c.mov(thumb, tmp); \
 			c.and_(thumb, 1); \
 			c.shl(thumb, 5); \
 			c.or_(cpu_ptr(CPSR), thumb.r64()); \
