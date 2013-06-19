@@ -63,8 +63,8 @@ typedef struct
 	VideoFilterTypeID typeID;
 	const char *typeString;
 	VideoFilterFunc filterFunction;
-	unsigned int scaleMultiply;
-	unsigned int scaleDivide;
+	size_t scaleMultiply;
+	size_t scaleDivide;
 } VideoFilterAttributes;
 
 // Attributes list of known video filters, indexed using VideoFilterTypeID.
@@ -169,25 +169,25 @@ private:
 	void SetTypeString(std::string typeString);
 	
 public:
-	VideoFilter(unsigned int srcWidth, unsigned int srcHeight, VideoFilterTypeID typeID, unsigned int numberThreads);
+	VideoFilter(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount);
 	~VideoFilter();
 	
-	bool SetSourceSize(const unsigned int width, const unsigned int height);
+	bool SetSourceSize(const size_t width, const size_t height);
 	bool ChangeFilterByID(const VideoFilterTypeID typeID);
 	bool ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr);
 	uint32_t* RunFilter();
 	
-	static void RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const unsigned int srcWidth, const unsigned int srcHeight, const VideoFilterTypeID typeID);
+	static void RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterTypeID typeID);
 	static const char* GetTypeStringByID(const VideoFilterTypeID typeID);
 	
 	VideoFilterTypeID GetTypeID();
 	const char* GetTypeString();
 	uint32_t* GetSrcBufferPtr();
 	uint32_t* GetDstBufferPtr();
-	unsigned int GetSrcWidth();
-	unsigned int GetSrcHeight();
-	unsigned int GetDstWidth();
-	unsigned int GetDstHeight();
+	size_t GetSrcWidth();
+	size_t GetSrcHeight();
+	size_t GetDstWidth();
+	size_t GetDstHeight();
 	VideoFilterParamType GetFilterParameterType(VideoFilterParamID paramID);
 	int GetFilterParameteri(VideoFilterParamID paramID);
 	unsigned int GetFilterParameterui(VideoFilterParamID paramID);
