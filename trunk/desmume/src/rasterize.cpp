@@ -1368,8 +1368,10 @@ void SoftRasterizerEngine::framebufferProcess()
 			edgeMarkColors[i].g = GFX3D_5TO6(edgeMarkColors[i].g);
 			edgeMarkColors[i].b = GFX3D_5TO6(edgeMarkColors[i].b);
 
-			// this seems to be the only thing that selectively disables edge marking
-			edgeMarkDisabled[i] = (col == 0x7FFF);
+			//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
+			//// this seems to be the only thing that selectively disables edge marking
+			//edgeMarkDisabled[i] = (col == 0x7FFF);
+			edgeMarkDisabled[i] = false;
 		}
 
 		for(int i=0,y=0;y<192;y++)
