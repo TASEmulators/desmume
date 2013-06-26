@@ -171,7 +171,7 @@ inline uint32_t RGBA8888ForceOpaque(const uint32_t color32)
 
 		destBuffer - Pointer to the destination 32-bit RGBA8888 pixel buffer.
 
-		numberPixels - The number of pixels to copy.
+		pixelCount - The number of pixels to copy.
 
 	Returns:
 		Nothing.
@@ -181,9 +181,9 @@ inline uint32_t RGBA8888ForceOpaque(const uint32_t color32)
 		Also, it is the caller's responsibility to ensure that the source and destination
 		buffers are large enough to accomodate the requested number of pixels.
  ********************************************************************************************/
-void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels)
+void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount)
 {
-	const uint32_t *__restrict__ destBufferEnd = destBuffer + numberPixels;
+	const uint32_t *__restrict__ destBufferEnd = destBuffer + pixelCount;
 	
 	while (destBuffer < destBufferEnd)
 	{
@@ -202,7 +202,7 @@ void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__
 
 		destBuffer - Pointer to the destination 32-bit RGBA8888 pixel buffer.
 
-		numberPixels - The number of pixels to copy.
+		pixelCount - The number of pixels to copy.
 
 	Returns:
 		Nothing.
@@ -212,9 +212,9 @@ void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__
 		Also, it is the caller's responsibility to ensure that the source and destination
 		buffers are large enough to accomodate the requested number of pixels.
  ********************************************************************************************/
-void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, unsigned int numberPixels)
+void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount)
 {
-	const uint32_t *__restrict__ destBufferEnd = destBuffer + numberPixels;
+	const uint32_t *__restrict__ destBufferEnd = destBuffer + pixelCount;
 	
 	while (destBuffer < destBufferEnd)
 	{

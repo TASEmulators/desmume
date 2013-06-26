@@ -53,7 +53,7 @@
 - (NSString *) internalName;
 - (NSString *) serial;
 - (NSString *) developerName;
-- (NSString *) developerNameWithCode;
+- (NSString *) developerNameAndCode;
 - (NSImage *) icon;
 - (void) handleAdvansceneDatabaseInfo;
 

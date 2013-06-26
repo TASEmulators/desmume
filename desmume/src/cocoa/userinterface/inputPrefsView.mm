@@ -427,7 +427,7 @@
 	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue);
 	const size_t inputCount = inputList.size();
 	
-	for (unsigned int i = 0; i < inputCount; i++)
+	for (size_t i = 0; i < inputCount; i++)
 	{
 		const InputAttributes &inputAttr = inputList[i];
 		char inputKey[INPUT_HANDLER_STRING_LENGTH*2];

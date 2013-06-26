@@ -45,7 +45,7 @@
 		return self;
 	}
 	
-	vf = new VideoFilter((unsigned int)theSize.width, (unsigned int)theSize.height, typeID, numThreads);
+	vf = new VideoFilter((size_t)theSize.width, (size_t)theSize.height, typeID, numThreads);
 	currentFilterType = typeID;
 	
 	return self;
@@ -61,7 +61,7 @@
 {
 	BOOL result = NO;
 	
-	bool cResult = vf->SetSourceSize((unsigned int)theSize.width, (unsigned int)theSize.height);
+	bool cResult = vf->SetSourceSize((size_t)theSize.width, (size_t)theSize.height);
 	if (cResult)
 	{
 		result = YES;

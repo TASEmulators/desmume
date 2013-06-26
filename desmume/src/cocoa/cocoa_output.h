@@ -37,8 +37,8 @@ typedef struct
 typedef struct
 {
 	NSInteger displayModeID;
-	unsigned int width;			// Measured in pixels
-	unsigned int height;		// Measured in pixels
+	size_t width;			// Measured in pixels
+	size_t height;			// Measured in pixels
 } DisplaySrcPixelAttributes;
 
 @interface CocoaDSOutput : CocoaDSThread

@@ -1842,7 +1842,7 @@
 				LastUpgradeCheck = 0460;
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 4)" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 5)" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -2781,7 +2781,7 @@
 				GCC_FAST_MATH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
-				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
@@ -2797,6 +2797,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				LD_NO_PIE = YES;
+				LLVM_VECTORIZE_LOOPS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = DeSmuME;
 				SDKROOT = macosx;
@@ -2835,7 +2836,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (XCode 4)" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 5)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

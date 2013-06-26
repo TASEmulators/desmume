@@ -36,7 +36,7 @@
 		return self;
 	}
 	
-	for (unsigned int i = 0; i < DSControllerState_StatesCount; i++)
+	for (size_t i = 0; i < DSControllerState_StatesCount; i++)
 	{
 		controllerState[i] = false;
 	}
@@ -95,7 +95,7 @@
 	const NSInteger theMicMode = micMode;
 	static bool flushedStates[DSControllerState_StatesCount] = {0};
 	
-	for (unsigned int i = 0; i < DSControllerState_StatesCount; i++)
+	for (size_t i = 0; i < DSControllerState_StatesCount; i++)
 	{
 		flushedStates[i] = controllerState[i];
 	}
