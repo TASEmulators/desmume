@@ -34,7 +34,7 @@ typedef struct
 	void *cdsController;
 	int state;
 	bool isFrameSkipEnabled;
-	unsigned int frameCount;
+	size_t frameCount;
 	unsigned int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
 	bool exitThread;

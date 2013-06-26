@@ -556,7 +556,7 @@
 		gpuData = [[NSData alloc] initWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES * 2];
 	}
 	
-	DisplaySrcPixelAttributes attr = {displayModeID, (unsigned int)displayFrameSize.width, (unsigned int)displayFrameSize.height};
+	DisplaySrcPixelAttributes attr = {displayModeID, (size_t)displayFrameSize.width, (size_t)displayFrameSize.height};
 	NSData *attributesData = [[NSData alloc] initWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)];
 	
 	NSArray *messageComponents = [[NSArray alloc] initWithObjects:gpuData, attributesData, nil];
@@ -665,15 +665,9 @@
 
 - (void) fillVideoFrameWithColor:(UInt16)colorValue
 {
-	NSData *gpuData = nil;
-	NSInteger displayModeID = [self displayMode];
-	NSSize displayFrameSize = [self frameSize];
-	size_t numberBytes = GPU_SCREEN_SIZE_BYTES * 2;
-	
-	if (displayModeID == DS_DISPLAY_TYPE_MAIN || displayModeID == DS_DISPLAY_TYPE_TOUCH)
-	{
-		numberBytes = GPU_SCREEN_SIZE_BYTES;
-	}
+	const NSInteger displayModeID = [self displayMode];
+	const NSSize displayFrameSize = [self frameSize];
+	const size_t numberBytes = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? GPU_SCREEN_SIZE_BYTES * 2 : GPU_SCREEN_SIZE_BYTES;
 	
 	UInt16 *gpuBytes = (UInt16 *)malloc(numberBytes);
 	if (gpuBytes == NULL)
@@ -683,15 +677,16 @@
 	
 	const UInt16 colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
 	memset_pattern16(gpuBytes, colorValuePattern, numberBytes);
-	gpuData = [[[NSData alloc] initWithBytes:gpuBytes length:numberBytes] autorelease];
+	NSData *gpuData = [[NSData alloc] initWithBytes:gpuBytes length:numberBytes];
 	
 	free(gpuBytes);
 	gpuBytes = nil;
 	
-	DisplaySrcPixelAttributes attr = {displayModeID, (unsigned int)displayFrameSize.width, (unsigned int)displayFrameSize.height};
+	DisplaySrcPixelAttributes attr = {displayModeID, (size_t)displayFrameSize.width, (size_t)displayFrameSize.height};
 	NSData *attributesData = [[[NSData alloc] initWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)] autorelease];
 	
 	[self handleEmuFrameProcessed:gpuData attributes:attributesData];
+	[gpuData release];
 }
 
 - (NSImage *) image

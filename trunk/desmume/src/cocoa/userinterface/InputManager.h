@@ -127,7 +127,7 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char 
 InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef);
 InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool useEightDirection);
 
-unsigned int ClearHIDQueue(const IOHIDQueueRef hidQueue);
+size_t ClearHIDQueue(const IOHIDQueueRef hidQueue);
 void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void *inSender);
 
 #pragma mark -

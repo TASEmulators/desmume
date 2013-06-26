@@ -424,7 +424,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) memAddressString
 {
-	return [NSString stringWithFormat:@"0x%08X", self.memAddress];
+	return [NSString stringWithFormat:@"0x%08X", (unsigned int)self.memAddress];
 }
 
 - (void) setMemAddressString:(NSString *)addressString
@@ -446,7 +446,7 @@ static NSImage *iconCodeBreaker = nil;
 
 - (NSString *) memAddressSixDigitString
 {
-	return [NSString stringWithFormat:@"%06X", (self.memAddress & 0x00FFFFFF)];
+	return [NSString stringWithFormat:@"%06X", (unsigned int)(self.memAddress & 0x00FFFFFF)];
 }
 
 - (void) setMemAddressSixDigitString:(NSString *)addressString

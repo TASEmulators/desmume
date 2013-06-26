@@ -407,9 +407,9 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 	bool offState = false;
 	
 	char elementCodeFourWay[4][256];
-	for (unsigned int i = 0; i < 4; i++)
+	for (size_t i = 0; i < 4; i++)
 	{
-		snprintf(elementCodeFourWay[i], 256, "0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, i);
+		snprintf(elementCodeFourWay[i], 256, "0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, (unsigned int)i);
 	}
 	
 	const char *elementNameFourWay[4] = {
@@ -419,9 +419,9 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 		"Hatswitch - Left" };
 	
 	char elementCodeEightWay[8][256];
-	for (unsigned int i = 0; i < 8; i++)
+	for (size_t i = 0; i < 8; i++)
 	{
-		snprintf(elementCodeEightWay[i], 256, "0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, i);
+		snprintf(elementCodeEightWay[i], 256, "0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, (unsigned int)i);
 	}
 	
 	const char *elementNameEightWay[8] = {
@@ -436,18 +436,18 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 	
 	if (logicalMax == 3)
 	{
-		for (unsigned int i = 0; i <= (unsigned int)logicalMax; i++)
+		for (size_t i = 0; i <= (size_t)logicalMax; i++)
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeFourWay[i], elementNameFourWay[i], (i == (unsigned int)logicalValue) ? &onState : &offState));
+			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeFourWay[i], elementNameFourWay[i], (i == (size_t)logicalValue) ? &onState : &offState));
 		}
 	}
 	else if (logicalMax == 7)
 	{
 		if (useEightDirection)
 		{
-			for (unsigned int i = 0; i <= (unsigned int)logicalMax; i++)
+			for (size_t i = 0; i <= (size_t)logicalMax; i++)
 			{
-				inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[i], elementNameEightWay[i], (i == (unsigned int)logicalValue) ? &onState : &offState));
+				inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[i], elementNameEightWay[i], (i == (size_t)logicalValue) ? &onState : &offState));
 			}
 		}
 		else
@@ -596,9 +596,9 @@ BOOL GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef)
 	return onState;
 }
 
-unsigned int ClearHIDQueue(const IOHIDQueueRef hidQueue)
+size_t ClearHIDQueue(const IOHIDQueueRef hidQueue)
 {
-	unsigned int hidInputClearCount = 0;
+	size_t hidInputClearCount = 0;
 	
 	if (hidQueue == nil)
 	{
@@ -1105,7 +1105,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	
 	const size_t inputCount = inputList->size();
 	
-	for (unsigned int i = 0; i < inputCount; i++)
+	for (size_t i = 0; i < inputCount; i++)
 	{
 		const InputAttributes &inputAttr = (*inputList)[i];
 		if (inputAttr.state != INPUT_ATTRIBUTE_STATE_ON)
@@ -1201,9 +1201,9 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 - (CommandAttributesList) generateCommandListUsingInputList:(const InputAttributesList *)inputList
 {
 	CommandAttributesList cmdList;
-	size_t inputCount = inputList->size();
+	const size_t inputCount = inputList->size();
 	
-	for (unsigned int i = 0; i < inputCount; i++)
+	for (size_t i = 0; i < inputCount; i++)
 	{
 		const InputAttributes &inputAttr = (*inputList)[i];
 		
@@ -1790,8 +1790,8 @@ InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue)
 			hidInputList = InputListFromHIDValue(hidValueRef);
 		}
 		
-		size_t hidInputCount = hidInputList.size();
-		for (unsigned int i = 0; i < hidInputCount; i++)
+		const size_t hidInputCount = hidInputList.size();
+		for (size_t i = 0; i < hidInputCount; i++)
 		{
 			if (hidInputList[i].deviceCode[0] == '\0' || hidInputList[i].elementCode[0] == '\0')
 			{
