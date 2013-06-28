@@ -87,57 +87,60 @@ extern BOOL click;
 //#define LOG_ARM9
 //#define LOG_ARM7
 
+#include "PACKED.h"
 struct NDS_header
 {
-       char     gameTile[12];
-       char     gameCode[4];
-       u16      makerCode;
-       u8       unitCode;
-       u8       deviceCode;
-       u8       cardSize;
-       u8       cardInfo[8];
-       u8       flags;
-	   u8		romversion;
-       
-       u32      ARM9src;
-       u32      ARM9exe;
-       u32      ARM9cpy;
-       u32      ARM9binSize;
-       
-       u32      ARM7src;
-       u32      ARM7exe;
-       u32      ARM7cpy;
-       u32      ARM7binSize;
-       
-       u32      FNameTblOff;
-       u32      FNameTblSize;
-       
-       u32      FATOff;
-       u32      FATSize;
-       
-       u32     ARM9OverlayOff;
-       u32     ARM9OverlaySize;
-       u32     ARM7OverlayOff;
-       u32     ARM7OverlaySize;
-       
-       u32     unknown2a;
-       u32     unknown2b;
-       
-       u32     IconOff;
-       u16     CRC16;
-       u16     ROMtimeout;
-       u32     ARM9unk;
-       u32     ARM7unk;
-       
-       u8      unknown3c[8];
-       u32     ROMSize;
-       u32     HeaderSize;
-       u8      unknown5[56];
-       u8      logo[156];
-       u16     logoCRC16;
-       u16     headerCRC16;
-       u8      reserved[160];
+	char     gameTile[12];
+	char     gameCode[4];
+	u16      makerCode;
+	u8       unitCode;
+	u8       deviceCode;
+	u8       cardSize;
+	u8       cardInfo[8];
+	u8       flags;
+	u8       romversion;
+	u8       reserved;
+
+	u32      ARM9src;
+	u32      ARM9exe;
+	u32      ARM9cpy;
+	u32      ARM9binSize;
+
+	u32      ARM7src;
+	u32      ARM7exe;
+	u32      ARM7cpy;
+	u32      ARM7binSize;
+
+	u32      FNameTblOff;
+	u32      FNameTblSize;
+
+	u32      FATOff;
+	u32      FATSize;
+
+	u32      ARM9OverlayOff;
+	u32      ARM9OverlaySize;
+	u32      ARM7OverlayOff;
+	u32      ARM7OverlaySize;
+
+	u32      unknown2a;
+	u32      unknown2b;
+
+	u32      IconOff;
+	u16      CRC16;
+	u16      ROMtimeout;
+	u32      ARM9unk;
+	u32      ARM7unk;
+
+	u8       unknown3c[8];
+	u32      ROMSize;
+	u32      HeaderSize;
+	u8       unknown5[56]; //"PASS" is contained within here?
+	u8       logo[156];
+	u16      logoCRC16;
+	u16      headerCRC16;
+	u8       unknown6[160];
 };
+#include "PACKED_END.h"
 
 extern void debug();
 void emu_halt();

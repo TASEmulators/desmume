@@ -205,46 +205,58 @@ NDS_header * NDS_getROMHeader(void)
 	if(MMU.CART_ROM == MMU.UNUSED_RAM) return NULL;
 	NDS_header * header = new NDS_header;
 
-	memcpy(header->gameTile, MMU.CART_ROM, 12);
-	memcpy(header->gameCode, MMU.CART_ROM + 12, 4);
-	header->makerCode = T1ReadWord(MMU.CART_ROM, 16);
-	header->unitCode = MMU.CART_ROM[18];
-	header->deviceCode = MMU.CART_ROM[19];
-	header->cardSize = MMU.CART_ROM[20];
-	memcpy(header->cardInfo, MMU.CART_ROM + 21, 8);
-	header->flags = MMU.CART_ROM[29];
-	header->romversion = MMU.CART_ROM[30];
-	header->ARM9src = T1ReadLong(MMU.CART_ROM, 32);
-	header->ARM9exe = T1ReadLong(MMU.CART_ROM, 36);
-	header->ARM9cpy = T1ReadLong(MMU.CART_ROM, 40);
-	header->ARM9binSize = T1ReadLong(MMU.CART_ROM, 44);
-	header->ARM7src = T1ReadLong(MMU.CART_ROM, 48);
-	header->ARM7exe = T1ReadLong(MMU.CART_ROM, 52);
-	header->ARM7cpy = T1ReadLong(MMU.CART_ROM, 56);
-	header->ARM7binSize = T1ReadLong(MMU.CART_ROM, 60);
-	header->FNameTblOff = T1ReadLong(MMU.CART_ROM, 64);
-	header->FNameTblSize = T1ReadLong(MMU.CART_ROM, 68);
-	header->FATOff = T1ReadLong(MMU.CART_ROM, 72);
-	header->FATSize = T1ReadLong(MMU.CART_ROM, 76);
-	header->ARM9OverlayOff = T1ReadLong(MMU.CART_ROM, 80);
-	header->ARM9OverlaySize = T1ReadLong(MMU.CART_ROM, 84);
-	header->ARM7OverlayOff = T1ReadLong(MMU.CART_ROM, 88);
-	header->ARM7OverlaySize = T1ReadLong(MMU.CART_ROM, 92);
-	header->unknown2a = T1ReadLong(MMU.CART_ROM, 96);
-	header->unknown2b = T1ReadLong(MMU.CART_ROM, 100);
-	header->IconOff = T1ReadLong(MMU.CART_ROM, 104);
-	header->CRC16 = T1ReadWord(MMU.CART_ROM, 108);
-	header->ROMtimeout = T1ReadWord(MMU.CART_ROM, 110);
-	header->ARM9unk = T1ReadLong(MMU.CART_ROM, 112);
-	header->ARM7unk = T1ReadLong(MMU.CART_ROM, 116);
-	memcpy(header->unknown3c, MMU.CART_ROM + 120, 8);
-	header->ROMSize = T1ReadLong(MMU.CART_ROM, 128);
-	header->HeaderSize = T1ReadLong(MMU.CART_ROM, 132);
-	memcpy(header->unknown5, MMU.CART_ROM + 136, 56);
-	memcpy(header->logo, MMU.CART_ROM + 192, 156);
-	header->logoCRC16 = T1ReadWord(MMU.CART_ROM, 348);
-	header->headerCRC16 = T1ReadWord(MMU.CART_ROM, 350);
-	memcpy(header->reserved, MMU.CART_ROM + 352, min(160, (int)gameInfo.romsize - 352));
+	//copy all data blindly, but not entirely blindly.. in case the header is smaller than normal, we dont want to read junk data
+	//(we memset to 0xFF since thats likely to be what gets read from the invalid area)
+	memset(header,0xFF,sizeof(NDS_header));
+	int todo = std::min(gameInfo.romsize,sizeof(NDS_header));
+	memcpy(header,MMU.CART_ROM,todo);
+
+	//endian swap necessary fields. It would be better if we made accessors for these. I wonder if you could make a macro for a field accessor that would take the bitsize and do the swap on the fly
+	struct FieldSwap {
+		size_t offset;
+		int bytes;
+	};
+
+	static const FieldSwap fieldSwaps[] = {
+		{ offsetof(NDS_header,makerCode), 2},
+
+		{ offsetof(NDS_header,ARM9src), 4},
+		{ offsetof(NDS_header,ARM9exe), 4},
+		{ offsetof(NDS_header,ARM9cpy), 4},
+		{ offsetof(NDS_header,ARM7src), 4},
+		{ offsetof(NDS_header,ARM7exe), 4},
+		{ offsetof(NDS_header,ARM7cpy), 4},
+		{ offsetof(NDS_header,ARM7binSize), 4},
+		{ offsetof(NDS_header,FNameTblOff), 4},
+		{ offsetof(NDS_header,FNameTblSize), 4},
+		{ offsetof(NDS_header,FATOff), 4},
+		{ offsetof(NDS_header,FATSize), 4},
+		{ offsetof(NDS_header,ARM9OverlayOff), 4},
+		{ offsetof(NDS_header,ARM9OverlaySize), 4},
+		{ offsetof(NDS_header,ARM7OverlayOff), 4},
+		{ offsetof(NDS_header,ARM7OverlaySize), 4},
+		{ offsetof(NDS_header,unknown2a), 4},
+		{ offsetof(NDS_header,unknown2b), 4},
+		{ offsetof(NDS_header,IconOff), 4},
+
+		{ offsetof(NDS_header,CRC16), 2},
+		{ offsetof(NDS_header,ROMtimeout), 2},
+		
+		{ offsetof(NDS_header,ARM9unk), 4},
+		{ offsetof(NDS_header,ARM7unk), 4},
+		{ offsetof(NDS_header,ROMSize), 4},
+		{ offsetof(NDS_header,HeaderSize), 4},
+
+		{ offsetof(NDS_header,logoCRC16), 2},
+		{ offsetof(NDS_header,headerCRC16), 2},
+	};
+
+	for(int i=0;i<ARRAY_SIZE(fieldSwaps);i++)
+		switch(fieldSwaps[i].bytes)
+		{
+		case 2: HostWriteWord((u8*)header,fieldSwaps[i].offset,T1ReadWord(header,fieldSwaps[i].offset));
+		case 4: HostWriteLong((u8*)header,fieldSwaps[i].offset,T1ReadLong((u8*)header,fieldSwaps[i].offset));
+		}
 
 	return header;
 } 
