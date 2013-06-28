@@ -41,6 +41,7 @@ public:
 		: decode_len(0)
 		, decoded(NULL)
 		, suspectedInvalid(false)
+		, assumedInvalid(false)
 		, deleteCallback(NULL)
 		, cacheFormat(TexFormat_None)
 	{}
@@ -52,7 +53,10 @@ public:
 	u32 mode;
 	u8* decoded; //decoded texture data
 	bool suspectedInvalid;
+	bool assumedInvalid;
 	TTexCacheItemMultimap::iterator iterator;
+
+	int getTextureMode() const { return (int)((texformat>>26)&0x07); }
 
 	u32 texformat, texpal;
 	u32 sizeX, sizeY;
