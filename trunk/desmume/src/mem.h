@@ -175,6 +175,12 @@ static INLINE void HostWriteWord(u8* const mem, const u32 addr, const u16 val)
    *((u16 *) (mem + addr)) = val;
 }
 
+
+static INLINE void HostWriteLong(u8* const mem, const u32 addr, const u32 val)
+{
+   *((u32 *) (mem + addr)) = val;
+}
+
 static INLINE void HostWriteTwoWords(u8* const mem, const u32 addr, const u32 val)
 {
 #ifdef WORDS_BIGENDIAN
