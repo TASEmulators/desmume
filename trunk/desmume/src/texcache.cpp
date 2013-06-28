@@ -156,7 +156,7 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 }
 
 //creates a MemSpan in texture palette memory
-static MemSpan MemSpan_TexPalette(u32 ofs, u32 len) 
+static MemSpan MemSpan_TexPalette(u32 ofs, u32 len, bool silent) 
 {
 	MemSpan ret;
 	ret.size = len;
@@ -165,7 +165,7 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 		MemSpan::Item &curr = ret.items[ret.numItems++];
 		curr.start = ofs&0x3FFF;
 		u32 slot = (ofs>>14)&7; //this masks to 8 slots, but there are really only 6
-		if(slot>5) {
+		if(slot>5 && !silent) {
 			PROGINFO("Texture palette overruns texture memory. Wrapping at palette slot 0.\n");
 			slot -= 5;
 		}
@@ -179,7 +179,7 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 		u8* ptr = MMU.texInfo.texPalSlot[slot];
 		
 		//TODO - dont alert if the masterbrightnesses are max or min
-		if(ptr == MMU.blank_memory) {
+		if(ptr == MMU.blank_memory && !silent) {
 			PROGINFO("Tried to reference unmapped texture palette memory: 16k slot #%d\n",slot);
 		}
 		curr.ptr = ptr + curr.start;
@@ -205,7 +205,9 @@ class TexCache
 public:
 	TexCache()
 		: cache_size(0)
-	{}
+	{
+		memset(paletteDump,0,sizeof(paletteDump));
+	}
 
 	TTexCacheItemMultimap index;
 
@@ -271,7 +273,7 @@ public:
 		int palSize = palSizes[textureMode];
 		int texSize = (imageSize*texSizes[textureMode])>>2; //shifted because the texSizes multiplier is fixed point
 		MemSpan ms = MemSpan_TexMem((format&0xFFFF)<<3,texSize);
-		MemSpan mspal = MemSpan_TexPalette(paletteAddress,palSize*2);
+		MemSpan mspal = MemSpan_TexPalette(paletteAddress,palSize*2,false);
 
 		//determine the location for 4x4 index data
 		u32 indexBase;
@@ -318,8 +320,11 @@ public:
 			//TODO - this could be done at the entire cache level instead of checking repeatedly
 			if(curr->cacheFormat != TEXFORMAT) goto REJECT;
 
+			//if the texture is assumed invalid, reject it
+			if(curr->assumedInvalid) goto REJECT; 
+
 			//the texture matches params, but isnt suspected invalid. accept it.
-			if (!curr->suspectedInvalid) return curr;
+			if(!curr->suspectedInvalid) return curr;
 
 			//we suspect the texture may be invalid. we need to do a byte-for-byte comparison to re-establish that it is valid:
 
@@ -654,10 +659,33 @@ public:
 		return newitem;
 	} //scan()
 
+	static const int PALETTE_DUMP_SIZE = (64+16+16)*1024;
+	u8 paletteDump[PALETTE_DUMP_SIZE];
+
 	void invalidate()
 	{
+		//check whether the palette memory changed
+		//TODO - we should handle this instead by setting dirty flags in the vram memory mapping and noting whether palette memory was dirty.
+		//but this will work for now
+		MemSpan mspal = MemSpan_TexPalette(0,PALETTE_DUMP_SIZE,true);
+		bool paletteDirty = mspal.memcmp(paletteDump);
+		if(paletteDirty)
+		{
+			mspal.dump(paletteDump);
+		}
+
 		for(TTexCacheItemMultimap::iterator it(index.begin()); it != index.end(); ++it)
+		{
 			it->second->suspectedInvalid = true;
+			
+			//when the palette changes, we assume all 4x4 textures are dirty.
+			//this is because each 4x4 item doesnt carry along with it a copy of the entire palette, for verification
+			//instead, we just use the one paletteDump for verifying of all 4x4 textures; and if paletteDirty is set, verification has failed
+			if(it->second->getTextureMode() == TEXMODE_4X4 && paletteDirty)
+			{
+				it->second->assumedInvalid = true;
+			}
+		}
 	}
 
 	void evict(u32 target = kMaxCacheSize)
