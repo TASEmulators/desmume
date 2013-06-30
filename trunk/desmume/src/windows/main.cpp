@@ -686,10 +686,14 @@ void ScaleScreen(float factor, bool user)
 		}
 		// fix for wrong gap
 
-		if(defh*w1x < h1x*defw)
-			defh = defw*h1x/w1x;
-		else if(defw*h1x < w1x*defh)
-			defw = defh*w1x/h1x;
+		//correct aspect ratio if that option's been turned on
+		if(ForceRatio)
+		{
+			if(defh*w1x < h1x*defw)
+				defh = defw*h1x/w1x;
+			else if(defw*h1x < w1x*defh)
+				defw = defh*w1x/h1x;
+		}
 
 		MainWindow->setClientSize(defw, defh);
 	}
@@ -1189,7 +1193,7 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.left = ptClient.x;
 		MainScreenRect.top = ptClient.y;
 		ptClient.x = (rc.left + oneScreenHeight);
-		ptClient.y = (rc.top + oneScreenWidth);
+		ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
@@ -1201,7 +1205,7 @@ void UpdateWndRects(HWND hwnd)
 		SubScreenRect.left = ptClient.x;
 		SubScreenRect.top = ptClient.y;
 		ptClient.x = (rc.left + oneScreenHeight + oneScreenHeight);
-		ptClient.y = (rc.top + oneScreenWidth);
+		ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.right = ptClient.x;
 		SubScreenRect.bottom = ptClient.y;
