@@ -208,7 +208,7 @@ NDS_header * NDS_getROMHeader(void)
 	//copy all data blindly, but not entirely blindly.. in case the header is smaller than normal, we dont want to read junk data
 	//(we memset to 0xFF since thats likely to be what gets read from the invalid area)
 	memset(header,0xFF,sizeof(NDS_header));
-	int todo = std::min(gameInfo.romsize,sizeof(NDS_header));
+	int todo = std::min<u32>(gameInfo.romsize,sizeof(NDS_header));
 	memcpy(header,MMU.CART_ROM,todo);
 
 	//endian swap necessary fields. It would be better if we made accessors for these. I wonder if you could make a macro for a field accessor that would take the bitsize and do the swap on the fly
