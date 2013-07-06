@@ -211,6 +211,11 @@ public:
 		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 		currentimageformat	= (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
 		r4Format = (R4Format)GetPrivateProfileInt(SECTION, R4FORMATKEY, R4_CHEAT_DAT, IniName);
+		if ((r4Format != R4_CHEAT_DAT) && (r4Format != R4_USRCHEAT_DAT))
+		{
+			r4Format = R4_USRCHEAT_DAT;
+			WritePrivateProfileInt(SECTION, R4FORMATKEY, r4Format, IniName);
+		}
 #endif
 	/*
 		needsSaving		= GetPrivateProfileInt(SECTION, NEEDSSAVINGKEY, TRUE, IniName);
