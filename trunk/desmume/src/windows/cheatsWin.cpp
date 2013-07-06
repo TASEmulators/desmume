@@ -1487,7 +1487,7 @@ bool CheatsExportDialog(HWND hwnd)
 	{
 		char buf2[512] = {0};
 		if (cheatsExport->getErrorCode() == 1)
-			sprintf(buf2, "Error loading cheats database. File not found\n\"%s\"\nCheck your path (Menu->Config->Path Settings->\"Cheats\")\n\nYou can download it from http://cheats.gbatemp.net/", buf);
+			sprintf(buf2, "Error loading cheats database. File not found\n\"%s\"\nCheck your path (Menu->Config->Path Settings->\"Cheats\")\n\nYou can download it from http://www.codemasters-project.net/vb/forumdisplay.php?44-Nintendo-DS", buf);
 		else
 			if (cheatsExport->getErrorCode() == 2)
 				sprintf(buf2, "File \"%s\" is not R4 cheats database.\nWrong file format!", buf);
