@@ -21,7 +21,6 @@
 
 // the count of bytes copied from the firmware into memory 
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
-
 #define FW_CONFIG_FILE_EXT "dfc"
 
 class CFIRMWARE
@@ -31,14 +30,6 @@ private:
 	u8		*tmp_data7;
 	u32		size9, size7;
 
-	u32		keyBuf[0x412];
-	u32		keyCode[3];
-
-	bool	getKeyBuf();
-	void	crypt64BitUp(u32 *ptr);
-	void	crypt64BitDown(u32 *ptr);
-	void	applyKeycode(u32 modulo);
-	bool	initKeycode(u32 idCode, int level, u32 modulo);
 	u16		getBootCodeCRC16();
 	u32		decrypt(const u8 *in, u8* &out);
 	u32		decompress(const u8 *in, u8* &out);

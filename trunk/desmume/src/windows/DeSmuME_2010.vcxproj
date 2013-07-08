@@ -394,6 +394,7 @@
     <ClCompile Include="..\Disassembler.cpp" />
     <ClCompile Include="..\driver.cpp" />
     <ClCompile Include="..\emufile.cpp" />
+    <ClCompile Include="..\encrypt.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
     <ClCompile Include="..\filter\2xsai.cpp" />
     <ClCompile Include="..\filter\bilinear.cpp" />
@@ -660,6 +661,7 @@
     <ClInclude Include="..\driver.h" />
     <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\emufile.h" />
+    <ClInclude Include="..\encrypt.h" />
     <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\FIFO.h" />
     <ClInclude Include="..\filter\filter.h" />
