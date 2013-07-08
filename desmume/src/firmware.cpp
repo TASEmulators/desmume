@@ -18,101 +18,9 @@
 #include "firmware.h"
 #include "NDSSystem.h"
 #include "path.h"
+#include "encrypt.h"
 
-#define DWNUM(i) ((i) >> 2)
-
-bool CFIRMWARE::getKeyBuf()
-{
-	FILE *file = fopen(CommonSettings.ARM7BIOS, "rb");
-	if (!file) return false;
-
-	fseek(file, 0x30, SEEK_SET);
-	size_t res = fread(keyBuf, 4, 0x412, file);
-	fclose(file);
-	return (res == 0x412);
-}
-
-void CFIRMWARE::crypt64BitUp(u32 *ptr)
-{
-	u32 Y = ptr[0];
-	u32 X = ptr[1];
-
-	for(u32 i = 0x00; i <= 0x0F; i++)
-	{
-		u32 Z = (keyBuf[i] ^ X);
-		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
-		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
-		X = (keyBuf[DWNUM(0x848 + (((Z >> 8) & 0xFF) << 2))] ^ X);
-		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
-		X = (Y ^ X);
-		Y = Z;
-	}
-
-	ptr[0] = (X ^ keyBuf[DWNUM(0x40)]);
-	ptr[1] = (Y ^ keyBuf[DWNUM(0x44)]);
-}
-
-void CFIRMWARE::crypt64BitDown(u32 *ptr)
-{
-	u32 Y = ptr[0];
-	u32 X = ptr[1];
-
-	for(u32 i = 0x11; i >= 0x02; i--)
-	{
-		u32 Z = (keyBuf[i] ^ X);
-		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
-		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
-		X = (keyBuf[DWNUM(0x848 + (((Z >> 8)  & 0xFF) << 2))] ^ X);
-		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
-		X = (Y ^ X);
-		Y = Z;
-	}
-
-	ptr[0] = (X ^ keyBuf[DWNUM(0x04)]);
-	ptr[1] = (Y ^ keyBuf[DWNUM(0x00)]);
-}
-
-#define bswap32(val) (((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24))
-void CFIRMWARE::applyKeycode(u32 modulo)
-{
-	crypt64BitUp(&keyCode[1]);
-	crypt64BitUp(&keyCode[0]);
-
-	u32 scratch[2] = {0x00000000, 0x00000000};
-
-	for(u32 i = 0; i <= 0x44; i += 4)
-	{
-		keyBuf[DWNUM(i)] = (keyBuf[DWNUM(i)] ^ bswap32(keyCode[DWNUM(i % modulo)]));
-	}
-
-	for(u32 i = 0; i <= 0x1040; i += 8)
-	{
-		crypt64BitUp(scratch);
-		keyBuf[DWNUM(i)] = scratch[1];
-		keyBuf[DWNUM(i+4)] = scratch[0];
-	}
-}
-#undef bswap32
-
-bool CFIRMWARE::initKeycode(u32 idCode, int level, u32 modulo)
-{
-	if(getKeyBuf() == FALSE)
-		return FALSE;
-
-	keyCode[0] = idCode;
-	keyCode[1] = (idCode >> 1);
-	keyCode[2] = (idCode << 1);
-
-	if(level >= 1) applyKeycode(modulo);
-	if(level >= 2) applyKeycode(modulo);
-
-	keyCode[1] <<= 1;
-	keyCode[2] >>= 1;
-
-	if(level >= 3) applyKeycode(modulo);
-
-	return TRUE;
-}
+static _KEY1	enc(&MMU.ARM7_BIOS[0x0030]);
 
 u16 CFIRMWARE::getBootCodeCRC16()
 {
@@ -164,7 +72,7 @@ u32 CFIRMWARE::decrypt(const u8 *in, u8* &out)
 	u16 data = 0;
 
 	memcpy(curBlock, in, 8);
-	crypt64BitDown(curBlock);
+	enc.decrypt(curBlock);
 	blockSize = (curBlock[0] >> 8);
 
 	if (blockSize == 0) return (0);
@@ -181,7 +89,7 @@ u32 CFIRMWARE::decrypt(const u8 *in, u8* &out)
 		if((xIn % 8) == 0)
 		{
 			memcpy(curBlock, in + xIn, 8);
-			crypt64BitDown(curBlock);
+			enc.decrypt(curBlock);
 		}
 
 		for(i = 0; i < 8; i++)
@@ -193,14 +101,14 @@ u32 CFIRMWARE::decrypt(const u8 *in, u8* &out)
 				if((xIn % 8) == 0)
 				{
 					memcpy(curBlock, in + xIn, 8);
-					crypt64BitDown(curBlock);
+					enc.decrypt(curBlock);
 				}
 				data |= T1ReadByte((u8*)curBlock, (xIn % 8));
 				xIn++;
 				if((xIn % 8) == 0)
 				{
 					memcpy(curBlock, in + xIn, 8);
-					crypt64BitDown(curBlock);
+					enc.decrypt(curBlock);
 				}
 
 				len = (data >> 12) + 3;
@@ -225,7 +133,7 @@ u32 CFIRMWARE::decrypt(const u8 *in, u8* &out)
 				if((xIn % 8) == 0)
 				{
 					memcpy(curBlock, in + xIn, 8);
-					crypt64BitDown(curBlock);
+					enc.decrypt(curBlock);
 				}
 
 				xLen--;
@@ -383,6 +291,15 @@ bool CFIRMWARE::load()
 		return false;
 	}
 
+#ifdef _NEW_BOOT
+	if (CommonSettings.BootFromFirmware)
+	{
+		memcpy(MMU.fw.data, data, size);
+		MMU.fw.size = size;
+		return true;
+	}
+#endif
+
 	shift1 = ((header.shift_amounts >> 0) & 0x07);
 	shift2 = ((header.shift_amounts >> 3) & 0x07);
 	shift3 = ((header.shift_amounts >> 6) & 0x07);
@@ -400,15 +317,10 @@ bool CFIRMWARE::load()
 	ARM9bootAddr = part1ram;
 	ARM7bootAddr = part2ram;
 
-	if(initKeycode(header.fw_identifier, 1, 0xC) == FALSE)
-	{
-		delete [] data;
-		fclose(fp);
-		return false;
-	}
+	enc.init(header.fw_identifier, 1, 0xC);
 
 #if 0
-	crypt64BitDown((u32*)&data[0x18]);
+	enc.applyKeycode((u32*)&data[0x18]);
 #else
 	// fix touch coords
 	data[0x18] = 0x00;
@@ -422,12 +334,7 @@ bool CFIRMWARE::load()
 	data[0x1F] = 0x00;
 #endif
 
-	if(initKeycode(header.fw_identifier, 2, 0xC) == FALSE)
-	{
-		delete [] data;
-		fclose(fp);
-		return false;
-	}
+	enc.init(header.fw_identifier, 2, 0xC);
 
 	size9 = decrypt(data + part1addr, tmp_data9);
 	if (!tmp_data9)

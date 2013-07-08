@@ -731,6 +731,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\encrypt.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\encrypt.h"
+				>
+			</File>
+			<File
 				RelativePath="..\fat.h"
 				>
 			</File>

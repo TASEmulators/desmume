@@ -768,6 +768,13 @@
     <ClCompile Include="sndxa2.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zDecode.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zExtract.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zHeader.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zItem.c" />
+    <ClCompile Include="..\encrypt.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1295,6 +1302,78 @@
     <ClInclude Include="sndxa2.h">
       <Filter>Windows</Filter>
     </ClInclude>
+    <ClInclude Include="..\emufat_types.h" />
+    <ClInclude Include="..\utils\emufat_types.h" />
+    <ClInclude Include="FEX_Interface.h" />
+    <ClInclude Include="File_Extractor\7z_C\7z.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zAlloc.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zBuf.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zCrc.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zDecode.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zExtract.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zFile.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zHeader.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zIn.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zItem.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zTypes.h" />
+    <ClInclude Include="File_Extractor\7z_C\7zVersion.h" />
+    <ClInclude Include="File_Extractor\7z_C\Alloc.h" />
+    <ClInclude Include="File_Extractor\7z_C\Bcj2.h" />
+    <ClInclude Include="File_Extractor\7z_C\Bra.h" />
+    <ClInclude Include="File_Extractor\7z_C\CpuArch.h" />
+    <ClInclude Include="File_Extractor\7z_C\Delta.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzFind.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzFindMt.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzHash.h" />
+    <ClInclude Include="File_Extractor\7z_C\Lzma2Dec.h" />
+    <ClInclude Include="File_Extractor\7z_C\Lzma2Enc.h" />
+    <ClInclude Include="File_Extractor\7z_C\Lzma86.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaDec.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaEnc.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaLib.h" />
+    <ClInclude Include="File_Extractor\7z_C\LzmaTypes.h" />
+    <ClInclude Include="File_Extractor\7z_C\MtCoder.h" />
+    <ClInclude Include="File_Extractor\7z_C\Ppmd.h" />
+    <ClInclude Include="File_Extractor\7z_C\Ppmd7.h" />
+    <ClInclude Include="File_Extractor\7z_C\RotateDefs.h" />
+    <ClInclude Include="File_Extractor\7z_C\Threads.h" />
+    <ClInclude Include="File_Extractor\7z_C\Types.h" />
+    <ClInclude Include="File_Extractor\fex\Binary_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_common.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_config.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_endian.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_errors.h" />
+    <ClInclude Include="File_Extractor\fex\blargg_source.h" />
+    <ClInclude Include="File_Extractor\fex\Data_Reader.h" />
+    <ClInclude Include="File_Extractor\fex\fex.h" />
+    <ClInclude Include="File_Extractor\fex\File_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Gzip_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Gzip_Reader.h" />
+    <ClInclude Include="File_Extractor\fex\Rar_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Zip7_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Zip_Extractor.h" />
+    <ClInclude Include="File_Extractor\fex\Zlib_Inflater.h" />
+    <ClInclude Include="File_Extractor\unrar\archive.hpp" />
+    <ClInclude Include="File_Extractor\unrar\array.hpp" />
+    <ClInclude Include="File_Extractor\unrar\coder.hpp" />
+    <ClInclude Include="File_Extractor\unrar\compress.hpp" />
+    <ClInclude Include="File_Extractor\unrar\encname.hpp" />
+    <ClInclude Include="File_Extractor\unrar\getbits.hpp" />
+    <ClInclude Include="File_Extractor\unrar\headers.hpp" />
+    <ClInclude Include="File_Extractor\unrar\model.hpp" />
+    <ClInclude Include="File_Extractor\unrar\rar.hpp" />
+    <ClInclude Include="File_Extractor\unrar\rarvm.hpp" />
+    <ClInclude Include="File_Extractor\unrar\rawread.hpp" />
+    <ClInclude Include="File_Extractor\unrar\suballoc.hpp" />
+    <ClInclude Include="File_Extractor\unrar\unicode.hpp" />
+    <ClInclude Include="File_Extractor\unrar\unpack.hpp" />
+    <ClInclude Include="File_Extractor\unrar\unrar.h" />
+    <ClInclude Include="filter\hq2x.h" />
+    <ClInclude Include="filter\interp.h" />
+    <ClInclude Include="filter\lq2x.h" />
+    <ClInclude Include="..\encrypt.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\instruction_tabdef.inc">
@@ -1306,27 +1385,18 @@
     <None Include="..\filter\hq4x.dat">
       <Filter>Core\filter</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\utils\AsmJit\COPYING.txt">
-      <Filter>Core\utils\AsmJit</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="bitmap1.bmp">
-      <Filter>Windows\resources</Filter>
-    </Image>
-    <Image Include="DeSmuME.ico">
-      <Filter>Windows\resources</Filter>
-    </Image>
-    <Image Include="bitmaps\IDB_FRAMEADVANCE.bmp" />
-    <Image Include="bitmaps\IDB_OPEN.bmp" />
-    <Image Include="bitmaps\IDB_PAUSE.bmp" />
-    <Image Include="bitmaps\IDB_PLAY.bmp" />
-    <Image Include="bitmaps\IDB_RESET.bmp" />
-    <Image Include="bitmaps\IDB_ROTATECCW.bmp" />
-    <Image Include="bitmaps\IDB_ROTATECW.bmp" />
-    <Image Include="bitmaps\IDB_STOP.bmp" />
+    <None Include="..\utils\AsmJit\COPYING.txt" />
+    <None Include="bitmap1.bmp" />
+    <None Include="DeSmuME.ico" />
+    <None Include="File_Extractor\7z_C\7zC.txt" />
+    <None Include="File_Extractor\7z_C\changes.txt" />
+    <None Include="File_Extractor\7z_C\lzma.txt" />
+    <None Include="File_Extractor\7z_C\readme.txt" />
+    <None Include="File_Extractor\unrar\changes.txt" />
+    <None Include="File_Extractor\unrar\license.txt" />
+    <None Include="File_Extractor\unrar\readme.txt" />
+    <None Include="File_Extractor\unrar\technote.txt" />
+    <None Include="File_Extractor\unrar\whatsnew.txt" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">
@@ -1338,9 +1408,6 @@
       <Filter>Windows\libs</Filter>
     </CustomBuild>
     <CustomBuild Include="glib-2.20.1\glib-2.20.1.7z">
-      <Filter>Windows\libs</Filter>
-    </CustomBuild>
-    <CustomBuild Include="libelf_libdwarf\libelf_libdwarf.7z">
       <Filter>Windows\libs</Filter>
     </CustomBuild>
     <CustomBuild Include="lua\lua.7z">

@@ -780,6 +780,9 @@
     <ClCompile Include="sndxa2.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
+    <ClCompile Include="..\encrypt.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1505,6 +1508,9 @@
     </ClInclude>
     <ClInclude Include="sndxa2.h">
       <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\encrypt.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
