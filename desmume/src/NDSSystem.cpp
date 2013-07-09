@@ -2639,9 +2639,6 @@ void NDS_Reset()
 	}
 
 
-	// Write the header checksum to memory (the firmware needs it to see the cart)
-	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
-
 	//--------------------------------
 	//setup the homebrew argv
 	//this is useful for nitrofs apps which are emulating themselves via cflash
