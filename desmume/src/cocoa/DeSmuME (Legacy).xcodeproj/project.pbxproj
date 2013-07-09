@@ -764,6 +764,13 @@
 		AB46781814ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
 		AB46781914ABD4890002FF94 /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */; };
 		AB4F981716C30117000E90EA /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB06CD2E135B8ACE00E977B3 /* OGLRender.cpp */; };
+		AB52F9EB178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
+		AB52F9EC178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
+		AB52F9ED178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
+		AB52F9EE178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
+		AB52F9EF178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
+		AB52F9F0178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
+		AB52F9F1178CA82200FD6E89 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB52F9EA178CA82200FD6E89 /* encrypt.cpp */; };
 		AB73B12B14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */; };
 		AB73B12C14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12A14BDA01C00F49C92 /* emuWindowDelegate_legacy.mm */; };
 		AB73B12D14BDA01C00F49C92 /* appDelegate_legacy.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */; };
@@ -1324,6 +1331,8 @@
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		AB46780914ABD4890002FF94 /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
+		AB52F9E9178CA82200FD6E89 /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = encrypt.h; path = ../encrypt.h; sourceTree = SOURCE_ROOT; };
+		AB52F9EA178CA82200FD6E89 /* encrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = encrypt.cpp; path = ../encrypt.cpp; sourceTree = SOURCE_ROOT; };
 		AB73B12714BDA01C00F49C92 /* appDelegate_legacy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = appDelegate_legacy.h; path = userinterface/appDelegate_legacy.h; sourceTree = "<group>"; };
 		AB73B12814BDA01C00F49C92 /* emuWindowDelegate_legacy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emuWindowDelegate_legacy.h; path = userinterface/emuWindowDelegate_legacy.h; sourceTree = "<group>"; };
 		AB73B12914BDA01C00F49C92 /* appDelegate_legacy.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = appDelegate_legacy.mm; path = userinterface/appDelegate_legacy.mm; sourceTree = "<group>"; };
@@ -1650,6 +1659,7 @@
 				AB06CD1A135B8ACE00E977B3 /* Disassembler.cpp */,
 				AB06CD1B135B8ACE00E977B3 /* driver.cpp */,
 				AB06CD1C135B8ACE00E977B3 /* emufile.cpp */,
+				AB52F9EA178CA82200FD6E89 /* encrypt.cpp */,
 				AB06CD1D135B8ACE00E977B3 /* FIFO.cpp */,
 				AB06CD1E135B8ACE00E977B3 /* firmware.cpp */,
 				AB06CD1F135B8ACE00E977B3 /* fs-linux.cpp */,
@@ -1699,6 +1709,7 @@
 				AB06CCE7135B8ACE00E977B3 /* driver.h */,
 				AB06CCE9135B8ACE00E977B3 /* emufile.h */,
 				AB06CCE8135B8ACE00E977B3 /* emufile_types.h */,
+				AB52F9E9178CA82200FD6E89 /* encrypt.h */,
 				AB06CCEA135B8ACE00E977B3 /* FIFO.h */,
 				AB06CCEB135B8ACE00E977B3 /* firmware.h */,
 				AB06CCEC135B8ACE00E977B3 /* fs.h */,
@@ -2871,6 +2882,7 @@
 				ABF50C04169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50C05169F61540018C08D /* x86util.cpp in Sources */,
 				AB2F5B051704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9F0178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3012,6 +3024,7 @@
 				ABF50C5B169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50C5C169F61540018C08D /* x86util.cpp in Sources */,
 				AB2F5B081704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9EE178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3153,6 +3166,7 @@
 				ABF50BCA169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50BCB169F61540018C08D /* x86util.cpp in Sources */,
 				AB2F5B031704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9EC178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3264,6 +3278,7 @@
 				AB18153E15D212B4007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB1816B615D216EC007A6CC3 /* OGLRender.cpp in Sources */,
 				AB2F5B071704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9EB178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3375,6 +3390,7 @@
 				AB1815DA15D21469007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB4F981716C30117000E90EA /* OGLRender.cpp in Sources */,
 				AB2F5B091704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9ED178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3496,6 +3512,7 @@
 				AB18168015D214F2007A6CC3 /* ringbuffer.cpp in Sources */,
 				AB1816B815D216F5007A6CC3 /* OGLRender.cpp in Sources */,
 				AB2F5B041704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9F1178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3637,6 +3654,7 @@
 				ABF50C21169F61540018C08D /* x86operand.cpp in Sources */,
 				ABF50C22169F61540018C08D /* x86util.cpp in Sources */,
 				AB2F5B061704EE0100E28885 /* utilities.c in Sources */,
+				AB52F9EF178CA82200FD6E89 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

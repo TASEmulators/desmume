@@ -18,16 +18,17 @@
 #ifndef _ENCRYPT_H_
 #define _ENCRYPT_H_
 #include "types.h"
+#include <string.h>
 
 struct _KEY1
 {
-	_KEY1(u8 *keyBufPtr)
+	_KEY1(u8 *inKeyBufPtr)
 	{
 		if (keyBuf) delete keyBuf;
 		keyBuf = new u32 [0x1048 / sizeof(u32)];
 		memset(keyBuf, 0x00, 0x1048);
 		memset(&keyCode[0], 0, sizeof(keyCode));
-		this->keyBufPtr = keyBufPtr;
+		this->keyBufPtr = inKeyBufPtr;
 	}
 
 	~_KEY1()
@@ -51,8 +52,8 @@ struct _KEY1
 
 struct _KEY2
 {
-	_KEY2() :	seed0(0x58C56DE0E8U), 
-					seed1(0x5C879B9B05U)
+	_KEY2() :	seed0(0x58C56DE0E8ULL), 
+					seed1(0x5C879B9B05ULL)
 	{}
 
 	u64 seed0;
