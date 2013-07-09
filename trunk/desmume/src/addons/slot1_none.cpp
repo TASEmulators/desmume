@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2012 DeSmuME team
+	Copyright (C) 2010-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,13 +16,19 @@
 */
 
 #include "../slot1.h"
+#include "../registers.h"
+#include "../MMU.h"
 
 static void slot1_info(char *info) { strcpy(info, "Slot1 no-card emulation"); }
 static void slot1_config(void) {}
 
 static BOOL slot1_init() { return (TRUE); }
 
-static void slot1_reset() {}
+static void slot1_reset()
+{
+	// Write the header checksum to memory (the firmware needs it to see the cart)
+	_MMU_write16<ARMCPU_ARM9>(0x027FF808, 0);
+}
 
 static void slot1_close() {}
 
@@ -41,6 +47,8 @@ static u16 slot1_read16(u8 PROCNUM, u32 adr)
 }
 static u32 slot1_read32(u8 PROCNUM, u32 adr)
 {
+	if (adr == REG_GCDATAIN && MMU.dscard[PROCNUM].command[0] == 0xB8)
+		return 0;
 	return 0xFFFFFFFF;
 }
 
