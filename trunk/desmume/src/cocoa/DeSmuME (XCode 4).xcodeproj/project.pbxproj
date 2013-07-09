@@ -612,6 +612,9 @@
 		ABD1FF9F1345ACFA00AF11D1 /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF771345ACFA00AF11D1 /* metaspu.cpp */; };
 		ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */; };
 		ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */; };
+		ABD798C8178C7B9000089F19 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD798C7178C7B9000089F19 /* encrypt.cpp */; };
+		ABD798C9178C7B9000089F19 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD798C7178C7B9000089F19 /* encrypt.cpp */; };
+		ABD798CA178C7B9000089F19 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD798C7178C7B9000089F19 /* encrypt.cpp */; };
 		ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABE5DFE5143FB1DA00835AD8 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
 		ABE6702B1415DE6C00E8E4C9 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
@@ -1049,6 +1052,8 @@
 		ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timestretcher.cpp; sourceTree = "<group>"; };
 		ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
+		ABD798C6178C7B9000089F19 /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = encrypt.h; path = ../encrypt.h; sourceTree = "<group>"; };
+		ABD798C7178C7B9000089F19 /* encrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = encrypt.cpp; path = ../encrypt.cpp; sourceTree = "<group>"; };
 		ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_videofilter.h; sourceTree = "<group>"; };
 		ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_videofilter.mm; sourceTree = "<group>"; };
 		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
@@ -1495,6 +1500,7 @@
 				ABD1FEAD1345AC8400AF11D1 /* Disassembler.cpp */,
 				ABD1FEAE1345AC8400AF11D1 /* driver.cpp */,
 				ABD1FEAF1345AC8400AF11D1 /* emufile.cpp */,
+				ABD798C7178C7B9000089F19 /* encrypt.cpp */,
 				ABD1FEB01345AC8400AF11D1 /* FIFO.cpp */,
 				ABD1FEB11345AC8400AF11D1 /* firmware.cpp */,
 				ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */,
@@ -1545,6 +1551,7 @@
 				ABD1FE7A1345AC8400AF11D1 /* driver.h */,
 				ABD1FE7C1345AC8400AF11D1 /* emufile.h */,
 				ABD1FE7B1345AC8400AF11D1 /* emufile_types.h */,
+				ABD798C6178C7B9000089F19 /* encrypt.h */,
 				ABD1FE7D1345AC8400AF11D1 /* FIFO.h */,
 				ABD1FE7E1345AC8400AF11D1 /* firmware.h */,
 				ABD1FE7F1345AC8400AF11D1 /* fs.h */,
@@ -2286,6 +2293,7 @@
 				ABD10AE81715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEB1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
+				ABD798C9178C7B9000089F19 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2447,6 +2455,7 @@
 				ABD10AE71715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEA1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
+				ABD798C8178C7B9000089F19 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2597,6 +2606,7 @@
 				ABD10AEE17160CDD00B5729D /* cocoa_input.mm in Sources */,
 				AB5785F817175F16002C5FC7 /* cocoa_core.mm in Sources */,
 				AB5785F9171760D2002C5FC7 /* cocoa_output.mm in Sources */,
+				ABD798CA178C7B9000089F19 /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

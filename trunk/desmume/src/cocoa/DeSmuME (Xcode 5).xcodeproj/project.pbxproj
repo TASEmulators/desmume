@@ -529,6 +529,9 @@
 		ABC5720D1344346600E7B0B1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		ABC719E2138CB25E002827A9 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
+		ABCFA9F4178BDE920030C8BA /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABCFA9F3178BDE920030C8BA /* encrypt.cpp */; };
+		ABCFA9F5178BDE920030C8BA /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABCFA9F3178BDE920030C8BA /* encrypt.cpp */; };
+		ABCFA9F6178BDE920030C8BA /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABCFA9F3178BDE920030C8BA /* encrypt.cpp */; };
 		ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		ABD1041E1346652500AF11D1 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
@@ -866,6 +869,8 @@
 		ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
+		ABCFA9F2178BDE920030C8BA /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = encrypt.h; path = ../encrypt.h; sourceTree = "<group>"; };
+		ABCFA9F3178BDE920030C8BA /* encrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = encrypt.cpp; path = ../encrypt.cpp; sourceTree = "<group>"; };
 		ABD103FE1346652500AF11D1 /* cocoa_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_core.h; sourceTree = "<group>"; };
 		ABD103FF1346652500AF11D1 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		ABD104001346652500AF11D1 /* cocoa_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_rom.h; sourceTree = "<group>"; };
@@ -1495,6 +1500,7 @@
 				ABD1FEAD1345AC8400AF11D1 /* Disassembler.cpp */,
 				ABD1FEAE1345AC8400AF11D1 /* driver.cpp */,
 				ABD1FEAF1345AC8400AF11D1 /* emufile.cpp */,
+				ABCFA9F3178BDE920030C8BA /* encrypt.cpp */,
 				ABD1FEB01345AC8400AF11D1 /* FIFO.cpp */,
 				ABD1FEB11345AC8400AF11D1 /* firmware.cpp */,
 				ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */,
@@ -1545,6 +1551,7 @@
 				ABD1FE7A1345AC8400AF11D1 /* driver.h */,
 				ABD1FE7C1345AC8400AF11D1 /* emufile.h */,
 				ABD1FE7B1345AC8400AF11D1 /* emufile_types.h */,
+				ABCFA9F2178BDE920030C8BA /* encrypt.h */,
 				ABD1FE7D1345AC8400AF11D1 /* FIFO.h */,
 				ABD1FE7E1345AC8400AF11D1 /* firmware.h */,
 				ABD1FE7F1345AC8400AF11D1 /* fs.h */,
@@ -2192,6 +2199,7 @@
 				ABD1FF0C1345AC9C00AF11D1 /* slot1_r4.cpp in Sources */,
 				ABD1FF0D1345AC9C00AF11D1 /* slot1_retail.cpp in Sources */,
 				AB6FBEF6139B6258007BB045 /* slot1_retail_nand.cpp in Sources */,
+				ABCFA9F5178BDE920030C8BA /* encrypt.cpp in Sources */,
 				ABD1FF0E1345AC9C00AF11D1 /* slot2_expMemory.cpp in Sources */,
 				ABD1FF0F1345AC9C00AF11D1 /* slot2_gbagame.cpp in Sources */,
 				ABD1FF101345AC9C00AF11D1 /* slot2_guitarGrip.cpp in Sources */,
@@ -2402,6 +2410,7 @@
 				AB796D5D15CDCBA200C59155 /* epx.cpp in Sources */,
 				AB796D5E15CDCBA200C59155 /* hq2x.cpp in Sources */,
 				AB796D5F15CDCBA200C59155 /* hq4x.cpp in Sources */,
+				ABCFA9F4178BDE920030C8BA /* encrypt.cpp in Sources */,
 				AB796D6015CDCBA200C59155 /* lq2x.cpp in Sources */,
 				AB796D6115CDCBA200C59155 /* scanline.cpp in Sources */,
 				AB796D6215CDCBA200C59155 /* coreaudiosound.cpp in Sources */,
@@ -2455,6 +2464,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ABE9EEEB1501C78700D3FB19 /* fs-linux.cpp in Sources */,
+				ABCFA9F6178BDE920030C8BA /* encrypt.cpp in Sources */,
 				ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */,
 				ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */,
 				ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */,

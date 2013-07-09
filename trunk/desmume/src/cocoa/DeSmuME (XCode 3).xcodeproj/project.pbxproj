@@ -830,6 +830,11 @@
 		ABA03571169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABA03572169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
 		ABA03573169127C000817C69 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */; };
+		ABA93EB0178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
+		ABA93EB1178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
+		ABA93EB2178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
+		ABA93EB3178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
+		ABA93EB4178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
 		ABAAFBEA172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAAFBEB172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAAFBEC172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
@@ -1229,6 +1234,8 @@
 		ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = troubleshootingWindowDelegate.mm; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
+		ABA93EAE178C7D4200CBF50B /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = encrypt.h; path = ../encrypt.h; sourceTree = SOURCE_ROOT; };
+		ABA93EAF178C7D4200CBF50B /* encrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = encrypt.cpp; path = ../encrypt.cpp; sourceTree = SOURCE_ROOT; };
 		ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1886,6 +1893,7 @@
 				ABD1FEAD1345AC8400AF11D1 /* Disassembler.cpp */,
 				ABD1FEAE1345AC8400AF11D1 /* driver.cpp */,
 				ABD1FEAF1345AC8400AF11D1 /* emufile.cpp */,
+				ABA93EAF178C7D4200CBF50B /* encrypt.cpp */,
 				ABD1FEB01345AC8400AF11D1 /* FIFO.cpp */,
 				ABD1FEB11345AC8400AF11D1 /* firmware.cpp */,
 				ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */,
@@ -1935,6 +1943,7 @@
 				ABD1FE7A1345AC8400AF11D1 /* driver.h */,
 				ABD1FE7C1345AC8400AF11D1 /* emufile.h */,
 				ABD1FE7B1345AC8400AF11D1 /* emufile_types.h */,
+				ABA93EAE178C7D4200CBF50B /* encrypt.h */,
 				ABD1FE7D1345AC8400AF11D1 /* FIFO.h */,
 				ABD1FE7E1345AC8400AF11D1 /* firmware.h */,
 				ABD1FE7F1345AC8400AF11D1 /* fs.h */,
@@ -3050,6 +3059,7 @@
 				AB2A9A691725F00F0062C1A1 /* InputProfileController.mm in Sources */,
 				AB2A9A6A1725F00F0062C1A1 /* audiosamplegenerator.cpp in Sources */,
 				AB2A9A6B1725F00F0062C1A1 /* FileMigrationDelegate.mm in Sources */,
+				ABA93EB4178C7D4200CBF50B /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3180,6 +3190,7 @@
 				AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145241714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
 				ABAAFBEB172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
+				ABA93EB1178C7D4200CBF50B /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3340,6 +3351,7 @@
 				AB213D48170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145261714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
 				ABAAFBEA172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
+				ABA93EB0178C7D4200CBF50B /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3500,6 +3512,7 @@
 				AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145251714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
 				ABAAFBED172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
+				ABA93EB3178C7D4200CBF50B /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3630,6 +3643,7 @@
 				AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */,
 				AB2145231714DFF4006DDB0F /* audiosamplegenerator.cpp in Sources */,
 				ABAAFBEC172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */,
+				ABA93EB2178C7D4200CBF50B /* encrypt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
