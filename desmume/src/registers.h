@@ -146,7 +146,7 @@
 #define REG_ENCSEED0L                           0x040001B0
 #define REG_ENCSEED1L                           0x040001B4
 #define REG_ENCSEED0H                           0x040001B8
-#define REG_ENCSEED1H                           0x040001BC
+#define REG_ENCSEED1H                           0x040001BA
 #define REG_SPICNT                              0x040001C0
 #define REG_SPIDATA                             0x040001C2
 
