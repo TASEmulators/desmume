@@ -3758,7 +3758,19 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 	return 1;
 }
 
-static int OP_BX_THUMB(const u32 i) { if (REG_POS(i, 3) == 15) c.mov(reg_ptr(15), bb_r15); return op_bx_thumb(reg_pos_ptr(3), 0, 0); }
+static int op_bx_thumbR15()
+{
+	GpVar dst = c.newGpVar(kX86VarTypeGpd);
+	GpVar thumb = c.newGpVar(kX86VarTypeGpd);
+	c.mov(dst, bb_next_instruction);
+	c.and_(cpu_ptr(CPSR), (u32)~(1<< 5));
+	c.and_(dst, 0xFFFFFFFC);
+	c.mov(reg_ptr(15), dst);
+	c.mov(cpu_ptr(instruct_adr), dst);
+	return 1;
+}
+
+static int OP_BX_THUMB(const u32 i) { if (REG_POS(i, 3) == 15) return op_bx_thumbR15(); return op_bx_thumb(reg_pos_ptr(3), 0, 0); }
 static int OP_BLX_THUMB(const u32 i) { return op_bx_thumb(reg_pos_ptr(3), 1, 1); }
 
 static int OP_SWI_THUMB(const u32 i) { return op_swi(i & 0x1F); }
