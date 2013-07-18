@@ -3760,13 +3760,11 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 
 static int op_bx_thumbR15()
 {
-	GpVar dst = c.newGpVar(kX86VarTypeGpd);
-	GpVar thumb = c.newGpVar(kX86VarTypeGpd);
-	c.mov(dst, bb_r15);
+	const u32 r15 = (bb_r15 & 0xFFFFFFFC);
+	c.mov(cpu_ptr(instruct_adr), Imm(r15));
+	c.mov(reg_ptr(15), Imm(r15));
 	c.and_(cpu_ptr(CPSR), (u32)~(1<< 5));
-	c.and_(dst, 0xFFFFFFFC);
-	c.mov(reg_ptr(15), dst);
-	c.mov(cpu_ptr(instruct_adr), dst);
+	
 	return 1;
 }
 
