@@ -3762,7 +3762,7 @@ static int op_bx_thumbR15()
 {
 	GpVar dst = c.newGpVar(kX86VarTypeGpd);
 	GpVar thumb = c.newGpVar(kX86VarTypeGpd);
-	c.mov(dst, bb_next_instruction);
+	c.mov(dst, bb_r15);
 	c.and_(cpu_ptr(CPSR), (u32)~(1<< 5));
 	c.and_(dst, 0xFFFFFFFC);
 	c.mov(reg_ptr(15), dst);
