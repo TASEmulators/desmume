@@ -44,74 +44,71 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 {
 	nds_dscard& card = MMU.dscard[PROCNUM];
 
-	switch(card.command[0])
+	if (card.mode == CardMode_Normal)
 	{
-		case 0x00: //Data read (0000000000000000h Get Cartridge Header) - len 200h bytes
-		case 0xB7:
-			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-			card.transfer_count = 0x80;
+		switch(card.command[0])
+		{
+			case 0x00: //Data read (0000000000000000h Get Cartridge Header) - len 200h bytes
+			case 0xB7:
+				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
+				card.transfer_count = 0x80;
+				break;
+
+			case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
+			case 0xB8:
+				card.address = 0;
+				card.transfer_count = 1;
+				break;
+
+			default:
+				card.address = 0;
+				card.transfer_count = 0;
+				printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_Normal\n", PROCNUM?'7':'9', card.command[0]);
+				break;
+		}
+		return;
+	}
+
+	if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
+	{
+		u8 cmd = (card.command[0] >> 4);
+		switch(cmd)
+		{
+			case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
+				card.address = 0;
+				card.transfer_count = 1;
 			break;
 
-		case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
-			card.address = 0;
-			card.transfer_count = 1;
+			default:
+				card.address = 0;
+				card.transfer_count = 0;
+				printf("ARM%c: SLOT1 invalid command %02X (write) - %s\n", PROCNUM?'7':'9', cmd, (card.mode == CardMode_KEY1)?"CardMode_KEY1":"CardMode_KEY2");
+			break;
+		}
+		return;
+	}
+
+	if (card.mode == CardMode_DATA_LOAD)
+	{
+		switch(card.command[0])
+		{
+			case 0xB7:	// Encrypted Data Read (B7aaaaaaaa000000h) - len 200h bytes
+				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
+				card.transfer_count = 0x80;
 			break;
 
-		case 0xB8:	// 3rd Get ROM Chip ID - len 4 bytes
-			card.address = 0;
-			card.transfer_count = 1;
+			case 0xB8:	// 3nd Get ROM Chip ID - len 4 bytes
+				card.address = 0;
+				card.transfer_count = 1;
 			break;
 
-		default:
-			if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
-			{
-				u8 cmd = (card.command[0] >> 4);
-				switch(cmd)
-				{
-					case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
-						card.address = 0;
-						card.transfer_count = 1;
-					break;
-
-					default:
-						card.address = 0;
-						card.transfer_count = 0;
-						printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_KEY1/CardMode_KEY2 mode\n", PROCNUM?'7':'9', cmd);
-					break;
-				}
-				return;
-			}
-
-			if (card.mode == CardMode_DATA_LOAD)
-			{
-				switch(card.command[0])
-				{
-					case 0xB7:
-						card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-						card.transfer_count = 0x80;
-					break;
-
-					case 0xB8:	// 3nd Get ROM Chip ID - len 4 bytes
-						card.address = 0;
-						card.transfer_count = 1;
-					break;
-
-					default:
-						card.address = 0;
-						card.transfer_count = 0;
-						printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_DATA_LOAD mode\n", PROCNUM?'7':'9', card.command[0]);
-					break;
-				}
-				return;
-			}
-
-			card.address = 0;
-			card.transfer_count = 0;
-#ifdef _NEW_BOOT
-			printf("ARM%c: SLOT1 invalid command %02X (write)\n", PROCNUM?'7':'9', card.command[0]);
-#endif
-
-		break;
+			default:
+				card.address = 0;
+				card.transfer_count = 0;
+				printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_DATA_LOAD\n", PROCNUM?'7':'9', card.command[0]);
+			break;
+		}
+		return;
 	}
 }
 
