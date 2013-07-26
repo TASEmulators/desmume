@@ -28,6 +28,9 @@ static BOOL init() { return (TRUE); }
 static void reset()
 {
 	// Write the header checksum to memory (the firmware needs it to see the cart)
+#ifdef _NEW_BOOT
+	if (!CommonSettings.BootFromFirmware)
+#endif
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
 }
 
@@ -43,21 +46,72 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 
 	switch(card.command[0])
 	{
-		case 0x00: //Data read
+		case 0x00: //Data read (0000000000000000h Get Cartridge Header) - len 200h bytes
 		case 0xB7:
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
 			card.transfer_count = 0x80;
 			break;
 
-		case 0xB8:	// Chip ID
+		case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
+			card.address = 0;
+			card.transfer_count = 1;
+			break;
+
+		case 0xB8:	// 3rd Get ROM Chip ID - len 4 bytes
 			card.address = 0;
 			card.transfer_count = 1;
 			break;
 
 		default:
+			if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
+			{
+				u8 cmd = (card.command[0] >> 4);
+				switch(cmd)
+				{
+					case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
+						card.address = 0;
+						card.transfer_count = 1;
+					break;
+
+					default:
+						card.address = 0;
+						card.transfer_count = 0;
+						printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_KEY1/CardMode_KEY2 mode\n", PROCNUM?'7':'9', cmd);
+					break;
+				}
+				return;
+			}
+
+			if (card.mode == CardMode_DATA_LOAD)
+			{
+				switch(card.command[0])
+				{
+					case 0xB7:
+						card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
+						card.transfer_count = 0x80;
+					break;
+
+					case 0xB8:	// 3nd Get ROM Chip ID - len 4 bytes
+						card.address = 0;
+						card.transfer_count = 1;
+					break;
+
+					default:
+						card.address = 0;
+						card.transfer_count = 0;
+						printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_DATA_LOAD mode\n", PROCNUM?'7':'9', card.command[0]);
+					break;
+				}
+				return;
+			}
+
 			card.address = 0;
 			card.transfer_count = 0;
-			break;
+#ifdef _NEW_BOOT
+			printf("ARM%c: SLOT1 invalid command %02X (write)\n", PROCNUM?'7':'9', card.command[0]);
+#endif
+
+		break;
 	}
 }
 
@@ -83,13 +137,32 @@ static u16 read16(u8 PROCNUM, u32 adr)
 static u32 read32_GCDATAIN(u8 PROCNUM)
 {
 	nds_dscard& card = MMU.dscard[PROCNUM];
+	u8 cmd = card.command[0];
 
-	switch(card.command[0])
+	if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
+		cmd >>= 4;
+
+	switch(cmd)
 	{
-		//Get ROM chip ID
-		case 0x90:
-		case 0xB8:
+		case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
+		case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
+		case 0xB8:	// 3rd Get ROM Chip ID - len 4 bytes
 			{
+				// Returns RAW unencrypted Chip ID (eg. C2h,0Fh,00h,00h), repeated every 4 bytes.
+				//
+				// 1st byte - Manufacturer (C2h = Macronix)
+				// 2nd byte - Chip size in megabytes minus 1 (eg. 0Fh = 16MB)
+				// 3rd byte - Reserved/zero (probably upper bits of chip size)
+				// 4th byte - Bit7: Secure Area Block transfer mode (8x200h or 1000h)
+
+#ifdef _NEW_BOOT
+				u32 chipID = 0;
+				if (CommonSettings.BootFromFirmware)
+					chipID = 0x00000000 | 0x00000000 | 0x00000F00 | 0x000000C2;;
+#else
+				u32 chipID = 0;
+#endif
+ 
 				// Note: the BIOS stores the chip ID in main memory
 				// Most games continuously compare the chip ID with
 				// the value in memory, probably to know if the card
@@ -104,7 +177,8 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 				//staff of kings verifies this (it also uses the arm7 IRQ 20)
 				if(nds.cardEjected) //TODO - handle this with ejected card slot1 device (and verify using this case)
 					return 0xFFFFFFFF;
-				else return 0;
+				else 
+					return chipID;
 			}
 			break;
 
@@ -119,7 +193,7 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 				u32 address = card.address & (gameInfo.mask);
 
 				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
-				if((card.command[0] == 0xB7) && (address < 0x8000))
+				if((cmd == 0xB7) && (address < 0x8000))
 				{
 					//TODO - refactor this to include the PROCNUM, for debugging purposes if nothing else
 					//(can refactor gbaslot also)
@@ -142,6 +216,9 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 			}
 			break;
 		default:
+#ifdef _NEW_BOOT
+			printf("ARM%c: SLOT1 invalid command %02X (read)\n", PROCNUM?'7':'9', cmd);
+#endif
 			return 0;
 	} //switch(card.command[0])
 } //read32_GCDATAIN

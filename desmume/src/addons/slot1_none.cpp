@@ -18,6 +18,7 @@
 #include "../slot1.h"
 #include "../registers.h"
 #include "../MMU.h"
+#include "../NDSSystem.h"
 
 static void slot1_info(char *info) { strcpy(info, "Slot1 no-card emulation"); }
 static void slot1_config(void) {}
@@ -27,6 +28,9 @@ static BOOL slot1_init() { return (TRUE); }
 static void slot1_reset()
 {
 	// Write the header checksum to memory (the firmware needs it to see the cart)
+#ifdef _NEW_BOOT
+	if (!CommonSettings.BootFromFirmware)
+#endif
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, 0);
 }
 

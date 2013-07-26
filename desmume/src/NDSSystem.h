@@ -83,6 +83,7 @@ extern BOOL click;
 #define NDS_FW_LANG_CHI 6
 #define NDS_FW_LANG_RES 7
 
+extern CFIRMWARE	*firmware;
 
 //#define LOG_ARM9
 //#define LOG_ARM7
@@ -90,55 +91,55 @@ extern BOOL click;
 #include "PACKED.h"
 struct NDS_header
 {
-	char     gameTile[12];
-	char     gameCode[4];
-	u16      makerCode;
-	u8       unitCode;
-	u8       deviceCode;
-	u8       cardSize;
-	u8       cardInfo[8];
-	u8       flags;
-	u8       romversion;
-	u8       reserved;
+       char     gameTile[12];	// 000 - Game Title (uppercase ASCII, padded with 00h)
+       char     gameCode[4];	// 00C - Gamecode (uppercase ASCII, NTR-<code>, 0=homebrew)
+       u16      makerCode;		// 010 - Makercode (uppercase ASCII, 0=homebrew)
+       u8       unitCode;		// 012 - Unitcode (00h=Nintendo DS)
+       u8       deviceCode;		// 013 - Encryption Seed Select (00..07h, usually 00h)
+       u8       cardSize;		// 014 - Devicecapacity (Chipsize = 128KB SHL nn) (eg. 7 = 16MB)
+       u8       cardInfo[8];	// 015 - ???  --> reversed (padded 00h)
+       u8       flags;			// 01D - ???  |
+	   u8		romversion;		// 01E - ROM Version (usually 00h)
+	   u8		autostart;		// 01F - Autostart (Bit2: Skip "Press Button" after Health and Safety)
+									//	 (Also skips bootmenu, even in Manual mode & even Start pressed)
+       u32      ARM9src;		// 020 - 
+       u32      ARM9exe;		// 024 - 
+       u32      ARM9cpy;		// 028 - 
+       u32      ARM9binSize;	// 02C - 
+       
+       u32      ARM7src;		// 030 - 
+       u32      ARM7exe;		// 034 - 
+       u32      ARM7cpy;		// 038 - 
+       u32      ARM7binSize;	// 03C - 
+ 
+       u32      FNameTblOff;	// 040 - 
+       u32      FNameTblSize;	// 044 - 
 
-	u32      ARM9src;
-	u32      ARM9exe;
-	u32      ARM9cpy;
-	u32      ARM9binSize;
+       u32      FATOff;			// 048 - 
+       u32      FATSize;		// 04C - 
 
-	u32      ARM7src;
-	u32      ARM7exe;
-	u32      ARM7cpy;
-	u32      ARM7binSize;
-
-	u32      FNameTblOff;
-	u32      FNameTblSize;
-
-	u32      FATOff;
-	u32      FATSize;
-
-	u32      ARM9OverlayOff;
-	u32      ARM9OverlaySize;
-	u32      ARM7OverlayOff;
-	u32      ARM7OverlaySize;
-
-	u32      unknown2a;
-	u32      unknown2b;
-
-	u32      IconOff;
-	u16      CRC16;
-	u16      ROMtimeout;
-	u32      ARM9unk;
-	u32      ARM7unk;
-
-	u8       unknown3c[8];
-	u32      ROMSize;
-	u32      HeaderSize;
-	u8       unknown5[56]; //"PASS" is contained within here?
-	u8       logo[156];
-	u16      logoCRC16;
-	u16      headerCRC16;
-	u8       unknown6[160];
+       u32     ARM9OverlayOff;	// 050 - 
+       u32     ARM9OverlaySize;	// 054 - 
+       u32     ARM7OverlayOff;	// 058 -
+       u32     ARM7OverlaySize;	// 05C -
+       
+       u32     unknown2a;		// 060 - Port 40001A4h setting for normal commands (usually 00586000h)
+       u32     unknown2b;		// 064 - Port 40001A4h setting for KEY1 commands   (usually 001808F8h)
+       
+       u32     IconOff;			// 068 - 
+       u16     CRC16;			// 06C - 
+       u16     ROMtimeout;		// 06E - 
+       u32     ARM9unk;			// 070 -
+       u32     ARM7unk;			// 074 - 
+       
+       u8      unknown3c[8];	// 078 - Secure Area Disable (by encrypted "NmMdOnly") (usually zero)
+       u32     ROMSize;			// 080 - Total Used ROM size (remaining/unused bytes usually FFh-padded)
+       u32     HeaderSize;		// 084 - ROM Header Size (4000h)
+       u8      unknown5[56];	// 088 - Reserved (zero filled) - "PASS" is contained within here?
+       u8      logo[156];		// 0C0 - Nintendo Logo (compressed bitmap, same as in GBA Headers)
+       u16     logoCRC16;		// 15C - Nintendo Logo Checksum, CRC-16 of [0C0h-15Bh], fixed CF56h
+       u16     headerCRC16;		// 15E - Header Checksum, CRC-16 of [000h-15Dh]
+       u8      reserved[160];	// 
 };
 #include "PACKED_END.h"
 
@@ -325,6 +326,7 @@ struct GameInfo
 		memset(&header, 0, sizeof(header));
 		memset(&ROMserial[0], 0, sizeof(ROMserial));
 		memset(&ROMname[0], 0, sizeof(ROMname));
+		memset(&securyArea[0], 0, sizeof(securyArea));
 	}
 
 	void loadData(char* buf, int size)
@@ -333,6 +335,18 @@ struct GameInfo
 		memcpy(romdata,buf,size);
 		romsize = (u32)size;
 		fillGap();
+	}
+
+	void storeSecureArea()
+	{
+		if ((header.ARM9src >= 0x4000) && (header.ARM9src < 0x8000))
+			memcpy(&securyArea[0], &romdata[header.ARM9src], 0x8000 - header.ARM9src);
+	}
+	
+	void restoreSecureArea()
+	{
+		if ((header.ARM9src >= 0x4000) && (header.ARM9src < 0x8000))
+			memcpy(&romdata[header.ARM9src], &securyArea[0], 0x8000 - header.ARM9src);
 	}
 
 	void fillGap()
@@ -371,6 +385,7 @@ struct GameInfo
 	const RomBanner& getRomBanner();
 	bool hasRomBanner();
 	bool isHomebrew;
+	u8	securyArea[0x4000];
 };
 
 typedef struct TSCalInfo

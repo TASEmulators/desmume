@@ -439,7 +439,6 @@ static std::vector<char> buffer;
 static std::vector<char> v;
 
 static void loadrom(std::string fname) {
-
 	FILE* inf = fopen(fname.c_str(),"rb");
 	if(!inf) return;
 
@@ -448,7 +447,15 @@ static void loadrom(std::string fname) {
 	fseek(inf,0,SEEK_SET);
 
 	gameInfo.resize(size);
-	fread(gameInfo.romdata,1,size,inf);
+
+#ifdef _NEW_BOOT
+	extern NDS_SLOT1_TYPE slot1_device_type;
+
+	if (slot1_device_type == NDS_SLOT1_NONE)
+		memset(gameInfo.romdata, 0xFF, size);
+	else
+#endif
+		fread(gameInfo.romdata,1,size,inf);
 	gameInfo.fillGap();
 	
 	fclose(inf);
@@ -566,6 +573,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	if (ret < 1)
 		return ret;
 
+#ifndef _NEW_BOOT
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
 #ifndef WORDS_BIGENDIAN
@@ -575,6 +583,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		printf("Specified file is not a valid rom\n");
 		return -1;
 	}
+#endif
 #endif
 
 	if (cheatSearch)
@@ -591,6 +600,10 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
 	INFO("ROM internal name: %s\n", gameInfo.ROMname);
 	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
+
+#ifdef _NEW_BOOT
+	gameInfo.storeSecureArea();
+#endif
 	
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);
@@ -1156,10 +1169,11 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 	{
 		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[13+procnum*4+num]++);
 		u8* regs = procnum==0?MMU.ARM9_REG:MMU.ARM7_REG;
-		bool first = true, over;
+		bool first = true;
 		//we'll need to check chained timers..
 		for(int i=num;i<4;i++)
 		{
+			bool over = false;
 			//maybe too many checks if this is here, but we need it here for now
 			if(!MMU.timerON[procnum][i]) return;
 
@@ -2478,12 +2492,14 @@ void NDS_Reset()
 
 	PrepareLogfiles();
 
+#ifndef _NEW_BOOT
 	//according to smea, this is initialized to 3 by the time we get into a user game program. who does this? 
 	//well, the firmware load process is about to write a boot program into SIWRAM for the arm7. so we need it setup by now.
 	//but, this is a bit weird.. I would be expecting the bioses to do that. maybe we have some more detail to emulate.
 	//* is this setting the default, or does the bios do it before loading the firmware programs?
 	//at any, it's important that this be done long before the user code ever runs
 	_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
+#endif
 
 	if (firmware)
 	{
@@ -2495,6 +2511,12 @@ void NDS_Reset()
 
 	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && fw_success)
 	{
+#ifdef _NEW_BOOT
+		gameInfo.restoreSecureArea();
+
+		armcpu_init(&NDS_ARM7, 0x00000000);
+		armcpu_init(&NDS_ARM9, 0xFFFF0000);
+#else
 		//Copy secure area to memory if needed.
 		//could we get a comment about what's going on here?
 		//how does this stuff get copied before anything ever even runs?
@@ -2526,6 +2548,7 @@ void NDS_Reset()
 			armcpu_init(&NDS_ARM7, firmware->ARM7bootAddr);
 			armcpu_init(&NDS_ARM9, firmware->ARM9bootAddr);
 		}
+#endif
 
 		//set REG_POSTFLG to the value indicating pre-firmware status
 		MMU.ARM9_REG[0x300] = 0;
@@ -2534,6 +2557,20 @@ void NDS_Reset()
 	else
 	{
 		//fake firmware boot-up process
+
+#ifdef _NEW_BOOT
+		gameInfo.restoreSecureArea();
+		//decrypt if necessary..
+		//but this is untested and suspected to fail on big endian, so lets not support this on big endian
+#ifndef WORDS_BIGENDIAN
+		bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+
+		if(!okRom) {
+			printf("Specified file is not a valid rom\n");
+			return;
+		}
+#endif
+#endif
 
 		// Create the dummy firmware
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
@@ -2571,6 +2608,7 @@ void NDS_Reset()
 	reconstruct(&cp15);
 	cp15.reset(&NDS_ARM9);
 
+#ifndef _NEW_BOOT
 	//bitbox 4k demo is so stripped down it relies on default stack values
 	//otherwise the arm7 will crash before making a sound
 	//(these according to gbatek softreset bios docs)
@@ -2588,6 +2626,7 @@ void NDS_Reset()
 	NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
 	//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
 	//and how theyre named in desmume to match them up correctly. i just guessed.
+#endif
 
 	nds.wifiCycle = 0;
 	memset(nds.timerCycle, 0, sizeof(u64) * 2 * 4);
@@ -2603,15 +2642,18 @@ void NDS_Reset()
 	nds.ensataIpcSyncCounter = 0;
 	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());
 
+#ifndef _NEW_BOOT
 	_MMU_write16<ARMCPU_ARM9>(REG_KEYINPUT, 0x3FF);
 	_MMU_write16<ARMCPU_ARM7>(REG_KEYINPUT, 0x3FF);
 	_MMU_write08<ARMCPU_ARM7>(REG_EXTKEYIN, 0x43);
+#endif
 
 	LidClosed = FALSE;
 	countLid = 0;
 
 	resetUserInput();
 
+#ifndef _NEW_BOOT
 	//Setup a copy of the firmware user settings in memory.
 	//(this is what the DS firmware would do).
 	{
@@ -2637,7 +2679,6 @@ void NDS_Reset()
 		for (int i = 0; i < ((0x170)/4); i++)
 			_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
-
 
 	//--------------------------------
 	//setup the homebrew argv
@@ -2685,6 +2726,17 @@ void NDS_Reset()
 	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60);
 	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
 	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
+#else
+	// TODO: hack!!!
+	TSCal.adc.x1 = 0x0228;
+	TSCal.adc.y1 = 0x0350;
+	TSCal.scr.x1 = 0x0020;
+	TSCal.scr.y1 = 0x0020;
+	TSCal.adc.x2 = 0x0DA0;
+	TSCal.adc.y2 = 0x0BFC;
+	TSCal.scr.x2 = 0xE0;
+	TSCal.scr.y2 = 0xA0;
+#endif
 
 	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
 	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
@@ -2694,7 +2746,9 @@ void NDS_Reset()
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
 
+#ifndef _NEW_BOOT
 	//_MMU_write32[ARMCPU_ARM9](0x02007FFC, 0xE92D4030);
+#endif
 
 	delete header;
 

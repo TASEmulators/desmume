@@ -667,11 +667,14 @@ void arm_jit_sync()
 template<int PROCNUM, bool jit>
 u32 armcpu_exec()
 {
+	// TODO: CrazyMax - temporarily disable JIT until finish a new boot code
+#ifndef _NEW_BOOT
 	if (jit)
 	{
 		ArmOpCompiled f = (ArmOpCompiled)JIT_COMPILED_FUNC(ARMPROC.instruct_adr, PROCNUM);
 		return f ? f() : arm_jit_compile<PROCNUM>();
 	}
+#endif
 
 	return armcpu_exec<PROCNUM>();
 }

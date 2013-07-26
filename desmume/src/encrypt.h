@@ -25,8 +25,8 @@ struct _KEY1
 	_KEY1(u8 *inKeyBufPtr)
 	{
 		if (keyBuf) delete keyBuf;
-		keyBuf = new u32 [0x1048 / sizeof(u32)];
-		memset(keyBuf, 0x00, 0x1048);
+		keyBuf = new u32 [0x412];
+		memset(keyBuf, 0x00, 0x412 * sizeof(u32));
 		memset(&keyCode[0], 0, sizeof(keyCode));
 		this->keyBufPtr = inKeyBufPtr;
 	}
@@ -52,14 +52,21 @@ struct _KEY1
 
 struct _KEY2
 {
-	_KEY2() :	seed0(0x58C56DE0E8ULL), 
-					seed1(0x5C879B9B05ULL)
-	{}
-
+private:
 	u64 seed0;
 	u64 seed1;
+	u64 x;
+	u64 y;
 
+	u64 bitsReverse39(u64 key);
+
+public:
+	_KEY2() :	seed0(0x58C56DE0E8ULL), 
+				seed1(0x5C879B9B05ULL)
+	{}
+	
 	void applySeed(u8 PROCNUM);
+	u8 apply(u8 data);
 };
 
 #endif

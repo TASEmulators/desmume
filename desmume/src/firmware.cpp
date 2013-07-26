@@ -253,13 +253,13 @@ bool CFIRMWARE::load()
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	if( (size != 256*1024) && (size != 512*1024) )
+	if( (size != NDS_FW_SIZE_V1) && (size != NDS_FW_SIZE_V2) )
 	{
 		fclose(fp);
 		return false;
 	}
 
-#if 1
+#ifndef _NEW_BOOT
 	if (size == 512*1024)
 	{
 		INFO("ERROR: 32Mbit (512Kb) firmware not supported\n");
@@ -278,6 +278,7 @@ bool CFIRMWARE::load()
 	if (fread(data, 1, size, fp) != size)
 	{
 		delete [] data;
+		data = NULL;
 		fclose(fp);
 		return false; 
 	}
@@ -294,8 +295,12 @@ bool CFIRMWARE::load()
 #ifdef _NEW_BOOT
 	if (CommonSettings.BootFromFirmware)
 	{
+		if (MMU.fw.size != size)	// reallocate
+			mc_alloc(&MMU.fw, size);
+
 		memcpy(MMU.fw.data, data, size);
-		MMU.fw.size = size;
+		delete [] data;
+		data = NULL;
 		return true;
 	}
 #endif
@@ -475,6 +480,7 @@ bool CFIRMWARE::load()
 	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
 
 	fclose(fp);
+
 	fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
 	{
