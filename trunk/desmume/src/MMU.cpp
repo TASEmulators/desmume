@@ -40,10 +40,20 @@
 #include "readwrite.h"
 #include "MMU_timing.h"
 
+#ifdef _NEW_BOOT
+#include "firmware.h"
+#include "encrypt.h"
+#endif
+
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
 #else
 #define ASSERT_UNALIGNED(x)
+#endif
+
+#ifdef _NEW_BOOT
+_KEY1 key1(&MMU.ARM7_BIOS[0x0030]);
+_KEY2 key2;
 #endif
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
@@ -1000,6 +1010,10 @@ void MMU_Reset()
 	MMU.SPI_CNT = 0;
 	MMU.AUX_SPI_CNT = 0;
 
+#ifdef _NEW_BOOT
+	reconstruct(&key2);
+#endif
+
 	MMU.WRAMCNT = 0;
 
 	// Enable the sound speakers
@@ -1274,95 +1288,243 @@ bool DSI_TSC::load_state(EMUFILE* is)
 	return true;
 }
 
+#ifdef _NEW_BOOT
+//#define _LOG_NEW_BOOT 1
+#endif
+
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
-	const int TEST_PROCNUM = PROCNUM;
-	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
+#ifdef _NEW_BOOT
+#ifdef _LOG_NEW_BOOT
+	extern bool dolog;
+	extern FILE *fp_dis9;
+	extern FILE *fp_dis7;
 
-	memcpy(&card.command[0], &MMU.MMU_MEM[TEST_PROCNUM][0x40][0x1A8], 8);
+	u32 oldCnt = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
+#endif
+#endif
+	
+
+	nds_dscard& card = MMU.dscard[PROCNUM];
+
+#ifdef _NEW_BOOT
+	card.delay = 0;
+#endif
+
+	memcpy(&card.command[0], &MMU.MMU_MEM[PROCNUM][0x40][0x1A8], 8);
 
 	card.blocklen = 0;
+
+#ifndef _NEW_BOOT
 	slot1_device.write32(PROCNUM,0xFFFFFFFF,val); //Special case for some flashcarts
 	if(card.blocklen==0x01020304) return;
 
-	if(!(val & 0x80000000))
+	if ((val & 0x80000000) == 0)
 	{
 		card.address = 0;
 		card.transfer_count = 0;
 
 		val &= 0x7F7FFFFF;
-		T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 		return;
 	}
+#else
+	if ((val & (1 << 15)) != 0)
+	{
+#ifdef _LOG_NEW_BOOT
+		printf("--- ARM%c: cmd %02X (%016llX), ctrl %08X (%08X), delay %X/%X\n", PROCNUM?'7':'9', card.command[0], *(u64 *)&card.command[0], val, oldCnt, (val & 0x1FFF), ((val >> 16) & 0x3F));
+		if (fp_dis7)
+			fprintf(fp_dis7, "--- ARM%c: KEY2 apply!!! ctrl %08X (PC:0x%08X)\n", PROCNUM?'7':'9', val, ARMPROC.instruct_adr);
+		printf("--- ARM%c: KEY2 apply!!! ctrl %08X (PC:0x%08X)\n", PROCNUM?'7':'9', val, ARMPROC.instruct_adr);
+#endif
+
+		key2.applySeed(PROCNUM);
+	}
+
+	if ((val & 0x80000000) == 0)
+	{
+		card.address = 0;
+		card.transfer_count = 0;
+		val &= 0x7F7FFFFF;
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+		return;
+	}
+#endif
 	
-	u32 shift = (val>>24&7); 
+	u32 shift = (val>>24&7);
 	if(shift == 7)
 		card.transfer_count = 1;
 	else if(shift == 0)
 		card.transfer_count = 0;
 	else
-		card.transfer_count = (0x100<<shift)/4;
+		card.transfer_count = (0x100 << shift) / 4;
 
-	switch (card.mode)
+#ifdef _NEW_BOOT
+
+#ifdef _LOG_NEW_BOOT
+	if (fp_dis7)
+		fprintf(fp_dis7, "ARM%c: cmd %02X (%016llX), ctrl %08X\n", PROCNUM?'7':'9', card.command[0], *(u64 *)&card.command[0], val);
+	//printf("ARM%c: cmd %02X (%016llX), ctrl %08X (%08X), PC:%08X, delay %X/%X\n", PROCNUM?'7':'9', card.command[0], *(u64 *)&card.command[0], val, oldCnt, ARMPROC.instruct_adr, (val & 0x1FFF), ((val >> 16) & 0x3F));
+#endif
+	
+#endif
+	
+	if (card.mode == CardMode_Normal)
 	{
-	case CardMode_Normal: 
-		break;
-
-	case CardMode_KEY1:
+		switch(card.command[0])
 		{
-			// TODO
-			INFO("Cartridge: KEY1 mode unsupported.\n");
+			case 0x9F: //Dummy
+				card.address = 0;
+				card.transfer_count = 0x800;
+				break;
 
+			case 0x3C: //Switch to KEY1 mode
+#ifdef _NEW_BOOT
+				{
+#ifdef _LOG_NEW_BOOT
+					u32 chipID = MMU_read32(PROCNUM, 0x027FFE0C);
+					if (fp_dis7)
+						fprintf(fp_dis7, "ARM%c: Activate KEY1 encryption mode (id %08X)\n", PROCNUM?'7':'9', chipID);
+					printf("ARM%c: Activate KEY1 encryption mode (id %08X)\n", PROCNUM?'7':'9', chipID);
+#endif
+					card.mode = CardMode_KEY1;
+					card.transfer_count = 0;
+				}
+#else
+					printf("ARM%c: Activate unsupported KEY1 encryption mode\n", PROCNUM?'7':'9');
+					card.mode = CardMode_KEY1;
+					card.transfer_count = 0;
+#endif
+				break;
+			default:
+				//fall through to the special slot1 handler
+				slot1_device.write32(PROCNUM, REG_GCROMCTRL,val);
+				break;
+		}
+	}
+	else
+		if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
+		{
+#ifdef _NEW_BOOT
+			u32 chipID = MMU_read32(PROCNUM, 0x027FFE0C);
+			//u32 chipID = MMU_read32(PROCNUM, 0x037F8014);
+			u64 cmd = bswap64(*(u64 *)&card.command[0]);
+			
+			key1.init(chipID, 2, 0x08);
+			key1.decrypt((u32*)&cmd);
+			*(u64*)&card.command[0] = bswap64(cmd);
+
+			switch (cmd >> 60)
+			{
+				case 0x02:		// Get secure are block (4Kbytes)		- 910h+11A8h
+					{
+						u32 size = ((cmd >> 44) & 0xFFFF) * (4 * 1024);
+						u32 addr = MMU_read32(PROCNUM, 0x0380FC00);
+#ifdef _LOG_NEW_BOOT
+						if (fp_dis7)
+							fprintf(fp_dis7, "ARM%c: Get secure are block (4Kbytes)\n", PROCNUM?'7':'9');
+						printf("ARM%c: Get secure are block (4Kbytes) src %08X size %04X\n", PROCNUM?'7':'9', addr, size);
+#endif
+
+						// TODO: check ChipID uppper bit
+						card.address = addr;
+						card.transfer_count = 0;//size / 4;
+					}
+					break;
+
+				case 0x04:		// Activate KEY2 encryption mode		- 910h+0
+					card.mode = CardMode_KEY2;
+#ifdef _LOG_NEW_BOOT
+					if (fp_dis7)
+						fprintf(fp_dis7, "ARM%c: Activate KEY2 encryption mode\n", PROCNUM?'7':'9');
+					printf("ARM%c: Activate KEY2 encryption mode\n", PROCNUM?'7':'9');
+#endif
+					//key2.applySeed(PROCNUM);
+					//card.delay = 0x910;
+					break;
+				case 0x06:		// Optional KEY2 disable				- 910h+?
+					break;
+				case 0x0A:		// Enter main data mode					- 910h+0
+#ifdef _LOG_NEW_BOOT
+					if (fp_dis7)
+						fprintf(fp_dis7, "ARM%c: Enter main data mode\n", PROCNUM?'7':'9');
+					printf("ARM%c: Enter main data mode\n", PROCNUM?'7':'9');
+#endif
+					card.mode = CardMode_DATA_LOAD;
+					//card.delay = 0x910;
+					break;
+				default:		// Invalid - get KEY2 stream XOR 00h	- 910h+...
+					slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
+					break;
+			}
+#else
 			card.address = 0;
 			card.transfer_count = 0;
-
-			val &= 0x7F7FFFFF;
-			T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
-			return;
+			printf("ARM%c: Activate unsupported KEY2 encryption mode\n", PROCNUM?'7':'9');
+			card.mode = CardMode_KEY2;
+			card.transfer_count = 0;
+#endif
 		}
-		break;
-	case CardMode_KEY2:
-			INFO("Cartridge: KEY2 mode unsupported.\n");
-		break;
-	}
+		else
+			if (card.mode == CardMode_DATA_LOAD)
+			{
+#ifdef _NEW_BOOT
+				u64 cmd = bswap64(*(u64 *)&card.command[0]);
+				*(u64*)&card.command[0] = bswap64(cmd);
+				slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
+#else
+				INFO("Cartridge: KEY2 load data mode unsupported.\n");
+				card.address = 0;
+				card.transfer_count = 0;
+#endif
+			}
 
-	switch(card.command[0])
-	{
-	case 0x9F: //Dummy
-		card.address = 0;
-		card.transfer_count = 0x800;
-		break;
-
-	//case 0x90: //Get ROM chip ID
-	//	break;
-
-	case 0x3C: //Switch to KEY1 mode
-		card.mode = CardMode_KEY1;
-		break;
-	
-	default:
-		//fall through to the special slot1 handler
-		slot1_device.write32(TEST_PROCNUM, REG_GCROMCTRL,val);
-		break;
-	}
-
-	if(card.transfer_count == 0)
+	if(card.delay == 0 && card.transfer_count == 0)
 	{
 		val &= 0x7F7FFFFF;
-		T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+#ifdef _LOG_NEW_BOOT
+		if (fp_dis7)
+			fprintf(fp_dis7, "ARM%c: ctrl %08X - stop transfer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", PROCNUM?'7':'9', val);
+		printf("ARM%c: ctrl %08X - stop transfer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", PROCNUM?'7':'9', val);
+#endif
 		return;
 	}
-	
-    val |= 0x00800000;
-    T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
+
+	val |= 0x00800000;
+    T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 						
 	// Launch DMA if start flag was set to "DS Cart"
 	//printf("triggering card dma\n");
 	triggerDma(EDMAMode_Card);
 }
 
+template<int PROCNUM>
+u32 FASTCALL MMU_readFromGCControl()
+{
+	nds_dscard& card = MMU.dscard[PROCNUM];
 
+#ifdef _NEW_BOOT
+	u32 val = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
+
+	if (card.delay > 0)
+	{
+		card.delay--;
+		if (card.delay == 0)
+		{
+			printf("ARM%c: delay stop\n", PROCNUM?'7':'9');
+			val &= 0x7F7FFFFF;
+			T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
+		}
+	}
+	return val;
+#else
+	card.delay = 0;
+	return T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
+#endif
+	
+}
 
 template<int PROCNUM>
 u32 MMU_readFromGC()
@@ -1375,7 +1537,11 @@ u32 MMU_readFromGC()
 	if(card.transfer_count == 0)
 		return 0;
 
-	switch(card.command[0])
+	u8 cmd = card.command[0];
+	if ((card.mode == CardMode_KEY1) || (card.mode == CardMode_KEY2))
+		cmd >>= 4;
+
+	switch(cmd)
 	{
 		case 0x9F: //Dummy
 			val = 0xFFFFFFFF;
@@ -2436,11 +2602,11 @@ static INLINE void write_auxspicnt(const int proc, const int size, const int adr
 		case 8:
 			switch(adr) {
 				case 0: 
-					T1WriteByte((u8*)&MMU.AUX_SPI_CNT,0,val); 
+					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 0, val); 
 					if (val == 0) MMU_new.backupDevice.reset_command();
 					break;
 				case 1: 
-					T1WriteByte((u8*)&MMU.AUX_SPI_CNT,1,val); 
+					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 1, val); 
 					break;
 			}
 	}
@@ -2650,10 +2816,8 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				break;
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(9,8,0,val);
-				return;
 			case REG_AUXSPICNT+1:
-				write_auxspicnt(9,8,1,val);
+				write_auxspicnt(9, 8, adr & 1, val);
 				return;
 			
 			case REG_AUXSPIDATA:
@@ -2709,7 +2873,6 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case 0x040001AF :
 						LOG("%08X : %02X\r\n", adr, val);
 		#endif
-
 		}
 
 		MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
@@ -3008,7 +3171,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(9,16,0,val);
+				write_auxspicnt(9, 16, 0, val);
 				return;
 
 			case REG_AUXSPIDATA:
@@ -4014,9 +4177,13 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 			case REG_IF+3: REG_IF_WriteByte<ARMCPU_ARM7>(3,val); break;
 
 			case REG_POSTFLG:
+#ifdef _LOG_NEW_BOOT
+				printf("ARM7: write POSTFLG %02X\n", val);
+#endif
 				//The NDS7 register can be written to only from code executed in BIOS.
 				if (NDS_ARM7.instruct_adr > 0x3FFF) return;
-				
+	
+#ifndef _NEW_BOOT
 				// hack for patched firmwares
 				if (val == 1)
 				{
@@ -4025,28 +4192,41 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 					_MMU_write32<ARMCPU_ARM9>(0x27FFE24, gameInfo.header.ARM9exe);
 					_MMU_write32<ARMCPU_ARM7>(0x27FFE34, gameInfo.header.ARM7exe);
 				}
+#endif
 				break;
 
 			case REG_HALTCNT:
-				//printf("halt 0x%02X\n", val);
-				switch(val)
 				{
-					case 0xC0: NDS_Sleep(); break;
-					case 0x80: armcpu_Wait4IRQ(&NDS_ARM7); break;
-					default: break;
+					//printf("ARM7: Halt 0x%02X IME %02X, IE 0x%08X, IF 0x%08X PC 0x%08X\n", val, MMU.reg_IME[1], MMU.reg_IE[1], MMU.reg_IF_bits[1], NDS_ARM7.instruct_adr);
+					switch(val)
+					{
+						//case 0x10: printf("GBA mode unsupported\n"); break;
+						case 0xC0: NDS_Sleep(); break;
+						case 0x80: 
+#ifdef _NEW_BOOT
+							// FIXME: CrazyMax: HACK!!! for firmware boot form BIOS:
+							// i should study this and remove hack later
+							if (NDS_ARM7.instruct_adr == 0x00002F28 &&
+										(MMU.reg_IE[1] & (1 << 19)) &&
+										(MMU.reg_IF_bits[1] == 0))
+												MMU.reg_IF_bits[1] |= (1 << 19);
+#endif
+							armcpu_Wait4IRQ(&NDS_ARM7);
+						break;
+						default: break;
+					}
+					break;
 				}
-				break;
 				
 			case REG_RTC:
 				rtcWrite(val);
 				return;
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(9,8,0,val);
-				return;
 			case REG_AUXSPICNT+1:
-				write_auxspicnt(9,8,1,val);
+				write_auxspicnt(7, 8, adr & 1, val);
 				return;
+
 			case REG_AUXSPIDATA:
 				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM7));
@@ -4054,8 +4234,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 				return;
 
 			case REG_SPIDATA:
-				// CrazyMax: 27 May 2013: BIOS write 8bit commands to flash controller
-				// (write firmware header into RAM at 0x027FF830)
+				// CrazyMax: 27 May 2013: BIOS write 8bit commands to flash controller when load firmware header 
+				// into RAM at 0x027FF830
 				MMU_writeToSPIData(val);
 				return;
 		}
@@ -4149,7 +4329,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(7,16,0,val);
+				write_auxspicnt(7, 16, 0, val);
 			return;
 
 			case REG_AUXSPIDATA:
@@ -4594,10 +4774,8 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
 			}	
 			case REG_GCROMCTRL:
-			{
-				//INFO("arm7 romctrl read\n");
-				break;
-			}
+				return MMU_readFromGCControl<ARMCPU_ARM7>();
+
 			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
 

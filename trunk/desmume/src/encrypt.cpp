@@ -15,11 +15,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "encrypt.h"
+#include "armcpu.h"
 #include "MMU.h"
+#include "encrypt.h"
 
 //================================================================================== KEY1
-#define bswap32(val) (((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24))
 #define DWNUM(i) ((i) >> 2)
 
 void _KEY1::init(u32 idcode, u8 level, u8 modulo)
@@ -36,8 +36,6 @@ void _KEY1::init(u32 idcode, u8 level, u8 modulo)
 	keyCode[2] >>= 1;
 	if (level >= 3)				// third apply (optional)
 		applyKeycode(modulo);
-
-	printf("keycode1: %08X%08X%08X\n", keyCode[2], keyCode[1], keyCode[0]);
 }
 
 void _KEY1::applyKeycode(u8 modulo)
@@ -97,15 +95,33 @@ void _KEY1::encrypt(u32 *ptr)
 	ptr[1] = y ^ keyBuf[DWNUM(0x44)];
 }
 #undef DWNUM
-#undef bswap32
 
 //================================================================================== KEY2
+u64 _KEY2::bitsReverse39(u64 key)
+{
+	u64 tmp = 0;
+	for (u32 i = 0; i < 39; i++)
+		 tmp |= ((key >> i) & 1) << (38 - i);
+
+	return tmp;
+}
+
 void _KEY2::applySeed(u8 PROCNUM)
 {
 	u64 tmp = (MMU_read8(PROCNUM, REG_ENCSEED0H) & 0xFF);
 	seed0 = MMU_read32(PROCNUM, REG_ENCSEED0L) | (tmp << 32);
 	tmp = (MMU_read8(PROCNUM, REG_ENCSEED1H) & 0xFF);
 	seed1 = MMU_read32(PROCNUM, REG_ENCSEED1L) | (tmp << 32);
-	printf("ARM%c: set KEY2 seed0 to %010llX\n", PROCNUM?'7':'9', seed0);
-	printf("ARM%c: set KEY2 seed1 to %010llX\n", PROCNUM?'7':'9', seed1);
+	x = bitsReverse39(seed0);
+	y = bitsReverse39(seed1);
+	
+	//printf("ARM%c: set KEY2 seed0 to %010llX (reverse %010llX)\n", PROCNUM?'7':'9', seed0, x);
+	//printf("ARM%c: set KEY2 seed1 to %010llX (reverse %010llX)\n", PROCNUM?'7':'9', seed1, y);
+}
+
+u8 _KEY2::apply(u8 data)
+{
+	x = (((x >> 5) ^ (x >> 17) ^ (x >> 18) ^ (x >> 31)) & 0xFF) + (x << 8);
+	y = (((y >> 5) ^ (y >> 23) ^ (y >> 18) ^ (y >> 31)) & 0xFF) + (y << 8);
+	return ((data ^ x ^ y) & 0xFF);
 }

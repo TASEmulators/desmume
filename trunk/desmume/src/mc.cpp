@@ -147,13 +147,13 @@ void mc_init(memory_chip_t *mc, int type)
 
 u8 *mc_alloc(memory_chip_t *mc, u32 size)
 {
-	u8 *buffer;
+	u8 *buffer = NULL;
 	buffer = new u8[size];
+	if(!buffer) { return NULL; }
 	memset(buffer,0,size);
 
 	if (mc->data) delete [] mc->data;
 	mc->data = buffer;
-	if(!buffer) { return NULL; }
 	mc->size = size;
 	mc->writeable_buffer = TRUE;
 
@@ -176,6 +176,7 @@ void fw_reset_com(memory_chip_t *mc)
 			fwrite(mc->data, mc->size, 1, mc->fp);
 		}
 
+#ifndef _NEW_BOOT
 		if (mc->isFirmware&&CommonSettings.UseExtFirmware)
 		{
 			// copy User Settings 1 to User Settings 0 area
@@ -200,7 +201,7 @@ void fw_reset_com(memory_chip_t *mc)
 			else
 				printf(" - failed\n");
 		}
-
+#endif
 		mc->write_enable = FALSE;
 	}
 

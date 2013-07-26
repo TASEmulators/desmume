@@ -300,6 +300,7 @@ enum ECardMode
 	CardMode_Normal = 0,
 	CardMode_KEY1,
 	CardMode_KEY2,
+	CardMode_DATA_LOAD
 };
 
 typedef struct
@@ -309,6 +310,7 @@ typedef struct
 
 	u32 address;
 	u32 transfer_count;
+	u32 delay;
 
 	ECardMode mode;
 
