@@ -105,6 +105,7 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 			default:
 				card.address = 0;
 				card.transfer_count = 0;
+				card.mode = CardMode_KEY1;
 				printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_DATA_LOAD\n", PROCNUM?'7':'9', card.command[0]);
 			break;
 		}
