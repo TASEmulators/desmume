@@ -38,6 +38,7 @@ public:
 	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0) {};
 	
 	bool load();
+	bool unpack();
 
 	static std::string GetExternalFilePath();
 

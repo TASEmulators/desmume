@@ -236,11 +236,6 @@ bool CFIRMWARE::load()
 {
 	u32 size = 0;
 	u8	*data = NULL;
-	u16 shift1 = 0, shift2 = 0, shift3 = 0, shift4 = 0;
-	u32 part1addr = 0, part2addr = 0, part3addr = 0, part4addr = 0, part5addr = 0;
-	u32 part1ram = 0, part2ram = 0;
-	
-	u32	src = 0;
 	
 	if (CommonSettings.UseExtFirmware == false)
 		return false;
@@ -258,15 +253,6 @@ bool CFIRMWARE::load()
 		fclose(fp);
 		return false;
 	}
-
-#ifndef _NEW_BOOT
-	if (size == 512*1024)
-	{
-		INFO("ERROR: 32Mbit (512Kb) firmware not supported\n");
-		fclose(fp);
-		return false;
-	}
-#endif
 
 	data = new u8 [size];
 	if (!data)
@@ -291,19 +277,38 @@ bool CFIRMWARE::load()
 		fclose(fp);
 		return false;
 	}
+	fclose(fp);
 
-#ifdef _NEW_BOOT
-	if (CommonSettings.BootFromFirmware)
+	if (MMU.fw.size != size)	// reallocate
+		mc_alloc(&MMU.fw, size);
+
+	memcpy(MMU.fw.data, data, size);
+
+	delete [] data;
+	data = NULL;
+
+	return true;
+}
+
+bool CFIRMWARE::unpack()
+{
+	u32	src = 0;
+	u16 shift1 = 0, shift2 = 0, shift3 = 0, shift4 = 0;
+	u32 part1addr = 0, part2addr = 0, part3addr = 0, part4addr = 0, part5addr = 0;
+	u32 part1ram = 0, part2ram = 0;
+	u32 size = MMU.fw.size;
+
+	if (size == 512*1024)
 	{
-		if (MMU.fw.size != size)	// reallocate
-			mc_alloc(&MMU.fw, size);
-
-		memcpy(MMU.fw.data, data, size);
-		delete [] data;
-		data = NULL;
-		return true;
+		INFO("ERROR: 32Mbit (512Kb) firmware not supported\n");
+		return false;
 	}
-#endif
+
+	u8	*data = new u8 [size];
+	if (!data)
+		return false;
+
+	memcpy(data, MMU.fw.data, size);
 
 	shift1 = ((header.shift_amounts >> 0) & 0x07);
 	shift2 = ((header.shift_amounts >> 3) & 0x07);
@@ -344,8 +349,7 @@ bool CFIRMWARE::load()
 	size9 = decrypt(data + part1addr, tmp_data9);
 	if (!tmp_data9)
 	{
-		delete [] data;
-		fclose(fp);
+		delete [] data; data = NULL;
 		return false;
 	}
 
@@ -353,8 +357,7 @@ bool CFIRMWARE::load()
 	if (!tmp_data7)
 	{
 		delete [] tmp_data9;
-		delete [] data;
-		fclose(fp);
+		delete [] data; data = NULL;
 		return false;
 	}
 
@@ -365,8 +368,7 @@ bool CFIRMWARE::load()
 		INFO("Firmware: ERROR: the boot code CRC16 (0x%04X) doesn't match the value in the firmware header (0x%04X)", crc16_mine, header.part12_boot_crc16);
 		delete [] tmp_data9;
 		delete [] tmp_data7;
-		delete [] data;
-		fclose(fp); 
+		delete [] data; data = NULL;
 		return false;
 	}
 
@@ -435,7 +437,6 @@ bool CFIRMWARE::load()
 		if (!tmp_data9) 
 		{
 			delete [] data;
-			fclose(fp);
 			return false;
 		}
 
@@ -444,7 +445,6 @@ bool CFIRMWARE::load()
 		{
 			delete [] tmp_data9;
 			delete [] data;
-			fclose(fp);
 			return false;
 		};
 		// Copy firmware boot codes to their respective locations
@@ -479,9 +479,7 @@ bool CFIRMWARE::load()
 	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
 	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
 
-	fclose(fp);
-
-	fp = fopen(MMU.fw.userfile, "rb");
+	FILE *fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
 	{
 		fseek(fp, 0, SEEK_END);
@@ -517,8 +515,7 @@ bool CFIRMWARE::load()
 	}
 	printf("\n");
 
-	// TODO: add 512Kb support
-	memcpy(MMU.fw.data, data, 256*1024);
+	memcpy(MMU.fw.data, data, size);
 	MMU.fw.fp = NULL;
 
 	delete [] data; data = NULL;
