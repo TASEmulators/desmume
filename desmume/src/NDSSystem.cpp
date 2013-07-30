@@ -2621,27 +2621,29 @@ void NDS_Reset()
 
 		// Create the dummy firmware
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
-
-		//copy the arm9 program to the address specified by rom header
-		u32 src = header->ARM9src;
-		u32 dst = header->ARM9cpy;
-		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
+		
 		{
-			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
-			dst += 4;
-			src += 4;
-		}
+			//copy the arm9 program to the address specified by rom header
+			u32 src = header->ARM9src;
+			u32 dst = header->ARM9cpy;
+			for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
+			{
+				_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
+				dst += 4;
+				src += 4;
+			}
 
-		//copy the arm7 program to the address specified by rom header
-		src = header->ARM7src;
-		dst = header->ARM7cpy;
-		for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
-		{
-			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
-			dst += 4;
-			src += 4;
+			//copy the arm7 program to the address specified by rom header
+			src = header->ARM7src;
+			dst = header->ARM7cpy;
+			for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
+			{
+				_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
+				dst += 4;
+				src += 4;
+			}
 		}
-
+		
 		//set the cpus to an initial state with their respective programs entrypoints
 		armcpu_init(&NDS_ARM7, header->ARM7exe);
 		armcpu_init(&NDS_ARM9, header->ARM9exe);
