@@ -46,31 +46,31 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 		case 0x00: //Data read
 		case 0xB7:
 			card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-			card.transfer_count = 0x80;
+			card.transfer_count = 0x200;
 			break;
 
 		case 0xB8:	// Chip ID
 			card.address = 0;
-			card.transfer_count = 1;
+			card.transfer_count = 4;
 			break;
 
 		// Nand Init
 		case 0x94:
 			card.address = 0;
-			card.transfer_count = 0x80;
+			card.transfer_count = 0x200;
 			break;
 
 		// Nand Error?
 		case 0xD6:
 			card.address = 0;
-			card.transfer_count = 1;
+			card.transfer_count = 4;
 			break;
 		
 		// Nand Write? ---- PROGRAM for INTERNAL DATA MOVE/RANDOM DATA INPUT
 		//case 0x8B:
 		case 0x85:
 			card.address = 0;
-			card.transfer_count = 0x80;
+			card.transfer_count = 0x200;
 			break;
 
 		default:
