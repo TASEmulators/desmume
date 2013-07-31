@@ -51,13 +51,13 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 			case 0x00: //Data read (0000000000000000h Get Cartridge Header) - len 200h bytes
 			case 0xB7:
 				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-				card.transfer_count = 0x80;
+				card.transfer_count = 0x200;
 				break;
 
 			case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
 			case 0xB8:
 				card.address = 0;
-				card.transfer_count = 1;
+				card.transfer_count = 4;
 				break;
 
 			default:
@@ -76,7 +76,7 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 		{
 			case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
 				card.address = 0;
-				card.transfer_count = 1;
+				card.transfer_count = 4;
 			break;
 
 			default:
@@ -94,12 +94,12 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 		{
 			case 0xB7:	// Encrypted Data Read (B7aaaaaaaa000000h) - len 200h bytes
 				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-				card.transfer_count = 0x80;
+				card.transfer_count = 0x200;
 			break;
 
 			case 0xB8:	// 3nd Get ROM Chip ID - len 4 bytes
 				card.address = 0;
-				card.transfer_count = 1;
+				card.transfer_count = 4;
 			break;
 
 			default:
