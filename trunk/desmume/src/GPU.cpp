@@ -660,47 +660,46 @@ FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 template<BlendFunc FUNC, bool WINDOW>
 static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
 {
-	bool windowDraw = true, windowEffect = true;
+	bool windowDraw = true;
+	bool windowEffectSatisfied;
 
 	if(WINDOW)
 	{
-		gpu->renderline_checkWindows(x, windowDraw, windowEffect);
+		gpu->renderline_checkWindows(x, windowDraw, windowEffectSatisfied);
 		if(!windowDraw)
 			return;
 	}
 
-	const bool sourceEffectSelected = gpu->blend1;
+	if(type == GPU_OBJ_MODE_Transparent || type == GPU_OBJ_MODE_Bitmap)
+	{
+		//under these conditions, we always use a normal blend, regardless of BLDCNT specifications.
+		//no more than one type of blend processing occurs, so this overrides brightness up/down selection.
+		//NOTE: This is probably happening even outside the effect window, but I'm not sure.
+		//NOTE: It is unclear whether blend EVA/EVB are affecting this. I don't think so.
+		u16 backColor = HostReadWord(dst,x<<1);
+		color = _blend(color,backColor,&gpuBlendTable555[alpha][16-alpha]);
+	}
+	else
+	{
+		const bool firstTargetSatisfied = gpu->blend1;
+		const int bg_under = gpu->bgPixels[x];
+		const bool secondTargetSatisfied = (bg_under != 4) && gpu->blend2[bg_under];
 
-	//note that the fadein and fadeout is done here before blending, 
-	//so that a fade and blending can be applied at the same time (actually, I don't think that is legal..)
-	bool forceBlendingForNormal = false;
-	if(windowEffect && sourceEffectSelected)
-		switch(FUNC) 
+		BlendFunc selectedFunc = NoBlend;
+
+		//if normal BLDCNT layer target conditions are met, then we can use the BLDCNT-specified color effect
+		if(firstTargetSatisfied && secondTargetSatisfied && windowEffectSatisfied) selectedFunc = FUNC;
+
+		switch(selectedFunc) 
 		{
-			//zero 13-jun-2010 : if(allowBlend) was removed from these;
-			//it should be possible to increase/decrease and also blend
-			//(the effect would be increase, but the obj properties permit blending and the target layers are configured correctly)
+		case NoBlend: break;
 		case Increase: color = gpu->currentFadeInColors[color&0x7FFF]; break;
 		case Decrease: color = gpu->currentFadeOutColors[color&0x7FFF]; break;
-
-		//only when blend color effect is selected, ordinarily opaque sprites are blended with the color effect params
-		case Blend: forceBlendingForNormal = true; break;
-		case NoBlend: break;
+		case Blend: 
+			u16 backColor = HostReadWord(dst,x<<1);
+			color = gpu->blend(color,backColor); 
+			break;
 		}
-
-	//this inspects the layer beneath the sprite to see if the current blend flags make it a candidate for blending
-	const int bg_under = gpu->bgPixels[x];
-	const bool allowBlend = (bg_under != 4) && gpu->blend2[bg_under];
-
-	if(allowBlend)
-	{
-		u16 backColor = HostReadWord(dst,x<<1);
-		//this hasn't been tested: this blending occurs without regard to the color effect,
-		//but rather purely from the sprite's alpha
-		if(type == GPU_OBJ_MODE_Bitmap)
-			color = _blend(color,backColor,&gpuBlendTable555[alpha+1][15-alpha]);
-		else if(type == GPU_OBJ_MODE_Transparent || forceBlendingForNormal)
-			color = gpu->blend(color,backColor);
 	}
 
 	HostWriteWord(dst, x<<1, (color | 0x8000));
@@ -1332,11 +1331,11 @@ INLINE void render_sprite_BMP (GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u32 src
 		u16* src = (u16*)MMU_gpu_map(srcadr+(x<<1));
 		color = LE_TO_LOCAL_16(*src);
 
-		// alpha bit = invisible
+		//a cleared alpha bit suppresses the pixel from processing entirely; it doesnt exist
 		if ((color&0x8000)&&(prio<prioTab[sprX]))
 		{
 			HostWriteWord(dst, (sprX<<1), color);
-			dst_alpha[sprX] = alpha;
+			dst_alpha[sprX] = alpha+1;
 			typeTab[sprX] = 3;
 			prioTab[sprX] = prio;
 			gpu->sprNum[sprX] = spriteNum;
@@ -1355,13 +1354,13 @@ INLINE void render_sprite_256(GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u32 srca
 		u32 adr = srcadr + (x&0x7) + ((x&0xFFF8)<<3);
 		u8* src = (u8 *)MMU_gpu_map(adr);
 		palette_entry = *src;
-		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
-		// palette entry = 0 means backdrop
+		//a zero value suppresses the pixel from processing entirely; it doesnt exist
 		if ((palette_entry>0)&&(prio<prioTab[sprX]))
 		{
+			color = LE_TO_LOCAL_16(pal[palette_entry]);
 			HostWriteWord(dst, (sprX<<1), color);
-			dst_alpha[sprX] = 16;
+			dst_alpha[sprX] = 15;
 			typeTab[sprX] = (alpha ? 1 : 0);
 			prioTab[sprX] = prio;
 			gpu->sprNum[sprX] = spriteNum;
@@ -1385,13 +1384,13 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u32 srcadr, u16 * pal
 
 		if (x & 1) palette_entry = palette >> 4;
 		else       palette_entry = palette & 0xF;
-		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
-		// palette entry = 0 means backdrop
+		//a zero value suppresses the pixel from processing entirely; it doesnt exist
 		if ((palette_entry>0)&&(prio<prioTab[sprX]))
 		{
+			color = LE_TO_LOCAL_16(pal[palette_entry]);
 			HostWriteWord(dst, (sprX<<1), color);
-			dst_alpha[sprX] = 16;
+			dst_alpha[sprX] = 15;
 			typeTab[sprX] = (alpha ? 1 : 0);
 			prioTab[sprX] = prio;
 		}
@@ -1646,7 +1645,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 						if (colour && (prio<prioTab[sprX]))
 						{ 
 							HostWriteWord(dst, (sprX<<1), HostReadWord(pal, (colour<<1)));
-							dst_alpha[sprX] = 16;
+							dst_alpha[sprX] = 15;
 							typeTab[sprX] = spriteInfo->Mode;
 							prioTab[sprX] = prio;
 						}
@@ -1749,7 +1748,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 							else
 							{
 								HostWriteWord(dst, (sprX<<1), LE_TO_LOCAL_16(HostReadWord(pal, colour << 1)));
-								dst_alpha[sprX] = 16;
+								dst_alpha[sprX] = 15;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
 							}
