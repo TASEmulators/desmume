@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -661,7 +661,7 @@ template<BlendFunc FUNC, bool WINDOW>
 static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
 {
 	bool windowDraw = true;
-	bool windowEffectSatisfied;
+	bool windowEffectSatisfied = true;
 
 	if(WINDOW)
 	{
