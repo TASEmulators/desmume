@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,67 +24,11 @@
 
 armcp15_t cp15;
 
-bool armcp15_t::reset(armcpu_t * c)
-{
-	//printf("CP15 Reset\n");
-	cpu = c;
-	IDCode = 0x41059461;
-	cacheType = 0x0F0D2112;
-	TCMSize = 0x00140180;
-	ctrl = 0x00012078;
-	DCConfig = 0x0;    
-	ICConfig = 0x0;    
-	writeBuffCtrl = 0x0;
-	und = 0x0;
-	DaccessPerm = 0x22222222;
-	IaccessPerm = 0x22222222;
-	protectBaseSize0 = 0x0;
-	protectBaseSize1 = 0x0;
-	protectBaseSize2 = 0x0;
-	protectBaseSize3 = 0x0;
-	protectBaseSize4 = 0x0;
-	protectBaseSize5 = 0x0;
-	protectBaseSize6 = 0x0;
-	protectBaseSize7 = 0x0;
-	cacheOp = 0x0;
-	DcacheLock = 0x0;
-	IcacheLock = 0x0;
-	ITCMRegion = 0x0C;
-	DTCMRegion = 0x0080000A;
-	processID = 0;
-
-	MMU.ARM9_RW_MODE = BIT7(ctrl);
-	cpu->intVector = 0xFFFF0000 * (BIT13(ctrl));
-	cpu->LDTBit = !BIT15(ctrl); //TBit
-
-	/* preset calculated regionmasks */	
-	for (u8 i=0;i<8;i++) {
-		regionWriteMask_USR[i] = 0 ;
-		regionWriteMask_SYS[i] = 0 ;
-		regionReadMask_USR[i] = 0 ;
-		regionReadMask_SYS[i] = 0 ;
-		regionExecuteMask_USR[i] = 0 ;
-		regionExecuteMask_SYS[i] = 0 ;
-		regionWriteSet_USR[i] = 0 ;
-		regionWriteSet_SYS[i] = 0 ;
-		regionReadSet_USR[i] = 0 ;
-		regionReadSet_SYS[i] = 0 ;
-		regionExecuteSet_USR[i] = 0 ;
-		regionExecuteSet_SYS[i] = 0 ;
-	} ;
-
-	return true;
-}
-
-#define ACCESSTYPE(val,n)   (((val) >> (4*n)) & 0x0F)
-#define SIZEIDENTIFIER(val) ((((val) >> 1) & 0x1F))
-#define SIZEBINARY(val)     (1 << (SIZEIDENTIFIER(val)+1))
-#define MASKFROMREG(val)    (~((SIZEBINARY(val)-1) | 0x3F))
-#define SETFROMREG(val)     ((val) & MASKFROMREG(val))
+#define CP15_ACCESSTYPE(val, n)   (((val) >> (4*n)) & 0x0F)
 /* sets the precalculated regions to mask,set for the affected accesstypes */
-void armcp15_t::setSingleRegionAccess(u32 dAccess,u32 iAccess,unsigned char num, u32 mask,u32 set) {
+void armcp15_t::setSingleRegionAccess(u8 num, u32 mask, u32 set) {
 
-	switch (ACCESSTYPE(dAccess,num)) {
+	switch (CP15_ACCESSTYPE(DaccessPerm, num)) {
 		case 4: /* UNP */
 		case 7: /* UNP */
 		case 8: /* UNP */
@@ -156,7 +100,7 @@ void armcp15_t::setSingleRegionAccess(u32 dAccess,u32 iAccess,unsigned char num,
 			regionReadSet_SYS[num] = set ;
 			break ;
 	}
-	switch (ACCESSTYPE(iAccess,num)) {
+	switch (CP15_ACCESSTYPE(IaccessPerm, num)) {
 		case 4: /* UNP */
 		case 7: /* UNP */
 		case 8: /* UNP */
@@ -195,16 +139,16 @@ void armcp15_t::maskPrecalc()
 {
 #define precalc(num) {  \
 	u32 mask = 0, set = 0xFFFFFFFF ; /* (x & 0) == 0xFF..FF is allways false (disabled) */  \
-	if (BIT_N(protectBaseSize##num,0)) /* if region is enabled */ \
+	if (BIT_N(protectBaseSize[num],0)) /* if region is enabled */ \
 	{    /* reason for this define: naming includes var */  \
-	mask = MASKFROMREG(protectBaseSize##num) ;   \
-	set = SETFROMREG(protectBaseSize##num) ; \
-	if (SIZEIDENTIFIER(protectBaseSize##num)==0x1F)  \
+	mask = CP15_MASKFROMREG(protectBaseSize[num]) ;   \
+	set = CP15_SETFROMREG(protectBaseSize[num]) ; \
+	if (CP15_SIZEIDENTIFIER(protectBaseSize[num])==0x1F)  \
 	{   /* for the 4GB region, u32 suffers wraparound */   \
 	mask = 0 ; set = 0 ;   /* (x & 0) == 0  is allways true (enabled) */  \
 } \
 }  \
-	setSingleRegionAccess(DaccessPerm,IaccessPerm,num,mask,set) ;  \
+	setSingleRegionAccess(num, mask, set) ;  \
 }
 	precalc(0) ;
 	precalc(1) ;
@@ -267,12 +211,7 @@ BOOL armcp15_t::store(u8 CRd, u8 adr)
 
 BOOL armcp15_t::moveCP2ARM(u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 {
-	if (!cpu)
-	{
-		printf("ERROR: cp15 don\'t allocated\n");
-		return FALSE;
-	}
-	if(cpu->CPSR.bits.mode == USR) return FALSE;
+	if(NDS_ARM9.CPSR.bits.mode == USR) return FALSE;
 
 	switch(CRn)
 	{
@@ -345,34 +284,10 @@ BOOL armcp15_t::moveCP2ARM(u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 	case 6:
 		if((opcode1==0) && (opcode2==0))
 		{
-			switch(CRm)
+			if (CRm < 8)
 			{
-			case 0:
-				*R = protectBaseSize0;
+				*R = protectBaseSize[CRm];
 				return TRUE;
-			case 1:
-				*R = protectBaseSize1;
-				return TRUE;
-			case 2:
-				*R = protectBaseSize2;
-				return TRUE;
-			case 3:
-				*R = protectBaseSize3;
-				return TRUE;
-			case 4:
-				*R = protectBaseSize4;
-				return TRUE;
-			case 5:
-				*R = protectBaseSize5;
-				return TRUE;
-			case 6:
-				*R = protectBaseSize6;
-				return TRUE;
-			case 7:
-				*R = protectBaseSize7;
-				return TRUE;
-			default:
-				return FALSE;
 			}
 		}
 		return FALSE;
@@ -416,12 +331,7 @@ BOOL armcp15_t::moveCP2ARM(u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 
 BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 {
-	if (!cpu)
-	{
-		printf("ERROR: cp15 don\'t allocated\n");
-		return FALSE;
-	}
-	if(cpu->CPSR.bits.mode == USR) return FALSE;
+	if(NDS_ARM9.CPSR.bits.mode == USR) return FALSE;
 
 	switch(CRn)
 	{
@@ -433,8 +343,8 @@ BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 			ctrl = (val & 0x000FF085) | 0x00000078;
 			MMU.ARM9_RW_MODE = BIT7(val);
 			//zero 31-jan-2010: change from 0x0FFF0000 to 0xFFFF0000 per gbatek
-			cpu->intVector = 0xFFFF0000 * (BIT13(val));
-			cpu->LDTBit = !BIT15(val); //TBit
+			NDS_ARM9.intVector = 0xFFFF0000 * (BIT13(val));
+			NDS_ARM9.LDTBit = !BIT15(val); //TBit
 			//LOG("CP15: ARMtoCP ctrl %08X (val %08X)\n", ctrl, val);
 			return TRUE;
 		}
@@ -484,42 +394,11 @@ BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 	case 6:
 		if((opcode1==0) && (opcode2==0))
 		{
-			switch(CRm)
+			if (CRm < 8)
 			{
-			case 0:
-				protectBaseSize0 = val;
+				protectBaseSize[CRm] = val;
 				maskPrecalc();
 				return TRUE;
-			case 1:
-				protectBaseSize1 = val;
-				maskPrecalc();
-				return TRUE;
-			case 2:
-				protectBaseSize2 = val;
-				maskPrecalc();
-				return TRUE;
-			case 3:
-				protectBaseSize3 = val;
-				maskPrecalc();
-				return TRUE;
-			case 4:
-				protectBaseSize4 = val;
-				maskPrecalc();
-				return TRUE;
-			case 5:
-				protectBaseSize5 = val;
-				maskPrecalc();
-				return TRUE;
-			case 6:
-				protectBaseSize6 = val;
-				maskPrecalc();
-				return TRUE;
-			case 7:
-				protectBaseSize7 = val;
-				maskPrecalc();
-				return TRUE;
-			default:
-				return FALSE;
 			}
 		}
 		return FALSE;
@@ -527,8 +406,8 @@ BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 		if((CRm==0)&&(opcode1==0)&&((opcode2==4)))
 		{
 			//CP15wait4IRQ;
-			cpu->waitIRQ = TRUE;
-			cpu->halt_IE_and_IF = TRUE;
+			NDS_ARM9.waitIRQ = TRUE;
+			NDS_ARM9.halt_IE_and_IF = TRUE;
 			//IME set deliberately omitted: only SWI sets IME to 1
 			return TRUE;
 		}
@@ -585,14 +464,7 @@ void armcp15_t::saveone(EMUFILE* os)
     write32le(und,os);
     write32le(DaccessPerm,os);
     write32le(IaccessPerm,os);
-    write32le(protectBaseSize0,os);
-    write32le(protectBaseSize1,os);
-    write32le(protectBaseSize2,os);
-    write32le(protectBaseSize3,os);
-    write32le(protectBaseSize4,os);
-    write32le(protectBaseSize5,os);
-    write32le(protectBaseSize6,os);
-    write32le(protectBaseSize7,os);
+	for(int i=0;i<8;i++) write32le(protectBaseSize[i],os);
     write32le(cacheOp,os);
     write32le(DcacheLock,os);
     write32le(IcacheLock,os);
@@ -628,14 +500,7 @@ bool armcp15_t::loadone(EMUFILE* is)
     if(!read32le(&und,is)) return false;
     if(!read32le(&DaccessPerm,is)) return false;
     if(!read32le(&IaccessPerm,is)) return false;
-    if(!read32le(&protectBaseSize0,is)) return false;
-    if(!read32le(&protectBaseSize1,is)) return false;
-    if(!read32le(&protectBaseSize2,is)) return false;
-    if(!read32le(&protectBaseSize3,is)) return false;
-    if(!read32le(&protectBaseSize4,is)) return false;
-    if(!read32le(&protectBaseSize5,is)) return false;
-    if(!read32le(&protectBaseSize6,is)) return false;
-    if(!read32le(&protectBaseSize7,is)) return false;
+	for(int i=0;i<8;i++) if(!read32le(&protectBaseSize[i],is)) return false;
     if(!read32le(&cacheOp,is)) return false;
     if(!read32le(&DcacheLock,is)) return false;
     if(!read32le(&IcacheLock,is)) return false;
@@ -660,31 +525,3 @@ bool armcp15_t::loadone(EMUFILE* is)
 
     return true;
 }
-
-/* precalculate region masks/sets from cp15 register ----- JIT */
-void maskPrecalc()
-{
-#define precalc(num) {  \
-	u32 mask = 0, set = 0xFFFFFFFF ; /* (x & 0) == 0xFF..FF is allways false (disabled) */  \
-	if (BIT_N(cp15.protectBaseSize##num,0)) /* if region is enabled */ \
-	{    /* reason for this define: naming includes var */  \
-	mask = MASKFROMREG(cp15.protectBaseSize##num) ;   \
-	set = SETFROMREG(cp15.protectBaseSize##num) ; \
-	if (SIZEIDENTIFIER(cp15.protectBaseSize##num)==0x1F)  \
-	{   /* for the 4GB region, u32 suffers wraparound */   \
-	mask = 0 ; set = 0 ;   /* (x & 0) == 0  is allways true (enabled) */  \
-} \
-}  \
-	cp15.setSingleRegionAccess(cp15.DaccessPerm,cp15.IaccessPerm,num,mask,set) ;  \
-}
-	precalc(0) ;
-	precalc(1) ;
-	precalc(2) ;
-	precalc(3) ;
-	precalc(4) ;
-	precalc(5) ;
-	precalc(6) ;
-	precalc(7) ;
-#undef precalc
-}
-
