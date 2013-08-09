@@ -2513,7 +2513,9 @@ void NDS_Reset()
 
 	// only ARM9 have co-processor
 	reconstruct(&cp15);
-	cp15.reset(&NDS_ARM9);
+	MMU.ARM9_RW_MODE = BIT7(cp15.ctrl);
+	NDS_ARM9.intVector = 0xFFFF0000 * (BIT13(cp15.ctrl));
+	NDS_ARM9.LDTBit = !BIT15(cp15.ctrl); //TBit
 
 	resetUserInput();
 
