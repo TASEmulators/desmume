@@ -2444,11 +2444,58 @@ static int OP_CLZ(const u32 i)
 //-----------------------------------------------------------------------------
 //   MCR / MRC
 //-----------------------------------------------------------------------------
-#define maskPrecalc \
-{ \
-	X86CompilerFuncCall* ctxM = c.call((void*)maskPrecalc); \
-	ctxM->setPrototype(ASMJIT_CALL_CONV, FuncBuilder0<Void>()); \
+
+// precalculate region masks/sets from cp15 register ----- JIT
+// TODO: rewrite to asm
+static void maskPrecalc(u32 _num)
+{
+#define precalc(num) {  \
+	u32 mask = 0, set = 0xFFFFFFFF ; /* (x & 0) == 0xFF..FF is allways false (disabled) */  \
+	if (BIT_N(cp15.protectBaseSize[num],0)) /* if region is enabled */ \
+	{    /* reason for this define: naming includes var */  \
+		mask = CP15_MASKFROMREG(cp15.protectBaseSize[num]) ;   \
+		set = CP15_SETFROMREG(cp15.protectBaseSize[num]) ; \
+		if (CP15_SIZEIDENTIFIER(cp15.protectBaseSize[num])==0x1F)  \
+		{   /* for the 4GB region, u32 suffers wraparound */   \
+			mask = 0 ; set = 0 ;   /* (x & 0) == 0  is allways true (enabled) */  \
+		} \
+	}  \
+	cp15.setSingleRegionAccess(num, mask, set) ;  \
 }
+	switch(_num)
+	{
+		case 0: precalc(0); break;
+		case 1: precalc(1); break;
+		case 2: precalc(2); break;
+		case 3: precalc(3); break;
+		case 4: precalc(4); break;
+		case 5: precalc(5); break;
+		case 6: precalc(6); break;
+		case 7: precalc(7); break;
+
+		case 0xFF:
+			precalc(0);
+			precalc(1);
+			precalc(2);
+			precalc(3);
+			precalc(4);
+			precalc(5);
+			precalc(6);
+			precalc(7);
+		break;
+	}
+#undef precalc
+}
+
+#define _maskPrecalc(num) \
+{ \
+	GpVar _num = c.newGpVar(kX86VarTypeGpd); \
+	X86CompilerFuncCall* ctxM = c.call((uintptr_t)maskPrecalc); \
+	c.mov(_num, num); \
+	ctxM->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<Void, u32>()); \
+	ctxM->setArgument(0, _num); \
+}
+
 static int OP_MCR(const u32 i)
 {
 	if (PROCNUM == ARMCPU_ARM7) return 0;
@@ -2548,12 +2595,12 @@ static int OP_MCR(const u32 i)
 					case 2:
 						//DaccessPerm = val;
 						c.mov(cp15_ptr(DaccessPerm), data);
-						maskPrecalc;
+						_maskPrecalc(0xFF);
 						break;
 					case 3:
 						//IaccessPerm = val;
 						c.mov(cp15_ptr(IaccessPerm), data);
-						maskPrecalc;
+						_maskPrecalc(0xFF);
 						break;
 					default:
 						bUnknown = true;
@@ -2565,51 +2612,12 @@ static int OP_MCR(const u32 i)
 		case 6:
 			if((opcode1==0) && (opcode2==0))
 			{
-				switch(CRm)
+				if (CRm < 8)
 				{
-					case 0:
-						//protectBaseSize0 = val;
-						c.mov(cp15_ptr(protectBaseSize0), data);
-						maskPrecalc;
-						break;
-					case 1:
-						//protectBaseSize1 = val;
-						c.mov(cp15_ptr(protectBaseSize1), data);
-						maskPrecalc;
-						break;
-					case 2:
-						//protectBaseSize2 = val;
-						c.mov(cp15_ptr(protectBaseSize2), data);
-						maskPrecalc;
-						break;
-					case 3:
-						//protectBaseSize3 = val;
-						c.mov(cp15_ptr(protectBaseSize3), data);
-						maskPrecalc;
-						break;
-					case 4:
-						//protectBaseSize4 = val;
-						c.mov(cp15_ptr(protectBaseSize4), data);
-						maskPrecalc;
-						break;
-					case 5:
-						//protectBaseSize5 = val;
-						c.mov(cp15_ptr(protectBaseSize5), data);
-						maskPrecalc;
-						break;
-					case 6:
-						//protectBaseSize6 = val;
-						c.mov(cp15_ptr(protectBaseSize6), data);
-						maskPrecalc;
-						break;
-					case 7:
-						//protectBaseSize7 = val;
-						c.mov(cp15_ptr(protectBaseSize7), data);
-						maskPrecalc;
-						break;
-					default:
-						bUnknown = true;
-						break;
+					//protectBaseSize[CRm] = val;
+					c.mov(cp15_ptr(protectBaseSize[CRm]), data);
+					_maskPrecalc(CRm);
+					break;
 				}
 			}
 			bUnknown = true;
@@ -2810,45 +2818,12 @@ static int OP_MRC(const u32 i)
 		case 6:
 			if((opcode1==0) && (opcode2==0))
 			{
-				switch(CRm)
+				if (CRm < 8)
 				{
-					case 0:
-						// *R = protectBaseSize0;
-						c.mov(data, cp15_ptr(protectBaseSize0));
-						break;
-					case 1:
-						// *R = protectBaseSize1;
-						c.mov(data, cp15_ptr(protectBaseSize1));
-						break;
-					case 2:
-						// *R = protectBaseSize2;
-						c.mov(data, cp15_ptr(protectBaseSize2));
-						break;
-					case 3:
-						// *R = protectBaseSize3;
-						c.mov(data, cp15_ptr(protectBaseSize3));
-						break;
-					case 4:
-						// *R = protectBaseSize4;
-						c.mov(data, cp15_ptr(protectBaseSize4));
-						break;
-					case 5:
-						// *R = protectBaseSize5;
-						c.mov(data, cp15_ptr(protectBaseSize5));
-						break;
-					case 6:
-						// *R = protectBaseSize6;
-						c.mov(data, cp15_ptr(protectBaseSize6));
-						break;
-					case 7:
-						// *R = protectBaseSize7;
-						c.mov(data, cp15_ptr(protectBaseSize7));
-						break;
-					default:
-						bUnknown = true;
-						break;
+					// *R = protectBaseSize[CRm];
+					c.mov(data, cp15_ptr(protectBaseSize[CRm]));
+					break;
 				}
-				break;
 			}
 			bUnknown = true;
 			break;
