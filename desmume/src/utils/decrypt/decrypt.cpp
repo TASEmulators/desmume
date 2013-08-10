@@ -448,6 +448,39 @@ static void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 	}
 }
 
+static void encrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
+{
+	u32 *p = (u32*)data;
+	if (p[0] != 0xE7FFDEFF || p[1] != 0xE7FFDEFF)
+	{
+		fprintf(stderr, "Encryption failed!\n");
+		return;
+	}
+	p += 2;
+
+	init1(cardheader_gamecode);
+
+	arg2[1] <<= 1;
+	arg2[2] >>= 1;
+	
+	init2(card_hash, arg2);
+
+	u32 size = 0x800 - 8;
+	while (size > 0)
+	{
+		encrypt(card_hash, p+1, p);
+		p += 2;
+		size -= 8;
+	}
+
+	p = (u32*)data;
+	p[0] = MAGIC30;
+	p[1] = MAGIC34;
+	encrypt(card_hash, p+1, p);
+	init1(cardheader_gamecode);
+	encrypt(card_hash, p+1, p);
+}
+
 
 bool DecryptSecureArea(u8 *romdata, long romlen)
 {
@@ -504,3 +537,30 @@ bool DecryptSecureArea(u8 *romdata, long romlen)
 
 	return true;
 }
+
+bool EncryptSecureArea(u8 *romdata, long romlen)
+{
+	//this looks like it will only work on little endian hosts
+	Header* header = (Header*)romdata;
+
+	int romType = DetectRomType(*header,(char*)romdata);
+
+	if(romType == ROMTYPE_INVALID)
+		return false;
+
+	if (romType == ROMTYPE_NDSDUMPED)
+	{
+		unsigned char data[0x4000];
+		memcpy(data,romdata+0x4000,0x4000);
+
+		encrypt_arm9(*(u32 *)header->gamecode, data);
+		// clear data after header
+		memset(romdata+0x200,0,(0x4000-0x200));
+		// write secure 0x800
+		memcpy(romdata+0x4000,data,0x800);
+		printf("Encrypted.\n");
+	}
+
+	return true;
+}
+

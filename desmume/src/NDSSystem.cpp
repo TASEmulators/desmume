@@ -2534,6 +2534,11 @@ void NDS_Reset()
 #ifdef _NEW_BOOT
 		gameInfo.restoreSecureArea();
 
+		// Firmware boot only encrypted ROMs
+#ifndef WORDS_BIGENDIAN
+		EncryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+#endif
+
 		armcpu_init(&NDS_ARM7, 0x00000000);
 		armcpu_init(&NDS_ARM9, 0xFFFF0000);
 
