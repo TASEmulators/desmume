@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,7 +23,18 @@
 #include "NDSSystem.h"
 
 #define cpu (&ARMPROC)
-#define TEMPLATE template<int PROCNUM> 
+#define TEMPLATE template<int PROCNUM>
+
+struct CompressionHeader
+{
+public:
+	CompressionHeader(u32 _value) : value(_value) {}
+	u32 DataSize() const { return value&15; } 
+	u32 Type() const { return (value>>4)&15; }
+	u32 DecompressedSize() const { return value>>24; }
+private:
+	u32 value;
+};
 
 static const u16 getsinetbl[] = {
 0x0000, 0x0324, 0x0648, 0x096A, 0x0C8C, 0x0FAB, 0x12C8, 0x15E2, 
@@ -890,74 +901,72 @@ TEMPLATE static u32 BitUnPack()
   return 1;
 }
 
-TEMPLATE static u32 Diff8bitUnFilterWram()
+TEMPLATE static u32 Diff8bitUnFilterWram() //this one might be different on arm7 and needs checking
 {
-  u32 source,dest,header;
-  u8 data,diff;
-  int len;
+	//INFO("swi diff8bitunfilterwram\n");
 
-  source = cpu->R[0];
-  dest = cpu->R[1];
+	u32 source = cpu->R[0];
+	u32 dest = cpu->R[1];
 
-  header = _MMU_read08<PROCNUM>(source);
-  source += 4;
+	CompressionHeader header(_MMU_read32<PROCNUM>(source));
+	source += 4;
 
-  //INFO("swi diff8bitunfilterwram\n");
+	if(header.DataSize() != 1) printf("WARNING: incorrect header passed to Diff8bitUnFilterWram\n");
+	if(header.Type() != 8) printf("WARNING: incorrect header passed to Diff8bitUnFilterWram\n");
+	u32 len = header.DecompressedSize();
 
-  if(((source & 0xe000000) == 0) ||
-     (( (source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0))
-    return 0;  
+	if(PROCNUM == ARMCPU_ARM7)
+	{
+		//can someone double check whether arm7 actually does this? arm9 definitely doesnt)
+		if(((source & 0x0E000000) == 0) ||
+			(( (source + (len & 0x001fffff)) & 0x0E000000) == 0))
+			return 0;  
+	}
 
-  len = header >> 8;
+	u8 data = _MMU_read08<PROCNUM>(source++);
+	_MMU_write08<PROCNUM>(dest++, data);
+	len--;
 
-  data = _MMU_read08<PROCNUM>(source++);
-  _MMU_write08<PROCNUM>(dest++, data);
-  len--;
-  
-  while(len > 0) {
-    diff = _MMU_read08<PROCNUM>(source++);
-    data += diff;
-    _MMU_write08<PROCNUM>(dest++, data);
-    len--;
-  }
-  return 1;
+	while(len > 0) {
+		u8 diff = _MMU_read08<PROCNUM>(source++);
+		data += diff;
+		_MMU_write08<PROCNUM>(dest++, data);
+		len--;
+	}
+	return 1;
 }
 
 TEMPLATE static u32 Diff16bitUnFilter()
 {
-  u32 source,dest,header;
-  u16 data;
-  int len;
+	//INFO("swi diff8bitunfilterwram\n");
 
-  source = cpu->R[0];
-  dest = cpu->R[1];
+	u32 source = cpu->R[0];
+	u32 dest = cpu->R[1];
 
-  //INFO("swi diff16bitunfilter\n");
+	CompressionHeader header(_MMU_read32<PROCNUM>(source));
+	source += 4;
 
-  header = _MMU_read08<PROCNUM>(source);
-  source += 4;
+	if(header.DataSize() != 2) printf("WARNING: incorrect header passed to Diff16bitUnFilter\n");
+	if(header.Type() != 8) printf("WARNING: incorrect header passed to Diff16bitUnFilter\n");
+	u32 len = header.DecompressedSize();
 
-  if(((source & 0xe000000) == 0) ||
-     ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-    return 0;  
-  
-  len = header >> 8;
+	//no arm7 version, so no range checks
 
-  data = _MMU_read16<PROCNUM>(source);
-  source += 2;
-  _MMU_write16<PROCNUM>(dest, data);
-  dest += 2;
-  len -= 2;
-  
-  while(len >= 2) {
-    u16 diff = _MMU_read16<PROCNUM>(source);
-    source += 2;
-    data += diff;
-    _MMU_write16<PROCNUM>(dest, data);
-    dest += 2;
-    len -= 2;
-  }
-  return 1;
+	u16 data = _MMU_read16<PROCNUM>(source);
+	source += 2;
+	_MMU_write16<PROCNUM>(dest, data);
+	dest += 2;
+	len -= 2;
+
+	while(len >= 2) {
+		u16 diff = _MMU_read16<PROCNUM>(source);
+		source += 2;
+		data += diff;
+		_MMU_write16<PROCNUM>(dest, data);
+		dest += 2;
+		len -= 2;
+	}
+	return 1;
 }
 
 TEMPLATE static u32 bios_sqrt()
@@ -972,6 +981,7 @@ TEMPLATE static u32 setHaltCR()
      return 1;
 }
 
+//ARM7 only
 TEMPLATE static u32 getSineTab()
 {
 	//ds returns garbage according to gbatek, but we must protect ourselves
@@ -986,6 +996,7 @@ TEMPLATE static u32 getSineTab()
 	return 1;
 }
 
+//ARM7 only
 TEMPLATE static u32 getPitchTab()
 { 
 	//ds returns garbage according to gbatek, but we must protect ourselves
@@ -999,6 +1010,7 @@ TEMPLATE static u32 getPitchTab()
 	return 1;
 }
 
+//ARM7 only
 TEMPLATE static u32 getVolumeTab()
 { 
 	//ds returns garbage according to gbatek, but we must protect ourselves
@@ -1007,14 +1019,12 @@ TEMPLATE static u32 getVolumeTab()
 		printf("Invalid SWI getVolumeTab: %08X\n",cpu->R[0]);
 		return 1;
 	}
-
-
-    cpu->R[0] = getvoltbl[cpu->R[0]];
-    return 1;
+	cpu->R[0] = getvoltbl[cpu->R[0]];
+	return 1;
 }
 
 
-//TEMPLATE static u32 getCRC16_old(u32 crc, u32 datap, u32 size)
+//TEMPLATE static u32 getCRC16_old_and_broken(u32 crc, u32 datap, u32 size)
 //{
 //  unsigned int i,j;
 //   
@@ -1041,7 +1051,8 @@ TEMPLATE static u32 getVolumeTab()
 
 TEMPLATE static u32 getCRC16()
 {
-	//gbatek is wrong.
+	//gbatek is wrong.. for ARM9, at least. 
+	//someone should check how the ARM7 version works.
 
 	//dawn of sorrow uses this to checksum its save data;
 	//if this implementation is wrong, then it won't match what the real bios returns, 
@@ -1090,14 +1101,15 @@ TEMPLATE static u32 isDebugger()
 
 TEMPLATE static u32 SoundBias()
 {
-     u32 curBias = _MMU_read32<ARMCPU_ARM7>(0x04000504);
-	 u32 newBias = (curBias == 0) ? 0x000:0x200;
-	 u32 delay = (newBias > curBias) ? (newBias-curBias) : (curBias-newBias);
+	u32 curBias = _MMU_read32<ARMCPU_ARM7>(0x04000504);
+	u32 newBias = (curBias == 0) ? 0x000:0x200;
+	u32 delay = (newBias > curBias) ? (newBias-curBias) : (curBias-newBias);
 
-	 _MMU_write32<ARMCPU_ARM7>(0x04000504, newBias);
-     return cpu->R[1] * delay;
+	_MMU_write32<ARMCPU_ARM7>(0x04000504, newBias);
+	return cpu->R[1] * delay;
 }
 
+//ARM7 only
 TEMPLATE static u32 getBootProcs()
 {
 	cpu->R[0] = 0x00000A2E;
@@ -1108,71 +1120,71 @@ TEMPLATE static u32 getBootProcs()
 
 u32 (* ARM_swi_tab[2][32])()={
 	{
-         bios_nop<ARMCPU_ARM9>,             // 0x00
-         bios_nop<ARMCPU_ARM9>,             // 0x01
-         bios_nop<ARMCPU_ARM9>,             // 0x02
-         WaitByLoop<ARMCPU_ARM9>,           // 0x03
-         intrWaitARM<ARMCPU_ARM9>,          // 0x04
-         waitVBlankARM<ARMCPU_ARM9>,        // 0x05
-         wait4IRQ<ARMCPU_ARM9>,             // 0x06
-         bios_nop<ARMCPU_ARM9>,             // 0x07
-         bios_nop<ARMCPU_ARM9>,             // 0x08
-         divide<ARMCPU_ARM9>,               // 0x09
-         bios_nop<ARMCPU_ARM9>,             // 0x0A
-         copy<ARMCPU_ARM9>,                 // 0x0B
-         fastCopy<ARMCPU_ARM9>,             // 0x0C
-         bios_sqrt<ARMCPU_ARM9>,            // 0x0D
-         getCRC16<ARMCPU_ARM9>,             // 0x0E
-         isDebugger<ARMCPU_ARM9>,           // 0x0F
-         BitUnPack<ARMCPU_ARM9>,            // 0x10
-         LZ77UnCompWram<ARMCPU_ARM9>,       // 0x11
-         LZ77UnCompVram<ARMCPU_ARM9>,       // 0x12
-         UnCompHuffman<ARMCPU_ARM9>,        // 0x13
-         RLUnCompWram<ARMCPU_ARM9>,         // 0x14
-         RLUnCompVram<ARMCPU_ARM9>,         // 0x15
-         Diff8bitUnFilterWram<ARMCPU_ARM9>, // 0x16
-         bios_nop<ARMCPU_ARM9>,             // 0x17
-         Diff16bitUnFilter<ARMCPU_ARM9>,    // 0x18
-         bios_nop<ARMCPU_ARM9>,             // 0x19
-         bios_nop<ARMCPU_ARM9>,             // 0x1A
-         bios_nop<ARMCPU_ARM9>,             // 0x1B
-         bios_nop<ARMCPU_ARM9>,             // 0x1C
-         bios_nop<ARMCPU_ARM9>,             // 0x1D
-         bios_nop<ARMCPU_ARM9>,             // 0x1E
-         setHaltCR<ARMCPU_ARM9>,            // 0x1F
+		bios_nop<ARMCPU_ARM9>,             // 0x00
+		bios_nop<ARMCPU_ARM9>,             // 0x01
+		bios_nop<ARMCPU_ARM9>,             // 0x02
+		WaitByLoop<ARMCPU_ARM9>,           // 0x03
+		intrWaitARM<ARMCPU_ARM9>,          // 0x04
+		waitVBlankARM<ARMCPU_ARM9>,        // 0x05
+		wait4IRQ<ARMCPU_ARM9>,             // 0x06
+		bios_nop<ARMCPU_ARM9>,             // 0x07
+		bios_nop<ARMCPU_ARM9>,             // 0x08
+		divide<ARMCPU_ARM9>,               // 0x09
+		bios_nop<ARMCPU_ARM9>,             // 0x0A
+		copy<ARMCPU_ARM9>,                 // 0x0B
+		fastCopy<ARMCPU_ARM9>,             // 0x0C
+		bios_sqrt<ARMCPU_ARM9>,            // 0x0D
+		getCRC16<ARMCPU_ARM9>,             // 0x0E
+		isDebugger<ARMCPU_ARM9>,           // 0x0F
+		BitUnPack<ARMCPU_ARM9>,            // 0x10
+		LZ77UnCompWram<ARMCPU_ARM9>,       // 0x11
+		LZ77UnCompVram<ARMCPU_ARM9>,       // 0x12
+		UnCompHuffman<ARMCPU_ARM9>,        // 0x13
+		RLUnCompWram<ARMCPU_ARM9>,         // 0x14
+		RLUnCompVram<ARMCPU_ARM9>,         // 0x15
+		Diff8bitUnFilterWram<ARMCPU_ARM9>, // 0x16
+		bios_nop<ARMCPU_ARM9>,             // 0x17
+		Diff16bitUnFilter<ARMCPU_ARM9>,    // 0x18
+		bios_nop<ARMCPU_ARM9>,             // 0x19
+		bios_nop<ARMCPU_ARM9>,             // 0x1A
+		bios_nop<ARMCPU_ARM9>,             // 0x1B
+		bios_nop<ARMCPU_ARM9>,             // 0x1C
+		bios_nop<ARMCPU_ARM9>,             // 0x1D
+		bios_nop<ARMCPU_ARM9>,             // 0x1E
+		setHaltCR<ARMCPU_ARM9>,            // 0x1F
 	},
 	{
-         bios_nop<ARMCPU_ARM7>,             // 0x00
-         bios_nop<ARMCPU_ARM7>,             // 0x01
-         bios_nop<ARMCPU_ARM7>,             // 0x02
-         WaitByLoop<ARMCPU_ARM7>,           // 0x03
-         intrWaitARM<ARMCPU_ARM7>,          // 0x04
-         waitVBlankARM<ARMCPU_ARM7>,        // 0x05
-         wait4IRQ<ARMCPU_ARM7>,             // 0x06
-         sleep<ARMCPU_ARM7>,                // 0x07
-         SoundBias<ARMCPU_ARM7>,            // 0x08
-         divide<ARMCPU_ARM7>,               // 0x09
-         bios_nop<ARMCPU_ARM7>,             // 0x0A
-         copy<ARMCPU_ARM7>,                 // 0x0B
-         fastCopy<ARMCPU_ARM7>,             // 0x0C
-         bios_sqrt<ARMCPU_ARM7>,            // 0x0D
-         getCRC16<ARMCPU_ARM7>,             // 0x0E
-		 isDebugger<ARMCPU_ARM7>,           // 0x0F
-         BitUnPack<ARMCPU_ARM7>,            // 0x10
-         LZ77UnCompWram<ARMCPU_ARM7>,       // 0x11
-         LZ77UnCompVram<ARMCPU_ARM7>,       // 0x12
-         UnCompHuffman<ARMCPU_ARM7>,        // 0x13
-         RLUnCompWram<ARMCPU_ARM7>,         // 0x14
-         RLUnCompVram<ARMCPU_ARM7>,         // 0x15
-         Diff8bitUnFilterWram<ARMCPU_ARM7>, // 0x16
-         bios_nop<ARMCPU_ARM7>,             // 0x17
-         bios_nop<ARMCPU_ARM7>,             // 0x18
-         bios_nop<ARMCPU_ARM7>,             // 0x19
-         getSineTab<ARMCPU_ARM7>,           // 0x1A
-         getPitchTab<ARMCPU_ARM7>,          // 0x1B
-         getVolumeTab<ARMCPU_ARM7>,         // 0x1C
-         getBootProcs<ARMCPU_ARM7>,         // 0x1D
-         bios_nop<ARMCPU_ARM7>,             // 0x1E
-         setHaltCR<ARMCPU_ARM7>,            // 0x1F
+		bios_nop<ARMCPU_ARM7>,             // 0x00
+		bios_nop<ARMCPU_ARM7>,             // 0x01
+		bios_nop<ARMCPU_ARM7>,             // 0x02
+		WaitByLoop<ARMCPU_ARM7>,           // 0x03
+		intrWaitARM<ARMCPU_ARM7>,          // 0x04
+		waitVBlankARM<ARMCPU_ARM7>,        // 0x05
+		wait4IRQ<ARMCPU_ARM7>,             // 0x06
+		sleep<ARMCPU_ARM7>,                // 0x07
+		SoundBias<ARMCPU_ARM7>,            // 0x08
+		divide<ARMCPU_ARM7>,               // 0x09
+		bios_nop<ARMCPU_ARM7>,             // 0x0A
+		copy<ARMCPU_ARM7>,                 // 0x0B
+		fastCopy<ARMCPU_ARM7>,             // 0x0C
+		bios_sqrt<ARMCPU_ARM7>,            // 0x0D
+		getCRC16<ARMCPU_ARM7>,             // 0x0E
+		isDebugger<ARMCPU_ARM7>,           // 0x0F
+		BitUnPack<ARMCPU_ARM7>,            // 0x10
+		LZ77UnCompWram<ARMCPU_ARM7>,       // 0x11
+		LZ77UnCompVram<ARMCPU_ARM7>,       // 0x12
+		UnCompHuffman<ARMCPU_ARM7>,        // 0x13
+		RLUnCompWram<ARMCPU_ARM7>,         // 0x14
+		RLUnCompVram<ARMCPU_ARM7>,         // 0x15
+		Diff8bitUnFilterWram<ARMCPU_ARM7>, // 0x16
+		bios_nop<ARMCPU_ARM7>,             // 0x17
+		bios_nop<ARMCPU_ARM7>,             // 0x18
+		bios_nop<ARMCPU_ARM7>,             // 0x19
+		getSineTab<ARMCPU_ARM7>,           // 0x1A
+		getPitchTab<ARMCPU_ARM7>,          // 0x1B
+		getVolumeTab<ARMCPU_ARM7>,         // 0x1C
+		getBootProcs<ARMCPU_ARM7>,         // 0x1D
+		bios_nop<ARMCPU_ARM7>,             // 0x1E
+		setHaltCR<ARMCPU_ARM7>,            // 0x1F
 	}
 };
