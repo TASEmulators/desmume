@@ -22,5 +22,6 @@
 #define _DECRYPT_H_
 
 bool DecryptSecureArea(u8 *romdata, long romlen);
+bool EncryptSecureArea(u8 *romdata, long romlen);
 
 #endif
