@@ -2534,6 +2534,8 @@ void NDS_Reset()
 #ifdef _NEW_BOOT
 		gameInfo.restoreSecureArea();
 
+		firmware->loadSettings();
+
 		// Firmware boot only encrypted ROMs
 #ifndef WORDS_BIGENDIAN
 		EncryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
@@ -2624,7 +2626,10 @@ void NDS_Reset()
 		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
 
 		if (CommonSettings.UseExtFirmware && fw_success)
+		{
 			firmware->unpack();
+			firmware->loadSettings();
+		}
 
 		// Create the dummy firmware
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);

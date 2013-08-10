@@ -439,6 +439,7 @@
 #define IDC_FULL_CHARS                  1055
 #define IDC_LIST1                       1056
 #define IDC_IMP_INFO_CURRENT            1056
+#define IDC_FIRMWAREEXTUSER             1056
 #define IDC_BADD_AR                     1057
 #define IDC_IMP_INFO_FILE               1057
 #define IDC_BADD_CB                     1058

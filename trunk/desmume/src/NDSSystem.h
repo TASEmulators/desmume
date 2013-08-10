@@ -520,6 +520,7 @@ extern struct TCommonSettings {
 		, SWIFromBIOS(false)
 		, PatchSWI3(false)
 		, UseExtFirmware(false)
+		, UseExtFirmwareSettings(false)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
 		, EnsataEmulation(false)
@@ -575,6 +576,7 @@ extern struct TCommonSettings {
 	bool PatchSWI3;
 
 	bool UseExtFirmware;
+	bool UseExtFirmwareSettings;
 	char Firmware[256];
 	bool BootFromFirmware;
 	NDS_fw_config_data fw_config;
