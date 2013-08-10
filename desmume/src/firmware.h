@@ -29,16 +29,19 @@ private:
 	u8		*tmp_data9;
 	u8		*tmp_data7;
 	u32		size9, size7;
+	u32		userDataAddr;
 
 	u16		getBootCodeCRC16();
 	u32		decrypt(const u8 *in, u8* &out);
 	u32		decompress(const u8 *in, u8* &out);
 
 public:
-	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0) {};
+	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0), userDataAddr(0x3FE00) {};
 	
 	bool load();
 	bool unpack();
+	bool loadSettings();
+	bool saveSettings();
 
 	static std::string GetExternalFilePath();
 

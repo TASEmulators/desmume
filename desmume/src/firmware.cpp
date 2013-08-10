@@ -20,6 +20,9 @@
 #include "path.h"
 #include "encrypt.h"
 
+#define DFC_ID_CODE	TEXT("DeSmuME Firmware User Settings")
+#define USER_SETTING_SIZE 0x100
+
 static _KEY1	enc(&MMU.ARM7_BIOS[0x0030]);
 
 u16 CFIRMWARE::getBootCodeCRC16()
@@ -282,10 +285,16 @@ bool CFIRMWARE::load()
 	if (MMU.fw.size != size)	// reallocate
 		mc_alloc(&MMU.fw, size);
 
+	userDataAddr = T1ReadWord(data, 0x20) * 8;
+
 	memcpy(MMU.fw.data, data, size);
 
 	delete [] data;
 	data = NULL;
+
+	// Generate the path for the external firmware config file.
+	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
+	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
 
 	return true;
 }
@@ -475,50 +484,81 @@ bool CFIRMWARE::unpack()
 		INFO("   * ARM7 unpacked size:         0x%08X (%i) bytes\n", size7, size7);
 	}
 
-	// Generate the path for the external firmware config file.
-	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
-	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
+	memcpy(MMU.fw.data, data, size);
+	MMU.fw.fp = NULL;
+
+	delete [] data; data = NULL;
+	return true;
+}
+
+bool CFIRMWARE::loadSettings()
+{
+	if (!CommonSettings.UseExtFirmwareSettings) return false;
+
+	u8 *data = MMU.fw.data;
 
 	FILE *fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
 	{
 		fseek(fp, 0, SEEK_END);
-		if (ftell(fp) == (0x100 + 0x1D6 + 0x300))
+		if (ftell(fp) == (USER_SETTING_SIZE + sizeof(DFC_ID_CODE)))
 		{
 			fseek(fp, 0, SEEK_SET);
-			char buf[0x301];
-			memset(buf, 0, sizeof(buf));
-			if (fread(buf, 1, 0x100, fp) == 0x100)
+			u8 *usr = new u8[USER_SETTING_SIZE];
+			if (usr)
 			{
-				printf("- loaded firmware config from %s:\n", MMU.fw.userfile);
-				memcpy(&data[0x3FE00], &buf[0], 0x100);
-				memcpy(&data[0x3FF00], &buf[0], 0x100);
-				printf("   * User settings\n");
-				memset(buf, 0, sizeof(buf));
-				if (fread(buf, 1, 0x1D6, fp) == 0x1D6)
+				if (fread(usr, 1, sizeof(DFC_ID_CODE), fp) == sizeof(DFC_ID_CODE))
 				{
-					memcpy(&data[0x002A], &buf[0], 0x1D6);
-					printf("   * WiFi settings\n");
-
-					memset(buf, 0, sizeof(buf));
-					if (fread(buf, 1, 0x300, fp) == 0x300)
+					if (memcmp(usr, DFC_ID_CODE, sizeof(DFC_ID_CODE)) == 0)
 					{
-						memcpy(&data[0x3FA00], &buf[0], 0x300);
-						printf("   * WiFi AP settings\n");
+						memset(usr, 0xFF, USER_SETTING_SIZE);
+						if (fread(usr, 1, USER_SETTING_SIZE, fp) == USER_SETTING_SIZE)
+						{
+							memcpy(&data[userDataAddr], usr, USER_SETTING_SIZE);
+							memcpy(&data[userDataAddr + 0x100], usr, USER_SETTING_SIZE);
+							printf("Loaded user settings from %s:\n", MMU.fw.userfile);
+						}
 					}
 				}
+				delete [] usr;
+				usr = NULL;
 			}
 		}
 		else
-			printf("- failed loading firmware config from %s (wrong file size)\n", MMU.fw.userfile);
+			printf("Failed loading firmware config from %s (wrong file size)\n", MMU.fw.userfile);
+
 		fclose(fp);
 	}
-	printf("\n");
 
-	memcpy(MMU.fw.data, data, size);
-	MMU.fw.fp = NULL;
+	return false;
+}
 
-	delete [] data; data = NULL;
+bool CFIRMWARE::saveSettings()
+{
+	if (!CommonSettings.UseExtFirmwareSettings) return false;
+
+	u8 *data = MMU.fw.data;
+	// copy User Settings 1 to User Settings 0 area
+	memcpy(&data[userDataAddr], &data[userDataAddr + 0x100], 0x100);
+	
+	printf("Firmware: saving config");
+	FILE *fp = fopen(MMU.fw.userfile, "wb");
+	if (fp)
+	{
+		if (fwrite(DFC_ID_CODE, 1, sizeof(DFC_ID_CODE), fp) == sizeof(DFC_ID_CODE))
+		{
+			if (fwrite(&data[userDataAddr], 1, 0x100, fp) == 0x100)
+				printf(" - done\n");
+			else
+				printf(" - failed\n");
+		}
+		else
+			printf(" - failed\n");
+		fclose(fp);
+	}
+	else
+		printf(" - failed\n");
+
 	return true;
 }
 

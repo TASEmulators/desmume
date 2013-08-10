@@ -176,32 +176,10 @@ void fw_reset_com(memory_chip_t *mc)
 			fwrite(mc->data, mc->size, 1, mc->fp);
 		}
 
-#ifndef _NEW_BOOT
-		if (mc->isFirmware&&CommonSettings.UseExtFirmware)
+		if (mc->isFirmware && CommonSettings.UseExtFirmware && CommonSettings.UseExtFirmwareSettings && firmware)
 		{
-			// copy User Settings 1 to User Settings 0 area
-			memcpy(&mc->data[0x3FE00], &mc->data[0x3FF00], 0x100);
-			
-			printf("Firmware: save config");
-			FILE *fp = fopen(mc->userfile, "wb");
-			if (fp)
-			{
-				if (fwrite(&mc->data[0x3FF00], 1, 0x100, fp) == 0x100)		// User Settings
-				{
-					if (fwrite(&mc->data[0x0002A], 1, 0x1D6, fp) == 0x1D6)  // WiFi Settings
-					{
-						if (fwrite(&mc->data[0x3FA00], 1, 0x300, fp) == 0x300)  // WiFi AP Settings
-							printf(" - done\n");
-						else
-							printf(" - failed\n");
-					}
-				}
-				fclose(fp);
-			}
-			else
-				printf(" - failed\n");
+			firmware->saveSettings();
 		}
-#endif
 		mc->write_enable = FALSE;
 	}
 
