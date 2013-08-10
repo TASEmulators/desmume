@@ -1359,9 +1359,17 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 	if ((val & 0x80000000) == 0)
 	{
+#ifdef _LOG_NEW_BOOT
+		if (fp_dis7)
+		{
+			fprintf(fp_dis7, "ARM%c: Bad I/O, PC:%08X\tcmd %02X (%016llX), ctrl %08X/%08X, old len %08X\n", PROCNUM?'7':'9', ARMPROC.instruct_adr, card.command[0], *(u64 *)&card.command[0], val, oldCnt, card.transfer_count);
+		}
+		printf("ARM%c: Bad I/O, PC:%08X\n", PROCNUM?'7':'9', ARMPROC.instruct_adr);
+		printf("\tcmd %02X (%016llX), ctrl %08X/%08X, old len %08X\n", card.command[0], *(u64 *)&card.command[0], val, oldCnt, card.transfer_count);
+#endif
 		card.address = 0;
 		card.transfer_count = 0;
-		MMU_endTransfer(PROCNUM, val);
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
 		return;
 	}
 #endif
@@ -1504,7 +1512,9 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 				//*(u64*)&card.command[0] = bswap64(cmd);
 				slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
 #ifdef _LOG_NEW_BOOT
-				printf("ARM%c: main data mode cmd %02X\n", PROCNUM?'7':'9', card.command[0]);
+				if (fp_dis7)
+					fprintf(fp_dis7, "ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
+				printf("ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
 #endif
 #else
 				INFO("Cartridge: KEY2 load data mode unsupported.\n");
@@ -2340,7 +2350,7 @@ void DmaController::write32(const u32 val)
 		//desp triggers this a lot. figure out whats going on
 		//printf("thats weird..user edited dma control while it was running\n");
 	}
-	//printf("ARM%c DMA%d WRITE %08X count %08X\n", procnum?'7':'9', chan, val, val&0x1FFFFF);
+	
 	wordcount = val&0x1FFFFF;
 	u8 wasRepeatMode = repeatMode;
 	u8 wasEnable = enable;
@@ -2353,6 +2363,8 @@ void DmaController::write32(const u32 val)
 	if(procnum==ARMCPU_ARM7) _startmode &= 6;
 	irq = BIT14(valhi);
 	enable = BIT15(valhi);
+
+	//printf("ARM%c DMA%d WRITE %08X count %08X, %08X -> %08X\n", procnum?'7':'9', chan, val, wordcount, saddr_user, daddr_user);
 
 	//if(irq) printf("!!!!!!!!!!!!IRQ!!!!!!!!!!!!!\n");
 
@@ -2470,6 +2482,8 @@ void DmaController::doCopy()
 {
 	//generate a copy count depending on various copy mode's behavior
 	u32 todo = wordcount;
+	u32 sz = (bitWidth==EDMABitWidth_16)?2:4;
+	u32 dstinc = 0, srcinc = 0;
 
 	if(PROCNUM == ARMCPU_ARM9) if(todo == 0) todo = 0x200000; //according to gbatek.. we've verified this behaviour on the arm7
 	if(startmode == EDMAMode_MemDisplay) 
@@ -2480,13 +2494,15 @@ void DmaController::doCopy()
 		if(nds.VCount==191) enable = 0;
 	}
 
+#ifdef _NEW_BOOT
+	if(startmode == EDMAMode_Card) todo = MMU.dscard[PROCNUM].transfer_count / sz;
+#else
 	if(startmode == EDMAMode_Card) todo *= 0x80;
+#endif
 	if(startmode == EDMAMode_GXFifo) todo = std::min(todo,(u32)112);
 
 	//determine how we're going to copy
 	bool bogarted = false;
-	u32 sz = (bitWidth==EDMABitWidth_16)?2:4;
-	u32 dstinc,srcinc;
 	switch(dar) {
 		case EDMADestinationUpdate_Increment       :  dstinc =  sz; break;
 		case EDMADestinationUpdate_Decrement       :  dstinc = (u32)-(s32)sz; break;
@@ -2512,26 +2528,6 @@ void DmaController::doCopy()
 
 	u32 src = saddr;
 	u32 dst = daddr;
-
-#ifdef _NEW_BOOT
-	// TODO: HACK!!! BIOS transfer 4Kb block from GameCard secure area to RAM
-	if(startmode == EDMAMode_Card)
-	{
-		if ((MMU.dscard[PROCNUM].command[0] & 0xF0) == 0x20)
-		{
-			const u32 addr_hack = (dst & 0x0FFFF000);
-			if ((addr_hack == 0x02000000) ||
-				(addr_hack == 0x02001000) ||
-				(addr_hack == 0x02002000) ||
-				(addr_hack == 0x02003000)
-				)
-			{
-				todo = MMU.dscard[PROCNUM].transfer_count / sz;
-				wordcount = 0;
-			}
-		}
-	}
-#endif
 
 	//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
 	//then danny phantom title screen will be filled with a garbage char which is made by
