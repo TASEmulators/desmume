@@ -269,6 +269,7 @@ static u32 bb_constant_cycles;
 #define reg_pos_thumb(x)	dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7))
 #define reg_pos_thumbB(x)	byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4*((i>>(x))&0x7))
 #define cp15_ptr(x)			dword_ptr(bb_cp15, offsetof(armcp15_t, x))
+#define cp15_ptr_off(x, y)	dword_ptr(bb_cp15, offsetof(armcp15_t, x) + y)
 #define mmu_ptr(x)			dword_ptr(bb_mmu, offsetof(MMU_struct, x))
 #define mmu_ptr_byte(x)		byte_ptr(bb_mmu, offsetof(MMU_struct, x))
 #define _REG_NUM(i, n)		((i>>(n))&0x7)
@@ -2615,7 +2616,7 @@ static int OP_MCR(const u32 i)
 				if (CRm < 8)
 				{
 					//protectBaseSize[CRm] = val;
-					c.mov(cp15_ptr(protectBaseSize[CRm]), data);
+					c.mov(cp15_ptr_off(protectBaseSize, (CRm * sizeof(u32))), data);
 					_maskPrecalc(CRm);
 					break;
 				}
@@ -2821,7 +2822,7 @@ static int OP_MRC(const u32 i)
 				if (CRm < 8)
 				{
 					// *R = protectBaseSize[CRm];
-					c.mov(data, cp15_ptr(protectBaseSize[CRm]));
+					c.mov(data, cp15_ptr_off(protectBaseSize, (CRm * sizeof(u32))));
 					break;
 				}
 			}
