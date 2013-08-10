@@ -48,7 +48,7 @@
 //#define LOG_ARM9
 //#define LOG_ARM7
 //#define dolog (currFrameCounter>15)
-//bool dolog=true;
+bool dolog=false;
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 
@@ -2339,7 +2339,7 @@ static void PrepareBiosARM9()
 			0xD6,0x25,0xE4,0x8B,0x38,0x0A,0xAC,0x72,0x21,0xD4,0xF8,0x07
 		};
 		
-		// logo (do some games fail to boot without this? example?)
+		// logo - Pokemon Platinum using this in Pal Park trade from GBA Slot
 		for (int t = 0; t < 0x9C; t++)
 			MMU.ARM9_BIOS[t + 0x20] = logo_data[t];
 
