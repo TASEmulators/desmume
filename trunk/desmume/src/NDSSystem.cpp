@@ -2235,7 +2235,10 @@ static void PrepareBiosARM7()
 
 		//if we used routines from bios, apply patches
 		if (CommonSettings.PatchSWI3)
-			_MMU_write16<ARMCPU_ARM7>(0x00002F08, 0x4770);
+		{
+			//[3801] SUB R0, #1 -> [4770] BX LR
+			T1WriteWord(MMU.ARM7_BIOS,0x2F08, 0x4770);
+		}
 	} 
 	else 
 		NDS_ARM7.swi_tab = ARM_swi_tab[ARMCPU_ARM7];
@@ -2248,25 +2251,20 @@ static void PrepareBiosARM7()
 	{
 		//fake bios content, critical to normal operations, since we dont have a real bios.
 
-#if 0
-		//someone please document what is in progress here
-		// TODO
-		T1WriteLong(MMU.ARM7_BIOS, 0x0000, 0xEAFFFFFE);		// loop for Reset !!!
-		T1WriteLong(MMU.ARM7_BIOS, 0x0004, 0xEAFFFFFE);		// loop for Undef instr expection
-		T1WriteLong(MMU.ARM7_BIOS, 0x0008, 0xEA00009C);		// SWI
-		T1WriteLong(MMU.ARM7_BIOS, 0x000C, 0xEAFFFFFE);		// loop for Prefetch Abort
-		T1WriteLong(MMU.ARM7_BIOS, 0x0010, 0xEAFFFFFE);		// loop for Data Abort
-		T1WriteLong(MMU.ARM7_BIOS, 0x0014, 0x00000000);		// Reserved
-		T1WriteLong(MMU.ARM7_BIOS, 0x001C, 0x00000000);		// Fast IRQ
-#endif
-		T1WriteLong(MMU.ARM7_BIOS, 0x0000, 0xE25EF002);
-		T1WriteLong(MMU.ARM7_BIOS, 0x0018, 0xEA000000);
-		T1WriteLong(MMU.ARM7_BIOS, 0x0020, 0xE92D500F);
-		T1WriteLong(MMU.ARM7_BIOS, 0x0024, 0xE3A00301);
-		T1WriteLong(MMU.ARM7_BIOS, 0x0028, 0xE28FE000);
-		T1WriteLong(MMU.ARM7_BIOS, 0x002C, 0xE510F004);
-		T1WriteLong(MMU.ARM7_BIOS, 0x0030, 0xE8BD500F);
-		T1WriteLong(MMU.ARM7_BIOS, 0x0034, 0xE25EF004);
+		T1WriteLong(MMU.ARM7_BIOS, 0x0000, 0xEAFFFFFE); //B 00000000 (reset: infinite loop) (originally: 0xE25EF002 - SUBS PC, LR, #2  
+		T1WriteLong(MMU.ARM7_BIOS, 0x0004, 0xEAFFFFFE); //B 00000004 (undefined instruction: infinite loop)
+		T1WriteLong(MMU.ARM7_BIOS, 0x0008, 0xEAFFFFFE); //B 00000280 (SWI: infinite loop [since we will be HLEing the SWI routines])
+		T1WriteLong(MMU.ARM7_BIOS, 0x000C, 0xEAFFFFFE); //B 0000000C (prefetch abort: infinite loop)
+		T1WriteLong(MMU.ARM7_BIOS, 0x0010, 0xEAFFFFFE); //B 00000010 (data abort: infinite loop)
+		T1WriteLong(MMU.ARM7_BIOS, 0x0018, 0xEA000000); //B 00000020 (IRQ: branch to handler)
+		T1WriteLong(MMU.ARM7_BIOS, 0x001C, 0xEAFFFFFE); //B 0000001C (FIQ vector: infinite loop)
+		//IRQ handler
+		T1WriteLong(MMU.ARM7_BIOS, 0x0020, 0xE92D500F); //STMDB SP!, {R0-R3,R12,LR}
+		T1WriteLong(MMU.ARM7_BIOS, 0x0024, 0xE3A00301); //MOV R0, #4000000
+		T1WriteLong(MMU.ARM7_BIOS, 0x0028, 0xE28FE000); //ADD LR, PC, #0
+		T1WriteLong(MMU.ARM7_BIOS, 0x002C, 0xE510F004); //LDR PC, [R0, -#4]
+		T1WriteLong(MMU.ARM7_BIOS, 0x0030, 0xE8BD500F); //LDMIA SP!, {R0-R3,R12,LR}
+		T1WriteLong(MMU.ARM7_BIOS, 0x0034, 0xE25EF004); //SUBS PC, LR, #4
 	}
 }
 
@@ -2291,8 +2289,9 @@ static void PrepareBiosARM9()
 		NDS_ARM9.swi_tab = 0;
 		
 		//if we used routines from bios, apply patches
+		//[3801] SUB R0, #1 -> [4770] BX LR
 		if (CommonSettings.PatchSWI3)
-			_MMU_write16<ARMCPU_ARM9>(0xFFFF07CC, 0x4770);
+			T1WriteWord(MMU.ARM9_BIOS, 0x07CC, 0x4770);
 	}
 	else NDS_ARM9.swi_tab = ARM_swi_tab[ARMCPU_ARM9];
 
@@ -2334,12 +2333,12 @@ static void PrepareBiosARM9()
 		
 		//copy the logo content into the bios - Pokemon Platinum uses this in Pal Park trade
 		//it compares the logo from the arm9 bios to the logo in the GBA header.
-		//NOTE: we could solve this by patching the rom of a mounted GBA game with whatever's here, even if its all zeroes.
+		//NOTE: we could MAYBE solve this by patching the rom of a mounted GBA game with whatever's here, even if its all zeroes.
 		for (int t = 0; t < 0x9C; t++)
 			MMU.ARM9_BIOS[t + 0x20] = logo_data[t];
 		//... and with that we are at 0xBC:
 
-		//(now what goes in this gap??)
+		//(now what goes in this gap?? nothing we need, i guess)
 
 		//IRQ handler: get dtcm address and jump to a vector in it
 		T1WriteLong(MMU.ARM9_BIOS, 0x0274, 0xE92D500F); //STMDB SP!, {R0-R3,R12,LR} 
