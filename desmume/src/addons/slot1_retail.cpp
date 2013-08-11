@@ -28,10 +28,8 @@ static BOOL init() { return (TRUE); }
 static void reset()
 {
 	// Write the header checksum to memory (the firmware needs it to see the cart)
-#ifdef _NEW_BOOT
 	if (!CommonSettings.BootFromFirmware)
-#endif
-	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
+		_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
 }
 
 static void close() {}
@@ -94,7 +92,6 @@ static void write32_GCROMCTRL(u8 PROCNUM, u32 val)
 		{
 			case 0xB7:	// Encrypted Data Read (B7aaaaaaaa000000h) - len 200h bytes
 				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-				card.transfer_count = 0x200;
 			break;
 
 			case 0xB8:	// 3nd Get ROM Chip ID - len 4 bytes
@@ -153,13 +150,9 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 				// 3rd byte - Reserved/zero (probably upper bits of chip size)
 				// 4th byte - Bit7: Secure Area Block transfer mode (8x200h or 1000h)
 
-#ifdef _NEW_BOOT
 				u32 chipID = 0;
 				if (CommonSettings.BootFromFirmware)
 					chipID = 0x00000000 | 0x00000000 | 0x00000F00 | 0x000000C2;;
-#else
-				u32 chipID = 0;
-#endif
  
 				// Note: the BIOS stores the chip ID in main memory
 				// Most games continuously compare the chip ID with
@@ -214,9 +207,7 @@ static u32 read32_GCDATAIN(u8 PROCNUM)
 			}
 			break;
 		default:
-#ifdef _NEW_BOOT
-			printf("ARM%c: SLOT1 invalid command %02X (read)\n", PROCNUM?'7':'9', cmd);
-#endif
+			//printf("ARM%c: SLOT1 invalid command %02X (read)\n", PROCNUM?'7':'9', cmd);
 			return 0;
 	} //switch(card.command[0])
 } //read32_GCDATAIN

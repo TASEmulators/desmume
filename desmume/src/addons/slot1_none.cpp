@@ -28,10 +28,8 @@ static BOOL slot1_init() { return (TRUE); }
 static void slot1_reset()
 {
 	// Write the header checksum to memory (the firmware needs it to see the cart)
-#ifdef _NEW_BOOT
 	if (!CommonSettings.BootFromFirmware)
-#endif
-	_MMU_write16<ARMCPU_ARM9>(0x027FF808, 0);
+		_MMU_write16<ARMCPU_ARM9>(0x027FF808, 0);
 }
 
 static void slot1_close() {}
