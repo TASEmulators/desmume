@@ -20,7 +20,7 @@
 #include "path.h"
 #include "encrypt.h"
 
-#define DFC_ID_CODE	TEXT("DeSmuME Firmware User Settings")
+#define DFC_ID_CODE	"DeSmuME Firmware User Settings"
 #define USER_SETTING_SIZE 0x100
 
 static _KEY1	enc(&MMU.ARM7_BIOS[0x0030]);
