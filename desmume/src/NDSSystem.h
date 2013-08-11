@@ -326,7 +326,7 @@ struct GameInfo
 		memset(&header, 0, sizeof(header));
 		memset(&ROMserial[0], 0, sizeof(ROMserial));
 		memset(&ROMname[0], 0, sizeof(ROMname));
-		memset(&securyArea[0], 0, sizeof(securyArea));
+		memset(&secureArea[0], 0, sizeof(secureArea));
 	}
 
 	void loadData(char* buf, int size)
@@ -340,13 +340,13 @@ struct GameInfo
 	void storeSecureArea()
 	{
 		if ((header.ARM9src >= 0x4000) && (header.ARM9src < 0x8000))
-			memcpy(&securyArea[0], &romdata[header.ARM9src], 0x8000 - header.ARM9src);
+			memcpy(&secureArea[0], &romdata[header.ARM9src], 0x8000 - header.ARM9src);
 	}
 	
 	void restoreSecureArea()
 	{
 		if ((header.ARM9src >= 0x4000) && (header.ARM9src < 0x8000))
-			memcpy(&romdata[header.ARM9src], &securyArea[0], 0x8000 - header.ARM9src);
+			memcpy(&romdata[header.ARM9src], &secureArea[0], 0x8000 - header.ARM9src);
 	}
 
 	void fillGap()
@@ -385,7 +385,9 @@ struct GameInfo
 	const RomBanner& getRomBanner();
 	bool hasRomBanner();
 	bool isHomebrew;
-	u8	securyArea[0x4000];
+	
+	//a copy of the pristine secure area from the rom
+	u8	secureArea[0x4000];
 };
 
 typedef struct TSCalInfo

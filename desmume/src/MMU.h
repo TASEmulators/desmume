@@ -303,9 +303,9 @@ enum ECardMode
 	CardMode_DATA_LOAD
 };
 
-typedef struct
+//should rather be known as gamecard bus controller, or somesuch
+struct nds_dscard
 {
-	
 	u8 command[8];
 
 	u32 address;
@@ -316,8 +316,7 @@ typedef struct
 
 	// NJSD stuff
 	int blocklen;
-	
-} nds_dscard;
+};
 
 #define DUP2(x)  x, x
 #define DUP4(x)  x, x, x, x

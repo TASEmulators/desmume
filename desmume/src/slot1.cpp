@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2012 DeSmuME team
+	Copyright (C) 2010-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,23 +24,10 @@
 #include "emufile.h"
 #include "utils/vfat.h"
 
-extern SLOT1INTERFACE slot1None;
-extern SLOT1INTERFACE slot1Retail;
-extern SLOT1INTERFACE slot1R4;
-extern SLOT1INTERFACE slot1Retail_NAND;
-
+//-------
+//fat-related common elements
 static EMUFILE* fatImage = NULL;
 static std::string fatDir;
-
-SLOT1INTERFACE slot1List[NDS_SLOT1_COUNT] = {
-		slot1None,
-		slot1Retail,
-		slot1R4,
-		slot1Retail_NAND
-};
-
-SLOT1INTERFACE slot1_device = slot1Retail; //default for frontends that dont even configure this
-NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL;
 
 static void scanDir()
 {
@@ -59,16 +46,69 @@ static void scanDir()
 	}
 }
 
-BOOL slot1Init()
+
+void slot1_SetFatDir(const std::string& dir)
+{
+	//printf("FAT path %s\n", dir.c_str());
+	fatDir = dir;
+}
+
+std::string slot1_GetFatDir()
+{
+	return fatDir;
+}
+
+EMUFILE* slot1_GetFatImage()
+{
+	return fatImage;
+}
+
+//------------
+
+ISlot1Interface* slot1_List[NDS_SLOT1_COUNT];
+
+ISlot1Interface* slot1_device = NULL;
+NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL;  //default for frontends that dont even configure this
+
+
+void slot1_Init()
+{
+	//due to sloppy initialization code in various untestable desmume ports, we might try this more than once
+	static bool initialized = false;
+	if(initialized) return;
+	initialized = true;
+
+	//construct all devices
+	extern TISlot1InterfaceConstructor construct_Slot1_None;
+	extern TISlot1InterfaceConstructor construct_Slot1_Retail;
+	extern TISlot1InterfaceConstructor construct_Slot1_R4;
+	extern TISlot1InterfaceConstructor construct_Slot1_Retail_NAND;
+	slot1_List[NDS_SLOT1_NONE] = construct_Slot1_None();
+	slot1_List[NDS_SLOT1_RETAIL] = construct_Slot1_Retail();
+	slot1_List[NDS_SLOT1_R4] = construct_Slot1_R4();
+	slot1_List[NDS_SLOT1_RETAIL_NAND] = construct_Slot1_Retail_NAND();
+}
+
+void slot1_Shutdown()
+{
+	for(int i=0;i<ARRAY_SIZE(slot1_List);i++)
+	{
+		slot1_List[i]->shutdown();
+		delete slot1_List[i];
+	}
+}
+
+bool slot1_Connect()
 {
 	if (slot1_device_type == NDS_SLOT1_R4)
 		scanDir();
-	return slot1_device.init();
+	slot1_device->connect();
+	return true;
 }
 
-void slot1Close()
+void slot1_Disconnect()
 {
-	slot1_device.close();
+	slot1_device->disconnect();
 	
 	//be careful to do this second, maybe the device will write something more
 	if (fatImage)
@@ -78,43 +118,34 @@ void slot1Close()
 	}
 }
 
-void slot1Reset()
+void slot1_Reset()
 {
-	slot1_device.reset();
+	//disconnect existing device
+	if(slot1_device != NULL) slot1_device->disconnect();
+	
+	//connect new device
+	slot1_device = slot1_List[slot1_device_type];
+	slot1_device->connect();
 }
 
-BOOL slot1Change(NDS_SLOT1_TYPE changeToType)
+bool slot1_Change(NDS_SLOT1_TYPE changeToType)
 {
 	if(changeToType == slot1_device_type) return FALSE; //nothing to do
 	if (changeToType > NDS_SLOT1_COUNT || changeToType < 0) return FALSE;
-	slot1_device.close();
+	if(slot1_device != NULL)
+		slot1_device->disconnect();
 	slot1_device_type = changeToType;
-	slot1_device = slot1List[slot1_device_type];
+	slot1_device = slot1_List[slot1_device_type];
 	if (changeToType == NDS_SLOT1_R4)
 		scanDir();
-	printf("Slot 1: %s\n", slot1_device.name);
+	printf("Slot 1: %s\n", slot1_device->info()->name());
 	printf("sending eject signal to SLOT-1\n");
 	NDS_TriggerCardEjectIRQ();
-	return slot1_device.init();
+	slot1_device->connect();
+	return true;
 }
 
-void slot1SetFatDir(const std::string& dir)
-{
-	//printf("FAT path %s\n", dir.c_str());
-	fatDir = dir;
-}
-
-std::string slot1GetFatDir()
-{
-	return fatDir;
-}
-
-EMUFILE* slot1GetFatImage()
-{
-	return fatImage;
-}
-
-NDS_SLOT1_TYPE slot1GetCurrentType()
+NDS_SLOT1_TYPE slot1_GetCurrentType()
 {
 	return slot1_device_type;
 }

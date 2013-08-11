@@ -21,7 +21,13 @@
 #ifndef _DECRYPT_H_
 #define _DECRYPT_H_
 
+//decrypts the secure area of a rom (or does nothing if it is already decrypted)
 bool DecryptSecureArea(u8 *romdata, long romlen);
+
+//encrypts the secure area of a rom (or does nothing if it is already encrypted)
 bool EncryptSecureArea(u8 *romdata, long romlen);
+
+//since we have rom-type detection heuristics here, this module is responsible for checking whether a rom is valid
+bool CheckValidRom(u8 *romdata, long romlen);
 
 #endif

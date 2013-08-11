@@ -294,13 +294,13 @@ void CommandLine::process_addonCommands()
 	}
 
 	if(slot1_fat_dir != "")
-		slot1SetFatDir(slot1_fat_dir);
+		slot1_SetFatDir(slot1_fat_dir);
 
 	if(slot1 == "RETAIL")
-		slot1Change(NDS_SLOT1_RETAIL);
+		slot1_Change(NDS_SLOT1_RETAIL);
 	else if(slot1 == "R4")
-		slot1Change(NDS_SLOT1_R4);
+		slot1_Change(NDS_SLOT1_R4);
 	else if(slot1 == "RETAILNAND")
-		slot1Change(NDS_SLOT1_RETAIL_NAND);
+		slot1_Change(NDS_SLOT1_RETAIL_NAND);
 }
 

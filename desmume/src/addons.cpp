@@ -47,7 +47,7 @@ ADDONINTERFACE addonList[NDS_ADDON_COUNT] = {
 		addonPaddle
 };
 
-ADDONINTERFACE	addon = addonCFlash;		// default none pak
+ADDONINTERFACE	addon = addonCFlash;		// default cflash pak (why??)
 NDS_ADDON_TYPE				addon_type = NDS_ADDON_CFLASH;
 
 BOOL addonsInit()
