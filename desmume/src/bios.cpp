@@ -16,6 +16,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//this file contains HLE for the arm9 and arm7 bios SWI routines.
+//it renders the use of bios files generally unnecessary.
+//it turns out that they're not too complex, although of course the timings will be all wrong here.
+
 #include "cp15.h"
 #include <math.h>
 #include "MMU.h"
@@ -31,7 +35,7 @@ public:
 	CompressionHeader(u32 _value) : value(_value) {}
 	u32 DataSize() const { return value&15; } 
 	u32 Type() const { return (value>>4)&15; }
-	u32 DecompressedSize() const { return value>>24; }
+	u32 DecompressedSize() const { return value>>8; }
 private:
 	u32 value;
 };
@@ -912,7 +916,7 @@ TEMPLATE static u32 BitUnPack()
 
 TEMPLATE static u32 Diff8bitUnFilterWram() //this one might be different on arm7 and needs checking
 {
-	//INFO("swi diff8bitunfilterwram\n");
+	//INFO("swi Diff8bitUnFilterWram\n");
 
 	u32 source = cpu->R[0];
 	u32 dest = cpu->R[1];
@@ -939,7 +943,7 @@ TEMPLATE static u32 Diff8bitUnFilterWram() //this one might be different on arm7
 
 TEMPLATE static u32 Diff16bitUnFilter()
 {
-	//INFO("swi diff8bitunfilterwram\n");
+	//INFO("swi Diff16bitUnFilter\n");
 
 	u32 source = cpu->R[0];
 	u32 dest = cpu->R[1];
@@ -1085,8 +1089,11 @@ TEMPLATE static u32 getCRC16()
 	}
 
 	cpu->R[0] = crc;
-	// R3 contains the last processed halfword 
+	
+	//R3 contains the last processed halfword 
+	//this is significant -- WHY?
 	cpu->R[3] = currVal;
+
 	return 1;
 }
 
