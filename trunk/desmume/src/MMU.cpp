@@ -39,11 +39,8 @@
 #include "movie.h"
 #include "readwrite.h"
 #include "MMU_timing.h"
-
-#ifdef _NEW_BOOT
 #include "firmware.h"
 #include "encrypt.h"
-#endif
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -51,13 +48,9 @@
 #define ASSERT_UNALIGNED(x)
 #endif
 
-#ifdef _NEW_BOOT
-
 //#define _LOG_NEW_BOOT
-
 _KEY1 key1(&MMU.ARM7_BIOS[0x0030]);
 _KEY2 key2;
-#endif
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
 static u64 isqrt (u64 x) {
@@ -1013,9 +1006,7 @@ void MMU_Reset()
 	MMU.SPI_CNT = 0;
 	MMU.AUX_SPI_CNT = 0;
 
-#ifdef _NEW_BOOT
 	reconstruct(&key2);
-#endif
 
 	MMU.WRAMCNT = 0;
 
@@ -1324,28 +1315,10 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 	nds_dscard& card = MMU.dscard[PROCNUM];
 
-#ifdef _NEW_BOOT
-	card.delay = 0;
-#endif
-
 	memcpy(&card.command[0], &MMU.MMU_MEM[PROCNUM][0x40][0x1A8], 8);
 
 	card.blocklen = 0;
 
-#ifndef _NEW_BOOT
-	slot1_device.write32(PROCNUM,0xFFFFFFFF,val); //Special case for some flashcarts
-	if(card.blocklen==0x01020304) return;
-
-	if ((val & 0x80000000) == 0)
-	{
-		card.address = 0;
-		card.transfer_count = 0;
-
-		val &= 0x7F7FFFFF;
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
-		return;
-	}
-#else
 	if ((val & (1 << 15)) != 0)
 	{
 #ifdef _LOG_NEW_BOOT
@@ -1372,7 +1345,6 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
 		return;
 	}
-#endif
 	
 	u32 shift = ((val >> 24) & 0x07);
 	if(shift == 7)
@@ -1408,7 +1380,6 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 				break;
 
 			case 0x3C: //Switch to KEY1 mode
-#ifdef _NEW_BOOT
 				{
 					u32 gameID = MMU_read32(PROCNUM, 0x027FFE0C);
 					key1.init(gameID, 2, 0x08);
@@ -1420,11 +1391,6 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 					card.mode = CardMode_KEY1;
 					card.transfer_count = 0;
 				}
-#else
-					printf("ARM%c: Activate unsupported KEY1 encryption mode\n", PROCNUM?'7':'9');
-					card.mode = CardMode_KEY1;
-					card.transfer_count = 0;
-#endif
 				break;
 			default:
 				//fall through to the special slot1 handler
@@ -1435,7 +1401,6 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	else
 		if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
 		{
-#ifdef _NEW_BOOT
 			u32 gameID = MMU_read32(PROCNUM, 0x027FFE0C);
 			u32 chipID = MMU_read32(PROCNUM, 0x027FF800);
 			u64 cmd = bswap64(*(u64 *)&card.command[0]);
@@ -1467,7 +1432,6 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 						printf("ARM%c: Get secure are block: area %04X, src %08X, dst %08X, len %08X, bsize %08X|%08X\n", PROCNUM?'7':'9', area, src, dst, len, size, size2);
 #endif
 						card.address = addr;
-						//card.delay = 0x910;
 					}
 					break;
 
@@ -1496,30 +1460,15 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 					slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
 					break;
 			}
-#else
-			card.address = 0;
-			card.transfer_count = 0;
-			printf("ARM%c: Activate unsupported KEY2 encryption mode\n", PROCNUM?'7':'9');
-			card.mode = CardMode_KEY2;
-			card.transfer_count = 0;
-#endif
 		}
 		else
 			if (card.mode == CardMode_DATA_LOAD)
 			{
-#ifdef _NEW_BOOT
-				//u64 cmd = bswap64(*(u64 *)&card.command[0]);
-				//*(u64*)&card.command[0] = bswap64(cmd);
 				slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
 #ifdef _LOG_NEW_BOOT
 				if (fp_dis7)
 					fprintf(fp_dis7, "ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
 				printf("ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
-#endif
-#else
-				INFO("Cartridge: KEY2 load data mode unsupported.\n");
-				card.address = 0;
-				card.transfer_count = 0;
 #endif
 			}
 
@@ -1542,24 +1491,9 @@ u32 FASTCALL MMU_readFromGCControl()
 {
 	nds_dscard& card = MMU.dscard[PROCNUM];
 
-#ifdef _NEW_BOOT
 	u32 val = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
 
-	if (card.delay > 0)
-	{
-		card.delay--;
-		if (card.delay == 0)
-		{
-			val &= 0x7F7FFFFF;
-			T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
-		}
-	}
 	return val;
-#else
-	card.delay = 0;
-	return T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
-#endif
-	
 }
 
 template<int PROCNUM>
@@ -2494,11 +2428,7 @@ void DmaController::doCopy()
 		if(nds.VCount==191) enable = 0;
 	}
 
-#ifdef _NEW_BOOT
 	if(startmode == EDMAMode_Card) todo = MMU.dscard[PROCNUM].transfer_count / sz;
-#else
-	if(startmode == EDMAMode_Card) todo *= 0x80;
-#endif
 	if(startmode == EDMAMode_GXFifo) todo = std::min(todo,(u32)112);
 
 	//determine how we're going to copy
@@ -4240,17 +4170,6 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 #endif
 				//The NDS7 register can be written to only from code executed in BIOS.
 				if (NDS_ARM7.instruct_adr > 0x3FFF) return;
-				
-#ifndef _NEW_BOOT
-				// hack for patched firmwares
-				if (val == 1)
-				{
-					if (_MMU_ARM7_read08(REG_POSTFLG) != 0)
-						break;
-					_MMU_write32<ARMCPU_ARM9>(0x27FFE24, gameInfo.header.ARM9exe);
-					_MMU_write32<ARMCPU_ARM7>(0x27FFE34, gameInfo.header.ARM7exe);
-				}
-#endif
 				break;
 
 			case REG_HALTCNT:

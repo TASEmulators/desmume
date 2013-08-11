@@ -448,13 +448,11 @@ static void loadrom(std::string fname) {
 
 	gameInfo.resize(size);
 
-#ifdef _NEW_BOOT
 	extern NDS_SLOT1_TYPE slot1_device_type;
 
 	if (slot1_device_type == NDS_SLOT1_NONE)
 		memset(gameInfo.romdata, 0xFF, size);
 	else
-#endif
 		fread(gameInfo.romdata,1,size,inf);
 	gameInfo.fillGap();
 	
@@ -573,19 +571,6 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	if (ret < 1)
 		return ret;
 
-#ifndef _NEW_BOOT
-	//decrypt if necessary..
-	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
-#ifndef WORDS_BIGENDIAN
-	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
-
-	if(!okRom) {
-		printf("Specified file is not a valid rom\n");
-		return -1;
-	}
-#endif
-#endif
-
 	if (cheatSearch)
 		cheatSearch->close();
 	FCEUI_StopMovie();
@@ -601,9 +586,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	INFO("ROM internal name: %s\n", gameInfo.ROMname);
 	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 
-#ifdef _NEW_BOOT
 	gameInfo.storeSecureArea();
-#endif
 	
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);
@@ -2531,7 +2514,6 @@ void NDS_Reset()
 
 	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && fw_success)
 	{
-#ifdef _NEW_BOOT
 		gameInfo.restoreSecureArea();
 
 		firmware->loadSettings();
@@ -2558,54 +2540,11 @@ void NDS_Reset()
 		TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
 		TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
 		TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
-#else
-		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
-		firmware->unpack();
-
-		//Copy secure area to memory if needed.
-		//could we get a comment about what's going on here?
-		//how does this stuff get copied before anything ever even runs?
-		//does it get mapped straight to the rom somehow?
-		//This code could be made more clear too.
-		if ((header->ARM9src >= 0x4000) && (header->ARM9src < 0x8000))
-		{
-			u32 src = header->ARM9src;
-			u32 dst = header->ARM9cpy;
-
-			u32 size = (0x8000 - src) >> 2;
-	
-			for (u32 i = 0; i < size; i++)
-			{
-				_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
-				src += 4; dst += 4;
-			}
-		}
-
-		//TODO someone describe why here
-		if (firmware->patched)
-		{
-			armcpu_init(&NDS_ARM7, 0x00000008);
-			armcpu_init(&NDS_ARM9, 0xFFFF0008);
-		}
-		else
-		{
-			//set the cpus to an initial state with their respective firmware program entrypoints
-			armcpu_init(&NDS_ARM7, firmware->ARM7bootAddr);
-			armcpu_init(&NDS_ARM9, firmware->ARM9bootAddr);
-		}
-
-		//set REG_POSTFLG to the value indicating pre-firmware status
-		MMU.ARM9_REG[0x300] = 0;
-		MMU.ARM7_REG[0x300] = 0;
-
-		goto _fake_boot;
-#endif
 	}
 	else
 	{
 		//fake firmware boot-up process
 
-#ifdef _NEW_BOOT
 		gameInfo.restoreSecureArea();
 		//decrypt if necessary..
 		//but this is untested and suspected to fail on big endian, so lets not support this on big endian
@@ -2616,7 +2555,6 @@ void NDS_Reset()
 			printf("Specified file is not a valid rom\n");
 			return;
 		}
-#endif
 #endif
 		//according to smea, this is initialized to 3 by the time we get into a user game program. who does this? 
 		//well, the firmware load process is about to write a boot program into SIWRAM for the arm7. so we need it setup by now.
@@ -2664,17 +2602,14 @@ void NDS_Reset()
 		MMU.ARM9_REG[0x300] = 1;
 		MMU.ARM7_REG[0x300] = 1;
 
-_fake_boot:
 		//Setup a copy of the firmware user settings in memory.
 		//(this is what the DS firmware would do).
-		{
-			u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
-			int fw_index;
+		u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
+		int fw_index;
 
-			if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
-				for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
-					_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
-			}
+		if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
+			for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
+				_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
 		}
 
 		// Copy the whole header to Main RAM 0x27FFE00 on startup. (http://nocash.emubase.de/gbatek.htm#dscartridgeheader)
@@ -2734,7 +2669,6 @@ _fake_boot:
 		//and how theyre named in desmume to match them up correctly. i just guessed.
 	}
 
-#ifndef _NEW_BOOT
 	//--------------------------------
 	//setup the homebrew argv
 	//this is useful for nitrofs apps which are emulating themselves via cflash
@@ -2759,7 +2693,6 @@ _fake_boot:
 		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
 	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
 	//--------------------------------
-#endif
 	
 	delete header;
 
