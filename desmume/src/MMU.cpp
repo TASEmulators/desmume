@@ -4410,7 +4410,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
-} 
+}
 //================================================= MMU ARM7 write 32
 void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
@@ -4526,10 +4526,9 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 	if (adr < 0x4000)
 	{
-		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
-		//if (prot) INFO("MMU7 read 08 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
-		
-		//How accurate is this? our R[15] may not be exactly what the hardware uses (may use something less by up to 0x08)
+		//the ARM7 bios can't be read by instructions outside of itself.
+		//TODO - use REG_BIOSPROT
+		//How accurate is this? our instruct_adr may not be exactly what the hardware uses (may use something +/- 0x08 or so)
 		//This may be inaccurate at the very edge cases.
 		if (NDS_ARM7.instruct_adr > 0x3FFF)
 			return 0xFF;
@@ -4596,8 +4595,6 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 
 	if (adr < 0x4000)
 	{
-		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
-		//if (prot) INFO("MMU7 read 16 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
 		if (NDS_ARM7.instruct_adr > 0x3FFF)
 			return 0xFFFF;
 	}
@@ -4696,8 +4693,10 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 
 	if (adr < 0x4000)
 	{
-		//u32 prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
-		//if (prot) INFO("MMU7 read 32 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
+		//the ARM7 bios can't be read by instructions outside of itself.
+		//TODO - use REG_BIOSPROT
+		//How accurate is this? our instruct_adr may not be exactly what the hardware uses (may use something +/- 0x08 or so)
+		//This may be inaccurate at the very edge cases.
 		if (NDS_ARM7.instruct_adr > 0x3FFF)
 			return 0xFFFFFFFF;
 	}

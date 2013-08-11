@@ -90,7 +90,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
 
              for(i = 0; i < nbligne; ++i)
              {
-                  u32 ins = MMU_read32(win->cpu->proc_ID, adr);
+                  u32 ins = _MMU_read32(win->cpu->proc_ID, MMU_AT_DEBUG, adr);
                   des_arm_instructions_set[INDEX(ins)](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %08X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
                   DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
@@ -124,7 +124,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
         
              for(i = 0; i < nbligne; ++i)
              {
-                  u32 ins = MMU_read16(win->cpu->proc_ID, adr);
+                  u32 ins = _MMU_read16(win->cpu->proc_ID, MMU_AT_DEBUG, adr);
                   des_thumb_instructions_set[ins>>6](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %04X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
                   DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
