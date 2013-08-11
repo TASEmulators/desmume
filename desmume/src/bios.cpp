@@ -290,7 +290,16 @@ TEMPLATE static u32 waitVBlankARM()
 
 TEMPLATE static u32 sleep()
 {
-	_MMU_write08<PROCNUM>(0x04000301, 0xC0);
+	//just set REG_HALTCNT to the fixed Sleep value
+	_MMU_write08<PROCNUM>(REG_HALTCNT, 0xC0);
+	return 1;
+}
+
+//ARM7 only
+TEMPLATE static u32 CustomHalt()
+{
+	//just set REG_HALTCNT to the provided value
+	_MMU_write08<PROCNUM>(REG_HALTCNT, cpu->R[2]);
 	return 1;
 }
 
@@ -915,14 +924,6 @@ TEMPLATE static u32 Diff8bitUnFilterWram() //this one might be different on arm7
 	if(header.Type() != 8) printf("WARNING: incorrect header passed to Diff8bitUnFilterWram\n");
 	u32 len = header.DecompressedSize();
 
-	if(PROCNUM == ARMCPU_ARM7)
-	{
-		//can someone double check whether arm7 actually does this? arm9 definitely doesnt)
-		if(((source & 0x0E000000) == 0) ||
-			(( (source + (len & 0x001fffff)) & 0x0E000000) == 0))
-			return 0;  
-	}
-
 	u8 data = _MMU_read08<PROCNUM>(source++);
 	_MMU_write08<PROCNUM>(dest++, data);
 	len--;
@@ -950,8 +951,6 @@ TEMPLATE static u32 Diff16bitUnFilter()
 	if(header.Type() != 8) printf("WARNING: incorrect header passed to Diff16bitUnFilter\n");
 	u32 len = header.DecompressedSize();
 
-	//no arm7 version, so no range checks
-
 	u16 data = _MMU_read16<PROCNUM>(source);
 	source += 2;
 	_MMU_write16<PROCNUM>(dest, data);
@@ -975,10 +974,12 @@ TEMPLATE static u32 bios_sqrt()
      return 1;
 }
 
-TEMPLATE static u32 setHaltCR()
+//ARM9 only
+TEMPLATE static u32 CustomPost()
 { 
-     _MMU_write08<PROCNUM>(0x4000300+cpu->proc_ID, cpu->R[0]);
-     return 1;
+	//just write provided value to REG_POSTFLG
+	_MMU_write08<PROCNUM>(REG_POSTFLG, cpu->R[0]);
+	return 1;
 }
 
 //ARM7 only
@@ -1099,6 +1100,7 @@ TEMPLATE static u32 isDebugger()
 	return 1;
 }
 
+//ARM7 only
 TEMPLATE static u32 SoundBias()
 {
 	u32 curBias = _MMU_read32<ARMCPU_ARM7>(0x04000504);
@@ -1118,9 +1120,16 @@ TEMPLATE static u32 getBootProcs()
 	return 1;
 }
 
+TEMPLATE static u32 SoftReset()
+{
+	//not emulated yet
+	return 1;
+}
+
+
 u32 (* ARM_swi_tab[2][32])()={
 	{
-		bios_nop<ARMCPU_ARM9>,             // 0x00
+		SoftReset<ARMCPU_ARM9>,            // 0x00
 		bios_nop<ARMCPU_ARM9>,             // 0x01
 		bios_nop<ARMCPU_ARM9>,             // 0x02
 		WaitByLoop<ARMCPU_ARM9>,           // 0x03
@@ -1151,10 +1160,10 @@ u32 (* ARM_swi_tab[2][32])()={
 		bios_nop<ARMCPU_ARM9>,             // 0x1C
 		bios_nop<ARMCPU_ARM9>,             // 0x1D
 		bios_nop<ARMCPU_ARM9>,             // 0x1E
-		setHaltCR<ARMCPU_ARM9>,            // 0x1F
+		CustomPost<ARMCPU_ARM9>,            // 0x1F
 	},
 	{
-		bios_nop<ARMCPU_ARM7>,             // 0x00
+		SoftReset<ARMCPU_ARM7>,            // 0x00
 		bios_nop<ARMCPU_ARM7>,             // 0x01
 		bios_nop<ARMCPU_ARM7>,             // 0x02
 		WaitByLoop<ARMCPU_ARM7>,           // 0x03
@@ -1176,7 +1185,7 @@ u32 (* ARM_swi_tab[2][32])()={
 		UnCompHuffman<ARMCPU_ARM7>,        // 0x13
 		RLUnCompWram<ARMCPU_ARM7>,         // 0x14
 		RLUnCompVram<ARMCPU_ARM7>,         // 0x15
-		Diff8bitUnFilterWram<ARMCPU_ARM7>, // 0x16
+		bios_nop<ARMCPU_ARM7>,             // 0x16
 		bios_nop<ARMCPU_ARM7>,             // 0x17
 		bios_nop<ARMCPU_ARM7>,             // 0x18
 		bios_nop<ARMCPU_ARM7>,             // 0x19
@@ -1185,6 +1194,6 @@ u32 (* ARM_swi_tab[2][32])()={
 		getVolumeTab<ARMCPU_ARM7>,         // 0x1C
 		getBootProcs<ARMCPU_ARM7>,         // 0x1D
 		bios_nop<ARMCPU_ARM7>,             // 0x1E
-		setHaltCR<ARMCPU_ARM7>,            // 0x1F
+		CustomHalt<ARMCPU_ARM7>,           // 0x1F
 	}
 };
