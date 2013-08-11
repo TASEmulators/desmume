@@ -675,9 +675,9 @@ static BOOL isCoreStarted = NO;
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	
 	_slot1R4Path = (r4Path != nil) ? std::string([r4Path cStringUsingEncoding:NSUTF8StringEncoding]) : "";
-	slot1SetFatDir(_slot1R4Path);
+	slot1_SetFatDir(_slot1R4Path);
 	
-	BOOL result = slot1Change((NDS_SLOT1_TYPE)deviceTypeID);
+	BOOL result = slot1_Change((NDS_SLOT1_TYPE)deviceTypeID);
 	
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	

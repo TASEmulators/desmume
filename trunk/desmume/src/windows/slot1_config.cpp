@@ -117,15 +117,12 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		{
 			OKbutton_slot1 = GetDlgItem(dialog, IDOK);
 			for(int i = 0; i < NDS_SLOT1_COUNT; i++)
-				ComboBox_AddString(GetDlgItem(dialog, IDC_ADDONS_LIST), slot1List[i].name);
+				ComboBox_AddString(GetDlgItem(dialog, IDC_ADDONS_LIST), slot1_List[i]->info()->name());
 			ComboBox_SetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST), temp_type_slot1);
-			u8 tmp_info[512];
-			slot1List[temp_type_slot1].info((char *)tmp_info);
-			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
+			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), slot1_List[temp_type_slot1]->info()->descr());
 
 			_OKbutton_slot1 = false;
-			wndConfigSlot1=CreateDialogW(hAppInst, MAKEINTRESOURCEW(Slot1_IDDs[temp_type_slot1]), 
-										dialog, (DLGPROC)Slot1_Procs[temp_type_slot1]);
+			wndConfigSlot1 = CreateDialogW(hAppInst, MAKEINTRESOURCEW(Slot1_IDDs[temp_type_slot1]), dialog, (DLGPROC)Slot1_Procs[temp_type_slot1]);
 			//SetWindowPos(GetDlgItem(dialog, IDC_ADDONS_INFO),HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE);
 			//EnableWindow(GetDlgItem(dialog, IDC_ADDONS_INFO),FALSE);
 			//EnableWindow(GetDlgItem(dialog, IDC_ADDONS_INFO),TRUE);
@@ -177,9 +174,7 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 								EnableWindow(OKbutton_slot1, TRUE);
 							else
 								EnableWindow(OKbutton_slot1, FALSE);
-							u8 tmp_info[512];
-							slot1List[temp_type_slot1].info((char *)tmp_info);
-							SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
+							SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), slot1_List[temp_type_slot1]->info()->descr());
 							last_type_slot1 = temp_type_slot1;
 						}
 					}
@@ -193,8 +188,8 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 void slot1Dialog(HWND hwnd)
 {
-	strcpy(tmp_fat_path, slot1GetFatDir().c_str());
-	temp_type_slot1 = slot1GetCurrentType();
+	strcpy(tmp_fat_path, slot1_GetFatDir().c_str());
+	temp_type_slot1 = slot1_GetCurrentType();
 	last_type_slot1 = temp_type_slot1;
 	_OKbutton_slot1 = false;
 	needReset_slot1 = true;
@@ -204,7 +199,7 @@ void slot1Dialog(HWND hwnd)
 		switch (temp_type_slot1)
 		{
 			case NDS_SLOT1_NONE:
-				if (temp_type_slot1 != slot1GetCurrentType())
+				if (temp_type_slot1 != slot1_GetCurrentType())
 					needReset_slot1 = true;
 				else
 					needReset_slot1 = false;
@@ -214,7 +209,7 @@ void slot1Dialog(HWND hwnd)
 			case NDS_SLOT1_R4:
 				if (strlen(tmp_fat_path))
 				{
-					slot1SetFatDir(tmp_fat_path);
+					slot1_SetFatDir(tmp_fat_path);
 					WritePrivateProfileString("Slot1","FAT_path",tmp_fat_path,IniName);
 				}
 				break;
@@ -225,10 +220,8 @@ void slot1Dialog(HWND hwnd)
 		}
 		WritePrivateProfileInt("Slot1","type",temp_type_slot1,IniName);
 
-		slot1Change((NDS_SLOT1_TYPE)temp_type_slot1);
-		//zero 30-aug-2012 
-		//if (romloaded && needReset_slot1)
-		//	NDS_Reset();
+		slot1_Change((NDS_SLOT1_TYPE)temp_type_slot1);
+		
 		return;
 	}
 }

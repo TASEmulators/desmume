@@ -20,51 +20,28 @@
 #include "../MMU.h"
 #include "../NDSSystem.h"
 
-static void slot1_info(char *info) { strcpy(info, "Slot1 no-card emulation"); }
-static void slot1_config(void) {}
-
-static BOOL slot1_init() { return (TRUE); }
-
-static void slot1_reset()
+class Slot1_None : public ISlot1Interface
 {
-	// Write the header checksum to memory (the firmware needs it to see the cart)
-	if (!CommonSettings.BootFromFirmware)
-		_MMU_write16<ARMCPU_ARM9>(0x027FF808, 0);
-}
+public:
+	virtual Slot1Info const* info()
+	{
+		static Slot1InfoSimple info("None","Slot1 no-card emulation");
+		return &info;
+	}
 
-static void slot1_close() {}
+	virtual void connect()
+	{
+	}
 
+	virtual u32 read32(u8 PROCNUM, u32 adr)
+	{
+		//return a chip ID of 0.
+		//if (adr == REG_GCDATAIN && MMU.dscard[PROCNUM].command[0] == 0xB8) return 0;
+		//EDIT - not sure who did this or why, but... but if a card is ejected, there can be no chip ID.
+		//we certainly want it to appear differently from chipId 0, which is something we are faking in other slot-1 devices
+		return 0xFFFFFFFF;
+	}
 
-static void slot1_write08(u8 PROCNUM, u32 adr, u8 val) {}
-static void slot1_write16(u8 PROCNUM, u32 adr, u16 val) {}
-static void slot1_write32(u8 PROCNUM, u32 adr, u32 val) {}
+};
 
-static u8 slot1_read08(u8 PROCNUM, u32 adr)
-{
-	return 0xFF;
-}
-static u16 slot1_read16(u8 PROCNUM, u32 adr)
-{
-	return 0xFFFF;
-}
-static u32 slot1_read32(u8 PROCNUM, u32 adr)
-{
-	if (adr == REG_GCDATAIN && MMU.dscard[PROCNUM].command[0] == 0xB8)
-		return 0;
-	return 0xFFFFFFFF;
-}
-
-
-SLOT1INTERFACE slot1None = {
-	"None",
-	slot1_init,
-	slot1_reset,
-	slot1_close,
-	slot1_config,
-	slot1_write08,
-	slot1_write16,
-	slot1_write32,
-	slot1_read08,
-	slot1_read16,
-	slot1_read32,
-	slot1_info};
+ISlot1Interface* construct_Slot1_None() { return new Slot1_None(); }

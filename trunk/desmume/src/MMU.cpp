@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -933,7 +933,9 @@ void MMU_Init(void) {
 	//MMU.bupmem.fp = NULL;
 	rtcInit();
 	addonsInit();
-	slot1Init();
+	
+	slot1_Init();
+	
 	if(Mic_Init() == FALSE)
 		INFO("Microphone init failed.\n");
 	else
@@ -949,7 +951,7 @@ void MMU_DeInit(void) {
 	//	fclose(MMU.bupmem.fp);
 	//mc_free(&MMU.bupmem);
 	addonsClose();
-	slot1Close();
+	slot1_Shutdown();
 	Mic_DeInit();
 }
 
@@ -1028,7 +1030,7 @@ void MMU_Reset()
 	rtcInit();
 	partie = 1;
 	addonsReset();
-	slot1Reset();
+	slot1_Reset();
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
 
@@ -1394,13 +1396,15 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 				break;
 			default:
 				//fall through to the special slot1 handler
-				slot1_device.write32(PROCNUM, REG_GCROMCTRL,val);
+				slot1_device->write32(PROCNUM, REG_GCROMCTRL,val);
 				break;
 		}
 	}
 	else
 		if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
 		{
+			//<zero> really? the values from memory are used here?
+			//somehow I doubt it. are they stored in the gamecard controllers somehow?
 			u32 gameID = MMU_read32(PROCNUM, 0x027FFE0C);
 			u32 chipID = MMU_read32(PROCNUM, 0x027FF800);
 			u64 cmd = bswap64(*(u64 *)&card.command[0]);
@@ -1411,7 +1415,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 			switch (cmd >> 60)
 			{
-				case 0x02:		// Get secure are block (4Kbytes)		- 910h+11A8h
+				case 0x02:		// Get secure area block (4Kbytes)		- 910h+11A8h
 					{
 						u32 addr = (u32)((cmd >> 32) & 0xF000);
 #ifdef _LOG_NEW_BOOT
@@ -1457,14 +1461,14 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 					//card.delay = 0x910;
 					break;
 				default:
-					slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
+					slot1_device->write32(PROCNUM, REG_GCROMCTRL, val);
 					break;
 			}
 		}
 		else
 			if (card.mode == CardMode_DATA_LOAD)
 			{
-				slot1_device.write32(PROCNUM, REG_GCROMCTRL, val);
+				slot1_device->write32(PROCNUM, REG_GCROMCTRL, val);
 #ifdef _LOG_NEW_BOOT
 				if (fp_dis7)
 					fprintf(fp_dis7, "ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
@@ -1535,7 +1539,7 @@ u32 MMU_readFromGC()
 			break;
 
 		default:
-			val = slot1_device.read32(TEST_PROCNUM, REG_GCDATAIN);
+			val = slot1_device->read32(TEST_PROCNUM, REG_GCDATAIN);
 			break;
 	}
 
@@ -3748,7 +3752,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(32,adr,val); return;
 
 			case REG_GCDATAIN:
-				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN,val);
+				slot1_device->write32(ARMCPU_ARM9, REG_GCDATAIN,val);
 				return;
 		}
 
@@ -4490,7 +4494,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 
 			case REG_GCDATAIN:
-				slot1_device.write32(ARMCPU_ARM7, REG_GCDATAIN,val);
+				slot1_device->write32(ARMCPU_ARM7, REG_GCDATAIN,val);
 				return;
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
