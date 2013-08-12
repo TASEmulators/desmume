@@ -21,7 +21,14 @@
 #include "encrypt.h"
 
 #define DFC_ID_CODE	"DeSmuME Firmware User Settings"
-#define USER_SETTING_SIZE 0x100
+#define DFC_ID_SIZE	sizeof(DFC_ID_CODE)
+#define USER_SETTINGS_SIZE 0x100
+#define WIFI_SETTINGS_SIZE 0x1D5
+#define WIFI_AP_SETTINGS_SIZE 0x300
+#define SETTINGS_SIZE (USER_SETTINGS_SIZE + WIFI_SETTINGS_SIZE + WIFI_AP_SETTINGS_SIZE)
+#define DFC_FILE_SIZE (SETTINGS_SIZE + DFC_ID_SIZE)
+#define WIFI_SETTINGS_OFF 0x0000002A
+#define WIFI_AP_SETTINGS_OFF 0x0003FA00
 
 static _KEY1	enc(&MMU.ARM7_BIOS[0x0030]);
 
@@ -493,29 +500,29 @@ bool CFIRMWARE::unpack()
 
 bool CFIRMWARE::loadSettings()
 {
+	if (!CommonSettings.UseExtFirmware) return false;
 	if (!CommonSettings.UseExtFirmwareSettings) return false;
-
-	u8 *data = &MMU.fw.data[userDataAddr];
 
 	FILE *fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
 	{
 		fseek(fp, 0, SEEK_END);
-		if (ftell(fp) == (USER_SETTING_SIZE + sizeof(DFC_ID_CODE)))
+		if (ftell(fp) == DFC_FILE_SIZE)
 		{
 			fseek(fp, 0, SEEK_SET);
-			u8 *usr = new u8[USER_SETTING_SIZE];
+			u8 *usr = new u8[SETTINGS_SIZE];
 			if (usr)
 			{
-				if (fread(usr, 1, sizeof(DFC_ID_CODE), fp) == sizeof(DFC_ID_CODE))
+				if (fread(usr, 1, DFC_ID_SIZE, fp) == DFC_ID_SIZE)
 				{
-					if (memcmp(usr, DFC_ID_CODE, sizeof(DFC_ID_CODE)) == 0)
+					if (memcmp(usr, DFC_ID_CODE, DFC_ID_SIZE) == 0)
 					{
-						memset(usr, 0xFF, USER_SETTING_SIZE);
-						if (fread(usr, 1, USER_SETTING_SIZE, fp) == USER_SETTING_SIZE)
+						if (fread(usr, 1, SETTINGS_SIZE, fp) == SETTINGS_SIZE)
 						{
-							memcpy(data, usr, USER_SETTING_SIZE);
-							memcpy(data + 0x100, usr, USER_SETTING_SIZE);
+							memcpy(&MMU.fw.data[userDataAddr], usr, USER_SETTINGS_SIZE);
+							memcpy(&MMU.fw.data[userDataAddr + 0x100], usr, USER_SETTINGS_SIZE);
+							memcpy(&MMU.fw.data[WIFI_SETTINGS_OFF], usr + USER_SETTINGS_SIZE, WIFI_SETTINGS_SIZE);
+							memcpy(&MMU.fw.data[WIFI_AP_SETTINGS_OFF], usr + USER_SETTINGS_SIZE + WIFI_SETTINGS_SIZE, WIFI_AP_SETTINGS_SIZE);
 							printf("Loaded user settings from %s\n", MMU.fw.userfile);
 						}
 					}
@@ -535,6 +542,7 @@ bool CFIRMWARE::loadSettings()
 
 bool CFIRMWARE::saveSettings()
 {
+	if (!CommonSettings.UseExtFirmware) return false;
 	if (!CommonSettings.UseExtFirmwareSettings) return false;
 
 	u8 *data = &MMU.fw.data[userDataAddr];
@@ -556,15 +564,20 @@ bool CFIRMWARE::saveSettings()
 	FILE *fp = fopen(MMU.fw.userfile, "wb");
 	if (fp)
 	{
-		if (fwrite(DFC_ID_CODE, 1, sizeof(DFC_ID_CODE), fp) == sizeof(DFC_ID_CODE))
+		u8 *usr = new u8[DFC_FILE_SIZE];
+		if (usr)
 		{
-			if (fwrite(data, 1, 0x100, fp) == 0x100)
+			memcpy(usr, DFC_ID_CODE, DFC_ID_SIZE);
+			memcpy(usr + DFC_ID_SIZE, data, USER_SETTINGS_SIZE);
+			memcpy(usr + DFC_ID_SIZE + USER_SETTINGS_SIZE, &MMU.fw.data[WIFI_SETTINGS_OFF], WIFI_SETTINGS_SIZE);
+			memcpy(usr + DFC_ID_SIZE + USER_SETTINGS_SIZE + WIFI_SETTINGS_SIZE, &MMU.fw.data[WIFI_AP_SETTINGS_OFF], WIFI_AP_SETTINGS_SIZE);
+			if (fwrite(usr, 1, DFC_FILE_SIZE, fp) == DFC_FILE_SIZE)
 				printf(" - done\n");
 			else
 				printf(" - failed\n");
+
+			delete [] usr;
 		}
-		else
-			printf(" - failed\n");
 		fclose(fp);
 	}
 	else
