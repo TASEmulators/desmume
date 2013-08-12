@@ -841,77 +841,84 @@ TEMPLATE static u32 UnCompHuffman()
 
 TEMPLATE static u32 BitUnPack()
 {
-  u32 source,dest,header,base,d,temp;
-  int len,bits,revbits,dataSize,data,bitwritecount,mask,bitcount,addBase;
-  u8 b;
+	u32 source,dest,header,base,d,temp;
+	int len,bits,revbits,dataSize,data,bitwritecount,mask,bitcount,addBase;
+	u8 b;
 
-  source = cpu->R[0];
-  dest = cpu->R[1];
-  header = cpu->R[2];
+	source = cpu->R[0];
+	dest = cpu->R[1];
+	header = cpu->R[2];
 
-  len = _MMU_read16<PROCNUM>(header);
-  bits = _MMU_read08<PROCNUM>(header+2);
-  switch (bits)
-  {
+	len = _MMU_read16<PROCNUM>(header);
+	bits = _MMU_read08<PROCNUM>(header+2);
+	switch (bits)
+	{
 	case 1:
 	case 2:
 	case 4:
 	case 8:
-	  break;
-	default: return (0);	// error
-  }
-  dataSize = _MMU_read08<PROCNUM>(header+3);
-  switch (dataSize)
-  {
+		break;
+	default: 
+		return (0);	// error
+	}
+	dataSize = _MMU_read08<PROCNUM>(header+3);
+	switch (dataSize)
+	{
 	case 1:
 	case 2:
 	case 4:
 	case 8:
 	case 16:
 	case 32:
-	  break;
-	default: return (0);	// error
-  }
+		break;
+	default: 
+		return (0);	// error
+	}
 
-  revbits = 8 - bits; 
-  // u32 value = 0;
-  base = _MMU_read08<PROCNUM>(header+4);
-  addBase = (base & 0x80000000) ? 1 : 0;
-  base &= 0x7fffffff;
-  
-  //INFO("SWI10: bitunpack src 0x%08X dst 0x%08X hdr 0x%08X (src len %05i src bits %02i dst bits %02i)\n\n", source, dest, header, len, bits, dataSize);
+	revbits = 8 - bits; 
+	base = _MMU_read32<PROCNUM>(header+4);
+	addBase = (base & 0x80000000) ? 1 : 0;
+	base &= 0x7fffffff;
 
-  data = 0; 
-  bitwritecount = 0; 
-  while(1) {
-    len -= 1;
-    if(len < 0)
-      break;
-    mask = 0xff >> revbits; 
-    b = _MMU_read08<PROCNUM>(source); 
-    source++;
-    bitcount = 0;
-    while(1) {
-      if(bitcount >= 8)
-        break;
-      d = b & mask;
-      temp = d >> bitcount;
-      if(!temp && addBase) {
-        temp += base;
-      }
-      data |= temp << bitwritecount;
-      bitwritecount += dataSize;
-      if(bitwritecount >= 32) {
-        _MMU_write08<PROCNUM>(dest, data);
-        dest += 4;
-        data = 0;
-        bitwritecount = 0;
-      }
-      mask <<= bits;
-      bitcount += bits;
-    }
-  }
-  return 1;
+	//INFO("SWI10: bitunpack src 0x%08X dst 0x%08X hdr 0x%08X (src len %05i src bits %02i dst bits %02i)\n\n", source, dest, header, len, bits, dataSize);
+
+	data = 0; 
+	bitwritecount = 0; 
+	while(1) {
+		len -= 1;
+		if(len < 0)
+			break;
+		mask = 0xff >> revbits; 
+		b = _MMU_read08<PROCNUM>(source); 
+		source++;
+		bitcount = 0;
+		while(1) {
+			if(bitcount >= 8)
+				break;
+			temp = b & mask;
+			if(temp)
+				temp += base;
+			else if(addBase)
+				temp += base;
+
+			//you might think you should do this. but you would be wrong!
+			//this is meant for palette adjusting things, i.e. 16col data to 256col data in colors 240..255. In that case theres no modulo normally.
+			//Users expecting modulo have done something wrong anyway.
+			//temp &= (1<<bits)-1;
+
+			data |= temp << bitwritecount;
+			bitwritecount += dataSize;
+			if(bitwritecount >= 32) {
+				_MMU_write32<PROCNUM>(dest, data);
+				dest += 4;
+				data = 0;
+				bitwritecount = 0;
+			}
+			bitcount += bits;
+			b >>= bits;
+		}
+	}
+	return 1;
 }
 
 TEMPLATE static u32 Diff8bitUnFilterWram() //this one might be different on arm7 and needs checking
@@ -1029,41 +1036,40 @@ TEMPLATE static u32 getVolumeTab()
 }
 
 
-//TEMPLATE static u32 getCRC16_old_and_broken(u32 crc, u32 datap, u32 size)
-//{
-//  unsigned int i,j;
-//   
-//  const u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
-//  for(i = 0; i < size; i++)
-//  {
-//    crc = crc ^ _MMU_read08<PROCNUM>(datap + i);
-//
-//    for(j = 0; j < 8; j++) {
-//      int do_bit = 0;
-//
-//      if ( crc & 0x1)
-//        do_bit = 1;
-//
-//      crc = crc >> 1;
-//
-//      if ( do_bit) {
-//        crc = crc ^ (val[j] << (7-j));
-//      }
-//    }
-//  }
-//  return crc;
-//}
+TEMPLATE static u32 getCRC16_old_and_broken(u32 crc, u32 datap, u32 size)
+{
+  unsigned int i,j;
+   
+  const u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+  for(i = 0; i < size; i++)
+  {
+    crc = crc ^ _MMU_read08<PROCNUM>(datap + i);
+
+    for(j = 0; j < 8; j++) {
+      int do_bit = 0;
+
+      if ( crc & 0x1)
+        do_bit = 1;
+
+      crc = crc >> 1;
+
+      if ( do_bit) {
+        crc = crc ^ (val[j] << (7-j));
+      }
+    }
+  }
+  return crc;
+}
 
 TEMPLATE static u32 getCRC16()
 {
-	//gbatek is wrong.. for ARM9, at least. 
-	//someone should check how the ARM7 version works.
-
 	//dawn of sorrow uses this to checksum its save data;
 	//if this implementation is wrong, then it won't match what the real bios returns, 
-	//and savefiles created with a bios will be invalid when loaded with non-bios (and vice-versa)
-
-	//u32 old = getCRC16_old<PROCNUM>(cpu->R[0],cpu->R[1],cpu->R[2]);
+	//and savefiles created with a bios will be invalid when loaded with non-bios (and vice-versa).
+	//Once upon a time, desmume was doing this wrongly; this was due to its mis-use of high bits of the input CRC.
+	//Additionally, that implementation was not handling odd sizes and addresses correctly (but this was discovered independently)
+	//The following call is left here so we can A/B test with the old version. Glad I left it, because we keep coming back to this code.
+	//u32 old = getCRC16_old_and_broken<PROCNUM>(cpu->R[0],cpu->R[1],cpu->R[2]);
 
 	u16 crc = (u16)cpu->R[0];
 	u32 datap = cpu->R[1];
@@ -1089,9 +1095,9 @@ TEMPLATE static u32 getCRC16()
 	}
 
 	cpu->R[0] = crc;
-	
+
 	//R3 contains the last processed halfword 
-	//this is significant -- WHY?
+	//this is significant -- why? Can we get a test case? Supposedly there is one..
 	cpu->R[3] = currVal;
 
 	return 1;
