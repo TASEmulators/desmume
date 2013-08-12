@@ -495,7 +495,7 @@ bool CFIRMWARE::loadSettings()
 {
 	if (!CommonSettings.UseExtFirmwareSettings) return false;
 
-	u8 *data = MMU.fw.data;
+	u8 *data = &MMU.fw.data[userDataAddr];
 
 	FILE *fp = fopen(MMU.fw.userfile, "rb");
 	if (fp)
@@ -514,9 +514,9 @@ bool CFIRMWARE::loadSettings()
 						memset(usr, 0xFF, USER_SETTING_SIZE);
 						if (fread(usr, 1, USER_SETTING_SIZE, fp) == USER_SETTING_SIZE)
 						{
-							memcpy(&data[userDataAddr], usr, USER_SETTING_SIZE);
-							memcpy(&data[userDataAddr + 0x100], usr, USER_SETTING_SIZE);
-							printf("Loaded user settings from %s:\n", MMU.fw.userfile);
+							memcpy(data, usr, USER_SETTING_SIZE);
+							memcpy(data + 0x100, usr, USER_SETTING_SIZE);
+							printf("Loaded user settings from %s\n", MMU.fw.userfile);
 						}
 					}
 				}
@@ -537,9 +537,20 @@ bool CFIRMWARE::saveSettings()
 {
 	if (!CommonSettings.UseExtFirmwareSettings) return false;
 
-	u8 *data = MMU.fw.data;
-	// copy User Settings 1 to User Settings 0 area
-	memcpy(&data[userDataAddr], &data[userDataAddr + 0x100], 0x100);
+	u8 *data = &MMU.fw.data[userDataAddr];
+	u8 counter0 = data[0x070];
+	u8 counter1 = data[0x170];
+
+	if (counter1 == ((counter0 + 1) & 0x7F))
+	{
+		// copy User Settings 1 to User Settings 0 area
+		memcpy(data, data + 0x100, 0x100);
+	}
+	else
+	{
+		// copy User Settings 0 to User Settings 1 area
+		memcpy(data + 0x100, data, 0x100);
+	}
 	
 	printf("Firmware: saving config");
 	FILE *fp = fopen(MMU.fw.userfile, "wb");
@@ -547,7 +558,7 @@ bool CFIRMWARE::saveSettings()
 	{
 		if (fwrite(DFC_ID_CODE, 1, sizeof(DFC_ID_CODE), fp) == sizeof(DFC_ID_CODE))
 		{
-			if (fwrite(&data[userDataAddr], 1, 0x100, fp) == 0x100)
+			if (fwrite(data, 1, 0x100, fp) == 0x100)
 				printf(" - done\n");
 			else
 				printf(" - failed\n");
