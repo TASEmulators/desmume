@@ -704,7 +704,7 @@ TEMPLATE static u32 UnCompHuffman()
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = _MMU_read08<PROCNUM>(source);
+  header = _MMU_read32<PROCNUM>(source);
   source += 4;
 
   //INFO("swi uncomphuffman\n");
@@ -722,7 +722,7 @@ TEMPLATE static u32 UnCompHuffman()
   len = header >> 8;
 
   mask = 0x80000000;
-  data = _MMU_read08<PROCNUM>(source);
+  data = _MMU_read32<PROCNUM>(source);
   source += 4;
 
   pos = 0;
@@ -765,7 +765,7 @@ TEMPLATE static u32 UnCompHuffman()
         if(byteCount == 4) {
           byteCount = 0;
           byteShift = 0;
-          _MMU_write08<PROCNUM>(dest, writeValue);
+          _MMU_write32<PROCNUM>(dest, writeValue);
           writeValue = 0;
           dest += 4;
           len -= 4;
@@ -774,7 +774,7 @@ TEMPLATE static u32 UnCompHuffman()
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = _MMU_read08<PROCNUM>(source);
+        data = _MMU_read32<PROCNUM>(source);
         source += 4;
       }
     }
@@ -818,7 +818,7 @@ TEMPLATE static u32 UnCompHuffman()
           if(byteCount == 4) {
             byteCount = 0;
             byteShift = 0;
-            _MMU_write08<PROCNUM>(dest, writeValue);
+            _MMU_write32<PROCNUM>(dest, writeValue);
             dest += 4;
             writeValue = 0;
             len -= 4;
@@ -831,17 +831,16 @@ TEMPLATE static u32 UnCompHuffman()
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = _MMU_read08<PROCNUM>(source);
+        data = _MMU_read32<PROCNUM>(source);
         source += 4;
       }
     }    
   }
   return 1;
 }
-
 TEMPLATE static u32 BitUnPack()
 {
-	u32 source,dest,header,base,d,temp;
+	u32 source,dest,header,base,temp;
 	int len,bits,revbits,dataSize,data,bitwritecount,mask,bitcount,addBase;
 	u8 b;
 
@@ -1068,6 +1067,7 @@ TEMPLATE static u32 getCRC16()
 	//and savefiles created with a bios will be invalid when loaded with non-bios (and vice-versa).
 	//Once upon a time, desmume was doing this wrongly; this was due to its mis-use of high bits of the input CRC.
 	//Additionally, that implementation was not handling odd sizes and addresses correctly (but this was discovered independently)
+	//We have confirmed that the crc16 works the same on the arm9 and arm7.
 	//The following call is left here so we can A/B test with the old version. Glad I left it, because we keep coming back to this code.
 	//u32 old = getCRC16_old_and_broken<PROCNUM>(cpu->R[0],cpu->R[1],cpu->R[2]);
 
