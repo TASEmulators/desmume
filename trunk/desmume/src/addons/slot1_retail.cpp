@@ -78,14 +78,10 @@ private:
 					// 3rd byte - Reserved/zero (probably upper bits of chip size)
 					// 4th byte - Bit7: Secure Area Block transfer mode (8x200h or 1000h)
 
-	#ifdef _NEW_BOOT
-					u32 chipID = 0;
-					if (CommonSettings.BootFromFirmware)
-						chipID = 0x00000000 | 0x00000000 | 0x00000F00 | 0x000000C2;;
-	#else
-					u32 chipID = 0;
-	#endif
-	 
+					// It doesnt look like the chip size is important.
+
+					u32 chipID = 0x00000000 | 0x00000000 | 0x00000F00 | 0x000000C2;
+
 					// Note: the BIOS stores the chip ID in main memory
 					// Most games continuously compare the chip ID with
 					// the value in memory, probably to know if the card
@@ -93,9 +89,6 @@ private:
 					// As DeSmuME normally boots directly from the game, the chip
 					// ID in main mem is zero and this value needs to be
 					// zero too.
-
-					//note that even if desmume was booting from firmware, and reading this chip ID to store in main memory,
-					//this still works, since it will have read 00 originally and then read 00 to validate.
 
 					//staff of kings verifies this (it also uses the arm7 IRQ 20)
 					return chipID;
