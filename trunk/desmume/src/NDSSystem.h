@@ -319,6 +319,7 @@ struct GameInfo
 {
 	GameInfo() :	romdata(NULL),
 					crc(0),
+					chipID(0x00000FC2),
 					romsize(0),
 					allocatedSize(0),
 					mask(0)
@@ -373,6 +374,7 @@ struct GameInfo
 		romsize = size;
 	}
 	u32 crc;
+	u32 chipID;
 	NDS_header header;
 	char ROMserial[20];
 	char ROMname[20];

@@ -120,11 +120,9 @@ private:
 					// ID in main mem is zero and this value needs to be
 					// zero too.
 
-					u32 chipID = 0;
-
 					//note that even if desmume was booting from firmware, and reading this chip ID to store in main memory,
 					//this still works, since it will have read 00 originally and then read 00 to validate.
-					return chipID;
+					return gameInfo.chipID;
 				}
 				break;
 

@@ -80,8 +80,6 @@ private:
 
 					// It doesnt look like the chip size is important.
 
-					u32 chipID = 0x00000000 | 0x00000000 | 0x00000F00 | 0x000000C2;
-
 					// Note: the BIOS stores the chip ID in main memory
 					// Most games continuously compare the chip ID with
 					// the value in memory, probably to know if the card
@@ -91,7 +89,7 @@ private:
 					// zero too.
 
 					//staff of kings verifies this (it also uses the arm7 IRQ 20)
-					return chipID;
+					return gameInfo.chipID;
 				}
 				break;
 
