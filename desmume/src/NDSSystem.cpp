@@ -585,6 +585,15 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 
 	gameInfo.populate();
 	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
+
+	// 1st byte - Manufacturer (C2h = Macronix)
+	// 2nd byte - Chip size in megabytes minus 1 (eg. 0Fh = 16MB)
+	// 3rd byte - Reserved/zero (probably upper bits of chip size)
+	// 4th byte - Bit7: Secure Area Block transfer mode (8x200h or 1000h)
+
+	// It doesnt look like the chip size is important.
+	gameInfo.chipID = 0x00000000 | 0x00000000 | 0x00000F00 | 0x000000C2;
+
 	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
 	INFO("ROM crc: %08X\n", gameInfo.crc);
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
@@ -2656,6 +2665,16 @@ void NDS_Reset()
 		//firmware makes system think it's booted from card -- EXTREMELY IMPORTANT!!! Thanks to cReDiAr
 		_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
 		_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1);
+
+		//
+		_MMU_write32<ARMCPU_ARM7>(0x027FF800, gameInfo.chipID);		// Chip ID
+		_MMU_write32<ARMCPU_ARM7>(0x027FF804, gameInfo.chipID);		// Secure Chip ID
+		_MMU_write32<ARMCPU_ARM7>(0x027FFC00, gameInfo.chipID);		// 2nd Secure Chip ID
+		// Write the header checksum to memory
+		_MMU_write16<ARMCPU_ARM9>(0x027FF808, gameInfo.header.headerCRC16);
+
+		// Write the header checksum to memory (the firmware needs it to see the cart)
+		//_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
 
 		// Save touchscreen calibration info in a structure
 		// so we can easily access it at any time
