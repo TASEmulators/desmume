@@ -71,15 +71,6 @@ private:
 			case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
 			case 0xB8:	// 3rd Get ROM Chip ID - len 4 bytes
 				{
-					// Returns RAW unencrypted Chip ID (eg. C2h,0Fh,00h,00h), repeated every 4 bytes.
-					//
-					// 1st byte - Manufacturer (C2h = Macronix)
-					// 2nd byte - Chip size in megabytes minus 1 (eg. 0Fh = 16MB)
-					// 3rd byte - Reserved/zero (probably upper bits of chip size)
-					// 4th byte - Bit7: Secure Area Block transfer mode (8x200h or 1000h)
-
-					// It doesnt look like the chip size is important.
-
 					// Note: the BIOS stores the chip ID in main memory
 					// Most games continuously compare the chip ID with
 					// the value in memory, probably to know if the card
@@ -127,9 +118,7 @@ private:
 				}
 				break;
 			default:
-	#ifdef _NEW_BOOT
-				printf("ARM%c: SLOT1 invalid command %02X (read)\n", PROCNUM?'7':'9', cmd);
-	#endif
+				//printf("ARM%c: SLOT1 invalid command %02X (read)\n", PROCNUM?'7':'9', cmd);
 				return 0;
 		} //switch(card.command[0])
 	} //read32_GCDATAIN

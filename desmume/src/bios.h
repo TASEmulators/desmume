@@ -21,7 +21,8 @@
 
 #include "armcpu.h"
 
-extern u32 (* ARM_swi_tab[2][32])();;
+extern u32 (* ARM_swi_tab[2][32])();
+extern char* ARM_swi_names[2][32];
 
 #endif
  

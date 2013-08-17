@@ -91,55 +91,55 @@ extern CFIRMWARE	*firmware;
 #include "PACKED.h"
 struct NDS_header
 {
-       char     gameTile[12];	// 000 - Game Title (uppercase ASCII, padded with 00h)
-       char     gameCode[4];	// 00C - Gamecode (uppercase ASCII, NTR-<code>, 0=homebrew)
-       u16      makerCode;		// 010 - Makercode (uppercase ASCII, 0=homebrew)
-       u8       unitCode;		// 012 - Unitcode (00h=Nintendo DS)
-       u8       deviceCode;		// 013 - Encryption Seed Select (00..07h, usually 00h)
-       u8       cardSize;		// 014 - Devicecapacity (Chipsize = 128KB SHL nn) (eg. 7 = 16MB)
-       u8       cardInfo[8];	// 015 - ???  --> reversed (padded 00h)
-       u8       flags;			// 01D - ???  |
-	   u8		romversion;		// 01E - ROM Version (usually 00h)
-	   u8		autostart;		// 01F - Autostart (Bit2: Skip "Press Button" after Health and Safety)
-									//	 (Also skips bootmenu, even in Manual mode & even Start pressed)
-       u32      ARM9src;		// 020 - 
-       u32      ARM9exe;		// 024 - 
-       u32      ARM9cpy;		// 028 - 
-       u32      ARM9binSize;	// 02C - 
-       
-       u32      ARM7src;		// 030 - 
-       u32      ARM7exe;		// 034 - 
-       u32      ARM7cpy;		// 038 - 
-       u32      ARM7binSize;	// 03C - 
- 
-       u32      FNameTblOff;	// 040 - 
-       u32      FNameTblSize;	// 044 - 
+	char	gameTile[12];		// 000 - Game Title (uppercase ASCII, padded with 00h)
+	char	gameCode[4];		// 00C - Gamecode (uppercase ASCII, NTR-<code>, 0=homebrew)
+	u16		makerCode;			// 010 - Makercode (uppercase ASCII, 0=homebrew)
+	u8		unitCode;			// 012 - Unitcode (00h=Nintendo DS)
+	u8		deviceCode;			// 013 - Encryption Seed Select (00..07h, usually 00h)
+	u8		cardSize;			// 014 - Devicecapacity (Chipsize = 128KB SHL nn) (eg. 7 = 16MB)
+	u8		cardInfo[8];		// 015 - ???  --> reversed (padded 00h)
+	u8		flags;				// 01D - ???  |
+	u8		romversion;			// 01E - ROM Version (usually 00h)
+	u8		autostart;			// 01F - Autostart (Bit2: Skip "Press Button" after Health and Safety)
+								//	 (Also skips bootmenu, even in Manual mode & even Start pressed)
+	u32		ARM9src;			// 020 - ARM9 rom_offset    (4000h and up, align 1000h)
+	u32		ARM9exe;			// 024 - ARM9 entry_address (2000000h..23BFE00h)
+	u32		ARM9cpy;			// 028 - ARM9 ram_address   (2000000h..23BFE00h)
+	u32		ARM9binSize;		// 02C - ARM9 size          (max 3BFE00h) (3839.5KB)
 
-       u32      FATOff;			// 048 - 
-       u32      FATSize;		// 04C - 
+	u32		ARM7src;			// 030 - ARM7 rom_offset    (8000h and up)
+	u32		ARM7exe;			// 034 - ARM7 entry_address (2000000h..23BFE00h, or 37F8000h..3807E00h)
+	u32		ARM7cpy;			// 038 - ARM7 ram_address   (2000000h..23BFE00h, or 37F8000h..3807E00h)
+	u32		ARM7binSize;		// 03C - ARM7 size          (max 3BFE00h, or FE00h) (3839.5KB, 63.5KB)
 
-       u32     ARM9OverlayOff;	// 050 - 
-       u32     ARM9OverlaySize;	// 054 - 
-       u32     ARM7OverlayOff;	// 058 -
-       u32     ARM7OverlaySize;	// 05C -
-       
-       u32     unknown2a;		// 060 - Port 40001A4h setting for normal commands (usually 00586000h)
-       u32     unknown2b;		// 064 - Port 40001A4h setting for KEY1 commands   (usually 001808F8h)
-       
-       u32     IconOff;			// 068 - 
-       u16     CRC16;			// 06C - 
-       u16     ROMtimeout;		// 06E - 
-       u32     ARM9unk;			// 070 -
-       u32     ARM7unk;			// 074 - 
-       
-       u8      unknown3c[8];	// 078 - Secure Area Disable (by encrypted "NmMdOnly") (usually zero)
-       u32     ROMSize;			// 080 - Total Used ROM size (remaining/unused bytes usually FFh-padded)
-       u32     HeaderSize;		// 084 - ROM Header Size (4000h)
-       u8      unknown5[56];	// 088 - Reserved (zero filled) - "PASS" is contained within here?
-       u8      logo[156];		// 0C0 - Nintendo Logo (compressed bitmap, same as in GBA Headers)
-       u16     logoCRC16;		// 15C - Nintendo Logo Checksum, CRC-16 of [0C0h-15Bh], fixed CF56h
-       u16     headerCRC16;		// 15E - Header Checksum, CRC-16 of [000h-15Dh]
-       u8      reserved[160];	// 
+	u32		FNameTblOff;		// 040 - File Name Table (FNT) offset
+	u32		FNameTblSize;		// 044 - File Name Table (FNT) size
+
+	u32		FATOff;				// 048 - File Allocation Table (FAT) offset
+	u32		FATSize;			// 04C - File Allocation Table (FAT) size
+
+	u32		ARM9OverlayOff;		// 050 - File ARM9 overlay_offset
+	u32		ARM9OverlaySize;	// 054 - File ARM9 overlay_size
+	u32		ARM7OverlayOff;		// 058 - File ARM7 overlay_offset
+	u32		ARM7OverlaySize;	// 05C - File ARM7 overlay_size
+
+	u32		normalCmd;			// 060 - Port 40001A4h setting for normal commands (usually 00586000h)
+	u32		Key1Cmd;			// 064 - Port 40001A4h setting for KEY1 commands   (usually 001808F8h)
+
+	u32		IconOff;			// 068 - Icon_title_offset (0=None) (8000h and up)
+	u16		CRC16;				// 06C - Secure Area Checksum, CRC-16 of [ [20h]..7FFFh]
+	u16		ROMtimeout;			// 06E - Secure Area Loading Timeout (usually 051Eh)
+	u32		ARM9unk;			// 070 -
+	u32		ARM7unk;			// 074 - 
+
+	u8		secAreaDisable[8];	// 078 - Secure Area Disable (by encrypted "NmMdOnly") (usually zero)
+	u32		ROMSize;			// 080 - Total Used ROM size (remaining/unused bytes usually FFh-padded)
+	u32		HeaderSize;			// 084 - ROM Header Size (4000h)
+	u8		unknown5[56];		// 088 - Reserved (zero filled) - "PASS" is contained within here?
+	u8		logo[156];			// 0C0 - Nintendo Logo (compressed bitmap, same as in GBA Headers)
+	u16		logoCRC16;			// 15C - Nintendo Logo Checksum, CRC-16 of [0C0h-15Bh], fixed CF56h
+	u16		headerCRC16;		// 15E - Header Checksum, CRC-16 of [000h-15Dh]
+	u8		reserved[160];		// 
 };
 #include "PACKED_END.h"
 
