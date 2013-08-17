@@ -1210,3 +1210,76 @@ u32 (* ARM_swi_tab[2][32])()={
 		CustomHalt<ARMCPU_ARM7>,           // 0x1F
 	}
 };
+
+#define BIOS_NOP "bios_nop"
+char* ARM_swi_names[2][32] = {
+	{
+		"SoftReset",			// 0x00
+		BIOS_NOP,				// 0x01
+		BIOS_NOP,				// 0x02
+		"WaitByLoop",			// 0x03
+		"IntrWait",				// 0x04
+		"VBlankIntrWait",		// 0x05
+		"Halt",					// 0x06
+		BIOS_NOP,				// 0x07
+		BIOS_NOP,				// 0x08
+		"Div",					// 0x09
+		BIOS_NOP,				// 0x0A
+		"CpuSet",				// 0x0B
+		"CpuFastSet",			// 0x0C
+		"Sqrt",					// 0x0D
+		"GetCRC16",				// 0x0E
+		"IsDebugger",			// 0x0F
+		"BitUnPack",			// 0x10
+		"LZ77UnCompWram",		// 0x11
+		"LZ77UnCompVram",		// 0x12
+		"HuffUnComp",			// 0x13
+		"RLUnCompWram",			// 0x14
+		"RLUnCompVram",			// 0x15
+		"Diff8bitUnFilterWram",	// 0x16
+		BIOS_NOP,				// 0x17
+		"Diff16bitUnFilter",	// 0x18
+		BIOS_NOP,				// 0x19
+		BIOS_NOP,				// 0x1A
+		BIOS_NOP,				// 0x1B
+		BIOS_NOP,				// 0x1C
+		BIOS_NOP,				// 0x1D
+		BIOS_NOP,				// 0x1E
+		"CustomPost",			// 0x1F
+	},
+	{
+		"SoftReset",			// 0x00
+		BIOS_NOP,				// 0x01
+		BIOS_NOP,				// 0x02
+		"WaitByLoop",			// 0x03
+		"IntrWait",				// 0x04
+		"VBlankIntrWait",		// 0x05
+		"Halt",					// 0x06
+		"Sleep",				// 0x07
+		"SoundBias",			// 0x08
+		"Div",					// 0x09
+		BIOS_NOP,				// 0x0A
+		"CpuSet",				// 0x0B
+		"CpuFastSet",			// 0x0C
+		"Sqrt",					// 0x0D
+		"GetCRC16",				// 0x0E
+		"IsDebugger",			// 0x0F
+		"BitUnPack",			// 0x10
+		"LZ77UnCompWram",		// 0x11
+		"LZ77UnCompVram",		// 0x12
+		"HuffUnComp",			// 0x13
+		"RLUnCompWram",			// 0x14
+		"RLUnCompVram",			// 0x15
+		BIOS_NOP,				// 0x16
+		BIOS_NOP,				// 0x17
+		BIOS_NOP,				// 0x18
+		BIOS_NOP,				// 0x19
+		"GetSineTable",			// 0x1A
+		"GetPitchTable",		// 0x1B
+		"GetVolumeTable",		// 0x1C
+		"GetBootProcs",			// 0x1D
+		BIOS_NOP,				// 0x1E
+		"CustomHalt",			// 0x1F
+	}
+};
+#undef BIOS_NOP
