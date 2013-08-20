@@ -220,7 +220,7 @@ SFORMAT SF_MMU[]={
 	{ "M_SX", 1, 2,       &MMU.SPI_CNT},
 	{ "M_SC", 1, 2,       &MMU.SPI_CMD},
 	{ "MASX", 1, 2,       &MMU.AUX_SPI_CNT},
-	{ "MASC", 1, 2,       &MMU.AUX_SPI_CMD},
+	//{ "MASC", 1, 2,       &MMU.AUX_SPI_CMD}, //zero 20-aug-2013 - this seems pointless
 
 	{ "MWRA", 1, 2,       &MMU.WRAMCNT},
 

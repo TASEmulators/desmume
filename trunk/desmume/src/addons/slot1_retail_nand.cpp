@@ -25,7 +25,7 @@ class Slot1_Retail_NAND : public ISlot1Interface
 public:
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("Retail+NAND","Slot1 Retail NAND card emulation");
+		static Slot1InfoSimple info("Retail NAND","Slot1 retail NAND card emulation");
 		return &info;
 	}
 

@@ -910,3 +910,190 @@ void NDS_PatchFirmwareMAC()
 	memcpy((MMU.fw.data + 0x36), FW_Mac, sizeof(FW_Mac));
 	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
 }
+
+//=========================
+//- firmware SPI chip interface -
+//the original intention was for this code to have similarity to the AUXSPI backup memory devices.
+//however, that got overgrown, and this stuff stayed pretty simple.
+//perhaps it can be re-defined in terms of a simpler AUXSPI device after the AUXSPI devices are re-designed.
+
+#define FW_CMD_READ             0x03
+#define FW_CMD_WRITEDISABLE     0x04
+#define FW_CMD_READSTATUS       0x05
+#define FW_CMD_WRITEENABLE      0x06
+#define FW_CMD_PAGEWRITE        0x0A
+#define FW_CMD_READ_ID			0x9F
+
+void fw_reset_com(fw_memory_chip *mc)
+{
+	if(mc->com == FW_CMD_PAGEWRITE)
+	{
+		if (mc->fp)
+		{
+			fseek(mc->fp, 0, SEEK_SET);
+			fwrite(mc->data, mc->size, 1, mc->fp);
+		}
+
+		if (mc->isFirmware && CommonSettings.UseExtFirmware && CommonSettings.UseExtFirmwareSettings && firmware)
+		{
+			firmware->saveSettings();
+		}
+		mc->write_enable = FALSE;
+	}
+
+	mc->com = 0;
+}
+
+u8 fw_transfer(fw_memory_chip *mc, u8 data)
+{
+	if(mc->com == FW_CMD_READ || mc->com == FW_CMD_PAGEWRITE) /* check if we are in a command that needs 3 bytes address */
+	{
+		if(mc->addr_shift > 0)   /* if we got a complete address */
+		{
+			mc->addr_shift--;
+			mc->addr |= data << (mc->addr_shift * 8); /* argument is a byte of address */
+		}
+		else    /* if we have received 3 bytes of address, proceed command */
+		{
+			switch(mc->com)
+			{
+				case FW_CMD_READ:
+					if(mc->addr < mc->size)  /* check if we can read */
+					{
+						data = mc->data[mc->addr];       /* return byte */
+						mc->addr++;      /* then increment address */
+					}
+					break;
+					
+				case FW_CMD_PAGEWRITE:
+					if(mc->addr < mc->size)
+					{
+						mc->data[mc->addr] = data;       /* write byte */
+						mc->addr++;
+					}
+					break;
+			}
+			
+		}
+	}
+	else if(mc->com == FW_CMD_READ_ID)
+	{
+		switch(mc->addr)
+		{
+		//here is an ID string measured from an old ds fat: 62 16 00 (0x62=sanyo)
+		//but we chose to use an ST from martin's ds fat string so programs might have a clue as to the firmware size:
+		//20 40 12
+		case 0: 
+			data = 0x20;
+			mc->addr=1; 
+			break;
+		case 1: 
+			data = 0x40; //according to gbatek this is the device ID for the flash on someone's ds fat
+			mc->addr=2; 
+			break;
+		case 2: 
+			data = 0x12;
+			mc->addr = 0; 
+			break;
+		}
+	}
+	else if(mc->com == FW_CMD_READSTATUS)
+	{
+		return (mc->write_enable ? 0x02 : 0x00);
+	}
+	else	//finally, check if it's a new command
+	{
+		switch(data)
+		{
+			case 0: break;	//nothing
+
+			case FW_CMD_READ_ID:
+				mc->addr = 0;
+				mc->com = FW_CMD_READ_ID;
+				break;
+			
+			case FW_CMD_READ:    //read command
+				mc->addr = 0;
+				mc->addr_shift = 3;
+				mc->com = FW_CMD_READ;
+				break;
+				
+			case FW_CMD_WRITEENABLE:     //enable writing
+				if(mc->writeable_buffer) { mc->write_enable = TRUE; }
+				break;
+				
+			case FW_CMD_WRITEDISABLE:    //disable writing
+				mc->write_enable = FALSE;
+				break;
+				
+			case FW_CMD_PAGEWRITE:       //write command
+				if(mc->write_enable)
+				{
+					mc->addr = 0;
+					mc->addr_shift = 3;
+					mc->com = FW_CMD_PAGEWRITE;
+				}
+				else { data = 0; }
+				break;
+			
+			case FW_CMD_READSTATUS:  //status register command
+				mc->com = FW_CMD_READSTATUS;
+				break;
+				
+			default:
+				printf("Unhandled FW command: %02X\n", data);
+				break;
+		}
+	}
+	
+	return data;
+}	
+
+
+void mc_init(fw_memory_chip *mc, int type)
+{
+	mc->com = 0;
+	mc->addr = 0;
+	mc->addr_shift = 0;
+	mc->data = NULL;
+	mc->size = 0;
+	mc->write_enable = FALSE;
+	mc->writeable_buffer = FALSE;
+	mc->type = type;
+
+	switch(mc->type)
+	{
+	case MC_TYPE_EEPROM1:
+		mc->addr_size = 1;
+		break;
+	case MC_TYPE_EEPROM2:
+	case MC_TYPE_FRAM:
+		mc->addr_size = 2;
+		break;
+	case MC_TYPE_FLASH:
+		mc->addr_size = 3;
+		break;
+	default: break;
+	}
+}
+
+u8 *mc_alloc(fw_memory_chip *mc, u32 size)
+{
+	u8 *buffer = NULL;
+	buffer = new u8[size];
+	if(!buffer) { return NULL; }
+	memset(buffer,0,size);
+
+	if (mc->data) delete [] mc->data;
+	mc->data = buffer;
+	mc->size = size;
+	mc->writeable_buffer = TRUE;
+
+	return buffer;
+}
+
+void mc_free(fw_memory_chip *mc)
+{
+    if(mc->data) delete[] mc->data;
+    mc_init(mc, 0);
+}

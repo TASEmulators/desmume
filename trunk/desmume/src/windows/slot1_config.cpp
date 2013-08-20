@@ -204,7 +204,8 @@ void slot1Dialog(HWND hwnd)
 				else
 					needReset_slot1 = false;
 				break;
-			case NDS_SLOT1_RETAIL:
+			case NDS_SLOT1_RETAIL_AUTO:
+			case NDS_SLOT1_RETAIL_MCROM:
 				break;
 			case NDS_SLOT1_R4:
 				if (strlen(tmp_fat_path))

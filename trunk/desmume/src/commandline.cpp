@@ -297,10 +297,14 @@ void CommandLine::process_addonCommands()
 		slot1_SetFatDir(slot1_fat_dir);
 
 	if(slot1 == "RETAIL")
-		slot1_Change(NDS_SLOT1_RETAIL);
+		slot1_Change(NDS_SLOT1_RETAIL_AUTO);
+	else if(slot1 == "RETAILAUTO")
+		slot1_Change(NDS_SLOT1_RETAIL_AUTO);
 	else if(slot1 == "R4")
 		slot1_Change(NDS_SLOT1_R4);
 	else if(slot1 == "RETAILNAND")
 		slot1_Change(NDS_SLOT1_RETAIL_NAND);
+		else if(slot1 == "RETAILMCROM")
+		slot1_Change(NDS_SLOT1_RETAIL_MCROM);
 }
 

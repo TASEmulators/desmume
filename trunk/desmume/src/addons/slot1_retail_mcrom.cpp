@@ -19,13 +19,15 @@
 #include "../registers.h"
 #include "../MMU.h"
 #include "../NDSSystem.h"
+#include "slot1comp_mc.h"
+#include "slot1comp_rom.h"
 
-class Slot1_Retail : public ISlot1Interface
+class Slot1_Retail_MCROM : public ISlot1Interface
 {
 public:
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("Retail","Slot1 Retail card emulation");
+		static Slot1InfoSimple info("Retail MC+ROM","Slot1 Retail MC+ROM (standard) card emulation");
 		return &info;
 	}
 
@@ -53,6 +55,16 @@ public:
 		default:
 			return 0;
 		}
+	}
+
+	virtual u8 auxspi_transaction(int PROCNUM, u8 value)
+	{
+		return g_Slot1Comp_MC.auxspi_transaction(PROCNUM,value);
+	}
+
+	virtual void auxspi_reset(int PROCNUM)
+	{
+		g_Slot1Comp_MC.auxspi_reset(PROCNUM);
 	}
 
 private:
@@ -199,7 +211,7 @@ private:
 
 };
 
-ISlot1Interface* construct_Slot1_Retail() { return new Slot1_Retail(); }
+ISlot1Interface* construct_Slot1_Retail_MCROM() { return new Slot1_Retail_MCROM(); }
 
 	//		///writetoGCControl:
 	//// --- Ninja SD commands -------------------------------------

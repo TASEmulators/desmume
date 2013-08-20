@@ -30,6 +30,7 @@
 #include "gfx3d.h"
 #include "utils/decrypt/decrypt.h"
 #include "utils/decrypt/crc.h"
+#include "utils/advanscene.h"
 #include "cp15.h"
 #include "bios.h"
 #include "debug.h"
@@ -41,7 +42,6 @@
 #include "firmware.h"
 #include "version.h"
 #include "slot1.h"
-
 #include "path.h"
 
 //int xxctr=0;
@@ -69,7 +69,6 @@ static u8	countLid = 0;
 GameInfo gameInfo;
 NDSSystem nds;
 CFIRMWARE	*firmware = NULL;
-ADVANsCEne	advsc;
 
 using std::min;
 using std::max;
@@ -607,7 +606,8 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	INFO("ROM internal name: %s\n", gameInfo.ROMname);
 	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 
-	gameInfo.storeSecureArea();
+	//crazymax: how would it have got whacked? dont think we need this
+	//gameInfo.storeSecureArea();
 	
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);

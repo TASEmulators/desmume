@@ -1550,6 +1550,14 @@
 			Name="utils"
 			>
 			<File
+				RelativePath="..\utils\advanscene.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\advanscene.h"
+				>
+			</File>
+			<File
 				RelativePath="..\utils\ConvertUTF.c"
 				>
 			</File>
@@ -2196,11 +2204,31 @@
 				>
 			</File>
 			<File
-				RelativePath="..\addons\slot1_retail.cpp"
+				RelativePath="..\addons\slot1_retail_auto.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1_retail_mcrom.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\addons\slot1_retail_nand.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1comp_mc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1comp_mc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1comp_rom.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\slot1comp_rom.h"
 				>
 			</File>
 			<File

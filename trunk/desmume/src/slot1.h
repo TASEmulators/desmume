@@ -64,15 +64,22 @@ public:
 	//called when the emulator shuts down, or when the device disappears from existence
 	virtual void shutdown() { }
 
-	//called when the emulator write to the slot
-	virtual void write08(u8 PROCNUM, u32 adr, u8 val) { }
-	virtual void write16(u8 PROCNUM, u32 adr, u16 val)  { }
+	//called when the emulator write to the slot (TODO - refactors necessary)
+	void write08(u8 PROCNUM, u32 adr, u8 val) { printf("WARNING: 8bit write to slot-1\n"); }
+	void write16(u8 PROCNUM, u32 adr, u16 val)  { printf("WARNING: 16bit write to slot-1\n"); }
 	virtual void write32(u8 PROCNUM, u32 adr, u32 val) { }
 
-	//called when the emulator reads from the slot
-	virtual u8  read08(u8 PROCNUM, u32 adr) { return 0xFF; }
-	virtual u16 read16(u8 PROCNUM, u32 adr) { return 0xFFFF; }
+	//called when the emulator reads from the slot (TODO - refactors necessary)
+	u8  read08(u8 PROCNUM, u32 adr) { printf("WARNING: 8bit read from slot-1\n"); return 0xFF; }
+	u16 read16(u8 PROCNUM, u32 adr) { printf("WARNING: 16bit read from slot-1\n"); return 0xFFFF; }
 	virtual u32 read32(u8 PROCNUM, u32 adr) { return 0xFFFFFFFF; }
+
+	//transfers a byte to the slot-1 device via auxspi, and returns the incoming byte
+	//cpu is provided for diagnostic purposes only.. the slot-1 device wouldn't know which CPU it is.
+	virtual u8 auxspi_transaction(int PROCNUM, u8 value) { return 0x00; }
+
+	//called when the auxspi burst is ended (SPI chipselect in is going low)
+	virtual void auxspi_reset(int PROCNUM) {}
 }; 
 
 typedef ISlot1Interface* TISlot1InterfaceConstructor();
@@ -80,13 +87,14 @@ typedef ISlot1Interface* TISlot1InterfaceConstructor();
 enum NDS_SLOT1_TYPE
 {
 	NDS_SLOT1_NONE,
-	NDS_SLOT1_RETAIL,
-	NDS_SLOT1_R4,
-	NDS_SLOT1_RETAIL_NAND,		// used in Made in Ore/WarioWare D.I.Y.
-	NDS_SLOT1_COUNT		// use for counter addons - MUST TO BE LAST!!!
+	NDS_SLOT1_RETAIL_AUTO, //autodetect which kind of retail card to use 
+	NDS_SLOT1_R4, //R4 flash card
+	NDS_SLOT1_RETAIL_NAND, //Made in Ore/WarioWare D.I.Y.
+	NDS_SLOT1_RETAIL_MCROM, //a standard MC (eeprom, flash, fram) -bearing retail card. Also supports motion, for now, because that's the way we originally coded it
+	NDS_SLOT1_COUNT		//use to count addons - MUST BE LAST!!!
 };
 
-extern ISlot1Interface* slot1_device;						// current slot1 device
+extern ISlot1Interface* slot1_device;						//the current slot1 device instance
 extern ISlot1Interface* slot1_List[NDS_SLOT1_COUNT];
 
 void slot1_Init();
