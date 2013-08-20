@@ -393,9 +393,6 @@
     <ClCompile Include="..\addons\slot1_r4.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
-    <ClCompile Include="..\addons\slot1_retail.cpp">
-      <Filter>Core\addons</Filter>
-    </ClCompile>
     <ClCompile Include="..\addons\slot1_retail_nand.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
@@ -782,6 +779,21 @@
     </ClCompile>
     <ClCompile Include="..\encrypt.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_auto.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_mcrom.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1comp_mc.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1comp_rom.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\advanscene.cpp">
+      <Filter>Core\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1511,6 +1523,15 @@
     </ClInclude>
     <ClInclude Include="..\encrypt.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\addons\slot1comp_mc.h">
+      <Filter>Core\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\addons\slot1comp_rom.h">
+      <Filter>Core\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\advanscene.h">
+      <Filter>Core\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

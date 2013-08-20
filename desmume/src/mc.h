@@ -17,8 +17,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __FW_H__
-#define __FW_H__
+#ifndef __MC_H__
+#define __MC_H__
 
 #include <stdio.h>
 #include <vector>
@@ -50,78 +50,11 @@
 #define MC_SIZE_256MBITS                0x2000000
 #define MC_SIZE_512MBITS                0x4000000
 
-// ============================================= ADVANsCEne
-#define _ADVANsCEne_BASE_ID "DeSmuME database (ADVANsCEne)\0x1A"
-#define _ADVANsCEne_BASE_VERSION_MAJOR 1
-#define _ADVANsCEne_BASE_VERSION_MINOR 0
-#define _ADVANsCEne_BASE_NAME "ADVANsCEne Nintendo DS Collection"
-class ADVANsCEne
-{
-private:
-	char			database_path[MAX_PATH];		// DeSmuME save types 
-	u8				versionBase[2];
-	char			version[4];
-	time_t			createTime;
-	u8				saveType;
-	u32				crc32;
-	bool			loaded;
-	bool foundAsCrc, foundAsSerial;
 
-	// XML
-	std::string datName;
-	std::string datVersion;
-	std::string	urlVersion;
-	std::string urlDat;
-	bool getXMLConfig(const char *in_filaname);
-
-public:
-	ADVANsCEne() :	saveType(0xFF),
-					crc32(0),
-					loaded(false)
-	{
-		memset(database_path, 0, sizeof(database_path));
-		memset(versionBase, 0, sizeof(versionBase));
-		memset(version, 0, sizeof(version));
-	}
-	void setDatabase(const char *path) { loaded = false; strcpy(database_path, path); }
-	u32 convertDB(const char *in_filaname);
-	u8 checkDB(const char *serial, u32 crc);
-	u32 getSaveType() { return saveType; }
-	u32 getCRC32() { return crc32; }
-	bool isLoaded() { return loaded; }
-	const char* getIdMethod() { 
-		if(foundAsCrc) return "CRC";
-		if(foundAsSerial) return "Serial";
-		return "";
-	}
-	std::string lastImportErrorMessage;
-};
-
-
-struct memory_chip_t
-{
-	u8 com;	//persistent command actually handled
-	u32 addr;        //current address for reading/writing
-	u8 addr_shift;   //shift for address (since addresses are transfered by 3 bytes units)
-	u8 addr_size;    //size of addr when writing/reading
-
-	BOOL write_enable;	//is write enabled ?
-
-	u8 *data;       //memory data
-	u32 size;       //memory size
-	BOOL writeable_buffer;	//is "data" writeable ?
-	int type; //type of Memory
-	char *filename;
-	FILE *fp;
-	u8 autodetectbuf[32768];
-	int autodetectsize;
-	
-	// needs only for firmware
-	bool isFirmware;
-	char userfile[MAX_PATH];
-};
-
-//the new backup system by zeromus
+//This "backup device" represents a typical retail NDS save memory accessible via AUXSPI.
+//It is managed as a core emulator service for historical reasons which are bad,
+//and possible infrastructural simplification reasons which are good.
+//Slot-1 devices will map their AUXSPI accesses through to the core-managed BackupDevice to access it for the running software.
 class BackupDevice
 {
 public:
@@ -219,16 +152,8 @@ private:
 	void resize(u32 size);
 };
 
-#define NDS_FW_SIZE_V1 (256 * 1024)		/* size of fw memory on nds v1 */
-#define NDS_FW_SIZE_V2 (512 * 1024)		/* size of fw memory on nds v2 */
 
-void mc_init(memory_chip_t *mc, int type);    /* reset and init values for memory struct */
-u8 *mc_alloc(memory_chip_t *mc, u32 size);  /* alloc mc memory */
-void mc_realloc(memory_chip_t *mc, int type, u32 size);      /* realloc mc memory */
-void mc_load_file(memory_chip_t *mc, const char* filename); /* load save file and setup fp */
-void mc_free(memory_chip_t *mc);    /* delete mc memory */
-void fw_reset_com(memory_chip_t *mc);       /* reset communication with mc */
-u8 fw_transfer(memory_chip_t *mc, u8 data);
+
 
 void backup_setManualBackupType(int type);
 void backup_forceManualBackupType();

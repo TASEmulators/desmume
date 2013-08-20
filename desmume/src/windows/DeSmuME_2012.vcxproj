@@ -381,10 +381,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
+    <ClCompile Include="..\addons\slot1comp_mc.cpp" />
+    <ClCompile Include="..\addons\slot1comp_rom.cpp" />
+    <ClCompile Include="..\addons\slot1_retail_auto.cpp" />
+    <ClCompile Include="..\addons\slot1_retail_mcrom.cpp" />
     <ClCompile Include="..\addons\slot2_piano.cpp" />
     <ClCompile Include="..\addons\slot1_none.cpp" />
     <ClCompile Include="..\addons\slot1_r4.cpp" />
-    <ClCompile Include="..\addons\slot1_retail.cpp" />
     <ClCompile Include="..\addons\slot1_retail_nand.cpp" />
     <ClCompile Include="..\addons\slot2_mpcf.cpp" />
     <ClCompile Include="..\addons\slot2_paddle.cpp" />
@@ -438,6 +441,7 @@
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
+    <ClCompile Include="..\utils\advanscene.cpp" />
     <ClCompile Include="..\utils\AsmJit\core\assembler.cpp" />
     <ClCompile Include="..\utils\AsmJit\core\assert.cpp" />
     <ClCompile Include="..\utils\AsmJit\core\buffer.cpp" />
@@ -659,6 +663,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h" />
+    <ClInclude Include="..\addons\slot1comp_mc.h" />
+    <ClInclude Include="..\addons\slot1comp_rom.h" />
     <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\arm_jit.h" />
     <ClInclude Include="..\bios.h" />
@@ -711,6 +717,7 @@
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\types.h" />
+    <ClInclude Include="..\utils\advanscene.h" />
     <ClInclude Include="..\utils\AsmJit\asmjit.h" />
     <ClInclude Include="..\utils\AsmJit\config.h" />
     <ClInclude Include="..\utils\AsmJit\core.h" />

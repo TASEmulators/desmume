@@ -27,6 +27,7 @@
 #include "bits.h"
 #include "readwrite.h"
 #include "debug.h"
+#include "firmware.h"
 
 #ifdef HAVE_LUA
 #include "lua-engine.h"
@@ -419,7 +420,7 @@ struct MMU_struct
 	u16 SPI_CNT;
 	u16 SPI_CMD;
 	u16 AUX_SPI_CNT;
-	u16 AUX_SPI_CMD;
+	//u16 AUX_SPI_CMD; //zero 20-aug-2013 - this seems pointless
 
 	u8 WRAMCNT;
 
@@ -429,7 +430,7 @@ struct MMU_struct
 	BOOL powerMan_CntRegWritten;
 	u8 powerMan_Reg[5];
 
-	memory_chip_t fw;
+	fw_memory_chip fw;
 
 	nds_dscard dscard[2];
 };

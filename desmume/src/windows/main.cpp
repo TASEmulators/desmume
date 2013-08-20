@@ -59,6 +59,7 @@
 #include "../firmware.h"
 #include "../lua-engine.h"
 #include "../path.h"
+#include "../utils/advanscene.h"
 
 //other random stuff
 #include "recentroms.h"
@@ -3244,7 +3245,7 @@ int _main()
 	slot1_Init();
 
 	//override slot1 type with commandline, if present
-	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL, IniName);
+	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL_AUTO, IniName);
 	if(cmdline.slot1 != "")
 		WritePrivateProfileInt("Slot1","type",slot1_device_type,IniName);
 	else

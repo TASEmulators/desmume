@@ -903,7 +903,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 
 
 
-void MMU_Init(void) {
+void MMU_Init(void)
+{
 	LOG("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
@@ -1597,14 +1598,26 @@ static void CalculateTouchPressure(int pressurePercent, u16 &z1, u16& z2)
 
 void FASTCALL MMU_writeToSPIData(u16 val)
 {
+
+	enum PM_Bits //from libnds
+	{
+		PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
+		PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
+		PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
+		PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
+		PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
+	};
+
 	if (val !=0)
 		MMU.SPI_CMD = val;
 
 	u16 spicnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
 
-	switch ((spicnt >> 8) & 0x3)	// device
+	int device = (spicnt >> 8) & 0x3;
+	int baudrate = spicnt & 0x3;
+	switch(device)
 	{
-		case 0:		// Powerman
+		case SPI_DEVICE_POWERMAN:
 			if (!MMU.powerMan_CntRegWritten)
 			{
 				MMU.powerMan_CntReg = (val & 0xFF);
@@ -1627,15 +1640,6 @@ void FASTCALL MMU_writeToSPIData(u16 val)
 					//write
 					MMU.powerMan_Reg[reg] = (u8)val;
 
-					enum PM_Bits //from libnds
-					{
-						PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
-						PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
-						PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
-						PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
-						PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
-					};
-
 					//our totally pathetic register handling, only the one thing we've wanted so far
 					if(MMU.powerMan_Reg[0]&PM_SYSTEM_PWR)
 					{
@@ -1649,14 +1653,17 @@ void FASTCALL MMU_writeToSPIData(u16 val)
 			}
 		break;
 
-		case 1:	// Firmware
-			if((spicnt & 0x3) != 0)		// check SPI baudrate (must be 4mhz)
+		case SPI_DEVICE_FIRMWARE:
+			if(baudrate != SPI_BAUDRATE_4MHZ)		// check SPI baudrate (must be 4mhz)
+			{
+				printf("Wrong SPI baud rate for firmware access\n");
 				val = 0;
+			}
 			else
 				val = fw_transfer(&MMU.fw, (u8)val);
 		break;
 
-		case 2:	// Touch screen
+		case SPI_DEVICE_TOUCHSCREEN:
 		{
 			if(nds.Is_DSI())
 			{
@@ -1709,6 +1716,7 @@ void FASTCALL MMU_writeToSPIData(u16 val)
 
 				case TSC_MEASURE_Y:
 					//counter the number of adc touch coord reads and jitter it after a while to simulate a shaky human hand or multiple reads
+					//this is actually important for some games.. seemingly due to bugs.
 					nds.adc_jitterctr++;
 					if(nds.adc_jitterctr == 25)
 					{
@@ -2584,16 +2592,24 @@ u32 DmaController::read32()
 static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
 {
 	//why val==0 to reset? is it a particular bit? its not bit 6...
-	switch(size) {
+
+	switch(size)
+	{
 		case 16:
 			MMU.AUX_SPI_CNT = val;
-			if (val == 0) MMU_new.backupDevice.reset_command();
+			if (val == 0)
+			{
+				//you know.. its strange. according to gbatek, this should get cleared before the last transfer.
+				//we've got it coded in such a way that it sort of terminates the transfer (is it getting reset immediately before a new transfer?)
+				slot1_device->auxspi_reset(proc);
+			}
 			break;
 		case 8:
-			switch(adr) {
+			switch(adr)
+			{
 				case 0: 
 					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 0, val); 
-					if (val == 0) MMU_new.backupDevice.reset_command();
+					if (val == 0) slot1_device->auxspi_reset(proc);
 					break;
 				case 1: 
 					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 1, val); 
@@ -2811,10 +2827,13 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				return;
 			
 			case REG_AUXSPIDATA:
-				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM9));
+			{
+				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF; //zero 20-aug-2013 - this seems pointless
+				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM9,(u8)val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
 				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
+			}
 
 			case REG_POWCNT1: writereg_POWCNT1(8,adr,val); break;
 			
@@ -3165,13 +3184,13 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
 
 			case REG_AUXSPIDATA:
-				if(val!=0)
-				   MMU.AUX_SPI_CMD = val & 0xFF;
-
-				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM9));
+			{
+				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;  //zero 20-aug-2013 - this seems pointless
+				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM9,(u8)val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
 				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
+			}
 
 			case REG_DISPA_BG0CNT :
 				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
@@ -4199,10 +4218,13 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 				return;
 
 			case REG_AUXSPIDATA:
-				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM7));
+			{
+				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF; //zero 20-aug-2013 - this seems pointless
+				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM7,(u8)val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
 				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
 				return;
+			}
 
 			case REG_SPIDATA:
 				// CrazyMax: 27 May 2013: BIOS write 8bit commands to flash controller when load firmware header 
@@ -4304,13 +4326,13 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			return;
 
 			case REG_AUXSPIDATA:
-				if(val!=0)
-				   MMU.AUX_SPI_CMD = val & 0xFF;
-
-				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((u8)val,ARMCPU_ARM7));
+			{
+				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF; //zero 20-aug-2013 - this seems pointless
+				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM7,(u8)val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
 				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-			return;
+				return;
+			}
 
 			case REG_SPICNT :
 				{

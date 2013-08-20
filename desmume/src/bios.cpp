@@ -652,6 +652,10 @@ TEMPLATE static u32 RLUnCompVram()
 
 TEMPLATE static u32 RLUnCompWram()
 {
+	//this routine is used by yoshi touch&go from the very beginning
+
+	printf("RLUnCompWram\n");
+
   int i;
   int len;
   u32 source = cpu->R[0];
@@ -695,6 +699,8 @@ TEMPLATE static u32 RLUnCompWram()
 
 TEMPLATE static u32 UnCompHuffman()
 {
+	//this routine is used by the nintendo logo in the firmware boot screen
+
   u32 source, dest, writeValue, header, treeStart, mask;
   u32 data;
   u8 treeSize, currentNode, rootNode;

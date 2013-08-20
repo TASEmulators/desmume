@@ -43,6 +43,7 @@ libdesmume_a_SOURCES = \
 	shaders.h \
 	movie.cpp movie.h \
 	PACKED.h PACKED_END.h \
+	utils/advanscene.cpp utils/advanscene.h \
 	utils/datetime.cpp utils/datetime.h \
 	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
 	utils/emufat.cpp utils/emufat.h utils/emufat_types.h \
@@ -86,7 +87,7 @@ libdesmume_a_SOURCES = \
 	utils/tinyxml/tinyxmlerror.cpp \
 	utils/tinyxml/tinyxmlparser.cpp \
 	addons.cpp addons.h \
-	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail.cpp addons/slot1_retail_nand.cpp \
+	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail_nand.cpp addons/slot1_retail_auto.cpp addons/slot1_retail_mcrom.cpp addons/slot1comp_mc.cpp addons/slot1comp_mc.h addons/slot1comp_rom.h addons/slot1comp_rom.cpp \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \

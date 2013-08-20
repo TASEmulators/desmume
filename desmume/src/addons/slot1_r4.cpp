@@ -40,7 +40,7 @@ public:
 
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("R4","Slot1 R4 Emulation");
+		static Slot1InfoSimple info("R4","Slot1 R4 emulation");
 		return &info;
 	}
 

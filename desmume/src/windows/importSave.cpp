@@ -23,6 +23,7 @@ along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 #include "../NDSSystem.h"
 #include "resource.h"
 #include "importSave.h"
+#include "utils/advanscene.h"
 
 char ImportSavFName[MAX_PATH] = {0};
 u32 fileSaveSize = 0;
