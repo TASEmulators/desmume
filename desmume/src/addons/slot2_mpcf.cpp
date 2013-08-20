@@ -32,7 +32,7 @@
 #include "../utils/vfat.h"
 #include "../path.h"
 
-#include "MMU.h"
+#include "../MMU.h"
 #include "NDSSystem.h"
 
 // Set up addresses for GBAMP

@@ -19,7 +19,7 @@
 //this is largely done by accessing the BackupDevice resources in the core emulator
 
 #include "types.h"
-#include "mmu.h"
+#include "../MMU.h"
 #include "slot1comp_mc.h"
 
 Slot1Comp_MC g_Slot1Comp_MC;

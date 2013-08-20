@@ -15,6 +15,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Ore/WarioWare D.I.Y. - chip:		SAMSUNG 004
+//									KLC2811ANB-P204
+//									NTR-UORE-0
+
 #include "../slot1.h"
 #include "../registers.h"
 #include "../MMU.h"
@@ -167,7 +171,7 @@ private:
 			// Nand Status?
 			case 0xD6:
 				//0x80 == busy
-				// Made in Ore/WariWare D.I.Y. need set value to 0x80
+				// Made in Ore/WarioWare D.I.Y. need set value to 0x80
 				return 0x80; //0x20 == ready
 
 			default:
