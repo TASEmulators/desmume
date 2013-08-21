@@ -15,6 +15,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Games with NAND Flash:
+// -  Ore/WarioWare D.I.Y. - 8Mbit
+// -  Daigassou! Band Brothers DX - 64MBit
+
 // Ore/WarioWare D.I.Y. - chip:		SAMSUNG 004
 //									KLC2811ANB-P204
 //									NTR-UORE-0
