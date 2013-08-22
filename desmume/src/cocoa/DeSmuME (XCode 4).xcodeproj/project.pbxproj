@@ -323,7 +323,6 @@
 		AB796D2815CDCBA200C59155 /* slot1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC91345AC8400AF11D1 /* slot1.cpp */; };
 		AB796D2915CDCBA200C59155 /* slot1_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF001345AC9B00AF11D1 /* slot1_none.cpp */; };
 		AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */; };
-		AB796D2B15CDCBA200C59155 /* slot1_retail.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF021345AC9B00AF11D1 /* slot1_retail.cpp */; };
 		AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
 		AB796D2D15CDCBA200C59155 /* slot2_expMemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */; };
 		AB796D2E15CDCBA200C59155 /* slot2_gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */; };
@@ -424,7 +423,6 @@
 		ABB3C6781501C04F00E0C22E /* slot1_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF001345AC9B00AF11D1 /* slot1_none.cpp */; };
 		ABB3C6791501C04F00E0C22E /* slot1_r4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */; };
 		ABB3C67A1501C04F00E0C22E /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
-		ABB3C67B1501C04F00E0C22E /* slot1_retail.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF021345AC9B00AF11D1 /* slot1_retail.cpp */; };
 		ABB3C67C1501C04F00E0C22E /* slot2_expMemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */; };
 		ABB3C67D1501C04F00E0C22E /* slot2_gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */; };
 		ABB3C67E1501C04F00E0C22E /* slot2_guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */; };
@@ -578,7 +576,6 @@
 		ABD1FEFE1345AC8400AF11D1 /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FECF1345AC8400AF11D1 /* wifi.cpp */; };
 		ABD1FF0B1345AC9C00AF11D1 /* slot1_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF001345AC9B00AF11D1 /* slot1_none.cpp */; };
 		ABD1FF0C1345AC9C00AF11D1 /* slot1_r4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */; };
-		ABD1FF0D1345AC9C00AF11D1 /* slot1_retail.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF021345AC9B00AF11D1 /* slot1_retail.cpp */; };
 		ABD1FF0E1345AC9C00AF11D1 /* slot2_expMemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */; };
 		ABD1FF0F1345AC9C00AF11D1 /* slot2_gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */; };
 		ABD1FF101345AC9C00AF11D1 /* slot2_guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */; };
@@ -637,6 +634,21 @@
 		ABFE150B14C92FF5005D6699 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150014C92FF5005D6699 /* hq4x.cpp */; };
 		ABFE150D14C92FF5005D6699 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150414C92FF5005D6699 /* lq2x.cpp */; };
 		ABFE150E14C92FF5005D6699 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE150614C92FF5005D6699 /* scanline.cpp */; };
+		ABFE7C8217C5CFE70028DC56 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8117C5CFE70028DC56 /* advanscene.cpp */; };
+		ABFE7C8317C5CFE70028DC56 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8117C5CFE70028DC56 /* advanscene.cpp */; };
+		ABFE7C8417C5CFE70028DC56 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8117C5CFE70028DC56 /* advanscene.cpp */; };
+		ABFE7C8B17C5D03C0028DC56 /* slot1_retail_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8717C5D03C0028DC56 /* slot1_retail_auto.cpp */; };
+		ABFE7C8C17C5D03C0028DC56 /* slot1_retail_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8717C5D03C0028DC56 /* slot1_retail_auto.cpp */; };
+		ABFE7C8D17C5D03C0028DC56 /* slot1_retail_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8717C5D03C0028DC56 /* slot1_retail_auto.cpp */; };
+		ABFE7C8E17C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8817C5D03C0028DC56 /* slot1_retail_mcrom.cpp */; };
+		ABFE7C8F17C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8817C5D03C0028DC56 /* slot1_retail_mcrom.cpp */; };
+		ABFE7C9017C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8817C5D03C0028DC56 /* slot1_retail_mcrom.cpp */; };
+		ABFE7C9117C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8917C5D03C0028DC56 /* slot1comp_mc.cpp */; };
+		ABFE7C9217C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8917C5D03C0028DC56 /* slot1comp_mc.cpp */; };
+		ABFE7C9317C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8917C5D03C0028DC56 /* slot1comp_mc.cpp */; };
+		ABFE7C9417C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8A17C5D03C0028DC56 /* slot1comp_rom.cpp */; };
+		ABFE7C9517C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8A17C5D03C0028DC56 /* slot1comp_rom.cpp */; };
+		ABFE7C9617C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE7C8A17C5D03C0028DC56 /* slot1comp_rom.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -982,7 +994,6 @@
 		ABD1FECF1345AC8400AF11D1 /* wifi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wifi.cpp; path = ../wifi.cpp; sourceTree = SOURCE_ROOT; };
 		ABD1FF001345AC9B00AF11D1 /* slot1_none.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_none.cpp; sourceTree = "<group>"; };
 		ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_r4.cpp; sourceTree = "<group>"; };
-		ABD1FF021345AC9B00AF11D1 /* slot1_retail.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail.cpp; sourceTree = "<group>"; };
 		ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_expMemory.cpp; sourceTree = "<group>"; };
 		ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_gbagame.cpp; sourceTree = "<group>"; };
 		ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_guitarGrip.cpp; sourceTree = "<group>"; };
@@ -1082,6 +1093,14 @@
 		ABFE150414C92FF5005D6699 /* lq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lq2x.cpp; sourceTree = "<group>"; };
 		ABFE150514C92FF5005D6699 /* lq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lq2x.h; sourceTree = "<group>"; };
 		ABFE150614C92FF5005D6699 /* scanline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scanline.cpp; sourceTree = "<group>"; };
+		ABFE7C8017C5CFE70028DC56 /* advanscene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = advanscene.h; sourceTree = "<group>"; };
+		ABFE7C8117C5CFE70028DC56 /* advanscene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = advanscene.cpp; sourceTree = "<group>"; };
+		ABFE7C8517C5D03C0028DC56 /* slot1comp_mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_mc.h; sourceTree = "<group>"; };
+		ABFE7C8617C5D03C0028DC56 /* slot1comp_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_rom.h; sourceTree = "<group>"; };
+		ABFE7C8717C5D03C0028DC56 /* slot1_retail_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_auto.cpp; sourceTree = "<group>"; };
+		ABFE7C8817C5D03C0028DC56 /* slot1_retail_mcrom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom.cpp; sourceTree = "<group>"; };
+		ABFE7C8917C5D03C0028DC56 /* slot1comp_mc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_mc.cpp; sourceTree = "<group>"; };
+		ABFE7C8A17C5D03C0028DC56 /* slot1comp_rom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_rom.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1598,8 +1617,11 @@
 			children = (
 				ABD1FF001345AC9B00AF11D1 /* slot1_none.cpp */,
 				ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */,
+				ABFE7C8717C5D03C0028DC56 /* slot1_retail_auto.cpp */,
+				ABFE7C8817C5D03C0028DC56 /* slot1_retail_mcrom.cpp */,
 				AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */,
-				ABD1FF021345AC9B00AF11D1 /* slot1_retail.cpp */,
+				ABFE7C8917C5D03C0028DC56 /* slot1comp_mc.cpp */,
+				ABFE7C8A17C5D03C0028DC56 /* slot1comp_rom.cpp */,
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
 				ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */,
@@ -1608,6 +1630,8 @@
 				ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */,
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
+				ABFE7C8517C5D03C0028DC56 /* slot1comp_mc.h */,
+				ABFE7C8617C5D03C0028DC56 /* slot1comp_rom.h */,
 			);
 			name = addons;
 			path = ../addons;
@@ -1630,6 +1654,7 @@
 				ABD1FF211345ACBF00AF11D1 /* decrypt */,
 				ABD1FF2E1345ACBF00AF11D1 /* libfat */,
 				ABE670241415DE6C00E8E4C9 /* tinyxml */,
+				ABFE7C8117C5CFE70028DC56 /* advanscene.cpp */,
 				ABD1FF1D1345ACBF00AF11D1 /* ConvertUTF.c */,
 				ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */,
 				ABD1FF281345ACBF00AF11D1 /* dlditool.cpp */,
@@ -1639,6 +1664,7 @@
 				ABD1FF4C1345ACBF00AF11D1 /* task.cpp */,
 				ABD1FF4F1345ACBF00AF11D1 /* vfat.cpp */,
 				ABD1FF511345ACBF00AF11D1 /* xstring.cpp */,
+				ABFE7C8017C5CFE70028DC56 /* advanscene.h */,
 				ABD1FF1E1345ACBF00AF11D1 /* ConvertUTF.h */,
 				ABD1FF201345ACBF00AF11D1 /* datetime.h */,
 				ABD1FF2A1345ACBF00AF11D1 /* emufat.h */,
@@ -2197,7 +2223,6 @@
 				ABD1FEF81345AC8400AF11D1 /* slot1.cpp in Sources */,
 				ABD1FF0B1345AC9C00AF11D1 /* slot1_none.cpp in Sources */,
 				ABD1FF0C1345AC9C00AF11D1 /* slot1_r4.cpp in Sources */,
-				ABD1FF0D1345AC9C00AF11D1 /* slot1_retail.cpp in Sources */,
 				AB6FBEF6139B6258007BB045 /* slot1_retail_nand.cpp in Sources */,
 				ABD1FF0E1345AC9C00AF11D1 /* slot2_expMemory.cpp in Sources */,
 				ABD1FF0F1345AC9C00AF11D1 /* slot2_gbagame.cpp in Sources */,
@@ -2294,6 +2319,11 @@
 				ABD10AEB1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
 				ABD798C9178C7B9000089F19 /* encrypt.cpp in Sources */,
+				ABFE7C8317C5CFE70028DC56 /* advanscene.cpp in Sources */,
+				ABFE7C8C17C5D03C0028DC56 /* slot1_retail_auto.cpp in Sources */,
+				ABFE7C8F17C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */,
+				ABFE7C9217C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */,
+				ABFE7C9517C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2361,7 +2391,6 @@
 				AB796D2815CDCBA200C59155 /* slot1.cpp in Sources */,
 				AB796D2915CDCBA200C59155 /* slot1_none.cpp in Sources */,
 				AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */,
-				AB796D2B15CDCBA200C59155 /* slot1_retail.cpp in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
 				AB796D2D15CDCBA200C59155 /* slot2_expMemory.cpp in Sources */,
 				AB796D2E15CDCBA200C59155 /* slot2_gbagame.cpp in Sources */,
@@ -2456,6 +2485,11 @@
 				ABD10AEA1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
 				ABD798C8178C7B9000089F19 /* encrypt.cpp in Sources */,
+				ABFE7C8217C5CFE70028DC56 /* advanscene.cpp in Sources */,
+				ABFE7C8B17C5D03C0028DC56 /* slot1_retail_auto.cpp in Sources */,
+				ABFE7C8E17C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */,
+				ABFE7C9117C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */,
+				ABFE7C9417C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2473,7 +2507,6 @@
 				ABB3C6781501C04F00E0C22E /* slot1_none.cpp in Sources */,
 				ABB3C6791501C04F00E0C22E /* slot1_r4.cpp in Sources */,
 				ABB3C67A1501C04F00E0C22E /* slot1_retail_nand.cpp in Sources */,
-				ABB3C67B1501C04F00E0C22E /* slot1_retail.cpp in Sources */,
 				ABB3C67C1501C04F00E0C22E /* slot2_expMemory.cpp in Sources */,
 				ABB3C67D1501C04F00E0C22E /* slot2_gbagame.cpp in Sources */,
 				ABB3C67E1501C04F00E0C22E /* slot2_guitarGrip.cpp in Sources */,
@@ -2607,6 +2640,11 @@
 				AB5785F817175F16002C5FC7 /* cocoa_core.mm in Sources */,
 				AB5785F9171760D2002C5FC7 /* cocoa_output.mm in Sources */,
 				ABD798CA178C7B9000089F19 /* encrypt.cpp in Sources */,
+				ABFE7C8417C5CFE70028DC56 /* advanscene.cpp in Sources */,
+				ABFE7C8D17C5D03C0028DC56 /* slot1_retail_auto.cpp in Sources */,
+				ABFE7C9017C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */,
+				ABFE7C9317C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */,
+				ABFE7C9617C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
