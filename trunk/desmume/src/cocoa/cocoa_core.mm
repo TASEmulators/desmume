@@ -99,7 +99,7 @@ static BOOL isCoreStarted = NO;
 	emuFlagDebugConsole = NO;
 	emuFlagEmulateEnsata = NO;
 	
-	slot1DeviceType = NDS_SLOT1_RETAIL;
+	slot1DeviceType = NDS_SLOT1_RETAIL_AUTO;
 	slot1StatusText = NSSTRING_STATUS_EMULATION_NOT_RUNNING;
 	
 	spinlockMasterExecute = OS_SPINLOCK_INIT;
@@ -687,7 +687,7 @@ static BOOL isCoreStarted = NO;
 			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_NO_DEVICE];
 			break;
 			
-		case NDS_SLOT1_RETAIL:
+		case NDS_SLOT1_RETAIL_AUTO:
 			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_RETAIL_INSERTED];
 			break;
 			
@@ -697,6 +697,10 @@ static BOOL isCoreStarted = NO;
 			
 		case NDS_SLOT1_R4:
 			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_R4_INSERTED];
+			break;
+			
+		case NDS_SLOT1_RETAIL_MCROM:
+			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_STANDARD_INSERTED];
 			break;
 			
 		default:

@@ -102,9 +102,10 @@
 #define NSSTRING_STATUS_EMULATION_NOT_RUNNING		NSLocalizedString(@"Emulation is not running.", nil)
 #define NSSTRING_STATUS_SLOT1_UNKNOWN_STATE			NSLocalizedString(@"Unknown state.", nil)
 #define NSSTRING_STATUS_SLOT1_NO_DEVICE				NSLocalizedString(@"No device inserted.", nil)
-#define NSSTRING_STATUS_SLOT1_RETAIL_INSERTED		NSLocalizedString(@"Retail cartridge inserted.", nil)
-#define NSSTRING_STATUS_SLOT1_RETAIL_NAND_INSERTED	NSLocalizedString(@"Retail cartridge (with NAND flash) inserted.", nil)
+#define NSSTRING_STATUS_SLOT1_RETAIL_INSERTED		NSLocalizedString(@"Retail cartridge inserted. (Auto-detect)", nil)
+#define NSSTRING_STATUS_SLOT1_RETAIL_NAND_INSERTED	NSLocalizedString(@"Retail cartridge w/ NAND flash inserted.", nil)
 #define NSSTRING_STATUS_SLOT1_R4_INSERTED			NSLocalizedString(@"R4 cartridge interface inserted.", nil)
+#define NSSTRING_STATUS_SLOT1_STANDARD_INSERTED		NSLocalizedString(@"Standard retail cartridge inserted.", nil)
 
 #define NSSTRING_DISPLAYMODE_MAIN					NSLocalizedString(@"Main", nil)
 #define NSSTRING_DISPLAYMODE_TOUCH					NSLocalizedString(@"Touch", nil)

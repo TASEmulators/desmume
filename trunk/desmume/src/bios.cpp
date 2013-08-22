@@ -1218,7 +1218,7 @@ u32 (* ARM_swi_tab[2][32])()={
 };
 
 #define BIOS_NOP "bios_nop"
-char* ARM_swi_names[2][32] = {
+const char* ARM_swi_names[2][32] = {
 	{
 		"SoftReset",			// 0x00
 		BIOS_NOP,				// 0x01
