@@ -40,8 +40,10 @@ private:
 	u32		decrypt(const u8 *in, u8* &out);
 	u32		decompress(const u8 *in, u8* &out);
 
+	bool	successLoad;
+
 public:
-	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0), userDataAddr(0x3FE00) {};
+	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0), userDataAddr(0x3FE00), successLoad(false) {};
 	
 	bool load();
 	bool unpack();
@@ -50,10 +52,8 @@ public:
 
 	static std::string GetExternalFilePath();
 
-	u32 getID()
-	{
-		return header.fw_identifier;
-	}
+	u32 getID() { return header.fw_identifier; }
+	bool loaded() { return successLoad; }
 
 	struct HEADER
 	{

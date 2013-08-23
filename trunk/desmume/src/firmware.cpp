@@ -303,6 +303,7 @@ bool CFIRMWARE::load()
 	std::string extFilePath = CFIRMWARE::GetExternalFilePath();
 	strncpy(MMU.fw.userfile, extFilePath.c_str(), MAX_PATH);
 
+	successLoad = true;
 	return true;
 }
 

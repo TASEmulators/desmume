@@ -4193,6 +4193,11 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 #endif
 				//The NDS7 register can be written to only from code executed in BIOS.
 				if (NDS_ARM7.instruct_adr > 0x3FFF) return;
+#ifdef HAVE_JIT
+				// hack for firmware boot in JIT mode
+				if (CommonSettings.UseExtFirmware && CommonSettings.BootFromFirmware && firmware->loaded() && val == 1)
+					CommonSettings.jit_max_block_size = saveBlockSizeJIT;
+#endif
 				break;
 
 			case REG_HALTCNT:
