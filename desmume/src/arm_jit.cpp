@@ -77,6 +77,8 @@ using namespace AsmJit;
 #ifdef MAPPED_JIT_FUNCS
 CACHE_ALIGN JIT_struct JIT;
 
+u32 saveBlockSizeJIT = 0;
+
 uintptr_t *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
 
 static uintptr_t *JIT_MEM[2][32] = {
@@ -4219,10 +4221,12 @@ void arm_jit_reset(bool enable)
 	scratchptr = scratchpad;
 #endif
 	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
+	saveBlockSizeJIT = CommonSettings.jit_max_block_size;
 
 	if (enable)
 	{
 		printf("JIT: max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
+
 #ifdef MAPPED_JIT_FUNCS
 
 		//these pointers are allocated by asmjit and need freeing

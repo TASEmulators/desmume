@@ -2535,13 +2535,16 @@ void NDS_Reset()
 	}
 
 	firmware = new CFIRMWARE();
-	// TODO: fw_success should be global
-	bool fw_success = firmware->load();
+	firmware->load();
 
 	//the firmware can't be booted without the roms, for the following reasons:
 	//TBD
-	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && fw_success)
+	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && firmware->loaded())
 	{
+#ifdef HAVE_JIT
+		// hack for firmware boot in JIT mode
+		CommonSettings.jit_max_block_size = 12;
+#endif
 		//crazymax: how would it have got whacked? dont think we need this
 		//gameInfo.restoreSecureArea();
 
@@ -2599,7 +2602,7 @@ void NDS_Reset()
 
 		//EDIT - whats this firmware and how is it relating to the dummy firmware below
 		//how do these even get used? what is the purpose of unpack and why is it not used by the firmware boot process?
-		if (CommonSettings.UseExtFirmware && fw_success)
+		if (CommonSettings.UseExtFirmware && firmware->loaded())
 		{
 			firmware->unpack();
 			firmware->loadSettings();
@@ -2721,32 +2724,32 @@ void NDS_Reset()
 		NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
 		//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
 		//and how theyre named in desmume to match them up correctly. i just guessed.
+
+		//--------------------------------
+		//setup the homebrew argv
+		//this is useful for nitrofs apps which are emulating themselves via cflash
+		//struct __argv {
+		//	int argvMagic;		//!< argv magic number, set to 0x5f617267 ('_arg') if valid 
+		//	char *commandLine;	//!< base address of command line, set of null terminated strings
+		//	int length;			//!< total length of command line
+		//	int argc;			//!< internal use, number of arguments
+		//	char **argv;		//!< internal use, argv pointer
+		//};
+		std::string rompath = "fat:/" + path.RomName;
+		const u32 kCommandline = 0x027E0000;
+		//const u32 kCommandline = 0x027FFF84;
+
+		//
+		_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
+		_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
+		_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
+		//0x027FFF7C (argc)
+		//0x027FFF80 (argv)
+		for(size_t i=0;i<rompath.size();i++)
+			_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
+		_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
+		//--------------------------------
 	}
-
-	//--------------------------------
-	//setup the homebrew argv
-	//this is useful for nitrofs apps which are emulating themselves via cflash
-	//struct __argv {
-	//	int argvMagic;		//!< argv magic number, set to 0x5f617267 ('_arg') if valid 
-	//	char *commandLine;	//!< base address of command line, set of null terminated strings
-	//	int length;			//!< total length of command line
-	//	int argc;			//!< internal use, number of arguments
-	//	char **argv;		//!< internal use, argv pointer
-	//};
-	std::string rompath = "fat:/" + path.RomName;
-	const u32 kCommandline = 0x027E0000;
-	//const u32 kCommandline = 0x027FFF84;
-
-	//
-	_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
-	_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
-	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
-	//0x027FFF7C (argc)
-	//0x027FFF80 (argv)
-	for(size_t i=0;i<rompath.size();i++)
-		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
-	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
-	//--------------------------------
 	
 	delete header;
 

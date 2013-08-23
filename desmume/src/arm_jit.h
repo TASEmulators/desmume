@@ -65,5 +65,6 @@ extern uintptr_t compiled_funcs[];
 #define JIT_MAPPED(adr, PROCNUM) true
 #endif
 
+extern u32 saveBlockSizeJIT;
 
 #endif
