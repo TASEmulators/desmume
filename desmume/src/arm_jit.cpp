@@ -60,12 +60,12 @@ using namespace AsmJit;
 	c.lea(txt, dword_ptr_abs(&buf)); \
 	c.mov(data, *(GpVar*)&val); \
 	X86CompilerFuncCall* prn = c.call((uintptr_t)fprintf); \
-	prn->setPrototype(ASMJIT_CALL_CONV, FuncBuilder3<void, void*, void*, u32>()); \
+	prn->setPrototype(kX86FuncConvDefault, FuncBuilder3<void, void*, void*, u32>()); \
 	prn->setArgument(0, io); \
 	prn->setArgument(1, txt); \
 	prn->setArgument(2, data); \
 	X86CompilerFuncCall* prn_flush = c.call((uintptr_t)fflush); \
-	prn_flush->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<void, void*>()); \
+	prn_flush->setPrototype(kX86FuncConvDefault, FuncBuilder1<void, void*>()); \
 	prn_flush->setArgument(0, io); \
 }
 #else
@@ -74,10 +74,10 @@ using namespace AsmJit;
 #define printJIT(buf, val)
 #endif
 
+u32 saveBlockSizeJIT = 0;
+
 #ifdef MAPPED_JIT_FUNCS
 CACHE_ALIGN JIT_struct JIT;
-
-u32 saveBlockSizeJIT = 0;
 
 uintptr_t *JIT_struct::JIT_MEM[2][0x4000] = {{0}};
 
@@ -283,7 +283,7 @@ static u32 bb_constant_cycles;
 // sequencer.reschedule = true;
 #define changeCPSR { \
 			X86CompilerFuncCall* ctxCPSR = c.call((void*)NDS_Reschedule); \
-			ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
+			ctxCPSR->setPrototype(kX86FuncConvDefault, FuncBuilder0<void>()); \
 }
 
 #if (PROFILER_JIT_LEVEL > 0)
@@ -407,7 +407,7 @@ static GpVar bb_profiler_entry;
 	c.mov(tmp, SPSR); \
 	c.and_(tmp, 0x1F); \
 	X86CompilerFuncCall* ctx = c.call((void*)armcpu_switchMode); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<Void, void*, u8>()); \
+	ctx->setPrototype(kX86FuncConvDefault, FuncBuilder2<Void, void*, u8>()); \
 	ctx->setArgument(0, bb_cpu); \
 	ctx->setArgument(1, tmp); \
 	c.mov(cpu_ptr(CPSR.val), SPSR); \
@@ -1388,7 +1388,7 @@ static int OP_MRS_SPSR(const u32 i)
 					c.mov(mode, rhs); \
 					c.and_(mode, 0x1F); \
 					X86CompilerFuncCall* ctx = c.call((void*)armcpu_switchMode); \
-					ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, void*, u8>()); \
+					ctx->setPrototype(kX86FuncConvDefault, FuncBuilder2<void, void*, u8>()); \
 					ctx->setArgument(0, bb_cpu); \
 					ctx->setArgument(1, mode); \
 				} \
@@ -1462,7 +1462,7 @@ static int OP_MRS_SPSR(const u32 i)
 		c.mov(mode, rhs); \
 		c.and_(mode, 0x1F); \
 		X86CompilerFuncCall* ctx = c.call((void*)armcpu_switchMode); \
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, void*, u8>()); \
+		ctx->setPrototype(kX86FuncConvDefault, FuncBuilder2<void, void*, u8>()); \
 		ctx->setArgument(0, bb_cpu); \
 		ctx->setArgument(1, mode); \
 	} \
@@ -2316,7 +2316,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 		//oldmode = armcpu_switchMode(cpu, SYS);
 		c.mov(oldmode, SYS);
 		X86CompilerFuncCall *ctx = c.call((void*)armcpu_switchMode);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<u32, u8*, u8>());
+		ctx->setPrototype(kX86FuncConvDefault, FuncBuilder2<u32, u8*, u8>());
 		ctx->setArgument(0, bb_cpu);
 		ctx->setArgument(1, oldmode);
 		ctx->setReturn(oldmode);
@@ -2328,7 +2328,7 @@ static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 	{
 		//armcpu_switchMode(cpu, oldmode);
 		X86CompilerFuncCall *ctx = c.call((void*)armcpu_switchMode);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<Void, u8*, u8>());
+		ctx->setPrototype(kX86FuncConvDefault, FuncBuilder2<Void, u8*, u8>());
 		ctx->setArgument(0, bb_cpu);
 		ctx->setArgument(1, oldmode);
 	}
@@ -2495,7 +2495,7 @@ static void maskPrecalc(u32 _num)
 	GpVar _num = c.newGpVar(kX86VarTypeGpd); \
 	X86CompilerFuncCall* ctxM = c.call((uintptr_t)maskPrecalc); \
 	c.mov(_num, num); \
-	ctxM->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<Void, u32>()); \
+	ctxM->setPrototype(kX86FuncConvDefault, FuncBuilder1<Void, u32>()); \
 	ctxM->setArgument(0, _num); \
 }
 
@@ -2922,7 +2922,7 @@ u32 op_swi(u8 swinum)
 		return 0;
 #else
 		X86CompilerFuncCall *ctx = c.call((void*)ARM_swi_tab[PROCNUM][swinum]);
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder0<u32>());
+		ctx->setPrototype(kX86FuncConvDefault, FuncBuilder0<u32>());
 		ctx->setReturn(bb_cycles);
 		c.add(bb_cycles, 3);
 		return 1;
@@ -2937,7 +2937,7 @@ u32 op_swi(u8 swinum)
 	JIT_COMMENT("enter SVC mode");
 	c.mov(mode, imm(SVC));
 	X86CompilerFuncCall* ctx = c.call((void*)armcpu_switchMode);
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<Void, void*, u8>());
+	ctx->setPrototype(kX86FuncConvDefault, FuncBuilder2<Void, void*, u8>());
 	ctx->setArgument(0, bb_cpu);
 	ctx->setArgument(1, mode);
 	c.unuse(mode);
