@@ -441,6 +441,8 @@ int romnum = 0;
 DWORD threadID;
 
 WINCLASS	*MainWindow=NULL;
+bool		gShowConsole = false;
+bool		gConsoleTopmost = false;
 
 //HWND hwnd;
 //HDC  hdc;
@@ -2543,8 +2545,9 @@ int MenuInit()
 
 	ResetSaveStateTimes();
 
-	HMENU configMenu = GetSubMenuByIdOfFirstChild(mainMenu,IDM_3DCONFIG);
-	HMENU advancedMenu = GetSubMenuByIdOfFirstChild(configMenu,ID_ADVANCED);
+	HMENU configMenu = GetSubMenuByIdOfFirstChild(mainMenu, IDM_3DCONFIG);
+	HMENU advancedMenu = GetSubMenuByIdOfFirstChild(configMenu, ID_ADVANCED);
+	HMENU toolsMenu = GetSubMenuByIdOfFirstChild(mainMenu, IDM_DISASSEMBLER);
 	DeleteMenu(advancedMenu,ID_ADVANCED,MF_BYCOMMAND);
 
 #ifndef DEVELOPER_MENU_ITEMS
@@ -2574,6 +2577,9 @@ int MenuInit()
 #else
 	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
 #endif
+
+	if (!gShowConsole)
+		DeleteMenu(toolsMenu, IDM_CONSOLE_ALWAYS_ON_TOP, MF_BYCOMMAND);
 
 	return 1;
 }
@@ -3532,8 +3538,14 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		static const bool defaultConsoleEnable = false;
 	#endif
 
-	if(GetPrivateProfileBool("Display", "Show Console", defaultConsoleEnable, IniName))
+	gShowConsole = GetPrivateProfileBool("Display", "Show Console", defaultConsoleEnable, IniName);
+	gConsoleTopmost = GetPrivateProfileBool("Console", "Always On Top", false, IniName);
+
+	if (gShowConsole)
+	{
 		OpenConsole();			// Init debug console
+		ConsoleAlwaysTop(gConsoleTopmost);
+	}
 
 	//--------------------------------
 	int ret = _main();
@@ -4526,7 +4538,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_LQ2X, video.currentfilter == video.LQ2X );
 			MainWindow->checkMenu(IDM_RENDER_LQ2XS, video.currentfilter == video.LQ2XS );
 			MainWindow->checkMenu(IDM_RENDER_HQ2X, video.currentfilter == video.HQ2X );
-      MainWindow->checkMenu(IDM_RENDER_HQ4X, video.currentfilter == video.HQ4X );
+			MainWindow->checkMenu(IDM_RENDER_HQ4X, video.currentfilter == video.HQ4X );
 			MainWindow->checkMenu(IDM_RENDER_HQ2XS, video.currentfilter == video.HQ2XS );
 			MainWindow->checkMenu(IDM_RENDER_2XSAI, video.currentfilter == video._2XSAI );
 			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, video.currentfilter == video.SUPER2XSAI );
@@ -4579,6 +4591,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, false);
 				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, false);
 			}
+
+			// Tools
+			MainWindow->checkMenu(IDM_CONSOLE_ALWAYS_ON_TOP, gConsoleTopmost);
 
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
@@ -6061,6 +6076,14 @@ DOKEYDOWN:
 			{
 				SetStyle(GetStyle()^DWS_ALWAYSONTOP);
 				WritePrivateProfileBool("Video", "Window Always On Top", (GetStyle()&DWS_ALWAYSONTOP)!=0, IniName);
+			}
+			return 0;
+
+		case IDM_CONSOLE_ALWAYS_ON_TOP:
+			{
+				gConsoleTopmost = !gConsoleTopmost;
+				ConsoleAlwaysTop(gConsoleTopmost);
+				WritePrivateProfileBool("Console", "Always On Top", gConsoleTopmost, IniName);
 			}
 			return 0;
 

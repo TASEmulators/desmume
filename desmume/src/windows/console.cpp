@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2011 DeSmuME team
+	Copyright 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 
 ///////////////////////////////////////////////////////////////// Console
 #define BUFFER_SIZE 100
-HANDLE hConsole = NULL;
+HANDLE	hConsole = NULL;
+HWND	gConsoleWnd = NULL;
 void printlog(const char *fmt, ...);
 
 std::wstring SkipEverythingButProgramInCommandLine(wchar_t* cmdLine)
@@ -112,12 +113,25 @@ void OpenConsole()
 
 	//newer and improved console title:
 	SetConsoleTitleW(SkipEverythingButProgramInCommandLine(GetCommandLineW()).c_str());
-
 	if(shouldRedirectStdout)
 	{
 		freopen("CONOUT$", "w", stdout);
 		freopen("CONOUT$", "w", stderr);
 		freopen("CONIN$", "r", stdin);
+	}
+
+	gConsoleWnd = GetConsoleWindow();
+	if (gConsoleWnd)
+	{
+		RECT rc = {0};
+		if (GetWindowRect(gConsoleWnd, &rc))
+		{
+			rc.left =	GetPrivateProfileInt("Console", "PosX", rc.left, IniName);
+			rc.top =	GetPrivateProfileInt("Console", "PosY", rc.top, IniName);
+			rc.right =	GetPrivateProfileInt("Console", "Width", (rc.right - rc.left), IniName);
+			rc.bottom =	GetPrivateProfileInt("Console", "Height", (rc.bottom - rc.top), IniName);
+			SetWindowPos(gConsoleWnd, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOACTIVATE);
+		}
 	}
 
 	printlog("%s\n",EMU_DESMUME_NAME_AND_VERSION());
@@ -126,11 +140,25 @@ void OpenConsole()
 	printlog("\n");
 }
 
-void CloseConsole() {
-	if (hConsole == NULL) return;
-	printlog("Closing...");
-	FreeConsole(); 
+void CloseConsole()
+{
+	RECT pos = {0};
+
+	if (GetWindowRect(gConsoleWnd, &pos))
+	{
+		WritePrivateProfileInt("Console", "PosX", pos.left, IniName);
+		WritePrivateProfileInt("Console", "PosY", pos.top, IniName);
+		WritePrivateProfileInt("Console", "Width", (pos.right - pos.left), IniName);
+		WritePrivateProfileInt("Console", "Height", (pos.bottom - pos.top), IniName);
+	}
+	FreeConsole();
 	hConsole = NULL;
+}
+
+void ConsoleTop(bool top)
+{
+	if (!gConsoleWnd) return;
+	SetWindowPos(gConsoleWnd, (top?HWND_TOPMOST:HWND_NOTOPMOST), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 }
 
 void printlog(const char *fmt, ...)

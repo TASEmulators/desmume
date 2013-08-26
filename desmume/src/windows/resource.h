@@ -710,6 +710,7 @@
 #define IDC_SNDCTRL_LEFTOUTTEXT         1468
 #define IDC_SNDCTRL_RIGHTOUT            1469
 #define IDC_SNDCTRL_RIGHTOUTTEXT        1470
+#define IDM_CONSOLE_ALWAYS_ON_TOP       1500
 #define IDC_SOUND0MUTE                  2001
 #define IDC_SOUND1MUTE                  2002
 #define IDC_SOUND2MUTE                  2003
