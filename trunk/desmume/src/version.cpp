@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2012 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -121,5 +121,6 @@
 
 u32 EMU_DESMUME_VERSION_NUMERIC() { return DESMUME_VERSION_NUMERIC; }
 const char* EMU_DESMUME_VERSION_STRING() { return DESMUME_VERSION_STRING; }
+const char* EMU_DESMUME_SUBVERSION_STRING() { return DESMUME_SUBVERSION_STRING; }
 const char* EMU_DESMUME_NAME_AND_VERSION() { return DESMUME_NAME_AND_VERSION; }
 const char* EMU_DESMUME_COMPILER_DETAIL() { return DESMUME_COMPILER_DETAIL; }

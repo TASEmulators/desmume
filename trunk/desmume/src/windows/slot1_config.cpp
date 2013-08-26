@@ -26,7 +26,7 @@
 
 HWND wndConfigSlot1 = NULL;
 NDS_SLOT1_TYPE temp_type_slot1 = NDS_SLOT1_NONE;
-u8 last_type_slot1 = 0;
+NDS_SLOT1_TYPE last_type_slot1 = NDS_SLOT1_NONE;
 char tmp_fat_path[MAX_PATH] = {0};
 HWND OKbutton_slot1 = NULL;
 bool _OKbutton_slot1 = false;
@@ -95,15 +95,17 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 u32	Slot1_IDDs[NDS_SLOT1_COUNT] = {
 	IDD_SLOT1_NONE,
-	IDD_SLOT1_NONE,
-	IDD_SLOT1_R4,
-	IDD_SLOT1_NONE
+	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_AUTO	- autodetect which kind of retail card to use 
+	IDD_SLOT1_R4,				// NDS_SLOT1_R4,			- R4 flash card
+	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
+	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
 };
 
 DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
-	Slot1None,
-	Slot1None,
-	Slot1R4,
+	Slot1None,					// NDS_SLOT1_RETAIL_AUTO	- autodetect which kind of retail card to use 
+	Slot1None,					// NDS_SLOT1_R4,			- R4 flash card
+	Slot1R4,  					// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
+	Slot1None,					// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
 	Slot1None
 };
 
@@ -165,7 +167,11 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 						temp_type_slot1 = (NDS_SLOT1_TYPE)ComboBox_GetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST));
 						if (temp_type_slot1 != last_type_slot1)
 						{
-							if (wndConfigSlot1) DestroyWindow(wndConfigSlot1);
+							if (wndConfigSlot1) 
+							{
+								DestroyWindow(wndConfigSlot1);
+								wndConfigSlot1 = NULL;
+							}
 							_OKbutton_slot1 = false;
 							wndConfigSlot1=CreateDialogW(hAppInst, 
 								MAKEINTRESOURCEW(Slot1_IDDs[temp_type_slot1]), dialog, 

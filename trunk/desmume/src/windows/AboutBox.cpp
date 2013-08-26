@@ -24,7 +24,10 @@
 #include "resource.h"
 
 #define ABOUT_TIMER_ID 110222
-const char	*team[] = { 
+const char	*team[] = {
+	"Original author\1",
+	"yopyop",
+	"",
 	"Current Team\1",
 	"Guillaume Duhamel",
 	"Normmatt",
@@ -85,9 +88,10 @@ BOOL CALLBACK ListProc(HWND Dlg, UINT msg,WPARAM wparam,LPARAM lparam)
 				HDC hdcMem = CreateCompatibleDC(hDC);
 				HBITMAP hbmMem = CreateCompatibleBitmap(hDC, gRc.right, gRc.bottom);
 				HANDLE hOld   = SelectObject(hdcMem, hbmMem);
+				SetBkMode(hdcMem, TRANSPARENT);
 				SetTextAlign(hdcMem, TA_CENTER);
 				u32 x = gRc.right / 2;
-				FillRect(hdcMem, &gRc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+				FillRect(hdcMem, &gRc, (HBRUSH)COLOR_WINDOW);
 				SetTextColor(hdcMem, RGB(255, 0, 0));
 				for (u32 i = 0; i < size; i++)
 				{
@@ -105,7 +109,6 @@ BOOL CALLBACK ListProc(HWND Dlg, UINT msg,WPARAM wparam,LPARAM lparam)
 					}
 					if ((i == size-1) && (pos < (s32)(gRc.top - 20))) gPosY = gRc.bottom;
 				}
-				FrameRect(hdcMem, &gRc, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
 				BitBlt(hDC, 0, 0, gRc.right, gRc.bottom, hdcMem, 0, 0, SRCCOPY);
 				SelectObject(hdcMem, hOld);
@@ -124,29 +127,19 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 	{
 		case WM_INITDIALOG: 
 		{
-			// Support Unicode text display
-			wchar_t wstr[256];
-			wchar_t wstr1[256];
-			wchar_t wstr2[256];
-
-			GetDlgItemTextW(dialog, IDC_TXT_VERSION, wstr,256);
-			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, EMU_DESMUME_VERSION_STRING(), -1, wstr1, 255);
-			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, EMU_DESMUME_COMPILER_DETAIL(), -1, wstr2, 255);
-			wcscat(wstr, wcscat(wstr1, wstr2));
-			SetDlgItemTextW(dialog, IDC_TXT_VERSION, wstr);
-
-			GetDlgItemTextW(dialog, IDC_TXT_COMPILED, wstr,256);
-			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, __DATE__, -1, wstr1, 255);
-			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, __TIME__, -1, wstr2, 255);
-			wcscat(wstr, wcscat(wcscat(wstr1, L" "), wstr2));
-			SetDlgItemTextW(dialog, IDC_TXT_COMPILED, wstr);
+			char buf[256] = {0};
+			memset(&buf[0], 0, sizeof(buf));
+			sprintf(buf, "DeSmuME%s", EMU_DESMUME_VERSION_STRING());
+			SetDlgItemText(dialog, IDC_TXT_VERSION, buf);
+			sprintf(buf, "compiled %s - %s %s", __DATE__, __TIME__, EMU_DESMUME_COMPILER_DETAIL());
+			SetDlgItemText(dialog, IDC_TXT_COMPILED, buf);
 			
 			gList = GetDlgItem(dialog, IDC_AUTHORS_LIST);
 			SetWindowLongPtr(gList, GWLP_WNDPROC, (LONG_PTR)ListProc);
 			GetClientRect(gList, &gRc);
 			gPosY = gRc.bottom;
 
-			SetTimer(dialog, ABOUT_TIMER_ID, 10, (TIMERPROC) NULL);
+			SetTimer(dialog, ABOUT_TIMER_ID, 20, (TIMERPROC) NULL);
 			break;
 		}
 	

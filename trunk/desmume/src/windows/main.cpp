@@ -5576,6 +5576,7 @@ DOKEYDOWN:
 
 			OpenToolWindow(new CMemView());
 			return 0;
+#if 0
 		case IDM_VIEW3D:
 			#ifdef HAVE_WX
 				driver->VIEW3D_Init();
@@ -5584,6 +5585,7 @@ DOKEYDOWN:
 				MessageBox(hwnd, "Sorry to get your hopes up; 3d viewer isn't finished yet.\r\nBut because of all these languages, it is too much trouble to remove from all the menus...", "DeSmuME", MB_OK);
 			#endif
 			return 0;
+#endif
 		case IDM_SOUND_VIEW:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);
 			return 0;
