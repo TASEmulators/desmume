@@ -883,7 +883,6 @@
 #define IDM_CHEATS_DISABLE              40062
 #define IDM_CHEATS_SEARCH               40063
 #define ID_RAMSEARCH_CAPTIONTEXT        40064
-#define IDM_VIEW3D                      40065
 #define IDM_LOCKDOWN                    40066
 #define IDM_SHOWTOOLBAR                 40069
 #define ID_CONFIG_DISPLAYMETHOD         40070
