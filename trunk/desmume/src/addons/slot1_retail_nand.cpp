@@ -27,9 +27,22 @@
 #include "../registers.h"
 #include "../MMU.h"
 #include "../NDSSystem.h"
+#include "slot1comp_rom.h"
+#include "slot1comp_protocol.h"
 
-class Slot1_Retail_NAND : public ISlot1Interface
+//quick architecture overview:
+//NAND receives GC bus commands from MMU.cpp
+//those are passed on to the protocol component for parsing
+//protocol calls back into NAND via ISlot1Comp_Protocol_Client interface for things the protocol doesnt know about (the contents of the rom, chiefly)
+//NAND utilizes the rom component for address logic and delivering data.
+//it also processes some commands itself which arent rom-related (the NANDy stuff)
+
+class Slot1_Retail_NAND : public ISlot1Interface, public ISlot1Comp_Protocol_Client
 {
+private:
+	Slot1Comp_Protocol protocol;
+	Slot1Comp_Rom rom;
+
 public:
 	virtual Slot1Info const* info()
 	{
@@ -39,135 +52,75 @@ public:
 
 	virtual void connect()
 	{
+		protocol.reset(this);
+		protocol.chipId = gameInfo.chipID;
+		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
 	}
 
-	virtual u32 read32(u8 PROCNUM, u32 adr)
+	virtual void write_command(u8 PROCNUM, GC_Command command)
 	{
-		switch(adr)
+		protocol.write_command(command);
+	}
+
+	virtual void write_GCDATAIN(u8 PROCNUM, u32 val)
+	{
+		protocol.write_GCDATAIN(PROCNUM, val);
+	}
+	virtual u32 read_GCDATAIN(u8 PROCNUM)
+	{
+		return protocol.read_GCDATAIN(PROCNUM);
+	}
+
+	virtual void slot1client_startOperation(eSlot1Operation operation)
+	{
+		//pass the normal rom operations along to the rom component
+		switch(operation)
 		{
-		case REG_GCDATAIN:
-			return read32_GCDATAIN(PROCNUM);
-		default:
-			return 0;
+			case eSlot1Operation_00_ReadHeader_Unencrypted:
+			case eSlot1Operation_B7_Read:
+				rom.start(operation,protocol.address);
+				return;
 		}
-	}
 
-	virtual void write32(u8 PROCNUM, u32 adr, u32 val)
-	{
-		switch(adr)
+		//handle special commands ourselves
+		int cmd = protocol.command.bytes[0];
+		switch(cmd)
 		{
-		case REG_GCROMCTRL:
-			write32_GCROMCTRL(PROCNUM, val);
-			break;
-		}
-	}
-
-
-private:
-
-
-	void write32_GCROMCTRL(u8 PROCNUM, u32 val)
-	{
-		nds_dscard& card = MMU.dscard[PROCNUM];
-
-		switch(card.command[0])
-		{
-			case 0x00: //Data read
-			case 0xB7:
-				card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-				card.transfer_count = 0x200;
-				break;
-
-			case 0xB8:	// Chip ID
-				card.address = 0;
-				card.transfer_count = 4;
-				break;
-
 			// Nand Init
 			case 0x94:
-				card.address = 0;
-				card.transfer_count = 0x200;
+				//GCLOG("NAND 0x94\n");
+				//length = 0x200;
 				break;
 
 			// Nand Error?
 			case 0xD6:
-				card.address = 0;
-				card.transfer_count = 4;
+				//GCLOG("NAND 0xD6\n");
+				//length = 4;
 				break;
-			
+
 			// Nand Write? ---- PROGRAM for INTERNAL DATA MOVE/RANDOM DATA INPUT
 			//case 0x8B:
 			case 0x85:
-				card.address = 0;
-				card.transfer_count = 0x200;
-				break;
-
-			default:
-				card.address = 0;
-				card.transfer_count = 0;
+				//GCLOG("NAND 0x85\n");
+				//length = 0x200;
 				break;
 		}
 	}
 
-
-	u32 read32_GCDATAIN(u8 PROCNUM)
+	virtual u32 slot1client_read_GCDATAIN(eSlot1Operation operation)
 	{
-		nds_dscard& card = MMU.dscard[PROCNUM];
-
-		switch(card.command[0])
+		//pass the normal rom operations along to the rom component
+		switch(operation)
 		{
-			//Get ROM chip ID
-			case 0x90:
-			case 0xB8:
-				{
-					// Note: the BIOS stores the chip ID in main memory
-					// Most games continuously compare the chip ID with
-					// the value in memory, probably to know if the card
-					// was removed.
-					// As DeSmuME boots directly from the game, the chip
-					// ID in main mem is zero and this value needs to be
-					// zero too.
+			case eSlot1Operation_00_ReadHeader_Unencrypted:
+			case eSlot1Operation_B7_Read:
+				return rom.read();
+		}
 
-					//note that even if desmume was booting from firmware, and reading this chip ID to store in main memory,
-					//this still works, since it will have read 00 originally and then read 00 to validate.
-					return gameInfo.chipID;
-				}
-				break;
-
-
-			// Data read
-			case 0x00:
-			case 0xB7:
-				{
-					// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
-					if((card.command[0] == 0xB7) && (card.address < 0x8000))
-					{
-						//TODO - refactor this to include the PROCNUM, for debugging purposes if nothing else
-						//(can refactor gbaslot also)
-
-						//INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
-						//	card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
-
-						card.address = (0x8000 + (card.address&0x1FF));
-					}
-
-					//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
-					//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
-					//but there is no test case yet
-					u32 address = card.address & (gameInfo.mask);
-
-					//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
-					//we need to protect ourselves by returning 0xFF for things still out of range
-					if(address >= gameInfo.romsize)
-					{
-						DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
-						return 0xFFFFFFFF;
-					}
-
-					return T1ReadLong(MMU.CART_ROM, address);
-				}
-				break;
-
+		//handle special commands ourselves
+		int cmd = protocol.command.bytes[0];
+		switch(cmd)
+		{
 			// Nand Init?
 			case 0x94:
 				return 0; //Unsure what to return here so return 0 for now
@@ -177,11 +130,30 @@ private:
 				//0x80 == busy
 				// Made in Ore/WarioWare D.I.Y. need set value to 0x80
 				return 0x80; //0x20 == ready
+		}
+		
+		return 0;
+	}
 
-			default:
-				return 0;
-		} //switch(card.command[0])
-	} //read32_GCDATAIN
+	virtual void slot1client_write_GCDATAIN(eSlot1Operation operation, u32 val)
+	{
+		//pass the normal rom operations along to the rom component
+		switch(operation)
+		{
+			case eSlot1Operation_00_ReadHeader_Unencrypted:
+			case eSlot1Operation_B7_Read:
+				return;
+		}
+
+		//handle special commands ourselves
+		int cmd = protocol.command.bytes[0];
+		switch(cmd)
+		{
+		}
+	}
+
+
+
 
 };
 

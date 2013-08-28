@@ -30,7 +30,8 @@
 #include "header.h"
 #include "decrypt.h"
 
-const unsigned char encr_data[] =
+//encr_data
+const unsigned char arm7_key[] =
 {
 	0x99,0xD5,0x20,0x5F,0x57,0x44,0xF5,0xB9,0x6E,0x19,0xA4,0xD9,0x9E,0x6A,0x5A,0x94,
 	0xD8,0xAE,0xF1,0xEB,0x41,0x75,0xE2,0x3A,0x93,0x82,0xD0,0x32,0x33,0xEE,0x31,0xD5,
@@ -396,7 +397,7 @@ static void init2(u32 *magic, u32 a[3])
 
 static void init1(u32 cardheader_gamecode)
 {
-	memcpy(card_hash, &encr_data, 4*(1024 + 18));
+	memcpy(card_hash, &arm7_key, 4*(1024 + 18));
 	arg2[0] = *(u32 *)&cardheader_gamecode;
 	arg2[1] = (*(u32 *)&cardheader_gamecode) >> 1;
 	arg2[2] = (*(u32 *)&cardheader_gamecode) << 1;

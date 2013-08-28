@@ -24,6 +24,8 @@ Since GCROMCTRL[26:24] can't represent 'data block size' of 1 or 2, it is assume
 ...so, any 8/16bit accesses to GCDATAIN would transfer a whole 32bit unit and then just return the requested portion
 */
 
+//TODO - create a Slot1_TurboRom which we can select when booting from fakebios/nonfirmware and which would provide a useful service to people porting to tighter platforms by bypassing largely useless cruft
+
 #include <string>
 
 #include "types.h"
@@ -74,7 +76,7 @@ EMUFILE* slot1_GetFatImage()
 
 //------------
 
-ISlot1Interface* slot1_List[NDS_SLOT1_COUNT];
+ISlot1Interface* slot1_List[NDS_SLOT1_COUNT] = {0};
 
 ISlot1Interface* slot1_device = NULL;
 NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL_AUTO;  //default for frontends that dont even configure this
@@ -95,7 +97,7 @@ void slot1_Init()
 	extern TISlot1InterfaceConstructor construct_Slot1_Retail_MCROM;
 	slot1_List[NDS_SLOT1_NONE] = construct_Slot1_None();
 	slot1_List[NDS_SLOT1_RETAIL_AUTO] = construct_Slot1_Retail_Auto();
-	slot1_List[NDS_SLOT1_R4] = construct_Slot1_R4();
+	slot1_List[NDS_SLOT1_R4] = construct_Slot1_None(); //HACK!!! R4 IS BROKEN RIGHT NOW
 	slot1_List[NDS_SLOT1_RETAIL_NAND] = construct_Slot1_Retail_NAND();
 	slot1_List[NDS_SLOT1_RETAIL_MCROM] = construct_Slot1_Retail_MCROM();
 }
@@ -104,7 +106,8 @@ void slot1_Shutdown()
 {
 	for(int i=0;i<ARRAY_SIZE(slot1_List);i++)
 	{
-		slot1_List[i]->shutdown();
+		if(slot1_List[i])
+			slot1_List[i]->shutdown();
 		delete slot1_List[i];
 	}
 }
@@ -160,3 +163,118 @@ NDS_SLOT1_TYPE slot1_GetCurrentType()
 {
 	return slot1_device_type;
 }
+
+
+	//// --- Ninja SD commands notes -------------------------------------
+	//		///writetoGCControl:
+
+	//	// NJSD init/reset
+	//	case 0x20:
+	//		{
+	//			card.address = 0;
+	//			card.transfer_count = 0;
+	//		}
+	//		break;
+
+	//	// NJSD_sendCLK()
+	//	case 0xE0:
+	//		{
+	//			card.address = 0;
+	//			card.transfer_count = 0;
+	//			NDS_makeInt(PROCNUM, 20);
+	//		}
+	//		break;
+
+	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
+	//	case 0xF0:
+	//	case 0xF1:
+	//		switch (card.command[2])
+	//		{
+	//		// GO_IDLE_STATE
+	//		case 0x40:
+	//			card.address = 0;
+	//			card.transfer_count = 0;
+	//			NDS_makeInt(PROCNUM, 20);
+	//			break;
+
+	//		case 0x42:  // ALL_SEND_CID
+	//		case 0x43:  // SEND_RELATIVE_ADDR
+	//		case 0x47:  // SELECT_CARD
+	//		case 0x49:  // SEND_CSD
+	//		case 0x4D:
+	//		case 0x77:  // APP_CMD
+	//		case 0x69:  // SD_APP_OP_COND
+	//			card.address = 0;
+	//			card.transfer_count = 6;
+	//			NDS_makeInt(PROCNUM, 20);
+	//			break;
+
+	//		// SET_BLOCKLEN
+	//		case 0x50:
+	//			card.address = 0;
+	//			card.transfer_count = 6;
+	//			card.blocklen = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
+	//			NDS_makeInt(PROCNUM, 20);
+	//			break;
+
+	//		// READ_SINGLE_BLOCK
+	//		case 0x51:
+	//			card.address = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
+	//			card.transfer_count = (card.blocklen + 3) >> 2;
+	//			NDS_makeInt(PROCNUM, 20);
+	//			break;
+	//		}
+	//		break;
+
+	//	// --- Ninja SD commands end ---------------------------------
+
+
+
+	//		//GCDATAIN:
+	//	// --- Ninja SD commands -------------------------------------
+
+	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
+	//	case 0xF0:
+	//	case 0xF1:
+	//		switch (card.command[2])
+	//		{
+	//		// ALL_SEND_CID
+	//		case 0x42:
+	//			if (card.transfer_count == 2) val = 0x44534A4E;
+	//			else val = 0x00000000;
+
+	//		// SEND_RELATIVE_ADDR
+	//		case 0x43:
+	//		case 0x47:
+	//		case 0x49:
+	//		case 0x50:
+	//			val = 0x00000000;
+	//			break;
+
+	//		case 0x4D:
+	//			if (card.transfer_count == 2) val = 0x09000000;
+	//			else val = 0x00000000;
+	//			break;
+
+	//		// APP_CMD
+	//		case 0x77:
+	//			if (card.transfer_count == 2) val = 0x00000037;
+	//			else val = 0x00000000;
+	//			break;
+
+	//		// SD_APP_OP_COND
+	//		case 0x69:
+	//			if (card.transfer_count == 2) val = 0x00008000;
+	//			else val = 0x00000000;
+	//			break;
+
+	//		// READ_SINGLE_BLOCK
+	//		case 0x51:
+	//			val = 0x00000000;
+	//			break;
+	//		}
+	//		break;
+
+	//	// --- Ninja SD commands end ---------------------------------
+
+

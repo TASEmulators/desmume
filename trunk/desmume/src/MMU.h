@@ -296,27 +296,60 @@ public:
 
 };
 
-enum ECardMode
+enum eCardMode : u32
 {
-	CardMode_Normal = 0,
-	CardMode_KEY1,
-	CardMode_KEY2,
-	CardMode_DATA_LOAD
+	//when the GC system is first booted up, the protocol is in raw mode
+	eCardMode_RAW = 0,
+	
+	//an intermediate stage during the protocol bootup process. commands are KEY1 encrypted.
+	eCardMode_KEY1,
+
+	//an intermediate stage during the protocol bootup process. commands are KEY1 encrypted, while replies are KEY2 encrypted
+	eCardMode_KEY2,
+
+	//the final stage of the protocol bootup process. "main data load" mode. commands are KEY2 encrypted, and replies are KEY2 encrypted.
+	//optionally, according to some flag we havent designed yet but should probably go in GCBUS_Controller, the whole KEY2 part can be bypassed
+	//(this is typical when skipping the firmware boot process)
+	eCardMode_NORMAL,
+
+	//help fix to 32bit
+	eCardMode_Pad = 0xFFFFFFFF
 };
 
-//should rather be known as gamecard bus controller, or somesuch
-struct nds_dscard
+//#define GCLOG(...) printf(__VA_ARGS__);
+#define GCLOG(...)
+
+struct GC_Command
 {
-	u8 command[8];
+	u8 bytes[8];
+	void print()
+	{
+		GCLOG("%02X%02X%02X%02X%02X%02X%02X%02X\n",bytes[0],bytes[1],bytes[2],bytes[3],bytes[4],bytes[5],bytes[6],bytes[7]);
+	}
+	void toCryptoBuffer(u32 buf[2])
+	{
+		u8 temp[8] = { bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0] };
+		buf[0] = T1ReadLong(temp,0);
+		buf[1] = T1ReadLong(temp,4);
+	}
+	void fromCryptoBuffer(u32 buf[2])
+	{
+		bytes[7] = (buf[0]>>0)&0xFF;
+		bytes[6] = (buf[0]>>8)&0xFF;
+		bytes[5] = (buf[0]>>16)&0xFF;
+		bytes[4] = (buf[0]>>24)&0xFF;
+		bytes[3] = (buf[1]>>0)&0xFF;
+		bytes[2] = (buf[1]>>8)&0xFF;
+		bytes[1] = (buf[1]>>16)&0xFF;
+		bytes[0] = (buf[1]>>24)&0xFF;
+	}
+};
 
-	u32 address;
+//should rather be known as GCBUS controller, or somesuch
+struct GCBUS_Controller
+{
 	u32 transfer_count;
-	u32 delay;
-
-	ECardMode mode;
-
-	// NJSD stuff
-	int blocklen;
+	eCardMode mode;
 };
 
 #define DUP2(x)  x, x
@@ -432,7 +465,7 @@ struct MMU_struct
 
 	fw_memory_chip fw;
 
-	nds_dscard dscard[2];
+	GCBUS_Controller dscard;
 };
 
 

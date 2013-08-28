@@ -242,10 +242,8 @@ SFORMAT SF_MMU[]={
 	{ "BUWR", 4, 1,       &MMU.fw.writeable_buffer},
 	//end memory chips
 
-	{ "MC0A", 4, 1,       &MMU.dscard[0].address},
-	{ "MC0T", 4, 1,       &MMU.dscard[0].transfer_count},
-	{ "MC1A", 4, 1,       &MMU.dscard[1].address},
-	{ "MC1T", 4, 1,       &MMU.dscard[1].transfer_count},
+	{ "GCTC", 4, 1,       &MMU.dscard.transfer_count},
+	{ "GCMO", 4, 1,       &MMU.dscard.mode},
 	//{ "MCHT", 4, 1,       &MMU.CheckTimers},
 	//{ "MCHD", 4, 1,       &MMU.CheckDMAs},
 

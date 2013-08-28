@@ -795,6 +795,9 @@
     <ClCompile Include="..\utils\advanscene.cpp">
       <Filter>Core\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\addons\slot1comp_protocol.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1532,6 +1535,9 @@
     </ClInclude>
     <ClInclude Include="..\utils\advanscene.h">
       <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\addons\slot1comp_protocol.h">
+      <Filter>Core\addons</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1030,6 +1030,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\addons\slot1comp_protocol.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\addons\slot1comp_protocol.h"
+					>
+				</File>
+				<File
 					RelativePath="..\addons\slot1comp_rom.cpp"
 					>
 				</File>
