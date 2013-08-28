@@ -52,18 +52,18 @@ void Slot1Comp_Protocol::write_command_RAW(GC_Command command)
 	if(cmd == 0x9F)
 	{
 		operation = eSlot1Operation_9F_Dummy;
-		delay = 0, length = 0x2000;
+		length = 0x2000;
 	}
 	if(cmd == 0x90)
 	{
 		operation = eSlot1Operation_90_ChipID;
-		delay = 0, length = 4;
+		length = 4;
 		//we handle this operation ourselves
 	}
 	if(cmd == 0x3C)
 	{
 		//switch to KEY1
-		delay = 0, length = 0; 
+		length = 0; 
 		mode = eCardMode_KEY1;
 		
 		//defer initialization of KEY1 until we know we need it, just to save some CPU time.
@@ -111,8 +111,6 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 			client->slot1client_startOperation(operation);
 
 			break;
-		case 0x30:
-			break;
 		case 0x40:
 			//switch to KEY2
 			delay = 0x910, length = 0; 
@@ -127,8 +125,7 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 			mode = eCardMode_NORMAL;
 			GCLOG("[GC] NORMAL MODE ACTIVATED\n");
 			break;
-		case 0xB0:
-			break;
+
 	}
 }
 
@@ -204,8 +201,13 @@ u32 Slot1Comp_Protocol::read_GCDATAIN(u8 PROCNUM)
 		default:
 			return client->slot1client_read_GCDATAIN(operation);
 
-		case eSlot1Operation_90_ChipID:
+		case eSlot1Operation_9F_Dummy:
+			return 0xFFFFFFFF;
+
 		case eSlot1Operation_1x_ChipID:
+			return chipId;
+
+		case eSlot1Operation_90_ChipID:
 		case eSlot1Operation_B8_ChipID:
 			// Note: the BIOS stores the chip ID in main memory
 			// Most games continuously compare the chip ID with
