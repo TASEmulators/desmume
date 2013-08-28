@@ -241,10 +241,8 @@ void rtcInit()
 
 u16 rtcRead() 
 { 
-	//ZEROMUS HACK! MAKE SOMETHING PREDICTABLE FOR FIRMWARE BOOT TESTS!
 	//INFO("MMU Read RTC 0x%02X (%03i)\n", rtc._REG, rtc.bitsCount);
-	//return (rtc._REG); 
-	return 0;
+	return (rtc._REG); 
 }
 
 void rtcWrite(u16 val)
