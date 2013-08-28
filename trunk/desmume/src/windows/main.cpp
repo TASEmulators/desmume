@@ -2080,6 +2080,8 @@ void CheckMessages()
 			}
 		}
 	}
+	if (gShowConsole)
+		readConsole();
 }
 
 static void InvokeOnMainThread(void (*function)(DWORD), DWORD argument)
@@ -3544,7 +3546,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	if (gShowConsole)
 	{
 		OpenConsole();			// Init debug console
-		//ConsoleAlwaysTop(gConsoleTopmost);
+		ConsoleAlwaysTop(gConsoleTopmost);
 	}
 
 	//--------------------------------
@@ -6082,7 +6084,7 @@ DOKEYDOWN:
 		case IDM_CONSOLE_ALWAYS_ON_TOP:
 			{
 				gConsoleTopmost = !gConsoleTopmost;
-				//ConsoleAlwaysTop(gConsoleTopmost);
+				ConsoleAlwaysTop(gConsoleTopmost);
 				WritePrivateProfileBool("Console", "Always On Top", gConsoleTopmost, IniName);
 			}
 			return 0;

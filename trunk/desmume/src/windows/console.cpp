@@ -19,13 +19,15 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <io.h>
-#include "version.h"
-
+#include "../version.h"
+#include "main.h"
 
 ///////////////////////////////////////////////////////////////// Console
 #define BUFFER_SIZE 100
-HANDLE	hConsole = NULL;
+HANDLE	hConsoleOut = NULL;
+HANDLE	hConsoleIn = NULL;
 HWND	gConsoleWnd = NULL;
+DWORD	oldmode = 0;
 void printlog(const char *fmt, ...);
 
 std::wstring SkipEverythingButProgramInCommandLine(wchar_t* cmdLine)
@@ -65,13 +67,42 @@ std::wstring SkipEverythingButProgramInCommandLine(wchar_t* cmdLine)
 	return path + L" " + remainder;
 }
 
+BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
+{
+	return ((dwCtrlType == CTRL_C_EVENT) || (dwCtrlType == CTRL_BREAK_EVENT));
+}
+
+void readConsole()
+{
+	INPUT_RECORD buf[10];
+	DWORD num = 0;
+	if (PeekConsoleInput(hConsoleIn, buf, 10, &num))
+	{
+		if (num)
+		{
+			for (u32 i = 0; i < num; i++)
+			{
+				if ((buf[i].EventType == KEY_EVENT) && (buf[i].Event.KeyEvent.bKeyDown) && (buf[i].Event.KeyEvent.wVirtualKeyCode == 0x13))
+				{
+					if (execute)
+						NDS_Pause(false);
+					else
+						NDS_UnPause(false);
+					break;
+				}
+			}
+			FlushConsoleInputBuffer(hConsoleIn);
+		}
+	}
+}
+
 void OpenConsole() 
 {
 	//dont do anything if we're already analyzed
-	if (hConsole) return;
+	if (hConsoleOut) return;
 
-	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD fileType = GetFileType(hConsole);
+	hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD fileType = GetFileType(hConsoleOut);
 	//is FILE_TYPE_UNKNOWN (0) with no redirect
 	//is FILE_TYPE_DISK (1) for redirect to file
 	//is FILE_TYPE_PIPE (3) for pipe
@@ -91,11 +122,11 @@ void OpenConsole()
 		HMODULE lib = LoadLibrary("kernel32.dll");
 		if(lib)
 		{
-			typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
-			_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
-			if(_AttachConsole)
+			typedef BOOL (WINAPI *_TAttachConsoleOut)(DWORD dwProcessId);
+			_TAttachConsoleOut _AttachConsoleOut  = (_TAttachConsoleOut)GetProcAddress(lib,"AttachConsoleOut");
+			if(_AttachConsoleOut)
 			{
-				if(!_AttachConsole(-1)) 
+				if(!_AttachConsoleOut(-1)) 
 				{
 					FreeLibrary(lib);
 					return;
@@ -120,42 +151,68 @@ void OpenConsole()
 		freopen("CONIN$", "r", stdin);
 	}
 
+	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
+	hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	hConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
+	GetConsoleMode(hConsoleIn, &oldmode);
+	SetConsoleMode(hConsoleIn, ENABLE_WINDOW_INPUT);
+
 	gConsoleWnd = GetConsoleWindow();
-	if (gConsoleWnd)
+	RECT pos = {0};
+	if (gConsoleWnd && GetWindowRect(gConsoleWnd, &pos))
 	{
-		RECT rc = {0};
-		if (GetWindowRect(gConsoleWnd, &rc))
+		LONG x		= std::max((LONG)0, pos.left);
+		LONG y		= std::max((LONG)0, pos.top);
+		LONG width	= std::max((LONG)0, (pos.right - pos.left));
+		LONG height	= std::max((LONG)0, (pos.bottom - pos.top));
+
+		x		= GetPrivateProfileInt("Console", "PosX",	x,		IniName);
+		y		= GetPrivateProfileInt("Console", "PosY",	y,		IniName);
+		width	= GetPrivateProfileInt("Console", "Width",	width,	IniName);
+		height	= GetPrivateProfileInt("Console", "Height",	height,	IniName);
+
+		if (x < 0) x = 0;
+		if (y < 0) y = 0;
+		if (width < 200) width = 200;
+		if (height < 100) height = 100;
+
+		HWND desktop = GetDesktopWindow(); 
+		if (desktop && GetClientRect(desktop, &pos))
 		{
-			rc.left =	GetPrivateProfileInt("Console", "PosX", rc.left, IniName);
-			rc.top =	GetPrivateProfileInt("Console", "PosY", rc.top, IniName);
-			rc.right =	GetPrivateProfileInt("Console", "Width", (rc.right - rc.left), IniName);
-			rc.bottom =	GetPrivateProfileInt("Console", "Height", (rc.bottom - rc.top), IniName);
-			SetWindowPos(gConsoleWnd, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOACTIVATE);
+			if (x >= pos.right) x = 0;
+			if (y >= pos.bottom) y = 0;
 		}
+
+		SetWindowPos(gConsoleWnd, NULL, x, y, width, height, SWP_NOACTIVATE);
 	}
 
-	printlog("%s\n",EMU_DESMUME_NAME_AND_VERSION());
-	printlog("- compiled: %s %s\n",__DATE__,__TIME__);
-	if(attached) printf("\nuse cmd /c desmume.exe to get more sensible console behaviour\n");
+	printlog("%s\n", EMU_DESMUME_NAME_AND_VERSION());
+	printlog("- compiled: %s %s\n", __DATE__, __TIME__);
+	if(attached) 
+		printf("\nuse cmd /c desmume.exe to get more sensible console behaviour\n");
 	printlog("\n");
 }
 
 void CloseConsole()
 {
 	RECT pos = {0};
+	SetConsoleMode(hConsoleIn, oldmode);
 
-	if (GetWindowRect(gConsoleWnd, &pos))
+	if (gConsoleWnd && GetWindowRect(gConsoleWnd, &pos))
 	{
-		WritePrivateProfileInt("Console", "PosX", pos.left, IniName);
-		WritePrivateProfileInt("Console", "PosY", pos.top, IniName);
-		WritePrivateProfileInt("Console", "Width", (pos.right - pos.left), IniName);
-		WritePrivateProfileInt("Console", "Height", (pos.bottom - pos.top), IniName);
+		LONG width	= std::max((LONG)0, (pos.right - pos.left));
+		LONG height	= std::max((LONG)0, (pos.bottom - pos.top));
+		WritePrivateProfileInt("Console", "PosX",	pos.left, IniName);
+		WritePrivateProfileInt("Console", "PosY",	pos.top, IniName);
+		WritePrivateProfileInt("Console", "Width",	width, IniName);
+		WritePrivateProfileInt("Console", "Height",	height, IniName);
 	}
+
 	FreeConsole();
-	hConsole = NULL;
+	hConsoleOut = NULL;
 }
 
-void ConsoleTop(bool top)
+void ConsoleAlwaysTop(bool top)
 {
 	if (!gConsoleWnd) return;
 	SetWindowPos(gConsoleWnd, (top?HWND_TOPMOST:HWND_NOTOPMOST), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
