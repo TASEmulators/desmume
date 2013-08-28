@@ -218,6 +218,7 @@ public:
 			//are you SURE this is logical? there doesnt seem to be any way for the card to signal that
 			T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4,val & 0x7F7FFFFF);
 
+			//but isnt this a different IRQ? IREQ_MC perhaps
 			MMU_GC_endTransfer(0);
 		}
 

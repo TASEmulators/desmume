@@ -81,6 +81,7 @@ u32 Slot1Comp_Rom::read()
 			//"However, the datastream wraps to the begin of the current 4K block when address+length crosses a 4K boundary (1000h bytes)"
 			address = (address&~0xFFF) + ((address+4)&0xFFF);
 
+
 			return ret;
 		}
 		break;
