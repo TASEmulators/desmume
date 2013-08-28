@@ -29,18 +29,9 @@ public:
 		return &info;
 	}
 
-	virtual void connect()
-	{
-	}
-
-	virtual u32 read32(u8 PROCNUM, u32 adr)
-	{
-		//return a chip ID of 0.
-		//if (adr == REG_GCDATAIN && MMU.dscard[PROCNUM].command[0] == 0xB8) return 0;
-		//EDIT - not sure who did this or why, but... but if a card is ejected, there can be no chip ID.
-		//we certainly want it to appear differently from chipId 0, which is something we are faking in other slot-1 devices
-		return 0xFFFFFFFF;
-	}
+	//pretty much every access to the card should just be ignored and reading HIGH-Z off the GC bus.
+	//so, nothing really to do here
+	//(notably, it results in a 0xFFFFFFFF card ID)
 
 };
 

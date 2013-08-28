@@ -48,7 +48,7 @@
 #define ASSERT_UNALIGNED(x)
 #endif
 
-//#define _LOG_NEW_BOOT
+//TODO - do we need these here?
 _KEY1 key1(&MMU.ARM7_BIOS[0x0030]);
 _KEY2 key2;
 
@@ -995,7 +995,7 @@ void MMU_Reset()
 	memset(MMU.reg_IF_bits,   0, sizeof(u32) * 2);
 	memset(MMU.reg_IF_pending,   0, sizeof(u32) * 2);
 	
-	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
+	memset(&MMU.dscard,        0, sizeof(MMU.dscard));
 
 	MMU.divRunning = 0;
 	MMU.divResult = 0;
@@ -1035,15 +1035,9 @@ void MMU_Reset()
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
 
-	memset(MMU.dscard[ARMCPU_ARM9].command, 0, 8);
-	MMU.dscard[ARMCPU_ARM9].address = 0;
-	MMU.dscard[ARMCPU_ARM9].transfer_count = 0;
-	MMU.dscard[ARMCPU_ARM9].mode = CardMode_Normal;
+	MMU.dscard.transfer_count = 0;
+	MMU.dscard.mode = eCardMode_RAW;
 
-	memset(MMU.dscard[ARMCPU_ARM7].command, 0, 8);
-	MMU.dscard[ARMCPU_ARM7].address = 0;
-	MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
-	MMU.dscard[ARMCPU_ARM7].mode = CardMode_Normal;
 
 	//HACK!!!
 	//until we improve all our session tracking stuff, we need to save the backup memory filename
@@ -1285,9 +1279,10 @@ bool DSI_TSC::load_state(EMUFILE* is)
 	return true;
 }
 
-static void FASTCALL MMU_endTransfer(u32 PROCNUM, u32 cnt)
+static void FASTCALL MMU_endTransfer(u32 PROCNUM)
 {
-	T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, cnt & 0x7F7FFFFF);
+	u32 val = T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0x7F7FFFFF;
+	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val);
 
 	// if needed, throw irq for the end of transfer
 	if(MMU.AUX_SPI_CNT & 0x4000)
@@ -1314,189 +1309,78 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 
 	u32 oldCnt = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
 #endif
+
+	int dbsize = (val>>24)&7;
+	static int gcctr=0;
+	GCLOG("[GC] [%07d] GCControl: %08X (dbsize:%d)\n",gcctr,val,dbsize);
+	gcctr++;
 	
+	GCBUS_Controller& card = MMU.dscard;
 
-	nds_dscard& card = MMU.dscard[PROCNUM];
+	//....pick apart the fields....
+	int keylength = (val&0x1FFF); //key1length high gcromctrl[21:16] ??
+	u8 key2_encryptdata = (val>>13)&1;
+	u8 bit15 = (val>>14)&1;
+	u8 key2_applyseed = (val>>15)&1; //write only strobe
+	//key1length high gcromctrl[21:16] ??
+	u8 key2_encryptcommand = (val>>22)&1;
+	//bit 23 read only status
+	int blocksize_field = (val>>24)&7;
+	u8 clockrate = (val>>27)&1;
+	u8 secureareamode = (val>>28)&1;
+	//RESB bit 29?
+	u8 wr = (val>>30)&1;
+	u8 start = (val>>31)&1; //doubles as busy on read
+	static const int blocksize_table[] = {0,0x200,0x400,0x800,0x1000,0x2000,0x4000,4};
+	int blocksize = blocksize_table[blocksize_field];
 
-	memcpy(&card.command[0], &MMU.MMU_MEM[PROCNUM][0x40][0x1A8], 8);
+	//store written value, without bit 31 and bit 23 set (those will be patched in as operations proceed)
+	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val & 0x7F7FFFFF);
 
-	card.blocklen = 0;
-
-	if ((val & (1 << 15)) != 0)
+	//if this operation has been triggered by strobing that bit, run it
+	if (key2_applyseed)
 	{
-#ifdef _LOG_NEW_BOOT
-		if (fp_dis7)
-			fprintf(fp_dis7, "ARM%c: KEY2 apply seeds, ctrl %08X (PC:0x%08X)\n", PROCNUM?'7':'9', val, ARMPROC.instruct_adr);
-		printf("ARM%c: KEY2 apply seeds, ctrl %08X (PC:0x%08X)\n", PROCNUM?'7':'9', val, ARMPROC.instruct_adr);
-#endif
-
 		key2.applySeed(PROCNUM);
 	}
 
-	if ((val & 0x80000000) == 0)
-	{
-#ifdef _LOG_NEW_BOOT
-		if (fp_dis7)
-		{
-			fprintf(fp_dis7, "ARM%c: Bad I/O, PC:%08X\tcmd %02X (%016llX), ctrl %08X/%08X, old len %08X\n", PROCNUM?'7':'9', ARMPROC.instruct_adr, card.command[0], *(u64 *)&card.command[0], val, oldCnt, card.transfer_count);
-		}
-		printf("ARM%c: Bad I/O, PC:%08X\n", PROCNUM?'7':'9', ARMPROC.instruct_adr);
-		printf("\tcmd %02X (%016llX), ctrl %08X/%08X, old len %08X\n", card.command[0], *(u64 *)&card.command[0], val, oldCnt, card.transfer_count);
-#endif
-		card.address = 0;
-		card.transfer_count = 0;
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
-		return;
-	}
-	
-	u32 shift = ((val >> 24) & 0x07);
-	if(shift == 7)
-		card.transfer_count = 4;
-	else if(shift == 0)
-		card.transfer_count = 0;
-	else
-		card.transfer_count = (0x100 << shift);
+	//pluck out the command registers into a more convenient format
+	GC_Command rawcmd = *(GC_Command*)&MMU.MMU_MEM[PROCNUM][0x40][0x1A8];
 
-#ifdef _LOG_NEW_BOOT
-	if (fp_dis7)
-		fprintf(fp_dis7, "ARM%c: cmd %02X (%016llX), ctrl %08X, old ctrl %08X, size %08X, PC:%08X, delay %X/%X\n", PROCNUM?'7':'9', card.command[0], *(u64 *)&card.command[0], val, oldCnt, card.transfer_count, ARMPROC.instruct_adr, (val & 0x1FFF), ((val >> 16) & 0x3F));
-	printf("ARM%c: cmd %02X (%016llX), ctrl %08X/%08X, size %08X, PC:%08X\n", PROCNUM?'7':'9', card.command[0], *(u64 *)&card.command[0], val, oldCnt, card.transfer_count, ARMPROC.instruct_adr);
-	if (card.mode != CardMode_Normal)
+	//when writing a 1 to the start bit, a command runs.
+	//the command is transferred to the GC during the next 8 clocks
+	if(start)
 	{
-		u64 rawCmd = (u64)MMU_read32(PROCNUM, 0x037F8074) | ((u64)MMU_read32(PROCNUM, 0x037F8078) << 32);
-		u64 rawCmd2 = rawCmd >> 56;
-		if (card.mode != CardMode_DATA_LOAD)
-			rawCmd2 >>= 4;
-		if (fp_dis7)
-			fprintf(fp_dis7, "  RAW cmd %02X (%016llX)\n", rawCmd2, rawCmd);
-		printf("  RAW cmd %02X (%016llX)\n", rawCmd2, rawCmd);
-	}
-#endif
-	
-	if (card.mode == CardMode_Normal)
-	{
-		switch(card.command[0])
-		{
-			case 0x9F: //Dummy
-				card.address = 0;
-				card.transfer_count = 0x2000;
-				break;
-
-			case 0x3C: //Switch to KEY1 mode
-				{
-					u32 gameID = MMU_read32(PROCNUM, 0x027FFE0C);
-					key1.init(gameID, 2, 0x08);
-#ifdef _LOG_NEW_BOOT
-					if (fp_dis7)
-						fprintf(fp_dis7, "ARM%c: Activate KEY1 encryption mode (id %08X)\n", PROCNUM?'7':'9', gameID);
-					printf("ARM%c: Activate KEY1 encryption mode (id %08X)\n", PROCNUM?'7':'9', gameID);
-#endif
-					card.mode = CardMode_KEY1;
-					card.transfer_count = 0;
-				}
-				break;
-			default:
-				//fall through to the special slot1 handler
-				slot1_device->write32(PROCNUM, REG_GCROMCTRL,val);
-				break;
-		}
+		GCLOG("[GC] command:"); rawcmd.print();
+		slot1_device->write_command(PROCNUM,rawcmd);
 	}
 	else
-		if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
-		{
-			//<zero> really? the values from memory are used here?
-			//somehow I doubt it. are they stored in the gamecard controllers somehow?
-			u32 gameID = MMU_read32(PROCNUM, 0x027FFE0C);
-			u32 chipID = MMU_read32(PROCNUM, 0x027FF800);
-			u64 cmd = bswap64(*(u64 *)&card.command[0]);
-			
-			//key1.init(gameID, 2, 0x08);
-			key1.decrypt((u32*)&cmd);
-			*(u64*)&card.command[0] = bswap64(cmd);
-
-			switch (cmd >> 60)
-			{
-				case 0x02:		// Get secure area block (4Kbytes)		- 910h+11A8h
-					{
-						u32 addr = (u32)((cmd >> 32) & 0xF000);
-#ifdef _LOG_NEW_BOOT
-						u32 area = (u32)((cmd >> 32) & 0xF000);
-						u32 src = MMU_read32(PROCNUM, 0x0380FC00);
-						u32 dst = MMU_read32(PROCNUM, 0x0380FC04);
-						u32 len = MMU_read32(PROCNUM, 0x0380FC08);
-						u32 size = MMU_read32(PROCNUM, 0x0380FC10);
-						u32 size2 = size;
-						if (size2 == 7)
-							size2 = 4;
-						else
-							if (size2 != 0) 
-								size2 = (0x100 << size2);
-
-						if (fp_dis7)
-							fprintf(fp_dis7, "ARM%c: Get secure are block: area %04X, src %08X, dst %08X, len %08X, bsize %08X\n", PROCNUM?'7':'9', area, src, dst, len, size);
-						printf("ARM%c: Get secure are block: area %04X, src %08X, dst %08X, len %08X, bsize %08X|%08X\n", PROCNUM?'7':'9', area, src, dst, len, size, size2);
-#endif
-						card.address = addr;
-					}
-					break;
-
-				case 0x04:		// Activate KEY2 encryption mode		- 910h+0
-					card.mode = CardMode_KEY2;
-#ifdef _LOG_NEW_BOOT
-					if (fp_dis7)
-						fprintf(fp_dis7, "ARM%c: Activate KEY2 encryption mode\n", PROCNUM?'7':'9');
-					printf("ARM%c: Activate KEY2 encryption mode\n", PROCNUM?'7':'9');
-#endif
-					//key2.applySeed(PROCNUM);
-					//card.delay = 0x910;
-					break;
-				case 0x06:		// Optional KEY2 disable				- 910h+?
-					break;
-				case 0x0A:		// Enter main data mode					- 910h+0
-#ifdef _LOG_NEW_BOOT
-					if (fp_dis7)
-						fprintf(fp_dis7, "ARM%c: Enter main data mode\n", PROCNUM?'7':'9');
-					printf("ARM%c: Enter main data mode\n", PROCNUM?'7':'9');
-#endif
-					card.mode = CardMode_DATA_LOAD;
-					//card.delay = 0x910;
-					break;
-				default:
-					slot1_device->write32(PROCNUM, REG_GCROMCTRL, val);
-					break;
-			}
-		}
-		else
-			if (card.mode == CardMode_DATA_LOAD)
-			{
-				slot1_device->write32(PROCNUM, REG_GCROMCTRL, val);
-#ifdef _LOG_NEW_BOOT
-				if (fp_dis7)
-					fprintf(fp_dis7, "ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
-				printf("ARM%c: main data mode cmd %02X (addr %08X, len %08X)\n", PROCNUM?'7':'9', card.command[0], card.address, card.transfer_count);
-#endif
-			}
-
-	if(card.delay == 0 && card.transfer_count == 0)
 	{
-		MMU_endTransfer(PROCNUM, val);
-		return;
+		//GCLOG("GC operation terminated or declined. please report, unless you just booted from firmware.\n");
 	}
+
+	//the transfer size is determined by the specification here in GCROMCTRL, not any logic private to the card.
+	card.transfer_count = blocksize;
 
 	val |= 0x00800000;
-    T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
-						
+	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val);
+
+	//if there was nothing to be done here, go ahead and flag it as done
+	if(card.transfer_count == 0)
+	{
+		MMU_endTransfer(PROCNUM);
+		return;
+	}
+
 	// Launch DMA if start flag was set to "DS Cart"
-	//printf("triggering card dma\n");
 	triggerDma(EDMAMode_Card);
 }
 
 template<int PROCNUM>
 u32 FASTCALL MMU_readFromGCControl()
 {
-	nds_dscard& card = MMU.dscard[PROCNUM];
+	GCBUS_Controller& card = MMU.dscard;
 
-	u32 val = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
+	u32 val = T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4);
 
 	return val;
 }
@@ -1504,57 +1388,18 @@ u32 FASTCALL MMU_readFromGCControl()
 template<int PROCNUM>
 u32 MMU_readFromGC()
 {
-	const int TEST_PROCNUM = PROCNUM;
+	GCBUS_Controller& card = MMU.dscard;
 
-	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
-	u32 val = 0;
-
+	//???? return the latched / last read value instead perhaps?
 	if(card.transfer_count == 0)
 		return 0;
 
-	u8 cmd = card.command[0];
-	if ((card.mode == CardMode_KEY1) || (card.mode == CardMode_KEY2))
-		cmd >>= 4;
+	u32 val = slot1_device->read_GCDATAIN(PROCNUM);
 
-	switch(cmd)
-	{
-		case 0x9F: //Dummy
-			val = 0xFFFFFFFF;
-			break;
-	
-		case 0x3C: //Switch to KEY1 mode
-			val = 0xFFFFFFFF;
-			break;
-
-		case 0x02:
-			val = T1ReadLong(MMU.CART_ROM, card.address);
-
-#ifdef _LOG_NEW_BOOT
-				{
-					extern FILE *fp_dis7;
-					if (fp_dis7)
-						fprintf(fp_dis7, "ARM%c: read secury area from %08X (val %08X)\n", PROCNUM?'7':'9', card.address, val);
-					printf("ARM%c: read secury area from %08X (val %08X)\n", PROCNUM?'7':'9', card.address, val);
-				}
-#endif
-			break;
-
-		default:
-			val = slot1_device->read32(TEST_PROCNUM, REG_GCDATAIN);
-			break;
-	}
-
-	card.address += 4;	// increment address
-
-	card.transfer_count -= 4;	// update transfer counter
-	if(card.transfer_count) // if transfer is not ended
-		return val;	// return data
-
-	// transfer is done
-	T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, 
-		T1ReadLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4) & 0x7F7FFFFF);
-
-	MMU_endTransfer(PROCNUM, T1ReadLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4));
+	//update transfer counter and complete the transfer if necessary
+	card.transfer_count -= 4;	
+	if(!card.transfer_count)
+		MMU_endTransfer(PROCNUM);
 
 	return val;
 }
@@ -2440,7 +2285,7 @@ void DmaController::doCopy()
 		if(nds.VCount==191) enable = 0;
 	}
 
-	if(startmode == EDMAMode_Card) todo = MMU.dscard[PROCNUM].transfer_count / sz;
+	if(startmode == EDMAMode_Card) todo = MMU.dscard.transfer_count / sz;
 	if(startmode == EDMAMode_GXFifo) todo = std::min(todo,(u32)112);
 
 	//determine how we're going to copy
@@ -3333,10 +3178,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 
 			case REG_GCROMCTRL :
-				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF0000) | val);
+				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
 			case REG_GCROMCTRL+2 :
-				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
+				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
 				return;
 		}
 
@@ -3771,7 +3616,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(32,adr,val); return;
 
 			case REG_GCDATAIN:
-				slot1_device->write32(ARMCPU_ARM9, REG_GCDATAIN,val);
+				slot1_device->write_GCDATAIN(ARMCPU_ARM9 ,val);
 				return;
 		}
 
@@ -4121,7 +3966,9 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 					return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2] | (val<<16);
 				}	
      
-			case REG_GCDATAIN: return MMU_readFromGC<ARMCPU_ARM9>();
+			case REG_GCDATAIN: 
+				return MMU_readFromGC<ARMCPU_ARM9>();
+
 			case REG_POWCNT1: return readreg_POWCNT1(32,adr);
 			case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(32,adr);
 
@@ -4415,10 +4262,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			}
 			
 			case REG_GCROMCTRL :
-				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF0000) | val);
+				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
 			case REG_GCROMCTRL+2 :
-				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
+				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
 				return;
 		}
 
@@ -4521,7 +4368,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 
 			case REG_GCDATAIN:
-				slot1_device->write32(ARMCPU_ARM7, REG_GCDATAIN,val);
+				slot1_device->write_GCDATAIN(ARMCPU_ARM7, val);
 				return;
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);

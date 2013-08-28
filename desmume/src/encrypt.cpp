@@ -19,6 +19,11 @@
 #include "MMU.h"
 #include "encrypt.h"
 
+//TODO - a lot of redundant code (maybe?) with utils/decrypt.cpp
+//we should try unifying all that.
+
+//TODO - endian unsafeness in here... dont like the way these take u32. maybe it makes sense and the user is genuinely supposed to present data in units of u32
+
 //================================================================================== KEY1
 #define DWNUM(i) ((i) >> 2)
 

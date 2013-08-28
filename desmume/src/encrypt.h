@@ -22,7 +22,7 @@
 
 struct _KEY1
 {
-	_KEY1(u8 *inKeyBufPtr)
+	_KEY1(const u8 *inKeyBufPtr)
 	{
 		if (keyBuf) delete keyBuf;
 		keyBuf = new u32 [0x412];
@@ -42,7 +42,7 @@ struct _KEY1
 
 	u32 *keyBuf;
 	u32 keyCode[3];
-	u8	*keyBufPtr;
+	const u8	*keyBufPtr;
 
 	void init(u32 idcode, u8 level, u8 modulo);
 	void applyKeycode(u8 modulo);

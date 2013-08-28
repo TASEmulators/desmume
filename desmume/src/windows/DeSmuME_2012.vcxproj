@@ -382,6 +382,7 @@
   <ItemGroup>
     <ClCompile Include="..\addons.cpp" />
     <ClCompile Include="..\addons\slot1comp_mc.cpp" />
+    <ClCompile Include="..\addons\slot1comp_protocol.cpp" />
     <ClCompile Include="..\addons\slot1comp_rom.cpp" />
     <ClCompile Include="..\addons\slot1_retail_auto.cpp" />
     <ClCompile Include="..\addons\slot1_retail_mcrom.cpp" />
@@ -664,6 +665,7 @@
   <ItemGroup>
     <ClInclude Include="..\addons.h" />
     <ClInclude Include="..\addons\slot1comp_mc.h" />
+    <ClInclude Include="..\addons\slot1comp_protocol.h" />
     <ClInclude Include="..\addons\slot1comp_rom.h" />
     <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\arm_jit.h" />

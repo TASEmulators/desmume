@@ -47,8 +47,8 @@
 //int xxctr=0;
 //#define LOG_ARM9
 //#define LOG_ARM7
-//#define dolog (currFrameCounter>15)
-bool dolog=false;
+#define dolog (currFrameCounter>30)
+//bool dolog=false;
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 

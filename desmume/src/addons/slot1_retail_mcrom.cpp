@@ -21,10 +21,22 @@
 #include "../NDSSystem.h"
 #include "slot1comp_mc.h"
 #include "slot1comp_rom.h"
+#include "slot1comp_protocol.h"
 
-class Slot1_Retail_MCROM : public ISlot1Interface
+//quick architecture overview:
+//MCROM receives GC bus commands from MMU.cpp
+//those are passed on to the protocol component for parsing
+//protocol calls back into MCROM via ISlot1Comp_Protocol_Client interface for things the protocol doesnt know about (the contents of the rom, chiefly)
+//MCROM utilizes the rom component for address logic and delivering data
+
+class Slot1_Retail_MCROM : public ISlot1Interface, public ISlot1Comp_Protocol_Client
 {
+private:
+	Slot1Comp_Protocol protocol;
+	Slot1Comp_Rom rom;
+
 public:
+
 	virtual Slot1Info const* info()
 	{
 		static Slot1InfoSimple info("Retail MC+ROM","Slot1 Retail MC+ROM (standard) card emulation");
@@ -33,28 +45,9 @@ public:
 
 	virtual void connect()
 	{
-	}
-
-	virtual void write32(u8 PROCNUM, u32 adr, u32 val)
-	{
-		switch(adr)
-		{
-		case REG_GCROMCTRL:
-			write32_GCROMCTRL(PROCNUM, val);
-			break;
-		}
-	}
-
-
-	virtual u32 read32(u8 PROCNUM, u32 adr)
-	{
-		switch(adr)
-		{
-		case REG_GCDATAIN:
-			return read32_GCDATAIN(PROCNUM);
-		default:
-			return 0;
-		}
+		protocol.reset(this);
+		protocol.chipId = gameInfo.chipID;
+		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
 	}
 
 	virtual u8 auxspi_transaction(int PROCNUM, u8 value)
@@ -67,262 +60,30 @@ public:
 		g_Slot1Comp_MC.auxspi_reset(PROCNUM);
 	}
 
-private:
-
-	u32 read32_GCDATAIN(u8 PROCNUM)
+	virtual void write_command(u8 PROCNUM, GC_Command command)
 	{
-		nds_dscard& card = MMU.dscard[PROCNUM];
-		u8 cmd = card.command[0];
-
-		if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
-			cmd >>= 4;
-
-		switch(cmd)
-		{
-			case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
-			case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
-			case 0xB8:	// 3rd Get ROM Chip ID - len 4 bytes
-				{
-					// Note: the BIOS stores the chip ID in main memory
-					// Most games continuously compare the chip ID with
-					// the value in memory, probably to know if the card
-					// was removed.
-					// As DeSmuME normally boots directly from the game, the chip
-					// ID in main mem is zero and this value needs to be
-					// zero too.
-
-					//staff of kings verifies this (it also uses the arm7 IRQ 20)
-					return gameInfo.chipID;
-				}
-				break;
-
-
-			// Data read
-			case 0x00:
-			case 0xB7:
-				{
-					//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
-					//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
-					//but there is no test case yet
-					u32 address = card.address & (gameInfo.mask);
-
-					// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real card
-					if((cmd == 0xB7) && (address < 0x8000))
-					{
-						//TODO - refactor this to include the PROCNUM, for debugging purposes if nothing else
-						//(can refactor gbaslot also)
-
-						//INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n",
-						//	card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
-
-						address = (0x8000 + (address&0x1FF));
-					}
-
-					//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
-					//we need to protect ourselves by returning 0xFF for things still out of range
-					if(address >= gameInfo.romsize)
-					{
-						DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
-						return 0xFFFFFFFF;
-					}
-
-					return T1ReadLong(MMU.CART_ROM, address);
-				}
-				break;
-			default:
-				//printf("ARM%c: SLOT1 invalid command %02X (read)\n", PROCNUM?'7':'9', cmd);
-				return 0;
-		} //switch(card.command[0])
-	} //read32_GCDATAIN
-
-	void write32_GCROMCTRL(u8 PROCNUM, u32 val)
-	{
-		nds_dscard& card = MMU.dscard[PROCNUM];
-
-		if (card.mode == CardMode_Normal)
-		{
-			switch(card.command[0])
-			{
-				case 0x00: //Data read (0000000000000000h Get Cartridge Header) - len 200h bytes
-				case 0xB7:
-					card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-					card.transfer_count = 0x200;
-					break;
-
-				case 0x90:	// 1st Get ROM Chip ID - len 4 bytes
-				case 0xB8:
-					card.address = 0;
-					card.transfer_count = 4;
-					break;
-
-				default:
-					card.address = 0;
-					card.transfer_count = 0;
-					printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_Normal\n", PROCNUM?'7':'9', card.command[0]);
-					break;
-			}
-			return;
-		}
-
-		if (card.mode == CardMode_KEY1 || card.mode == CardMode_KEY2)
-		{
-			u8 cmd = (card.command[0] >> 4);
-			switch(cmd)
-			{
-				case 0x01:	// 2nd Get ROM Chip ID - len 4 bytes
-					card.address = 0;
-					card.transfer_count = 4;
-				break;
-
-				default:
-					card.address = 0;
-					card.transfer_count = 0;
-					printf("ARM%c: SLOT1 invalid command %02X (write) - %s\n", PROCNUM?'7':'9', cmd, (card.mode == CardMode_KEY1)?"CardMode_KEY1":"CardMode_KEY2");
-				break;
-			}
-			return;
-		}
-
-		if (card.mode == CardMode_DATA_LOAD)
-		{
-			switch(card.command[0])
-			{
-				case 0xB7:	// Encrypted Data Read (B7aaaaaaaa000000h) - len 200h bytes
-					card.address = 	(card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
-					card.transfer_count = 0x200;
-				break;
-
-				case 0xB8:	// 3nd Get ROM Chip ID - len 4 bytes
-					card.address = 0;
-					card.transfer_count = 4;
-				break;
-
-				default:
-					card.address = 0;
-					card.transfer_count = 0;
-					card.mode = CardMode_KEY1;
-					printf("ARM%c: SLOT1 invalid command %02X (write) - CardMode_DATA_LOAD\n", PROCNUM?'7':'9', card.command[0]);
-				break;
-			}
-			return;
-		}
+		protocol.write_command(command);
 	}
 
+	virtual void write_GCDATAIN(u8 PROCNUM, u32 val)
+	{
+		protocol.write_GCDATAIN(PROCNUM, val);
+	}
+	virtual u32 read_GCDATAIN(u8 PROCNUM)
+	{
+		return protocol.read_GCDATAIN(PROCNUM);
+	}
+	virtual void slot1client_startOperation(eSlot1Operation operation)
+	{
+		rom.start(operation,protocol.address);
+	}
 
+private:
+
+	u32 slot1client_read_GCDATAIN(eSlot1Operation operation)
+	{
+		return rom.read();
+	}
 };
 
 ISlot1Interface* construct_Slot1_Retail_MCROM() { return new Slot1_Retail_MCROM(); }
-
-	//		///writetoGCControl:
-	//// --- Ninja SD commands -------------------------------------
-
-	//	// NJSD init/reset
-	//	case 0x20:
-	//		{
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//		}
-	//		break;
-
-	//	// NJSD_sendCLK()
-	//	case 0xE0:
-	//		{
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//			NDS_makeInt(PROCNUM, 20);
-	//		}
-	//		break;
-
-	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
-	//	case 0xF0:
-	//	case 0xF1:
-	//		switch (card.command[2])
-	//		{
-	//		// GO_IDLE_STATE
-	//		case 0x40:
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		case 0x42:  // ALL_SEND_CID
-	//		case 0x43:  // SEND_RELATIVE_ADDR
-	//		case 0x47:  // SELECT_CARD
-	//		case 0x49:  // SEND_CSD
-	//		case 0x4D:
-	//		case 0x77:  // APP_CMD
-	//		case 0x69:  // SD_APP_OP_COND
-	//			card.address = 0;
-	//			card.transfer_count = 6;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		// SET_BLOCKLEN
-	//		case 0x50:
-	//			card.address = 0;
-	//			card.transfer_count = 6;
-	//			card.blocklen = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		// READ_SINGLE_BLOCK
-	//		case 0x51:
-	//			card.address = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-	//			card.transfer_count = (card.blocklen + 3) >> 2;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-	//		}
-	//		break;
-
-	//	// --- Ninja SD commands end ---------------------------------
-
-
-
-	//		//GCDATAIN:
-	//	// --- Ninja SD commands -------------------------------------
-
-	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
-	//	case 0xF0:
-	//	case 0xF1:
-	//		switch (card.command[2])
-	//		{
-	//		// ALL_SEND_CID
-	//		case 0x42:
-	//			if (card.transfer_count == 2) val = 0x44534A4E;
-	//			else val = 0x00000000;
-
-	//		// SEND_RELATIVE_ADDR
-	//		case 0x43:
-	//		case 0x47:
-	//		case 0x49:
-	//		case 0x50:
-	//			val = 0x00000000;
-	//			break;
-
-	//		case 0x4D:
-	//			if (card.transfer_count == 2) val = 0x09000000;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// APP_CMD
-	//		case 0x77:
-	//			if (card.transfer_count == 2) val = 0x00000037;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// SD_APP_OP_COND
-	//		case 0x69:
-	//			if (card.transfer_count == 2) val = 0x00008000;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// READ_SINGLE_BLOCK
-	//		case 0x51:
-	//			val = 0x00000000;
-	//			break;
-	//		}
-	//		break;
-
-	//	// --- Ninja SD commands end ---------------------------------
-
-

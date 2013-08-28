@@ -39,23 +39,38 @@ public:
 
 	virtual void connect()
 	{
-		//TODO - check game ID in core emulator and select right implementation
-		mSelectedImplementation = slot1_List[NDS_SLOT1_RETAIL_MCROM];
+
+		NDS_SLOT1_TYPE selection = NDS_SLOT1_RETAIL_MCROM;
+		
+		//check game ID in core emulator and select right implementation
+		if(!memcmp(gameInfo.header.gameCode,"UORE",4))
+			selection = NDS_SLOT1_RETAIL_NAND;
+
+		mSelectedImplementation = slot1_List[selection];
+		mSelectedImplementation->connect();
+		printf("slot1 auto-selected device type: %s\n",mSelectedImplementation->info()->name());
+
 	}
 
 	virtual void disconnect()
 	{
+		if(mSelectedImplementation) mSelectedImplementation->disconnect();
 		mSelectedImplementation = NULL;
 	}
 
-	virtual void write32(u8 PROCNUM, u32 adr, u32 val)
+	virtual void write_command(u8 PROCNUM, GC_Command command)
 	{
-		mSelectedImplementation->write32(PROCNUM, adr, val);
+		mSelectedImplementation->write_command(PROCNUM, command);
 	}
 
-	virtual u32 read32(u8 PROCNUM, u32 adr)
+	virtual void write_GCDATAIN(u8 PROCNUM, u32 val)
 	{
-		return mSelectedImplementation->read32(PROCNUM, adr);
+		mSelectedImplementation->write_GCDATAIN(PROCNUM, val);
+	}
+
+	virtual u32 read_GCDATAIN(u8 PROCNUM)
+	{
+		return mSelectedImplementation->read_GCDATAIN(PROCNUM);
 	}
 
 	virtual u8 auxspi_transaction(int PROCNUM, u8 value)
