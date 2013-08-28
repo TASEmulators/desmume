@@ -49,7 +49,6 @@
 #endif
 
 //TODO - do we need these here?
-_KEY1 key1(&MMU.ARM7_BIOS[0x0030]);
 _KEY2 key2;
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
@@ -1035,8 +1034,10 @@ void MMU_Reset()
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
 
-	MMU.dscard.transfer_count = 0;
-	MMU.dscard.mode = eCardMode_RAW;
+	MMU.dscard[0].transfer_count = 0;
+	MMU.dscard[0].mode = eCardMode_RAW;
+	MMU.dscard[1].transfer_count = 0;
+	MMU.dscard[1].mode = eCardMode_RAW;
 
 
 	//HACK!!!
@@ -1281,9 +1282,8 @@ bool DSI_TSC::load_state(EMUFILE* is)
 
 void MMU_GC_endTransfer(u32 PROCNUM)
 {
-	u32 val = T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0x7F7FFFFF;
-	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val);
-	T1WriteLong(MMU.MMU_MEM[1][0x40], 0x1A4, val);
+	u32 val = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4) & 0x7F7FFFFF;
+	T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 
 	// if needed, throw irq for the end of transfer
 	if(MMU.AUX_SPI_CNT & 0x4000)
@@ -1317,7 +1317,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	GCLOG("[GC] [%07d] GCControl: %08X (dbsize:%d)\n",gcctr,val,dbsize);
 	gcctr++;
 	
-	GCBUS_Controller& card = MMU.dscard;
+	GCBUS_Controller& card = MMU.dscard[PROCNUM];
 
 	//....pick apart the fields....
 	int keylength = (val&0x1FFF); //key1length high gcromctrl[21:16] ??
@@ -1337,63 +1337,58 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	int blocksize = blocksize_table[blocksize_field];
 
 	//store written value, without bit 31 and bit 23 set (those will be patched in as operations proceed)
-	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val & 0x7F7FFFFF);
-	T1WriteLong(MMU.MMU_MEM[1][0x40], 0x1A4, val & 0x7F7FFFFF);
+	//T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
 
 	//if this operation has been triggered by strobing that bit, run it
 	if (key2_applyseed)
 	{
-		key2.applySeed(0);
+		key2.applySeed(PROCNUM);
 	}
 
 	//pluck out the command registers into a more convenient format
-	GC_Command rawcmd = *(GC_Command*)&MMU.MMU_MEM[0][0x40][0x1A8];
+	GC_Command rawcmd = *(GC_Command*)&MMU.MMU_MEM[PROCNUM][0x40][0x1A8];
 
 	//when writing a 1 to the start bit, a command runs.
 	//the command is transferred to the GC during the next 8 clocks
 	if(start)
 	{
 		GCLOG("[GC] command:"); rawcmd.print();
-		slot1_device->write_command(PROCNUM,rawcmd);
+		slot1_device->write_command(PROCNUM, rawcmd);
 	}
 	else
 	{
-		T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val & 0x7F7FFFFF);
-		T1WriteLong(MMU.MMU_MEM[1][0x40], 0x1A4, val & 0x7F7FFFFF);
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
 		GCLOG("SCUTTLE????\n");
 		return;
-		//GCLOG("GC operation terminated or declined. please report, unless you just booted from firmware.\n");
 	}
 
 	//the transfer size is determined by the specification here in GCROMCTRL, not any logic private to the card.
 	card.transfer_count = blocksize;
 
-	val |= 0x00800000;
-	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val);
-	T1WriteLong(MMU.MMU_MEM[1][0x40], 0x1A4, val);
-
 	//if there was nothing to be done here, go ahead and flag it as done
 	if(card.transfer_count == 0)
 	{
-		MMU_GC_endTransfer(0);
-		MMU_GC_endTransfer(1);
+		MMU_GC_endTransfer(PROCNUM);
 		return;
 	}
+
+	val |= 0x00800000;
+	T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 
 	// Launch DMA if start flag was set to "DS Cart"
 	triggerDma(EDMAMode_Card);
 }
 
-template<int PROCNUM>
+/*template<int PROCNUM>
 u32 FASTCALL MMU_readFromGCControl()
 {
 	return T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4);
-}
+}*/
 
 template<int PROCNUM>
 u32 MMU_readFromGC()
 {
-	GCBUS_Controller& card = MMU.dscard;
+	GCBUS_Controller& card = MMU.dscard[PROCNUM];
 
 	//???? return the latched / last read value instead perhaps?
 	if(card.transfer_count == 0)
@@ -2293,7 +2288,7 @@ void DmaController::doCopy()
 		if(nds.VCount==191) enable = 0;
 	}
 
-	if(startmode == EDMAMode_Card) todo = MMU.dscard.transfer_count / sz;
+	if(startmode == EDMAMode_Card) todo = MMU.dscard[PROCNUM].transfer_count / sz;
 	if(startmode == EDMAMode_GXFifo) todo = std::min(todo,(u32)112);
 
 	//determine how we're going to copy
@@ -4035,31 +4030,6 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 		switch(adr)
 		{
-			case REG_GCCMDOUT:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+1:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+1,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+2:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+2,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+3:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+3,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+4:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+4,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+5:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+5,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+6:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+6,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+7:
-				T1WriteByte(MMU.MMU_MEM[0][0x40],0x1A8+7,val); //stuff in ARM9 for now
-				break;
-
 			case REG_IF: REG_IF_WriteByte<ARMCPU_ARM7>(0,val); break;
 			case REG_IF+1: REG_IF_WriteByte<ARMCPU_ARM7>(1,val); break;
 			case REG_IF+2: REG_IF_WriteByte<ARMCPU_ARM7>(2,val); break;
@@ -4173,19 +4143,6 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		//Address is an IO register
 		switch(adr)
 		{
-			case REG_GCCMDOUT:
-				T1WriteWord(MMU.MMU_MEM[0][0x40],0x1A8,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+2:
-				T1WriteWord(MMU.MMU_MEM[0][0x40],0x1A8+2,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+4:
-				T1WriteWord(MMU.MMU_MEM[0][0x40],0x1A8+4,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+6:
-				T1WriteWord(MMU.MMU_MEM[0][0x40],0x1A8+6,val); //stuff in ARM9 for now
-				break;
-
 		case REG_DISPA_VCOUNT:
 			if (nds.VCount >= 202 && nds.VCount <= 212)
 			{
@@ -4308,10 +4265,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			}
 			
 			case REG_GCROMCTRL :
-				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF0000) | val);
+				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[1][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
 			case REG_GCROMCTRL+2 :
-				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
+				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[1][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
 				return;
 		}
 
@@ -4369,13 +4326,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
-			case REG_GCCMDOUT:
-				T1WriteLong(MMU.MMU_MEM[0][0x40],0x1A8,val); //stuff in ARM9 for now
-				break;
-			case REG_GCCMDOUT+4:
-				T1WriteLong(MMU.MMU_MEM[0][0x40],0x1A8+4,val); //stuff in ARM9 for now
-				break;
-
 			case REG_RTC:
 				rtcWrite((u16)val);
 				break;
@@ -4670,8 +4620,8 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				u32 val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
 			}	
-			case REG_GCROMCTRL:
-				return MMU_readFromGCControl<ARMCPU_ARM7>();
+			//case REG_GCROMCTRL:
+			//	return MMU_readFromGCControl<ARMCPU_ARM7>();
 
 			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
