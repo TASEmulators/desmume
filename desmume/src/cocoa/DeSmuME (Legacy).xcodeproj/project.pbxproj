@@ -851,6 +851,13 @@
 		ABAC890A14B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
 		ABAC890B14B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
 		ABAC890C14B7943E001B299F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = ABAC890814B7943E001B299F /* main.m */; };
+		ABB9215A17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9215B17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9215C17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9215D17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9215E17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9215F17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9216017CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
 		ABBF053014B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
@@ -1382,6 +1389,8 @@
 		AB8FE37514B652EC009E20B1 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
 		AB97D29516964D01002AC11B /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		ABAC890814B7943E001B299F /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		ABB9215817CEB53A0049D4C5 /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
+		ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
 		ABBF045E14B5144D00E505A0 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "translations/English.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
 		ABBF04CB14B51BBB00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF04CC14B51BC300E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1844,6 +1853,7 @@
 				AB4C80F017C5DA240024D479 /* slot1_retail_mcrom.cpp */,
 				956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */,
 				AB4C80F117C5DA240024D479 /* slot1comp_mc.cpp */,
+				ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */,
 				AB4C80F317C5DA240024D479 /* slot1comp_rom.cpp */,
 				AB06CD9F135B8AED00E977B3 /* slot2_expMemory.cpp */,
 				AB06CDA0135B8AED00E977B3 /* slot2_gbagame.cpp */,
@@ -1854,6 +1864,7 @@
 				AB06CDA5135B8AED00E977B3 /* slot2_piano.cpp */,
 				AB06CDA6135B8AED00E977B3 /* slot2_rumblepak.cpp */,
 				AB4C80F217C5DA240024D479 /* slot1comp_mc.h */,
+				ABB9215817CEB53A0049D4C5 /* slot1comp_protocol.h */,
 				AB4C80F417C5DA240024D479 /* slot1comp_rom.h */,
 			);
 			name = addons;
@@ -2929,6 +2940,7 @@
 				AB4C80FF17C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C810017C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815B17C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9215C17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3075,6 +3087,7 @@
 				AB4C810B17C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C810C17C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815E17C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9215F17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3221,6 +3234,7 @@
 				AB4C80F717C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C80F817C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815917C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9215A17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3337,6 +3351,7 @@
 				AB4C810717C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C810817C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815D17C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9215E17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3453,6 +3468,7 @@
 				AB4C810F17C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C811017C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815F17C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9216017CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3579,6 +3595,7 @@
 				AB4C80FB17C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C80FC17C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815A17C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9215B17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3725,6 +3742,7 @@
 				AB4C810317C5DA240024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C810417C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815C17C5DC240024D479 /* encrypt.cpp in Sources */,
+				ABB9215D17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

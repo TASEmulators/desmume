@@ -391,6 +391,9 @@
 		AB8967DA16D2ED0700F826F1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */; };
 		AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
 		AB8967DE16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
+		AB8B7AAC17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */; };
+		AB8B7AAD17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */; };
+		AB8B7AAE17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */; };
 		AB901BDE1420706100348EEC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB901BDD1420706100348EEC /* Localizable.strings */; };
 		AB9038A617C5ECFD00F410BD /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
 		AB9038A717C5ECFD00F410BD /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
@@ -829,6 +832,8 @@
 		AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayWindowController.h; sourceTree = "<group>"; };
 		AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayWindowController.mm; sourceTree = "<group>"; };
 		AB8967DC16D2ED2700F826F1 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/DisplayWindow.xib; sourceTree = "<group>"; };
+		AB8B7AAA17CE8C440051CEBF /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
+		AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
 		AB901BDF1420706B00348EEC /* Japanese */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Japanese; path = translations/Japanese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE01420706F00348EEC /* French */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = French; path = translations/French.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE11420707400348EEC /* Italian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Italian; path = translations/Italian.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1621,6 +1626,7 @@
 				AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */,
 				AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */,
 				AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */,
+				AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */,
 				AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */,
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
@@ -1631,6 +1637,7 @@
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
 				AB9038AC17C5ED2200F410BD /* slot1comp_mc.h */,
+				AB8B7AAA17CE8C440051CEBF /* slot1comp_protocol.h */,
 				AB9038AE17C5ED2200F410BD /* slot1comp_rom.h */,
 			);
 			name = addons;
@@ -2267,6 +2274,7 @@
 				AB80E04D142BC4A800A52038 /* cocoa_util.mm in Sources */,
 				ABE5DFE5143FB1DA00835AD8 /* cocoa_videofilter.mm in Sources */,
 				AB0F291D14BE6F4A009ABC6F /* OGLRender.cpp in Sources */,
+				AB8B7AAD17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
 				AB3ACB7214C2361100D7D192 /* appDelegate.mm in Sources */,
 				AB3ACB7314C2361100D7D192 /* cheatWindowDelegate.mm in Sources */,
 				AB3ACB7614C2361100D7D192 /* inputPrefsView.mm in Sources */,
@@ -2485,6 +2493,7 @@
 				AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 				AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
 				AB29B33116D4BEBF000EF671 /* InputManager.mm in Sources */,
+				AB8B7AAC17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
 				AB82445B1704AE9A00B8EE20 /* utilities.c in Sources */,
 				AB01005E170D07B000D70FBE /* InputProfileController.mm in Sources */,
 				ABD10AE71715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
@@ -2586,6 +2595,7 @@
 				ABB3C6C41501C04F00E0C22E /* mc.cpp in Sources */,
 				ABB3C6C61501C04F00E0C22E /* MMU.cpp in Sources */,
 				ABB3C6C71501C04F00E0C22E /* movie.cpp in Sources */,
+				AB8B7AAE17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
 				ABB3C6C81501C04F00E0C22E /* NDSSystem.cpp in Sources */,
 				ABB3C6C91501C04F00E0C22E /* OGLRender.cpp in Sources */,
 				ABB3C6CA1501C04F00E0C22E /* path.cpp in Sources */,

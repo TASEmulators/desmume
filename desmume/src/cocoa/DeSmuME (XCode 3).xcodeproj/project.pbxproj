@@ -1042,6 +1042,11 @@
 		ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		ABAD104515ACE7A00000EC47 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
+		ABB9212117CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9212217CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9212317CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9212417CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
+		ABB9212517CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
 		ABBCE29715ACB1FF00A2C965 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */; };
 		ABBCE29815ACB1FF00A2C965 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */; };
 		ABBF04A614B515F300E505A0 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */; };
@@ -1268,6 +1273,8 @@
 		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		ABB9211F17CEB4110049D4C5 /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
+		ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
 		ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = Images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
 		ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_CodeBreaker_32x32.png; path = Images/Icon_CodeBreaker_32x32.png; sourceTree = "<group>"; };
 		ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DeSmuME_32x32.png; path = Images/Icon_DeSmuME_32x32.png; sourceTree = "<group>"; };
@@ -2020,6 +2027,7 @@
 				AB4C808817C5D7780024D479 /* slot1_retail_mcrom.cpp */,
 				AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */,
 				AB4C808917C5D7780024D479 /* slot1comp_mc.cpp */,
+				ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */,
 				AB4C808B17C5D7780024D479 /* slot1comp_rom.cpp */,
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
@@ -2030,6 +2038,7 @@
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
 				AB4C808A17C5D7780024D479 /* slot1comp_mc.h */,
+				ABB9211F17CEB4110049D4C5 /* slot1comp_protocol.h */,
 				AB4C808C17C5D7780024D479 /* slot1comp_rom.h */,
 			);
 			name = addons;
@@ -3098,6 +3107,7 @@
 				AB4C809F17C5D7780024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C80A017C5D7780024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C80AE17C5D7A00024D479 /* advanscene.cpp in Sources */,
+				ABB9212517CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3233,6 +3243,7 @@
 				AB4C809317C5D7780024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C809417C5D7780024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C80AB17C5D7A00024D479 /* advanscene.cpp in Sources */,
+				ABB9212217CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3398,6 +3409,7 @@
 				AB4C808F17C5D7780024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C809017C5D7780024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C80AA17C5D7A00024D479 /* advanscene.cpp in Sources */,
+				ABB9212117CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3563,6 +3575,7 @@
 				AB4C809B17C5D7780024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C809C17C5D7780024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C80AD17C5D7A00024D479 /* advanscene.cpp in Sources */,
+				ABB9212417CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3698,6 +3711,7 @@
 				AB4C809717C5D7780024D479 /* slot1comp_mc.cpp in Sources */,
 				AB4C809817C5D7780024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C80AC17C5D7A00024D479 /* advanscene.cpp in Sources */,
+				ABB9212317CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

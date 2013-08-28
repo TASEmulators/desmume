@@ -296,7 +296,7 @@ public:
 
 };
 
-enum eCardMode : u32
+enum eCardMode
 {
 	//when the GC system is first booted up, the protocol is in raw mode
 	eCardMode_RAW = 0,

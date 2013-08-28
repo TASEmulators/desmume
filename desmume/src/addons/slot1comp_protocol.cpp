@@ -19,7 +19,7 @@
 #include "MMU.h"
 #include "armcpu.h"
 #include "encrypt.h"
-#include "utils/decrypt/decrypt.h"
+#include "../utils/decrypt/decrypt.h"
 
 static _KEY1 key1((const u8*)arm7_key);
 
