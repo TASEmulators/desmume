@@ -33,5 +33,6 @@
 void OpenConsole();
 void CloseConsole();
 void ConsoleAlwaysTop(bool top);
+void readConsole();
 
 #endif
