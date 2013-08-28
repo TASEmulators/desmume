@@ -38,8 +38,9 @@ enum eSlot1Operation
 	//----------
 
 	//----------
-	//KEY2 mode operations
+	//KEY1 mode operations
 	eSlot1Operation_1x_ChipID,
+	eSlot1Operation_2x_SecureAreaLoad,
 	//----------
 	
 	//----------

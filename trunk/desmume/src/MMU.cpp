@@ -1355,6 +1355,9 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	}
 	else
 	{
+		T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val & 0x7F7FFFFF);
+		GCLOG("SCUTTLE????\n");
+		return;
 		//GCLOG("GC operation terminated or declined. please report, unless you just booted from firmware.\n");
 	}
 

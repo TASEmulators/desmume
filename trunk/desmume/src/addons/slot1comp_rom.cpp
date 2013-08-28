@@ -38,6 +38,15 @@ u32 Slot1Comp_Rom::read()
 		}
 		break;
 
+	case eSlot1Operation_2x_SecureAreaLoad:
+		{
+			//see B7 for details
+			address &= gameInfo.mask; //sanity check
+			u32 ret = T1ReadLong(MMU.CART_ROM, address);
+			address = (address&~0xFFF) + ((address+4)&0xFFF);
+			return ret;
+		}
+
 	case eSlot1Operation_B7_Read:
 		{
 			//is this legitimate? need some way to verify.

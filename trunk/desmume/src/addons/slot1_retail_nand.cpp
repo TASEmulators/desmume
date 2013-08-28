@@ -77,6 +77,7 @@ public:
 		switch(operation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
+			case eSlot1Operation_2x_SecureAreaLoad:
 			case eSlot1Operation_B7_Read:
 				rom.start(operation,protocol.address);
 				return;
@@ -113,6 +114,7 @@ public:
 		switch(operation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
+			case eSlot1Operation_2x_SecureAreaLoad:
 			case eSlot1Operation_B7_Read:
 				return rom.read();
 		}
@@ -142,6 +144,7 @@ public:
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
 			case eSlot1Operation_B7_Read:
+			case eSlot1Operation_2x_SecureAreaLoad:
 				return;
 		}
 

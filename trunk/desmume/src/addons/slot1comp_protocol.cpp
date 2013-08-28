@@ -90,7 +90,7 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 	GCLOG("[GC] (key1-decrypted):"); command.print();
 
 	//and process it:
-	int cmd = command.bytes[0]&0xF0;
+	int cmd = command.bytes[0];
 	switch(cmd&0xF0)
 	{
 		case 0x10:
@@ -99,7 +99,17 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 			//we handle this operation ourselves
 			break;
 		case 0x20:
+			operation = eSlot1Operation_2x_SecureAreaLoad;
 			delay = 0x910, length = 0x11A8;
+			
+			//TODO - more endian-safe way of doing this (theres examples in R4)
+			{
+				u64 cmd64 = bswap64(*(u64*)command.bytes);
+				//todo - parse into blocknumber
+				address = (u32)((cmd64 >> 32) & 0xF000);
+			}
+			client->slot1client_startOperation(operation);
+
 			break;
 		case 0x30:
 			break;
@@ -130,7 +140,7 @@ void Slot1Comp_Protocol::write_command_NORMAL(GC_Command command)
 		{
 			operation = eSlot1Operation_B7_Read;
 
-			//TODO - more endian-safe way of doing this
+			//TODO - more endian-safe way of doing this (theres examples in R4)
 			u64 cmd64 = bswap64(*(u64*)command.bytes);
 			address = (u32)((cmd64 >> 24));
 			length = 0x200;
@@ -191,11 +201,7 @@ u32 Slot1Comp_Protocol::read_GCDATAIN(u8 PROCNUM)
 {
 	switch(operation)
 	{
-		case eSlot1Operation_00_ReadHeader_Unencrypted:
-		case eSlot1Operation_B7_Read:
-			return client->slot1client_read_GCDATAIN(operation);
-
-		case eSlot1Operation_Unknown:
+		default:
 			return client->slot1client_read_GCDATAIN(operation);
 
 		case eSlot1Operation_90_ChipID:
