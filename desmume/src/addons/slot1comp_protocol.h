@@ -55,9 +55,9 @@ enum eSlot1Operation
 class ISlot1Comp_Protocol_Client
 {
 public:
-	virtual void slot1client_write_GCDATAIN(eSlot1Operation operation, u32 val) { }
-	virtual u32 slot1client_read_GCDATAIN(eSlot1Operation operation) = 0;
 	virtual void slot1client_startOperation(eSlot1Operation operation) {}
+	virtual u32 slot1client_read_GCDATAIN(eSlot1Operation operation) = 0;
+	virtual void slot1client_write_GCDATAIN(eSlot1Operation operation, u32 val) {}
 };
 
 

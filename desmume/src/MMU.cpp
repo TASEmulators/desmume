@@ -1279,7 +1279,7 @@ bool DSI_TSC::load_state(EMUFILE* is)
 	return true;
 }
 
-static void FASTCALL MMU_endTransfer(u32 PROCNUM)
+void MMU_GC_endTransfer(u32 PROCNUM)
 {
 	u32 val = T1ReadLong(MMU.MMU_MEM[0][0x40], 0x1A4) & 0x7F7FFFFF;
 	T1WriteLong(MMU.MMU_MEM[0][0x40], 0x1A4, val);
@@ -1367,7 +1367,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	//if there was nothing to be done here, go ahead and flag it as done
 	if(card.transfer_count == 0)
 	{
-		MMU_endTransfer(PROCNUM);
+		MMU_GC_endTransfer(PROCNUM);
 		return;
 	}
 
@@ -1399,7 +1399,7 @@ u32 MMU_readFromGC()
 	//update transfer counter and complete the transfer if necessary
 	card.transfer_count -= 4;	
 	if(!card.transfer_count)
-		MMU_endTransfer(PROCNUM);
+		MMU_GC_endTransfer(PROCNUM);
 
 	return val;
 }

@@ -319,6 +319,8 @@ enum eCardMode : u32
 //#define GCLOG(...) printf(__VA_ARGS__);
 #define GCLOG(...)
 
+void MMU_GC_endTransfer(u32 PROCNUM);
+
 struct GC_Command
 {
 	u8 bytes[8];
