@@ -64,7 +64,6 @@ public:
 	{
 		protocol.write_command(command);
 	}
-
 	virtual void write_GCDATAIN(u8 PROCNUM, u32 val)
 	{
 		protocol.write_GCDATAIN(PROCNUM, val);
@@ -73,6 +72,7 @@ public:
 	{
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
+
 	virtual void slot1client_startOperation(eSlot1Operation operation)
 	{
 		rom.start(operation,protocol.address);
