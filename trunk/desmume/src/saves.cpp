@@ -242,8 +242,11 @@ SFORMAT SF_MMU[]={
 	{ "BUWR", 4, 1,       &MMU.fw.writeable_buffer},
 	//end memory chips
 
-	{ "GCTC", 4, 1,       &MMU.dscard.transfer_count},
-	{ "GCMO", 4, 1,       &MMU.dscard.mode},
+	//TODO:slot-1 plugins
+	{ "GC0T", 4, 1,       &MMU.dscard[0].transfer_count},
+	{ "GC0M", 4, 1,       &MMU.dscard[0].mode},
+	{ "GC1T", 4, 1,       &MMU.dscard[1].transfer_count},
+	{ "GC1M", 4, 1,       &MMU.dscard[1].mode},
 	//{ "MCHT", 4, 1,       &MMU.CheckTimers},
 	//{ "MCHD", 4, 1,       &MMU.CheckDMAs},
 

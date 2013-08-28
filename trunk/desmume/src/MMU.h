@@ -351,7 +351,7 @@ struct GC_Command
 struct GCBUS_Controller
 {
 	u32 transfer_count;
-	eCardMode mode;
+	eCardMode mode; //probably only one of these
 };
 
 #define DUP2(x)  x, x
@@ -467,7 +467,7 @@ struct MMU_struct
 
 	fw_memory_chip fw;
 
-	GCBUS_Controller dscard;
+	GCBUS_Controller dscard[2];
 };
 
 
