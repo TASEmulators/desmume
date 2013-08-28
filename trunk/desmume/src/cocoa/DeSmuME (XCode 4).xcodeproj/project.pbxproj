@@ -627,6 +627,9 @@
 		ABEFCF64141AB82A000CC0CD /* AppIcon_SaveState.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABEFCF60141AB82A000CC0CD /* AppIcon_SaveState.icns */; };
 		ABF2B9FB16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
 		ABF2B9FC16904133000FF7C0 /* troubleshootingWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */; };
+		ABF55C2817CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF55C2717CEB38F00A193FD /* slot1comp_protocol.cpp */; };
+		ABF55C2917CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF55C2717CEB38F00A193FD /* slot1comp_protocol.cpp */; };
+		ABF55C2A17CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF55C2717CEB38F00A193FD /* slot1comp_protocol.cpp */; };
 		ABFE150714C92FF5005D6699 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */; };
 		ABFE150814C92FF5005D6699 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FB14C92FF5005D6699 /* bilinear.cpp */; };
 		ABFE150914C92FF5005D6699 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABFE14FC14C92FF5005D6699 /* epx.cpp */; };
@@ -1081,6 +1084,8 @@
 		ABEFCF60141AB82A000CC0CD /* AppIcon_SaveState.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_SaveState.icns; sourceTree = "<group>"; };
 		ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = troubleshootingWindowDelegate.h; sourceTree = "<group>"; };
 		ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = troubleshootingWindowDelegate.mm; sourceTree = "<group>"; };
+		ABF55C2617CEB38F00A193FD /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
+		ABF55C2717CEB38F00A193FD /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
 		ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = 2xsai.cpp; sourceTree = "<group>"; };
 		ABFE14FB14C92FF5005D6699 /* bilinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bilinear.cpp; sourceTree = "<group>"; };
 		ABFE14FC14C92FF5005D6699 /* epx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = epx.cpp; sourceTree = "<group>"; };
@@ -1621,6 +1626,7 @@
 				ABFE7C8817C5D03C0028DC56 /* slot1_retail_mcrom.cpp */,
 				AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */,
 				ABFE7C8917C5D03C0028DC56 /* slot1comp_mc.cpp */,
+				ABF55C2717CEB38F00A193FD /* slot1comp_protocol.cpp */,
 				ABFE7C8A17C5D03C0028DC56 /* slot1comp_rom.cpp */,
 				ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */,
 				ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */,
@@ -1631,6 +1637,7 @@
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
 				ABFE7C8517C5D03C0028DC56 /* slot1comp_mc.h */,
+				ABF55C2617CEB38F00A193FD /* slot1comp_protocol.h */,
 				ABFE7C8617C5D03C0028DC56 /* slot1comp_rom.h */,
 			);
 			name = addons;
@@ -2324,6 +2331,7 @@
 				ABFE7C8F17C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */,
 				ABFE7C9217C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */,
 				ABFE7C9517C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */,
+				ABF55C2917CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2490,6 +2498,7 @@
 				ABFE7C8E17C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */,
 				ABFE7C9117C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */,
 				ABFE7C9417C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */,
+				ABF55C2817CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2645,6 +2654,7 @@
 				ABFE7C9017C5D03C0028DC56 /* slot1_retail_mcrom.cpp in Sources */,
 				ABFE7C9317C5D03C0028DC56 /* slot1comp_mc.cpp in Sources */,
 				ABFE7C9617C5D03C0028DC56 /* slot1comp_rom.cpp in Sources */,
+				ABF55C2A17CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
