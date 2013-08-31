@@ -187,6 +187,9 @@ struct NDSSystem
 	u16 scr_touchX;
 	u16 scr_touchY;
 
+	//whether the console is using our faked-bootup process
+	BOOL isFakeBooted;
+	
 	BOOL isTouch;
 	u16 pad;
 	
@@ -478,6 +481,9 @@ void NDS_Reset();
 int NDS_ImportSave(const char *filename, u32 force_size = 0);
 u32 NDS_ImportSaveSize(const char *filename);
 bool NDS_ExportSave(const char *filename);
+
+bool NDS_LegitBoot();
+bool NDS_FakeBoot();
 
 void nds_savestate(EMUFILE* os);
 bool nds_loadstate(EMUFILE* is, int size);
