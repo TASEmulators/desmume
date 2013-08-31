@@ -16,6 +16,8 @@
 */
 
 #include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 #include <string>
 #include "fsnitro.h"
 
@@ -192,7 +194,7 @@ bool FS_NITRO::loadFileTables()
 	uintptr_t	*store = new uintptr_t[numDirs];
 	
 	if (!store) return false;
-	memset(store, NULL, sizeof(uintptr_t) * numDirs);
+	memset(store, 0, sizeof(uintptr_t) * numDirs);
 
 	strcpy((char*)fnt[0].filename, "/");
 	fnt[0].parentID = 0xF000;
