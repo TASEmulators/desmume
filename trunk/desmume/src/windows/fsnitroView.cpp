@@ -24,6 +24,11 @@
 #include "../path.h"
 #include "../utils/fsnitro.h"
 
+//not available on old SDK versions
+#ifndef ILC_HIGHQUALITYSCALE
+#define ILC_HIGHQUALITYSCALE 0x00020000
+#endif
+
 HMENU	popupMenu = NULL;
 HWND	hBar = NULL;
 FS_NITRO *fs = NULL;
