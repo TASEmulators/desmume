@@ -386,6 +386,7 @@
     <ClCompile Include="..\addons\slot1comp_rom.cpp" />
     <ClCompile Include="..\addons\slot1_retail_auto.cpp" />
     <ClCompile Include="..\addons\slot1_retail_mcrom.cpp" />
+    <ClCompile Include="..\addons\slot1_retail_mcrom_debug.cpp" />
     <ClCompile Include="..\addons\slot2_piano.cpp" />
     <ClCompile Include="..\addons\slot1_none.cpp" />
     <ClCompile Include="..\addons\slot1_r4.cpp" />
@@ -475,6 +476,7 @@
     <ClCompile Include="..\utils\datetime.cpp" />
     <ClCompile Include="..\utils\dlditool.cpp" />
     <ClCompile Include="..\utils\emufat.cpp" />
+    <ClCompile Include="..\utils\fsnitro.cpp" />
     <ClCompile Include="..\utils\libfat\cache.cpp" />
     <ClCompile Include="..\utils\libfat\directory.cpp" />
     <ClCompile Include="..\utils\libfat\disc.cpp" />
@@ -762,6 +764,7 @@
     <ClInclude Include="..\utils\datetime.h" />
     <ClInclude Include="..\utils\emufat.h" />
     <ClInclude Include="..\utils\emufat_types.h" />
+    <ClInclude Include="..\utils\fsnitro.h" />
     <ClInclude Include="..\utils\libfat\bit_ops.h" />
     <ClInclude Include="..\utils\libfat\cache.h" />
     <ClInclude Include="..\utils\libfat\common.h" />

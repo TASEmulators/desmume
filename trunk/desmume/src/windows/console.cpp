@@ -82,7 +82,7 @@ void readConsole()
 		{
 			for (u32 i = 0; i < num; i++)
 			{
-				if ((buf[i].EventType == KEY_EVENT) && (buf[i].Event.KeyEvent.bKeyDown) && (buf[i].Event.KeyEvent.wVirtualKeyCode == 0x13))
+				if ((buf[i].EventType == KEY_EVENT) && (buf[i].Event.KeyEvent.bKeyDown) && (buf[i].Event.KeyEvent.wVirtualKeyCode == VK_PAUSE))
 				{
 					if (execute)
 						NDS_Pause(false);

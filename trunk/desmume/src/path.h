@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -90,6 +90,7 @@ public:
 	#define NEEDSSAVINGKEY	"needsSaving"
 	#define LASTVISITKEY	"lastVisit"
 	#define LUAKEY			"Lua"
+	#define SLOT1DKEY		"Slot1D"
 	char screenshotFormat[MAX_FORMAT];
 	bool savelastromvisit;
 
@@ -105,6 +106,7 @@ public:
 		SOUNDS,
 		FIRMWARE,
 		MODULE,
+		SLOT1D,
 		MAXKNOWNPATH = MODULE
 	};
 
@@ -118,6 +120,7 @@ public:
 	char pathToFirmware[MAX_PATH];
 	char pathToModule[MAX_PATH];
 	char pathToLua[MAX_PATH];
+	char pathToSlot1D[MAX_PATH];
 
 	void init(const char *filename) {
 
@@ -206,6 +209,7 @@ public:
 		ReadKey(pathToSounds, SOUNDKEY);
 		ReadKey(pathToFirmware, FIRMWAREKEY);
 		ReadKey(pathToLua, LUAKEY);
+		ReadKey(pathToSlot1D, SLOT1DKEY);
 #ifdef _WINDOWS
 		GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
@@ -257,6 +261,9 @@ public:
 			break;
 		case MODULE:
 			pathToCopy = pathToModule;
+			break;
+		case SLOT1D:
+			pathToCopy = pathToSlot1D;
 			break;
 		}
 

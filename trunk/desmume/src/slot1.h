@@ -87,11 +87,12 @@ typedef ISlot1Interface* TISlot1InterfaceConstructor();
 enum NDS_SLOT1_TYPE
 {
 	NDS_SLOT1_NONE,
-	NDS_SLOT1_RETAIL_AUTO, //autodetect which kind of retail card to use 
-	NDS_SLOT1_R4, //R4 flash card
-	NDS_SLOT1_RETAIL_NAND, //Made in Ore/WarioWare D.I.Y.
-	NDS_SLOT1_RETAIL_MCROM, //a standard MC (eeprom, flash, fram) -bearing retail card. Also supports motion, for now, because that's the way we originally coded it
-	NDS_SLOT1_COUNT		//use to count addons - MUST BE LAST!!!
+	NDS_SLOT1_RETAIL_AUTO,	//autodetect which kind of retail card to use 
+	NDS_SLOT1_R4,			//R4 flash card
+	NDS_SLOT1_RETAIL_NAND,	//Made in Ore/WarioWare D.I.Y.
+	NDS_SLOT1_RETAIL_MCROM,	//a standard MC (eeprom, flash, fram) -bearing retail card. Also supports motion, for now, because that's the way we originally coded it
+	NDS_SLOT1_RETAIL_DEBUG,	//for romhacking and fan-made translations
+	NDS_SLOT1_COUNT			//use to count addons - MUST BE LAST!!!
 };
 
 extern ISlot1Interface* slot1_device;						//the current slot1 device instance

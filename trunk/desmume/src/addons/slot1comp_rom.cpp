@@ -91,3 +91,15 @@ u32 Slot1Comp_Rom::read()
 
 	} //switch(operation)
 } //Slot1Comp_Rom::read()
+
+u32 Slot1Comp_Rom::getAddress()
+{
+	return address & gameInfo.mask;
+} //Slot1Comp_Rom::getAddress()
+
+u32 Slot1Comp_Rom::incAddress()
+{
+	address &= gameInfo.mask;
+	address = (address&~0xFFF) + ((address+4)&0xFFF);
+	return address;
+}

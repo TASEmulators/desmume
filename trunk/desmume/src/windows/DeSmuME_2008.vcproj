@@ -1018,6 +1018,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\addons\slot1_retail_mcrom_debug.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\addons\slot1_retail_nand.cpp"
 					>
 				</File>
@@ -1127,6 +1131,14 @@
 				</File>
 				<File
 					RelativePath="..\utils\emufat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\fsnitro.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\fsnitro.h"
 					>
 				</File>
 				<File

@@ -47,6 +47,7 @@ libdesmume_a_SOURCES = \
 	utils/datetime.cpp utils/datetime.h \
 	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
 	utils/emufat.cpp utils/emufat.h utils/emufat_types.h \
+	utils/fsnitro.cpp utils/fsnitro.h \
 	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
@@ -87,7 +88,7 @@ libdesmume_a_SOURCES = \
 	utils/tinyxml/tinyxmlerror.cpp \
 	utils/tinyxml/tinyxmlparser.cpp \
 	addons.cpp addons.h \
-	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail_nand.cpp addons/slot1_retail_auto.cpp addons/slot1_retail_mcrom.cpp addons/slot1comp_mc.cpp addons/slot1comp_mc.h addons/slot1comp_rom.h addons/slot1comp_rom.cpp addons/slot1comp_protocol.h addons/slot1comp_protocol.cpp \
+	addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail_nand.cpp addons/slot1_retail_auto.cpp addons/slot1_retail_mcrom.cpp addons/slot1_retail_mcrom_debug.cpp addons/slot1comp_mc.cpp addons/slot1comp_mc.h addons/slot1comp_rom.h addons/slot1comp_rom.cpp addons/slot1comp_protocol.h addons/slot1comp_protocol.cpp \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
