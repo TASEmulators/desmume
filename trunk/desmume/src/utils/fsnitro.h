@@ -115,24 +115,38 @@ private:
 	FNT_TYPES getFNTType(u8 type);
 	bool loadFileTables();
 
+	bool extract(u16 id, string to);
+	void destroy();
+
 public:
 	FS_NITRO(u8 *cart_rom);
 	~FS_NITRO();
-	void destroy();
 
 	bool getFileIdByAddr(u32 addr, u16 &id);
 	bool getFileIdByAddr(u32 addr, u16 &id, u32 &offset);
+	
+	string getDirNameByID(u16 id);
+	u16 getDirParrentByID(u16 id);
+
 	string getFileNameByID(u16 id);
-	string getFullPathByFileID(u16 id);
+	string getFullPathByFileID(u16 id, bool addRoot = true);
+	
+	u16 getFileParentById(u16 id);
 	u32 getFileSizeById(u16 id);
 	u32 getStartAddrById(u16 id);
 	u32 getEndAddrById(u16 id);
+	bool isOverlay(u16 id) { if (id > numFiles) return false; return fat[id].isOverlay; }
+	
 	bool isARM9(u32 addr) { return ((addr >= ARM9exeStart) && (addr < ARM9exeEnd)); }
 	bool isARM7(u32 addr) { return ((addr >= ARM7exeStart) && (addr < ARM7exeEnd)); }
 	bool isFAT(u32 addr) { return ((addr >= FATOff) && (addr < FATEnd)); }
+	
 	bool rebuildFAT(u32 addr, u32 size, string pathData);
 	bool rebuildFAT(string pathData);
 	u32 getFATRecord(u32 addr);
+
+	bool extractFile(u16 id, string to);
+	bool extractAll(string to, void (*callback)(u32 current, u32 num) = NULL);
 	
 	u32 getNumDirs() { return numDirs; }
 	u32 getNumFiles() { return numFiles; }

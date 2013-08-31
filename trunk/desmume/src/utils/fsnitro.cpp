@@ -17,9 +17,14 @@
 
 #include <stdio.h>
 #include <string>
-#ifndef _MSC_VER
+#include <direct.h>
+#ifdef _MSC_VER
+#include <windows.h>
+#define __mkdir(x) mkdir(x)
+#else
 #include <string.h>
 #include <stdint.h>
+#define __mkdir(x) mkdir(x, 0777)
 #endif
 #include "fsnitro.h"
 
@@ -373,6 +378,24 @@ bool FS_NITRO::getFileIdByAddr(u32 addr, u16 &id, u32 &offset)
 	return false;
 }
 
+string FS_NITRO::getDirNameByID(u16 id)
+{
+	if (!inited) return "";
+	if ((id & 0xF000) != 0xF000) return "|file|";
+	if ((id & 0x0FFF) > numDirs) return "<!ERROR invalid id>";
+
+	return (string)fnt[id & 0x0FFF].filename;
+}
+
+u16 FS_NITRO::getDirParrentByID(u16 id)
+{
+	if (!inited) return 0xFFFF;
+	if ((id & 0xF000) != 0xF000) return 0xFFFF;
+	if ((id & 0x0FFF) > numDirs) return 0xFFFF;
+
+	return fnt[id & 0x0FFF].parentID;
+}
+
 string FS_NITRO::getFileNameByID(u16 id)
 {
 	if (!inited) return "";
@@ -383,7 +406,16 @@ string FS_NITRO::getFileNameByID(u16 id)
 	return (string)fat[id].filename;
 }
 
-string FS_NITRO::getFullPathByFileID(u16 id)
+u16 FS_NITRO::getFileParentById(u16 id)
+{
+	if (!inited) return 0xFFFF;
+	if ((id & 0xF000) == 0xF000) return 0xFFFF;
+	if (id > numFiles) return 0xFFFF;
+
+	return fat[id].parentID;
+}
+
+string FS_NITRO::getFullPathByFileID(u16 id, bool addRoot)
 {
 	if (!inited) return "";
 	if (id > numFiles) return "<!ERROR invalid id>";
@@ -397,10 +429,14 @@ string FS_NITRO::getFullPathByFileID(u16 id)
 			res = fnt[parentID].filename + string(FS_DIRECTORY_DELIMITER_CHAR + res);
 			parentID = (fnt[parentID].parentID & 0x0FFF);
 		}
-		res = (string)FS_DIRECTORY_DELIMITER_CHAR + (string)"data" + (string)FS_DIRECTORY_DELIMITER_CHAR + res;
+		if (addRoot)
+			res = (string)FS_DIRECTORY_DELIMITER_CHAR + (string)"data" + (string)FS_DIRECTORY_DELIMITER_CHAR + res;
 	}
 	else
-		res = string("\\overlay") + FS_DIRECTORY_DELIMITER_CHAR;
+	{
+		if (addRoot)
+			res = FS_DIRECTORY_DELIMITER_CHAR + string("overlay") + FS_DIRECTORY_DELIMITER_CHAR;
+	}
 
 	res += (string)fat[id].filename;
 	return res;
@@ -428,5 +464,82 @@ u32 FS_NITRO::getEndAddrById(u16 id)
 	if (id > numFiles) return 0;
 
 	return (fat[id].end);
+}
+
+bool FS_NITRO::extract(u16 id, string to)
+{
+	printf("Extract to %s\n", to.c_str());
+
+	FILE *fp = fopen(to.c_str(), "wb");
+	if (fp)
+	{
+		fwrite((rom + fat[id].start), 1, fat[id].size, fp);
+		fclose(fp);
+		return true;
+	}
+
+	return false;
+}
+
+bool FS_NITRO::extractFile(u16 id, string to)
+{
+	if (!inited) return false;
+	if (id > numFiles) return false;
+
+	char curr_dir[MAX_PATH] = {0};
+	getcwd(curr_dir, sizeof(curr_dir));
+	chdir(to.c_str());
+	extract(id, fat[id].filename);
+	chdir(curr_dir);
+
+	return true;
+}
+
+bool FS_NITRO::extractAll(string to, void (*callback)(u32 current, u32 num))
+{
+	if (!inited) return false;
+
+	string dataDir = to + "data" + FS_DIRECTORY_DELIMITER_CHAR;
+	string overlayDir = to + "overlay" + FS_DIRECTORY_DELIMITER_CHAR;
+	__mkdir(dataDir.c_str());
+	__mkdir(overlayDir.c_str());
+
+	char curr_dir[MAX_PATH] = {0};
+	getcwd(curr_dir, sizeof(curr_dir));
+	chdir(dataDir.c_str());
+
+	for (u32 i = 0; i < numDirs; i++)
+	{
+		string tmp = fnt[i].filename;
+		u16 parent = (fnt[i].parentID) & 0x0FFF;
+
+		while (parent)
+		{
+			tmp = (string)fnt[parent].filename + FS_DIRECTORY_DELIMITER_CHAR + tmp;
+			parent = (fnt[parent].parentID) & 0x0FFF;
+		}
+		__mkdir(tmp.c_str());
+	}
+
+	chdir(dataDir.c_str());
+	for (u32 i = 0; i < numFiles; i++)
+	{
+		if (fat[i].isOverlay) continue;
+		string fname = getFullPathByFileID(i, false);
+		extract(i, fname.c_str());
+		if (callback)
+			callback(i, numFiles);
+	}
+
+	chdir(overlayDir.c_str());
+	for (u32 i = 0; i < numFiles; i++)
+	{
+		if (!fat[i].isOverlay) continue;
+		extract(i, fat[i].filename);
+	}
+
+	chdir(curr_dir);
+
+	return true;
 }
 

@@ -804,6 +804,9 @@
     <ClCompile Include="..\utils\fsnitro.cpp">
       <Filter>Core\utils</Filter>
     </ClCompile>
+    <ClCompile Include="fsnitroView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
@@ -1547,6 +1550,9 @@
     </ClInclude>
     <ClInclude Include="..\utils\fsnitro.h">
       <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="fsnitroView.h">
+      <Filter>Windows\tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
