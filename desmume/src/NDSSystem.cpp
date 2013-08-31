@@ -2647,7 +2647,7 @@ void NDS_Reset()
 				_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
 		}
 
-		//firmware copies the whole header to Main RAM 0x27FFE00 on startup. (http://nocash.emubase.de/gbatek.htm#dscartridgeheader)
+		//something copies the whole header to Main RAM 0x27FFE00 on startup. (http://nocash.emubase.de/gbatek.htm#dscartridgeheader)
 		//once upon a time this copied 0x90 more. this was thought to be wrong, and changed.
 		if(nds.Is_DSI())
 		{
@@ -2669,19 +2669,17 @@ void NDS_Reset()
 		MMU.ARM9_REG[0x300] = 1;
 		MMU.ARM7_REG[0x300] = 1;
 
-		//firmware makes system think it's booted from card -- EXTREMELY IMPORTANT!!! Thanks to cReDiAr
-		_MMU_write08<ARMCPU_ARM9>(0x02FFFC40,0x1);
-		_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1);
+		//firmware makes system think it's booted from card -- EXTREMELY IMPORTANT!!! This is actually checked by some things. (which things?) Thanks to cReDiAr
+		_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1); //<zero> removed redundant write to ARM9, this is going to shared main memory. But one has to wonder why r3478 was made which corrected a typo resulting in only ARMCPU_ARM7 getting used.
 
-		//
-		_MMU_write32<ARMCPU_ARM7>(0x027FF800, gameInfo.chipID);		// Chip ID
-		_MMU_write32<ARMCPU_ARM7>(0x027FF804, gameInfo.chipID);		// Secure Chip ID
-		_MMU_write32<ARMCPU_ARM7>(0x027FFC00, gameInfo.chipID);		// 2nd Secure Chip ID
+		//the chipId is read several times
+		//for some reason, each of those reads get stored here.
+		_MMU_write32<ARMCPU_ARM7>(0x027FF800, gameInfo.chipID);		//1st chipId
+		_MMU_write32<ARMCPU_ARM7>(0x027FF804, gameInfo.chipID);		//2nd (secure) chipId
+		_MMU_write32<ARMCPU_ARM7>(0x027FFC00, gameInfo.chipID);		//3rd (secure) chipId
+		
 		// Write the header checksum to memory
 		_MMU_write16<ARMCPU_ARM9>(0x027FF808, gameInfo.header.headerCRC16);
-
-		// Write the header checksum to memory (the firmware needs it to see the cart)
-		//_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
 
 		// Save touchscreen calibration info in a structure
 		// so we can easily access it at any time

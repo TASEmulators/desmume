@@ -209,13 +209,9 @@ u32 Slot1Comp_Protocol::read_GCDATAIN(u8 PROCNUM)
 
 		case eSlot1Operation_90_ChipID:
 		case eSlot1Operation_B8_ChipID:
-			// Note: the BIOS stores the chip ID in main memory
-			// Most games continuously compare the chip ID with
-			// the value in memory, probably to know if the card
-			// was removed.
-			// As DeSmuME normally boots directly from the game, the chip
-			// ID in main mem is zero and this value needs to be
-			// zero too.
+			
+			//Most games continuously compare the current chipId with the value in 
+			//stored in memory at boot-up, probably to know if the card was removed.
 
 			//staff of kings verifies this (it also uses the arm7 IRQ 20 to detect card ejects)
 			return chipId;
