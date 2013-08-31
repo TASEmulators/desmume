@@ -51,14 +51,21 @@
 #define IDM_SBG3                        127
 #define IDD_DIALOG1                     127
 #define IDM_OAM                         128
+#define IDD_TOOL_FSNITRO                128
+#define IDR_POPUPM_FSNITRO              128
 #define IDM_PRINTSCREEN                 129
+#define MENU_FSNITRO                    129
 #define IDM_QUICK_PRINTSCREEN           130
 #define IDM_SOUNDSETTINGS               131
+#define IDD_PROGRESS_WND                131
 #define IDM_WEBSITE                     132
 #define IDM_FORUM                       133
 #define IDM_SUBMITBUGREPORT             134
 #define IDM_STATE_LOAD                  135
 #define IDM_STATE_SAVE                  136
+#define IDI_FOLDER_OPEN                 136
+#define IDI_FOLDER_CLOSED               137
+#define IDI_FILE_BINARY                 138
 #define IDM_STATE_SAVE_F10              139
 #define IDM_STATE_SAVE_F1               140
 #define IDM_STATE_SAVE_F2               141
@@ -443,8 +450,12 @@
 #define IDC_DIRECTORY_SCAN              1056
 #define IDC_BADD_AR                     1057
 #define IDC_IMP_INFO_FILE               1057
+#define IDC_FILES_TREE                  1057
+#define IDC_PROGRESS_BAR                1057
 #define IDC_BADD_CB                     1058
 #define IDC_IMP_INFO_ADVANSCENE         1058
+#define IDC_FILE_INFO                   1058
+#define IDC_MESSAGE                     1058
 #define IDC_IMP_MANUAL_SIZE             1059
 #define IDC_BREMOVE                     1060
 #define IDC_BEDIT                       1061
@@ -921,6 +932,9 @@
 #define ID_DISPLAYMETHOD_FILTER         40106
 #define IDC_VIEW_PADTOINTEGER           40107
 #define ID_TOOLS_VIEWFSNITRO            40108
+#define ID_EXTRACTFILE                  40109
+#define ID_EXTRACTALL                   40110
+#define ID_CLOSE                        40111
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
@@ -1025,6 +1039,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
 #define _APS_NEXT_COMMAND_VALUE         40109
 #define _APS_NEXT_CONTROL_VALUE         1057

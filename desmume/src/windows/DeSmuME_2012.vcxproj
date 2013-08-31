@@ -272,7 +272,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_debug.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;lua51.dll</DelayLoadDLLs>
@@ -317,7 +317,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_release.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
       <DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
@@ -362,7 +362,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;lua51.lib;glib-vc8-x64.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)_x64_dev+.exe</OutputFile>
       <AdditionalLibraryDirectories>.\zlib123;agg;.libs\x64;.libs</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;lua51.dll</DelayLoadDLLs>
@@ -633,6 +633,7 @@
     <ClCompile Include="File_Extractor\unrar\unrar_misc.cpp" />
     <ClCompile Include="File_Extractor\unrar\unrar_open.cpp" />
     <ClCompile Include="FirmConfig.cpp" />
+    <ClCompile Include="fsnitroView.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="hotkey.cpp" />
     <ClCompile Include="importSave.cpp" />
@@ -885,6 +886,7 @@
     <ClInclude Include="filter\interp.h" />
     <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
+    <ClInclude Include="fsnitroView.h" />
     <ClInclude Include="gbaslot_config.h" />
     <ClInclude Include="hotkey.h" />
     <ClInclude Include="importSave.h" />

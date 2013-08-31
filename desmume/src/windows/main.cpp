@@ -109,6 +109,7 @@
 #include "aviout.h"
 #include "soundView.h"
 #include "importSave.h"
+#include "fsnitroView.h"
 //
 //static size_t heapram = 0;
 //void* operator new[](size_t amt)
@@ -477,6 +478,7 @@ TOOLSCLASS	*ViewMaps = NULL;
 TOOLSCLASS	*ViewOAM = NULL;
 TOOLSCLASS	*ViewMatrices = NULL;
 TOOLSCLASS	*ViewLights = NULL;
+TOOLSCLASS	*ViewFSNitro = NULL;
 
 volatile bool execute = false;
 volatile bool paused = true;
@@ -3192,6 +3194,7 @@ int _main()
 	ViewOAM = new TOOLSCLASS(hAppInst, IDD_OAM, (DLGPROC) ViewOAMProc);
 	ViewMatrices = new TOOLSCLASS(hAppInst, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
 	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
+	ViewFSNitro = new TOOLSCLASS(hAppInst, IDD_TOOL_FSNITRO, (DLGPROC) ViewFSNitroProc);
 
 	// Slot 1 / Slot 2 (GBA slot)
 	cmdline.slot1_fat_dir = GetPrivateProfileStdString("Slot1", "fat_path", "");
@@ -3485,6 +3488,7 @@ int _main()
 	SoundView_DeInit();
 
 	//if (input!=NULL) delete input;
+	if (ViewFSNitro!=NULL) delete ViewFSNitro;
 	if (ViewLights!=NULL) delete ViewLights;
 	if (ViewMatrices!=NULL) delete ViewMatrices;
 	if (ViewOAM!=NULL) delete ViewOAM;
@@ -4455,6 +4459,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Gray the recent ROM menu item if there are no recent ROMs
 			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM, RecentRoms.size()>0);
+
+			DesEnableMenuItem(mainMenu, ID_TOOLS_VIEWFSNITRO,     romloaded);
 
 			//Updated Checked menu items
 
@@ -5632,6 +5638,10 @@ DOKEYDOWN:
 
 		case IDM_LIGHT_VIEWER:
 			ViewLights->open();
+			return 0;
+
+		case ID_TOOLS_VIEWFSNITRO:
+			ViewFSNitro->open();
 			return 0;
 			//========================================================== Tools end
 

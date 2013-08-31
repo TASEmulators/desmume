@@ -818,7 +818,7 @@ bool TOOLSCLASS::close()
 DWORD TOOLSCLASS::doOpen()
 {
 	GetLastError();
-	hwnd = CreateDialogW(hInstance, MAKEINTRESOURCEW(idd), NULL, (DLGPROC) dlgproc);
+	hwnd = CreateDialog(hInstance, MAKEINTRESOURCE(idd), NULL, (DLGPROC) dlgproc);
 
 	if (!hwnd) 
 	{
