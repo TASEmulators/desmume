@@ -177,6 +177,7 @@ SFORMAT SF_NDS[]={
 	{ "_STX", 2, 1, &nds.scr_touchX},
 	{ "_STY", 2, 1, &nds.scr_touchY},
 	{ "_TPB", 4, 1, &nds.isTouch},
+	{ "_IFB", 4, 1, &nds.isFakeBooted},
 	{ "_DBG", 4, 1, &nds._DebugConsole},
 	{ "_ENS", 4, 1, &nds.ensataEmulation},
 	{ "_TYP", 4, 1, &nds.ConsoleType},

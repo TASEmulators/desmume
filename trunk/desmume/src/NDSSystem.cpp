@@ -110,7 +110,6 @@ int NDS_Init( void)
 	nds.idleFrameCounter = 0;
 	memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
 	MMU_Init();
-	nds.VCount = 0;
 
 	//got to print this somewhere..
 	printf("%s\n", EMU_DESMUME_NAME_AND_VERSION());
@@ -2449,28 +2448,232 @@ static void PrepareLogfiles()
 #endif
 }
 
+bool NDS_LegitBoot()
+{
+	#ifdef HAVE_JIT
+		//hack for firmware boot in JIT mode.
+		//we know that it takes certain jit parameters to successfully boot the firmware.
+		//CRAZYMAX: is it safe to accept anything smaller than 12?
+		CommonSettings.jit_max_block_size = std::min(CommonSettings.jit_max_block_size,12U);
+	#endif
+
+	//crazymax: how would it have got whacked? dont think we need this
+	//gameInfo.restoreSecureArea();
+
+	//partially clobber the loaded firmware with the user settings from DFC
+	firmware->loadSettings();
+
+	//since firmware only boots encrypted roms, we have to make sure it's encrypted first
+		//this has not been validated on big endian systems. it almost positively doesn't work.
+	EncryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+
+	//boot processors from their bios entrypoints
+	armcpu_init(&NDS_ARM7, 0x00000000);
+	armcpu_init(&NDS_ARM9, 0xFFFF0000);
+
+	// TODO: hack!!!
+	// possible explanation - since we can't generally trust calibration info from the firmware (who's bothered to set it up?) 
+	// we don't bother to use the firmware's configured calibration info, and just enter our own.
+	// Can someone verify this?
+	// TODO - this isn't good. need revising.
+	TSCal.adc.x1 = 0x0228;
+	TSCal.adc.y1 = 0x0350;
+	TSCal.scr.x1 = 0x0020;
+	TSCal.scr.y1 = 0x0020;
+	TSCal.adc.x2 = 0x0DA0;
+	TSCal.adc.y2 = 0x0BFC;
+	TSCal.scr.x2 = 0xE0;
+	TSCal.scr.y2 = 0xA0;
+	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
+	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
+	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
+	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
+	
+	return true;
+}
+
+//the fake firmware boot-up process
+bool NDS_FakeBoot()
+{
+	NDS_header * header = NDS_getROMHeader();
+
+	//DEBUG_reset();
+
+	if (!header) return false;
+
+	nds.isFakeBooted = true;
+
+	//crazymax: how would it have got whacked? dont think we need this
+	//gameInfo.restoreSecureArea();
+	
+	//since we're bypassing the code to decrypt the secure area, we need to make sure its decrypted first
+	//this has not been validated on big endian systems. it almost positively doesn't work.
+	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+
+	if(!okRom) {
+		printf("Specified file is not a valid rom\n");
+		return false;
+	}
+
+	//bios (or firmware) sets this default, which is generally not important for retail games but some homebrews are depending on
+	_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
+
+	//EDIT - whats this firmware and how is it relating to the dummy firmware below
+	//how do these even get used? what is the purpose of unpack and why is it not used by the firmware boot process?
+	if (CommonSettings.UseExtFirmware && firmware->loaded())
+	{
+		firmware->unpack();
+		firmware->loadSettings();
+	}
+
+	// Create the dummy firmware
+	//EDIT - whats dummy firmware and how is relating to the above?
+	//it seems to be emplacing basic firmware data into MMU.fw.data
+	NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+	
+	//firmware loads the game card arm9 and arm7 programs as specified in rom header
+	{
+		//copy the arm9 program to the address specified by rom header
+		u32 src = header->ARM9src;
+		u32 dst = header->ARM9cpy;
+		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
+		{
+			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
+			dst += 4;
+			src += 4;
+		}
+
+		//copy the arm7 program to the address specified by rom header
+		src = header->ARM7src;
+		dst = header->ARM7cpy;
+		for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
+		{
+			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
+			dst += 4;
+			src += 4;
+		}
+	}
+	
+	//bios does this (thats weird, though. shouldnt it get changed when the card is swapped in the firmware menu?
+	//right now our firmware menu isnt detecting any change to the card.
+	//are some games depending on it being written here? please document.
+	//_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
+
+	//firmware sets up a copy of the firmware user settings in memory.
+	//TBD - this code is really clunky
+	//it seems to be copying the MMU.fw.data data into RAM in the user memory stash locations
+	u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
+	if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
+		for ( int fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
+			_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
+	}
+
+	//something copies the whole header to Main RAM 0x27FFE00 on startup. (http://nocash.emubase.de/gbatek.htm#dscartridgeheader)
+	//once upon a time this copied 0x90 more. this was thought to be wrong, and changed.
+	if(nds.Is_DSI())
+	{
+		//dsi needs this copied later in memory. there are probably a number of things that  get copied to a later location in memory.. thats where the NDS consoles tend to stash stuff.
+		for (int i = 0; i < ((0x170)/4); i++)
+			_MMU_write32<ARMCPU_ARM9>(0x02FFFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+	}
+	else
+	{
+		for (int i = 0; i < ((0x170)/4); i++)
+			_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+	}
+
+	//firmware sets the cpus to an initial state with their respective programs entrypoints
+	armcpu_init(&NDS_ARM7, header->ARM7exe);
+	armcpu_init(&NDS_ARM9, header->ARM9exe);
+
+	//firmware sets REG_POSTFLG to the value indicating post-firmware status
+	MMU.ARM9_REG[0x300] = 1;
+	MMU.ARM7_REG[0x300] = 1;
+
+	//firmware makes system think it's booted from card -- EXTREMELY IMPORTANT!!! This is actually checked by some things. (which things?) Thanks to cReDiAr
+	_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1); //<zero> removed redundant write to ARM9, this is going to shared main memory. But one has to wonder why r3478 was made which corrected a typo resulting in only ARMCPU_ARM7 getting used.
+
+	//the chipId is read several times
+	//for some reason, each of those reads get stored here.
+	_MMU_write32<ARMCPU_ARM7>(0x027FF800, gameInfo.chipID);		//1st chipId
+	_MMU_write32<ARMCPU_ARM7>(0x027FF804, gameInfo.chipID);		//2nd (secure) chipId
+	_MMU_write32<ARMCPU_ARM7>(0x027FFC00, gameInfo.chipID);		//3rd (secure) chipId
+	
+	// Write the header checksum to memory
+	_MMU_write16<ARMCPU_ARM9>(0x027FF808, gameInfo.header.headerCRC16);
+
+	// Save touchscreen calibration info in a structure
+	// so we can easily access it at any time
+	// TODO - this isn't good. need revising.
+	TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x58);
+	TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5A);
+	TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5C);
+	TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5D);
+	TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5E);
+	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60);
+	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
+	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
+	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
+	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
+	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
+	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
+
+	 //zero 11-aug-2013 - dont think we need this. the emulator will be setting these nonstop
+	//_MMU_write16<ARMCPU_ARM9>(REG_KEYINPUT, 0x3FF);
+	//_MMU_write16<ARMCPU_ARM7>(REG_KEYINPUT, 0x3FF);
+	//_MMU_write08<ARMCPU_ARM7>(REG_EXTKEYIN, 0x43);
+
+	//bitbox 4k demo is so stripped down it relies on default stack values
+	//otherwise the arm7 will crash before making a sound
+	//(these according to gbatek softreset bios docs)
+	NDS_ARM7.R13_svc = 0x0380FFDC;
+	NDS_ARM7.R13_irq = 0x0380FFB0;
+	NDS_ARM7.R13_usr = 0x0380FF00;
+	NDS_ARM7.R[13] = NDS_ARM7.R13_usr;
+	//and let's set these for the arm9 while we're at it, though we have no proof
+	NDS_ARM9.R13_svc = 0x00803FC0;
+	NDS_ARM9.R13_irq = 0x00803FA0;
+	NDS_ARM9.R13_usr = 0x00803EC0;
+	NDS_ARM9.R13_abt = NDS_ARM9.R13_usr; //????? 
+	//I think it is wrong to take gbatek's "SYS" and put it in USR--maybe USR doesnt matter. 
+	//i think SYS is all the misc modes. please verify by setting nonsensical stack values for USR here
+	NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
+	//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
+	//and how theyre named in desmume to match them up correctly. i just guessed.
+
+	//--------------------------------
+	//setup the homebrew argv
+	//this is useful for nitrofs apps which are emulating themselves via cflash
+	//struct __argv {
+	//	int argvMagic;		//!< argv magic number, set to 0x5f617267 ('_arg') if valid 
+	//	char *commandLine;	//!< base address of command line, set of null terminated strings
+	//	int length;			//!< total length of command line
+	//	int argc;			//!< internal use, number of arguments
+	//	char **argv;		//!< internal use, argv pointer
+	//};
+	std::string rompath = "fat:/" + path.RomName;
+	const u32 kCommandline = 0x027E0000;
+	//const u32 kCommandline = 0x027FFF84;
+
+	//
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
+	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
+	//0x027FFF7C (argc)
+	//0x027FFF80 (argv)
+	for(size_t i=0;i<rompath.size();i++)
+		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
+	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
+	//--------------------------------
+
+	delete header;
+	return true;
+}
+
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
-	singleStep = false;
-	nds_debug_continuing[0] = nds_debug_continuing[1] = false;
-	FILE* inf = NULL;
-	NDS_header * header = NDS_getROMHeader();
-
-	DEBUG_reset();
-
-	if (!header) return ;
-
-	nds.sleeping = FALSE;
-	nds.cardEjected = FALSE;
-	nds.freezeBus = 0;
-	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1;
-	nds.power2.speakers = 1;
-	nds.power2.wifi = 0;
-
-	nds_timer = 0;
-	nds_arm9_timer = 0;
-	nds_arm7_timer = 0;
+	PrepareLogfiles();
 
 	if(movieMode != MOVIEMODE_INACTIVE && !_HACK_DONT_STOPMOVIE)
 		movie_reset_command = true;
@@ -2483,25 +2686,23 @@ void NDS_Reset()
 		TotalLagFrames = 0;
 	}
 
-	SPU_DeInit();
+	resetUserInput();
 
-	MMU_Reset();
-
-#ifdef HAVE_JIT
-	arm_jit_reset(CommonSettings.use_jit);
-#endif
-
-	JumbleMemory();
-	PrepareBiosARM7();
-	PrepareBiosARM9();
-
-	PrepareLogfiles();
-
+	
+	singleStep = false;
+	nds_debug_continuing[0] = nds_debug_continuing[1] = false;
+	nds.sleeping = FALSE;
+	nds.cardEjected = FALSE;
+	nds.freezeBus = 0;
+	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1;
+	nds.power2.speakers = 1;
+	nds.power2.wifi = 0;
 	nds.wifiCycle = 0;
 	memset(nds.timerCycle, 0, sizeof(u64) * 2 * 4);
 	nds.old = 0;
 	nds.scr_touchX = nds.scr_touchY = nds.adc_touchX = nds.adc_touchY = 0;
 	nds.isTouch = 0;
+	nds.isFakeBooted = false;
 	nds.paddle = 0;
 	nds.ConsoleType = CommonSettings.ConsoleType;
 	nds._DebugConsole = CommonSettings.DebugConsole;
@@ -2509,21 +2710,31 @@ void NDS_Reset()
 	nds.stylusJitter = CommonSettings.StylusJitter;
 	nds.ensataHandshake = ENSATA_HANDSHAKE_none;
 	nds.ensataIpcSyncCounter = 0;
-	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());
-	
+	nds_timer = 0;
+	nds_arm9_timer = 0;
+	nds_arm7_timer = 0;
 	LidClosed = FALSE;
 	countLid = 0;
-	
-	MainScreen.offset = 0;
-	SubScreen.offset = 192;
 
-	// only ARM9 have co-processor
+	MMU_Reset();
+	SetupMMU(nds.Is_DebugConsole(),nds.Is_DSI());
+	JumbleMemory();
+
+	#ifdef HAVE_JIT
+		arm_jit_reset(CommonSettings.use_jit);
+	#endif
+
+
+	//initialize CP15 specially for this platform
+	//TODO - how much of this is necessary for firmware boot?
+	//(only ARM9 has CP15)
 	reconstruct(&cp15);
 	MMU.ARM9_RW_MODE = BIT7(cp15.ctrl);
 	NDS_ARM9.intVector = 0xFFFF0000 * (BIT13(cp15.ctrl));
 	NDS_ARM9.LDTBit = !BIT15(cp15.ctrl); //TBit
 
-	resetUserInput();
+	PrepareBiosARM7();
+	PrepareBiosARM9();
 
 	if (firmware)
 	{
@@ -2534,219 +2745,16 @@ void NDS_Reset()
 	firmware = new CFIRMWARE();
 	firmware->load();
 
-	//the firmware can't be booted without the roms, for the following reasons:
-	//TBD
-	if (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && firmware->loaded())
-	{
-#ifdef HAVE_JIT
-		// hack for firmware boot in JIT mode
-		CommonSettings.jit_max_block_size = 12;
-#endif
-		//crazymax: how would it have got whacked? dont think we need this
-		//gameInfo.restoreSecureArea();
-
-		//partially clobber the loaded firmware with the user settings from DFC
-		firmware->loadSettings();
-
-		//since firmware only boots encrypted roms, we have to make sure it's encrypted first
-		#ifndef WORDS_BIGENDIAN
-			//this has not been validated on big endian systems. it almost positively doesn't work.
-			EncryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
-		#endif
-
-		//boot processors from their bios entrypoints
-		armcpu_init(&NDS_ARM7, 0x00000000);
-		armcpu_init(&NDS_ARM9, 0xFFFF0000);
-
-		// TODO: hack!!!
-		// possible explanation - since we can't generally trust calibration info from the firmware (who's bothered to set it up?) 
-		// we don't bother to use the firmware's configured calibration info, and just enter our own.
-		// Can someone verify this?
-		// TODO - this isn't good. need revising.
-		TSCal.adc.x1 = 0x0228;
-		TSCal.adc.y1 = 0x0350;
-		TSCal.scr.x1 = 0x0020;
-		TSCal.scr.y1 = 0x0020;
-		TSCal.adc.x2 = 0x0DA0;
-		TSCal.adc.y2 = 0x0BFC;
-		TSCal.scr.x2 = 0xE0;
-		TSCal.scr.y2 = 0xA0;
-		TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
-		TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
-		TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
-		TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
-	}
+	//we will allow a proper firmware boot, if:
+	//1. we have the ARM7 and ARM9 bioses (its doubtful that our HLE bios implement the necessary functions)
+	//2. firmware is available
+	//3. user has requested booting from firmware
+	bool canBootFromFirmware = (NDS_ARM7.BIOS_loaded && NDS_ARM9.BIOS_loaded && CommonSettings.BootFromFirmware && firmware->loaded());
+	bool bootResult = false;
+	if(canBootFromFirmware)
+		bootResult = NDS_LegitBoot();
 	else
-	{
-		//the fake firmware boot-up process
-
-		//crazymax: how would it have got whacked? dont think we need this
-		//gameInfo.restoreSecureArea();
-		
-		//since we're bypassing the code to decrypt the secure area, we need to make sure its decrypted first
-#ifndef WORDS_BIGENDIAN
-		//this has not been validated on big endian systems. it almost positively doesn't work.
-		bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
-
-		if(!okRom) {
-			printf("Specified file is not a valid rom\n");
-			return;
-		}
-#endif
-
-		//bios (or firmware) sets this default
-		_MMU_write08<ARMCPU_ARM9>(REG_WRAMCNT,3);
-
-		//EDIT - whats this firmware and how is it relating to the dummy firmware below
-		//how do these even get used? what is the purpose of unpack and why is it not used by the firmware boot process?
-		if (CommonSettings.UseExtFirmware && firmware->loaded())
-		{
-			firmware->unpack();
-			firmware->loadSettings();
-		}
-
-		// Create the dummy firmware
-		//EDIT - whats dummy firmware and how is relating to the above?
-		//it seems to be emplacing basic firmware data into MMU.fw.data
-		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
-		
-		//firmware loads the game card arm9 and arm7 programs as specified in rom header
-		{
-			//copy the arm9 program to the address specified by rom header
-			u32 src = header->ARM9src;
-			u32 dst = header->ARM9cpy;
-			for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
-			{
-				_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
-				dst += 4;
-				src += 4;
-			}
-
-			//copy the arm7 program to the address specified by rom header
-			src = header->ARM7src;
-			dst = header->ARM7cpy;
-			for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
-			{
-				_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
-				dst += 4;
-				src += 4;
-			}
-		}
-		
-		//bios does this (thats weird, though. shouldnt it get changed when the card is swapped in the firmware menu?
-		//right now our firmware menu isnt detecting any change to the card.
-		//are some games depending on it being written here? please document.
-		//_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
-
-		//firmware sets up a copy of the firmware user settings in memory.
-		//TBD - this code is really clunky
-		//it seems to be copying the MMU.fw.data data into RAM in the user memory stash locations
-		u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
-		if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
-			for ( int fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
-				_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
-		}
-
-		//something copies the whole header to Main RAM 0x27FFE00 on startup. (http://nocash.emubase.de/gbatek.htm#dscartridgeheader)
-		//once upon a time this copied 0x90 more. this was thought to be wrong, and changed.
-		if(nds.Is_DSI())
-		{
-			//dsi needs this copied later in memory. there are probably a number of things that  get copied to a later location in memory.. thats where the NDS consoles tend to stash stuff.
-			for (int i = 0; i < ((0x170)/4); i++)
-				_MMU_write32<ARMCPU_ARM9>(0x02FFFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
-		}
-		else
-		{
-			for (int i = 0; i < ((0x170)/4); i++)
-				_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
-		}
-
-		//firmware sets the cpus to an initial state with their respective programs entrypoints
-		armcpu_init(&NDS_ARM7, header->ARM7exe);
-		armcpu_init(&NDS_ARM9, header->ARM9exe);
-
-		//firmware sets REG_POSTFLG to the value indicating post-firmware status
-		MMU.ARM9_REG[0x300] = 1;
-		MMU.ARM7_REG[0x300] = 1;
-
-		//firmware makes system think it's booted from card -- EXTREMELY IMPORTANT!!! This is actually checked by some things. (which things?) Thanks to cReDiAr
-		_MMU_write08<ARMCPU_ARM7>(0x02FFFC40,0x1); //<zero> removed redundant write to ARM9, this is going to shared main memory. But one has to wonder why r3478 was made which corrected a typo resulting in only ARMCPU_ARM7 getting used.
-
-		//the chipId is read several times
-		//for some reason, each of those reads get stored here.
-		_MMU_write32<ARMCPU_ARM7>(0x027FF800, gameInfo.chipID);		//1st chipId
-		_MMU_write32<ARMCPU_ARM7>(0x027FF804, gameInfo.chipID);		//2nd (secure) chipId
-		_MMU_write32<ARMCPU_ARM7>(0x027FFC00, gameInfo.chipID);		//3rd (secure) chipId
-		
-		// Write the header checksum to memory
-		_MMU_write16<ARMCPU_ARM9>(0x027FF808, gameInfo.header.headerCRC16);
-
-		// Save touchscreen calibration info in a structure
-		// so we can easily access it at any time
-		// TODO - this isn't good. need revising.
-		TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x58);
-		TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5A);
-		TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5C);
-		TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5D);
-		TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5E);
-		TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60);
-		TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
-		TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
-		TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
-		TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
-		TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
-		TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
-
-		 //zero 11-aug-2013 - dont think we need this. the emulator will be setting these nonstop
-		//_MMU_write16<ARMCPU_ARM9>(REG_KEYINPUT, 0x3FF);
-		//_MMU_write16<ARMCPU_ARM7>(REG_KEYINPUT, 0x3FF);
-		//_MMU_write08<ARMCPU_ARM7>(REG_EXTKEYIN, 0x43);
-
-		//bitbox 4k demo is so stripped down it relies on default stack values
-		//otherwise the arm7 will crash before making a sound
-		//(these according to gbatek softreset bios docs)
-		NDS_ARM7.R13_svc = 0x0380FFDC;
-		NDS_ARM7.R13_irq = 0x0380FFB0;
-		NDS_ARM7.R13_usr = 0x0380FF00;
-		NDS_ARM7.R[13] = NDS_ARM7.R13_usr;
-		//and let's set these for the arm9 while we're at it, though we have no proof
-		NDS_ARM9.R13_svc = 0x00803FC0;
-		NDS_ARM9.R13_irq = 0x00803FA0;
-		NDS_ARM9.R13_usr = 0x00803EC0;
-		NDS_ARM9.R13_abt = NDS_ARM9.R13_usr; //????? 
-		//I think it is wrong to take gbatek's "SYS" and put it in USR--maybe USR doesnt matter. 
-		//i think SYS is all the misc modes. please verify by setting nonsensical stack values for USR here
-		NDS_ARM9.R[13] = NDS_ARM9.R13_usr;
-		//n.b.: im not sure about all these, I dont know enough about arm9 svc/irq/etc modes
-		//and how theyre named in desmume to match them up correctly. i just guessed.
-
-		//--------------------------------
-		//setup the homebrew argv
-		//this is useful for nitrofs apps which are emulating themselves via cflash
-		//struct __argv {
-		//	int argvMagic;		//!< argv magic number, set to 0x5f617267 ('_arg') if valid 
-		//	char *commandLine;	//!< base address of command line, set of null terminated strings
-		//	int length;			//!< total length of command line
-		//	int argc;			//!< internal use, number of arguments
-		//	char **argv;		//!< internal use, argv pointer
-		//};
-		std::string rompath = "fat:/" + path.RomName;
-		const u32 kCommandline = 0x027E0000;
-		//const u32 kCommandline = 0x027FFF84;
-
-		//
-		_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
-		_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
-		_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
-		//0x027FFF7C (argc)
-		//0x027FFF80 (argv)
-		for(size_t i=0;i<rompath.size();i++)
-			_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
-		_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
-		//--------------------------------
-	}
-	
-	delete header;
+		bootResult = NDS_FakeBoot();
 
 	Screen_Reset();
 	gfx3d_reset();
@@ -2755,9 +2763,11 @@ void NDS_Reset()
 	WIFI_Reset();
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 
-	initSchedule();
-
+	SPU_DeInit();
 	SPU_ReInit();
+
+	//this needs to happen last, pretty much, since it establishes the correct scheduling state based on all of the above initialization
+	initSchedule();
 }
 
 static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {

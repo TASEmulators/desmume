@@ -1868,6 +1868,8 @@ void Screen_Reset(void)
 {
 	GPU_Reset(MainScreen.gpu, 0);
 	GPU_Reset(SubScreen.gpu, 1);
+	MainScreen.offset = 0;
+	SubScreen.offset = 192;
 
 	memset(GPU_screen, 0, sizeof(GPU_screen));
 	for(int i = 0; i < (256*192*2); i++)
