@@ -17,17 +17,20 @@
 
 #include "slot1_config.h"
 #include <windowsx.h>
+#include <shlobj.h>
+#include <string>
 #include "resource.h"
 #include "main.h"
 #include "debug.h"
 #include "../slot1.h"
 #include "../NDSSystem.h"
-#include <shlobj.h>
+#include "../path.h"
 
 HWND wndConfigSlot1 = NULL;
 NDS_SLOT1_TYPE temp_type_slot1 = NDS_SLOT1_NONE;
 NDS_SLOT1_TYPE last_type_slot1 = NDS_SLOT1_NONE;
 char tmp_fat_path[MAX_PATH] = {0};
+char tmp_fs_path[MAX_PATH] = {0};
 HWND OKbutton_slot1 = NULL;
 bool _OKbutton_slot1 = false;
 bool needReset_slot1 = true;
@@ -41,6 +44,55 @@ INT_PTR CALLBACK Slot1None(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		{
 			_OKbutton_slot1 = TRUE;
 			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+INT_PTR CALLBACK Slot1Debug(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	switch(msg)
+	{
+		case WM_INITDIALOG: 
+		{
+			_OKbutton_slot1 = TRUE;
+
+			SetWindowText(GetDlgItem(dialog, IDC_DIRECTORY_SCAN), tmp_fs_path);
+			return TRUE;
+		}
+
+		
+		case WM_COMMAND:
+		{
+			switch (LOWORD(wparam))
+			{
+				case IDC_BROWSE:
+				{
+					BROWSEINFO bp={0};
+
+					bp.hwndOwner=dialog;
+					bp.pidlRoot=NULL;
+					bp.pszDisplayName=NULL;
+					bp.lpszTitle="Select directory for game files";
+					bp.ulFlags=BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
+					bp.lpfn=NULL;
+	
+					LPITEMIDLIST tmp = SHBrowseForFolder((LPBROWSEINFO)&bp);
+					if (tmp!=NULL) 
+					{
+						memset(tmp_fs_path, 0, sizeof(tmp_fs_path));
+						SHGetPathFromIDList(tmp, tmp_fs_path);
+						if (tmp_fs_path[strlen(tmp_fs_path)-1] != '\\')
+							tmp_fs_path[strlen(tmp_fs_path)] = '\\';
+						SetWindowText(GetDlgItem(dialog, IDC_DIRECTORY_SCAN), tmp_fs_path);
+					}
+					if (strlen(tmp_fs_path))
+							EnableWindow(OKbutton_slot1, TRUE);
+						else
+							EnableWindow(OKbutton_slot1, FALSE);
+					break;
+				}
+			}
 		}
 	}
 	return FALSE;
@@ -99,7 +151,7 @@ u32	Slot1_IDDs[NDS_SLOT1_COUNT] = {
 	IDD_SLOT1_R4,				// NDS_SLOT1_R4,			- R4 flash card
 	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
-	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
+	IDD_SLOT1_DEBUG,			// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
 };
 
 DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
@@ -108,7 +160,7 @@ DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
 	Slot1None,					// NDS_SLOT1_R4,			- R4 flash card
 	Slot1R4,  					// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	Slot1None,					// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
-	Slot1None					// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
+	Slot1Debug					// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
 };
 
 
@@ -197,6 +249,7 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 void slot1Dialog(HWND hwnd)
 {
 	strcpy(tmp_fat_path, slot1_GetFatDir().c_str());
+	strcpy(tmp_fs_path, path.getpath(path.SLOT1D).c_str());
 	temp_type_slot1 = slot1_GetCurrentType();
 	last_type_slot1 = temp_type_slot1;
 	_OKbutton_slot1 = false;
@@ -225,6 +278,11 @@ void slot1Dialog(HWND hwnd)
 			case NDS_SLOT1_RETAIL_NAND:
 				break;
 			case NDS_SLOT1_RETAIL_DEBUG:
+				if (strlen(tmp_fs_path))
+				{
+					path.setpath(path.SLOT1D, tmp_fs_path);
+					WritePrivateProfileString(SECTION, SLOT1DKEY, path.pathToSlot1D, IniName);
+				}
 				break;
 			default:
 				return;
