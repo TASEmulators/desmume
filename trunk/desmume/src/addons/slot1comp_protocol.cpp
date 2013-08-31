@@ -223,3 +223,30 @@ u32 Slot1Comp_Protocol::read_GCDATAIN(u8 PROCNUM)
 
 	return 0xFFFFFFFF;
 }
+
+void Slot1Comp_Protocol::savestate(EMUFILE* os)
+{
+	s32 version = 0;
+	os->write32le(version);
+	os->write32le((s32)mode);
+	os->write32le((s32)operation);
+	os->fwrite(command.bytes,8);
+	os->write32le(address);
+	os->write32le(length);
+	os->write32le(delay);
+	os->write32le(chipId);
+	os->write32le(gameCode);
+}
+
+void Slot1Comp_Protocol::loadstate(EMUFILE* is)
+{
+	s32 version = is->read32le();
+	mode = (eCardMode)is->read32le();
+	operation = (eSlot1Operation)is->read32le();
+	is->fread(command.bytes,8);
+	address = is->read32le();
+	length = is->read32le();
+	delay = is->read32le();
+	chipId = is->read32le();
+	gameCode = is->read32le();
+}

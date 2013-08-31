@@ -80,6 +80,10 @@ public:
 
 	//called when the auxspi burst is ended (SPI chipselect in is going low)
 	virtual void auxspi_reset(int PROCNUM) {}
+
+	virtual void savestate(EMUFILE* os) {}
+
+	virtual void loadstate(EMUFILE* is) {}
 }; 
 
 typedef ISlot1Interface* TISlot1InterfaceConstructor();
@@ -102,6 +106,8 @@ void slot1_Init();
 bool slot1_Connect();
 void slot1_Disconnect();
 void slot1_Shutdown();
+void slot1_Savestate(EMUFILE* os);
+void slot1_Loadstate(EMUFILE* is);
 
 //just disconnects and reconnects the device. ideally, the disconnection and connection would be called with sensible timing
 void slot1_Reset();

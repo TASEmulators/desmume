@@ -65,6 +65,9 @@ public:
 class Slot1Comp_Protocol
 {
 public:
+
+	void savestate(EMUFILE* os);
+	void loadstate(EMUFILE* is);
 	
 	//set some kind of protocol/hardware reset state
 	void reset(ISlot1Comp_Protocol_Client* client);
@@ -81,6 +84,8 @@ public:
 	
 	//operations not related to obscurities of the protocol or otherwise unknown are passed through to the client here
 	ISlot1Comp_Protocol_Client* client;
+
+	//--state--
 
 	//the major operational mode. the protocol shifts modes and interprets commands into operations differently depending on the mode
 	eCardMode mode;
