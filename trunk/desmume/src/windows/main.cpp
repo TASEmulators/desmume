@@ -2475,7 +2475,9 @@ static BOOL LoadROM(const char * filename, const char * physicalName, const char
 
 		return TRUE;		
 	}
-	INFO("Loading %s FAILED.\n",logicalName);
+	else
+		msgbox->error("Loading %s FAILED.\n", logicalName);
+
 	return FALSE;
 }
 
