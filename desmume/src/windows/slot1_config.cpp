@@ -99,14 +99,16 @@ u32	Slot1_IDDs[NDS_SLOT1_COUNT] = {
 	IDD_SLOT1_R4,				// NDS_SLOT1_R4,			- R4 flash card
 	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
+	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
 };
 
 DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
+	Slot1None,
 	Slot1None,					// NDS_SLOT1_RETAIL_AUTO	- autodetect which kind of retail card to use 
 	Slot1None,					// NDS_SLOT1_R4,			- R4 flash card
 	Slot1R4,  					// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	Slot1None,					// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
-	Slot1None
+	Slot1None					// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
 };
 
 
@@ -221,6 +223,8 @@ void slot1Dialog(HWND hwnd)
 				}
 				break;
 			case NDS_SLOT1_RETAIL_NAND:
+				break;
+			case NDS_SLOT1_RETAIL_DEBUG:
 				break;
 			default:
 				return;

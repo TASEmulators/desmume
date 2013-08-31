@@ -26,6 +26,8 @@ class Slot1Comp_Rom
 public:
 	void start(eSlot1Operation operation, u32 addr);
 	u32 read();
+	u32 getAddress();
+	u32 incAddress();
 private:
 	u32 address;
 	eSlot1Operation operation;

@@ -305,6 +305,8 @@ void CommandLine::process_addonCommands()
 	else if(slot1 == "RETAILNAND")
 		slot1_Change(NDS_SLOT1_RETAIL_NAND);
 		else if(slot1 == "RETAILMCROM")
-		slot1_Change(NDS_SLOT1_RETAIL_MCROM);
+			slot1_Change(NDS_SLOT1_RETAIL_MCROM);
+			else if(slot1 == "RETAILDEBUG")
+				slot1_Change(NDS_SLOT1_RETAIL_DEBUG);
 }
 

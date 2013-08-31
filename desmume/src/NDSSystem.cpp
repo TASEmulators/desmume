@@ -41,7 +41,6 @@
 #include "debug.h"
 #include "firmware.h"
 #include "version.h"
-#include "slot1.h"
 #include "path.h"
 
 //int xxctr=0;
@@ -446,8 +445,6 @@ static void loadrom(std::string fname) {
 	fseek(inf,0,SEEK_SET);
 
 	gameInfo.resize(size);
-
-	extern NDS_SLOT1_TYPE slot1_device_type;
 
 	fread(gameInfo.romdata,1,size,inf);
 	gameInfo.fillGap();
@@ -2756,7 +2753,6 @@ void NDS_Reset()
 	Screen_Reset();
 	gfx3d_reset();
 	gpu3D->NDS_3D_Reset();
-	slot1_Reset();
 
 	WIFI_Reset();
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
