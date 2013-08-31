@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by resources.rc
 //
+#define ICONDESMUME                     101
 #define IDD_RECORDMOVIE                 101
 #define IDM_OPEN                        101
 #define IDM_QUIT                        102
@@ -731,7 +732,6 @@
 #define IDC_SOUND5MUTE                  2006
 #define IDC_SOUND6MUTE                  2007
 #define IDC_SOUND7MUTE                  2008
-#define ICONDESMUME                     2009
 #define IDD_REPLAYINP                   2010
 #define IDD_REPLAY_METADATA             2011
 #define MENU_PRINCIPAL                  2012
