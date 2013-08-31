@@ -43,7 +43,8 @@ public:
 		NDS_SLOT1_TYPE selection = NDS_SLOT1_RETAIL_MCROM;
 		
 		//check game ID in core emulator and select right implementation
-		if(!memcmp(gameInfo.header.gameCode,"UORE",4))
+		if(!memcmp(gameInfo.header.gameCode,"UORE",4) ||
+			!memcmp(gameInfo.header.gameCode,"UORJ",4))
 			selection = NDS_SLOT1_RETAIL_NAND;
 
 		mSelectedImplementation = slot1_List[selection];

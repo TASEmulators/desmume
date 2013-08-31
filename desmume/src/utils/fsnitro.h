@@ -18,6 +18,10 @@
 #ifndef _FS_NITRO_H_
 #define _FS_NITRO_H_
 #include <string>
+#ifndef _MSC_VER
+#include <stdint.h>
+#include <string.h>
+#endif
 #include "../types.h"
 
 using namespace std;
