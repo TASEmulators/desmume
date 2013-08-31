@@ -103,3 +103,19 @@ u32 Slot1Comp_Rom::incAddress()
 	address = (address&~0xFFF) + ((address+4)&0xFFF);
 	return address;
 }
+
+
+void Slot1Comp_Rom::savestate(EMUFILE* os)
+{
+	s32 version = 0;
+	os->write32le(version);
+	os->write32le((s32)operation);
+	os->write32le(address);
+}
+
+void Slot1Comp_Rom::loadstate(EMUFILE* is)
+{
+	s32 version = is->read32le();
+	operation = (eSlot1Operation)is->read32le();
+	address = is->read32le();
+}

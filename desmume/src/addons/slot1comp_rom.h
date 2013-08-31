@@ -19,7 +19,7 @@
 //this is largely done by accessing the rom provided in the core emulator
 
 #include "slot1comp_protocol.h"
-
+#include "emufile.h"
 
 class Slot1Comp_Rom
 {
@@ -28,6 +28,10 @@ public:
 	u32 read();
 	u32 getAddress();
 	u32 incAddress();
+
+	void savestate(EMUFILE* os);
+	void loadstate(EMUFILE* is);
+
 private:
 	u32 address;
 	eSlot1Operation operation;

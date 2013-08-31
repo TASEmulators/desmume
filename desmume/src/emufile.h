@@ -43,6 +43,8 @@ THE SOFTWARE.
 #include <unistd.h>
 #endif
 
+class EMUFILE_MEMORY;
+
 class EMUFILE {
 protected:
 	bool failbit;
@@ -120,6 +122,10 @@ public:
 	virtual void fflush() = 0;
 
 	virtual void truncate(s32 length) = 0;
+
+	void writeMemoryStream(EMUFILE_MEMORY* ms);
+	void readMemoryStream(EMUFILE_MEMORY* ms);
+
 };
 
 //todo - handle read-only specially?
@@ -182,10 +188,10 @@ public:
 		va_start(argptr, format);
 		vsprintf(tempbuf,format,argptr);
 		
-        fwrite(tempbuf,amt);
+		fwrite(tempbuf,amt);
 		delete[] tempbuf;
-		
-        va_end(argptr);
+
+		va_end(argptr);
 		return amt;
 	};
 

@@ -258,3 +258,25 @@ size_t EMUFILE::readdouble(double* val)
 	*val = u64_to_double(temp);
 	return ret;
 }
+
+void EMUFILE::writeMemoryStream(EMUFILE_MEMORY* ms)
+{
+	s32 size = (s32)ms->size();
+	write32le(size);
+	if(size>0)
+	{
+		std::vector<u8>* vec = ms->get_vec();
+		fwrite(&vec->at(0),size);
+	}
+}
+
+void EMUFILE::readMemoryStream(EMUFILE_MEMORY* ms)
+{
+	s32 size = read32le();
+	if(size != 0)
+	{
+		std::vector<u8> temp(size);
+		fread(&temp[0],size);
+		ms->fwrite(&temp[0],size);
+	}
+}

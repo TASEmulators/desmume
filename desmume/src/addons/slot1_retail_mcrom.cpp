@@ -78,6 +78,18 @@ public:
 		rom.start(operation,protocol.address);
 	}
 
+	virtual void savestate(EMUFILE* os)
+	{
+		protocol.savestate(os);
+		rom.savestate(os);
+	}
+
+	virtual void loadstate(EMUFILE* is)
+	{
+		protocol.loadstate(is);
+		rom.loadstate(is);
+	}
+
 private:
 
 	u32 slot1client_read_GCDATAIN(eSlot1Operation operation)

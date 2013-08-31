@@ -166,6 +166,14 @@ NDS_SLOT1_TYPE slot1_GetCurrentType()
 	return slot1_device_type;
 }
 
+void slot1_Savestate(EMUFILE* os)
+{
+	slot1_device->savestate(os);
+}
+void slot1_Loadstate(EMUFILE* is)
+{
+	slot1_device->loadstate(is);
+}
 
 	//// --- Ninja SD commands notes -------------------------------------
 	//		///writetoGCControl:

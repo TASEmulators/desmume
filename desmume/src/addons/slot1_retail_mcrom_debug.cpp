@@ -88,6 +88,18 @@ public:
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
 
+	virtual void savestate(EMUFILE* os)
+	{
+		protocol.savestate(os);
+		rom.savestate(os);
+	}
+
+	virtual void loadstate(EMUFILE* is)
+	{
+		protocol.loadstate(is);
+		rom.loadstate(is);
+	}
+
 	virtual void slot1client_startOperation(eSlot1Operation operation)
 	{
 		if (protocol.operation == eSlot1Operation_B7_Read)
