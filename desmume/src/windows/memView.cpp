@@ -177,7 +177,7 @@ bool memIsAvailable(MemRegionType regionType, HWAddressType address)
 	if (regionType == MEMVIEW_ARM7 && (address & 0xFFFF0000) == 0x04800000)
 		return false;
 
-	if (regionType == MEMVIEW_ROM && (address < gameInfo.romsize))
+	if (regionType == MEMVIEW_ROM && (address > gameInfo.romsize))
 		return false;
 
 	return true;
