@@ -221,9 +221,13 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				return TRUE;
 
 				case ID_FSNITRO_VIEW:
-					if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
-						OpenToolWindow(new CMemView(MEMVIEW_ROM, fs->getStartAddrById(currentFileID)));
-				return TRUE;
+					if (currentFileID < 0xF000)
+					{
+						if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
+							OpenToolWindow(new CMemView(MEMVIEW_ROM, fs->getStartAddrById(currentFileID)));
+						return TRUE;
+					}
+				return FALSE;
 
 				case ID_EXTRACTFILE:
 				case ID_EXTRACTALL:
@@ -276,10 +280,13 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					switch (notify->code)
 					{
 						case NM_DBLCLK:
-							case ID_FSNITRO_VIEW:
-							if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
-								OpenToolWindow(new CMemView(MEMVIEW_ROM, fs->getStartAddrById(currentFileID)));
-							return TRUE;
+							if (currentFileID < 0xF000)
+							{
+								if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
+									OpenToolWindow(new CMemView(MEMVIEW_ROM, fs->getStartAddrById(currentFileID)));
+								return TRUE;
+							}
+							return FALSE;
 
 						case NM_RCLICK:
 							{
