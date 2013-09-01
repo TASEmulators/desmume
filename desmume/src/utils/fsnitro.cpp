@@ -17,11 +17,13 @@
 
 #include <stdio.h>
 #include <string>
-#include <direct.h>
 #ifdef _MSC_VER
+#include <direct.h>
 #include <windows.h>
 #define __mkdir(x) mkdir(x)
 #else
+#include <unistd.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <stdint.h>
 #define __mkdir(x) mkdir(x, 0777)
