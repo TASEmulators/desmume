@@ -22,13 +22,21 @@
 #ifndef MEM_VIEW_H
 #define MEM_VIEW_H
 
+enum MemRegionType {
+	MEMVIEW_ARM9 = 0,
+	MEMVIEW_ARM7,
+	MEMVIEW_FIRMWARE,
+	MEMVIEW_ROM,
+	MEMVIEW_FULL
+};
+
 INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 class CMemView : public CToolWindow
 {
 public:
-	CMemView();
+	CMemView(MemRegionType memRegion = MEMVIEW_ARM9, u32 start_address = 0xFFFFFFFF);
 	~CMemView();
 
 	HFONT font;

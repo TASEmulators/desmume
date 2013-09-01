@@ -23,6 +23,7 @@
 #include "../MMU.h"
 #include "../path.h"
 #include "../utils/fsnitro.h"
+#include "memView.h"
 
 //not available on old SDK versions
 #ifndef ILC_HIGHQUALITYSCALE
@@ -90,6 +91,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 
 				HWND tree = GetDlgItem(hWnd, IDC_FILES_TREE);
+				SendMessage(tree, WM_SETREDRAW, (WPARAM)false, 0);
 
 				//HBITMAP hBmp;
 				HICON hIcon = NULL;
@@ -191,6 +193,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 					TreeView_InsertItem(tree, &item);
 				}
 				delete [] dirs;
+				SendMessage(tree, WM_SETREDRAW, (WPARAM)true, 0);
 
 				popupMenu = LoadMenu(hAppInst, MAKEINTRESOURCE(MENU_FSNITRO));
 			}
@@ -215,6 +218,11 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 			{
 				case IDCANCEL:
 					SendMessage(hWnd, WM_CLOSE, 0, 0);
+				return TRUE;
+
+				case ID_FSNITRO_VIEW:
+					if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
+						OpenToolWindow(new CMemView(MEMVIEW_ROM, fs->getStartAddrById(currentFileID)));
 				return TRUE;
 
 				case ID_EXTRACTFILE:
@@ -267,9 +275,16 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 				{
 					switch (notify->code)
 					{
+						case NM_DBLCLK:
+							case ID_FSNITRO_VIEW:
+							if (RegWndClass("MemView_ViewBox", MemView_ViewBoxProc, 0, sizeof(CMemView*)))
+								OpenToolWindow(new CMemView(MEMVIEW_ROM, fs->getStartAddrById(currentFileID)));
+							return TRUE;
+
 						case NM_RCLICK:
 							{
-
+								DWORD tmp = GetMessagePos();
+								POINTS pos = MAKEPOINTS(tmp);
 								HTREEITEM hItem = TreeView_GetNextItem(notify->hwndFrom, 0, TVGN_DROPHILITE);
 								if(hItem)
 									TreeView_SelectItem(notify->hwndFrom, hItem);
@@ -283,8 +298,8 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 								
 								currentFileID = pitem.lParam;
 								EnableMenuItem(popupMenu, ID_EXTRACTFILE, MF_BYCOMMAND | ((currentFileID < 0xF000)?MF_ENABLED:MF_GRAYED));
-								DWORD tmp = GetMessagePos();
-								POINTS pos = MAKEPOINTS(tmp);
+								EnableMenuItem(popupMenu, ID_FSNITRO_VIEW, MF_BYCOMMAND | ((currentFileID < 0xF000)?MF_ENABLED:MF_GRAYED));
+								SetMenuDefaultItem(GetSubMenu(popupMenu, 0), ID_FSNITRO_VIEW, FALSE);
 								TrackPopupMenu(GetSubMenu(popupMenu, 0), TPM_LEFTALIGN | TPM_RIGHTBUTTON, pos.x, pos.y, NULL, hWnd, NULL);
 							}
 						break;
@@ -294,16 +309,16 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 								LPNMTREEVIEW sel = (LPNMTREEVIEW)lParam;
 								char buf[256] = {0};
 								
-								u16 id = sel->itemNew.lParam;
+								currentFileID = sel->itemNew.lParam;
 
-								if ((id & 0xF000) == 0xF000)
+								if ((currentFileID & 0xF000) == 0xF000)
 								{
 									SetWindowText(GetDlgItem(hWnd, IDC_FILE_INFO), "");
 								}
 								else
 								{
-									u32 start = fs->getStartAddrById(id);
-									u32 end = fs->getEndAddrById(id);
+									u32 start = fs->getStartAddrById(currentFileID);
+									u32 end = fs->getEndAddrById(currentFileID);
 									u32 size = (end - start);
 									sprintf(buf, "[%08X-%08X] size %d", start, end, size);
 									SetWindowText(GetDlgItem(hWnd, IDC_FILE_INFO), buf);

@@ -935,6 +935,7 @@
 #define ID_EXTRACTFILE                  40109
 #define ID_EXTRACTALL                   40110
 #define ID_CLOSE                        40111
+#define ID_FSNITRO_VIEW                 40112
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
