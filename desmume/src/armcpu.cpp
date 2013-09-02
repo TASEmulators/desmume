@@ -171,7 +171,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	memcpy(&armcpu->cond_table[0], &arm_cond_table[0], sizeof(arm_cond_table));
 #endif
 	
-	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
+	armcpu->LDTBit = (armcpu->proc_ID==0); //set ARMv5 style bit--different for each processor
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
 	armcpu->waitIRQ = FALSE;
 	armcpu->halt_IE_and_IF = FALSE;
@@ -202,7 +202,9 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	//armcpu->R[15] = adr;
 //#endif
 
-	armcpu->next_instruction = adr;
+	//do something sensible when booting up to a thumb address
+	armcpu->next_instruction = adr & ~1;
+	armcpu->CPSR.bits.T = BIT0(adr);
 	
 //#ifndef GDB_STUB
 	armcpu_prefetch(armcpu);

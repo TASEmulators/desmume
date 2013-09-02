@@ -2582,7 +2582,7 @@ bool NDS_FakeBoot()
 			_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
 
-	//firmware sets the cpus to an initial state with their respective programs entrypoints
+	//the firmware will be booting to these entrypoint addresses via BX (well, the arm9 at least; is unverified for the arm7)
 	armcpu_init(&NDS_ARM7, header->ARM7exe);
 	armcpu_init(&NDS_ARM9, header->ARM9exe);
 
@@ -2618,11 +2618,6 @@ bool NDS_FakeBoot()
 	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
 	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
 
-	 //zero 11-aug-2013 - dont think we need this. the emulator will be setting these nonstop
-	//_MMU_write16<ARMCPU_ARM9>(REG_KEYINPUT, 0x3FF);
-	//_MMU_write16<ARMCPU_ARM7>(REG_KEYINPUT, 0x3FF);
-	//_MMU_write08<ARMCPU_ARM7>(REG_EXTKEYIN, 0x43);
-
 	//bitbox 4k demo is so stripped down it relies on default stack values
 	//otherwise the arm7 will crash before making a sound
 	//(these according to gbatek softreset bios docs)
@@ -2655,7 +2650,10 @@ bool NDS_FakeBoot()
 	const u32 kCommandline = 0x027E0000;
 	//const u32 kCommandline = 0x027FFF84;
 
-	//
+	//homebrew-related stuff.
+	//its safe to put things in this position.. apparently nothing important is here.
+	//however, some games could be checking them as an anti-desmume measure, so we might have to control it with slot-1 settings to suggest booting a homebrew app
+	//perhaps we could automatically boot homebrew to an R4-like device.
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE70, 0x5f617267);
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE74, kCommandline); //(commandline starts here)
 	_MMU_write32<ARMCPU_ARM9>(0x02FFFE78, rompath.size()+1);
