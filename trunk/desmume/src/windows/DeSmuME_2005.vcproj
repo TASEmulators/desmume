@@ -686,14 +686,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\fsnitroView.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\fsnitroView.h"
-				>
-			</File>
-			<File
 				RelativePath=".\FEX_Interface.cpp"
 				>
 			</File>
@@ -703,6 +695,14 @@
 			</File>
 			<File
 				RelativePath=".\FirmConfig.h"
+				>
+			</File>
+			<File
+				RelativePath=".\fsnitroView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\fsnitroView.h"
 				>
 			</File>
 			<File
@@ -1594,15 +1594,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\utils\emufat_types.h"
+				>
+			</File>
+			<File
 				RelativePath="..\utils\fsnitro.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\utils\fsnitro.h"
-				>
-			</File>
-			<File
-				RelativePath="..\utils\emufat_types.h"
 				>
 			</File>
 			<File
@@ -2518,10 +2518,6 @@
 		</File>
 		<File
 			RelativePath="..\arm_instructions.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\arm_instructions.h"
 			>
 		</File>
 		<File
