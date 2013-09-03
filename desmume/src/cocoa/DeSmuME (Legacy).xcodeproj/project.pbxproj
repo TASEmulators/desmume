@@ -741,6 +741,20 @@
 		AB3AD16D14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB3AD16E14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
 		AB3AD16F14C4F6AD00D7D192 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */; };
+		AB4352B517D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352B617D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352B717D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352B817D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352B917D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352BA17D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352BB17D66187007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352B417D66187007417C8 /* fsnitro.cpp */; };
+		AB4352C117D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
+		AB4352C217D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
+		AB4352C317D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
+		AB4352C417D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
+		AB4352C517D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
+		AB4352C617D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
+		AB4352C717D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */; };
 		AB46780A14ABD4890002FF94 /* AppIcon_DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */; };
 		AB46780B14ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */; };
 		AB46780C14ABD4890002FF94 /* AppIcon_ROMSave.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */; };
@@ -1361,6 +1375,9 @@
 		AB2F5B011704EE0100E28885 /* utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
 		AB2F5B021704EE0100E28885 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		AB3AD16B14C4F6AD00D7D192 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
+		AB4352B317D66187007417C8 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
+		AB4352B417D66187007417C8 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
+		AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom_debug.cpp; sourceTree = "<group>"; };
 		AB46780614ABD4890002FF94 /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		AB46780714ABD4890002FF94 /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
 		AB46780814ABD4890002FF94 /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
@@ -1851,6 +1868,7 @@
 				AB06CD9D135B8AED00E977B3 /* slot1_r4.cpp */,
 				AB4C80EF17C5DA240024D479 /* slot1_retail_auto.cpp */,
 				AB4C80F017C5DA240024D479 /* slot1_retail_mcrom.cpp */,
+				AB4352C017D661AC007417C8 /* slot1_retail_mcrom_debug.cpp */,
 				956B96C213DF4CF900FCDCD0 /* slot1_retail_nand.cpp */,
 				AB4C80F117C5DA240024D479 /* slot1comp_mc.cpp */,
 				ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */,
@@ -1940,11 +1958,12 @@
 				AB06CDE1135B8AED00E977B3 /* decrypt */,
 				AB06CDEE135B8AED00E977B3 /* libfat */,
 				7FA912191426523900E2ABDD /* tinyxml */,
-				AB4C80E317C5DA070024D479 /* advanscene.cpp */,
 				AB06CDDD135B8AED00E977B3 /* ConvertUTF.c */,
+				AB4C80E317C5DA070024D479 /* advanscene.cpp */,
 				AB06CDDF135B8AED00E977B3 /* datetime.cpp */,
 				AB06CDE8135B8AED00E977B3 /* dlditool.cpp */,
 				AB06CDE9135B8AED00E977B3 /* emufat.cpp */,
+				AB4352B417D66187007417C8 /* fsnitro.cpp */,
 				AB06CDEC135B8AED00E977B3 /* guid.cpp */,
 				AB06CE0A135B8AED00E977B3 /* md5.cpp */,
 				AB06CE0C135B8AED00E977B3 /* task.cpp */,
@@ -1955,6 +1974,7 @@
 				AB06CDE0135B8AED00E977B3 /* datetime.h */,
 				AB06CDEA135B8AED00E977B3 /* emufat.h */,
 				AB06CDEB135B8AED00E977B3 /* emufat_types.h */,
+				AB4352B317D66187007417C8 /* fsnitro.h */,
 				AB06CDED135B8AED00E977B3 /* guid.h */,
 				AB06CE0B135B8AED00E977B3 /* md5.h */,
 				AB06CE0D135B8AED00E977B3 /* task.h */,
@@ -2941,6 +2961,8 @@
 				AB4C810017C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815B17C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9215C17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352B717D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C317D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3088,6 +3110,8 @@
 				AB4C810C17C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815E17C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9215F17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352BA17D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C617D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3235,6 +3259,8 @@
 				AB4C80F817C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815917C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9215A17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352B517D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C117D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3352,6 +3378,8 @@
 				AB4C810817C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815D17C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9215E17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352B917D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C517D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3469,6 +3497,8 @@
 				AB4C811017C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815F17C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9216017CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352BB17D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C717D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3596,6 +3626,8 @@
 				AB4C80FC17C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815A17C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9215B17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352B617D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C217D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3743,6 +3775,8 @@
 				AB4C810417C5DA240024D479 /* slot1comp_rom.cpp in Sources */,
 				AB4C815C17C5DC240024D479 /* encrypt.cpp in Sources */,
 				ABB9215D17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
+				AB4352B817D66187007417C8 /* fsnitro.cpp in Sources */,
+				AB4352C417D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

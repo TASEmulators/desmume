@@ -72,6 +72,12 @@
 		AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
 		AB29B33116D4BEBF000EF671 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB29B33016D4BEBF000EF671 /* InputManager.mm */; };
 		AB29B33216D4BEBF000EF671 /* InputManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB29B33016D4BEBF000EF671 /* InputManager.mm */; };
+		AB2EE12C17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE12B17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp */; };
+		AB2EE12D17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE12B17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp */; };
+		AB2EE12E17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE12B17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp */; };
+		AB2EE13117D57F5000F68622 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
+		AB2EE13217D57F5000F68622 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
+		AB2EE13317D57F5000F68622 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
 		AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB350D3B147A1D93007165AC /* HID_usage_strings.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB350D3A147A1D93007165AC /* HID_usage_strings.plist */; };
 		AB3701E5173A3FBF006E573E /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB74EC891738499C0026C41E /* Carbon.framework */; };
@@ -720,6 +726,9 @@
 		AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = macosx_10_5_compat.cpp; sourceTree = "<group>"; };
 		AB29B32F16D4BEBF000EF671 /* InputManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputManager.h; sourceTree = "<group>"; };
 		AB29B33016D4BEBF000EF671 /* InputManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputManager.mm; sourceTree = "<group>"; };
+		AB2EE12B17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom_debug.cpp; sourceTree = "<group>"; };
+		AB2EE12F17D57F5000F68622 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
+		AB2EE13017D57F5000F68622 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		AB350D38147A1D8D007165AC /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = English; path = translations/English.lproj/HID_usage_strings.plist; sourceTree = "<group>"; };
 		AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmuControllerDelegate.h; sourceTree = "<group>"; };
@@ -1624,6 +1633,7 @@
 				ABD1FF011345AC9B00AF11D1 /* slot1_r4.cpp */,
 				AB9038A917C5ED2200F410BD /* slot1_retail_auto.cpp */,
 				AB9038AA17C5ED2200F410BD /* slot1_retail_mcrom.cpp */,
+				AB2EE12B17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp */,
 				AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */,
 				AB9038AB17C5ED2200F410BD /* slot1comp_mc.cpp */,
 				AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */,
@@ -1661,11 +1671,12 @@
 				ABD1FF211345ACBF00AF11D1 /* decrypt */,
 				ABD1FF2E1345ACBF00AF11D1 /* libfat */,
 				ABE670241415DE6C00E8E4C9 /* tinyxml */,
-				AB9038A517C5ECFD00F410BD /* advanscene.cpp */,
 				ABD1FF1D1345ACBF00AF11D1 /* ConvertUTF.c */,
+				AB9038A517C5ECFD00F410BD /* advanscene.cpp */,
 				ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */,
 				ABD1FF281345ACBF00AF11D1 /* dlditool.cpp */,
 				ABD1FF291345ACBF00AF11D1 /* emufat.cpp */,
+				AB2EE13017D57F5000F68622 /* fsnitro.cpp */,
 				ABD1FF2C1345ACBF00AF11D1 /* guid.cpp */,
 				ABD1FF4A1345ACBF00AF11D1 /* md5.cpp */,
 				ABD1FF4C1345ACBF00AF11D1 /* task.cpp */,
@@ -1676,6 +1687,7 @@
 				ABD1FF201345ACBF00AF11D1 /* datetime.h */,
 				ABD1FF2A1345ACBF00AF11D1 /* emufat.h */,
 				ABD1FF2B1345ACBF00AF11D1 /* emufat_types.h */,
+				AB2EE12F17D57F5000F68622 /* fsnitro.h */,
 				ABD1FF2D1345ACBF00AF11D1 /* guid.h */,
 				ABD1FF4B1345ACBF00AF11D1 /* md5.h */,
 				ABD1FF4D1345ACBF00AF11D1 /* task.h */,
@@ -1780,11 +1792,11 @@
 			isa = PBXGroup;
 			children = (
 				ABE670251415DE6C00E8E4C9 /* tinystr.cpp */,
-				ABE670261415DE6C00E8E4C9 /* tinystr.h */,
 				ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */,
-				ABE670281415DE6C00E8E4C9 /* tinyxml.h */,
 				ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */,
 				ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */,
+				ABE670261415DE6C00E8E4C9 /* tinystr.h */,
+				ABE670281415DE6C00E8E4C9 /* tinyxml.h */,
 			);
 			path = tinyxml;
 			sourceTree = "<group>";
@@ -2198,6 +2210,7 @@
 				ABD1FEDF1345AC8400AF11D1 /* FIFO.cpp in Sources */,
 				ABAD3E7413AF1D6D00502E1E /* FIFOSampleBuffer.cpp in Sources */,
 				ABD1FF601345ACBF00AF11D1 /* file_allocation_table.cpp in Sources */,
+				AB2EE12D17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				ABD1FF611345ACBF00AF11D1 /* filetime.cpp in Sources */,
 				ABAD3E7513AF1D6D00502E1E /* FIRFilter.cpp in Sources */,
 				ABD1FEE01345AC8400AF11D1 /* firmware.cpp in Sources */,
@@ -2320,6 +2333,7 @@
 				AB40568E169F5DCC0016AC3E /* x86func.cpp in Sources */,
 				AB405691169F5DCC0016AC3E /* x86operand.cpp in Sources */,
 				AB405694169F5DCC0016AC3E /* x86util.cpp in Sources */,
+				AB2EE13217D57F5000F68622 /* fsnitro.cpp in Sources */,
 				AB23567416C2F6F400DA782E /* macosx_10_5_compat.cpp in Sources */,
 				AB23567516C2FAD800DA782E /* OGLRender_3_2.cpp in Sources */,
 				AB3A655F16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
@@ -2346,6 +2360,7 @@
 				AB796CF315CDCBA200C59155 /* armcpu.cpp in Sources */,
 				AB796CF415CDCBA200C59155 /* bios.cpp in Sources */,
 				AB796CF515CDCBA200C59155 /* cache.cpp in Sources */,
+				AB2EE13117D57F5000F68622 /* fsnitro.cpp in Sources */,
 				AB796CF615CDCBA200C59155 /* cheatSystem.cpp in Sources */,
 				AB796CF715CDCBA200C59155 /* common.cpp in Sources */,
 				AB9038B517C5ED2200F410BD /* slot1comp_mc.cpp in Sources */,
@@ -2402,6 +2417,7 @@
 				AB796D2715CDCBA200C59155 /* saves.cpp in Sources */,
 				AB796D2815CDCBA200C59155 /* slot1.cpp in Sources */,
 				AB796D2915CDCBA200C59155 /* slot1_none.cpp in Sources */,
+				AB2EE12C17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
 				AB796D2D15CDCBA200C59155 /* slot2_expMemory.cpp in Sources */,
@@ -2521,6 +2537,7 @@
 				ABB3C67C1501C04F00E0C22E /* slot2_expMemory.cpp in Sources */,
 				ABB3C67D1501C04F00E0C22E /* slot2_gbagame.cpp in Sources */,
 				ABB3C67E1501C04F00E0C22E /* slot2_guitarGrip.cpp in Sources */,
+				AB2EE12E17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				ABB3C67F1501C04F00E0C22E /* slot2_mpcf.cpp in Sources */,
 				ABB3C6801501C04F00E0C22E /* slot2_none.cpp in Sources */,
 				ABB3C6811501C04F00E0C22E /* slot2_paddle.cpp in Sources */,
@@ -2610,6 +2627,7 @@
 				ABB3C6D41501C04F00E0C22E /* texcache.cpp in Sources */,
 				AB9038BA17C5ED2200F410BD /* slot1comp_rom.cpp in Sources */,
 				ABB3C6D51501C04F00E0C22E /* thumb_instructions.cpp in Sources */,
+				AB2EE13317D57F5000F68622 /* fsnitro.cpp in Sources */,
 				ABB3C6D61501C04F00E0C22E /* version.cpp in Sources */,
 				ABB3C6D71501C04F00E0C22E /* wifi.cpp in Sources */,
 				ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */,
