@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2011-2012 Roger Manuel
 	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
@@ -58,12 +58,19 @@ VideoFilter::VideoFilter(size_t srcWidth,
 	
 	_isFilterRunning = false;
 	_vfSrcSurfacePixBuffer = NULL;
-	_vfTypeID = typeID;
+	
+	if (typeID < VideoFilterTypeIDCount)
+	{
+		_vfAttributes = VideoFilterAttributesList[typeID];
+	}
+	else
+	{
+		_vfAttributes = VideoFilterAttributesList[VideoFilterTypeID_None];
+	}
 	
 	pthread_mutex_init(&_mutexSrc, NULL);
 	pthread_mutex_init(&_mutexDst, NULL);
-	pthread_mutex_init(&_mutexTypeID, NULL);
-	pthread_mutex_init(&_mutexTypeString, NULL);
+	pthread_mutex_init(&_mutexAttributes, NULL);
 	pthread_cond_init(&_condRunning, NULL);
 	
 	// Create all threads
@@ -120,8 +127,7 @@ VideoFilter::~VideoFilter()
 	
 	pthread_mutex_destroy(&_mutexSrc);
 	pthread_mutex_destroy(&_mutexDst);
-	pthread_mutex_destroy(&_mutexTypeID);
-	pthread_mutex_destroy(&_mutexTypeString);
+	pthread_mutex_destroy(&_mutexAttributes);
 	pthread_cond_destroy(&_condRunning);
 }
 
@@ -182,7 +188,8 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
-	result = this->ChangeFilterByID(this->GetTypeID());
+	const VideoFilterAttributes vfAttr = this->GetAttributes();
+	result = this->ChangeFilterByAttributes(&vfAttr);
 	
 	return result;
 }
@@ -209,7 +216,9 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		return result;
 	}
 	
-	return this->ChangeFilterByAttributes(&VideoFilterAttributesList[typeID]);
+	result = this->ChangeFilterByAttributes(&VideoFilterAttributesList[typeID]);
+	
+	return result;
 }
 
 /********************************************************************************************
@@ -233,16 +242,22 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 		return result;
 	}
 	
+	if (vfAttr->scaleMultiply == 0 || vfAttr->scaleDivide < 1)
+	{
+		return result;
+	}
+	
+	this->SetAttributes(*vfAttr);
+	VideoFilterAttributes &workingAttributes = this->_vfAttributes;
+	
 	pthread_mutex_lock(&this->_mutexSrc);
 	const size_t srcWidth = this->_vfSrcSurface.Width;
 	const size_t srcHeight = this->_vfSrcSurface.Height;
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
-	const VideoFilterTypeID typeID = vfAttr->typeID;
-	const size_t dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-	const size_t dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-	const char *typeString = vfAttr->typeString;
-	const VideoFilterFunc filterFunction = vfAttr->filterFunction;
+	const size_t dstWidth = srcWidth * workingAttributes.scaleMultiply / workingAttributes.scaleDivide;
+	const size_t dstHeight = srcHeight * workingAttributes.scaleMultiply / workingAttributes.scaleDivide;
+	const VideoFilterFunc filterFunction = workingAttributes.filterFunction;
 	
 	pthread_mutex_lock(&this->_mutexDst);
 	
@@ -261,7 +276,7 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 	this->_vfDstSurface.Surface = (unsigned char *)newSurfaceBuffer;
 	
 	// Update the surfaces on threads.
-	size_t threadCount = this->_vfThread.size();
+	const size_t threadCount = this->_vfThread.size();
 	
 	for (size_t i = 0; i < threadCount; i++)
 	{
@@ -279,9 +294,6 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 	}
 	
 	pthread_mutex_unlock(&this->_mutexDst);
-	
-	this->SetTypeID(typeID);
-	this->SetTypeString(typeString);
 	
 	result = true;
 	
@@ -306,7 +318,6 @@ uint32_t* VideoFilter::RunFilter()
 	pthread_mutex_lock(&this->_mutexDst);
 	
 	this->_isFilterRunning = true;
-	uint32_t *destBufPtr = (uint32_t *)this->_vfDstSurface.Surface;
 	
 	if (this->_vfFunc == NULL)
 	{
@@ -314,8 +325,7 @@ uint32_t* VideoFilter::RunFilter()
 	}
 	else
 	{
-		size_t threadCount = this->_vfThread.size();
-		
+		const size_t threadCount = this->_vfThread.size();
 		if (threadCount > 0)
 		{
 			for (size_t i = 0; i < threadCount; i++)
@@ -340,11 +350,11 @@ uint32_t* VideoFilter::RunFilter()
 	pthread_mutex_unlock(&this->_mutexDst);
 	pthread_mutex_unlock(&this->_mutexSrc);
 	
-	return destBufPtr;
+	return (uint32_t *)this->_vfDstSurface.Surface;
 }
 
 /********************************************************************************************
-	RunFilterCustom() - STATIC
+	RunFilterCustomByID() - STATIC
 	
 	Runs the pixels from srcBuffer through the video filter, and then stores the
 	resulting pixels into dstBuffer. This function is useful for when your source or
@@ -371,22 +381,62 @@ uint32_t* VideoFilter::RunFilter()
 	Returns:
 		Nothing.
  ********************************************************************************************/
-void VideoFilter::RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer,
-								  const size_t srcWidth, const size_t srcHeight,
-								  const VideoFilterTypeID typeID)
+void VideoFilter::RunFilterCustomByID(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer,
+									  const size_t srcWidth, const size_t srcHeight,
+									  const VideoFilterTypeID typeID)
+{
+	if (typeID >= VideoFilterTypeIDCount)
+	{
+		return;
+	}
+	
+	VideoFilter::RunFilterCustomByAttributes(srcBuffer, dstBuffer, srcWidth, srcHeight, &VideoFilterAttributesList[typeID]);
+}
+
+/********************************************************************************************
+	RunFilterCustomByAttributes() - STATIC
+
+	Runs the pixels from srcBuffer through the video filter, and then stores the
+	resulting pixels into dstBuffer. This function is useful for when your source or
+	destination buffers are already established, or when you want to run a filter once
+	without having to instantiate a new filter object.
+
+	Takes:
+		srcBuffer - A pointer to the source pixel buffer. The caller is responsible
+			for ensuring that this buffer is valid. Also note that certain video filters
+			may do out-of-bounds reads, so the caller is responsible for overallocating
+			this buffer in order to avoid crashing on certain platforms.
+
+		dstBuffer - A pointer to the destination pixel buffer. The caller is responsible
+			for ensuring that this buffer is valid and large enough to store all of the
+			destination pixels.
+
+		srcWidth - The source surface width in pixels.
+
+		srcHeight - The source surface height in pixels.
+
+		vfAttr - The video filter's attributes.
+
+	Returns:
+		Nothing.
+ ********************************************************************************************/
+void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer,
+											  const size_t srcWidth, const size_t srcHeight,
+											  const VideoFilterAttributes *vfAttr)
 {
 	// Parameter check
 	if (srcBuffer == NULL ||
 		dstBuffer == NULL ||
-		srcWidth == 0 ||
-		srcHeight == 0 ||
-		typeID >= VideoFilterTypeIDCount)
+		srcWidth < 1 ||
+		srcHeight < 1 ||
+		vfAttr == NULL ||
+		vfAttr->scaleMultiply == 0 ||
+		vfAttr->scaleDivide < 1)
 	{
 		return;
 	}
 	
 	// Get the filter attributes
-	const VideoFilterAttributes *vfAttr = &VideoFilterAttributesList[typeID];
 	const size_t dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
 	const size_t dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
 	const VideoFilterFunc filterFunction = vfAttr->filterFunction;
@@ -440,41 +490,38 @@ const char* VideoFilter::GetTypeStringByID(const VideoFilterTypeID typeID)
 /********************************************************************************************
 	ACCESSORS
  ********************************************************************************************/
+VideoFilterAttributes VideoFilter::GetAttributes()
+{
+	pthread_mutex_lock(&this->_mutexAttributes);
+	VideoFilterAttributes vfAttr = this->_vfAttributes;
+	pthread_mutex_unlock(&this->_mutexAttributes);
+	
+	return vfAttr;
+}
+
+void VideoFilter::SetAttributes(const VideoFilterAttributes vfAttr)
+{
+	pthread_mutex_lock(&this->_mutexAttributes);
+	this->_vfAttributes = vfAttr;
+	pthread_mutex_unlock(&this->_mutexAttributes);
+}
+
 VideoFilterTypeID VideoFilter::GetTypeID()
 {
-	pthread_mutex_lock(&this->_mutexTypeID);
-	VideoFilterTypeID typeID = this->_vfTypeID;
-	pthread_mutex_unlock(&this->_mutexTypeID);
+	pthread_mutex_lock(&this->_mutexAttributes);
+	VideoFilterTypeID typeID = this->_vfAttributes.typeID;
+	pthread_mutex_unlock(&this->_mutexAttributes);
 	
 	return typeID;
 }
 
-void VideoFilter::SetTypeID(const VideoFilterTypeID typeID)
-{
-	pthread_mutex_lock(&this->_mutexTypeID);
-	this->_vfTypeID = typeID;
-	pthread_mutex_unlock(&this->_mutexTypeID);
-}
-
 const char* VideoFilter::GetTypeString()
 {
-	pthread_mutex_lock(&this->_mutexTypeString);
-	const char *typeString = this->_vfTypeString.c_str();
-	pthread_mutex_unlock(&this->_mutexTypeString);
+	pthread_mutex_lock(&this->_mutexAttributes);
+	const char *typeString = this->_vfAttributes.typeString;
+	pthread_mutex_unlock(&this->_mutexAttributes);
 	
 	return typeString;
-}
-
-void VideoFilter::SetTypeString(const char *typeString)
-{
-	this->SetTypeString(std::string(typeString));
-}
-
-void VideoFilter::SetTypeString(std::string typeString)
-{
-	pthread_mutex_lock(&this->_mutexTypeString);
-	this->_vfTypeString = typeString;
-	pthread_mutex_unlock(&this->_mutexTypeString);
 }
 
 uint32_t* VideoFilter::GetSrcBufferPtr()

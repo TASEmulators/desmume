@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011 Roger Manuel
+	Copyright (C) 2011-2012 Roger Manuel
 	Copyright (C) 2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
@@ -148,8 +148,7 @@ typedef struct
 class VideoFilter
 {
 private:
-	VideoFilterTypeID _vfTypeID;
-	std::string _vfTypeString;
+	VideoFilterAttributes _vfAttributes;
 	
 	SSurface _vfSrcSurface;
 	SSurface _vfDstSurface;
@@ -160,13 +159,10 @@ private:
 	bool _isFilterRunning;
 	pthread_mutex_t _mutexSrc;
 	pthread_mutex_t _mutexDst;
-	pthread_mutex_t _mutexTypeID;
-	pthread_mutex_t _mutexTypeString;
+	pthread_mutex_t _mutexAttributes;
 	pthread_cond_t _condRunning;
 	
-	void SetTypeID(VideoFilterTypeID typeID);
-	void SetTypeString(const char *typeString);
-	void SetTypeString(std::string typeString);
+	void SetAttributes(const VideoFilterAttributes vfAttr);
 	
 public:
 	VideoFilter(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount);
@@ -177,9 +173,11 @@ public:
 	bool ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr);
 	uint32_t* RunFilter();
 	
-	static void RunFilterCustom(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterTypeID typeID);
+	static void RunFilterCustomByID(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterTypeID typeID);
+	static void RunFilterCustomByAttributes(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterAttributes *vfAttr);
 	static const char* GetTypeStringByID(const VideoFilterTypeID typeID);
 	
+	VideoFilterAttributes GetAttributes();
 	VideoFilterTypeID GetTypeID();
 	const char* GetTypeString();
 	uint32_t* GetSrcBufferPtr();
