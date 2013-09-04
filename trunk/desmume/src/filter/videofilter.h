@@ -19,11 +19,21 @@
 #ifndef _VIDEOFILTER_
 #define _VIDEOFILTER_
 
-#include <stdint.h>
+#if defined(_MSC_VER)
+	typedef unsigned __int32 uint32_t;
+	#include <windows.h>
+	typedef CRITICAL_SECTION ThreadLock;
+	typedef HANDLE ThreadCond;
+#else
+	#include <stdint.h>
+	#include <pthread.h>
+	typedef pthread_mutex_t ThreadLock;
+	typedef pthread_cond_t ThreadCond;
+#endif
+
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#include <pthread.h>
 #include "filter.h"
 #include "../utils/task.h"
 
@@ -157,10 +167,10 @@ private:
 	std::vector<VideoFilterThread> _vfThread;
 	
 	bool _isFilterRunning;
-	pthread_mutex_t _mutexSrc;
-	pthread_mutex_t _mutexDst;
-	pthread_mutex_t _mutexAttributes;
-	pthread_cond_t _condRunning;
+	ThreadLock _lockSrc;
+	ThreadLock _lockDst;
+	ThreadLock _lockAttributes;
+	ThreadCond _condRunning;
 	
 	void SetAttributes(const VideoFilterAttributes vfAttr);
 	
@@ -173,8 +183,8 @@ public:
 	bool ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr);
 	uint32_t* RunFilter();
 	
-	static void RunFilterCustomByID(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterTypeID typeID);
-	static void RunFilterCustomByAttributes(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterAttributes *vfAttr);
+	static void RunFilterCustomByID(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterTypeID typeID);
+	static void RunFilterCustomByAttributes(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterAttributes *vfAttr);
 	static const char* GetTypeStringByID(const VideoFilterTypeID typeID);
 	
 	VideoFilterAttributes GetAttributes();
@@ -196,5 +206,15 @@ public:
 };
 
 static void* RunVideoFilterTask(void *arg);
+
+void ThreadLockInit(ThreadLock *theLock);
+void ThreadLockDestroy(ThreadLock *theLock);
+void ThreadLockLock(ThreadLock *theLock);
+void ThreadLockUnlock(ThreadLock *theLock);
+
+void ThreadCondInit(ThreadCond *theCondition);
+void ThreadCondDestroy(ThreadCond *theCondition);
+void ThreadCondWait(ThreadCond *theCondition, ThreadLock *conditionLock);
+void ThreadCondSignal(ThreadCond *theCondition);
 
 #endif

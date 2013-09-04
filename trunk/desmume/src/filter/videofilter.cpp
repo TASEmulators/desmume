@@ -25,7 +25,7 @@ int scanline_filter_b = 2;
 int scanline_filter_c = 2;
 int scanline_filter_d = 4;
 
-// 
+// Parameters passed to the RunVideoFilterTask() thread task function
 typedef struct
 {
 	void *index;
@@ -68,10 +68,10 @@ VideoFilter::VideoFilter(size_t srcWidth,
 		_vfAttributes = VideoFilterAttributesList[VideoFilterTypeID_None];
 	}
 	
-	pthread_mutex_init(&_mutexSrc, NULL);
-	pthread_mutex_init(&_mutexDst, NULL);
-	pthread_mutex_init(&_mutexAttributes, NULL);
-	pthread_cond_init(&_condRunning, NULL);
+	ThreadLockInit(&_lockSrc);
+	ThreadLockInit(&_lockDst);
+	ThreadLockInit(&_lockAttributes);
+	ThreadCondInit(&_condRunning);
 	
 	// Create all threads
 	_vfThread.resize(threadCount);
@@ -106,29 +106,29 @@ VideoFilter::~VideoFilter()
 	_vfThread.clear();
 	
 	// Destroy everything else
-	pthread_mutex_lock(&_mutexSrc);
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&_lockSrc);
+	ThreadLockLock(&_lockDst);
 	
-	while (this->_isFilterRunning)
+	while (_isFilterRunning)
 	{
-		pthread_cond_wait(&this->_condRunning, &this->_mutexDst);
+		ThreadCondWait(&_condRunning, &_lockDst);
 	}
 	
 	free(_vfDstSurface.Surface);
 	_vfDstSurface.Surface = NULL;
 	
-	pthread_mutex_unlock(&_mutexDst);
+	ThreadLockUnlock(&_lockDst);
 	
 	free(_vfSrcSurfacePixBuffer);
 	_vfSrcSurfacePixBuffer = NULL;
 	_vfSrcSurface.Surface = NULL;
 	
-	pthread_mutex_unlock(&_mutexSrc);
+	ThreadLockUnlock(&_lockSrc);
 	
-	pthread_mutex_destroy(&_mutexSrc);
-	pthread_mutex_destroy(&_mutexDst);
-	pthread_mutex_destroy(&_mutexAttributes);
-	pthread_cond_destroy(&_condRunning);
+	ThreadLockDestroy(&_lockSrc);
+	ThreadLockDestroy(&_lockDst);
+	ThreadLockDestroy(&_lockAttributes);
+	ThreadCondDestroy(&_condRunning);
 }
 
 /********************************************************************************************
@@ -150,7 +150,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 {
 	bool result = false;
 	
-	pthread_mutex_lock(&this->_mutexSrc);
+	ThreadLockLock(&this->_lockSrc);
 	
 	// Overallocate the source buffer by 8 rows of pixels to account for out-of-bounds
 	// memory reads done by some filters.
@@ -186,7 +186,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 		}
 	}
 	
-	pthread_mutex_unlock(&this->_mutexSrc);
+	ThreadLockUnlock(&this->_lockSrc);
 	
 	const VideoFilterAttributes vfAttr = this->GetAttributes();
 	result = this->ChangeFilterByAttributes(&vfAttr);
@@ -250,16 +250,16 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 	this->SetAttributes(*vfAttr);
 	VideoFilterAttributes &workingAttributes = this->_vfAttributes;
 	
-	pthread_mutex_lock(&this->_mutexSrc);
+	ThreadLockLock(&this->_lockSrc);
 	const size_t srcWidth = this->_vfSrcSurface.Width;
 	const size_t srcHeight = this->_vfSrcSurface.Height;
-	pthread_mutex_unlock(&this->_mutexSrc);
+	ThreadLockUnlock(&this->_lockSrc);
 	
 	const size_t dstWidth = srcWidth * workingAttributes.scaleMultiply / workingAttributes.scaleDivide;
 	const size_t dstHeight = srcHeight * workingAttributes.scaleMultiply / workingAttributes.scaleDivide;
 	const VideoFilterFunc filterFunction = workingAttributes.filterFunction;
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	uint32_t *newSurfaceBuffer = (uint32_t *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
 	if (newSurfaceBuffer == NULL)
@@ -293,7 +293,7 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 		this->_vfThread[i].param.filterFunction = this->_vfFunc;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	result = true;
 	
@@ -314,8 +314,8 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
  ********************************************************************************************/
 uint32_t* VideoFilter::RunFilter()
 {
-	pthread_mutex_lock(&this->_mutexSrc);
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockSrc);
+	ThreadLockLock(&this->_lockDst);
 	
 	this->_isFilterRunning = true;
 	
@@ -345,10 +345,10 @@ uint32_t* VideoFilter::RunFilter()
 	}
 	
 	this->_isFilterRunning = false;
-	pthread_cond_signal(&this->_condRunning);
+	ThreadCondSignal(&this->_condRunning);
 	
-	pthread_mutex_unlock(&this->_mutexDst);
-	pthread_mutex_unlock(&this->_mutexSrc);
+	ThreadLockUnlock(&this->_lockDst);
+	ThreadLockUnlock(&this->_lockSrc);
 	
 	return (uint32_t *)this->_vfDstSurface.Surface;
 }
@@ -381,7 +381,7 @@ uint32_t* VideoFilter::RunFilter()
 	Returns:
 		Nothing.
  ********************************************************************************************/
-void VideoFilter::RunFilterCustomByID(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer,
+void VideoFilter::RunFilterCustomByID(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer,
 									  const size_t srcWidth, const size_t srcHeight,
 									  const VideoFilterTypeID typeID)
 {
@@ -420,7 +420,7 @@ void VideoFilter::RunFilterCustomByID(const uint32_t *__restrict__ srcBuffer, ui
 	Returns:
 		Nothing.
  ********************************************************************************************/
-void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ dstBuffer,
+void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer,
 											  const size_t srcWidth, const size_t srcHeight,
 											  const VideoFilterAttributes *vfAttr)
 {
@@ -492,88 +492,88 @@ const char* VideoFilter::GetTypeStringByID(const VideoFilterTypeID typeID)
  ********************************************************************************************/
 VideoFilterAttributes VideoFilter::GetAttributes()
 {
-	pthread_mutex_lock(&this->_mutexAttributes);
+	ThreadLockLock(&this->_lockAttributes);
 	VideoFilterAttributes vfAttr = this->_vfAttributes;
-	pthread_mutex_unlock(&this->_mutexAttributes);
+	ThreadLockUnlock(&this->_lockAttributes);
 	
 	return vfAttr;
 }
 
 void VideoFilter::SetAttributes(const VideoFilterAttributes vfAttr)
 {
-	pthread_mutex_lock(&this->_mutexAttributes);
+	ThreadLockLock(&this->_lockAttributes);
 	this->_vfAttributes = vfAttr;
-	pthread_mutex_unlock(&this->_mutexAttributes);
+	ThreadLockUnlock(&this->_lockAttributes);
 }
 
 VideoFilterTypeID VideoFilter::GetTypeID()
 {
-	pthread_mutex_lock(&this->_mutexAttributes);
+	ThreadLockLock(&this->_lockAttributes);
 	VideoFilterTypeID typeID = this->_vfAttributes.typeID;
-	pthread_mutex_unlock(&this->_mutexAttributes);
+	ThreadLockUnlock(&this->_lockAttributes);
 	
 	return typeID;
 }
 
 const char* VideoFilter::GetTypeString()
 {
-	pthread_mutex_lock(&this->_mutexAttributes);
+	ThreadLockLock(&this->_lockAttributes);
 	const char *typeString = this->_vfAttributes.typeString;
-	pthread_mutex_unlock(&this->_mutexAttributes);
+	ThreadLockUnlock(&this->_lockAttributes);
 	
 	return typeString;
 }
 
 uint32_t* VideoFilter::GetSrcBufferPtr()
 {
-	pthread_mutex_lock(&this->_mutexSrc);
+	ThreadLockLock(&this->_lockSrc);
 	uint32_t *ptr = (uint32_t *)this->_vfSrcSurface.Surface;
-	pthread_mutex_unlock(&this->_mutexSrc);
+	ThreadLockUnlock(&this->_lockSrc);
 	
 	return ptr;
 }
 
 uint32_t* VideoFilter::GetDstBufferPtr()
 {
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	uint32_t *ptr = (uint32_t *)this->_vfDstSurface.Surface;
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	return ptr;
 }
 
 size_t VideoFilter::GetSrcWidth()
 {
-	pthread_mutex_lock(&this->_mutexSrc);
+	ThreadLockLock(&this->_lockSrc);
 	size_t width = this->_vfSrcSurface.Width;
-	pthread_mutex_unlock(&this->_mutexSrc);
+	ThreadLockUnlock(&this->_lockSrc);
 	
 	return width;
 }
 
 size_t VideoFilter::GetSrcHeight()
 {
-	pthread_mutex_lock(&this->_mutexSrc);
+	ThreadLockLock(&this->_lockSrc);
 	size_t height = this->_vfSrcSurface.Height;
-	pthread_mutex_unlock(&this->_mutexSrc);
+	ThreadLockUnlock(&this->_lockSrc);
 	
 	return height;
 }
 
 size_t VideoFilter::GetDstWidth()
 {
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	size_t width = this->_vfDstSurface.Width;
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	return width;
 }
 
 size_t VideoFilter::GetDstHeight()
 {
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	size_t height = this->_vfDstSurface.Height;
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	return height;
 }
@@ -587,7 +587,7 @@ int VideoFilter::GetFilterParameteri(VideoFilterParamID paramID)
 {
 	int value = 0;
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	switch (_VideoFilterParamAttributesList[paramID].type)
 	{
@@ -607,7 +607,7 @@ int VideoFilter::GetFilterParameteri(VideoFilterParamID paramID)
 			break;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	return value;
 }
@@ -616,7 +616,7 @@ unsigned int VideoFilter::GetFilterParameterui(VideoFilterParamID paramID)
 {
 	unsigned int value = 0;
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	switch (_VideoFilterParamAttributesList[paramID].type)
 	{
@@ -636,7 +636,7 @@ unsigned int VideoFilter::GetFilterParameterui(VideoFilterParamID paramID)
 			break;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	return value;
 }
@@ -645,7 +645,7 @@ float VideoFilter::GetFilterParameterf(VideoFilterParamID paramID)
 {
 	float value = 0.0f;
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	switch (_VideoFilterParamAttributesList[paramID].type)
 	{
@@ -665,7 +665,7 @@ float VideoFilter::GetFilterParameterf(VideoFilterParamID paramID)
 			break;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 	
 	return value;
 }
@@ -677,7 +677,7 @@ void VideoFilter::SetFilterParameteri(VideoFilterParamID paramID, int value)
 		return;
 	}
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	switch (_VideoFilterParamAttributesList[paramID].type)
 	{
@@ -697,7 +697,7 @@ void VideoFilter::SetFilterParameteri(VideoFilterParamID paramID, int value)
 			break;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 }
 
 void VideoFilter::SetFilterParameterui(VideoFilterParamID paramID, unsigned int value)
@@ -707,7 +707,7 @@ void VideoFilter::SetFilterParameterui(VideoFilterParamID paramID, unsigned int 
 		return;
 	}
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	switch (_VideoFilterParamAttributesList[paramID].type)
 	{
@@ -727,7 +727,7 @@ void VideoFilter::SetFilterParameterui(VideoFilterParamID paramID, unsigned int 
 			break;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 }
 
 void VideoFilter::SetFilterParameterf(VideoFilterParamID paramID, float value)
@@ -737,7 +737,7 @@ void VideoFilter::SetFilterParameterf(VideoFilterParamID paramID, float value)
 		return;
 	}
 	
-	pthread_mutex_lock(&this->_mutexDst);
+	ThreadLockLock(&this->_lockDst);
 	
 	switch (_VideoFilterParamAttributesList[paramID].type)
 	{
@@ -757,7 +757,7 @@ void VideoFilter::SetFilterParameterf(VideoFilterParamID paramID, float value)
 			break;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexDst);
+	ThreadLockUnlock(&this->_lockDst);
 }
 
 // Task function for multithreaded filtering
@@ -769,3 +769,86 @@ static void* RunVideoFilterTask(void *arg)
 	
 	return NULL;
 }
+
+#ifdef _MSC_VER
+void ThreadLockInit(ThreadLock *theLock)
+{
+	InitializeCriticalSection(theLock);
+}
+
+void ThreadLockDestroy(ThreadLock *theLock)
+{
+	DeleteCriticalSection(theLock);
+}
+
+void ThreadLockLock(ThreadLock *theLock)
+{
+	EnterCriticalSection(theLock);
+}
+
+void ThreadLockUnlock(ThreadLock *theLock)
+{
+	LeaveCriticalSection(theLock);
+}
+
+void ThreadCondInit(ThreadCond *theCondition)
+{
+	*theCondition = CreateEvent(NULL, FALSE, FALSE, NULL);
+}
+
+void ThreadCondDestroy(ThreadCond *theCondition)
+{
+	CloseHandle(*theCondition);
+}
+
+void ThreadCondWait(ThreadCond *theCondition, ThreadLock *conditionLock)
+{
+	WaitForSingleObject(*theCondition, INFINITE);
+}
+
+void ThreadCondSignal(ThreadCond *theCondition)
+{
+	SetEvent(*theCondition);
+}
+
+#else
+void ThreadLockInit(ThreadLock *theLock)
+{
+	pthread_mutex_init(theLock, NULL);
+}
+
+void ThreadLockDestroy(ThreadLock *theLock)
+{
+	pthread_mutex_destroy(theLock);
+}
+
+void ThreadLockLock(ThreadLock *theLock)
+{
+	pthread_mutex_lock(theLock);
+}
+
+void ThreadLockUnlock(ThreadLock *theLock)
+{
+	pthread_mutex_unlock(theLock);
+}
+
+void ThreadCondInit(ThreadCond *theCondition)
+{
+	pthread_cond_init(theCondition, NULL);
+}
+
+void ThreadCondDestroy(ThreadCond *theCondition)
+{
+	pthread_cond_destroy(theCondition);
+}
+
+void ThreadCondWait(ThreadCond *theCondition, ThreadLock *conditionLock)
+{
+	pthread_cond_wait(theCondition, conditionLock);
+}
+
+void ThreadCondSignal(ThreadCond *theCondition)
+{
+	pthread_cond_signal(theCondition);
+}
+#endif
