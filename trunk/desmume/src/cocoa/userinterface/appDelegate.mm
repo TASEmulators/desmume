@@ -81,6 +81,7 @@
 	return self;
 }
 
+#pragma mark NSApplicationDelegate Protocol
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
 	BOOL result = NO;
@@ -237,6 +238,10 @@
 		appFirstTimeRunDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:isFirstTimeRunNumber, bundleVersionString, nil];
 	}
 	
+	//Bring the application to the front
+	[NSApp activateIgnoringOtherApps:TRUE];
+	[self restoreDisplayWindowStates];
+	
 	// Load a new ROM on launch per user preferences.
 	const BOOL loadROMOnLaunch = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_AutoloadROMOnLaunch"];
 	if (loadROMOnLaunch && [emuControl currentRom] == nil)
@@ -262,10 +267,6 @@
 			[emuControl handleLoadRom:autoloadRomURL];
 		}
 	}
-	
-	//Bring the application to the front
-	[NSApp activateIgnoringOtherApps:TRUE];
-	[emuControl newDisplayWindow:nil];
 	
 	// Present the file migration window to the user (if they haven't disabled it).
 	if (![[NSUserDefaults standardUserDefaults] boolForKey:@"General_DoNotAskMigrate"] || !isFirstTimeRun)
@@ -310,6 +311,7 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Save some settings to user defaults before app termination
+	[self saveDisplayWindowStates];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isCheatingEnabled] forKey:@"CoreControl_EnableCheats"];
@@ -317,6 +319,7 @@
 	[cdsCoreController setContent:nil];
 }
 
+#pragma mark IBActions
 - (IBAction) launchWebsite:(id)sender
 {
 	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@STRING_DESMUME_WEBSITE]];
@@ -345,6 +348,7 @@
 	[troubleshootingWindow makeKeyAndOrderFront:sender];
 }
 
+#pragma mark Class Methods
 - (void) setupSlotMenuItems
 {
 	NSMenuItem *loadItem = nil;
@@ -580,6 +584,153 @@
 	[boxARMBinaries setNeedsDisplay:YES];
 	[boxFileSystem setNeedsDisplay:YES];
 	[boxMisc setNeedsDisplay:YES];
+}
+
+- (void) restoreDisplayWindowStates
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	NSArray *windowPropertiesList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"General_DisplayWindowRestorableStates"];
+	const BOOL willRestoreWindows = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_WillRestoreDisplayWindows"];
+	
+	if (!willRestoreWindows || windowPropertiesList == nil || [windowPropertiesList count] < 1)
+	{
+		// If no windows were saved for restoring (the user probably closed all windows before
+		// app termination), then simply create a new display window per user defaults.
+		[emuControl newDisplayWindow:self];
+	}
+	else
+	{
+		for (NSDictionary *windowProperties in windowPropertiesList)
+		{
+			DisplayWindowController *windowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:emuControl];
+			
+			if (windowController == nil)
+			{
+				continue;
+			}
+			
+			const NSInteger displayMode				= [(NSNumber *)[windowProperties valueForKey:@"displayMode"] integerValue];
+			const double displayScale				= [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue];
+			const double displayRotation			= [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue];
+			const NSInteger displayOrientation		= [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue];
+			const NSInteger displayOrder			= [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue];
+			const double displayGap					= [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue];
+			const NSInteger videoFilterType			= [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue];
+			const NSInteger screenshotFileFormat	= [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue];
+			const BOOL useBilinearOutput			= [(NSNumber *)[windowProperties valueForKey:@"useBilinearOutput"] boolValue];
+			const BOOL useVerticalSync				= [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue];
+			const BOOL isMinSizeNormal				= [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue];
+			const BOOL isShowingStatusBar			= [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue];
+			const BOOL isInFullScreenMode			= [(NSNumber *)[windowProperties valueForKey:@"isInFullScreenMode"] boolValue];
+			const NSUInteger screenIndex			= [(NSNumber *)[windowProperties valueForKey:@"screenIndex"] unsignedIntegerValue];
+			NSString *windowFrameStr				= (NSString *)[windowProperties valueForKey:@"windowFrame"];
+			
+			int frameX = 0;
+			int frameY = 0;
+			int frameWidth = GPU_DISPLAY_WIDTH;
+			int frameHeight = GPU_DISPLAY_HEIGHT;
+			const char *frameCStr = [windowFrameStr cStringUsingEncoding:NSUTF8StringEncoding];
+			sscanf(frameCStr, "%i %i %i %i", &frameX, &frameY, &frameWidth, &frameHeight);
+			
+			[windowController setIsMinSizeNormal:isMinSizeNormal];
+			[windowController setIsShowingStatusBar:isShowingStatusBar];
+			[windowController setVideoFilterType:videoFilterType];
+			[windowController setDisplayMode:displayMode];
+			[windowController setDisplayRotation:displayRotation];
+			[windowController setDisplayOrientation:displayOrientation];
+			[windowController setDisplayOrder:displayOrder];
+			[windowController setDisplayGap:displayGap];
+			[windowController setScreenshotFileFormat:screenshotFileFormat];
+			[windowController setUseBilinearOutput:useBilinearOutput];
+			[windowController setUseVerticalSync:useVerticalSync];
+			[windowController setDisplayScale:displayScale];
+			
+			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
+			
+			// If this is the last window in the list, make this window key and main.
+			// Otherwise, just order the window to the front so that the windows will
+			// stack in a deterministic order.
+			if (windowProperties == [windowPropertiesList lastObject])
+			{
+				[[windowController window] makeKeyAndOrderFront:self];
+				[[windowController window] makeMainWindow];
+			}
+			else
+			{
+				[[windowController window] orderFront:self];
+			}
+			
+			// Draw the display view now so that we guarantee that its drawn at least once.
+			if ([emuControl currentRom] == nil)
+			{
+				[[windowController view] clearToBlack];
+			}
+			else
+			{
+				[[windowController view] setNeedsDisplay:YES];
+			}
+			
+			// If this window is set to full screen mode, its associated screen index must
+			// exist. If not, this window will not enter full screen mode. This is necessary,
+			// since the user's screen configuration could change in between app launches,
+			// and since we don't want a window to go full screen on the wrong screen.
+			if (isInFullScreenMode &&
+				([[NSScreen screens] indexOfObject:[[windowController window] screen]] == screenIndex))
+			{
+				[windowController enterFullScreen];
+				[[windowController window] makeKeyAndOrderFront:self];
+				[[windowController window] makeMainWindow];
+			}
+		}
+	}
+}
+
+- (void) saveDisplayWindowStates
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
+	NSArray *windowList = [emuControl windowList];
+	const BOOL willRestoreWindows = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_WillRestoreDisplayWindows"];
+	
+	if (willRestoreWindows && [windowList count] > 0)
+	{
+		NSMutableArray *windowPropertiesList = [NSMutableArray arrayWithCapacity:[windowList count]];
+		
+		for (DisplayWindowController *windowController in windowList)
+		{
+			const BOOL isInFullScreenMode = ([windowController assignedScreen] != nil);
+			const NSUInteger screenIndex = [[NSScreen screens] indexOfObject:[[windowController masterWindow] screen]];
+			
+			const NSRect windowFrame = [[windowController masterWindow] frame];
+			NSString *windowFrameStr = [NSString stringWithFormat:@"%i %i %i %i",
+										(int)windowFrame.origin.x, (int)windowFrame.origin.y, (int)windowFrame.size.width, (int)windowFrame.size.height];
+			
+			NSDictionary *windowProperties = [NSDictionary dictionaryWithObjectsAndKeys:
+											  [NSNumber numberWithInteger:[windowController displayMode]], @"displayMode",
+											  [NSNumber numberWithDouble:[windowController displayScale]], @"displayScale",
+											  [NSNumber numberWithDouble:[windowController displayRotation]], @"displayRotation",
+											  [NSNumber numberWithInteger:[windowController displayOrientation]], @"displayOrientation",
+											  [NSNumber numberWithInteger:[windowController displayOrder]], @"displayOrder",
+											  [NSNumber numberWithDouble:[windowController displayGap]], @"displayGap",
+											  [NSNumber numberWithInteger:[windowController videoFilterType]], @"videoFilterType",
+											  [NSNumber numberWithInteger:[windowController screenshotFileFormat]], @"screenshotFileFormat",
+											  [NSNumber numberWithBool:[windowController useBilinearOutput]], @"useBilinearOutput",
+											  [NSNumber numberWithBool:[windowController useVerticalSync]], @"useVerticalSync",
+											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
+											  [NSNumber numberWithBool:[windowController isShowingStatusBar]], @"isShowingStatusBar",
+											  [NSNumber numberWithBool:isInFullScreenMode], @"isInFullScreenMode",
+											  [NSNumber numberWithUnsignedInteger:screenIndex], @"screenIndex",
+											  windowFrameStr, @"windowFrame",
+											  nil];
+			
+			[windowPropertiesList addObject:windowProperties];
+		}
+		
+		[[NSUserDefaults standardUserDefaults] setObject:windowPropertiesList forKey:@"General_DisplayWindowRestorableStates"];
+	}
+	else
+	{
+		[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"General_DisplayWindowRestorableStates"];
+	}
 }
 
 @end

@@ -1119,7 +1119,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[view setInputManager:[emuControl inputManager]];
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
-		
+	
 	// Set up the video output thread.
 	cdsVideoOutput = [[CocoaDSDisplayVideo alloc] init];
 	[cdsVideoOutput setDelegate:view];
@@ -1220,10 +1220,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 		[emuControl closeRom:nil];
 		shouldClose = NO;
 	}
-	else // If no ROM is loaded, close the window and terminate the application.
-	{
-		[NSApp terminate:sender];
-	}
 	
 	return shouldClose;
 }
@@ -1236,6 +1232,18 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[self setCdsVideoOutput:nil];
 	
 	[[emuControl windowList] removeObject:self];
+	
+	if ([[emuControl windowList] count] < 1)
+	{
+		if ([emuControl currentRom] != nil)
+		{
+			[emuControl closeRom:nil];
+		}
+		
+		[NSApp terminate:[notification object]];
+		return;
+	}
+	
 	[emuControl updateAllWindowTitles];
 }
 
@@ -1316,6 +1324,8 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 		return self;
 	}
 	
+	inputManager = nil;
+	
 	// Initialize the OpenGL context
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
@@ -1330,11 +1340,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[format release];
 	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
 	
-	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(cglDisplayContext);
-	[self startupOpenGL];
-	CGLSetCurrentContext(prevContext);
-	
 	_currentDisplayMode = DS_DISPLAY_TYPE_COMBO;
 	_currentDisplayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	_currentGapScalar = 0.0f;
@@ -1347,7 +1352,20 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	glTexBackSize = NSMakeSize(w, h);
 	vtxBufferOffset = 0;
 	
-	inputManager = nil;
+	[self updateDisplayVerticesUsingDisplayMode:_currentDisplayMode orientation:_currentDisplayOrientation gap:_currentGapScalar];
+	[self updateTexCoordS:1.0f T:2.0f];
+	
+	// Set up initial vertex elements
+	vtxIndexBuffer[0]	= 0;	vtxIndexBuffer[1]	= 1;	vtxIndexBuffer[2]	= 2;
+	vtxIndexBuffer[3]	= 2;	vtxIndexBuffer[4]	= 3;	vtxIndexBuffer[5]	= 0;
+	
+	vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
+	vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
+	
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	[self startupOpenGL];
+	CGLSetCurrentContext(prevContext);
 	
 	return self;
 }
@@ -1373,16 +1391,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void) startupOpenGL
 {
-	[self updateDisplayVerticesUsingDisplayMode:_currentDisplayMode orientation:_currentDisplayOrientation gap:_currentGapScalar];
-	[self updateTexCoordS:1.0f T:2.0f];
-	
-	// Set up initial vertex elements
-	vtxIndexBuffer[0]	= 0;	vtxIndexBuffer[1]	= 1;	vtxIndexBuffer[2]	= 2;
-	vtxIndexBuffer[3]	= 2;	vtxIndexBuffer[4]	= 3;	vtxIndexBuffer[5]	= 0;
-	
-	vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
-	vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
-	
 	// Check the OpenGL capabilities for this renderer
 	const GLubyte *glExtString = glGetString(GL_EXTENSIONS);
 	
@@ -1795,7 +1803,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	const size_t inputCount = inputList.size();
 	
-	for (unsigned int i = 0; i < inputCount; i++)
+	for (size_t i = 0; i < inputCount; i++)
 	{
 		const InputAttributes &inputAttr = inputList[i];
 		
@@ -1943,7 +1951,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 		[context update];
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		[CocoaDSUtil messageSendOneWayWithRect:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RESIZE_VIEW rect:rect];
-		[self setNeedsDisplay:YES];
 	}
 }
 
