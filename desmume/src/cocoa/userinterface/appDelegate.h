@@ -95,5 +95,7 @@
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber;
 - (void) setupUserDefaults;
 - (void) setRomInfoPanelBoxTitleColors;
+- (void) restoreDisplayWindowStates;
+- (void) saveDisplayWindowStates;
 
 @end

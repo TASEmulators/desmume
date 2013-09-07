@@ -70,7 +70,7 @@
 	GLubyte vtxIndexBuffer[12];
 	
 	BOOL isShaderSupported;
-	unsigned int vtxBufferOffset;
+	size_t vtxBufferOffset;
 }
 
 @property (retain) InputManager *inputManager;

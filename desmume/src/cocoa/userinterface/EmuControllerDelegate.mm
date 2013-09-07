@@ -430,8 +430,6 @@
 - (IBAction) newDisplayWindow:(id)sender
 {
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
-	[[newWindowController window] makeKeyAndOrderFront:self];
-	[[newWindowController window] makeMainWindow];
 	
 	if ([self currentRom] == nil)
 	{
@@ -441,6 +439,9 @@
 	{
 		[[newWindowController view] setNeedsDisplay:YES];
 	}
+	
+	[[newWindowController window] makeKeyAndOrderFront:self];
+	[[newWindowController window] makeMainWindow];
 }
 
 - (IBAction) openRom:(id)sender
