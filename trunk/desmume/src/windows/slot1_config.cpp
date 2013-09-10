@@ -157,8 +157,8 @@ u32	Slot1_IDDs[NDS_SLOT1_COUNT] = {
 DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
 	Slot1None,
 	Slot1None,					// NDS_SLOT1_RETAIL_AUTO	- autodetect which kind of retail card to use 
-	Slot1None,					// NDS_SLOT1_R4,			- R4 flash card
-	Slot1R4,  					// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
+	Slot1R4,					// NDS_SLOT1_R4,			- R4 flash card
+	Slot1None,  				// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	Slot1None,					// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
 	Slot1Debug					// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
 };
