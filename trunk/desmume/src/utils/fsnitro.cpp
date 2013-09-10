@@ -170,8 +170,11 @@ bool FS_NITRO::loadFileTables()
 		memcpy(ovr9, (rom + ARM9OverlayOff), ARM9OverlaySize);
 		for (u32 i = 0 ; i < numOverlay9; i++)
 		{
+			char buf[129] = {0};
+			memset(&buf[9], 0, sizeof(buf));
 			fat[ovr9[i].fileID].isOverlay = true;
-			sprintf(fat[i].filename, "overlay_%04d.bin", ovr9[i].id);
+			sprintf(buf, "overlay_%04d.bin", ovr9[i].id);
+			fat[ovr9[i].fileID].filename = buf;
 		}
 	}
 
@@ -181,8 +184,11 @@ bool FS_NITRO::loadFileTables()
 		memcpy(ovr7, (rom + ARM7OverlayOff), ARM7OverlaySize);
 		for (u32 i = 0 ; i < numOverlay7; i++)
 		{
+			char buf[129] = {0};
+			memset(&buf[9], 0, sizeof(buf));
 			fat[ovr7[i].fileID].isOverlay = true;
-			sprintf(fat[i].filename, "overlay_%04d.bin", ovr7[i].id);
+			sprintf(buf, "overlay_%04d.bin", ovr7[i].id);
+			fat[ovr7[i].fileID].filename = buf;
 		}
 	}
 
@@ -205,7 +211,7 @@ bool FS_NITRO::loadFileTables()
 	if (!store) return false;
 	memset(store, 0, sizeof(uintptr_t) * numDirs);
 
-	strcpy((char*)fnt[0].filename, "/");
+	fnt[0].filename = FS_DIRECTORY_DELIMITER_CHAR;
 	fnt[0].parentID = 0xF000;
 
 	//printf("FNT F000: Sub:%08Xh, 1st ID:%04xh, parentID:%04Xh <%s>\n", fnt[0].offset, fnt[0].firstID, fnt[0].parentID, fnt[0].filename);
@@ -218,7 +224,6 @@ bool FS_NITRO::loadFileTables()
 		if (type == FS_END_SUBTABLE)
 		{
 			//printf("********** End Subdir (%04Xh, parent %04X)\n", fntID, fnt[fntID & 0x0FFF].parentID);
-			//sub = (store + (fntID & 0x0FFF));
 			sub = (u8*)store[fntID & 0x0FFF];
 			fntID = fnt[fntID & 0x0FFF].parentID;
 			continue;
@@ -236,7 +241,7 @@ bool FS_NITRO::loadFileTables()
 			u32 id = (fntID & 0x0FFF);
 			store[id] = (uintptr_t)sub;
 			sub = (u8*)(rom + FNameTblOff + fnt[id].offset);
-			strcpy(fnt[id].filename, buf);
+			fnt[id].filename = buf;
 
 			//printf("FNT %04X: Sub:%08Xh, 1st ID:%04xh, parentID:%04Xh <%s>\n", fntID, fnt[id].offset, fnt[id].firstID, fnt[id].parentID, buf);
 			continue;
@@ -245,8 +250,9 @@ bool FS_NITRO::loadFileTables()
 		if (type == FS_FILE_ENTRY)
 		{
 			//printf("********** File Entry\n");
-			memcpy(&fat[fileCount].filename[0], (sub + 1), len);
-			fat[fileCount].filename[len] = 0;
+			char buf[129] = {0};
+			memcpy(buf, (sub + 1), len); buf[len] = 0;
+			fat[fileCount].filename = buf;
 			fat[fileCount].parentID = fntID;
 			//printf("ID:%04Xh, len %03d, type %d, parentID %04X, filename: %s\n", fileCount, len, (u32)type, fntID, fat[fileCount].filename);
 			sub += (len + 1);
@@ -386,7 +392,7 @@ string FS_NITRO::getDirNameByID(u16 id)
 	if ((id & 0xF000) != 0xF000) return "|file|";
 	if ((id & 0x0FFF) > numDirs) return "<!ERROR invalid id>";
 
-	return (string)fnt[id & 0x0FFF].filename;
+	return fnt[id & 0x0FFF].filename;
 }
 
 u16 FS_NITRO::getDirParrentByID(u16 id)
@@ -403,9 +409,8 @@ string FS_NITRO::getFileNameByID(u16 id)
 	if (!inited) return "";
 	if ((id & 0xF000) == 0xF000) return "<directory>";
 	if (id > numFiles) return "<!ERROR invalid id>";
-	id &= 0x0FFF;
 
-	return (string)fat[id].filename;
+	return fat[id].filename;
 }
 
 u16 FS_NITRO::getFileParentById(u16 id)
@@ -428,19 +433,19 @@ string FS_NITRO::getFullPathByFileID(u16 id, bool addRoot)
 		u32 parentID = (fat[id].parentID & 0x0FFF);
 		while (parentID)
 		{
-			res = fnt[parentID].filename + string(FS_DIRECTORY_DELIMITER_CHAR + res);
+			res = fnt[parentID].filename + string(FS_DIRECTORY_DELIMITER_CHAR) + res;
 			parentID = (fnt[parentID].parentID & 0x0FFF);
 		}
 		if (addRoot)
-			res = (string)FS_DIRECTORY_DELIMITER_CHAR + (string)"data" + (string)FS_DIRECTORY_DELIMITER_CHAR + res;
+			res = string(FS_DIRECTORY_DELIMITER_CHAR) + string("data") + string(FS_DIRECTORY_DELIMITER_CHAR) + res;
 	}
 	else
 	{
 		if (addRoot)
-			res = FS_DIRECTORY_DELIMITER_CHAR + string("overlay") + FS_DIRECTORY_DELIMITER_CHAR;
+			res = string(FS_DIRECTORY_DELIMITER_CHAR) + string("overlay") + string(FS_DIRECTORY_DELIMITER_CHAR);
 	}
 
-	res += (string)fat[id].filename;
+	res += fat[id].filename;
 	return res;
 }
 
@@ -517,7 +522,7 @@ bool FS_NITRO::extractAll(string to, void (*callback)(u32 current, u32 num))
 
 		while (parent)
 		{
-			tmp = (string)fnt[parent].filename + FS_DIRECTORY_DELIMITER_CHAR + tmp;
+			tmp = fnt[parent].filename + string(FS_DIRECTORY_DELIMITER_CHAR) + tmp;
 			parent = (fnt[parent].parentID) & 0x0FFF;
 		}
 		__mkdir(tmp.c_str());
