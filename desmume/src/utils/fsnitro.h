@@ -45,7 +45,7 @@ struct FAT_NITRO
 	bool file;
 	u32 sizeFile;
 	u16 parentID;
-	char filename[128];
+	string filename;
 };
 
 struct FNT_MAIN
@@ -60,7 +60,7 @@ struct FNT_NITRO
 	u32 offset;
 	u16 firstID;
 	u16 parentID;
-	char filename[128];
+	string filename;
 };
 
 struct OVR_NITRO
