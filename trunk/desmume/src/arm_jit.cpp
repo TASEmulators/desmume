@@ -390,6 +390,32 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("end SET_NZ"); \
 }
 
+#define SET_N { \
+	JIT_COMMENT("SET_N"); \
+	GpVar x = c.newGpVar(kX86VarTypeGpz); \
+	GpVar y = c.newGpVar(kX86VarTypeGpz); \
+	c.sets(x.r8Lo()); \
+	c.movzx(y, flags_ptr); \
+	c.and_(y, 0x7F); \
+	c.shl(x, 7); \
+	c.or_(x, y); \
+	c.mov(flags_ptr, x.r8Lo()); \
+	JIT_COMMENT("end SET_N"); \
+}
+
+#define SET_Z { \
+	JIT_COMMENT("SET_Z"); \
+	GpVar x = c.newGpVar(kX86VarTypeGpz); \
+	GpVar y = c.newGpVar(kX86VarTypeGpz); \
+	c.setz(x.r8Lo()); \
+	c.movzx(y, flags_ptr); \
+	c.and_(y, 0xBF); \
+	c.shl(x, 6); \
+	c.or_(x, y); \
+	c.mov(flags_ptr, x.r8Lo()); \
+	JIT_COMMENT("end SET_Z"); \
+}
+
 #define SET_Q { \
 	JIT_COMMENT("SET_Q"); \
 	GpVar x = c.newGpVar(kX86VarTypeGpz); \
@@ -1208,7 +1234,8 @@ static void MUL_Mxx_END(GpVar x, bool sign, int cycles)
 			c.adc(hi, reg_pos_ptr(16)); \
 			c.mov(reg_pos_ptr(12), lhs); \
 			c.mov(reg_pos_ptr(16), hi); \
-			c.or_(hi, lhs); SET_NZ(0); \
+			c.or_(lhs, hi); SET_Z; \
+			c.and_(hi, (1 << 31)); SET_N; \
 		} \
 		else \
 		{ \
