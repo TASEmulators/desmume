@@ -295,44 +295,6 @@ bool bSocketsAvailable = false;
 
 VideoInfo video;
 
-#ifdef HAVE_WX
-#include "wx/wxprec.h"
-#ifdef _M_X64  
-	#ifdef __WXDEBUG__
-		#pragma comment(lib,"wxmsw28d_core-x64.lib")
-		#pragma comment(lib,"wxbase28d-x64.lib")
-	#else
-		#pragma comment(lib,"wxmsw28_core-x64.lib")
-		#pragma comment(lib,"wxbase28-x64.lib")
-	#endif
-#else
-	#ifdef __WXDEBUG__
-		#pragma comment(lib,"wxmsw28d_core.lib")
-		#pragma comment(lib,"wxbase28d.lib")
-	#else
-		#pragma comment(lib,"wxmsw28_core.lib")
-		#pragma comment(lib,"wxbase28.lib")
-	#endif
-#endif
-#pragma comment(lib,"comctl32.lib")
-#include "../wxdlg/wxdlg3dViewer.h"
-
-class wxDesmumeApp : public wxApp
-{
-public:
-	//call me each frame or something.
-	//sort of an idle routine
-	static void frameUpdate()
-	{
-		if(!wxTheApp) return;
-		wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
-		self->DeletePendingObjects();
-	}
-};
-
-IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
-#endif //HAVE_WX
-
 #ifndef PUBLIC_RELEASE
 #define DEVELOPER_MENU_ITEMS
 #endif
@@ -2058,10 +2020,6 @@ void CheckMessages()
 	MSG msg;
 	HWND hwnd = MainWindow->getHWnd();
 
-	#ifdef WX_STUB
-	wxDesmumeApp::frameUpdate();
-	#endif
-
 	while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
 	{
 		if( GetMessage( &msg, 0,  0, 0)>0 )
@@ -2935,10 +2893,6 @@ int _main()
 	OGLLoadEntryPoints_3_2_Func = OGLLoadEntryPoints_3_2;
 	OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
 
-
-#ifdef HAVE_WX
-	wxInitialize();
-#endif
 
 #ifdef EXPERIMENTAL_WIFI_COMM
 	WSADATA wsaData; 	 
@@ -5601,16 +5555,6 @@ DOKEYDOWN:
 
 			OpenToolWindow(new CMemView());
 			return 0;
-#if 0
-		case IDM_VIEW3D:
-			#ifdef HAVE_WX
-				driver->VIEW3D_Init();
-				driver->view3d->Launch();
-			#else
-				MessageBox(hwnd, "Sorry to get your hopes up; 3d viewer isn't finished yet.\r\nBut because of all these languages, it is too much trouble to remove from all the menus...", "DeSmuME", MB_OK);
-			#endif
-			return 0;
-#endif
 		case IDM_SOUND_VIEW:
 			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);
 			return 0;

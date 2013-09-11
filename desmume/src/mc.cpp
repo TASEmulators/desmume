@@ -290,7 +290,7 @@ void BackupDevice::reset_command()
 }
 u8 BackupDevice::data_command(u8 val, int cpu)
 {
-	//printf("MC CMD: %02X\n",val);
+	printf("MC CMD: (%02X) %02X\n",com,val);
 
 	//motion: some guessing here... hope it doesn't break anything
 	if(com == BM_CMD_READLOW && motionInitState == MOTION_INIT_STATE_RECEIVED_4_B && val == 0)
@@ -365,7 +365,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 	else if(com == BM_CMD_READSTATUS)
 	{
 		//handle request to read status
-		LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
+		//LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
 		return (write_enable << 1) | (3<<2);
 	}
 	else

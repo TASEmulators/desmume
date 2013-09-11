@@ -56,7 +56,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx"
 				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -238,7 +238,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -428,7 +428,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;.\wx\include;directx"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -2602,70 +2602,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath=".\libelf_libdwarf\libelf_libdwarf.7z"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Dev+|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Dev+|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat libelf_libdwarf\libelf_libdwarf.7z .libs\libelf_libdwarf*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\libelf_libdwarf.tag"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath=".\lua\lua.7z"
 					>
 					<FileConfiguration
@@ -2735,70 +2671,6 @@
 							CommandLine="un7z_and_touch.bat lua\lua.7z .libs\lua*&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\lua.tag"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\wx\wx.7z"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Dev+|Win32"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*&#x0D;&#x0A;"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release FastBuild|x64"
-						>
-						<Tool
-							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat wx\wx.7z .libs\wx*"
-							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
-							Outputs=".libs\wx.tag"
 						/>
 					</FileConfiguration>
 				</File>
