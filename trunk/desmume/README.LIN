@@ -14,7 +14,7 @@
 
 DeSmuME is written in C using the gtk+ and SDL libraries.
 So you need a working C compiler, such as gcc and
-the above libraries runtime and development packages:
+the following libraries runtime and development packages:
 
   * http://www.gtk.org
 
@@ -48,7 +48,10 @@ done by typing "make uninstall".
 Move to the toplevel directory (the one that contains the
 configure.ac file). Type "./autogen.sh" to generate the
 configure/install scripts and needed Makefiles. Then you can follow the
-same procedure as in 1.1 .
+same procedure as in 1.1 . intltoolize is required for the
+autogen stage:
+
+  * http://freedesktop.org/wiki/Software/intltool/
 
 2 How to use DeSmuME__________________________________________
 
