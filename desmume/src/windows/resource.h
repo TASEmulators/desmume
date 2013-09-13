@@ -459,6 +459,7 @@
 #define IDC_MESSAGE                     1058
 #define IDC_IMP_MANUAL_SIZE             1059
 #define IDC_BREMOVE                     1060
+#define IDC_FILE_QVIEW                  1060
 #define IDC_BEDIT                       1061
 #define IDC_STATIC_S1                   1061
 #define IDC_STATIC_S2                   1062
