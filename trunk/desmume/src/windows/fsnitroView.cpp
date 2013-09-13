@@ -76,6 +76,28 @@ void extractCallback(u32 current, u32 num)
 		SendMessage(hBar, PBM_SETPOS, current, 0);
 }
 
+void refreshQView(HWND hWnd, u16 id)
+{
+	HWND ctrl = GetDlgItem(hWnd, IDC_FILE_QVIEW);
+
+	if (id < 0xF000)
+	{
+		char buf[256] = {0};
+		memset(buf, 0, sizeof(buf));
+		u32 len = std::min<u32>(sizeof(buf), fs->getFileSizeById(id));
+		u32 start = fs->getStartAddrById(id);
+
+		memcpy(&buf[0], &MMU.CART_ROM[start], len);
+
+		for (u32 i = 0; i < len; i++)
+			if (buf[i] < 0x20) buf[i] = 0x20;
+		
+		SetWindowText(ctrl, buf);
+	}
+	else
+		SetWindowText(ctrl, "");
+}
+
 BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -304,6 +326,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 								TreeView_GetItem(GetDlgItem(hWnd, IDC_FILES_TREE), &pitem);
 								
 								currentFileID = pitem.lParam;
+								refreshQView(hWnd, currentFileID);
 								EnableMenuItem(popupMenu, ID_EXTRACTFILE, MF_BYCOMMAND | ((currentFileID < 0xF000)?MF_ENABLED:MF_GRAYED));
 								EnableMenuItem(popupMenu, ID_FSNITRO_VIEW, MF_BYCOMMAND | ((currentFileID < 0xF000)?MF_ENABLED:MF_GRAYED));
 								SetMenuDefaultItem(GetSubMenu(popupMenu, 0), ID_FSNITRO_VIEW, FALSE);
@@ -317,6 +340,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 								char buf[256] = {0};
 								
 								currentFileID = sel->itemNew.lParam;
+								refreshQView(hWnd, currentFileID);
 
 								if ((currentFileID & 0xF000) == 0xF000)
 								{
