@@ -531,7 +531,6 @@
     <ClCompile Include="..\metaspu\SoundTouch\sse_optimized.cpp" />
     <ClCompile Include="..\metaspu\SoundTouch\TDStretch.cpp" />
     <ClCompile Include="..\metaspu\SoundTouch\WavFile.cpp" />
-    <ClCompile Include="..\wxdlg\wxdlg3dViewer.cpp" />
     <ClCompile Include="AboutBox.cpp" />
     <ClCompile Include="aviout.cpp" />
     <ClCompile Include="cheatsWin.cpp" />
@@ -811,7 +810,6 @@
     <ClInclude Include="..\metaspu\SoundTouch\STTypes.h" />
     <ClInclude Include="..\metaspu\SoundTouch\TDStretch.h" />
     <ClInclude Include="..\metaspu\SoundTouch\WavFile.h" />
-    <ClInclude Include="..\wxdlg\wxdlg3dViewer.h" />
     <ClInclude Include="AboutBox.h" />
     <ClInclude Include="aviout.h" />
     <ClInclude Include="cheatsWin.h" />
@@ -988,26 +986,6 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">call un7z_and_touch.bat lua\lua.7z .libs\win32\lua* .libs\x64\lua* .libs\lua.tag</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">.libs\lua.tag;</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">7z.exe;un7z_and_touch.bat</AdditionalInputs>
-    </CustomBuild>
-    <CustomBuild Include="wx\wx.7z">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">call un7z_and_touch.bat wx\wx.7z .libs\wx*</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">call un7z_and_touch.bat wx\wx.7z .libs\wx*
-</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.libs\wx.tag;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">call un7z_and_touch.bat wx\wx.7z .libs\wx*</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">7z.exe;un7z_and_touch.bat;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.libs\wx.tag;%(Outputs)</Outputs>
     </CustomBuild>
     <None Include="File_Extractor\7z_C\7zC.txt" />
     <None Include="File_Extractor\7z_C\changes.txt" />

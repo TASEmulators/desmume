@@ -20,7 +20,7 @@
 #ifndef OGLRENDER_3_2_H
 #define OGLRENDER_3_2_H
 
-#if defined(_WIN32) && !defined(WXPORT)
+#if defined(_WIN32)
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>

@@ -40,9 +40,6 @@
     <Filter Include="Core\metaspu\SoundTouch">
       <UniqueIdentifier>{46c55ff6-0bd2-4715-ba89-aead8b466220}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core\wxdlg">
-      <UniqueIdentifier>{d089f491-2c1b-4006-9f3d-d23ab756613f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Core\filter">
       <UniqueIdentifier>{841d24f1-7f40-48a3-bde6-d546d7903ade}</UniqueIdentifier>
     </Filter>
@@ -440,9 +437,6 @@
     </ClCompile>
     <ClCompile Include="..\metaspu\SoundTouch\WavFile.cpp">
       <Filter>Core\metaspu\SoundTouch</Filter>
-    </ClCompile>
-    <ClCompile Include="..\wxdlg\wxdlg3dViewer.cpp">
-      <Filter>Core\wxdlg</Filter>
     </ClCompile>
     <ClCompile Include="..\filter\2xsai.cpp">
       <Filter>Core\filter</Filter>
@@ -1194,9 +1188,6 @@
     <ClInclude Include="..\metaspu\SoundTouch\WavFile.h">
       <Filter>Core\metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\wxdlg\wxdlg3dViewer.h">
-      <Filter>Core\wxdlg</Filter>
-    </ClInclude>
     <ClInclude Include="..\filter\filter.h">
       <Filter>Core\filter</Filter>
     </ClInclude>
@@ -1453,9 +1444,6 @@
       <Filter>Windows\libs</Filter>
     </CustomBuild>
     <CustomBuild Include="lua\lua.7z">
-      <Filter>Windows\libs</Filter>
-    </CustomBuild>
-    <CustomBuild Include="wx\wx.7z">
       <Filter>Windows\libs</Filter>
     </CustomBuild>
   </ItemGroup>

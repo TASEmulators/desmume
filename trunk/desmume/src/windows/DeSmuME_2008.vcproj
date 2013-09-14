@@ -1815,18 +1815,6 @@
 				</Filter>
 			</Filter>
 			<Filter
-				Name="wxdlg"
-				>
-				<File
-					RelativePath="..\wxdlg\wxdlg3dViewer.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\wxdlg\wxdlg3dViewer.h"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="filter"
 				>
 				<File

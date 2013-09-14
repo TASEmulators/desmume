@@ -33,7 +33,7 @@
 
 #include <string>
 
-#if defined(_WINDOWS) && !defined(WXPORT)
+#if defined(_WINDOWS)
 #include "pathsettings.h"
 #endif
 

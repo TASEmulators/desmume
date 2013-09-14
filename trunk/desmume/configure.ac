@@ -211,34 +211,12 @@ if test "x$HAVE_ALSA" = "xno"; then
    fi
 fi
 
-dnl - Check for wxWidgets
-
-dnl - if --enable-wxwidgets is used, check for it
-AC_ARG_ENABLE([wxwidgets],
-               [AC_HELP_STRING([--enable-wxwidgets], [Enable cross platform wx widgets frontend])],
-               [wxwidgets=$enableval],
-               [wxwidgets=no])
-if test "x$wxwidgets" = "xyes" ; then
-	m4_include(wxwin.m4)
-	AM_PATH_WXCONFIG([2.4.0], wxwin=yes)
-	if test "x$wxwin" = "xyes"; then
-		AC_SUBST(WX_CPPFLAGS)
-		AC_SUBST(WX_LIBS)
-   		AC_DEFINE([WANT_WX])
-	fi
-fi
-
-AM_CONDITIONAL([HAVE_WX], [test "x$wxwidgets" = "xyes"])
-
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR="po"
 PO_MAKEFILE="po/Makefile.in"
 UI_DIR="cli $UI_DIR"
 if test "x$HAVE_GTK" = "xyes"; then
   UI_DIR="gtk $UI_DIR"
-fi
-if test "x$wxwin" = "xyes"; then
-  UI_DIR="wx $UI_DIR"
 fi
 
 if test "x$HAVE_LIBGLADE" = "xyes"; then
@@ -362,7 +340,6 @@ AC_CONFIG_FILES([Makefile
                  src/gtk/doc/Makefile
                  src/gtk-glade/Makefile
                  src/gtk-glade/doc/Makefile
-                 src/wx/Makefile
 		 src/gdbstub/Makefile
 		 autopackage/default.apspec
 ])

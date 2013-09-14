@@ -27,11 +27,7 @@
 #include <direct.h>
 #include "winutil.h"
 #include "common.h"
-#if !defined(WXPORT)
 #include "resource.h"
-#else
-#include <glib.h>
-#endif /* !WXPORT */
 #elif !defined(DESMUME_COCOA)
 #include <glib.h>
 #endif /* _WINDOWS */
