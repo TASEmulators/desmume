@@ -688,7 +688,16 @@ static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u
 		BlendFunc selectedFunc = NoBlend;
 
 		//if normal BLDCNT layer target conditions are met, then we can use the BLDCNT-specified color effect
-		if(firstTargetSatisfied && secondTargetSatisfied && windowEffectSatisfied) selectedFunc = FUNC;
+		if(FUNC == Blend)
+		{
+			//blending requires first and second target screens to be satisfied, as well as the window
+			if(firstTargetSatisfied && secondTargetSatisfied && windowEffectSatisfied) selectedFunc = FUNC;
+		}
+		else 
+		{
+			//brightness up and down requires only the first target screen to be satisfied
+			if(firstTargetSatisfied && windowEffectSatisfied) selectedFunc = FUNC;
+		}
 
 		switch(selectedFunc) 
 		{
