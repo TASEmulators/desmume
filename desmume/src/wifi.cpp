@@ -29,9 +29,7 @@
 	#include <ws2tcpip.h>
 	#define socket_t    SOCKET 	 
 	#define sockaddr_t  SOCKADDR
-	#ifndef WXPORT
-		#include "windriver.h"
-	#endif
+	#include "windriver.h"
 	#define PCAP_DEVICE_NAME description
 #else
 	#include <unistd.h> 	 

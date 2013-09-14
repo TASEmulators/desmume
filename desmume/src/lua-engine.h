@@ -20,7 +20,7 @@
 
 #include "types.h"
 
-#if defined(WIN32) && !defined(WXPORT)
+#if defined(WIN32)
 #include <winsock2.h>
 #include <windows.h>
 #include "resource.h"
@@ -110,7 +110,7 @@ private:
 void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData);
 void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& saveData);
 
-#if defined(WIN32) && !defined(WXPORT)
+#if defined(WIN32)
 typedef HMENU PlatformMenu;    // hMenu
 typedef UINT PlatformMenuItem; // menuId
 #define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
