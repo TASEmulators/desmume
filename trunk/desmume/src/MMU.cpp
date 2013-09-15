@@ -2467,7 +2467,7 @@ static INLINE void write_auxspicnt(const int proc, const int size, const int adr
 }
 
 template <u8 PROCNUM>
-bool validateIORegs(u32 addr, u8 size)
+bool checkIORegs(u32 addr, u8 size, u32 val)
 {
 	if (PROCNUM == ARMCPU_ARM9)
 	{
@@ -2730,7 +2730,7 @@ bool validateIORegs(u32 addr, u8 size)
 				return true;
 
 			default:
-				printf("MMU9 write%02d to undefined register %08Xh\n", size, addr);
+				printf("MMU9 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
 				return false;
 		}
 	}
@@ -2824,7 +2824,7 @@ bool validateIORegs(u32 addr, u8 size)
 				return true;
 
 			default:
-				printf("MMU7 write%02d to undefined register %08Xh\n", size, addr);
+				printf("MMU7 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
 				return false;
 		}
 	}
@@ -2866,7 +2866,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegs<ARMCPU_ARM9>(adr, 8)) return;
+		if (!checkIORegs<ARMCPU_ARM9>(adr, 8, val)) return;
 		
 		// TODO: add pal reg
 		if (nds.power1.gpuMain == 0)
@@ -3143,7 +3143,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegs<ARMCPU_ARM9>(adr, 16)) return;
+		if (!checkIORegs<ARMCPU_ARM9>(adr, 16, val)) return;
 
 		// TODO: add pal reg
 		if (nds.power1.gpuMain == 0)
@@ -3610,7 +3610,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegs<ARMCPU_ARM9>(adr, 32)) return;
+		if (!checkIORegs<ARMCPU_ARM9>(adr, 32, val)) return;
 
 		// TODO: add pal reg
 		if (nds.power1.gpuMain == 0)
@@ -4396,7 +4396,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegs<ARMCPU_ARM7>(adr, 8)) return;
+		if (!checkIORegs<ARMCPU_ARM7>(adr, 8, val)) return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,8,adr,val); return; }
 
@@ -4510,7 +4510,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegs<ARMCPU_ARM7>(adr, 16)) return;
+		if (!checkIORegs<ARMCPU_ARM7>(adr, 16, val)) return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,16,adr,val); return; }
 
@@ -4696,7 +4696,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegs<ARMCPU_ARM7>(adr, 32)) return;
+		if (!checkIORegs<ARMCPU_ARM7>(adr, 32, val)) return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,32,adr,val); return; }
 
