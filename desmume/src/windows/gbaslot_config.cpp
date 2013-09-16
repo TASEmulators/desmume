@@ -248,7 +248,7 @@ INT_PTR CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 		case WM_INITDIALOG: 
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_PATHGAME), tmp_gbagame_filename);
-			if (strlen(tmp_gbagame_filename) > 0) _OKbutton = true;
+			if (tmp_gbagame_filename[0] == 0) _OKbutton = true;
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -349,7 +349,7 @@ INT_PTR CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			SendDlgItemMessage(dialog,IDC_GYELLOW,WM_USER+44,tmp_Guitar.YELLOW,0);
 			SendDlgItemMessage(dialog,IDC_GBLUE,WM_USER+44,tmp_Guitar.BLUE,0);
 			PostMessage(dialog,WM_NEXTDLGCTL,0,0);
-		return true;
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -435,7 +435,7 @@ INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			SendDlgItemMessage(dialog,IDC_PIANO_B,WM_USER+44,tmp_Piano.B,0);
 			SendDlgItemMessage(dialog,IDC_PIANO_HIC,WM_USER+44,tmp_Piano.HIC,0);
 			PostMessage(dialog,WM_NEXTDLGCTL,0,0);
-		return true;
+		return TRUE;
 	}
 	return FALSE;
 }

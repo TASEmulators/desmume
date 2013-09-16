@@ -98,10 +98,10 @@ FS_NITRO::FS_NITRO(u8 *cart_rom)
 	printf("\t* ARM7 at Overlay 0x%08X, size 0x%08X\n", ARM7OverlayOff, ARM7OverlaySize);
 	printf("\t* ARM9 exe at %08X, size %08Xh\n", ARM9exeStart, ARM9exeSize);
 	printf("\t* ARM7 exe at %08X, size %08Xh\n", ARM7exeStart, ARM7exeSize);
-	printf("\t* Directories: %d\n", numDirs);
-	printf("\t* Files %d\n", numFiles);
-	printf("\t* ARM9 Overlays %d\n", numOverlay9);
-	printf("\t* ARM7 Overlays %d\n", numOverlay7);
+	printf("\t* Directories: %u\n", numDirs);
+	printf("\t* Files %u\n", numFiles);
+	printf("\t* ARM9 Overlays %u\n", numOverlay9);
+	printf("\t* ARM7 Overlays %u\n", numOverlay7);
 
 	fat = new FAT_NITRO[numFiles];
 	fnt = new FNT_NITRO[numDirs];
@@ -171,9 +171,9 @@ bool FS_NITRO::loadFileTables()
 		for (u32 i = 0 ; i < numOverlay9; i++)
 		{
 			char buf[129] = {0};
-			memset(&buf[9], 0, sizeof(buf));
+			memset(&buf[0], 0, sizeof(buf));
 			fat[ovr9[i].fileID].isOverlay = true;
-			sprintf(buf, "overlay_%04d.bin", ovr9[i].id);
+			sprintf(buf, "overlay_%04u.bin", ovr9[i].id);
 			fat[ovr9[i].fileID].filename = buf;
 		}
 	}
@@ -185,9 +185,9 @@ bool FS_NITRO::loadFileTables()
 		for (u32 i = 0 ; i < numOverlay7; i++)
 		{
 			char buf[129] = {0};
-			memset(&buf[9], 0, sizeof(buf));
+			memset(&buf[0], 0, sizeof(buf));
 			fat[ovr7[i].fileID].isOverlay = true;
-			sprintf(buf, "overlay_%04d.bin", ovr7[i].id);
+			sprintf(buf, "overlay_%04u.bin", ovr7[i].id);
 			fat[ovr7[i].fileID].filename = buf;
 		}
 	}
@@ -533,7 +533,7 @@ bool FS_NITRO::extractAll(string to, void (*callback)(u32 current, u32 num))
 	{
 		if (fat[i].isOverlay) continue;
 		string fname = getFullPathByFileID(i, false);
-		extract(i, fname.c_str());
+		extract(i, fname);
 		if (callback)
 			callback(i, numFiles);
 	}

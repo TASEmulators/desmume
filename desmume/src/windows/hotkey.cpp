@@ -114,7 +114,7 @@ void HK_JitBlockSizeDec(int, bool justPressed)
 
 	CommonSettings.jit_max_block_size--;
 	char tmp[256];
-	sprintf(tmp,"JIT block size changed to: %d", CommonSettings.jit_max_block_size);
+	sprintf(tmp,"JIT block size changed to: %u", CommonSettings.jit_max_block_size);
 	osd->addLine(tmp);
 	arm_jit_reset(CommonSettings.use_jit, true);
 }
@@ -126,7 +126,7 @@ void HK_JitBlockSizeInc(int, bool justPressed)
 
 	CommonSettings.jit_max_block_size++;
 	char tmp[256];
-	sprintf(tmp,"JIT block size changed to: %d", CommonSettings.jit_max_block_size);
+	sprintf(tmp,"JIT block size changed to: %u", CommonSettings.jit_max_block_size);
 	osd->addLine(tmp);
 	arm_jit_reset(CommonSettings.use_jit, true);
 }
