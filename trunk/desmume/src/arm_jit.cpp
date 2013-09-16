@@ -1,6 +1,6 @@
 /*	Copyright (C) 2006 yopyop
 	Copyright (C) 2011 Loren Merritt
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -3868,11 +3868,16 @@ static u32 instr_attributes(u32 opcode)
 static bool instr_is_branch(u32 opcode)
 {
 	u32 x = instr_attributes(opcode);
+	
 	if(bb_thumb)
+	{
+		// merge OP_BL_10+OP_BL_11
+		if (x & MERGE_NEXT) return false;
 		return (x & BRANCH_ALWAYS)
 		    || ((x & BRANCH_POS0) && ((opcode&7) | ((opcode>>4)&8)) == 15)
 			|| (x & BRANCH_SWI)
 		    || (x & JIT_BYPASS);
+	}
 	else
 		return (x & BRANCH_ALWAYS)
 		    || ((x & BRANCH_POS12) && REG_POS(opcode,12) == 15)
@@ -4111,7 +4116,7 @@ static u32 compile_basicblock()
 
 		u32 cycles = instr_cycles(opcode);
 
-		bEndBlock = (i >= (CommonSettings.jit_max_block_size - 1)) || instr_is_branch(opcode);
+		bEndBlock = instr_is_branch(opcode) || (i >= (CommonSettings.jit_max_block_size - 1));
 		
 #if LOG_JIT
 		if (instr_is_conditional(opcode) && (cycles > 1) || (cycles == 0))
@@ -4236,7 +4241,7 @@ template<int PROCNUM> u32 arm_jit_compile()
 template u32 arm_jit_compile<0>();
 template u32 arm_jit_compile<1>();
 
-void arm_jit_reset(bool enable)
+void arm_jit_reset(bool enable, bool suppress_msg)
 {
 #if LOG_JIT
 	c.setLogger(&logger);
@@ -4247,7 +4252,8 @@ void arm_jit_reset(bool enable)
 #ifdef HAVE_STATIC_CODE_BUFFER
 	scratchptr = scratchpad;
 #endif
-	printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
+	if (!suppress_msg)
+		printf("CPU mode: %s\n", enable?"JIT":"Interpreter");
 	saveBlockSizeJIT = CommonSettings.jit_max_block_size;
 
 	if (enable)
