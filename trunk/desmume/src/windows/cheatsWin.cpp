@@ -1150,8 +1150,8 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 				SendMessage(searchListView, WM_SETREDRAW, (WPARAM)FALSE,0);
 				while (cheatSearch->getList(&address, &val))
 				{
-					char buf[256] = {0};
-					wsprintf(buf, "0x02%06X", address);
+					char buf[256];
+					sprintf(buf, "0x02%06X", address);
 					lvi.pszText = buf;
 					u32 row = SendMessage(searchListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 					_ltoa(val, buf, 10);

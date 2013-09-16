@@ -248,7 +248,7 @@ INT_PTR CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 		case WM_INITDIALOG: 
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_PATHGAME), tmp_gbagame_filename);
-			if (tmp_gbagame_filename[0] == 0) _OKbutton = true;
+			_OKbutton = (tmp_gbagame_filename[0] != 0)?true:false;
 			return TRUE;
 		}
 		case WM_COMMAND:
