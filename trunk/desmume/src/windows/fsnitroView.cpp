@@ -351,7 +351,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 									u32 start = fs->getStartAddrById(currentFileID);
 									u32 end = fs->getEndAddrById(currentFileID);
 									u32 size = (end - start);
-									sprintf(buf, "[%08X-%08X] size %d", start, end, size);
+									sprintf(buf, "[%08X-%08X] size %u", start, end, size);
 									SetWindowText(GetDlgItem(hWnd, IDC_FILE_INFO), buf);
 								}
 							}

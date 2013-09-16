@@ -76,7 +76,7 @@ int write64le(u64 b, EMUFILE* os)
 
 int read32le(u32 *Bufo, EMUFILE *fp)
 {
-	u32 buf;
+	u32 buf = 0;
 	if(fp->_fread(&buf,4)<4)
 		return 0;
 #ifdef LOCAL_LE

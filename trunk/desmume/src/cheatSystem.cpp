@@ -653,7 +653,7 @@ BOOL CHEATS::load()
 			continue;
 		}
 		trim(buf);
-		if ((strlen(buf) == 0) || (buf[0] == ';')) continue;
+		if ((buf[0] == 0) || (buf[0] == ';')) continue;
 		if(!strncasecmp(buf,"name=",5)) continue;
 		if(!strncasecmp(buf,"serial=",7)) continue;
 

@@ -1371,7 +1371,7 @@ void SoftRasterizerEngine::framebufferProcess()
 			//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
 			//// this seems to be the only thing that selectively disables edge marking
 			//edgeMarkDisabled[i] = (col == 0x7FFF);
-			edgeMarkDisabled[i] = false;
+			edgeMarkDisabled[i] = 0;
 		}
 
 		for(int i=0,y=0;y<192;y++)

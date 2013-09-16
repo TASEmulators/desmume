@@ -89,7 +89,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 				else
 				{
 					char sizeS[30] = {0};
-					memset(&sizeS[0], 0, sizeof(size));
+					memset(&sizeS[0], 0, sizeof(sizeS));
 					u32 ss = save_types[fileSaveType+1].size * 8 / 1024;
 					if (ss >= 1024)
 						sprintf(sizeS, "%i Mbit", ss / 1024);

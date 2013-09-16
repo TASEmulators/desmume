@@ -784,7 +784,6 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 	{ \
 		if(REG_POS(i,12)==15) \
 		{ \
-			GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
 			c.mov(cpu_ptr(next_instruction), lhs); \
 			c.add(bb_total_cycles, 2); \
 		} \
