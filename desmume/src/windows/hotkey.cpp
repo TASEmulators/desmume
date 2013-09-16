@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -97,9 +97,6 @@ void HK_ReloadROM(int, bool justPressed)
 #ifdef HAVE_JIT
 void HK_CpuMode(int, bool justPressed)
 {
-	extern void arm_jit_sync();
-	void arm_jit_reset(bool enable);
-
 	arm_jit_sync();
 	CommonSettings.use_jit = !CommonSettings.use_jit;
 	arm_jit_reset(CommonSettings.use_jit);
@@ -119,7 +116,7 @@ void HK_JitBlockSizeDec(int, bool justPressed)
 	char tmp[256];
 	sprintf(tmp,"JIT block size changed to: %d", CommonSettings.jit_max_block_size);
 	osd->addLine(tmp);
-	arm_jit_reset(CommonSettings.use_jit);
+	arm_jit_reset(CommonSettings.use_jit, true);
 }
 
 void HK_JitBlockSizeInc(int, bool justPressed)
@@ -131,7 +128,7 @@ void HK_JitBlockSizeInc(int, bool justPressed)
 	char tmp[256];
 	sprintf(tmp,"JIT block size changed to: %d", CommonSettings.jit_max_block_size);
 	osd->addLine(tmp);
-	arm_jit_reset(CommonSettings.use_jit);
+	arm_jit_reset(CommonSettings.use_jit, true);
 }
 #endif
 
