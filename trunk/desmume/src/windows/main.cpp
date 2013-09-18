@@ -556,7 +556,7 @@ static void InputTimer()
 	bool S9xGetState (WORD KeyIdent);
 
 	static DWORD lastTime = timeGetTime();
-	DWORD currentTime = lastTime;
+	DWORD currentTime = timeGetTime();
 
 	static struct JoyState {
 		bool wasPressed;
@@ -4196,7 +4196,7 @@ void ScreenshotToClipboard(bool extraInfo)
 		else
 			TextOut(hMemDC, 0, 384 + 14, nameandver, strlen(nameandver));
 
-		char str[38];
+		char str[32];
 		memcpy(&str[0], &MMU.CART_ROM[0], 12); str[12] = '\0';
 		int titlelen = strlen(str); 
 		str[titlelen] = ' ';

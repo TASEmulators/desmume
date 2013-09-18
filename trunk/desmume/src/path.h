@@ -193,7 +193,7 @@ public:
 
 	void ReadPathSettings()
 	{
-		if (pathToModule[0] == 0)
+		if( ( strcmp(pathToModule, "") == 0) || !pathToModule)
 			LoadModulePath();
 
 		ReadKey(pathToRoms, ROMKEY);

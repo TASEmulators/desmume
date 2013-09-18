@@ -645,7 +645,7 @@ public:
 					{
 						u16 c = map[x];
 						int alpha = ((c&0x8000)?opaqueColor:0);
-						*dwdst++ = CONVERT(c,alpha);
+						*dwdst++ = CONVERT(c&0x7FFF,alpha);
 					}
 				}
 				break;

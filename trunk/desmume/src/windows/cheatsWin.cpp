@@ -48,7 +48,7 @@ static	u8		searchAddSize = 0;
 static	const char*	searchAddDesc = 0;
 static	char	editBuf[3][75] = { 0 };
 static	u32		cheatEditPos = 0;
-static	bool	cheatAddPasteCheck = false;
+static	u8		cheatAddPasteCheck = 0;
 static	u8		cheatXXtype = 0;
 static	u8		cheatXXaction = 0;
 
@@ -267,7 +267,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 
 						if(cheatAddPasteCheck)
 						{
-							cheatAddPasteCheck = false;
+							cheatAddPasteCheck = 0;
 							char temp [12];
 							sprintf(temp, "%06X", val);
 							if(strcmp(editBuf[0], temp))
@@ -297,7 +297,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 
 						if(cheatAddPasteCheck || parseOffset)
 						{
-							cheatAddPasteCheck = false;
+							cheatAddPasteCheck = 0;
 							val &= searchRange[searchAddSize][1];
 							char temp [12];
 							sprintf(temp, "%u", val);
@@ -374,8 +374,8 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 
 				cheats->get(&tempCheat, cheatEditPos);
 				
-				memset(&buf[0], 0, sizeof(buf));
-				memset(&buf2[0], 0, sizeof(buf2));
+				memset(buf, 0, 100);
+				memset(buf2, 0, 100);
 				tempCheat.code[0][0] &= 0x00FFFFFF;
 				wsprintf(buf, "%06X", tempCheat.code[0][0]);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf);
@@ -443,7 +443,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 
 						if(cheatAddPasteCheck || parseOffset)
 						{
-							cheatAddPasteCheck = false;
+							cheatAddPasteCheck = 0;
 							val &= searchRange[tempCheat.size][1];
 							char temp [12];
 							sprintf(temp, "%u", val);
@@ -1151,8 +1151,8 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 				while (cheatSearch->getList(&address, &val))
 				{
 					char buf[256];
-					sprintf(buf, "0x02%06X", address);
-					lvi.pszText = buf;
+					wsprintf(buf, "0x02%06X", address);
+					lvi.pszText= buf;
 					u32 row = SendMessage(searchListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 					_ltoa(val, buf, 10);
 					ListView_SetItemText(searchListView, row, 1, buf);
@@ -1379,7 +1379,7 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 		case WM_INITDIALOG:
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_CDATE), (LPCSTR)cheatsExport->date);
-			if (cheatsExport->gametitle[0] != 0)
+			if ((char*)cheatsExport->gametitle != "")
 			{
 				char buf[512] = {0};
 				GetWindowText(dialog, &buf[0], sizeof(buf));
