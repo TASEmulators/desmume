@@ -105,7 +105,7 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		case WM_INITDIALOG: 
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_PATH), tmp_fat_path);
-			_OKbutton_slot1 = (tmp_fat_path[0] != 0);
+			_OKbutton_slot1 = (tmp_fat_path!="");
 			return TRUE;
 		}
 

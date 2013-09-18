@@ -249,7 +249,7 @@ bool CFIRMWARE::load()
 	
 	if (CommonSettings.UseExtFirmware == false)
 		return false;
-	if (CommonSettings.Firmware[0] == 0)
+	if (strlen(CommonSettings.Firmware) == 0)
 		return false;
 	
 	FILE	*fp = fopen(CommonSettings.Firmware, "rb");
