@@ -1379,7 +1379,7 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 		case WM_INITDIALOG:
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_CDATE), (LPCSTR)cheatsExport->date);
-			if (cheatsExport->gametitle && (std::string)cheatsExport->gametitle != "")
+			if (cheatsExport->gametitle && strlen((char*)cheatsExport->gametitle) > 0)
 			{
 				char buf[512] = {0};
 				GetWindowText(dialog, &buf[0], sizeof(buf));
