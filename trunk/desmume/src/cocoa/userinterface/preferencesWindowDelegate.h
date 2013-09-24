@@ -89,7 +89,6 @@
 - (IBAction) showSoundView:(id)sender;
 - (IBAction) showEmulationView:(id)sender;
 
-- (IBAction) selectAutoloadRomOption:(id)sender;
 - (IBAction) chooseAdvansceneDatabase:(id)sender;
 - (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 - (IBAction) chooseRomForAutoload:(id)sender;
@@ -97,8 +96,6 @@
 - (IBAction) chooseCheatDatabase:(id)sender;
 - (void) chooseCheatDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 
-- (IBAction) selectDisplayMode:(id)sender;
-- (IBAction) selectDisplaySize:(id)sender;
 - (IBAction) selectDisplayRotation:(id)sender;
 - (void) updateDisplayRotationMenu:(double)displayRotation;
 
