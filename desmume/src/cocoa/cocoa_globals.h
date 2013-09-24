@@ -107,9 +107,11 @@
 #define NSSTRING_STATUS_SLOT1_R4_INSERTED			NSLocalizedString(@"R4 cartridge interface inserted.", nil)
 #define NSSTRING_STATUS_SLOT1_STANDARD_INSERTED		NSLocalizedString(@"Standard retail cartridge inserted.", nil)
 
+#define NSSTRING_STATUS_AUTOLOAD_ROM_NAME_NONE		NSLocalizedString(@"No ROM chosen.", nil)
+
 #define NSSTRING_DISPLAYMODE_MAIN					NSLocalizedString(@"Main", nil)
 #define NSSTRING_DISPLAYMODE_TOUCH					NSLocalizedString(@"Touch", nil)
-#define NSSTRING_DISPLAYMODE_COMBO					NSLocalizedString(@"Combo", nil)
+#define NSSTRING_DISPLAYMODE_DUAL					NSLocalizedString(@"Dual Screen", nil)
 
 #define NSSTRING_INPUTPREF_NUM_INPUTS_MAPPED		NSLocalizedString(@"%ld Input Mapped", nil)
 #define NSSTRING_INPUTPREF_NUM_INPUTS_MAPPED_PLURAL	NSLocalizedString(@"%ld Inputs Mapped", nil)
@@ -229,7 +231,9 @@
 enum
 {
 	ROMAUTOLOADOPTION_LOAD_LAST						= 0,
-	ROMAUTOLOADOPTION_LOAD_SELECTED					= 1
+	ROMAUTOLOADOPTION_LOAD_SELECTED					= 1,
+	ROMAUTOLOADOPTION_LOAD_NONE						= 10000,
+	ROMAUTOLOADOPTION_CHOOSE_ROM					= 10001
 };
 
 enum
@@ -422,7 +426,7 @@ enum
 {
 	DS_DISPLAY_TYPE_MAIN = 0,
 	DS_DISPLAY_TYPE_TOUCH,
-	DS_DISPLAY_TYPE_COMBO
+	DS_DISPLAY_TYPE_DUAL
 };
 
 enum
@@ -444,7 +448,7 @@ enum
 {
 	DS_GPU_TYPE_MAIN = 0,
 	DS_GPU_TYPE_SUB,
-	DS_GPU_TYPE_COMBO
+	DS_GPU_TYPE_MAIN_AND_SUB
 };
 
 /*

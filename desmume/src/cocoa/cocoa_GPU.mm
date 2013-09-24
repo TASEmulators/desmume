@@ -586,7 +586,7 @@ GPU3DInterface *core3DList[] = {
 			}
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			if (flags & (GPUSTATE_MAIN_GPU_MASK | GPUSTATE_SUB_GPU_MASK))
 			{
 				result = YES;
@@ -614,7 +614,7 @@ GPU3DInterface *core3DList[] = {
 			flags &= ~GPUSTATE_SUB_GPU_MASK;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			flags &= ~GPUSTATE_MAIN_GPU_MASK;
 			flags &= ~GPUSTATE_SUB_GPU_MASK;
 			break;
@@ -640,7 +640,7 @@ GPU3DInterface *core3DList[] = {
 			flags |= GPUSTATE_SUB_GPU_MASK;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			flags |= GPUSTATE_MAIN_GPU_MASK;
 			flags |= GPUSTATE_SUB_GPU_MASK;
 			break;
@@ -674,7 +674,7 @@ void SetGPULayerState(const int gpuType, const unsigned int i, const bool state)
 			theGpu = MainScreen.gpu;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			SetGPULayerState(DS_GPU_TYPE_SUB, i, state); // Recursive call
 			theGpu = MainScreen.gpu;
 			break;
@@ -722,7 +722,7 @@ bool GetGPULayerState(const int gpuType, const unsigned int i)
 			}
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			if (SubScreen.gpu != NULL && MainScreen.gpu != NULL)
 			{
 				theState = (CommonSettings.dispLayers[SubScreen.gpu->core][i] && CommonSettings.dispLayers[MainScreen.gpu->core][i]);
@@ -748,7 +748,7 @@ void SetGPUDisplayState(const int gpuType, const bool state)
 			CommonSettings.showGpu.main = state;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			CommonSettings.showGpu.sub = state;
 			CommonSettings.showGpu.main = state;
 			break;
@@ -772,7 +772,7 @@ bool GetGPUDisplayState(const int gpuType)
 			theState = CommonSettings.showGpu.main;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			theState = (CommonSettings.showGpu.sub && CommonSettings.showGpu.main);
 			break;
 			

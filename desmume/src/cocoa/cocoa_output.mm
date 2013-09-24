@@ -436,7 +436,7 @@
 	spinlockDisplayType = OS_SPINLOCK_INIT;
 	
 	delegate = nil;
-	displayMode = DS_DISPLAY_TYPE_COMBO;
+	displayMode = DS_DISPLAY_TYPE_DUAL;
 	frameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT * 2);
 	
 	[property setValue:[NSNumber numberWithInteger:displayMode] forKey:@"displayMode"];
@@ -497,8 +497,8 @@
 			newDispString = NSSTRING_DISPLAYMODE_TOUCH;
 			break;
 			
-		case DS_DISPLAY_TYPE_COMBO:
-			newDispString = NSSTRING_DISPLAYMODE_COMBO;
+		case DS_DISPLAY_TYPE_DUAL:
+			newDispString = NSSTRING_DISPLAYMODE_DUAL;
 			newFrameSize.height *= 2;
 			break;
 			
@@ -551,7 +551,7 @@
 	{
 		gpuData = [[NSData alloc] initWithBytes:(GPU_screen + GPU_SCREEN_SIZE_BYTES) length:GPU_SCREEN_SIZE_BYTES];
 	}
-	else if(displayModeID == DS_DISPLAY_TYPE_COMBO)
+	else if(displayModeID == DS_DISPLAY_TYPE_DUAL)
 	{
 		gpuData = [[NSData alloc] initWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES * 2];
 	}
@@ -667,7 +667,7 @@
 {
 	const NSInteger displayModeID = [self displayMode];
 	const NSSize displayFrameSize = [self frameSize];
-	const size_t numberBytes = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? GPU_SCREEN_SIZE_BYTES * 2 : GPU_SCREEN_SIZE_BYTES;
+	const size_t numberBytes = (displayModeID == DS_DISPLAY_TYPE_DUAL) ? GPU_SCREEN_SIZE_BYTES * 2 : GPU_SCREEN_SIZE_BYTES;
 	
 	UInt16 *gpuBytes = (UInt16 *)malloc(numberBytes);
 	if (gpuBytes == NULL)
@@ -767,7 +767,7 @@
 	}
 	
 	videoDelegate = nil;
-	lastDisplayMode = DS_DISPLAY_TYPE_COMBO;
+	lastDisplayMode = DS_DISPLAY_TYPE_DUAL;
 	
 	spinlockVideoFilterType = OS_SPINLOCK_INIT;
 	spinlockVFBuffers = OS_SPINLOCK_INIT;

@@ -140,7 +140,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// These need to be initialized first since there are dependencies on these.
 	_displayGap = 0.0;
-	_displayMode = DS_DISPLAY_TYPE_COMBO;
+	_displayMode = DS_DISPLAY_TYPE_DUAL;
 	_displayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	
 	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*_displayGap));
@@ -322,10 +322,10 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 			modeString = NSSTRING_DISPLAYMODE_TOUCH;
 			break;
 			
-		case DS_DISPLAY_TYPE_COMBO:
+		case DS_DISPLAY_TYPE_DUAL:
 		{
 			const double gapScalar = [self displayGap];
-			modeString = NSSTRING_DISPLAYMODE_COMBO;
+			modeString = NSSTRING_DISPLAYMODE_DUAL;
 			
 			if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
 			{
@@ -372,7 +372,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	_displayOrientation = theOrientation;
 	OSSpinLockUnlock(&spinlockDisplayOrientation);
 	
-	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
+	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
 	{
 		const double gapScalar = [self displayGap];
 		NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
@@ -430,7 +430,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	_displayGap = gapScalar;
 	OSSpinLockUnlock(&spinlockDisplayGap);
 	
-	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
+	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
 	{
 		NSSize newDisplaySize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 		
@@ -489,7 +489,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	_isMinSizeNormal = theState;
 	
-	if ([self displayMode] == DS_DISPLAY_TYPE_COMBO)
+	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
 	{
 		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_HORIZONTAL)
 		{
@@ -1135,7 +1135,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// Set the video filter source size now since the proper size is needed on initialization.
 	// If we don't do this, new windows could draw incorrectly.
-	const NSSize vfSrcSize = NSMakeSize(GPU_DISPLAY_WIDTH, ([self displayMode] == DS_DISPLAY_TYPE_COMBO) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT);
+	const NSSize vfSrcSize = NSMakeSize(GPU_DISPLAY_WIDTH, ([self displayMode] == DS_DISPLAY_TYPE_DUAL) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT);
 	[[cdsVideoOutput vf] setSourceSize:vfSrcSize];
 	[CocoaDSUtil messageSendOneWayWithInteger:[cdsVideoOutput receivePort] msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:[self videoFilterType]];
 	
@@ -1340,7 +1340,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[format release];
 	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
 	
-	_currentDisplayMode = DS_DISPLAY_TYPE_COMBO;
+	_currentDisplayMode = DS_DISPLAY_TYPE_DUAL;
 	_currentDisplayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	_currentGapScalar = 0.0f;
 	_currentNormalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*_currentGapScalar));
@@ -1643,7 +1643,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 		[self uploadVertices];
 	}
 	
-	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_COMBO) ? 12 : 6;
+	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_DUAL) ? 12 : 6;
 	const GLubyte *elementPointer = !(displayModeID == DS_DISPLAY_TYPE_TOUCH) ? 0 : (GLubyte *)(vtxElementCount * sizeof(GLubyte));
 	
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -1661,7 +1661,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	const GLfloat h = GPU_DISPLAY_HEIGHT;
 	const GLfloat gap = DS_DISPLAY_GAP * gapScalar / 2.0;
 	
-	if (displayModeID == DS_DISPLAY_TYPE_COMBO)
+	if (displayModeID == DS_DISPLAY_TYPE_DUAL)
 	{
 		// displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST
 		if (displayOrientationID == DS_DISPLAY_ORIENTATION_VERTICAL)
@@ -1751,7 +1751,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 														  viewAngle);
 	
 	// Normalize the touch location to the DS.
-	if ([windowController displayMode] == DS_DISPLAY_TYPE_COMBO)
+	if ([windowController displayMode] == DS_DISPLAY_TYPE_DUAL)
 	{
 		const NSInteger theOrientation = [windowController displayOrientation];
 		const NSInteger theOrder = [windowController displayOrder];
@@ -1864,7 +1864,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	// and finally to DS touchscreen coordinates.
 	NSPoint touchLoc = NSMakePoint(-2.0, -2.0);
 	
-	if (displayModeID == DS_DISPLAY_TYPE_TOUCH || displayModeID == DS_DISPLAY_TYPE_COMBO)
+	if (displayModeID == DS_DISPLAY_TYPE_TOUCH || displayModeID == DS_DISPLAY_TYPE_DUAL)
 	{
 		touchLoc = [self dsPointFromEvent:theEvent];
 	}
@@ -2211,7 +2211,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	[self uploadVertices];
 	
-	if (_currentDisplayMode == DS_DISPLAY_TYPE_COMBO)
+	if (_currentDisplayMode == DS_DISPLAY_TYPE_DUAL)
 	{
 		const NSSize viewSize = [self bounds].size;
 		const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
@@ -2252,7 +2252,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	[self uploadVertices];
 	
-	if (_currentDisplayMode == DS_DISPLAY_TYPE_COMBO)
+	if (_currentDisplayMode == DS_DISPLAY_TYPE_DUAL)
 	{
 		[self renderDisplayUsingDisplayMode:_currentDisplayMode];
 		[self drawVideoFrame];
@@ -2274,7 +2274,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	[self uploadVertices];
 	
-	if (_currentDisplayMode == DS_DISPLAY_TYPE_COMBO)
+	if (_currentDisplayMode == DS_DISPLAY_TYPE_DUAL)
 	{
 		const NSSize viewSize = [self bounds].size;
 		const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
@@ -2316,7 +2316,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 		glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	}
 	
-	if (_currentDisplayMode != DS_DISPLAY_TYPE_COMBO)
+	if (_currentDisplayMode != DS_DISPLAY_TYPE_DUAL)
 	{
 		videoFilterDestSize.height = (uint32_t)videoFilterDestSize.height * 2;
 	}

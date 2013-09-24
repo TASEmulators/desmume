@@ -243,23 +243,50 @@
 	[self restoreDisplayWindowStates];
 	
 	// Load a new ROM on launch per user preferences.
-	const BOOL loadROMOnLaunch = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_AutoloadROMOnLaunch"];
-	if (loadROMOnLaunch && [emuControl currentRom] == nil)
+	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"General_AutoloadROMOnLaunch"] != nil)
+	{
+		// Older versions of DeSmuME used General_AutoloadROMOnLaunch to determine whether to
+		// load a ROM on launch or not. This has been superseded by the autoload ROM option
+		// ROMAUTOLOADOPTION_LOAD_NONE. So if this object key exists in the user defaults, we
+		// need to update the user defaults key/values as needed, and then remove the
+		// General_AutoloadROMOnLaunch object key.
+		const BOOL loadROMOnLaunch = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_AutoloadROMOnLaunch"];
+		if (!loadROMOnLaunch)
+		{
+			[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
+		}
+		
+		[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"General_AutoloadROMOnLaunch"];
+	}
+	
+	if ([emuControl currentRom] == nil)
 	{
 		const NSInteger autoloadRomOption = [[NSUserDefaults standardUserDefaults] integerForKey:@"General_AutoloadROMOption"];
 		NSURL *autoloadRomURL = nil;
 		
-		if (autoloadRomOption == ROMAUTOLOADOPTION_LOAD_LAST)
+		switch (autoloadRomOption)
 		{
-			autoloadRomURL = [CocoaDSFile lastLoadedRomURL];
-		}
-		else if(autoloadRomOption == ROMAUTOLOADOPTION_LOAD_SELECTED)
-		{
-			NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
-			if (autoloadRomPath != nil && [autoloadRomPath length] > 0)
+			case ROMAUTOLOADOPTION_LOAD_NONE:
+				autoloadRomURL = nil;
+				break;
+				
+			case ROMAUTOLOADOPTION_LOAD_LAST:
+				autoloadRomURL = [CocoaDSFile lastLoadedRomURL];
+				break;
+				
+			case ROMAUTOLOADOPTION_LOAD_SELECTED:
 			{
-				autoloadRomURL = [NSURL fileURLWithPath:autoloadRomPath];
+				NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
+				if (autoloadRomPath != nil && [autoloadRomPath length] > 0)
+				{
+					autoloadRomURL = [NSURL fileURLWithPath:autoloadRomPath];
+				}
+				
+				break;
 			}
+				
+			default:
+				break;
 		}
 		
 		if (autoloadRomURL != nil)
@@ -536,7 +563,7 @@
 		[[prefWindowDelegate spuSyncMethodMenu] setEnabled:YES];
 	}
 	
-	// Set the text field for the autoloaded ROM.
+	// Set the name of the autoloaded ROM.
 	NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
 	if (autoloadRomPath != nil)
 	{
@@ -544,7 +571,7 @@
 	}
 	else
 	{
-		[prefBindings setValue:nil forKey:@"AutoloadRomName"];
+		[prefBindings setValue:NSSTRING_STATUS_AUTOLOAD_ROM_NAME_NONE forKey:@"AutoloadRomName"];
 	}
 	
 	// Set the menu for the display rotation.

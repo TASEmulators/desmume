@@ -154,22 +154,6 @@
 	[self switchContentView:viewEmulation];
 }
 
-- (IBAction) selectAutoloadRomOption:(id)sender
-{
-	const NSInteger option = [(NSMenuItem *)sender tag];
-	
-	[[NSUserDefaults standardUserDefaults] setInteger:option forKey:@"General_AutoloadROMOption"];
-	
-	if (option == 1)
-	{
-		NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
-		if ([autoloadRomPath length] == 0)
-		{
-			[self chooseRomForAutoload:sender];
-		}
-	}
-}
-
 - (IBAction) chooseRomForAutoload:(id)sender
 {
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
@@ -205,17 +189,20 @@
 	
 	if (returnCode == NSCancelButton)
 	{
+		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
 		return;
 	}
 	
 	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
 	if(selectedFileURL == nil)
 	{
+		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
 		return;
 	}
 	
 	NSString *selectedFile = [selectedFileURL path];
 	
+	[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_SELECTED forKey:@"General_AutoloadROMOption"];
 	[[NSUserDefaults standardUserDefaults] setObject:selectedFile forKey:@"General_AutoloadROMSelectedPath"];
 	[bindings setValue:[selectedFile lastPathComponent] forKey:@"AutoloadRomName"];
 }
@@ -374,18 +361,6 @@
 			}
 		}
 	}
-}
-
-- (IBAction) selectDisplayMode:(id)sender
-{
-	const NSInteger displayMode = [(NSMenuItem *)sender tag];
-	[[NSUserDefaults standardUserDefaults] setInteger:displayMode forKey:@"DisplayView_Mode"];
-}
-
-- (IBAction) selectDisplaySize:(id)sender
-{
-	const NSInteger displaySize = [(NSMenuItem *)sender tag];
-	[[NSUserDefaults standardUserDefaults] setInteger:displaySize forKey:@"DisplayView_Size"];
 }
 
 - (IBAction) selectDisplayRotation:(id)sender
