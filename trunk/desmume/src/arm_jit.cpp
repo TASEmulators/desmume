@@ -2452,7 +2452,6 @@ static int op_bx(Mem srcreg, bool blx, bool test_thumb)
 	return 1;
 }
 
-//TODO: exeption when Rm=PC
 static int OP_BX(const u32 i) { return op_bx(reg_pos_ptr(0), 0, 1); }
 static int OP_BLX_REG(const u32 i) { return op_bx(reg_pos_ptr(0), 1, 1); }
 
@@ -3955,9 +3954,9 @@ static void sync_r15(u32 opcode, bool is_last, bool force)
 {
 	if(instr_does_prefetch(opcode))
 	{
-		assert(!instr_uses_r15(opcode));
 		if(force)
 		{
+			//assert(!instr_uses_r15(opcode));
 			JIT_COMMENT("sync_r15: force instruct_adr %08Xh (PREFETCH)", bb_adr);
 			c.mov(cpu_ptr(instruct_adr), bb_next_instruction);
 		}
