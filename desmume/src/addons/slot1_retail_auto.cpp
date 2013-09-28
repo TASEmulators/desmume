@@ -43,13 +43,14 @@ public:
 		NDS_SLOT1_TYPE selection = NDS_SLOT1_RETAIL_MCROM;
 		
 		//check game ID in core emulator and select right implementation
-		if(!memcmp(gameInfo.header.gameCode,"UOR",3) || //WarioWare Do It Yourself
-			!memcmp(gameInfo.header.gameCode,"UXBP",4)) //Jam with the Band
+		if ((memcmp(gameInfo.header.gameCode, "UOR",  3) == 0) ||	// WarioWare - D.I.Y. (U)(E)(EUR) / Made in Ore (J)
+			(memcmp(gameInfo.header.gameCode, "UXBP", 4) == 0) 		// Jam with the Band (EUR)
+			)
 			selection = NDS_SLOT1_RETAIL_NAND;
 
 		mSelectedImplementation = slot1_List[selection];
 		mSelectedImplementation->connect();
-		printf("slot1 auto-selected device type: %s\n",mSelectedImplementation->info()->name());
+		printf("Slot1 auto-selected device type: %s\n",mSelectedImplementation->info()->name());
 
 	}
 
