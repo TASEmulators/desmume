@@ -465,19 +465,29 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 //guarantees that the data buffer has room enough for the specified number of bytes
 void BackupDevice::ensure(u32 addr)
 {
+	ensure(addr,kUninitializedSaveDataValue);
+}
+
+void BackupDevice::ensure(u32 addr, u8 val)
+{
 	u32 size = data.size();
 	if(size<addr)
 	{
-		resize(addr);
+		resize(addr, val);
 	}
 }
 
 void BackupDevice::resize(u32 size)
 {
+	resize(size,kUninitializedSaveDataValue);
+}
+
+void BackupDevice::resize(u32 size, u8 val)
+{
 	size_t old_size = data.size();
 	data.resize(size);
 	for(u32 i=old_size;i<size;i++)
-		data[i] = kUninitializedSaveDataValue;
+		data[i] = val;
 }
 
 u32 BackupDevice::addr_size_for_old_save_size(int bupmem_size)

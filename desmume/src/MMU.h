@@ -350,7 +350,7 @@ struct GC_Command
 //should rather be known as GCBUS controller, or somesuch
 struct GCBUS_Controller
 {
-	u32 transfer_count;
+	int transfer_count;
 	eCardMode mode; //probably only one of these
 };
 

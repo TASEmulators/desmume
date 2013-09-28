@@ -1354,6 +1354,13 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	{
 		GCLOG("[GC] command:"); rawcmd.print();
 		slot1_device->write_command(PROCNUM, rawcmd);
+
+		/*INFO("WRITE: %02X%02X%02X%02X%02X%02X%02X%02X ", 
+			rawcmd.bytes[0], rawcmd.bytes[1], rawcmd.bytes[2], rawcmd.bytes[3],
+			rawcmd.bytes[4], rawcmd.bytes[5], rawcmd.bytes[6], rawcmd.bytes[7]);
+		INFO("FROM: %08X ", (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
+		INFO("1A4: %08X ", val);
+		INFO("SIZE: %08X\n", blocksize);*/
 	}
 	else
 	{
@@ -1398,13 +1405,27 @@ u32 MMU_readFromGC()
 
 	//update transfer counter and complete the transfer if necessary
 	card.transfer_count -= 4;	
-	if(!card.transfer_count)
+	if(card.transfer_count <= 0)
 	{
-		MMU_GC_endTransfer(0);
-		MMU_GC_endTransfer(1);
+		MMU_GC_endTransfer(PROCNUM);
 	}
 
 	return val;
+}
+
+template<int PROCNUM>
+void MMU_writeToGC(u32 val)
+{
+	GCBUS_Controller& card = MMU.dscard[PROCNUM];
+
+	slot1_device->write_GCDATAIN(PROCNUM,val);
+
+	//update transfer counter and complete the transfer if necessary
+	card.transfer_count -= 4;	
+	if(card.transfer_count <= 0)
+	{
+		MMU_GC_endTransfer(PROCNUM);
+	}
 }
 
 // ====================================================================== REG_SPIxxx
@@ -3989,7 +4010,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(32,adr,val); return;
 
 			case REG_GCDATAIN:
-				slot1_device->write_GCDATAIN(ARMCPU_ARM9 ,val);
+				MMU_writeToGC<ARMCPU_ARM9>(val);
 				return;
 		}
 
@@ -4747,7 +4768,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 
 			case REG_GCDATAIN:
-				slot1_device->write_GCDATAIN(ARMCPU_ARM7, val);
+				MMU_writeToGC<ARMCPU_ARM7>(val);
 				return;
 		}
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
