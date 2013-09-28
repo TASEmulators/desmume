@@ -16,12 +16,10 @@
 */
 
 // Games with NAND Flash:
-// -  Ore/WarioWare D.I.Y.			- 128Mbit
-// -  Daigassou! Band Brothers DX	- 64MBit (NAND?)
-
 // Ore/WarioWare D.I.Y. - chip:		SAMSUNG 004
 //									KLC2811ANB-P204
 //									NTR-UORE-0
+//									- 128Mbit
 
 #include "../slot1.h"
 #include "../registers.h"
