@@ -64,8 +64,7 @@ public:
 
 		handle_save = 0;
 
-		NDS_header * _header = NDS_getROMHeader();
-		subAdr = (_header->unknown5[0xE] | _header->unknown5[0xF]<<8) << 17;
+		subAdr = T1ReadWord(gameInfo.header.unknown5, 0xE) << 17;
 
 		mode = 0;
 	}
@@ -127,7 +126,11 @@ public:
 			case 0xB2: //Set save position
 				mode = cmd;
 				save_adr = protocol.address & gameInfo.mask;
-				save_adr -= subAdr;
+				// to Norrmatt: Made in Ore (UORJ, crc 2E7111B8) crash when save_addr < subAdr
+				if (save_adr > subAdr)
+					save_adr -= subAdr;
+				else
+					save_adr = 0;
 				handle_save = 1;
 				break;
 		}
