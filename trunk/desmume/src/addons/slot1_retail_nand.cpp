@@ -33,15 +33,21 @@
 //quick architecture overview:
 //NAND receives GC bus commands from MMU.cpp
 //those are passed on to the protocol component for parsing
-//protocol calls back into NAND via ISlot1Comp_Protocol_Client interface for things the protocol doesnt know about (the contents of the rom, chiefly)
+//protocol calls back into NAND via ISlot1Comp_Protocol_Client interface for things the protocol doesn't know about (the contents of the rom, chiefly)
 //NAND utilizes the rom component for address logic and delivering data.
-//it also processes some commands itself which arent rom-related (the NANDy stuff)
+//it also processes some commands itself which aren't rom-related (the NANDy stuff)
 
 class Slot1_Retail_NAND : public ISlot1Interface, public ISlot1Comp_Protocol_Client
 {
 private:
+	u32 subAdr;
+
 	Slot1Comp_Protocol protocol;
 	Slot1Comp_Rom rom;
+
+	u32 mode;
+	u32 handle_save;
+	u32 save_adr;
 
 public:
 	virtual Slot1Info const* info()
@@ -55,6 +61,13 @@ public:
 		protocol.reset(this);
 		protocol.chipId = gameInfo.chipID;
 		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
+
+		handle_save = 0;
+
+		NDS_header * _header = NDS_getROMHeader();
+		subAdr = (_header->unknown5[0xE] | _header->unknown5[0xF]<<8) << 17;
+
+		mode = 0;
 	}
 
 	virtual void write_command(u8 PROCNUM, GC_Command command)
@@ -73,6 +86,8 @@ public:
 
 	virtual void slot1client_startOperation(eSlot1Operation operation)
 	{
+		protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
+
 		//pass the normal rom operations along to the rom component
 		switch(operation)
 		{
@@ -87,23 +102,33 @@ public:
 		int cmd = protocol.command.bytes[0];
 		switch(cmd)
 		{
+			//Nand Write Page
+			case 0x81:
+				break;
+
 			// Nand Init
 			case 0x94:
-				//GCLOG("NAND 0x94\n");
-				//length = 0x200;
+				mode = cmd;
 				break;
 
 			// Nand Error?
 			case 0xD6:
-				//GCLOG("NAND 0xD6\n");
-				//length = 4;
 				break;
 
-			// Nand Write? ---- PROGRAM for INTERNAL DATA MOVE/RANDOM DATA INPUT
-			//case 0x8B:
-			case 0x85:
-				//GCLOG("NAND 0x85\n");
-				//length = 0x200;
+			case 0x84: //Write disable
+			case 0x85: //Write enable
+				mode = cmd;
+				break;
+			case 0x8B:
+				mode = cmd;
+				handle_save = 0;
+				break;
+
+			case 0xB2: //Set save position
+				mode = cmd;
+				save_adr = protocol.address & gameInfo.mask;
+				save_adr -= subAdr;
+				handle_save = 1;
 				break;
 		}
 	}
@@ -115,26 +140,68 @@ public:
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
 			case eSlot1Operation_2x_SecureAreaLoad:
-			case eSlot1Operation_B7_Read:
+			//case eSlot1Operation_B7_Read:
 				return rom.read();
 		}
 
 		//handle special commands ourselves
 		int cmd = protocol.command.bytes[0];
+		int val = 0;
 		switch(cmd)
 		{
 			// Nand Init?
 			case 0x94:
-				return 0; //Unsure what to return here so return 0 for now
+				val = 0;
+				mode = 0;
+				break;
+
+			//Rom/Save Read
+			case 0xB7:
+				{
+					if(handle_save)
+					{
+						MMU_new.backupDevice.ensure(save_adr+4,0);
+						val = MMU_new.backupDevice.data[save_adr+3]<<24 | MMU_new.backupDevice.data[save_adr+2]<<16 | MMU_new.backupDevice.data[save_adr+1]<<8| MMU_new.backupDevice.data[save_adr+0]<<0;
+
+						MMU_new.backupDevice.setLazyFlushPending();
+
+						save_adr += 4;
+					}
+					else
+					{
+						val = rom.read();
+					}
+				}
+				break;
 
 			// Nand Status?
 			case 0xD6:
 				//0x80 == busy
-				// Made in Ore/WarioWare D.I.Y. need set value to 0x80
-				return 0x80; //0x20 == ready
+				//0x40 == ??
+				//0x20 == ready?
+				//0x10 == write enabled?
+				switch (mode)
+				{
+					case 0x84: //Write disable
+						val = 0x20202020;
+						break;
+					case 0x85: //Write enable
+						val = 0x20202020 | 0x10101010;
+						break;
+					case 0x8B:
+						val = 0x60606060 | 0x10101010;
+						break;
+					case 0xB2: //Set save position
+						val = 0x20202020;
+						break;
+					default:
+						val = 0x60606060; //0x20 == ready
+						break;
+				}
+				break;
 		}
 		
-		return 0;
+		return val;
 	}
 
 	virtual void slot1client_write_GCDATAIN(eSlot1Operation operation, u32 val)
@@ -150,8 +217,19 @@ public:
 
 		//handle special commands ourselves
 		int cmd = protocol.command.bytes[0];
+		u32 value = val;
+		u32 adr = save_adr;
 		switch(cmd)
 		{
+			case 0x81:	//Nand Write
+				MMU_new.backupDevice.ensure(adr+4,0);
+				MMU_new.backupDevice.data[adr+0] = (val >>  0) & 0xFF;
+				MMU_new.backupDevice.data[adr+1] = (val >>  8) & 0xFF;
+				MMU_new.backupDevice.data[adr+2] = (val >> 16) & 0xFF;
+				MMU_new.backupDevice.data[adr+3] = (val >> 24) & 0xFF;
+				MMU_new.backupDevice.setFlushPending();
+				save_adr += 4;
+				break;
 		}
 	}
 

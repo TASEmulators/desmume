@@ -111,6 +111,12 @@ public:
 	void lazy_flush();
 	void flush();
 
+	void setFlushPending() { flushPending = true; }
+	void setLazyFlushPending() { lazyFlushPending = true; }
+
+	void ensure(u32 addr);
+	void ensure(u32 addr, u8 val);
+
 	struct {
 			u32 size,padSize,type,addr_size,mem_size;
 		} info;
@@ -144,12 +150,11 @@ private:
 
 	void loadfile();
 	bool _loadfile(const char *fname);
-	void ensure(u32 addr);
 
 	bool flushPending, lazyFlushPending;
 
-private:
 	void resize(u32 size);
+	void resize(u32 size, u8 val);
 };
 
 
