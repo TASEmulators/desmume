@@ -2488,7 +2488,7 @@ static INLINE void write_auxspicnt(const int proc, const int size, const int adr
 }
 
 template <u8 PROCNUM>
-bool checkIORegs(u32 addr, u8 size, u32 val)
+bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 {
 	if (PROCNUM == ARMCPU_ARM9)
 	{
@@ -2588,8 +2588,7 @@ bool checkIORegs(u32 addr, u8 size, u32 val)
 			case REG_AUXSPICNT:
 			case REG_AUXSPIDATA:
 			case REG_GCROMCTRL:
-			case REG_GCCMDOUT:
-			case REG_GCCMDOUT + 4:
+			case REG_GCCMDOUT + 0x00: case REG_GCCMDOUT + 0x04:
 			case REG_ENCSEED0L:
 			case REG_ENCSEED1L:
 			case REG_ENCSEED0H:
@@ -2613,29 +2612,23 @@ bool checkIORegs(u32 addr, u8 size, u32 val)
 
 			// Math
 			case REG_DIVCNT:
-			case REG_DIVNUMER:
-			case REG_DIVNUMER + 4:
-			case REG_DIVDENOM:
-			case REG_DIVDENOM + 4:
-			case REG_DIVRESULT:
-			case REG_DIVRESULT + 4:
-			case REG_DIVREMRESULT:
-			case REG_DIVREMRESULT + 4:
+			case REG_DIVNUMER + 0x00: case REG_DIVNUMER + 0x04:
+			case REG_DIVDENOM + 0x00: case REG_DIVDENOM + 0x04:
+			case REG_DIVRESULT + 0x00: case REG_DIVRESULT + 0x04:
+			case REG_DIVREMRESULT + 0x00: case REG_DIVREMRESULT + 0x04:
 			case REG_SQRTCNT:
 			case REG_SQRTRESULT:
-			case REG_SQRTPARAM:
-			case REG_SQRTPARAM + 4:
+			case REG_SQRTPARAM + 0x00: case REG_SQRTPARAM + 0x04:
 
 			// Other 
 			case REG_POSTFLG:
 			case REG_HALTCNT:
 			case REG_POWCNT1:
 
+			//R case eng_3D_RDLINES_COUNT:
+
 			// 3D ===============================================================
-			case eng_3D_EDGE_COLOR + 0x00:
-			case eng_3D_EDGE_COLOR + 0x04:
-			case eng_3D_EDGE_COLOR + 0x08:
-			case eng_3D_EDGE_COLOR + 0x0C:
+			case eng_3D_EDGE_COLOR + 0x00: case eng_3D_EDGE_COLOR + 0x04: case eng_3D_EDGE_COLOR + 0x08: case eng_3D_EDGE_COLOR + 0x0C:
 			case eng_3D_ALPHA_TEST_REF:
 			case eng_3D_CLEAR_COLOR:
 			case eng_3D_CLEAR_DEPTH:
@@ -2693,12 +2686,16 @@ bool checkIORegs(u32 addr, u8 size, u32 val)
 			case cmd_3D_VEC_TEST:
 
 			case eng_3D_GXSTAT:
-			case eng_3D_RAM_COUNT:
+			//R case eng_3D_RAM_COUNT:
 			case eng_3D_DISP_1DOT_DEPTH:
-			case eng_3D_POS_RESULT:
-			case eng_3D_VEC_RESULT:
-			case eng_3D_CLIPMTX_RESULT:
-			case eng_3D_VECMTX_RESULT:
+			//R case eng_3D_POS_RESULT + 0x00: case eng_3D_POS_RESULT + 0x04: case eng_3D_POS_RESULT + 0x08: case eng_3D_POS_RESULT + 0x0C:
+			//R case eng_3D_VEC_RESULT + 0x00: case eng_3D_VEC_RESULT + 0x04:
+			//R case eng_3D_CLIPMTX_RESULT + 0x00: case eng_3D_CLIPMTX_RESULT + 0x04: case eng_3D_CLIPMTX_RESULT + 0x08: case eng_3D_CLIPMTX_RESULT + 0x0C:
+			//R case eng_3D_CLIPMTX_RESULT + 0x10: case eng_3D_CLIPMTX_RESULT + 0x14: case eng_3D_CLIPMTX_RESULT + 0x18: case eng_3D_CLIPMTX_RESULT + 0x1C:
+			//R case eng_3D_CLIPMTX_RESULT + 0x20: case eng_3D_CLIPMTX_RESULT + 0x24: case eng_3D_CLIPMTX_RESULT + 0x28: case eng_3D_CLIPMTX_RESULT + 0x2C:
+			//R case eng_3D_CLIPMTX_RESULT + 0x30: case eng_3D_CLIPMTX_RESULT + 0x34: case eng_3D_CLIPMTX_RESULT + 0x38: case eng_3D_CLIPMTX_RESULT + 0x3C:
+			//R case eng_3D_VECMTX_RESULT + 0x00: case eng_3D_VECMTX_RESULT + 0x04: case eng_3D_VECMTX_RESULT + 0x08: case eng_3D_VECMTX_RESULT + 0x0C:
+			//R case eng_3D_VECMTX_RESULT + 0x20:
 
 			// 0x04001xxx
 			case REG_DISPB_DISPCNT:
@@ -2747,7 +2744,7 @@ bool checkIORegs(u32 addr, u8 size, u32 val)
 			// 0x04100000
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
-
+				//printf("MMU9 write%02d to register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
 				return true;
 
 			default:
@@ -2841,7 +2838,7 @@ bool checkIORegs(u32 addr, u8 size, u32 val)
 			// 0x04100000 - IPC
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
-
+				//printf("MMU7 write%02d to register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
 				return true;
 
 			default:
@@ -2852,6 +2849,378 @@ bool checkIORegs(u32 addr, u8 size, u32 val)
 
 	return false;
 }
+
+#if 0
+template <u8 PROCNUM>
+bool validateIORegsRead(u32 addr, u8 size)
+{
+	if (PROCNUM == ARMCPU_ARM9)
+	{
+		switch (addr & 0x0FFFFFFC)
+		{
+			// Display Engine A
+			case REG_DISPA_DISPCNT:
+			case REG_DISPA_DISPSTAT:
+			case REG_DISPA_VCOUNT:
+				// same as GBA...
+			case REG_DISPA_BG0CNT:
+			case REG_DISPA_BG1CNT:
+			case REG_DISPA_BG2CNT:
+			case REG_DISPA_BG3CNT:
+			case REG_DISPA_BG0HOFS:
+			case REG_DISPA_BG0VOFS:
+			case REG_DISPA_BG1HOFS:
+			case REG_DISPA_BG1VOFS:
+			case REG_DISPA_BG2HOFS:
+			case REG_DISPA_BG2VOFS:
+			case REG_DISPA_BG3HOFS:
+			case REG_DISPA_BG3VOFS:
+			case REG_DISPA_BG2PA:
+			case REG_DISPA_BG2PB:
+			case REG_DISPA_BG2PC:
+			case REG_DISPA_BG2PD:
+			case REG_DISPA_BG2XL:
+			case REG_DISPA_BG2XH:
+			case REG_DISPA_BG2YL:
+			case REG_DISPA_BG2YH:
+			case REG_DISPA_BG3PA:
+			case REG_DISPA_BG3PB:
+			case REG_DISPA_BG3PC:
+			case REG_DISPA_BG3PD:
+			case REG_DISPA_BG3XL:
+			case REG_DISPA_BG3XH:
+			case REG_DISPA_BG3YL:
+			case REG_DISPA_BG3YH:
+			case REG_DISPA_WIN0H:
+			case REG_DISPA_WIN1H:
+			case REG_DISPA_WIN0V:
+			case REG_DISPA_WIN1V:
+			case REG_DISPA_WININ:
+			case REG_DISPA_WINOUT:
+			case REG_DISPA_MOSAIC:
+			case REG_DISPA_BLDCNT:
+			case REG_DISPA_BLDALPHA:
+			case REG_DISPA_BLDY:
+				// ...GBA
+			case REG_DISPA_DISP3DCNT:
+			case REG_DISPA_DISPCAPCNT:
+			case REG_DISPA_DISPMMEMFIFO:
+
+			case REG_DISPA_MASTERBRIGHT:
+
+			// DMA
+			case REG_DMA0SAD:
+			case REG_DMA0DAD:
+			case REG_DMA0CNTL:
+			case REG_DMA0CNTH:
+			case REG_DMA1SAD:
+			case REG_DMA1DAD:
+			case REG_DMA1CNTL:
+			case REG_DMA2SAD:
+			case REG_DMA2DAD:
+			case REG_DMA2CNTL:
+			case REG_DMA2CNTH:
+			case REG_DMA3SAD:
+			case REG_DMA3DAD:
+			case REG_DMA3CNTL:
+			case REG_DMA3CNTH:
+			case REG_DMA0FILL:
+			case REG_DMA1FILL:
+			case REG_DMA2FILL:
+			case REG_DMA3FILL:
+
+			// Timers
+			case REG_TM0CNTL:
+			case REG_TM0CNTH:
+			case REG_TM1CNTL:
+			case REG_TM1CNTH:
+			case REG_TM2CNTL:
+			case REG_TM2CNTH:
+			case REG_TM3CNTL:
+			case REG_TM3CNTH:
+
+			// Keypad Input
+			case REG_KEYINPUT:
+			case REG_KEYCNT:
+
+			// IPC
+			case REG_IPCSYNC:
+			case REG_IPCFIFOCNT:
+			case REG_IPCFIFOSEND:
+
+			// ROM
+			case REG_AUXSPICNT:
+			case REG_AUXSPIDATA:
+			case REG_GCROMCTRL:
+			case REG_GCCMDOUT + 0x00: case REG_GCCMDOUT + 0x04:
+			case REG_ENCSEED0L:
+			case REG_ENCSEED1L:
+			case REG_ENCSEED0H:
+			case REG_ENCSEED1H:
+
+			// Memory/IRQ
+			case REG_EXMEMCNT:
+			case REG_IME:
+			case REG_IE:
+			case REG_IF:
+			case REG_VRAMCNTA:
+			case REG_VRAMCNTB:
+			case REG_VRAMCNTC:
+			case REG_VRAMCNTD:
+			case REG_VRAMCNTE:
+			case REG_VRAMCNTF:
+			case REG_VRAMCNTG:
+			case REG_WRAMCNT:
+			case REG_VRAMCNTH:
+			case REG_VRAMCNTI:
+
+			// Math
+			case REG_DIVCNT:
+			case REG_DIVNUMER + 0x00: case REG_DIVNUMER + 0x04:
+			case REG_DIVDENOM + 0x00: case REG_DIVDENOM + 0x04:
+			case REG_DIVRESULT + 0x00: case REG_DIVRESULT + 0x04:
+			case REG_DIVREMRESULT + 0x00: case REG_DIVREMRESULT + 0x04:
+			case REG_SQRTCNT:
+			case REG_SQRTRESULT:
+			case REG_SQRTPARAM + 0x00: case REG_SQRTPARAM + 0x04:
+
+			// Other 
+			case REG_POSTFLG:
+			case REG_HALTCNT:
+			case REG_POWCNT1:
+
+			case eng_3D_RDLINES_COUNT:
+
+			// 3D ===============================================================
+			//W case eng_3D_EDGE_COLOR + 0x00:
+			//W case eng_3D_EDGE_COLOR + 0x04:
+			//W case eng_3D_EDGE_COLOR + 0x08:
+			//W case eng_3D_EDGE_COLOR + 0x0C:
+			//W case eng_3D_ALPHA_TEST_REF:
+			//W case eng_3D_CLEAR_COLOR:
+			//W case eng_3D_CLEAR_DEPTH:
+			//W case eng_3D_CLRIMAGE_OFFSET:
+			//W case eng_3D_FOG_COLOR:
+			//W case eng_3D_FOG_OFFSET:
+			//W case eng_3D_FOG_TABLE + 0x00: case eng_3D_FOG_TABLE + 0x04: case eng_3D_FOG_TABLE + 0x08: case eng_3D_FOG_TABLE + 0x0C:
+			//W case eng_3D_FOG_TABLE + 0x10: case eng_3D_FOG_TABLE + 0x14: case eng_3D_FOG_TABLE + 0x18: case eng_3D_FOG_TABLE + 0x1C:
+			//W case eng_3D_TOON_TABLE + 0x00: case eng_3D_TOON_TABLE + 0x04: case eng_3D_TOON_TABLE + 0x08: case eng_3D_TOON_TABLE + 0x0C:
+			//W case eng_3D_TOON_TABLE + 0x10: case eng_3D_TOON_TABLE + 0x14: case eng_3D_TOON_TABLE + 0x18: case eng_3D_TOON_TABLE + 0x1C:
+			//W case eng_3D_TOON_TABLE + 0x20: case eng_3D_TOON_TABLE + 0x24: case eng_3D_TOON_TABLE + 0x28: case eng_3D_TOON_TABLE + 0x2C:
+			//W case eng_3D_TOON_TABLE + 0x30: case eng_3D_TOON_TABLE + 0x34: case eng_3D_TOON_TABLE + 0x38: case eng_3D_TOON_TABLE + 0x3C:
+			//W case eng_3D_GXFIFO + 0x00: case eng_3D_GXFIFO + 0x04: case eng_3D_GXFIFO + 0x08: case eng_3D_GXFIFO + 0x0C:
+			//W case eng_3D_GXFIFO + 0x10: case eng_3D_GXFIFO + 0x14: case eng_3D_GXFIFO + 0x18: case eng_3D_GXFIFO + 0x1C:
+			//W case eng_3D_GXFIFO + 0x20: case eng_3D_GXFIFO + 0x24: case eng_3D_GXFIFO + 0x28: case eng_3D_GXFIFO + 0x2C:
+			//W case eng_3D_GXFIFO + 0x30: case eng_3D_GXFIFO + 0x34: case eng_3D_GXFIFO + 0x38: case eng_3D_GXFIFO + 0x3C:
+
+				// 3d commands
+			//W case cmd_3D_MTX_MODE:
+			//W case cmd_3D_MTX_PUSH:
+			//W case cmd_3D_MTX_POP:
+			//W case cmd_3D_MTX_STORE:
+			//W case cmd_3D_MTX_RESTORE:
+			//W case cmd_3D_MTX_IDENTITY:
+			//W case cmd_3D_MTX_LOAD_4x4:
+			//W case cmd_3D_MTX_LOAD_4x3:
+			//W case cmd_3D_MTX_MULT_4x4:
+			//W case cmd_3D_MTX_MULT_4x3:
+			//W case cmd_3D_MTX_MULT_3x3:
+			//W case cmd_3D_MTX_SCALE:
+			//W case cmd_3D_MTX_TRANS:
+			//W case cmd_3D_COLOR:
+			//W case cmd_3D_NORMA:
+			//W case cmd_3D_TEXCOORD:
+			//W case cmd_3D_VTX_16:
+			//W case cmd_3D_VTX_10:
+			//W case cmd_3D_VTX_XY:
+			//W case cmd_3D_VTX_XZ:
+			//W case cmd_3D_VTX_YZ:
+			//W case cmd_3D_VTX_DIFF:
+			//W case cmd_3D_POLYGON_ATTR:
+			//W case cmd_3D_TEXIMAGE_PARAM:
+			//W case cmd_3D_PLTT_BASE:
+			//W case cmd_3D_DIF_AMB:
+			//W case cmd_3D_SPE_EMI:
+			//W case cmd_3D_LIGHT_VECTOR:
+			//W case cmd_3D_LIGHT_COLOR:
+			//W case cmd_3D_SHININESS:
+			//W case cmd_3D_BEGIN_VTXS:
+			//W case cmd_3D_END_VTXS:
+			//W case cmd_3D_SWAP_BUFFERS:
+			//W case cmd_3D_VIEWPORT:
+			//W case cmd_3D_BOX_TEST:
+			//W case cmd_3D_POS_TEST:
+			//W case cmd_3D_VEC_TEST:
+
+			case eng_3D_GXSTAT:
+			case eng_3D_RAM_COUNT:
+			//W case eng_3D_DISP_1DOT_DEPTH:
+			case eng_3D_POS_RESULT + 0x00: case eng_3D_POS_RESULT + 0x04: case eng_3D_POS_RESULT + 0x08: case eng_3D_POS_RESULT + 0x0C:
+			case eng_3D_VEC_RESULT + 0x00: case eng_3D_VEC_RESULT + 0x04:
+			case eng_3D_CLIPMTX_RESULT + 0x00: case eng_3D_CLIPMTX_RESULT + 0x04: case eng_3D_CLIPMTX_RESULT + 0x08: case eng_3D_CLIPMTX_RESULT + 0x0C:
+			case eng_3D_CLIPMTX_RESULT + 0x10: case eng_3D_CLIPMTX_RESULT + 0x14: case eng_3D_CLIPMTX_RESULT + 0x18: case eng_3D_CLIPMTX_RESULT + 0x1C:
+			case eng_3D_CLIPMTX_RESULT + 0x20: case eng_3D_CLIPMTX_RESULT + 0x24: case eng_3D_CLIPMTX_RESULT + 0x28: case eng_3D_CLIPMTX_RESULT + 0x2C:
+			case eng_3D_CLIPMTX_RESULT + 0x30: case eng_3D_CLIPMTX_RESULT + 0x34: case eng_3D_CLIPMTX_RESULT + 0x38: case eng_3D_CLIPMTX_RESULT + 0x3C:
+			case eng_3D_VECMTX_RESULT + 0x00: case eng_3D_VECMTX_RESULT + 0x04: case eng_3D_VECMTX_RESULT + 0x08: case eng_3D_VECMTX_RESULT + 0x0C:
+			case eng_3D_VECMTX_RESULT + 0x20:
+
+			// 0x04001xxx
+			case REG_DISPB_DISPCNT:
+				// same as GBA...
+			case REG_DISPB_BG0CNT:
+			case REG_DISPB_BG1CNT:
+			case REG_DISPB_BG2CNT:
+			case REG_DISPB_BG3CNT:
+			case REG_DISPB_BG0HOFS:
+			case REG_DISPB_BG0VOFS:
+			case REG_DISPB_BG1HOFS:
+			case REG_DISPB_BG1VOFS:
+			case REG_DISPB_BG2HOFS:
+			case REG_DISPB_BG2VOFS:
+			case REG_DISPB_BG3HOFS:
+			case REG_DISPB_BG3VOFS:
+			case REG_DISPB_BG2PA:
+			case REG_DISPB_BG2PB:
+			case REG_DISPB_BG2PC:
+			case REG_DISPB_BG2PD:
+			case REG_DISPB_BG2XL:
+			case REG_DISPB_BG2XH:
+			case REG_DISPB_BG2YL:
+			case REG_DISPB_BG2YH:
+			case REG_DISPB_BG3PA:
+			case REG_DISPB_BG3PB:
+			case REG_DISPB_BG3PC:
+			case REG_DISPB_BG3PD:
+			case REG_DISPB_BG3XL:
+			case REG_DISPB_BG3XH:
+			case REG_DISPB_BG3YL:
+			case REG_DISPB_BG3YH:
+			case REG_DISPB_WIN0H:
+			case REG_DISPB_WIN1H:
+			case REG_DISPB_WIN0V:
+			case REG_DISPB_WIN1V:
+			case REG_DISPB_WININ:
+			case REG_DISPB_WINOUT:
+			case REG_DISPB_MOSAIC:
+			case REG_DISPB_BLDCNT:
+			case REG_DISPB_BLDALPHA:
+			case REG_DISPB_BLDY:
+				// ...GBA
+			case REG_DISPB_MASTERBRIGHT:
+
+			// 0x04100000
+			case REG_IPCFIFORECV:
+			case REG_GCDATAIN:
+				//printf("MMU9 read%02d from register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+				return true;
+
+			default:
+				//printf("MMU9 read%02d from undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+				return false;
+		}
+	}
+
+	// ARM7
+	if (PROCNUM == ARMCPU_ARM7)
+	{
+		switch (addr & 0x0FFFFFFC)
+		{
+			case REG_DISPA_DISPSTAT:
+			case REG_DISPA_VCOUNT:
+
+			// DMA
+			case REG_DMA0SAD:
+			case REG_DMA0DAD:
+			case REG_DMA0CNTL:
+			case REG_DMA0CNTH:
+			case REG_DMA1SAD:
+			case REG_DMA1DAD:
+			case REG_DMA1CNTL:
+			case REG_DMA2SAD:
+			case REG_DMA2DAD:
+			case REG_DMA2CNTL:
+			case REG_DMA2CNTH:
+			case REG_DMA3SAD:
+			case REG_DMA3DAD:
+			case REG_DMA3CNTL:
+			case REG_DMA3CNTH:
+			case REG_DMA0FILL:
+			case REG_DMA1FILL:
+			case REG_DMA2FILL:
+			case REG_DMA3FILL:
+
+			// Timers
+			case REG_TM0CNTL:
+			case REG_TM0CNTH:
+			case REG_TM1CNTL:
+			case REG_TM1CNTH:
+			case REG_TM2CNTL:
+			case REG_TM2CNTH:
+			case REG_TM3CNTL:
+			case REG_TM3CNTH:
+
+			// SIO/Keypad Input/RTC
+			case REG_SIODATA32:
+			case REG_SIOCNT:
+			case REG_KEYINPUT:
+			case REG_KEYCNT:
+			case REG_RCNT:
+			case REG_EXTKEYIN:
+			case REG_RTC:
+
+			// IPC
+			case REG_IPCSYNC:
+			case REG_IPCFIFOCNT:
+			case REG_IPCFIFOSEND:
+
+			// ROM
+			case REG_AUXSPICNT:
+			case REG_AUXSPIDATA:
+			case REG_GCROMCTRL:
+			case REG_GCCMDOUT:
+			case REG_GCCMDOUT + 4:
+			case REG_ENCSEED0L:
+			case REG_ENCSEED1L:
+			case REG_ENCSEED0H:
+			case REG_ENCSEED1H:
+			case REG_SPICNT:
+			case REG_SPIDATA:
+
+			// Memory/IRQ
+			case REG_EXMEMCNT:
+			case REG_IME:
+			case REG_IE:
+			case REG_IF:
+			case REG_VRAMSTAT:
+			case REG_WRAMSTAT:
+
+			// Other 
+			case REG_POSTFLG:
+			case REG_HALTCNT:
+			case REG_POWCNT2:
+			case REG_BIOSPROT:
+			
+			// Sound
+
+			// 0x04100000 - IPC
+			case REG_IPCFIFORECV:
+			case REG_GCDATAIN:
+				//printf("MMU7 read%02d from register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+				return true;
+
+			default:
+				printf("MMU7 read%02d from undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM7_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+				return false;
+		}
+	}
+
+	return false;
+}
+
+#define VALIDATE_IO_REGS_READ(PROC, SIZE) if (!validateIORegsRead<PROC>(adr, SIZE)) return 0;
+#else
+#define VALIDATE_IO_REGS_READ(PROC, SIZE) ;
+#endif
 
 //================================================================================================== ARM9 *
 //=========================================================================================================
@@ -2885,9 +3254,10 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	if ((adr & 0x0F000000) == 0x07000000) return;
 	if ((adr & 0x0F000000) == 0x05000000) return;
 
+	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
-		if (!checkIORegs<ARMCPU_ARM9>(adr, 8, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM9>(adr, 8, val)) return;
 		
 		// TODO: add pal reg
 		if (nds.power1.gpuMain == 0)
@@ -3162,9 +3532,10 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return;
 	}
 
+	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
-		if (!checkIORegs<ARMCPU_ARM9>(adr, 16, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM9>(adr, 16, val)) return;
 
 		// TODO: add pal reg
 		if (nds.power1.gpuMain == 0)
@@ -3629,9 +4000,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	}
 #endif
 
+	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
-		if (!checkIORegs<ARMCPU_ARM9>(adr, 32, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM9>(adr, 32, val)) return;
 
 		// TODO: add pal reg
 		if (nds.power1.gpuMain == 0)
@@ -4052,8 +4424,11 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		else return addon.read08(ARMCPU_ARM9, adr);
 	}
 
-	if (adr >> 24 == 4)
-	{	//Address is an IO register
+	// Address is an IO register
+	if ((adr >> 24) == 4)
+	{
+		VALIDATE_IO_REGS_READ(ARMCPU_ARM9, 8);
+		
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,8,adr);
 
 		switch(adr)
@@ -4144,11 +4519,13 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		else return addon.read16(ARMCPU_ARM9, adr);
 	}
 
-	if (adr >> 24 == 4)
+	// Address is an IO register
+	if ((adr >> 24) == 4)
 	{
+		VALIDATE_IO_REGS_READ(ARMCPU_ARM9, 16);
+
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,16,adr); 
 
-		// Address is an IO register
 		switch(adr)
 		{
 			case REG_DISPA_DISPSTAT:
@@ -4256,8 +4633,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	}
 
 	// Address is an IO register
-	if((adr >> 24) == 4)
+	if ((adr >> 24) == 4)
 	{
+		VALIDATE_IO_REGS_READ(ARMCPU_ARM9, 32);
+		
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,32,adr); 
 
 		switch(adr)
@@ -4415,9 +4794,10 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
 	}
 
+	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
-		if (!checkIORegs<ARMCPU_ARM7>(adr, 8, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM7>(adr, 8, val)) return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,8,adr,val); return; }
 
@@ -4529,9 +4909,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		return;
 	}
 
+	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
-		if (!checkIORegs<ARMCPU_ARM7>(adr, 16, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM7>(adr, 16, val)) return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,16,adr,val); return; }
 
@@ -4715,9 +5096,10 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
+	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
-		if (!checkIORegs<ARMCPU_ARM7>(adr, 32, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM7>(adr, 32, val)) return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,32,adr,val); return; }
 
@@ -4832,11 +5214,12 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 	if (adr == REG_RTC) return (u8)rtcRead();
 
-	if (adr >> 24 == 4)
+	// Address is an IO register
+	if ((adr >> 24) == 4)
 	{
+		VALIDATE_IO_REGS_READ(ARMCPU_ARM7, 8);
+		
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,8,adr); 
-
-		// Address is an IO register
 
 		switch(adr)
 		{
@@ -4890,8 +5273,10 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
         return SPU_ReadWord(adr);
     }
 
-	if(adr>>24==4)
-	{	//Address is an IO register
+	// Address is an IO register
+	if ((adr >> 24) == 4)
+	{
+		VALIDATE_IO_REGS_READ(ARMCPU_ARM7, 16);
 
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,16,adr); 
 
@@ -4992,8 +5377,10 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
         return SPU_ReadLong(adr);
     }
 
-	if((adr >> 24) == 4)
-	{	//Address is an IO register
+	// Address is an IO register
+	if ((adr >> 24) == 4)
+	{
+		VALIDATE_IO_REGS_READ(ARMCPU_ARM7, 32);
 		
 		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,32,adr); 
 		
