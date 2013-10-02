@@ -4441,6 +4441,17 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case REG_WRAMCNT:
 				return MMU.WRAMCNT;
 
+			case REG_VRAMCNTA:
+			case REG_VRAMCNTB:
+			case REG_VRAMCNTC:
+			case REG_VRAMCNTD:
+			case REG_VRAMCNTE:
+			case REG_VRAMCNTF:
+			case REG_VRAMCNTG:
+			case REG_VRAMCNTH:
+			case REG_VRAMCNTI:
+				return MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)];
+
 			case REG_DISPA_DISPSTAT:
 				break;
 			case REG_DISPA_DISPSTAT+1:
@@ -4563,9 +4574,14 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
 
-			//WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
+			case REG_VRAMCNTA:
+			case REG_VRAMCNTC:
+			case REG_VRAMCNTE:
+			case REG_VRAMCNTH:
+				return MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)+1] << 8 | 
+                       MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)];
 			case REG_VRAMCNTG:
-				return MMU.WRAMCNT << 8;
+				return MMU.WRAMCNT << 8 | MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)];
 				
 			case REG_IE :
 				return (u16)MMU.reg_IE[ARMCPU_ARM9];
@@ -4654,9 +4670,16 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_DISPx_VCOUNT:
 				return nds.VCount;
 
-			//WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
-			case REG_VRAMCNTE:
-				return MMU.WRAMCNT << 24;
+			case REG_VRAMCNTA: // A-B-C-D
+				return MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)]      |
+					MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)+1] << 8  |
+					MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)+2] << 16 |
+					MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)+3] << 24;
+			case REG_VRAMCNTE: // E-F-G-WRAM
+				return MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)]      |
+					MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)+1] << 8  |
+					MMU.ARM9_REG[0x240+(adr-REG_VRAMCNTA)+2] << 16 |
+					MMU.WRAMCNT                              << 24;
 
 			//despite these being 16bit regs,
 			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
@@ -5046,8 +5069,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_GCROMCTRL+2 :
 				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[1][0x40], 0x1A4) & 0xFFFF) | ((u32) val << 16));
 				return;
-		}
-
+			}
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
 		return;
 	}
