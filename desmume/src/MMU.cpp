@@ -4563,10 +4563,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
 
-			//WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
-			case REG_VRAMCNTG:
-				return MMU.WRAMCNT << 8;
-				
+			
 			case REG_IE :
 				return (u16)MMU.reg_IE[ARMCPU_ARM9];
 			case REG_IE + 2 :
@@ -4653,10 +4650,6 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 			case REG_DISPx_VCOUNT:
 				return nds.VCount;
-
-			//WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
-			case REG_VRAMCNTE:
-				return MMU.WRAMCNT << 24;
 
 			//despite these being 16bit regs,
 			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
