@@ -670,44 +670,60 @@ static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u
 			return;
 	}
 
-	if(type == GPU_OBJ_MODE_Transparent || type == GPU_OBJ_MODE_Bitmap)
+	bool handleTransparentType = type == GPU_OBJ_MODE_Transparent || type == GPU_OBJ_MODE_Bitmap;
+	if(windowEffectSatisfied)
 	{
-		//under these conditions, we always use a normal blend, regardless of BLDCNT specifications.
-		//no more than one type of blend processing occurs, so this overrides brightness up/down selection.
-		//NOTE: This is probably happening even outside the effect window, but I'm not sure.
-		//NOTE: It is unclear whether blend EVA/EVB are affecting this. I don't think so.
-		u16 backColor = HostReadWord(dst,x<<1);
-		color = _blend(color,backColor,&gpuBlendTable555[alpha][16-alpha]);
-	}
-	else
-	{
-		const bool firstTargetSatisfied = gpu->blend1;
-		const int bg_under = gpu->bgPixels[x];
-		const bool secondTargetSatisfied = (bg_under != 4) && gpu->blend2[bg_under];
-
-		BlendFunc selectedFunc = NoBlend;
-
-		//if normal BLDCNT layer target conditions are met, then we can use the BLDCNT-specified color effect
-		if(FUNC == Blend)
+		if(handleTransparentType)
 		{
-			//blending requires first and second target screens to be satisfied, as well as the window
-			if(firstTargetSatisfied && secondTargetSatisfied && windowEffectSatisfied) selectedFunc = FUNC;
-		}
-		else 
-		{
-			//brightness up and down requires only the first target screen to be satisfied
-			if(firstTargetSatisfied && windowEffectSatisfied) selectedFunc = FUNC;
-		}
-
-		switch(selectedFunc) 
-		{
-		case NoBlend: break;
-		case Increase: color = gpu->currentFadeInColors[color&0x7FFF]; break;
-		case Decrease: color = gpu->currentFadeOutColors[color&0x7FFF]; break;
-		case Blend: 
+			//under these conditions, we always use a normal blend, regardless of BLDCNT specifications.
+			//no more than one type of blend processing occurs, so this overrides brightness up/down selection.
+			//NOTE: obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 255 in the alpha
+			//NOTE: according to nocash.exe, this is affected by the window effects
 			u16 backColor = HostReadWord(dst,x<<1);
-			color = gpu->blend(color,backColor); 
-			break;
+			int eva, evb;
+			if(alpha == 255)
+			{
+				//tested by glory of heracles title screen and "spriteblend" test
+				eva = gpu->BLDALPHA_EVA;
+				evb = gpu->BLDALPHA_EVB;
+			}
+			else
+			{
+				eva = alpha;
+				evb = 16 - alpha;
+			}
+			color = _blend(color,backColor,&gpuBlendTable555[eva][evb]);
+		}
+		else
+		{
+			const bool firstTargetSatisfied = gpu->blend1;
+			const int bg_under = gpu->bgPixels[x];
+			const bool secondTargetSatisfied = (bg_under != 4) && gpu->blend2[bg_under];
+
+			BlendFunc selectedFunc = NoBlend;
+
+			//if normal BLDCNT layer target conditions are met, then we can use the BLDCNT-specified color effect
+			if(FUNC == Blend)
+			{
+				//blending requires first and second target screens to be satisfied
+				if(firstTargetSatisfied && secondTargetSatisfied) selectedFunc = FUNC;
+			}
+			else 
+			{
+				//brightness up and down requires only the first target screen to be satisfied
+				if(firstTargetSatisfied) selectedFunc = FUNC;
+			}
+
+			switch(selectedFunc) 
+			{
+			case NoBlend: break;
+			case Increase: color = gpu->currentFadeInColors[color&0x7FFF]; break;
+			case Decrease: color = gpu->currentFadeOutColors[color&0x7FFF]; break;
+			case Blend: 
+				u16 backColor = HostReadWord(dst,x<<1);
+				color = gpu->blend(color,backColor); 
+				break;
+			}
 		}
 	}
 
@@ -1369,7 +1385,7 @@ INLINE void render_sprite_256(GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u32 srca
 		{
 			color = LE_TO_LOCAL_16(pal[palette_entry]);
 			HostWriteWord(dst, (sprX<<1), color);
-			dst_alpha[sprX] = 15;
+			dst_alpha[sprX] = -1;
 			typeTab[sprX] = (alpha ? 1 : 0);
 			prioTab[sprX] = prio;
 			gpu->sprNum[sprX] = spriteNum;
@@ -1399,7 +1415,7 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u32 srcadr, u16 * pal
 		{
 			color = LE_TO_LOCAL_16(pal[palette_entry]);
 			HostWriteWord(dst, (sprX<<1), color);
-			dst_alpha[sprX] = 15;
+			dst_alpha[sprX] = -1;
 			typeTab[sprX] = (alpha ? 1 : 0);
 			prioTab[sprX] = prio;
 		}
@@ -1654,7 +1670,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 						if (colour && (prio<prioTab[sprX]))
 						{ 
 							HostWriteWord(dst, (sprX<<1), HostReadWord(pal, (colour<<1)));
-							dst_alpha[sprX] = 15;
+							dst_alpha[sprX] = -1;
 							typeTab[sprX] = spriteInfo->Mode;
 							prioTab[sprX] = prio;
 						}
@@ -1757,7 +1773,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 							else
 							{
 								HostWriteWord(dst, (sprX<<1), LE_TO_LOCAL_16(HostReadWord(pal, colour << 1)));
-								dst_alpha[sprX] = 15;
+								dst_alpha[sprX] = -1;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
 							}
