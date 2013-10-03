@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "drunkenlogo.h"
+#include "plain.h"
 
 int main(void)
 {
@@ -22,16 +23,23 @@ int main(void)
 	/*oamInit(&oamSub, SpriteMapping_1D_32, false);*/
     consoleDemoInit();
 	int bg3 = bgInit(3, BgType_Bmp8, BgSize_B8_256x256, 0,0);
+	int bg2 = bgInit(2, BgType_Bmp8, BgSize_B8_256x256, 4,0);
+
+	//display bg3 above bg2. when the window effect excludes bg3, will bg2 be displayed?
+	bgSetPriority(bg3,0);
+	bgSetPriority(bg2,1);
+
 
 	dmaCopy(drunkenlogoBitmap, bgGetGfxPtr(bg3), drunkenlogoBitmapLen);
 	dmaCopy(drunkenlogoPal, BG_PALETTE, 256*2);
+	dmaCopy(plainBitmap, bgGetGfxPtr(bg2), plainBitmapLen);
 
 	u16* gfx = oamAllocateGfx(&oamMain, SpriteSize_16x16, SpriteColorFormat_16Color);
 	/*u16* gfxSub = oamAllocateGfx(&oamSub, SpriteSize_16x16, SpriteColorFormat_256Color);*/
     REG_BLDCNT = (1<<11) | (1<<6);
     
     REG_WININ = 0x3F; //display everything, including color special effects, in window 0
-    REG_WINOUT = 0x1F; //display everything, excluding color special effects, outside window 0
+    REG_WINOUT = 0x17; //display everything, excluding color special effects and BG3 outside window 0
     REG_WIN0H = (0<<8) | 128; //window is x (0..128)
     REG_WIN0V = (0<<8) | 128; //window is y (0..128)
     REG_DISPCNT |= (1<<13); //enable use of window 0
