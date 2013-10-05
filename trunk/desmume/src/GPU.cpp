@@ -660,6 +660,8 @@ FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 template<BlendFunc FUNC, bool WINDOW>
 static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
 {
+	const bool isObjTranslucentType = type == GPU_OBJ_MODE_Transparent || type == GPU_OBJ_MODE_Bitmap;
+	
 	bool windowDraw = true;
 	bool windowEffectSatisfied = true;
 
@@ -670,60 +672,52 @@ static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u
 			return;
 	}
 
-	bool handleTransparentType = type == GPU_OBJ_MODE_Transparent || type == GPU_OBJ_MODE_Bitmap;
+	//if the window effect is satisfied, then we can do color effects to modify the color
 	if(windowEffectSatisfied)
 	{
-		if(handleTransparentType)
+		const bool firstTargetSatisfied = gpu->blend1;
+		const int bg_under = gpu->bgPixels[x];
+		const bool secondTargetSatisfied = (bg_under != 4) && gpu->blend2[bg_under];
+		BlendFunc selectedFunc = NoBlend;
+
+		int eva = gpu->BLDALPHA_EVA, evb = gpu->BLDALPHA_EVB;
+
+		//if normal BLDCNT layer target conditions are met, then we can use the BLDCNT-specified color effect
+		if(FUNC == Blend)
 		{
-			//under these conditions, we always use a normal blend, regardless of BLDCNT specifications.
-			//no more than one type of blend processing occurs, so this overrides brightness up/down selection.
-			//NOTE: obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 255 in the alpha
-			//NOTE: according to nocash.exe, this is affected by the window effects
-			u16 backColor = HostReadWord(dst,x<<1);
-			int eva, evb;
-			if(alpha == 255)
-			{
-				//tested by glory of heracles title screen and "spriteblend" test
-				eva = gpu->BLDALPHA_EVA;
-				evb = gpu->BLDALPHA_EVB;
-			}
-			else
+			//blending requires first and second target screens to be satisfied
+			if(firstTargetSatisfied && secondTargetSatisfied) selectedFunc = FUNC;
+		}
+		else 
+		{
+			//brightness up and down requires only the first target screen to be satisfied
+			if(firstTargetSatisfied) selectedFunc = FUNC;
+		}
+
+		//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
+		if(isObjTranslucentType && secondTargetSatisfied)
+		{
+			selectedFunc = Blend;
+		
+			//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 255 in the alpha
+			//it's tested by the spriteblend demo and the glory of heracles title screen
+			if(alpha != 255)
 			{
 				eva = alpha;
 				evb = 16 - alpha;
 			}
-			color = _blend(color,backColor,&gpuBlendTable555[eva][evb]);
 		}
-		else
+
+	
+		switch(selectedFunc) 
 		{
-			const bool firstTargetSatisfied = gpu->blend1;
-			const int bg_under = gpu->bgPixels[x];
-			const bool secondTargetSatisfied = (bg_under != 4) && gpu->blend2[bg_under];
-
-			BlendFunc selectedFunc = NoBlend;
-
-			//if normal BLDCNT layer target conditions are met, then we can use the BLDCNT-specified color effect
-			if(FUNC == Blend)
-			{
-				//blending requires first and second target screens to be satisfied
-				if(firstTargetSatisfied && secondTargetSatisfied) selectedFunc = FUNC;
-			}
-			else 
-			{
-				//brightness up and down requires only the first target screen to be satisfied
-				if(firstTargetSatisfied) selectedFunc = FUNC;
-			}
-
-			switch(selectedFunc) 
-			{
-			case NoBlend: break;
-			case Increase: color = gpu->currentFadeInColors[color&0x7FFF]; break;
-			case Decrease: color = gpu->currentFadeOutColors[color&0x7FFF]; break;
-			case Blend: 
-				u16 backColor = HostReadWord(dst,x<<1);
-				color = gpu->blend(color,backColor); 
-				break;
-			}
+		case NoBlend: break;
+		case Increase: color = gpu->currentFadeInColors[color&0x7FFF]; break;
+		case Decrease: color = gpu->currentFadeOutColors[color&0x7FFF]; break;
+		case Blend: 
+			u16 backColor = HostReadWord(dst,x<<1);
+			color = _blend(color,backColor,&gpuBlendTable555[eva][evb]); 
+			break;
 		}
 	}
 
