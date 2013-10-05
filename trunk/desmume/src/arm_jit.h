@@ -60,8 +60,8 @@ extern CACHE_ALIGN JIT_struct JIT;
 extern uintptr_t compiled_funcs[];
 // there isn't anything mapped between 07000000 and 0EFFFFFF, so we can mask off bit 27 and get away with a smaller array
 #define JIT_COMPILED_FUNC(adr, PROCNUM) compiled_funcs[((adr) & 0x07FFFFFE) >> 1]
-#define JIT_COMPILED_FUNC_PREMASKED(adr, PROCNUM, ofs) JIT_COMPILED_FUNC(adr, PROCNUM)
-#define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask, ofs) JIT_COMPILED_FUNC(adr, PROCNUM)
+#define JIT_COMPILED_FUNC_PREMASKED(adr, PROCNUM, ofs) JIT_COMPILED_FUNC(adr+(ofs<<1), PROCNUM)
+#define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask, ofs) JIT_COMPILED_FUNC(adr+(ofs<<1), PROCNUM)
 #define JIT_MAPPED(adr, PROCNUM) true
 #endif
 
