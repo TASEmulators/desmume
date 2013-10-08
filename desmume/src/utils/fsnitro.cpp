@@ -149,9 +149,6 @@ bool FS_NITRO::loadFileTables()
 	if (numOverlay7 && !ovr7) return false;
 	if (numOverlay9 && !ovr9) return false;
 
-	memset(fnt, 0, sizeof(FNT_NITRO) * numDirs);
-	memset(fat, 0, sizeof(FAT_NITRO) * numFiles);
-
 	// ========= FAT (File Allocation Table)
 	u32 *_FAT = (u32*)(rom + FATOff);
 	for (u32 i = 0; i < numFiles; i++)
