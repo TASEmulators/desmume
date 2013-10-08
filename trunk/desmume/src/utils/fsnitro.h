@@ -37,6 +37,17 @@ enum FNT_TYPES
 #include "PACKED.h"
 struct FAT_NITRO
 {
+	FAT_NITRO()
+		: start(0)
+		, end(0)
+		, size(0)
+		, parentOffset(0)
+		, isOverlay(false)
+		, file(false)
+		, sizeFile(0)
+		, parentID(0)
+	{
+	}
 	u32 start;
 	u32 end;
 	u32 size;
@@ -57,6 +68,12 @@ struct FNT_MAIN
 
 struct FNT_NITRO
 {
+	FNT_NITRO()
+		: offset(0)
+		, firstID(0)
+		, parentID(0)
+	{
+	}
 	u32 offset;
 	u16 firstID;
 	u16 parentID;
