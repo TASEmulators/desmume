@@ -518,6 +518,13 @@ int main(int argc, char ** argv) {
   /* the firmware settings */
   struct NDS_fw_config_data fw_config;
 
+#ifdef GDB_STUB
+  NDS_Init( arm9_memio, &arm9_ctrl_iface,
+            arm7_memio, &arm7_ctrl_iface);
+#else
+        NDS_Init();
+#endif
+
   /* default the firmware settings, they may get changed later */
   NDS_FillDefaultFirmwareConfigData( &fw_config);
 
@@ -584,13 +591,6 @@ int main(int argc, char ** argv) {
       exit( 1);
     }
   }
-#endif
-
-#ifdef GDB_STUB
-  NDS_Init( arm9_memio, &arm9_ctrl_iface,
-            arm7_memio, &arm7_ctrl_iface);
-#else
-        NDS_Init();
 #endif
 
   /* Create the dummy firmware */
