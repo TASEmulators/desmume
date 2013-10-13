@@ -80,6 +80,9 @@ public:
 
 	//called when the auxspi burst is ended (SPI chipselect in is going low)
 	virtual void auxspi_reset(int PROCNUM) {}
+    
+	//called when NDS_FakeBoot terminates, emulate in here the BIOS behaviour
+	virtual void post_fakeboot(int PROCNUM) {}
 
 	virtual void savestate(EMUFILE* os) {}
 

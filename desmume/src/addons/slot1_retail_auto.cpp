@@ -85,6 +85,11 @@ public:
 		mSelectedImplementation->auxspi_reset(PROCNUM);
 	}
 
+	virtual void post_fakeboot(int PROCNUM)
+	{
+		mSelectedImplementation->post_fakeboot(PROCNUM);
+	}
+
 	virtual void savestate(EMUFILE* os)
 	{
 		mSelectedImplementation->savestate(os);

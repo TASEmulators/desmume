@@ -40,15 +40,6 @@ void Slot1Comp_Protocol::reset(ISlot1Comp_Protocol_Client* client)
 void Slot1Comp_Protocol::write_command_RAW(GC_Command command)
 {
 	int cmd = command.bytes[0];
-	if(cmd == 0xB7)
-	{
-		//HACK!!!!!!!!!!!!!!!!!!
-		//switch to normal mode. we should do it in the NDSSystem bootup process.
-		//WAY cleaner it will be.
-		mode = eCardMode_NORMAL;
-		//be suer to forward this command to the NORMAL command handler...
-		write_command_NORMAL(command);
-	}
 	if(cmd == 0x9F)
 	{
 		operation = eSlot1Operation_9F_Dummy;

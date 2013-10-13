@@ -173,6 +173,12 @@ public:
 		}
 	}
 
+    virtual void post_fakeboot(int PROCNUM)
+    {
+        // The BIOS leaves the card in NORMAL mode
+        protocol.mode = eCardMode_NORMAL;
+    }
+
 	void write32_GCDATAIN(u32 val)
 	{
 		//bool log = false;
