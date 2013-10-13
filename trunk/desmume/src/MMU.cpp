@@ -4940,7 +4940,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_POWCNT2:
 				{
 					nds.power2.speakers = BIT0(val);
-					nds.power2.wifi = BIT0(val);
+					nds.power2.wifi = BIT1(val);
 				}
 				return;
 
