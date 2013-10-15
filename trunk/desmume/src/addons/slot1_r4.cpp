@@ -128,10 +128,10 @@ public:
 		switch(cmd)
 		{
 			case 0xB0:
-				val = 0x1F4;
+				val = (img) ? 0x1F4 : 0x1F2;
 				break;
 			case 0xB9:
-				val = (rand() % 100) ? 0x1F4 : 0;
+				val = (rand() % 100) ? (img) ? 0x1F4 : 0x1F2 : 0;
 				break;
 			case 0xBB:
 			case 0xBC:
