@@ -40,7 +40,7 @@ public:
 	virtual void connect()
 	{
 
-		NDS_SLOT1_TYPE selection = NDS_SLOT1_RETAIL_MCROM;
+		NDS_SLOT1_TYPE selection = NDS_SLOT1_RETAIL_DEBUG;
 		
 		//check game ID in core emulator and select right implementation
 		if ((memcmp(gameInfo.header.gameCode, "UOR",  3) == 0) ||	// WarioWare - D.I.Y. (U)(E)(EUR) / Made in Ore (J)
