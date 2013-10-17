@@ -65,24 +65,14 @@ public:
 		fs->rebuildFAT(pathData);
 	}
 
-	virtual u8 auxspi_transaction(const u8 PROCNUM, u8 value)
+	virtual u8 auxspi_transaction(int PROCNUM, u8 value)
 	{
 		return g_Slot1Comp_MC.auxspi_transaction(PROCNUM,value);
 	}
 
-	virtual void auxspi_reset(const u8 PROCNUM)
+	virtual void auxspi_reset(int PROCNUM)
 	{
 		g_Slot1Comp_MC.auxspi_reset(PROCNUM);
-	}
-	
-	virtual void auxspi_write(const u8 PROCNUM, const u8 size, const u8 adr, u16 cnt)
-	{
-		g_Slot1Comp_MC.auxspi_write(PROCNUM, size, adr, cnt);
-	}
-
-	virtual u16 auxspi_read(const u8 PROCNUM, const u8 size, const u8 adr)
-	{
-		return g_Slot1Comp_MC.auxspi_read(PROCNUM, size, adr);
 	}
 
 	virtual void write_command(u8 PROCNUM, GC_Command command)
@@ -97,7 +87,7 @@ public:
 	{
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
-	
+
 	virtual void post_fakeboot(int PROCNUM)
 	{
 	    // The BIOS leaves the card in NORMAL mode

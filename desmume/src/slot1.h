@@ -76,14 +76,11 @@ public:
 
 	//transfers a byte to the slot-1 device via auxspi, and returns the incoming byte
 	//cpu is provided for diagnostic purposes only.. the slot-1 device wouldn't know which CPU it is.
-	virtual u8 auxspi_transaction(const u8 PROCNUM, u8 value) { return 0x00; }
+	virtual u8 auxspi_transaction(int PROCNUM, u8 value) { return 0x00; }
 
 	//called when the auxspi burst is ended (SPI chipselect in is going low)
-	virtual void auxspi_reset(const u8 PROCNUM) {}
-	
-	virtual void auxspi_write(const u8 PROCNUM, const u8 size, const u8 adr, u16 cnt) {}
-	virtual u16  auxspi_read (const u8 PROCNUM, const u8 size, const u8 adr) { return 0x0000; }
-	
+	virtual void auxspi_reset(int PROCNUM) {}
+    
 	//called when NDS_FakeBoot terminates, emulate in here the BIOS behaviour
 	virtual void post_fakeboot(int PROCNUM) {}
 

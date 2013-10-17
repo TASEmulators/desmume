@@ -233,7 +233,7 @@ public:
 				break;
 		}
 	}
-	
+
 	virtual void post_fakeboot(int PROCNUM)
 	{
 	    // The BIOS leaves the card in NORMAL mode
