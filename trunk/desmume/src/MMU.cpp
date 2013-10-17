@@ -2458,35 +2458,6 @@ u32 DmaController::read32()
 	return ret;
 }
 
-static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
-{
-	//why val==0 to reset? is it a particular bit? its not bit 6...
-
-	switch(size)
-	{
-		case 16:
-			MMU.AUX_SPI_CNT = val;
-			if (val == 0)
-			{
-				//you know.. its strange. according to gbatek, this should get cleared before the last transfer.
-				//we've got it coded in such a way that it sort of terminates the transfer (is it getting reset immediately before a new transfer?)
-				slot1_device->auxspi_reset(proc);
-			}
-			break;
-		case 8:
-			switch(adr)
-			{
-				case 0: 
-					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 0, val); 
-					if (val == 0) slot1_device->auxspi_reset(proc);
-					break;
-				case 1: 
-					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 1, val); 
-					break;
-			}
-	}
-}
-
 template <u8 PROCNUM>
 bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 {
@@ -2744,6 +2715,7 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 			// 0x04100000
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
+
 				//printf("MMU9 write%02d to register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
 				return true;
 
@@ -2838,6 +2810,7 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 			// 0x04100000 - IPC
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
+
 				//printf("MMU7 write%02d to register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
 				return true;
 
@@ -3111,6 +3084,7 @@ bool validateIORegsRead(u32 addr, u8 size)
 			// 0x04100000
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
+
 				//printf("MMU9 read%02d from register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
 				return true;
 
@@ -3205,7 +3179,8 @@ bool validateIORegsRead(u32 addr, u8 size)
 			// 0x04100000 - IPC
 			case REG_IPCFIFORECV:
 			case REG_GCDATAIN:
-				//printf("MMU7 read%02d from register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+
+				//printf("MMU7 read%02d from register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM7_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
 				return true;
 
 			default:
@@ -3428,17 +3403,12 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 
 			case REG_AUXSPICNT:
 			case REG_AUXSPICNT+1:
-				write_auxspicnt(ARMCPU_ARM9, 8, adr & 1, val);
+				slot1_device->auxspi_write(ARMCPU_ARM9, 8, adr & 1, (u16)val);
 				return;
 			
 			case REG_AUXSPIDATA:
-			{
-				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF; //zero 20-aug-2013 - this seems pointless
-				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM9,(u8)val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-				return;
-			}
+				val = slot1_device->auxspi_transaction(ARMCPU_ARM9, val);
+				break;
 
 			case REG_POWCNT1: writereg_POWCNT1(8,adr,val); break;
 			
@@ -3788,17 +3758,12 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(9, 16, 0, val);
+				slot1_device->auxspi_write(ARMCPU_ARM9, 16, 0, val);
 				return;
 
 			case REG_AUXSPIDATA:
-			{
-				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;  //zero 20-aug-2013 - this seems pointless
-				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM9,(u8)val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-				return;
-			}
+				val = slot1_device->auxspi_transaction(ARMCPU_ARM9, (u8)val);
+				break;
 
 			case REG_DISPA_BG0CNT :
 				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
@@ -4474,6 +4439,10 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1D: case eng_3D_FOG_TABLE+0x1E: case eng_3D_FOG_TABLE+0x1F: 
 				return 0;
 
+			case REG_AUXSPICNT:
+			case REG_AUXSPICNT+1:
+				return (u8)slot1_device->auxspi_read(ARMCPU_ARM9, 8, adr & 1);
+
 			case REG_POWCNT1: 
 			case REG_POWCNT1+1: 
 			case REG_POWCNT1+2: 
@@ -4563,12 +4532,11 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
 
-			
 			case REG_IE :
 				return (u16)MMU.reg_IE[ARMCPU_ARM9];
 			case REG_IE + 2 :
 				return (u16)(MMU.reg_IE[ARMCPU_ARM9]>>16);
-				
+
 			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
 			case REG_IF+2: return MMU.gen_IF<ARMCPU_ARM9>()>>16;
 
@@ -4579,7 +4547,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				return read_timer(ARMCPU_ARM9,(adr&0xF)>>2);
 
 			case REG_AUXSPICNT:
-				return MMU.AUX_SPI_CNT;
+				return slot1_device->auxspi_read(ARMCPU_ARM9, 16, 0);
 
             case REG_POWCNT1: 
 			case REG_POWCNT1+2:
@@ -4835,17 +4803,12 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 			case REG_AUXSPICNT:
 			case REG_AUXSPICNT+1:
-				write_auxspicnt(7, 8, adr & 1, val);
-				return;
+				slot1_device->auxspi_write(ARMCPU_ARM7, 8, adr & 1, (u16)val);
+				break;
 
 			case REG_AUXSPIDATA:
-			{
-				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF; //zero 20-aug-2013 - this seems pointless
-				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM7,(u8)val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
+				val = slot1_device->auxspi_transaction(ARMCPU_ARM7, val);
 				return;
-			}
 
 			case REG_SPIDATA:
 				// CrazyMax: 27 May 2013: BIOS write 8bit commands to flash controller when load firmware header 
@@ -4946,17 +4909,12 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(7, 16, 0, val);
-			return;
+				slot1_device->auxspi_write(ARMCPU_ARM7, 16, 0, val);
+				return;
 
 			case REG_AUXSPIDATA:
-			{
-				//if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF; //zero 20-aug-2013 - this seems pointless
-				u8 spidata = slot1_device->auxspi_transaction(ARMCPU_ARM7,(u8)val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, spidata);
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-				return;
-			}
+				val = slot1_device->auxspi_transaction(ARMCPU_ARM7, val);
+				break;
 
 			case REG_SPICNT :
 				{
@@ -5225,6 +5183,10 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8)&0xFF;
 
 			case REG_WRAMSTAT: return MMU.WRAMCNT;
+
+			case REG_AUXSPICNT:
+			case REG_AUXSPICNT+1:
+				return (u8)slot1_device->auxspi_read(ARMCPU_ARM7, 8, adr & 1);
 		}
 
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
@@ -5307,7 +5269,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				break;
 
 			case REG_AUXSPICNT:
-				return MMU.AUX_SPI_CNT;
+				return slot1_device->auxspi_read(ARMCPU_ARM7, 16, 0);
 
 			case REG_KEYINPUT:
 				//here is an example of what not to do:
