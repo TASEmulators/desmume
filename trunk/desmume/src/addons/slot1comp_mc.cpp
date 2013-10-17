@@ -24,59 +24,12 @@
 
 Slot1Comp_MC g_Slot1Comp_MC;
 
-void Slot1Comp_MC::auxspi_reset(const u8 PROCNUM)
+u8 Slot1Comp_MC::auxspi_transaction(int PROCNUM, u8 value)
+{
+	return MMU_new.backupDevice.data_command((u8)value,ARMCPU_ARM9);
+}
+void Slot1Comp_MC::auxspi_reset(int PROCNUM)
 {
 	MMU_new.backupDevice.reset_command();
 }
 
-void Slot1Comp_MC::auxspi_write(const u8 PROCNUM, const u8 size, const u8 adr, u16 cnt)
-{
-	if (size == 8)
-	{
-		const u8 ofs = (adr << 3);
-		u8 oldCnt = T1ReadByte((u8*)&MMU.AUX_SPI_CNT, (1 - adr));
-		cnt = (oldCnt << (8 - ofs)) | (cnt << ofs);
-	}
-
-	MMU.AUX_SPI_CNT = cnt;
-
-	//bool enabled = (cnt & (1 << 15))?true:false;
-	//bool irq = (cnt & (1 << 14))?true:false;
-	//bool spi = (cnt & (1 << 13))?true:false;
-	//bool cs = (cnt & (1 << 6))?true:false;
-
-	//printf("MMU%c: write%02d%s to AUX cnt: %08X, CS:%d - %s%s\n", PROCNUM?'7':'9', size, (adr?"+1":""), cnt, cs, spi?"Backup":"NDS Slot", (cnt & (1 << 7))?" - BUSY":"");
-
-	//if (!enabled && irq && !(cnt & 0x3) || spi)
-	if (!cnt)
-	{
-		//printf("MMU%c: reset command (cnt %04x)\n", PROCNUM?'7':'9', cnt);
-		auxspi_reset(PROCNUM);
-	}
-}
-
-u16 Slot1Comp_MC::auxspi_read(const u8 PROCNUM, const u8 size, const u8 adr)
-{
-	u16 cnt = (MMU.AUX_SPI_CNT >> (adr << 3));
-
-	//bool cs = (cnt & (1 << 6))?true:false;
-	//bool spi = (cnt & (1 << 13))?true:false;
-	//printf("MMU%c: read%02d%s from AUX cnt: %08X, CS:%d - %s\n", PROCNUM?'7':'9', size, (adr?"+1":""), cnt, cs, spi?"Backup":"NDS Slot");
-
-	return cnt;
-}
-
-u8 Slot1Comp_MC::auxspi_transaction(const u8 PROCNUM, u8 value)
-{
-	u16 cnt = MMU.AUX_SPI_CNT;
-	bool spi = (cnt & (1 << 13))?true:false;
-	bool cs = (cnt & (1 << 6))?true:false;
-
-	if (spi)
-	{
-		value = MMU_new.backupDevice.data_command(value, PROCNUM);
-		MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-	}
-
-	return value;
-}

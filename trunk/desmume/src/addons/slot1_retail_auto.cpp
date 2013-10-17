@@ -75,26 +75,16 @@ public:
 		return mSelectedImplementation->read_GCDATAIN(PROCNUM);
 	}
 
-	virtual u8 auxspi_transaction(const u8 PROCNUM, u8 value)
+	virtual u8 auxspi_transaction(int PROCNUM, u8 value)
 	{
 		return mSelectedImplementation->auxspi_transaction(PROCNUM, value);
 	}
 
-	virtual void auxspi_reset(const u8 PROCNUM)
+	virtual void auxspi_reset(int PROCNUM)
 	{
 		mSelectedImplementation->auxspi_reset(PROCNUM);
 	}
-	
-	virtual void auxspi_write(const u8 PROCNUM, const u8 size, const u8 adr, u16 cnt)
-	{
-		mSelectedImplementation->auxspi_write(PROCNUM, size, adr, cnt);
-	}
 
-	virtual u16 auxspi_read(const u8 PROCNUM, const u8 size, const u8 adr)
-	{
-		return mSelectedImplementation->auxspi_read(PROCNUM, size, adr);
-	}
-	
 	virtual void post_fakeboot(int PROCNUM)
 	{
 		mSelectedImplementation->post_fakeboot(PROCNUM);
