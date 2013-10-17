@@ -20,8 +20,10 @@
 class Slot1Comp_MC
 {
 public:
-	u8 auxspi_transaction(int PROCNUM, u8 value);
-	void auxspi_reset(int PROCNUM);
+	u8 auxspi_transaction(const u8 PROCNUM, u8 value);
+	void auxspi_reset(const u8 PROCNUM);
+	void auxspi_write(const u8 PROCNUM, const u8 size, const u8 adr, u16 cnt);
+	u16  auxspi_read (const u8 PROCNUM, const u8 size, const u8 adr);
 };
 
 extern Slot1Comp_MC g_Slot1Comp_MC;
