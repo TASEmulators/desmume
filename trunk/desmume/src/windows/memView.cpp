@@ -374,7 +374,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			CheckDlgButton(hDlg, IDC_FULL_CHARS, MF_CHECKED);
 
 			wnd->sel = TRUE;
-			wnd->selAddress = wnd->address;
+			wnd->selAddress = wnd->address + (wnd->address & 0x0000000F);
 			wnd->selPart = 0;
 			wnd->selNewVal = 0x00000000;
 			wnd->Refresh();
@@ -507,7 +507,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 				wnd->address = max((u32)addrMin, min((u32)addrMax, (address & 0xFFFFFFF0)));
 
 				wnd->sel = TRUE;
-				wnd->selAddress = wnd->address;
+				wnd->selAddress = wnd->address + (address & 0x0000000F);
 				wnd->selPart = 0;
 				wnd->selNewVal = 0x00000000;
 
@@ -531,6 +531,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, (((wnd->address - region.hardwareAddress) >> 4) & 0x000FFFFF), TRUE);
 				wnd->Refresh();
+				wnd->SetFocus();
 			}
 			return 1;
 
