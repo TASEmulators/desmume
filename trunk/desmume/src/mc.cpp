@@ -28,6 +28,7 @@
 #include "NDSSystem.h"
 #include "utils/advanscene.h"
 
+//#define _ENABLE_MOTION
 
 #define BM_CMD_AUTODETECT       0xFF
 #define BM_CMD_WRITESTATUS      0x01
@@ -106,7 +107,7 @@ void backup_setManualBackupType(int type)
 
 bool BackupDevice::save_state(EMUFILE* os)
 {
-	u32 version = 2;
+	u32 version = 3;
 	//v0
 	write32le(version,os);
 	write32le(write_enable,os);
@@ -121,6 +122,8 @@ bool BackupDevice::save_state(EMUFILE* os)
 	//v2
 	write8le(motionInitState,os);
 	write8le(motionFlag,os);
+	//v3
+	writebool(reset_command_state,os);
 	return true;
 }
 
@@ -142,10 +145,16 @@ bool BackupDevice::load_state(EMUFILE* is)
 	}
 	if(version>=1)
 		read32le(&addr,is);
+	
 	if(version>=2)
 	{
 		read8le(&motionInitState,is);
 		read8le(&motionFlag,is);
+	}
+
+	if(version>=3)
+	{
+		readbool(&reset_command_state,is);
 	}
 
 	return true;
@@ -182,6 +191,7 @@ void BackupDevice::reset_hardware()
 	motionInitState = MOTION_INIT_STATE_IDLE;
 	motionFlag = MOTION_FLAG_NONE;
 	state = DETECTING;
+	reset_command_state = false;
 	flushPending = false;
 	lazyFlushPending = false;
 }
@@ -223,17 +233,9 @@ u8 BackupDevice::searchFileSaveType(u32 size)
 	return 0xFF;
 }
 
-void BackupDevice::reset_command()
+void BackupDevice::detect()
 {
-	//printf("MC RESET\n");
-	//for a performance hack, save files are only flushed after each reset command
-	//(hopefully, after each page)
-	if(flushPending)
-	{
-		flush();
-		flushPending = false;
-		lazyFlushPending = false;
-	}
+	if (!reset_command_state) return;
 
 	if(state == DETECTING && data_autodetect.size()>0)
 	{
@@ -285,13 +287,33 @@ void BackupDevice::reset_command()
 		data_autodetect.resize(0);
 		flush();
 	}
-
-	com = 0;
 }
+
+void BackupDevice::checkReset()
+{
+	if (reset_command_state)
+	{
+		//printf("MC  : reset command\n");
+
+		//for a performance hack, save files are only flushed after each reset command
+		//(hopefully, after each page)
+		if(flushPending)
+		{
+			flush();
+			flushPending = false;
+			lazyFlushPending = false;
+		}
+		
+		com = 0;
+		reset_command_state = false;
+	}
+}
+
 u8 BackupDevice::data_command(u8 val, int cpu)
 {
-	//printf("MC CMD: (%02X) %02X\n",com,val);
+	//printf("MC%c : cmd %02X, val %02X\n", cpu?'7':'9', com, val);
 
+#ifdef _ENABLE_MOTION
 	//motion: some guessing here... hope it doesn't break anything
 	if(com == BM_CMD_READLOW && motionInitState == MOTION_INIT_STATE_RECEIVED_4_B && val == 0)
 	{
@@ -306,6 +328,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 	{
 		return 0;
 	}
+#endif
 
 	if(com == BM_CMD_READLOW || com == BM_CMD_WRITELOW)
 	{
@@ -320,6 +343,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 			//just buffer the data until we're no longer detecting
 			data_autodetect.push_back(val);
 			val = 0;
+			detect();
 		}
 		else
 		{
@@ -359,6 +383,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 				}
 				addr++;
 
+				checkReset();
 			}
 		}
 	}
@@ -366,6 +391,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 	{
 		//handle request to read status
 		//LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
+		checkReset();
 		return (write_enable << 1) | (3<<2);
 	}
 	else
@@ -375,6 +401,7 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 		{
 			case 0: break; //??
 
+#ifdef _ENABLE_MOTION
 			case 0xFE:
 				if(motionInitState == MOTION_INIT_STATE_IDLE) { motionInitState = MOTION_INIT_STATE_FE; return 0; }
 				break;
@@ -402,28 +429,36 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 					return 0;
 				}
 				break;
+#endif
 
-			case 8:
+			case 0x08:	// IrDA - Pokemon HG/SS
 				printf("COMMAND%c: Unverified Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
 				val = 0xAA;
+
+				checkReset();
 				break;
 
 			case BM_CMD_WRITEDISABLE:
+#ifdef _ENABLE_MOTION
 				switch(motionInitState)
 				{
 				case MOTION_INIT_STATE_IDLE: motionInitState = MOTION_INIT_STATE_RECEIVED_4; break;
 				case MOTION_INIT_STATE_RECEIVED_4: motionInitState = MOTION_INIT_STATE_RECEIVED_4_B; break;
 				}
+#endif
 				write_enable = FALSE;
+				checkReset();
 				break;
 							
 			case BM_CMD_READSTATUS:
 				com = BM_CMD_READSTATUS;
 				val = (write_enable << 1) | (3<<2);
+				checkReset();
 				break;
 
 			case BM_CMD_WRITEENABLE:
 				write_enable = TRUE;
+				checkReset();
 				break;
 
 			case BM_CMD_WRITELOW:
@@ -456,8 +491,10 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 				break;
 		} //switch(val)
 
+#ifdef _ENABLE_MOTION
 		//motion control state machine broke, return to ground
 		motionInitState = MOTION_INIT_STATE_IDLE;
+#endif
 	}
 	return val;
 }

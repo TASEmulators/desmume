@@ -2460,30 +2460,27 @@ u32 DmaController::read32()
 
 static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
 {
-	//why val==0 to reset? is it a particular bit? its not bit 6...
+	//u16 oldCnt = MMU.AUX_SPI_CNT;
+	bool csOld = (MMU.AUX_SPI_CNT & (1 << 6))?true:false;
 
 	switch(size)
 	{
 		case 16:
 			MMU.AUX_SPI_CNT = val;
-			if (val == 0)
-			{
-				//you know.. its strange. according to gbatek, this should get cleared before the last transfer.
-				//we've got it coded in such a way that it sort of terminates the transfer (is it getting reset immediately before a new transfer?)
-				slot1_device->auxspi_reset(proc);
-			}
 			break;
 		case 8:
-			switch(adr)
-			{
-				case 0: 
-					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 0, val); 
-					if (val == 0) slot1_device->auxspi_reset(proc);
-					break;
-				case 1: 
-					T1WriteByte((u8*)&MMU.AUX_SPI_CNT, 1, val); 
-					break;
-			}
+			T1WriteByte((u8*)&MMU.AUX_SPI_CNT, adr, val); 
+			break;
+	}
+
+	bool cs = (MMU.AUX_SPI_CNT & (1 << 6))?true:false;
+
+	//printf("MMU%c: cnt %04X, old %04X\n", proc?'7':'9', MMU.AUX_SPI_CNT, oldCnt);
+	
+	if (!cs && csOld)
+	{
+		//printf("MMU%c: CS changed from HIGH to LOW *****\n", proc?'7':'9');
+		slot1_device->auxspi_reset(proc);
 	}
 }
 
@@ -3115,7 +3112,7 @@ bool validateIORegsRead(u32 addr, u8 size)
 				return true;
 
 			default:
-				//printf("MMU9 read%02d from undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+				printf("MMU9 read%02d from undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
 				return false;
 		}
 	}
@@ -3788,7 +3785,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(9, 16, 0, val);
+				write_auxspicnt(ARMCPU_ARM9, 16, 0, val);
 				return;
 
 			case REG_AUXSPIDATA:
@@ -4835,7 +4832,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 			case REG_AUXSPICNT:
 			case REG_AUXSPICNT+1:
-				write_auxspicnt(7, 8, adr & 1, val);
+				write_auxspicnt(ARMCPU_ARM7, 8, adr & 1, val);
 				return;
 
 			case REG_AUXSPIDATA:
@@ -4946,7 +4943,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 
 			case REG_AUXSPICNT:
-				write_auxspicnt(7, 16, 0, val);
+				write_auxspicnt(ARMCPU_ARM7, 16, 0, val);
 			return;
 
 			case REG_AUXSPIDATA:

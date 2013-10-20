@@ -26,7 +26,7 @@ Slot1Comp_MC g_Slot1Comp_MC;
 
 u8 Slot1Comp_MC::auxspi_transaction(int PROCNUM, u8 value)
 {
-	return MMU_new.backupDevice.data_command((u8)value,ARMCPU_ARM9);
+	return MMU_new.backupDevice.data_command(value, PROCNUM);
 }
 void Slot1Comp_MC::auxspi_reset(int PROCNUM)
 {

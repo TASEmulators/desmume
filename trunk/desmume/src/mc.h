@@ -76,7 +76,7 @@ public:
 	bool load_state(EMUFILE* is);
 	
 	//commands from mmu
-	void reset_command();
+	void reset_command() { reset_command_state = true; };
 	u8 data_command(u8,int);
 	std::vector<u8> data;
 
@@ -123,9 +123,12 @@ public:
 
 	bool isMovieMode;
 private:
+	void detect();
+
 	std::string filename;
 	
 	bool write_enable;	//is write enabled?
+	bool reset_command_state;
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
 	u32 addr;
@@ -155,6 +158,8 @@ private:
 
 	void resize(u32 size);
 	void resize(u32 size, u8 val);
+
+	void checkReset();
 };
 
 
