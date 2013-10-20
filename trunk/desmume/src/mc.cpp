@@ -283,6 +283,7 @@ void BackupDevice::detect()
 			default:
 				//the archaic case: write the address and then some modulo-4 number of bytes
 				//why modulo 4? who knows.
+				if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) { addr_size = 2; break; } // Dementium II
 				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				addr_size = autodetect_size & 3;
 				break;
