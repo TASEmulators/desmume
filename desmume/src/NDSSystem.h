@@ -376,6 +376,8 @@ struct GameInfo
 		romdata = new char[allocatedSize];
 		romsize = size;
 	}
+
+	bool isDSiEnhanced();
 	u32 crc;
 	u32 chipID;
 	NDS_header header;
