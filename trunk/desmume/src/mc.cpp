@@ -254,8 +254,14 @@ void BackupDevice::detect()
 			{
 			case 0:
 			case 1:
-				msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
 				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
+
+				if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) break; //spongebob atlantis squarepantis.
+				//if(!memcmp(gameInfo.header.gameCode,"AH5",3)) break; //over the hedge 
+				if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) break; //over the hedge - Hammy Goes Nuts!
+				if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) break; //spider-man 3
+
+				msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
 				break;
 			case 2:
 				 //the modern typical case for small eeproms
@@ -267,9 +273,8 @@ void BackupDevice::detect()
 				//(the archaic 1+2 case is: specifying one address byte, and then reading the first two bytes, instead of the first one byte, as most other games would do.)
 				//so, we're gonna hack in checks for the games that are doing this
 				addr_size = 2;
-				if(!memcmp(gameInfo.header.gameCode,"AL3E",4)) addr_size = 1; //spongebob atlantis squarepantis.
-				if(!memcmp(gameInfo.header.gameCode,"AH5E",4)) addr_size = 1; //over the hedge 
-				if(!memcmp(gameInfo.header.gameCode,"AQ3E",4)) addr_size = 1; //spider-man 3
+				if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge 
+				
 				break;
 			case 4:
 				//a modern typical case
