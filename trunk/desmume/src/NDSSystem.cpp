@@ -351,11 +351,12 @@ const RomBanner& GameInfo::getRomBanner()
 
 void GameInfo::populate()
 {
-	const char *regions[] = {	"JPFSEDIRKHX",
+	const char *regions[] = {	"JPFSEODIRKHX",
 								"JPN",
 								"EUR",
 								"FRA",
 								"ESP",
+								"USA",
 								"USA",
 								"NOE",
 								"ITA",
@@ -429,6 +430,11 @@ void GameInfo::populate()
 		}*/
 
 
+}
+
+bool GameInfo::isDSiEnhanced()
+{
+	return ((*(u32*)(romdata + 0x180) == 0x8D898581U) && (*(u32*)(romdata + 0x184) == 0x8C888480U));
 }
 
 #ifdef _WINDOWS
@@ -595,12 +601,17 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	// 5: DSi? (if set to 1 then DSi Enhanced games send command D6h to Slot1)
 	// 6: Unknown
 	// 7: ROM speed (Secure Area Block transfer mode (trasfer 8x200h or 1000h bytes)
-	gameInfo.chipID |= (0x00 << 24);
+	// TODO:
+	//if (gameInfo.isDSiEnhanced())
+	//		gameInfo.chipID |= (0x40 << 24);
+	gameInfo.chipID |= (0x40 << 24);
 
 	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
 	INFO("ROM crc: %08X\n", gameInfo.crc);
 	INFO("ROM serial: %s\n", gameInfo.ROMserial);
+	INFO("ROM chipID: %08X\n", gameInfo.chipID);
 	INFO("ROM internal name: %s\n", gameInfo.ROMname);
+	if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
 	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 
 	//crazymax: how would it have got whacked? dont think we need this
