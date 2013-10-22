@@ -604,7 +604,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	// TODO:
 	//if (gameInfo.isDSiEnhanced())
 	//		gameInfo.chipID |= (0x40 << 24);
-	gameInfo.chipID |= (0x40 << 24);
+	gameInfo.chipID |= (0x00 << 24);
 
 	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
 	INFO("ROM crc: %08X\n", gameInfo.crc);
