@@ -54,7 +54,7 @@
 //the game reads its initial sound volumes from uninitialized data, and if it is 0, the game will be silent
 //if it is 0xFF then the game starts with its sound and music at max, as presumably it is supposed to.
 //so in r3303 I finally changed it (no$ appears definitely to initialize to 0xFF)
-static const u8 kUninitializedSaveDataValue = 0xFF; 
+static const u8 kUninitializedSaveDataValue = 0xFF;
 
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
@@ -244,24 +244,19 @@ void BackupDevice::detect()
 
 		printf("Autodetecting with autodetect_size=%d\n",autodetect_size);
 
-		const u8 sm64_sig[] = {0x01,0x80,0x00,0x00};
-		if(autodetect_size == 4 && !memcmp(&data_autodetect[0],sm64_sig,4))
+		//detect based on rules
+		switch(autodetect_size)
 		{
-			addr_size = 2;
-		}
-		else //detect based on rules
-			switch(autodetect_size)
-			{
 			case 0:
 			case 1:
 				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
 
 				if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) break; //spongebob atlantis squarepantis.
-				//if(!memcmp(gameInfo.header.gameCode,"AH5",3)) break; //over the hedge 
 				if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) break; //over the hedge - Hammy Goes Nuts!
 				if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) break; //spider-man 3
 
-				msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
+				printf("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
+				//msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
 				break;
 			case 2:
 				 //the modern typical case for small eeproms
@@ -279,6 +274,7 @@ void BackupDevice::detect()
 			case 4:
 				//a modern typical case
 				addr_size = 3;
+				if(!memcmp(gameInfo.header.gameCode,"ASM", 3)) addr_size = 2; //super mario 64 ds
 				break;
 			default:
 				//the archaic case: write the address and then some modulo-4 number of bytes
@@ -287,7 +283,7 @@ void BackupDevice::detect()
 				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				addr_size = autodetect_size & 3;
 				break;
-			}
+		}
 
 		state = RUNNING;
 		data_autodetect.resize(0);

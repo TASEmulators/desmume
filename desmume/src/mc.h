@@ -76,7 +76,7 @@ public:
 	bool load_state(EMUFILE* is);
 	
 	//commands from mmu
-	void reset_command() { reset_command_state = true; };
+	void reset_command(bool state = true) { reset_command_state = state; };
 	u8 data_command(u8,int);
 	std::vector<u8> data;
 
