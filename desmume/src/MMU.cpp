@@ -920,7 +920,6 @@ void MMU_Init(void)
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
-	new(&MMU_new) MMU_struct_new;	
 
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -1039,19 +1038,7 @@ void MMU_Reset()
 	MMU.dscard[1].transfer_count = 0;
 	MMU.dscard[1].mode = eCardMode_RAW;
 
-
-	//HACK!!!
-	//until we improve all our session tracking stuff, we need to save the backup memory filename
-	std::string bleh = MMU_new.backupDevice.getFilename();
-	BackupDevice tempBackupDevice;
-	bool bleh2 = MMU_new.backupDevice.isMovieMode;
-	if(bleh2) tempBackupDevice = MMU_new.backupDevice;
 	reconstruct(&MMU_new);
-	if(bleh2) {
-		MMU_new.backupDevice = tempBackupDevice;
-		MMU_new.backupDevice.reset_hardware();
-	}
-	else MMU_new.backupDevice.load_rom(bleh.c_str());
 
 	MMU_timing.arm7codeFetch.Reset();
 	MMU_timing.arm7dataFetch.Reset();

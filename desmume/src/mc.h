@@ -60,8 +60,6 @@ class BackupDevice
 public:
 	BackupDevice();
 
-	//signals the save system that we are in our regular mode, loading up a rom. initializes for that case.
-	void load_rom(const char* filename);
 	//signals the save system that we are in MOVIE mode. doesnt load up a rom, and never saves it. initializes for that case.
 	void movie_mode();
 
