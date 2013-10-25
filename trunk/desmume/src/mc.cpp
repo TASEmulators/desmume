@@ -26,10 +26,11 @@
 #include "movie.h"
 #include "readwrite.h"
 #include "NDSSystem.h"
+#include "path.h"
 #include "utils/advanscene.h"
 
-//#define _NO_LOAD_BACKUP
-//#define _NO_SAVE_BACKUP
+//#define _DONT_LOAD_BACKUP
+//#define _DONT_SAVE_BACKUP
 
 // TODO: motion device was broken
 //#define _ENABLE_MOTION
@@ -84,20 +85,20 @@ static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
 //the lookup table from user save types to save parameters
 const SAVE_TYPE save_types[] = {
-	{"Autodetect", MC_TYPE_AUTODETECT,1},
-	{"EEPROM 4kbit",MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
-	{"EEPROM 64kbit",MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
-	{"EEPROM 512kbit",MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
-	{"FRAM 256kbit",MC_TYPE_FRAM,MC_SIZE_256KBITS},
-	{"FLASH 2Mbit",MC_TYPE_FLASH,MC_SIZE_2MBITS},
-	{"FLASH 4Mbit",MC_TYPE_FLASH,MC_SIZE_4MBITS},
-	{"FLASH 8Mbit",MC_TYPE_FLASH,MC_SIZE_8MBITS},
-	{"FLASH 16Mbit",MC_TYPE_FLASH,MC_SIZE_16MBITS},
-	{"FLASH 32Mbit",MC_TYPE_FLASH,MC_SIZE_32MBITS},
-	{"FLASH 64Mbit",MC_TYPE_FLASH,MC_SIZE_64MBITS},
-	{"FLASH 128Mbit",MC_TYPE_FLASH,MC_SIZE_128MBITS},
-	{"FLASH 256Mbit",MC_TYPE_FLASH,MC_SIZE_256MBITS},
-	{"FLASH 512Mbit",MC_TYPE_FLASH,MC_SIZE_512MBITS}
+	{"Autodetect",		MC_TYPE_AUTODETECT,	1},
+	{"EEPROM 4kbit",	MC_TYPE_EEPROM1,	MC_SIZE_4KBITS},
+	{"EEPROM 64kbit",	MC_TYPE_EEPROM2,	MC_SIZE_64KBITS},
+	{"EEPROM 512kbit",	MC_TYPE_EEPROM2,	MC_SIZE_512KBITS},
+	{"FRAM 256kbit",	MC_TYPE_FRAM,		MC_SIZE_256KBITS},
+	{"FLASH 2Mbit",		MC_TYPE_FLASH,		MC_SIZE_2MBITS},
+	{"FLASH 4Mbit",		MC_TYPE_FLASH,		MC_SIZE_4MBITS},
+	{"FLASH 8Mbit",		MC_TYPE_FLASH,		MC_SIZE_8MBITS},
+	{"FLASH 16Mbit",	MC_TYPE_FLASH,		MC_SIZE_16MBITS},
+	{"FLASH 32Mbit",	MC_TYPE_FLASH,		MC_SIZE_32MBITS},
+	{"FLASH 64Mbit",	MC_TYPE_FLASH,		MC_SIZE_64MBITS},
+	{"FLASH 128Mbit",	MC_TYPE_FLASH,		MC_SIZE_128MBITS},
+	{"FLASH 256Mbit",	MC_TYPE_FLASH,		MC_SIZE_256MBITS},
+	{"FLASH 512Mbit",	MC_TYPE_FLASH,		MC_SIZE_512MBITS}
 };
 
 
@@ -170,18 +171,12 @@ bool BackupDevice::load_state(EMUFILE* is)
 
 BackupDevice::BackupDevice()
 {
-	isMovieMode = false;
-	reset();
-}
+	char buf[MAX_PATH] = {0};
+	memset(buf, 0, MAX_PATH);
+	path.getpathnoext(path.BATTERY, buf);
+	filename = std::string(buf) + ".dsv";						// DeSmuME memory card
 
-//due to unfortunate shortcomings in the emulator architecture, 
-//at reset-time, we won't have a filename to the .dsv file.
-//so the only difference between load_rom (init) and reset is that
-//one of them saves the filename
-void BackupDevice::load_rom(const char* filename)
-{
 	isMovieMode = false;
-	this->filename = filename;
 	reset();
 }
 
@@ -288,8 +283,7 @@ void BackupDevice::detect()
 				//why modulo 4? who knows.
 				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				addr_size = autodetect_size & 3;
-				
-				
+
 				if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) addr_size = 2; // Dementium II
 				break;
 		}
@@ -417,6 +411,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 			switch (com)
 			{
 				case BM_CMD_NOP: break;
+
 #ifdef _ENABLE_MOTION
 				case 0xFE:
 					if(motionInitState == MOTION_INIT_STATE_IDLE) { motionInitState = MOTION_INIT_STATE_FE; return 0; }
@@ -470,6 +465,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					break;
 
 				case BM_CMD_WRITEENABLE:
+					//printf("MC%c: write enable\n", PROCNUM?'7':'9');
 					write_enable = TRUE;
 					break;
 
@@ -826,7 +822,7 @@ void BackupDevice::loadfile()
 	if(isMovieMode) return;
 	if(filename.length() ==0) return; //No sense crashing if no filename supplied
 
-#ifdef _NO_LOAD_BACKUP
+#ifdef _DONT_LOAD_BACKUP
 	return;
 #endif
 
@@ -838,10 +834,9 @@ void BackupDevice::loadfile()
 		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
 		
 		//change extension to sav
-		char tmp[MAX_PATH];
-		strcpy(tmp,filename.c_str());
-		tmp[strlen(tmp)-3] = 0;
-		strcat(tmp,"sav");
+		char tmp[MAX_PATH] = {0};
+		path.getpathnoext(path.BATTERY, tmp);
+		strcat(tmp, ".sav");
 
 		inf = new EMUFILE_FILE(tmp,"rb");
 		if(inf->fail())
@@ -926,14 +921,16 @@ void BackupDevice::loadfile()
 			if (info.type == 0xFF) info.type = 0;
 		}
 
-		u32 ss = info.size * 8 / 1024;
+		u32 ss = (info.padSize * 8) / 1024;
+		bool _Mbit = false;
+
 		if (ss >= 1024)
 		{
 			ss /= 1024;
-			printf("Backup size: %i Mbit\n", ss);
+			_Mbit = true;
 		}
-		else
-			printf("Backup size: %i Kbit\n", ss);
+
+		printf("Backup size: %u %cbit\n", ss, _Mbit?'M':'K');
 
 		delete inf;
 	}
@@ -981,7 +978,7 @@ void BackupDevice::flush()
 	//never use save files if we are in movie mode
 	if(isMovieMode) return;
 
-#ifdef _NO_SAVE_BACKUP
+#ifdef _DONT_SAVE_BACKUP
 	return;
 #endif
 

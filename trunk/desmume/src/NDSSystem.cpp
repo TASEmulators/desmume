@@ -47,8 +47,8 @@
 //int xxctr=0;
 //#define LOG_ARM9
 //#define LOG_ARM7
-#define dolog (currFrameCounter>30)
-//bool dolog=false;
+//#define dolog (currFrameCounter>30)
+bool dolog = false;
 //#define LOG_TO_FILE
 //#define LOG_TO_FILE_REGS
 
@@ -649,11 +649,6 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(gameInfo.isHomebrew)
 		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
-
-	memset(buf, 0, MAX_PATH);
-	path.getpathnoext(path.BATTERY, buf);
-	strcat(buf, ".dsv");							// DeSmuME memory card	:)
-	MMU_new.backupDevice.load_rom(buf);
 
 	if (cheats != NULL)
 	{
@@ -1912,7 +1907,8 @@ FORCEINLINE void arm9log()
 #ifdef LOG_TO_FILE
 		if (!fp_dis9) return;
 #ifdef LOG_TO_FILE_REGS
-		fprintf(fp_dis9, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+		fprintf(fp_dis9, "\t\t;%05d:%03d %12lld\n\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+			currFrameCounter, nds.VCount, nds_timer,
 			NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
 			NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15],
 			NDS_ARM9.next_instruction, NDS_ARM9.CPSR.bits.N, NDS_ARM9.CPSR.bits.Z, NDS_ARM9.CPSR.bits.C, NDS_ARM9.CPSR.bits.V);
@@ -1947,7 +1943,8 @@ FORCEINLINE void arm7log()
 #ifdef LOG_TO_FILE
 		if (!fp_dis7) return;
 #ifdef LOG_TO_FILE_REGS
-		fprintf(fp_dis7, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+		fprintf(fp_dis7, "\t\t;%05d:%03d %12lld\n\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
+			currFrameCounter, nds.VCount, nds_timer, 
 			NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
 			NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15],
 			NDS_ARM7.next_instruction, NDS_ARM7.CPSR.bits.N, NDS_ARM7.CPSR.bits.Z, NDS_ARM7.CPSR.bits.C, NDS_ARM7.CPSR.bits.V);
