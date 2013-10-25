@@ -28,23 +28,31 @@
 #include "NDSSystem.h"
 #include "utils/advanscene.h"
 
+//#define _NO_LOAD_BACKUP
+//#define _NO_SAVE_BACKUP
+
+// TODO: motion device was broken
 //#define _ENABLE_MOTION
 
-#define BM_CMD_AUTODETECT       0xFF
-#define BM_CMD_WRITESTATUS      0x01
-#define BM_CMD_WRITELOW         0x02
-#define BM_CMD_READLOW          0x03
-#define BM_CMD_WRITEDISABLE     0x04
-#define BM_CMD_READSTATUS       0x05
-#define BM_CMD_WRITEENABLE      0x06
-#define BM_CMD_WRITEHIGH        0x0A
-#define BM_CMD_READHIGH         0x0B
+#define BM_CMD_NOP					0x00
+#define BM_CMD_AUTODETECT			0xFF
+#define BM_CMD_WRITESTATUS			0x01
+#define BM_CMD_WRITELOW				0x02
+#define BM_CMD_READLOW				0x03
+#define BM_CMD_WRITEDISABLE			0x04
+#define BM_CMD_READSTATUS			0x05
+#define BM_CMD_WRITEENABLE			0x06
+#define BM_CMD_WRITEHIGH			0x0A
+#define BM_CMD_READHIGH				0x0B
+
+// Pokemons IrDA
+#define BM_CMD_IRDA					0x08
 
 //FLASH
-#define COMM_PAGE_WRITE		0x0A
-#define COMM_PAGE_ERASE		0xDB
-#define COMM_SECTOR_ERASE	0xD8
-#define COMM_CHIP_ERASE		0xC7
+#define COMM_PAGE_WRITE				0x0A
+#define COMM_PAGE_ERASE				0xDB
+#define COMM_SECTOR_ERASE			0xD8
+#define COMM_CHIP_ERASE				0xC7
 #define CARDFLASH_READ_BYTES_FAST	0x0B    /* Not used*/
 #define CARDFLASH_DEEP_POWDOWN		0xB9    /* Not used*/
 #define CARDFLASH_WAKEUP			0xAB    /* Not used*/
@@ -250,13 +258,7 @@ void BackupDevice::detect()
 			case 0:
 			case 1:
 				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
-
-				if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) break; //spongebob atlantis squarepantis.
-				if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) break; //over the hedge - Hammy Goes Nuts!
-				if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) break; //spider-man 3
-
-				printf("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
-				//msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
+				msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
 				break;
 			case 2:
 				 //the modern typical case for small eeproms
@@ -268,8 +270,13 @@ void BackupDevice::detect()
 				//(the archaic 1+2 case is: specifying one address byte, and then reading the first two bytes, instead of the first one byte, as most other games would do.)
 				//so, we're gonna hack in checks for the games that are doing this
 				addr_size = 2;
-				if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge 
-				
+
+				// TODO: will study a deep, why this happens (wrong detect size)
+				if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) addr_size = 1; //spongebob atlantis squarepantis.
+				if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge
+				if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) addr_size = 1; //over the hedge - Hammy Goes Nuts!
+				if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) addr_size = 1; //spider-man 3
+
 				break;
 			case 4:
 				//a modern typical case
@@ -279,9 +286,11 @@ void BackupDevice::detect()
 			default:
 				//the archaic case: write the address and then some modulo-4 number of bytes
 				//why modulo 4? who knows.
-				if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) { addr_size = 2; break; } // Dementium II
 				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				addr_size = autodetect_size & 3;
+				
+				
+				if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) addr_size = 2; // Dementium II
 				break;
 		}
 
@@ -311,9 +320,9 @@ void BackupDevice::checkReset()
 	}
 }
 
-u8 BackupDevice::data_command(u8 val, int cpu)
+u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 {
-	//printf("MC%c : cmd %02X, val %02X\n", cpu?'7':'9', com, val);
+	//printf("MC%c : cmd %02X, val %02X\n", PROCNUM?'7':'9', com, val);
 
 #ifdef _ENABLE_MOTION
 	//motion: some guessing here... hope it doesn't break anything
@@ -332,172 +341,177 @@ u8 BackupDevice::data_command(u8 val, int cpu)
 	}
 #endif
 
-	if(com == BM_CMD_READLOW || com == BM_CMD_WRITELOW)
+	switch (com)
 	{
-		//handle data or address
-		if(state == DETECTING)
-		{
-			if(com == BM_CMD_WRITELOW)
+		case BM_CMD_READLOW:
+		case BM_CMD_WRITELOW:
+			//handle data or address
+			if(state == DETECTING)
 			{
-				printf("Unexpected backup device initialization sequence using writes!\n");
-			}
+				if(com == BM_CMD_WRITELOW)
+					printf("MC%c: Unexpected backup device initialization sequence using writes!\n", PROCNUM?'7':'9');
 
-			//just buffer the data until we're no longer detecting
-			data_autodetect.push_back(val);
-			val = 0;
-			detect();
-		}
-		else
-		{
-			if(addr_counter<addr_size)
-			{
-				//continue building address
-				addr <<= 8;
-				addr |= val;
-				addr_counter++;
-				//if(addr_counter==addr_size) printf("ADR: %08X\n",addr);
+				//just buffer the data until we're no longer detecting
+				data_autodetect.push_back(val);
+				detect();
+				val = 0xFF;
 			}
 			else
 			{
-				//why does tomb raider underworld access 0x180 and go clear through to 0x280?
-				//should this wrap around at 0 or at 0x100?
-				if(addr_size == 1) addr &= 0x1FF; 
-
-				//address is complete
-				ensure(addr+1);
-				if(com == BM_CMD_READLOW)
+				if(addr_counter<addr_size)
 				{
-					//printf("READ ADR: %08X\n",addr);
-					val = data[addr];
-					//flushPending = true; //is this a good idea? it may slow stuff down, but it is helpful for debugging
-					lazyFlushPending = true; //lets do this instead
-					//printf("read: %08X\n",addr);
+					//continue building address
+					addr <<= 8;
+					addr |= val;
+					addr_counter++;
+					val = 0xFF;
 				}
-				else 
+				else
 				{
-					if(write_enable)
+					//why does tomb raider underworld access 0x180 and go clear through to 0x280?
+					//should this wrap around at 0 or at 0x100?
+					if(addr_size == 1) addr &= 0x1FF; 
+
+					//address is complete
+					ensure(addr+1);
+					if(com == BM_CMD_READLOW)
 					{
-						//printf("WRITE ADR: %08X\n",addr);
-						data[addr] = val;
-						flushPending = true;
-						//printf("writ: %08X\n",addr);
+						val = data[addr];
+						//flushPending = true; //is this a good idea? it may slow stuff down, but it is helpful for debugging
+						lazyFlushPending = true; //lets do this instead
+						//printf("MC%c: read from %08X, value %02Xh\n", PROCNUM?'7':'9', addr, val);
 					}
-				}
-				addr++;
+					else 
+						if(write_enable)
+						{
+							data[addr] = val;
+							flushPending = true;
+							//printf("MC%c: write to %08X, value %02Xh\n", PROCNUM?'7':'9', addr, val);
+						}
 
-				checkReset();
+					addr++;
+				}
 			}
-		}
-	}
-	else if(com == BM_CMD_READSTATUS)
-	{
-		//handle request to read status
-		//LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
-		checkReset();
-		return (write_enable << 1) | (3<<2);
-	}
-	else
-	{
-		//there is no current command. receive one
-		switch(val)
-		{
-			case 0: break; //??
+		break;
+		
+		case BM_CMD_READSTATUS:
+			//handle request to read status
+			//LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
+			val = (write_enable << 1) | (3<<2);
+		break;
 
+		case BM_CMD_IRDA:
+			printf("MC%c: Unverified Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+			val = 0xAA;
+		break;
+
+		default:
+			if (com != 0)
+			{
+				//printf("MC%c: Unhandled Backup Memory command %02X, value %02X (PC:%08X)\n", PROCNUM?'7':'9', com, val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+				break;
+			}
+
+			com = val;
+			//there is no current command. receive one
+			switch (com)
+			{
+				case BM_CMD_NOP: break;
 #ifdef _ENABLE_MOTION
-			case 0xFE:
-				if(motionInitState == MOTION_INIT_STATE_IDLE) { motionInitState = MOTION_INIT_STATE_FE; return 0; }
-				break;
-			case 0xFD:
-				if(motionInitState == MOTION_INIT_STATE_FE) { motionInitState = MOTION_INIT_STATE_FD; return 0; }
-				break;
-			case 0xFB:
-				if(motionInitState == MOTION_INIT_STATE_FD) { motionInitState = MOTION_INIT_STATE_FB; return 0; }
-				break;
-			case 0xF8:
-				//enable sensor mode
-				if(motionInitState == MOTION_INIT_STATE_FD) 
-				{
-					motionInitState = MOTION_INIT_STATE_IDLE;
-					motionFlag |= MOTION_FLAG_SENSORMODE;
-					return 0;
-				}
-				break;
-			case 0xF9:
-				//disable sensor mode
-				if(motionInitState == MOTION_INIT_STATE_FD) 
-				{
-					motionInitState = MOTION_INIT_STATE_IDLE;
-					motionFlag &= ~MOTION_FLAG_SENSORMODE;
-					return 0;
-				}
-				break;
+				case 0xFE:
+					if(motionInitState == MOTION_INIT_STATE_IDLE) { motionInitState = MOTION_INIT_STATE_FE; return 0; }
+					break;
+				case 0xFD:
+					if(motionInitState == MOTION_INIT_STATE_FE) { motionInitState = MOTION_INIT_STATE_FD; return 0; }
+					break;
+				case 0xFB:
+					if(motionInitState == MOTION_INIT_STATE_FD) { motionInitState = MOTION_INIT_STATE_FB; return 0; }
+					break;
+				case 0xF8:
+					//enable sensor mode
+					if(motionInitState == MOTION_INIT_STATE_FD) 
+					{
+						motionInitState = MOTION_INIT_STATE_IDLE;
+						motionFlag |= MOTION_FLAG_SENSORMODE;
+						return 0;
+					}
+					break;
+				case 0xF9:
+					//disable sensor mode
+					if(motionInitState == MOTION_INIT_STATE_FD) 
+					{
+						motionInitState = MOTION_INIT_STATE_IDLE;
+						motionFlag &= ~MOTION_FLAG_SENSORMODE;
+						return 0;
+					}
+					break;
 #endif
 
-			case 0x08:	// IrDA - Pokemon HG/SS
-				printf("COMMAND%c: Unverified Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
-				val = 0xAA;
+				case BM_CMD_IRDA:
+					printf("MC%c: Unverified Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+					
+					val = 0xAA;
+					break;
 
-				checkReset();
-				break;
-
-			case BM_CMD_WRITEDISABLE:
+				case BM_CMD_WRITEDISABLE:
 #ifdef _ENABLE_MOTION
-				switch(motionInitState)
-				{
-				case MOTION_INIT_STATE_IDLE: motionInitState = MOTION_INIT_STATE_RECEIVED_4; break;
-				case MOTION_INIT_STATE_RECEIVED_4: motionInitState = MOTION_INIT_STATE_RECEIVED_4_B; break;
-				}
+					switch (motionInitState)
+					{
+						case MOTION_INIT_STATE_IDLE: motionInitState = MOTION_INIT_STATE_RECEIVED_4; break;
+						case MOTION_INIT_STATE_RECEIVED_4: motionInitState = MOTION_INIT_STATE_RECEIVED_4_B; break;
+					}
 #endif
-				write_enable = FALSE;
-				checkReset();
-				break;
-							
-			case BM_CMD_READSTATUS:
-				com = BM_CMD_READSTATUS;
-				val = (write_enable << 1) | (3<<2);
-				checkReset();
-				break;
+					write_enable = FALSE;
+					break;
+								
+				case BM_CMD_READSTATUS:
+					//val = (write_enable << 1) | (3<<2);
+					val = 0xFF;
+					break;
 
-			case BM_CMD_WRITEENABLE:
-				write_enable = TRUE;
-				checkReset();
-				break;
+				case BM_CMD_WRITEENABLE:
+					write_enable = TRUE;
+					break;
 
-			case BM_CMD_WRITELOW:
-			case BM_CMD_READLOW:
-				//printf("XLO: %08X\n",addr);
-				com = val;
-				addr_counter = 0;
-				addr = 0;
-				break;
+				case BM_CMD_WRITELOW:
+				case BM_CMD_READLOW:
+					//printf("XLO: %08X\n",addr);
+					addr_counter = 0;
+					addr = 0;
+					val = 0xFF;
+					break;
 
-			case BM_CMD_WRITEHIGH:
-			case BM_CMD_READHIGH:
-				//printf("XHI: %08X\n",addr);
-				if(val == BM_CMD_WRITEHIGH) val = BM_CMD_WRITELOW;
-				if(val == BM_CMD_READHIGH) val = BM_CMD_READLOW;
-				com = val;
-				addr_counter = 0;
-				addr = 0;
-				if(addr_size==1) {
-					//"write command that's only available on ST M95040-W that I know of"
-					//this makes sense, since this device would only have a 256 bytes address space with writelow
-					//and writehigh would allow access to the upper 256 bytes
-					//but it was detected in pokemon diamond also during the main save process
-					addr = 0x1;
-				}
-				break;
+				case BM_CMD_WRITEHIGH:
+				case BM_CMD_READHIGH:
+					//printf("XHI: %08X\n",addr);
+					if(val == BM_CMD_WRITEHIGH) com = BM_CMD_WRITELOW;
+					if(val == BM_CMD_READHIGH) com = BM_CMD_READLOW;
+					addr_counter = 0;
+					addr = 0;
+					if(addr_size==1)
+					{
+						//"write command that's only available on ST M95040-W that I know of"
+						//this makes sense, since this device would only have a 256 bytes address space with writelow
+						//and writehigh would allow access to the upper 256 bytes
+						//but it was detected in pokemon diamond also during the main save process
+						addr = 0x1;
+					}
+					break;
 
-			default:
-				printf("COMMAND%c: Unhandled Backup Memory command: %02X FROM %08X\n",(cpu==ARMCPU_ARM9)?'9':'7',val, (cpu==ARMCPU_ARM9)?NDS_ARM9.instruct_adr:NDS_ARM7.instruct_adr);
-				break;
-		} //switch(val)
+				default:
+					printf("MC%c: Unhandled Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+					break;
+			} //switch(val)
+		break;
+	} //switch (com)
 
 #ifdef _ENABLE_MOTION
-		//motion control state machine broke, return to ground
-		motionInitState = MOTION_INIT_STATE_IDLE;
+	//motion control state machine broke, return to ground
+	motionInitState = MOTION_INIT_STATE_IDLE;
 #endif
-	}
+
+	checkReset();
+
 	return val;
 }
 
@@ -812,6 +826,10 @@ void BackupDevice::loadfile()
 	if(isMovieMode) return;
 	if(filename.length() ==0) return; //No sense crashing if no filename supplied
 
+#ifdef _NO_LOAD_BACKUP
+	return;
+#endif
+
 	EMUFILE_FILE* inf = new EMUFILE_FILE(filename.c_str(),"rb");
 	if(inf->fail())
 	{
@@ -962,6 +980,10 @@ void BackupDevice::flush()
 {
 	//never use save files if we are in movie mode
 	if(isMovieMode) return;
+
+#ifdef _NO_SAVE_BACKUP
+	return;
+#endif
 
 	if (filename.length() == 0) return;
 

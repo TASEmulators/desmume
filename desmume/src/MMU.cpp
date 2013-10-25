@@ -2458,8 +2458,9 @@ u32 DmaController::read32()
 	return ret;
 }
 
-static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
+static INLINE void write_auxspicnt(const int PROCNUM, const int size, const int adr, const int val)
 {
+	//u16 oldCnt = MMU.AUX_SPI_CNT;
 	bool csOld = (MMU.AUX_SPI_CNT & (1 << 6))?true:false;
 
 	switch(size)
@@ -2474,16 +2475,13 @@ static INLINE void write_auxspicnt(const int proc, const int size, const int adr
 
 	bool cs = (MMU.AUX_SPI_CNT & (1 << 6))?true:false;
 
-	//printf("MMU%c: cnt %04X, old %04X\n", proc?'7':'9', MMU.AUX_SPI_CNT, oldCnt);
-	
-	if (MMU.AUX_SPI_CNT == 0)
-		MMU_new.backupDevice.reset_command(false);
-
 	if (!cs && csOld)
 	{
-		//printf("MMU%c: CS changed from HIGH to LOW *****\n", proc?'7':'9');
-		slot1_device->auxspi_reset(proc);
+		//printf("MMU%c: CS changed from HIGH to LOW *****\n", PROCNUM?'7':'9');
+		slot1_device->auxspi_reset(PROCNUM);
 	}
+
+	//printf("MMU%c: cnt %04X, old %04X\n", PROCNUM?'7':'9', MMU.AUX_SPI_CNT, oldCnt);
 }
 
 template <u8 PROCNUM>
