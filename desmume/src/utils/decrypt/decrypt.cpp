@@ -487,12 +487,12 @@ static void encrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 //0x0200 - 0x3FFF : typically, nothing is stored here. on retail cards, you can't read from that area anyway, but im not sure if that's done in the game card or the GC bus controller on the system
 //0x4000 - 0x7FFF : secure area (details in gbatek)
 
-bool DecryptSecureArea(u8 *romdata, long romlen)
+bool DecryptSecureArea(u8 *romheader, u8 *secure)
 {
 	//this looks like it will only work on little endian hosts
-	Header* header = (Header*)romdata;
+	Header* header = (Header*)romheader;
 
-	int romType = DetectRomType(*header,(char*)romdata);
+	int romType = DetectRomType(*header, (char*)secure);
 
 	if(romType == ROMTYPE_INVALID)
 		return false;
@@ -512,7 +512,7 @@ bool DecryptSecureArea(u8 *romdata, long romlen)
 		//// write secure 0x800
 		//memcpy(romdata+0x4000,data,0x800);
 
-		decrypt_arm9(*(u32 *)header->gamecode, romdata+0x4000);
+		decrypt_arm9(*(u32 *)header->gamecode, secure);
 
 		printf("Decrypted.\n");
 	}
@@ -524,12 +524,12 @@ bool DecryptSecureArea(u8 *romdata, long romlen)
 	return true;
 }
 
-bool EncryptSecureArea(u8 *romdata, long romlen)
+bool EncryptSecureArea(u8 *romheader, u8 *secure)
 {
 	//this looks like it will only work on little endian hosts
-	Header* header = (Header*)romdata;
+	Header* header = (Header*)romheader;
 
-	int romType = DetectRomType(*header,(char*)romdata);
+	int romType = DetectRomType(*header, (char*)secure);
 
 	if(romType == ROMTYPE_INVALID)
 		return false;
@@ -544,7 +544,7 @@ bool EncryptSecureArea(u8 *romdata, long romlen)
 		//// write secure 0x800
 		//memcpy(romdata+0x4000,data,0x800);
 
-		encrypt_arm9(*(u32 *)header->gamecode, romdata+0x4000);
+		encrypt_arm9(*(u32 *)header->gamecode, secure);
 
 		printf("Encrypted.\n");
 	}
@@ -552,11 +552,11 @@ bool EncryptSecureArea(u8 *romdata, long romlen)
 	return true;
 }
 
-bool CheckValidRom(u8 *romdata, long romlen)
+bool CheckValidRom(u8 *header, u8 *secure)
 {
-	Header* header = (Header*)romdata;
+	Header* hdr = (Header*)header;
 
-	int romType = DetectRomType(*header,(char*)romdata);
+	int romType = DetectRomType(*hdr, (char*)secure);
 
 	return (romType != ROMTYPE_INVALID);
 }

@@ -51,17 +51,23 @@ public:
 
 	virtual void connect()
 	{
-		if (!MMU.CART_ROM) return;
 		protocol.reset(this);
 		protocol.chipId = gameInfo.chipID;
 		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
 
-		pathData = path.getpath(path.SLOT1D) + path.GetRomNameWithoutExtension();
-		printf("Path to Slot1 data: %s\n", pathData.c_str());
-
 		curr_file_id = 0xFFFF;
 		fpROM = NULL;
-		fs = new FS_NITRO(MMU.CART_ROM);
+		fs = NULL;
+
+		if (!CommonSettings.loadToMemory) 
+		{
+			printf("NitroFS: change load type to \"Load to RAM\"\n");
+			return;
+		}
+		pathData = path.getpath(path.SLOT1D) + path.GetRomNameWithoutExtension();
+		printf("Path to Slot1 data: %s\n", pathData.c_str());
+		
+		fs = new FS_NITRO(gameInfo.romdata);
 		fs->rebuildFAT(pathData);
 	}
 
@@ -113,13 +119,13 @@ public:
 			u16 file_id = 0xFFFF; u32 offset = 0;
 			bool bFromFile = false;
 
-			if (fs->isFAT(protocol.address))
+			if (fs && fs->isFAT(protocol.address))
 			{
 				fs->rebuildFAT(protocol.address, protocol.length, pathData);
 			}
 			else
 			{
-				if (fs->getFileIdByAddr(protocol.address, file_id, offset)) 
+				if (fs && fs->getFileIdByAddr(protocol.address, file_id, offset)) 
 				{
 					if (file_id != curr_file_id)
 					{
@@ -178,7 +184,7 @@ private:
 			
 			u32 address = rom.getAddress();
 
-			if (fs->isFAT(address))
+			if (fs && fs->isFAT(address))
 			{
 				u32 res = fs->getFATRecord(address);
 				if (res != 0xFFFFFFFF)

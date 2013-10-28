@@ -66,9 +66,9 @@
 /*
  * DetectRomType
  */
-int DetectRomType(const Header& header, char* romdata)
+int DetectRomType(const Header& header, char* secure)
 {
-	unsigned int * data = (unsigned int*)(romdata + 0x4000);
+	unsigned int * data = (unsigned int*)(secure);
 
 	//this is attempting to check for an utterly invalid nds header
 	if(header.unitcode < 0 && header.unitcode > 3) return ROMTYPE_INVALID;
@@ -76,8 +76,9 @@ int DetectRomType(const Header& header, char* romdata)
 	if (header.arm9_rom_offset < 0x4000) return ROMTYPE_HOMEBREW;
 	if (data[0] == 0x00000000 && data[1] == 0x00000000) return ROMTYPE_MULTIBOOT;
 	if (data[0] == 0xE7FFDEFF && data[1] == 0xE7FFDEFF) return ROMTYPE_NDSDUMPED;
-	for (int i=0x200; i<0x4000; i++)
-		if (romdata[i]) return ROMTYPE_MASKROM;	// found something odd ;)
+	//TODO
+	//for (int i=0x200; i<0x4000; i++)
+	//	if (romdata[i]) return ROMTYPE_MASKROM;	// found something odd ;)
 	return ROMTYPE_ENCRSECURE;
 }
 

@@ -297,7 +297,7 @@ NDS_header * NDS_getROMHeader(void);
 
 struct RomBanner
 {
-	RomBanner(bool defaultInit);
+	RomBanner(bool defaultInit = true);
 	u16 version; //Version  (0001h)
 	u16 crc16; //CRC16 across entries 020h..83Fh
 	u8 reserved[0x1C]; //Reserved (zero-filled)
@@ -322,102 +322,48 @@ struct RomBanner
 
 struct GameInfo
 {
-	GameInfo() :	romdata(NULL),
+	FILE *fROM;
+	u8	*romdata;
+	u32 romsize;
+	u32 cardSize;
+	u32 mask;
+	u32 crc;
+	u32 chipID;
+	u32 lastReadPos;
+	char ROMserial[20];
+	char ROMname[20];
+	bool _isDSiEnhanced;
+	bool isHomebrew;
+	NDS_header header;
+	//a copy of the pristine secure area from the rom
+	u8	secureArea[0x4000];
+	RomBanner	banner;
+	const RomBanner& getRomBanner();
+
+	GameInfo() :	fROM(NULL),
+					romdata(NULL),
 					crc(0),
 					chipID(0x00000FC2),
 					romsize(0),
 					cardSize(0),
-					allocatedSize(0),
 					mask(0),
-					filemask(0)
+					lastReadPos(0xFFFFFFFF),
+					_isDSiEnhanced(false)
 	{
 		memset(&header, 0, sizeof(header));
 		memset(&ROMserial[0], 0, sizeof(ROMserial));
 		memset(&ROMname[0], 0, sizeof(ROMname));
-		memset(&secureArea[0], 0, sizeof(secureArea));
 	}
 
-	void loadData(char* buf, int size)
-	{
-		resize(size);
-		memcpy(romdata,buf,size);
-		romsize = (u32)size;
-		fillGap();
-	}
+	~GameInfo() { closeROM(); }
 
-	void storeSecureArea()
-	{
-		if ((header.ARM9src >= 0x4000) && (header.ARM9src < 0x8000))
-			memcpy(&secureArea[0], &romdata[header.ARM9src], 0x8000 - header.ARM9src);
-	}
-	
-	void restoreSecureArea()
-	{
-		if ((header.ARM9src >= 0x4000) && (header.ARM9src < 0x8000))
-			memcpy(&romdata[header.ARM9src], &secureArea[0], 0x8000 - header.ARM9src);
-	}
-
-	void fillGap()
-	{
-		memset(romdata+romsize,0xFF,allocatedSize-romsize);
-	}
-
-	void resize(int size) {
-		if(romdata != NULL) delete[] romdata;
-
-		//calculate the necessary mask for the requested size
-		filemask = (size - 1);
-		filemask |= (filemask >>1);
-		filemask |= (filemask >>2);
-		filemask |= (filemask >>4);
-		filemask |= (filemask >>8);
-		filemask |= (filemask >>16);
-
-		//now, we actually need to over-allocate, because bytes from anywhere protected by that mask
-		//could be read from the rom
-		allocatedSize = (filemask + 4);
-
-		romdata = new char[allocatedSize];
-		romsize = size;
-	}
-
-	bool loadRom(FILE *fp)
-	{
-		bool res = (fread(romdata, 1, romsize, fp) == romsize);
-		if (res)
-		{
-			cardSize = (128 * 1024) << romdata[0x14];
-			mask = (cardSize - 1);
-			mask |= (mask >>1);
-			mask |= (mask >>2);
-			mask |= (mask >>4);
-			mask |= (mask >>8);
-			mask |= (mask >>16);
-			return true;
-		}
-		return false;
-	}
-
-	bool isDSiEnhanced();
-	u32 crc;
-	u32 chipID;
-	NDS_header header;
-	char ROMserial[20];
-	char ROMname[20];
-	//char ROMfullName[7][0x100];
+	bool loadROM(std::string fname);
+	void closeROM();
+	u32 readROM(u32 pos);
 	void populate();
-	char* romdata;
-	u32 romsize;
-	u32 cardSize;
-	u32 allocatedSize;
-	u32 mask;
-	u32 filemask;
-	const RomBanner& getRomBanner();
+	bool isDSiEnhanced() { return _isDSiEnhanced; };
 	bool hasRomBanner();
-	bool isHomebrew;
 	
-	//a copy of the pristine secure area from the rom
-	u8	secureArea[0x4000];
 };
 
 typedef struct TSCalInfo
@@ -551,6 +497,7 @@ extern struct TCommonSettings {
 		, GFX3D_Zelda_Shadow_Depth_Hack(0)
 		, GFX3D_Renderer_Multisample(false)
 		, jit_max_block_size(100)
+		, loadToMemory(true)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
 		, PatchSWI3(false)
@@ -603,6 +550,8 @@ extern struct TCommonSettings {
 	bool GFX3D_LineHack;
 	int  GFX3D_Zelda_Shadow_Depth_Hack;
 	bool GFX3D_Renderer_Multisample;
+
+	bool loadToMemory;
 
 	bool UseExtBIOS;
 	char ARM9BIOS[256];

@@ -908,8 +908,6 @@ void MMU_Init(void)
 
 	memset(&MMU, 0, sizeof(MMU_struct));
 
-	MMU.CART_ROM = MMU.UNUSED_RAM;
-
 	//MMU.DTCMRegion = 0x027C0000;
 	//even though apps may change dtcm immediately upon startup, this is the correct hardware starting value:
 	MMU.DTCMRegion = 0x08000000;
@@ -1054,16 +1052,6 @@ void SetupMMU(bool debugConsole, bool dsi) {
 	if(dsi) _MMU_MAIN_MEM_MASK = 0xFFFFFF;
 	_MMU_MAIN_MEM_MASK16 = _MMU_MAIN_MEM_MASK & ~1;
 	_MMU_MAIN_MEM_MASK32 = _MMU_MAIN_MEM_MASK & ~3;
-}
-
-void MMU_setRom(u8 * rom, u32 mask)
-{
-	MMU.CART_ROM = rom;
-}
-
-void MMU_unsetRom()
-{
-	MMU.CART_ROM=MMU.UNUSED_RAM;
 }
 
 static void execsqrt() {

@@ -21,6 +21,7 @@
 #include "fsnitroView.h"
 #include "CWindow.h"
 #include "../MMU.h"
+#include "../NDSSystem.h"
 #include "../path.h"
 #include "../utils/fsnitro.h"
 #include "memView.h"
@@ -87,7 +88,7 @@ void refreshQView(HWND hWnd, u16 id)
 		u32 len = std::min<u32>(sizeof(buf), fs->getFileSizeById(id));
 		u32 start = fs->getStartAddrById(id);
 
-		memcpy(&buf[0], &MMU.CART_ROM[start], len);
+		memcpy(&buf[0], &gameInfo.romdata[start], len);
 
 		for (u32 i = 0; i < len; i++)
 			if (buf[i] < 0x20) buf[i] = 0x20;
@@ -104,7 +105,8 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	{
 		case WM_INITDIALOG:
 			{
-				fs = new FS_NITRO(MMU.CART_ROM);
+				fs = new FS_NITRO(gameInfo.romdata);
+
 				if (!fs)
 				{
 					msgbox->error("Error reading FS from ROM");

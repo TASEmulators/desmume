@@ -153,10 +153,9 @@ int NDS_Init( void)
 	return 0;
 }
 
-void NDS_DeInit(void) {
-	if(MMU.CART_ROM != MMU.UNUSED_RAM)
-		NDS_FreeROM();
-
+void NDS_DeInit(void)
+{
+	gameInfo.closeROM();
 	SPU_DeInit();
 	Screen_DeInit();
 	MMU_DeInit();
@@ -191,23 +190,11 @@ void NDS_DeInit(void) {
 #endif
 }
 
-BOOL NDS_SetROM(u8 * rom, u32 mask)
-{
-	MMU_setRom(rom, mask);
-
-	return TRUE;
-} 
-
 NDS_header * NDS_getROMHeader(void)
 {
-	if(MMU.CART_ROM == MMU.UNUSED_RAM) return NULL;
 	NDS_header * header = new NDS_header;
 
-	//copy all data blindly, but not entirely blindly.. in case the header is smaller than normal, we dont want to read junk data
-	//(we memset to 0xFF since thats likely to be what gets read from the invalid area)
-	memset(header,0xFF,sizeof(NDS_header));
-	int todo = std::min<u32>(gameInfo.romsize,sizeof(NDS_header));
-	memcpy(header,MMU.CART_ROM,todo);
+	memcpy(header, &gameInfo.header, sizeof(gameInfo.header));
 
 	//endian swap necessary fields. It would be better if we made accessors for these. I wonder if you could make a macro for a field accessor that would take the bitsize and do the swap on the fly
 	struct FieldSwap {
@@ -244,6 +231,9 @@ NDS_header * NDS_getROMHeader(void)
 		{ offsetof(NDS_header,ARM7autoload), 4},
 		{ offsetof(NDS_header,endROMoffset), 4},
 		{ offsetof(NDS_header,HeaderSize), 4},
+
+		{ offsetof(NDS_header, ARM9module), 4},
+		{ offsetof(NDS_header, ARM7module), 4},
 
 		{ offsetof(NDS_header,logoCRC16), 2},
 		{ offsetof(NDS_header,headerCRC16), 2},
@@ -339,14 +329,7 @@ bool GameInfo::hasRomBanner()
 
 const RomBanner& GameInfo::getRomBanner()
 {
-	//we may not have a valid banner. return a default one
-	if(!hasRomBanner())
-	{
-		static RomBanner defaultBanner(true);
-		return defaultBanner;
-	}
-	
-	return *(RomBanner*)(romdata+header.IconOff);
+	return banner;
 }
 
 void GameInfo::populate()
@@ -440,31 +423,105 @@ void GameInfo::populate()
 
 }
 
-bool GameInfo::isDSiEnhanced()
-{
-	return ((*(u32*)(romdata + 0x180) == 0x8D898581U) && (*(u32*)(romdata + 0x184) == 0x8C888480U));
-}
-
 #ifdef _WINDOWS
 
 static std::vector<char> buffer;
 static std::vector<char> v;
 
-static void loadrom(std::string fname) {
-	FILE* inf = fopen(fname.c_str(),"rb");
-	if(!inf) return;
-
-	fseek(inf,0,SEEK_END);
-	int size = ftell(inf);
-	fseek(inf,0,SEEK_SET);
-
-	gameInfo.resize(size);
-
-	gameInfo.loadRom(inf);
-
-	gameInfo.fillGap();
+bool GameInfo::loadROM(std::string fname)
+{
+	printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
 	
-	fclose(inf);
+	closeROM();
+
+	fROM = fopen(fname.c_str(), "rb");
+	if (!fROM) return false;
+
+	fseek(fROM, 0, SEEK_END);
+	romsize = ftell(fROM);
+	fseek(fROM, 0, SEEK_SET);
+
+	bool res = (fread(&header, 1, sizeof(header), fROM) == sizeof(header));
+
+	if (res)
+	{
+		cardSize = (128 * 1024) << header.cardSize;
+		mask = (cardSize - 1);
+		mask |= (mask >>1);
+		mask |= (mask >>2);
+		mask |= (mask >>4);
+		mask |= (mask >>8);
+		mask |= (mask >>16);
+
+		fseek(fROM, 0x4000, SEEK_SET);
+		fread(&secureArea[0], 1, 0x4000, fROM);
+
+		if (CommonSettings.loadToMemory)
+		{
+			fseek(fROM, 0, SEEK_SET);
+			
+			romdata = new u8[romsize + 4];
+			if (fread(romdata, 1, romsize, fROM) != romsize)
+			{
+				delete [] romdata; romdata = NULL;
+				romsize = 0;
+
+				return false;
+			}
+
+			if(hasRomBanner())
+				memcpy(&banner, romdata + header.IconOff, sizeof(RomBanner));
+
+			_isDSiEnhanced = ((*(u32*)(romdata + 0x180) == 0x8D898581U) && (*(u32*)(romdata + 0x184) == 0x8C888480U));
+			fclose(fROM); fROM = NULL;
+			return true;
+		}
+		_isDSiEnhanced = ((readROM(0x180) == 0x8D898581U) && (readROM(0x184) == 0x8C888480U));
+		if (hasRomBanner())
+		{
+			fseek(fROM, header.IconOff, SEEK_SET);
+			fread(&banner, 1, sizeof(RomBanner), fROM);
+		}
+		fseek(fROM, 0, SEEK_SET);
+		lastReadPos = 0;
+		return true;
+	}
+
+	romsize = 0;
+	fclose(fROM); fROM = NULL;
+	return false;
+}
+
+void GameInfo::closeROM()
+{
+	if (fROM)
+		fclose(fROM);
+
+	if (romdata)
+		delete [] romdata;
+
+	fROM = NULL;
+	romdata = NULL;
+	romsize = 0;
+	lastReadPos = 0xFFFFFFFF;
+}
+
+u32 GameInfo::readROM(u32 pos)
+{
+	if ((pos < 0x8000) && (pos >= 0x4000))
+		return *(u32*)(secureArea + (pos - 0x4000));
+
+	if (!romdata)
+	{
+		u32 data;
+		if (lastReadPos != pos)
+			fseek(fROM, pos, SEEK_SET);
+		u32 num = fread(&data, 1, 4, fROM);
+		lastReadPos = (pos + num);
+		return data;
+	}
+	else
+		return *(u32*)(romdata + pos);
 }
 
 static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
@@ -475,11 +532,11 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 
 	if ( path.isdsgba(path.path)) {
 		type = ROM_DSGBA;
-		loadrom(path.path);
+		gameInfo.loadROM(path.path);
 	}
 	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
 		type = ROM_NDS;
-		loadrom(physicalName ? physicalName : path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
+		gameInfo.loadROM(physicalName ? physicalName : path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
 		//...but since the data was extracted to gameInfo then it is ok
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
@@ -488,14 +545,17 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 	} else {
 		//well, try to load it as an nds rom anyway
 		type = ROM_NDS;
-		loadrom(physicalName ? physicalName : path.path);
+		gameInfo.loadROM(physicalName ? physicalName : path.path);
 	}
 
+	// TODO: !!!!!
+#if 0
 	if(type == ROM_DSGBA)
 	{
 		std::vector<char> v(gameInfo.romdata + DSGBA_LOADER_SIZE, gameInfo.romdata + gameInfo.romsize);
 		gameInfo.loadData(&v[0],gameInfo.romsize - DSGBA_LOADER_SIZE);
 	}
+#endif
 
 	//check that size is at least the size of the header
 	if (gameInfo.romsize < 352) {
@@ -555,6 +615,7 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 
 	// Make sure old ROM is freed first(at least this way we won't be eating
 	// up a ton of ram before the old ROM is freed)
+
 	if(MMU.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
@@ -585,17 +646,19 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 
 
 	//check whether this rom is any kind of valid
-	if(!CheckValidRom((u8*)gameInfo.romdata,gameInfo.romsize))
+	if(!CheckValidRom((u8*)&gameInfo.header, gameInfo.secureArea))
 	{
 		printf("Specified file is not a valid rom\n");
 		return -1;
 	}
 
-	MMU_unsetRom();
-	NDS_SetROM((u8*)gameInfo.romdata, gameInfo.mask);
-
 	gameInfo.populate();
-	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
+
+
+	if (CommonSettings.loadToMemory)
+		gameInfo.crc = crc32(0, (u8*)gameInfo.romdata, gameInfo.romsize);
+	else
+		gameInfo.crc = 0;
 
 	gameInfo.chipID  = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
 	gameInfo.chipID |= ((((128 << gameInfo.header.cardSize) / 1024) - 1) << 8);		// Chip size in megabytes minus 1
@@ -623,9 +686,6 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
 	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 
-	//crazymax: how would it have got whacked? dont think we need this
-	//gameInfo.storeSecureArea();
-
 #if 1
 	u32 mask = gameInfo.header.endROMoffset - 1;
 	mask |= (mask >> 1);
@@ -636,7 +696,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 
 	printf("======================================================================\n");
 	printf("card size    %10u (%08Xh) mask %08Xh\n", gameInfo.cardSize, gameInfo.cardSize, gameInfo.mask);
-	printf("file size    %10u (%08Xh) mask %08Xh\n", gameInfo.romsize, gameInfo.romsize, gameInfo.filemask);
+	printf("file size    %10u (%08Xh)\n", gameInfo.romsize, gameInfo.romsize);
 	printf("endROMoffset %10u (%08Xh) mask %08Xh\n", gameInfo.header.endROMoffset, gameInfo.header.endROMoffset, mask);
 	printf("======================================================================\n");
 #endif
@@ -672,7 +732,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	printf("\n");
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(gameInfo.isHomebrew)
+	if(gameInfo.isHomebrew && CommonSettings.loadToMemory)
 		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
 
 	if (cheats != NULL)
@@ -691,11 +751,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 void NDS_FreeROM(void)
 {
 	FCEUI_StopMovie();
-	if ((u8*)MMU.CART_ROM == (u8*)gameInfo.romdata)
-		gameInfo.romdata = NULL;
-	if (MMU.CART_ROM != MMU.UNUSED_RAM)
-		delete [] MMU.CART_ROM;
-	MMU_unsetRom();
+	gameInfo.closeROM();
 }
 
 u32 NDS_ImportSaveSize(const char *filename)
@@ -2504,8 +2560,8 @@ bool NDS_LegitBoot()
 	firmware->loadSettings();
 
 	//since firmware only boots encrypted roms, we have to make sure it's encrypted first
-		//this has not been validated on big endian systems. it almost positively doesn't work.
-	EncryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+	//this has not been validated on big endian systems. it almost positively doesn't work.
+	EncryptSecureArea((u8*)&gameInfo.header, (u8*)gameInfo.secureArea);
 
 	//boot processors from their bios entrypoints
 	armcpu_init(&NDS_ARM7, 0x00000000);
@@ -2548,7 +2604,7 @@ bool NDS_FakeBoot()
 	
 	//since we're bypassing the code to decrypt the secure area, we need to make sure its decrypted first
 	//this has not been validated on big endian systems. it almost positively doesn't work.
-	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+	bool okRom = DecryptSecureArea((u8*)&gameInfo.header, (u8*)gameInfo.secureArea);
 
 	if(!okRom) {
 		printf("Specified file is not a valid rom\n");
@@ -2578,7 +2634,8 @@ bool NDS_FakeBoot()
 		u32 dst = header->ARM9cpy;
 		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
 		{
-			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
+			_MMU_write32<ARMCPU_ARM9>(dst, gameInfo.readROM(src));
+
 			dst += 4;
 			src += 4;
 		}
@@ -2588,7 +2645,8 @@ bool NDS_FakeBoot()
 		dst = header->ARM7cpy;
 		for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
 		{
-			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
+			_MMU_write32<ARMCPU_ARM7>(dst, gameInfo.readROM(src));
+
 			dst += 4;
 			src += 4;
 		}
@@ -2613,13 +2671,13 @@ bool NDS_FakeBoot()
 	if(nds.Is_DSI())
 	{
 		//dsi needs this copied later in memory. there are probably a number of things that  get copied to a later location in memory.. thats where the NDS consoles tend to stash stuff.
-		for (int i = 0; i < ((0x170)/4); i++)
-			_MMU_write32<ARMCPU_ARM9>(0x02FFFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+		for (int i = 0; i < (0x170); i+=4)
+			_MMU_write32<ARMCPU_ARM9>(0x027FFE00 + i, LE_TO_LOCAL_32(gameInfo.readROM(i)));
 	}
 	else
 	{
-		for (int i = 0; i < ((0x170)/4); i++)
-			_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+		for (int i = 0; i < (0x170); i+=4)
+			_MMU_write32<ARMCPU_ARM9>(0x027FFE00 + i, LE_TO_LOCAL_32(gameInfo.readROM(i)));
 	}
 
 	//the firmware will be booting to these entrypoint addresses via BX (well, the arm9 at least; is unverified for the arm7)

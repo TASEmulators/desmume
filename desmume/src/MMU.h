@@ -406,9 +406,6 @@ struct MMU_struct
 	//32KB of shared WRAM - can be switched between ARM7 & ARM9 in two blocks
 	u8 SWIRAM[0x8000];
 
-	//Card rom & ram
-	u8 * CART_ROM;
-
 	//Unused ram
 	u8 UNUSED_RAM[4];
 
@@ -545,9 +542,6 @@ void MMU_Init(void);
 void MMU_DeInit(void);
 
 void MMU_Reset( void);
-
-void MMU_setRom(u8 * rom, u32 mask);
-void MMU_unsetRom( void);
 
 void print_memory_profiling( void);
 
