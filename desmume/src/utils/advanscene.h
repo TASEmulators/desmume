@@ -22,11 +22,13 @@ class ADVANsCEne
 {
 private:
 	std::string database_path;		// DeSmuME save types 
-	u8				versionBase[2];
-	char			version[4];
 	time_t			createTime;
-	u8				saveType;
 	u32				crc32;
+	char			serial[6];
+	char			version[4];
+	u8				versionBase[2];
+	u8				saveType;
+
 	bool			loaded;
 	bool foundAsCrc, foundAsSerial;
 
@@ -45,16 +47,19 @@ public:
 	{
 		memset(versionBase, 0, sizeof(versionBase));
 		memset(version, 0, sizeof(version));
+		memset(serial, 0, sizeof(serial));
 	}
 	void setDatabase(const char *path) { loaded = false; database_path = path; }
 	u32 convertDB(const char *in_filaname);
-	u8 checkDB(const char *serial, u32 crc);
+	u8 checkDB(const char *ROMserial, u32 crc);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }
+	char *getSerial() { return serial; }
 	bool isLoaded() { return loaded; }
 	const char* getIdMethod() { 
-		if(foundAsCrc) return "CRC";
+		if(foundAsSerial && foundAsCrc) return "Serial/CRC";
 		if(foundAsSerial) return "Serial";
+		if(foundAsCrc) return "CRC";
 		return "";
 	}
 	std::string lastImportErrorMessage;

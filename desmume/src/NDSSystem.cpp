@@ -351,19 +351,22 @@ const RomBanner& GameInfo::getRomBanner()
 
 void GameInfo::populate()
 {
-	const char *regions[] = {	"JPFSEODIRKHX",
-								"JPN",
-								"EUR",
-								"FRA",
-								"ESP",
-								"USA",
-								"USA",
-								"NOE",
-								"ITA",
-								"RUS",
-								"KOR",
-								"HOL",
-								"EUU",
+	const char *regions[] = {	"JPFSEODIRKHXWVU",
+								"JPN",		// J
+								"EUR",		// P
+								"FRA",		// F
+								"ESP",		// S
+								"USA",		// E
+								"INT",		// O
+								"NOE",		// D
+								"ITA",		// I
+								"RUS",		// R
+								"KOR",		// K
+								"HOL",		// H
+								"EUU",		// X
+								"EUU",		// V
+								"EUU",		// W
+								"AUS",		// U
 
 	};
 
@@ -404,11 +407,16 @@ void GameInfo::populate()
 	}
 	else
 	{
-		strcpy(ROMserial,"NTR-    -");
+		if (isDSiEnhanced())
+			strcpy(ROMserial,"TWL-    -");
+		else
+			strcpy(ROMserial,"NTR-    -");
 		memcpy(ROMserial+4, header.gameCode, 4);
 
+		u32 regions_num = ARRAY_SIZE(regions);
 		u32 region = (u32)(std::max<s32>(strchr(regions[0],header.gameCode[3]) - regions[0] + 1, 0));
-		if (region > 0 && region < 12)
+
+		if (region < regions_num)
 			strcat(ROMserial, regions[region]);
 		else
 			strcat(ROMserial, "Unknown");
@@ -645,8 +653,9 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	if (advsc.checkDB(buf, gameInfo.crc))
 	{
 		u8 sv = advsc.getSaveType();
-		printf("Found in game database by %s:\n",advsc.getIdMethod());
-		printf("\t* ROM save type: ");
+		printf("Found in game database by %s:\n", advsc.getIdMethod());
+		printf("\t* ROM serial:\t\t%s\n", advsc.getSerial());
+		printf("\t* ROM save type:\t");
 		if (sv == 0xFF)
 			printf("Unknown");
 		else
@@ -658,7 +667,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 				if (CommonSettings.autodetectBackupMethod == 1)
 					backup_setManualBackupType(sv + 1);
 			}
-		printf("\n\t* ROM crc: %08X\n", advsc.getCRC32());
+		printf("\n\t* ROM crc:\t\t%08X\n", advsc.getCRC32());
 	}
 	printf("\n");
 
