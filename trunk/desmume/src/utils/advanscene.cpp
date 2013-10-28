@@ -31,7 +31,7 @@ ADVANsCEne advsc;
 #define _ADVANsCEne_BASE_VERSION_MINOR 0
 #define _ADVANsCEne_BASE_NAME "ADVANsCEne Nintendo DS Collection"
 
-u8 ADVANsCEne::checkDB(const char *serial, u32 crc)
+u8 ADVANsCEne::checkDB(const char *ROMserial, u32 crc)
 {
 	loaded = false;
 	FILE *fp = fopen(database_path.c_str(), "rb");
@@ -58,7 +58,7 @@ u8 ADVANsCEne::checkDB(const char *serial, u32 crc)
 							{
 								if (fread(buf, 1, 21, fp) != 21) break;
 
-								bool serialFound = (memcmp(&buf[4], serial, 4) == 0);
+								bool serialFound = (memcmp(&buf[4], ROMserial, 4) == 0);
 								u32 dbcrc = LE_TO_LOCAL_32(*(u32*)(buf+8));
 								bool crcFound = (crc == dbcrc);
 
@@ -67,7 +67,8 @@ u8 ADVANsCEne::checkDB(const char *serial, u32 crc)
 									foundAsCrc = crcFound;
 									foundAsSerial = serialFound;
 									memcpy(&crc32, &buf[8], 4);
-									//printf("%s founded: crc32=%04X, save type %02X\n", serial, crc32, buf[12]);
+									memcpy(&serial[0], &buf[4], 4);
+									//printf("%s founded: crc32=%04X, save type %02X\n", ROMserial, crc32, buf[12]);
 									saveType = buf[12];
 									fclose(fp);
 									loaded = true;
