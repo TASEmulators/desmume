@@ -457,6 +457,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					}
 #endif
 					write_enable = FALSE;
+					com = 0;
 					break;
 								
 				case BM_CMD_READSTATUS:
@@ -467,6 +468,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 				case BM_CMD_WRITEENABLE:
 					//printf("MC%c: write enable\n", PROCNUM?'7':'9');
 					write_enable = TRUE;
+					com = 0;
 					break;
 
 				case BM_CMD_WRITELOW:

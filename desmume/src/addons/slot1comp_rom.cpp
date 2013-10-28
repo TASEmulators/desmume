@@ -49,11 +49,6 @@ u32 Slot1Comp_Rom::read()
 
 	case eSlot1Operation_B7_Read:
 		{
-			//is this legitimate? need some way to verify.
-			//if(length == 0)
-			//	return 0xFFFFFFFF;
-			//length -= 4;
-
 			//TODO - check about non-4-byte aligned addresses
 
 			//OBSOLETED?
@@ -61,15 +56,16 @@ u32 Slot1Comp_Rom::read()
 			////but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
 			////but there is no test case yet
 			//at any rate, this is good for safety's sake.
+
 			address &= gameInfo.mask;
 
 			//"Can be used only for addresses 8000h and up, smaller addresses will be silently redirected to address `8000h+(addr AND 1FFh)`"
 			if(address < 0x8000)
-				address = (0x8000 + (address&0x1FF));
+				address = (0x8000 + (address & 0x1FF));
 
 			//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
 			//we need to protect ourselves by returning 0xFF for things still out of range
-			if(address+4 >= gameInfo.romsize)
+			if (address > gameInfo.header.endROMoffset)
 			{
 				DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
 				return 0xFFFFFFFF;
@@ -80,7 +76,6 @@ u32 Slot1Comp_Rom::read()
 
 			//"However, the datastream wraps to the begin of the current 4K block when address+length crosses a 4K boundary (1000h bytes)"
 			address = (address&~0xFFF) + ((address+4)&0xFFF);
-
 
 			return ret;
 		}

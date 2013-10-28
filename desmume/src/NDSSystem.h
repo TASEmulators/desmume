@@ -97,8 +97,8 @@ struct NDS_header
 	u8		unitCode;			// 012 - Unitcode (00h=Nintendo DS)
 	u8		deviceCode;			// 013 - Encryption Seed Select (00..07h, usually 00h)
 	u8		cardSize;			// 014 - Devicecapacity (Chipsize = 128KB SHL nn) (eg. 7 = 16MB)
-	u8		cardInfo[8];		// 015 - ???  --> reversed (padded 00h)
-	u8		flags;				// 01D - ???  |
+	u8		reserved1[8];		// 015 - Must be set to 0x00
+	u8		region;				// 01D - Specific region: 0x80 - China, 0x40 - Korea, 0x00 - Other
 	u8		romversion;			// 01E - ROM Version (usually 00h)
 	u8		autostart;			// 01F - Autostart (Bit2: Skip "Press Button" after Health and Safety)
 								//	 (Also skips bootmenu, even in Manual mode & even Start pressed)
@@ -127,19 +127,21 @@ struct NDS_header
 	u32		Key1Cmd;			// 064 - Port 40001A4h setting for KEY1 commands   (usually 001808F8h)
 
 	u32		IconOff;			// 068 - Icon_title_offset (0=None) (8000h and up)
-	u16		CRC16;				// 06C - Secure Area Checksum, CRC-16 of [ [20h]..7FFFh]
+	u16		CRC16;				// 06C - Secure Area Checksum, CRC-16 of [ [20h]..7FFFh] - Calculations with this algorithm use 0xffff as the initial value
 	u16		ROMtimeout;			// 06E - Secure Area Loading Timeout (usually 051Eh)
-	u32		ARM9unk;			// 070 -
-	u32		ARM7unk;			// 074 - 
+	u32		ARM9autoload;		// 070 - ARM9 Auto Load List RAM Address
+	u32		ARM7autoload;		// 074 - ARM7 Auto Load List RAM Address
 
-	u8		secAreaDisable[8];	// 078 - Secure Area Disable (by encrypted "NmMdOnly") (usually zero)
-	u32		ROMSize;			// 080 - Total Used ROM size (remaining/unused bytes usually FFh-padded)
+	u8		infoResevedRegion[8];	// 078 - ROM Information Reserved Region (must be set to 0x00)
+	u32		endROMoffset;		// 080 - Total Used ROM size (remaining/unused bytes usually FFh-padded)
 	u32		HeaderSize;			// 084 - ROM Header Size (4000h)
-	u8		unknown5[56];		// 088 - Reserved (zero filled) - "PASS" is contained within here?
+	u32		ARM9module;			// 088 - ARM9 Module Parameter Address (auto-load parameters)
+	u32		ARM7module;			// 08C - ARM7 Module Parameter Address (auto-load parameters)
+	u8		reserved2[58];		// 090 - Must be set to 0x00 - "PASS" is contained within here?
 	u8		logo[156];			// 0C0 - Nintendo Logo (compressed bitmap, same as in GBA Headers)
 	u16		logoCRC16;			// 15C - Nintendo Logo Checksum, CRC-16 of [0C0h-15Bh], fixed CF56h
 	u16		headerCRC16;		// 15E - Header Checksum, CRC-16 of [000h-15Dh]
-	u8		reserved[160];		// 
+	u8		reserved[160];		// Must be set to 0x00
 };
 #include "PACKED_END.h"
 
@@ -324,8 +326,10 @@ struct GameInfo
 					crc(0),
 					chipID(0x00000FC2),
 					romsize(0),
+					cardSize(0),
 					allocatedSize(0),
-					mask(0)
+					mask(0),
+					filemask(0)
 	{
 		memset(&header, 0, sizeof(header));
 		memset(&ROMserial[0], 0, sizeof(ROMserial));
@@ -362,19 +366,36 @@ struct GameInfo
 		if(romdata != NULL) delete[] romdata;
 
 		//calculate the necessary mask for the requested size
-		mask = size-1; 
-		mask |= (mask >>1);
-		mask |= (mask >>2);
-		mask |= (mask >>4);
-		mask |= (mask >>8);
-		mask |= (mask >>16);
+		filemask = (size - 1);
+		filemask |= (filemask >>1);
+		filemask |= (filemask >>2);
+		filemask |= (filemask >>4);
+		filemask |= (filemask >>8);
+		filemask |= (filemask >>16);
 
 		//now, we actually need to over-allocate, because bytes from anywhere protected by that mask
 		//could be read from the rom
-		allocatedSize = mask+4;
+		allocatedSize = (filemask + 4);
 
 		romdata = new char[allocatedSize];
 		romsize = size;
+	}
+
+	bool loadRom(FILE *fp)
+	{
+		bool res = (fread(romdata, 1, romsize, fp) == romsize);
+		if (res)
+		{
+			cardSize = (128 * 1024) << romdata[0x14];
+			mask = (cardSize - 1);
+			mask |= (mask >>1);
+			mask |= (mask >>2);
+			mask |= (mask >>4);
+			mask |= (mask >>8);
+			mask |= (mask >>16);
+			return true;
+		}
+		return false;
 	}
 
 	bool isDSiEnhanced();
@@ -387,8 +408,10 @@ struct GameInfo
 	void populate();
 	char* romdata;
 	u32 romsize;
+	u32 cardSize;
 	u32 allocatedSize;
 	u32 mask;
+	u32 filemask;
 	const RomBanner& getRomBanner();
 	bool hasRomBanner();
 	bool isHomebrew;

@@ -240,9 +240,9 @@ NDS_header * NDS_getROMHeader(void)
 		{ offsetof(NDS_header,CRC16), 2},
 		{ offsetof(NDS_header,ROMtimeout), 2},
 		
-		{ offsetof(NDS_header,ARM9unk), 4},
-		{ offsetof(NDS_header,ARM7unk), 4},
-		{ offsetof(NDS_header,ROMSize), 4},
+		{ offsetof(NDS_header,ARM9autoload), 4},
+		{ offsetof(NDS_header,ARM7autoload), 4},
+		{ offsetof(NDS_header,endROMoffset), 4},
 		{ offsetof(NDS_header,HeaderSize), 4},
 
 		{ offsetof(NDS_header,logoCRC16), 2},
@@ -452,7 +452,8 @@ static void loadrom(std::string fname) {
 
 	gameInfo.resize(size);
 
-	fread(gameInfo.romdata,1,size,inf);
+	gameInfo.loadRom(inf);
+
 	gameInfo.fillGap();
 	
 	fclose(inf);
@@ -616,6 +617,21 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 
 	//crazymax: how would it have got whacked? dont think we need this
 	//gameInfo.storeSecureArea();
+
+#if 1
+	u32 mask = gameInfo.header.endROMoffset - 1;
+	mask |= (mask >> 1);
+	mask |= (mask >> 2);
+	mask |= (mask >> 4);
+	mask |= (mask >> 8);
+	mask |= (mask >> 16);
+
+	printf("======================================================================\n");
+	printf("card size    %10u (%08Xh) mask %08Xh\n", gameInfo.cardSize, gameInfo.cardSize, gameInfo.mask);
+	printf("file size    %10u (%08Xh) mask %08Xh\n", gameInfo.romsize, gameInfo.romsize, gameInfo.filemask);
+	printf("endROMoffset %10u (%08Xh) mask %08Xh\n", gameInfo.header.endROMoffset, gameInfo.header.endROMoffset, mask);
+	printf("======================================================================\n");
+#endif
 	
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);
