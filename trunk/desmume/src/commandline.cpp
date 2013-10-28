@@ -33,6 +33,7 @@ int _commandline_linux_nojoy = 0;
 
 CommandLine::CommandLine()
 : is_cflash_configured(false)
+, _load_to_memory(-1)
 , error(NULL)
 , ctx(g_option_context_new (""))
 , _play_movie_file(0)
@@ -80,6 +81,7 @@ void CommandLine::loadCommonOptions()
 	//but also see the gtk port for an example of how to combine this with other options
 	//(you may need to use ifdefs to cause options to be entered in the desired order)
 	static const GOptionEntry options[] = {
+		{ "load-type", 0, 0, G_OPTION_ARG_INT, &_load_to_memory, "Load ROM type, 0 - stream from disk, 1 - to RAM (default 1)", "LOAD_TYPE"},
 		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savegame from slot NUM", "NUM"},
 		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
 		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},
@@ -143,6 +145,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_slot1_fat_dir) slot1_fat_dir = _slot1_fat_dir;
 	if(_slot1) slot1 = _slot1; slot1 = strtoupper(slot1);
 	if(_console_type) console_type = _console_type;
+	if(_load_to_memory != -1) CommonSettings.loadToMemory = (_load_to_memory == 1)?true:false;
 	if(_play_movie_file) play_movie_file = _play_movie_file;
 	if(_record_movie_file) record_movie_file = _record_movie_file;
 	if(_cflash_image) cflash_image = _cflash_image;
@@ -208,6 +211,11 @@ bool CommandLine::validate()
 			g_printerr("Invalid slot1 device specified.\n");
 			return false;
 		}
+	}
+
+	if (_load_to_memory < -1 || _load_to_memory > 1) {
+		g_printerr("Invalid parameter (0 - stream from disk, 1 - from RAM)\n");
+		return false;
 	}
 
 	if (load_slot < -1 || load_slot > 10) {

@@ -2935,10 +2935,11 @@ int _main()
 
 	msgbox = &msgBoxWnd;
 
-	char text[80];
+	char text[80] = {0};
 
 	path.ReadPathSettings();
 
+	CommonSettings.loadToMemory = GetPrivateProfileBool("General", "loadType", true, IniName);
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 	CommonSettings.autodetectBackupMethod = GetPrivateProfileInt("General", "autoDetectMethod", 0, IniName);
 
@@ -3975,11 +3976,10 @@ void CloseRom()
 {
 	StopAllLuaScripts();
 //	cheatsSearchClose();
-	NDS_FreeROM();
 	romloaded = false;
 	execute = false;
 	Hud.resetTransient();
-	NDS_Reset();
+	NDS_FreeROM();
 
 	// clear screen so the last frame we rendered doesn't stick around
 	// (TODO: maybe NDS_Reset should do this?)
@@ -4151,7 +4151,7 @@ void ScreenshotToClipboard(bool extraInfo)
 	int exHeight = 0;
 	if(extraInfo)
 	{
-		exHeight = (14 * (twolinever ? 7:6));
+		exHeight = (14 * (twolinever ? 8:7));
 	}
 
 	HDC hScreenDC = GetDC(NULL);
@@ -4196,21 +4196,19 @@ void ScreenshotToClipboard(bool extraInfo)
 		else
 			TextOut(hMemDC, 0, 384 + 14, nameandver, strlen(nameandver));
 
-		char str[32];
-		memcpy(&str[0], &MMU.CART_ROM[0], 12); str[12] = '\0';
-		int titlelen = strlen(str); 
-		str[titlelen] = ' ';
-		memcpy(&str[titlelen+1], &MMU.CART_ROM[12], 6); str[titlelen+1+6] = '\0';
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), str, strlen(str));
+		char str[32] = {0};
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), gameInfo.ROMname, strlen(gameInfo.ROMname));
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), gameInfo.ROMserial, strlen(gameInfo.ROMserial));
+		
 
 		sprintf(str, "CPU: %s", CommonSettings.use_jit ? "JIT":"Interpreter");
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), str, strlen(str));
-
-		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 5:4), str, strlen(str));
 
-		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
 		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 6:5), str, strlen(str));
+
+		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 7:6), str, strlen(str));
 	}
 
 	OpenClipboard(NULL);
@@ -4404,6 +4402,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			DesEnableMenuItem(mainMenu, IDC_BACKGROUNDINPUT,   !lostFocusPause);
 
+			DesEnableMenuItem(mainMenu, ID_LOADTORAM,			!romloaded);
+			DesEnableMenuItem(mainMenu, ID_STREAMFROMDISK,		!romloaded);
+
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
 			{
@@ -4555,6 +4556,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORGRAY, false);
 				DesEnableMenuItem(mainMenu, IDM_SCREENSEP_COLORBLACK, false);
 			}
+
+			// load type
+			MainWindow->checkMenu(ID_STREAMFROMDISK, ((CommonSettings.loadToMemory == false)));
+			MainWindow->checkMenu(ID_LOADTORAM, ((CommonSettings.loadToMemory == true)));
 
 			// Tools
 			MainWindow->checkMenu(IDM_CONSOLE_ALWAYS_ON_TOP, gConsoleTopmost);
@@ -5585,6 +5590,11 @@ DOKEYDOWN:
 			return 0;
 
 		case ID_TOOLS_VIEWFSNITRO:
+			if (!CommonSettings.loadToMemory)
+			{
+				msgbox->error("Change load type to \"Load to RAM\"");
+				return 0;
+			}
 			ViewFSNitro->open();
 			return 0;
 			//========================================================== Tools end
@@ -5798,6 +5808,16 @@ DOKEYDOWN:
 
 		case IDM_RESET:
 			ResetGame();
+			return 0;
+
+		case ID_STREAMFROMDISK:
+			CommonSettings.loadToMemory = false;
+			WritePrivateProfileBool("General", "loadType", CommonSettings.loadToMemory, IniName);
+			return 0;
+
+		case ID_LOADTORAM:
+			CommonSettings.loadToMemory = true;
+			WritePrivateProfileBool("General", "loadType", CommonSettings.loadToMemory, IniName);
 			return 0;
 
 		case IDM_3DCONFIG:

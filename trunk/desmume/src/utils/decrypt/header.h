@@ -121,7 +121,7 @@ unsigned short CalcLogoCRC(Header &header);
 void FixHeaderCRC(char *ndsfilename);
 void ShowInfo(char *ndsfilename);
 int HashAndCompareWithList(char *filename, unsigned char sha1[]);
-int DetectRomType(const Header& header, char* romdata);
+int DetectRomType(const Header& header, char* secure);
 unsigned short CalcSecureAreaCRC(bool encrypt);
 
 #define ROMTYPE_HOMEBREW	0

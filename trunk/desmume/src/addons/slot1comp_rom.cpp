@@ -32,7 +32,7 @@ u32 Slot1Comp_Rom::read()
 	{
 	case eSlot1Operation_00_ReadHeader_Unencrypted:
 		{
-			u32 ret = T1ReadLong(MMU.CART_ROM, address);
+			u32 ret = gameInfo.readROM(address);
 			address = (address + 4) & 0xFFF;
 			return ret;
 		}
@@ -42,7 +42,7 @@ u32 Slot1Comp_Rom::read()
 		{
 			//see B7 for details
 			address &= gameInfo.mask; //sanity check
-			u32 ret = T1ReadLong(MMU.CART_ROM, address);
+			u32 ret = gameInfo.readROM(address);
 			address = (address&~0xFFF) + ((address+4)&0xFFF);
 			return ret;
 		}
@@ -72,7 +72,7 @@ u32 Slot1Comp_Rom::read()
 			}
 
 			//actually read from the ROM provider
-			u32 ret = T1ReadLong(MMU.CART_ROM, address);
+			u32 ret = gameInfo.readROM(address);
 
 			//"However, the datastream wraps to the begin of the current 4K block when address+length crosses a 4K boundary (1000h bytes)"
 			address = (address&~0xFFF) + ((address+4)&0xFFF);

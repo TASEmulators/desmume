@@ -934,8 +934,11 @@
 #define IDC_VIEW_PADTOINTEGER           40107
 #define ID_TOOLS_VIEWFSNITRO            40108
 #define ID_EXTRACTFILE                  40109
+#define ID_CONFIG_LOADROMTYPE           40109
 #define ID_EXTRACTALL                   40110
+#define ID_LOADTORAM                    40110
 #define ID_CLOSE                        40111
+#define ID_STREAMFROMDISK               40111
 #define ID_FSNITRO_VIEW                 40112
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
@@ -1043,7 +1046,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40109
+#define _APS_NEXT_COMMAND_VALUE         40111
 #define _APS_NEXT_CONTROL_VALUE         1057
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

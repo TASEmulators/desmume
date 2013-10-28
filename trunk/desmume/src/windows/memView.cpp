@@ -82,7 +82,7 @@ u8 memRead8 (MemRegionType regionType, HWAddressType address)
 		return value;
 	case MEMVIEW_ROM:
 		if (address < gameInfo.romsize)
-			value = MMU.CART_ROM[address];
+			value = gameInfo.romdata[address];
 		return value;
 	case MEMVIEW_FULL:
 		MMU_DumpMemBlock(0, address, 1, &value);
@@ -113,7 +113,7 @@ u16 memRead16 (MemRegionType regionType, HWAddressType address)
 		return value;
 	case MEMVIEW_ROM:
 		if (address < (gameInfo.romsize - 2))
-			value = T1ReadWord(MMU.CART_ROM, address);
+			value = T1ReadWord(gameInfo.romdata, address);
 		return value;
 	case MEMVIEW_FULL:
 		MMU_DumpMemBlock(0, address, 2, (u8*)&value);
@@ -144,7 +144,8 @@ u32 memRead32 (MemRegionType regionType, HWAddressType address)
 		return value;
 	case MEMVIEW_ROM:
 		if (address < (gameInfo.romsize - 4))
-			value = T1ReadLong(MMU.CART_ROM, address);
+			value = T1ReadLong(gameInfo.romdata, address);
+
 		return value;
 	case MEMVIEW_FULL:
 		MMU_DumpMemBlock(0, address, 4, (u8*)&value);
@@ -197,7 +198,7 @@ void memWrite8(MemRegionType regionType, HWAddressType address, u8 value)
 		MMU.fw.data[address] = value;
 		break;
 	case MEMVIEW_ROM:
-		MMU.CART_ROM[address] = value;
+		gameInfo.romdata[address] = value;
 		break;
 	case MEMVIEW_FULL:
 		MMU_write8(ARMCPU_ARM9, address, value);
@@ -220,7 +221,7 @@ void memWrite16(MemRegionType regionType, HWAddressType address, u16 value)
 		*((u16*)&MMU.fw.data[address]) = value;
 		break;
 	case MEMVIEW_ROM:
-		*((u16*)&MMU.CART_ROM[address]) = value;
+		*((u16*)&gameInfo.romdata[address]) = value;
 		break;
 	case MEMVIEW_FULL:
 		MMU_write16(ARMCPU_ARM9, address, value);
@@ -243,7 +244,7 @@ void memWrite32(MemRegionType regionType, HWAddressType address, u32 value)
 		*((u32*)&MMU.fw.data[address]) = value;
 		break;
 	case MEMVIEW_ROM:
-		*((u32*)&MMU.CART_ROM[address]) = value;
+		*((u32*)&gameInfo.romdata[address]) = value;
 		break;
 	case MEMVIEW_FULL:
 		MMU_write32(ARMCPU_ARM9, address, value);
@@ -271,8 +272,9 @@ CMemView::CMemView(MemRegionType memRegion, u32 start_address)
 		s_memoryRegions.push_back(s_arm9Region);
 		s_memoryRegions.push_back(s_arm7Region);
 		s_memoryRegions.push_back(s_firmwareRegion);
-		s_memoryRegions.push_back(s_RomRegion);
 		s_memoryRegions.push_back(s_fullRegion);
+		if (CommonSettings.loadToMemory)
+			s_memoryRegions.push_back(s_RomRegion);
 	}
 
 	PostInitialize();

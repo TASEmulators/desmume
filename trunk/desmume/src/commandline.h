@@ -85,6 +85,7 @@ private:
 	char* _cflash_path;
 	char* _gbaslot_rom;
 	char* _bios_arm9, *_bios_arm7;
+	int _load_to_memory;
 	int _bios_swi;
 	int _spu_advanced;
 	int _num_cores;
