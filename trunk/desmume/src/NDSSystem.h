@@ -137,7 +137,7 @@ struct NDS_header
 	u32		HeaderSize;			// 084 - ROM Header Size (4000h)
 	u32		ARM9module;			// 088 - ARM9 Module Parameter Address (auto-load parameters)
 	u32		ARM7module;			// 08C - ARM7 Module Parameter Address (auto-load parameters)
-	u8		reserved2[58];		// 090 - Must be set to 0x00 - "PASS" is contained within here?
+	u8		reserved2[48];		// 090 - Must be set to 0x00 - "PASS" is contained within here?
 	u8		logo[156];			// 0C0 - Nintendo Logo (compressed bitmap, same as in GBA Headers)
 	u16		logoCRC16;			// 15C - Nintendo Logo Checksum, CRC-16 of [0C0h-15Bh], fixed CF56h
 	u16		headerCRC16;		// 15E - Header Checksum, CRC-16 of [000h-15Dh]
