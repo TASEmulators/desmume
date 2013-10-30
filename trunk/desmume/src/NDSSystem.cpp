@@ -423,8 +423,6 @@ void GameInfo::populate()
 
 }
 
-#ifdef _WINDOWS
-
 static std::vector<char> buffer;
 static std::vector<char> v;
 
@@ -528,7 +526,7 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 {
 	int	type = ROM_NDS;
 
-	path.init(logicalFilename);
+	path.init(logicalFilename? logicalFilename : filename);
 
 	if ( path.isdsgba(path.path)) {
 		type = ROM_DSGBA;
@@ -564,69 +562,6 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 
 	return 1;
 }
-#else
-static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
-{
-	int			ret;
-	int			type;
-	ROMReader_struct	*reader;
-	void			*file;
-	u32			size;
-	char			*noext;
-
-	noext = strdup(filename);
-	reader = ROMReaderInit(&noext);
-	free(noext);
-	
-	if (logicalFilename)
-		path.init(logicalFilename);
-	else
-		path.init(filename);
-
-	if (!strcasecmp(path.extension().c_str(), "zip"))
-		type = ROM_NDS;
-	else if (!strcasecmp(path.extension().c_str(), "nds"))
-		type = ROM_NDS;
-	else if (path.isdsgba(path.path))
-		type = ROM_DSGBA;
-	else
-		type = ROM_NDS;
-
-	file = reader->Init(filename);
-	if (!file)
-	{
-		reader->DeInit(file);
-		return -1;
-	}
-
-	size = reader->Size(file);
-
-	if(type == ROM_DSGBA)
-	{
-		reader->Seek(file, DSGBA_LOADER_SIZE, SEEK_SET);
-		size -= DSGBA_LOADER_SIZE;
-	}
-
-	//check that size is at least the size of the header
-	if (size < 352) {
-		reader->DeInit(file);
-		return -1;
-	}
-
-	// Make sure old ROM is freed first(at least this way we won't be eating
-	// up a ton of ram before the old ROM is freed)
-
-	if(MMU.CART_ROM != MMU.UNUSED_RAM)
-		NDS_FreeROM();
-
-	gameInfo.resize(size);
-	ret = reader->Read(file, gameInfo.romdata, size);
-	gameInfo.fillGap();
-	reader->DeInit(file);
-
-	return ret;
-}
-#endif
 
 int NDS_LoadROM(const char *filename, const char *physicalName, const char *logicalFilename)
 {

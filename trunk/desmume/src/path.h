@@ -118,8 +118,8 @@ public:
 	char pathToLua[MAX_PATH];
 	char pathToSlot1D[MAX_PATH];
 
-	void init(const char *filename) {
-
+	void init(const char *filename) 
+	{
 		path = std::string(filename);
 
 		//extract the internal part of the logical rom name
@@ -430,6 +430,8 @@ public:
 
 	std::string GetRomNameWithoutExtension()
 	{
+		if (RomName.c_str() == NULL)
+			return "";
 		return Path::GetFileNameWithoutExt(RomName);
 	}
 
