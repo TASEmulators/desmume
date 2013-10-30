@@ -180,7 +180,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	}
 	
 	const char *romPath = [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding];
-	NSInteger resultCode = NDS_LoadROM(romPath, nil);
+	NSInteger resultCode = NDS_LoadROM(romPath, NULL, NULL);
 	if (resultCode > 0)
 	{
 		result = YES;

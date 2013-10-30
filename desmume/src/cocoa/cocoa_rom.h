@@ -39,11 +39,13 @@
 @property (readonly) NSMutableDictionary *header;
 @property (readonly) NSMutableDictionary *bindings;
 @property (readonly) NSURL *fileURL;
+@property (assign) BOOL willStreamLoadData;
 @property (readonly) BOOL isDataLoaded;
 @property (assign) NSInteger saveType;
 
 - (id) initWithURL:(NSURL *)theURL;
 - (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID;
+- (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID streamLoadData:(BOOL)willStreamLoad;
 - (void) initHeader;
 - (BOOL) loadData:(NSURL *)theURL;
 - (void) loadDataOnThread:(id)object;
