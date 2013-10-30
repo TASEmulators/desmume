@@ -32,6 +32,7 @@
 @synthesize header;
 @synthesize bindings;
 @synthesize fileURL;
+@dynamic willStreamLoadData;
 @dynamic isDataLoaded;
 @synthesize saveType;
 
@@ -48,6 +49,11 @@ static NSMutableDictionary *saveTypeValues = nil;
 }
 
 - (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID
+{
+	return [self initWithURL:theURL saveType:ROMSAVETYPE_AUTOMATIC streamLoadData:NO];
+}
+
+- (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID streamLoadData:(BOOL)willStreamLoad
 {
 	self = [super init];
 	if (self == nil)
@@ -94,6 +100,8 @@ static NSMutableDictionary *saveTypeValues = nil;
 	xmlElementStack = [[NSMutableArray alloc] initWithCapacity:32];
 	xmlCharacterStack = [[NSMutableArray alloc] initWithCapacity:32];
 	
+	[self setWillStreamLoadData:willStreamLoad];
+	
 	if (theURL != nil)
 	{
 		[self loadData:theURL];
@@ -118,9 +126,19 @@ static NSMutableDictionary *saveTypeValues = nil;
 	[super dealloc];
 }
 
+- (void) setWillStreamLoadData:(BOOL)theState
+{
+	CommonSettings.loadToMemory = (theState) ? false : true;
+}
+
+- (BOOL) willStreamLoadData
+{
+	return (CommonSettings.loadToMemory ? NO : YES);
+}
+
 - (BOOL) isDataLoaded
 {
-	return (MMU.CART_ROM != MMU.UNUSED_RAM);
+	return (gameInfo.romdata != NULL);
 }
 
 - (void) initHeader
@@ -171,7 +189,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->FATOff] forKey:@"fatOffset"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->FATSize] forKey:@"fatSize"];
 		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->IconOff] forKey:@"iconOffset"];
-		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->ROMSize] forKey:@"usedRomSize"];
+		[self.header setValue:[NSNumber numberWithInteger:ndsRomHeader->endROMoffset] forKey:@"usedRomSize"];
 		
 		[self.bindings setValue:[self.header objectForKey:@"gameTitle"] forKey:@"gameTitle"];
 		[self.bindings setValue:[self.header objectForKey:@"gameCode"] forKey:@"gameCode"];
@@ -572,8 +590,7 @@ static NSMutableDictionary *saveTypeValues = nil;
  ********************************************************************************************/
 void RomIconToRGBA8888(uint32_t *bitmapData)
 {
-	const NDS_header *ndsRomHeader = NDS_getROMHeader();	// Contains the memory addresses we need to get our read pointer locations.
-	int iconOffset;					// Memory location offset for the ROM icon data.
+	const RomBanner &ndsRomBanner = gameInfo.getRomBanner(); // Contains the memory addresses we need to get our read pointer locations.
 	const uint16_t *iconClutPtr;	// Read pointer for the icon's CLUT.
 	const uint32_t *iconPixPtr;		// Read pointer for the icon's pixel data.
 	
@@ -591,16 +608,15 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 		return;
 	}
 	
-	if (ndsRomHeader == NULL)
+	if (&ndsRomBanner == NULL)
 	{
 		memset(bitmapData, 0, 4096); // 4096 bytes = 32px * 32px * sizeof(uint32_t)
 		return;
 	}
 	
-	// Set all of our pointers relative to iconOffset.
-	iconOffset = ndsRomHeader->IconOff;
-	iconClutPtr = (uint16_t *)&MMU.CART_ROM[iconOffset + 0x220] + 1;
-	iconPixPtr = (uint32_t *)&MMU.CART_ROM[iconOffset + 0x20];
+	// Set all of our icon read pointers.
+	iconClutPtr = (uint16_t *)ndsRomBanner.palette + 1;
+	iconPixPtr = (uint32_t *)ndsRomBanner.bitmap;
 	
 	// Setup the 4-bit CLUT.
 	//

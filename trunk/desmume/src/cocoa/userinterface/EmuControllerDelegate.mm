@@ -1408,6 +1408,7 @@
 		[self setIsRomLoading:YES];
 		[romURL retain];
 		[newRom setSaveType:selectedRomSaveTypeID];
+		[newRom setWillStreamLoadData:[[NSUserDefaults standardUserDefaults] boolForKey:@"General_StreamLoadRomData"]];
 		[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
 		[romURL release];
 	}
@@ -1423,7 +1424,7 @@
 	NSDictionary *userInfo = [aNotification userInfo];
 	const BOOL didLoad = [(NSNumber *)[userInfo valueForKey:@"DidLoad"] boolValue];
 	
-	if (theRom == nil || ![theRom isDataLoaded] || !didLoad)
+	if ( theRom == nil || !didLoad || (![theRom willStreamLoadData] && ![theRom isDataLoaded]) )
 	{
 		// If ROM loading fails, restore the core state, but only if a ROM is already loaded.
 		if([self currentRom] != nil)
