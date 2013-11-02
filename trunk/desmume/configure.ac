@@ -260,6 +260,7 @@ case $host in
     AC_DEFINE(HAVE_OPENAL)
     LIBS="$LIBS -framework OpenGL -framework OpenAL"
     CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers"
+	AC_SUBST(CPPFLAGS)
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;
