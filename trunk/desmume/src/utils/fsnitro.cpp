@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <string>
-#ifdef _MSC_VER
+#ifdef HOST_WINDOWS 
 #include <direct.h>
 #include <windows.h>
 #define __mkdir(x) mkdir(x)
@@ -32,7 +32,7 @@
 
 using namespace std;
 
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 #define FS_DIRECTORY_DELIMITER_CHAR	"\\"
 #else
 #define FS_DIRECTORY_DELIMITER_CHAR	"/"

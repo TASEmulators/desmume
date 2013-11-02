@@ -62,7 +62,7 @@ CommandLine::CommandLine()
 , start_paused(FALSE)
 , autodetect_method(-1)
 {
-#ifndef _MSC_VER
+#ifndef HOST_WINDOWS 
 	disable_sound = 0;
 	disable_limiter = 0;
 #endif
@@ -108,7 +108,7 @@ void CommandLine::loadCommonOptions()
 		{ "cpu-mode", 0, 0, G_OPTION_ARG_INT, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
 		{ "jit-size", 0, 0, G_OPTION_ARG_INT, &_jit_size, "ARM JIT block size: 1..100 (1 - accuracy, 100 - faster) (default 100)", NULL},
 #endif
-#ifndef _MSC_VER
+#ifndef HOST_WINDOWS 
 		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
 		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
 		{ "nojoy", 0, 0, G_OPTION_ARG_INT, &_commandline_linux_nojoy, "Disables joystick support", "NOJOY"},

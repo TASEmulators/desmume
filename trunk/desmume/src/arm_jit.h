@@ -20,7 +20,7 @@
 #define ARM_JIT
 
 #include "types.h"
-#ifndef _MSC_VER
+#ifndef _MSC_VER 
 #include <stdint.h>
 #endif
 
@@ -31,7 +31,7 @@ void arm_jit_close();
 void arm_jit_sync();
 template<int PROCNUM> u32 arm_jit_compile();
 
-#if defined(_WINDOWS) || defined(DESMUME_COCOA)
+#if defined(HOST_WINDOWS) || defined(HOST_DARWIN)
 #define MAPPED_JIT_FUNCS
 #endif
 #ifdef MAPPED_JIT_FUNCS

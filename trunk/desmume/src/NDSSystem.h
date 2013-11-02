@@ -30,10 +30,11 @@
 #include "emufile.h"
 #include "firmware.h"
 #include "types.h"
+#include "utils/task.h"
 
 #include <string>
 
-#if defined(_WINDOWS)
+#if defined(HOST_WINDOWS)
 #include "pathsettings.h"
 #endif
 
@@ -507,7 +508,6 @@ extern struct TCommonSettings {
 		, DebugConsole(false)
 		, EnsataEmulation(false)
 		, cheatsDisable(false)
-		, num_cores(1)
 		, rigorous_timing(false)
 		, advanced_timing(true)
 		, micMode(InternalNoise)
@@ -542,6 +542,8 @@ extern struct TCommonSettings {
 #else
 		use_jit = false;
 #endif
+
+		num_cores = getOnlineCores();
 	}
 	bool GFX3D_HighResolutionInterpolateColor;
 	bool GFX3D_EdgeMark;

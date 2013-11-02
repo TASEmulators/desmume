@@ -260,11 +260,26 @@ case $host in
     AC_DEFINE(HAVE_OPENAL)
     LIBS="$LIBS -framework OpenGL -framework OpenAL"
     CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers"
-    AC_SUBST(CPPFLAGS)
     dnl - extra hackery needed for X includes
     AC_PATH_XTRA
     ;;
 esac
+
+# Detect the host platform and architecture and feed them to the compiler as
+# defines
+AS_CASE([$host],
+		[*linux*], [AC_DEFINE(HOST_LINUX)],
+		[*bsd*]  , [AC_DEFINE(HOST_BSD)],
+		[*mingw*], [AC_DEFINE(HOST_WINDOWS)],
+		[*darwin*],[AC_DEFINE(HOST_DARWIN)],
+		[AC_DEFINE(HOST_UNK)]
+)
+
+AS_CASE([$host_cpu],
+		[x86_64], [AC_DEFINE(HOST_64)],
+		[amd64],  [AC_DEFINE(HOST_64)],
+		[AC_DEFINE(HOST_32)]
+)
 
 AC_SUBST(UI_DIR)
 AC_SUBST(PO_DIR)

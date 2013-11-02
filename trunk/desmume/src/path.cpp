@@ -29,7 +29,7 @@ static const char InvalidPathChars[] = {
 	'\x13', '\x14', '\x15', '\x16', '\x17', '\x18', '\x19', '\x1A', '\x1B', '\x1C', '\x1D', 
 	'\x1E', '\x1F'
 	//but I added this
-	#ifdef _WINDOWS
+	#ifdef HOST_WINDOWS
 	,'\x2F'
 	#endif
 };
@@ -145,7 +145,7 @@ std::string Path::GetFileExt(std::string fileName)
 }
 
 //-----------------------------------
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 void FCEUD_MakePathDirs(const char *fname)
 {
 	char path[MAX_PATH];

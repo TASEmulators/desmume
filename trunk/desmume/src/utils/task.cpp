@@ -19,13 +19,38 @@
 #include "task.h"
 #include <stdio.h>
 
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 #include <windows.h>
 #else
 #include <pthread.h>
+#if defined HOST_LINUX || defined HOST_DARWIN
+#include <unistd.h>
+#elif defined HOST_BSD
+#include <sys/sysctl.h>
 #endif
+#endif // HOST_WINDOWS
 
-#ifdef _MSC_VER
+// http://stackoverflow.com/questions/150355/programmatically-find-the-number-of-cores-on-a-machine
+int getOnlineCores (void)
+{
+#ifdef HOST_WINDOWS
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	return sysinfo.dwNumberOfProcessors;
+#elif defined HOST_LINUX || defined HOST_DARWIN
+	return sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined HOST_BSD
+	int cores;
+	const int mib[4] = { CTL_HW, HW_NCPU, 0, 0 };
+	const size_t len = sizeof(cores);
+	sysctl(mib, 2, &cores, &len, NULL, 0);
+	return (cores < 1) ? 1 : cores;
+#else
+	return 1;
+#endif
+}
+
+#ifdef HOST_WINDOWS
 class Task::Impl {
 public:
 	Impl();

@@ -19,7 +19,7 @@
 #ifndef _VIDEOFILTER_
 #define _VIDEOFILTER_
 
-#if defined(_MSC_VER)
+#ifdef HOST_WINDOWS
 	typedef unsigned __int32 uint32_t;
 	#include <windows.h>
 	typedef CRITICAL_SECTION ThreadLock;

@@ -770,7 +770,7 @@ static void* RunVideoFilterTask(void *arg)
 	return NULL;
 }
 
-#ifdef _MSC_VER
+#ifdef HOST_WINDOWS 
 void ThreadLockInit(ThreadLock *theLock)
 {
 	InitializeCriticalSection(theLock);

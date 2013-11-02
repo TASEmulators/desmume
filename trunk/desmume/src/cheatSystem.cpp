@@ -23,7 +23,7 @@
 #include "debug.h"
 #include "utils/xstring.h"
 
-#ifndef _MSC_VER
+#ifndef _MSC_VER 
 #include <stdint.h>
 #endif
 
