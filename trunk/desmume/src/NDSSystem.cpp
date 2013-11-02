@@ -506,6 +506,7 @@ void GameInfo::closeROM()
 
 u32 GameInfo::readROM(u32 pos)
 {
+	//TODO - this should not be done here! it's a property of the slot-1 device, not the rom!
 	if ((pos < 0x8000) && (pos >= 0x4000))
 		return *(u32*)(secureArea + (pos - 0x4000));
 
