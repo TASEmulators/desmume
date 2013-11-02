@@ -92,7 +92,7 @@ public:
 };
 extern BaseDriver* driver;
 
-#ifndef _WINDOWS
+#ifndef HOST_WINDOWS
 class UnixDriver : public BaseDriver
 {
 #ifdef EXPERIMENTAL_WIFI_COMM

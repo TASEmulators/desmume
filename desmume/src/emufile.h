@@ -37,7 +37,7 @@ THE SOFTWARE.
 
 #include "emufile_types.h"
 
-#ifdef _MSC_VER
+#ifdef HOST_WINDOWS 
 #include <io.h>
 #else
 #include <unistd.h>

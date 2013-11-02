@@ -47,7 +47,7 @@
 
 #include "path.h"
 
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 #include "windows/main.h"
 #endif
 

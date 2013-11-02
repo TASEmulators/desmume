@@ -33,7 +33,7 @@
 #include <math.h>
 #include <string.h>
 
-#ifndef _MSC_VER
+#ifndef _MSC_VER 
 #include <stdint.h>
 #endif
 
@@ -1099,9 +1099,11 @@ static char SoftRastInit(void)
 		_HACK_viewer_rasterizerUnit.SLI_VALUE = 0;
 
 		rasterizerCores = CommonSettings.num_cores;
+
 		if (rasterizerCores > _MAX_CORES) 
 			rasterizerCores = _MAX_CORES;
-		if(CommonSettings.num_cores <= 1)
+
+		if(CommonSettings.num_cores == 1)
 		{
 			rasterizerCores = 1;
 			rasterizerUnit[0].SLI_MASK = 0;

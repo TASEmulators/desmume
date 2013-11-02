@@ -21,7 +21,7 @@
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
-#define _WINDOWS
+#define HOST_WINDOWS
 //todo - everyone will want to support this eventually, i suppose
 #include "config.h"
 #endif
@@ -37,7 +37,7 @@
 #define IF_DEVELOPER(X)
 #endif
 
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 	#define HAVE_LIBAGG
 	#define ENABLE_SSE
 	#define ENABLE_SSE2

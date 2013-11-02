@@ -1317,7 +1317,7 @@ struct TSequenceItem_divider : public TSequenceItem
 	{
 		IF_DEVELOPER(DEBUG_statistics.sequencerExecutionCounters[2]++);
 		MMU_new.div.busy = 0;
-#ifdef _WIN64
+#ifdef HOST_64 
 		T1WriteQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, MMU.divResult);
 		T1WriteQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, MMU.divMod);
 #else

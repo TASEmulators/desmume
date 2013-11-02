@@ -17,25 +17,25 @@
 
 #include <string>
 
-#ifdef _MSC_VER
+#ifdef HOST_WINDOWS 
 #define mkdir _mkdir
 #endif
 
-#if defined(_WINDOWS)
+#if defined(HOST_WINDOWS)
 #include <winsock2.h>
 #include <windows.h>
 #include <direct.h>
 #include "winutil.h"
 #include "common.h"
 #include "resource.h"
-#elif !defined(DESMUME_COCOA)
+#elif !defined(HOST_DARWIN)
 #include <glib.h>
-#endif /* _WINDOWS */
+#endif /* HOST_WINDOWS */
 
 #include "time.h"
 #include "utils/xstring.h"
 
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 #define FILE_EXT_DELIMITER_CHAR		'.'
 #define DIRECTORY_DELIMITER_CHAR	'\\'
 #define ALL_DIRECTORY_DELIMITER_STRING "/\\"
@@ -45,7 +45,7 @@
 #define ALL_DIRECTORY_DELIMITER_STRING "/"
 #endif
 
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 void FCEUD_MakePathDirs(const char *fname);
 #endif
 
@@ -126,7 +126,7 @@ public:
 		std::vector<std::string> parts = tokenize_str(filename,"|");
 		SetRomName(parts[parts.size()-1].c_str());
 		LoadModulePath();
-#if !defined(WIN32) && !defined(DESMUME_COCOA)
+#if !defined(WIN32) && !defined(HOST_DARWIN)
 		ReadPathSettings();
 #endif
 		
@@ -134,7 +134,7 @@ public:
 
 	void LoadModulePath()
 	{
-#if defined(_WINDOWS)
+#if defined(HOST_WINDOWS)
 
 		char *p;
 		ZeroMemory(pathToModule, sizeof(pathToModule));
@@ -149,7 +149,7 @@ public:
 		{
 			strcpy(pathToModule,_hack_alternateModulePath);
 		}
-#elif defined(DESMUME_COCOA)
+#elif defined(HOST_DARWIN)
 		std::string pathStr = Path::GetFileDirectoryPath(path);
 
 		strncpy(pathToModule, pathStr.c_str(), MAX_PATH);
@@ -169,7 +169,7 @@ public:
 
 	void GetDefaultPath(char *pathToDefault, const char *key, int maxCount)
 	{
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 		std::string temp = (std::string)"." + DIRECTORY_DELIMITER_CHAR + pathToDefault;
 		strncpy(pathToDefault, temp.c_str(), maxCount);
 #else
@@ -179,7 +179,7 @@ public:
 
 	void ReadKey(char *pathToRead, const char *key)
 	{
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 		GetPrivateProfileString(SECTION, key, key, pathToRead, MAX_PATH, IniName);
 		if(strcmp(pathToRead, key) == 0) {
 			//since the variables are all intialized in this file they all use MAX_PATH
@@ -206,7 +206,7 @@ public:
 		ReadKey(pathToFirmware, FIRMWAREKEY);
 		ReadKey(pathToLua, LUAKEY);
 		ReadKey(pathToSlot1D, SLOT1DKEY);
-#ifdef _WINDOWS
+#ifdef HOST_WINDOWS
 		GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 		currentimageformat	= (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
@@ -282,7 +282,7 @@ public:
 			}
 
 			strncpy(buffer, thePath.c_str(), MAX_PATH);
-			#ifdef _WINDOWS
+			#ifdef HOST_WINDOWS
 			FCEUD_MakePathDirs(buffer);
 			#endif
 		}
