@@ -21,10 +21,18 @@
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
-#define HOST_WINDOWS
-//todo - everyone will want to support this eventually, i suppose
-#include "config.h"
-#endif
+	#define HOST_WINDOWS
+	
+	#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) 
+		#define HOST_64
+	#else
+		#define HOST_32
+	#endif
+	
+	//todo - everyone will want to support this eventually, i suppose
+	#include "config.h"
+
+#endif //_MSC_VER
 
 //enforce a constraint: gdb stub requires developer
 #if defined(GDB_STUB) && !defined(DEVELOPER)

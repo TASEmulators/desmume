@@ -17,11 +17,13 @@
 */
 
 #include "types.h"
+
 #ifdef HAVE_JIT
 #if !defined(HOST_32) && !defined(HOST_64)
 #error "ERROR: JIT compiler - unsupported target platform"
 #endif
-#ifdef _WINDOWS
+
+#ifdef HOST_WINDOWS
 // **** Windows port
 #else
 #include <sys/mman.h>
@@ -30,6 +32,7 @@
 #include <stddef.h>
 #define HAVE_STATIC_CODE_BUFFER
 #endif
+
 #include "instructions.h"
 #include "instruction_attributes.h"
 #include "Disassembler.h"

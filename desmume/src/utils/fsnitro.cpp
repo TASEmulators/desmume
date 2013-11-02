@@ -15,6 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "types.h"
+
 #include <stdio.h>
 #include <string>
 #ifdef HOST_WINDOWS 
