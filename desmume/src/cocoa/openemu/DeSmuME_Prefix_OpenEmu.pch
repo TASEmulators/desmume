@@ -19,6 +19,7 @@
 	#define OBJ_C
 #endif
 
+#define HOST_DARWIN
 #define DESMUME_COCOA
 #define HAVE_OPENGL
 #define HAVE_LIBZ

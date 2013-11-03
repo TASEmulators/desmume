@@ -28,7 +28,7 @@
 #include "winutil.h"
 #include "common.h"
 #include "resource.h"
-#elif !defined(HOST_DARWIN)
+#elif !defined(DESMUME_COCOA)
 #include <glib.h>
 #endif /* HOST_WINDOWS */
 
@@ -126,7 +126,7 @@ public:
 		std::vector<std::string> parts = tokenize_str(filename,"|");
 		SetRomName(parts[parts.size()-1].c_str());
 		LoadModulePath();
-#if !defined(WIN32) && !defined(HOST_DARWIN)
+#if !defined(WIN32) && !defined(DESMUME_COCOA)
 		ReadPathSettings();
 #endif
 		
@@ -149,7 +149,7 @@ public:
 		{
 			strcpy(pathToModule,_hack_alternateModulePath);
 		}
-#elif defined(HOST_DARWIN)
+#elif defined(DESMUME_COCOA)
 		std::string pathStr = Path::GetFileDirectoryPath(path);
 
 		strncpy(pathToModule, pathStr.c_str(), MAX_PATH);
