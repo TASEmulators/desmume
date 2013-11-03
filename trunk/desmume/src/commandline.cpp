@@ -81,8 +81,8 @@ void CommandLine::loadCommonOptions()
 	//but also see the gtk port for an example of how to combine this with other options
 	//(you may need to use ifdefs to cause options to be entered in the desired order)
 	static const GOptionEntry options[] = {
-		{ "load-type", 0, 0, G_OPTION_ARG_INT, &_load_to_memory, "Load ROM type, 0 - stream from disk, 1 - to RAM (default 1)", "LOAD_TYPE"},
-		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savegame from slot NUM", "NUM"},
+		{ "load-type", 0, 0, G_OPTION_ARG_INT, &_load_to_memory, "ROM loading method, 0 - stream from disk (like an iso), 1 - load entirely to RAM (default 1)", "LOAD_TYPE"},
+		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savestate from slot NUM", "NUM"},
 		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
 		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},
 		{ "start-paused", 0, 0, G_OPTION_ARG_NONE, &start_paused, "Indicates that emulation should start paused", "START_PAUSED"},
@@ -100,7 +100,7 @@ void CommandLine::loadCommonOptions()
 		{ "scanline-filter-d", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_d, "Intensity of fadeout for scanlines filter (bottomright) (default 4)", "SCANLINE_FILTER_D"},
 		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
 		{ "advanced-timing", 0, 0, G_OPTION_ARG_INT, &_advanced_timing, "Use advanced BUS-level timing (default 1)", "ADVANCED_TIMING"},
-		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to load in slot 1 (default retail)", "SLOT1"},
+		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to mount in slot 1 (default retail)", "SLOT1"},
 		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },

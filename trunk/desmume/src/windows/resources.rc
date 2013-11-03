@@ -18,6 +18,7 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
 #endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
@@ -30,7 +31,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTI
 CAPTION "NITRO File System"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_FILES_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_DISABLEDRAGDROP | TVS_SHOWSELALWAYS | TVS_INFOTIP | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,7,359,294
+    CONTROL         "",IDC_FILES_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_DISABLEDRAGDROP | TVS_SHOWSELALWAYS | WS_BORDER | WS_HSCROLL | WS_TABSTOP | 0x800,7,7,359,294
     PUSHBUTTON      "Close",IDCANCEL,316,320,50,14
     EDITTEXT        IDC_FILE_INFO,8,322,306,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
     LTEXT           "Static",IDC_FILE_QVIEW,7,303,359,15,NOT WS_GROUP
@@ -1659,10 +1660,10 @@ BEGIN
             MENUITEM "Internal",                    IDM_AUTODETECTSAVETYPE_INTERNAL
             MENUITEM "From database",               IDM_AUTODETECTSAVETYPE_FROMDATABASE
         END
-        POPUP "&Load ROM Type"
+        POPUP "&ROM Loading"
         BEGIN
-            MENUITEM "Load to &RAM (fastest, more RAM)", ID_LOADTORAM
-            MENUITEM "Stream from &Disk",           ID_STREAMFROMDISK
+            MENUITEM "&Load entirely to RAM (long start-up time, high RAM usage)", ID_LOADTORAM
+            MENUITEM "&Stream from Disk (like an ISO, instant start-up, no RAM usage)", ID_STREAMFROMDISK
         END
         MENUITEM "&Control Config",             IDM_CONFIG
         MENUITEM "&Hotkey Config",              IDM_HOTKEY_CONFIG
