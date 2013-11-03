@@ -2529,11 +2529,23 @@
 			>
 		</File>
 		<File
+			RelativePath=".\bitmaps\FileBinary.ico"
+			>
+		</File>
+		<File
 			RelativePath="..\firmware.cpp"
 			>
 		</File>
 		<File
 			RelativePath="..\firmware.h"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\FolderClosed.ico"
+			>
+		</File>
+		<File
+			RelativePath=".\bitmaps\FolderOpen.ico"
 			>
 		</File>
 		<File
