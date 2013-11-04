@@ -24,17 +24,9 @@
 #include "../OGLRender.h"
 #include "osmesa_3Demu.h"
 
-static bool osmesa_beginOpenGL(void) {
-  return 1;
-}
-
-static void osmesa_endOpenGL(void) {
-}
-
-static bool osmesa_init(void) {
-
-  return true;
-}
+static bool osmesa_beginOpenGL(void) { return 1; }
+static void osmesa_endOpenGL(void) { }
+static bool osmesa_init(void) { return true; }
 
 int init_osmesa_3Demu(void) {
   void * buffer;
