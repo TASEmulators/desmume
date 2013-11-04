@@ -65,7 +65,7 @@ fi
 
 dnl - Check for the OpenGL includes
 AC_CHECK_HEADERS([GL/gl.h],
-		 [AC_CHECK_HEADERS([GL/glu.h], [have_gl_h=yes LIBS="$LIBS -lGLU"], [have_gl_h=no])],
+		 [AC_CHECK_HEADERS([GL/glu.h], [have_gl_h=yes LIBS="$LIBS -lGL -lGLU"], [have_gl_h=no])],
 		 [have_gl_h=no])
 if test "have_gl_h" = "no" ; then
 	AC_MSG_WARN([Building without GL support because of missing headers.])
@@ -76,7 +76,13 @@ dnl - if --enable-osmesa is used, check for it
 AC_ARG_ENABLE([osmesa],
                [AC_HELP_STRING([--enable-osmesa], [use off-screen mesa])],
                [osmesa=$enableval],
-               [osmesa=yes])
+               [osmesa=no])
+
+dnl - GLX is the default renderer
+AC_ARG_ENABLE([glx],
+               [AC_HELP_STRING([--enable-glx], [use hw accelerated rendering])],
+               [glx=$enableval],
+               [glx=yes])
 
 if test "x$osmesa" = "xyes" ; then
 	AC_CHECK_LIB(dl, main)
@@ -87,8 +93,20 @@ if test "x$osmesa" = "xyes" ; then
 		OSMESA_LIBS="-lOSMesa"
 		AC_SUBST(OSMESA_LIBS)
 	])
+else
+  if test "x$glx" = "xyes" ; then
+	AC_CHECK_LIB(dl, main)
+	AC_CHECK_LIB([GL], main)
+	AC_CHECK_HEADERS([GL/glx.h], [
+	  useglx=yes
+	  AC_DEFINE(HAVE_GL_GLX)
+	  GLX_LIBS="-lX11"
+	  AC_SUBST(GLX_LIBS)
+	])
+  fi
 fi
-AM_CONDITIONAL([HAVE_LIBOSMESA], [test "${useosmesa}" = "yes"])
+AM_CONDITIONAL([HAVE_LIBOSMESA],  [test "${useosmesa}" = "yes"])
+AM_CONDITIONAL([HAVE_GL_GLX],	  [test "${useglx}" = "yes"])
 
 dnl - make the usage of libagg for HUD rendering configurable
 AC_ARG_ENABLE([hud],

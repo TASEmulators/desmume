@@ -59,11 +59,12 @@
 #include "gdbstub.h"
 #endif
 
-#ifdef HAVE_LIBOSMESA
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "OGLRender.h"
 #include "osmesa_3Demu.h"
+#include "glx_3Demu.h"
 #endif
 
 #include "DeSmuME.xpm"
@@ -461,7 +462,7 @@ NULL
 GPU3DInterface *core3DList[] = {
   &gpu3DNull,
   &gpu3DRasterize
-#if defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
   ,
   &gpu3Dgl
 #endif
@@ -528,8 +529,8 @@ fill_configured_features( class configured_features *config,
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"
-#ifdef HAVE_LIBOSMESA
-        "\t\t\t\t  2 = osmesa opengl\n"
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+        "\t\t\t\t  2 = opengl\n"
 #endif
         ,"ENGINE"},
     { "save-type", 0, 0, G_OPTION_ARG_INT, &config->savetype, "Select savetype from the following:\n"
@@ -572,12 +573,12 @@ fill_configured_features( class configured_features *config,
   }
 
   if (config->engine_3d != 0 && config->engine_3d != 1
-#if defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
            && config->engine_3d != 2
 #endif
           ) {
     g_printerr("Currently available ENGINES: 0, 1"
-#if defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
             ", 2"
 #endif
             "\n");
@@ -2376,9 +2377,15 @@ common_gtk_main( class configured_features *my_config)
     //Set the 3D emulation to use
     unsigned core = my_config->engine_3d;
     // setup the gdk 3D emulation;
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+    if(my_config->engine_3d == 2)
+    {
 #if defined(HAVE_LIBOSMESA)
-    if(my_config->engine_3d == 2){
-        core = init_osmesa_3Demu() ? 2 : GPU3D_NULL;
+        core = init_osmesa_3Demu()
+#elif defined(HAVE_GL_GLX)
+        core = init_glx_3Demu()
+#endif
+        ? 2 : GPU3D_NULL;
     }
 #endif
     NDS_3D_ChangeCore(core);

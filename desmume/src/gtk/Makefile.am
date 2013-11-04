@@ -17,6 +17,7 @@ desmume_SOURCES = \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	../driver.h ../driver.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
+	glx_3Demu.cpp glx_3Demu.h \
 	cheatsGTK.h cheatsGTK.cpp \
 	../filter/hq2x.cpp ../filter/hq2x.h \
 	../filter/hq4x.cpp ../filter/hq4x.h \
@@ -32,6 +33,10 @@ desmume_LDADD += ../gdbstub/libgdbstub.a
 endif
 if HAVE_LIBOSMESA
 desmume_LDADD += $(OSMESA_LIBS)
+else
+if HAVE_GL_GLX
+desmume_LDADD += $(GLX_LIBS)
+endif
 endif
 
 UPDATE_DESKTOP = \
