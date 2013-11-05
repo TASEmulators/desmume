@@ -137,17 +137,17 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 			if (!tmp_fat_path_type)
 			{
-				CheckDlgButton(dialog, IDC_RFOLDER, BST_CHECKED);
+				CheckDlgButton(dialog, IDC_R4_FOLDER, BST_CHECKED);
 				EnableWindow(GetDlgItem(dialog, IDC_BROWSE), true);
 				EnableWindow(GetDlgItem(dialog, IDC_PATH), true);
 			}
 			else
 			{
-				CheckDlgButton(dialog, IDC_PATHDESMUME, BST_CHECKED);
+				CheckDlgButton(dialog, IDC_R4_ROM, BST_CHECKED);
 				EnableWindow(GetDlgItem(dialog, IDC_BROWSE), false);
 				EnableWindow(GetDlgItem(dialog, IDC_PATH), false);
 			}
-			return TRUE;
+			return FALSE;
 		}
 
 		case WM_COMMAND:
@@ -182,13 +182,13 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					break;
 				}
 
-				case IDC_RFOLDER:
+				case IDC_R4_FOLDER:
 					EnableWindow(GetDlgItem(dialog, IDC_BROWSE), true);
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), true);
 					tmp_fat_path_type = false;
 					return TRUE;
 
-				case IDC_PATHDESMUME:
+				case IDC_R4_ROM:
 					EnableWindow(GetDlgItem(dialog, IDC_BROWSE), false);
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), false);
 					tmp_fat_path_type = true;
@@ -310,6 +310,7 @@ void slot1Dialog(HWND hwnd)
 	tmp_fat_path_type = slot1_R4_path_type;
 	_OKbutton_slot1 = false;
 	needReset_slot1 = true;
+
 	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_SLOT1CONFIG), hwnd, (DLGPROC)Slot1Box_Proc);
 	if (res)
 	{
@@ -325,13 +326,16 @@ void slot1Dialog(HWND hwnd)
 			case NDS_SLOT1_RETAIL_MCROM:
 				break;
 			case NDS_SLOT1_R4:
-				if (strlen(tmp_fat_path))
+				WritePrivateProfileBool("Slot1","FAT_path_type",tmp_fat_path_type,IniName);
+				if (tmp_fat_path_type)
 				{
-					slot1_SetFatDir(tmp_fat_path);
+					slot1_SetFatDir(slot1_GetFatDir(), true);
+				}
+				else
+				{
+					slot1_SetFatDir(tmp_fat_path, false);
 					WritePrivateProfileString("Slot1","FAT_path",tmp_fat_path,IniName);
 				}
-				WritePrivateProfileBool("Slot1","FAT_path_type",tmp_fat_path_type,IniName);
-				slot1_R4_path_type = tmp_fat_path_type;
 				break;
 			case NDS_SLOT1_RETAIL_NAND:
 				break;

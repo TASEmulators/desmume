@@ -270,13 +270,6 @@ void debug()
 	//if((NDS_ARM9.R[15]>>28)) emu_halt();
 }
 
-#define DSGBA_LOADER_SIZE 512
-enum
-{
-	ROM_NDS = 0,
-	ROM_DSGBA
-};
-
 #if 0 /* not used */
 //http://www.aggregate.org/MAGIC/#Population%20Count%20(Ones%20Count)
 static u32 ones32(u32 x)
@@ -547,6 +540,8 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 		return -1;
 	}
 
+	gameInfo.romType = type;
+
 	return 1;
 }
 
@@ -600,29 +595,17 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	//		gameInfo.chipID |= (0x40 << 24);
 	gameInfo.chipID |= (0x00 << 24);
 
-	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
-	INFO("ROM crc: %08X\n", gameInfo.crc);
-	INFO("ROM serial: %s\n", gameInfo.ROMserial);
-	INFO("ROM chipID: %08X\n", gameInfo.chipID);
-	INFO("ROM internal name: %s\n", gameInfo.ROMname);
-	if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
-	INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
+	if (gameInfo.romType == ROM_NDS)
+	{
+		INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
+		INFO("ROM crc: %08X\n", gameInfo.crc);
+		INFO("ROM serial: %s\n", gameInfo.ROMserial);
+		INFO("ROM chipID: %08X\n", gameInfo.chipID);
+		INFO("ROM internal name: %s\n", gameInfo.ROMname);
+		if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
+		INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
+	}
 
-#if 1
-	u32 mask = gameInfo.header.endROMoffset - 1;
-	mask |= (mask >> 1);
-	mask |= (mask >> 2);
-	mask |= (mask >> 4);
-	mask |= (mask >> 8);
-	mask |= (mask >> 16);
-
-	printf("======================================================================\n");
-	printf("card size    %10u (%08Xh) mask %08Xh\n", gameInfo.cardSize, gameInfo.cardSize, gameInfo.mask);
-	printf("file size    %10u (%08Xh)\n", gameInfo.romsize, gameInfo.romsize);
-	printf("endROMoffset %10u (%08Xh) mask %08Xh\n", gameInfo.header.endROMoffset, gameInfo.header.endROMoffset, mask);
-	printf("======================================================================\n");
-#endif
-	
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);
 	strcat(buf, "desmume.ddb");							// DeSmuME database	:)

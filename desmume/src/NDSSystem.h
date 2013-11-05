@@ -86,6 +86,13 @@ extern BOOL click;
 
 extern CFIRMWARE	*firmware;
 
+#define DSGBA_LOADER_SIZE 512
+enum
+{
+	ROM_NDS = 0,
+	ROM_DSGBA
+};
+
 //#define LOG_ARM9
 //#define LOG_ARM7
 
@@ -332,6 +339,7 @@ struct GameInfo
 	u32 crc;
 	u32 chipID;
 	u32 lastReadPos;
+	u32	romType;
 	char ROMserial[20];
 	char ROMname[20];
 	bool _isDSiEnhanced;
@@ -350,6 +358,7 @@ struct GameInfo
 					cardSize(0),
 					mask(0),
 					lastReadPos(0xFFFFFFFF),
+					romType(ROM_NDS),
 					_isDSiEnhanced(false)
 	{
 		memset(&header, 0, sizeof(header));
