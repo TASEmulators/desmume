@@ -50,6 +50,7 @@ public:
 	std::string slot1;
 	std::string console_type;
 	std::string slot1_fat_dir;
+	bool _slot1_fat_dir_type;
 #ifndef HOST_WINDOWS 
 	int disable_sound;
 	int disable_limiter;

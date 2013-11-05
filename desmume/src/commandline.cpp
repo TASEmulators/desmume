@@ -50,6 +50,7 @@ CommandLine::CommandLine()
 , _advanced_timing(-1)
 , _slot1(NULL)
 , _slot1_fat_dir(NULL)
+, _slot1_fat_dir_type(false)
 #ifdef HAVE_JIT
 , _cpu_mode(-1)
 , _jit_size(-1)

@@ -121,7 +121,8 @@ bool slot1_Change(NDS_SLOT1_TYPE type);
 //check on the current device
 NDS_SLOT1_TYPE slot1_GetCurrentType();
 
-void slot1_SetFatDir(const std::string& dir);
+extern bool slot1_R4_path_type;
+void slot1_SetFatDir(const std::string& dir, bool sameAsRom = false);
 std::string slot1_GetFatDir();
 EMUFILE* slot1_GetFatImage();
 
