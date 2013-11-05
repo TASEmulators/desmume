@@ -1393,8 +1393,8 @@ IDD_SLOT1_R4 DIALOGEX 7, 64, 302, 89
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_VISIBLE | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-	CONTROL         "Directory to scan:",IDC_RFOLDER,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,9,22,35,10
-    CONTROL         "use path of the loaded ROM (not the same as ""ROM path"" in path configuration)",IDC_PATHDESMUME,
+	CONTROL         "Directory to scan:",IDC_R4_FOLDER,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,9,22,35,10
+    CONTROL         "use path of the loaded ROM (not the same as ""ROM path"" in path configuration)",IDC_R4_ROM,
                     "Button",BS_AUTORADIOBUTTON,9,53,272,10
     PUSHBUTTON      "Browse...",IDC_BROWSE,245,33,50,14
     EDITTEXT        IDC_PATH,9,34,231,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
