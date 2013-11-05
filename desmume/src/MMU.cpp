@@ -2720,7 +2720,9 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 				return true;
 
 			default:
+#ifdef DEVELOPER
 				printf("MMU9 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
+#endif
 				return false;
 		}
 	}
@@ -2814,7 +2816,9 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 				return true;
 
 			default:
+#ifdef DEVELOPER
 				printf("MMU7 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
+#endif
 				return false;
 		}
 	}
@@ -3087,7 +3091,9 @@ bool validateIORegsRead(u32 addr, u8 size)
 				return true;
 
 			default:
+#ifdef DEVELOPER
 				printf("MMU9 read%02d from undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM9_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+#endif
 				return false;
 		}
 	}
@@ -3181,7 +3187,9 @@ bool validateIORegsRead(u32 addr, u8 size)
 				return true;
 
 			default:
+#ifdef DEVELOPER
 				printf("MMU7 read%02d from undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, T1ReadLong(MMU.ARM7_REG, addr & 0x00FFFFFF), ARMPROC.instruct_adr);
+#endif
 				return false;
 		}
 	}

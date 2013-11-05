@@ -17,6 +17,7 @@
 
 #include "firmware.h"
 #include "NDSSystem.h"
+#include "MMU.h"
 #include "path.h"
 #include "encrypt.h"
 
@@ -293,6 +294,15 @@ bool CFIRMWARE::load()
 		mc_alloc(&MMU.fw, size);
 
 	userDataAddr = T1ReadWord(data, 0x20) * 8;
+
+	// fix bad dump of firmware? (wrong DS type)
+	// fix mario kart touch screen calibration
+	if ((T1ReadWord(data, 0x1E) != 0xFFFF) && data[0x1D] == 0x63)
+	{
+		data[0x1D] = NDS_CONSOLE_TYPE_FAT;
+		data[0x1E] = 0xFF;
+		data[0x1F] = 0xFF;
+	}
 
 	memcpy(MMU.fw.data, data, size);
 
@@ -597,6 +607,41 @@ std::string CFIRMWARE::GetExternalFilePath()
 	return finalPath;
 }
 
+void *CFIRMWARE::getTouchCalibrate()
+{
+	static TSCalInfo cal = {0};
+
+	if (!successLoad || !CommonSettings.UseExtFirmware || !successLoad)
+	{
+		cal.adc.x1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x58) & 0x1FFF;
+		cal.adc.y1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5A) & 0x1FFF;
+		cal.scr.x1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5C);
+		cal.scr.y1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5D);
+		cal.adc.x2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5E) & 0x1FFF;
+		cal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60) & 0x1FFF;
+		cal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
+		cal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
+	}
+	else
+	{
+		cal.adc.x1 = T1ReadWord(MMU.fw.data, userDataAddr + 0x58) & 0x1FFF;
+		cal.adc.y1 = T1ReadWord(MMU.fw.data, userDataAddr + 0x5A) & 0x1FFF;
+		cal.scr.x1 = T1ReadByte(MMU.fw.data, userDataAddr + 0x5C);
+		cal.scr.y1 = T1ReadByte(MMU.fw.data, userDataAddr + 0x5D);
+		cal.adc.x2 = T1ReadWord(MMU.fw.data, userDataAddr + 0x5E) & 0x1FFF;
+		cal.adc.y2 = T1ReadWord(MMU.fw.data, userDataAddr + 0x60) & 0x1FFF;
+		cal.scr.x2 = T1ReadByte(MMU.fw.data, userDataAddr + 0x62);
+		cal.scr.y2 = T1ReadByte(MMU.fw.data, userDataAddr + 0x63);
+	}
+
+	cal.adc.width	= (cal.adc.x2 - cal.adc.x1);
+	cal.adc.height	= (cal.adc.y2 - cal.adc.y1);
+	cal.scr.width	= (cal.scr.x2 - cal.scr.x1);
+	cal.scr.height	= (cal.scr.y2 - cal.scr.y1);
+
+	return (void*)&cal;
+}
+
 //=====================================================================================================
 static u32
 calc_CRC16( u32 start, const u8 *data, int count) {
@@ -776,10 +821,10 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	MMU.fw.data[0x8 + 3] = 'P';
 
 	// DS type
-	if ( user_settings->ds_type == NDS_CONSOLE_TYPE_LITE)
-		MMU.fw.data[0x1d] = 0x20;
+	if ( user_settings->ds_type == NDS_CONSOLE_TYPE_DSI)
+		MMU.fw.data[0x1d] = 0xFF;
 	else
-		MMU.fw.data[0x1d] = 0xff;
+		MMU.fw.data[0x1d] = user_settings->ds_type;
 
 	//User Settings offset 0x3fe00 / 8
 	MMU.fw.data[0x20] = 0xc0;
