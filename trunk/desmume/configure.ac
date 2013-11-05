@@ -13,7 +13,7 @@ case $host in
 esac
 AC_SUBST(desmume_arch)
 
-AM_INIT_AUTOMAKE([1.10])
+AM_INIT_AUTOMAKE([1.10 subdir-objects])
 
 dnl -- make sure we have a c++ compiler
 AC_PROG_CXX
@@ -24,11 +24,12 @@ AC_PROG_RANLIB
 dnl -- check for endianess
 AC_C_BIGENDIAN
 
-# took this from geany, hope it works
+dnl -- since svn 1.7 theres only a single .svn folder in the root dir
 REVISION="r0"
 SVN=`which svn 2>/dev/null`
-if test -d ".svn" -a "x${SVN}" != "x" -a -x "${SVN}" ; then
+if test -d "../.svn" -a "x${SVN}" != "x" -a -x "${SVN}" ; then
   REVISION=r`$SVN info|grep 'Last Changed Rev'|cut -d' ' -f4`
+  echo "$REVISION"
 fi
 AC_DEFINE_UNQUOTED([SVN_REV], "$REVISION", [subversion revision number])
 
