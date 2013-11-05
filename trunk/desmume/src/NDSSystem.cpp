@@ -133,20 +133,6 @@ int NDS_Init( void)
 
 	WIFI_Init() ;
 
-	// Init calibration info
-	TSCal.adc.x1 = 0x0200;
-	TSCal.adc.y1 = 0x0200;
-	TSCal.scr.x1 = 0x20 + 1; // calibration screen coords are 1-based,
-	TSCal.scr.y1 = 0x20 + 1; // either that or NDS_getADCTouchPosX/Y are wrong.
-	TSCal.adc.x2 = 0x0E00;
-	TSCal.adc.y2 = 0x0800;
-	TSCal.scr.x2 = 0xE0 + 1;
-	TSCal.scr.y2 = 0x80 + 1;
-	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
-	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
-	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
-	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
-
 	cheats = new CHEATS();
 	cheatSearch = new CHEATSEARCH();
 
@@ -2489,9 +2475,6 @@ bool NDS_LegitBoot()
 		CommonSettings.jit_max_block_size = std::min(CommonSettings.jit_max_block_size,12U);
 	#endif
 
-	//crazymax: how would it have got whacked? dont think we need this
-	//gameInfo.restoreSecureArea();
-
 	//partially clobber the loaded firmware with the user settings from DFC
 	firmware->loadSettings();
 
@@ -2503,24 +2486,6 @@ bool NDS_LegitBoot()
 	armcpu_init(&NDS_ARM7, 0x00000000);
 	armcpu_init(&NDS_ARM9, 0xFFFF0000);
 
-	// TODO: hack!!!
-	// possible explanation - since we can't generally trust calibration info from the firmware (who's bothered to set it up?) 
-	// we don't bother to use the firmware's configured calibration info, and just enter our own.
-	// Can someone verify this?
-	// TODO - this isn't good. need revising.
-	TSCal.adc.x1 = 0x0228;
-	TSCal.adc.y1 = 0x0350;
-	TSCal.scr.x1 = 0x0020;
-	TSCal.scr.y1 = 0x0020;
-	TSCal.adc.x2 = 0x0DA0;
-	TSCal.adc.y2 = 0x0BFC;
-	TSCal.scr.x2 = 0xE0;
-	TSCal.scr.y2 = 0xA0;
-	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
-	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
-	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
-	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
-	
 	return true;
 }
 
@@ -2635,22 +2600,6 @@ bool NDS_FakeBoot()
 	
 	// Write the header checksum to memory
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, gameInfo.header.headerCRC16);
-
-	// Save touchscreen calibration info in a structure
-	// so we can easily access it at any time
-	// TODO - this isn't good. need revising.
-	TSCal.adc.x1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x58);
-	TSCal.adc.y1 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5A);
-	TSCal.scr.x1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5C);
-	TSCal.scr.y1 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x5D);
-	TSCal.adc.x2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x5E);
-	TSCal.adc.y2 = _MMU_read16<ARMCPU_ARM7>(0x027FFC80 + 0x60);
-	TSCal.scr.x2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x62);
-	TSCal.scr.y2 = _MMU_read08<ARMCPU_ARM7>(0x027FFC80 + 0x63);
-	TSCal.adc.width = (TSCal.adc.x2 - TSCal.adc.x1);
-	TSCal.adc.height = (TSCal.adc.y2 - TSCal.adc.y1);
-	TSCal.scr.width = (TSCal.scr.x2 - TSCal.scr.x1);
-	TSCal.scr.height = (TSCal.scr.y2 - TSCal.scr.y1);
 
 	//bitbox 4k demo is so stripped down it relies on default stack values
 	//otherwise the arm7 will crash before making a sound
@@ -2791,6 +2740,9 @@ void NDS_Reset()
 		bootResult = NDS_LegitBoot();
 	else
 		bootResult = NDS_FakeBoot();
+
+	// Init calibration info
+	memcpy(&TSCal, firmware->getTouchCalibrate(), sizeof(TSCalInfo));
 
 	Screen_Reset();
 	gfx3d_reset();

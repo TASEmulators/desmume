@@ -54,6 +54,7 @@ public:
 
 	u32 getID() { return header.fw_identifier; }
 	bool loaded() { return successLoad; }
+	void *getTouchCalibrate();
 
 	struct HEADER
 	{
