@@ -3153,6 +3153,10 @@ int _main()
 
 	// Slot 1 / Slot 2 (GBA slot)
 	cmdline.slot1_fat_dir = GetPrivateProfileStdString("Slot1", "fat_path", "");
+	cmdline._slot1_fat_dir_type = GetPrivateProfileBool("Slot1", "fat_path_type", false, IniName);
+	if (cmdline._slot1_fat_dir_type != 0 && cmdline._slot1_fat_dir_type != 1)
+		cmdline._slot1_fat_dir_type = 0;
+	slot1_R4_path_type = cmdline._slot1_fat_dir_type;
 
 	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
 	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
@@ -3163,6 +3167,8 @@ int _main()
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();
 	
+	slot1_R4_path_type = cmdline._slot1_fat_dir_type;
+
 	if(cmdline.is_cflash_configured)
 	{
 	    addon_type = NDS_ADDON_CFLASH;

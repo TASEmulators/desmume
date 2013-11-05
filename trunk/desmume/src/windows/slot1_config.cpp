@@ -31,9 +31,36 @@ NDS_SLOT1_TYPE temp_type_slot1 = NDS_SLOT1_NONE;
 NDS_SLOT1_TYPE last_type_slot1 = NDS_SLOT1_NONE;
 char tmp_fat_path[MAX_PATH] = {0};
 char tmp_fs_path[MAX_PATH] = {0};
+bool tmp_fat_path_type = false;
 HWND OKbutton_slot1 = NULL;
 bool _OKbutton_slot1 = false;
 bool needReset_slot1 = true;
+
+#define SLOT1_DEBUG_ID 20000
+#define SLOT1_R4_ID 20001
+
+INT CALLBACK Slot1_BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData) 
+{
+	TCHAR szDir[MAX_PATH];
+
+	switch(uMsg)
+	{
+		case BFFM_INITIALIZED: 
+			if (pData == SLOT1_DEBUG_ID)
+				SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)tmp_fs_path);
+			else
+				SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)tmp_fat_path);
+		break;
+
+		case BFFM_SELCHANGED: 
+			if (SHGetPathFromIDList((LPITEMIDLIST) lp, szDir))
+			{
+				SendMessage(hwnd,BFFM_SETSTATUSTEXT, 0, (LPARAM)szDir);
+			}
+		break;
+	}
+	return 0;
+}
 
 
 INT_PTR CALLBACK Slot1None(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
@@ -75,7 +102,8 @@ INT_PTR CALLBACK Slot1Debug(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					bp.pszDisplayName=NULL;
 					bp.lpszTitle="Select directory for game files";
 					bp.ulFlags=BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
-					bp.lpfn=NULL;
+					bp.lParam = SLOT1_DEBUG_ID;
+					bp.lpfn=Slot1_BrowseCallbackProc;
 	
 					LPITEMIDLIST tmp = SHBrowseForFolder((LPBROWSEINFO)&bp);
 					if (tmp!=NULL) 
@@ -106,6 +134,19 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_PATH), tmp_fat_path);
 			_OKbutton_slot1 = (tmp_fat_path!="");
+
+			if (!tmp_fat_path_type)
+			{
+				CheckDlgButton(dialog, IDC_RFOLDER, BST_CHECKED);
+				EnableWindow(GetDlgItem(dialog, IDC_BROWSE), true);
+				EnableWindow(GetDlgItem(dialog, IDC_PATH), true);
+			}
+			else
+			{
+				CheckDlgButton(dialog, IDC_PATHDESMUME, BST_CHECKED);
+				EnableWindow(GetDlgItem(dialog, IDC_BROWSE), false);
+				EnableWindow(GetDlgItem(dialog, IDC_PATH), false);
+			}
 			return TRUE;
 		}
 
@@ -122,7 +163,8 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					bp.pszDisplayName=NULL;
 					bp.lpszTitle="Select directory for FAT image building";
 					bp.ulFlags=BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
-					bp.lpfn=NULL;
+					bp.lParam = SLOT1_R4_ID;
+					bp.lpfn=Slot1_BrowseCallbackProc;
 	
 					LPITEMIDLIST tmp = SHBrowseForFolder((LPBROWSEINFO)&bp);
 					if (tmp!=NULL) 
@@ -139,6 +181,18 @@ INT_PTR CALLBACK Slot1R4(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 							EnableWindow(OKbutton_slot1, FALSE);
 					break;
 				}
+
+				case IDC_RFOLDER:
+					EnableWindow(GetDlgItem(dialog, IDC_BROWSE), true);
+					EnableWindow(GetDlgItem(dialog, IDC_PATH), true);
+					tmp_fat_path_type = false;
+					return TRUE;
+
+				case IDC_PATHDESMUME:
+					EnableWindow(GetDlgItem(dialog, IDC_BROWSE), false);
+					EnableWindow(GetDlgItem(dialog, IDC_PATH), false);
+					tmp_fat_path_type = true;
+					return TRUE;
 			}
 		}
 	}
@@ -186,6 +240,7 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				EnableWindow(OKbutton_slot1, TRUE);
 			else
 				EnableWindow(OKbutton_slot1, FALSE);
+
 			return TRUE;
 		}
 	
@@ -252,6 +307,7 @@ void slot1Dialog(HWND hwnd)
 	strcpy(tmp_fs_path, path.getpath(path.SLOT1D).c_str());
 	temp_type_slot1 = slot1_GetCurrentType();
 	last_type_slot1 = temp_type_slot1;
+	tmp_fat_path_type = slot1_R4_path_type;
 	_OKbutton_slot1 = false;
 	needReset_slot1 = true;
 	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_SLOT1CONFIG), hwnd, (DLGPROC)Slot1Box_Proc);
@@ -274,6 +330,8 @@ void slot1Dialog(HWND hwnd)
 					slot1_SetFatDir(tmp_fat_path);
 					WritePrivateProfileString("Slot1","FAT_path",tmp_fat_path,IniName);
 				}
+				WritePrivateProfileBool("Slot1","FAT_path_type",tmp_fat_path_type,IniName);
+				slot1_R4_path_type = tmp_fat_path_type;
 				break;
 			case NDS_SLOT1_RETAIL_NAND:
 				break;

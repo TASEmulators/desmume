@@ -34,6 +34,9 @@ Since GCROMCTRL[26:24] can't represent 'data block size' of 1 or 2, it is assume
 #include "NDSSystem.h"
 #include "emufile.h"
 #include "utils/vfat.h"
+#include "path.h"
+
+bool slot1_R4_path_type = false;
 
 //-------
 //fat-related common elements
@@ -51,17 +54,24 @@ static void scanDir()
 	}
 
 	VFAT vfat;
-	if(vfat.build(fatDir.c_str(),16))
+
+	char buf[MAX_PATH] = {0};
+	if (slot1_R4_path_type)
+		path.getpath(path.ROMS, buf);
+
+	if(vfat.build(slot1_R4_path_type?buf:fatDir.c_str(), 16))
 	{
 		fatImage = vfat.detach();
 	}
 }
 
 
-void slot1_SetFatDir(const std::string& dir)
+void slot1_SetFatDir(const std::string& dir, bool sameAsRom)
 {
 	//printf("FAT path %s\n", dir.c_str());
-	fatDir = dir;
+	slot1_R4_path_type = sameAsRom;
+	if (!slot1_R4_path_type)
+		fatDir = dir;
 }
 
 std::string slot1_GetFatDir()
@@ -116,8 +126,6 @@ void slot1_Shutdown()
 
 bool slot1_Connect()
 {
-	if (slot1_device_type == NDS_SLOT1_R4)
-		scanDir();
 	slot1_device->connect();
 	return true;
 }
@@ -141,6 +149,8 @@ void slot1_Reset()
 	
 	//connect new device
 	slot1_device = slot1_List[slot1_device_type];
+	if (slot1_device_type == NDS_SLOT1_R4)
+		scanDir();
 	slot1_device->connect();
 }
 
@@ -152,8 +162,6 @@ bool slot1_Change(NDS_SLOT1_TYPE changeToType)
 		slot1_device->disconnect();
 	slot1_device_type = changeToType;
 	slot1_device = slot1_List[slot1_device_type];
-	if (changeToType == NDS_SLOT1_R4)
-		scanDir();
 	printf("Slot 1: %s\n", slot1_device->info()->name());
 	printf("sending eject signal to SLOT-1\n");
 	NDS_TriggerCardEjectIRQ();
