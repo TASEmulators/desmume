@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009-2010 DeSmuME team
+/*  Copyright (C) 2009-2013 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -22,8 +22,9 @@
 #include <string.h>
 #include "../MMU.h"
 
-u8		*expMemory	=	NULL;
-u32		expMemSize = 8 * 1024 * 1024; // 8Mb
+static u8	*expMemory		= NULL;
+static u32	expMemSize		= 8 * 1024 * 1024; // 8Mb
+static bool	ext_ram_lock	= true;
 
 #if 0
 #define EXPINFO(...) INFO(__VA_ARGS__)
@@ -41,6 +42,7 @@ static void ExpMemory_reset(void)
 	}
 	expMemory = new u8 [expMemSize];
 	memset(expMemory, 0xFF, expMemSize);
+	ext_ram_lock = true; 
 }
 static void ExpMemory_close(void)
 {
@@ -53,6 +55,8 @@ static void ExpMemory_close(void)
 static void ExpMemory_config(void) {}
 static void ExpMemory_write08(u32 procnum, u32 adr, u8 val) 
 {
+	if (ext_ram_lock) return;
+
 	if (adr >= 0x09000000)
 	{
 		u32 offs = (adr - 0x09000000);
@@ -63,6 +67,18 @@ static void ExpMemory_write08(u32 procnum, u32 adr, u8 val)
 }
 static void ExpMemory_write16(u32 procnum, u32 adr, u16 val) 
 {
+	if (adr == 0x08240000)
+	{
+		if (val == 0)
+			ext_ram_lock = true;
+		else
+			if (val == 1)
+				ext_ram_lock = false;
+		return;
+	}
+
+	if (ext_ram_lock) return;
+
 	if (adr >= 0x09000000)
 	{
 		u32 offs = (adr - 0x09000000);
@@ -73,7 +89,8 @@ static void ExpMemory_write16(u32 procnum, u32 adr, u16 val)
 }
 static void ExpMemory_write32(u32 procnum, u32 adr, u32 val) 
 {
-	
+	if (ext_ram_lock) return;
+
 	if (adr >= 0x09000000)
 	{
 		u32 offs = (adr - 0x09000000);
@@ -93,6 +110,9 @@ static u8 header_0x00B0[] =
 static u8 ExpMemory_read08(u32 procnum, u32 adr)
 {
 	EXPINFO("ExpMemory: read 08 at 0x%08X\n", adr);
+
+	if (adr == 0x08240000)
+		return (ext_ram_lock?0:1);
 	
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadByte(header_0x00B0,adr-0x080000B0);
@@ -108,6 +128,9 @@ static u8 ExpMemory_read08(u32 procnum, u32 adr)
 }
 static u16 ExpMemory_read16(u32 procnum, u32 adr)
 {
+	if (adr == 0x08240000)
+		return (ext_ram_lock?0:1);
+
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadWord(header_0x00B0,adr-0x080000B0);
 
@@ -126,6 +149,9 @@ static u16 ExpMemory_read16(u32 procnum, u32 adr)
 }
 static u32 ExpMemory_read32(u32 procnum, u32 adr)
 {
+	if (adr == 0x08240000)
+		return (ext_ram_lock?0:1);
+
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadLong(header_0x00B0,adr-0x080000B0);
 
@@ -139,7 +165,7 @@ static u32 ExpMemory_read32(u32 procnum, u32 adr)
 	EXPINFO("ExpMemory: read 32 at 0x%08X\n", adr);
 	return 0xFFFFFFFF;
 }
-static void ExpMemory_info(char *info) { strcpy(info, "Memory Expansion Pak"); }
+static void ExpMemory_info(char *info) { strcpy(info, "Official RAM expansion for Opera browser"); }
 
 ADDONINTERFACE addonExpMemory = {
 				"Memory Expansion Pak",
