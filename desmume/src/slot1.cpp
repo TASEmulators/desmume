@@ -54,12 +54,7 @@ static void scanDir()
 	}
 
 	VFAT vfat;
-
-	char buf[MAX_PATH] = {0};
-	if (slot1_R4_path_type)
-		path.getpath(path.ROMS, buf);
-
-	if(vfat.build(slot1_R4_path_type?buf:fatDir.c_str(), 16))
+	if(vfat.build(slot1_R4_path_type?path.RomDirectory.c_str():fatDir.c_str(), 16))
 	{
 		fatImage = vfat.detach();
 	}
