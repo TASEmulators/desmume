@@ -43,6 +43,7 @@
 #include "version.h"
 #include "path.h"
 #include "slot1.h"
+#include "addons.h"
 
 //int xxctr=0;
 //#define LOG_ARM9
@@ -84,7 +85,7 @@ TSCalInfo TSCal;
 
 namespace DLDI
 {
-	bool tryPatch(void* data, size_t size);
+	bool tryPatch(void* data, size_t size, unsigned int device);
 }
 
 void Desmume_InitOnce()
@@ -638,7 +639,13 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(gameInfo.isHomebrew && CommonSettings.loadToMemory)
-		DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize);
+	{
+		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
+			DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 1);
+		else
+			if (addon_type == NDS_ADDON_CFLASH)
+				DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 0);
+	}
 
 	if (cheats != NULL)
 	{
