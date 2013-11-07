@@ -126,6 +126,7 @@ private:
 	std::string filename;
 	
 	bool write_enable;	//is write enabled?
+	u8 write_protect;
 	bool reset_command_state;
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
