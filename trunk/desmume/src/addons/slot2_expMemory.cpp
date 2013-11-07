@@ -111,9 +111,6 @@ static u8 ExpMemory_read08(u32 procnum, u32 adr)
 {
 	EXPINFO("ExpMemory: read 08 at 0x%08X\n", adr);
 
-	if (adr == 0x08240000)
-		return (ext_ram_lock?0:1);
-	
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadByte(header_0x00B0,adr-0x080000B0);
 
@@ -128,9 +125,6 @@ static u8 ExpMemory_read08(u32 procnum, u32 adr)
 }
 static u16 ExpMemory_read16(u32 procnum, u32 adr)
 {
-	if (adr == 0x08240000)
-		return (ext_ram_lock?0:1);
-
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadWord(header_0x00B0,adr-0x080000B0);
 
@@ -149,9 +143,6 @@ static u16 ExpMemory_read16(u32 procnum, u32 adr)
 }
 static u32 ExpMemory_read32(u32 procnum, u32 adr)
 {
-	if (adr == 0x08240000)
-		return (ext_ram_lock?0:1);
-
 	if(adr>=0x080000B0 && adr<0x080000C0)
 		return T1ReadLong(header_0x00B0,adr-0x080000B0);
 

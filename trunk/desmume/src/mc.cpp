@@ -63,7 +63,7 @@
 //the game reads its initial sound volumes from uninitialized data, and if it is 0, the game will be silent
 //if it is 0xFF then the game starts with its sound and music at max, as presumably it is supposed to.
 //so in r3303 I finally changed it (no$ appears definitely to initialize to 0xFF)
-static const u8 kUninitializedSaveDataValue = 0xFF;
+static u8 kUninitializedSaveDataValue = 0xFF;
 
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
@@ -116,7 +116,7 @@ void backup_setManualBackupType(int type)
 
 bool BackupDevice::save_state(EMUFILE* os)
 {
-	u32 version = 3;
+	u32 version = 4;
 	//v0
 	write32le(version,os);
 	write32le(write_enable,os);
@@ -133,6 +133,8 @@ bool BackupDevice::save_state(EMUFILE* os)
 	write8le(motionFlag,os);
 	//v3
 	writebool(reset_command_state,os);
+	//v4
+	write8le(write_protect,os);
 	return true;
 }
 
@@ -166,6 +168,11 @@ bool BackupDevice::load_state(EMUFILE* is)
 		readbool(&reset_command_state,is);
 	}
 
+	if(version>=4)
+	{
+		read8le(&write_protect,is);
+	}
+
 	return true;
 }
 
@@ -189,6 +196,7 @@ void BackupDevice::movie_mode()
 void BackupDevice::reset_hardware()
 {
 	write_enable = FALSE;
+	write_protect = 0;
 	com = 0;
 	addr = addr_counter = 0;
 	motionInitState = MOTION_INIT_STATE_IDLE;
@@ -197,6 +205,10 @@ void BackupDevice::reset_hardware()
 	reset_command_state = false;
 	flushPending = false;
 	lazyFlushPending = false;
+
+	kUninitializedSaveDataValue = 0xFF;
+
+	if(!memcmp(gameInfo.header.gameCode,"AXBJ", 4)) kUninitializedSaveDataValue = 0x00; // Daigassou! Band Brothers DX (JP)
 }
 
 void BackupDevice::reset()
@@ -302,7 +314,7 @@ void BackupDevice::checkReset()
 
 		//for a performance hack, save files are only flushed after each reset command
 		//(hopefully, after each page)
-		if(flushPending)
+		if(flushPending && (com == BM_CMD_WRITELOW || com == BM_CMD_WRITEHIGH))
 		{
 			flush();
 			flushPending = false;
@@ -337,8 +349,13 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 
 	switch (com)
 	{
-		case BM_CMD_READLOW:
+		case BM_CMD_WRITESTATUS:
+			//printf("MC%c: write status %02X\n", PROCNUM?'7':'9', val);
+			write_protect = (val & 0xFC);
+		break;
+
 		case BM_CMD_WRITELOW:
+		case BM_CMD_READLOW:
 			//handle data or address
 			if(state == DETECTING)
 			{
@@ -391,7 +408,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 		case BM_CMD_READSTATUS:
 			//handle request to read status
 			//LOG("Backup Memory Read Status: %02X\n", write_enable << 1);
-			val = (write_enable << 1) | (3<<2);
+			val = (write_enable << 1) | write_protect;
 		break;
 
 		case BM_CMD_IRDA:
@@ -402,15 +419,19 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 		default:
 			if (com != 0)
 			{
-				//printf("MC%c: Unhandled Backup Memory command %02X, value %02X (PC:%08X)\n", PROCNUM?'7':'9', com, val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+				printf("MC%c: Unhandled Backup Memory command %02X, value %02X (PC:%08X)\n", PROCNUM?'7':'9', com, val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
 				break;
 			}
 
 			com = val;
+			val = 0xFF;
+
 			//there is no current command. receive one
 			switch (com)
 			{
 				case BM_CMD_NOP: break;
+
+				case BM_CMD_WRITESTATUS: break;
 
 #ifdef _ENABLE_MOTION
 				case 0xFE:
@@ -449,6 +470,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					break;
 
 				case BM_CMD_WRITEDISABLE:
+					//printf("MC%c: write disable\n", PROCNUM?'7':'9');
 #ifdef _ENABLE_MOTION
 					switch (motionInitState)
 					{
@@ -457,18 +479,13 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					}
 #endif
 					write_enable = FALSE;
-					com = 0;
 					break;
 								
-				case BM_CMD_READSTATUS:
-					//val = (write_enable << 1) | (3<<2);
-					val = 0xFF;
-					break;
+				case BM_CMD_READSTATUS: break;
 
 				case BM_CMD_WRITEENABLE:
 					//printf("MC%c: write enable\n", PROCNUM?'7':'9');
 					write_enable = TRUE;
-					com = 0;
 					break;
 
 				case BM_CMD_WRITELOW:
@@ -476,14 +493,13 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					//printf("XLO: %08X\n",addr);
 					addr_counter = 0;
 					addr = 0;
-					val = 0xFF;
 					break;
 
 				case BM_CMD_WRITEHIGH:
 				case BM_CMD_READHIGH:
 					//printf("XHI: %08X\n",addr);
-					if(val == BM_CMD_WRITEHIGH) com = BM_CMD_WRITELOW;
-					if(val == BM_CMD_READHIGH) com = BM_CMD_READLOW;
+					if(com == BM_CMD_WRITEHIGH) com = BM_CMD_WRITELOW;
+					if(com == BM_CMD_READHIGH) com = BM_CMD_READLOW;
 					addr_counter = 0;
 					addr = 0;
 					if(addr_size==1)
@@ -497,7 +513,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					break;
 
 				default:
-					printf("MC%c: Unhandled Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', val, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
+					printf("MC%c: Unhandled Backup Memory command: %02X FROM %08X\n", PROCNUM?'7':'9', com, PROCNUM?NDS_ARM7.instruct_adr:NDS_ARM9.instruct_adr);
 					break;
 			} //switch(val)
 		break;

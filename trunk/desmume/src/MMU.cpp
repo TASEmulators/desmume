@@ -2435,8 +2435,7 @@ u32 DmaController::read32()
 
 static INLINE void write_auxspicnt(const int PROCNUM, const int size, const int adr, const int val)
 {
-	//u16 oldCnt = MMU.AUX_SPI_CNT;
-	bool csOld = (MMU.AUX_SPI_CNT & (1 << 6))?true:false;
+	u16 oldCnt = MMU.AUX_SPI_CNT;
 
 	switch(size)
 	{
@@ -2448,9 +2447,11 @@ static INLINE void write_auxspicnt(const int PROCNUM, const int size, const int 
 			break;
 	}
 
+	bool csOld = (oldCnt & (1 << 6))?true:false;
 	bool cs = (MMU.AUX_SPI_CNT & (1 << 6))?true:false;
+	bool spi = (MMU.AUX_SPI_CNT & (1 << 13))?true:false;
 
-	if (!cs && csOld)
+	if ((!cs && csOld) || (spi && (oldCnt == 0) && !cs))
 	{
 		//printf("MMU%c: CS changed from HIGH to LOW *****\n", PROCNUM?'7':'9');
 		slot1_device->auxspi_reset(PROCNUM);
