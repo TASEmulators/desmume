@@ -1480,7 +1480,7 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	float zd = float16table[(uz+ud)&0xFFFF];
 
 	//eight corners of cube
-	VERT verts[8];
+	CACHE_ALIGN VERT verts[8];
 	verts[0].set_coord(x,y,z,1);
 	verts[1].set_coord(xw,y,z,1);
 	verts[2].set_coord(xw,yh,z,1);
@@ -1529,13 +1529,19 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	////---------------------
 
 	//transform all coords
-	for(int i=0;i<8;i++) {
+	for(int i=0;i<8;i++)
+	{
+		//this cant work. its left as a reminder that we could (and probably should) do the boxtest in all fixed point values
 		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
 
+		//but change it all to floating point and do it that way instead
 		CACHE_ALIGN float temp1[16] = {mtxCurrent[1][0]/4096.0f,mtxCurrent[1][1]/4096.0f,mtxCurrent[1][2]/4096.0f,mtxCurrent[1][3]/4096.0f,mtxCurrent[1][4]/4096.0f,mtxCurrent[1][5]/4096.0f,mtxCurrent[1][6]/4096.0f,mtxCurrent[1][7]/4096.0f,mtxCurrent[1][8]/4096.0f,mtxCurrent[1][9]/4096.0f,mtxCurrent[1][10]/4096.0f,mtxCurrent[1][11]/4096.0f,mtxCurrent[1][12]/4096.0f,mtxCurrent[1][13]/4096.0f,mtxCurrent[1][14]/4096.0f,mtxCurrent[1][15]/4096.0f};
 		CACHE_ALIGN float temp0[16] = {mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f,mtxCurrent[0][4]/4096.0f,mtxCurrent[0][5]/4096.0f,mtxCurrent[0][6]/4096.0f,mtxCurrent[0][7]/4096.0f,mtxCurrent[0][8]/4096.0f,mtxCurrent[0][9]/4096.0f,mtxCurrent[0][10]/4096.0f,mtxCurrent[0][11]/4096.0f,mtxCurrent[0][12]/4096.0f,mtxCurrent[0][13]/4096.0f,mtxCurrent[0][14]/4096.0f,mtxCurrent[0][15]/4096.0f};
-		MatrixMultVec4x4(temp1,verts[i].coord);
-		MatrixMultVec4x4(temp0,verts[i].coord);
+
+		DS_ALIGN(16) VERT_POS4f vert = { verts[i].x, verts[i].y, verts[i].z, verts[i].w };
+
+		_NOSSE_MatrixMultVec4x4(temp1,verts[i].coord);
+		_NOSSE_MatrixMultVec4x4(temp0,verts[i].coord);
 	}
 
 	//clip each poly

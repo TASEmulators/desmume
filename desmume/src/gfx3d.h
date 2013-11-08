@@ -520,6 +520,29 @@ struct POLYLIST {
 	int count;
 };
 
+//just a vert with a 4 float position
+struct VERT_POS4f
+{
+	union {
+		float coord[4];
+		struct {
+			float x,y,z,w;
+		};
+		struct {
+			float x,y,z,w;
+		} position;
+	};
+	void set_coord(float x, float y, float z, float w)
+	{ 
+		this->x = x; 
+		this->y = y; 
+		this->z = z; 
+		this->w = w; 
+	}
+};
+
+//dont use SSE optimized matrix instructions in here, things might not be aligned
+//we havent padded this because the sheer bulk of data leaves things running faster without the extra bloat
 struct VERT {
 	// Align to 16 for SSE instructions to work
 	union {
@@ -546,8 +569,10 @@ struct VERT {
 		z = coords[2];
 		w = coords[3];
 	}
-	u8 color[3];
 	float fcolor[3];
+	u8 color[3];
+
+
 	void color_to_float() {
 		fcolor[0] = color[0];
 		fcolor[1] = color[1];

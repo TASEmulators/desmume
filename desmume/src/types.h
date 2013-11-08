@@ -93,6 +93,9 @@
 #endif
 
 
+//------------alignment macros-------------
+//dont apply these to types without further testing. it only works portably here on declarations of variables
+//cant we find a pattern other people use more successfully?
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define DS_ALIGN(X) __declspec(align(X))
 #elif defined(__GNUC__)
@@ -100,11 +103,10 @@
 #else
 #define DS_ALIGN(X)
 #endif
-
 #define CACHE_ALIGN DS_ALIGN(32)
-
 //use this for example when you want a byte value to be better-aligned
 #define FAST_ALIGN DS_ALIGN(4)
+//---------------------------------------------
 
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
