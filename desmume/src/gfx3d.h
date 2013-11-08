@@ -522,18 +522,18 @@ struct POLYLIST {
 
 struct VERT {
 	// Align to 16 for SSE instructions to work
-	CACHE_ALIGN union {
+	union {
 		float coord[4];
 		struct {
 			float x,y,z,w;
 		};
-	};
-	CACHE_ALIGN union {
+	} CACHE_ALIGN;
+	union {
 		float texcoord[2];
 		struct {
 			float u,v;
 		};
-	};
+	} CACHE_ALIGN;
 	void set_coord(float x, float y, float z, float w) { 
 		this->x = x; 
 		this->y = y; 
