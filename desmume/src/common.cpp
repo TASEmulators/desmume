@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include "common.h"
 #include <zlib.h>
+#include <stdlib.h>
 
 char *trim(char *s, int len)
 {
