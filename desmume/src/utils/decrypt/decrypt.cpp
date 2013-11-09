@@ -421,7 +421,7 @@ static void init0(u32 cardheader_gamecode)
 /*
  * decrypt_arm9
  */
-static void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
+static bool decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 {
 	u32 *p = (u32*)data;
 
@@ -435,7 +435,7 @@ static void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 	if (p[0] != MAGIC30 || p[1] != MAGIC34)
 	{
 		fprintf(stderr, "Decryption failed!\n");
-		exit(1);
+		return false;
 	}
 
 	*p++ = 0xE7FFDEFF;
@@ -447,6 +447,8 @@ static void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 		p += 2;
 		size -= 8;
 	}
+
+	return true;
 }
 
 static void encrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
@@ -512,7 +514,8 @@ bool DecryptSecureArea(u8 *romheader, u8 *secure)
 		//// write secure 0x800
 		//memcpy(romdata+0x4000,data,0x800);
 
-		decrypt_arm9(*(u32 *)header->gamecode, secure);
+		if (!decrypt_arm9(*(u32 *)header->gamecode, secure))
+			return false;
 
 		printf("Decrypted.\n");
 	}

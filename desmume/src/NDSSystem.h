@@ -337,6 +337,7 @@ struct GameInfo
 	u32 chipID;
 	u32 lastReadPos;
 	u32	romType;
+	u32 headerOffset;
 	char ROMserial[20];
 	char ROMname[20];
 	bool _isDSiEnhanced;
@@ -356,6 +357,7 @@ struct GameInfo
 					mask(0),
 					lastReadPos(0xFFFFFFFF),
 					romType(ROM_NDS),
+					headerOffset(0),
 					_isDSiEnhanced(false)
 	{
 		memset(&header, 0, sizeof(header));
@@ -365,7 +367,7 @@ struct GameInfo
 
 	~GameInfo() { closeROM(); }
 
-	bool loadROM(std::string fname);
+	bool loadROM(std::string fname, u32 type = ROM_NDS);
 	void closeROM();
 	u32 readROM(u32 pos);
 	void populate();

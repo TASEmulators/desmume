@@ -403,21 +403,19 @@ void GameInfo::populate()
 
 }
 
-static std::vector<char> buffer;
-static std::vector<char> v;
-
-bool GameInfo::loadROM(std::string fname)
+bool GameInfo::loadROM(std::string fname, u32 type)
 {
-	printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
-	
+	//printf("ROM %s\n", CommonSettings.loadToMemory?"loaded to RAM":"stream from disk");
+
 	closeROM();
 
 	fROM = fopen(fname.c_str(), "rb");
 	if (!fROM) return false;
 
+	headerOffset = (type == ROM_DSGBA)?DSGBA_LOADER_SIZE:0;
 	fseek(fROM, 0, SEEK_END);
-	romsize = ftell(fROM);
-	fseek(fROM, 0, SEEK_SET);
+	romsize = ftell(fROM) - headerOffset;
+	fseek(fROM, headerOffset, SEEK_SET);
 
 	bool res = (fread(&header, 1, sizeof(header), fROM) == sizeof(header));
 
@@ -431,12 +429,15 @@ bool GameInfo::loadROM(std::string fname)
 		mask |= (mask >>8);
 		mask |= (mask >>16);
 
-		fseek(fROM, 0x4000, SEEK_SET);
-		fread(&secureArea[0], 1, 0x4000, fROM);
+		if (type == ROM_NDS)
+		{
+			fseek(fROM, 0x4000 + headerOffset, SEEK_SET);
+			fread(&secureArea[0], 1, 0x4000, fROM);
+		}
 
 		if (CommonSettings.loadToMemory)
 		{
-			fseek(fROM, 0, SEEK_SET);
+			fseek(fROM, headerOffset, SEEK_SET);
 			
 			romdata = new u8[romsize + 4];
 			if (fread(romdata, 1, romsize, fROM) != romsize)
@@ -457,10 +458,10 @@ bool GameInfo::loadROM(std::string fname)
 		_isDSiEnhanced = ((readROM(0x180) == 0x8D898581U) && (readROM(0x184) == 0x8C888480U));
 		if (hasRomBanner())
 		{
-			fseek(fROM, header.IconOff, SEEK_SET);
+			fseek(fROM, header.IconOff + headerOffset, SEEK_SET);
 			fread(&banner, 1, sizeof(RomBanner), fROM);
 		}
-		fseek(fROM, 0, SEEK_SET);
+		fseek(fROM, headerOffset, SEEK_SET);
 		lastReadPos = 0;
 		return true;
 	}
@@ -494,7 +495,7 @@ u32 GameInfo::readROM(u32 pos)
 	{
 		u32 data;
 		if (lastReadPos != pos)
-			fseek(fROM, pos, SEEK_SET);
+			fseek(fROM, pos + headerOffset, SEEK_SET);
 		u32 num = fread(&data, 1, 4, fROM);
 		lastReadPos = (pos + num);
 		return data;
@@ -505,17 +506,17 @@ u32 GameInfo::readROM(u32 pos)
 
 static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
 {
-	int	type = ROM_NDS;
+	u32	type = ROM_NDS;
 
 	path.init(logicalFilename? logicalFilename : filename);
 
 	if ( path.isdsgba(path.path)) {
 		type = ROM_DSGBA;
-		gameInfo.loadROM(path.path);
+		gameInfo.loadROM(path.path, type);
 	}
 	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
 		type = ROM_NDS;
-		gameInfo.loadROM(physicalName ? physicalName : path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
+		gameInfo.loadROM(physicalName ? physicalName : path.path, type); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
 		//...but since the data was extracted to gameInfo then it is ok
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
@@ -524,17 +525,8 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 	} else {
 		//well, try to load it as an nds rom anyway
 		type = ROM_NDS;
-		gameInfo.loadROM(physicalName ? physicalName : path.path);
+		gameInfo.loadROM(physicalName ? physicalName : path.path, type);
 	}
-
-	// TODO: !!!!!
-#if 0
-	if(type == ROM_DSGBA)
-	{
-		std::vector<char> v(gameInfo.romdata + DSGBA_LOADER_SIZE, gameInfo.romdata + gameInfo.romsize);
-		gameInfo.loadData(&v[0],gameInfo.romsize - DSGBA_LOADER_SIZE);
-	}
-#endif
 
 	//check that size is at least the size of the header
 	if (gameInfo.romsize < 352) {
@@ -2163,7 +2155,8 @@ bool NDS_LegitBoot()
 
 	//since firmware only boots encrypted roms, we have to make sure it's encrypted first
 	//this has not been validated on big endian systems. it almost positively doesn't work.
-	EncryptSecureArea((u8*)&gameInfo.header, (u8*)gameInfo.secureArea);
+	if (gameInfo.header.CRC16 != 0)
+		EncryptSecureArea((u8*)&gameInfo.header, (u8*)gameInfo.secureArea);
 
 	//boot processors from their bios entrypoints
 	armcpu_init(&NDS_ARM7, 0x00000000);
@@ -2183,16 +2176,16 @@ bool NDS_FakeBoot()
 
 	nds.isFakeBooted = true;
 
-	//crazymax: how would it have got whacked? dont think we need this
-	//gameInfo.restoreSecureArea();
-	
 	//since we're bypassing the code to decrypt the secure area, we need to make sure its decrypted first
 	//this has not been validated on big endian systems. it almost positively doesn't work.
-	bool okRom = DecryptSecureArea((u8*)&gameInfo.header, (u8*)gameInfo.secureArea);
+	if (gameInfo.header.CRC16 != 0)
+	{
+		bool okRom = DecryptSecureArea((u8*)&gameInfo.header, (u8*)gameInfo.secureArea);
 
-	if(!okRom) {
-		printf("Specified file is not a valid rom\n");
-		return false;
+		if(!okRom) {
+			printf("Specified file is not a valid rom\n");
+			return false;
+		}
 	}
 
 	//bios (or firmware) sets this default, which is generally not important for retail games but some homebrews are depending on
