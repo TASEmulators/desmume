@@ -64,6 +64,7 @@ enum NDS_ADDON_TYPE
 	NDS_ADDON_PIANO,		// Piano
   NDS_ADDON_PADDLE,
 	//NDS_ADDON_EXTERNALMIC,
+	NDS_ADDON_PASSME,		// PassME
 	NDS_ADDON_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };
 

@@ -34,6 +34,7 @@ extern ADDONINTERFACE addonGuitarGrip;
 extern ADDONINTERFACE addonExpMemory;
 extern ADDONINTERFACE addonPiano;
 extern ADDONINTERFACE addonPaddle;
+extern ADDONINTERFACE addonPassME;
 //extern ADDONINTERFACE addonExternalMic;
 
 ADDONINTERFACE addonList[NDS_ADDON_COUNT] = {
@@ -44,7 +45,8 @@ ADDONINTERFACE addonList[NDS_ADDON_COUNT] = {
 		addonGuitarGrip,
 		addonExpMemory,
 		addonPiano,
-		addonPaddle
+		addonPaddle,
+		addonPassME
 };
 
 ADDONINTERFACE	addon = addonCFlash;		// default cflash pak (why??)

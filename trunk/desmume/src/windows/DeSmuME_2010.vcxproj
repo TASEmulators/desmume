@@ -376,6 +376,7 @@
     <ClCompile Include="..\addons\slot1_retail_auto.cpp" />
     <ClCompile Include="..\addons\slot1_retail_mcrom.cpp" />
     <ClCompile Include="..\addons\slot1_retail_mcrom_debug.cpp" />
+    <ClCompile Include="..\addons\slot2_passme.cpp" />
     <ClCompile Include="..\addons\slot2_piano.cpp" />
     <ClCompile Include="..\addons\slot1_none.cpp" />
     <ClCompile Include="..\addons\slot1_r4.cpp" />

@@ -801,6 +801,9 @@
     <ClCompile Include="fsnitroView.cpp">
       <Filter>Windows\tools</Filter>
     </ClCompile>
+    <ClCompile Include="..\addons\slot2_passme.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h">
