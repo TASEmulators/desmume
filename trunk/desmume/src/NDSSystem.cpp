@@ -487,6 +487,11 @@ void GameInfo::closeROM()
 
 u32 GameInfo::readROM(u32 pos)
 {
+	//TODO - this should not be done here! it's a property of the slot-1 device, not the rom!
+	//required only for FAKE boot
+	if ((romType == ROM_NDS) && (pos < 0x8000) && (pos >= 0x4000))
+			return *(u32*)(secureArea + (pos - 0x4000));
+
 	if (!romdata)
 	{
 		u32 data;
@@ -2207,9 +2212,7 @@ bool NDS_FakeBoot()
 		u32 dst = header->ARM9cpy;
 		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
 		{
-			u32 tmp = ((gameInfo.romType == ROM_NDS) && (src < 0x8000) && (src >= 0x4000))?*(u32*)(gameInfo.secureArea + (src - 0x4000)):gameInfo.readROM(src);
-
-			_MMU_write32<ARMCPU_ARM9>(dst, tmp);
+			_MMU_write32<ARMCPU_ARM9>(dst, gameInfo.readROM(src));
 
 			dst += 4;
 			src += 4;
