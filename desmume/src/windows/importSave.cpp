@@ -76,7 +76,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			}
 			SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_SETCURSEL, MMU_new.backupDevice.info.type, 0);
 
-			fileSaveSize = NDS_ImportSaveSize(ImportSavFName);
+			fileSaveSize = MMU_new.backupDevice.importDataSize(ImportSavFName);
 
 			if (fileSaveSize > 0)
 			{
@@ -187,7 +187,7 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	u32 res = DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_IMPORT_SAVE_SIZE), hwnd, (DLGPROC)ImportSizeSelect_Proc);
 	if (res < MAX_SAVE_TYPES)
 	{
-		res = NDS_ImportSave(ImportSavFName, save_types[res+1].size);
+		res = MMU_new.backupDevice.importData(ImportSavFName, save_types[res+1].size);
 		if (res)
 		{
 			printf("Save was successfully imported\n");
