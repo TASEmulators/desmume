@@ -122,7 +122,7 @@ public:
 	bool isMovieMode;
 
 	u32 importDataSize(const char *filename);
-	u32 importData(const char *filename, u32 force_size);
+	u32 importData(const char *filename, u32 force_size = 0);
 	bool exportData(const char *filename);
 private:
 	void detect();
