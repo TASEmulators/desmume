@@ -52,6 +52,11 @@
 		AB0F29C714BE7213009ABC6F /* Icon_RotateCW_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */; };
 		AB0F29C814BE7213009ABC6F /* Icon_ShowHUD_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */; };
 		AB0F29C914BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
+		AB126D07182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
+		AB126D08182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
+		AB126D09182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
+		AB126D0A182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
+		AB126D0B182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
 		AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
@@ -1190,6 +1195,7 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB213D43170CB141006DDB0F /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
 		AB213D44170CB141006DDB0F /* InputProfileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputProfileController.mm; sourceTree = "<group>"; };
 		AB213E981710D074006DDB0F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -2049,6 +2055,7 @@
 				ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */,
 				ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */,
 				ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */,
+				AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */,
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
 				AB4C808A17C5D7780024D479 /* slot1comp_mc.h */,
@@ -3126,6 +3133,7 @@
 				ABB9212517CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB43527617D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB43528B17D5BA95007417C8 /* fsnitro.cpp in Sources */,
+				AB126D0B182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3264,6 +3272,7 @@
 				ABB9212217CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB43527317D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB43528817D5BA95007417C8 /* fsnitro.cpp in Sources */,
+				AB126D08182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3432,6 +3441,7 @@
 				ABB9212117CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB43527217D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB43528717D5BA95007417C8 /* fsnitro.cpp in Sources */,
+				AB126D07182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3600,6 +3610,7 @@
 				ABB9212417CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB43527517D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB43528A17D5BA95007417C8 /* fsnitro.cpp in Sources */,
+				AB126D0A182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3738,6 +3749,7 @@
 				ABB9212317CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB43527417D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB43528917D5BA95007417C8 /* fsnitro.cpp in Sources */,
+				AB126D09182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

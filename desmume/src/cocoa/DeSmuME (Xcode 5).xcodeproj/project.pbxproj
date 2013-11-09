@@ -61,6 +61,9 @@
 		AB0F29B614BE7213009ABC6F /* Icon_ShowHUD_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */; };
 		AB0F29B714BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
 		AB15CA7214A29EE500B8A6A4 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
+		AB1773FD182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
+		AB1773FE182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
+		AB1773FF182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
 		AB181D0013B66889006CA82D /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */; };
 		AB1B9E631501A78000464647 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */; };
@@ -719,6 +722,7 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreaudiosound.cpp; sourceTree = "<group>"; };
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
@@ -1438,11 +1442,11 @@
 		ABB3C63A1501BB8300E0C22E /* openemu */ = {
 			isa = PBXGroup;
 			children = (
-				ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */,
 				ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */,
 				ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */,
 				ABB3C6411501BB8300E0C22E /* OESoundInterface.h */,
 				ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */,
+				ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */,
 				ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */,
 				ABB3C63C1501BB8300E0C22E /* Info (OpenEmu Plug-in).plist */,
 			);
@@ -1644,6 +1648,7 @@
 				ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */,
 				ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */,
 				ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */,
+				AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */,
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
 				AB9038AC17C5ED2200F410BD /* slot1comp_mc.h */,
@@ -2272,6 +2277,7 @@
 				ABD1FEFD1345AC8400AF11D1 /* version.cpp in Sources */,
 				ABD1FF681345ACBF00AF11D1 /* vfat.cpp in Sources */,
 				ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */,
+				AB1773FE182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
 				ABAD3E7B13AF1D6D00502E1E /* WavFile.cpp in Sources */,
 				ABD1FEFE1345AC8400AF11D1 /* wifi.cpp in Sources */,
 				AB9038B317C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */,
@@ -2499,6 +2505,7 @@
 				AB40567E169F5DCC0016AC3E /* x86compilercontext.cpp in Sources */,
 				AB405681169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */,
 				AB405684169F5DCC0016AC3E /* x86compileritem.cpp in Sources */,
+				AB1773FD182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
 				AB405687169F5DCC0016AC3E /* x86cpuinfo.cpp in Sources */,
 				AB40568A169F5DCC0016AC3E /* x86defs.cpp in Sources */,
 				AB40568D169F5DCC0016AC3E /* x86func.cpp in Sources */,
@@ -2567,6 +2574,7 @@
 				ABB3C6981501C04F00E0C22E /* crc.cpp in Sources */,
 				ABB3C6991501C04F00E0C22E /* decrypt.cpp in Sources */,
 				ABB3C69A1501C04F00E0C22E /* header.cpp in Sources */,
+				AB1773FF182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
 				ABB3C69B1501C04F00E0C22E /* cache.cpp in Sources */,
 				ABB3C69C1501C04F00E0C22E /* directory.cpp in Sources */,
 				ABB3C69D1501C04F00E0C22E /* disc.cpp in Sources */,

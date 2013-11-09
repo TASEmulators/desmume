@@ -324,6 +324,13 @@
 		AB0E770414C5635800EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB0E770514C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
 		AB0E770614C5635900EF460C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = ABEB321914C56182007F0D4C /* InfoPlist.strings */; };
+		AB126D25182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
+		AB126D26182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
+		AB126D27182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
+		AB126D28182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
+		AB126D29182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
+		AB126D2A182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
+		AB126D2B182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */; };
 		AB18136D15D1FB73007A6CC3 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */; };
 		AB18136E15D1FB73007A6CC3 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */; };
 		AB18136F15D1FB73007A6CC3 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */; };
@@ -1365,6 +1372,7 @@
 		AB0A0EA914AAF77000E83E91 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../../ChangeLog; sourceTree = SOURCE_ROOT; };
 		AB0A0EAA14AAF77000E83E91 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB0A0EAB14AAF77000E83E91 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../README; sourceTree = SOURCE_ROOT; };
+		AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB18136C15D1FB73007A6CC3 /* arm_jit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_jit.cpp; path = ../arm_jit.cpp; sourceTree = SOURCE_ROOT; };
 		AB18137115D1FB8F007A6CC3 /* arm_jit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_jit.h; path = ../arm_jit.h; sourceTree = SOURCE_ROOT; };
 		AB18137215D1FBA6007A6CC3 /* instruction_attributes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = instruction_attributes.h; path = ../instruction_attributes.h; sourceTree = SOURCE_ROOT; };
@@ -1879,6 +1887,7 @@
 				AB06CDA2135B8AED00E977B3 /* slot2_mpcf.cpp */,
 				AB06CDA3135B8AED00E977B3 /* slot2_none.cpp */,
 				AB06CDA4135B8AED00E977B3 /* slot2_paddle.cpp */,
+				AB126D24182ECC7B00EBCF22 /* slot2_passme.cpp */,
 				AB06CDA5135B8AED00E977B3 /* slot2_piano.cpp */,
 				AB06CDA6135B8AED00E977B3 /* slot2_rumblepak.cpp */,
 				AB4C80F217C5DA240024D479 /* slot1comp_mc.h */,
@@ -2963,6 +2972,7 @@
 				ABB9215C17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352B717D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C317D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D2A182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3112,6 +3122,7 @@
 				ABB9215F17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352BA17D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C617D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D28182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3261,6 +3272,7 @@
 				ABB9215A17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352B517D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C117D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D26182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3380,6 +3392,7 @@
 				ABB9215E17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352B917D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C517D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D25182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3499,6 +3512,7 @@
 				ABB9216017CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352BB17D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C717D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D27182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3628,6 +3642,7 @@
 				ABB9215B17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352B617D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C217D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D2B182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3777,6 +3792,7 @@
 				ABB9215D17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */,
 				AB4352B817D66187007417C8 /* fsnitro.cpp in Sources */,
 				AB4352C417D661AC007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB126D29182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

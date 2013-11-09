@@ -195,7 +195,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	BOOL result = NO;
 	const char *romSavePath = [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding];
 	
-	NSInteger resultCode = MMU_new.backupDevice.importData(romSavePath);
+	NSInteger resultCode = MMU_new.backupDevice.importData(romSavePath, 0);
 	if (resultCode == 0)
 	{
 		return result;
