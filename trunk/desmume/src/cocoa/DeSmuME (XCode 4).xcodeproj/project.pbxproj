@@ -60,6 +60,9 @@
 		AB0F29B514BE7213009ABC6F /* Icon_RotateCW_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */; };
 		AB0F29B614BE7213009ABC6F /* Icon_ShowHUD_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */; };
 		AB0F29B714BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
+		AB107685182ECB29000D6F67 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB107684182ECB29000D6F67 /* slot2_passme.cpp */; };
+		AB107686182ECB29000D6F67 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB107684182ECB29000D6F67 /* slot2_passme.cpp */; };
+		AB107687182ECB29000D6F67 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB107684182ECB29000D6F67 /* slot2_passme.cpp */; };
 		AB15CA7214A29EE500B8A6A4 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
 		AB181D0013B66889006CA82D /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
 		AB1949DB15034F900098793E /* OESoundInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */; };
@@ -719,6 +722,7 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB107684182ECB29000D6F67 /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreaudiosound.cpp; sourceTree = "<group>"; };
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
 		AB1B9E611501A78000464647 /* coreaudiosound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreaudiosound.h; sourceTree = "<group>"; };
@@ -1438,11 +1442,11 @@
 		ABB3C63A1501BB8300E0C22E /* openemu */ = {
 			isa = PBXGroup;
 			children = (
-				ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */,
 				ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */,
 				ABB3C63F1501BB8300E0C22E /* OENDSSystemResponderClient.h */,
 				ABB3C6411501BB8300E0C22E /* OESoundInterface.h */,
 				ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */,
+				ABB3C6401501BB8300E0C22E /* OESoundInterface.mm */,
 				ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */,
 				ABB3C63C1501BB8300E0C22E /* Info (OpenEmu Plug-in).plist */,
 			);
@@ -1644,6 +1648,7 @@
 				ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */,
 				ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */,
 				ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */,
+				AB107684182ECB29000D6F67 /* slot2_passme.cpp */,
 				ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */,
 				ABD1FF0A1345AC9C00AF11D1 /* slot2_rumblepak.cpp */,
 				ABFE7C8517C5D03C0028DC56 /* slot1comp_mc.h */,
@@ -2346,6 +2351,7 @@
 				ABF55C2917CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */,
 				AB497A9C17D583EE0045B888 /* fsnitro.cpp in Sources */,
 				AB497AA017D584570045B888 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB107686182ECB29000D6F67 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2515,6 +2521,7 @@
 				ABF55C2817CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */,
 				AB497A9B17D583EE0045B888 /* fsnitro.cpp in Sources */,
 				AB497A9F17D584570045B888 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB107685182ECB29000D6F67 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2673,6 +2680,7 @@
 				ABF55C2A17CEB38F00A193FD /* slot1comp_protocol.cpp in Sources */,
 				AB497A9D17D583EE0045B888 /* fsnitro.cpp in Sources */,
 				AB497AA117D584570045B888 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB107687182ECB29000D6F67 /* slot2_passme.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
