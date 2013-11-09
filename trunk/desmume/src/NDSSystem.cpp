@@ -487,11 +487,6 @@ void GameInfo::closeROM()
 
 u32 GameInfo::readROM(u32 pos)
 {
-	//TODO - this should not be done here! it's a property of the slot-1 device, not the rom!
-	//required only for FAKE boot
-	if ((romType == ROM_NDS) && (pos < 0x8000) && (pos >= 0x4000))
-			return *(u32*)(secureArea + (pos - 0x4000));
-
 	if (!romdata)
 	{
 		u32 data;
@@ -2207,12 +2202,15 @@ bool NDS_FakeBoot()
 	
 	//firmware loads the game card arm9 and arm7 programs as specified in rom header
 	{
+		bool hasSecureArea = ((gameInfo.romType == ROM_NDS) && (gameInfo.header.CRC16 != 0));
 		//copy the arm9 program to the address specified by rom header
 		u32 src = header->ARM9src;
 		u32 dst = header->ARM9cpy;
-		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
+		for(u32 i = 0; i < header->ARM9binSize; i+=4)
 		{
-			_MMU_write32<ARMCPU_ARM9>(dst, gameInfo.readROM(src));
+			u32 tmp = (hasSecureArea && ((src >= 0x4000) && (src < 0x8000)))?*(u32*)(gameInfo.secureArea + (src - 0x4000)):gameInfo.readROM(src);
+
+			_MMU_write32<ARMCPU_ARM9>(dst, tmp);
 
 			dst += 4;
 			src += 4;
@@ -2221,7 +2219,7 @@ bool NDS_FakeBoot()
 		//copy the arm7 program to the address specified by rom header
 		src = header->ARM7src;
 		dst = header->ARM7cpy;
-		for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
+		for(u32 i = 0; i < header->ARM7binSize; i+=4)
 		{
 			_MMU_write32<ARMCPU_ARM7>(dst, gameInfo.readROM(src));
 
