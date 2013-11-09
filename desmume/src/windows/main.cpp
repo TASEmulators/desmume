@@ -3209,6 +3209,8 @@ int _main()
 		break;
 	case NDS_ADDON_PADDLE:
 		break;
+	case NDS_ADDON_PASSME:
+		break;
 	default:
 		addon_type = NDS_ADDON_NONE;
 		break;

@@ -2156,6 +2156,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\addons\slot2_passme.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\addons\slot2_piano.cpp"
 				>
 			</File>
