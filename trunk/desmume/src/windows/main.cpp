@@ -5459,7 +5459,7 @@ DOKEYDOWN:
 
 				if (ofn.nFilterIndex == 2) strcat(ImportSavName, "*");
 
-				if (!NDS_ExportSave(ImportSavName))
+				if (!MMU_new.backupDevice.exportData(ImportSavName))
 					MessageBox(hwnd,"Save was not successfully exported","Error",MB_OK);
 				NDS_UnPause();
 				return 0;

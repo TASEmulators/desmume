@@ -1263,29 +1263,12 @@ void MMU_GC_endTransfer(u32 PROCNUM)
 	// if needed, throw irq for the end of transfer
 	if(MMU.AUX_SPI_CNT & 0x4000)
 		NDS_makeIrq(PROCNUM, IRQ_BIT_GC_TRANSFER_COMPLETE);
-
-#ifdef _LOG_NEW_BOOT
-	{
-		extern FILE *fp_dis7;
-
-		if (fp_dis7)
-			fprintf(fp_dis7, "ARM%c: ctrl %08X - stop transfer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", PROCNUM?'7':'9', cnt);
-		printf("ARM%c: ctrl %08X - stop transfer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", PROCNUM?'7':'9', cnt);
-	}
-#endif
 }
 
 
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
 {
-#ifdef _LOG_NEW_BOOT
-	extern bool dolog;
-	extern FILE *fp_dis9;
-	extern FILE *fp_dis7;
-
-	u32 oldCnt = T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4);
-#endif
 
 	int dbsize = (val>>24)&7;
 	static int gcctr=0;
@@ -4785,9 +4768,6 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 			case REG_POSTFLG:
 				//printf("ARM7: write POSTFLG %02X PC:0x%08X\n", val, NDS_ARM7.instruct_adr);
 
-#ifdef _LOG_NEW_BOOT
-				printf("ARM7: write POSTFLG %02X PC:0x%08X\n", val, NDS_ARM7.instruct_adr);
-#endif
 				//The NDS7 register can be written to only from code executed in BIOS.
 				if (NDS_ARM7.instruct_adr > 0x3FFF) return;
 #ifdef HAVE_JIT

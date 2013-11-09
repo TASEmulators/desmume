@@ -66,9 +66,6 @@ struct buttonstruct {
 extern buttonstruct<bool> Turbo;
 extern buttonstruct<int> TurboTime;
 extern buttonstruct<bool> AutoHold;
-
-int NDS_WritePNG(const char *fname);
-
 extern volatile bool execute;
 extern BOOL click;
 
@@ -460,17 +457,12 @@ void NDS_suspendProcessingInput(bool suspend);
 int NDS_LoadROM(const char *filename, const char* physicalFilename=0, const char* logicalFilename=0);
 void NDS_FreeROM(void);
 void NDS_Reset();
-int NDS_ImportSave(const char *filename, u32 force_size = 0);
-u32 NDS_ImportSaveSize(const char *filename);
-bool NDS_ExportSave(const char *filename);
 
 bool NDS_LegitBoot();
 bool NDS_FakeBoot();
 
 void nds_savestate(EMUFILE* os);
 bool nds_loadstate(EMUFILE* is, int size);
-
-int NDS_WriteBMP(const char *filename);
 
 void NDS_Sleep();
 void NDS_TriggerCardEjectIRQ();
@@ -495,8 +487,6 @@ static INLINE void NDS_swapScreen(void)
    MainScreen.offset = SubScreen.offset;
    SubScreen.offset = tmp;
 }
-
-int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
 
 extern struct TCommonSettings {
 	TCommonSettings() 

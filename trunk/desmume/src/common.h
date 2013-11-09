@@ -104,4 +104,9 @@ struct MAKER
 
 std::string getDeveloperNameByID(u16 id);
 
+
+extern int NDS_WritePNG(const char *fname, u8 *data);
+extern int NDS_WriteBMP(const char *filename, u8 *data);
+extern int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
+
 #endif

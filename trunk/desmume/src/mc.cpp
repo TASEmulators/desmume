@@ -606,6 +606,65 @@ void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 	flush();
 }
 
+//======================================================================= Tools
+//=======================================================================
+//=======================================================================
+u32 BackupDevice::importDataSize(const char *filename)
+{
+	u32 res = 0;
+	if (strlen(filename) < 4) return 0;
+
+	if (memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0)
+	{
+		res = get_save_duc_size(filename);
+		if (res == 0xFFFFFFFF) return 0;
+		return res;
+	}
+
+	res = get_save_nogba_size(filename);
+	if (res != 0xFFFFFFFF) return res;
+
+	res = get_save_raw_size(filename);
+	if (res != 0xFFFFFFFF) return res;
+
+	return 0;
+}
+
+u32 BackupDevice::importData(const char *filename, u32 force_size)
+{
+	if (strlen(filename) < 4) return 0;
+
+	if (memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0)
+		return load_duc(filename, force_size);
+	else
+		if (load_no_gba(filename, force_size))
+			return 1;
+		else
+			return load_raw(filename, force_size);
+
+	return 0;
+}
+
+bool BackupDevice::exportData(const char *filename)
+{
+	if (strlen(filename) < 4)
+		return false;
+
+	if (memcmp(filename + strlen(filename) - 5, ".sav*", 5) == 0)
+	{
+		char tmp[MAX_PATH];
+		memset(tmp, 0, MAX_PATH);
+		strcpy(tmp, filename);
+		tmp[strlen(tmp)-1] = 0;
+		return save_no_gba(tmp);
+	}
+
+	if (memcmp(filename + strlen(filename) - 4, ".sav", 4) == 0)
+		return save_raw(filename);
+
+	return false;
+}
+
 //======================================================================= no$GBA
 //=======================================================================
 //=======================================================================

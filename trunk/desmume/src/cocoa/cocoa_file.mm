@@ -22,6 +22,7 @@
 #import "cocoa_util.h"
 
 #include "../NDSSystem.h"
+#include "../MMU.h"
 #include "../path.h"
 #include "../saves.h"
 #undef BOOL
@@ -194,7 +195,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	BOOL result = NO;
 	const char *romSavePath = [[romSaveURL path] cStringUsingEncoding:NSUTF8StringEncoding];
 	
-	NSInteger resultCode = NDS_ImportSave(romSavePath);
+	NSInteger resultCode = MMU_new.backupDevice.importData(romSavePath);
 	if (resultCode == 0)
 	{
 		return result;
@@ -224,7 +225,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		case ROMSAVEFORMAT_NOGBA:
 		{
 			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_NOGBA] cStringUsingEncoding:NSUTF8StringEncoding];
-			bool resultCode = NDS_ExportSave(destinationPath);
+			bool resultCode = MMU_new.backupDevice.exportData(destinationPath);
 			if (resultCode)
 			{
 				result = YES;
@@ -235,7 +236,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		case ROMSAVEFORMAT_RAW:
 		{
 			const char *destinationPath = [[[destinationURL path] stringByAppendingPathExtension:@FILE_EXT_ROM_SAVE_RAW] cStringUsingEncoding:NSUTF8StringEncoding];
-			bool resultCode = NDS_ExportSave(destinationPath);
+			bool resultCode = MMU_new.backupDevice.exportData(destinationPath);
 			if (resultCode)
 			{
 				result = YES;
