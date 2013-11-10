@@ -341,7 +341,6 @@ struct GameInfo
 	char ROMserial[20];
 	char ROMname[20];
 	bool _isDSiEnhanced;
-	bool isHomebrew;
 	NDS_header header;
 	//a copy of the pristine secure area from the rom
 	u8	secureArea[0x4000];
@@ -372,6 +371,7 @@ struct GameInfo
 	u32 readROM(u32 pos);
 	void populate();
 	bool isDSiEnhanced() { return _isDSiEnhanced; };
+	bool isHomebrew() { return ((header.ARM9src < 0x4000) && (T1ReadLong(header.logo, 0) != 0x51AEFF24) && (T1ReadLong(header.logo, 4) != 0x699AA221)); }
 	bool hasRomBanner();
 	
 };

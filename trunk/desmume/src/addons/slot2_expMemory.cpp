@@ -1,30 +1,22 @@
-/*  Copyright (C) 2009-2013 DeSmuME team
+/*
+	Copyright (C) 2009 CrazyMax
+	Copyright (C) 2009-2013 DeSmuME team
 
-    This file is part of DeSmuME
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../addons.h"
-#include "../mem.h"
-#include <string.h>
-#include "../MMU.h"
-
-static u8	*expMemory		= NULL;
-static u32	expMemSize		= 8 * 1024 * 1024; // 8Mb
-static bool	ext_ram_lock	= true;
+#include "../slot2.h"
 
 #if 0
 #define EXPINFO(...) INFO(__VA_ARGS__)
@@ -32,73 +24,7 @@ static bool	ext_ram_lock	= true;
 #define EXPINFO(...)
 #endif 
 
-static BOOL ExpMemory_init(void) { return (TRUE); }
-static void ExpMemory_reset(void)
-{
-	if (expMemory)
-	{
-		delete [] expMemory;
-		expMemory = NULL;
-	}
-	expMemory = new u8 [expMemSize];
-	memset(expMemory, 0xFF, expMemSize);
-	ext_ram_lock = true; 
-}
-static void ExpMemory_close(void)
-{
-	if (expMemory)
-	{
-		delete [] expMemory;
-		expMemory = NULL;
-	}
-}
-static void ExpMemory_config(void) {}
-static void ExpMemory_write08(u32 procnum, u32 adr, u8 val) 
-{
-	if (ext_ram_lock) return;
-
-	if (adr >= 0x09000000)
-	{
-		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return;
-		T1WriteByte(expMemory, offs, val);
-	}
-	EXPINFO("ExpMemory: write 08 at 0x%08X = 0x%02X\n", adr, val);
-}
-static void ExpMemory_write16(u32 procnum, u32 adr, u16 val) 
-{
-	if (adr == 0x08240000)
-	{
-		if (val == 0)
-			ext_ram_lock = true;
-		else
-			if (val == 1)
-				ext_ram_lock = false;
-		return;
-	}
-
-	if (ext_ram_lock) return;
-
-	if (adr >= 0x09000000)
-	{
-		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return;
-		T1WriteWord(expMemory, offs, val);
-	}
-	EXPINFO("ExpMemory: write 16 at 0x%08X = 0x%04X\n", adr, val);
-}
-static void ExpMemory_write32(u32 procnum, u32 adr, u32 val) 
-{
-	if (ext_ram_lock) return;
-
-	if (adr >= 0x09000000)
-	{
-		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return;
-		T1WriteLong(expMemory, offs, val);
-	}
-	EXPINFO("ExpMemory: write 32 at 0x%08X = 0x%08X\n", adr, val);
-}
+#define EXPANSION_MEMORY_SIZE (8 * 1024 * 1024)
 
 static u8 header_0x00B0[] = 
 { 0xFF, 0xFF, 0x96, 0x00,  //this 0x96 is strange. it can't be read from the pak when it boots, it must appear later
@@ -107,67 +33,135 @@ static u8 header_0x00B0[] =
   0xFF, 0xFF, 0xFF, 0x7F
 };
 
-static u8 ExpMemory_read08(u32 procnum, u32 adr)
+class Slot2_ExpansionPak : public ISlot2Interface
 {
-	EXPINFO("ExpMemory: read 08 at 0x%08X\n", adr);
-
-	if(adr>=0x080000B0 && adr<0x080000C0)
-		return T1ReadByte(header_0x00B0,adr-0x080000B0);
-
-	if (adr >= 0x09000000)
+private:
+	u8		*expMemory;
+	bool	ext_ram_lock;
+public:
+	virtual Slot2Info const* info()
 	{
-		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return (0xFF);
-		return T1ReadByte(expMemory, offs);
+		static Slot2InfoSimple info("Memory Expansion Pak", "Official RAM expansion for Opera browser");
+		return &info;
 	}
 
-	return 0xFF;
-}
-static u16 ExpMemory_read16(u32 procnum, u32 adr)
-{
-	if(adr>=0x080000B0 && adr<0x080000C0)
-		return T1ReadWord(header_0x00B0,adr-0x080000B0);
-
-	if (adr == 0x0801FFFC) return 0x7FFF;
-	if (adr == 0x08240002) return 0; //this can't be 0xFFFF. dunno why, we just guessed 0
-
-	if (adr >= 0x09000000)
+	virtual void connect()
 	{
-		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return (0xFFFF);
-		return T1ReadWord(expMemory, offs);
+		if (expMemory)
+		{
+			delete [] expMemory;
+			expMemory = NULL;
+		}
+
+		expMemory = new u8 [EXPANSION_MEMORY_SIZE];
+		memset(expMemory, 0xFF, EXPANSION_MEMORY_SIZE);
+		ext_ram_lock = true; 
 	}
 
-	EXPINFO("ExpMemory: read 16 at 0x%08X\n", adr);
-	return 0xFFFF;
-}
-static u32 ExpMemory_read32(u32 procnum, u32 adr)
-{
-	if(adr>=0x080000B0 && adr<0x080000C0)
-		return T1ReadLong(header_0x00B0,adr-0x080000B0);
-
-	if (adr >= 0x09000000)
+	virtual void disconnect()
 	{
-		u32 offs = (adr - 0x09000000);
-		if (offs >= expMemSize) return 0xFFFFFFFF;
-		return T1ReadLong(expMemory, offs);
+		delete [] expMemory;
+		expMemory = NULL;
 	}
 
-	EXPINFO("ExpMemory: read 32 at 0x%08X\n", adr);
-	return 0xFFFFFFFF;
-}
-static void ExpMemory_info(char *info) { strcpy(info, "Official RAM expansion for Opera browser"); }
+	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
+	{
+		if (ext_ram_lock) return;
 
-ADDONINTERFACE addonExpMemory = {
-				"Memory Expansion Pak",
-				ExpMemory_init,
-				ExpMemory_reset,
-				ExpMemory_close,
-				ExpMemory_config,
-				ExpMemory_write08,
-				ExpMemory_write16,
-				ExpMemory_write32,
-				ExpMemory_read08,
-				ExpMemory_read16,
-				ExpMemory_read32,
-				ExpMemory_info};
+		if (addr >= 0x09000000)
+		{
+			u32 offs = (addr - 0x09000000);
+			if (offs >= EXPANSION_MEMORY_SIZE) return;
+			T1WriteByte(expMemory, offs, val);
+		}
+		EXPINFO("ExpMemory: write 08 at 0x%08X = 0x%02X\n", addr, val);
+	}
+	virtual void writeWord(u8 PROCNUM, u32 addr, u16 val)
+	{
+		if (addr == 0x08240000)
+		{
+			if (val == 0)
+				ext_ram_lock = true;
+			else
+				if (val == 1)
+					ext_ram_lock = false;
+			return;
+		}
+
+		if (ext_ram_lock) return;
+
+		if (addr >= 0x09000000)
+		{
+			u32 offs = (addr - 0x09000000);
+			if (offs >= EXPANSION_MEMORY_SIZE) return;
+			T1WriteWord(expMemory, offs, val);
+		}
+		EXPINFO("ExpMemory: write 16 at 0x%08X = 0x%04X\n", addr, val);
+	}
+	virtual void writeLong(u8 PROCNUM, u32 addr, u32 val)
+	{
+		if (ext_ram_lock) return;
+
+		if (addr >= 0x09000000)
+		{
+			u32 offs = (addr - 0x09000000);
+			if (offs >= EXPANSION_MEMORY_SIZE) return;
+			T1WriteLong(expMemory, offs, val);
+		}
+		EXPINFO("ExpMemory: write 32 at 0x%08X = 0x%08X\n", addr, val);
+	}
+
+	virtual u8	readByte(u8 PROCNUM, u32 addr)
+	{
+		EXPINFO("ExpMemory: read 08 at 0x%08X\n", addr);
+
+		if ((addr >= 0x080000B0) && (addr < 0x080000C0))
+			return T1ReadByte(header_0x00B0, (addr - 0x080000B0));
+
+		if (addr >= 0x09000000)
+		{
+			u32 offs = (addr - 0x09000000);
+			if (offs >= EXPANSION_MEMORY_SIZE) return (0xFF);
+			return T1ReadByte(expMemory, offs);
+		}
+		
+		return 0xFF;
+	}
+	virtual u16	readWord(u8 PROCNUM, u32 addr)
+	{
+		EXPINFO("ExpMemory: read 16 at 0x%08X\n", addr);
+
+		if ((addr >= 0x080000B0) && (addr < 0x080000C0))
+			return T1ReadWord(header_0x00B0, (addr - 0x080000B0));
+
+		if (addr == 0x0801FFFC) return 0x7FFF;
+		if (addr == 0x08240002) return 0; //this can't be 0xFFFF. dunno why, we just guessed 0
+
+		if (addr >= 0x09000000)
+		{
+			u32 offs = (addr - 0x09000000);
+			if (offs >= EXPANSION_MEMORY_SIZE) return (0xFFFF);
+			return T1ReadWord(expMemory, offs);
+		}
+		
+		return 0xFFFF;
+	}
+	virtual u32	readLong(u8 PROCNUM, u32 addr)
+	{
+		EXPINFO("ExpMemory: read 32 at 0x%08X\n", addr);
+
+		if((addr >= 0x080000B0) && (addr < 0x080000C0))
+			return T1ReadLong(header_0x00B0, (addr - 0x080000B0));
+
+		if (addr >= 0x09000000)
+		{
+			u32 offs = (addr - 0x09000000);
+			if (offs >= EXPANSION_MEMORY_SIZE) return 0xFFFFFFFF;
+			return T1ReadLong(expMemory, offs);
+		}
+		
+		return 0xFFFFFFFF;
+	}
+};
+
+ISlot2Interface* construct_Slot2_ExpansionPak() { return new Slot2_ExpansionPak(); }

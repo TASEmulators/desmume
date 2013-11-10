@@ -1,4 +1,5 @@
-/*  Copyright (C) 2010-2011 DeSmuME team
+/*
+	Copyright (C) 2010-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -14,82 +15,69 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../addons.h"
-#include <string.h>
+#include "../slot2.h"
 
 static u16	pianoKeyStatus = 0;
 
-static BOOL piano_init(void) { return (TRUE); }
-static void piano_reset(void)
+class Slot2_EasyPiano : public ISlot2Interface
 {
-	//INFO("piano: Reset\n");
-	pianoKeyStatus = 0;
-}
+public:
+	virtual Slot2Info const* info()
+	{
+		static Slot2InfoSimple info("Piano", "Piano for EasyPiano");
+		return &info;
+	}
 
-static void piano_close(void) {}
-static void piano_config(void) {}
-static void piano_write08(u32 procnum, u32 adr, u8 val)
-{
-	//INFO("piano: write 08 at 0x%08X = %02X\n", adr, val);
-}
-static void piano_write16(u32 procnum, u32 adr, u16 val)
-{
-	//INFO("piano: write 16 at 0x%08X = %04X\n", adr, val);
-}
-static void piano_write32(u32 procnum, u32 adr, u32 val)
-{
-	//INFO("piano: write 32 at 0x%08X = %08X\n", adr, val);
-}
-extern int currFrameCounter;
-static u8 piano_read08(u32 procnum, u32 adr)
-{
-	//printf("piano: read 08 at 0x%08X\n", adr);
+	virtual void connect()
+	{
+		pianoKeyStatus = 0;
+	}
 
-	//the actual keyboard output
+	virtual u8	readByte(u8 PROCNUM, u32 addr)
+	{
+		//printf("piano: read 08 at 0x%08X\n", adr);
 
-	//byte:bit
-	//0x09FFFFFE:0 = C
-	//0x09FFFFFE:1 = C#
-	//0x09FFFFFE:2 = D
-	//0x09FFFFFE:3 = D#
-	//0x09FFFFFE:4 = E
-	//0x09FFFFFE:5 = F
-	//0x09FFFFFE:6 = F#
-	//0x09FFFFFE:7 = G
-	//0x09FFFFFF:0 = G#
-	//0x09FFFFFF:1 = A
-	//0x09FFFFFF:2 = A#
-	//0x09FFFFFF:3 = ?
-	//0x09FFFFFF:4 = ?
-	//0x09FFFFFF:5 = B
-	//0x09FFFFFF:6 = hiC
-	//0x09FFFFFF:7 = ?
+		//the actual keyboard output
 
-	//deassert bit if key is pressed
+		//byte:bit
+		//0x09FFFFFE:0 = C
+		//0x09FFFFFE:1 = C#
+		//0x09FFFFFE:2 = D
+		//0x09FFFFFE:3 = D#
+		//0x09FFFFFE:4 = E
+		//0x09FFFFFE:5 = F
+		//0x09FFFFFE:6 = F#
+		//0x09FFFFFE:7 = G
+		//0x09FFFFFF:0 = G#
+		//0x09FFFFFF:1 = A
+		//0x09FFFFFF:2 = A#
+		//0x09FFFFFF:3 = ?
+		//0x09FFFFFF:4 = ?
+		//0x09FFFFFF:5 = B
+		//0x09FFFFFF:6 = hiC
+		//0x09FFFFFF:7 = ?
 
-	//LOG("PIANO: %04X\n",pianoKeyStatus);
+		//deassert bit if key is pressed
 
-	if(adr == 0x09FFFFFE) return (~(pianoKeyStatus&0xFF));
-	if(adr == 0x09FFFFFF) return (~((pianoKeyStatus>>8)&0xFF))&~(0x18);
+		//LOG("PIANO: %04X\n",pianoKeyStatus);
 
-	if(adr&1) return 0xE7;
-	else return 0xFF;
-}
-static u16 piano_read16(u32 procnum, u32 adr)
-{
-	//printf("piano: read 16 at 0x%08X\n", adr);
-	if(adr != 0x09FFFFFE)
-		return 0xE7FF;
-	u16 ret = piano_read08(procnum,0x09FFFFFE)|(piano_read08(procnum,0x09FFFFFF)<<8);
-	//return ( (PIANO_PAK & 0x1800 ) == 0 );
-	return ret;
-}
-static u32 piano_read32(u32 procnum, u32 adr)
-{
-	//printf("piano: read 32 at 0x%08X\n", adr);
-	return 0xE7FFE7FF;
-}
-static void piano_info(char *info) { strcpy(info, "Piano for EasyPiano"); }
+		if(addr == 0x09FFFFFE) return (~(pianoKeyStatus&0xFF));
+		if(addr == 0x09FFFFFF) return (~((pianoKeyStatus>>8)&0xFF))&~(0x18);
+
+		return (addr & 1)?0xE7:0xFF;
+	}
+	virtual u16	readWord(u8 PROCNUM, u32 addr)
+	{
+		if (addr != 0x09FFFFFE)
+			return 0xE7FF;
+		
+		return readByte(PROCNUM, 0x09FFFFFE) | (readByte(PROCNUM,0x09FFFFFF) << 8);
+	}
+	virtual u32	readLong(u8 PROCNUM, u32 addr) { return 0xE7FFE7FF; }
+
+};
+
+ISlot2Interface* construct_Slot2_EasyPiano() { return new Slot2_EasyPiano(); }
 
 void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic)
 {
@@ -110,35 +98,20 @@ void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, boo
 	//0x09FFFFFF:6 = hiC
 	//0x09FFFFFF:7 = ?
 
-#define BIT(N,v) ((v)?(1<<(N)):0)
-	pianoKeyStatus = 
-		BIT(0,c) |
-		BIT(1,cs) |
-		BIT(2,d) |
-		BIT(3,ds) |
-		BIT(4,e) |
-		BIT(5,f) |
-		BIT(6,fs) |
-		BIT(7,g) |
-		BIT(8,gs) |
-		BIT(9,a) |
-		BIT(10,as) |
-		BIT(13,b) |
-		BIT(14,hic)
-		;
-	pianoKeyStatus = pianoKeyStatus;
+	#define BIT_P(N,v) ((v)?(1<<(N)):0)
+		pianoKeyStatus = 
+			BIT_P(0,c) |
+			BIT_P(1,cs) |
+			BIT_P(2,d) |
+			BIT_P(3,ds) |
+			BIT_P(4,e) |
+			BIT_P(5,f) |
+			BIT_P(6,fs) |
+			BIT_P(7,g) |
+			BIT_P(8,gs) |
+			BIT_P(9,a) |
+			BIT_P(10,as) |
+			BIT_P(13,b) |
+			BIT_P(14,hic)
+			;
 }
-
-ADDONINTERFACE addonPiano = {
-	"Piano",
-	piano_init,
-	piano_reset,
-	piano_close,
-	piano_config,
-	piano_write08,
-	piano_write16,
-	piano_write32,
-	piano_read08,
-	piano_read16,
-	piano_read32,
-	piano_info};

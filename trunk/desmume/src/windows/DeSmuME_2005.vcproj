@@ -2349,14 +2349,6 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath="..\addons.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\addons.h"
-			>
-		</File>
-		<File
 			RelativePath="..\agg2d.h"
 			>
 		</File>
@@ -2782,6 +2774,14 @@
 		</File>
 		<File
 			RelativePath="..\slot1.h"
+			>
+		</File>
+		<File
+			RelativePath="..\slot2.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\slot2.h"
 			>
 		</File>
 		<File

@@ -33,8 +33,8 @@
 #include "gfx3d.h"
 #include "rtc.h"
 #include "mc.h"
-#include "addons.h"
 #include "slot1.h"
+#include "slot2.h"
 #include "mic.h"
 #include "movie.h"
 #include "readwrite.h"
@@ -924,14 +924,10 @@ void MMU_Init(void)
 	MMU.fw.fp = NULL;
 	MMU.fw.isFirmware = true;
 
-	// Init Backup Memory device, this should really be done when the rom is loaded
-	//mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
-	//mc_alloc(&MMU.bupmem, 1);
-	//MMU.bupmem.fp = NULL;
 	rtcInit();
-	addonsInit();
 	
 	slot1_Init();
+	slot2_Init();
 	
 	if(Mic_Init() == FALSE)
 		INFO("Microphone init failed.\n");
@@ -944,11 +940,9 @@ void MMU_DeInit(void) {
 	if (MMU.fw.fp)
 		fclose(MMU.fw.fp);
 	mc_free(&MMU.fw);      
-	//if (MMU.bupmem.fp)
-	//	fclose(MMU.bupmem.fp);
-	//mc_free(&MMU.bupmem);
-	addonsClose();
+
 	slot1_Shutdown();
+	slot2_Shutdown();
 	Mic_DeInit();
 }
 
@@ -1026,8 +1020,8 @@ void MMU_Reset()
 
 	rtcInit();
 	partie = 1;
-	addonsReset();
 	slot1_Reset();
+	slot2_Reset();
 	Mic_Reset();
 	MMU.gfx3dCycles = 0;
 
@@ -3205,14 +3199,8 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		return;
 	}
 
-	if ((adr >= 0x08000000) && (adr < 0x0A010000))
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
-		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
-		{} //prohibited
-		else addon.write08(ARMCPU_ARM9, adr, val);
+	if (slot2_write<ARMCPU_ARM9, u8>(adr, val))
 		return;
-	}
 
 	//block 8bit writes to OAM and palette memory
 	if ((adr & 0x0F000000) == 0x07000000) return;
@@ -3487,14 +3475,8 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return;
 	}
 
-	if ((adr >= 0x08000000) && (adr < 0x0A010000))
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
-		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
-		{} //prohibited
-		else addon.write16(ARMCPU_ARM9, adr, val);
+	if (slot2_write<ARMCPU_ARM9, u16>(adr, val))
 		return;
-	}
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
@@ -3947,14 +3929,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		return ;
 	}
 
-	if ((adr >= 0x08000000) && (adr < 0x0A010000))
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
-		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
-		{} //prohibited
-		else addon.write32(ARMCPU_ARM9, adr, val);
+	if (slot2_write<ARMCPU_ARM9, u32>(adr, val))
 		return;
-	}
 
 #if 0
 	if ((adr & 0xFF800000) == 0x04800000) {
@@ -4380,13 +4356,9 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
-		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
-			return 0; //prohibited
-		else return addon.read08(ARMCPU_ARM9, adr);
-	}
+	u8 slot2_val;
+	if (slot2_read<ARMCPU_ARM9, u8>(adr, slot2_val))
+		return slot2_val;
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
@@ -4475,13 +4447,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);	
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
-		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
-			return 0; //prohibited
-		else return addon.read16(ARMCPU_ARM9, adr);
-	}
+	u16 slot2_val;
+	if (slot2_read<ARMCPU_ARM9, u16>(adr, slot2_val))
+		return slot2_val;
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
@@ -4585,13 +4553,9 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	if(adr<0x02000000) 
 		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
-		if(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7)
-			return 0; //prohibited
-		else return addon.read32(ARMCPU_ARM9, adr);
-	}
+	u32 slot2_val;
+	if (slot2_read<ARMCPU_ARM9, u32>(adr, slot2_val))
+		return slot2_val;
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
@@ -4728,14 +4692,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	if (adr < 0x02000000) return; //can't write to bios or entire area below main memory
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
-		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
-		{} //prohibited
-		else addon.write08(ARMCPU_ARM7,adr, val);
+	if (slot2_write<ARMCPU_ARM7, u8>(adr, val))
 		return;
-	}
 
 	if ((adr >= 0x04000400) && (adr < 0x04000520)) 
 	{
@@ -4839,15 +4797,9 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
 
 	if (adr < 0x02000000) return; //can't write to bios or entire area below main memory
-	
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
-		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
-		{} //prohibited
-		else addon.write16(ARMCPU_ARM7,adr, val);
+
+	if (slot2_write<ARMCPU_ARM7, u16>(adr, val))
 		return;
-	}
 
 	if ((adr >= 0x04000400) && (adr < 0x04000520))
 	{
@@ -5027,14 +4979,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 	if (adr < 0x02000000) return; //can't write to bios or entire area below main memory
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
-		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
-		{} //prohibited
-		else addon.write32(ARMCPU_ARM7,adr, val);
+	if (slot2_write<ARMCPU_ARM7, u32>(adr, val))
 		return;
-	}
 
 	if ((adr >= 0x04000400) && (adr < 0x04000520))
 	{
@@ -5153,20 +5099,14 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 			return WIFI_read16(adr) & 0xFF;
 	}
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
-		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
-			return 0; //prohibited
-		else return addon.read08(ARMCPU_ARM7,adr);
-	}
+	u8 slot2_val;
+	if (slot2_read<ARMCPU_ARM7, u8>(adr, slot2_val))
+		return slot2_val;
 
 	if ((adr>=0x04000400)&&(adr<0x04000520))
 	{
 		return SPU_ReadByte(adr);
 	}
-
-	if (adr == REG_RTC) return (u8)rtcRead();
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
@@ -5177,6 +5117,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 		switch(adr)
 		{
+			case REG_RTC: return (u8)rtcRead();
 			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
 			case REG_IF+1: return (MMU.gen_IF<ARMCPU_ARM7>()>>8);
 			case REG_IF+2: return (MMU.gen_IF<ARMCPU_ARM7>()>>16);
@@ -5214,13 +5155,9 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	if ((adr & 0xFFFF0000) == 0x04800000)
 		return WIFI_read16(adr) ;
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
-		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
-			return 0; //prohibited
-		else return addon.read16(ARMCPU_ARM7,adr);
-	}
+	u16 slot2_val;
+	if (slot2_read<ARMCPU_ARM7, u16>(adr, slot2_val))
+		return slot2_val;
 
     if ((adr>=0x04000400)&&(adr<0x04000520))
     {
@@ -5318,13 +5255,9 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	if ((adr & 0xFFFF0000) == 0x04800000)
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		u16 exmemcnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
-		if(!(exmemcnt & EXMEMCNT_MASK_SLOT2_ARM7))
-			return 0; //prohibited
-		else return addon.read32(ARMCPU_ARM7,adr);
-	}
+	u32 slot2_val;
+	if (slot2_read<ARMCPU_ARM7, u32>(adr, slot2_val))
+		return slot2_val;
 
     if ((adr>=0x04000400)&&(adr<0x04000520))
     {

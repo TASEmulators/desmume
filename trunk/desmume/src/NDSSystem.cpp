@@ -43,7 +43,7 @@
 #include "version.h"
 #include "path.h"
 #include "slot1.h"
-#include "addons.h"
+#include "slot2.h"
 
 //int xxctr=0;
 //#define LOG_ARM9
@@ -340,30 +340,7 @@ void GameInfo::populate()
 	memset(ROMserial, 0, sizeof(ROMserial));
 	memset(ROMname, 0, sizeof(ROMname));
 
-	//homebrew detection heuristics
-	//Option Old. - look for this instruction in the game title
-	//(did this ever work?)
-	//(header->gameTile[0] == 0x2E) && (header->gameTile[1] == 0x00) && header->gameTile[2] == 0x00) && header->gameTile[3] == 0xEA)
-	//Option New. - look for gamecode #### (default for ndstool)
-	//or an invalid gamecode
-	//this first part may look like a poor heuristic for detecting homebrew, but it is actually pretty good.
-	//setting your own game code is stupid, so homebrew should just leave it.
-	//however, non-devkitARM-default makefiles may not have set this.
-	bool gamecodeHash = !memcmp(header.gameCode,"####",4);
-	bool gamecodeInvalid = header.gameCode[0] == 0x00;
-
-
-	if((gamecodeHash || gamecodeInvalid) 
-		//TBD - is this check a good idea?
-		&& header.makerCode == 0x0
-		)
-	{
-		isHomebrew = true;
-	}
-	else
-		isHomebrew = false;
-
-	if(isHomebrew)
+	if(isHomebrew())
 	{
 		//we can't really make a serial for a homebrew game that hasnt set a game code
 		strcpy(ROMserial, "Homebrew");
@@ -567,34 +544,37 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		gameInfo.crc = 0;
 
 	gameInfo.chipID  = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
-	gameInfo.chipID |= ((((128 << gameInfo.header.cardSize) / 1024) - 1) << 8);		// Chip size in megabytes minus 1
-																					// (07h = 8MB, 0Fh = 16MB, 1Fh = 32MB, 3Fh = 64MB, 7Fh = 128MB)
-
-	// flags
-	// 0: Unknown
-	// 1: Unknown
-	// 2: Unknown
-	// 3: Unknown
-	// 4: Unknown
-	// 5: DSi? (if set to 1 then DSi Enhanced games send command D6h to Slot1)
-	// 6: Unknown
-	// 7: ROM speed (Secure Area Block transfer mode (trasfer 8x200h or 1000h bytes)
-	// TODO:
-	//if (gameInfo.isDSiEnhanced())
-	//		gameInfo.chipID |= (0x40 << 24);
-	gameInfo.chipID |= (0x00 << 24);
-
-	if (gameInfo.romType == ROM_NDS)
+	if (!gameInfo.isHomebrew())
 	{
-		INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
-		if (gameInfo.crc)
-			INFO("ROM crc: %08X\n", gameInfo.crc);
+		gameInfo.chipID |= ((((128 << gameInfo.header.cardSize) / 1024) - 1) << 8);		// Chip size in megabytes minus 1
+																						// (07h = 8MB, 0Fh = 16MB, 1Fh = 32MB, 3Fh = 64MB, 7Fh = 128MB)
+
+		// flags
+		// 0: Unknown
+		// 1: Unknown
+		// 2: Unknown
+		// 3: Unknown
+		// 4: Unknown
+		// 5: DSi? (if set to 1 then DSi Enhanced games send command D6h to Slot1)
+		// 6: Unknown
+		// 7: ROM speed (Secure Area Block transfer mode (trasfer 8x200h or 1000h bytes)
+		// TODO:
+		//if (gameInfo.isDSiEnhanced())
+		//		gameInfo.chipID |= (0x40 << 24);
+		gameInfo.chipID |= (0x00 << 24);
+	}
+
+	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
+	if (gameInfo.crc)
+		INFO("ROM crc: %08X\n", gameInfo.crc);
+	if (!gameInfo.isHomebrew())
+	{
 		INFO("ROM serial: %s\n", gameInfo.ROMserial);
 		INFO("ROM chipID: %08X\n", gameInfo.chipID);
 		INFO("ROM internal name: %s\n", gameInfo.ROMname);
 		if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
-		INFO("ROM developer: %s\n", getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 	}
+	INFO("ROM developer: %s\n", ((gameInfo.header.makerCode == 0) && gameInfo.isHomebrew())?"Homebrew":getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, path.pathToModule);
@@ -627,13 +607,14 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	printf("\n");
 
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
-	if(gameInfo.isHomebrew && CommonSettings.loadToMemory)
+	if(gameInfo.isHomebrew() && CommonSettings.loadToMemory)
 	{
 		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
 			DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 1);
 		else
-			if (addon_type == NDS_ADDON_CFLASH)
+			if (slot2_GetCurrentType() == NDS_SLOT2_CFLASH)
 				DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 0);
+
 	}
 
 	if (cheats != NULL)

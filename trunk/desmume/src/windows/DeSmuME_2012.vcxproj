@@ -380,7 +380,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\addons.cpp" />
     <ClCompile Include="..\addons\slot1comp_mc.cpp" />
     <ClCompile Include="..\addons\slot1comp_protocol.cpp" />
     <ClCompile Include="..\addons\slot1comp_rom.cpp" />
@@ -441,6 +440,7 @@
     <ClCompile Include="..\rtc.cpp" />
     <ClCompile Include="..\saves.cpp" />
     <ClCompile Include="..\slot1.cpp" />
+    <ClCompile Include="..\slot2.cpp" />
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
@@ -666,7 +666,6 @@
     <ClCompile Include="tileView.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\addons.h" />
     <ClInclude Include="..\addons\slot1comp_mc.h" />
     <ClInclude Include="..\addons\slot1comp_protocol.h" />
     <ClInclude Include="..\addons\slot1comp_rom.h" />
@@ -719,6 +718,7 @@
     <ClInclude Include="..\saves.h" />
     <ClInclude Include="..\shaders.h" />
     <ClInclude Include="..\slot1.h" />
+    <ClInclude Include="..\slot2.h" />
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\types.h" />

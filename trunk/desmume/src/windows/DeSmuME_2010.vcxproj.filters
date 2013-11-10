@@ -69,9 +69,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\addons.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="..\aggdraw.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -166,6 +163,9 @@
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="..\slot1.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\slot2.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="..\SPU.cpp">
@@ -806,9 +806,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\addons.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\armcpu.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -923,6 +920,9 @@
     <ClInclude Include="..\slot1.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClCompile Include="..\slot2.h">
+      <Filter>Core</Filter>
+    </ClCompile>
     <ClInclude Include="..\SPU.h">
       <Filter>Core</Filter>
     </ClInclude>

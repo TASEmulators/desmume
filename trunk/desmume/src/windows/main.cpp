@@ -45,7 +45,7 @@
 #include "../debug.h"
 #include "../saves.h"
 #include "../slot1.h"
-#include "../addons.h"
+#include "../slot2.h"
 #include "../GPU_osd.h"
 #include "../OGLRender.h"
 #include "../OGLRender_3_2.h"
@@ -3132,8 +3132,8 @@ int _main()
 
 	input_init();
 
-	if (addon_type == NDS_ADDON_GUITARGRIP) Guitar.Enabled = true;
-	if (addon_type == NDS_ADDON_PIANO) Piano.Enabled = true;
+	if (slot2_GetCurrentType() == NDS_SLOT2_GUITARGRIP) Guitar.Enabled = true;
+	if (slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO) Piano.Enabled = true;
 
 	LOG("Init NDS\n");
 
@@ -3158,11 +3158,11 @@ int _main()
 		cmdline._slot1_fat_dir_type = 0;
 	slot1_R4_path_type = cmdline._slot1_fat_dir_type;
 
-	addon_type = (NDS_ADDON_TYPE)GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
-	win32_CFlash_cfgMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
-	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
-	win32_CFlash_cfgFileName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
-	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
+	int slot2_device_type = (NDS_SLOT2_TYPE)GetPrivateProfileInt("Slot2", "type", NDS_SLOT1_NONE, IniName);
+	win32_CFlash_cfgMode = GetPrivateProfileInt("Slot2.CFlash", "fileMode", 2, IniName);
+	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("Slot2.CFlash", "path", "");
+	win32_CFlash_cfgFileName = GetPrivateProfileStdString("Slot2.CFlash", "filename", "");
+	GetPrivateProfileString("Slot2.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
 
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();
@@ -3171,7 +3171,7 @@ int _main()
 
 	if(cmdline.is_cflash_configured)
 	{
-	    addon_type = NDS_ADDON_CFLASH;
+	    slot2_device_type = NDS_SLOT2_CFLASH;
 		//push the commandline-provided options into the current config slots
 		if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
 			win32_CFlash_cfgDirectory = CFlash_Path;
@@ -3179,53 +3179,54 @@ int _main()
 			win32_CFlash_cfgFileName = CFlash_Path;
 	}
 
-	if(cmdline.gbaslot_rom != "")
-	{
-		addon_type = NDS_ADDON_GBAGAME;
-		strcpy(GBAgameName, cmdline.gbaslot_rom.c_str());
-	}
-
-	switch (addon_type)
-	{
-	case NDS_ADDON_NONE:
-		break;
-	case NDS_ADDON_CFLASH:
-		break;
-	case NDS_ADDON_RUMBLEPAK:
-		break;
-	case NDS_ADDON_GBAGAME:
-		if (!strlen(GBAgameName))
-		{
-			addon_type = NDS_ADDON_NONE;
-			break;
-		}
-		// TODO: check for file exist
-		break;
-	case NDS_ADDON_GUITARGRIP:
-		break;
-	case NDS_ADDON_EXPMEMORY:
-		break;
-	case NDS_ADDON_PIANO:
-		break;
-	case NDS_ADDON_PADDLE:
-		break;
-	case NDS_ADDON_PASSME:
-		break;
-	default:
-		addon_type = NDS_ADDON_NONE;
-		break;
-	}
-
-	addonsChangePak(addon_type);
-
 	slot1_Init();
-
 	//override slot1 type with commandline, if present
 	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL_AUTO, IniName);
 	if(cmdline.slot1 != "")
 		WritePrivateProfileInt("Slot1","type",slot1_device_type,IniName);
 	else
 		slot1_Change((NDS_SLOT1_TYPE)slot1_device_type);
+
+	//slot2_device_type = NDS_SLOT2_GBACART;		// ====================================
+	slot2_Init();
+	if(cmdline.gbaslot_rom != "")
+	{
+		slot2_device_type = NDS_SLOT2_GBACART;
+		strcpy(GBAgameName, cmdline.gbaslot_rom.c_str());
+	}
+
+	switch (slot2_device_type)
+	{
+		case NDS_SLOT2_NONE:
+			break;
+		case NDS_SLOT2_CFLASH:
+			break;
+		case NDS_SLOT2_RUMBLEPAK:
+			break;
+		case NDS_SLOT2_GBACART:
+			if (!strlen(GBAgameName))
+			{
+				slot2_device_type = NDS_SLOT2_NONE;
+				break;
+			}
+			// TODO: check for file exist
+			break;
+		case NDS_SLOT2_GUITARGRIP:
+			break;
+		case NDS_SLOT2_EXPMEMORY:
+			break;
+		case NDS_SLOT2_EASYPIANO:
+			break;
+		case NDS_SLOT2_PADDLE:
+			break;
+		case NDS_SLOT2_PASSME:
+			break;
+		default:
+			slot2_device_type = NDS_SLOT2_NONE;
+			break;
+	}
+
+	slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
@@ -7157,7 +7158,6 @@ void WIN_InstallCFlash()
 				CFlash_Path = "";
 				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 			}
-
 }
 
 // ================================================================= DDraw

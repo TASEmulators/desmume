@@ -23,8 +23,8 @@
 #include "commandline.h"
 #include "types.h"
 #include "movie.h"
-#include "addons.h"
 #include "slot1.h"
+#include "slot2.h"
 #include "NDSSystem.h"
 #include "utils/xstring.h"
 

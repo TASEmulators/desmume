@@ -20,7 +20,7 @@
 #include "resource.h"
 #include "main.h"
 #include "debug.h"
-#include "../addons.h"
+#include "../slot2.h"
 #include "../NDSSystem.h"
 #include "inputdx.h"
 #include <shlobj.h>
@@ -307,7 +307,7 @@ INT_PTR CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			SendDlgItemMessage(dialog,IDC_GRED,WM_USER+44,tmp_Guitar.RED,0);
 			SendDlgItemMessage(dialog,IDC_GYELLOW,WM_USER+44,tmp_Guitar.YELLOW,0);
 			SendDlgItemMessage(dialog,IDC_GBLUE,WM_USER+44,tmp_Guitar.BLUE,0);
-			if (temp_type != addon_type)
+			if (temp_type != slot2_GetCurrentType())
 				needReset = true;
 			else
 				needReset = false;
@@ -376,7 +376,7 @@ INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			SendDlgItemMessage(dialog,IDC_PIANO_AS,WM_USER+44,tmp_Piano.AS,0);
 			SendDlgItemMessage(dialog,IDC_PIANO_B,WM_USER+44,tmp_Piano.B,0);
 			SendDlgItemMessage(dialog,IDC_PIANO_HIC,WM_USER+44,tmp_Piano.HIC,0);
-			if (temp_type != addon_type)
+			if (temp_type != slot2_GetCurrentType())
 				needReset = true;
 			else
 				needReset = false;
@@ -440,7 +440,7 @@ INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
-u32		GBAslot_IDDs[NDS_ADDON_COUNT] = {
+u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_NONE,
 	IDD_GBASLOT_CFLASH,
 	IDD_GBASLOT_RUMBLEPAK,
@@ -452,7 +452,7 @@ u32		GBAslot_IDDs[NDS_ADDON_COUNT] = {
 	IDD_GBASLOT_NONE, //PassME
 };
 
-DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
+DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
 	GbaSlotNone,
 	GbaSlotCFlash,
 	GbaSlotRumblePak,
@@ -473,12 +473,10 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		case WM_INITDIALOG: 
 		{
 			OKbutton = GetDlgItem(dialog, IDOK);
-			for(int i = 0; i < NDS_ADDON_COUNT; i++)
-				ComboBox_AddString(GetDlgItem(dialog, IDC_ADDONS_LIST), addonList[i].name);
+			for(int i = 0; i < NDS_SLOT2_COUNT; i++)
+				ComboBox_AddString(GetDlgItem(dialog, IDC_ADDONS_LIST), slot2_List[i]->info()->name());
 			ComboBox_SetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST), temp_type);
-			u8 tmp_info[512];
-			addonList[temp_type].info((char *)tmp_info);
-			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
+			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), slot2_List[temp_type]->info()->descr());
 
 			_OKbutton = false;
 			wndConfig=CreateDialogW(hAppInst, MAKEINTRESOURCEW(GBAslot_IDDs[temp_type]), 
@@ -497,7 +495,7 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				case IDOK:
 					{
 						int Msg = IDYES;
-						if (romloaded && (needReset || (temp_type!=addon_type)) )
+						if (romloaded && (needReset || (temp_type!=slot2_GetCurrentType())) )
 						{
 							Msg = MessageBox(dialog, 
 									"After change GBA slot pak game will reset!\nAre you sure to continue?", "DeSmuME",
@@ -530,9 +528,7 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 								EnableWindow(OKbutton, TRUE);
 							else
 								EnableWindow(OKbutton, FALSE);
-							u8 tmp_info[512];
-							addonList[temp_type].info((char *)tmp_info);
-							SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
+							SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), slot2_List[temp_type]->info()->descr());
 							last_type = temp_type;
 						}
 					}
@@ -546,7 +542,7 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 void GBAslotDialog(HWND hwnd)
 {
-	temp_type = addon_type;
+	temp_type = (u8)slot2_GetCurrentType();
 	last_type = temp_type;
 	strcpy(tmp_cflash_filename, win32_CFlash_cfgFileName.c_str());
 	strcpy(tmp_cflash_path, win32_CFlash_cfgDirectory.c_str());
@@ -556,95 +552,96 @@ void GBAslotDialog(HWND hwnd)
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
 	needReset = true;
+	
 	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
 	{
 		switch (temp_type)
 		{
-			case NDS_ADDON_NONE:
-				if (temp_type != addon_type)
+			case NDS_SLOT2_NONE:
+				if (temp_type != slot2_GetCurrentType())
 					needReset = true;
 				else
 					needReset = false;
 				break;
-			case NDS_ADDON_CFLASH:
+			case NDS_SLOT2_CFLASH:
 				//save current values for win32 configuration
 				win32_CFlash_cfgMode = tmp_CFlashMode;
 				win32_CFlash_cfgDirectory = tmp_cflash_path;
 				win32_CFlash_cfgFileName = tmp_cflash_filename;
-				WritePrivateProfileInt("GBAslot.CFlash","fileMode",tmp_CFlashMode,IniName);
-				WritePrivateProfileString("GBAslot.CFlash","path",tmp_cflash_path,IniName);
-				WritePrivateProfileString("GBAslot.CFlash","filename",tmp_cflash_filename,IniName);
+				WritePrivateProfileInt("Slot2.CFlash","fileMode",tmp_CFlashMode,IniName);
+				WritePrivateProfileString("Slot2.CFlash","path",tmp_cflash_path,IniName);
+				WritePrivateProfileString("Slot2.CFlash","filename",tmp_cflash_filename,IniName);
 
 				WIN_InstallCFlash();
 
 				needReset = true;
 				break;
-			case NDS_ADDON_RUMBLEPAK:
-				if (temp_type != addon_type)
+			case NDS_SLOT2_RUMBLEPAK:
+				if (temp_type != slot2_GetCurrentType())
 					needReset = true;
 				else
 					needReset = false;
 				break;
-			case NDS_ADDON_PADDLE:
-				if (temp_type != addon_type)
+			case NDS_SLOT2_PADDLE:
+				if (temp_type != slot2_GetCurrentType())
 					needReset = true;
 				else
 					needReset = false;
 				break;
-			case NDS_ADDON_GBAGAME:
+			case NDS_SLOT2_GBACART:
 				strcpy(GBAgameName, tmp_gbagame_filename);
-				WritePrivateProfileString("GBAslot.GBAgame","filename",GBAgameName,IniName);
+				WritePrivateProfileString("Slot2.GBAgame","filename",GBAgameName,IniName);
 				needReset = true;
 				break;
-			case NDS_ADDON_GUITARGRIP:
+			case NDS_SLOT2_GUITARGRIP:
 				memcpy(&Guitar, &tmp_Guitar, sizeof(tmp_Guitar));
 				Guitar.Enabled = true;
-				WritePrivateProfileInt("GBAslot.GuitarGrip","green",Guitar.GREEN,IniName);
-				WritePrivateProfileInt("GBAslot.GuitarGrip","red",Guitar.RED,IniName);
-				WritePrivateProfileInt("GBAslot.GuitarGrip","yellow",Guitar.YELLOW,IniName);
-				WritePrivateProfileInt("GBAslot.GuitarGrip","blue",Guitar.BLUE,IniName);
-				if (temp_type != addon_type)
+				WritePrivateProfileInt("Slot2.GuitarGrip","green",Guitar.GREEN,IniName);
+				WritePrivateProfileInt("Slot2.GuitarGrip","red",Guitar.RED,IniName);
+				WritePrivateProfileInt("Slot2.GuitarGrip","yellow",Guitar.YELLOW,IniName);
+				WritePrivateProfileInt("Slot2.GuitarGrip","blue",Guitar.BLUE,IniName);
+				if (temp_type != slot2_GetCurrentType())
 					needReset = true;
 				else
 					needReset = false;
 				break;
-			case NDS_ADDON_PIANO:
+			case NDS_SLOT2_EASYPIANO:
 				memcpy(&Piano, &tmp_Piano, sizeof(tmp_Piano));
 				Piano.Enabled = true;
-				WritePrivateProfileInt("GBAslot.Piano","C",Piano.C,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","CS",Piano.CS,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","D",Piano.D,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","DS",Piano.DS,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","E",Piano.E,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","F",Piano.F,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","FS",Piano.FS,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","G",Piano.G,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","GS",Piano.GS,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","A",Piano.A,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","AS",Piano.AS,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","B",Piano.B,IniName);
-				WritePrivateProfileInt("GBAslot.Piano","HIC",Piano.HIC,IniName);
-				if (temp_type != addon_type)
+				WritePrivateProfileInt("Slot2.Piano","C",Piano.C,IniName);
+				WritePrivateProfileInt("Slot2.Piano","CS",Piano.CS,IniName);
+				WritePrivateProfileInt("Slot2.Piano","D",Piano.D,IniName);
+				WritePrivateProfileInt("Slot2.Piano","DS",Piano.DS,IniName);
+				WritePrivateProfileInt("Slot2.Piano","E",Piano.E,IniName);
+				WritePrivateProfileInt("Slot2.Piano","F",Piano.F,IniName);
+				WritePrivateProfileInt("Slot2.Piano","FS",Piano.FS,IniName);
+				WritePrivateProfileInt("Slot2.Piano","G",Piano.G,IniName);
+				WritePrivateProfileInt("Slot2.Piano","GS",Piano.GS,IniName);
+				WritePrivateProfileInt("Slot2.Piano","A",Piano.A,IniName);
+				WritePrivateProfileInt("Slot2.Piano","AS",Piano.AS,IniName);
+				WritePrivateProfileInt("Slot2.Piano","B",Piano.B,IniName);
+				WritePrivateProfileInt("Slot2.Piano","HIC",Piano.HIC,IniName);
+				if (temp_type != slot2_GetCurrentType())
 					needReset = true;
 				else
 					needReset = false;
 				break;
-			case NDS_ADDON_EXPMEMORY:
+			case NDS_SLOT2_EXPMEMORY:
 				break;
-			case NDS_ADDON_PASSME:
+			case NDS_SLOT2_PASSME:
 				break;
 			default:
 				return;
 		}
-		if (temp_type!=NDS_ADDON_GUITARGRIP) 
+		if (temp_type!=NDS_SLOT2_GUITARGRIP) 
 			Guitar.Enabled = false;
-		WritePrivateProfileInt("GBAslot","type",temp_type,IniName);
+		WritePrivateProfileInt("Slot2","type",temp_type,IniName);
 
-		addon_type = (NDS_ADDON_TYPE)temp_type;
-		addonsChangePak(addon_type);
+		slot2_Change((NDS_SLOT2_TYPE)temp_type);
 		if (romloaded && needReset)
 			NDS_Reset();
 		return;
 	}
 }
+
