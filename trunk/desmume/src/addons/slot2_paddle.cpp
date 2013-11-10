@@ -37,15 +37,95 @@ The emulation in all the handling of erroneous cases is not perfect, and some ot
 maybe legally configure the paddle differently, which could be rejected here; in which case this code will need finetuning
 */
 
+#include <string.h>
+#include "../NDSSystem.h"
 #include "../slot2.h"
 
 class Slot2_Paddle : public ISlot2Interface
 {
+private:
+	void calibrate() { nds.paddle = 0; }
+	bool Validate(u32 procnum, bool rom)
+	{
+		if(rom)
+			return ValidateSlot2Access(procnum, 0, 0, 0, -1);
+		else
+			return ValidateSlot2Access(procnum, 18, 0, 0, 1);
+	}
+
 public:
 	virtual Slot2Info const* info()
 	{
 		static Slot2InfoSimple info("Paddle", "Paddle");
 		return &info;
+	}
+
+	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
+	{
+		if (addr < 0x0A000000) return;	// ???
+		calibrate();
+	}
+	virtual void writeWord(u8 PROCNUM, u32 addr, u16 val)
+	{
+		if (addr < 0x0A000000)
+			calibrate();
+	}
+	virtual void writeLong(u8 PROCNUM, u32 addr, u32 val)
+	{
+		if (addr < 0x0A000000)
+			calibrate();
+	}
+
+	virtual u8	readByte(u8 PROCNUM, u32 addr)
+	{
+		//printf("paddle: read 08 at 0x%08X\n", adr);
+		if (!Validate(PROCNUM, (addr < 0x0A000000)))
+			return 0xFF;
+
+		if (addr < 0x0A000000)
+			return (addr & 1)?0xFF:0xEF;
+
+		if (addr == 0x0A000000)
+			return (nds.paddle & 0xFF);
+
+		if (addr == 0x0A000001)
+			return ((nds.paddle >> 8) & 0x0F);
+
+		return 0x00;
+	}
+	virtual u16	readWord(u8 PROCNUM, u32 addr)
+	{
+		//printf("paddle : read 16 at 0x%08X\n", adr);
+		if (!Validate(PROCNUM, (addr < 0x0A000000)))
+			return 0xFFFF;
+
+		if (addr < 0x0A000000)
+			return 0xEFFF;
+
+		if (addr == 0x0A000000)
+		{
+			u8 val = (nds.paddle & 0xFF);
+			return (val | (val << 8));
+		}
+		
+		return 0x0000;
+	}
+	virtual u32	readLong(u8 PROCNUM, u32 addr)
+	{
+		//printf("paddle: read 32 at 0x%08X\n", adr);
+		if (!Validate(PROCNUM, (addr < 0x0A000000)))
+			return 0xFFFFFFFF;
+
+		if (addr < 0x0A000000)
+			return 0xEFFFEFFF;
+		
+		if (addr == 0x0A000000)
+		{
+			u8 val = (nds.paddle & 0xFF);
+			return (val | (val << 8) | (val << 16) | (val << 24));
+		}
+
+		return 0x00000000;
 	}
 };
 
