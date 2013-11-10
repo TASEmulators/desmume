@@ -49,7 +49,7 @@
 #include "main.h"
 #include "resource.h"
 #include "common.h"
-#include "../addons.h"
+#include "../slot2.h"
 #include "../NDSSystem.h"
 
 #define DIRECTINPUT_VERSION 0x0800
@@ -365,7 +365,7 @@ static void ReadHotkey(const char* name, WORD& output)
 static void ReadGuitarControl(const char* name, WORD& output)
 {
 	UINT temp;
-	temp = GetPrivateProfileInt("GBAslot.GuitarGrip",name,-1,IniName);
+	temp = GetPrivateProfileInt("Slot2.GuitarGrip",name,-1,IniName);
 	if(temp != -1) {
 		output = temp;
 	}
@@ -374,7 +374,7 @@ static void ReadGuitarControl(const char* name, WORD& output)
 static void ReadPianoControl(const char* name, WORD& output)
 {
 	UINT temp;
-	temp = GetPrivateProfileInt("GBAslot.Piano",name,-1,IniName);
+	temp = GetPrivateProfileInt("Slot2.Piano",name,-1,IniName);
 	if(temp != -1) {
 		output = temp;
 	}

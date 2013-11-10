@@ -591,14 +591,6 @@
 			Name="Core"
 			>
 			<File
-				RelativePath="..\addons.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\addons.h"
-				>
-			</File>
-			<File
 				RelativePath="..\aggdraw.cpp"
 				>
 			</File>
@@ -948,6 +940,14 @@
 			</File>
 			<File
 				RelativePath="..\slot1.h"
+				>
+			</File>
+			<File
+				RelativePath="..\slot2.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\slot2.h"
 				>
 			</File>
 			<File
