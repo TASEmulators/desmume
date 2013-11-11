@@ -28,7 +28,7 @@ private:
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Rumble Pak", "NDS Rumble Pak (need joystick with Feedback)");
+		static Slot2InfoSimple info("Rumble Pak", "NDS Rumble Pak (need joystick with Feedback)", 0x02);
 		return &info;
 	}
 

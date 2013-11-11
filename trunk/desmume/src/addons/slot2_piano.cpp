@@ -24,7 +24,7 @@ class Slot2_EasyPiano : public ISlot2Interface
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Piano", "Piano for EasyPiano");
+		static Slot2InfoSimple info("Piano", "Piano for EasyPiano", 0x06);
 		return &info;
 	}
 

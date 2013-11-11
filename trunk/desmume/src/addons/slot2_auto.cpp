@@ -33,7 +33,7 @@ public:
 
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Auto","Slot2 (auto-selection) device emulation");
+		static Slot2InfoSimple info("Auto","Slot2 (auto-selection) device emulation", 0xFE);
 		return &info;
 	}
 
@@ -43,6 +43,9 @@ public:
 		NDS_SLOT2_TYPE selection = NDS_SLOT2_NONE;
 
 		//check game ID in core emulator and select right implementation
+		if (gameInfo.romsize == 0)
+		{}
+		else
 		if ((memcmp(gameInfo.header.gameCode, "UBR",  3) == 0)) selection = NDS_SLOT2_EXPMEMORY; // Opera Browser
 		else
 			if ((memcmp(gameInfo.header.gameCode, "YGH",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour

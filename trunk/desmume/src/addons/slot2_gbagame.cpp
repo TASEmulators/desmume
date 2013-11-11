@@ -303,7 +303,7 @@ private:
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("GBA cartridge", "GBA cartridge in slot");
+		static Slot2InfoSimple info("GBA cartridge", "GBA cartridge in slot", 0x03);
 		return &info;
 	}
 
