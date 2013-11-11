@@ -37,7 +37,7 @@ HWND		OKbutton = NULL;
 bool		_OKbutton = false;
 SGuitar		tmp_Guitar;
 SPiano		tmp_Piano;
-bool		needReset = true;
+SPaddle		tmp_Paddle;
 
 //these are the remembered preset values for directory and filename
 //they are named very verbosely to distinguish them from the currently-configured values in addons.cpp
@@ -217,13 +217,43 @@ INT_PTR CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 
 INT_PTR CALLBACK GbaSlotPaddle(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
+	int which = 0;
+
 	switch(msg)
 	{
 		case WM_INITDIALOG: 
 		{
 			_OKbutton = TRUE;
+			SendDlgItemMessage(dialog,IDC_PINC,WM_USER+44,tmp_Paddle.INC,0);
+			SendDlgItemMessage(dialog,IDC_PDEC,WM_USER+44,tmp_Paddle.DEC,0);
+
 			return TRUE;
 		}
+
+		case WM_USER+46:
+			SendDlgItemMessage(dialog,IDC_PINC,WM_USER+44,tmp_Paddle.INC,0);
+			SendDlgItemMessage(dialog,IDC_PDEC,WM_USER+44,tmp_Paddle.DEC,0);
+		return TRUE;
+
+		case WM_USER+43:
+			//MessageBox(hDlg,"USER+43 CAUGHT","moo",MB_OK);
+			which = GetDlgCtrlID((HWND)lparam);
+			switch(which)
+			{
+			case IDC_PINC:
+				tmp_Paddle.INC = wparam;
+
+				break;
+			case IDC_PDEC:
+				tmp_Paddle.DEC = wparam;
+
+				break;
+			}
+
+			SendDlgItemMessage(dialog,IDC_PINC,WM_USER+44,tmp_Paddle.INC,0);
+			SendDlgItemMessage(dialog,IDC_PDEC,WM_USER+44,tmp_Paddle.DEC,0);
+			PostMessage(dialog,WM_NEXTDLGCTL,0,0);
+		return true;
 	}
 	return FALSE;
 }
@@ -307,10 +337,6 @@ INT_PTR CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			SendDlgItemMessage(dialog,IDC_GRED,WM_USER+44,tmp_Guitar.RED,0);
 			SendDlgItemMessage(dialog,IDC_GYELLOW,WM_USER+44,tmp_Guitar.YELLOW,0);
 			SendDlgItemMessage(dialog,IDC_GBLUE,WM_USER+44,tmp_Guitar.BLUE,0);
-			if (temp_type != slot2_GetCurrentType())
-				needReset = true;
-			else
-				needReset = false;
 
 			return TRUE;
 		}
@@ -376,10 +402,6 @@ INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			SendDlgItemMessage(dialog,IDC_PIANO_AS,WM_USER+44,tmp_Piano.AS,0);
 			SendDlgItemMessage(dialog,IDC_PIANO_B,WM_USER+44,tmp_Piano.B,0);
 			SendDlgItemMessage(dialog,IDC_PIANO_HIC,WM_USER+44,tmp_Piano.HIC,0);
-			if (temp_type != slot2_GetCurrentType())
-				needReset = true;
-			else
-				needReset = false;
 
 			return TRUE;
 		}
@@ -449,7 +471,7 @@ u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_GUITARGRIP,
 	IDD_GBASLOT_NONE, //expmem
 	IDD_GBASLOT_PIANO,
-	IDD_GBASLOT_NONE, //paddle
+	IDD_GBASLOT_PADDLE, //paddle
 	IDD_GBASLOT_NONE, //PassME
 };
 
@@ -496,18 +518,8 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			{
 				case IDOK:
 					{
-						int Msg = IDYES;
-						if (romloaded && (needReset || (temp_type!=slot2_GetCurrentType())) )
-						{
-							Msg = MessageBox(dialog, 
-									"After change GBA slot pak game will reset!\nAre you sure to continue?", "DeSmuME",
-									MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2);
-						}
-						if (Msg == IDYES)
-						{
-							if (wndConfig) DestroyWindow(wndConfig);
-							EndDialog(dialog, TRUE);
-						}
+						if (wndConfig) DestroyWindow(wndConfig);
+						EndDialog(dialog, TRUE);
 					}
 				return TRUE;
 				case IDCANCEL:
@@ -551,9 +563,9 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_gbagame_filename, GBAgameName);
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	memcpy(&tmp_Piano, &Piano, sizeof(Piano));
+	memcpy(&tmp_Paddle, &Paddle, sizeof(Paddle));
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
-	needReset = true;
 	
 	u32 res=DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
@@ -561,14 +573,9 @@ void GBAslotDialog(HWND hwnd)
 		switch (temp_type)
 		{
 			case NDS_SLOT2_NONE:
-				if (temp_type != slot2_GetCurrentType())
-					needReset = true;
-				else
-					needReset = false;
 			break;
 
 			case NDS_SLOT2_AUTO:
-				needReset = false;
 			break;
 
 			case NDS_SLOT2_CFLASH:
@@ -581,41 +588,27 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileString("Slot2.CFlash","filename",tmp_cflash_filename,IniName);
 
 				WIN_InstallCFlash();
-
-				needReset = true;
 				break;
 			case NDS_SLOT2_RUMBLEPAK:
-				if (temp_type != slot2_GetCurrentType())
-					needReset = true;
-				else
-					needReset = false;
 				break;
 			case NDS_SLOT2_PADDLE:
-				if (temp_type != slot2_GetCurrentType())
-					needReset = true;
-				else
-					needReset = false;
+				memcpy(&Paddle, &tmp_Paddle, sizeof(tmp_Paddle));
+				WritePrivateProfileInt("Slot2.Paddle","DEC",Paddle.DEC,IniName);
+				WritePrivateProfileInt("Slot2.Paddle","INC",Paddle.INC,IniName);
 				break;
 			case NDS_SLOT2_GBACART:
 				strcpy(GBAgameName, tmp_gbagame_filename);
 				WritePrivateProfileString("Slot2.GBAgame","filename",GBAgameName,IniName);
-				needReset = true;
 				break;
 			case NDS_SLOT2_GUITARGRIP:
 				memcpy(&Guitar, &tmp_Guitar, sizeof(tmp_Guitar));
-				Guitar.Enabled = true;
 				WritePrivateProfileInt("Slot2.GuitarGrip","green",Guitar.GREEN,IniName);
 				WritePrivateProfileInt("Slot2.GuitarGrip","red",Guitar.RED,IniName);
 				WritePrivateProfileInt("Slot2.GuitarGrip","yellow",Guitar.YELLOW,IniName);
 				WritePrivateProfileInt("Slot2.GuitarGrip","blue",Guitar.BLUE,IniName);
-				if (temp_type != slot2_GetCurrentType())
-					needReset = true;
-				else
-					needReset = false;
 				break;
 			case NDS_SLOT2_EASYPIANO:
 				memcpy(&Piano, &tmp_Piano, sizeof(tmp_Piano));
-				Piano.Enabled = true;
 				WritePrivateProfileInt("Slot2.Piano","C",Piano.C,IniName);
 				WritePrivateProfileInt("Slot2.Piano","CS",Piano.CS,IniName);
 				WritePrivateProfileInt("Slot2.Piano","D",Piano.D,IniName);
@@ -629,10 +622,6 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileInt("Slot2.Piano","AS",Piano.AS,IniName);
 				WritePrivateProfileInt("Slot2.Piano","B",Piano.B,IniName);
 				WritePrivateProfileInt("Slot2.Piano","HIC",Piano.HIC,IniName);
-				if (temp_type != slot2_GetCurrentType())
-					needReset = true;
-				else
-					needReset = false;
 				break;
 			case NDS_SLOT2_EXPMEMORY:
 				break;
@@ -641,17 +630,14 @@ void GBAslotDialog(HWND hwnd)
 			default:
 				return;
 		}
-		if (temp_type != NDS_SLOT2_GUITARGRIP) 
-			Guitar.Enabled = false;
-		if (temp_type != NDS_SLOT2_EASYPIANO) 
-			Piano.Enabled = false;
 
 		slot2_Change((NDS_SLOT2_TYPE)temp_type);
+
 		WritePrivateProfileInt("Slot2", "id", slot2_List[(u8)slot2_GetCurrentType()]->info()->id(), IniName);
-		
-		if (romloaded && needReset)
-			NDS_Reset();
-		return;
+
+		Guitar.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_GUITARGRIP)?true:false;
+		Piano.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO)?true:false;
+		Paddle.Enabled	= (slot2_GetCurrentType() == NDS_SLOT2_PADDLE)?true:false;
 	}
 }
 

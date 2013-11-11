@@ -453,10 +453,12 @@
 #define IDC_IMP_INFO_FILE               1057
 #define IDC_FILES_TREE                  1057
 #define IDC_PROGRESS_BAR                1057
+#define IDC_PINC                        1057
 #define IDC_BADD_CB                     1058
 #define IDC_IMP_INFO_ADVANSCENE         1058
 #define IDC_FILE_INFO                   1058
 #define IDC_MESSAGE                     1058
+#define IDC_PDEC                        1058
 #define IDC_IMP_MANUAL_SIZE             1059
 #define IDC_BREMOVE                     1060
 #define IDC_FILE_QVIEW                  1060
@@ -854,6 +856,7 @@
 #define IDD_SLOT1_NONE                  10011
 #define IDD_SLOT1_R4                    10012
 #define IDD_SLOT1_DEBUG                 10013
+#define IDD_GBASLOT_PADDLE              10014
 #define IDM_FILE_STOPAVI                40000
 #define IDM_SCREENSEP_NONE              40000
 #define IDM_FILE_STOPWAV                40001
@@ -1049,7 +1052,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
 #define _APS_NEXT_COMMAND_VALUE         40111
-#define _APS_NEXT_CONTROL_VALUE         1057
+#define _APS_NEXT_CONTROL_VALUE         1059
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

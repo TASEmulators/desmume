@@ -3132,9 +3132,6 @@ int _main()
 
 	input_init();
 
-	if (slot2_GetCurrentType() == NDS_SLOT2_GUITARGRIP) Guitar.Enabled = true;
-	if (slot2_GetCurrentType() == NDS_SLOT2_EASYPIANO) Piano.Enabled = true;
-
 	LOG("Init NDS\n");
 
 	GInfo_Init();
@@ -3236,6 +3233,9 @@ int _main()
 
 	slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
+	Guitar.Enabled	= (slot2_device_type == NDS_SLOT2_GUITARGRIP)?true:false;
+	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
+	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
