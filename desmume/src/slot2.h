@@ -111,7 +111,7 @@ void slot2_Reset();
 //change the current device
 bool slot2_Change(NDS_SLOT2_TYPE type);
 
-bool getTypeByID(u8 ID, NDS_SLOT2_TYPE &type);
+bool slot2_getTypeByID(u8 ID, NDS_SLOT2_TYPE &type);
 
 //change the current device by ID
 bool slot2_ChangeByID(u8 ID);

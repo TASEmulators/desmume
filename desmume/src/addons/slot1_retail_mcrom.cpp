@@ -39,7 +39,7 @@ public:
 
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("Retail MC+ROM","Slot1 Retail MC+ROM (standard) card emulation");
+		static Slot1InfoSimple info("Retail MC+ROM", "Slot1 Retail MC+ROM (standard) card emulation", 0x01);
 		return &info;
 	}
 

@@ -45,7 +45,7 @@ public:
 
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("Retail DEBUG","Slot1 Retail (standard) card emulation + FS Nitro DEBUG");
+		static Slot1InfoSimple info("Retail DEBUG","Slot1 Retail (standard) card emulation + FS Nitro DEBUG", 0x04);
 		return &info;
 	}
 

@@ -3163,7 +3163,7 @@ int _main()
 
 	int slot2_device_id = (NDS_SLOT2_TYPE)GetPrivateProfileInt("Slot2", "id", slot2_List[NDS_SLOT2_AUTO]->info()->id(), IniName);
 	NDS_SLOT2_TYPE slot2_device_type = NDS_SLOT2_AUTO;
-	getTypeByID(slot2_device_id, slot2_device_type);
+	slot2_getTypeByID(slot2_device_id, slot2_device_type);
 
 	win32_CFlash_cfgMode = GetPrivateProfileInt("Slot2.CFlash", "fileMode", ADDON_CFLASH_MODE_RomPath, IniName);
 	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("Slot2.CFlash", "path", "");
@@ -3186,7 +3186,10 @@ int _main()
 	}
 	
 	//override slot1 type with commandline, if present
-	int slot1_device_type = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "type", NDS_SLOT1_RETAIL_AUTO, IniName);
+	int slot1_device_id = (NDS_SLOT1_TYPE)GetPrivateProfileInt("Slot1", "id", slot1_List[NDS_SLOT1_RETAIL_AUTO]->info()->id(), IniName);
+	NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL_AUTO;
+	slot1_getTypeByID(slot1_device_id, slot1_device_type);
+
 	if(cmdline.slot1 != "")
 		WritePrivateProfileInt("Slot1","type",slot1_device_type,IniName);
 	else

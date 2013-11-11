@@ -25,7 +25,7 @@ class Slot1_None : public ISlot1Interface
 public:
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("None","Slot1 no-card emulation");
+		static Slot1InfoSimple info("None","Slot1 no-card emulation", 0xFF);
 		return &info;
 	}
 

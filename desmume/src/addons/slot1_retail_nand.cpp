@@ -50,7 +50,7 @@ private:
 public:
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("Retail NAND","Slot1 retail NAND card emulation");
+		static Slot1InfoSimple info("Retail NAND","Slot1 retail NAND card emulation", 0x02);
 		return &info;
 	}
 
