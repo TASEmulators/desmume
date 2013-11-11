@@ -115,7 +115,7 @@ bool slot2_Change(NDS_SLOT2_TYPE changeToType)
 	return true;
 }
 
-bool getTypeByID(u8 ID, NDS_SLOT2_TYPE &type)
+bool slot2_getTypeByID(u8 ID, NDS_SLOT2_TYPE &type)
 {
 	for (u8 i = 0; i < NDS_SLOT2_COUNT; i++)
 	{
@@ -131,7 +131,7 @@ bool getTypeByID(u8 ID, NDS_SLOT2_TYPE &type)
 bool slot2_ChangeByID(u8 ID)
 {
 	NDS_SLOT2_TYPE type = NDS_SLOT2_AUTO;
-	getTypeByID(ID, type);
+	slot2_getTypeByID(ID, type);
 	return slot2_Change(type);
 }
 

@@ -31,20 +31,24 @@ class Slot1Info
 public:
 	virtual const char* name() const = 0;
 	virtual const char* descr()const  = 0;
+	virtual const u8 id() const  = 0;
 };
 
 class Slot1InfoSimple : public Slot1Info
 {
 public:
-	Slot1InfoSimple(const char* _name, const char* _descr)
+	Slot1InfoSimple(const char* _name, const char* _descr, const u8 _id)
 		: mName(_name)
 		, mDescr(_descr)
+		, mID(_id)
 	{
 	}
 	virtual const char* name() const { return mName; }
 	virtual const char* descr() const { return mDescr; }
+	virtual const u8 id() const { return mID; }
 private:
 	const char* mName, *mDescr;
+	const u8 mID;
 };
 
 class ISlot1Interface
@@ -93,12 +97,12 @@ typedef ISlot1Interface* TISlot1InterfaceConstructor();
 
 enum NDS_SLOT1_TYPE
 {
-	NDS_SLOT1_NONE,
-	NDS_SLOT1_RETAIL_AUTO,	//autodetect which kind of retail card to use 
-	NDS_SLOT1_R4,			//R4 flash card
-	NDS_SLOT1_RETAIL_NAND,	//Made in Ore/WarioWare D.I.Y.
-	NDS_SLOT1_RETAIL_MCROM,	//a standard MC (eeprom, flash, fram) -bearing retail card. Also supports motion, for now, because that's the way we originally coded it
-	NDS_SLOT1_RETAIL_DEBUG,	//for romhacking and fan-made translations
+	NDS_SLOT1_NONE,			// 0xFF - None
+	NDS_SLOT1_RETAIL_AUTO,	// 0xFE - autodetect which kind of retail card to use 
+	NDS_SLOT1_R4,			// 0x03 - R4 flash card
+	NDS_SLOT1_RETAIL_NAND,	// 0x02 - Made in Ore/WarioWare D.I.Y.
+	NDS_SLOT1_RETAIL_MCROM,	// 0x01 - a standard MC (eeprom, flash, fram) -bearing retail card. Also supports motion, for now, because that's the way we originally coded it
+	NDS_SLOT1_RETAIL_DEBUG,	// 0x04 - for romhacking and fan-made translations
 	NDS_SLOT1_COUNT			//use to count addons - MUST BE LAST!!!
 };
 
@@ -115,8 +119,13 @@ void slot1_Loadstate(EMUFILE* is);
 //just disconnects and reconnects the device. ideally, the disconnection and connection would be called with sensible timing
 void slot1_Reset();
 
+bool slot1_getTypeByID(u8 ID, NDS_SLOT1_TYPE &type);
+
 //change the current device
 bool slot1_Change(NDS_SLOT1_TYPE type);
+
+//change the current device by ID
+bool slot1_ChangeByID(u8 ID);
 
 //check on the current device
 NDS_SLOT1_TYPE slot1_GetCurrentType();

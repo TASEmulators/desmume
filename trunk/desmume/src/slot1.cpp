@@ -164,6 +164,26 @@ bool slot1_Change(NDS_SLOT1_TYPE changeToType)
 	return true;
 }
 
+bool slot1_getTypeByID(u8 ID, NDS_SLOT1_TYPE &type)
+{
+	for (u8 i = 0; i < NDS_SLOT1_COUNT; i++)
+	{
+		if (slot1_List[i]->info()->id() == ID)
+		{
+			type = (NDS_SLOT1_TYPE)i;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool slot1_ChangeByID(u8 ID)
+{
+	NDS_SLOT1_TYPE type = NDS_SLOT1_RETAIL_AUTO;
+	slot1_getTypeByID(ID, type);
+	return slot1_Change(type);
+}
+
 NDS_SLOT1_TYPE slot1_GetCurrentType()
 {
 	return slot1_device_type;

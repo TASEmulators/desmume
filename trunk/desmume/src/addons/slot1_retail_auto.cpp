@@ -33,7 +33,7 @@ public:
 
 	virtual Slot1Info const* info()
 	{
-		static Slot1InfoSimple info("Retail (Auto)","Slot1 Retail (auto-selection) card emulation");
+		static Slot1InfoSimple info("Retail (Auto)","Slot1 Retail (auto-selection) card emulation", 0xFE);
 		return &info;
 	}
 

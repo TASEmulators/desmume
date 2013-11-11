@@ -349,9 +349,9 @@ void slot1Dialog(HWND hwnd)
 			default:
 				return;
 		}
-		WritePrivateProfileInt("Slot1","type",temp_type_slot1,IniName);
-
+		
 		slot1_Change((NDS_SLOT1_TYPE)temp_type_slot1);
+		WritePrivateProfileInt("Slot1", "id", slot1_List[temp_type_slot1]->info()->id(), IniName);
 		
 		return;
 	}
