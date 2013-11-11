@@ -1050,6 +1050,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\addons\slot2_auto.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\addons\slot2_expMemory.cpp"
 					>
 				</File>

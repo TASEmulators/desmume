@@ -375,6 +375,7 @@
     <ClCompile Include="..\addons\slot1_retail_auto.cpp" />
     <ClCompile Include="..\addons\slot1_retail_mcrom.cpp" />
     <ClCompile Include="..\addons\slot1_retail_mcrom_debug.cpp" />
+    <ClCompile Include="..\addons\slot2_auto.cpp" />
     <ClCompile Include="..\addons\slot2_passme.cpp" />
     <ClCompile Include="..\addons\slot2_piano.cpp" />
     <ClCompile Include="..\addons\slot1_none.cpp" />
@@ -669,7 +670,6 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
-    <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\encrypt.h" />
     <ClInclude Include="..\fat.h" />
@@ -870,9 +870,6 @@
     <ClInclude Include="File_Extractor\unrar\unicode.hpp" />
     <ClInclude Include="File_Extractor\unrar\unpack.hpp" />
     <ClInclude Include="File_Extractor\unrar\unrar.h" />
-    <ClInclude Include="filter\hq2x.h" />
-    <ClInclude Include="filter\interp.h" />
-    <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="fsnitroView.h" />
     <ClInclude Include="gbaslot_config.h" />

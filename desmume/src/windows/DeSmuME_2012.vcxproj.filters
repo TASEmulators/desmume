@@ -796,6 +796,9 @@
     <ClCompile Include="..\addons\slot2_passme.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\addons\slot2_auto.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\arm_jit.h">
