@@ -43,9 +43,23 @@ public:
 		NDS_SLOT2_TYPE selection = NDS_SLOT2_NONE;
 
 		//check game ID in core emulator and select right implementation
-		if ((memcmp(gameInfo.header.gameCode, "UBR",  3) == 0)		// Opera Browser
-			)
-			selection = NDS_SLOT2_EXPMEMORY;
+		if ((memcmp(gameInfo.header.gameCode, "UBR",  3) == 0)) selection = NDS_SLOT2_EXPMEMORY; // Opera Browser
+		else
+			if ((memcmp(gameInfo.header.gameCode, "YGH",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour
+		else
+			if ((memcmp(gameInfo.header.gameCode, "CGS",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Decades
+		else
+			if ((memcmp(gameInfo.header.gameCode, "C6Q",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Modern Hits
+		else
+			if ((memcmp(gameInfo.header.gameCode, "YGR",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour (Demo)
+		else
+			if ((memcmp(gameInfo.header.gameCode, "Y56",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Decades (Demo)
+		else
+			if ((memcmp(gameInfo.header.gameCode, "Y6R",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Modern Hits (Demo)
+		else
+			if ((memcmp(gameInfo.header.gameCode, "BEP",  3) == 0)) selection = NDS_SLOT2_EASYPIANO; // Easy Piano (EUR)(USA)
+		else
+			if ((memcmp(gameInfo.header.gameCode, "YAA",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Arkanoid DS
 		else
 			if (gameInfo.isHomebrew())
 				selection = NDS_SLOT2_PASSME;
