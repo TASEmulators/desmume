@@ -56,7 +56,7 @@ private:
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Paddle", "Paddle");
+		static Slot2InfoSimple info("Paddle", "Paddle", 0x07);
 		return &info;
 	}
 

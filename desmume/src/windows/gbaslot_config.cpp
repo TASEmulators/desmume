@@ -641,11 +641,14 @@ void GBAslotDialog(HWND hwnd)
 			default:
 				return;
 		}
-		if (temp_type!=NDS_SLOT2_GUITARGRIP) 
+		if (temp_type != NDS_SLOT2_GUITARGRIP) 
 			Guitar.Enabled = false;
-		WritePrivateProfileInt("Slot2","type",temp_type,IniName);
+		if (temp_type != NDS_SLOT2_EASYPIANO) 
+			Piano.Enabled = false;
 
 		slot2_Change((NDS_SLOT2_TYPE)temp_type);
+		WritePrivateProfileInt("Slot2", "id", slot2_List[(u8)slot2_GetCurrentType()]->info()->id(), IniName);
+		
 		if (romloaded && needReset)
 			NDS_Reset();
 		return;

@@ -24,7 +24,7 @@ class Slot2_PassME : public ISlot2Interface
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("PassME", "PassME in GBA slot");
+		static Slot2InfoSimple info("PassME", "PassME in GBA slot", 0x08);
 		return &info;
 	}
 

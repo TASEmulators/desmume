@@ -266,7 +266,7 @@ class Slot2_CFlash : public ISlot2Interface
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("MPCF Flash Card Device", "MPCF Flash Card Device");
+		static Slot2InfoSimple info("MPCF Flash Card Device", "MPCF Flash Card Device", 0x01);
 		return &info;
 	}
 

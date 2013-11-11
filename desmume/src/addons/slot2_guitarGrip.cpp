@@ -26,7 +26,7 @@ private:
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Guitar Grip", "Guitar Grip for Guitar Hero games");
+		static Slot2InfoSimple info("Guitar Grip", "Guitar Grip for Guitar Hero games", 0x04);
 		return &info;
 	}
 

@@ -23,7 +23,7 @@ class Slot2_None : public ISlot2Interface
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("None", "Slot2 no-device emulation");
+		static Slot2InfoSimple info("None", "Slot2 no-device emulation", 0xFF);
 		return &info;
 	}
 };

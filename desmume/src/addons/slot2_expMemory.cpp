@@ -41,7 +41,7 @@ private:
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Memory Expansion Pak", "Official RAM expansion for Opera browser");
+		static Slot2InfoSimple info("Memory Expansion Pak", "Official RAM expansion for Opera browser", 0x05);
 		return &info;
 	}
 

@@ -27,20 +27,24 @@ class Slot2Info
 public:
 	virtual const char* name() const = 0;
 	virtual const char* descr() const  = 0;
+	virtual const u8 id() const  = 0;
 };
 
 class Slot2InfoSimple : public Slot2Info
 {
 public:
-	Slot2InfoSimple(const char* _name, const char* _descr)
+	Slot2InfoSimple(const char* _name, const char* _descr, const u8 _id)
 		: mName(_name)
 		, mDescr(_descr)
+		, mID(_id)
 	{
 	}
 	virtual const char* name() const { return mName; }
 	virtual const char* descr() const { return mDescr; }
+	virtual const u8 id() const { return mID; }
 private:
 	const char* mName, *mDescr;
+	const u8 mID;
 };
 
 class ISlot2Interface
@@ -78,16 +82,16 @@ typedef ISlot2Interface* TISlot2InterfaceConstructor();
 
 enum NDS_SLOT2_TYPE
 {
-	NDS_SLOT2_NONE,
-	NDS_SLOT2_AUTO,
-	NDS_SLOT2_CFLASH,		// compact flash
-	NDS_SLOT2_RUMBLEPAK,	// rumble pack
-	NDS_SLOT2_GBACART,		// GBA cartrindge in slot
-	NDS_SLOT2_GUITARGRIP,	// Guitar Grip
-	NDS_SLOT2_EXPMEMORY,	// Memory Expansion 
-	NDS_SLOT2_EASYPIANO,	// Easy Piano
-	NDS_SLOT2_PADDLE,
-	NDS_SLOT2_PASSME,		// PassME
+	NDS_SLOT2_NONE,			// 0xFF
+	NDS_SLOT2_AUTO,			// 0xFE - Auto-select
+	NDS_SLOT2_CFLASH,		// 0x01 - Compact flash
+	NDS_SLOT2_RUMBLEPAK,	// 0x02 - RumblePak
+	NDS_SLOT2_GBACART,		// 0x03 - GBA cartrindge in slot
+	NDS_SLOT2_GUITARGRIP,	// 0x04 - Guitar Grip
+	NDS_SLOT2_EXPMEMORY,	// 0x05 - Memory Expansion Pak 
+	NDS_SLOT2_EASYPIANO,	// 0x06 - Easy Piano
+	NDS_SLOT2_PADDLE,		// 0x07 - Arkanoids DS paddle
+	NDS_SLOT2_PASSME,		// 0x08 - PassME/Homebrew
 	NDS_SLOT2_COUNT			// use for counter addons - MUST TO BE LAST!!!
 };
 
@@ -106,6 +110,11 @@ void slot2_Reset();
 
 //change the current device
 bool slot2_Change(NDS_SLOT2_TYPE type);
+
+bool getTypeByID(u8 ID, NDS_SLOT2_TYPE &type);
+
+//change the current device by ID
+bool slot2_ChangeByID(u8 ID);
 
 //check on the current device
 NDS_SLOT2_TYPE slot2_GetCurrentType();
