@@ -15,9 +15,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "slot2.h"
-#include "../types.h"
-#include "../mem.h"
-#include "../MMU.h"
+#include "types.h"
+#include "mem.h"
+#include "MMU.h"
 
 //this is the currently-configured cflash mode
 ADDON_CFLASH_MODE CFlash_Mode = ADDON_CFLASH_MODE_RomPath;

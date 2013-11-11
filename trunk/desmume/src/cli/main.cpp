@@ -56,7 +56,7 @@
 #include "GPU_osd.h"
 #include "desmume_config.h"
 #include "commandline.h"
-#include "addons.h"
+#include "slot2.h"
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
@@ -539,28 +539,52 @@ int main(int argc, char ** argv) {
     fw_config.language = my_config.firmware_language;
   }
 
-  /* addons */
-  my_config.process_addonCommands();
-  addon_type = NDS_ADDON_NONE;
-  if (my_config.is_cflash_configured)
-    addon_type = NDS_ADDON_CFLASH;
+    my_config.process_addonCommands();
 
-  if(my_config.gbaslot_rom != "") {
-    addon_type = NDS_ADDON_GBAGAME;
-    strncpy(GBAgameName, my_config.gbaslot_rom.c_str(), MAX_PATH);
-  }
+    int slot2_device_type = NDS_SLOT2_AUTO;
 
-  switch (addon_type) {
-  case NDS_ADDON_CFLASH:
-  case NDS_ADDON_RUMBLEPAK:
-  case NDS_ADDON_NONE:
-  case NDS_ADDON_GBAGAME:
-    break;
-  default:
-    addon_type = NDS_ADDON_NONE;
-    break;
-  }
-  addonsChangePak (addon_type);
+    if (my_config.is_cflash_configured)
+        slot2_device_type = NDS_SLOT2_CFLASH;
+
+    if(my_config.gbaslot_rom != "") {
+        strncpy(GBAgameName, my_config.gbaslot_rom.c_str(), MAX_PATH);
+        // Check if the file exists and can be opened
+        FILE * test = fopen(GBAgameName, "rb");
+        if (test) {
+            slot2_device_type = NDS_SLOT2_GBACART;
+            fclose(test);
+        }
+    }
+
+	switch (slot2_device_type)
+	{
+		case NDS_SLOT2_NONE:
+			break;
+		case NDS_SLOT2_AUTO:
+			break;
+		case NDS_SLOT2_CFLASH:
+			break;
+		case NDS_SLOT2_RUMBLEPAK:
+			break;
+		case NDS_SLOT2_GBACART:
+			break;
+		case NDS_SLOT2_GUITARGRIP:
+			break;
+		case NDS_SLOT2_EXPMEMORY:
+			break;
+		case NDS_SLOT2_EASYPIANO:
+			break;
+		case NDS_SLOT2_PADDLE:
+			break;
+		case NDS_SLOT2_PASSME:
+			break;
+		default:
+			slot2_device_type = NDS_SLOT2_NONE;
+			break;
+	}
+    
+    slot2_Init();
+    slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
   if ( !g_thread_supported()) {
     g_thread_init( NULL);
