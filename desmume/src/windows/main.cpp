@@ -3158,7 +3158,7 @@ int _main()
 		cmdline._slot1_fat_dir_type = 0;
 	slot1_R4_path_type = cmdline._slot1_fat_dir_type;
 
-	int slot2_device_type = (NDS_SLOT2_TYPE)GetPrivateProfileInt("Slot2", "type", NDS_SLOT1_NONE, IniName);
+	int slot2_device_type = (NDS_SLOT2_TYPE)GetPrivateProfileInt("Slot2", "type", NDS_SLOT2_AUTO, IniName);
 	win32_CFlash_cfgMode = GetPrivateProfileInt("Slot2.CFlash", "fileMode", ADDON_CFLASH_MODE_RomPath, IniName);
 	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("Slot2.CFlash", "path", "");
 	win32_CFlash_cfgFileName = GetPrivateProfileStdString("Slot2.CFlash", "filename", "");
