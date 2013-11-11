@@ -28,9 +28,9 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
-#include "../addons.h"
 #include "../NDSSystem.h"
 #include "../slot1.h"
+#include "../slot2.h"
 #undef BOOL
 
 
@@ -187,7 +187,7 @@ static BOOL isCoreStarted = NO;
 		return isCoreStarted;
 	}
 	
-	addonsChangePak(NDS_ADDON_NONE);
+	slot2_Change(NDS_SLOT2_NONE);
 	
 	result = NDS_Init();
 	if (result == -1)
