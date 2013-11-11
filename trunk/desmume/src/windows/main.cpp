@@ -3159,7 +3159,7 @@ int _main()
 	slot1_R4_path_type = cmdline._slot1_fat_dir_type;
 
 	int slot2_device_type = (NDS_SLOT2_TYPE)GetPrivateProfileInt("Slot2", "type", NDS_SLOT1_NONE, IniName);
-	win32_CFlash_cfgMode = GetPrivateProfileInt("Slot2.CFlash", "fileMode", 2, IniName);
+	win32_CFlash_cfgMode = GetPrivateProfileInt("Slot2.CFlash", "fileMode", ADDON_CFLASH_MODE_RomPath, IniName);
 	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("Slot2.CFlash", "path", "");
 	win32_CFlash_cfgFileName = GetPrivateProfileStdString("Slot2.CFlash", "filename", "");
 	GetPrivateProfileString("Slot2.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
@@ -3187,7 +3187,6 @@ int _main()
 	else
 		slot1_Change((NDS_SLOT1_TYPE)slot1_device_type);
 
-	//slot2_device_type = NDS_SLOT2_GBACART;		// ====================================
 	slot2_Init();
 	if(cmdline.gbaslot_rom != "")
 	{
@@ -3198,6 +3197,8 @@ int _main()
 	switch (slot2_device_type)
 	{
 		case NDS_SLOT2_NONE:
+			break;
+		case NDS_SLOT2_AUTO:
 			break;
 		case NDS_SLOT2_CFLASH:
 			break;

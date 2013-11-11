@@ -442,6 +442,7 @@ INT_PTR CALLBACK GbaSlotPiano(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 	IDD_GBASLOT_NONE,
+	IDD_GBASLOT_NONE,
 	IDD_GBASLOT_CFLASH,
 	IDD_GBASLOT_RUMBLEPAK,
 	IDD_GBASLOT_GBAGAME,
@@ -453,6 +454,7 @@ u32		GBAslot_IDDs[NDS_SLOT2_COUNT] = {
 };
 
 DLGPROC GBAslot_Procs[NDS_SLOT2_COUNT] = {
+	GbaSlotNone,
 	GbaSlotNone,
 	GbaSlotCFlash,
 	GbaSlotRumblePak,
@@ -563,7 +565,12 @@ void GBAslotDialog(HWND hwnd)
 					needReset = true;
 				else
 					needReset = false;
-				break;
+			break;
+
+			case NDS_SLOT2_AUTO:
+				needReset = false;
+			break;
+
 			case NDS_SLOT2_CFLASH:
 				//save current values for win32 configuration
 				win32_CFlash_cfgMode = tmp_CFlashMode;

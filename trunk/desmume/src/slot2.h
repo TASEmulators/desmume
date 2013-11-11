@@ -79,7 +79,7 @@ typedef ISlot2Interface* TISlot2InterfaceConstructor();
 enum NDS_SLOT2_TYPE
 {
 	NDS_SLOT2_NONE,
-	//NDS_SLOT2_AUTO,
+	NDS_SLOT2_AUTO,
 	NDS_SLOT2_CFLASH,		// compact flash
 	NDS_SLOT2_RUMBLEPAK,	// rumble pack
 	NDS_SLOT2_GBACART,		// GBA cartrindge in slot

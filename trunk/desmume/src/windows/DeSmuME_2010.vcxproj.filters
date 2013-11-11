@@ -804,6 +804,9 @@
     <ClCompile Include="..\addons\slot2_passme.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\addons\slot2_auto.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\armcpu.h">
@@ -920,9 +923,6 @@
     <ClInclude Include="..\slot1.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClCompile Include="..\slot2.h">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClInclude Include="..\SPU.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -1115,10 +1115,6 @@
     <ClInclude Include="tileView.h">
       <Filter>Windows\tools</Filter>
     </ClInclude>
-    <ClInclude Include="filter\hq2x.h" />
-    <ClInclude Include="filter\interp.h" />
-    <ClInclude Include="filter\lq2x.h" />
-    <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\utils\datetime.h">
       <Filter>Core\utils</Filter>
     </ClInclude>
@@ -1547,6 +1543,9 @@
     </ClInclude>
     <ClInclude Include="fsnitroView.h">
       <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\slot2.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

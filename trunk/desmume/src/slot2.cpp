@@ -44,7 +44,7 @@ void slot2_Init()
 
 	//construct all devices
 	extern TISlot2InterfaceConstructor construct_Slot2_None;
-	//extern TISlot2InterfaceConstructor construct_Slot2_Auto;
+	extern TISlot2InterfaceConstructor construct_Slot2_Auto;
 	extern TISlot2InterfaceConstructor construct_Slot2_CFlash;
 	extern TISlot2InterfaceConstructor construct_Slot2_RumblePak;
 	extern TISlot2InterfaceConstructor construct_Slot2_GbaCart;
@@ -55,7 +55,7 @@ void slot2_Init()
 	extern TISlot2InterfaceConstructor construct_Slot2_PassME;
 
 	slot2_List[NDS_SLOT2_NONE]			= construct_Slot2_None();
-	//slot2_List[NDS_SLOT2_AUTO]		= construct_Slot2_Auto();
+	slot2_List[NDS_SLOT2_AUTO]			= construct_Slot2_Auto();
 	slot2_List[NDS_SLOT2_CFLASH]		= construct_Slot2_CFlash();
 	slot2_List[NDS_SLOT2_RUMBLEPAK]		= construct_Slot2_RumblePak();
 	slot2_List[NDS_SLOT2_GBACART]		= construct_Slot2_GbaCart();
