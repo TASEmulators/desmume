@@ -15,6 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "../NDSSystem.h"
+#include "../types.h"
 #include "../slot2.h"
 
 class Slot2_PassME : public ISlot2Interface
@@ -24,6 +26,31 @@ public:
 	{
 		static Slot2InfoSimple info("PassME", "PassME in GBA slot");
 		return &info;
+	}
+
+	virtual u8	readByte(u8 PROCNUM, u32 addr)
+	{
+		u32 tmp_addr = (addr & 0x07FFFFFF);
+		if (tmp_addr < gameInfo.romsize)
+			return (u8)gameInfo.readROM(tmp_addr);
+
+		return (0xFF);
+	}
+	virtual u16	readWord(u8 PROCNUM, u32 addr)
+	{
+		u32 tmp_addr = (addr & 0x07FFFFFF);
+		if (tmp_addr < gameInfo.romsize)
+			return (u16)gameInfo.readROM(tmp_addr);
+
+		return (0xFFFF);
+	}
+	virtual u32	readLong(u8 PROCNUM, u32 addr)
+	{
+		u32 tmp_addr = (addr & 0x07FFFFFF);
+		if (tmp_addr < gameInfo.romsize)
+			return (u32)gameInfo.readROM(tmp_addr);
+
+		return (0xFFFFFFFF);
 	}
 };
 

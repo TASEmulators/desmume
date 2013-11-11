@@ -46,6 +46,9 @@ public:
 		if ((memcmp(gameInfo.header.gameCode, "UBR",  3) == 0)		// Opera Browser
 			)
 			selection = NDS_SLOT2_EXPMEMORY;
+		else
+			if (gameInfo.isHomebrew())
+				selection = NDS_SLOT2_PASSME;
 		
 		mSelectedImplementation = slot2_List[selection];
 		mSelectedImplementation->connect();
