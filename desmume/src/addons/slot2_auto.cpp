@@ -64,6 +64,12 @@ public:
 		else
 			if ((memcmp(gameInfo.header.gameCode, "YAA",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Arkanoid DS
 		else
+			if ((memcmp(gameInfo.header.gameCode, "CB6",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Space Bust-A-Move
+		else
+			if ((memcmp(gameInfo.header.gameCode, "YXX",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Space Invaders Extreme
+				else
+			if ((memcmp(gameInfo.header.gameCode, "CV8",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Space Invaders Extreme 2
+		else
 			if (gameInfo.isHomebrew())
 				selection = NDS_SLOT2_PASSME;
 		

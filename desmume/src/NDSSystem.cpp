@@ -2743,14 +2743,6 @@ static void NDS_applyFinalInput()
 		((input.buttons.X ? 1 : 0) << 3)|
 		((input.buttons.W ? 1 : 0) << 2)|
 		((input.buttons.E ? 1 : 0) << 1);
-
-	//these values are arbitrarily chosen to make arkanoid paddle control act similarly to its dpad controls
-	if(input.buttons.R)
-		nds.paddle += 5;
-	else if(input.buttons.L)
-		nds.paddle -= 5;
-
-	// TODO: low power IRQ
 }
 
 

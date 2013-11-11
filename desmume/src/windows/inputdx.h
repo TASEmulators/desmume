@@ -145,8 +145,15 @@ struct SPiano {
     WORD C,CS,D,DS,E,F,FS,G,GS,A,AS,B,HIC;
 };
 
+struct SPaddle {
+    BOOL Enabled;
+    WORD DEC;
+    WORD INC;
+};
+
 extern SGuitar Guitar;
 extern SPiano Piano;
+extern SPaddle Paddle;
 
 #endif
 

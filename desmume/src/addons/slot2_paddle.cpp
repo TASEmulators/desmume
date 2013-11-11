@@ -56,14 +56,14 @@ private:
 public:
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("Paddle", "Paddle", 0x07);
+		static Slot2InfoSimple info("Paddle Controller", "Taito Paddle Controller", 0x07);
 		return &info;
 	}
 
 	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
 	{
-		if (addr < 0x0A000000) return;	// ???
-		calibrate();
+		if (addr < 0x0A000000) 
+			calibrate();
 	}
 	virtual void writeWord(u8 PROCNUM, u32 addr, u16 val)
 	{
@@ -78,7 +78,7 @@ public:
 
 	virtual u8	readByte(u8 PROCNUM, u32 addr)
 	{
-		//printf("paddle: read 08 at 0x%08X\n", adr);
+		//printf("paddle: read 08 at 0x%08X\n", addr);
 		if (!Validate(PROCNUM, (addr < 0x0A000000)))
 			return 0xFF;
 
@@ -95,7 +95,7 @@ public:
 	}
 	virtual u16	readWord(u8 PROCNUM, u32 addr)
 	{
-		//printf("paddle : read 16 at 0x%08X\n", adr);
+		//printf("paddle: read 16 at 0x%08X\n", addr);
 		if (!Validate(PROCNUM, (addr < 0x0A000000)))
 			return 0xFFFF;
 
@@ -112,7 +112,7 @@ public:
 	}
 	virtual u32	readLong(u8 PROCNUM, u32 addr)
 	{
-		//printf("paddle: read 32 at 0x%08X\n", adr);
+		//printf("paddle: read 32 at 0x%08X\n", addr);
 		if (!Validate(PROCNUM, (addr < 0x0A000000)))
 			return 0xFFFFFFFF;
 

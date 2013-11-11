@@ -211,10 +211,12 @@
 static TCHAR szClassName[] = _T("InputCustom");
 static TCHAR szHotkeysClassName[] = _T("InputCustomHot");
 static TCHAR szGuitarClassName[] = _T("InputCustomGuitar");
+static TCHAR szPaddleClassName[] = _T("InputCustomPaddle");
 
 static LRESULT CALLBACK InputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK HotInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK GuitarInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK PaddleInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 SJoyState Joystick [16];
 SJoyState JoystickF [16];
@@ -258,6 +260,9 @@ SGuitar DefaultGuitar = { false, 'E', 'R', 'T', 'Y' };
 
 SPiano Piano;
 SPiano DefaultPiano = { false, 'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M', VK_OEM_COMMA };
+
+SPaddle Paddle;
+SPaddle DefaultPaddle = { false, 'K', 'L' };
 
 bool allowUpAndDown = false;
 bool allowBackgroundInput = false;
@@ -380,6 +385,15 @@ static void ReadPianoControl(const char* name, WORD& output)
 	}
 }
 
+static void ReadPaddleControl(const char* name, WORD& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("Slot2.Paddle",name,-1,IniName);
+	if(temp != -1) {
+		output = temp;
+	}
+}
+
 void LoadHotkeyConfig()
 {
 	SCustomKey *key = &CustomKeys.key(0);
@@ -432,6 +446,14 @@ static void LoadPianoConfig()
 	DO(B);
 	DO(HIC);
 #undef DO
+}
+
+static void LoadPaddleConfig()
+{
+	memcpy(&Paddle, &DefaultPaddle, sizeof(Paddle));
+
+	ReadPaddleControl("DEC", Paddle.DEC);
+	ReadPaddleControl("INC", Paddle.INC);
 }
 
 
@@ -1259,6 +1281,22 @@ static void InitCustomControls()
 
 
     RegisterClassEx(&wc);
+
+	wc.cbSize         = sizeof(wc);
+    wc.lpszClassName  = szPaddleClassName;
+    wc.hInstance      = GetModuleHandle(0);
+    wc.lpfnWndProc    = PaddleInputCustomWndProc;
+    wc.hCursor        = LoadCursor (NULL, IDC_ARROW);
+    wc.hIcon          = 0;
+    wc.lpszMenuName   = 0;
+    wc.hbrBackground  = (HBRUSH)GetSysColorBrush(COLOR_BTNFACE);
+    wc.style          = 0;
+    wc.cbClsExtra     = 0;
+    wc.cbWndExtra     = sizeof(InputCust *);
+    wc.hIconSm        = 0;
+
+
+    RegisterClassEx(&wc);
 }
 
 InputCust * GetInputCustom(HWND hwnd)
@@ -1461,6 +1499,148 @@ static LRESULT CALLBACK InputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 }
 
 static LRESULT CALLBACK GuitarInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+		// retrieve the custom structure POINTER for THIS window
+    InputCust *icp = GetInputCustom(hwnd);
+	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWLP_HWNDPARENT);
+	funky= hwnd;
+
+	static HWND selectedItem = NULL;
+
+	char temp[100];
+	COLORREF col;
+    switch(msg)
+    {
+
+	case WM_GETDLGCODE:
+		return DLGC_WANTARROWS|DLGC_WANTALLKEYS|DLGC_WANTCHARS;
+		break;
+
+
+    case WM_NCCREATE:
+
+        // Allocate a new CustCtrl structure for this window.
+        icp = (InputCust *) malloc( sizeof(InputCust) );
+
+        // Failed to allocate, stop window creation.
+        if(icp == NULL) return FALSE;
+
+        // Initialize the CustCtrl structure.
+        icp->hwnd      = hwnd;
+        icp->crForeGnd = GetSysColor(COLOR_WINDOWTEXT);
+        icp->crBackGnd = GetSysColor(COLOR_WINDOW);
+        icp->hFont     = (HFONT__ *) GetStockObject(DEFAULT_GUI_FONT);
+
+        // Assign the window text specified in the call to CreateWindow.
+        SetWindowText(hwnd, ((CREATESTRUCT *)lParam)->lpszName);
+
+        // Attach custom structure to this window.
+        SetInputCustom(hwnd, icp);
+
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+
+		selectedItem = NULL;
+
+		SetTimer(hwnd,777,125,NULL);
+
+        // Continue with window creation.
+        return TRUE;
+
+    // Clean up when the window is destroyed.
+    case WM_NCDESTROY:
+        free(icp);
+        break;
+	case WM_PAINT:
+		return InputCustom_OnPaint(icp,wParam,lParam);
+		break;
+	case WM_ERASEBKGND:
+		return 1;
+	case WM_USER+45:
+	case WM_KEYDOWN:
+		TranslateKey(wParam,temp);
+		col = CheckButtonKey(wParam);
+
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		SetWindowText(hwnd,temp);
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		SendMessage(pappy,WM_USER+43,wParam,(LPARAM)hwnd);
+
+		break;
+	case WM_USER+44:
+
+		TranslateKey(wParam,temp);
+		if(IsWindowEnabled(hwnd))
+		{
+			col = CheckButtonKey(wParam);
+		}
+		else
+		{
+			col = RGB( 192,192,192);
+		}
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		SetWindowText(hwnd,temp);
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+
+		break;
+
+	case WM_SETFOCUS:
+	{
+		selectedItem = hwnd;
+		col = RGB( 0,255,0);
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+//		tid = wParam;
+
+		break;
+	}
+	case WM_KILLFOCUS:
+	{
+		selectedItem = NULL;
+		SendMessage(pappy,WM_USER+46,wParam,(LPARAM)hwnd); // refresh fields on deselect
+		break;
+	}
+
+	case WM_TIMER:
+		if(hwnd == selectedItem)
+		{
+			FunkyJoyStickTimer();
+		}
+		SetTimer(hwnd,777,125,NULL);
+		break;
+	case WM_LBUTTONDOWN:
+		SetFocus(hwnd);
+		break;
+	case WM_ENABLE:
+		COLORREF col;
+		if(wParam)
+		{
+			col = RGB( 255,255,255);
+			icp->crForeGnd = ((~col) & 0x00ffffff);
+			icp->crBackGnd = col;
+		}
+		else
+		{
+			col = RGB( 192,192,192);
+			icp->crForeGnd = ((~col) & 0x00ffffff);
+			icp->crBackGnd = col;
+		}
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		return true;
+    default:
+        break;
+    }
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK PaddleInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 		// retrieve the custom structure POINTER for THIS window
     InputCust *icp = GetInputCustom(hwnd);
@@ -2497,6 +2677,7 @@ void input_init()
 	LoadHotkeyConfig();
 	LoadGuitarConfig();
 	LoadPianoConfig();
+	LoadPaddleConfig();
 
 	di_init();
 	FeedbackON = input_feedback;
@@ -2612,6 +2793,14 @@ void input_acquire()
 		bool b=!S9xGetState(Piano.B);
 		bool hic=!S9xGetState(Piano.HIC);
 		piano_setKey(c,cs,d,ds,e,f,fs,g,gs,a,as,b,hic);
+	}
+
+	if (Paddle.Enabled)
+	{
+		bool dec = !S9xGetState(Paddle.DEC);
+		bool inc = !S9xGetState(Paddle.INC);
+		if (inc) nds.paddle += 5;
+		if (dec) nds.paddle -= 5;
 	}
 }
 
