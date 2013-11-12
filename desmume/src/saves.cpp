@@ -408,9 +408,10 @@ static bool s_slot2_loadstate(EMUFILE* is, int size)
 	//version 0:
 	if(version >= 0)
 	{
-		u8 slotID = is->read32le();
 		NDS_SLOT2_TYPE slotType = NDS_SLOT2_AUTO;
-		slot2_getTypeByID(slotID, slotType);
+		u8 slotID = is->read32le();
+		if (version == 0)
+			slot2_getTypeByID(slotID, slotType);
 
 		slot2_Change(slotType);
 
