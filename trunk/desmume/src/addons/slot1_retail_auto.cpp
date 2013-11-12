@@ -48,10 +48,10 @@ public:
 			)
 			selection = NDS_SLOT1_RETAIL_NAND;
 
+		slot1_selected_type = selection;
 		mSelectedImplementation = slot1_List[selection];
 		mSelectedImplementation->connect();
 		printf("Slot1 auto-selected device type: %s\n",mSelectedImplementation->info()->name());
-		slot1_selected_id = selection;
 	}
 
 	virtual void disconnect()

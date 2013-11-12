@@ -76,11 +76,11 @@ public:
 			if (gameInfo.isHomebrew())
 				selection = NDS_SLOT2_PASSME;
 		
+		slot2_selected_type = selection;
 		mSelectedImplementation = slot2_List[selection];
 		mSelectedImplementation->connect();
-		printf("Slot2 auto-selected device type: %s\n", mSelectedImplementation->info()->name());
-		slot2_selected_id = selection;
-
+		printf("Slot2 auto-selected device type: %s (0x%02X)\n", mSelectedImplementation->info()->name(), mSelectedImplementation->info()->id());
+		
 #ifdef HOST_WINDOWS
 		Guitar.Enabled	= (selection == NDS_SLOT2_GUITARGRIP)?true:false;
 		Piano.Enabled	= (selection == NDS_SLOT2_EASYPIANO)?true:false;

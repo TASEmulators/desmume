@@ -43,6 +43,7 @@
 #include "MMU_timing.h"
 #include "slot1.h"
 #include "slot2.h"
+#include "svnrev.h"
 
 #include "path.h"
 
@@ -56,6 +57,16 @@ int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load
 //since this isnt supported right now, it is declared in here to make things compile
 #define SS_INDIRECT            0x80000000
 
+u32 _DESMUME_version = EMU_DESMUME_VERSION_NUMERIC();
+#ifdef SVN_REV
+#define _SVN_REV SVN_REV
+#else
+#define _SVN_REV 0
+#endif
+
+u32 svn_rev = _SVN_REV;
+s64 save_time = 0;
+
 savestates_t savestates[NB_STATES];
 
 #define SAVESTATE_VERSION       12
@@ -64,9 +75,14 @@ static const char* magic = "DeSmuME SState\0";
 //a savestate chunk loader can set this if it wants to permit a silent failure (for compatibility)
 static bool SAV_silent_fail_flag;
 
-SFORMAT SF_NDS_HEADER[]={
+SFORMAT SF_NDS_INFO[]={
 	{ "GINF", 1, sizeof(gameInfo.header), &gameInfo.header},
 	{ "GRSZ", 1, 4, &gameInfo.romsize},
+	{ "DVMJ", 1, 1, (void*)&DESMUME_VERSION_MAJOR},
+	{ "DVMI", 1, 1, (void*)&DESMUME_VERSION_MINOR},
+	{ "DSBD", 1, 1, (void*)&DESMUME_VERSION_BUILD},
+	{ "GREV", 1, 4, &svn_rev},
+	{ "GTIM", 1, 8, &save_time},
 	{ 0 }
 };
 
@@ -393,7 +409,7 @@ static void s_slot1_savestate(EMUFILE* os)
 	u32 version = 1;
 	os->write32le(version);
 
-	u8 slotID = (u8)slot1_List[slot1_GetCurrentType()]->info()->id();
+	u8 slotID = (u8)slot1_List[slot1_GetSelectedType()]->info()->id();
 	os->write32le(slotID);
 
 	EMUFILE_MEMORY temp;
@@ -412,7 +428,6 @@ static bool s_slot2_loadstate(EMUFILE* is, int size)
 		u8 slotID = is->read32le();
 		if (version == 0)
 			slot2_getTypeByID(slotID, slotType);
-
 		slot2_Change(slotType);
 
 		EMUFILE_MEMORY temp;
@@ -429,7 +444,8 @@ static void s_slot2_savestate(EMUFILE* os)
 	u32 version = 0;
 	os->write32le(version);
 
-	u8 slotID = (u8)slot2_List[slot2_GetCurrentType()]->info()->id();
+	//version 0:
+	u8 slotID = (u8)slot2_List[slot2_GetSelectedType()]->info()->id();
 	os->write32le(slotID);
 
 	EMUFILE_MEMORY temp;
@@ -1007,6 +1023,16 @@ bool savestate_save (const char *file_name)
 }
 
 static void writechunks(EMUFILE* os) {
+
+	DateTime tm = DateTime::get_Now();
+#ifdef PUBLIC_RELEASE
+	svn_rev = 0xFFFFFFFF;
+#else
+	svn_rev = _SVN_REV;
+#endif
+
+	save_time = tm.get_Ticks();
+
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
 	savestate_WriteChunk(os,3,cp15_savestate);
@@ -1024,7 +1050,7 @@ static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,101,mov_savestate);
 	savestate_WriteChunk(os,110,SF_WIFI);
 	savestate_WriteChunk(os,120,SF_RTC);
-	savestate_WriteChunk(os,130,SF_NDS_HEADER);
+	savestate_WriteChunk(os,130,SF_NDS_INFO);
 	savestate_WriteChunk(os,140,s_slot1_savestate);
 	savestate_WriteChunk(os,150,s_slot2_savestate);
 	// reserved for future versions
@@ -1040,11 +1066,21 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 	bool ret = true;
 	bool haveInfo = false;
 	
+	s64 save_time = 0;
 	u32 romsize = 0;
+	u8 version_major = 0;
+	u8 version_minor = 0;
+	u8 version_build = 0;
+	
 	NDS_header header;
-	SFORMAT SF_HEADER[]={
+	SFORMAT SF_INFO[]={
 		{ "GINF", 1, sizeof(header), &header},
 		{ "GRSZ", 1, 4, &romsize},
+		{ "DVMJ", 1, 1, &version_major},
+		{ "DVMI", 1, 1, &version_minor},
+		{ "DSBD", 1, 1, &version_build},
+		{ "GREV", 1, 4, &svn_rev},
+		{ "GTIM", 1, 8, &save_time},
 		{ 0 }
 	};
 	memset(&header, 0, sizeof(header));
@@ -1075,7 +1111,7 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 			case 101: if(!mov_loadstate(is, size)) ret=false; break;
 			case 110: if(!ReadStateChunk(is,SF_WIFI,size)) ret=false; break;
 			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
-			case 130: if(!ReadStateChunk(is,SF_HEADER,size)) ret=false; else haveInfo=true; break;
+			case 130: if(!ReadStateChunk(is,SF_INFO,size)) ret=false; else haveInfo=true; break;
 			case 140: if(!s_slot1_loadstate(is, size)) ret=false; break;
 			case 150: if(!s_slot2_loadstate(is, size)) ret=false; break;
 			// reserved for future versions
@@ -1099,6 +1135,20 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 		memset(&buf[0], 0, sizeof(buf));
 		memcpy(buf, header.gameTile, sizeof(header.gameTile));
 		printf("Savestate info:\n");
+		if (version_major | version_minor | version_build)
+		{
+			char buf[32] = {0};
+			if (svn_rev != 0xFFFFFFFF)
+				sprintf(buf, " svn %u", svn_rev);
+			printf("\tDeSmuME version: %u.%u.%u%s\n", version_major, version_minor, version_build, buf);
+		}
+
+		if (save_time)
+		{
+			static const char *wday[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+			DateTime tm = save_time;
+			printf("\tSave created: %04d-%03s-%02d %s %02d:%02d:%02d\n", tm.get_Year(), DateTime::GetNameOfMonth(tm.get_Month()), tm.get_Day(), wday[tm.get_DayOfWeek()%7], tm.get_Hour(), tm.get_Minute(), tm.get_Second());
+		}
 		printf("\tGame title: %s\n", buf);
 		printf("\tGame code: %c%c%c%c\n", header.gameCode[3], header.gameCode[2], header.gameCode[1], header.gameCode[0]);
 		printf("\tMaker code: %c%c (0x%04X) - %s\n", header.makerCode & 0xFF, header.makerCode >> 8, header.makerCode, getDeveloperNameByID(header.makerCode).c_str());
@@ -1153,9 +1203,9 @@ bool savestate_load(EMUFILE* is)
 	if(is->fail() || memcmp(header,magic,16))
 		return false;
 
-	u32 ssversion,dversion,len,comprlen;
+	u32 ssversion,len,comprlen;
 	if(!read32le(&ssversion,is)) return false;
-	if(!read32le(&dversion,is)) return false;
+	if(!read32le(&_DESMUME_version,is)) return false;
 	if(!read32le(&len,is)) return false;
 	if(!read32le(&comprlen,is)) return false;
 

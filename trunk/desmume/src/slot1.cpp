@@ -36,8 +36,6 @@ Since GCROMCTRL[26:24] can't represent 'data block size' of 1 or 2, it is assume
 #include "utils/vfat.h"
 #include "path.h"
 
-NDS_SLOT1_TYPE slot1_selected_id = NDS_SLOT1_NONE;
-
 bool slot1_R4_path_type = false;
 
 //-------
@@ -87,6 +85,7 @@ ISlot1Interface* slot1_List[NDS_SLOT1_COUNT] = {0};
 
 ISlot1Interface* slot1_device = NULL;
 NDS_SLOT1_TYPE slot1_device_type = NDS_SLOT1_RETAIL_AUTO;  //default for frontends that dont even configure this
+NDS_SLOT1_TYPE slot1_selected_type = NDS_SLOT1_NONE;
 
 
 void slot1_Init()
@@ -153,7 +152,8 @@ void slot1_Reset()
 
 bool slot1_Change(NDS_SLOT1_TYPE changeToType)
 {
-	if(changeToType == slot1_device_type) return FALSE; //nothing to do
+	if((changeToType == slot1_device_type) || (changeToType == slot1_GetSelectedType()))
+		return FALSE; //nothing to do
 	if (changeToType > NDS_SLOT1_COUNT || changeToType < 0) return FALSE;
 	if(slot1_device != NULL)
 		slot1_device->disconnect();
@@ -194,7 +194,7 @@ NDS_SLOT1_TYPE slot1_GetCurrentType()
 NDS_SLOT1_TYPE slot1_GetSelectedType()
 {
 	if (slot1_device_type == NDS_SLOT1_RETAIL_AUTO)
-		return slot1_selected_id;
+		return slot1_selected_type;
 	return slot1_device_type;
 }
 
