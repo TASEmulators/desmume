@@ -97,7 +97,7 @@ enum NDS_SLOT2_TYPE
 
 extern ISlot2Interface* slot2_device;						//the current slot2 device instance
 extern ISlot2Interface* slot2_List[NDS_SLOT2_COUNT];
-extern NDS_SLOT2_TYPE slot2_selected_id;
+extern NDS_SLOT2_TYPE slot2_selected_type;
 
 void slot2_Init();
 bool slot2_Connect();

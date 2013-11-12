@@ -108,7 +108,7 @@ enum NDS_SLOT1_TYPE
 
 extern ISlot1Interface* slot1_device;						//the current slot1 device instance
 extern ISlot1Interface* slot1_List[NDS_SLOT1_COUNT];
-extern NDS_SLOT1_TYPE slot1_selected_id;
+extern NDS_SLOT1_TYPE slot1_selected_type;
 
 void slot1_Init();
 bool slot1_Connect();

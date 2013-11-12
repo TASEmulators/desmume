@@ -19,8 +19,6 @@
 #include "mem.h"
 #include "MMU.h"
 
-NDS_SLOT2_TYPE slot2_selected_id = NDS_SLOT2_NONE;
-
 //this is the currently-configured cflash mode
 ADDON_CFLASH_MODE CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 
@@ -34,7 +32,8 @@ char GBAgameName[MAX_PATH] = {0};
 ISlot2Interface* slot2_List[NDS_SLOT2_COUNT] = {0};
 
 ISlot2Interface* slot2_device = NULL;
-NDS_SLOT2_TYPE slot2_device_type = NDS_SLOT2_NONE;
+NDS_SLOT2_TYPE slot2_device_type = NDS_SLOT2_AUTO;
+NDS_SLOT2_TYPE slot2_selected_type = NDS_SLOT2_NONE;
 
 
 void slot2_Init()
@@ -103,7 +102,7 @@ void slot2_Reset()
 
 bool slot2_Change(NDS_SLOT2_TYPE changeToType)
 {
-	if(changeToType == slot2_device_type)
+	if((changeToType == slot2_device_type) || (changeToType == slot2_GetSelectedType()))
 		return FALSE; //nothing to do
 	if (changeToType > NDS_SLOT2_COUNT || changeToType < 0)
 		return FALSE;
@@ -142,10 +141,10 @@ NDS_SLOT2_TYPE slot2_GetCurrentType()
 	return slot2_device_type;
 }
 
-NDS_SLOT2_TYPE slot2_GetSelectetType()
+NDS_SLOT2_TYPE slot2_GetSelectedType()
 {
 	if (slot2_device_type == NDS_SLOT2_AUTO)
-		return slot2_selected_id;
+		return slot2_selected_type;
 
 	return slot2_device_type;
 }

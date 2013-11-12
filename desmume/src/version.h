@@ -18,6 +18,10 @@
 #include <string>
 #include "types.h"
 
+extern const u8 DESMUME_VERSION_MAJOR;
+extern const u8 DESMUME_VERSION_MINOR;
+extern const u8 DESMUME_VERSION_BUILD;
+
 u32 EMU_DESMUME_VERSION_NUMERIC();
 const char* EMU_DESMUME_VERSION_STRING();
 const char* EMU_DESMUME_SUBVERSION_STRING();
