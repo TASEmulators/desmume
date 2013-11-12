@@ -18,8 +18,6 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//MUST SAVE ADDONS! OMG HOW DID WE FORGET THAT
-
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif
@@ -44,6 +42,7 @@
 #include "mic.h"
 #include "MMU_timing.h"
 #include "slot1.h"
+#include "slot2.h"
 
 #include "path.h"
 
@@ -373,8 +372,12 @@ static bool s_slot1_loadstate(EMUFILE* is, int size)
 	//version 0:
 	if(version >= 0)
 	{
-		int slotType = is->read32le();
-		slot1_Change((NDS_SLOT1_TYPE)slotType);
+		u8 slotID = is->read32le();
+		NDS_SLOT1_TYPE slotType = NDS_SLOT1_RETAIL_AUTO;
+		if (version >= 1)
+			slot1_getTypeByID(slotID, slotType);
+
+		slot1_Change(slotType);
 
 		EMUFILE_MEMORY temp;
 		is->readMemoryStream(&temp);
@@ -387,15 +390,49 @@ static bool s_slot1_loadstate(EMUFILE* is, int size)
 
 static void s_slot1_savestate(EMUFILE* os)
 {
-	u32 version = 0;
+	u32 version = 1;
 	os->write32le(version);
 
-	//version 0:
-	int slotType = (int)slot1_GetCurrentType();
-	os->write32le(slotType);
+	u8 slotID = (u8)slot1_List[slot1_GetCurrentType()]->info()->id();
+	os->write32le(slotID);
 
 	EMUFILE_MEMORY temp;
 	slot1_Savestate(&temp);
+	os->writeMemoryStream(&temp);
+}
+
+static bool s_slot2_loadstate(EMUFILE* is, int size)
+{
+	u32 version = is->read32le();
+
+	//version 0:
+	if(version >= 0)
+	{
+		u8 slotID = is->read32le();
+		NDS_SLOT2_TYPE slotType = NDS_SLOT2_AUTO;
+		slot2_getTypeByID(slotID, slotType);
+
+		slot2_Change(slotType);
+
+		EMUFILE_MEMORY temp;
+		is->readMemoryStream(&temp);
+		temp.fseek(0,SEEK_SET);
+		slot2_Loadstate(&temp);
+	}
+
+	return true;
+}
+
+static void s_slot2_savestate(EMUFILE* os)
+{
+	u32 version = 0;
+	os->write32le(version);
+
+	u8 slotID = (u8)slot2_List[slot2_GetCurrentType()]->info()->id();
+	os->write32le(slotID);
+
+	EMUFILE_MEMORY temp;
+	slot2_Savestate(&temp);
 	os->writeMemoryStream(&temp);
 }
 
@@ -988,8 +1025,8 @@ static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,120,SF_RTC);
 	savestate_WriteChunk(os,130,SF_NDS_HEADER);
 	savestate_WriteChunk(os,140,s_slot1_savestate);
+	savestate_WriteChunk(os,150,s_slot2_savestate);
 	// reserved for future versions
-	savestate_WriteChunk(os,150,reserveChunks);
 	savestate_WriteChunk(os,160,reserveChunks);
 	savestate_WriteChunk(os,170,reserveChunks);
 	savestate_WriteChunk(os,180,reserveChunks);
@@ -1039,8 +1076,8 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 			case 120: if(!ReadStateChunk(is,SF_RTC,size)) ret=false; break;
 			case 130: if(!ReadStateChunk(is,SF_HEADER,size)) ret=false; else haveInfo=true; break;
 			case 140: if(!s_slot1_loadstate(is, size)) ret=false; break;
+			case 150: if(!s_slot2_loadstate(is, size)) ret=false; break;
 			// reserved for future versions
-			case 150:
 			case 160:
 			case 170:
 			case 180:
@@ -1067,6 +1104,8 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 		printf("\tDevice capacity: %dMb (real size %dMb)\n", ((128 * 1024) << header.cardSize) / (1024 * 1024), romsize / (1024 * 1024));
 		printf("\tCRC16: %04Xh\n", header.CRC16);
 		printf("\tHeader CRC16: %04Xh\n", header.headerCRC16);
+		printf("\tSlot1: %s\n", slot1_List[slot1_GetCurrentType()]->info()->name());
+		printf("\tSlot2: %s\n", slot2_List[slot2_GetCurrentType()]->info()->name());
 
 		if (gameInfo.romsize != romsize || memcmp(&gameInfo.header, &header, sizeof(header)) != 0)
 			msgbox->warn("The savestate you are loading does not match the ROM you are running.\nYou should find the correct ROM");

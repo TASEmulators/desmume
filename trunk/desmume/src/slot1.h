@@ -108,6 +108,7 @@ enum NDS_SLOT1_TYPE
 
 extern ISlot1Interface* slot1_device;						//the current slot1 device instance
 extern ISlot1Interface* slot1_List[NDS_SLOT1_COUNT];
+extern NDS_SLOT1_TYPE slot1_selected_id;
 
 void slot1_Init();
 bool slot1_Connect();
@@ -129,6 +130,7 @@ bool slot1_ChangeByID(u8 ID);
 
 //check on the current device
 NDS_SLOT1_TYPE slot1_GetCurrentType();
+NDS_SLOT1_TYPE slot1_GetSelectedType();
 
 extern bool slot1_R4_path_type;
 void slot1_SetFatDir(const std::string& dir, bool sameAsRom = false);

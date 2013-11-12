@@ -19,6 +19,8 @@
 #include "mem.h"
 #include "MMU.h"
 
+NDS_SLOT2_TYPE slot2_selected_id = NDS_SLOT2_NONE;
+
 //this is the currently-configured cflash mode
 ADDON_CFLASH_MODE CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 
@@ -137,6 +139,14 @@ bool slot2_ChangeByID(u8 ID)
 
 NDS_SLOT2_TYPE slot2_GetCurrentType()
 {
+	return slot2_device_type;
+}
+
+NDS_SLOT2_TYPE slot2_GetSelectetType()
+{
+	if (slot2_device_type == NDS_SLOT2_AUTO)
+		return slot2_selected_id;
+
 	return slot2_device_type;
 }
 
