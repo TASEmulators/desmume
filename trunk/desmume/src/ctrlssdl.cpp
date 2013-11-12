@@ -406,9 +406,6 @@ process_joystick_events( u16 *keypad) {
   if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
     SDL_JoystickEventState(SDL_ENABLE);
 
-  /* Reset the keypad bits */
-  *keypad = 0;
-
   /* There's an event waiting to be processed? */
   while (SDL_PollEvent(&event))
     {

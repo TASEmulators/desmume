@@ -75,16 +75,6 @@ bool desmume_running( void)
 
 void desmume_cycle( void)
 {
-  u16 keypad;
-
-  /* Joystick events */
-  /* Retrieve old value: can use joysticks w/ another device (from our side) */
-  keypad = get_keypad();
-  /* Look for queued events */
-  process_joystick_events( &keypad);
-  /* Update keypad value */
-  update_keypad(keypad);
-
   FCEUMOV_AddInputState();
   NDS_exec<false>();
   SPU_Emulate_user();
