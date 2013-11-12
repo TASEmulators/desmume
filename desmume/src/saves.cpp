@@ -43,11 +43,11 @@
 #include "MMU_timing.h"
 #include "slot1.h"
 #include "slot2.h"
-#include "svnrev.h"
 
 #include "path.h"
 
 #ifdef HOST_WINDOWS
+#include "svnrev.h"
 #include "windows/main.h"
 #endif
 
