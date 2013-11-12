@@ -24,15 +24,16 @@ AC_PROG_RANLIB
 dnl -- check for endianess
 AC_C_BIGENDIAN
 
-dnl -- since svn 1.7 theres only a single .svn folder in the root dir
-REVISION="r0"
+dnl -- since svn 1.7 theres only a single .svn folder in the root dir of the checkout
+dnl -- depending on what was checked out that might be .svn or ../.svn
+REVISION=0
 SVN=`which svn 2>/dev/null`
-if test -d "../.svn" -a "x${SVN}" != "x" -a -x "${SVN}" ; then
-  REVISION=r`$SVN info|grep 'Last Changed Rev'|cut -d' ' -f4`
+if ( test -d .svn || test -d ../.svn ; ) && test "x${SVN}" != "x" -a -x "${SVN}" ; then
+  REVISION=`$SVN info|grep 'Last Changed Rev'|cut -d' ' -f4`
   echo "$REVISION"
 fi
-AC_DEFINE_UNQUOTED([SVN_REV], "$REVISION", [subversion revision number])
-
+AC_DEFINE_UNQUOTED([SVN_REV], [$REVISION], [subversion revision number])
+AC_DEFINE_UNQUOTED([SVN_REV_STR], ["$REVISION"], [subversion revision number string])
 
 dnl - Check for intltool/gettext macros
 IT_PROG_INTLTOOL
