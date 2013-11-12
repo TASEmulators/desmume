@@ -51,7 +51,7 @@ public:
 		mSelectedImplementation = slot1_List[selection];
 		mSelectedImplementation->connect();
 		printf("Slot1 auto-selected device type: %s\n",mSelectedImplementation->info()->name());
-
+		slot1_selected_id = selection;
 	}
 
 	virtual void disconnect()

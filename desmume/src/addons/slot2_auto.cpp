@@ -79,6 +79,7 @@ public:
 		mSelectedImplementation = slot2_List[selection];
 		mSelectedImplementation->connect();
 		printf("Slot2 auto-selected device type: %s\n", mSelectedImplementation->info()->name());
+		slot2_selected_id = selection;
 
 #ifdef HOST_WINDOWS
 		Guitar.Enabled	= (selection == NDS_SLOT2_GUITARGRIP)?true:false;

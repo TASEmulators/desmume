@@ -36,6 +36,8 @@ Since GCROMCTRL[26:24] can't represent 'data block size' of 1 or 2, it is assume
 #include "utils/vfat.h"
 #include "path.h"
 
+NDS_SLOT1_TYPE slot1_selected_id = NDS_SLOT1_NONE;
+
 bool slot1_R4_path_type = false;
 
 //-------
@@ -186,6 +188,13 @@ bool slot1_ChangeByID(u8 ID)
 
 NDS_SLOT1_TYPE slot1_GetCurrentType()
 {
+	return slot1_device_type;
+}
+
+NDS_SLOT1_TYPE slot1_GetSelectedType()
+{
+	if (slot1_device_type == NDS_SLOT1_RETAIL_AUTO)
+		return slot1_selected_id;
 	return slot1_device_type;
 }
 

@@ -97,6 +97,7 @@ enum NDS_SLOT2_TYPE
 
 extern ISlot2Interface* slot2_device;						//the current slot2 device instance
 extern ISlot2Interface* slot2_List[NDS_SLOT2_COUNT];
+extern NDS_SLOT2_TYPE slot2_selected_id;
 
 void slot2_Init();
 bool slot2_Connect();
@@ -118,6 +119,7 @@ bool slot2_ChangeByID(u8 ID);
 
 //check on the current device
 NDS_SLOT2_TYPE slot2_GetCurrentType();
+NDS_SLOT2_TYPE slot2_GetSelectedType();
 
 template <u8 PROCNUM, typename T>
 bool slot2_write(u32 addr, T val);
