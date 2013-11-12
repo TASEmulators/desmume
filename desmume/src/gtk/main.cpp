@@ -493,7 +493,7 @@ struct modify_key_ctx {
     u8 key_id;
 };
 
-static u16 Cur_Keypad = 0;
+static u16 keys_latch = 0;
 static u16 gdk_shift_pressed = 0;
 u16 Keypad_Temp[NB_KEYS];
 
@@ -1476,8 +1476,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
   if( (e->state & mask) == 0){
     u16 Key = lookup_key(e->keyval);
     if(Key){
-      ADD_KEY( Cur_Keypad, Key );
-      if(desmume_running()) update_keypad(Cur_Keypad);
+      ADD_KEY( keys_latch, Key );
       return 1;
     }
   }
@@ -1502,8 +1501,7 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
       return 1;
   }
   u16 Key = lookup_key(e->keyval);
-  RM_KEY( Cur_Keypad, Key );
-  if(desmume_running()) update_keypad(Cur_Keypad);
+  RM_KEY( keys_latch, Key );
   return 1;
 
 }
@@ -1973,6 +1971,11 @@ gboolean EmuLoop(gpointer data)
         fps_FrameCount = 0;
         skipped_frames = 0;
     }
+
+    /* Merge the joystick keys with the keyboard ones */
+    process_joystick_events(&keys_latch);
+    /* Update! */
+    update_keypad(keys_latch);
 
     desmume_cycle();    /* Emule ! */
     for (i = 0; i < Frameskip; i++) {
