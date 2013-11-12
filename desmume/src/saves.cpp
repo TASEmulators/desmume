@@ -47,7 +47,6 @@
 #include "path.h"
 
 #ifdef HOST_WINDOWS
-#include "svnrev.h"
 #include "windows/main.h"
 #endif
 
@@ -58,13 +57,7 @@ int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load
 #define SS_INDIRECT            0x80000000
 
 u32 _DESMUME_version = EMU_DESMUME_VERSION_NUMERIC();
-#ifdef SVN_REV
-#define _SVN_REV SVN_REV
-#else
-#define _SVN_REV 0
-#endif
-
-u32 svn_rev = _SVN_REV;
+u32 svn_rev = EMU_DESMUME_SUBVERSION_NUMERIC();
 s64 save_time = 0;
 
 savestates_t savestates[NB_STATES];
@@ -1025,11 +1018,7 @@ bool savestate_save (const char *file_name)
 static void writechunks(EMUFILE* os) {
 
 	DateTime tm = DateTime::get_Now();
-#ifdef PUBLIC_RELEASE
-	svn_rev = 0xFFFFFFFF;
-#else
-	svn_rev = _SVN_REV;
-#endif
+	svn_rev = EMU_DESMUME_SUBVERSION_NUMERIC();
 
 	save_time = tm.get_Ticks();
 
