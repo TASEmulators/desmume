@@ -162,6 +162,31 @@ public:
 		
 		return 0xFFFFFFFF;
 	}
+
+	virtual void savestate(EMUFILE* os)
+	{
+		s32 version = 0;
+		EMUFILE_MEMORY *ram = new EMUFILE_MEMORY(expMemory, EXPANSION_MEMORY_SIZE);
+		os->write32le(version);
+		os->write32le((u32)ext_ram_lock);
+		os->writeMemoryStream(ram);
+		delete ram;
+	}
+
+	virtual void loadstate(EMUFILE* is)
+	{
+		EMUFILE_MEMORY *ram = new EMUFILE_MEMORY();
+
+		s32 version = is->read32le();
+
+		if (version >= 0)
+		{
+			is->read32le((u32*)&ext_ram_lock);
+			is->readMemoryStream(ram);
+			memcpy(expMemory, ram->buf(), std::min(EXPANSION_MEMORY_SIZE, ram->size()));
+		}
+		delete ram;
+	}
 };
 
 ISlot2Interface* construct_Slot2_ExpansionPak() { return new Slot2_ExpansionPak(); }
