@@ -226,7 +226,7 @@ IOReg IORegs9[] = {
 											{"Game Pak",13,1},{"IPC sync",16,1},{"IPC send FIFO empty",17,1},{"IPC recv FIFO not empty",18,1},
 											{"Gamecard transfer",19,1},{"Gamecard IREQ_MC",20,1},{"GX FIFO",21,1}}},
 
-	{ListEnd, 0, 0, 0, 0, {{0}}}
+	{ListEnd, "", 0, 0, 0, {{0}}}
 };
 
 IOReg IORegs7[] = {
@@ -269,7 +269,7 @@ IOReg IORegs7[] = {
 		{MMIOReg, "DMA3CNT", REG_DMA3CNTL, 4, 8, {{"Word Count",0,21}, {"Dest update method",21,2}, {"Src  update method",23,2}, {"Repeat Flag",25,1}, {"32bit Width Enable",26,1},{"Start Mode",28,2}, {"IRQ Enable",30,1}, {"Enabled",31,1}}},
 		
 		
-	{ListEnd, 0, 0, 0, 0, {{0}}}
+	{ListEnd, "", 0, 0, 0, {{0}}}
 };
 
 IOReg* IORegs[2] = {IORegs9, IORegs7};
