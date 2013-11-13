@@ -60,8 +60,11 @@ public:
 
 	virtual void disconnect()
 	{
-		delete [] expMemory;
-		expMemory = NULL;
+		if (expMemory)
+		{
+			delete [] expMemory;
+			expMemory = NULL;
+		}
 	}
 
 	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
