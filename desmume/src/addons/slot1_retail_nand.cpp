@@ -46,6 +46,7 @@ private:
 	u32 mode;
 	u32 handle_save;
 	u32 save_adr;
+	u32 save_start_adr;
 
 public:
 	virtual Slot1Info const* info()
@@ -85,12 +86,17 @@ public:
 	{
 		protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
 
+		//INFO("Start command: %02X%02X%02X%02X%02X%02X%02X%02X\t",
+		//	protocol.command.bytes[0], protocol.command.bytes[1], protocol.command.bytes[2], protocol.command.bytes[3],
+		//	protocol.command.bytes[4], protocol.command.bytes[5], protocol.command.bytes[6], protocol.command.bytes[7]);
+		//INFO("FROM: %08X\n", NDS_ARM9.instruct_adr);
+
 		//pass the normal rom operations along to the rom component
 		switch(operation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
 			case eSlot1Operation_2x_SecureAreaLoad:
-			case eSlot1Operation_B7_Read:
+			//case eSlot1Operation_B7_Read:
 				rom.start(operation,protocol.address);
 				return;
 		}
@@ -99,10 +105,6 @@ public:
 		int cmd = protocol.command.bytes[0];
 		switch(cmd)
 		{
-			//Nand Write Page
-			case 0x81:
-				break;
-
 			// Nand Init
 			case 0x94:
 				mode = cmd;
@@ -110,6 +112,16 @@ public:
 
 			// Nand Error?
 			case 0xD6:
+				break;
+
+			//Nand Write Page
+			case 0x81:
+				mode = cmd;
+				if (save_start_adr != (protocol.address & gameInfo.mask) - subAdr)
+				{
+					save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
+				}
+				handle_save = 1;
 				break;
 
 			case 0x84: //Write disable
@@ -121,9 +133,24 @@ public:
 				handle_save = 0;
 				break;
 
+			case 0xB7:
+				if (handle_save)
+				{
+					mode = cmd;
+					if (save_start_adr != (protocol.address & gameInfo.mask) - subAdr)
+					{
+						save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
+					}
+				}
+				else
+				{
+					rom.start(operation, protocol.address);
+				}
+				break;
+
 			case 0xB2: //Set save position
 				mode = cmd;
-				save_adr = (protocol.address & gameInfo.mask) - subAdr;
+				save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
 				handle_save = 1;
 				break;
 		}
