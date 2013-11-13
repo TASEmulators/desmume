@@ -59,6 +59,8 @@ int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load
 u32 _DESMUME_version = EMU_DESMUME_VERSION_NUMERIC();
 u32 svn_rev = EMU_DESMUME_SUBVERSION_NUMERIC();
 s64 save_time = 0;
+NDS_SLOT1_TYPE slot1Type = NDS_SLOT1_RETAIL_AUTO;
+NDS_SLOT2_TYPE slot2Type = NDS_SLOT2_AUTO;
 
 savestates_t savestates[NB_STATES];
 
@@ -382,11 +384,11 @@ static bool s_slot1_loadstate(EMUFILE* is, int size)
 	if(version >= 0)
 	{
 		u8 slotID = is->read32le();
-		NDS_SLOT1_TYPE slotType = NDS_SLOT1_RETAIL_AUTO;
+		slot1Type = NDS_SLOT1_RETAIL_AUTO;
 		if (version >= 1)
-			slot1_getTypeByID(slotID, slotType);
+			slot1_getTypeByID(slotID, slot1Type);
 
-		slot1_Change(slotType);
+		slot1_Change(slot1Type);
 
 		EMUFILE_MEMORY temp;
 		is->readMemoryStream(&temp);
@@ -417,11 +419,11 @@ static bool s_slot2_loadstate(EMUFILE* is, int size)
 	//version 0:
 	if(version >= 0)
 	{
-		NDS_SLOT2_TYPE slotType = NDS_SLOT2_AUTO;
+		slot2Type = NDS_SLOT2_AUTO;
 		u8 slotID = is->read32le();
 		if (version == 0)
-			slot2_getTypeByID(slotID, slotType);
-		slot2_Change(slotType);
+			slot2_getTypeByID(slotID, slot2Type);
+		slot2_Change(slot2Type);
 
 		EMUFILE_MEMORY temp;
 		is->readMemoryStream(&temp);
@@ -1144,8 +1146,8 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 		printf("\tDevice capacity: %dMb (real size %dMb)\n", ((128 * 1024) << header.cardSize) / (1024 * 1024), romsize / (1024 * 1024));
 		printf("\tCRC16: %04Xh\n", header.CRC16);
 		printf("\tHeader CRC16: %04Xh\n", header.headerCRC16);
-		printf("\tSlot1: %s\n", slot1_List[slot1_GetCurrentType()]->info()->name());
-		printf("\tSlot2: %s\n", slot2_List[slot2_GetCurrentType()]->info()->name());
+		printf("\tSlot1: %s\n", slot1_List[slot1Type]->info()->name());
+		printf("\tSlot2: %s\n", slot2_List[slot2Type]->info()->name());
 
 		if (gameInfo.romsize != romsize || memcmp(&gameInfo.header, &header, sizeof(header)) != 0)
 			msgbox->warn("The savestate you are loading does not match the ROM you are running.\nYou should find the correct ROM");
