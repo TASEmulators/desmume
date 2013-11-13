@@ -61,11 +61,10 @@ public:
 		protocol.chipId = gameInfo.chipID;
 		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
 
+		save_start_adr = 0;
 		handle_save = 0;
-
-		subAdr = T1ReadWord(gameInfo.header.reserved2, 0x6) << 17;
-
 		mode = 0;
+		subAdr = T1ReadWord(gameInfo.header.reserved2, 0x6) << 17;
 	}
 
 	virtual void write_command(u8 PROCNUM, GC_Command command)
@@ -264,14 +263,38 @@ public:
 
 	virtual void savestate(EMUFILE* os)
 	{
+		s32 version = 0;
+
 		protocol.savestate(os);
 		rom.savestate(os);
+
+		os->write32le(version);
+		
+		os->write32le(mode);
+		os->write32le(handle_save);
+		os->write32le(save_adr);
+		os->write32le(save_start_adr);
+		os->write32le(subAdr);
 	}
 
 	virtual void loadstate(EMUFILE* is)
 	{
+		s32 version = 0;
+
 		protocol.loadstate(is);
 		rom.loadstate(is);
+
+		is->read32le(&version);
+
+		// version 0
+		if (version >= 0)
+		{
+			is->read32le(&mode);
+			is->read32le(&handle_save);
+			is->read32le(&save_adr);
+			is->read32le(&save_start_adr);
+			is->read32le(&subAdr);
+		}
 	}
 
 
