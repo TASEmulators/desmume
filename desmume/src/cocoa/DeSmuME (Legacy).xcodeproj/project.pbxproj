@@ -2736,7 +2736,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 		ABE76A9B15E090C100F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2750,7 +2750,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 		ABE76A9D15E090CE00F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2764,7 +2764,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 		ABE76A9F15E090E500F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2778,7 +2778,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 		ABE76AA115E090FA00F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2792,7 +2792,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 		ABE76AA315E0910700F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2806,7 +2806,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 		ABE76AA515E0911E00F458AE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2820,7 +2820,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"${SRCROOT}/../../\"\nREV=`svnversion -n`\nprintf \"// REVISION TRACKING\\n\\\n// This file is auto-generated.\\n\\\n// Do not commit this file to the code repository!\\n\\\n#define SVN_REV $REV\\n\\\n#define SVN_REV_STR \\\"$REV\\\"\\n\" > ./src/svnrev.h";
+			shellScript = "cd \"${SRCROOT}\"\nsh \"svnrev.sh\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
