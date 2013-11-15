@@ -521,6 +521,7 @@ extern struct TCommonSettings {
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
 		, StylusJitter(false)
+		, backupSave(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -611,6 +612,7 @@ extern struct TCommonSettings {
 	int autodetectBackupMethod;
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
 	int manualBackupType;
+	bool backupSave;
 
 	bool spu_muteChannels[16];
 	bool spu_captureMuted;

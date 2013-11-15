@@ -130,6 +130,7 @@ public:
 			case 0x8B:
 				mode = cmd;
 				handle_save = 0;
+				MMU_new.backupDevice.flushBackup();
 				break;
 
 			case 0xB7:
@@ -182,10 +183,9 @@ public:
 				{
 					if(handle_save)
 					{
-						MMU_new.backupDevice.ensure(save_adr+4,0);
-						val = MMU_new.backupDevice.data[save_adr+3]<<24 | MMU_new.backupDevice.data[save_adr+2]<<16 | MMU_new.backupDevice.data[save_adr+1]<<8| MMU_new.backupDevice.data[save_adr+0]<<0;
+						MMU_new.backupDevice.ensure(save_adr+4, (u8)0);
 
-						MMU_new.backupDevice.setLazyFlushPending();
+						val = MMU_new.backupDevice.readLong(save_adr, 0);
 
 						save_adr += 4;
 					}
@@ -244,12 +244,10 @@ public:
 		switch(cmd)
 		{
 			case 0x81:	//Nand Write
-				MMU_new.backupDevice.ensure(adr+4,0);
-				MMU_new.backupDevice.data[adr+0] = (val >>  0) & 0xFF;
-				MMU_new.backupDevice.data[adr+1] = (val >>  8) & 0xFF;
-				MMU_new.backupDevice.data[adr+2] = (val >> 16) & 0xFF;
-				MMU_new.backupDevice.data[adr+3] = (val >> 24) & 0xFF;
-				MMU_new.backupDevice.setFlushPending();
+
+				MMU_new.backupDevice.ensure(adr+4, (u8)0);
+				MMU_new.backupDevice.writeLong(adr, val);
+
 				save_adr += 4;
 				break;
 		}
