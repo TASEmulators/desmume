@@ -29,8 +29,8 @@
 #include "path.h"
 #include "utils/advanscene.h"
 
-//#define _DONT_LOAD_BACKUP
 //#define _DONT_SAVE_BACKUP
+//#define _MCLOG
 
 // TODO: motion device was broken
 //#define _ENABLE_MOTION
@@ -57,6 +57,12 @@
 #define CARDFLASH_READ_BYTES_FAST	0x0B    /* Not used*/
 #define CARDFLASH_DEEP_POWDOWN		0xB9    /* Not used*/
 #define CARDFLASH_WAKEUP			0xAB    /* Not used*/
+
+#ifdef _MCLOG
+#define MCLOG(...) printf(__VA_ARGS__)
+#else
+#define MCLOG(...)
+#endif
 
 //since r2203 this was 0x00.
 //but baby pals proves finally that it should be 0xFF:
@@ -116,7 +122,11 @@ void backup_setManualBackupType(int type)
 
 bool BackupDevice::save_state(EMUFILE* os)
 {
-	u32 version = 4;
+	u32 savePos = fpMC->ftell();
+	std::vector<u8> data(fsize);
+	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+
+	u32 version = 5;
 	//v0
 	write32le(version,os);
 	write32le(write_enable,os);
@@ -135,23 +145,39 @@ bool BackupDevice::save_state(EMUFILE* os)
 	writebool(reset_command_state,os);
 	//v4
 	write8le(write_protect,os);
+	//v5
+	write32le(savePos,os);
+
+	fpMC->fseek(savePos, SEEK_SET);
+
+	data.clear();
+
 	return true;
 }
 
 bool BackupDevice::load_state(EMUFILE* is)
 {
 	u32 version;
+	u32 temp;
+
 	if(read32le(&version,is)!=1) return false;
 	if(version>=0)
 	{
+		std::vector<u8> data;
+
 		readbool(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
 		read32le(&addr_counter,is);
-		u32 temp;
 		read32le(&temp,is);
 		state = (STATE)temp;
 		readbuffer(data,is);
+		fsize = data.size();
+#ifdef _DONT_SAVE_BACKUP
+		fpMC->fseek(0, SEEK_SET);
+		fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
+		ensure(data.size(), fpMC);
+#endif
 		readbuffer(data_autodetect,is);
 	}
 	if(version>=1)
@@ -173,18 +199,293 @@ bool BackupDevice::load_state(EMUFILE* is)
 		read8le(&write_protect,is);
 	}
 
+	if(version>=5)
+	{
+		read32le(&temp,is);
+		fpMC->fseek(temp, SEEK_SET);
+	}
+	else
+		fpMC->fseek(addr, SEEK_SET);
+
 	return true;
 }
 
 BackupDevice::BackupDevice()
 {
+	fpMC = NULL;
+	fsize = 0;
+	addr_size = 0;
+	isMovieMode = false;
+
+	if (gameInfo.romsize == 0) return;
+
 	char buf[MAX_PATH] = {0};
 	memset(buf, 0, MAX_PATH);
 	path.getpathnoext(path.BATTERY, buf);
 	filename = std::string(buf) + ".dsv";						// DeSmuME memory card
 
-	isMovieMode = false;
+	MCLOG("MC: %s\n", filename.c_str());
+
+	bool fexists = (access(filename.c_str(), 0) == 0)?true:false;
+
+	if (fexists && CommonSettings.backupSave)
+	{
+		std::string tmp_fsav = std::string(buf) + ".dsv.bak";
+		EMUFILE_FILE *in = new EMUFILE_FILE(filename, "rb");
+		if (!in->fail())
+		{
+			u32 sz = in->size();
+			if (sz > 0)
+			{
+				EMUFILE_FILE *out = new EMUFILE_FILE(tmp_fsav, "wb");
+				if (!out->fail())
+				{
+					u8 *data = new u8[sz];
+					fread(data, 1, sz, in->get_fp());
+					fwrite(data, 1, sz, out->get_fp());
+					delete [] data;
+				}
+				delete out;
+			}
+		}
+		delete in;
+	}
+
+	if (!fexists)
+	{
+		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
+		std::string tmp_fsav = std::string(buf) + ".sav";
+
+		EMUFILE_FILE *fpTmp = new EMUFILE_FILE(tmp_fsav, "rb");
+		if (!fpTmp->fail())
+		{
+			u32 sz = fpTmp->size();
+
+			if (sz > 0)
+			{
+				EMUFILE_FILE *fpOut = new EMUFILE_FILE(filename, "wb");
+				if (!fpOut->fail())
+				{
+					u8 *buf = new u8[sz + 1];
+					if ((buf) && (fread(buf, 1, sz, fpTmp->get_fp()) == sz))
+					{
+						if (no_gba_unpack(buf, sz))
+							printf("Found no$gba save\n");
+
+						if (fwrite(buf, 1, sz, fpOut->get_fp()) == sz)
+						{
+							u8 res = searchFileSaveType(sz);
+							if (res != 0xFF)
+							{
+								info.type = (res + 1); // +1 - skip autodetect
+								addr_size = info.addr_size = addr_size_for_old_save_type(info.type);
+								fsize = sz;
+								info.size = sz;
+								ensure(sz, fpOut);
+								fsize = 0;
+							}
+							else
+								info.type = 0;
+							fexists = true;
+						}
+					}
+					delete [] buf;
+				}
+				delete fpOut;
+			}
+		}
+		delete fpTmp;
+	}
+
+	fpMC = new EMUFILE_FILE(filename, fexists?"rb+":"wb+");
+	if (!fpMC->fail())
+	{
+		fsize = fpMC->size();
+		if (fsize < saveSizes[0])
+			fpMC->truncate(0);
+
+		if (readFooter() == 0)
+			fsize = fsize - 24;
+		else
+		{
+			memset(&info, 0, sizeof(info));
+			fsize = 0;
+		}
+	
+		fpMC->fseek(0, SEEK_SET);
+
+		u32 left = 0;
+		if (CommonSettings.autodetectBackupMethod == 1)
+		{
+			if (advsc.isLoaded())
+			{
+				info.type = advsc.getSaveType();
+				if (info.type != 0xFF && info.type != 0xFE)
+				{
+					info.type++;
+					u32 adv_size = save_types[info.type].size;
+					if (info.size > adv_size)
+					{
+						info.size = adv_size;
+						fpMC->truncate(adv_size);
+						ensure(adv_size, fpMC);
+					}
+					else
+						if (info.size < adv_size)
+						{
+							left = adv_size - info.size;
+							info.size = adv_size;
+							ensure(adv_size);
+						}
+
+					fsize = adv_size;
+				}
+			}
+		}
+
+		addr_size = info.addr_size;
+		//none of the other fields are used right now
+
+		if (CommonSettings.autodetectBackupMethod != 1 && info.type == 0) 
+		{
+			info.type = searchFileSaveType(info.size);
+			if (info.type == 0xFF) info.type = 0;
+		}
+
+		u32 ss = (info.padSize * 8) / 1024;
+		bool _Mbit = false;
+
+		if (ss >= 1024)
+		{
+			ss /= 1024;
+			_Mbit = true;
+		}
+
+		printf("Backup size: %u %cbit\n", ss, _Mbit?'M':'K');
+	}
+
+	state = (fsize > 0)?RUNNING:DETECTING;
 	reset();
+}
+
+BackupDevice::~BackupDevice()
+{
+	delete fpMC;
+	fpMC = NULL;
+}
+
+int BackupDevice::readFooter()
+{
+	//scan for desmume save footer
+	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
+	char *sigbuf = new char[cookieLen];
+	
+	fpMC->fseek(-cookieLen, SEEK_END);
+	fpMC->fread(sigbuf, cookieLen);
+	int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
+	delete[] sigbuf;
+	
+	if (cmp)
+		return -1;
+
+	//desmume format
+	fpMC->fseek(-cookieLen, SEEK_END);
+	fpMC->fseek(-4, SEEK_CUR);
+	
+	u32 version = 0xFFFFFFFF;
+	fpMC->read32le(&version);
+	if (version != 0)
+		return -2;
+
+	fpMC->fseek(-24, SEEK_CUR);
+	fpMC->read32le(&info.size);
+	fpMC->read32le(&info.padSize);
+	fpMC->read32le(&info.type);
+	fpMC->read32le(&info.addr_size);
+	fpMC->read32le(&info.mem_size);
+
+	MCLOG("DeSmuME backup footer:\n");
+	MCLOG("\t* size:\t\t%u\n", info.size);
+	MCLOG("\t* padSize:\t%u\n", info.padSize);
+	MCLOG("\t* type (%u):\t%s\n", info.type, save_types[info.type].descr);
+	MCLOG("\t* addr_size:\t%u\n", info.addr_size);
+	MCLOG("\t* mem_size:\t%u\n", info.mem_size);
+
+	return 0;
+}
+
+u8 BackupDevice::read()
+{
+	u8 val = 0xFF;
+	fpMC->read8le(&val);
+	
+	return val;
+}
+
+u8 BackupDevice::readByte(u32 addr, const u8 init)
+{
+	u8 val = init;
+
+	fpMC->fseek(addr, SEEK_SET);
+	fpMC->read8le(&val);
+	
+	return val;
+}
+u16 BackupDevice::readWord(u32 addr, const u16 init)
+{
+	u16 val = init;
+
+	fpMC->fseek(addr, SEEK_SET);
+	fpMC->read16le(&val);
+	
+	return val;
+}
+u32 BackupDevice::readLong(u32 addr, const u32 init)
+{
+	u32 val = init;
+
+	fpMC->fseek(addr, SEEK_SET);
+	fpMC->read32le(&val);
+	
+	return val;
+}
+
+bool  BackupDevice::write(u8 val)
+{
+#ifdef _DONT_SAVE_BACKUP
+	return true;
+#endif
+	//never use save files if we are in movie mode
+	if (isMovieMode) return true;
+
+	return fwrite(&val, 1, 1, fpMC->get_fp())?true:false;
+}
+
+void BackupDevice::writeByte(u32 addr, u8 val)
+{
+	if (isMovieMode) return;
+	fpMC->fseek(addr, SEEK_SET);
+	fpMC->write8le(val);
+}
+void BackupDevice::writeWord(u32 addr, u16 val)
+{
+	if (isMovieMode) return;
+	fpMC->fseek(addr, SEEK_SET);
+	fpMC->write16le(val);
+}
+void BackupDevice::writeLong(u32 addr, u32 val)
+{
+	if (isMovieMode) return;
+	fpMC->fseek(addr, SEEK_SET);
+	fpMC->write32le(val);
+}
+
+bool BackupDevice::saveBuffer(u8 *data, u32 size)
+{
+	fsize = size;
+	fwrite(data, 1, size, fpMC->get_fp());
+	ensure(size, fpMC);
+	return true;
 }
 
 void BackupDevice::movie_mode()
@@ -195,16 +496,14 @@ void BackupDevice::movie_mode()
 
 void BackupDevice::reset_hardware()
 {
+	com = 0;
+	reset_command_state = false;
 	write_enable = FALSE;
 	write_protect = 0;
-	com = 0;
 	addr = addr_counter = 0;
+
 	motionInitState = MOTION_INIT_STATE_IDLE;
 	motionFlag = MOTION_FLAG_NONE;
-	state = DETECTING;
-	reset_command_state = false;
-	flushPending = false;
-	lazyFlushPending = false;
 
 	kUninitializedSaveDataValue = 0xFF;
 
@@ -213,12 +512,8 @@ void BackupDevice::reset_hardware()
 
 void BackupDevice::reset()
 {
-	memset(&info, 0, sizeof(info));
 	reset_hardware();
-	resize(0);
 	data_autodetect.resize(0);
-	addr_size = 0;
-	loadfile();
 
 	//if the user has requested a manual choice for backup type, and we havent imported a raw save file, then apply it now
 	if(state == DETECTING && CommonSettings.manualBackupType != MC_TYPE_AUTODETECT)
@@ -227,15 +522,15 @@ void BackupDevice::reset()
 		int savetype = save_types[CommonSettings.manualBackupType].media_type;
 		int savesize = save_types[CommonSettings.manualBackupType].size;
 		ensure((u32)savesize); //expand properly if necessary
-		resize(savesize); //truncate if necessary
 		addr_size = addr_size_for_old_save_type(savetype);
-		flush();
 	}
 }
 
 void BackupDevice::close_rom()
 {
-	flush();
+	fpMC->fflush();
+	delete fpMC;
+	fpMC = NULL;
 }
 
 u8 BackupDevice::searchFileSaveType(u32 size)
@@ -302,7 +597,6 @@ void BackupDevice::detect()
 
 		state = RUNNING;
 		data_autodetect.resize(0);
-		flush();
 	}
 }
 
@@ -312,14 +606,8 @@ void BackupDevice::checkReset()
 	{
 		//printf("MC  : reset command\n");
 
-		//for a performance hack, save files are only flushed after each reset command
-		//(hopefully, after each page)
-		if(flushPending && (com == BM_CMD_WRITELOW || com == BM_CMD_WRITEHIGH))
-		{
-			flush();
-			flushPending = false;
-			lazyFlushPending = false;
-		}
+		if(com == BM_CMD_WRITELOW || com == BM_CMD_WRITEHIGH)
+			fpMC->fflush();
 		
 		com = 0;
 		reset_command_state = false;
@@ -376,30 +664,30 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					addr |= val;
 					addr_counter++;
 					val = 0xFF;
+
+					if (addr_counter >= addr_size)
+					{
+						//why does tomb raider underworld access 0x180 and go clear through to 0x280?
+						//should this wrap around at 0 or at 0x100?
+						if(addr_size == 1) addr &= 0x1FF; 
+
+						fpMC->fseek(addr, SEEK_SET);
+					}
 				}
 				else
 				{
-					//why does tomb raider underworld access 0x180 and go clear through to 0x280?
-					//should this wrap around at 0 or at 0x100?
-					if(addr_size == 1) addr &= 0x1FF; 
-
-					//address is complete
-					ensure(addr+1);
+					ensure(addr);
 					if(com == BM_CMD_READLOW)
 					{
-						val = data[addr];
-						//flushPending = true; //is this a good idea? it may slow stuff down, but it is helpful for debugging
-						lazyFlushPending = true; //lets do this instead
-						//printf("MC%c: read from %08X, value %02Xh\n", PROCNUM?'7':'9', addr, val);
+						val = read();
+						//MCLOG("BACKUP: Read at 0x%08X, value 0x%02X\n", addr, val);
 					}
 					else 
 						if(write_enable)
 						{
-							data[addr] = val;
-							flushPending = true;
-							//printf("MC%c: write to %08X, value %02Xh\n", PROCNUM?'7':'9', addr, val);
+							write(val);
+							//MCLOG("BACKUP: Write to %08X, value %02Xh\n", addr, val);
 						}
-
 					addr++;
 				}
 			}
@@ -530,31 +818,47 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 }
 
 //guarantees that the data buffer has room enough for the specified number of bytes
-void BackupDevice::ensure(u32 addr)
+void BackupDevice::ensure(u32 addr, EMUFILE_FILE *fpOut)
 {
-	ensure(addr,kUninitializedSaveDataValue);
+	ensure(addr, kUninitializedSaveDataValue, fpOut);
 }
 
-void BackupDevice::ensure(u32 addr, u8 val)
+void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
 {
-	u32 size = data.size();
-	if(size<addr)
-	{
-		resize(addr, val);
-	}
-}
+	if (!fpOut && (addr < fsize)) return;
 
-void BackupDevice::resize(u32 size)
-{
-	resize(size,kUninitializedSaveDataValue);
-}
+	EMUFILE_FILE *fp = fpOut?fpOut:fpMC;
 
-void BackupDevice::resize(u32 size, u8 val)
-{
-	size_t old_size = data.size();
-	data.resize(size);
-	for(u32 i=old_size;i<size;i++)
-		data[i] = val;
+#ifdef _DONT_SAVE_BACKUP
+	fp->fseek(fsize, SEEK_SET);
+#endif
+	
+	u32 padSize = pad_up_size(addr);
+	u32 size = padSize - fsize;
+	fsize = padSize;
+
+#ifdef _DONT_SAVE_BACKUP
+	u8 *tmp = new u8[size];
+	memset(tmp, val, size);
+	fwrite(tmp, 1, size, fp->get_fp());
+	delete [] tmp;
+
+	//this is just for humans to read
+	fp->fprintf("|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:");
+
+	//and now the actual footer
+	fp->write32le(addr);			//the size of data that has actually been written
+	fp->write32le(padSize);			//the size we padded it to
+	fp->write32le(info.type);		//save memory type
+	fp->write32le(addr_size);
+	fp->write32le(info.size);		//save memory size
+	fp->write32le((u32)0);		//version number
+	fp->fprintf("%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
+
+	fp->fflush();
+
+	fp->fseek(addr, SEEK_SET);
+#endif
 }
 
 u32 BackupDevice::addr_size_for_old_save_size(int bupmem_size)
@@ -594,16 +898,16 @@ u32 BackupDevice::addr_size_for_old_save_type(int bupmem_type)
 	}
 }
 
-
+// TODO: this is required yet?
 void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 {
-	state = RUNNING;
-	this->addr_size = addr_size;
-	resize(datasize);
-	memcpy(&this->data[0],data,datasize);
+	//state = RUNNING;
+	//this->addr_size = addr_size;
+	//resize(datasize);
+	//memcpy(&this->data[0],data,datasize);
 
 	//dump back out as a dsv, just to keep things sane
-	flush();
+	//flush();
 }
 
 //======================================================================= Tools
@@ -847,13 +1151,7 @@ bool BackupDevice::load_no_gba(const char *fname, u32 force_size)
 				size = no_gba_fillLeft(size);
 				//printf("--- new size after fill %i byte(s)\n", size);
 				raw_applyUserSettings(size, (force_size > 0));
-				resize(size);
-				for (u32 tt = 0; tt < size; tt++)
-					data[tt] = out_buf[tt];
-
-				//dump back out as a dsv, just to keep things sane
-				flush();
-				printf("---- Loaded no$GBA save\n");
+				saveBuffer(out_buf, size);
 
 				if (in_buf) delete [] in_buf;
 				if (out_buf) delete [] out_buf;
@@ -865,12 +1163,39 @@ bool BackupDevice::load_no_gba(const char *fname, u32 force_size)
 		if (in_buf) delete [] in_buf;
 		fclose(fsrc);
 	}
+	return false;
+}
+
+bool BackupDevice::no_gba_unpack(u8 *&buf, u32 &size)
+{
+	if (!buf) return false;
+	u32 out_size = saveSizes[saveSizes_count - 1];
+	u8 *out_buf = new u8 [out_size];
+	if (out_buf)
+	{
+		if (no_gba_unpackSAV(buf, size, out_buf, out_size) == 0)
+		{
+			out_size = no_gba_savTrim(out_buf, out_size);
+			out_size = no_gba_fillLeft(out_size);
+			delete [] buf;
+			buf = out_buf;
+			size = out_size;
+			return true;
+		}
+	}
+
+	delete out_buf;
 
 	return false;
 }
 
 bool BackupDevice::save_no_gba(const char* fname)
 {
+	std::vector<u8> data(fsize);
+	u32 pos = fpMC->ftell();
+	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+	fpMC->fseek(pos, SEEK_SET);
+
 	FILE* outf = fopen(fname,"wb");
 	if(!outf) return false;
 	u32 size = data.size();
@@ -886,135 +1211,19 @@ bool BackupDevice::save_no_gba(const char* fname)
 			fputc(0xFF,outf);
 	}
 	fclose(outf);
+
 	return true;
 }
 //======================================================================= end
 //=======================================================================
 //======================================================================= no$GBA
-
-
-void BackupDevice::loadfile()
-{
-	//never use save files if we are in movie mode
-	if(isMovieMode) return;
-	if(filename.length() ==0) return; //No sense crashing if no filename supplied
-
-#ifdef _DONT_LOAD_BACKUP
-	return;
-#endif
-
-	EMUFILE_FILE* inf = new EMUFILE_FILE(filename.c_str(),"rb");
-	if(inf->fail())
-	{
-		delete inf;
-		//no dsv found; we need to try auto-importing a file with .sav extension 
-		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
-		
-		//change extension to sav
-		char tmp[MAX_PATH] = {0};
-		path.getpathnoext(path.BATTERY, tmp);
-		strcat(tmp, ".sav");
-
-		inf = new EMUFILE_FILE(tmp,"rb");
-		if(inf->fail())
-		{
-			delete inf;
-			printf("Missing save file %s\n",filename.c_str());
-			return;
-		}
-		delete inf;
-
-		if (!load_no_gba(tmp))
-			load_raw(tmp);
-	}
-	else
-	{
-		//scan for desmume save footer
-		const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
-		char *sigbuf = new char[cookieLen];
-		inf->fseek(-cookieLen, SEEK_END);
-		inf->fread(sigbuf,cookieLen);
-		int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
-		delete[] sigbuf;
-		if(cmp)
-		{
-			//maybe it is a misnamed raw save file. try loading it that way
-			printf("Not a DeSmuME .dsv save file. Trying to load as raw.\n");
-			delete inf;
-			if (!load_no_gba(filename.c_str()))
-				load_raw(filename.c_str());
-			return;
-		}
-		//desmume format
-		inf->fseek(-cookieLen, SEEK_END);
-		inf->fseek(-4, SEEK_CUR);
-		u32 version = 0xFFFFFFFF;
-		read32le(&version,inf);
-		if(version!=0) {
-			printf("Unknown save file format\n");
-			return;
-		}
-		inf->fseek(-24, SEEK_CUR);
-		read32le(&info.size,inf);
-		read32le(&info.padSize,inf);
-		read32le(&info.type,inf);
-		read32le(&info.addr_size,inf);
-		read32le(&info.mem_size,inf);
-
-		u32 left = 0;
-		if (CommonSettings.autodetectBackupMethod == 1)
-		{
-			if (advsc.isLoaded())
-			{
-				info.type = advsc.getSaveType();
-				if (info.type != 0xFF && info.type != 0xFE)
-				{
-					info.type++;
-					u32 adv_size = save_types[info.type].size;
-					if (info.size > adv_size)
-						info.size = adv_size;
-					else
-						if (info.size < adv_size)
-						{
-							left = adv_size - info.size;
-							info.size = adv_size;
-						}
-				}
-			}
-		}
-		//establish the save data
-		resize(info.size);
-		inf->fseek(0, SEEK_SET);
-		if(info.size>0)
-			inf->fread(&data[0],info.size - left); //read all the raw data we have
-		state = RUNNING;
-		addr_size = info.addr_size;
-		//none of the other fields are used right now
-
-
-		if (CommonSettings.autodetectBackupMethod != 1 && info.type == 0) 
-		{
-			info.type = searchFileSaveType(info.size);
-			if (info.type == 0xFF) info.type = 0;
-		}
-
-		u32 ss = (info.padSize * 8) / 1024;
-		bool _Mbit = false;
-
-		if (ss >= 1024)
-		{
-			ss /= 1024;
-			_Mbit = true;
-		}
-
-		printf("Backup size: %u %cbit\n", ss, _Mbit?'M':'K');
-
-		delete inf;
-	}
-}
-
 bool BackupDevice::save_raw(const char* filename)
 {
+	std::vector<u8> data(fsize);
+	u32 pos = fpMC->ftell();
+	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+	fpMC->fseek(pos, SEEK_SET);
+
 	FILE* outf = fopen(filename,"wb");
 	if(!outf) return false;
 	u32 size = data.size();
@@ -1024,6 +1233,7 @@ bool BackupDevice::save_raw(const char* filename)
 	for(u32 i=size;i<padSize;i++)
 		fputc(kUninitializedSaveDataValue,outf);
 	fclose(outf);
+
 	return true;
 }
 
@@ -1031,71 +1241,17 @@ u32 BackupDevice::pad_up_size(u32 startSize)
 {
 	u32 size = startSize;
 	u32 ctr=0;
-	while(ctr<saveSizes_count && size > saveSizes[ctr]) ctr++;
+	
+	while ((ctr < saveSizes_count) && (size > saveSizes[ctr])) ctr++;
+	
 	u32 padSize = saveSizes[ctr];
 	if(padSize == 0xFFFFFFFF)
 	{
 		printf("PANIC! Couldn't pad up save size. Refusing to pad.\n");
 		padSize = startSize;
 	}
-		return padSize;
-}
-
-void BackupDevice::lazy_flush()
-{
-	if(flushPending || lazyFlushPending)
-	{
-		lazyFlushPending = flushPending = false;
-		flush();
-	}
-}
-
-void BackupDevice::flush()
-{
-	//never use save files if we are in movie mode
-	if(isMovieMode) return;
-
-#ifdef _DONT_SAVE_BACKUP
-	return;
-#endif
-
-	if (filename.length() == 0) return;
-
-	EMUFILE* outf = new EMUFILE_FILE(filename.c_str(),"wb");
-	if(!outf->fail())
-	{
-		if(data.size()>0)
-			outf->fwrite(&data[0],data.size());
-		
-		//write the footer. we use a footer so that we can maximize the chance of the
-		//save file being recognized as a raw save file by other emulators etc.
-		
-		//first, pad up to the next largest known save size.
-		u32 size = data.size();
-		u32 padSize = pad_up_size(size);
-
-		for(u32 i=size;i<padSize;i++)
-			outf->fputc(kUninitializedSaveDataValue);
-
-		//this is just for humans to read
-		outf->fprintf("|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:");
-
-		//and now the actual footer
-		write32le(size,outf); //the size of data that has actually been written
-		write32le(padSize,outf); //the size we padded it to
-		write32le(info.type,outf); //save memory type
-		write32le(addr_size,outf);
-		write32le(info.size,outf); //save memory size
-		write32le(0,outf); //version number
-		outf->fprintf("%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
-
-		delete outf;
-	}
-	else
-	{
-		delete outf;
-		printf("Unable to open savefile %s\n", filename.c_str());
-	}
+	
+	return padSize;
 }
 
 void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
@@ -1104,7 +1260,7 @@ void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
 	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT && !manual)
 	{
 		addr_size = addr_size_for_old_save_size(size);
-		resize(size);
+		ensure(size);
 	}
 	else
 	{
@@ -1118,9 +1274,7 @@ void BackupDevice::raw_applyUserSettings(u32& size, bool manual)
 		int savesize = save_types[type].size;
 		addr_size = addr_size_for_old_save_type(savetype);
 		if((u32)savesize<size) size = savesize;
-		resize(savesize);
 	}
-
 	state = RUNNING;
 }
 
@@ -1161,11 +1315,14 @@ bool BackupDevice::load_raw(const char* filename, u32 force_size)
 
 	raw_applyUserSettings(size, (force_size > 0));
 
+	u8 *data = new u8[size];
+
 	fread(&data[0],1,size-left,inf);
 	fclose(inf);
+	
+	saveBuffer(data, size);
+	delete data;
 
-	//dump back out as a dsv, just to keep things sane
-	flush();
 
 	return true;
 }
@@ -1184,7 +1341,7 @@ u32 BackupDevice::get_save_duc_size(const char* fname)
 
 bool BackupDevice::load_duc(const char* filename, u32 force_size)
 {
-  u32 size;
+   u32 size;
    char id[16];
    FILE* file = fopen(filename, "rb");
    
@@ -1221,14 +1378,13 @@ bool BackupDevice::load_duc(const char* filename, u32 force_size)
 
    raw_applyUserSettings(size, (force_size > 0));
 
-   ensure((u32)size);
+   u8 *data = new u8[size];
 
-   fread(&data[0],1,size-left,file);
+   fread(data, 1, (size-left), file);
    fclose(file);
 
-   //choose 
-
-   flush();
+   saveBuffer(data, size);
+   delete data;
 
    return true;
 
@@ -1259,11 +1415,8 @@ bool BackupDevice::load_movie(EMUFILE* is) {
 	is->fread((char*)&info.addr_size,4);
 	is->fread((char*)&info.mem_size,4);
 
-	//establish the save data
-	resize(info.size);
 	is->fseek(0, SEEK_SET);
-	if(info.size>0)
-		is->fread((char*)&data[0],info.size);
+	fpMC = (EMUFILE_FILE*)&is;
 
 	state = RUNNING;
 	addr_size = info.addr_size;

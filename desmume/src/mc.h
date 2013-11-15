@@ -50,7 +50,6 @@
 #define MC_SIZE_256MBITS                0x2000000
 #define MC_SIZE_512MBITS                0x4000000
 
-
 //This "backup device" represents a typical retail NDS save memory accessible via AUXSPI.
 //It is managed as a core emulator service for historical reasons which are bad,
 //and possible infrastructural simplification reasons which are good.
@@ -59,15 +58,26 @@ class BackupDevice
 {
 public:
 	BackupDevice();
+	~BackupDevice();
 
 	//signals the save system that we are in MOVIE mode. doesnt load up a rom, and never saves it. initializes for that case.
 	void movie_mode();
-
 	void reset();
 	void close_rom();
 	void forceManualBackupType();
 	void reset_hardware();
 	std::string getFilename() { return filename; }
+
+	u8  readByte(u32 addr, const u8 init  = 0xFF);
+	u16 readWord(u32 addr, const u16 init = 0xFFFF);
+	u32 readLong(u32 addr, const u32 init = 0xFFFFFFFF);
+
+	void writeByte(u32 addr, u8  val);
+	void writeWord(u32 addr, u16 val);
+	void writeLong(u32 addr, u32 val);
+
+	void flushBackup() { fpMC->fflush(); }
+	
 	u8 searchFileSaveType(u32 size);
 
 	bool save_state(EMUFILE* os);
@@ -76,13 +86,15 @@ public:
 	//commands from mmu
 	void reset_command() { reset_command_state = true; };
 	u8 data_command(u8, u8);
-	std::vector<u8> data;
 
 	//this info was saved before the last reset (used for savestate compatibility)
 	struct SavedInfo
 	{
 		u32 addr_size;
 	} savedInfo;
+
+	void ensure(u32 addr, EMUFILE_FILE *fpOut = NULL);
+	void ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut = NULL);
 
 	//and these are used by old savestates
 	void load_old_state(u32 addr_size, u8* data, u32 datasize);
@@ -93,6 +105,7 @@ public:
 	void raw_applyUserSettings(u32& size, bool manual = false);
 
 	bool load_duc(const char* filename, u32 force_size = 0);
+	bool no_gba_unpack(u8 *&buf, u32 &size);
 	bool load_no_gba(const char *fname, u32 force_size = 0);
 	bool save_no_gba(const char* fname);
 	bool load_raw(const char* filename, u32 force_size = 0);
@@ -101,19 +114,6 @@ public:
 	u32 get_save_duc_size(const char* filename);
 	u32 get_save_nogba_size(const char* filename);
 	u32 get_save_raw_size(const char* filename);
-
-	//call me once a second or so to lazy flush the save data
-	//here's the reason for this system: we want to dump save files when theyre READ
-	//so that we have a better idea earlier on how large they are. but it slows things down
-	//way too much if we flush whenever we read.
-	void lazy_flush();
-	void flush();
-
-	void setFlushPending() { flushPending = true; }
-	void setLazyFlushPending() { lazyFlushPending = true; }
-
-	void ensure(u32 addr);
-	void ensure(u32 addr, u8 val);
 
 	struct {
 			u32 size,padSize,type,addr_size,mem_size;
@@ -124,18 +124,23 @@ public:
 	u32 importDataSize(const char *filename);
 	u32 importData(const char *filename, u32 force_size = 0);
 	bool exportData(const char *filename);
-private:
-	void detect();
 
+private:
+	EMUFILE_FILE *fpMC;
 	std::string filename;
+	u32	fsize;
+	int readFooter();
+	bool write(u8 val);
+	u8	read();
+	bool saveBuffer(u8 *data, u32 size);
 	
-	bool write_enable;	//is write enabled?
-	u8 write_protect;
+	bool write_enable;
 	bool reset_command_state;
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
 	u32 addr;
-
+	u8 write_protect;
+	
 	std::vector<u8> data_autodetect;
 	enum STATE {
 		DETECTING = 0, RUNNING = 1
@@ -154,15 +159,8 @@ private:
 	};
 	u8 motionInitState, motionFlag;
 
-	void loadfile();
-	bool _loadfile(const char *fname);
-
-	bool flushPending, lazyFlushPending;
-
-	void resize(u32 size);
-	void resize(u32 size, u8 val);
-
 	void checkReset();
+	void detect();
 };
 
 

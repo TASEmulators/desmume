@@ -1734,9 +1734,6 @@ void NDS_exec(s32 nb)
 {
 	LagFrameFlag=1;
 
-	if((currFrameCounter&63) == 0)
-		MMU_new.backupDevice.lazy_flush();
-
 	sequencer.nds_vblankEnded = false;
 
 	nds.cpuloopIterationCount = 0;
