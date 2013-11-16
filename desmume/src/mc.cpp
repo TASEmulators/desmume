@@ -173,7 +173,7 @@ bool BackupDevice::load_state(EMUFILE* is)
 		state = (STATE)temp;
 		readbuffer(data,is);
 		fsize = data.size();
-#ifdef _DONT_SAVE_BACKUP
+#ifndef _DONT_SAVE_BACKUP
 		fpMC->fseek(0, SEEK_SET);
 		fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
 		ensure(data.size(), fpMC);
@@ -344,6 +344,7 @@ BackupDevice::BackupDevice()
 		}
 
 		addr_size = info.addr_size;
+		info.padSize = fsize;
 		//none of the other fields are used right now
 
 		if (CommonSettings.autodetectBackupMethod != 1 && info.type == 0) 
@@ -480,8 +481,14 @@ void BackupDevice::writeLong(u32 addr, u32 val)
 	fpMC->write32le(val);
 }
 
-bool BackupDevice::saveBuffer(u8 *data, u32 size)
+bool BackupDevice::saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate)
 {
+	if (_rewind)
+	{
+		fpMC->fseek(0, SEEK_SET);
+		if (_truncate)
+			fpMC->truncate(0);
+	}
 	fsize = size;
 	fwrite(data, 1, size, fpMC->get_fp());
 	ensure(size, fpMC);
@@ -829,15 +836,16 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
 
 	EMUFILE_FILE *fp = fpOut?fpOut:fpMC;
 
-#ifdef _DONT_SAVE_BACKUP
+#ifndef _DONT_SAVE_BACKUP
 	fp->fseek(fsize, SEEK_SET);
 #endif
 	
 	u32 padSize = pad_up_size(addr);
 	u32 size = padSize - fsize;
 	fsize = padSize;
+	info.padSize = fsize;
 
-#ifdef _DONT_SAVE_BACKUP
+#ifndef _DONT_SAVE_BACKUP
 	u8 *tmp = new u8[size];
 	memset(tmp, val, size);
 	fwrite(tmp, 1, size, fp->get_fp());
@@ -936,17 +944,20 @@ u32 BackupDevice::importDataSize(const char *filename)
 
 u32 BackupDevice::importData(const char *filename, u32 force_size)
 {
-	if (strlen(filename) < 4) return 0;
+	u32 res = 0;
+	if (strlen(filename) < 4) return res;
 
 	if (memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0)
-		return load_duc(filename, force_size);
+		res = import_duc(filename, force_size);
 	else
-		if (load_no_gba(filename, force_size))
-			return 1;
+		if (import_no_gba(filename, force_size))
+			res = 1;
 		else
-			return load_raw(filename, force_size);
+			res = import_raw(filename, force_size);
 
-	return 0;
+	NDS_Reset();
+
+	return res;
 }
 
 bool BackupDevice::exportData(const char *filename)
@@ -960,11 +971,11 @@ bool BackupDevice::exportData(const char *filename)
 		memset(tmp, 0, MAX_PATH);
 		strcpy(tmp, filename);
 		tmp[strlen(tmp)-1] = 0;
-		return save_no_gba(tmp);
+		return export_no_gba(tmp);
 	}
 
 	if (memcmp(filename + strlen(filename) - 4, ".sav", 4) == 0)
-		return save_raw(filename);
+		return export_raw(filename);
 
 	return false;
 }
@@ -1119,7 +1130,7 @@ static u32 no_gba_fillLeft(u32 size)
 	return size;
 }
 
-bool BackupDevice::load_no_gba(const char *fname, u32 force_size)
+bool BackupDevice::import_no_gba(const char *fname, u32 force_size)
 {
 	FILE	*fsrc = fopen(fname, "rb");
 	u8		*in_buf = NULL;
@@ -1151,7 +1162,7 @@ bool BackupDevice::load_no_gba(const char *fname, u32 force_size)
 				size = no_gba_fillLeft(size);
 				//printf("--- new size after fill %i byte(s)\n", size);
 				raw_applyUserSettings(size, (force_size > 0));
-				saveBuffer(out_buf, size);
+				saveBuffer(out_buf, size, true, true);
 
 				if (in_buf) delete [] in_buf;
 				if (out_buf) delete [] out_buf;
@@ -1189,7 +1200,7 @@ bool BackupDevice::no_gba_unpack(u8 *&buf, u32 &size)
 	return false;
 }
 
-bool BackupDevice::save_no_gba(const char* fname)
+bool BackupDevice::export_no_gba(const char* fname)
 {
 	std::vector<u8> data(fsize);
 	u32 pos = fpMC->ftell();
@@ -1217,7 +1228,7 @@ bool BackupDevice::save_no_gba(const char* fname)
 //======================================================================= end
 //=======================================================================
 //======================================================================= no$GBA
-bool BackupDevice::save_raw(const char* filename)
+bool BackupDevice::export_raw(const char* filename)
 {
 	std::vector<u8> data(fsize);
 	u32 pos = fpMC->ftell();
@@ -1289,7 +1300,7 @@ u32 BackupDevice::get_save_raw_size(const char* fname)
 	return size;
 }
 
-bool BackupDevice::load_raw(const char* filename, u32 force_size)
+bool BackupDevice::import_raw(const char* filename, u32 force_size)
 {
 	FILE* inf = fopen(filename,"rb");
 
@@ -1316,12 +1327,14 @@ bool BackupDevice::load_raw(const char* filename, u32 force_size)
 	raw_applyUserSettings(size, (force_size > 0));
 
 	u8 *data = new u8[size];
+	u32 sz = (size-left);
 
-	fread(&data[0],1,size-left,inf);
+	bool res = (fread(data, 1, sz, inf) == sz);
 	fclose(inf);
-	
-	saveBuffer(data, size);
-	delete data;
+
+	if (res)
+		saveBuffer(data, sz, true, true);
+	delete [] data;
 
 
 	return true;
@@ -1339,29 +1352,29 @@ u32 BackupDevice::get_save_duc_size(const char* fname)
 	return (size - 500);
 }
 
-bool BackupDevice::load_duc(const char* filename, u32 force_size)
+bool BackupDevice::import_duc(const char* filename, u32 force_size)
 {
-   u32 size;
-   char id[16];
-   FILE* file = fopen(filename, "rb");
-   
-   if(!file) return false;
+	u32 size;
+	char id[16];
+	FILE* file = fopen(filename, "rb");
 
-   fseek(file, 0, SEEK_END);
-   size = (u32)ftell(file) - 500;
-   fseek(file, 0, SEEK_SET);
+	if(!file) return false;
 
-   // Make sure we really have the right file
-   fread((void *)id, sizeof(char), 16, file);
+	fseek(file, 0, SEEK_END);
+	size = (u32)ftell(file) - 500;
+	fseek(file, 0, SEEK_SET);
 
-   if (memcmp(id, "ARDS000000000001", 16) != 0)
-   {
+	// Make sure we really have the right file
+	fread((void *)id, sizeof(char), 16, file);
+
+	if (memcmp(id, "ARDS000000000001", 16) != 0)
+	{
 		printf("Not recognized as a valid DUC file\n");
 		fclose(file);
 		return false;
-   }
-   // Skip the rest of the header since we don't need it
-   fseek(file, 500, SEEK_SET);
+	}
+	// Skip the rest of the header since we don't need it
+	fseek(file, 500, SEEK_SET);
 
 	u32 left = 0;
 	if (force_size > 0)
@@ -1376,17 +1389,19 @@ bool BackupDevice::load_duc(const char* filename, u32 force_size)
 			}
 	}
 
-   raw_applyUserSettings(size, (force_size > 0));
+	raw_applyUserSettings(size, (force_size > 0));
 
-   u8 *data = new u8[size];
+	u8 *data = new u8[size];
+	u32 sz = (size-left);
 
-   fread(data, 1, (size-left), file);
-   fclose(file);
+	bool res = (fread(data, 1, sz, file) == sz);
+	fclose(file);
 
-   saveBuffer(data, size);
-   delete data;
+	if (res)
+		saveBuffer(data, sz, true, true);
+	delete [] data;
 
-   return true;
+	return res;
 
 }
 

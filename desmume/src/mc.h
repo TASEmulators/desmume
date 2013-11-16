@@ -104,16 +104,17 @@ public:
 	static u32 pad_up_size(u32 startSize);
 	void raw_applyUserSettings(u32& size, bool manual = false);
 
-	bool load_duc(const char* filename, u32 force_size = 0);
-	bool no_gba_unpack(u8 *&buf, u32 &size);
-	bool load_no_gba(const char *fname, u32 force_size = 0);
-	bool save_no_gba(const char* fname);
-	bool load_raw(const char* filename, u32 force_size = 0);
-	bool save_raw(const char* filename);
-	bool load_movie(EMUFILE* is);
 	u32 get_save_duc_size(const char* filename);
 	u32 get_save_nogba_size(const char* filename);
 	u32 get_save_raw_size(const char* filename);
+	bool import_duc(const char* filename, u32 force_size = 0);
+	bool import_no_gba(const char *fname, u32 force_size = 0);
+	bool import_raw(const char* filename, u32 force_size = 0);
+	bool export_no_gba(const char* fname);
+	bool export_raw(const char* filename);
+	bool no_gba_unpack(u8 *&buf, u32 &size);
+	
+	bool load_movie(EMUFILE* is);
 
 	struct {
 			u32 size,padSize,type,addr_size,mem_size;
@@ -132,7 +133,7 @@ private:
 	int readFooter();
 	bool write(u8 val);
 	u8	read();
-	bool saveBuffer(u8 *data, u32 size);
+	bool saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate = false);
 	
 	bool write_enable;
 	bool reset_command_state;
