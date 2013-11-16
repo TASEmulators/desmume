@@ -79,6 +79,8 @@ public:
 	GError *error;
 	GOptionContext *ctx;
 
+	int _spu_sync_mode;
+	int _spu_sync_method;
 private:
 	char* _play_movie_file;
 	char* _record_movie_file;

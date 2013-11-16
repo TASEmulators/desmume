@@ -217,6 +217,8 @@ int SPU_Init(int coreid, int buffersize)
 		}
 	}
 
+	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
+
 	return SPU_ChangeSoundCore(coreid, buffersize);
 }
 
