@@ -68,13 +68,23 @@ public:
 	void reset_hardware();
 	std::string getFilename() { return filename; }
 
-	u8  readByte(u32 addr, const u8 init  = 0xFF);
-	u16 readWord(u32 addr, const u16 init = 0xFFFF);
-	u32 readLong(u32 addr, const u32 init = 0xFFFFFFFF);
+	u8  readByte(u32 addr, const u8 init);
+	u16 readWord(u32 addr, const u16 init);
+	u32 readLong(u32 addr, const u32 init);
+
+	u8  readByte(const u8 init);
+	u16 readWord(const u16 init);
+	u32 readLong(const u32 init);
 
 	void writeByte(u32 addr, u8  val);
 	void writeWord(u32 addr, u16 val);
 	void writeLong(u32 addr, u32 val);
+
+	void writeByte(u8  val);
+	void writeWord(u16 val);
+	void writeLong(u32 val);
+
+	void seek(u32 pos) { fpMC->fseek(pos, SEEK_SET); }
 
 	void flushBackup() { fpMC->fflush(); }
 	
@@ -123,7 +133,7 @@ public:
 	bool isMovieMode;
 
 	u32 importDataSize(const char *filename);
-	u32 importData(const char *filename, u32 force_size = 0);
+	bool importData(const char *filename, u32 force_size = 0);
 	bool exportData(const char *filename);
 
 private:

@@ -451,6 +451,28 @@ u32 BackupDevice::readLong(u32 addr, const u32 init)
 	return val;
 }
 
+u8 BackupDevice::readByte(const u8 init)
+{
+	u8 val = init;
+	fpMC->read8le(&val);
+	
+	return val;
+}
+u16 BackupDevice::readWord(const u16 init)
+{
+	u16 val = init;
+	fpMC->read16le(&val);
+	
+	return val;
+}
+u32 BackupDevice::readLong(const u32 init)
+{
+	u32 val = init;
+	fpMC->read32le(&val);
+	
+	return val;
+}
+
 bool  BackupDevice::write(u8 val)
 {
 #ifdef _DONT_SAVE_BACKUP
@@ -478,6 +500,22 @@ void BackupDevice::writeLong(u32 addr, u32 val)
 {
 	if (isMovieMode) return;
 	fpMC->fseek(addr, SEEK_SET);
+	fpMC->write32le(val);
+}
+
+void BackupDevice::writeByte(u8 val)
+{
+	if (isMovieMode) return;
+	fpMC->write8le(val);
+}
+void BackupDevice::writeWord(u16 val)
+{
+	if (isMovieMode) return;
+	fpMC->write16le(val);
+}
+void BackupDevice::writeLong(u32 val)
+{
+	if (isMovieMode) return;
 	fpMC->write32le(val);
 }
 
@@ -942,20 +980,21 @@ u32 BackupDevice::importDataSize(const char *filename)
 	return 0;
 }
 
-u32 BackupDevice::importData(const char *filename, u32 force_size)
+bool BackupDevice::importData(const char *filename, u32 force_size)
 {
-	u32 res = 0;
+	bool res = false;
 	if (strlen(filename) < 4) return res;
 
 	if (memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0)
 		res = import_duc(filename, force_size);
 	else
 		if (import_no_gba(filename, force_size))
-			res = 1;
+			res = true;
 		else
 			res = import_raw(filename, force_size);
 
-	NDS_Reset();
+	if (res)
+		NDS_Reset();
 
 	return res;
 }

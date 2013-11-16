@@ -119,6 +119,7 @@ public:
 				if (save_start_adr != (protocol.address & gameInfo.mask) - subAdr)
 				{
 					save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
+					MMU_new.backupDevice.seek(save_start_adr);
 				}
 				handle_save = 1;
 				break;
@@ -140,6 +141,7 @@ public:
 					if (save_start_adr != (protocol.address & gameInfo.mask) - subAdr)
 					{
 						save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
+						MMU_new.backupDevice.seek(save_start_adr);
 					}
 				}
 				else
@@ -151,6 +153,7 @@ public:
 			case 0xB2: //Set save position
 				mode = cmd;
 				save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
+				MMU_new.backupDevice.seek(save_start_adr);
 				handle_save = 1;
 				break;
 		}
@@ -185,7 +188,7 @@ public:
 					{
 						MMU_new.backupDevice.ensure(save_adr+4, (u8)0);
 
-						val = MMU_new.backupDevice.readLong(save_adr, 0);
+						val = MMU_new.backupDevice.readLong(0);
 
 						save_adr += 4;
 					}
@@ -246,7 +249,7 @@ public:
 			case 0x81:	//Nand Write
 
 				MMU_new.backupDevice.ensure(adr+4, (u8)0);
-				MMU_new.backupDevice.writeLong(adr, val);
+				MMU_new.backupDevice.writeLong(val);
 
 				save_adr += 4;
 				break;
