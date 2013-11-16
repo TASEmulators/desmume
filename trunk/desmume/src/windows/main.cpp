@@ -2942,6 +2942,7 @@ int _main()
 	CommonSettings.loadToMemory = GetPrivateProfileBool("General", "loadType", true, IniName);
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 	CommonSettings.autodetectBackupMethod = GetPrivateProfileInt("General", "autoDetectMethod", 0, IniName);
+	CommonSettings.backupSave = GetPrivateProfileBool("General", "backupSave", false, IniName);
 
 	ColorCtrl_Register();
 	if (!RegWndClass("DeSmuME", WindowProcedure, CS_DBLCLKS, LoadIcon(hAppInst, MAKEINTRESOURCE(ICONDESMUME))))
