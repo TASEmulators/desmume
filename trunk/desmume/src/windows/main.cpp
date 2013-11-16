@@ -482,8 +482,6 @@ extern bool userTouchesScreen;
 
 static int sndcoretype=SNDCORE_DIRECTX;
 static int sndbuffersize=DESMUME_SAMPLE_RATE*8/60;
-static int snd_synchmode=0;
-static int snd_synchmethod=0;
 int sndvolume=100;
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -3352,13 +3350,11 @@ int _main()
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
 	SPU_SetVolume(sndvolume);
 
-	snd_synchmode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
-	snd_synchmethod = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);
-	{
-		Lock lock;
-		SPU_SetSynchMode(snd_synchmode,snd_synchmethod);
-	}
-
+	if (cmdline._spu_sync_mode == -1)
+		CommonSettings.SPU_sync_mode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
+	if (cmdline._spu_sync_method == -1)
+		CommonSettings.SPU_sync_method = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);	
+	
 	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", false, IniName);
 	CommonSettings.EnsataEmulation = GetPrivateProfileBool("Emulation", "EnsataEmulation", false, IniName);
 	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", false, IniName);
@@ -6818,14 +6814,14 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 			}
 
 			//update the synch mode
-			CheckDlgItem(hDlg,IDC_SYNCHMODE_DUAL,snd_synchmode==0);
-			CheckDlgItem(hDlg,IDC_SYNCHMODE_SYNCH,snd_synchmode==1);
+			CheckDlgItem(hDlg,IDC_SYNCHMODE_DUAL, CommonSettings.SPU_sync_mode==0);
+			CheckDlgItem(hDlg,IDC_SYNCHMODE_SYNCH,CommonSettings.SPU_sync_mode==1);
 			SoundSettings_updateSynchMode(hDlg);
 
 			//update the synch method
-			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_N,snd_synchmethod==0);
-			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_Z,snd_synchmethod==1);
-			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_P,snd_synchmethod==2);
+			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_N, CommonSettings.SPU_sync_method==0);
+			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_Z, CommonSettings.SPU_sync_method==1);
+			CheckDlgItem(hDlg,IDC_SYNCHMETHOD_P, CommonSettings.SPU_sync_method==2);
 
 			//setup interpolation combobox
 			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_RESETCONTENT, 0, 0);
@@ -6905,19 +6901,19 @@ static LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam
 					SPU_SetVolume(sndvolume);
 
 					//save the synch mode
-					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_DUAL)) snd_synchmode = 0;
-					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_SYNCH)) snd_synchmode = 1;
-					WritePrivateProfileInt("Sound", "SynchMode", snd_synchmode, IniName);
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_DUAL)) CommonSettings.SPU_sync_mode = 0;
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMODE_SYNCH)) CommonSettings.SPU_sync_mode = 1;
+					WritePrivateProfileInt("Sound", "SynchMode", CommonSettings.SPU_sync_mode, IniName);
 
 					//save the synch method
-					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_N)) snd_synchmethod = 0;
-					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_Z)) snd_synchmethod = 1;
-					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_P)) snd_synchmethod = 2;
-					WritePrivateProfileInt("Sound", "SynchMethod", snd_synchmethod, IniName);
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_N)) CommonSettings.SPU_sync_method = 0;
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_Z)) CommonSettings.SPU_sync_method = 1;
+					if(IsDlgCheckboxChecked(hDlg,IDC_SYNCHMETHOD_P)) CommonSettings.SPU_sync_method = 2;
+					WritePrivateProfileInt("Sound", "SynchMethod", CommonSettings.SPU_sync_method, IniName);
 
 					{
 						Lock lock;
-						SPU_SetSynchMode(snd_synchmode, snd_synchmethod);
+						SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 					}
 
 					//write interpolation type
