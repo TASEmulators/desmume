@@ -188,7 +188,7 @@ public:
 					{
 						MMU_new.backupDevice.ensure(save_adr+4, (u8)0);
 
-						val = MMU_new.backupDevice.readLong(0);
+						val = MMU_new.backupDevice.readLong(save_adr, 0);
 
 						save_adr += 4;
 					}
@@ -249,7 +249,7 @@ public:
 			case 0x81:	//Nand Write
 
 				MMU_new.backupDevice.ensure(adr+4, (u8)0);
-				MMU_new.backupDevice.writeLong(val);
+				MMU_new.backupDevice.writeLong(adr, val);
 
 				save_adr += 4;
 				break;
