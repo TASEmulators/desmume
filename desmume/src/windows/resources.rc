@@ -1757,6 +1757,9 @@ BEGIN
     BEGIN
         MENUITEM "&Website",                    IDM_WEBSITE
         MENUITEM "&Forums",                     IDM_FORUM
+        MENUITEM "W&iki",                       IDM_WIKI
+        MENUITEM "&FAQ",                        IDM_FAQ
+        MENUITEM SEPARATOR
         MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
         MENUITEM "&About",                      IDM_ABOUT
     END
