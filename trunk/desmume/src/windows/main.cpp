@@ -5956,11 +5956,19 @@ DOKEYDOWN:
 			WritePrivateProfileInt("Display", "ScreenGapColor", ScreenGapColor, IniName);
 			break;
 		case IDM_WEBSITE:
-			ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(NULL, "open", "http://desmume.org", NULL, NULL, SW_SHOWNORMAL);
 			return 0;
 
 		case IDM_FORUM:
 			ShellExecute(NULL, "open", "http://forums.desmume.org/index.php", NULL, NULL, SW_SHOWNORMAL);
+			return 0;
+
+		case IDM_WIKI:
+			ShellExecute(NULL, "open", "http://wiki.desmume.org", NULL, NULL, SW_SHOWNORMAL);
+			return 0;
+
+		case IDM_FAQ:
+			ShellExecute(NULL, "open", "http://wiki.desmume.org/index.php?title=Faq", NULL, NULL, SW_SHOWNORMAL);
 			return 0;
 
 		case IDM_ABOUT:
@@ -5980,7 +5988,7 @@ DOKEYDOWN:
 
 #ifndef BETA_VERSION
 		case IDM_SUBMITBUGREPORT:
-			ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(NULL, "open", "http://sourceforge.net/p/desmume/bugs/", NULL, NULL, SW_SHOWNORMAL);
 			return 0;
 #endif
 

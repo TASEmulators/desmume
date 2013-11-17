@@ -945,6 +945,8 @@
 #define ID_CLOSE                        40111
 #define ID_STREAMFROMDISK               40111
 #define ID_FSNITRO_VIEW                 40112
+#define IDM_FAQ                         40116
+#define IDM_WIKI                        40117
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
@@ -1051,7 +1053,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40111
+#define _APS_NEXT_COMMAND_VALUE         40118
 #define _APS_NEXT_CONTROL_VALUE         1059
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
