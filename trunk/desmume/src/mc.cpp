@@ -271,6 +271,8 @@ BackupDevice::BackupDevice()
 					{
 						if (no_gba_unpack(buf, sz))
 							printf("Converted from no$gba save.\n");
+						else
+							sz = trim(buf, sz);
 
 						if (fwrite(buf, 1, sz, fpOut->get_fp()) == sz)
 						{
@@ -1069,6 +1071,8 @@ u32 BackupDevice::get_save_nogba_size(u8 *data)
 		return *((u32*)(data+0x48));
 	if (compressMethod == 1)
 		return *((u32*)(data+0x4C));
+
+	return 0xFFFFFFFF;
 }
 
 static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
@@ -1151,7 +1155,7 @@ static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 	return (200);
 }
 
-static u32 no_gba_savTrim(void *buf, u32 size)
+u32 BackupDevice::trim(void *buf, u32 size)
 {
 	u32 rows = size / 16;
 	u32 pos = (size - 16);
@@ -1174,7 +1178,7 @@ static u32 no_gba_savTrim(void *buf, u32 size)
 	return (size);
 }
 
-static u32 no_gba_fillLeft(u32 size)
+u32 BackupDevice::fillLeft(u32 size)
 {
 	for (u32 i = 1; i < ARRAY_SIZE(save_types); i++)
 	{
@@ -1211,9 +1215,9 @@ bool BackupDevice::import_no_gba(const char *fname, u32 force_size)
 				if (force_size > 0)
 					size = force_size;
 				//printf("New size %i byte(s)\n", size);
-				size = no_gba_savTrim(out_buf, size);
+				size = trim(out_buf, size);
 				//printf("--- new size after trim %i byte(s)\n", size);
-				size = no_gba_fillLeft(size);
+				size = fillLeft(size);
 				//printf("--- new size after fill %i byte(s)\n", size);
 				raw_applyUserSettings(size, (force_size > 0));
 				saveBuffer(out_buf, size, true, true);
@@ -1241,8 +1245,8 @@ bool BackupDevice::no_gba_unpack(u8 *&buf, u32 &size)
 	{
 		if (no_gba_unpackSAV(buf, size, out_buf, out_size) == 0)
 		{
-			out_size = no_gba_savTrim(out_buf, out_size);
-			out_size = no_gba_fillLeft(out_size);
+			out_size = trim(out_buf, out_size);
+			out_size = fillLeft(out_size);
 			delete [] buf;
 			buf = out_buf;
 			size = out_size;
