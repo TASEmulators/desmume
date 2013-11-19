@@ -114,6 +114,9 @@ public:
 	static u32 pad_up_size(u32 startSize);
 	void raw_applyUserSettings(u32& size, bool manual = false);
 
+	u32 trim(void *buf, u32 size);
+	u32 fillLeft(u32 size);
+
 	u32 get_save_duc_size(const char* filename);
 	u32 get_save_nogba_size(const char* filename);
 	u32 get_save_nogba_size(u8 *data);
