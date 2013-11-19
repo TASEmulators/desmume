@@ -270,7 +270,7 @@ BackupDevice::BackupDevice()
 					if ((buf) && (fread(buf, 1, sz, fpTmp->get_fp()) == sz))
 					{
 						if (no_gba_unpack(buf, sz))
-							printf("Found no$gba save\n");
+							printf("Converted from no$gba save.\n");
 
 						if (fwrite(buf, 1, sz, fpOut->get_fp()) == sz)
 						{
@@ -1056,6 +1056,21 @@ u32 BackupDevice::get_save_nogba_size(const char* fname)
 	return 0xFFFFFFFF;
 }
 
+u32 BackupDevice::get_save_nogba_size(u8 *data)
+{
+	for (u8 i = 0; i < 0x1F; i++)
+		if (data[i] != no_GBA_HEADER_ID[i]) return 0xFFFFFFFF;
+	if (data[0x1F] != 0x1A) return 0xFFFFFFFF;
+	for (int i = 0; i < 0x4; i++)
+		if (data[i+0x40] != no_GBA_HEADER_SRAM_ID[i]) return 0xFFFFFFFF;
+	
+	u32 compressMethod = *((u32*)(data+0x44));
+	if (compressMethod == 0)
+		return *((u32*)(data+0x48));
+	if (compressMethod == 1)
+		return *((u32*)(data+0x4C));
+}
+
 static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 {
 	u8	*src = (u8 *)in_buf;
@@ -1076,7 +1091,7 @@ static int no_gba_unpackSAV(void *in_buf, u32 fsize, void *out_buf, u32 &size)
 	if (src[0x1F] != 0x1A) return (2);
 	for (int i = 0; i < 0x4; i++)
 	{
-		if (src[i+0x40] != no_GBA_HEADER_SRAM_ID[i]) return (2);
+		if (src[i+0x40] != no_GBA_HEADER_SRAM_ID[i]) return (3);
 	}
 
 	compressMethod = *((u32*)(src+0x44));
@@ -1219,7 +1234,8 @@ bool BackupDevice::import_no_gba(const char *fname, u32 force_size)
 bool BackupDevice::no_gba_unpack(u8 *&buf, u32 &size)
 {
 	if (!buf) return false;
-	u32 out_size = saveSizes[saveSizes_count - 1];
+	u32 out_size = get_save_nogba_size(buf);
+	if (out_size == 0xFFFFFFFF) return false;
 	u8 *out_buf = new u8 [out_size];
 	if (out_buf)
 	{

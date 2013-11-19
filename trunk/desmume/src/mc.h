@@ -116,6 +116,7 @@ public:
 
 	u32 get_save_duc_size(const char* filename);
 	u32 get_save_nogba_size(const char* filename);
+	u32 get_save_nogba_size(u8 *data);
 	u32 get_save_raw_size(const char* filename);
 	bool import_duc(const char* filename, u32 force_size = 0);
 	bool import_no_gba(const char *fname, u32 force_size = 0);
