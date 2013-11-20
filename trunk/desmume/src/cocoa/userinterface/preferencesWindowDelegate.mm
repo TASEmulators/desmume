@@ -187,6 +187,11 @@
 {
 	[sheet orderOut:self];
 	
+	// Temporarily set the autoload ROM option in user defaults to some neutral value first and synchronize.
+	// When the user defaults are actually set later, this will force the proper state transitions to occur.
+	[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_CHOOSE_ROM forKey:@"General_AutoloadROMOption"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
+	
 	if (returnCode == NSCancelButton)
 	{
 		[[NSUserDefaults standardUserDefaults] setInteger:ROMAUTOLOADOPTION_LOAD_NONE forKey:@"General_AutoloadROMOption"];
