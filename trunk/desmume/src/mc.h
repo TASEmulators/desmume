@@ -189,6 +189,7 @@ struct SAVE_TYPE
 	const char* descr;
 	int media_type;
 	int size;
+	int addr_size;
 };
 
 extern const SAVE_TYPE save_types[];
