@@ -91,20 +91,20 @@ static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
 //the lookup table from user save types to save parameters
 const SAVE_TYPE save_types[] = {
-	{"Autodetect",		MC_TYPE_AUTODETECT,	1},
-	{"EEPROM 4kbit",	MC_TYPE_EEPROM1,	MC_SIZE_4KBITS},
-	{"EEPROM 64kbit",	MC_TYPE_EEPROM2,	MC_SIZE_64KBITS},
-	{"EEPROM 512kbit",	MC_TYPE_EEPROM2,	MC_SIZE_512KBITS},
-	{"FRAM 256kbit",	MC_TYPE_FRAM,		MC_SIZE_256KBITS},
-	{"FLASH 2Mbit",		MC_TYPE_FLASH,		MC_SIZE_2MBITS},
-	{"FLASH 4Mbit",		MC_TYPE_FLASH,		MC_SIZE_4MBITS},
-	{"FLASH 8Mbit",		MC_TYPE_FLASH,		MC_SIZE_8MBITS},
-	{"FLASH 16Mbit",	MC_TYPE_FLASH,		MC_SIZE_16MBITS},
-	{"FLASH 32Mbit",	MC_TYPE_FLASH,		MC_SIZE_32MBITS},
-	{"FLASH 64Mbit",	MC_TYPE_FLASH,		MC_SIZE_64MBITS},
-	{"FLASH 128Mbit",	MC_TYPE_FLASH,		MC_SIZE_128MBITS},
-	{"FLASH 256Mbit",	MC_TYPE_FLASH,		MC_SIZE_256MBITS},
-	{"FLASH 512Mbit",	MC_TYPE_FLASH,		MC_SIZE_512MBITS}
+	{"Autodetect",		MC_TYPE_AUTODETECT,	1, 0},
+	{"EEPROM 4kbit",	MC_TYPE_EEPROM1,	MC_SIZE_4KBITS		, 1},
+	{"EEPROM 64kbit",	MC_TYPE_EEPROM2,	MC_SIZE_64KBITS		, 2},
+	{"EEPROM 512kbit",	MC_TYPE_EEPROM2,	MC_SIZE_512KBITS	, 2},
+	{"FRAM 256kbit",	MC_TYPE_FRAM,		MC_SIZE_256KBITS	, 2},
+	{"FLASH 2Mbit",		MC_TYPE_FLASH,		MC_SIZE_2MBITS		, 3},
+	{"FLASH 4Mbit",		MC_TYPE_FLASH,		MC_SIZE_4MBITS		, 3},
+	{"FLASH 8Mbit",		MC_TYPE_FLASH,		MC_SIZE_8MBITS		, 3},
+	{"FLASH 16Mbit",	MC_TYPE_FLASH,		MC_SIZE_16MBITS		, 3},
+	{"FLASH 32Mbit",	MC_TYPE_FLASH,		MC_SIZE_32MBITS		, 3},
+	{"FLASH 64Mbit",	MC_TYPE_FLASH,		MC_SIZE_64MBITS		, 3},
+	{"FLASH 128Mbit",	MC_TYPE_FLASH,		MC_SIZE_128MBITS	, 3},
+	{"FLASH 256Mbit",	MC_TYPE_FLASH,		MC_SIZE_256MBITS	, 3},
+	{"FLASH 512Mbit",	MC_TYPE_FLASH,		MC_SIZE_512MBITS	, 3}
 };
 
 
@@ -279,10 +279,9 @@ BackupDevice::BackupDevice()
 							u8 res = searchFileSaveType(sz);
 							if (res != 0xFF)
 							{
-								info.type = (res + 1); // +1 - skip autodetect
-								addr_size = info.addr_size = addr_size_for_old_save_type(info.type);
-								fsize = sz;
-								info.size = sz;
+								info.type = (res + 1);
+								addr_size = info.addr_size = save_types[info.type].addr_size;
+								info.size = fsize = sz;
 								ensure(sz, fpOut);
 								fsize = 0;
 							}
@@ -364,7 +363,8 @@ BackupDevice::BackupDevice()
 			_Mbit = true;
 		}
 
-		printf("Backup size: %u %cbit\n", ss, _Mbit?'M':'K');
+		if (ss > 0)
+			printf("Backup size: %u %cbit\n", ss, _Mbit?'M':'K');
 	}
 
 	state = (fsize > 0)?RUNNING:DETECTING;
@@ -585,7 +585,7 @@ u8 BackupDevice::searchFileSaveType(u32 size)
 	for (u8 i = 1; i < MAX_SAVE_TYPES; i++)
 	{
 		if (size == save_types[i].size)
-			return (i-1);
+			return (i - 1);
 	}
 	return 0xFF;
 }
@@ -884,6 +884,8 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
 	u32 size = padSize - fsize;
 	fsize = padSize;
 	info.padSize = fsize;
+	int type = searchFileSaveType(fsize);
+	if (type != 0xFF) info.type = type;
 
 #ifndef _DONT_SAVE_BACKUP
 	u8 *tmp = new u8[size];
@@ -938,7 +940,7 @@ u32 BackupDevice::addr_size_for_old_save_type(int bupmem_type)
 			return 1;
 		case MC_TYPE_EEPROM2:
 		case MC_TYPE_FRAM:
-              return 2;
+			return 2;
 		case MC_TYPE_FLASH:
 			return 3;
 		default:

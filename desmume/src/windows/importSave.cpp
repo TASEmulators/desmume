@@ -146,7 +146,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 							}
 							else
 								if (SendDlgItemMessage(hDlg, IDC_IMP_MANUAL, BM_GETCHECK, 0, 0) == BST_CHECKED)
-									res = SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_GETCURSEL, 0, 0)+1;
+									res = SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_GETCURSEL, 0, 0);
 								else
 									break;
 					EndDialog(hDlg, res);
