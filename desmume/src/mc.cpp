@@ -1269,6 +1269,7 @@ bool BackupDevice::export_no_gba(const char* fname)
 {
 	std::vector<u8> data(fsize);
 	u32 pos = fpMC->ftell();
+	fpMC->fseek(0, SEEK_SET);
 	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
 	fpMC->fseek(pos, SEEK_SET);
 
@@ -1297,6 +1298,7 @@ bool BackupDevice::export_raw(const char* filename)
 {
 	std::vector<u8> data(fsize);
 	u32 pos = fpMC->ftell();
+	fpMC->fseek(0, SEEK_SET);
 	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
 	fpMC->fseek(pos, SEEK_SET);
 
