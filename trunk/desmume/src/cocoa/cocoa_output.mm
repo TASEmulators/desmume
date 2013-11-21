@@ -264,10 +264,9 @@
 	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuSyncMode"];
 	OSSpinLockUnlock(&spinlockSpuSyncMode);
 	
-	NSInteger methodID = [self spuSyncMethod];
-	
 	pthread_mutex_lock(self.mutexProducer);
-	SPU_SetSynchMode(modeID, methodID);
+	CommonSettings.SPU_sync_mode = (int)modeID;
+	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 	pthread_mutex_unlock(self.mutexProducer);
 }
 
@@ -286,10 +285,9 @@
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"spuSyncMethod"];
 	OSSpinLockUnlock(&spinlockSpuSyncMethod);
 	
-	NSInteger modeID = [self spuSyncMode];
-	
 	pthread_mutex_lock(self.mutexProducer);
-	SPU_SetSynchMode(modeID, methodID);
+	CommonSettings.SPU_sync_method = (int)methodID;
+	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 	pthread_mutex_unlock(self.mutexProducer);
 }
 
