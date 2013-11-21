@@ -71,6 +71,7 @@
 //so in r3303 I finally changed it (no$ appears definitely to initialize to 0xFF)
 static u8 kUninitializedSaveDataValue = 0xFF;
 
+static const char* DESMUME_BACKUP_FOOTER_TXT = "|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:";
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
 static const u32 saveSizes[] = {512,			// 4k
@@ -124,6 +125,7 @@ bool BackupDevice::save_state(EMUFILE* os)
 {
 	u32 savePos = fpMC->ftell();
 	std::vector<u8> data(fsize);
+	fpMC->fseek(0, SEEK_SET);
 	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
 
 	u32 version = 5;
@@ -159,12 +161,11 @@ bool BackupDevice::load_state(EMUFILE* is)
 {
 	u32 version;
 	u32 temp;
+	std::vector<u8> data;
 
 	if(read32le(&version,is)!=1) return false;
 	if(version>=0)
 	{
-		std::vector<u8> data;
-
 		readbool(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
@@ -172,12 +173,6 @@ bool BackupDevice::load_state(EMUFILE* is)
 		read32le(&temp,is);
 		state = (STATE)temp;
 		readbuffer(data,is);
-		fsize = data.size();
-#ifndef _DONT_SAVE_BACKUP
-		fpMC->fseek(0, SEEK_SET);
-		fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
-		ensure(data.size(), fpMC);
-#endif
 		readbuffer(data_autodetect,is);
 	}
 	if(version>=1)
@@ -198,6 +193,13 @@ bool BackupDevice::load_state(EMUFILE* is)
 	{
 		read8le(&write_protect,is);
 	}
+
+	fsize = data.size();
+#ifndef _DONT_SAVE_BACKUP
+	fpMC->fseek(0, SEEK_SET);
+	fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
+	ensure(data.size(), fpMC);
+#endif
 
 	if(version>=5)
 	{
@@ -306,7 +308,7 @@ BackupDevice::BackupDevice()
 			fpMC->truncate(0);
 
 		if (readFooter() == 0)
-			fsize = fsize - 24;
+			fsize -= (strlen(kDesmumeSaveCookie) + strlen(DESMUME_BACKUP_FOOTER_TXT) + 24);
 		else
 		{
 			memset(&info, 0, sizeof(info));
@@ -882,19 +884,21 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
 	
 	u32 padSize = pad_up_size(addr);
 	u32 size = padSize - fsize;
-	fsize = padSize;
-	info.padSize = fsize;
+	info.padSize = info.size = fsize = padSize;
 	int type = searchFileSaveType(fsize);
-	if (type != 0xFF) info.type = type;
+	if (type != 0xFF) info.type = (type + 1);
 
 #ifndef _DONT_SAVE_BACKUP
-	u8 *tmp = new u8[size];
-	memset(tmp, val, size);
-	fwrite(tmp, 1, size, fp->get_fp());
-	delete [] tmp;
+	if (size > 0)
+	{
+		u8 *tmp = new u8[size];
+		memset(tmp, val, size);
+		fwrite(tmp, 1, size, fp->get_fp());
+		delete [] tmp;
+	}
 
 	//this is just for humans to read
-	fp->fprintf("|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:");
+	fp->fprintf(DESMUME_BACKUP_FOOTER_TXT);
 
 	//and now the actual footer
 	fp->write32le(addr);			//the size of data that has actually been written
