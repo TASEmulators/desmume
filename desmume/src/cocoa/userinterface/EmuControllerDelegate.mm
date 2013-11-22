@@ -61,6 +61,7 @@
 
 @dynamic masterExecuteFlag;
 @dynamic executionState;
+@synthesize lastSetSpeedScalar;
 @dynamic speedScalar;
 
 @synthesize isWorking;
@@ -478,7 +479,7 @@
 			return;
 		}
 		
-		[self handleLoadRom:selectedFile];
+		[self handleLoadRomByURL:selectedFile];
 	}
 }
 
@@ -775,9 +776,7 @@
 	else
 	{
 		const CGFloat newSpeedScalar = (CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
-		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-		[cdsCore setSpeedScalar:newSpeedScalar];
-		lastSetSpeedScalar = newSpeedScalar;
+		[self changeCoreSpeedWithDouble:newSpeedScalar];
 	}
 }
 
@@ -1286,11 +1285,11 @@
 	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
 }
 
-- (BOOL) handleLoadRom:(NSURL *)fileURL
+- (BOOL) handleLoadRomByURL:(NSURL *)fileURL
 {
 	BOOL result = NO;
 	
-	if ([self isRomLoading])
+	if (fileURL == nil || [self isRomLoading])
 	{
 		return result;
 	}
@@ -1324,7 +1323,7 @@
 	}
 	else
 	{
-		result = [self loadRom:fileURL];
+		result = [self loadRomByURL:fileURL asynchronous:YES];
 	}
 	
 	return result;
@@ -1377,7 +1376,7 @@
 	return result;
 }
 
-- (BOOL) loadRom:(NSURL *)romURL
+- (BOOL) loadRomByURL:(NSURL *)romURL asynchronous:(BOOL)willLoadAsync
 {
 	BOOL result = NO;
 	
@@ -1409,7 +1408,16 @@
 		[romURL retain];
 		[newRom setSaveType:selectedRomSaveTypeID];
 		[newRom setWillStreamLoadData:[[NSUserDefaults standardUserDefaults] boolForKey:@"General_StreamLoadRomData"]];
-		[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
+		
+		if (willLoadAsync)
+		{
+			[NSThread detachNewThreadSelector:@selector(loadDataOnThread:) toTarget:newRom withObject:romURL];
+		}
+		else
+		{
+			[newRom loadData:romURL];
+		}
+		
 		[romURL release];
 	}
 	
@@ -1626,6 +1634,13 @@
 	[cdsCore removeOutput:theOutput];
 }
 
+- (void) changeCoreSpeedWithDouble:(double)newSpeedScalar
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setSpeedScalar:newSpeedScalar];
+	lastSetSpeedScalar = newSpeedScalar;
+}
+
 - (void) executeCore
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -1675,7 +1690,7 @@
 	
 	[self setIsUserInterfaceBlockingExecution:NO];
 	[self setIsShowingFileMigrationDialog:NO];
-	[self loadRom:romURL];
+	[self loadRomByURL:romURL asynchronous:YES];
 	
 	// We retained this when we initially put up the sheet, so we need to release it now.
 	[romURL release];
@@ -1723,7 +1738,7 @@
 	[self didEndSaveStateSheet:sheet returnCode:returnCode contextInfo:contextInfo];
 	
 	NSURL *romURL = (NSURL *)contextInfo;
-	[self handleLoadRom:romURL];
+	[self handleLoadRomByURL:romURL];
 	[romURL release];
 }
 

@@ -97,7 +97,7 @@
 	NSString *fileKind = [CocoaDSFile fileKindByURL:fileURL];
 	if ([fileKind isEqualToString:@"ROM"])
 	{
-		result = [emuControl handleLoadRom:fileURL];
+		result = [emuControl handleLoadRomByURL:fileURL];
 		if ([emuControl isShowingSaveStateDialog] || [emuControl isShowingFileMigrationDialog])
 		{
 			// Just reply YES if a sheet is showing, even if the ROM hasn't actually been loaded yet.
@@ -289,10 +289,7 @@
 				break;
 		}
 		
-		if (autoloadRomURL != nil)
-		{
-			[emuControl handleLoadRom:autoloadRomURL];
-		}
+		[emuControl handleLoadRomByURL:autoloadRomURL];
 	}
 	
 	// Present the file migration window to the user (if they haven't disabled it).
@@ -335,10 +332,12 @@
 
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Save some settings to user defaults before app termination
 	[self saveDisplayWindowStates];
+	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isCheatingEnabled] forKey:@"CoreControl_EnableCheats"];
@@ -487,6 +486,7 @@
 	[cdsCore setSlot1R4URL:(slot1R4Path != nil) ? [NSURL fileURLWithPath:slot1R4Path] : nil];
 	
 	// Set the miscellaneous emulations settings per user preferences.
+	[emuControl changeCoreSpeedWithDouble:[[NSUserDefaults standardUserDefaults] doubleForKey:@"CoreControl_SpeedScalar"]];
 	[cdsCore setIsSpeedLimitEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableSpeedLimit"]];
 	[cdsCore setIsFrameSkipEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableAutoFrameSkip"]];
 	[cdsCore setIsCheatingEnabled:[[NSUserDefaults standardUserDefaults] boolForKey:@"CoreControl_EnableCheats"]];
