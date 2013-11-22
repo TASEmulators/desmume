@@ -1,0 +1,4400 @@
+/*  Copyright (C) 2006 yopyop
+    yopyop156@ifrance.com
+    yopyop156.ifrance.com
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
+     OP_AND_LSL_IMM,    // 000 0000 0 0000
+     OP_AND_LSL_REG,    // 000 0000 0 0001
+     OP_AND_LSR_IMM,    // 000 0000 0 0010
+     OP_AND_LSR_REG,    // 000 0000 0 0011
+     OP_AND_ASR_IMM,    // 000 0000 0 0100
+     OP_AND_ASR_REG,    // 000 0000 0 0101
+     OP_AND_ROR_IMM,    // 000 0000 0 0110
+     OP_AND_ROR_REG,    // 000 0000 0 0111
+     
+     OP_AND_LSL_IMM,    // 000 0000 0 1000
+     OP_MUL,            // 000 0000 0 1001
+     OP_AND_LSR_IMM,    // OOO OOOO O 1010
+     OP_STRH_POS_INDE_M_REG_OFF, // 000 0000 0 1011
+     OP_AND_ASR_IMM,    // 000 0000 0 1100
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0000 0 1101
+     OP_AND_ROR_IMM,    // 000 0000 0 1110
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0000 0 1111
+     
+     OP_AND_S_LSL_IMM,  // 000 0000 1 0000
+     OP_AND_S_LSL_REG,  // 000 0000 1 0001
+     OP_AND_S_LSR_IMM,  // 000 0000 1 0010
+     OP_AND_S_LSR_REG,  // 000 0000 1 0011
+     OP_AND_S_ASR_IMM,  // 000 0000 1 0100
+     OP_AND_S_ASR_REG,  // 000 0000 1 0101
+     OP_AND_S_ROR_IMM,  // 000 0000 1 0110
+     OP_AND_S_ROR_REG,  // 000 0000 1 0111
+     
+     OP_AND_S_LSL_IMM,  // 000 0000 1 1000
+     OP_MUL_S,          // 000 0000 1 1001
+     OP_AND_S_LSR_IMM,  // 000 0000 1 1010
+     OP_LDRH_POS_INDE_M_REG_OFF, // 000 0000 1 1011
+     OP_AND_S_ASR_IMM,  // 000 0000 1 1100
+     OP_LDRSB_POS_INDE_M_REG_OFF,// 000 0000 1 1101
+     OP_AND_S_ROR_IMM,  // 000 0000 1 1110
+     OP_LDRSH_POS_INDE_M_REG_OFF,// 000 0000 1 1111
+     
+     OP_EOR_LSL_IMM,    // 000 0001 0 0000
+     OP_EOR_LSL_REG,    // 000 0001 0 0001
+     OP_EOR_LSR_IMM,    // 000 0001 0 0010
+     OP_EOR_LSR_REG,    // 000 0001 0 0011
+     OP_EOR_ASR_IMM,    // 000 0001 0 0100
+     OP_EOR_ASR_REG,    // 000 0001 0 0101
+     OP_EOR_ROR_IMM,    // 000 0001 0 0110
+     OP_EOR_ROR_REG,    // 000 0001 0 0111
+     
+     OP_EOR_LSL_IMM,    // 000 0001 0 1000
+     OP_MLA,            // 000 0001 0 1001
+     OP_EOR_LSR_IMM,    // OOO OOO1 O 1010
+     OP_UND,            // 000 0001 0 1011
+     OP_EOR_ASR_IMM,    // 000 0001 0 1100
+     OP_UND,            // 000 0001 0 1101
+     OP_EOR_ROR_IMM,    // 000 0001 0 1110
+     OP_UND,            // 000 0001 0 1111
+     
+     OP_EOR_S_LSL_IMM,  // 000 0001 1 0000
+     OP_EOR_S_LSL_REG,  // 000 0001 1 0001
+     OP_EOR_S_LSR_IMM,  // 000 0001 1 0010
+     OP_EOR_S_LSR_REG,  // 000 0001 1 0011
+     OP_EOR_S_ASR_IMM,  // 000 0001 1 0100
+     OP_EOR_S_ASR_REG,  // 000 0001 1 0101
+     OP_EOR_S_ROR_IMM,  // 000 0001 1 0110
+     OP_EOR_S_ROR_REG,  // 000 0001 1 0111
+     
+     OP_EOR_S_LSL_IMM,  // 000 0001 1 1000
+     OP_MLA_S,          // 000 0001 1 1001
+     OP_EOR_S_LSR_IMM,  // 000 0001 1 1010
+     OP_UND,            // 000 0001 1 1011
+     OP_EOR_S_ASR_IMM,  // 000 0001 1 1100
+     OP_UND,            // 000 0001 1 1101
+     OP_EOR_S_ROR_IMM,  // 000 0001 1 1110
+     OP_UND,            // 000 0001 1 1111
+
+     OP_SUB_LSL_IMM,    // 000 0010 0 0000
+     OP_SUB_LSL_REG,    // 000 0010 0 0001
+     OP_SUB_LSR_IMM,    // 000 0010 0 0010
+     OP_SUB_LSR_REG,    // 000 0010 0 0011
+     OP_SUB_ASR_IMM,    // 000 0010 0 0100
+     OP_SUB_ASR_REG,    // 000 0010 0 0101
+     OP_SUB_ROR_IMM,    // 000 0010 0 0110
+     OP_SUB_ROR_REG,    // 000 0010 0 0111
+     
+     OP_SUB_LSL_IMM,    // 000 0010 0 1000
+     OP_UND,            // 000 0010 0 1001
+     OP_SUB_LSR_IMM,    // OOO OO1O O 1010
+     OP_STRH_POS_INDE_M_IMM_OFF, // 000 0010 0 1011
+     OP_SUB_ASR_IMM,    // 000 0010 0 1100
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0010 0 1101
+     OP_SUB_ROR_IMM,    // 000 0010 0 1110
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0010 0 1111
+     
+     OP_SUB_S_LSL_IMM,  // 000 0010 1 0000
+     OP_SUB_S_LSL_REG,  // 000 0010 1 0001
+     OP_SUB_S_LSR_IMM,  // 000 0010 1 0010
+     OP_SUB_S_LSR_REG,  // 000 0010 1 0011
+     OP_SUB_S_ASR_IMM,  // 000 0010 1 0100
+     OP_SUB_S_ASR_REG,  // 000 0010 1 0101
+     OP_SUB_S_ROR_IMM,  // 000 0010 1 0110
+     OP_SUB_S_ROR_REG,  // 000 0010 1 0111
+     
+     OP_SUB_S_LSL_IMM,  // 000 0010 1 1000
+     OP_UND,            // 000 0010 1 1001
+     OP_SUB_S_LSR_IMM,  // 000 0010 1 1010
+     OP_LDRH_POS_INDE_M_IMM_OFF, // 000 0010 1 1011
+     OP_SUB_S_ASR_IMM,  // 000 0010 1 1100
+     OP_LDRSB_POS_INDE_M_IMM_OFF,// 000 0010 1 1101
+     OP_SUB_S_ROR_IMM,  // 000 0010 1 1110
+     OP_LDRSH_POS_INDE_M_IMM_OFF,// 000 0010 1 1111
+//--------------------     
+     OP_RSB_LSL_IMM,    // 000 0011 0 0000
+     OP_RSB_LSL_REG,    // 000 0011 0 0001
+     OP_RSB_LSR_IMM,    // 000 0011 0 0010
+     OP_RSB_LSR_REG,    // 000 0011 0 0011
+     OP_RSB_ASR_IMM,    // 000 0011 0 0100
+     OP_RSB_ASR_REG,    // 000 0011 0 0101
+     OP_RSB_ROR_IMM,    // 000 0011 0 0110
+     OP_RSB_ROR_REG,    // 000 0011 0 0111
+     
+     OP_RSB_LSL_IMM,    // 000 0011 0 1000
+     OP_UND,            // 000 0011 0 1001
+     OP_RSB_LSR_IMM,    // OOO OO11 O 1010
+     OP_UND,            // 000 0011 0 1011
+     OP_RSB_ASR_IMM,    // 000 0011 0 1100
+     OP_UND,            // 000 0011 0 1101
+     OP_RSB_ROR_IMM,    // 000 0011 0 1110
+     OP_UND,            // 000 0011 0 1111
+     
+     OP_RSB_S_LSL_IMM,  // 000 0011 1 0000
+     OP_RSB_S_LSL_REG,  // 000 0011 1 0001
+     OP_RSB_S_LSR_IMM,  // 000 0011 1 0010
+     OP_RSB_S_LSR_REG,  // 000 0011 1 0011
+     OP_RSB_S_ASR_IMM,  // 000 0011 1 0100
+     OP_RSB_S_ASR_REG,  // 000 0011 1 0101
+     OP_RSB_S_ROR_IMM,  // 000 0011 1 0110
+     OP_RSB_S_ROR_REG,  // 000 0011 1 0111
+     
+     OP_RSB_S_LSL_IMM,  // 000 0011 1 1000
+     OP_UND,            // 000 0011 1 1001
+     OP_RSB_S_LSR_IMM,  // 000 0011 1 1010
+     OP_UND,            // 000 0011 1 1011
+     OP_RSB_S_ASR_IMM,  // 000 0011 1 1100
+     OP_UND,            // 000 0011 1 1101
+     OP_RSB_S_ROR_IMM,  // 000 0011 1 1110
+     OP_UND,            // 000 0011 1 1111
+//--------------------------
+     OP_ADD_LSL_IMM,    // 000 0100 0 0000
+     OP_ADD_LSL_REG,    // 000 0100 0 0001
+     OP_ADD_LSR_IMM,    // 000 0100 0 0010
+     OP_ADD_LSR_REG,    // 000 0100 0 0011
+     OP_ADD_ASR_IMM,    // 000 0100 0 0100
+     OP_ADD_ASR_REG,    // 000 0100 0 0101
+     OP_ADD_ROR_IMM,    // 000 0100 0 0110
+     OP_ADD_ROR_REG,    // 000 0100 0 0111
+     
+     OP_ADD_LSL_IMM,    // 000 0100 0 1000
+     OP_UMULL,          // 000 0100 0 1001
+     OP_ADD_LSR_IMM,    // OOO O10O O 1010
+     OP_STRH_POS_INDE_P_REG_OFF, // 000 0100 0 1011
+     OP_ADD_ASR_IMM,    // 000 0100 0 1100
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0100 0 1101
+     OP_ADD_ROR_IMM,    // 000 0100 0 1110
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0100 0 1111
+     
+     OP_ADD_S_LSL_IMM,  // 000 0100 1 0000
+     OP_ADD_S_LSL_REG,  // 000 0100 1 0001
+     OP_ADD_S_LSR_IMM,  // 000 0100 1 0010
+     OP_ADD_S_LSR_REG,  // 000 0100 1 0011
+     OP_ADD_S_ASR_IMM,  // 000 0100 1 0100
+     OP_ADD_S_ASR_REG,  // 000 0100 1 0101
+     OP_ADD_S_ROR_IMM,  // 000 0100 1 0110
+     OP_ADD_S_ROR_REG,  // 000 0100 1 0111
+     
+     OP_ADD_S_LSL_IMM,  // 000 0100 1 1000
+     OP_UMULL_S,        // 000 0100 1 1001
+     OP_ADD_S_LSR_IMM,  // 000 0100 1 1010
+     OP_LDRH_POS_INDE_P_REG_OFF, // 000 0100 1 1011
+     OP_ADD_S_ASR_IMM,  // 000 0100 1 1100
+     OP_LDRSB_POS_INDE_P_REG_OFF,// 000 0100 1 1101
+     OP_ADD_S_ROR_IMM,  // 000 0100 1 1110
+     OP_LDRSH_POS_INDE_P_REG_OFF,// 000 0100 1 1111
+//-----------------------------------------
+     OP_ADC_LSL_IMM,    // 000 0101 0 0000
+     OP_ADC_LSL_REG,    // 000 0101 0 0001
+     OP_ADC_LSR_IMM,    // 000 0101 0 0010
+     OP_ADC_LSR_REG,    // 000 0101 0 0011
+     OP_ADC_ASR_IMM,    // 000 0101 0 0100
+     OP_ADC_ASR_REG,    // 000 0101 0 0101
+     OP_ADC_ROR_IMM,    // 000 0101 0 0110
+     OP_ADC_ROR_REG,    // 000 0101 0 0111
+     
+     OP_ADC_LSL_IMM,    // 000 0101 0 1000
+     OP_UMLAL,          // 000 0101 0 1001
+     OP_ADC_LSR_IMM,    // OOO O101 O 1010
+     OP_UND,            // 000 0101 0 1011
+     OP_ADC_ASR_IMM,    // 000 0101 0 1100
+     OP_UND,            // 000 0101 0 1101
+     OP_ADC_ROR_IMM,    // 000 0101 0 1110
+     OP_UND,            // 000 0101 0 1111
+     
+     OP_ADC_S_LSL_IMM,  // 000 0101 1 0000
+     OP_ADC_S_LSL_REG,  // 000 0101 1 0001
+     OP_ADC_S_LSR_IMM,  // 000 0101 1 0010
+     OP_ADC_S_LSR_REG,  // 000 0101 1 0011
+     OP_ADC_S_ASR_IMM,  // 000 0101 1 0100
+     OP_ADC_S_ASR_REG,  // 000 0101 1 0101
+     OP_ADC_S_ROR_IMM,  // 000 0101 1 0110
+     OP_ADC_S_ROR_REG,  // 000 0101 1 0111
+     
+     OP_ADC_S_LSL_IMM,  // 000 0101 1 1000
+     OP_UMLAL_S,        // 000 0101 1 1001
+     OP_ADC_S_LSR_IMM,  // 000 0101 1 1010
+     OP_UND,            // 000 0101 1 1011
+     OP_ADC_S_ASR_IMM,  // 000 0101 1 1100
+     OP_UND,            // 000 0101 1 1101
+     OP_ADC_S_ROR_IMM,  // 000 0101 1 1110
+     OP_UND,            // 000 0101 1 1111
+//------------------------------------------
+     OP_SBC_LSL_IMM,    // 000 0110 0 0000
+     OP_SBC_LSL_REG,    // 000 0110 0 0001
+     OP_SBC_LSR_IMM,    // 000 0110 0 0010
+     OP_SBC_LSR_REG,    // 000 0110 0 0011
+     OP_SBC_ASR_IMM,    // 000 0110 0 0100
+     OP_SBC_ASR_REG,    // 000 0110 0 0101
+     OP_SBC_ROR_IMM,    // 000 0110 0 0110
+     OP_SBC_ROR_REG,    // 000 0110 0 0111
+     
+     OP_SBC_LSL_IMM,    // 000 0110 0 1000
+     OP_SMULL,          // 000 0110 0 1001
+     OP_SBC_LSR_IMM,    // OOO O11O O 1010
+     OP_STRH_POS_INDE_P_IMM_OFF, // 000 0110 0 1011
+     OP_SBC_ASR_IMM,    // 000 0110 0 1100
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0110 0 1101
+     OP_SBC_ROR_IMM,    // 000 0110 0 1110
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0110 0 1111
+     
+     OP_SBC_S_LSL_IMM,  // 000 0110 1 0000
+     OP_SBC_S_LSL_REG,  // 000 0110 1 0001
+     OP_SBC_S_LSR_IMM,  // 000 0110 1 0010
+     OP_SBC_S_LSR_REG,  // 000 0110 1 0011
+     OP_SBC_S_ASR_IMM,  // 000 0110 1 0100
+     OP_SBC_S_ASR_REG,  // 000 0110 1 0101
+     OP_SBC_S_ROR_IMM,  // 000 0110 1 0110
+     OP_SBC_S_ROR_REG,  // 000 0110 1 0111
+     
+     OP_SBC_S_LSL_IMM,  // 000 0110 1 1000
+     OP_SMULL_S,        // 000 0110 1 1001
+     OP_SBC_S_LSR_IMM,  // 000 0110 1 1010
+     OP_LDRH_POS_INDE_P_IMM_OFF, // 000 0110 1 1011
+     OP_SBC_S_ASR_IMM,  // 000 0110 1 1100
+     OP_LDRSB_POS_INDE_P_IMM_OFF,// 000 0110 1 1101
+     OP_SBC_S_ROR_IMM,  // 000 0110 1 1110
+     OP_LDRSH_POS_INDE_P_IMM_OFF,// 000 0110 1 1111
+//------------------------------------------
+     OP_RSC_LSL_IMM,    // 000 0111 0 0000
+     OP_RSC_LSL_REG,    // 000 0111 0 0001
+     OP_RSC_LSR_IMM,    // 000 0111 0 0010
+     OP_RSC_LSR_REG,    // 000 0111 0 0011
+     OP_RSC_ASR_IMM,    // 000 0111 0 0100
+     OP_RSC_ASR_REG,    // 000 0111 0 0101
+     OP_RSC_ROR_IMM,    // 000 0111 0 0110
+     OP_RSC_ROR_REG,    // 000 0111 0 0111
+     
+     OP_RSC_LSL_IMM,    // 000 0111 0 1000
+     OP_SMLAL,          // 000 0111 0 1001
+     OP_RSC_LSR_IMM,    // OOO O111 O 1010
+     OP_UND,            // 000 0111 0 1011
+     OP_RSC_ASR_IMM,    // 000 0111 0 1100
+     OP_UND,            // 000 0111 0 1101
+     OP_RSC_ROR_IMM,    // 000 0111 0 1110
+     OP_UND,            // 000 0111 0 1111
+     
+     OP_RSC_S_LSL_IMM,  // 000 0111 1 0000
+     OP_RSC_S_LSL_REG,  // 000 0111 1 0001
+     OP_RSC_S_LSR_IMM,  // 000 0111 1 0010
+     OP_RSC_S_LSR_REG,  // 000 0111 1 0011
+     OP_RSC_S_ASR_IMM,  // 000 0111 1 0100
+     OP_RSC_S_ASR_REG,  // 000 0111 1 0101
+     OP_RSC_S_ROR_IMM,  // 000 0111 1 0110
+     OP_RSC_S_ROR_REG,  // 000 0111 1 0111
+     
+     OP_RSC_S_LSL_IMM,  // 000 0111 1 1000
+     OP_SMLAL_S,        // 000 0111 1 1001
+     OP_RSC_S_LSR_IMM,  // 000 0111 1 1010
+     OP_UND,            // 000 0111 1 1011
+     OP_RSC_S_ASR_IMM,  // 000 0111 1 1100
+     OP_UND,            // 000 0111 1 1101
+     OP_RSC_S_ROR_IMM,  // 000 0111 1 1110
+     OP_UND,            // 000 0111 1 1111
+//------------------------------------------
+     OP_MRS_CPSR,       // 000 1000 0 0000
+     OP_UND,            // 000 1000 0 0001
+     OP_UND,            // 000 1000 0 0010
+     OP_UND,            // 000 1000 0 0011
+     OP_UND,            // 000 1000 0 0100
+     OP_QADD,           // 000 1000 0 0101
+     OP_UND,            // 000 1000 0 0110
+     OP_UND,            // 000 1000 0 0111         
+     
+     OP_SMLA_B_B,       // 000 1000 0 1000
+     OP_SWP,            // 000 1000 0 1001
+     OP_SMLA_T_B,       // 000 1000 0 1010
+     OP_STRH_M_REG_OFF, // 000 1000 0 1011
+     OP_SMLA_B_T,       // 000 1000 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1000 0 1101
+     OP_SMLA_T_T,       // 000 1000 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1000 0 1111
+
+     OP_TST_LSL_IMM,    // 000 1000 1 0000
+     OP_TST_LSL_REG,    // 000 1000 1 0001
+     OP_TST_LSR_IMM,    // 000 1000 1 0010
+     OP_TST_LSR_REG,    // 000 1000 1 0011
+     OP_TST_ASR_IMM,    // 000 1000 1 0100
+     OP_TST_ASR_REG,    // 000 1000 1 0101
+     OP_TST_ROR_IMM,    // 000 1000 1 0110
+     OP_TST_ROR_REG,    // 000 1000 1 0111
+     
+     OP_TST_LSL_IMM,    // 000 1000 1 1000
+     OP_UND,            // 000 1000 1 1001
+     OP_TST_LSR_IMM,    // OOO 100O 1 1010
+     OP_LDRH_M_REG_OFF, // 000 1000 1 1011
+     OP_TST_ASR_IMM,    // 000 1000 1 1100
+     OP_LDRSB_M_REG_OFF,// 000 1000 1 1101
+     OP_TST_ROR_IMM,    // 000 1000 1 1110
+     OP_LDRSH_M_REG_OFF,// 000 1000 1 1111
+//------------------------------------------
+     OP_MSR_CPSR,       // 000 1001 0 0000
+     OP_BX,             // 000 1001 0 0001
+     OP_UND,            // 000 1001 0 0010
+     OP_BLX_REG,        // 000 1001 0 0011
+     OP_UND,            // 000 1001 0 0100
+     OP_QSUB,           // 000 1001 0 0101
+     OP_UND,            // 000 1001 0 0110
+     OP_BKPT,            // 000 1001 0 0111  
+     
+     OP_SMLAW_B,      // 000 1001 0 1000
+     OP_UND,          // 000 1001 0 1001
+     OP_SMULW_B,          // 000 1001 0 1010
+     OP_STRH_PRE_INDE_M_REG_OFF,  // 000 1001 0 1011
+     OP_SMLAW_T,      // 000 1001 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1001 0 1101
+     OP_SMULW_T,  // 000 1001 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1001 0 1111
+     
+     OP_TEQ_LSL_IMM,    // 000 1001 1 0000
+     OP_TEQ_LSL_REG,    // 000 1001 1 0001
+     OP_TEQ_LSR_IMM,    // 000 1001 1 0010
+     OP_TEQ_LSR_REG,    // 000 1001 1 0011
+     OP_TEQ_ASR_IMM,    // 000 1001 1 0100
+     OP_TEQ_ASR_REG,    // 000 1001 1 0101
+     OP_TEQ_ROR_IMM,    // 000 1001 1 0110
+     OP_TEQ_ROR_REG,    // 000 1001 1 0111
+     
+     OP_TEQ_LSL_IMM,    // 000 1001 1 1000
+     OP_UND,            // 000 1001 1 1001
+     OP_TEQ_LSR_IMM,    // OOO 1001 1 1010
+     OP_LDRH_PRE_INDE_M_REG_OFF,  // 000 1001 1 1011
+     OP_TEQ_ASR_IMM,    // 000 1001 1 1100
+     OP_LDRSB_PRE_INDE_M_REG_OFF, // 000 1001 1 1101
+     OP_TEQ_ROR_IMM,    // 000 1001 1 1110
+     OP_LDRSH_PRE_INDE_M_REG_OFF, // 000 1001 1 1111     
+//------------------------------------------
+     OP_MRS_SPSR,       // 000 1010 0 0000
+     OP_UND,            // 000 1010 0 0001
+     OP_UND,            // 000 1010 0 0010
+     OP_UND,            // 000 1010 0 0011
+     OP_UND,            // 000 1010 0 0100
+     OP_QDADD,          // 000 1010 0 0101
+     OP_UND,            // 000 1010 0 0110
+     OP_UND,            // 000 1010 0 0111
+     
+     OP_SMLAL_B_B,      // 000 1010 0 1000
+     OP_SWPB,           // 000 1010 0 1001
+     OP_SMLAL_T_B,      // 000 1010 0 1010
+     OP_STRH_M_IMM_OFF, // 000 1010 0 1011
+     OP_SMLAL_B_T,      // 000 1010 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1010 0 1101
+     OP_SMLAL_T_T,      // 000 1010 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1010 0 1111
+     
+     OP_CMP_LSL_IMM,    // 000 1010 1 0000
+     OP_CMP_LSL_REG,    // 000 1010 1 0001
+     OP_CMP_LSR_IMM,    // 000 1010 1 0010
+     OP_CMP_LSR_REG,    // 000 1010 1 0011
+     OP_CMP_ASR_IMM,    // 000 1010 1 0100
+     OP_CMP_ASR_REG,    // 000 1010 1 0101
+     OP_CMP_ROR_IMM,    // 000 1010 1 0110
+     OP_CMP_ROR_REG,    // 000 1010 1 0111
+     
+     OP_CMP_LSL_IMM,    // 000 1010 1 1000
+     OP_UND,            // 000 1010 1 1001
+     OP_CMP_LSR_IMM,    // OOO 1O1O 1 1010
+     OP_LDRH_M_IMM_OFF, // 000 1010 1 1011
+     OP_CMP_ASR_IMM,    // 000 1010 1 1100
+     OP_LDRSB_M_IMM_OFF,// 000 1010 1 1101
+     OP_CMP_ROR_IMM,    // 000 1010 1 1110
+     OP_LDRSH_M_IMM_OFF,// 000 1010 1 1111
+//------------------------------------------
+     OP_MSR_SPSR,       // 000 1011 0 0000
+     OP_CLZ,            // 000 1011 0 0001
+     OP_UND,            // 000 1011 0 0010
+     OP_UND,            // 000 1011 0 0011
+     OP_UND,            // 000 1011 0 0100
+     OP_QDSUB,          // 000 1011 0 0101
+     OP_UND,            // 000 1011 0 0110
+     OP_UND,            // 000 1011 0 0111
+     
+     OP_SMUL_B_B,       // 000 1011 0 1000
+     OP_UND,            // 000 1011 0 1001
+     OP_SMUL_T_B,       // 000 1011 0 1010
+     OP_STRH_PRE_INDE_M_IMM_OFF,  // 000 1011 0 1011
+     OP_SMUL_B_T,       // 000 1011 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1011 0 1101
+     OP_SMUL_T_T,       // 000 1011 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1011 0 1111
+
+     OP_CMN_LSL_IMM,    // 000 1011 1 0000
+     OP_CMN_LSL_REG,    // 000 1011 1 0001
+     OP_CMN_LSR_IMM,    // 000 1011 1 0010
+     OP_CMN_LSR_REG,    // 000 1011 1 0011
+     OP_CMN_ASR_IMM,    // 000 1011 1 0100
+     OP_CMN_ASR_REG,    // 000 1011 1 0101
+     OP_CMN_ROR_IMM,    // 000 1011 1 0110
+     OP_CMN_ROR_REG,    // 000 1011 1 0111
+     
+     OP_CMN_LSL_IMM,    // 000 1011 1 1000
+     OP_UND,            // 000 1011 1 1001
+     OP_CMN_LSR_IMM,    // OOO 1O11 1 1010
+     OP_LDRH_PRE_INDE_M_IMM_OFF,  // 000 1011 1 1011
+     OP_CMN_ASR_IMM,    // 000 1011 1 1100
+     OP_LDRSB_PRE_INDE_M_IMM_OFF, // 000 1011 1 1101
+     OP_CMN_ROR_IMM,    // 000 1011 1 1110
+     OP_LDRSH_PRE_INDE_M_IMM_OFF, // 000 1011 1 1111
+//------------------------------------------
+     OP_ORR_LSL_IMM,    // 000 1100 0 0000
+     OP_ORR_LSL_REG,    // 000 1100 0 0001
+     OP_ORR_LSR_IMM,    // 000 1100 0 0010
+     OP_ORR_LSR_REG,    // 000 1100 0 0011
+     OP_ORR_ASR_IMM,    // 000 1100 0 0100
+     OP_ORR_ASR_REG,    // 000 1100 0 0101
+     OP_ORR_ROR_IMM,    // 000 1100 0 0110
+     OP_ORR_ROR_REG,    // 000 1100 0 0111
+     
+     OP_ORR_LSL_IMM,    // 000 1100 0 1000
+     OP_UND,            // 000 1100 0 1001
+     OP_ORR_LSR_IMM,    // OOO 110O O 1010
+     OP_STRH_P_REG_OFF, // 000 1100 0 1011
+     OP_ORR_ASR_IMM,    // 000 1100 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1100 0 1101
+     OP_ORR_ROR_IMM,    // 000 1100 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1100 0 1111
+     
+     OP_ORR_S_LSL_IMM,  // 000 1100 1 0000
+     OP_ORR_S_LSL_REG,  // 000 1100 1 0001
+     OP_ORR_S_LSR_IMM,  // 000 1100 1 0010
+     OP_ORR_S_LSR_REG,  // 000 1100 1 0011
+     OP_ORR_S_ASR_IMM,  // 000 1100 1 0100
+     OP_ORR_S_ASR_REG,  // 000 1100 1 0101
+     OP_ORR_S_ROR_IMM,  // 000 1100 1 0110
+     OP_ORR_S_ROR_REG,  // 000 1100 1 0111
+     
+     OP_ORR_S_LSL_IMM,  // 000 1100 1 1000
+     OP_UND,            // 000 1100 1 1001
+     OP_ORR_S_LSR_IMM,  // 000 1100 1 1010
+     OP_LDRH_P_REG_OFF, // 000 1100 1 1011
+     OP_ORR_S_ASR_IMM,  // 000 1100 1 1100
+     OP_LDRSB_P_REG_OFF,// 000 1100 1 1101
+     OP_ORR_S_ROR_IMM,  // 000 1100 1 1110
+     OP_LDRSH_P_REG_OFF,// 000 1100 1 1111
+//------------------------------------------
+     OP_MOV_LSL_IMM,    // 000 1101 0 0000
+     OP_MOV_LSL_REG,    // 000 1101 0 0001
+     OP_MOV_LSR_IMM,    // 000 1101 0 0010
+     OP_MOV_LSR_REG,    // 000 1101 0 0011
+     OP_MOV_ASR_IMM,    // 000 1101 0 0100
+     OP_MOV_ASR_REG,    // 000 1101 0 0101
+     OP_MOV_ROR_IMM,    // 000 1101 0 0110
+     OP_MOV_ROR_REG,    // 000 1101 0 0111
+     
+     OP_MOV_LSL_IMM,    // 000 1101 0 1000
+     OP_UND,            // 000 1101 0 1001
+     OP_MOV_LSR_IMM,    // OOO 1101 O 1010
+     OP_STRH_PRE_INDE_P_REG_OFF, // 000 1101 0 1011
+     OP_MOV_ASR_IMM,    // 000 1101 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1101 0 1101
+     OP_MOV_ROR_IMM,    // 000 1101 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1101 0 1111
+     
+     OP_MOV_S_LSL_IMM,  // 000 1101 1 0000
+     OP_MOV_S_LSL_REG,  // 000 1101 1 0001
+     OP_MOV_S_LSR_IMM,  // 000 1101 1 0010
+     OP_MOV_S_LSR_REG,  // 000 1101 1 0011
+     OP_MOV_S_ASR_IMM,  // 000 1101 1 0100
+     OP_MOV_S_ASR_REG,  // 000 1101 1 0101
+     OP_MOV_S_ROR_IMM,  // 000 1101 1 0110
+     OP_MOV_S_ROR_REG,  // 000 1101 1 0111
+     
+     OP_MOV_S_LSL_IMM,  // 000 1101 1 1000
+     OP_UND,            // 000 1101 1 1001
+     OP_MOV_S_LSR_IMM,  // 000 1101 1 1010
+     OP_LDRH_PRE_INDE_P_REG_OFF, // 000 1101 1 1011
+     OP_MOV_S_ASR_IMM,  // 000 1101 1 1100
+     OP_LDRSB_PRE_INDE_P_REG_OFF,// 000 1101 1 1101
+     OP_MOV_S_ROR_IMM,  // 000 1101 1 1110
+     OP_LDRSH_PRE_INDE_P_REG_OFF,// 000 1101 1 1111
+//------------------------------------------
+     OP_BIC_LSL_IMM,    // 000 1110 0 0000
+     OP_BIC_LSL_REG,    // 000 1110 0 0001
+     OP_BIC_LSR_IMM,    // 000 1110 0 0010
+     OP_BIC_LSR_REG,    // 000 1110 0 0011
+     OP_BIC_ASR_IMM,    // 000 1110 0 0100
+     OP_BIC_ASR_REG,    // 000 1110 0 0101
+     OP_BIC_ROR_IMM,    // 000 1110 0 0110
+     OP_BIC_ROR_REG,    // 000 1110 0 0111
+     
+     OP_BIC_LSL_IMM,    // 000 1110 0 1000
+     OP_UND,            // 000 1110 0 1001
+     OP_BIC_LSR_IMM,    // OOO 111O O 1010
+     OP_STRH_P_IMM_OFF, // 000 1110 0 1011
+     OP_BIC_ASR_IMM,    // 000 1110 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1110 0 1101
+     OP_BIC_ROR_IMM,    // 000 1110 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1110 0 1111
+     
+     OP_BIC_S_LSL_IMM,  // 000 1110 1 0000
+     OP_BIC_S_LSL_REG,  // 000 1110 1 0001
+     OP_BIC_S_LSR_IMM,  // 000 1110 1 0010
+     OP_BIC_S_LSR_REG,  // 000 1110 1 0011
+     OP_BIC_S_ASR_IMM,  // 000 1110 1 0100
+     OP_BIC_S_ASR_REG,  // 000 1110 1 0101
+     OP_BIC_S_ROR_IMM,  // 000 1110 1 0110
+     OP_BIC_S_ROR_REG,  // 000 1110 1 0111
+     
+     OP_BIC_S_LSL_IMM,  // 000 1110 1 1000
+     OP_UND,            // 000 1110 1 1001
+     OP_BIC_S_LSR_IMM,  // 000 1110 1 1010
+     OP_LDRH_P_IMM_OFF, // 000 1110 1 1011
+     OP_BIC_S_ASR_IMM,  // 000 1110 1 1100
+     OP_LDRSB_P_IMM_OFF,// 000 1110 1 1101
+     OP_BIC_S_ROR_IMM,  // 000 1110 1 1110
+     OP_LDRSH_P_IMM_OFF,// 000 1110 1 1111
+//-------------------------------------------
+     OP_MVN_LSL_IMM,    // 000 1111 0 0000
+     OP_MVN_LSL_REG,    // 000 1111 0 0001
+     OP_MVN_LSR_IMM,    // 000 1111 0 0010
+     OP_MVN_LSR_REG,    // 000 1111 0 0011
+     OP_MVN_ASR_IMM,    // 000 1111 0 0100
+     OP_MVN_ASR_REG,    // 000 1111 0 0101
+     OP_MVN_ROR_IMM,    // 000 1111 0 0110
+     OP_MVN_ROR_REG,    // 000 1111 0 0111
+     
+     OP_MVN_LSL_IMM,    // 000 1111 0 1000
+     OP_UND,            // 000 1111 0 1001
+     OP_MVN_LSR_IMM,    // OOO 1111 O 1010
+     OP_STRH_PRE_INDE_P_IMM_OFF, // 000 1111 0 1011
+     OP_MVN_ASR_IMM,    // 000 1111 0 1100
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1111 0 1101
+     OP_MVN_ROR_IMM,    // 000 1111 0 1110
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1111 0 1111
+     
+     OP_MVN_S_LSL_IMM,  // 000 1111 1 0000
+     OP_MVN_S_LSL_REG,  // 000 1111 1 0001
+     OP_MVN_S_LSR_IMM,  // 000 1111 1 0010
+     OP_MVN_S_LSR_REG,  // 000 1111 1 0011
+     OP_MVN_S_ASR_IMM,  // 000 1111 1 0100
+     OP_MVN_S_ASR_REG,  // 000 1111 1 0101
+     OP_MVN_S_ROR_IMM,  // 000 1111 1 0110
+     OP_MVN_S_ROR_REG,  // 000 1111 1 0111
+     
+     OP_MVN_S_LSL_IMM,  // 000 1111 1 1000
+     OP_UND,            // 000 1111 1 1001
+     OP_MVN_S_LSR_IMM,  // 000 1111 1 1010
+     OP_LDRH_PRE_INDE_P_IMM_OFF, // 000 1111 1 1011
+     OP_MVN_S_ASR_IMM,  // 000 1111 1 1100
+     OP_LDRSB_PRE_INDE_P_IMM_OFF,// 000 1111 1 1101
+     OP_MVN_S_ROR_IMM,  // 000 1111 1 1110
+     OP_LDRSH_PRE_INDE_P_IMM_OFF,// 000 1111 1 1111
+//-------------------------------------------
+     OP_AND_IMM_VAL,    // 001 0000 0 0000
+     OP_AND_IMM_VAL,    // 001 0000 0 0001
+     OP_AND_IMM_VAL,    // 001 0000 0 0010
+     OP_AND_IMM_VAL,    // 001 0000 0 0011
+     OP_AND_IMM_VAL,    // 001 0000 0 0100
+     OP_AND_IMM_VAL,    // 001 0000 0 0101
+     OP_AND_IMM_VAL,    // 001 0000 0 0110
+     OP_AND_IMM_VAL,    // 001 0000 0 0111
+     OP_AND_IMM_VAL,    // 001 0000 0 1000
+     OP_AND_IMM_VAL,    // 001 0000 0 1001
+     OP_AND_IMM_VAL,    // 001 0000 0 1010
+     OP_AND_IMM_VAL,    // 001 0000 0 1011
+     OP_AND_IMM_VAL,    // 001 0000 0 1100
+     OP_AND_IMM_VAL,    // 001 0000 0 1101
+     OP_AND_IMM_VAL,    // 001 0000 0 1110
+     OP_AND_IMM_VAL,    // 001 0000 0 1111
+     
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0000
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0001
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0010
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0011
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0100
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0101
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0110
+     OP_AND_S_IMM_VAL,  // 001 0000 1 0111
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1000
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1001
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1010
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1011
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1100
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1101
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1110
+     OP_AND_S_IMM_VAL,  // 001 0000 1 1111
+//------------------------------------------
+     OP_EOR_IMM_VAL,    // 001 0001 0 0000
+     OP_EOR_IMM_VAL,    // 001 0001 0 0001
+     OP_EOR_IMM_VAL,    // 001 0001 0 0010
+     OP_EOR_IMM_VAL,    // 001 0001 0 0011
+     OP_EOR_IMM_VAL,    // 001 0001 0 0100
+     OP_EOR_IMM_VAL,    // 001 0001 0 0101
+     OP_EOR_IMM_VAL,    // 001 0001 0 0110
+     OP_EOR_IMM_VAL,    // 001 0001 0 0111
+     OP_EOR_IMM_VAL,    // 001 0001 0 1000
+     OP_EOR_IMM_VAL,    // 001 0001 0 1001
+     OP_EOR_IMM_VAL,    // 001 0001 0 1010
+     OP_EOR_IMM_VAL,    // 001 0001 0 1011
+     OP_EOR_IMM_VAL,    // 001 0001 0 1100
+     OP_EOR_IMM_VAL,    // 001 0001 0 1101
+     OP_EOR_IMM_VAL,    // 001 0001 0 1110
+     OP_EOR_IMM_VAL,    // 001 0001 0 1111
+     
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0000
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0001
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0010
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0011
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0100
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0101
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0110
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 0111
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1000
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1001
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1010
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1011
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1100
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1101
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1110
+     OP_EOR_S_IMM_VAL,  // 001 0001 1 1111
+//------------------------------------------
+     OP_SUB_IMM_VAL,    // 001 0010 0 0000
+     OP_SUB_IMM_VAL,    // 001 0010 0 0001
+     OP_SUB_IMM_VAL,    // 001 0010 0 0010
+     OP_SUB_IMM_VAL,    // 001 0010 0 0011
+     OP_SUB_IMM_VAL,    // 001 0010 0 0100
+     OP_SUB_IMM_VAL,    // 001 0010 0 0101
+     OP_SUB_IMM_VAL,    // 001 0010 0 0110
+     OP_SUB_IMM_VAL,    // 001 0010 0 0111
+     OP_SUB_IMM_VAL,    // 001 0010 0 1000
+     OP_SUB_IMM_VAL,    // 001 0010 0 1001
+     OP_SUB_IMM_VAL,    // 001 0010 0 1010
+     OP_SUB_IMM_VAL,    // 001 0010 0 1011
+     OP_SUB_IMM_VAL,    // 001 0010 0 1100
+     OP_SUB_IMM_VAL,    // 001 0010 0 1101
+     OP_SUB_IMM_VAL,    // 001 0010 0 1110
+     OP_SUB_IMM_VAL,    // 001 0010 0 1111
+     
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0000
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0001
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0010
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0011
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0100
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0101
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0110
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 0111
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1000
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1001
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1010
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1011
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1100
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1101
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1110
+     OP_SUB_S_IMM_VAL,  // 001 0010 1 1111
+//------------------------------------------
+     OP_RSB_IMM_VAL,    // 001 0011 0 0000
+     OP_RSB_IMM_VAL,    // 001 0011 0 0001
+     OP_RSB_IMM_VAL,    // 001 0011 0 0010
+     OP_RSB_IMM_VAL,    // 001 0011 0 0011
+     OP_RSB_IMM_VAL,    // 001 0011 0 0100
+     OP_RSB_IMM_VAL,    // 001 0011 0 0101
+     OP_RSB_IMM_VAL,    // 001 0011 0 0110
+     OP_RSB_IMM_VAL,    // 001 0011 0 0111
+     OP_RSB_IMM_VAL,    // 001 0011 0 1000
+     OP_RSB_IMM_VAL,    // 001 0011 0 1001
+     OP_RSB_IMM_VAL,    // 001 0011 0 1010
+     OP_RSB_IMM_VAL,    // 001 0011 0 1011
+     OP_RSB_IMM_VAL,    // 001 0011 0 1100
+     OP_RSB_IMM_VAL,    // 001 0011 0 1101
+     OP_RSB_IMM_VAL,    // 001 0011 0 1110
+     OP_RSB_IMM_VAL,    // 001 0011 0 1111
+     
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0000
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0001
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0010
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0011
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0100
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0101
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0110
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 0111
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1000
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1001
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1010
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1011
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1100
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1101
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1110
+     OP_RSB_S_IMM_VAL,  // 001 0011 1 1111
+//------------------------------------------
+     OP_ADD_IMM_VAL,    // 001 0100 0 0000
+     OP_ADD_IMM_VAL,    // 001 0100 0 0001
+     OP_ADD_IMM_VAL,    // 001 0100 0 0010
+     OP_ADD_IMM_VAL,    // 001 0100 0 0011
+     OP_ADD_IMM_VAL,    // 001 0100 0 0100
+     OP_ADD_IMM_VAL,    // 001 0100 0 0101
+     OP_ADD_IMM_VAL,    // 001 0100 0 0110
+     OP_ADD_IMM_VAL,    // 001 0100 0 0111
+     OP_ADD_IMM_VAL,    // 001 0100 0 1000
+     OP_ADD_IMM_VAL,    // 001 0100 0 1001
+     OP_ADD_IMM_VAL,    // 001 0100 0 1010
+     OP_ADD_IMM_VAL,    // 001 0100 0 1011
+     OP_ADD_IMM_VAL,    // 001 0100 0 1100
+     OP_ADD_IMM_VAL,    // 001 0100 0 1101
+     OP_ADD_IMM_VAL,    // 001 0100 0 1110
+     OP_ADD_IMM_VAL,    // 001 0100 0 1111
+     
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0000
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0001
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0010
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0011
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0100
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0101
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0110
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 0111
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1000
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1001
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1010
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1011
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1100
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1101
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1110
+     OP_ADD_S_IMM_VAL,  // 001 0100 1 1111
+//------------------------------------------
+     OP_ADC_IMM_VAL,    // 001 0101 0 0000
+     OP_ADC_IMM_VAL,    // 001 0101 0 0001
+     OP_ADC_IMM_VAL,    // 001 0101 0 0010
+     OP_ADC_IMM_VAL,    // 001 0101 0 0011
+     OP_ADC_IMM_VAL,    // 001 0101 0 0100
+     OP_ADC_IMM_VAL,    // 001 0101 0 0101
+     OP_ADC_IMM_VAL,    // 001 0101 0 0110
+     OP_ADC_IMM_VAL,    // 001 0101 0 0111
+     OP_ADC_IMM_VAL,    // 001 0101 0 1000
+     OP_ADC_IMM_VAL,    // 001 0101 0 1001
+     OP_ADC_IMM_VAL,    // 001 0101 0 1010
+     OP_ADC_IMM_VAL,    // 001 0101 0 1011
+     OP_ADC_IMM_VAL,    // 001 0101 0 1100
+     OP_ADC_IMM_VAL,    // 001 0101 0 1101
+     OP_ADC_IMM_VAL,    // 001 0101 0 1110
+     OP_ADC_IMM_VAL,    // 001 0101 0 1111
+     
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0000
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0001
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0010
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0011
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0100
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0101
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0110
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 0111
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1000
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1001
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1010
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1011
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1100
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1101
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1110
+     OP_ADC_S_IMM_VAL,  // 001 0101 1 1111
+//------------------------------------------
+     OP_SBC_IMM_VAL,    // 001 0110 0 0000
+     OP_SBC_IMM_VAL,    // 001 0110 0 0001
+     OP_SBC_IMM_VAL,    // 001 0110 0 0010
+     OP_SBC_IMM_VAL,    // 001 0110 0 0011
+     OP_SBC_IMM_VAL,    // 001 0110 0 0100
+     OP_SBC_IMM_VAL,    // 001 0110 0 0101
+     OP_SBC_IMM_VAL,    // 001 0110 0 0110
+     OP_SBC_IMM_VAL,    // 001 0110 0 0111
+     OP_SBC_IMM_VAL,    // 001 0110 0 1000
+     OP_SBC_IMM_VAL,    // 001 0110 0 1001
+     OP_SBC_IMM_VAL,    // 001 0110 0 1010
+     OP_SBC_IMM_VAL,    // 001 0110 0 1011
+     OP_SBC_IMM_VAL,    // 001 0110 0 1100
+     OP_SBC_IMM_VAL,    // 001 0110 0 1101
+     OP_SBC_IMM_VAL,    // 001 0110 0 1110
+     OP_SBC_IMM_VAL,    // 001 0110 0 1111
+     
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0000
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0001
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0010
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0011
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0100
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0101
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0110
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 0111
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1000
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1001
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1010
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1011
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1100
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1101
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1110
+     OP_SBC_S_IMM_VAL,  // 001 0110 1 1111
+//------------------------------------------
+     OP_RSC_IMM_VAL,    // 001 0111 0 0000
+     OP_RSC_IMM_VAL,    // 001 0111 0 0001
+     OP_RSC_IMM_VAL,    // 001 0111 0 0010
+     OP_RSC_IMM_VAL,    // 001 0111 0 0011
+     OP_RSC_IMM_VAL,    // 001 0111 0 0100
+     OP_RSC_IMM_VAL,    // 001 0111 0 0101
+     OP_RSC_IMM_VAL,    // 001 0111 0 0110
+     OP_RSC_IMM_VAL,    // 001 0111 0 0111
+     OP_RSC_IMM_VAL,    // 001 0111 0 1000
+     OP_RSC_IMM_VAL,    // 001 0111 0 1001
+     OP_RSC_IMM_VAL,    // 001 0111 0 1010
+     OP_RSC_IMM_VAL,    // 001 0111 0 1011
+     OP_RSC_IMM_VAL,    // 001 0111 0 1100
+     OP_RSC_IMM_VAL,    // 001 0111 0 1101
+     OP_RSC_IMM_VAL,    // 001 0111 0 1110
+     OP_RSC_IMM_VAL,    // 001 0111 0 1111
+     
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0000
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0001
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0010
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0011
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0100
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0101
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0110
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 0111
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1000
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1001
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1010
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1011
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1100
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1101
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1110
+     OP_RSC_S_IMM_VAL,  // 001 0111 1 1111
+//------------------------------------------
+     OP_UND,    // 001 1000 0 0000
+     OP_UND,    // 001 1000 0 0001
+     OP_UND,    // 001 1000 0 0010
+     OP_UND,    // 001 1000 0 0011
+     OP_UND,    // 001 1000 0 0100
+     OP_UND,    // 001 1000 0 0101
+     OP_UND,    // 001 1000 0 0110
+     OP_UND,    // 001 1000 0 0111
+     OP_UND,    // 001 1000 0 1000
+     OP_UND,    // 001 1000 0 1001
+     OP_UND,    // 001 1000 0 1010
+     OP_UND,    // 001 1000 0 1011
+     OP_UND,    // 001 1000 0 1100
+     OP_UND,    // 001 1000 0 1101
+     OP_UND,    // 001 1000 0 1110
+     OP_UND,    // 001 1000 0 1111
+     
+     OP_TST_IMM_VAL,  // 001 1000 1 0000
+     OP_TST_IMM_VAL,  // 001 1000 1 0001
+     OP_TST_IMM_VAL,  // 001 1000 1 0010
+     OP_TST_IMM_VAL,  // 001 1000 1 0011
+     OP_TST_IMM_VAL,  // 001 1000 1 0100
+     OP_TST_IMM_VAL,  // 001 1000 1 0101
+     OP_TST_IMM_VAL,  // 001 1000 1 0110
+     OP_TST_IMM_VAL,  // 001 1000 1 0111
+     OP_TST_IMM_VAL,  // 001 1000 1 1000
+     OP_TST_IMM_VAL,  // 001 1000 1 1001
+     OP_TST_IMM_VAL,  // 001 1000 1 1010
+     OP_TST_IMM_VAL,  // 001 1000 1 1011
+     OP_TST_IMM_VAL,  // 001 1000 1 1100
+     OP_TST_IMM_VAL,  // 001 1000 1 1101
+     OP_TST_IMM_VAL,  // 001 1000 1 1110
+     OP_TST_IMM_VAL,  // 001 1000 1 1111
+//------------------------------------------
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0000
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0001
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0010
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0011
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0100
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0101
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0110
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 0111
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1000
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1001
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1010
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1011
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1100
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1101
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1110
+     OP_MSR_CPSR_IMM_VAL,    // 001 1001 0 1111
+     
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0000
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0001
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0010
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0011
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0100
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0101
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0110
+     OP_TEQ_IMM_VAL,  // 001 1001 1 0111
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1000
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1001
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1010
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1011
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1100
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1101
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1110
+     OP_TEQ_IMM_VAL,  // 001 1001 1 1111
+//------------------------------------------
+     OP_UND,    // 001 1010 0 0000
+     OP_UND,    // 001 1010 0 0001
+     OP_UND,    // 001 1010 0 0010
+     OP_UND,    // 001 1010 0 0011
+     OP_UND,    // 001 1010 0 0100
+     OP_UND,    // 001 1010 0 0101
+     OP_UND,    // 001 1010 0 0110
+     OP_UND,    // 001 1010 0 0111
+     OP_UND,    // 001 1010 0 1000
+     OP_UND,    // 001 1010 0 1001
+     OP_UND,    // 001 1010 0 1010
+     OP_UND,    // 001 1010 0 1011
+     OP_UND,    // 001 1010 0 1100
+     OP_UND,    // 001 1010 0 1101
+     OP_UND,    // 001 1010 0 1110
+     OP_UND,    // 001 1010 0 1111
+     
+     OP_CMP_IMM_VAL,  // 001 1010 1 0000
+     OP_CMP_IMM_VAL,  // 001 1010 1 0001
+     OP_CMP_IMM_VAL,  // 001 1010 1 0010
+     OP_CMP_IMM_VAL,  // 001 1010 1 0011
+     OP_CMP_IMM_VAL,  // 001 1010 1 0100
+     OP_CMP_IMM_VAL,  // 001 1010 1 0101
+     OP_CMP_IMM_VAL,  // 001 1010 1 0110
+     OP_CMP_IMM_VAL,  // 001 1010 1 0111
+     OP_CMP_IMM_VAL,  // 001 1010 1 1000
+     OP_CMP_IMM_VAL,  // 001 1010 1 1001
+     OP_CMP_IMM_VAL,  // 001 1010 1 1010
+     OP_CMP_IMM_VAL,  // 001 1010 1 1011
+     OP_CMP_IMM_VAL,  // 001 1010 1 1100
+     OP_CMP_IMM_VAL,  // 001 1010 1 1101
+     OP_CMP_IMM_VAL,  // 001 1010 1 1110
+     OP_CMP_IMM_VAL,  // 001 1010 1 1111
+//------------------------------------------
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0000
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0001
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0010
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0011
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0100
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0101
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0110
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 0111
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1000
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1001
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1010
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1011
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1100
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1101
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1110
+     OP_MSR_SPSR_IMM_VAL,    // 001 1011 0 1111
+     
+     OP_CMN_IMM_VAL,  // 001 1011 1 0000
+     OP_CMN_IMM_VAL,  // 001 1011 1 0001
+     OP_CMN_IMM_VAL,  // 001 1011 1 0010
+     OP_CMN_IMM_VAL,  // 001 1011 1 0011
+     OP_CMN_IMM_VAL,  // 001 1011 1 0100
+     OP_CMN_IMM_VAL,  // 001 1011 1 0101
+     OP_CMN_IMM_VAL,  // 001 1011 1 0110
+     OP_CMN_IMM_VAL,  // 001 1011 1 0111
+     OP_CMN_IMM_VAL,  // 001 1011 1 1000
+     OP_CMN_IMM_VAL,  // 001 1011 1 1001
+     OP_CMN_IMM_VAL,  // 001 1011 1 1010
+     OP_CMN_IMM_VAL,  // 001 1011 1 1011
+     OP_CMN_IMM_VAL,  // 001 1011 1 1100
+     OP_CMN_IMM_VAL,  // 001 1011 1 1101
+     OP_CMN_IMM_VAL,  // 001 1011 1 1110
+     OP_CMN_IMM_VAL,  // 001 1011 1 1111
+//------------------------------------------
+     OP_ORR_IMM_VAL,    // 001 1100 0 0000
+     OP_ORR_IMM_VAL,    // 001 1100 0 0001
+     OP_ORR_IMM_VAL,    // 001 1100 0 0010
+     OP_ORR_IMM_VAL,    // 001 1100 0 0011
+     OP_ORR_IMM_VAL,    // 001 1100 0 0100
+     OP_ORR_IMM_VAL,    // 001 1100 0 0101
+     OP_ORR_IMM_VAL,    // 001 1100 0 0110
+     OP_ORR_IMM_VAL,    // 001 1100 0 0111
+     OP_ORR_IMM_VAL,    // 001 1100 0 1000
+     OP_ORR_IMM_VAL,    // 001 1100 0 1001
+     OP_ORR_IMM_VAL,    // 001 1100 0 1010
+     OP_ORR_IMM_VAL,    // 001 1100 0 1011
+     OP_ORR_IMM_VAL,    // 001 1100 0 1100
+     OP_ORR_IMM_VAL,    // 001 1100 0 1101
+     OP_ORR_IMM_VAL,    // 001 1100 0 1110
+     OP_ORR_IMM_VAL,    // 001 1100 0 1111
+     
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0000
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0001
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0010
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0011
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0100
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0101
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0110
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 0111
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1000
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1001
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1010
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1011
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1100
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1101
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1110
+     OP_ORR_S_IMM_VAL,  // 001 1100 1 1111
+//------------------------------------------
+     OP_MOV_IMM_VAL,    // 001 1101 0 0000
+     OP_MOV_IMM_VAL,    // 001 1101 0 0001
+     OP_MOV_IMM_VAL,    // 001 1101 0 0010
+     OP_MOV_IMM_VAL,    // 001 1101 0 0011
+     OP_MOV_IMM_VAL,    // 001 1101 0 0100
+     OP_MOV_IMM_VAL,    // 001 1101 0 0101
+     OP_MOV_IMM_VAL,    // 001 1101 0 0110
+     OP_MOV_IMM_VAL,    // 001 1101 0 0111
+     OP_MOV_IMM_VAL,    // 001 1101 0 1000
+     OP_MOV_IMM_VAL,    // 001 1101 0 1001
+     OP_MOV_IMM_VAL,    // 001 1101 0 1010
+     OP_MOV_IMM_VAL,    // 001 1101 0 1011
+     OP_MOV_IMM_VAL,    // 001 1101 0 1100
+     OP_MOV_IMM_VAL,    // 001 1101 0 1101
+     OP_MOV_IMM_VAL,    // 001 1101 0 1110
+     OP_MOV_IMM_VAL,    // 001 1101 0 1111
+     
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0000
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0001
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0010
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0011
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0100
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0101
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0110
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 0111
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1000
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1001
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1010
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1011
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1100
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1101
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1110
+     OP_MOV_S_IMM_VAL,  // 001 1101 1 1111
+//------------------------------------------
+     OP_BIC_IMM_VAL,    // 001 1110 0 0000
+     OP_BIC_IMM_VAL,    // 001 1110 0 0001
+     OP_BIC_IMM_VAL,    // 001 1110 0 0010
+     OP_BIC_IMM_VAL,    // 001 1110 0 0011
+     OP_BIC_IMM_VAL,    // 001 1110 0 0100
+     OP_BIC_IMM_VAL,    // 001 1110 0 0101
+     OP_BIC_IMM_VAL,    // 001 1110 0 0110
+     OP_BIC_IMM_VAL,    // 001 1110 0 0111
+     OP_BIC_IMM_VAL,    // 001 1110 0 1000
+     OP_BIC_IMM_VAL,    // 001 1110 0 1001
+     OP_BIC_IMM_VAL,    // 001 1110 0 1010
+     OP_BIC_IMM_VAL,    // 001 1110 0 1011
+     OP_BIC_IMM_VAL,    // 001 1110 0 1100
+     OP_BIC_IMM_VAL,    // 001 1110 0 1101
+     OP_BIC_IMM_VAL,    // 001 1110 0 1110
+     OP_BIC_IMM_VAL,    // 001 1110 0 1111
+     
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0000
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0001
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0010
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0011
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0100
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0101
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0110
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 0111
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1000
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1001
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1010
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1011
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1100
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1101
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1110
+     OP_BIC_S_IMM_VAL,  // 001 1110 1 1111
+//------------------------------------------
+     OP_MVN_IMM_VAL,    // 001 1111 0 0000
+     OP_MVN_IMM_VAL,    // 001 1111 0 0001
+     OP_MVN_IMM_VAL,    // 001 1111 0 0010
+     OP_MVN_IMM_VAL,    // 001 1111 0 0011
+     OP_MVN_IMM_VAL,    // 001 1111 0 0100
+     OP_MVN_IMM_VAL,    // 001 1111 0 0101
+     OP_MVN_IMM_VAL,    // 001 1111 0 0110
+     OP_MVN_IMM_VAL,    // 001 1111 0 0111
+     OP_MVN_IMM_VAL,    // 001 1111 0 1000
+     OP_MVN_IMM_VAL,    // 001 1111 0 1001
+     OP_MVN_IMM_VAL,    // 001 1111 0 1010
+     OP_MVN_IMM_VAL,    // 001 1111 0 1011
+     OP_MVN_IMM_VAL,    // 001 1111 0 1100
+     OP_MVN_IMM_VAL,    // 001 1111 0 1101
+     OP_MVN_IMM_VAL,    // 001 1111 0 1110
+     OP_MVN_IMM_VAL,    // 001 1111 0 1111
+     
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0000
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0001
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0010
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0011
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0100
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0101
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0110
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 0111
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1000
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1001
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1010
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1011
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1100
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1101
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1110
+     OP_MVN_S_IMM_VAL,  // 001 1111 1 1111
+//------------------------------------------
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0000
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0001
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0010
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0011
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0100
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0101
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0110
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 0111
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1000
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1001
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1010
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1011
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1100
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1101
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1110
+     OP_STR_M_IMM_OFF_POSTIND,  //010 0000 0 1111
+     
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0000
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0001
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0010
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0011
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0100
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0101
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0110
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 0111
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1000
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1001
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1010
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1011
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1100
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1101
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1110
+     OP_LDR_M_IMM_OFF_POSTIND,  //010 0000 1 1111
+//------------------------------------------
+     OP_UND,  //010 0001 0 0000
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+//------------------------------------------
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0000
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0001
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0010
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0011
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0100
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0101
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0110
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 0111
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1000
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1001
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1010
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1011
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1100
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1101
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1110
+     OP_STRB_M_IMM_OFF_POSTIND,  //010 0010 0 1111
+     
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0000
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0001
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0010
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0011
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0100
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0101
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0110
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 0111
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1000
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1001
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1010
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1011
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1100
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1101
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1110
+     OP_LDRB_M_IMM_OFF_POSTIND,  //010 0010 1 1111
+//------------------------------------------
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_STRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+     OP_LDRBT_M_IMM_OFF_POSTIND,  //010 0011 0 0000
+//------------------------------------------
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+//------------------------------------------
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STR_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+     OP_LDR_P_IMM_OFF_POSTIND2,  //010 0100 0 0000
+//------------------------------------------
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0110 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRB_P_IMM_OFF_POSTIND,  //010 0110 1 1111
+//------------------------------------------
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0111 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_STRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0100 0 0000
+     OP_LDRBT_P_IMM_OFF_POSTIND,  //010 0111 1 1111
+//------------------------------------------
+     OP_STR_M_IMM_OFF,  //010 1000 0 0000
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     OP_STR_M_IMM_OFF,
+     
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,
+     OP_LDR_M_IMM_OFF,  //010 1000 1 1111
+//------------------------------------------
+     OP_STR_M_IMM_OFF_PREIND,  //010 1001 0 0000
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     OP_STR_M_IMM_OFF_PREIND,
+     
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,
+     OP_LDR_M_IMM_OFF_PREIND,  //010 1001 1 1111
+//------------------------------------------
+     OP_STRB_M_IMM_OFF,  //010 1010 0 0000
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     OP_STRB_M_IMM_OFF,
+     
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,
+     OP_LDRB_M_IMM_OFF,  //010 1010 1 1111
+//------------------------------------------
+     OP_STRB_M_IMM_OFF_PREIND,  //010 1011 0 0000
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     OP_STRB_M_IMM_OFF_PREIND,
+     
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,
+     OP_LDRB_M_IMM_OFF_PREIND,  //010 1011 1 1111
+//------------------------------------------
+     OP_STR_P_IMM_OFF,  //010 1100 0 0000
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     OP_STR_P_IMM_OFF,
+     
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,
+     OP_LDR_P_IMM_OFF,  //010 1100 1 1111
+//------------------------------------------
+     OP_STR_P_IMM_OFF_PREIND,  //010 1101 0 0000
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     OP_STR_P_IMM_OFF_PREIND,
+     
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,
+     OP_LDR_P_IMM_OFF_PREIND,  //010 1101 1 1111
+//------------------------------------------
+     OP_STRB_P_IMM_OFF,  //010 1110 0 0000
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     OP_STRB_P_IMM_OFF,
+     
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,
+     OP_LDRB_P_IMM_OFF,  //010 1110 1 1111
+//------------------------------------------
+     OP_STRB_P_IMM_OFF_PREIND,  //010 1111 0 0000
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     OP_STRB_P_IMM_OFF_PREIND,
+     
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,
+     OP_LDRB_P_IMM_OFF_PREIND,  //010 1111 1 1111
+//------------------------------------------
+     OP_STR_M_LSL_IMM_OFF_POSTIND,  //011 0000 0 0000
+     OP_UND,
+     OP_STR_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_M_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     
+     OP_LDR_M_LSL_IMM_OFF_POSTIND,  
+     OP_UND,
+     OP_LDR_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_M_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,                        //011 0000 1 1111
+//------------------------------------------
+     OP_UND, //011 0001 0 0000
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND, //011 0001 1 1111
+//------------------------------------------
+     OP_STRB_M_LSL_IMM_OFF_POSTIND,  //011 0010 0 0000
+     OP_UND,
+     OP_STRB_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_M_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     
+     OP_LDRB_M_LSL_IMM_OFF_POSTIND,  
+     OP_UND,
+     OP_LDRB_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_M_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,                         //011 0010 1 1111
+//------------------------------------------
+     OP_STRBT_M_LSL_IMM_OFF_POSTIND,  //011 0011 0 0000
+     OP_UND,
+     OP_STRBT_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_M_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     
+     OP_LDRBT_M_LSL_IMM_OFF_POSTIND, 
+     OP_UND,
+     OP_LDRBT_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_M_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_M_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_M_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_M_ROR_IMM_OFF_POSTIND,
+     OP_UND,                            //011 0011 1 1111
+//------------------------------------------
+     OP_STR_P_LSL_IMM_OFF_POSTIND,  //011 0100 0 0000
+     OP_UND,
+     OP_STR_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_P_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STR_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     
+     OP_LDR_P_LSL_IMM_OFF_POSTIND,  
+     OP_UND,
+     OP_LDR_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_P_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDR_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,     //011 0100 1 1111
+//------------------------------------------
+     OP_UND,  //011 0101 0 0000
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,
+     OP_UND,   //011 0101 1 1111
+//------------------------------------------
+     OP_STRB_P_LSL_IMM_OFF_POSTIND,  //011 0110 0 0000
+     OP_UND,
+     OP_STRB_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_P_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRB_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     
+     OP_LDRB_P_LSL_IMM_OFF_POSTIND,  
+     OP_UND,
+     OP_LDRB_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_P_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRB_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,     
+//------------------------------------------
+     OP_STRBT_P_LSL_IMM_OFF_POSTIND,  //011 0111 0 0000
+     OP_UND,
+     OP_STRBT_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_P_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_STRBT_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     
+     OP_LDRBT_P_LSL_IMM_OFF_POSTIND, 
+     OP_UND,
+     OP_LDRBT_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_P_LSL_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_P_LSR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_P_ASR_IMM_OFF_POSTIND,
+     OP_UND,
+     OP_LDRBT_P_ROR_IMM_OFF_POSTIND,
+     OP_UND,     
+//------------------------------------------
+     OP_STR_M_LSL_IMM_OFF,  //011 1000 0 0000
+     OP_UND,
+     OP_STR_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_STR_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_STR_M_ROR_IMM_OFF,
+     OP_UND,
+     OP_STR_M_LSL_IMM_OFF,
+     OP_UND,
+     OP_STR_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_STR_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_STR_M_ROR_IMM_OFF,
+     OP_UND,
+     
+     OP_LDR_M_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_ROR_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDR_M_ROR_IMM_OFF,
+     OP_UND,
+//------------------------------------------
+     OP_STR_M_LSL_IMM_OFF_PREIND,  //011 1001 0 0000
+     OP_UND,
+     OP_STR_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_M_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     
+     OP_LDR_M_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+//------------------------------------------
+     OP_STRB_M_LSL_IMM_OFF,  //011 1010 0 0000
+     OP_UND,
+     OP_STRB_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_STRB_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_STRB_M_ROR_IMM_OFF,
+     OP_UND,
+     OP_STRB_M_LSL_IMM_OFF,
+     OP_UND,
+     OP_STRB_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_STRB_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_STRB_M_ROR_IMM_OFF,
+     OP_UND,
+     
+     OP_LDRB_M_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_ROR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_M_ROR_IMM_OFF,
+     OP_UND,
+//------------------------------------------
+     OP_STRB_M_LSL_IMM_OFF_PREIND, //011 1011 0 0000
+     OP_UND,
+     OP_STRB_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_M_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     
+     OP_LDRB_M_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_M_ROR_IMM_OFF_PREIND,
+     OP_UND,
+//------------------------------------------
+     OP_STR_P_LSL_IMM_OFF, //011 1100 0 0000
+     OP_UND,
+     OP_STR_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_STR_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_STR_P_ROR_IMM_OFF,
+     OP_UND,
+     OP_STR_P_LSL_IMM_OFF,
+     OP_UND,
+     OP_STR_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_STR_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_STR_P_ROR_IMM_OFF,
+     OP_UND,
+     
+     OP_LDR_P_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_ROR_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDR_P_ROR_IMM_OFF,
+     OP_UND,
+//------------------------------------------
+     OP_STR_P_LSL_IMM_OFF_PREIND, //011 1101 0 0000
+     OP_UND,
+     OP_STR_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_P_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STR_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     
+     OP_LDR_P_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDR_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+//------------------------------------------
+     OP_STRB_P_LSL_IMM_OFF, //011 1110 0 0000
+     OP_UND,
+     OP_STRB_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_STRB_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_STRB_P_ROR_IMM_OFF,
+     OP_UND,
+     OP_STRB_P_LSL_IMM_OFF,
+     OP_UND,
+     OP_STRB_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_STRB_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_STRB_P_ROR_IMM_OFF,
+     OP_UND,
+     
+     OP_LDRB_P_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_ROR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_LSL_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_LSR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_ASR_IMM_OFF,
+     OP_UND,
+     OP_LDRB_P_ROR_IMM_OFF,
+     OP_UND,
+//------------------------------------------
+     OP_STRB_P_LSL_IMM_OFF_PREIND, //011 1111 0 0000
+     OP_UND,
+     OP_STRB_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_P_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_STRB_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     
+     OP_LDRB_P_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_ROR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_LSL_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_LSR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_ASR_IMM_OFF_PREIND,
+     OP_UND,
+     OP_LDRB_P_ROR_IMM_OFF_PREIND,
+     OP_UND,           //011 1111 1 1111
+//------------------------------------------
+     OP_STMDA, //100 0000 0 0000
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     OP_STMDA,
+     
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+     OP_LDMDA,
+//------------------------------------------
+     OP_STMDA_W, //100 0001 0 0000
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     OP_STMDA_W,
+     
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+     OP_LDMDA_W,
+//------------------------------------------
+     OP_STMDA2, //100 0010 0 0000
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     OP_STMDA2,
+     
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+     OP_LDMDA2,
+//------------------------------------------
+     OP_STMDA2_W, //100 0011 0 0000
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     OP_STMDA2_W,
+     
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+     OP_LDMDA2_W,
+//------------------------------------------
+     OP_STMIA, //100 0100 0 0000
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     OP_STMIA,
+     
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+     OP_LDMIA,
+//------------------------------------------
+     OP_STMIA_W, //100 0101 0 0000
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     OP_STMIA_W,
+     
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+     OP_LDMIA_W,
+//------------------------------------------
+     OP_STMIA2, //100 0110 0 0000
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     OP_STMIA2,
+     
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+     OP_LDMIA2,
+//------------------------------------------
+     OP_STMIA2_W, //100 0111 0 0000
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     OP_STMIA2_W,
+     
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+     OP_LDMIA2_W,
+//------------------------------------------
+     OP_STMDB, //100 1000 0 0000
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     OP_STMDB,
+     
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+     OP_LDMDB,
+//------------------------------------------
+     OP_STMDB_W, //100 1001 0 0000
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     OP_STMDB_W,
+     
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+     OP_LDMDB_W,
+//------------------------------------------
+     OP_STMDB2, //100 1010 0 0000
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     OP_STMDB2,
+     
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+     OP_LDMDB2,
+//------------------------------------------
+     OP_STMDB2_W, //100 1011 0 0000
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     OP_STMDB2_W,
+     
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+     OP_LDMDB2_W,
+//------------------------------------------
+
+
+     OP_STMIB, //100 1100 0 0000
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     OP_STMIB,
+     
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+     OP_LDMIB,
+//------------------------------------------
+     OP_STMIB_W, //100 1101 0 0000
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     OP_STMIB_W,
+     
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+     OP_LDMIB_W,
+//------------------------------------------
+     OP_STMIB2, //100 1110 0 0000
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     OP_STMIB2,
+     
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+     OP_LDMIB2,
+//------------------------------------------
+     OP_STMIB2_W, //100 1111 0 0000
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     OP_STMIB2_W,
+     
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+     OP_LDMIB2_W,
+//------------------------------------------
+     OP_B, //101 0000 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0001 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0010 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0011 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0100 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0101 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0110 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_B, //101 0111 0 0000
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+     OP_B,
+//------------------------------------------
+     OP_BL, //101 1000 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1001 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1010 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1011 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1100 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1101 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1110 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_BL, //101 1111 0 0000
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+     OP_BL,
+//------------------------------------------
+     OP_STC_OPTION,  //110 0000 0 0000
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+//------------------------------------------
+     OP_STC_M_POSTIND,  //110 0001 0 0000
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+//------------------------------------------
+     OP_STC_OPTION,  //110 0010 0 0000
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+//------------------------------------------
+     OP_STC_M_POSTIND,  //110 0011 0 0000
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     OP_STC_M_POSTIND,
+     
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+     OP_LDC_M_POSTIND,
+//------------------------------------------
+     OP_STC_OPTION,  //110 0100 0 0000
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+//------------------------------------------
+     OP_STC_P_POSTIND,  //110 0101 0 0000
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+//------------------------------------------
+     OP_STC_OPTION,  //110 0110 0 0000
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     OP_STC_OPTION,
+     
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+     OP_LDC_OPTION,
+//------------------------------------------
+     OP_STC_P_POSTIND,  //110 0111 0 0000
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     OP_STC_P_POSTIND,
+     
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+     OP_LDC_P_POSTIND,
+//------------------------------------------
+     OP_STC_M_IMM_OFF,  //110 1000 0 0000
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+//------------------------------------------
+     OP_STC_M_PREIND,  //110 1001 0 0000
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+//------------------------------------------
+     OP_STC_M_IMM_OFF,  //110 1010 0 0000
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     OP_STC_M_IMM_OFF,
+     
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+     OP_LDC_M_IMM_OFF,
+//------------------------------------------
+     OP_STC_M_PREIND,  //110 1011 0 0000
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     OP_STC_M_PREIND,
+     
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+     OP_LDC_M_PREIND,
+//------------------------------------------
+     OP_STC_P_IMM_OFF,  //110 1100 0 0000
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+//------------------------------------------
+     OP_STC_P_PREIND,  //110 1101 0 0000
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+//------------------------------------------
+     OP_STC_P_IMM_OFF,  //110 1110 0 0000
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     OP_STC_P_IMM_OFF,
+     
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+     OP_LDC_P_IMM_OFF,
+//------------------------------------------
+     OP_STC_P_PREIND,  //110 1111 0 0000
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     OP_STC_P_PREIND,
+     
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+     OP_LDC_P_PREIND,
+//------------------------------------------
+     OP_CDP,  //111 0000 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0001 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0010 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0011 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0100 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0101 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0110 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_CDP,  //111 0111 0 0000
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     OP_CDP,
+     OP_MCR,
+     
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+     OP_CDP,
+     OP_MRC,
+//---------------------------------------------
+     OP_SWI,  //111 1000 0 0000
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI, 
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+     OP_SWI,
+};
+

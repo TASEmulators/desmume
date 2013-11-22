@@ -1,0 +1,2351 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+
+<glade-interface>
+
+<widget class="GtkWindow" id="wMainW">
+  <property name="visible">True</property>
+  <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK</property>
+  <property name="title" translatable="yes">DeSmuME</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_CENTER</property>
+  <property name="modal">False</property>
+  <property name="resizable">False</property>
+  <property name="destroy_with_parent">False</property>
+  <property name="icon">DeSmuME.xpm</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
+  <accessibility>
+    <atkrelation target="wMainW" type="parent-window-of"/>
+  </accessibility>
+  <signal name="key_press_event" handler="on_wMainW_key_press_event" last_modification_time="Tue, 02 Jan 2007 10:29:24 GMT"/>
+  <signal name="key_release_event" handler="on_wMainW_key_release_event" last_modification_time="Tue, 02 Jan 2007 10:29:36 GMT"/>
+  <signal name="delete_event" handler="gtk_main_quit" last_modification_time="Wed, 03 Jan 2007 20:33:14 GMT"/>
+
+  <child>
+    <widget class="GtkVBox" id="wgVBox">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child>
+        <widget class="GtkMenuBar" id="wgMenuBar">
+          <property name="visible">True</property>
+          <property name="pack_direction">GTK_PACK_DIRECTION_LTR</property>
+          <property name="child_pack_direction">GTK_PACK_DIRECTION_LTR</property>
+
+          <child>
+            <widget class="GtkMenuItem" id="menu_file">
+              <property name="visible">True</property>
+              <property name="label" translatable="yes">_File</property>
+              <property name="use_underline">True</property>
+
+              <child>
+                <widget class="GtkMenu" id="menu_file_menu">
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_open">
+                      <property name="visible">True</property>
+                      <property name="label">gtk-open</property>
+                      <property name="use_stock">True</property>
+                      <signal name="activate" handler="on_menu_open_activate" last_modification_time="Mon, 01 Jan 2007 16:34:54 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkMenuItem" id="save_state">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Save State</property>
+                      <property name="use_underline">True</property>
+
+                      <child>
+                        <widget class="GtkMenu" id="save_state_menu">
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate1">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 1</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:1" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate2">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 2</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:2" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F2" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate3">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 3</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:3" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F3" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate4">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 4</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:4" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F4" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate5">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 5</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:5" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F5" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate6">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 6</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:6" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F6" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate7">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 7</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:7" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F7" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate8">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 8</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:8" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F8" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate9">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 9</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:9" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F9" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="savestate10">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 10</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_savestateXX_activate" object="%d:10" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F10" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+                            </widget>
+                          </child>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+                  
+                  <child>
+                    <widget class="GtkMenuItem" id="load_state">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Load State</property>
+                      <property name="use_underline">True</property>
+
+                      <child>
+                        <widget class="GtkMenu" id="load_state_menu">
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate1">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 1</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:1" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F1" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate2">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 2</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:2" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F2" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate3">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 3</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:3" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F3" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate4">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 4</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:4" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F4" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate5">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 5</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:5" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F5" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate6">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 6</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:6" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F6" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate7">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 7</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:7" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F7" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate8">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 8</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:8" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F8" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate9">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 9</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:9" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F9" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkMenuItem" id="loadstate10">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">State 10</property>
+                              <property name="use_underline">True</property>
+                              <signal name="activate" handler="on_loadstateXX_activate" object="%d:10" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+                              <accelerator key="F10" modifiers="0" signal="activate"/>
+                            </widget>
+                          </child>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkMenuItem" id="menu_pscreen">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">_PrintScreen</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_pscreen_activate" last_modification_time="Mon, 01 Jan 2007 16:34:54 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_quit">
+                      <property name="visible">True</property>
+                      <property name="label">gtk-quit</property>
+                      <property name="use_stock">True</property>
+                      <signal name="activate" handler="on_menu_quit_activate" last_modification_time="Mon, 01 Jan 2007 16:34:54 GMT"/>
+                    </widget>
+                  </child>
+                </widget>
+              </child>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkMenuItem" id="menu_emulation">
+              <property name="visible">True</property>
+              <property name="label" translatable="yes">_Emulation</property>
+              <property name="use_underline">True</property>
+
+              <child>
+                <widget class="GtkMenu" id="menu_emulation_menu">
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_exec">
+                      <property name="visible">True</property>
+                      <property name="sensitive">False</property>
+                      <property name="label">gtk-execute</property>
+                      <property name="use_stock">True</property>
+                      <signal name="activate" handler="on_menu_exec_activate" last_modification_time="Mon, 01 Jan 2007 16:34:54 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_pause">
+                      <property name="visible">True</property>
+                      <property name="sensitive">False</property>
+                      <property name="label">gtk-media-pause</property>
+                      <property name="use_stock">True</property>
+                      <signal name="activate" handler="on_menu_pause_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_reset">
+                      <property name="visible">True</property>
+                      <property name="sensitive">False</property>
+                      <property name="label" translatable="yes">Reset</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_reset_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image116">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-refresh</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkCheckMenuItem" id="menu_layers">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Layers</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <signal name="activate" handler="on_menu_layers_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkMenuItem" id="menu_frameskip">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">FrameSkip</property>
+                      <property name="use_underline">True</property>
+
+                      <child>
+                        <widget class="GtkMenu" id="menu_frameskip_menu">
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs0">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">0</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">True</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:0" last_modification_time="Thu, 08 Feb 2007 15:03:50 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs1">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">1</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:1" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs2">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">2</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:2" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs3">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">3</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:3" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs4">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">4</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:4" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs5">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">5</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:5" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs6">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">6</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:6" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs7">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">7</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:7" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs8">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">8</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:8" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="fs9">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">9</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">fs0</property>
+                              <signal name="activate" handler="on_fsXX_activate" object="%d:9" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+                            </widget>
+                          </child>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkMenuItem" id="menu_size">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Size</property>
+                      <property name="use_underline">True</property>
+
+                      <child>
+                        <widget class="GtkMenu" id="menu_size_menu">
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="size1x">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">1x</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">True</property>
+                              <signal name="activate" handler="on_sizeXX_activate" object="%f:1.0" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="size2x">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">2x</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">size1x</property>
+                              <signal name="activate" handler="on_sizeXX_activate" object="%f:2.0" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="size3x">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">3x</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">size1x</property>
+                              <signal name="activate" handler="on_sizeXX_activate" object="%f:3.0" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
+                            </widget>
+                          </child>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+                </widget>
+              </child>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkMenuItem" id="menu_config">
+              <property name="visible">True</property>
+              <property name="label" translatable="yes">Config</property>
+              <property name="use_underline">True</property>
+
+              <child>
+                <widget class="GtkMenu" id="menu_config_menu">
+
+                  <child>
+                    <widget class="GtkMenuItem" id="menu_save">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">_Saves</property>
+                      <property name="use_underline">True</property>
+
+                      <child>
+                        <widget class="GtkMenu" id="menu_save_menu">
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype1">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: Auto (1B)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">True</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:0" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype2">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: EEPROM1 (4kB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:1" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype3">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: EEPROM2 (64kB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:2" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype4">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: EEPROM2 (512kB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:3" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype5">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: FLASH (256kB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:4" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype6">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: FRAM (2MB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:5" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype7">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: FRAM (4MB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:5" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_controls">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Keyboard controls</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_controls_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image117">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-preferences</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_joy_controls">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Joystick controls</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_joy_controls_activate" last_modification_time="Fri, 12 Jan 2007 22:26:36 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image118">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-preferences</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkCheckMenuItem" id="menu_audio_on">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Audio On</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">True</property>
+                      <signal name="activate" handler="on_menu_audio_on_activate" last_modification_time="Sat, 06 Jan 2007 13:56:06 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkCheckMenuItem" id="menu_gapscreen">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">True Gap</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <signal name="activate" handler="on_menu_gapscreen_activate" last_modification_time="Sat, 06 Jan 2007 23:32:56 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkCheckMenuItem" id="menu_nogap">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">No Gap</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <signal name="activate" handler="on_menu_nogap_activate" last_modification_time="Sat, 06 Jan 2007 23:32:56 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkCheckMenuItem" id="menu_rightscreen">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Right Screen</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <signal name="activate" handler="on_menu_rightscreen_activate" last_modification_time="Mon, 01 Jan 2007 20:16:24 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkRadioMenuItem" id="menu_rotatescreen0">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Rotate Screen 0</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">True</property>
+                      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:0.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkRadioMenuItem" id="menu_rotatescreen1">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Rotate Screen 90</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <property name="group">menu_rotatescreen0</property>
+                      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:90.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkRadioMenuItem" id="menu_rotatescreen2">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Rotate Screen 180</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <property name="group">menu_rotatescreen0</property>
+                      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:180.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkRadioMenuItem" id="menu_rotatescreen3">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">Rotate Screen 270</property>
+                      <property name="use_underline">True</property>
+                      <property name="active">False</property>
+                      <property name="group">menu_rotatescreen0</property>
+                      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:270.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+                    </widget>
+                  </child>
+                </widget>
+              </child>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkMenuItem" id="menu_tools">
+              <property name="visible">True</property>
+              <property name="label" translatable="yes">Tools</property>
+              <property name="use_underline">True</property>
+
+              <child>
+                <widget class="GtkMenu" id="menu_tools_menu">
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_IO_regs">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">IO regs</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_IO_regs_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image119">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-properties</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_memview">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">View Memory</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_memview_activate" last_modification_time="Fri, 12 Jan 2007 15:44:42 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image120">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-properties</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_palview">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">View Palette</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_palview_activate" last_modification_time="Sun, 14 Jan 2007 10:34:32 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image121">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-properties</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_tileview">
+                      <property name="visible">True</property>
+                      <property name="label" translatable="yes">View Tiles</property>
+                      <property name="use_underline">True</property>
+                      <signal name="activate" handler="on_menu_tileview_activate" last_modification_time="Sun, 14 Jan 2007 10:34:32 GMT"/>
+
+                      <child internal-child="image">
+                        <widget class="GtkImage" id="image121">
+                          <property name="visible">True</property>
+                          <property name="stock">gtk-properties</property>
+                          <property name="icon_size">1</property>
+                          <property name="xalign">0.5</property>
+                          <property name="yalign">0.5</property>
+                          <property name="xpad">0</property>
+                          <property name="ypad">0</property>
+                        </widget>
+                      </child>
+                    </widget>
+                  </child>
+                </widget>
+              </child>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkMenuItem" id="menu_help">
+              <property name="visible">True</property>
+              <property name="label" translatable="yes">?</property>
+              <property name="use_underline">True</property>
+
+              <child>
+                <widget class="GtkMenu" id="menu_help_menu">
+
+                  <child>
+                    <widget class="GtkImageMenuItem" id="menu_apropos">
+                      <property name="visible">True</property>
+                      <property name="label">gtk-about</property>
+                      <property name="use_stock">True</property>
+                      <signal name="activate" handler="on_menu_apropos_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
+                    </widget>
+                  </child>
+                </widget>
+              </child>
+            </widget>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">False</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkToolbar" id="wgToolBar">
+          <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
+          <property name="toolbar_style">GTK_TOOLBAR_BOTH</property>
+          <property name="tooltips">True</property>
+          <property name="show_arrow">True</property>
+
+          <child>
+            <widget class="GtkToolButton" id="wgt_Open">
+              <property name="visible">True</property>
+              <property name="stock_id">gtk-open</property>
+              <property name="visible_horizontal">True</property>
+              <property name="visible_vertical">True</property>
+              <property name="is_important">False</property>
+              <signal name="clicked" handler="on_wgt_Open_clicked" last_modification_time="Mon, 01 Jan 2007 21:05:16 GMT"/>
+            </widget>
+            <packing>
+              <property name="expand">False</property>
+              <property name="homogeneous">True</property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkSeparatorToolItem" id="misc_sep1">
+              <property name="visible">True</property>
+              <property name="draw">True</property>
+              <property name="visible_horizontal">True</property>
+              <property name="visible_vertical">True</property>
+            </widget>
+            <packing>
+              <property name="expand">False</property>
+              <property name="homogeneous">False</property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkToggleToolButton" id="wgt_Exec">
+              <property name="visible">True</property>
+              <property name="sensitive">False</property>
+              <property name="stock_id">gtk-execute</property>
+              <property name="visible_horizontal">True</property>
+              <property name="visible_vertical">True</property>
+              <property name="is_important">False</property>
+              <property name="active">False</property>
+              <signal name="toggled" handler="on_wgt_Exec_toggled" last_modification_time="Mon, 01 Jan 2007 21:05:29 GMT"/>
+            </widget>
+            <packing>
+              <property name="expand">False</property>
+              <property name="homogeneous">True</property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkToolButton" id="wgt_Reset">
+              <property name="visible">True</property>
+              <property name="sensitive">False</property>
+              <property name="label" translatable="yes">Reset</property>
+              <property name="use_underline">True</property>
+              <property name="stock_id">gtk-refresh</property>
+              <property name="visible_horizontal">True</property>
+              <property name="visible_vertical">True</property>
+              <property name="is_important">False</property>
+              <signal name="clicked" handler="on_wgt_Reset_clicked" last_modification_time="Mon, 01 Jan 2007 21:05:35 GMT"/>
+            </widget>
+            <packing>
+              <property name="expand">False</property>
+              <property name="homogeneous">True</property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkSeparatorToolItem" id="misc_sep2">
+              <property name="visible">True</property>
+              <property name="draw">True</property>
+              <property name="visible_horizontal">True</property>
+              <property name="visible_vertical">True</property>
+            </widget>
+            <packing>
+              <property name="expand">False</property>
+              <property name="homogeneous">False</property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkToolButton" id="wgt_Quit">
+              <property name="visible">True</property>
+              <property name="stock_id">gtk-quit</property>
+              <property name="visible_horizontal">True</property>
+              <property name="visible_vertical">True</property>
+              <property name="is_important">False</property>
+              <signal name="clicked" handler="on_wgt_Quit_clicked" last_modification_time="Mon, 01 Jan 2007 21:05:50 GMT"/>
+            </widget>
+            <packing>
+              <property name="expand">False</property>
+              <property name="homogeneous">True</property>
+            </packing>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">False</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkTable" id="table_layout">
+          <property name="visible">True</property>
+          <property name="n_rows">3</property>
+          <property name="n_columns">5</property>
+          <property name="homogeneous">False</property>
+          <property name="row_spacing">0</property>
+          <property name="column_spacing">0</property>
+
+          <child>
+            <widget class="GtkDrawingArea" id="wDraw_Main">
+              <property name="width_request">256</property>
+              <property name="height_request">192</property>
+              <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+              <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:0" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
+              <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+              <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+              <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+              <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+              <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options"></property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkDrawingArea" id="wDraw_Sub">
+              <property name="width_request">256</property>
+              <property name="height_request">192</property>
+              <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+              <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:1" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
+              <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+              <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+              <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+              <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+              <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">2</property>
+              <property name="bottom_attach">3</property>
+              <property name="x_options"></property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkVBox" id="wvb_2_Sub">
+              <property name="visible">False</property>
+              <property name="homogeneous">False</property>
+              <property name="spacing">0</property>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_2_BG0">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG0</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_2_BG1">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG1</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_2_BG2">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG2</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_2_BG3">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG3</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_2_OBJ">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">OBJ</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+            </widget>
+            <packing>
+              <property name="left_attach">0</property>
+              <property name="right_attach">1</property>
+              <property name="top_attach">2</property>
+              <property name="bottom_attach">3</property>
+              <property name="x_options"></property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkVBox" id="wvb_1_Main">
+              <property name="visible">False</property>
+              <property name="homogeneous">False</property>
+              <property name="spacing">0</property>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_1_BG0">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG0</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_1_BG1">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG1</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_1_BG2">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG2</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_1_BG3">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">BG3</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+
+              <child>
+                <widget class="GtkCheckButton" id="wc_1_OBJ">
+                  <property name="visible">True</property>
+                  <property name="can_focus">True</property>
+                  <property name="label" translatable="yes">OBJ</property>
+                  <property name="use_underline">True</property>
+                  <property name="relief">GTK_RELIEF_NORMAL</property>
+                  <property name="focus_on_click">True</property>
+                  <property name="active">True</property>
+                  <property name="inconsistent">False</property>
+                  <property name="draw_indicator">True</property>
+                  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+                </widget>
+                <packing>
+                  <property name="padding">0</property>
+                  <property name="expand">False</property>
+                  <property name="fill">False</property>
+                </packing>
+              </child>
+            </widget>
+            <packing>
+              <property name="left_attach">0</property>
+              <property name="right_attach">1</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options"></property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkVSeparator" id="misc_sep3">
+              <property name="visible">True</property>
+            </widget>
+            <packing>
+              <property name="left_attach">2</property>
+              <property name="right_attach">3</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options"></property>
+              <property name="y_options">fill</property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkHSeparator" id="misc_sep4">
+              <property name="visible">True</property>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">False</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkStatusbar" id="wStatus">
+          <property name="visible">True</property>
+          <property name="has_resize_grip">True</property>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">False</property>
+        </packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkAboutDialog" id="wAboutDlg">
+  <property name="destroy_with_parent">False</property>
+  <property name="name" translatable="yes">DeSmuME</property>
+  <property name="comments" translatable="yes">Nintendo DS emulator based on work by Yopyop</property>
+  <property name="wrap_license">False</property>
+  <property name="website">http://desmume.org</property>
+  <property name="website_label" translatable="yes">http://desmume.org</property>
+  <property name="authors">Original author:
+  yopyop (now inactive)
+
+Current team:
+  Allustar
+  amponzi
+  ape
+  delfare
+  Guillaume Duhamel
+  Normmatt
+  Romain Vallet
+  shash
+  Theo Berkau
+  thoduv
+  Tim Seidel (Mighty Max)
+  Damien Nozay (damdoum)
+  Pascal Giard (evilynux)
+
+Contributors:
+  Anthony Molinaro</property>
+  <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
+  <property name="logo">DeSmuME.xpm</property>
+  <signal name="close" handler="gtk_widget_hide" last_modification_time="Sat, 17 Feb 2007 18:13:08 GMT"/>
+  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Sat, 17 Feb 2007 18:13:22 GMT"/>
+  <signal name="response" handler="gtk_widget_hide" last_modification_time="Sat, 17 Feb 2007 18:14:22 GMT"/>
+</widget>
+
+<widget class="GtkDialog" id="wKeybConfDlg">
+  <property name="title" translatable="yes">Keyboard Config</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
+  <property name="modal">False</property>
+  <property name="resizable">True</property>
+  <property name="destroy_with_parent">True</property>
+  <property name="icon">DeSmuME.xpm</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
+  <property name="has_separator">True</property>
+  <signal name="response" handler="on_wKeybConfDlg_response" last_modification_time="Wed, 03 Jan 2007 19:09:39 GMT"/>
+  <signal name="delete_event" handler="gtk_widget_hide_on_delete" last_modification_time="Wed, 03 Jan 2007 19:43:34 GMT"/>
+
+  <child internal-child="vbox">
+    <widget class="GtkVBox" id="dialog-vbox1">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child internal-child="action_area">
+        <widget class="GtkHButtonBox" id="dialog-action_area1">
+          <property name="visible">True</property>
+          <property name="layout_style">GTK_BUTTONBOX_END</property>
+
+          <child>
+            <widget class="GtkButton" id="keybconf_cancel">
+              <property name="visible">True</property>
+              <property name="can_default">True</property>
+              <property name="can_focus">True</property>
+              <property name="label">gtk-cancel</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <property name="response_id">-6</property>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="keybconf_ok">
+              <property name="visible">True</property>
+              <property name="can_default">True</property>
+              <property name="can_focus">True</property>
+              <property name="label">gtk-ok</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <property name="response_id">-5</property>
+            </widget>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">True</property>
+          <property name="pack_type">GTK_PACK_END</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkTable" id="layout_keyb">
+          <property name="visible">True</property>
+          <property name="n_rows">6</property>
+          <property name="n_columns">7</property>
+          <property name="homogeneous">False</property>
+          <property name="row_spacing">0</property>
+          <property name="column_spacing">0</property>
+
+          <child>
+            <widget class="GtkButton" id="button_Left">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Left : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:6" last_modification_time="Tue, 13 Feb 2007 07:20:42 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">0</property>
+              <property name="right_attach">1</property>
+              <property name="top_attach">4</property>
+              <property name="bottom_attach">5</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Up">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Up : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:7" last_modification_time="Tue, 13 Feb 2007 07:18:33 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">3</property>
+              <property name="bottom_attach">4</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Right">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Right : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:5" last_modification_time="Tue, 13 Feb 2007 07:20:52 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">2</property>
+              <property name="right_attach">3</property>
+              <property name="top_attach">4</property>
+              <property name="bottom_attach">5</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Y">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Y : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:12" last_modification_time="Tue, 13 Feb 2007 07:21:14 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">4</property>
+              <property name="right_attach">5</property>
+              <property name="top_attach">4</property>
+              <property name="bottom_attach">5</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_X">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">X : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:11" last_modification_time="Tue, 13 Feb 2007 07:21:31 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">5</property>
+              <property name="right_attach">6</property>
+              <property name="top_attach">3</property>
+              <property name="bottom_attach">4</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_A">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">A : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:1" last_modification_time="Tue, 13 Feb 2007 07:21:44 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">6</property>
+              <property name="right_attach">7</property>
+              <property name="top_attach">4</property>
+              <property name="bottom_attach">5</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Down">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Down : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:8" last_modification_time="Tue, 13 Feb 2007 07:21:03 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">5</property>
+              <property name="bottom_attach">6</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_B">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">B : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:2" last_modification_time="Tue, 13 Feb 2007 07:21:55 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">5</property>
+              <property name="right_attach">6</property>
+              <property name="top_attach">5</property>
+              <property name="bottom_attach">6</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Select">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Select : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:3" last_modification_time="Tue, 13 Feb 2007 07:20:23 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">3</property>
+              <property name="right_attach">4</property>
+              <property name="top_attach">2</property>
+              <property name="bottom_attach">3</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_L">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">L : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:10" last_modification_time="Tue, 13 Feb 2007 07:18:58 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">0</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_R">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">R : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:9" last_modification_time="Tue, 13 Feb 2007 07:20:00 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">5</property>
+              <property name="right_attach">7</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Debug">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Debug : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:13" last_modification_time="Tue, 13 Feb 2007 07:19:13 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">2</property>
+              <property name="right_attach">3</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Start">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Start : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:4" last_modification_time="Tue, 13 Feb 2007 07:19:34 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">3</property>
+              <property name="right_attach">4</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_Boost">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Boost : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:14" last_modification_time="Tue, 13 Feb 2007 07:19:50 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">4</property>
+              <property name="right_attach">5</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">True</property>
+          <property name="fill">True</property>
+        </packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkDialog" id="wKeyDlg">
+  <property name="events">GDK_KEY_RELEASE_MASK</property>
+  <property name="title" translatable="yes">Key definition</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
+  <property name="modal">True</property>
+  <property name="resizable">True</property>
+  <property name="destroy_with_parent">True</property>
+  <property name="icon">DeSmuME.xpm</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
+  <property name="has_separator">True</property>
+  <signal name="key_press_event" handler="on_wKeyDlg_key_press_event" last_modification_time="Wed, 03 Jan 2007 20:34:13 GMT"/>
+
+  <child internal-child="vbox">
+    <widget class="GtkVBox" id="dialog-vbox2">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child internal-child="action_area">
+        <widget class="GtkHButtonBox" id="dialog-action_area2">
+          <property name="visible">True</property>
+          <property name="layout_style">GTK_BUTTONBOX_END</property>
+
+          <child>
+            <widget class="GtkButton" id="button1">
+              <property name="visible">True</property>
+              <property name="label">gtk-cancel</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">False</property>
+              <property name="response_id">-6</property>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button2">
+              <property name="visible">True</property>
+              <property name="label">gtk-ok</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">False</property>
+              <property name="response_id">-5</property>
+            </widget>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">True</property>
+          <property name="pack_type">GTK_PACK_END</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkLabel" id="label">
+          <property name="visible">True</property>
+          <property name="label" translatable="yes">Press a key...</property>
+          <property name="use_underline">False</property>
+          <property name="use_markup">False</property>
+          <property name="justify">GTK_JUSTIFY_LEFT</property>
+          <property name="wrap">False</property>
+          <property name="selectable">False</property>
+          <property name="xalign">0.5</property>
+          <property name="yalign">0.5</property>
+          <property name="xpad">0</property>
+          <property name="ypad">0</property>
+          <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+          <property name="width_chars">-1</property>
+          <property name="single_line_mode">False</property>
+          <property name="angle">0</property>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">False</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkLabel" id="label_key">
+          <property name="visible">True</property>
+          <property name="label" translatable="yes"></property>
+          <property name="use_underline">False</property>
+          <property name="use_markup">False</property>
+          <property name="justify">GTK_JUSTIFY_LEFT</property>
+          <property name="wrap">False</property>
+          <property name="selectable">False</property>
+          <property name="xalign">0.5</property>
+          <property name="yalign">0.5</property>
+          <property name="xpad">0</property>
+          <property name="ypad">0</property>
+          <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+          <property name="width_chars">-1</property>
+          <property name="single_line_mode">False</property>
+          <property name="angle">0</property>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">False</property>
+        </packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkDialog" id="wJoyConfDlg">
+  <property name="title" translatable="yes">Joystick Config</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
+  <property name="modal">False</property>
+  <property name="resizable">True</property>
+  <property name="destroy_with_parent">True</property>
+  <property name="icon">DeSmuME.xpm</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
+  <property name="has_separator">True</property>
+  <signal name="response" handler="gtk_widget_hide" last_modification_time="Sat, 13 Jan 2007 08:08:33 GMT"/>
+  <signal name="delete_event" handler="gtk_widget_hide_on_delete" last_modification_time="Wed, 03 Jan 2007 19:43:34 GMT"/>
+
+  <child internal-child="vbox">
+    <widget class="GtkVBox" id="dialog-vbox1">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child internal-child="action_area">
+        <widget class="GtkHButtonBox" id="dialog-action_area1">
+          <property name="visible">True</property>
+          <property name="layout_style">GTK_BUTTONBOX_END</property>
+
+          <child>
+            <widget class="GtkButton" id="keybconf_cancel">
+              <property name="visible">True</property>
+              <property name="can_default">True</property>
+              <property name="can_focus">True</property>
+              <property name="label">gtk-cancel</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <property name="response_id">-6</property>
+            </widget>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="keybconf_ok">
+              <property name="visible">True</property>
+              <property name="can_default">True</property>
+              <property name="can_focus">True</property>
+              <property name="label">gtk-ok</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <property name="response_id">-5</property>
+            </widget>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">True</property>
+          <property name="pack_type">GTK_PACK_END</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkTable" id="layout_keyb">
+          <property name="visible">True</property>
+          <property name="n_rows">5</property>
+          <property name="n_columns">7</property>
+          <property name="homogeneous">True</property>
+          <property name="row_spacing">0</property>
+          <property name="column_spacing">0</property>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Y">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Y : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:12" last_modification_time="Tue, 13 Feb 2007 07:06:20 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">4</property>
+              <property name="right_attach">5</property>
+              <property name="top_attach">3</property>
+              <property name="bottom_attach">4</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_X">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">X : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:11" last_modification_time="Tue, 13 Feb 2007 07:06:35 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">5</property>
+              <property name="right_attach">6</property>
+              <property name="top_attach">2</property>
+              <property name="bottom_attach">3</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_A">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">A : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:1" last_modification_time="Tue, 13 Feb 2007 07:04:28 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">6</property>
+              <property name="right_attach">7</property>
+              <property name="top_attach">3</property>
+              <property name="bottom_attach">4</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_B">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">B : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:2" last_modification_time="Tue, 13 Feb 2007 07:06:02 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">5</property>
+              <property name="right_attach">6</property>
+              <property name="top_attach">4</property>
+              <property name="bottom_attach">5</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Select">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Select : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:3" last_modification_time="Tue, 13 Feb 2007 07:07:05 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">3</property>
+              <property name="right_attach">4</property>
+              <property name="top_attach">1</property>
+              <property name="bottom_attach">2</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_L">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">L : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:10" last_modification_time="Tue, 13 Feb 2007 07:07:30 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">0</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_R">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">R : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:9" last_modification_time="Tue, 13 Feb 2007 07:07:18 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">5</property>
+              <property name="right_attach">7</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Debug">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Debug : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:13" last_modification_time="Tue, 13 Feb 2007 07:08:11 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">2</property>
+              <property name="right_attach">3</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Start">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Start : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:4" last_modification_time="Tue, 13 Feb 2007 07:06:52 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">3</property>
+              <property name="right_attach">4</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Boost">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Boost : </property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:14" last_modification_time="Tue, 13 Feb 2007 07:08:01 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">4</property>
+              <property name="right_attach">5</property>
+              <property name="top_attach">0</property>
+              <property name="bottom_attach">1</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Up">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Axis :</property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:7" last_modification_time="Tue, 13 Feb 2007 07:13:04 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">2</property>
+              <property name="bottom_attach">3</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Down">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Axis :</property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:8" last_modification_time="Tue, 13 Feb 2007 07:13:14 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+              <property name="top_attach">4</property>
+              <property name="bottom_attach">5</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Left">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Axis :</property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:6" last_modification_time="Tue, 13 Feb 2007 07:13:29 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">0</property>
+              <property name="right_attach">1</property>
+              <property name="top_attach">3</property>
+              <property name="bottom_attach">4</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+
+          <child>
+            <widget class="GtkButton" id="button_joy_Right">
+              <property name="visible">True</property>
+              <property name="can_focus">True</property>
+              <property name="label" translatable="yes">Axis :</property>
+              <property name="use_underline">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:5" last_modification_time="Tue, 13 Feb 2007 07:13:42 GMT"/>
+            </widget>
+            <packing>
+              <property name="left_attach">2</property>
+              <property name="right_attach">3</property>
+              <property name="top_attach">3</property>
+              <property name="bottom_attach">4</property>
+              <property name="x_options">fill</property>
+              <property name="y_options"></property>
+            </packing>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">True</property>
+          <property name="fill">True</property>
+        </packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkDialog" id="wJoyDlg">
+  <property name="events">GDK_KEY_RELEASE_MASK</property>
+  <property name="title" translatable="yes">Key definition</property>
+  <property name="type">GTK_WINDOW_POPUP</property>
+  <property name="window_position">GTK_WIN_POS_CENTER_ALWAYS</property>
+  <property name="modal">True</property>
+  <property name="resizable">False</property>
+  <property name="destroy_with_parent">False</property>
+  <property name="icon">DeSmuME.xpm</property>
+  <property name="decorated">False</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
+  <property name="has_separator">False</property>
+
+  <child internal-child="vbox">
+    <widget class="GtkVBox" id="dialog-vbox1">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child internal-child="action_area">
+        <widget class="GtkHButtonBox" id="hbuttonbox1">
+          <property name="visible">True</property>
+          <property name="layout_style">GTK_BUTTONBOX_END</property>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">True</property>
+          <property name="pack_type">GTK_PACK_END</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkLabel" id="label">
+          <property name="visible">True</property>
+          <property name="label" translatable="yes">Press a button...</property>
+          <property name="use_underline">False</property>
+          <property name="use_markup">False</property>
+          <property name="justify">GTK_JUSTIFY_LEFT</property>
+          <property name="wrap">False</property>
+          <property name="selectable">False</property>
+          <property name="xalign">0.5</property>
+          <property name="yalign">0.5</property>
+          <property name="xpad">0</property>
+          <property name="ypad">0</property>
+          <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+          <property name="width_chars">-1</property>
+          <property name="single_line_mode">False</property>
+          <property name="angle">0</property>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">True</property>
+          <property name="fill">True</property>
+        </packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkDialog" id="w3Dop">
+  <property name="title" translatable="yes">3D rom</property>
+  <property name="type">GTK_WINDOW_TOPLEVEL</property>
+  <property name="window_position">GTK_WIN_POS_CENTER</property>
+  <property name="modal">True</property>
+  <property name="resizable">False</property>
+  <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
+  <property name="has_separator">True</property>
+  <signal name="response" handler="gtk_widget_hide" last_modification_time="Fri, 23 Feb 2007 20:20:09 GMT"/>
+  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Fri, 23 Feb 2007 20:20:23 GMT"/>
+
+  <child internal-child="vbox">
+    <widget class="GtkVBox" id="dialog-vbox3">
+      <property name="visible">True</property>
+      <property name="homogeneous">False</property>
+      <property name="spacing">0</property>
+
+      <child internal-child="action_area">
+        <widget class="GtkHButtonBox" id="dialog-action_area3">
+          <property name="visible">True</property>
+          <property name="layout_style">GTK_BUTTONBOX_END</property>
+
+          <child>
+            <widget class="GtkButton" id="okbutton1">
+              <property name="visible">True</property>
+              <property name="can_default">True</property>
+              <property name="can_focus">True</property>
+              <property name="label">gtk-ok</property>
+              <property name="use_stock">True</property>
+              <property name="relief">GTK_RELIEF_NORMAL</property>
+              <property name="focus_on_click">True</property>
+              <property name="response_id">-5</property>
+            </widget>
+          </child>
+        </widget>
+        <packing>
+          <property name="padding">0</property>
+          <property name="expand">False</property>
+          <property name="fill">True</property>
+          <property name="pack_type">GTK_PACK_END</property>
+        </packing>
+      </child>
+
+      <child>
+        <widget class="GtkLabel" id="label1">
+          <property name="width_request">250</property>
+          <property name="height_request">20</property>
+          <property name="visible">True</property>
+          <property name="label" translatable="yes">3D operation detected</property>
+          <property name="use_underline">False</property>
+          <property name="use_markup">False</property>
+          <property name="justify">GTK_JUSTIFY_LEFT</property>
+          <property name="wrap">False</property>
+          <property name="selectable">False</property>
+          <property name="xalign">0.5</property>
+          <property name="yalign">0.5</property>
+          <property name="xpad">0</property>
+          <property name="ypad">0</property>
+          <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+          <property name="width_chars">-1</property>
+          <property name="single_line_mode">False</property>
+          <property name="angle">0</property>
+        </widget>
+        <packing>
+          <property name="padding">10</property>
+          <property name="expand">True</property>
+          <property name="fill">True</property>
+        </packing>
+      </child>
+    </widget>
+  </child>
+</widget>
+
+</glade-interface>

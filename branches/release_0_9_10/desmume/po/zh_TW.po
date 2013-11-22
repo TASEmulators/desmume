@@ -1,0 +1,676 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: desmume\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2009-12-28 15:37+0100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Ronmi Ren <ronmi@rmi.twbbs.org>\n"
+"Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Chinese\n"
+"X-Poedit-Country: TAIWAN\n"
+"X-Poedit-SourceCharset: iso-8859-1\n"
+
+#: ../src/gtk-glade/callbacks.cpp:53
+#, c-format
+msgid "State %d (empty)"
+msgstr "存檔 %d (空的)"
+
+#. Creating the selection window
+#: ../src/gtk-glade/callbacks.cpp:166
+msgid "Open..."
+msgstr "開啟..."
+
+#: ../src/gtk-glade/callbacks.cpp:175
+msgid "Nds binary (.nds)"
+msgstr "NDS遊戲 (.nds)"
+
+#: ../src/gtk-glade/callbacks.cpp:176
+msgid "Nds binary with loader (.ds.gba)"
+msgstr "NDS遊戲與載入器 (.ds.gba)"
+
+#: ../src/gtk-glade/callbacks.cpp:177
+msgid "All files"
+msgstr "所有檔案"
+
+#: ../src/gtk-glade/callbacks.cpp:192
+#: ../src/gtk-glade/main.cpp:553
+#, c-format
+msgid ""
+"Unable to load :\n"
+"%s"
+msgstr ""
+"載入失敗:\n"
+"%s"
+
+#: ../src/gtk-glade/callbacks.cpp:408
+msgid "You don't have any joystick!"
+msgstr "沒有偵測到搖桿"
+
+#: ../src/gtk-glade/callbacks.cpp:410
+msgid "Can't configure joystick while the game is running!"
+msgstr "在遊戲執行時不可以調整搖桿設定"
+
+#: ../src/gtk-glade/gdk_3Demu.cpp:66
+#, c-format
+msgid "*** Cannot get %s attribute value\n"
+msgstr "*** 無法取得屬性 %s 的值\n"
+
+#: ../src/gtk-glade/gdk_3Demu.cpp:164
+#, c-format
+msgid "*** Failed to create pixmap.\n"
+msgstr "*** 創造點陣圖失敗\n"
+
+#: ../src/gtk-glade/gdk_3Demu.cpp:174
+#, c-format
+msgid "*** No appropriate OpenGL-capable visual found.\n"
+msgstr "*** 找不到與 OpenGL 相容的可用視覺效果\n"
+
+#: ../src/gtk-glade/gdk_3Demu.cpp:187
+#, c-format
+msgid "Failed to create the GdkGLPixmap\n"
+msgstr "創造 GdkGLPixmap 失敗\n"
+
+#: ../src/gtk-glade/gdk_3Demu.cpp:197
+#, c-format
+msgid "Connot create the OpenGL rendering context\n"
+msgstr "創造 OpenGL rendering context 失敗\n"
+
+#: ../src/gtk-glade/glade-xml.cpp:58
+#, c-format
+msgid "could not find signal handler '%s'."
+msgstr "找不到 signal handler '%s'"
+
+#: ../src/gtk-glade/main.cpp:132
+#, c-format
+msgid "USAGE: %s [OPTIONS] [nds-file]\n"
+msgstr "使用方式: %s [選項] [nds檔]\n"
+
+#: ../src/gtk-glade/main.cpp:133
+#, c-format
+msgid "OPTIONS:\n"
+msgstr "可用選項:\n"
+
+#: ../src/gtk-glade/main.cpp:134
+#, c-format
+msgid ""
+"   --load-slot=NUM     Load game saved under NUM position.\n"
+"\n"
+msgstr ""
+"   --load-slot=存檔編號     讀取第幾號的即時存檔\n"
+"\n"
+
+#: ../src/gtk-glade/main.cpp:137
+#, c-format
+msgid ""
+"   --soft-convert      Use software colour conversion during OpenGL\n"
+"                       screen rendering. May produce better or worse\n"
+"                       frame rates depending on hardware.\n"
+"\n"
+msgstr ""
+"   --soft-convert      在 OpenGL 模式中使用軟體轉換色彩。\n"
+"                       在不同的硬體下，效能可能更好也可能更壞。\n"
+"   \n"
+
+#: ../src/gtk-glade/main.cpp:142
+#, c-format
+msgid ""
+"   --3d-engine=ENGINE  Selects 3D rendering engine\n"
+"                         0 = disabled\n"
+"                         1 = internal desmume rasterizer (default)\n"
+msgstr ""
+"   --3d-engine=3D引擎  選擇3D引擎\n"
+"                         0 = 不使用3D\n"
+"                         1 = desmume內建的軟體模擬引擎 (預設值)\n"
+
+#: ../src/gtk-glade/main.cpp:147
+#, c-format
+msgid ""
+"                         2 = gtkglext off-screen 3d opengl\n"
+"\n"
+msgstr ""
+"                         2 = gtkglext 於幕後演算的 OpenGL 3D 支援\n"
+"\n"
+
+#: ../src/gtk-glade/main.cpp:150
+#, c-format
+msgid ""
+"   --disable-limiter   Disables the 60 fps limiter\n"
+"\n"
+msgstr ""
+"   --disable-limiter   取消畫面更新率最高60的上限\n"
+"\n"
+
+#: ../src/gtk-glade/main.cpp:152
+#, c-format
+msgid ""
+"   --save-type=TYPE    Selects savetype:\n"
+"                         0 = Autodetect (default)\n"
+"                         1 = EEPROM 4kbit\n"
+"                         2 = EEPROM 64kbit\n"
+"                         3 = EEPROM 512kbit\n"
+"                         4 = FRAM 256kbit\n"
+"                         5 = FLASH 2mbit\n"
+"                         6 = FLASH 4mbit\n"
+"   \n"
+msgstr ""
+"   --save-type=類型    選擇記憶卡類型:\n"
+"                         0 = 自動選擇 (default)\n"
+"                         1 = EEPROM 4kbit\n"
+"                         2 = EEPROM 64kbit\n"
+"                         3 = EEPROM 512kbit\n"
+"                         4 = FRAM 256kbit\n"
+"                         5 = FLASH 2mbit\n"
+"                         6 = FLASH 4mbit\n"
+"   \n"
+
+#: ../src/gtk-glade/main.cpp:162
+#, c-format
+msgid ""
+"   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n"
+"                         0 = Japanese\n"
+"                         1 = English\n"
+"                         2 = French\n"
+"                         3 = German\n"
+"                         4 = Italian\n"
+"                         5 = Spanish\n"
+"\n"
+msgstr ""
+"   --fwlang=LANG       設定韌體的語言, 可用的 LANG 設定有:\n"
+"                         0 = 日文\n"
+"                         1 = 英文\n"
+"                         2 = 法文\n"
+"                         3 = 德文\n"
+"                         4 = 義大利文\n"
+"                         5 = 西班牙文\n"
+"\n"
+
+#: ../src/gtk-glade/main.cpp:171
+#, c-format
+msgid ""
+"   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n"
+"   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n"
+"\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.cpp:175
+#, c-format
+msgid "   --help              Display this message\n"
+msgstr "   --help              顯示這份幫助訊息\n"
+
+#: ../src/gtk-glade/main.cpp:188
+#, c-format
+msgid "I only know how to load from slots 1-10.\n"
+msgstr "即時存檔的編號只能介於 1 到 10 之間\n"
+
+#: ../src/gtk-glade/main.cpp:212
+#, c-format
+msgid "Supported 3d engines: 0, 1, and on some machines 2; use --help option for details\n"
+msgstr "可用的3D引擎有: 0, 1, 在某些機器上可能可以用2; 你可以用 --help 選項查看詳細說明\n"
+
+#: ../src/gtk-glade/main.cpp:224
+#, c-format
+msgid "select savetype from 0 to 6; use --help option for details\n"
+msgstr "記憶卡的類型只能介於 0 到 6之間; 你可以用 --help 選項查看詳細說明\n"
+
+#: ../src/gtk-glade/main.cpp:236
+#, c-format
+msgid "Firmware language must be set to a value from 0 to 5.\n"
+msgstr "韌體語言必須設定 0 到 5 之間的值\n"
+
+#: ../src/gtk-glade/main.cpp:249
+#, c-format
+msgid "ARM9 GDB stub port must be in the range 1 to 65535\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.cpp:261
+#, c-format
+msgid "ARM7 GDB stub port must be in the range 1 to 65535\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.cpp:274
+#, c-format
+msgid "NDS file (\"%s\") already set\n"
+msgstr "NDS檔 (\"%s\") 已經設定\n"
+
+#: ../src/gtk-glade/main.cpp:287
+#, c-format
+msgid "USAGE: %s [options] [nds-file]\n"
+msgstr "使用方式: %s [選項] [nds檔]\n"
+
+#: ../src/gtk-glade/main.cpp:288
+#, c-format
+msgid "USAGE: %s --help    - for help\n"
+msgstr "使用方式: %s --help   - 顯示幫助訊息\n"
+
+#: ../src/gtk-glade/main.cpp:466
+#, c-format
+msgid "Failed to create ARM9 gdbstub on port %d\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.cpp:477
+#, c-format
+msgid "Failed to create ARM7 gdbstub on port %d\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.cpp:486
+#, c-format
+msgid "Error trying to initialize SDL: %s\n"
+msgstr "SDL 初始化錯誤: %s\n"
+
+#: ../src/gtk-glade/main.cpp:569
+#, c-format
+msgid "Failed to initialise openGL 3D emulation; removing 3D support\n"
+msgstr "無法初始化 OpenGL 3D 模擬。取消 3D 支援\n"
+
+#: ../src/gtk-glade/main.cpp:576
+#, c-format
+msgid "Failed to setup 3D engine; removing 3D support\n"
+msgstr "無法設定 OpenGL 3D 模擬; 取消 3D 支援\n"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:1
+msgid "0"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:2
+msgid "1"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:3
+msgid "1x"
+msgstr "原始大小"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:4
+msgid "2"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:5
+msgid "2x"
+msgstr "2倍"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:6
+msgid "3"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:7
+msgid "3D operation detected"
+msgstr "偵測到 3D 操作"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:8
+msgid "3D rom"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:9
+msgid "3x"
+msgstr "3倍"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:10
+msgid "4"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:11
+msgid "5"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:12
+msgid "6"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:13
+msgid "7"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:14
+msgid "8"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:15
+msgid "9"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:16
+msgid "?"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:17
+msgid "A : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:18
+msgid "Audio On"
+msgstr "開啟音效"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:19
+msgid "Axis :"
+msgstr "方向軸 :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:20
+msgid "B : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:21
+msgid "BG0"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:22
+msgid "BG1"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:23
+msgid "BG2"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:24
+msgid "BG3"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:25
+msgid "Boost : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:26
+msgid "Config"
+msgstr "設定"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:27
+msgid "DeSmuME"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:28
+msgid "Debug : "
+msgstr "除錯 :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:29
+msgid "Down : "
+msgstr "下 :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:30
+msgid "FrameSkip"
+msgstr "畫面跳過"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:31
+msgid "IO regs"
+msgstr "IO 暫存器"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:32
+msgid "Joystick Config"
+msgstr "搖桿設定"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:33
+msgid "Joystick controls"
+msgstr "搖桿控制"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:34
+msgid "Key definition"
+msgstr "按鍵定義"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:35
+msgid "Keyboard Config"
+msgstr "鍵盤設定"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:36
+msgid "Keyboard controls"
+msgstr "鍵盤控制"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:37
+msgid "L : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:38
+msgid "Layers"
+msgstr "圖層"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:39
+msgid "Left : "
+msgstr "左 :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:40
+msgid "Load State"
+msgstr "讀取即時存檔"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:41
+msgid "Nintendo DS emulator based on work by Yopyop"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:42
+msgid "No Gap"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:43
+msgid "OBJ"
+msgstr "物件"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:44
+msgid "Press a button..."
+msgstr "請按一個按鈕..."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:45
+msgid "Press a key..."
+msgstr "請按一個按鍵..."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:46
+msgid "R : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:47
+msgid "Reset"
+msgstr "重新啟動"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:48
+msgid "Right : "
+msgstr "右 :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:49
+msgid "Right Screen"
+msgstr "視窗水平排列"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:50
+msgid "Rotate Screen 0"
+msgstr "螢幕旋轉 0 度"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:51
+msgid "Rotate Screen 180"
+msgstr "螢幕旋轉 180 度"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:52
+msgid "Rotate Screen 270"
+msgstr "螢幕旋轉 270 度"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:53
+msgid "Rotate Screen 90"
+msgstr "螢幕旋轉 90 度"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:54
+msgid "Save State"
+msgstr "即時存檔"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:55
+msgid "Select : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:56
+msgid "Size"
+msgstr "大小"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:57
+msgid "Start : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:58
+msgid "State 1"
+msgstr "存檔 1"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:59
+msgid "State 10"
+msgstr "存檔 10"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:60
+msgid "State 2"
+msgstr "存檔 2"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:61
+msgid "State 3"
+msgstr "存檔 3"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:62
+msgid "State 4"
+msgstr "存檔 4"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:63
+msgid "State 5"
+msgstr "存檔 5"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:64
+msgid "State 6"
+msgstr "存檔 6"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:65
+msgid "State 7"
+msgstr "存檔 7"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:66
+msgid "State 8"
+msgstr "存檔 8"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:67
+msgid "State 9"
+msgstr "存檔 9"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:68
+msgid "TYPE: Auto (1B)"
+msgstr "TYPE: 自動選擇 (1B)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:69
+msgid "TYPE: EEPROM1 (4kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:70
+msgid "TYPE: EEPROM2 (512kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:71
+msgid "TYPE: EEPROM2 (64kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:72
+msgid "TYPE: FLASH (256kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:73
+msgid "TYPE: FRAM (2MB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:74
+msgid "TYPE: FRAM (4MB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:75
+msgid "Tools"
+msgstr "工具"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:76
+msgid "True Gap"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:77
+msgid "Up : "
+msgstr "上 :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:78
+msgid "View Memory"
+msgstr "檢視記憶體"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:79
+msgid "View Palette"
+msgstr "檢視調色盤"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:80
+msgid "View Tiles"
+msgstr "檢視物件"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:81
+msgid "X : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:82
+msgid "Y : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:83
+msgid "_Emulation"
+msgstr "模擬器 (_E)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:84
+msgid "_File"
+msgstr "檔案 (_F)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:85
+msgid "_PrintScreen"
+msgstr "截圖 (_P)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:86
+msgid "_Saves"
+msgstr "存檔 (_S)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:87
+msgid "http://desmume.org"
+msgstr ""
+
+#. TRANSLATORS: Replace this string with your names, one name per line.
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:89
+msgid "translator-credits"
+msgstr "Ronmi Ren <ronmi@rmi.twbbs.org>"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:1
+msgid "      GoTo: "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:2
+msgid "  Palette : "
+msgstr "調色盤:"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:3
+msgid "16 bit"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:4
+msgid "16c"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:5
+msgid "256c"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:6
+msgid "32 bit"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:7
+msgid "8 bit"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:8
+msgid ""
+"ARM9 cpu\n"
+"ARM7 cpu"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:10
+msgid "BMP"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:11
+msgid "Go!"
+msgstr "執行"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:12
+msgid ""
+"cpu : ARM9\n"
+"cpu : ARM7"
+msgstr ""
+
+#~ msgid "Error trying to start FPS limiter timer: %s\n"
+#~ msgstr "無法啟始 fps 限制的計時器: %s\n"
+

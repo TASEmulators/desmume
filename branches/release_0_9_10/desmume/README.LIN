@@ -1,0 +1,179 @@
+                        DeSmuME
+        _________________________________________
+        Copyright (C) 2006 yopyop
+        Copyright (C) 2006-2007 DeSmuME team
+
+
+1) Compiling instructions...................................13
+2) How to use DeSmuME.......................................53
+3) Contact information......................................142
+4) Disclaimer...............................................160
+
+
+1 Compiling instructions______________________________________
+
+DeSmuME is written in C using the gtk+ and SDL libraries.
+So you need a working C compiler, such as gcc and
+the following libraries runtime and development packages:
+
+  * http://www.gtk.org
+
+  * http://www.libsdl.org/
+
+Once these libraries are installed, you should be ready to
+install DeSmuME.
+
+DeSmuME provides another interface based on libglade, to use
+it, you'll need glade:
+
+  * http://glade.gnome.org/
+
+1.1 From a release archive____________________________________
+
+Uncompress the DeSmuME archive, move to the newly created 
+directory, type "./configure", then "make".
+It will generate three programs:
+1) "desmume" in the "src/gtk" directory;
+2) "desmume-cli" in the "src/cli" directory.
+If glade is installed on your system, you'll get a third
+binary:
+3) "desmume-glade" in the "src/gtk-glade" directory.
+
+You can even type "make install" to install those programs on
+your system (in /usr/local/ by default), then uninstalling is
+done by typing "make uninstall".
+
+1.2 From a CVS copy___________________________________________
+
+Move to the toplevel directory (the one that contains the
+configure.ac file). Type "./autogen.sh" to generate the
+configure/install scripts and needed Makefiles. Then you can follow the
+same procedure as in 1.1 . intltoolize is required for the
+autogen stage:
+
+  * http://freedesktop.org/wiki/Software/intltool/
+
+2 How to use DeSmuME__________________________________________
+
+There are three versions of DeSmuME under Linux. These are a
+Gtk+ build, a Glade build and a CLI SDL build. All these builds
+have some common command line options:
+
+--disable-limiter   Disables the 60 fps limiter
+--soft-convert      Use software colour conversion during OpenGL
+                    screen rendering. May produce better or worse
+                    frame rates depending on hardware.
+
+--arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port
+--arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port
+
+--cflash=PATH_TO_DISK_IMAGE
+                    Enable disk image GBAMP compact flash emulation
+
+--help              Display this message
+
+
+NOTE:
+The Gtk+ and Glade builds use gtkGLext to handle the OpenGL
+rendering and contexts. You may get improved performance by
+also passing the argument --gdk-gl-force-indirect. This has
+been seen to improve things for Nvidia based graphics cards
+under Linux.
+
+
+GDB Debugger Stubs:
+Source level debugging of ARM9 and/or ARM7 code is supported
+using a GDB/Insight debugger.
+The GDB stubs are enabled from the command line using the
+following options:
+
+--arm9gdb=<PORT_NUM> (for the ARM9)
+--arm7gdb=<PORT_NUM> (for the ARM7)
+
+The PORT_NUM is the TCP port upon which the stub will listen for
+connections. Once enabled you can connect to the stub using the
+following command at the GDB debugger prompt (assuming GDB and
+DeSmuME are running on the same machine):
+
+target remote :<PORT_NUM>
+
+NOTE: there are problems with the ARM support when stepping code
+with GDB versions prior to version 6.6. It is recommended that
+you use at least version 6.6 if possible.
+
+
+GBAMP compact flash emulation:
+
+The default behaviour of DeSmumME is to attempt to emulate the
+FAT image for the contents of the directory where the running
+.nds file was located.
+This behaviour can be altered using the
+--cflash=<DISK_IMAGE_FILE> command line option. Using this
+option DeSmuME will emulation a GBAMP and read and write sectors
+from/to the disk image file.
+The disk image file must be created and populated with files
+using some external tool.
+NOTE: currently if desmume fails to open the disk image file it
+will silently continue minus a working GBAMP emulation.
+
+
+2.1 Gtk+ version______________________________________________
+
+Type "desmume" in a shell, a window should appear, then open
+a rom file using the "open" button, next use the "run" button
+to start emulation.
+
+The following command line options are specific to the Gtk+
+build:
+
+--opengl-2d         Enables using OpenGL for screen rendering
+--disable-sound     Disables the sound emulation
+--disable-3d        Disables the 3D emulation
+
+
+2.2 CLI SDL version_______________________________________________
+
+Just type "desmume-cli path-to-a-rom" in a shell.
+
+The following command line options are specific to the CLI
+build:
+
+--opengl-2d         Enables using OpenGL for screen rendering
+--disable-sound     Disables the sound emulation
+
+
+3 Contact information_________________________________________
+
+General inquiries should go to:
+E-mail:	guillaume@desmume.org
+
+Linux Port-related inquiries should go to:
+E-mail: guillaume@desmume.org
+
+Web:    http://desmume.org
+
+Please don't ask for roms, bios files or any other copyrighted
+stuff.
+
+If you want to submit a bug report, please run desmume, go into
+the "Help" menu, and click on "Submit a bug report". If you're
+having trouble with it, please feel free to email.
+
+
+4 Disclaimer__________________________________________________
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+See the GNU General Public License details in COPYING.

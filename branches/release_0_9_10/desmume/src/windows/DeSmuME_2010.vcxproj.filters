@@ -1,0 +1,1614 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{34192339-8456-4aa2-b100-d721ff246431}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\addons">
+      <UniqueIdentifier>{1761f316-4c22-4742-8f37-77ea008d2623}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\gdbstub">
+      <UniqueIdentifier>{cfb7bfbc-4470-4691-a3c2-b86c388e6a52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils">
+      <UniqueIdentifier>{1b0f72b3-27d4-4d86-b253-eda5a3ebab7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\decrypt">
+      <UniqueIdentifier>{80fa193a-2814-401d-8a51-47c8d876eb8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\metaspu">
+      <UniqueIdentifier>{53ec9c3c-7653-46ff-83a8-9590482bcf8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\metaspu\win32">
+      <UniqueIdentifier>{a6e751df-3c94-41c0-96a1-5ca50d92b221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\metaspu\SoundTouch">
+      <UniqueIdentifier>{e51fc8a7-4240-4b5c-8c2a-86c30fef95c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows">
+      <UniqueIdentifier>{56813aa6-2261-4011-8938-105c0b4b3773}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\userconfig">
+      <UniqueIdentifier>{78bb8fa0-5d56-4cf5-94b3-b020f4f4c290}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\tools">
+      <UniqueIdentifier>{947281ba-49a1-4379-ab51-078980176832}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\resources">
+      <UniqueIdentifier>{e95a5ba4-9d37-4a40-928f-6ee2d8a3a13f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\libs">
+      <UniqueIdentifier>{42b6ff9b-c9ff-4006-b2f7-f3e3268b8c31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\libfat">
+      <UniqueIdentifier>{c751e37c-54da-44e2-9be8-0399cb02467a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\tinyxml">
+      <UniqueIdentifier>{6d47beab-6087-48e1-953d-f5da134a023a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\filter">
+      <UniqueIdentifier>{0c7156df-b4ef-4cd2-af76-6a6c1e66145a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\AsmJit">
+      <UniqueIdentifier>{faa7804e-deb3-482f-b348-921cb7dacca7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\fex">
+      <UniqueIdentifier>{d2287daf-de85-4c64-8eef-2198f501904a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\fex\7z">
+      <UniqueIdentifier>{fddf8c65-a8f4-41ed-ab58-cd268c3a12da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Windows\fex\unrar">
+      <UniqueIdentifier>{24398c49-4650-412e-b46f-4725ad4f5b11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\AsmJit\core">
+      <UniqueIdentifier>{82c38db3-d06d-44b5-a9a4-be3c002d0db0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\utils\AsmJit\x86">
+      <UniqueIdentifier>{0d620905-0dcf-47a4-bac2-91f307aa9994}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\aggdraw.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\arm_instructions.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\armcpu.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\bios.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cheatSystem.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\commandline.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cp15.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\debug.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Disassembler.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\driver.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\emufile.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\FIFO.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\firmware.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fs-windows.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gfx3d.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GPU.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\GPU_OSD.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lua-engine.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\matrix.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\MMU.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\movie.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\NDSSystem.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OGLRender.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\rasterize.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\readwrite.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\render3D.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ROMReader.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\rtc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\saves.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\slot1.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\slot2.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SPU.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\texcache.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thumb_instructions.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\version.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\wifi.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_expMemory.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_gbagame.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_guitarGrip.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_none.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_rumblepak.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gdbstub\gdbstub.cpp">
+      <Filter>Core\gdbstub</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\ConvertUTF.c">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\guid.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\md5.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\task.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\xstring.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\decrypt\crc.cpp">
+      <Filter>Core\utils\decrypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\decrypt\decrypt.cpp">
+      <Filter>Core\utils\decrypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\decrypt\header.cpp">
+      <Filter>Core\utils\decrypt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\metaspu.cpp">
+      <Filter>Core\metaspu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SndOut.cpp">
+      <Filter>Core\metaspu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\Timestretcher.cpp">
+      <Filter>Core\metaspu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\win32\ConfigSoundtouch.cpp">
+      <Filter>Core\metaspu\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\3dnow_win.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\AAFilter.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\cpu_detect_x86_win.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\FIFOSampleBuffer.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\FIRFilter.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\mmx_optimized.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\RateTransposer.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\SoundTouch.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\sse_optimized.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\TDStretch.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\metaspu\SoundTouch\WavFile.cpp">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClCompile>
+    <ClCompile Include="AboutBox.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="aviout.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="cheatsWin.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="colorctrl.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="console.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="CWindow.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="FirmConfig.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="gbaslot_config.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="hotkey.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="inputdx.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="luaconsole.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="mic.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="ogl.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenArchive.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="pathsettings.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="recentroms.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="replay.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="snddx.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="slot1_config.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="throttle.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="winutil.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="disView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="ginfo.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="IORegView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="lightView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="mapView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="matrixView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="memView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="oamView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="palView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="ram_search.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="ramwatch.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="soundView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="tileView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_piano.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\dlditool.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_none.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_r4.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_nand.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\datetime.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\partition.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\cache.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\directory.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\disc.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\fatdir.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\fatfile.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\file_allocation_table.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\filetime.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\libfat.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\libfat_public_api.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\lock.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\path.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_mpcf.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\vfat.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\emufat.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_paddle.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinystr.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinyxml.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinyxmlerror.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\tinyxml\tinyxmlparser.cpp">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\epx.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\hq2x.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\hq4x.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\lq2x.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\scanline.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\2xsai.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\filter\bilinear.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="importSave.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\arm_jit.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Binary_Extractor.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\blargg_common.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\blargg_errors.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Data_Reader.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\fex.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Gzip_Extractor.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Gzip_Reader.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Rar_Extractor.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Zip_Extractor.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Zip7_Extractor.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\Zlib_Inflater.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zAlloc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zBuf.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zBuf2.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zCrc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zCrcOpt.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zDec.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zDecode.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zExtract.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zFile.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zHeader.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zIn.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zItem.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zStream.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Alloc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Bcj2.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Bra.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Bra86.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\BraIA64.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\CpuArch.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Delta.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\LzFind.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\LzFindMt.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Lzma2Dec.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Lzma2Enc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Lzma86Dec.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Lzma86Enc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\LzmaDec.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\LzmaEnc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\LzmaLib.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\MtCoder.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Ppmd7.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Ppmd7Dec.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Ppmd7Enc.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\Threads.c">
+      <Filter>Windows\fex\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\archive.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\arcread.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\coder.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\encname.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\extract.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\getbits.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\model.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\rarvm.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\rarvmtbl.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\rawread.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\suballoc.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unicode.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unpack.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unpack15.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unpack20.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unrar.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unrar_misc.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\unrar_open.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\fex\File_Extractor.cpp">
+      <Filter>Windows\fex</Filter>
+    </ClCompile>
+    <ClCompile Include="FEX_Interface.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="File_Extractor\unrar\crc.cpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\assembler.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\assert.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\buffer.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compiler.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compilercontext.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compilerfunc.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\compileritem.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\context.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\cpuinfo.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\defs.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\func.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\logger.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\memorymanager.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\memorymarker.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\operand.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\stringbuilder.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\stringutil.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\virtualmemory.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\core\zonememory.cpp">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86assembler.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compiler.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compilercontext.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compilerfunc.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86compileritem.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86cpuinfo.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86defs.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86func.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86operand.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\AsmJit\x86\x86util.cpp">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="..\OGLRender_3_2.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="sndxa2.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\encrypt.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_auto.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_mcrom.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1comp_mc.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1comp_rom.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\advanscene.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1comp_protocol.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot1_retail_mcrom_debug.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\fsnitro.cpp">
+      <Filter>Core\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="fsnitroView.cpp">
+      <Filter>Windows\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_passme.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\addons\slot2_auto.cpp">
+      <Filter>Core\addons</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\armcpu.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\bios.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\bits.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cheatSystem.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\commandline.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cp15.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\debug.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Disassembler.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\driver.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\emufile.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fat.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FIFO.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\firmware.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fs.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gfx3d.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GPU.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\GPU_osd.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lua-engine.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\matrix.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mc.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mem.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mic.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MMU.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MMU_timing.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\movie.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\NDSSystem.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OGLRender.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\path.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rasterize.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\readwrite.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\registers.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\render3D.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ROMReader.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rtc.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\saves.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shaders.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\slot1.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SPU.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\texcache.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\types.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\version.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\wifi.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\xstring.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gdbstub.h">
+      <Filter>Core\gdbstub</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\ConvertUTF.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\guid.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\md5.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\task.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\valuearray.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\decrypt\crc.h">
+      <Filter>Core\utils\decrypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\decrypt\decrypt.h">
+      <Filter>Core\utils\decrypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\decrypt\header.h">
+      <Filter>Core\utils\decrypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\metaspu.h">
+      <Filter>Core\metaspu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SndOut.h">
+      <Filter>Core\metaspu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\win32\Dialogs.h">
+      <Filter>Core\metaspu\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\AAFilter.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\BPMDetect.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\cpu_detect.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\FIFOSampleBuffer.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\FIFOSamplePipe.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\FIRFilter.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\RateTransposer.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\SoundTouch.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\STTypes.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\TDStretch.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\metaspu\SoundTouch\WavFile.h">
+      <Filter>Core\metaspu\SoundTouch</Filter>
+    </ClInclude>
+    <ClInclude Include="AboutBox.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="aviout.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="cheatsWin.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="colorctrl.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="console.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="CWindow.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="FirmConfig.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="gbaslot_config.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="hotkey.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="inputdx.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="main.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenArchive.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="pathsettings.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="recentroms.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="replay.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="snddx.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="slot1_config.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="throttle.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="winpcap.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="winutil.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="userconfig\userconfig.h">
+      <Filter>Windows\userconfig</Filter>
+    </ClInclude>
+    <ClInclude Include="disView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ginfo.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="IORegView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="lightView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="mapView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="matrixView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="memView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="oamView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="palView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ram_search.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ramwatch.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="soundView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="tileView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\datetime.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\partition.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\bit_ops.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\cache.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\common.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\directory.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\disc.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\disc_io.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\fat.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\fatdir.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\fatfile.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\file_allocation_table.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\filetime.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\libfat_pc.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\libfat_public_api.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\lock.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\libfat\mem_allocate.h">
+      <Filter>Core\utils\libfat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\vfat.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\emufat.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\emufat_types.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\tinyxml\tinystr.h">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\tinyxml\tinyxml.h">
+      <Filter>Core\utils\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\filter.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\hq2x.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\hq4x.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\interp.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\lq2x.h">
+      <Filter>Core\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="importSave.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\arm_jit.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\instruction_attributes.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\instructions.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Binary_Extractor.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\blargg_common.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\blargg_config.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\blargg_endian.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\blargg_errors.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\blargg_source.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Data_Reader.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\fex.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Gzip_Extractor.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Gzip_Reader.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Rar_Extractor.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Zip_Extractor.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Zip7_Extractor.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\Zlib_Inflater.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7z.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zAlloc.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zBuf.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zCrc.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zDecode.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zExtract.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zFile.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zHeader.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zIn.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zItem.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zTypes.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\7zVersion.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Alloc.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Bcj2.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Bra.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\CpuArch.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Delta.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzFind.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzFindMt.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzHash.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Lzma2Dec.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Lzma2Enc.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Lzma86.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzmaDec.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzmaEnc.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzmaLib.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\LzmaTypes.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\MtCoder.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Ppmd.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Ppmd7.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\RotateDefs.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Threads.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\7z_C\Types.h">
+      <Filter>Windows\fex\7z</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\archive.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\array.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\coder.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\compress.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\encname.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\getbits.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\headers.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\model.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\rar.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\rarvm.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\rawread.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\suballoc.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\unicode.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\unpack.hpp">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\unrar\unrar.h">
+      <Filter>Windows\fex\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="File_Extractor\fex\File_Extractor.h">
+      <Filter>Windows\fex</Filter>
+    </ClInclude>
+    <ClInclude Include="FEX_Interface.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\asmjit.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\config.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86.h">
+      <Filter>Core\utils\AsmJit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\apibegin.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\apiend.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\assembler.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\assert.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\buffer.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\build.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compiler.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compilercontext.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compilerfunc.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\compileritem.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\context.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\cpuinfo.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\defs.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\func.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\intutil.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\lock.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\logger.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\memorymanager.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\memorymarker.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\operand.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\podvector.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\stringbuilder.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\stringutil.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\virtualmemory.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\core\zonememory.h">
+      <Filter>Core\utils\AsmJit\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86assembler.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compiler.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compilercontext.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compilerfunc.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86compileritem.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86cpuinfo.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86defs.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86func.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86operand.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\AsmJit\x86\x86util.h">
+      <Filter>Core\utils\AsmJit\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="..\OGLRender_3_2.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="sndxa2.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\encrypt.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\addons\slot1comp_mc.h">
+      <Filter>Core\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\addons\slot1comp_rom.h">
+      <Filter>Core\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\advanscene.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\addons\slot1comp_protocol.h">
+      <Filter>Core\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\fsnitro.h">
+      <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="fsnitroView.h">
+      <Filter>Windows\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\slot2.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\instruction_tabdef.inc">
+      <Filter>Core</Filter>
+    </None>
+    <None Include="..\thumb_tabdef.inc">
+      <Filter>Core</Filter>
+    </None>
+    <None Include="bitmap1.bmp">
+      <Filter>Windows\resources</Filter>
+    </None>
+    <None Include="DeSmuME.ico">
+      <Filter>Windows\resources</Filter>
+    </None>
+    <None Include="..\filter\hq4x.dat">
+      <Filter>Core\filter</Filter>
+    </None>
+    <None Include="File_Extractor\7z_C\7zC.txt">
+      <Filter>Windows\fex\7z</Filter>
+    </None>
+    <None Include="File_Extractor\7z_C\changes.txt">
+      <Filter>Windows\fex\7z</Filter>
+    </None>
+    <None Include="File_Extractor\7z_C\lzma.txt">
+      <Filter>Windows\fex\7z</Filter>
+    </None>
+    <None Include="File_Extractor\7z_C\readme.txt">
+      <Filter>Windows\fex\7z</Filter>
+    </None>
+    <None Include="File_Extractor\unrar\changes.txt">
+      <Filter>Windows\fex\unrar</Filter>
+    </None>
+    <None Include="File_Extractor\unrar\license.txt">
+      <Filter>Windows\fex\unrar</Filter>
+    </None>
+    <None Include="File_Extractor\unrar\readme.txt">
+      <Filter>Windows\fex\unrar</Filter>
+    </None>
+    <None Include="File_Extractor\unrar\technote.txt">
+      <Filter>Windows\fex\unrar</Filter>
+    </None>
+    <None Include="File_Extractor\unrar\whatsnew.txt">
+      <Filter>Windows\fex\unrar</Filter>
+    </None>
+    <None Include="..\utils\AsmJit\COPYING.txt">
+      <Filter>Core\utils\AsmJit</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resources.rc">
+      <Filter>Windows\resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="directx\directx.7z">
+      <Filter>Windows\libs</Filter>
+    </CustomBuild>
+    <CustomBuild Include="glib-2.20.1\glib-2.20.1.7z">
+      <Filter>Windows\libs</Filter>
+    </CustomBuild>
+    <CustomBuild Include="lua\lua.7z">
+      <Filter>Windows\libs</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>
