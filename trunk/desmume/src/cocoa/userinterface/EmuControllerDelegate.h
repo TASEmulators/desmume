@@ -114,6 +114,7 @@ class AudioSampleBlockGenerator;
 
 @property (readonly) BOOL masterExecuteFlag;
 @property (readonly) NSInteger executionState;
+@property (readonly) CGFloat lastSetSpeedScalar;
 @property (readonly) CGFloat speedScalar;
 
 @property (assign) BOOL isWorking;
@@ -205,14 +206,15 @@ class AudioSampleBlockGenerator;
 - (void) cmdReset:(NSValue *)cmdAttrValue;
 - (void) cmdToggleGPUState:(NSValue *)cmdAttrValue;
 
-- (BOOL) handleLoadRom:(NSURL *)fileURL;
+- (BOOL) handleLoadRomByURL:(NSURL *)fileURL;
 - (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;
-- (BOOL) loadRom:(NSURL *)romURL;
+- (BOOL) loadRomByURL:(NSURL *)romURL asynchronous:(BOOL)willLoadAsync;
 - (void) loadRomDidFinish:(NSNotification *)aNotification;
 - (BOOL) unloadRom;
 
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput;
 - (void) removeOutputFromCore:(CocoaDSOutput *)theOutput;
+- (void) changeCoreSpeedWithDouble:(double)newSpeedScalar;
 - (void) executeCore;
 - (void) pauseCore;
 - (void) restoreCoreState;
