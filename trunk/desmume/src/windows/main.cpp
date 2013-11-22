@@ -5606,7 +5606,7 @@ DOKEYDOWN:
 		case ID_TOOLS_VIEWFSNITRO:
 			if (!CommonSettings.loadToMemory)
 			{
-				msgbox->error("Change load type to \"Load to RAM\"");
+				msgbox->error("Change ROM loading mode to \"Load entirely to RAM\"");
 				return 0;
 			}
 			ViewFSNitro->open();
