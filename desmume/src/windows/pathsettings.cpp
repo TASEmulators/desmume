@@ -44,7 +44,7 @@ void DoAssociations()
 	string classes = "Software\\Classes";
 	string defaultIcon = "DefaultIcon";
 	string openVerb = "shell\\open\\command";
-	string iconIndex = ", 96";
+	string iconIndex = ", 0";
 	string argument = " \"%1\"";
 
 	HKEY user = NULL;
