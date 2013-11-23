@@ -84,7 +84,7 @@ void CommandLine::loadCommonOptions()
 	//but also see the gtk port for an example of how to combine this with other options
 	//(you may need to use ifdefs to cause options to be entered in the desired order)
 	static const GOptionEntry options[] = {
-		{ "load-type", 0, 0, G_OPTION_ARG_INT, &_load_to_memory, "ROM loading method, 0 - stream from disk (like an iso), 1 - load entirely to RAM (default 1)", "LOAD_TYPE"},
+		{ "load-type", 0, 0, G_OPTION_ARG_INT, &_load_to_memory, "ROM loading method, 0 - stream from disk (like an iso), 1 - load entirely to RAM (default 0)", "LOAD_TYPE"},
 		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savestate from slot NUM", "NUM"},
 		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
 		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},

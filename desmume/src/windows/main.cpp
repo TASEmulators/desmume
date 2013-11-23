@@ -2937,7 +2937,7 @@ int _main()
 
 	path.ReadPathSettings();
 
-	CommonSettings.loadToMemory = GetPrivateProfileBool("General", "loadType", true, IniName);
+	CommonSettings.loadToMemory = GetPrivateProfileBool("General", "ROM Loading Mode", false, IniName);
 	CommonSettings.cheatsDisable = GetPrivateProfileBool("General", "cheatsDisable", false, IniName);
 	CommonSettings.autodetectBackupMethod = GetPrivateProfileInt("General", "autoDetectMethod", 0, IniName);
 	CommonSettings.backupSave = GetPrivateProfileBool("General", "backupSave", false, IniName);
@@ -5826,12 +5826,12 @@ DOKEYDOWN:
 
 		case ID_STREAMFROMDISK:
 			CommonSettings.loadToMemory = false;
-			WritePrivateProfileBool("General", "loadType", CommonSettings.loadToMemory, IniName);
+			WritePrivateProfileBool("General", "ROM Loading Mode", CommonSettings.loadToMemory, IniName);
 			return 0;
 
 		case ID_LOADTORAM:
 			CommonSettings.loadToMemory = true;
-			WritePrivateProfileBool("General", "loadType", CommonSettings.loadToMemory, IniName);
+			WritePrivateProfileBool("General", "ROM Loading Mode", CommonSettings.loadToMemory, IniName);
 			return 0;
 
 		case IDM_3DCONFIG:
