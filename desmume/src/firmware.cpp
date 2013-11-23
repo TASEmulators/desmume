@@ -601,8 +601,11 @@ std::string CFIRMWARE::GetExternalFilePath()
 {
 	std::string fwPath = CommonSettings.Firmware;
 	std::string fwFileName = Path::GetFileNameFromPathWithoutExt(fwPath);
-	std::string configPath = path.pathToBattery;
-	std::string finalPath = configPath + DIRECTORY_DELIMITER_CHAR + fwFileName + FILE_EXT_DELIMITER_CHAR + FW_CONFIG_FILE_EXT;
+	char configPath[MAX_PATH] = {0};
+	path.getpath(path.BATTERY, configPath);
+	if (configPath[strlen(configPath)-1] == DIRECTORY_DELIMITER_CHAR)
+			configPath[strlen(configPath)-1] = 0;
+	std::string finalPath = std::string(configPath) + DIRECTORY_DELIMITER_CHAR + fwFileName + FILE_EXT_DELIMITER_CHAR + FW_CONFIG_FILE_EXT;
 
 	return finalPath;
 }
