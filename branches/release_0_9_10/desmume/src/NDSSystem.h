@@ -500,7 +500,7 @@ extern struct TCommonSettings {
 		, GFX3D_Zelda_Shadow_Depth_Hack(0)
 		, GFX3D_Renderer_Multisample(false)
 		, jit_max_block_size(100)
-		, loadToMemory(true)
+		, loadToMemory(false)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
 		, PatchSWI3(false)
