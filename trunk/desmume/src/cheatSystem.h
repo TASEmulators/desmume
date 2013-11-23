@@ -82,6 +82,7 @@ public:
 	BOOL	get(CHEATS_LIST *cheat, u32 pos);
 	CHEATS_LIST*	getItemByIndex(const u32 pos);
 	u32		getSize();
+	size_t	getActiveCount();
 	void	setDescription(const char *description, u32 pos);
 	BOOL	save();
 	BOOL	load();

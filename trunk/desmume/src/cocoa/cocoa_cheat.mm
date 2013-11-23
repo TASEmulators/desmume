@@ -888,6 +888,15 @@ static NSImage *iconCodeBreaker = nil;
 	return result;
 }
 
+- (NSUInteger) activeCount
+{
+	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	NSUInteger activeCheatsCount = self.listData->getActiveCount();
+	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	
+	return activeCheatsCount;
+}
+
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error
 {
 	NSMutableArray *newDBList = nil;

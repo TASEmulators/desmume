@@ -536,6 +536,22 @@ u32	CHEATS::getSize()
 	return list.size();
 }
 
+size_t CHEATS::getActiveCount()
+{
+	size_t activeCheatCount = 0;
+	const size_t cheatListCount = this->getSize();
+	
+	for (size_t i = 0; i < cheatListCount; i++)
+	{
+		if (list[i].enabled)
+		{
+			activeCheatCount++;
+		}
+	}
+	
+	return activeCheatCount;
+}
+
 void CHEATS::setDescription(const char *description, u32 pos)
 {
 	strncpy(list[pos].description, description, sizeof(list[pos].description));
