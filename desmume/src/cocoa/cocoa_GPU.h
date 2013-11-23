@@ -60,6 +60,8 @@
 - (void) hideGPUType:(const NSInteger)theGpuType;
 - (void) showGPUType:(const NSInteger)theGpuType;
 
+- (NSString *) render3DRenderingEngineString;
+
 @end
 
 #ifdef __cplusplus

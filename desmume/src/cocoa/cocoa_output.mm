@@ -329,6 +329,87 @@
 	[property setValue:[NSNumber numberWithInteger:filter] forKey:@"filter"];
 }
 
+- (NSString *) audioOutputEngineString
+{
+	NSString *theString = @"Uninitialized";
+	
+	pthread_mutex_lock(self.mutexProducer);
+	
+	SoundInterface_struct *soundCore = SPU_SoundCore();
+	if(soundCore == NULL)
+	{
+		pthread_mutex_unlock(self.mutexProducer);
+		return theString;
+	}
+	
+	const char *theName = soundCore->Name;
+	theString = [NSString stringWithCString:theName encoding:NSUTF8StringEncoding];
+	
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return theString;
+}
+
+- (NSString *) spuInterpolationModeString
+{
+	NSString *theString = @"Unknown";
+	NSInteger theMode = [self spuInterpolationMode];
+	
+	switch (theMode)
+	{
+		case SPUInterpolation_None:
+			theString = @"None";
+			break;
+			
+		case SPUInterpolation_Linear:
+			theString = @"Linear";
+			break;
+			
+		case SPUInterpolation_Cosine:
+			theString = @"Cosine";
+			break;
+			
+		default:
+			break;
+	}
+	
+	return theString;
+}
+
+- (NSString *) spuSyncMethodString
+{
+	NSString *theString = @"Unknown";
+	NSInteger theMode = [self spuSyncMode];
+	NSInteger theMethod = [self spuSyncMethod];
+	
+	if (theMode == ESynchMode_DualSynchAsynch)
+	{
+		theString = @"Dual SPU Sync/Async";
+	}
+	else
+	{
+		switch (theMethod)
+		{
+			case ESynchMethod_N:
+				theString = @"\"N\" Sync Method";
+				break;
+				
+			case ESynchMethod_Z:
+				theString = @"\"Z\" Sync Method";
+				break;
+				
+			case ESynchMethod_P:
+				theString = @"\"P\" Sync Method";
+				break;
+				
+			default:
+				break;
+		}
+	}
+	
+	return theString;
+}
+
 - (void)handlePortMessage:(NSPortMessage*)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];

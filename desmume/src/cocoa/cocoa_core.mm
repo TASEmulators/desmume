@@ -759,6 +759,67 @@ static BOOL isCoreStarted = NO;
 	[CocoaDSCore shutdownCore];
 }
 
+- (NSString *) cpuEmulationEngineString
+{
+	NSString *theString = @"Uninitialized";
+	
+	switch ([self cpuEmulationEngine])
+	{
+		case CPU_EMULATION_ENGINE_INTERPRETER:
+			theString = @"Interpreter";
+			break;
+			
+		case CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER:
+			theString = @"Dynamic Recompiler";
+			break;
+			
+		default:
+			break;
+	}
+	
+	return theString;
+}
+
+- (NSString *) slot1DeviceTypeString
+{
+	NSString *theString = @"Uninitialized";
+	
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	
+	if(slot1_device == NULL)
+	{
+		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		return theString;
+	}
+	
+	const Slot1Info *info = slot1_device->info();
+	theString = [NSString stringWithCString:info->name() encoding:NSUTF8StringEncoding];
+	
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	
+	return theString;
+}
+
+- (NSString *) slot2DeviceTypeString
+{
+	NSString *theString = @"Uninitialized";
+	
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	
+	if(slot2_device == NULL)
+	{
+		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		return theString;
+	}
+	
+	const Slot2Info *info = slot2_device->info();
+	theString = [NSString stringWithCString:info->name() encoding:NSUTF8StringEncoding];
+	
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	
+	return theString;
+}
+
 @end
 
 static void* RunCoreThread(void *arg)

@@ -652,6 +652,26 @@ GPU3DInterface *core3DList[] = {
 	[self setGpuStateFlags:flags];
 }
 
+- (NSString *) render3DRenderingEngineString
+{
+	NSString *theString = @"Uninitialized";
+	
+	pthread_mutex_lock(self.mutexProducer);
+	
+	if(gpu3D == NULL)
+	{
+		pthread_mutex_unlock(self.mutexProducer);
+		return theString;
+	}
+	
+	const char *theName = gpu3D->name;
+	theString = [NSString stringWithCString:theName encoding:NSUTF8StringEncoding];
+	
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return theString;
+}
+
 @end
 
 void SetGPULayerState(const int gpuType, const unsigned int i, const bool state)

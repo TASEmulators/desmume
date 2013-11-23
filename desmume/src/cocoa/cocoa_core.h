@@ -138,6 +138,10 @@ typedef struct
 - (void) removeOutput:(CocoaDSOutput *)theOutput;
 - (void) removeAllOutputs;
 
+- (NSString *) cpuEmulationEngineString;
+- (NSString *) slot1DeviceTypeString;
+- (NSString *) slot2DeviceTypeString;
+
 @end
 
 static void* RunCoreThread(void *arg);

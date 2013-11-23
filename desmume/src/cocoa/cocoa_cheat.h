@@ -111,6 +111,7 @@
 - (void) remove:(CocoaDSCheatItem *)cheatItem;
 - (BOOL) update:(CocoaDSCheatItem *)cheatItem;
 - (BOOL) save;
+- (NSUInteger) activeCount;
 - (NSMutableArray *) cheatListFromDatabase:(NSURL *)fileURL errorCode:(NSInteger *)error;
 - (void) applyInternalCheat:(CocoaDSCheatItem *)cheatItem;
 
