@@ -34,6 +34,8 @@ enum TroubleshootingViewID
 	NSWindow *window;
 	NSObjectController *troubleshootingWindowController;
 	NSObjectController *romInfoController;
+	NSObjectController *emuControlController;
+	NSObjectController *cdsCoreController;
 	
 	NSView *viewSupportRequest;
 	NSView *viewBugReport;
@@ -48,6 +50,8 @@ enum TroubleshootingViewID
 @property (readonly) IBOutlet NSWindow *window;
 @property (readonly) IBOutlet NSObjectController *troubleshootingWindowController;
 @property (readonly) IBOutlet NSObjectController *romInfoController;
+@property (readonly) IBOutlet NSObjectController *emuControlController;
+@property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet NSView *viewSupportRequest;
 @property (readonly) IBOutlet NSView *viewBugReport;
 @property (readonly) IBOutlet NSView *viewFinishedForm;

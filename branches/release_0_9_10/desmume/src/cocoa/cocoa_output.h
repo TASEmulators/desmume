@@ -101,6 +101,9 @@ typedef struct
 - (void) setMute:(BOOL)mute;
 - (NSInteger) filter;
 - (void) setFilter:(NSInteger)filter;
+- (NSString *) audioOutputEngineString;
+- (NSString *) spuInterpolationModeString;
+- (NSString *) spuSyncMethodString;
 - (void) handleSetVolume:(NSData *)volumeData;
 - (void) handleSetAudioOutputEngine:(NSData *)methodIdData;
 - (void) handleSetSpuAdvancedLogic:(NSData *)stateData;
