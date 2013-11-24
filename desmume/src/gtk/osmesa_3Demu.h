@@ -19,5 +19,6 @@
 */
 
 #ifdef HAVE_LIBOSMESA
-int init_osmesa_3Demu( void);
+int  init_osmesa_3Demu(void);
+void deinit_osmesa_3Demu(void);
 #endif

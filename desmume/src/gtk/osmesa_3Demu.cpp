@@ -28,18 +28,41 @@ static bool osmesa_beginOpenGL(void) { return 1; }
 static void osmesa_endOpenGL(void) { }
 static bool osmesa_init(void) { return true; }
 
-int init_osmesa_3Demu(void) {
-  void * buffer;
-  OSMesaContext ctx;
+static void * buffer = NULL;
+static OSMesaContext ctx;
 
-  ctx = OSMesaCreateContext(OSMESA_RGBA, NULL);
-  buffer = malloc(256 * 192 * 4);
-  OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, 256, 192);
+void deinit_osmesa_3Demu (void)
+{
+    free(buffer);
+    OSMesaDestroyContext(ctx);
+}
 
-  oglrender_init = osmesa_init;
-  oglrender_beginOpenGL = osmesa_beginOpenGL;
-  oglrender_endOpenGL = osmesa_endOpenGL;
+int init_osmesa_3Demu(void) 
+{
+    if (!ctx)
+    {
+        printf("OSMesaCreateContext failed!\n");
+        return false;
+    }
 
-  return 1;
+    buffer = malloc(256 * 192 * 4);
+    if (!buffer)
+    {
+        printf("Could not allocate enough memory!\n");
+        return false;
+    }
+
+    if (!OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, 256, 192))
+    {
+        printf("OSMesaMakeCurrent failed!\n");
+        free(buffer);
+        return false;
+    }
+
+    oglrender_init = osmesa_init;
+    oglrender_beginOpenGL = osmesa_beginOpenGL;
+    oglrender_endOpenGL = osmesa_endOpenGL;
+
+    return true;
 }
 #endif
