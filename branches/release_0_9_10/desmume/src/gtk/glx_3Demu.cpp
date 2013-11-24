@@ -28,25 +28,43 @@ static bool glx_beginOpenGL(void) { return 1; }
 static void glx_endOpenGL(void) { }
 static bool glx_init(void) { return true; }
 
+static GLXContext ctx;
+static GLXPbuffer pbuf;
+
+void deinit_glx_3Demu(void)
+{
+    Display *dpy = glXGetCurrentDisplay();
+
+    if (dpy)
+    {
+        glXDestroyPbuffer(dpy, pbuf);
+        glXDestroyContext(dpy, ctx);
+
+        XCloseDisplay(dpy);
+
+        return true;
+    }
+
+    return false;
+}
+
 int init_glx_3Demu(void) 
 {
     Display *dpy = XOpenDisplay(NULL);
     XVisualInfo *vis;
-    GLXContext ctx;
     GLXFBConfig *cfg;
-    GLXPbuffer pbuf;
     int maj, min;
 
     if (!dpy)
-        return 0;
+        return false;
 
     // Check if GLX is present
     if (!glXQueryVersion(dpy, &maj, &min))
-        return 0;
+        return false;
 
     // We need GLX 1.3 at least
     if (maj < 1 || (maj == 1 && min < 3))
-        return 0;
+        return false;
 
     const int vis_attr[] =  {
       GLX_RGBA, 
@@ -62,7 +80,7 @@ int init_glx_3Demu(void)
     vis = glXChooseVisual(dpy, DefaultScreen(dpy), (int *)&vis_attr);
 
     if (!vis)
-        return 0;
+        return false;
 
     const int fb_attr[] = { 
       GLX_RENDER_TYPE,    GLX_RGBA_BIT,
@@ -82,7 +100,7 @@ int init_glx_3Demu(void)
     cfg = glXChooseFBConfig(dpy, DefaultScreen(dpy), (int *)&fb_attr, &configs);
 
     if (!cfg)
-      return 0;
+      return false;
 
     const int pbuf_attr[] = {
       GLX_PBUFFER_WIDTH,  256,
@@ -98,10 +116,10 @@ int init_glx_3Demu(void)
     ctx = glXCreateContext(dpy, vis, NULL, true);
 
     if (!ctx)
-      return 0;
+      return false;
 
     if (!glXMakeContextCurrent(dpy, pbuf, pbuf, ctx))
-      return 0;
+      return false;
 
     printf("OGL/GLX Renderer has finished the initialization.\n");
 
@@ -109,7 +127,7 @@ int init_glx_3Demu(void)
     oglrender_beginOpenGL = glx_beginOpenGL;
     oglrender_endOpenGL = glx_endOpenGL;
 
-    return 1;
+    return true;
 }
 
 #endif // HAVE_GLX
