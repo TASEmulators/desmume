@@ -2464,6 +2464,12 @@ common_gtk_main( class configured_features *my_config)
 
     desmume_free();
 
+#if defined(HAVE_LIBOSMESA)
+    deinit_osmesa_3Demu();
+#elif defined(HAVE_GL_GLX)
+    deinit_glx_3Demu();
+#endif
+
     if ( !gtk_fps_limiter_disabled) {
         /* tidy up the FPS limiter timer and semaphore */
         SDL_RemoveTimer( limiter_timer);
