@@ -3515,7 +3515,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		static const bool defaultConsoleEnable = false;
 	#endif
 
-	gShowConsole = GetPrivateProfileBool("Display", "Show Console", defaultConsoleEnable, IniName);
+	gShowConsole = GetPrivateProfileBool("Console", "Show", defaultConsoleEnable, IniName);
 	gConsoleTopmost = GetPrivateProfileBool("Console", "Always On Top", false, IniName);
 
 	if (gShowConsole)
