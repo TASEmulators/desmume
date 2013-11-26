@@ -1,7 +1,40 @@
-0.9.9 -> 0.9.10 (r4623-)
+0.9.9 -> 0.9.10 (r4623-r4908)
+
+In this version, we have focused on trying to clean up some complexities in the user experience and emulator internals. Pretty unglamorous stuff, but some games are newly compatible.
+
+General/Core:
+ enh: break savestate back-compatibility
+ bug: improve save size autodetection for some games
+ bug: cpu: fix many basic jit cpu bugs
+ bug: 3d: tweak softrasterizer edge marking
+ bug: 3d: fix stale 4x4 texture palettes
+ bug: fix some GPU sprite blending scenarios
+ bug: fix bios HLE BitUnPack, UnCompHuffman
+ enh: modular slot-1 device system, emulate GC bus more faithfully
+ enh: support NAND slot-1 device
+ enh: auto-detect appropriate slot-1 and slot-2 device
+ enh: many revisions to firmware boot process for more authenticity. iQue and FlashME versions function, .dfc rewritten.
+ enh: support streaming NDS file from disk (like an ISO, to avoid long initial load time)
+ enh: run .dsv directly on disk, to save long flushing times. should speed backup operations.
+ enh: spu synch mode and method on commandline
+ 
 Windows:
  bug: fixes to advanscene DB import
- 
+ bug: save opengl display method filter option
+ bug: general bugfixes to various screen layout modes
+ enh: add option to stop non-integer scaling during fullscreen or maximize
+ enh: improvements to save import dialog
+ enh: improved memory viewer tool
+ enh: operate better when run, against our advice, from a zipfile
+ enh: add slot-1 Nitro Filesystem viewer tool
+
+Cocoa:
+ bug: fix slot1-R4 path saving
+ bug: fix bug with mic samples < 16khz
+ bug: fix bugs and enhancements in multi display windows
+ bug: fix handling of some joystick analog inputs
+ enh: save display windows configuration and emulation speed on app exit
+
 0.9.8 -> 0.9.9 (r4228-r4623)
 
 Yes, it's been a while since the last release, but we haven't been completely idle. There's a brand new jit cpu core which yields some impressive speedups! 
