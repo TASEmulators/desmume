@@ -20,7 +20,7 @@
 #define STRING_DESMUME_SHORT_DESCRIPTION			"Nintendo DS Emulator"
 #define STRING_DESMUME_FORUM_SITE					"http://forums.desmume.org/index.php"
 #define STRING_DESMUME_TECH_SUPPORT_SITE			"http://forums.desmume.org/viewforum.php?id=4"
-#define STRING_DESMUME_BUG_REPORT_SITE				"http://sourceforge.net/tracker/?group_id=164579&atid=832291"
+#define STRING_DESMUME_BUG_REPORT_SITE				"http://sourceforge.net/p/desmume/bugs"
 
 // User Interface Localized Strings
 #define NSSTRING_TITLE_OPEN_ROM_PANEL				NSLocalizedString(@"Open ROM", nil)
