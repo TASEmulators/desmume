@@ -654,7 +654,7 @@ TEMPLATE static u32 RLUnCompWram()
 {
 	//this routine is used by yoshi touch&go from the very beginning
 
-	printf("RLUnCompWram\n");
+	//printf("RLUnCompWram\n");
 
   int i;
   int len;

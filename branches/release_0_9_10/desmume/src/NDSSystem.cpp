@@ -1999,7 +1999,9 @@ static void PrepareBiosARM9()
 
 		//copy the logo content into the bios - Pokemon Platinum uses this in Pal Park trade
 		//it compares the logo from the arm9 bios to the logo in the GBA header.
-		//NOTE: we could MAYBE solve this by patching the rom of a mounted GBA game with whatever's here, even if its all zeroes.
+		//NOTE: in the unlikely event that the valid header is missing from the gameInfo, we'd be doing wrong here.
+		//      however, its nice not to have the logo embedded here. 
+		//      TODO - take a CRC of the logo, check vs logoCRC16, and a hardcoded value, to make sure all is in order--report error if not
 		memcpy(&MMU.ARM9_BIOS[0x20], &gameInfo.header.logo[0], 0x9C);
 		T1WriteWord(MMU.ARM9_BIOS, 0x20 + 0x9C,  gameInfo.header.logoCRC16);
 		//... and with that we are at 0xBC:
