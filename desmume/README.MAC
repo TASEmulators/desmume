@@ -2,7 +2,7 @@
                       _________________________________________
                       Copyright (C) 2006 yopyop
                       Copyright (C) 2006-2013 DeSmuME team
-                      Last Updated: April 16, 2013
+                      Last Updated: November 27, 2013
 
 Contents:
 1) System Requirements ..................................................... 15
@@ -248,7 +248,7 @@ possible. The better your descriptions are, the faster we can test and fix
 bugs. For example, if you observed a bug in the game Golden Sun: Dark Dawn, then
 the bug report could look something like this:
 
-    App Version: v0.9.9
+    App Version: v0.9.10
     Operating System: OS X v10.8.3 (12D78)
     Mac Model Identifier: iMac11,2
     ROM Name: GOLDENSUN_DD
