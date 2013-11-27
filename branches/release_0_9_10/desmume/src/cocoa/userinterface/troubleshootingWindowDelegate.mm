@@ -113,7 +113,7 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nSLOT-2 Device Type: "] stringByAppendingString:[cdsCore slot2DeviceTypeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAdvanced Bus-Level Timing: "] stringByAppendingString:([cdsCore emuFlagAdvancedBusLevelTiming] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nRigorous 3D Rendering Timing: "] stringByAppendingString:([cdsCore emuFlagRigorousTiming] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCPU Emulation Engine: "] stringByAppendingString:([cdsCore cpuEmulationEngine] == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER ? [NSString stringWithFormat:@"%@ (BlockSize=%li)", [cdsCore cpuEmulationEngineString], [cdsCore maxJITBlockSize]] : [cdsCore cpuEmulationEngineString])];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCPU Emulation Engine: "] stringByAppendingString:([cdsCore cpuEmulationEngine] == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER ? [NSString stringWithFormat:@"%@ (BlockSize=%li)", [cdsCore cpuEmulationEngineString], (long)[cdsCore maxJITBlockSize]] : [cdsCore cpuEmulationEngineString])];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal BIOS: "] stringByAppendingString:([cdsCore emuFlagUseExternalBios] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal Firmware: "] stringByAppendingString:([cdsCore emuFlagUseExternalFirmware] ? @"YES" : @"NO")];
 	
@@ -129,7 +129,7 @@
 									 ([[cdsCore cdsGPU] render3DHighPrecisionColorInterpolation] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO"),
-									 [[cdsCore cdsGPU] render3DDepthComparisonThreshold]];
+									 (unsigned long)[[cdsCore cdsGPU] render3DDepthComparisonThreshold]];
 			break;
 			
 		case CORE3DLIST_OPENGL:
@@ -145,13 +145,13 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Engine: "] stringByAppendingString:render3DEngineDetails];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Line Hack: "] stringByAppendingString:([[cdsCore cdsGPU] render3DLineHack] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Textures: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextures] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Thread Count: "] stringByAppendingString:([[cdsCore cdsGPU] render3DThreads] == 0 ? @"Automatic" : [NSString stringWithFormat:@"%ld", [[cdsCore cdsGPU] render3DThreads]])];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Thread Count: "] stringByAppendingString:([[cdsCore cdsGPU] render3DThreads] == 0 ? @"Automatic" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DThreads]])];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl cdsSpeaker] audioOutputEngineString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl cdsSpeaker] spuAdvancedLogic] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuInterpolationModeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Synchronization Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuSyncMethodString]];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n-----------------------------------"];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:([cdsCore isCheatingEnabled] ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", [[emuControl cdsCheats] activeCount]] : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCheats: "] stringByAppendingString:([cdsCore isCheatingEnabled] ? [NSString stringWithFormat:@"YES (ActiveCheatCount=%ld)", (unsigned long)[[emuControl cdsCheats] activeCount]] : @"NO")];
 	finalFormTextStr = [finalFormTextStr stringByAppendingString:@"\n-----------------------------------"];
 	
 	if ([window contentView] == viewSupportRequest)
