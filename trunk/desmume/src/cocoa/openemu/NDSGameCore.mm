@@ -16,6 +16,7 @@
  */
 
 #import "NDSGameCore.h"
+#import "cocoa_cheat.h"
 #import "cocoa_globals.h"
 #import "cocoa_file.h"
 #import "cocoa_firmware.h"
@@ -36,6 +37,7 @@
 @synthesize cdsController;
 @synthesize cdsGPU;
 @synthesize cdsFirmware;
+@synthesize cdsCheats;
 @dynamic displayMode;
 
 - (id)init
@@ -86,6 +88,10 @@
 	CommonSettings.use_jit = true;
 	[CocoaDSCore startupCore];
 	
+	// Set up the cheat system
+	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
+	[cdsCheats setMutexCoreExecute:&mutexCoreExecute];
+	
 	// Set up the DS firmware using the internal firmware
 	cdsFirmware = [[[[CocoaDSFirmware alloc] init] retain] autorelease];
 	[cdsFirmware update];
@@ -93,6 +99,8 @@
 	// Set up the sound core
 	CommonSettings.spu_advanced = true;
 	CommonSettings.spuInterpolationMode = SPUInterpolation_Cosine;
+	CommonSettings.SPU_sync_mode = SPU_SYNC_MODE_SYNCHRONOUS;
+	CommonSettings.SPU_sync_method = SPU_SYNC_METHOD_P;
 	openEmuSoundInterfaceBuffer = [self ringBufferAtIndex:0];
 	
 	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
@@ -101,11 +109,11 @@
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	}
 	
-	SPU_SetSynchMode(SPU_SYNC_MODE_SYNCHRONOUS, SPU_SYNC_METHOD_P);
+	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
 	SPU_SetVolume(100);
     
 	// Set up the DS display
-	displayMode = DS_DISPLAY_TYPE_COMBO;
+	displayMode = DS_DISPLAY_TYPE_DUAL;
 	displayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
 	displayAspectRatio = OEIntSizeMake(2, 3);
 	
@@ -118,6 +126,7 @@
 	NDS_3D_ChangeCore(CORE3DLIST_NULL);
 	[CocoaDSCore shutdownCore];
 	
+	[self setCdsCheats:nil];
 	[self setCdsController:nil];
 	[self setCdsGPU:nil];
 	[self setCdsFirmware:nil];
@@ -153,7 +162,7 @@
 			newDisplayAspectRatio = OEIntSizeMake(4, 3);
 			break;
 			
-		case DS_DISPLAY_TYPE_COMBO:
+		case DS_DISPLAY_TYPE_DUAL:
 			newDisplayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
 			newDisplayAspectRatio = OEIntSizeMake(2, 3);
 			break;
@@ -208,6 +217,7 @@
 
 - (BOOL)loadFileAtPath:(NSString*)path
 {
+	BOOL isRomLoaded = NO;
 	NSString *openEmuDataPath = [self batterySavesDirectoryPath];
 	NSURL *openEmuDataURL = [NSURL fileURLWithPath:openEmuDataPath];
 	
@@ -228,7 +238,11 @@
 	[fileManager createDirectoryAtPath:openEmuDataPath withIntermediateDirectories:YES attributes:nil error:NULL];
 	[fileManager release];
 	
-	return [CocoaDSFile loadRom:[NSURL fileURLWithPath:path]];
+	isRomLoaded = [CocoaDSFile loadRom:[NSURL fileURLWithPath:path]];
+	
+	[CocoaDSCheatManager setMasterCheatList:cdsCheats];
+	
+	return isRomLoaded;
 }
 
 #pragma mark Video
@@ -281,6 +295,28 @@
 	return DS_FRAMES_PER_SECOND;
 }
 
+- (void)changeDisplayMode
+{
+	switch (displayMode)
+    {
+        case DS_DISPLAY_TYPE_MAIN:
+            [self setDisplayMode:DS_DISPLAY_TYPE_TOUCH];
+            break;
+			
+        case DS_DISPLAY_TYPE_TOUCH:
+            [self setDisplayMode:DS_DISPLAY_TYPE_DUAL];
+            break;
+			
+        case DS_DISPLAY_TYPE_DUAL:
+            [self setDisplayMode:DS_DISPLAY_TYPE_MAIN];
+            break;
+			
+        default:
+            return;
+            break;
+    }
+}
+
 #pragma mark Audio
 
 - (NSUInteger)audioBufferCount
@@ -296,6 +332,11 @@
 - (double)audioSampleRate
 {
 	return SPU_SAMPLE_RATE;
+}
+
+- (NSUInteger)audioBitDepth
+{
+    return SPU_SAMPLE_RESOLUTION;
 }
 
 - (NSUInteger)channelCountForBuffer:(NSUInteger)buffer
@@ -340,7 +381,7 @@
 			isTouchPressed = YES;
 			break;
 			
-		case DS_DISPLAY_TYPE_COMBO:
+		case DS_DISPLAY_TYPE_DUAL:
 			isTouchPressed = YES;
 			aPoint.y -= GPU_DISPLAY_HEIGHT; // Normalize the y-coordinate to the DS.
 			break;
@@ -399,6 +440,23 @@
 - (BOOL)loadStateFromFileAtPath:(NSString *)fileName
 {
 	return [CocoaDSFile loadState:[NSURL fileURLWithPath:fileName]];
+}
+
+#pragma mark Miscellaneous
+
+- (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
+{
+	CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
+	[newCheatItem setEnabled:enabled];
+	[newCheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
+	[newCheatItem setFreezeType:0];
+	[newCheatItem setDescription:@""]; // OpenEmu takes care of this
+	[newCheatItem setCode:code];
+	[newCheatItem setMemAddress:0x00000000]; // UNUSED
+	[newCheatItem setBytes:1]; // UNUSED
+	[newCheatItem setValue:0]; // UNUSED
+	
+	[[self cdsCheats] add:newCheatItem];
 }
 
 @end

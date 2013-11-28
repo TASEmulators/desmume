@@ -30,6 +30,8 @@
 	<string>NDSGameCore</string>
 	<key>OEGameCorePlayerCount</key>
 	<string>1</string>
+	<key>OEGameCoreSupportsCheatCode</key>
+	<true/>
 	<key>OEProjectURL</key>
 	<string>http://desmume.org/</string>
 	<key>OESystemIdentifiers</key>

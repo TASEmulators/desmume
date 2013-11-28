@@ -21,6 +21,7 @@
 #include <libkern/OSAtomic.h>
 #include <pthread.h>
 
+@class CocoaDSCheatManager;
 @class CocoaDSController;
 @class CocoaDSGPU;
 @class CocoaDSFirmware;
@@ -29,6 +30,7 @@
 @interface NDSGameCore : OEGameCore
 {
 	NSPoint touchLocation;
+	CocoaDSCheatManager *cdsCheats;
 	CocoaDSController *cdsController;
 	CocoaDSGPU *cdsGPU;
 	CocoaDSFirmware *cdsFirmware;
@@ -41,6 +43,7 @@
 	pthread_mutex_t mutexCoreExecute;
 }
 
+@property (retain) CocoaDSCheatManager *cdsCheats;
 @property (retain) CocoaDSController *cdsController;
 @property (retain) CocoaDSGPU *cdsGPU;
 @property (retain) CocoaDSFirmware *cdsFirmware;
