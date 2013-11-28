@@ -187,6 +187,7 @@
 		AB405694169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB405695169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		AB4806BC18472EF20085F59B /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
 		AB497A9B17D583EE0045B888 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB497A9A17D583EE0045B888 /* fsnitro.cpp */; };
 		AB497A9C17D583EE0045B888 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB497A9A17D583EE0045B888 /* fsnitro.cpp */; };
 		AB497A9D17D583EE0045B888 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB497A9A17D583EE0045B888 /* fsnitro.cpp */; };
@@ -2689,6 +2690,7 @@
 				AB107687182ECB29000D6F67 /* slot2_passme.cpp in Sources */,
 				AB1B702E18313D7700E64141 /* slot2_auto.cpp in Sources */,
 				AB1B703218313D9000E64141 /* slot2.cpp in Sources */,
+				AB4806BC18472EF20085F59B /* cocoa_cheat.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

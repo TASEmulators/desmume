@@ -14,6 +14,7 @@
 		AB01005F170D07B000D70FBE /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB01005D170D07B000D70FBE /* InputProfileController.mm */; };
 		AB010060170D07B000D70FBE /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB01005D170D07B000D70FBE /* InputProfileController.mm */; };
 		AB02475C13886BF300E9F9AB /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
+		AB031B5518472F3100541888 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
 		AB0F290214BE6E68009ABC6F /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */; };
 		AB0F290314BE6E68009ABC6F /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */; };
 		AB0F290414BE6E68009ABC6F /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F290014BE6E68009ABC6F /* Icon_Speed1x_420x420.png */; };
@@ -2581,6 +2582,7 @@
 				ABB3C6961501C04F00E0C22E /* SndOut.cpp in Sources */,
 				ABB3C6971501C04F00E0C22E /* Timestretcher.cpp in Sources */,
 				ABB3C6981501C04F00E0C22E /* crc.cpp in Sources */,
+				AB031B5518472F3100541888 /* cocoa_cheat.mm in Sources */,
 				ABB3C6991501C04F00E0C22E /* decrypt.cpp in Sources */,
 				ABB3C69A1501C04F00E0C22E /* header.cpp in Sources */,
 				AB1773FF182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
