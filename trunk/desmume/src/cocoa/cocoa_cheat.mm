@@ -17,7 +17,6 @@
 */
 
 #import "cocoa_cheat.h"
-#import "cocoa_core.h"
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
@@ -87,13 +86,6 @@ static NSImage *iconCodeBreaker = nil;
 		data = cheatData;
 	}
 	
-	if (iconInternalCheat == nil || iconActionReplay == nil || iconCodeBreaker == nil)
-	{
-		iconInternalCheat = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"AppIcon_DeSmuME" ofType:@"icns"]];
-		iconActionReplay = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ActionReplay_128x128" ofType:@"png"]];
-		iconCodeBreaker = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_CodeBreaker_128x128" ofType:@"png"]];
-	}
-	
 	pthread_mutex_init(&mutexData, NULL);
 	
 	willAdd = NO;
@@ -132,9 +124,7 @@ static NSImage *iconCodeBreaker = nil;
 	}
 	
 	pthread_mutex_lock(&mutexData);
-	
 	data = cheatData;
-	
 	pthread_mutex_unlock(&mutexData);
 	
 	[self update];
@@ -633,6 +623,36 @@ static NSImage *iconCodeBreaker = nil;
 			nil];
 }
 
++ (void) setIconInternalCheat:(NSImage *)iconImage
+{
+	iconInternalCheat = iconImage;
+}
+
++ (NSImage *) iconInternalCheat
+{
+	return iconInternalCheat;
+}
+
++ (void) setIconActionReplay:(NSImage *)iconImage
+{
+	iconActionReplay = iconImage;
+}
+
++ (NSImage *) iconActionReplay
+{
+	return iconActionReplay;
+}
+
++ (void) setIconCodeBreaker:(NSImage *)iconImage
+{
+	iconCodeBreaker = iconImage;
+}
+
++ (NSImage *) iconCodeBreaker
+{
+	return iconCodeBreaker;
+}
+
 @end
 
 
@@ -640,32 +660,27 @@ static NSImage *iconCodeBreaker = nil;
 
 @synthesize listData;
 @synthesize list;
-@synthesize cdsCore;
+@dynamic mutexCoreExecute;
 @synthesize untitledCount;
 @synthesize dbTitle;
 @synthesize dbDate;
 
 - (id)init
 {
-	return [self initWithCore:nil fileURL:nil listData:nil];
+	return [self initWithFileURL:nil listData:nil];
 }
 
-- (id) initWithCore:(CocoaDSCore *)core
+- (id) initWithFileURL:(NSURL *)fileURL
 {
-	return [self initWithCore:core fileURL:nil listData:nil];
+	return [self initWithFileURL:fileURL listData:nil];
 }
 
-- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL
+- (id) initWithListData:(CHEATS *)cheatList
 {
-	return [self initWithCore:core fileURL:fileURL listData:nil];
+	return [self initWithFileURL:nil listData:cheatList];
 }
 
-- (id) initWithCore:(CocoaDSCore *)core listData:(CHEATS *)cheatList
-{
-	return [self initWithCore:core fileURL:nil listData:cheatList];
-}
-
-- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList
+- (id) initWithFileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList
 {
 	self = [super init];
 	if(self == nil)
@@ -705,7 +720,10 @@ static NSImage *iconCodeBreaker = nil;
 		}
 	}
 	
-	cdsCore = [core retain];
+	mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexCoreExecute, NULL);
+	isUsingDummyMutex = YES;
+	
 	untitledCount = 0;
 	dbTitle = nil;
 	dbDate = nil;
@@ -717,11 +735,48 @@ static NSImage *iconCodeBreaker = nil;
 {
 	self.dbTitle = nil;
 	self.dbDate = nil;
-	self.cdsCore = nil;
 	[list release];
 	delete (CHEATS *)self.listData;
 	
+	if (isUsingDummyMutex)
+	{
+		pthread_mutex_destroy(mutexCoreExecute);
+		free(mutexCoreExecute);
+		mutexCoreExecute = NULL;
+	}
+	
 	[super dealloc];
+}
+
+- (void) setMutexCoreExecute:(pthread_mutex_t *)theMutex
+{
+	if (theMutex == NULL && isUsingDummyMutex)
+	{
+		return;
+	}
+	else if (theMutex == NULL && !isUsingDummyMutex)
+	{
+		mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+		pthread_mutex_init(mutexCoreExecute, NULL);
+		isUsingDummyMutex = YES;
+		return;
+	}
+	else if (theMutex != NULL && isUsingDummyMutex)
+	{
+		pthread_mutex_destroy(mutexCoreExecute);
+		free(mutexCoreExecute);
+		isUsingDummyMutex = NO;
+		mutexCoreExecute = theMutex;
+	}
+	else if (theMutex != NULL && !isUsingDummyMutex)
+	{
+		mutexCoreExecute = theMutex;
+	}
+}
+
+- (pthread_mutex_t *) mutexCoreExecute
+{
+	return mutexCoreExecute;
 }
 
 - (BOOL) add:(CocoaDSCheatItem *)cheatItem
@@ -737,7 +792,7 @@ static NSImage *iconCodeBreaker = nil;
 	// to check if the list got reallocated.
 	CHEATS_LIST *cheatListData = self.listData->getListPtr();
 	
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	
 	switch (cheatItem.cheatType)
 	{
@@ -769,7 +824,7 @@ static NSImage *iconCodeBreaker = nil;
 			break;
 	}
 	
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	if (![self.list containsObject:cheatItem])
 	{
@@ -809,9 +864,9 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	self.listData->remove(selectionIndex);
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	// Removing an item from the raw cheat list data shifts all higher elements
 	// by one, so we need to do the same.
@@ -840,7 +895,7 @@ static NSImage *iconCodeBreaker = nil;
 		return result;
 	}
 	
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	
 	switch (cheatItem.cheatType)
 	{
@@ -872,7 +927,7 @@ static NSImage *iconCodeBreaker = nil;
 			break;
 	}
 		
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	[cheatItem update];
 		
@@ -881,18 +936,18 @@ static NSImage *iconCodeBreaker = nil;
 
 - (BOOL) save
 {
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	BOOL result = self.listData->save();
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	return result;
 }
 
 - (NSUInteger) activeCount
 {
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	NSUInteger activeCheatsCount = self.listData->getActiveCount();
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	return activeCheatsCount;
 }
@@ -944,9 +999,9 @@ static NSImage *iconCodeBreaker = nil;
 		return;
 	}
 	
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	[CocoaDSCheatManager applyInternalCheatWithItem:cheatItem];
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 }
 
 + (void) setMasterCheatList:(CocoaDSCheatManager *)cheatListManager
@@ -1071,15 +1126,10 @@ static NSImage *iconCodeBreaker = nil;
 
 @synthesize listData;
 @synthesize addressList;
-@synthesize cdsCore;
+@dynamic mutexCoreExecute;
 @synthesize searchCount;
 
 - (id)init
-{
-	return [self initWithCore:nil];
-}
-
-- (id) initWithCore:(CocoaDSCore *)core
 {
 	self = [super init];
 	if(self == nil)
@@ -1094,9 +1144,12 @@ static NSImage *iconCodeBreaker = nil;
 		return nil;
 	}
 	
+	mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutexCoreExecute, NULL);
+	isUsingDummyMutex = YES;
+	
 	listData = newListData;
 	addressList = nil;
-	cdsCore = [core retain];
 	searchCount = 0;
 	
 	return self;
@@ -1104,15 +1157,52 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void)dealloc
 {
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	self.listData->close();
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	[addressList release];
-	self.cdsCore = nil;
 	delete (CHEATSEARCH *)self.listData;
 	
+	if (isUsingDummyMutex)
+	{
+		pthread_mutex_destroy(mutexCoreExecute);
+		free(mutexCoreExecute);
+		mutexCoreExecute = NULL;
+	}
+	
 	[super dealloc];
+}
+
+- (void) setMutexCoreExecute:(pthread_mutex_t *)theMutex
+{
+	if (theMutex == NULL && isUsingDummyMutex)
+	{
+		return;
+	}
+	else if (theMutex == NULL && !isUsingDummyMutex)
+	{
+		mutexCoreExecute = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+		pthread_mutex_init(mutexCoreExecute, NULL);
+		isUsingDummyMutex = YES;
+		return;
+	}
+	else if (theMutex != NULL && isUsingDummyMutex)
+	{
+		pthread_mutex_destroy(mutexCoreExecute);
+		free(mutexCoreExecute);
+		isUsingDummyMutex = NO;
+		mutexCoreExecute = theMutex;
+	}
+	else if (theMutex != NULL && !isUsingDummyMutex)
+	{
+		mutexCoreExecute = theMutex;
+	}
+}
+
+- (pthread_mutex_t *) mutexCoreExecute
+{
+	return mutexCoreExecute;
 }
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType
@@ -1124,17 +1214,17 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		byteSize--;
 		
-		pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_lock([self mutexCoreExecute]);
 		listExists = (NSUInteger)self.listData->start((u8)CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE, (u8)byteSize, (u8)signType);
-		pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_unlock([self mutexCoreExecute]);
 	}
 	
 	if (listExists)
 	{
-		pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_lock([self mutexCoreExecute]);
 		itemCount = (NSUInteger)self.listData->search((u32)value);
 		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100] retain];
-		pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_unlock([self mutexCoreExecute]);
 		
 		[addressList release];
 		addressList = newAddressList;
@@ -1161,18 +1251,18 @@ static NSImage *iconCodeBreaker = nil;
 	{
 		byteSize--;
 		
-		pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_lock([self mutexCoreExecute]);
 		listExists = (NSUInteger)self.listData->start((u8)CHEATSEARCH_SEARCHSTYLE_COMPARATIVE, (u8)byteSize, (u8)signType);
-		pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_unlock([self mutexCoreExecute]);
 		
 		addressList = nil;
 	}
 	else
 	{
-		pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_lock([self mutexCoreExecute]);
 		itemCount = (NSUInteger)self.listData->search((u8)typeID);
 		NSMutableArray *newAddressList = [[CocoaDSCheatSearch addressListWithListObject:self.listData maxItems:100] retain];
-		pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+		pthread_mutex_unlock([self mutexCoreExecute]);
 		
 		[addressList release];
 		addressList = newAddressList;
@@ -1196,9 +1286,9 @@ static NSImage *iconCodeBreaker = nil;
 
 - (void) reset
 {
-	pthread_mutex_lock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_lock([self mutexCoreExecute]);
 	self.listData->close();
-	pthread_mutex_unlock(self.cdsCore.mutexCoreExecute);
+	pthread_mutex_unlock([self mutexCoreExecute]);
 	
 	searchCount = 0;
 	[addressList release];

@@ -1454,7 +1454,7 @@
 	// If the ROM has an associated cheat file, load it now.
 	NSString *cheatsPath = [[CocoaDSFile fileURLFromRomURL:[theRom fileURL] toKind:@"Cheat"] path];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	CocoaDSCheatManager *newCheatList = [[[CocoaDSCheatManager alloc] initWithCore:cdsCore fileURL:[NSURL fileURLWithPath:cheatsPath]] autorelease];
+	CocoaDSCheatManager *newCheatList = [[[CocoaDSCheatManager alloc] initWithFileURL:[NSURL fileURLWithPath:cheatsPath]] autorelease];
 	if (newCheatList != nil)
 	{
 		NSMutableDictionary *cheatWindowBindings = (NSMutableDictionary *)[cheatWindowController content];
@@ -1518,7 +1518,7 @@
 		}
 		
 		[cheatWindowDelegate setCdsCheats:newCheatList];
-		[[cheatWindowDelegate cdsCheatSearch] setCdsCore:cdsCore];
+		[[cheatWindowDelegate cdsCheatSearch] setMutexCoreExecute:[cdsCore mutexCoreExecute]];
 		[cheatWindowDelegate setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE];
 	}
 	
