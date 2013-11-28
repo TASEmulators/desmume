@@ -13,7 +13,7 @@ case $host in
 esac
 AC_SUBST(desmume_arch)
 
-AM_INIT_AUTOMAKE([1.10 subdir-objects])
+AM_INIT_AUTOMAKE([1.10 subdir-objects tar-pax])
 
 dnl -- make sure we have a c++ compiler
 AC_PROG_CXX
