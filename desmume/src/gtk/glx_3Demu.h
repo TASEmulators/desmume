@@ -20,5 +20,5 @@
 
 #ifdef HAVE_GL_GLX
 int  init_glx_3Demu(void);
-void deinit_glx_3Demu(void);
+int  deinit_glx_3Demu(void);
 #endif

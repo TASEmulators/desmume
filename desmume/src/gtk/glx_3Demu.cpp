@@ -31,7 +31,7 @@ static bool glx_init(void) { return true; }
 static GLXContext ctx;
 static GLXPbuffer pbuf;
 
-void deinit_glx_3Demu(void)
+int deinit_glx_3Demu(void)
 {
     Display *dpy = glXGetCurrentDisplay();
 
