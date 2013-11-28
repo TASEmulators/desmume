@@ -194,7 +194,7 @@ public:
 int SPU_ChangeSoundCore(int coreid, int buffersize);
 SoundInterface_struct *SPU_SoundCore();
 
-void SPU_ReInit();
+void SPU_ReInit(bool fakeBoot = false);
 int SPU_Init(int coreid, int buffersize);
 void SPU_Pause(int pause);
 void SPU_SetVolume(int volume);

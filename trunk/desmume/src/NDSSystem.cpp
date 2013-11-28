@@ -2394,7 +2394,7 @@ void NDS_Reset()
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 
 	SPU_DeInit();
-	SPU_ReInit();
+	SPU_ReInit(!canBootFromFirmware && bootResult);
 
 	//this needs to happen last, pretty much, since it establishes the correct scheduling state based on all of the above initialization
 	initSchedule();

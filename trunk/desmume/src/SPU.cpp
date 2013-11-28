@@ -184,9 +184,13 @@ SoundInterface_struct *SPU_SoundCore()
 	return SNDCore;
 }
 
-void SPU_ReInit()
+void SPU_ReInit(bool fakeBoot)
 {
 	SPU_Init(SNDCoreId, buffersize);
+
+	// Firmware set BIAS to 0x200
+	if (fakeBoot)
+		SPU_WriteWord(0x04000504, 0x0200);
 }
 
 int SPU_Init(int coreid, int buffersize)
