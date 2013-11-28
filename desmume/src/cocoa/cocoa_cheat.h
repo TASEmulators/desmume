@@ -20,8 +20,6 @@
 #include "../cheatSystem.h"
 #undef BOOL
 
-@class CocoaDSCore;
-
 
 /********************************************************************************************
 	CocoaDSCheatItem - OBJECTIVE-C CLASS
@@ -74,6 +72,13 @@
 - (void) setDataWithDictionary:(NSDictionary *)dataDict;
 - (NSDictionary *) dataDictionary;
 
++ (void) setIconInternalCheat:(NSImage *)iconImage;
++ (NSImage *) iconInternalCheat;
++ (void) setIconActionReplay:(NSImage *)iconImage;
++ (NSImage *) iconActionReplay;
++ (void) setIconCodeBreaker:(NSImage *)iconImage;
++ (NSImage *) iconCodeBreaker;
+
 @end
 
 /********************************************************************************************
@@ -89,7 +94,9 @@
 	CHEATS *listData;
 	NSMutableArray *list;
 	
-	CocoaDSCore *cdsCore;
+	pthread_mutex_t *mutexCoreExecute;
+	BOOL isUsingDummyMutex;
+	
 	NSUInteger untitledCount;
 	NSString *dbTitle;
 	NSString *dbDate;
@@ -97,15 +104,14 @@
 
 @property (readonly) CHEATS *listData;
 @property (readonly) NSMutableArray *list;
-@property (retain) CocoaDSCore *cdsCore;
+@property (assign) pthread_mutex_t *mutexCoreExecute;
 @property (assign) NSUInteger untitledCount;
 @property (copy) NSString *dbTitle;
 @property (copy) NSString *dbDate;
 
-- (id) initWithCore:(CocoaDSCore *)core;
-- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL;
-- (id) initWithCore:(CocoaDSCore *)core listData:(CHEATS *)cheatList;
-- (id) initWithCore:(CocoaDSCore *)core fileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList;
+- (id) initWithFileURL:(NSURL *)fileURL;
+- (id) initWithListData:(CHEATS *)cheatList;
+- (id) initWithFileURL:(NSURL *)fileURL listData:(CHEATS *)cheatList;
 
 - (BOOL) add:(CocoaDSCheatItem *)cheatItem;
 - (void) remove:(CocoaDSCheatItem *)cheatItem;
@@ -129,16 +135,16 @@
 	CHEATSEARCH *listData;
 	NSMutableArray *addressList;
 	
-	CocoaDSCore *cdsCore;
+	pthread_mutex_t *mutexCoreExecute;
+	BOOL isUsingDummyMutex;
+	
 	NSUInteger searchCount;
 }
 
 @property (readonly) CHEATSEARCH *listData;
 @property (readonly) NSMutableArray *addressList;
-@property (retain) CocoaDSCore *cdsCore;
+@property (assign) pthread_mutex_t *mutexCoreExecute;
 @property (readonly) NSUInteger searchCount;
-
-- (id) initWithCore:(CocoaDSCore *)core;
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType;
 - (void) runExactValueSearchOnThread:(id)object;
