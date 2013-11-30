@@ -4695,7 +4695,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	if (slot2_write<ARMCPU_ARM7, u8>(adr, val))
 		return;
 
-	if ((adr >= 0x04000400) && (adr < 0x04000520)) 
+	if (SPU_core->isSPU(adr))
 	{
 		SPU_WriteByte(adr, val);
 		return;
@@ -4801,7 +4801,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	if (slot2_write<ARMCPU_ARM7, u16>(adr, val))
 		return;
 
-	if ((adr >= 0x04000400) && (adr < 0x04000520))
+	if (SPU_core->isSPU(adr))
 	{
 		SPU_WriteWord(adr, val);
 		return;
@@ -4982,7 +4982,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	if (slot2_write<ARMCPU_ARM7, u32>(adr, val))
 		return;
 
-	if ((adr >= 0x04000400) && (adr < 0x04000520))
+	if (SPU_core->isSPU(adr))
 	{
 		SPU_WriteLong(adr, val);
 		return;
@@ -5103,7 +5103,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	if (slot2_read<ARMCPU_ARM7, u8>(adr, slot2_val))
 		return slot2_val;
 
-	if ((adr>=0x04000400)&&(adr<0x04000520))
+	if (SPU_core->isSPU(adr))
 	{
 		return SPU_ReadByte(adr);
 	}
@@ -5159,7 +5159,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	if (slot2_read<ARMCPU_ARM7, u16>(adr, slot2_val))
 		return slot2_val;
 
-    if ((adr>=0x04000400)&&(adr<0x04000520))
+    if (SPU_core->isSPU(adr))
     {
         return SPU_ReadWord(adr);
     }
@@ -5259,7 +5259,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 	if (slot2_read<ARMCPU_ARM7, u32>(adr, slot2_val))
 		return slot2_val;
 
-    if ((adr>=0x04000400)&&(adr<0x04000520))
+    if (SPU_core->isSPU(adr))
     {
         return SPU_ReadLong(adr);
     }
