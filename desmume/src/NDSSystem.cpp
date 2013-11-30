@@ -464,6 +464,7 @@ void GameInfo::closeROM()
 
 u32 GameInfo::readROM(u32 pos)
 {
+	//TODO - endian correctness?
 	if (!romdata)
 	{
 		u32 data;
@@ -474,7 +475,14 @@ u32 GameInfo::readROM(u32 pos)
 		return data;
 	}
 	else
+	{
+		if(pos + 4 >= romsize)
+		{
+			printf("Panic! GameInfo reading out of buffer!\n");
+			exit(-1);
+		}
 		return *(u32*)(romdata + pos);
+	}
 }
 
 static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
