@@ -750,6 +750,8 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 		u8 chan_num = (addr >> 4) & 0xF;
 		channel_struct &thischan=channels[chan_num];
 
+		//printf("SPU write08 channel%d, reg %04X, val %02X\n", chan_num, addr, val);
+
 		switch (addr & 0x000F)
 		{
 			case 0x0: thischan.vol = (val & 0x7F); break;
@@ -844,6 +846,8 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		u32 chan_num = (addr >> 4) & 0xF;
 		channel_struct &thischan=channels[chan_num];
 
+		//printf("SPU write16 channel%d, reg %04X, val %04X\n", chan_num, addr, val);
+
 		switch (addr & 0xF)
 		{
 			case 0x0:
@@ -928,6 +932,8 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 	{
 		u32 chan_num = (addr >> 4) & 0xF;
 		channel_struct &thischan=channels[chan_num];
+
+		//printf("SPU write32 channel%d, reg %04X, val %08X\n", chan_num, addr, val);
 
 		switch (addr & 0xF)
 		{
@@ -1211,6 +1217,12 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 
 static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 {
+	// Minimum length (the sum of PNT+LEN) is 4 words (16 bytes), 
+	// smaller values (0..3 words) are causing hang-ups 
+	// (busy bit remains set infinite, but no sound output occurs).
+	// fix: 7th Dragon (JP) - http://sourceforge.net/p/desmume/bugs/1357/
+	if (chan->totlength < 4) return;
+
 	chan->sampcnt += chan->sampinc;
 
 	if (chan->sampcnt > chan->double_totlength_shifted)
@@ -1218,8 +1230,9 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
-			while (chan->sampcnt > chan->double_totlength_shifted)
-				chan->sampcnt -= chan->double_totlength_shifted - (double)(chan->loopstart << 3);
+			double step = (chan->double_totlength_shifted - (double)(chan->loopstart << 3));
+			
+			while (chan->sampcnt > chan->double_totlength_shifted) chan->sampcnt -= step;
 
 			if(chan->loop_index == K_ADPCM_LOOPING_RECOVERY_INDEX)
 			{
