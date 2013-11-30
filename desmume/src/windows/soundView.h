@@ -25,7 +25,7 @@ BOOL SoundView_DlgOpen(HWND hParentWnd);
 void SoundView_DlgClose();
 BOOL SoundView_IsOpened();
 HWND SoundView_GetHWnd();
-void SoundView_Refresh();
+void SoundView_Refresh(bool forceRedraw = false);
 
 INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

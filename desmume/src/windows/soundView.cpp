@@ -69,29 +69,6 @@ inline int chanOfs()
 	return SoundView_Data->viewFirst8Channels ? 0 : 8;
 }
 
-inline int ProgressSetPosImmediate(HWND hDlg, int nIDDlgItem, int nPos)
-{
-	int nOldPos = SendDlgItemMessage(hDlg, nIDDlgItem, PBM_GETPOS, (WPARAM)0, (LPARAM)0);
-	int nMin = SendDlgItemMessage(hDlg, nIDDlgItem, PBM_GETRANGE, (WPARAM)TRUE, (LPARAM)NULL);
-	int nMax = SendDlgItemMessage(hDlg, nIDDlgItem, PBM_GETRANGE, (WPARAM)FALSE, (LPARAM)NULL);
-
-	// get rid of fancy progress animation since Windows Vista
-	// http://stackoverflow.com/questions/1061715/how-do-i-make-tprogressbar-stop-lagging
-	if (nPos < nMax)
-	{
-		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETPOS, (WPARAM)(nPos + 1), (LPARAM)0);
-		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETPOS, (WPARAM)nPos, (LPARAM)0); // This will set Progress backwards and give an instant update
-	}
-	else
-	{
-		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETRANGE32, nMin, nPos + 1);
-		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETPOS, (WPARAM)(nPos + 1), (LPARAM)0);
-		SendDlgItemMessage(hDlg, nIDDlgItem, PBM_SETRANGE32, nMin, nPos); // This will also set Progress backwards also so instant update
-	}
-
-	return nOldPos;
-}
-
 BOOL SoundView_DlgOpen(HWND hParentWnd)
 {
 	HWND hDlg;
@@ -136,7 +113,12 @@ HWND SoundView_GetHWnd()
 	return SoundView_Data ? SoundView_Data->hDlg : NULL;
 }
 
-void SoundView_Refresh()
+static channel_struct oldchanel[16];
+static SPU_struct::REGS::CAP oldCap[2];
+static s32 volBar[16] = {0};
+static u16 oldCtrl = 0xFFFF;
+
+void SoundView_Refresh(bool forceRedraw)
 {
 	if(SoundView_Data == NULL || SPU_core == NULL)
 		return;
@@ -144,21 +126,26 @@ void SoundView_Refresh()
 	char buf[256];
 	HWND hDlg = SoundView_Data->hDlg;
 	static const int format_shift[] = { 2, 1, 3, 0 };
+	static const u8 volume_shift[] = { 0, 1, 2, 4 };
 	static const double ARM7_CLOCK = 33513982;
+
 	for(int chanId = 0; chanId < 8; chanId++) {
 		int chan = chanId + chanOfs();
 		channel_struct &thischan = SPU_core->channels[chan];
+		channel_struct &oldchan = oldchanel[chan];
 
-		ProgressSetPosImmediate(hDlg, IDC_SOUND0PANBAR+chanId, spumuldiv7(128, thischan.pan));
+		if (!forceRedraw && memcmp(&oldchan, &thischan, sizeof(channel_struct)) == 0) continue;
+
+		InvalidateRect(GetDlgItem(hDlg, IDC_SOUND0PANBAR+chanId), NULL, FALSE);
 		if(thischan.status != CHANSTAT_STOPPED)
 		{
-			s32 vol = spumuldiv7(128, thischan.vol) >> thischan.datashift;
-			ProgressSetPosImmediate(hDlg, IDC_SOUND0VOLBAR+chanId, vol);
+			volBar[chan] = spumuldiv7(128, thischan.vol) >> volume_shift[thischan.volumeDiv];
+			InvalidateRect(GetDlgItem(hDlg, IDC_SOUND0VOLBAR+chanId), NULL, FALSE);
 
 			if(SoundView_Data->volModeAlternate) 
-				sprintf(buf, "%d/%d", thischan.vol, 1 << thischan.datashift);
+				sprintf(buf, "%d/%d", thischan.vol, 1 << volume_shift[thischan.volumeDiv]);
 			else
-				sprintf(buf, "%d", vol);
+				sprintf(buf, "%d", volBar[chan]);
 			SetDlgItemText(hDlg, IDC_SOUND0VOL+chanId, buf);
 
 			if (thischan.pan == 0)
@@ -210,31 +197,35 @@ void SoundView_Refresh()
 			SetDlgItemText(hDlg, IDC_SOUND0POSLEN+chanId, buf);
 		}
 		else {
-			ProgressSetPosImmediate(hDlg, IDC_SOUND0VOLBAR+chanId, 0);
-			strcpy(buf, "---");
-			SetDlgItemText(hDlg, IDC_SOUND0VOL+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0PAN+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0HOLD+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0BUSY+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0REPEATMODE+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0FORMAT+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0SAD+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0PNT+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0TMR+chanId, buf);
-			SetDlgItemText(hDlg, IDC_SOUND0POSLEN+chanId, buf);
+			#define _EMPTY "---"
+			volBar[chan] = 0;
+			InvalidateRect(GetDlgItem(hDlg, IDC_SOUND0VOLBAR+chanId), NULL, FALSE);
+			SetDlgItemText(hDlg, IDC_SOUND0VOL+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0PAN+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0HOLD+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0BUSY+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0REPEATMODE+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0FORMAT+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0SAD+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0PNT+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0TMR+chanId, _EMPTY);
+			SetDlgItemText(hDlg, IDC_SOUND0POSLEN+chanId, _EMPTY);
 		}
+		memcpy(&oldchan, &thischan, sizeof(channel_struct));
 	} //chan loop
 
 	//ctrl
+	u16 ctrl = _MMU_ARM7_read16(0x04000500);
+	if (oldCtrl != ctrl)
 	{
 		CheckDlgItem(hDlg,IDC_SNDCTRL_ENABLE,SPU_core->regs.masteren!=0);
 		CheckDlgItem(hDlg,IDC_SNDCTRL_CH1NOMIX,SPU_core->regs.ctl_ch1bypass!=0);
 		CheckDlgItem(hDlg,IDC_SNDCTRL_CH3NOMIX,SPU_core->regs.ctl_ch3bypass!=0);
 
-		sprintf(buf,"%04X",_MMU_ARM7_read16(0x04000500));
+		sprintf(buf,"%04X",ctrl);
 		SetDlgItemText(hDlg,IDC_SNDCTRL_CTRL,buf);
 
-		sprintf(buf,"%04X",_MMU_ARM7_read16(0x04000504));
+		sprintf(buf,"%04X",SPU_core->regs.soundbias);
 		SetDlgItemText(hDlg,IDC_SNDCTRL_BIAS,buf);
 
 		sprintf(buf,"%02X",SPU_core->regs.mastervol);
@@ -252,67 +243,71 @@ void SoundView_Refresh()
 		SetDlgItemText(hDlg,IDC_SNDCTRL_LEFTOUTTEXT,leftouttext[SPU_core->regs.ctl_left]);
 
 		SetDlgItemText(hDlg,IDC_SNDCTRL_RIGHTOUTTEXT,rightouttext[SPU_core->regs.ctl_right]);
-
+		oldCtrl = ctrl;
 	}
 
 	//cap0
+	SPU_struct::REGS::CAP& cap0 = SPU_core->regs.cap[0];
+	if (memcmp(&oldCap[0], &cap0, sizeof(SPU_struct::REGS::CAP)) != 0)
 	{
-		SPU_struct::REGS::CAP& cap = SPU_core->regs.cap[0];
+		CheckDlgItem(hDlg,IDC_CAP0_ADD,cap0.add!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_SRC,cap0.source!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_ONESHOT,cap0.oneshot!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_TYPE,cap0.bits8!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_ACTIVE,cap0.active!=0);
+		CheckDlgItem(hDlg,IDC_CAP0_RUNNING,cap0.runtime.running!=0);
 
-		CheckDlgItem(hDlg,IDC_CAP0_ADD,cap.add!=0);
-		CheckDlgItem(hDlg,IDC_CAP0_SRC,cap.source!=0);
-		CheckDlgItem(hDlg,IDC_CAP0_ONESHOT,cap.oneshot!=0);
-		CheckDlgItem(hDlg,IDC_CAP0_TYPE,cap.bits8!=0);
-		CheckDlgItem(hDlg,IDC_CAP0_ACTIVE,cap.active!=0);
-		CheckDlgItem(hDlg,IDC_CAP0_RUNNING,cap.runtime.running!=0);
-
-		if(cap.source) SetDlgItemText(hDlg,IDC_CAP0_SRCTEXT,"Ch2");
+		if(cap0.source) SetDlgItemText(hDlg,IDC_CAP0_SRCTEXT,"Ch2");
 		else SetDlgItemText(hDlg,IDC_CAP0_SRCTEXT,"L-Mix");
 
-		if(cap.bits8) SetDlgItemText(hDlg,IDC_CAP0_TYPETEXT,"Pcm8");
+		if(cap0.bits8) SetDlgItemText(hDlg,IDC_CAP0_TYPETEXT,"Pcm8");
 		else SetDlgItemText(hDlg,IDC_CAP0_TYPETEXT,"Pcm16");
 
 		sprintf(buf,"%02X",_MMU_ARM7_read08(0x04000508));
 		SetDlgItemText(hDlg,IDC_CAP0_CTRL,buf);
 
-		sprintf(buf,"%08X",cap.dad);
+		sprintf(buf,"%08X",cap0.dad);
 		SetDlgItemText(hDlg,IDC_CAP0_DAD,buf);
 
-		sprintf(buf,"%08X",cap.len);
+		sprintf(buf,"%08X",cap0.len);
 		SetDlgItemText(hDlg,IDC_CAP0_LEN,buf);
 
-		sprintf(buf,"%08X",cap.runtime.curdad);
+		sprintf(buf,"%08X",cap0.runtime.curdad);
 		SetDlgItemText(hDlg,IDC_CAP0_CURDAD,buf);
+
+		memcpy(&oldCap[0], &cap0, sizeof(SPU_struct::REGS::CAP));
 	}
 
 	//cap1
+	SPU_struct::REGS::CAP& cap1 = SPU_core->regs.cap[1];
+	if (memcmp(&oldCap[1], &cap1, sizeof(SPU_struct::REGS::CAP)) != 0)
 	{
-		SPU_struct::REGS::CAP& cap = SPU_core->regs.cap[1];
+		CheckDlgItem(hDlg,IDC_CAP1_ADD,cap1.add!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_SRC,cap1.source!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_ONESHOT,cap1.oneshot!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_TYPE,cap1.bits8!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_ACTIVE,cap1.active!=0);
+		CheckDlgItem(hDlg,IDC_CAP1_RUNNING,cap1.runtime.running!=0);
 
-		CheckDlgItem(hDlg,IDC_CAP1_ADD,cap.add!=0);
-		CheckDlgItem(hDlg,IDC_CAP1_SRC,cap.source!=0);
-		CheckDlgItem(hDlg,IDC_CAP1_ONESHOT,cap.oneshot!=0);
-		CheckDlgItem(hDlg,IDC_CAP1_TYPE,cap.bits8!=0);
-		CheckDlgItem(hDlg,IDC_CAP1_ACTIVE,cap.active!=0);
-		CheckDlgItem(hDlg,IDC_CAP1_RUNNING,cap.runtime.running!=0);
-
-		if(cap.source) SetDlgItemText(hDlg,IDC_CAP1_SRCTEXT,"Ch3"); //maybe call it "Ch3(+2)" if it fits
+		if(cap1.source) SetDlgItemText(hDlg,IDC_CAP1_SRCTEXT,"Ch3"); //maybe call it "Ch3(+2)" if it fits
 		else SetDlgItemText(hDlg,IDC_CAP1_SRCTEXT,"R-Mix");
 
-		if(cap.bits8) SetDlgItemText(hDlg,IDC_CAP1_TYPETEXT,"Pcm8");
+		if(cap1.bits8) SetDlgItemText(hDlg,IDC_CAP1_TYPETEXT,"Pcm8");
 		else SetDlgItemText(hDlg,IDC_CAP1_TYPETEXT,"Pcm16");
 
 		sprintf(buf,"%02X",_MMU_ARM7_read08(0x04000509));
 		SetDlgItemText(hDlg,IDC_CAP1_CTRL,buf);
 
-		sprintf(buf,"%08X",cap.dad);
+		sprintf(buf,"%08X",cap1.dad);
 		SetDlgItemText(hDlg,IDC_CAP1_DAD,buf);
 
-		sprintf(buf,"%08X",cap.len);
+		sprintf(buf,"%08X",cap1.len);
 		SetDlgItemText(hDlg,IDC_CAP1_LEN,buf);
 
-		sprintf(buf,"%08X",cap.runtime.curdad);
+		sprintf(buf,"%08X",cap1.runtime.curdad);
 		SetDlgItemText(hDlg,IDC_CAP1_CURDAD,buf);
+
+		memcpy(&oldCap[1], &cap1, sizeof(SPU_struct::REGS::CAP));
 	}
 }
 
@@ -359,6 +354,63 @@ static void SoundView_SwitchChanOfs(SoundView_DataStruct *data)
 	SoundView_Refresh();
 }
 
+static LONG_PTR OldLevelBarProc = 0;
+static LONG_PTR OldPanBarProc = 0;
+static HBRUSH level_color = CreateSolidBrush(RGB(0, 255, 0));
+static HBRUSH level_background = CreateSolidBrush(RGB(90, 90, 90));
+static COLORREF pan_color = RGB(255, 0, 0);
+static COLORREF pan_center_color = RGB(200, 200, 200);
+static HBRUSH pan_background = (HBRUSH)COLOR_WINDOW;
+
+INT_PTR CALLBACK LevelBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (msg == WM_PAINT)
+	{
+		u8 chan = (u8)GetProp(hBar, "chan");
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hBar, &ps);
+		u32 vol =  volBar[chan + chanOfs()];
+		if (vol > 0)
+		{
+			RECT rc = {0, 0, vol, ps.rcPaint.bottom};
+			FillRect(hdc, &rc, level_color);
+		}
+		if (vol < 128)
+		{
+			RECT rc2 = {vol + 1, 0, 128, ps.rcPaint.bottom};
+			FillRect(hdc, &rc2, level_background);
+		}
+		EndPaint(hBar, &ps);
+	}
+
+	return CallWindowProc((WNDPROC)OldLevelBarProc, hBar, msg, wParam, lParam);
+}
+
+INT_PTR CALLBACK PanBarProc(HWND hBar, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (msg == WM_PAINT)
+	{
+		u8 chan = (u8)GetProp(hBar, "chan");
+		channel_struct &thischan = SPU_core->channels[chan + chanOfs()];
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hBar, &ps);
+		FillRect(hdc, &ps.rcPaint, pan_background);
+		
+		SelectObject(hdc, GetStockObject(DC_PEN));
+		if (thischan.pan != 64)
+		{
+			SetDCPenColor(hdc, pan_center_color);
+			MoveToEx(hdc, 64, 0, NULL);
+			LineTo(hdc, 64, ps.rcPaint.bottom);
+		}
+		SetDCPenColor(hdc, pan_color);
+		MoveToEx(hdc, thischan.pan, 0, NULL);
+		LineTo(hdc, thischan.pan, ps.rcPaint.bottom);
+		EndPaint(hBar, &ps);
+	}
+
+	return CallWindowProc((WNDPROC)OldPanBarProc, hBar, msg, wParam, lParam);
+}
 
 static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -371,8 +423,13 @@ static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 	case WM_INITDIALOG:
 		{
 			for(int chanId = 0; chanId < 8; chanId++) {
-				SendDlgItemMessage(hDlg, IDC_SOUND0VOLBAR+chanId, PBM_SETRANGE, (WPARAM)0, MAKELPARAM(0, 128));
-				SendDlgItemMessage(hDlg, IDC_SOUND0PANBAR+chanId, PBM_SETRANGE, (WPARAM)0, MAKELPARAM(0, 128));
+				HWND tmp = GetDlgItem(hDlg, IDC_SOUND0VOLBAR+chanId);
+				OldLevelBarProc = SetWindowLongPtr(tmp, GWLP_WNDPROC, (LONG_PTR)LevelBarProc);
+				SetProp(tmp, "chan", (HANDLE)chanId);
+
+				tmp = GetDlgItem(hDlg, IDC_SOUND0PANBAR+chanId);
+				OldPanBarProc = SetWindowLongPtr(tmp, GWLP_WNDPROC, (LONG_PTR)PanBarProc);
+				SetProp(tmp, "chan", (HANDLE)chanId);
 			}
 
 			for(int chanId = 0; chanId < 8; chanId++) {
@@ -441,6 +498,7 @@ static INT_PTR CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 		case IDC_SOUNDVIEW_CHANSWITCH:
 			{
 				SoundView_SwitchChanOfs(data);
+				SoundView_Refresh(true);
 			}
 			return 1;
 		}

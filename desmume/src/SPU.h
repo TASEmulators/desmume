@@ -34,6 +34,7 @@
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
+
 //who made these static? theyre used in multiple places.
 FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
 FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
@@ -71,11 +72,36 @@ extern int SPU_currentCoreNum;
 
 struct channel_struct
 {
-	channel_struct()
+	channel_struct() :	num(0),
+						vol(0),
+						volumeDiv(0),
+						hold(0),
+						pan(0),
+						waveduty(0),
+						repeat(0),
+						format(0),
+						keyon(0),
+						status(0),
+						addr(0),
+						timer(0),
+						loopstart(0),
+						length(0),
+						totlength(0),
+						double_totlength_shifted(0.f),
+						sampcnt(0.f),
+						sampinc(0.f),
+						lastsampcnt(0),
+						pcm16b(0),
+						pcm16b_last(0),
+						loop_pcm16b(0),
+						index(0),
+						loop_index(0),
+						x(0),
+						psgnoise_last(0)
 	{}
 	u32 num;
    u8 vol;
-   u8 datashift;
+   u8 volumeDiv;
    u8 hold;
    u8 pan;
    u8 waveduty;
@@ -181,15 +207,19 @@ public:
    void KeyProbe(int channel);
    void ProbeCapture(int which);
    void WriteByte(u32 addr, u8 val);
+   void WriteWord(u32 addr, u16 val);
+   void WriteLong(u32 addr, u32 val);
    u8 ReadByte(u32 addr);
    u16 ReadWord(u32 addr);
    u32 ReadLong(u32 addr);
-   void WriteWord(u32 addr, u16 val);
-   void WriteLong(u32 addr, u32 val);
+   bool isSPU(u32 addr) { return ((addr >= 0x04000400) && (addr < 0x04000520)); }
    
    //kills all channels but leaves SPU otherwise running normally
    void ShutUp();
 };
+
+extern SPU_struct *SPU_core, *SPU_user;
+extern int spu_core_samples;
 
 int SPU_ChangeSoundCore(int coreid, int buffersize);
 SoundInterface_struct *SPU_SoundCore();
@@ -203,19 +233,37 @@ void SPU_ClearOutputBuffer(void);
 void SPU_Reset(void);
 void SPU_DeInit(void);
 void SPU_KeyOn(int channel);
-void SPU_WriteByte(u32 addr, u8 val);
-void SPU_WriteWord(u32 addr, u16 val);
-void SPU_WriteLong(u32 addr, u32 val);
-u8 SPU_ReadByte(u32 addr);
-u16 SPU_ReadWord(u32 addr);
-u32 SPU_ReadLong(u32 addr);
+static FORCEINLINE void SPU_WriteByte(u32 addr, u8 val)
+{
+	addr &= 0xFFF;
+
+	SPU_core->WriteByte(addr,val);
+	if(SPU_user)
+		SPU_user->WriteByte(addr,val);
+}
+static FORCEINLINE void SPU_WriteWord(u32 addr, u16 val)
+{
+	addr &= 0xFFF;
+
+	SPU_core->WriteWord(addr,val);
+	if(SPU_user)
+		SPU_user->WriteWord(addr,val);
+}
+static FORCEINLINE void SPU_WriteLong(u32 addr, u32 val)
+{
+	addr &= 0xFFF;
+
+	SPU_core->WriteLong(addr,val);
+	if(SPU_user) 
+		SPU_user->WriteLong(addr,val);
+}
+static FORCEINLINE u8 SPU_ReadByte(u32 addr) { return SPU_core->ReadByte(addr & 0x0FFF); }
+static FORCEINLINE u16 SPU_ReadWord(u32 addr) { return SPU_core->ReadWord(addr & 0x0FFF); }
+static FORCEINLINE u32 SPU_ReadLong(u32 addr) { return SPU_core->ReadLong(addr & 0x0FFF); }
 void SPU_Emulate_core(void);
 void SPU_Emulate_user(bool mix = true);
 void SPU_DefaultFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 size_t SPU_DefaultPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-
-extern SPU_struct *SPU_core, *SPU_user;
-extern int spu_core_samples;
 
 void spu_savestate(EMUFILE* os);
 bool spu_loadstate(EMUFILE* is, int size);
