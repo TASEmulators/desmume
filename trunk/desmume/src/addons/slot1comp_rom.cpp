@@ -51,21 +51,22 @@ u32 Slot1Comp_Rom::read()
 		{
 			//TODO - check about non-4-byte aligned addresses
 
-			//OBSOLETED?
-			////it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
-			////but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
-			////but there is no test case yet
-			//at any rate, this is good for safety's sake.
-
+			//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
+			//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
+			//but there is no test case yet
 			address &= gameInfo.mask;
 
-			//"Can be used only for addresses 8000h and up, smaller addresses will be silently redirected to address `8000h+(addr AND 1FFh)`"
+			//feature of retail carts: 
+			//B7 "Can be used only for addresses 8000h and up, smaller addresses will be silently redirected to address `8000h+(addr AND 1FFh)`"
 			if(address < 0x8000)
 				address = (0x8000 + (address & 0x1FF));
 
-			//as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
-			//we need to protect ourselves by returning 0xFF for things still out of range
-			if (address > gameInfo.header.endROMoffset)
+			//1. as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms) we need to protect ourselves by returning 0xFF for things still out of range.
+			//2. this isnt right, unless someone documents otherwise:
+			//if (address > gameInfo.header.endROMoffset)
+			//  ... the cart hardware doesnt know anything about the rom header. if it has a totally bogus endROMoffset, the cart will probably work just fine. and, the +4 is missing anyway:
+			//3. this is better: it just allows us to read 0xFF anywhere we dont have rom data. forget what the header says
+			if(address+4 >= gameInfo.romsize)
 			{
 				DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
 				return 0xFFFFFFFF;
