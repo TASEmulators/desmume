@@ -64,13 +64,6 @@
 #define MCLOG(...)
 #endif
 
-//since r2203 this was 0x00.
-//but baby pals proves finally that it should be 0xFF:
-//the game reads its initial sound volumes from uninitialized data, and if it is 0, the game will be silent
-//if it is 0xFF then the game starts with its sound and music at max, as presumably it is supposed to.
-//so in r3303 I finally changed it (no$ appears definitely to initialize to 0xFF)
-static u8 kUninitializedSaveDataValue = 0xFF;
-
 static const char* DESMUME_BACKUP_FOOTER_TXT = "|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:";
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
@@ -219,12 +212,20 @@ BackupDevice::BackupDevice()
 	addr_size = 0;
 	isMovieMode = false;
 
+	//default for most games; will be altered where appropriate
+	//usually 0xFF, but occasionally others. If these exceptions could be related to a particular backup memory type, that would be helpful.
+	//at first we assumed it would be 0x00, but baby pals proved that it should be 0xFF:
+	// the game reads its initial sound volumes from uninitialized data, and if it is 0, the game will be silent
+	// if it is 0xFF then the game starts with its sound and music at max, as presumably it is supposed to.
+	// so in r3303 we finally changed it (no$ appears definitely to initialize to 0xFF)
+	uninitializedValue = 0xFF;
+
 	if (gameInfo.romsize == 0) return;
 
 	char buf[MAX_PATH] = {0};
 	memset(buf, 0, MAX_PATH);
 	path.getpathnoext(path.BATTERY, buf);
-	filename = std::string(buf) + ".dsv";						// DeSmuME memory card
+	filename = std::string(buf) + ".dsv";
 
 	MCLOG("MC: %s\n", filename.c_str());
 
@@ -553,10 +554,6 @@ void BackupDevice::reset_hardware()
 
 	motionInitState = MOTION_INIT_STATE_IDLE;
 	motionFlag = MOTION_FLAG_NONE;
-
-	kUninitializedSaveDataValue = 0xFF;
-
-	if(!memcmp(gameInfo.header.gameCode,"AXBJ", 4)) kUninitializedSaveDataValue = 0x00; // Daigassou! Band Brothers DX (JP)
 }
 
 void BackupDevice::reset()
@@ -876,7 +873,7 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 //guarantees that the data buffer has room enough for the specified number of bytes
 void BackupDevice::ensure(u32 addr, EMUFILE_FILE *fpOut)
 {
-	ensure(addr, kUninitializedSaveDataValue, fpOut);
+	ensure(addr, uninitializedValue, fpOut);
 }
 
 void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
@@ -1322,7 +1319,7 @@ bool BackupDevice::export_raw(const char* filename)
 	if(data.size()>0)
 		fwrite(&data[0],1,size,outf);
 	for(u32 i=size;i<padSize;i++)
-		fputc(kUninitializedSaveDataValue,outf);
+		fputc(uninitializedValue,outf);
 	fclose(outf);
 
 	return true;

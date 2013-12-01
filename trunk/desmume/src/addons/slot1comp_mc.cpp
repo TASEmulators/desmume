@@ -21,6 +21,7 @@
 #include "types.h"
 #include "../MMU.h"
 #include "slot1comp_mc.h"
+#include "NDSSystem.h"
 
 Slot1Comp_MC g_Slot1Comp_MC;
 
@@ -28,8 +29,13 @@ u8 Slot1Comp_MC::auxspi_transaction(int PROCNUM, u8 value)
 {
 	return MMU_new.backupDevice.data_command(value, PROCNUM);
 }
+
 void Slot1Comp_MC::auxspi_reset(int PROCNUM)
 {
 	MMU_new.backupDevice.reset_command();
 }
 
+void Slot1Comp_MC::connect()
+{
+	if(!memcmp(gameInfo.header.gameCode,"AXBJ", 4)) MMU_new.backupDevice.uninitializedValue = 0x00; // Daigassou! Band Brothers DX (JP)
+}
