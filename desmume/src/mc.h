@@ -140,6 +140,9 @@ public:
 	bool importData(const char *filename, u32 force_size = 0);
 	bool exportData(const char *filename);
 
+	//the value contained in memory when shipped from factory (before user program ever writes to it). more details commented elsewhere.
+	u8 uninitializedValue;
+
 private:
 	EMUFILE_FILE *fpMC;
 	std::string filename;
@@ -155,7 +158,7 @@ private:
 	u32 addr_size, addr_counter;
 	u32 addr;
 	u8 write_protect;
-	
+
 	std::vector<u8> data_autodetect;
 	enum STATE {
 		DETECTING = 0, RUNNING = 1

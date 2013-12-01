@@ -22,6 +22,7 @@ class Slot1Comp_MC
 public:
 	u8 auxspi_transaction(int PROCNUM, u8 value);
 	void auxspi_reset(int PROCNUM);
+	void connect();
 };
 
 extern Slot1Comp_MC g_Slot1Comp_MC;

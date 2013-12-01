@@ -48,6 +48,7 @@ public:
 		protocol.reset(this);
 		protocol.chipId = gameInfo.chipID;
 		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
+		g_Slot1Comp_MC.connect();
 	}
 
 	virtual u8 auxspi_transaction(int PROCNUM, u8 value)
