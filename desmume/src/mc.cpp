@@ -714,18 +714,25 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 					addr_counter++;
 					val = 0xFF;
 
-					if (addr_counter >= addr_size)
-					{
-						//why does tomb raider underworld access 0x180 and go clear through to 0x280?
-						//should this wrap around at 0 or at 0x100?
-						if(addr_size == 1) addr &= 0x1FF; 
-
+					//if we just finished building the address, seek the FP
+					if (addr_counter == addr_size)
 						fpMC->fseek(addr, SEEK_SET);
-					}
 				}
 				else
 				{
-					ensure(addr);
+					//why does tomb raider underworld access 0x180 and go clear through to 0x280?
+					//should this wrap around at 0 or at 0x100?
+					//TODO - dont other backup memory types have similar wraparound issues?
+					if(addr_size == 1)
+					{
+						addr &= 0x1FF;
+						//since we changed the address unexpectedly (non-sequentially), be sure to seek the FP
+						fpMC->fseek(addr, SEEK_SET);
+					}
+
+					//if we're writing a byte at address 0, we need to ensure that we have at least 1 byte in the file (IOW, ensure to size addr+1 == 0+1)
+					ensure(addr+1);
+
 					if(com == BM_CMD_READLOW)
 					{
 						val = read();
@@ -911,7 +918,13 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
 
 	fp->fflush();
 
-	fp->fseek(addr, SEEK_SET);
+	//this is a HORRIBLE IDEA.
+	//leave the FP positioned to write the final byte
+	//this is a HACK to make the basic read/write byte operation work when it calls ensure().
+	//IDEALLY, no assumptions about the file pointer can be made.
+	//but someone (actually, not really) so very carefully profiled the save IO code and discovered that not fseeking for every byte read/write was a great optimization.
+	//so, now all this code is depending/assuming on the FP being kept in a precise position, and I dont think its smart to change the main user of this assumption to paper over this bug by making it fseek before read/write, while leaving other unknown assuming clients intact
+	fpMC->fseek(addr-1, SEEK_SET);
 #endif
 }
 
