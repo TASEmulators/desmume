@@ -399,6 +399,22 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 	if (res)
 	{
 		cardSize = (128 * 1024) << header.cardSize;
+
+		if (cardSize < romsize)
+		{
+			msgbox->warn("The ROM header is invalid.\nThe device size has been increased to allow for the provided file size.\n");
+			
+			for (u32 i = header.cardSize; i < 0xF; i++)
+			{
+				if (((128 * 1024) << i) >= romsize) 
+				{
+					header.cardSize = i;
+					cardSize = (128 * 1024) << i;
+					break;
+				}
+			}
+		}
+		
 		mask = (cardSize - 1);
 		mask |= (mask >>1);
 		mask |= (mask >>2);
