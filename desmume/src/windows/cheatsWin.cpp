@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -937,6 +937,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 
 				case IDC_BREMOVE:
 				{
+					if (!msgbox->confirm("Are you sure you want to delete?")) return TRUE;
 					while(true)
 					{
 						int tmp_pos = ListView_GetNextItem(cheatListView, -1, LVNI_ALL | LVNI_SELECTED);
@@ -1410,10 +1411,9 @@ INT_PTR CALLBACK CheatsExportProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				lvi.pszText= tmp[i].description;
 				SendMessage(exportListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 			}
-			if (gameInfo.crc != cheatsExport->CRC)
-			{
-				//MessageBox(dialog, "WARNING!\n Checksums not matching.",EMU_DESMUME_NAME_AND_VERSION(), MB_OK);// | MB_ICON_ERROR);
-			}
+			if (gameInfo.crc && (gameInfo.crc != cheatsExport->CRC))
+				msgbox->warn("Checksums not matching");
+
 			SendMessage(exportListView, WM_SETREDRAW, (WPARAM)TRUE,0);
 			ListView_SetItemState(exportListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
 			SetFocus(exportListView);
