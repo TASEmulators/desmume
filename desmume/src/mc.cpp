@@ -982,7 +982,8 @@ u32 BackupDevice::importDataSize(const char *filename)
 	u32 res = 0;
 	if (strlen(filename) < 4) return 0;
 
-	if (memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0)
+	if ((memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0) ||
+		(memcmp(filename + strlen(filename) - 4, ".dss", 4) == 0))
 	{
 		res = get_save_duc_size(filename);
 		if (res == 0xFFFFFFFF) return 0;
@@ -1003,7 +1004,8 @@ bool BackupDevice::importData(const char *filename, u32 force_size)
 	bool res = false;
 	if (strlen(filename) < 4) return res;
 
-	if (memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0)
+	if ((memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0) ||
+		(memcmp(filename + strlen(filename) - 4, ".dss", 4) == 0))
 		res = import_duc(filename, force_size);
 	else
 		if (import_no_gba(filename, force_size))
