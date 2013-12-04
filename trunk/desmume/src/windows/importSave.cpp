@@ -169,11 +169,11 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hwnd;
-	ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0Raw/No$GBA Save format (*.sav)\0*.sav\0\0";
+	ofn.lpstrFilter = "All supported types\0*.sav;*.duc;*.dss\0Raw/No$GBA Save format (*.sav)\0*.sav\0Action Replay DS Save (*.duc,*.dss)\0*.duc;*.dss\0\0";
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFile =  ImportSavFName;
 	ofn.nMaxFile = MAX_PATH;
-	ofn.lpstrDefExt = "duc";
+	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
 
 	char buffer[MAX_PATH] = {0};
