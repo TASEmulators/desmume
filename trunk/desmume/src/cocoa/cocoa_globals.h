@@ -194,12 +194,9 @@
 #define DS_FRAMES_PER_SECOND						59.8261	// Number of DS frames per second.
 #define DS_SECONDS_PER_FRAME						(1.0 / DS_FRAMES_PER_SECOND) // The length of time in seconds that, ideally, a frame should be processed within.
 
-#define FRAME_SKIP_AGGRESSIVENESS					10.0	// Must be a value between 0.0 (inclusive) and positive infinity.
+#define FRAME_SKIP_AGGRESSIVENESS					9.0		// Must be a value between 0.0 (inclusive) and positive infinity.
 															// This value acts as a scalar multiple of the frame skip.
-#define FRAME_SKIP_SMOOTHNESS						0.90	// Must be a value between 0.00 (inclusive) and 1.00 (exclusive).
-															// Values closer to 0.00 give better video smoothness, but makes the emulation timing more "jumpy."
-															// Values closer to 1.00 makes the emulation timing more accurate, but makes the video look more "choppy."
-#define FRAME_SKIP_BIAS								0.5		// May be any real number. This value acts as a vector addition to the frame skip.
+#define FRAME_SKIP_BIAS								0.1		// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 3.0)
 
 #define SPU_SAMPLE_RATE								44100.0	// Samples per second

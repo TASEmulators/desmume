@@ -35,7 +35,7 @@ typedef struct
 	int state;
 	bool isFrameSkipEnabled;
 	size_t frameCount;
-	unsigned int framesToSkip;
+	int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
 	bool exitThread;
 	pthread_mutex_t mutexCoreExecute;
@@ -145,4 +145,5 @@ typedef struct
 @end
 
 static void* RunCoreThread(void *arg);
-static void CoreFrameSkip(uint64_t timeBudgetMachAbsoluteTime, uint64_t frameStartMachAbsoluteTime, unsigned int *outFramesToSkip);
+static int CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime);
+uint64_t GetFrameAbsoluteTime(const double frameTimeScalar);
