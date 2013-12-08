@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "debug.h"
 #include "resource.h"
 #include "../MMU.h"
+#include "../gfx3d.h"
 
 typedef struct
 {
@@ -60,7 +61,15 @@ LRESULT PalView_OnPaint(const u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPAR
                   for(x = 0; x < 16; ++x)
                   {
                        c = adr[(y<<4)+x+0x100*num];
-                       brush = CreateSolidBrush(RGB((c&0x1F)<<3, (c&0x3E0)>>2, (c&0x7C00)>>7));
+											 int r = (c>>0)&0x1F;
+											 int g = (c>>5)&0x1F;
+											 int b = (c>>10)&0x1F;
+											 //zero 08-dec-2013
+											 //main.cpp converts the screen from 555 via RGB15TO24_REVERSE which uses material_5bit_to_8bit. thus we get results here mirroring the display as follows:
+											 r = material_5bit_to_8bit[r];
+											 g = material_5bit_to_8bit[g];
+											 b = material_5bit_to_8bit[b];
+                       brush = CreateSolidBrush(RGB(r,g,b));
                        FillRect(hdc, &rect, brush);
                        DeleteObject(brush);
                        rect.left += 11;
