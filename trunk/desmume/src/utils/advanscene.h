@@ -17,7 +17,7 @@
 
 #include <string>
 #include "types.h"
-#include "EMUFILE.h"
+#include "emufile.h"
 
 class ADVANsCEne
 {
