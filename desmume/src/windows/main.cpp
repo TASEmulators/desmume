@@ -5499,7 +5499,8 @@ DOKEYDOWN:
 					return 0;
 				}
 
-				u32 count = advsc.convertDB(ImportSavName);
+				EMUFILE_FILE outf(advsc.getDatabase(),"wb");
+				u32 count = advsc.convertDB(ImportSavName,&outf);
 				if (count > 0)
 				{
 					sprintf(buffer, "ADVANsCEne database was successfully imported\n(%i records)", count);

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -101,6 +101,7 @@ private:
 	char* _slot1;
 	char *_slot1_fat_dir;
 	char* _console_type;
+	char* _advanscene_import;
 };
 
 #endif

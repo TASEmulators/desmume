@@ -644,8 +644,11 @@ extern struct TCommonSettings {
 		bool ShowInputDisplay, ShowGraphicalInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone, ShowRTC;
 	} hud;
 
+	std::string run_advanscene_import;
+
 } CommonSettings;
 
+void NDS_RunAdvansceneAutoImport();
 
 extern std::string InputDisplayString;
 extern int LagFrameFlag;
