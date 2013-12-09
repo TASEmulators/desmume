@@ -205,33 +205,29 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE* output)
 		
 		// Save type
 		el_saveType = el->FirstChildElement("saveType"); 
+		u8 selectedSaveType = 0xFF; //unknown
 		if (el_saveType)
 		{
 			const char *tmp = el_saveType->GetText();
 			if (tmp)
 			{
 				if (strcmp(tmp, "None")  == 0)
-					output->fputc(0xFE);
+					selectedSaveType = 0xFE;
 				else
 				{
-					bool bUnknown = true;
 					for (u8 i = 0; i < MAX_SAVE_TYPES; i++)
 					{
 						if (strcmp(saveTypeNames[i], "") == 0) continue;
 						if (strcasecmp(tmp, saveTypeNames[i]) == 0)
 						{
-							output->fputc(i);
-							bUnknown = false;
+							selectedSaveType = i;
 							break;
 						}
 					}
-					if (bUnknown)
-						output->fputc(0xFF);	// Unknown
 				}
 			}
-			else
-				output->fputc(0xFF);	// Unknown
 		}
+		output->fputc(selectedSaveType);
 		output->fwrite(&reserved, sizeof(u32));
 		output->fwrite(&reserved, sizeof(u32));
 		count++;
