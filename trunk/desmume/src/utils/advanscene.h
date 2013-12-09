@@ -17,11 +17,12 @@
 
 #include <string>
 #include "types.h"
+#include "EMUFILE.h"
 
 class ADVANsCEne
 {
 private:
-	std::string database_path;		// DeSmuME save types 
+	std::string database_path;
 	time_t			createTime;
 	u32				crc32;
 	char			serial[6];
@@ -37,7 +38,7 @@ private:
 	std::string datVersion;
 	std::string	urlVersion;
 	std::string urlDat;
-	bool getXMLConfig(const char *in_filaname);
+	bool getXMLConfig(const char *in_filename);
 
 public:
 	ADVANsCEne()
@@ -49,8 +50,9 @@ public:
 		memset(version, 0, sizeof(version));
 		memset(serial, 0, sizeof(serial));
 	}
-	void setDatabase(const char *path) { loaded = false; database_path = path; }
-	u32 convertDB(const char *in_filaname);
+	void setDatabase(const char *path);
+	std::string getDatabase() const { return database_path; }
+	u32 convertDB(const char *in_filename, EMUFILE* output);
 	u8 checkDB(const char *ROMserial, u32 crc);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }

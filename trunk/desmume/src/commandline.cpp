@@ -58,6 +58,7 @@ CommandLine::CommandLine()
 , _jit_size(-1)
 #endif
 , _console_type(NULL)
+, _advanscene_import(NULL)
 , depth_threshold(-1)
 , load_slot(-1)
 , arm9_gdb_port(0)
@@ -109,6 +110,7 @@ void CommandLine::loadCommonOptions()
 		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
 		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
 		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },
+		{ "advanscene-import", 0, 0, G_OPTION_ARG_STRING, &_advanscene_import, "Import advanscene, dump .ddb, and exit", "ADVANSCENE_IMPORT" },
 #ifdef HAVE_JIT
 		{ "cpu-mode", 0, 0, G_OPTION_ARG_INT, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
 		{ "jit-size", 0, 0, G_OPTION_ARG_INT, &_jit_size, "ARM JIT block size: 1..100 (1 - accuracy, 100 - faster) (default 100)", NULL},
@@ -147,6 +149,7 @@ bool CommandLine::parse(int argc,char **argv)
 		return false;
 	}
 
+	if(_advanscene_import) CommonSettings.run_advanscene_import = _advanscene_import;
 	if(_slot1_fat_dir) slot1_fat_dir = _slot1_fat_dir;
 	if(_slot1) slot1 = _slot1; slot1 = strtoupper(slot1);
 	if(_console_type) console_type = _console_type;
@@ -210,8 +213,6 @@ bool CommandLine::parse(int argc,char **argv)
 
 bool CommandLine::validate()
 {
-
-
 	if(slot1 != "")
 	{
 		if(slot1 != "R4" && slot1 != "RETAIL" && slot1 != "NONE" && slot1 != "RETAILNAND") {

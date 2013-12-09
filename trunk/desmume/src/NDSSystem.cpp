@@ -100,6 +100,20 @@ void Desmume_InitOnce()
 #endif
 }
 
+void NDS_RunAdvansceneAutoImport()
+{
+	if(CommonSettings.run_advanscene_import != "")
+	{
+		std::string fname = CommonSettings.run_advanscene_import;
+		std::string fname_out = fname + ".ddb";
+		EMUFILE_FILE outf(fname_out,"wb");
+		u32 ret = advsc.convertDB(fname.c_str(),&outf);
+		if(ret == 0)
+			exit(0);
+		else exit(1);
+	}
+}
+
 #ifdef GDB_STUB
 int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
 struct armcpu_ctrl_iface **arm9_ctrl_iface,
@@ -118,6 +132,17 @@ int NDS_Init( void)
 
 	if (Screen_Init() != 0)
 		return -1;
+
+	{
+		char	buf[MAX_PATH];
+		memset(buf, 0, MAX_PATH);
+		strcpy(buf, path.pathToModule);
+		strcat(buf, "desmume.ddb");							// DeSmuME database	:)
+		advsc.setDatabase(buf);
+
+		//why is this done here? shitty engineering. not intended.
+		NDS_RunAdvansceneAutoImport();
+	}
 
 	gfx3d_init();
 
@@ -600,10 +625,6 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	}
 	INFO("ROM developer: %s\n", ((gameInfo.header.makerCode == 0) && gameInfo.isHomebrew())?"Homebrew":getDeveloperNameByID(gameInfo.header.makerCode).c_str());
 
-	memset(buf, 0, MAX_PATH);
-	strcpy(buf, path.pathToModule);
-	strcat(buf, "desmume.ddb");							// DeSmuME database	:)
-	advsc.setDatabase(buf);
 	buf[0] = gameInfo.header.gameCode[0];
 	buf[1] = gameInfo.header.gameCode[1];
 	buf[2] = gameInfo.header.gameCode[2];

@@ -85,9 +85,16 @@ u8 ADVANsCEne::checkDB(const char *ROMserial, u32 crc)
 	return false;
 }
 
+ 
+void ADVANsCEne::setDatabase(const char *path)
+{
+	database_path = path;
+	
+	//i guess this means it needs (re)loading on account of the path having changed
+	loaded = false;
+}
 
-
-bool ADVANsCEne::getXMLConfig(const char *in_filaname)
+bool ADVANsCEne::getXMLConfig(const char *in_filename)
 {
 	TiXmlDocument	*xml = NULL;
 	TiXmlElement	*el = NULL;
@@ -96,7 +103,7 @@ bool ADVANsCEne::getXMLConfig(const char *in_filaname)
 	
 	xml = new TiXmlDocument();
 	if (!xml) return false;
-	if (!xml->LoadFile(in_filaname)) return false;
+	if (!xml->LoadFile(in_filename)) return false;
 	el = xml->FirstChildElement("dat");
 	if (!el) return false;
 	el_configuration = el->FirstChildElement("configuration");
@@ -113,7 +120,7 @@ bool ADVANsCEne::getXMLConfig(const char *in_filaname)
 	return true;
 }
 
-u32 ADVANsCEne::convertDB(const char *in_filaname)
+u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE* output)
 {
 	//these strings are contained in the xml file, verbatim, so they function as enum values
 	//we leave the strings here rather than pooled elsewhere to remind us that theyre part of the advanscene format.
@@ -139,42 +146,38 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 	TiXmlElement	*el_games = NULL;
 	TiXmlElement	*el_crc32 = NULL;
 	TiXmlElement	*el_saveType = NULL;
-	FILE			*fp;
 	u32				crc32 = 0;
 	u32				reserved = 0;
 
 	lastImportErrorMessage = "";
 
 	printf("Converting DB...\n");
-	if (getXMLConfig(in_filaname))
+	if (getXMLConfig(in_filename))
 	{
 		if (datName.size()==0) return 0;
 		if (datName != _ADVANsCEne_BASE_NAME) return 0;
 	}
 
-	fp = fopen(database_path.c_str(), "wb");
-	if (!fp) return 0;
-
 	// Header
-	fwrite(_ADVANsCEne_BASE_ID, 1, strlen(_ADVANsCEne_BASE_ID), fp);
-	fputc(_ADVANsCEne_BASE_VERSION_MAJOR, fp);
-	fputc(_ADVANsCEne_BASE_VERSION_MINOR, fp);
+	output->fwrite(_ADVANsCEne_BASE_ID, strlen(_ADVANsCEne_BASE_ID));
+	output->fputc(_ADVANsCEne_BASE_VERSION_MAJOR);
+	output->fputc(_ADVANsCEne_BASE_VERSION_MINOR);
 	if (datVersion.size()) 
-		fwrite(&datVersion[0], 1, datVersion.size(), fp);
+		output->fwrite(&datVersion[0], datVersion.size());
 	else
-		fputc(0, fp);
+		output->fputc(0);
 	time_t __time = time(NULL);
-	fwrite(&__time, 1, sizeof(time_t), fp);
+	output->fwrite(&__time, sizeof(time_t));
 
 	xml = new TiXmlDocument();
-	if (!xml) { fclose(fp); return 0; }
-	if (!xml->LoadFile(in_filaname)) { fclose(fp); return 0; }
+	if (!xml) return 0;
+	if (!xml->LoadFile(in_filename)) return 0;
 	el = xml->FirstChildElement("dat");
-	if (!el) { fclose(fp); return 0; }
+	if (!el) return 0;
 	el_games = el->FirstChildElement("games");
-	if (!el_games) { fclose(fp); return 0; }
+	if (!el_games) return 0;
 	el = el_games->FirstChildElement("game");
-	if (!el) { fclose(fp); return 0; }
+	if (!el) return 0;
 	u32 count = 0;
 	while (el)
 	{
@@ -184,30 +187,22 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 			//just a little diagnostic
 			//printf("Importing %s\n",title->GetText());
 		}
-		else { fclose(fp); return 0; }
+		else return 0;
 
 		el_serial = el->FirstChildElement("serial");
 		
 		if(!el_serial)
 		{
 			lastImportErrorMessage = "Missing <serial> element. Did you use the right xml file? We need the RtoolDS one.";
-			fclose(fp); 
 			return 0;
 		}
-		if (fwrite(el_serial->GetText(), 1, 8, fp) != 8)
-		{
-			lastImportErrorMessage = "Error writing output file";
-			fclose(fp); return 0;
-		}
-
+		output->fwrite(el_serial->GetText(), 8);
 
 		// CRC32
 		el_crc32 = el->FirstChildElement("files"); 
 		sscanf_s(el_crc32->FirstChildElement("romCRC")->GetText(), "%x", &crc32);
-		if (fwrite(&crc32, 1, sizeof(u32), fp) != sizeof(u32))
-		{
-			fclose(fp); return 0;
-		}
+		output->fwrite(&crc32, sizeof(u32));
+		
 		// Save type
 		el_saveType = el->FirstChildElement("saveType"); 
 		if (el_saveType)
@@ -216,7 +211,7 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 			if (tmp)
 			{
 				if (strcmp(tmp, "None")  == 0)
-					fputc(0xFE, fp);
+					output->fputc(0xFE);
 				else
 				{
 					bool bUnknown = true;
@@ -225,26 +220,25 @@ u32 ADVANsCEne::convertDB(const char *in_filaname)
 						if (strcmp(saveTypeNames[i], "") == 0) continue;
 						if (strcasecmp(tmp, saveTypeNames[i]) == 0)
 						{
-							fputc(i, fp);
+							output->fputc(i);
 							bUnknown = false;
 							break;
 						}
 					}
 					if (bUnknown)
-						fputc(0xFF, fp);	// Unknown
+						output->fputc(0xFF);	// Unknown
 				}
 			}
 			else
-				fputc(0xFF, fp);	// Unknown
+				output->fputc(0xFF);	// Unknown
 		}
-		fwrite(&reserved, 1, sizeof(u32), fp);
-		fwrite(&reserved, 1, sizeof(u32), fp);
+		output->fwrite(&reserved, sizeof(u32));
+		output->fwrite(&reserved, sizeof(u32));
 		count++;
 		el = el->NextSiblingElement("game");
 	}
 	printf("\n");
 	delete xml;
-	fclose(fp);
 	if (count > 0) 
 		printf("done\n");
 	else
