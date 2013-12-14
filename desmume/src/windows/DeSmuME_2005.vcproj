@@ -81,7 +81,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib glib-vc8-Win32.lib lua51.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib comctl32.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib glib-vc8-Win32.lib lua51.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\win32"
 				IgnoreDefaultLibraryNames="LIBCPMT"
@@ -274,7 +274,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib comctl32.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib comctl32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\win32"
 				DelayLoadDLLs="lua51.dll"
@@ -474,7 +474,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib libelf_libdwarf-vc8-Win32.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
+				AdditionalDependencies="directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib lua51.lib glib-vc8-Win32.lib zlib-vc8-Win32.lib agg-2.5.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib shell32.lib comdlg32.lib shlwapi.lib Rpcrt4.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;agg;.libs;.libs\win32"
 				DelayLoadDLLs="lua51.dll"
