@@ -22,6 +22,7 @@
 #include "../NDSSystem.h"
 #include "../path.h"
 #include "../slot2.h"
+#include "../emufile.h"
 
 #define EEPROM		0x52504545
 #define SRAM_		0x4D415253
@@ -40,8 +41,8 @@ static const char *saveTypes[] = {
 class Slot2_GbaCart : public ISlot2Interface
 {
 private:
-	FILE	*fROM;
-	FILE	*fSRAM;
+	EMUFILE* fROM;
+	EMUFILE* fSRAM;
 	u32		romSize;
 	u32		currentROMPos;
 	u32		sramSize;
@@ -60,44 +61,43 @@ private:
 
 	u32	readRom(const u32 pos, const u8 size) 
 	{
-		if (fROM)
-		{
-			if (currentROMPos != pos)
-				fseek(fROM, pos, SEEK_SET);
+		if (!fROM) return 0xFFFFFFFF;
+	
+		if (currentROMPos != pos)
+			fROM->fseek(pos, SEEK_SET);
 
-			u32 data = 0xFFFFFFFF;
-			u32 readed = fread(&data, 1, size, fROM);
-			currentROMPos = (pos + readed);
-			return data;
-		}
-		return 0xFFFFFFFF;
+		u32 data = 0xFFFFFFFF;
+		u32 readed = fROM->fread(&data, size);
+		currentROMPos = (pos + readed);
+		return data;
 	}
 
 	u32 readSRAM(const u32 pos, const u8 size) 
 	{
-		if (fSRAM)
-		{
-			if (currentSRAMPos != pos)
-				fseek(fSRAM, pos, SEEK_SET);
+		if (!fSRAM)
+			return 0xFFFFFFFF;
+			
+		if (currentSRAMPos != pos)
+				fSRAM->fseek(pos, SEEK_SET);
 
-			u32 data = 0xFFFFFFFF;
-			u32 readed = fread(&data, 1, size, fSRAM);
-			currentSRAMPos = (pos + readed);
-			return data;
-		}
+		u32 data = 0xFFFFFFFF;
+		u32 readed = fSRAM->fread(&data, size);
+		currentSRAMPos = (pos + readed);
+		return data;
 		return 0xFFFFFFFF;
 	}
 
 	void writeSRAM(const u32 pos, const u8 *data, u32 size) 
 	{
-		if (fSRAM)
-		{
-			if (currentSRAMPos != pos)
-				fseek(fSRAM, pos, SEEK_SET);
+		if (!fSRAM)
+			return;
 
-			u32 writed = fwrite(&data, 1, size, fSRAM);
-			currentSRAMPos = (pos + writed);
-		}
+		if (currentSRAMPos != pos)
+			fSRAM->fseek(pos, SEEK_SET);
+
+		u32 writed = size;
+		fSRAM->fwrite(&data, size);
+		currentSRAMPos = (pos + writed);
 	}
 
 
@@ -108,24 +108,24 @@ private:
 		u32 saveROMPos = currentROMPos;
 		u32 tmp = 0;
 
-		fseek(fROM, 0, SEEK_SET);
+		fROM->fseek(0, SEEK_SET);
 
-		while (!feof(fROM))
+		while (!fROM->eof())
 		{
-			u32 readed = fread(&tmp, 1, 4, fROM);
+			u32 readed = fROM->fread(&tmp, 4);
 			if (readed < 4) break;
 
 			switch (tmp)
 			{
-				case EEPROM:	fseek(fROM, saveROMPos, SEEK_SET); return 1;
-				case SRAM_:		fseek(fROM, saveROMPos, SEEK_SET); return 2;
+				case EEPROM:	fROM->fseek(saveROMPos, SEEK_SET); return 1;
+				case SRAM_:		fROM->fseek(saveROMPos, SEEK_SET); return 2;
 				case FLASH:
 				{
-					fread(&tmp, 1, 4, fROM);
-					fseek(fROM, saveROMPos, SEEK_SET); 
+					fROM->fread(&tmp, 4);
+					fROM->fseek(saveROMPos, SEEK_SET); 
 					return ((tmp == FLASH1M_)?3:5);
 				}
-				case SIIRTC_V:	 fseek(fROM, saveROMPos, SEEK_SET); return 4;
+				case SIIRTC_V:	 fROM->fseek(saveROMPos, SEEK_SET); return 4;
 			}
 		}
 
@@ -300,7 +300,24 @@ private:
 		return 0xFF;
 	}
 
+	void Close()
+	{
+		delete fROM; fROM = NULL;
+		delete fSRAM; fSRAM = NULL;
+		romSize = 0;
+		currentROMPos = 0;
+		sramSize = 0;
+		currentSRAMPos = 0;
+	}
+
 public:
+	Slot2_GbaCart()
+		: fROM(NULL)
+		, fSRAM(NULL)
+	{
+		Close();
+	}
+
 	virtual Slot2Info const* info()
 	{
 		static Slot2InfoSimple info("GBA cartridge", "GBA cartridge in slot", 0x03);
@@ -309,43 +326,43 @@ public:
 
 	virtual void connect()
 	{
-		if (fROM) fclose(fROM);
-		if (fSRAM) fclose(fSRAM);
-		fROM = NULL; fSRAM = NULL;
-		romSize = 0;
-		currentROMPos = 0;
-		sramSize = 0;
-		currentSRAMPos = 0;
-
-		if (gameInfo.romsize == 0) return;
-
-		if (!strcasecmp(GBAgameName, "self"))
-			strcpy(GBAgameName, path.path.c_str());
-
-		if (!strlen(GBAgameName)) return;
-		
-		printf("GBASlot opening ROM %s", GBAgameName);
-
-		fROM = fopen(GBAgameName, "rb");
-		if (fROM)
 		{
-			fseek(fROM, 0, SEEK_END);
-			romSize = ftell(fROM);
-			fseek(fROM, 0, SEEK_SET);
+			Close();
+			romSize = 0;
+			currentROMPos = 0;
+			sramSize = 0;
+			currentSRAMPos = 0;
+
+			if (gameInfo.romsize == 0) return;
+
+			if (!strcasecmp(GBAgameName, "self"))
+				strcpy(GBAgameName, path.path.c_str());
+
+			if (!strlen(GBAgameName)) return;
+			
+			printf("GBASlot opening ROM: %s", GBAgameName);
+
+			fROM = new EMUFILE_FILE(GBAgameName, "rb");
+			if (fROM->fail())
+				goto FAIL;
+
+			romSize = fROM->size();
 			printf(" - Success (%u bytes)\n", romSize);
 
-			//try loading the sram
+			//try loading the sram. build the filename from the rom, and expect it to be a .sav
 			char *dot = strrchr(GBAgameName, '.');
 			if(!dot) return;
 
 			std::string sram_fname = GBAgameName;
 			sram_fname.resize(dot-GBAgameName);
 			sram_fname += ".sav";
-			fSRAM = fopen(sram_fname.c_str(), "rb+");
-			if(!fSRAM) return;
-			fseek(fSRAM, 0, SEEK_END);
-			sramSize = ftell(fSRAM);
-			fseek(fSRAM, 0, SEEK_SET);
+			fSRAM = new EMUFILE_FILE(sram_fname.c_str(), "rb+");
+			if(fSRAM->fail())
+			{
+				delete fSRAM; fSRAM = NULL;
+				return;
+			}
+			sramSize = fSRAM->size();
 			saveType = getSaveTypeGBA();
 			printf("GBASlot found SRAM %s (%s - %u bytes)\n", sram_fname.c_str(), (saveType == 0xFF)?"Unknown":saveTypes[saveType], sramSize);
 			gbaFlash.size = sramSize;
@@ -359,20 +376,19 @@ public:
 				gbaFlash.idDevice = 0x09;
 				gbaFlash.idManufacturer = 0xC2;
 			}
+
+			//success!
+			return;
 		}
-		else
-			printf(" - Failed\n");
+
+	FAIL:
+		Close();
+		printf(" - Failed\n");
 	}
 
 	virtual void disconnect()
 	{
-		if (fROM) fclose(fROM);
-		if (fSRAM) fclose(fSRAM);
-		fROM = NULL; fSRAM = NULL;
-		romSize = 0;
-		currentROMPos = 0;
-		sramSize = 0;
-		currentSRAMPos = 0;
+		Close();
 	}
 
 	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
