@@ -655,7 +655,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	if(gameInfo.isHomebrew())
 	{
 		if(!CommonSettings.loadToMemory)
-			msgbox->warn("Sorry.. right now, you can't use the default (stream rom from disk) with homebrew due to a bug wityh DLDI-autopatching");
+			msgbox->warn("Sorry.. right now, you can't use the default (stream rom from disk) with homebrew due to a bug with DLDI-autopatching");
 		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
 			DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 1);
 		else
