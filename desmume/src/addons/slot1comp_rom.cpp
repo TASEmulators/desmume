@@ -42,7 +42,7 @@ u32 Slot1Comp_Rom::read()
 		{
 			//see B7 for details
 			address &= gameInfo.mask; //sanity check
-			u32 ret = *(u32*)(gameInfo.secureArea + (address - 0x4000));
+			u32 ret = LE_TO_LOCAL_32(*(u32*)(gameInfo.secureArea + (address - 0x4000)));
 			address = (address&~0xFFF) + ((address+4)&0xFFF);
 			return ret;
 		}
