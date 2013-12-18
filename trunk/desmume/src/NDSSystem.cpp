@@ -202,63 +202,12 @@ void NDS_DeInit(void)
 #endif
 }
 
-NDS_header * NDS_getROMHeader(void)
+NDS_header* NDS_getROMHeader(void)
 {
-	NDS_header * header = new NDS_header;
-
-	memcpy(header, &gameInfo.header, sizeof(gameInfo.header));
-
-	//endian swap necessary fields. It would be better if we made accessors for these. I wonder if you could make a macro for a field accessor that would take the bitsize and do the swap on the fly
-	struct FieldSwap {
-		size_t offset;
-		int bytes;
-	};
-
-	static const FieldSwap fieldSwaps[] = {
-		{ offsetof(NDS_header,makerCode), 2},
-
-		{ offsetof(NDS_header,ARM9src), 4},
-		{ offsetof(NDS_header,ARM9exe), 4},
-		{ offsetof(NDS_header,ARM9cpy), 4},
-		{ offsetof(NDS_header,ARM7src), 4},
-		{ offsetof(NDS_header,ARM7exe), 4},
-		{ offsetof(NDS_header,ARM7cpy), 4},
-		{ offsetof(NDS_header,ARM7binSize), 4},
-		{ offsetof(NDS_header,FNameTblOff), 4},
-		{ offsetof(NDS_header,FNameTblSize), 4},
-		{ offsetof(NDS_header,FATOff), 4},
-		{ offsetof(NDS_header,FATSize), 4},
-		{ offsetof(NDS_header,ARM9OverlayOff), 4},
-		{ offsetof(NDS_header,ARM9OverlaySize), 4},
-		{ offsetof(NDS_header,ARM7OverlayOff), 4},
-		{ offsetof(NDS_header,ARM7OverlaySize), 4},
-		{ offsetof(NDS_header,normalCmd), 4},
-		{ offsetof(NDS_header,Key1Cmd), 4},
-		{ offsetof(NDS_header,IconOff), 4},
-
-		{ offsetof(NDS_header,CRC16), 2},
-		{ offsetof(NDS_header,ROMtimeout), 2},
-		
-		{ offsetof(NDS_header,ARM9autoload), 4},
-		{ offsetof(NDS_header,ARM7autoload), 4},
-		{ offsetof(NDS_header,endROMoffset), 4},
-		{ offsetof(NDS_header,HeaderSize), 4},
-
-		{ offsetof(NDS_header, ARM9module), 4},
-		{ offsetof(NDS_header, ARM7module), 4},
-
-		{ offsetof(NDS_header,logoCRC16), 2},
-		{ offsetof(NDS_header,headerCRC16), 2},
-	};
-
-	for(int i=0;i<ARRAY_SIZE(fieldSwaps);i++)
-		switch(fieldSwaps[i].bytes)
-		{
-		case 2: HostWriteWord((u8*)header,fieldSwaps[i].offset,T1ReadWord(header,fieldSwaps[i].offset));
-		case 4: HostWriteLong((u8*)header,fieldSwaps[i].offset,T1ReadLong((u8*)header,fieldSwaps[i].offset));
-		}
-
-	return header;
+	NDS_header *newHeader = new NDS_header;
+	memcpy(newHeader, &gameInfo.header, sizeof(NDS_header));
+	
+	return newHeader;
 } 
 
 
@@ -357,11 +306,7 @@ void GameInfo::populate()
 								"AUS",		// U
 
 	};
-
-	NDS_header * _header = NDS_getROMHeader();
-	header = *_header;
-	delete _header;
-
+	
 	memset(ROMserial, 0, sizeof(ROMserial));
 	memset(ROMname, 0, sizeof(ROMname));
 
@@ -401,8 +346,6 @@ void GameInfo::populate()
 				trim(ROMfullName[i]);
 			}
 		}*/
-
-
 }
 
 bool GameInfo::loadROM(std::string fname, u32 type)
@@ -423,6 +366,67 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 	if (res)
 	{
+#ifndef LOCAL_LE
+		//endian swap necessary fields. It would be better if we made accessors for these. I wonder if you could make a macro for a field accessor that would take the bitsize and do the swap on the fly
+		struct FieldSwap {
+			const size_t offset;
+			const size_t bytes;
+		};
+		
+		static const FieldSwap fieldSwaps[] = {
+			{ offsetof(NDS_header,makerCode), 2},
+			
+			{ offsetof(NDS_header,ARM9src), 4},
+			{ offsetof(NDS_header,ARM9exe), 4},
+			{ offsetof(NDS_header,ARM9cpy), 4},
+			{ offsetof(NDS_header,ARM9binSize), 4},
+			{ offsetof(NDS_header,ARM7src), 4},
+			{ offsetof(NDS_header,ARM7exe), 4},
+			{ offsetof(NDS_header,ARM7cpy), 4},
+			{ offsetof(NDS_header,ARM7binSize), 4},
+			{ offsetof(NDS_header,FNameTblOff), 4},
+			{ offsetof(NDS_header,FNameTblSize), 4},
+			{ offsetof(NDS_header,FATOff), 4},
+			{ offsetof(NDS_header,FATSize), 4},
+			{ offsetof(NDS_header,ARM9OverlayOff), 4},
+			{ offsetof(NDS_header,ARM9OverlaySize), 4},
+			{ offsetof(NDS_header,ARM7OverlayOff), 4},
+			{ offsetof(NDS_header,ARM7OverlaySize), 4},
+			{ offsetof(NDS_header,normalCmd), 4},
+			{ offsetof(NDS_header,Key1Cmd), 4},
+			{ offsetof(NDS_header,IconOff), 4},
+			
+			{ offsetof(NDS_header,CRC16), 2},
+			{ offsetof(NDS_header,ROMtimeout), 2},
+			
+			{ offsetof(NDS_header,ARM9autoload), 4},
+			{ offsetof(NDS_header,ARM7autoload), 4},
+			{ offsetof(NDS_header,endROMoffset), 4},
+			{ offsetof(NDS_header,HeaderSize), 4},
+			
+			{ offsetof(NDS_header, ARM9module), 4},
+			{ offsetof(NDS_header, ARM7module), 4},
+			
+			{ offsetof(NDS_header,logoCRC16), 2},
+			{ offsetof(NDS_header,headerCRC16), 2},
+		};
+		
+		for(size_t i = 0; i < ARRAY_SIZE(fieldSwaps); i++)
+		{
+			const u8 *fieldAddr = (u8 *)&header + fieldSwaps[i].offset;
+			
+			switch(fieldSwaps[i].bytes)
+			{
+				case 2:
+					*(u16 *)fieldAddr = LE_TO_LOCAL_16(*(u16 *)fieldAddr);
+					break;
+					
+				case 4:
+					*(u32 *)fieldAddr = LE_TO_LOCAL_32(*(u32 *)fieldAddr);
+					break;
+			}
+		}
+#endif
 		cardSize = (128 * 1024) << header.cardSize;
 
 		if (cardSize < romsize)
@@ -467,9 +471,19 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			}
 
 			if(hasRomBanner())
+			{
 				memcpy(&banner, romdata + header.IconOff, sizeof(RomBanner));
+				
+				banner.version = LE_TO_LOCAL_16(banner.version);
+				banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
+				
+				for(size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
+				{
+					banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
+				}
+			}
 
-			_isDSiEnhanced = ((*(u32*)(romdata + 0x180) == 0x8D898581U) && (*(u32*)(romdata + 0x184) == 0x8C888480U));
+			_isDSiEnhanced = (LE_TO_LOCAL_32(*(u32*)(romdata + 0x180) == 0x8D898581U) && LE_TO_LOCAL_32(*(u32*)(romdata + 0x184) == 0x8C888480U));
 			fclose(fROM); fROM = NULL;
 			return true;
 		}
@@ -478,6 +492,14 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 		{
 			fseek(fROM, header.IconOff + headerOffset, SEEK_SET);
 			fread(&banner, 1, sizeof(RomBanner), fROM);
+			
+			banner.version = LE_TO_LOCAL_16(banner.version);
+			banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
+			
+			for(size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
+			{
+				banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
+			}
 		}
 		fseek(fROM, headerOffset, SEEK_SET);
 		lastReadPos = 0;
@@ -505,7 +527,6 @@ void GameInfo::closeROM()
 
 u32 GameInfo::readROM(u32 pos)
 {
-	//TODO - endian correctness?
 	if (!romdata)
 	{
 		u32 data;
@@ -513,7 +534,7 @@ u32 GameInfo::readROM(u32 pos)
 			fseek(fROM, pos + headerOffset, SEEK_SET);
 		u32 num = fread(&data, 1, 4, fROM);
 		lastReadPos = (pos + num);
-		return data;
+		return LE_TO_LOCAL_32(data);
 	}
 	else
 	{
@@ -522,7 +543,7 @@ u32 GameInfo::readROM(u32 pos)
 			printf("Panic! GameInfo reading out of buffer!\n");
 			exit(-1);
 		}
-		return *(u32*)(romdata + pos);
+		return LE_TO_LOCAL_32(*(u32*)(romdata + pos));
 	}
 }
 
@@ -2222,7 +2243,7 @@ bool NDS_FakeBoot()
 		u32 dst = header->ARM9cpy;
 		for(u32 i = 0; i < header->ARM9binSize; i+=4)
 		{
-			u32 tmp = (hasSecureArea && ((src >= 0x4000) && (src < 0x8000)))?*(u32*)(gameInfo.secureArea + (src - 0x4000)):gameInfo.readROM(src);
+			u32 tmp = (hasSecureArea && ((src >= 0x4000) && (src < 0x8000)))?LE_TO_LOCAL_32(*(u32*)(gameInfo.secureArea + (src - 0x4000))):gameInfo.readROM(src);
 
 			_MMU_write32<ARMCPU_ARM9>(dst, tmp);
 
@@ -2262,12 +2283,12 @@ bool NDS_FakeBoot()
 	{
 		//dsi needs this copied later in memory. there are probably a number of things that  get copied to a later location in memory.. thats where the NDS consoles tend to stash stuff.
 		for (int i = 0; i < (0x170); i+=4)
-			_MMU_write32<ARMCPU_ARM9>(0x027FFE00 + i, LE_TO_LOCAL_32(gameInfo.readROM(i)));
+			_MMU_write32<ARMCPU_ARM9>(0x027FFE00 + i, gameInfo.readROM(i));
 	}
 	else
 	{
 		for (int i = 0; i < (0x170); i+=4)
-			_MMU_write32<ARMCPU_ARM9>(0x027FFE00 + i, LE_TO_LOCAL_32(gameInfo.readROM(i)));
+			_MMU_write32<ARMCPU_ARM9>(0x027FFE00 + i, gameInfo.readROM(i));
 	}
 
 	//the firmware will be booting to these entrypoint addresses via BX (well, the arm9 at least; is unverified for the arm7)
