@@ -620,16 +620,9 @@ static BOOL isCoreStarted = NO;
 {
 	if (self.isSpeedLimitEnabled)
 	{
-		CGFloat theSpeed = self.speedScalar;
-		if(theSpeed <= SPEED_SCALAR_MIN)
-		{
-			theSpeed = SPEED_SCALAR_MIN;
-		}
-		
+		const CGFloat theSpeed = ([self speedScalar] > SPEED_SCALAR_MIN) ? [self speedScalar] : SPEED_SCALAR_MIN;
 		pthread_mutex_lock(&threadParam.mutexThreadExecute);
-		uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / theSpeed);
-		AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
-		threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
+		threadParam.timeBudgetMachAbsTime = GetFrameAbsoluteTime(1.0/theSpeed);
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	}
 	else
@@ -893,7 +886,15 @@ static void* RunCoreThread(void *arg)
 		// we owe on timeBudget.
 		if (param->isFrameSkipEnabled)
 		{
-			CoreFrameSkip(timeBudget, startTime, &param->framesToSkip);
+			if (param->framesToSkip > 0)
+			{
+				NDS_SkipNextFrame();
+				param->framesToSkip--;
+			}
+			else
+			{
+				param->framesToSkip = CalculateFrameSkip(timeBudget, startTime);
+			}
 		}
 		
 		pthread_mutex_unlock(&param->mutexThreadExecute);
@@ -906,52 +907,76 @@ static void* RunCoreThread(void *arg)
 	return nil;
 }
 
-static void CoreFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime, unsigned int *outFramesToSkip)
+static int CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime)
 {
-	if (*outFramesToSkip > 0)
+	static const double skipCurve[10]	= {0.60, 0.58, 0.55, 0.51, 0.46, 0.40, 0.30, 0.20, 0.10, 0.00};
+	static const double unskipCurve[10]	= {0.75, 0.70, 0.65, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00};
+	static size_t skipStep = 0;
+	static size_t unskipStep = 0;
+	static int lastSetFrameSkip = 0;
+	
+	// Calculate the time remaining.
+	const uint64_t elapsed = mach_absolute_time() - frameStartMachAbsTime;
+	int framesToSkip = 0;
+	
+	if (elapsed > timeBudgetMachAbsTime)
 	{
-		NDS_SkipNextFrame();
-		(*outFramesToSkip)--;
-	}
-	else
-	{
-		// Calculate the time remaining.
-		uint64_t elapsed = mach_absolute_time() - frameStartMachAbsTime;
-		
-		if (elapsed > timeBudgetMachAbsTime)
+		if (timeBudgetMachAbsTime > 0)
 		{
-			static unsigned int lastSetFrameSkip = 0;
-			unsigned int framesToSkip = 0;
+			framesToSkip = (int)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS) / (double)timeBudgetMachAbsTime) + FRAME_SKIP_BIAS );
 			
-			if (timeBudgetMachAbsTime > 0)
+			if (framesToSkip > lastSetFrameSkip)
 			{
-				framesToSkip = (unsigned int)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS) / (double)timeBudgetMachAbsTime) + FRAME_SKIP_BIAS );
-				if (framesToSkip < lastSetFrameSkip)
+				framesToSkip -= (int)((double)(framesToSkip - lastSetFrameSkip) * skipCurve[skipStep]);
+				if (skipStep < 9)
 				{
-					framesToSkip += (unsigned int)((double)(lastSetFrameSkip - framesToSkip) * FRAME_SKIP_SMOOTHNESS);
+					skipStep++;
 				}
-				
-				lastSetFrameSkip = framesToSkip;
 			}
 			else
 			{
-				framesToSkip = (unsigned int)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS * 100.0) / DS_SECONDS_PER_FRAME) + FRAME_SKIP_BIAS );
-				// Don't need to save lastSetFrameSkip here since this code path assumes that
-				// the frame limiter is disabled.
+				framesToSkip += (int)((double)(lastSetFrameSkip - framesToSkip) * skipCurve[skipStep]);
+				if (skipStep > 0)
+				{
+					skipStep--;
+				}
 			}
-			
-			// Bound the frame skip.
-			if (framesToSkip > (unsigned int)MAX_FRAME_SKIP)
-			{
-				framesToSkip = (unsigned int)MAX_FRAME_SKIP;
-				lastSetFrameSkip = framesToSkip;
-			}
-			
-			*outFramesToSkip = framesToSkip;
 		}
 		else
 		{
-			*outFramesToSkip = 0;
+			static const double frameRate100x = (double)FRAME_SKIP_AGGRESSIVENESS / (double)GetFrameAbsoluteTime(1.0/100.0);
+			framesToSkip = (int)((double)elapsed * frameRate100x);
 		}
+		
+		unskipStep = 0;
 	}
+	else
+	{
+		framesToSkip = (int)((double)lastSetFrameSkip * unskipCurve[unskipStep]);
+		if (unskipStep < 9)
+		{
+			unskipStep++;
+		}
+		
+		skipStep = 0;
+	}
+	
+	// Bound the frame skip.
+	static const int kMaxFrameSkip = (int)MAX_FRAME_SKIP;
+	if (framesToSkip > kMaxFrameSkip)
+	{
+		framesToSkip = kMaxFrameSkip;
+	}
+	
+	lastSetFrameSkip = framesToSkip;
+	
+	return framesToSkip;
+}
+
+uint64_t GetFrameAbsoluteTime(const double frameTimeScalar)
+{
+	const uint64_t frameTimeNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 * frameTimeScalar);
+	const AbsoluteTime frameTimeAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&frameTimeNanoseconds);
+	
+	return *(uint64_t *)&frameTimeAbsTime;
 }
