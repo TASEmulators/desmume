@@ -2067,7 +2067,7 @@ static int OP_SWPB(const u32 i) { return op_swp_(i, 1); }
 //-----------------------------------------------------------------------------
 //   LDMIA / LDMIB / LDMDA / LDMDB / STMIA / STMIB / STMDA / STMDB
 //-----------------------------------------------------------------------------
-static u32 popcount(u32 x)
+static u32 popregcount(u32 x)
 {
 	uint32_t pop = 0;
 	for(; x; x>>=1)
@@ -2233,7 +2233,7 @@ static void call_ldm_stm(GpVar adr, u32 bitmask, bool store, int dir)
 	if(bitmask)
 	{
 		GpVar n = c.newGpVar(kX86VarTypeGpd);
-		c.mov(n, popcount(bitmask));
+		c.mov(n, popregcount(bitmask));
 #ifdef ASMJIT_X64
 		GpVar regs = c.newGpVar(kX86VarTypeGpz);
 		c.mov(regs, get_reg_list(bitmask, dir));
@@ -2267,7 +2267,7 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb);
 static int op_ldm_stm(u32 i, bool store, int dir, bool before, bool writeback)
 {
 	u32 bitmask = i & 0xFFFF;
-	u32 pop = popcount(bitmask);
+	u32 pop = popregcount(bitmask);
 
 	GpVar adr = c.newGpVar(kX86VarTypeGpd);
 	c.mov(adr, reg_pos_ptr(16));
@@ -2326,7 +2326,7 @@ static int OP_STMDB_W(const u32 i) { return op_ldm_stm(i, 1, -1, 1, 1); }
 static int op_ldm_stm2(u32 i, bool store, int dir, bool before, bool writeback)
 {
 	u32 bitmask = i & 0xFFFF;
-	u32 pop = popcount(bitmask);
+	u32 pop = popregcount(bitmask);
 	bool bit15 = BIT15(i);
 
 	//printf("ARM%c: %s R%d:%08X, bitmask %02X\n", PROCNUM?'7':'9', (store?"STM":"LDM"), REG_POS(i, 16), cpu->R[REG_POS(i, 16)], bitmask);
@@ -3615,7 +3615,7 @@ static int OP_LDR_PCREL(const u32 i)
 static int op_ldm_stm_thumb(u32 i, bool store)
 {
 	u32 bitmask = i & 0xFF;
-	u32 pop = popcount(bitmask);
+	u32 pop = popregcount(bitmask);
 
 	//if (BIT_N(i, _REG_NUM(i, 8)))
 	//	printf("WARNING - %sIA with Rb in Rlist (THUMB)\n", store?"STM":"LDM");
@@ -3656,7 +3656,7 @@ static int op_push_pop(u32 i, bool store, bool pc_lr)
 {
 	u32 bitmask = (i & 0xFF);
 	bitmask |= pc_lr << (store ? 14 : 15);
-	u32 pop = popcount(bitmask);
+	u32 pop = popregcount(bitmask);
 	int dir = store ? -1 : 1;
 
 	GpVar adr = c.newGpVar(kX86VarTypeGpd);
