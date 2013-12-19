@@ -42,7 +42,7 @@ int getOnlineCores (void)
 #elif defined HOST_BSD
 	int cores;
 	const int mib[4] = { CTL_HW, HW_NCPU, 0, 0 };
-	const size_t len = sizeof(cores);
+	size_t len = sizeof(cores); //don't make this const, i guess sysctl can't take a const *
 	sysctl(mib, 2, &cores, &len, NULL, 0);
 	return (cores < 1) ? 1 : cores;
 #else

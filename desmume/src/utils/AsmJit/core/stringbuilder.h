@@ -4,6 +4,8 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
+#include <stdarg.h>
+
 // [Guard]
 #ifndef _ASMJIT_CORE_STRINGBUILDER_H
 #define _ASMJIT_CORE_STRINGBUILDER_H
