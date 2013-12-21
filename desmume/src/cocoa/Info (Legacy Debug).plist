@@ -240,11 +240,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>v0.9.10 (Debug)</string>
+	<string>v0.9.11 (Debug)</string>
 	<key>CFBundleSignature</key>
 	<string>DSmM</string>
 	<key>CFBundleVersion</key>
-	<string>0.9.10</string>
+	<string>0.9.11</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.entertainment</string>
 	<key>LSMinimumSystemVersion</key>

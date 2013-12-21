@@ -687,6 +687,14 @@ static NSMutableDictionary *_gURLDictionary = nil;
 		portStr = @"Cocoa";
 	}
 	
+	versionURL = [CocoaDSFile userAppSupportURL:nil version:@"0.9.10"];
+	versionPath = [versionURL path];
+	if (versionPath != nil && [[[filePath stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] isEqualToString:versionPath])
+	{
+		versionStr = @"0.9.10";
+		portStr = @"Cocoa";
+	}
+	
 	fileVersion = [[versionStr stringByAppendingString:@" "] stringByAppendingString:portStr];
 	
 	return fileVersion;
