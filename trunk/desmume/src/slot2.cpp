@@ -18,6 +18,7 @@
 #include "types.h"
 #include "mem.h"
 #include "MMU.h"
+#include "NDSSystem.h"
 
 //this is the currently-configured cflash mode
 ADDON_CFLASH_MODE CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
@@ -70,7 +71,7 @@ void slot2_Init()
 
 void slot2_Shutdown()
 {
-	for(int i=0; i<ARRAY_SIZE(slot2_List); i++)
+	for(size_t i=0; i<ARRAY_SIZE(slot2_List); i++)
 	{
 		if(slot2_List[i])
 			slot2_List[i]->shutdown();
@@ -102,18 +103,71 @@ void slot2_Reset()
 
 bool slot2_Change(NDS_SLOT2_TYPE changeToType)
 {
-	if((changeToType == slot2_device_type) || (changeToType == slot2_GetSelectedType()))
-		return FALSE; //nothing to do
 	if (changeToType > NDS_SLOT2_COUNT || changeToType < 0)
-		return FALSE;
-	if(slot2_device != NULL)
-		slot2_device->disconnect();
+		return false;
+	
+	if (slot2_device_type == changeToType)
+	{
+		return false;
+	}
+	else if (slot2_device_type != NDS_SLOT2_AUTO && changeToType == NDS_SLOT2_AUTO)
+	{
+		const NDS_SLOT2_TYPE prevDeviceType = slot2_device_type;
+		const NDS_SLOT2_TYPE autoDeviceType = slot2_DetermineType();
+		
+		if (prevDeviceType != autoDeviceType && slot2_device != NULL)
+		{
+			slot2_device->disconnect();
+		}
+		
+		slot2_setDeviceByType(changeToType);
+		slot2_selected_type = autoDeviceType;
+		
+		if (prevDeviceType != autoDeviceType)
+		{
+			slot2_device->connect();
+		}
+	}
+	else if (slot2_device_type == NDS_SLOT2_AUTO && changeToType != NDS_SLOT2_AUTO)
+	{
+		const NDS_SLOT2_TYPE autoDeviceType = slot2_DetermineType();
+		
+		if (autoDeviceType != changeToType && slot2_device != NULL)
+		{
+			slot2_device->disconnect();
+		}
+		
+		slot2_setDeviceByType(changeToType);
+		
+		if (autoDeviceType != changeToType)
+		{
+			slot2_device->connect();
+		}
+	}
+	else //(slot2_device_type != NDS_SLOT2_AUTO && changeToType != NDS_SLOT2_AUTO)
+	{
+		if (slot2_device != NULL)
+		{
+			slot2_device->disconnect();
+		}
+		
+		slot2_setDeviceByType(changeToType);
+		slot2_device->connect();
+	}
+	
+	return true;
+}
 
-	slot2_device_type = changeToType;
+void slot2_setDeviceByType(NDS_SLOT2_TYPE theType)
+{
+	if (theType > NDS_SLOT2_COUNT || theType < 0)
+	{
+		return;
+	}
+	
+	slot2_device_type = theType;
 	slot2_device = slot2_List[slot2_device_type];
 	printf("Slot 2: %s\n", slot2_device->info()->name());
-	slot2_device->connect();
-	return true;
 }
 
 bool slot2_getTypeByID(u8 ID, NDS_SLOT2_TYPE &type)
@@ -147,6 +201,64 @@ NDS_SLOT2_TYPE slot2_GetSelectedType()
 		return slot2_selected_type;
 
 	return slot2_device_type;
+}
+
+NDS_SLOT2_TYPE slot2_DetermineType()
+{
+	NDS_SLOT2_TYPE theType = NDS_SLOT2_NONE;
+	
+	//check game ID in core emulator and select right implementation
+	if (gameInfo.romsize == 0)
+	{
+		return theType;
+	}
+	else if (gameInfo.isHomebrew())
+	{
+		theType = NDS_SLOT2_PASSME;
+	}
+	else
+	{
+		theType = slot2_DetermineTypeByGameCode(gameInfo.header.gameCode);
+	}
+	
+	return theType;
+}
+
+NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
+{
+	NDS_SLOT2_TYPE theType = NDS_SLOT2_NONE;
+	
+	struct Slot2AutoDeviceType
+	{
+		const char				*gameCode;
+		const NDS_SLOT2_TYPE	deviceType;
+	};
+	
+	static const Slot2AutoDeviceType gameCodeDeviceTypes[] = {
+		{"UBR", NDS_SLOT2_EXPMEMORY},		// Opera Browser
+		{"YGH", NDS_SLOT2_GUITARGRIP},		// Guitar Hero - On Tour
+		{"CGS", NDS_SLOT2_GUITARGRIP},		// Guitar Hero - On Tour - Decades
+		{"C6Q", NDS_SLOT2_GUITARGRIP},		// Guitar Hero - On Tour - Modern Hits
+		{"YGR", NDS_SLOT2_GUITARGRIP},		// Guitar Hero - On Tour (Demo)
+		{"Y56", NDS_SLOT2_GUITARGRIP},		// Guitar Hero - On Tour - Decades (Demo)
+		{"Y6R", NDS_SLOT2_GUITARGRIP},		// Guitar Hero - On Tour - Modern Hits (Demo)
+		{"BEP", NDS_SLOT2_EASYPIANO},		// Easy Piano (EUR)(USA)
+		{"YAA", NDS_SLOT2_PADDLE},			// Arkanoid DS
+		{"CB6", NDS_SLOT2_PADDLE},			// Space Bust-A-Move
+		{"YXX", NDS_SLOT2_PADDLE},			// Space Invaders Extreme
+		{"CV8", NDS_SLOT2_PADDLE},			// Space Invaders Extreme 2
+	};
+	
+	for(size_t i = 0; i < ARRAY_SIZE(gameCodeDeviceTypes); i++)
+	{
+		if(memcmp(theGameCode, gameCodeDeviceTypes[i].gameCode, 3) == 0)
+		{
+			theType = gameCodeDeviceTypes[i].deviceType;
+			break;
+		}
+	}
+	
+	return theType;
 }
 
 void slot2_Savestate(EMUFILE* os)
