@@ -187,8 +187,6 @@ static BOOL isCoreStarted = NO;
 		return isCoreStarted;
 	}
 	
-	slot2_Change(NDS_SLOT2_NONE);
-	
 	result = NDS_Init();
 	if (result == -1)
 	{
