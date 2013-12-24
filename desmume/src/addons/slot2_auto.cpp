@@ -18,7 +18,6 @@
 #include "../slot2.h"
 #include "../registers.h"
 #include "../MMU.h"
-#include "../NDSSystem.h"
 #ifdef HOST_WINDOWS
 #include "../windows/inputdx.h"
 #endif
@@ -39,45 +38,11 @@ public:
 		static Slot2InfoSimple info("Auto","Slot2 (auto-selection) device emulation", 0xFE);
 		return &info;
 	}
-
+	
 	virtual void connect()
 	{
-
-		NDS_SLOT2_TYPE selection = NDS_SLOT2_NONE;
-
-		//check game ID in core emulator and select right implementation
-		if (gameInfo.romsize == 0)
-		{}
-		else
-		if ((memcmp(gameInfo.header.gameCode, "UBR",  3) == 0)) selection = NDS_SLOT2_EXPMEMORY; // Opera Browser
-		else
-			if ((memcmp(gameInfo.header.gameCode, "YGH",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour
-		else
-			if ((memcmp(gameInfo.header.gameCode, "CGS",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Decades
-		else
-			if ((memcmp(gameInfo.header.gameCode, "C6Q",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Modern Hits
-		else
-			if ((memcmp(gameInfo.header.gameCode, "YGR",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour (Demo)
-		else
-			if ((memcmp(gameInfo.header.gameCode, "Y56",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Decades (Demo)
-		else
-			if ((memcmp(gameInfo.header.gameCode, "Y6R",  3) == 0)) selection = NDS_SLOT2_GUITARGRIP; // Guitar Hero - On Tour - Modern Hits (Demo)
-		else
-			if ((memcmp(gameInfo.header.gameCode, "BEP",  3) == 0)) selection = NDS_SLOT2_EASYPIANO; // Easy Piano (EUR)(USA)
-		else
-			if ((memcmp(gameInfo.header.gameCode, "YAA",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Arkanoid DS
-		else
-			if ((memcmp(gameInfo.header.gameCode, "CB6",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Space Bust-A-Move
-		else
-			if ((memcmp(gameInfo.header.gameCode, "YXX",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Space Invaders Extreme
-				else
-			if ((memcmp(gameInfo.header.gameCode, "CV8",  3) == 0)) selection = NDS_SLOT2_PADDLE; // Space Invaders Extreme 2
-		else
-			if (gameInfo.isHomebrew())
-				selection = NDS_SLOT2_PASSME;
-		
-		slot2_selected_type = selection;
-		mSelectedImplementation = slot2_List[selection];
+		slot2_selected_type = slot2_DetermineType();
+		mSelectedImplementation = slot2_List[slot2_selected_type];
 		mSelectedImplementation->connect();
 		printf("Slot2 auto-selected device type: %s (0x%02X)\n", mSelectedImplementation->info()->name(), mSelectedImplementation->info()->id());
 		

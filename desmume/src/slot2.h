@@ -111,6 +111,7 @@ void slot2_Reset();
 
 //change the current device
 bool slot2_Change(NDS_SLOT2_TYPE type);
+void slot2_setDeviceByType(NDS_SLOT2_TYPE theType);
 
 bool slot2_getTypeByID(u8 ID, NDS_SLOT2_TYPE &type);
 
@@ -120,6 +121,10 @@ bool slot2_ChangeByID(u8 ID);
 //check on the current device
 NDS_SLOT2_TYPE slot2_GetCurrentType();
 NDS_SLOT2_TYPE slot2_GetSelectedType();
+
+//determine which device type is appropriate for the loaded ROM
+NDS_SLOT2_TYPE slot2_DetermineType();
+NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode);
 
 template <u8 PROCNUM, typename T>
 bool slot2_write(u32 addr, T val);
