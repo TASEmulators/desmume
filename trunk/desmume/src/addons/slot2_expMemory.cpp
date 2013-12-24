@@ -39,6 +39,13 @@ private:
 	u8		*expMemory;
 	bool	ext_ram_lock;
 public:
+	
+	Slot2_ExpansionPak()
+	{
+		expMemory = NULL;
+		ext_ram_lock = true;
+	}
+	
 	virtual Slot2Info const* info()
 	{
 		static Slot2InfoSimple info("Memory Expansion Pak", "Official RAM expansion for Opera browser", 0x05);
@@ -47,24 +54,18 @@ public:
 
 	virtual void connect()
 	{
-		if (expMemory)
+		if (expMemory == NULL)
 		{
-			delete [] expMemory;
-			expMemory = NULL;
+			expMemory = new u8[EXPANSION_MEMORY_SIZE];
 		}
-
-		expMemory = new u8 [EXPANSION_MEMORY_SIZE];
 		memset(expMemory, 0xFF, EXPANSION_MEMORY_SIZE);
 		ext_ram_lock = true; 
 	}
 
 	virtual void disconnect()
 	{
-		if (expMemory)
-		{
-			delete [] expMemory;
-			expMemory = NULL;
-		}
+		delete[] expMemory;
+		expMemory = NULL;
 	}
 
 	virtual void writeByte(u8 PROCNUM, u32 addr, u8 val)
