@@ -18,9 +18,7 @@
 #include "../slot2.h"
 #include "../registers.h"
 #include "../MMU.h"
-#ifdef HOST_WINDOWS
-#include "../windows/inputdx.h"
-#endif
+
 
 class Slot2_Auto : public ISlot2Interface
 {
@@ -45,12 +43,6 @@ public:
 		mSelectedImplementation = slot2_List[slot2_selected_type];
 		mSelectedImplementation->connect();
 		printf("Slot2 auto-selected device type: %s (0x%02X)\n", mSelectedImplementation->info()->name(), mSelectedImplementation->info()->id());
-		
-#ifdef HOST_WINDOWS
-		Guitar.Enabled	= (selection == NDS_SLOT2_GUITARGRIP)?true:false;
-		Piano.Enabled	= (selection == NDS_SLOT2_EASYPIANO)?true:false;
-		Paddle.Enabled	= (selection == NDS_SLOT2_PADDLE)?true:false;
-#endif
 	}
 
 	virtual void disconnect()
