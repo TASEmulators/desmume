@@ -2627,7 +2627,7 @@ void S9xWinScanJoypads ()
 
 #include "directx/xinput.h"
 
-void input_feedback(BOOL enable)
+void input_feedback(bool enable)
 {
 	
 	for(int C=0;C<16;C++)

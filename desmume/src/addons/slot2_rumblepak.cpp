@@ -18,7 +18,7 @@
 
 #include "../slot2.h"
 
-void (*FeedbackON)(BOOL enable) = NULL;
+void (*FeedbackON)(bool enable) = NULL;
 
 class Slot2_RumblePak : public ISlot2Interface
 {
