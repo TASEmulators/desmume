@@ -135,7 +135,7 @@ bool slot2_read(u32 addr, T &val);
 
 // =================================================================================
 extern char GBAgameName[MAX_PATH];					// file name for GBA game (rom)
-extern void (*FeedbackON)(BOOL enable);				// feedback on/off
+extern void (*FeedbackON)(bool enable);				// feedback on/off
 
 enum ADDON_CFLASH_MODE
 {
