@@ -27,8 +27,9 @@ ADDON_CFLASH_MODE CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 //it should be viewed as a parameter for the above.
 std::string CFlash_Path;
 
-char GBAgameName[MAX_PATH] = {0};
-
+// GBA file paths for cartridge and SRAM
+std::string GBACartridge_RomPath;
+std::string GBACartridge_SRAMPath;
 
 ISlot2Interface* slot2_List[NDS_SLOT2_COUNT] = {0};
 
@@ -247,7 +248,7 @@ NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
 		{"CB6", NDS_SLOT2_PADDLE},			// Space Bust-A-Move
 		{"YXX", NDS_SLOT2_PADDLE},			// Space Invaders Extreme
 		{"CV8", NDS_SLOT2_PADDLE},			// Space Invaders Extreme 2
-		{"AP2", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Hunters Pinball
+		{"AP2", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Pinball
 	};
 	
 	for(size_t i = 0; i < ARRAY_SIZE(gameCodeDeviceTypes); i++)

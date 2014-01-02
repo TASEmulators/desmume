@@ -67,6 +67,7 @@ extern int backupmemorytype;
 extern u32 backupmemorysize;
 
 void WIN_InstallCFlash();
+void WIN_InstallGBACartridge();
 
 #define IDM_RECENT_RESERVED0                    65500
 #define IDM_RECENT_RESERVED1                    65501

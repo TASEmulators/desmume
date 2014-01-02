@@ -320,51 +320,60 @@ public:
 
 	virtual Slot2Info const* info()
 	{
-		static Slot2InfoSimple info("GBA cartridge", "GBA cartridge in slot", 0x03);
+		static Slot2InfoSimple info("GBA Cartridge", "GBA cartridge in slot", 0x03);
 		return &info;
 	}
 
 	virtual void connect()
 	{
+		Close();
+		romSize = 0;
+		currentROMPos = 0;
+		sramSize = 0;
+		currentSRAMPos = 0;
+		
+		if (gameInfo.romsize == 0)
 		{
+			return;
+		}
+		
+		if (GBACartridge_RomPath.empty())
+		{
+			return;
+		}
+		
+		if (!strcasecmp(GBACartridge_RomPath.c_str(), "self"))
+		{
+			GBACartridge_RomPath = path.path;
+			GBACartridge_SRAMPath = Path::GetFileNameWithoutExt(GBACartridge_RomPath) + "." + GBA_SRAM_FILE_EXT;
+		}
+		
+		printf("GBASlot opening ROM: %s", GBACartridge_RomPath.c_str());
+		fROM = new EMUFILE_FILE(GBACartridge_RomPath, "rb");
+		if (fROM->fail())
+		{
+			printf(" - Failed\n");
 			Close();
-			romSize = 0;
-			currentROMPos = 0;
-			sramSize = 0;
-			currentSRAMPos = 0;
-
-			if (gameInfo.romsize == 0) return;
-
-			if (!strcasecmp(GBAgameName, "self"))
-				strcpy(GBAgameName, path.path.c_str());
-
-			if (!strlen(GBAgameName)) return;
 			
-			printf("GBASlot opening ROM: %s", GBAgameName);
-
-			fROM = new EMUFILE_FILE(GBAgameName, "rb");
-			if (fROM->fail())
-				goto FAIL;
-
-			romSize = fROM->size();
-			printf(" - Success (%u bytes)\n", romSize);
-
-			//try loading the sram. build the filename from the rom, and expect it to be a .sav
-			char *dot = strrchr(GBAgameName, '.');
-			if(!dot) return;
-
-			std::string sram_fname = GBAgameName;
-			sram_fname.resize(dot-GBAgameName);
-			sram_fname += ".sav";
-			fSRAM = new EMUFILE_FILE(sram_fname.c_str(), "rb+");
-			if(fSRAM->fail())
-			{
-				delete fSRAM; fSRAM = NULL;
-				return;
-			}
+			return;
+		}
+		
+		romSize = fROM->size();
+		printf(" - Success (%u bytes)\n", romSize);
+		
+		// Load the GBA cartridge SRAM.
+		fSRAM = new EMUFILE_FILE(GBACartridge_SRAMPath, "rb+");
+		if(fSRAM->fail())
+		{
+			delete fSRAM;
+			fSRAM = NULL;
+			printf("GBASlot did not load associated SRAM.\n");
+		}
+		else
+		{
 			sramSize = fSRAM->size();
 			saveType = getSaveTypeGBA();
-			printf("GBASlot found SRAM %s (%s - %u bytes)\n", sram_fname.c_str(), (saveType == 0xFF)?"Unknown":saveTypes[saveType], sramSize);
+			printf("GBASlot found SRAM %s (%s - %u bytes)\n", GBACartridge_SRAMPath.c_str(), (saveType == 0xFF)?"Unknown":saveTypes[saveType], sramSize);
 			gbaFlash.size = sramSize;
 			if (gbaFlash.size <= (64 * 1024))
 			{
@@ -376,14 +385,7 @@ public:
 				gbaFlash.idDevice = 0x09;
 				gbaFlash.idManufacturer = 0xC2;
 			}
-
-			//success!
-			return;
 		}
-
-	FAIL:
-		Close();
-		printf(" - Failed\n");
 	}
 
 	virtual void disconnect()

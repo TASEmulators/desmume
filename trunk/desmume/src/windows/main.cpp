@@ -3170,10 +3170,11 @@ int _main()
 	win32_CFlash_cfgMode = GetPrivateProfileInt("Slot2.CFlash", "fileMode", ADDON_CFLASH_MODE_RomPath, IniName);
 	win32_CFlash_cfgDirectory = GetPrivateProfileStdString("Slot2.CFlash", "path", "");
 	win32_CFlash_cfgFileName = GetPrivateProfileStdString("Slot2.CFlash", "filename", "");
-	GetPrivateProfileString("Slot2.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
+	win32_GBA_cfgRomPath = GetPrivateProfileStdString("Slot2.GBAgame", "filename", "");
 
 	cmdline.process_addonCommands();
 	WIN_InstallCFlash();
+	WIN_InstallGBACartridge();
 	
 	slot1_R4_path_type = cmdline._slot1_fat_dir_type;
 
@@ -3200,7 +3201,7 @@ int _main()
 	if(cmdline.gbaslot_rom != "")
 	{
 		slot2_device_type = NDS_SLOT2_GBACART;
-		strcpy(GBAgameName, cmdline.gbaslot_rom.c_str());
+		win32_GBA_cfgRomPath = cmdline.gbaslot_rom;
 	}
 
 	switch (slot2_device_type)
@@ -3214,7 +3215,7 @@ int _main()
 		case NDS_SLOT2_RUMBLEPAK:
 			break;
 		case NDS_SLOT2_GBACART:
-			if (!strlen(GBAgameName))
+			if (win32_GBA_cfgRomPath.empty())
 			{
 				slot2_device_type = NDS_SLOT2_NONE;
 				break;
@@ -7178,6 +7179,12 @@ void WIN_InstallCFlash()
 				CFlash_Path = "";
 				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 			}
+}
+
+void WIN_InstallGBACartridge()
+{
+	GBACartridge_RomPath = win32_GBA_cfgRomPath;
+	GBACartridge_SRAMPath = Path::GetFileNameWithoutExt(win32_GBA_cfgRomPath) + "." + GBA_SRAM_FILE_EXT;
 }
 
 // ================================================================= DDraw

@@ -38,6 +38,11 @@ public:
 		if (!FeedbackON) return;
 		FeedbackON(false);
 	}
+	
+	virtual void disconnect()
+	{
+		FeedbackON(false);
+	}
 
 	virtual void writeWord(u8 PROCNUM, u32 addr, u16 val)
 	{
