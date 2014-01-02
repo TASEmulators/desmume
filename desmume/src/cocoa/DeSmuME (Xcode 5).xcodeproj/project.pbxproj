@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		AB0038A71872A96700B0B055 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0038A61872A96700B0B055 /* Image_PaddleController.png */; };
+		AB0038A81872A96700B0B055 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0038A61872A96700B0B055 /* Image_PaddleController.png */; };
 		AB00E87B14205EAE00DE561F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87914205EAE00DE561F /* InfoPlist.strings */; };
 		AB00E87E14205EBC00DE561F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87C14205EBC00DE561F /* MainMenu.xib */; };
 		AB01005E170D07B000D70FBE /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB01005D170D07B000D70FBE /* InputProfileController.mm */; };
@@ -197,6 +199,19 @@
 		AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
+		AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
+		AB564900186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
+		AB564901186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
+		AB564904186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
+		AB564905186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */; };
+		AB564907186E6F0C002740F4 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB564906186E6F0C002740F4 /* ForceFeedback.framework */; };
+		AB564908186E6F1F002740F4 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB564906186E6F0C002740F4 /* ForceFeedback.framework */; };
+		AB564910186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */; };
+		AB564911186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */; };
+		AB564912186E6F67002740F4 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB56490A186E6F67002740F4 /* Image_PassME.png */; };
+		AB564913186E6F67002740F4 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB56490A186E6F67002740F4 /* Image_PassME.png */; };
+		AB564914186E6F67002740F4 /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = AB56490B186E6F67002740F4 /* Image_Piano.png */; };
+		AB564915186E6F67002740F4 /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = AB56490B186E6F67002740F4 /* Image_Piano.png */; };
 		AB5785F817175F16002C5FC7 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		AB5785F9171760D2002C5FC7 /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */; };
@@ -673,6 +688,7 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0038A61872A96700B0B055 /* Image_PaddleController.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PaddleController.png; path = images/Image_PaddleController.png; sourceTree = "<group>"; };
 		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB00E87D14205EBC00DE561F /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		AB00E89114205ECC00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -830,6 +846,14 @@
 		AB405676169F5DCC0016AC3E /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
 		AB405677169F5DCC0016AC3E /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		AB5648FD186E6EA8002740F4 /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
+		AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
+		AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Slot2WindowDelegate.h; sourceTree = "<group>"; };
+		AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slot2WindowDelegate.mm; sourceTree = "<group>"; };
+		AB564906186E6F0C002740F4 /* ForceFeedback.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ForceFeedback.framework; path = System/Library/Frameworks/ForceFeedback.framework; sourceTree = SDKROOT; };
+		AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_MemoryExpansionPak.png; path = images/Image_MemoryExpansionPak.png; sourceTree = "<group>"; };
+		AB56490A186E6F67002740F4 /* Image_PassME.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PassME.png; path = images/Image_PassME.png; sourceTree = "<group>"; };
+		AB56490B186E6F67002740F4 /* Image_Piano.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_Piano.png; path = images/Image_Piano.png; sourceTree = "<group>"; };
 		AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenEmuBase.framework; path = openemu/OpenEmuBase.framework; sourceTree = "<group>"; };
 		AB58F32B1364F44B0074C376 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
@@ -1135,12 +1159,13 @@
 				ABC5720D1344346600E7B0B1 /* AppKit.framework in Frameworks */,
 				ABACB8DD1710B656003B845D /* AudioToolbox.framework in Frameworks */,
 				ABC570D1134431CE00E7B0B1 /* AudioUnit.framework in Frameworks */,
+				AB3701E5173A3FBF006E573E /* Carbon.framework in Frameworks */,
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				AB564908186E6F1F002740F4 /* ForceFeedback.framework in Frameworks */,
 				ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */,
 				AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */,
 				ABC570D5134431DA00E7B0B1 /* OpenGL.framework in Frameworks */,
 				AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */,
-				AB3701E5173A3FBF006E573E /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1154,6 +1179,7 @@
 				AB796D6715CDCBA200C59155 /* AudioUnit.framework in Frameworks */,
 				AB74EC8A1738499C0026C41E /* Carbon.framework in Frameworks */,
 				AB796D6815CDCBA200C59155 /* Cocoa.framework in Frameworks */,
+				AB564907186E6F0C002740F4 /* ForceFeedback.framework in Frameworks */,
 				AB796D6915CDCBA200C59155 /* Foundation.framework in Frameworks */,
 				AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */,
 				AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */,
@@ -1202,6 +1228,7 @@
 				ABD103FF1346652500AF11D1 /* cocoa_input.h */,
 				AB3E34C7134AF4500056477A /* cocoa_output.h */,
 				ABD104001346652500AF11D1 /* cocoa_rom.h */,
+				AB5648FD186E6EA8002740F4 /* cocoa_slot2.h */,
 				AB80E050142BC4FA00A52038 /* cocoa_util.h */,
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
 				AB1B9E611501A78000464647 /* coreaudiosound.h */,
@@ -1217,6 +1244,7 @@
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
 				ABD104131346652500AF11D1 /* cocoa_rom.mm */,
+				AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */,
 				AB80E04C142BC4A800A52038 /* cocoa_util.mm */,
 				ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */,
 			);
@@ -1232,6 +1260,7 @@
 				ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */,
 				AB74EC891738499C0026C41E /* Carbon.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+				AB564906186E6F0C002740F4 /* ForceFeedback.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
@@ -1325,6 +1354,7 @@
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
@@ -1335,6 +1365,7 @@
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */,
 				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
 			);
 			path = userinterface;
@@ -1513,6 +1544,10 @@
 				ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */,
 				ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */,
 				ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */,
+				AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */,
+				AB0038A61872A96700B0B055 /* Image_PaddleController.png */,
+				AB56490A186E6F67002740F4 /* Image_PassME.png */,
+				AB56490B186E6F67002740F4 /* Image_Piano.png */,
 				AB0F297914BE70BC009ABC6F /* VideoFilterPreview_64x64.png */,
 			);
 			name = Images;
@@ -1952,6 +1987,7 @@
 				ABB97878144E89CC00793FA3 /* Icon_DeSmuME_32x32.png in Resources */,
 				AB350D3B147A1D93007165AC /* HID_usage_strings.plist in Resources */,
 				ABBF04A514B515F300E505A0 /* AppIcon_ROMCheats.icns in Resources */,
+				AB564915186E6F67002740F4 /* Image_Piano.png in Resources */,
 				ABC3AF2F14B7F06900D5B13D /* Icon_VolumeFull_16x16.png in Resources */,
 				ABC3AF3014B7F06900D5B13D /* Icon_VolumeMute_16x16.png in Resources */,
 				ABC3AF3114B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png in Resources */,
@@ -1974,11 +2010,13 @@
 				AB0F294314BE6FA7009ABC6F /* ColorSwatch_Red_16x16.png in Resources */,
 				AB0F294414BE6FA7009ABC6F /* ColorSwatch_SeaGreen_16x16.png in Resources */,
 				AB0F294514BE6FA7009ABC6F /* ColorSwatch_Turquoise_16x16.png in Resources */,
+				AB564911186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */,
 				AB0F294614BE6FA7009ABC6F /* ColorSwatch_Violet_16x16.png in Resources */,
 				AB0F294714BE6FA7009ABC6F /* ColorSwatch_Yellow_16x16.png in Resources */,
 				AB0F296D14BE705D009ABC6F /* Icon_ActionReplay_128x128.png in Resources */,
 				AB0F296E14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png in Resources */,
 				AB0F297A14BE70BC009ABC6F /* VideoFilterPreview_64x64.png in Resources */,
+				AB564913186E6F67002740F4 /* Image_PassME.png in Resources */,
 				AB0F298C14BE71E0009ABC6F /* Icon_ArrowDown_420x420.png in Resources */,
 				AB0F298D14BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB0F298E14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png in Resources */,
@@ -1991,6 +2029,7 @@
 				AB0F29AB14BE7213009ABC6F /* Icon_DSButtonSelect_420x420.png in Resources */,
 				AB0F29AC14BE7213009ABC6F /* Icon_DSButtonStart_420x420.png in Resources */,
 				AB0F29AD14BE7213009ABC6F /* Icon_DSButtonX_420x420.png in Resources */,
+				AB0038A81872A96700B0B055 /* Image_PaddleController.png in Resources */,
 				AB0F29AE14BE7213009ABC6F /* Icon_DSButtonY_420x420.png in Resources */,
 				AB0F29AF14BE7213009ABC6F /* Icon_Emulation_420x420.png in Resources */,
 				AB0F29B014BE7213009ABC6F /* Icon_Input_420x420.png in Resources */,
@@ -2031,6 +2070,7 @@
 				AB796CB415CDCBA200C59155 /* Icon_DeSmuME_32x32.png in Resources */,
 				AB796CB515CDCBA200C59155 /* HID_usage_strings.plist in Resources */,
 				AB796CB615CDCBA200C59155 /* AppIcon_ROMCheats.icns in Resources */,
+				AB564914186E6F67002740F4 /* Image_Piano.png in Resources */,
 				AB796CB715CDCBA200C59155 /* Icon_VolumeFull_16x16.png in Resources */,
 				AB796CB815CDCBA200C59155 /* Icon_VolumeMute_16x16.png in Resources */,
 				AB796CB915CDCBA200C59155 /* Icon_VolumeOneThird_16x16.png in Resources */,
@@ -2053,11 +2093,13 @@
 				AB796CCA15CDCBA200C59155 /* ColorSwatch_Red_16x16.png in Resources */,
 				AB796CCB15CDCBA200C59155 /* ColorSwatch_SeaGreen_16x16.png in Resources */,
 				AB796CCC15CDCBA200C59155 /* ColorSwatch_Turquoise_16x16.png in Resources */,
+				AB564910186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */,
 				AB796CCD15CDCBA200C59155 /* ColorSwatch_Violet_16x16.png in Resources */,
 				AB796CCE15CDCBA200C59155 /* ColorSwatch_Yellow_16x16.png in Resources */,
 				AB796CCF15CDCBA200C59155 /* Icon_ActionReplay_128x128.png in Resources */,
 				AB796CD015CDCBA200C59155 /* Icon_CodeBreaker_128x128.png in Resources */,
 				AB796CD115CDCBA200C59155 /* VideoFilterPreview_64x64.png in Resources */,
+				AB564912186E6F67002740F4 /* Image_PassME.png in Resources */,
 				AB796CD215CDCBA200C59155 /* Icon_ArrowDown_420x420.png in Resources */,
 				AB796CD315CDCBA200C59155 /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB796CD415CDCBA200C59155 /* Icon_ArrowRight_420x420.png in Resources */,
@@ -2070,6 +2112,7 @@
 				AB796CDB15CDCBA200C59155 /* Icon_DSButtonSelect_420x420.png in Resources */,
 				AB796CDC15CDCBA200C59155 /* Icon_DSButtonStart_420x420.png in Resources */,
 				AB796CDD15CDCBA200C59155 /* Icon_DSButtonX_420x420.png in Resources */,
+				AB0038A71872A96700B0B055 /* Image_PaddleController.png in Resources */,
 				AB796CDE15CDCBA200C59155 /* Icon_DSButtonY_420x420.png in Resources */,
 				AB796CDF15CDCBA200C59155 /* Icon_Emulation_420x420.png in Resources */,
 				AB796CE015CDCBA200C59155 /* Icon_Input_420x420.png in Resources */,
@@ -2267,6 +2310,7 @@
 				ABD1FF151345AC9C00AF11D1 /* slot2_rumblepak.cpp in Sources */,
 				ABD1041F1346652500AF11D1 /* sndOSX.cpp in Sources */,
 				AB1F468413A0ADE400B80DE6 /* SndOut.cpp in Sources */,
+				AB564905186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */,
 				ABAD3E7813AF1D6D00502E1E /* SoundTouch.cpp in Sources */,
 				AB9038B017C5ED2200F410BD /* slot1_retail_auto.cpp in Sources */,
 				ABD1FEFA1345AC8400AF11D1 /* SPU.cpp in Sources */,
@@ -2342,6 +2386,7 @@
 				AB405682169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */,
 				AB405685169F5DCC0016AC3E /* x86compileritem.cpp in Sources */,
 				AB405688169F5DCC0016AC3E /* x86cpuinfo.cpp in Sources */,
+				AB564900186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				AB40568B169F5DCC0016AC3E /* x86defs.cpp in Sources */,
 				AB40568E169F5DCC0016AC3E /* x86func.cpp in Sources */,
 				AB405691169F5DCC0016AC3E /* x86operand.cpp in Sources */,
@@ -2389,6 +2434,7 @@
 				AB796D0115CDCBA200C59155 /* dlditool.cpp in Sources */,
 				AB796D0215CDCBA200C59155 /* driver.cpp in Sources */,
 				AB796D0315CDCBA200C59155 /* emufat.cpp in Sources */,
+				AB564904186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */,
 				AB9038B217C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */,
 				AB796D0415CDCBA200C59155 /* emufile.cpp in Sources */,
 				AB796D0515CDCBA200C59155 /* fatdir.cpp in Sources */,
@@ -2431,6 +2477,7 @@
 				AB796D2815CDCBA200C59155 /* slot1.cpp in Sources */,
 				AB796D2915CDCBA200C59155 /* slot1_none.cpp in Sources */,
 				AB2EE12C17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */,
+				AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
 				AB796D2D15CDCBA200C59155 /* slot2_expMemory.cpp in Sources */,
@@ -2537,6 +2584,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB564901186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				ABE9EEEB1501C78700D3FB19 /* fs-linux.cpp in Sources */,
 				ABCFA9F6178BDE920030C8BA /* encrypt.cpp in Sources */,
 				ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */,

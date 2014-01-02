@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -38,12 +38,14 @@
 	NSObjectController *prefWindowController;
 	NSObjectController *cheatWindowController;
 	NSObjectController *cdsCoreController;
+	NSArrayController *inputDeviceListController;
 	FileMigrationDelegate *migrationDelegate;
 	InputManager *inputManager;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
 	NSWindow *cheatListWindow;
+	NSWindow *slot2Window;
 	NSView *prefGeneralView;
 	InputPrefsView *inputPrefsView;
 	
@@ -68,11 +70,13 @@
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
+@property (readonly) IBOutlet NSArrayController *inputDeviceListController;
 @property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
 @property (readonly) IBOutlet InputManager *inputManager;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSWindow *cheatListWindow;
+@property (readonly) IBOutlet NSWindow *slot2Window;
 @property (readonly) IBOutlet NSView *prefGeneralView;
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;

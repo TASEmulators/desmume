@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -40,6 +40,25 @@ enum
 	
 	DSControllerState_Touch,
 	DSControllerState_Microphone,
+	
+	DSControllerState_GuitarGrip_Green,
+	DSControllerState_GuitarGrip_Red,
+	DSControllerState_GuitarGrip_Yellow,
+	DSControllerState_GuitarGrip_Blue,
+	DSControllerState_Piano_C,
+	DSControllerState_Piano_CSharp,
+	DSControllerState_Piano_D,
+	DSControllerState_Piano_DSharp,
+	DSControllerState_Piano_E,
+	DSControllerState_Piano_F,
+	DSControllerState_Piano_FSharp,
+	DSControllerState_Piano_G,
+	DSControllerState_Piano_GSharp,
+	DSControllerState_Piano_A,
+	DSControllerState_Piano_ASharp,
+	DSControllerState_Piano_B,
+	DSControllerState_Piano_HighC,
+	DSControllerState_Paddle,
 	
 	DSControllerState_StatesCount
 };

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@
 	NSWindow *inputSettingsSaveStateSlot;
 	NSWindow *inputSettingsSetSpeedLimit;
 	NSWindow *inputSettingsGPUState;
+	NSWindow *inputSettingsPaddleController;
 	
 	InputManager *inputManager;
 	NSString *configInputTargetID;
@@ -75,6 +76,7 @@
 @property (readonly) IBOutlet NSWindow *inputSettingsSaveStateSlot;
 @property (readonly) IBOutlet NSWindow *inputSettingsSetSpeedLimit;
 @property (readonly) IBOutlet NSWindow *inputSettingsGPUState;
+@property (readonly) IBOutlet NSWindow *inputSettingsPaddleController;
 
 @property (readonly) IBOutlet InputManager *inputManager;
 @property (retain) NSString *configInputTargetID;

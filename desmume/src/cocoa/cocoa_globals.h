@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -34,6 +34,10 @@
 #define NSSTRING_TITLE_SELECT_ARM7_IMAGE_PANEL		NSLocalizedString(@"Select ARM7 BIOS Image", nil)
 #define NSSTRING_TITLE_SELECT_ARM9_IMAGE_PANEL		NSLocalizedString(@"Select ARM9 BIOS Image", nil)
 #define NSSTRING_TITLE_SELECT_FIRMWARE_IMAGE_PANEL	NSLocalizedString(@"Select Firmware Image", nil)
+#define NSSTRING_TITLE_SELECT_MPCF_FOLDER_PANEL		NSLocalizedString(@"Select MPCF Folder", nil)
+#define NSSTRING_TITLE_SELECT_MPCF_DISK_IMAGE_PANEL	NSLocalizedString(@"Select MPCF Disk Image", nil)
+#define NSSTRING_TITLE_CHOOSE_GBA_CARTRIDGE_PANEL	NSLocalizedString(@"Choose GBA Cartridge", nil)
+#define NSSTRING_TITLE_CHOOSE_GBA_SRAM_PANEL		NSLocalizedString(@"Choose GBA SRAM File", nil)
 #define NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL		NSLocalizedString(@"Save Screenshot", nil)
 
 #define NSSTRING_TITLE_EXECUTE_CONTROL				NSLocalizedString(@"Execute", nil)
@@ -107,7 +111,22 @@
 #define NSSTRING_STATUS_SLOT1_R4_INSERTED			NSLocalizedString(@"R4 cartridge interface inserted.", nil)
 #define NSSTRING_STATUS_SLOT1_STANDARD_INSERTED		NSLocalizedString(@"Standard retail cartridge inserted.", nil)
 
-#define NSSTRING_STATUS_AUTOLOAD_ROM_NAME_NONE		NSLocalizedString(@"No ROM chosen.", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_NONE			NSLocalizedString(@"No SLOT-2 device loaded.", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_AUTOMATIC		NSLocalizedString(@"Loaded SLOT-2 device using automatic selection.\nSelected device type: %@", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_MPCF_WITH_ROM		NSLocalizedString(@"Compact flash device loaded with data from the ROM's directory.", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_MPCF_DIRECTORY		NSLocalizedString(@"Compact flash device loaded with data from directory path:\n%s", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_MPCF_DISK_IMAGE	NSLocalizedString(@"Compact flash device loaded using disk image:\n%s", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_GBA_CART_WITH_SRAM	NSLocalizedString(@"GBA cartridge loaded with SRAM file:\n%s", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_GBA_CART_NO_SRAM	NSLocalizedString(@"GBA cartridge loaded. (No associated SRAM file loaded.)", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_GENERIC_DEVICE	NSLocalizedString(@"Loaded SLOT-2 device:\n%@", nil)
+#define NSSTRING_STATUS_SLOT2_LOADED_UNKNOWN		NSLocalizedString(@"An unknown SLOT-2 device has been loaded.", nil)
+
+#define NSSTRING_STATUS_NO_ROM_CHOSEN				NSLocalizedString(@"No ROM chosen.", nil)
+#define NSSTRING_STATUS_NO_FOLDER_CHOSEN			NSLocalizedString(@"No folder chosen.", nil)
+#define NSSTRING_STATUS_NO_DISK_IMAGE_CHOSEN		NSLocalizedString(@"No disk image chosen.", nil)
+#define NSSTRING_STATUS_NO_GBA_CART_CHOSEN			NSLocalizedString(@"No GBA cartridge chosen.", nil)
+#define NSSTRING_STATUS_NO_GBA_SRAM_CHOSEN			NSLocalizedString(@"No GBA SRAM chosen.", nil)
+#define NSSTRING_STATUS_NO_GBA_SRAM_FOUND			NSLocalizedString(@"No GBA SRAM found.", nil)
 
 #define NSSTRING_DISPLAYMODE_MAIN					NSLocalizedString(@"Main", nil)
 #define NSSTRING_DISPLAYMODE_TOUCH					NSLocalizedString(@"Touch", nil)
@@ -166,6 +185,8 @@
 #define FILE_EXT_HW_IMAGE_FILE						"bin"
 #define FILE_EXT_ADVANSCENE_DB						"xml"
 #define FILE_EXT_R4_CHEAT_DB						"dat"
+#define FILE_EXT_GBA_ROM							"gba"
+#define FILE_EXT_GBA_SRAM							"sav"
 
 #define MAX_SAVESTATE_SLOTS							10
 
@@ -225,12 +246,25 @@
 #define COCOA_DIALOG_OK								1
 #define COCOA_DIALOG_OPTION							2
 
+#define RUMBLE_ITERATIONS_RUMBLE_PAK				2
+#define RUMBLE_ITERATIONS_ENABLE					1
+#define RUMBLE_ITERATIONS_TEST						3
+
 enum
 {
 	ROMAUTOLOADOPTION_LOAD_LAST						= 0,
 	ROMAUTOLOADOPTION_LOAD_SELECTED					= 1,
 	ROMAUTOLOADOPTION_LOAD_NONE						= 10000,
 	ROMAUTOLOADOPTION_CHOOSE_ROM					= 10001
+};
+
+enum
+{
+	MPCF_OPTION_LOAD_WITH_ROM						= 0,
+	MPCF_OPTION_LOAD_DIRECTORY						= 1,
+	MPCF_OPTION_LOAD_DISK_IMAGE						= 2,
+	MPCF_ACTION_CHOOSE_DIRECTORY					= 10000,
+	MPCF_ACTION_CHOOSE_DISK_IMAGE					= 10001
 };
 
 enum
@@ -478,4 +512,10 @@ enum
 	MICMODE_WHITE_NOISE,
 	MICMODE_PHYSICAL,
 	MICMODE_SINE_WAVE
+};
+
+enum
+{
+	PADDLE_CONTROL_RELATIVE = 0,
+	PADDLE_CONTROL_DIRECT
 };

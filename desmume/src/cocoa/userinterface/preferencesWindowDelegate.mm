@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 
 @synthesize dummyObject;
 @synthesize window;
+@synthesize toolbar;
 @synthesize firmwareConfigSheet;
 @synthesize cdsCoreController;
 @synthesize emuController;
@@ -113,6 +114,8 @@
 	
 	[bindings setObject:iconVolumeFull forKey:@"volumeIconImage"];
 	
+	prefViewDict = nil;
+	
 	return self;
 }
 
@@ -124,34 +127,36 @@
 	[iconVolumeMute release];
 	[bindings release];
 	[videoFilter release];
+	[prefViewDict release];
 	
 	[super dealloc];
 }
 
-- (IBAction) showGeneralView:(id)sender
+- (IBAction) changePrefView:(id)sender
 {
-	[self switchContentView:viewGeneral];
-}
-
-- (IBAction) showInputView:(id)sender
-{
-	[self switchContentView:(NSView *)viewInput];
-	[window makeFirstResponder:(NSView *)viewInput];
-}
-
-- (IBAction) showDisplayView:(id)sender
-{
-	[self switchContentView:viewDisplay];
-}
-
-- (IBAction) showSoundView:(id)sender
-{
-	[self switchContentView:viewSound];
-}
-
-- (IBAction) showEmulationView:(id)sender
-{
-	[self switchContentView:viewEmulation];
+	if (prefViewDict == nil)
+	{
+		// Associates NSView objects to their respective toolbar identifiers.
+		prefViewDict = [[NSDictionary alloc] initWithObjectsAndKeys:
+						viewGeneral, @"General",
+						viewInput, @"Input",
+						viewDisplay, @"Display",
+						viewSound, @"Sound",
+						viewEmulation, @"Emulation",
+						nil];
+	}
+	
+	NSString *toolbarItemIdentifier = [[self toolbar] selectedItemIdentifier];
+	NSView *theView = [prefViewDict objectForKey:toolbarItemIdentifier];
+	if (theView != nil)
+	{
+		[self switchContentView:theView];
+		
+		if ([toolbarItemIdentifier isEqualToString:@"Input"])
+		{
+			[window makeFirstResponder:theView];
+		}
+	}
 }
 
 - (IBAction) chooseRomForAutoload:(id)sender

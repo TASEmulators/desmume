@@ -57,6 +57,11 @@
 		AB126D09182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
 		AB126D0A182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
 		AB126D0B182ECB9500EBCF22 /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */; };
+		AB142026186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
+		AB142027186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
+		AB142028186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
+		AB142029186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
+		AB14202A186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */; };
 		AB213D45170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB213D46170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
 		AB213D47170CB141006DDB0F /* InputProfileController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB213D44170CB141006DDB0F /* InputProfileController.mm */; };
@@ -622,7 +627,6 @@
 		AB711F251481C35F009011C8 /* slot2_expMemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF031345AC9B00AF11D1 /* slot2_expMemory.cpp */; };
 		AB711F261481C35F009011C8 /* slot2_gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF041345AC9B00AF11D1 /* slot2_gbagame.cpp */; };
 		AB711F271481C35F009011C8 /* slot2_guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF051345AC9B00AF11D1 /* slot2_guitarGrip.cpp */; };
-		AB711F281481C35F009011C8 /* slot2_mpcf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */; };
 		AB711F291481C35F009011C8 /* slot2_none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF071345AC9C00AF11D1 /* slot2_none.cpp */; };
 		AB711F2A1481C35F009011C8 /* slot2_paddle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF081345AC9C00AF11D1 /* slot2_paddle.cpp */; };
 		AB711F2B1481C35F009011C8 /* slot2_piano.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF091345AC9C00AF11D1 /* slot2_piano.cpp */; };
@@ -864,6 +868,18 @@
 		AB7DDA6E173DC399004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		AB7DDA6F173DC39E004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		AB7DDA70173DC3A3004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
+		AB8C6CBF186A950C00E3EC64 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */; };
+		AB8C6CC0186A950C00E3EC64 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */; };
+		AB8C6CC1186A950C00E3EC64 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */; };
+		AB8C6CC2186A950C00E3EC64 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */; };
+		AB8C6CC3186A950C00E3EC64 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */; };
+		AB8C6E57186CD07E00E3EC64 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
+		AB8FFCB4186F8E5400C10085 /* slot2_mpcf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF061345AC9B00AF11D1 /* slot2_mpcf.cpp */; };
+		AB8FFE4A1872032B00C10085 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8FFE491872032B00C10085 /* Image_PaddleController.png */; };
+		AB8FFE4B1872032B00C10085 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8FFE491872032B00C10085 /* Image_PaddleController.png */; };
+		AB8FFE4C1872032B00C10085 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8FFE491872032B00C10085 /* Image_PaddleController.png */; };
+		AB8FFE4D1872032B00C10085 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8FFE491872032B00C10085 /* Image_PaddleController.png */; };
+		AB8FFE4E1872032B00C10085 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8FFE491872032B00C10085 /* Image_PaddleController.png */; };
 		AB97C554169646D1002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
 		AB97D5E516964F3B002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
 		AB97D60916964F48002AC11B /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB97C553169646D1002AC11B /* Accelerate.framework */; };
@@ -1061,6 +1077,21 @@
 		ABAD104315ACE7A00000EC47 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		ABAD104515ACE7A00000EC47 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		ABAE2F7B18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */; };
+		ABAE2F7C18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */; };
+		ABAE2F7D18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */; };
+		ABAE2F7E18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */; };
+		ABAE2F7F18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */; };
+		ABAE2F8418682B8F00C92F4F /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */; };
+		ABAE2F8518682B8F00C92F4F /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */; };
+		ABAE2F8618682B8F00C92F4F /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */; };
+		ABAE2F8718682B8F00C92F4F /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */; };
+		ABAE2F8818682B8F00C92F4F /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */; };
+		ABAE30BB1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
+		ABAE30BC1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
+		ABAE30BD1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
+		ABAE30BE1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
+		ABAE30BF1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
 		ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		ABB9212117CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
 		ABB9212217CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
@@ -1077,6 +1108,10 @@
 		ABC3AFCF14B8D16700D5B13D /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABD0A53A1501AA5A0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */; };
 		ABD0A53B1501AA5A0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */; };
+		ABEF84721873576300E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
+		ABEF84831873578F00E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
+		ABEF84841873579400E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
+		ABEF84851873579700E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
 		ABF50ABA169F5FDA0018C08D /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7B169F5FDA0018C08D /* assembler.cpp */; };
 		ABF50ABB169F5FDA0018C08D /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7D169F5FDA0018C08D /* assert.cpp */; };
 		ABF50ABC169F5FDA0018C08D /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABF50A7F169F5FDA0018C08D /* buffer.cpp */; };
@@ -1201,6 +1236,7 @@
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
 		AB126D06182ECB9500EBCF22 /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
+		AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_MemoryExpansionPak.png; path = images/Image_MemoryExpansionPak.png; sourceTree = "<group>"; };
 		AB213D43170CB141006DDB0F /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
 		AB213D44170CB141006DDB0F /* InputProfileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputProfileController.mm; sourceTree = "<group>"; };
 		AB213E981710D074006DDB0F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -1282,6 +1318,9 @@
 		AB80E050142BC4FA00A52038 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
 		AB817A34143EE2DB00A7DFE9 /* videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = videofilter.h; sourceTree = "<group>"; };
 		AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = videofilter.cpp; sourceTree = "<group>"; };
+		AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PassME.png; path = images/Image_PassME.png; sourceTree = "<group>"; };
+		AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ForceFeedback.framework; path = System/Library/Frameworks/ForceFeedback.framework; sourceTree = SDKROOT; };
+		AB8FFE491872032B00C10085 /* Image_PaddleController.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PaddleController.png; path = images/Image_PaddleController.png; sourceTree = "<group>"; };
 		AB901BDF1420706B00348EEC /* Japanese */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Japanese; path = translations/Japanese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE01420706F00348EEC /* French */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = French; path = translations/French.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE11420707400348EEC /* Italian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Italian; path = translations/Italian.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1299,6 +1338,11 @@
 		ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Slot2WindowDelegate.h; sourceTree = "<group>"; };
+		ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slot2WindowDelegate.mm; sourceTree = "<group>"; };
+		ABAE2F8218682B8F00C92F4F /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
+		ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
+		ABAE30BA1869484F00C92F4F /* Image_Piano.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_Piano.png; path = images/Image_Piano.png; sourceTree = "<group>"; };
 		ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		ABB9211F17CEB4110049D4C5 /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
 		ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
@@ -1601,14 +1645,15 @@
 			files = (
 				AB2A9A6D1725F00F0062C1A1 /* Accelerate.framework in Frameworks */,
 				AB2A9A6E1725F00F0062C1A1 /* AppKit.framework in Frameworks */,
+				AB2A9A751725F00F0062C1A1 /* AudioToolbox.framework in Frameworks */,
 				AB2A9A6F1725F00F0062C1A1 /* AudioUnit.framework in Frameworks */,
+				ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */,
 				AB2A9A701725F00F0062C1A1 /* Cocoa.framework in Frameworks */,
 				AB2A9A711725F00F0062C1A1 /* Foundation.framework in Frameworks */,
+				ABEF84851873579700E99ADC /* ForceFeedback.framework in Frameworks */,
 				AB2A9A721725F00F0062C1A1 /* IOKit.framework in Frameworks */,
-				AB2A9A731725F00F0062C1A1 /* OpenGL.framework in Frameworks */,
 				AB2A9A741725F00F0062C1A1 /* libz.dylib in Frameworks */,
-				AB2A9A751725F00F0062C1A1 /* AudioToolbox.framework in Frameworks */,
-				ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */,
+				AB2A9A731725F00F0062C1A1 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1618,14 +1663,15 @@
 			files = (
 				AB97D60C16964F54002AC11B /* Accelerate.framework in Frameworks */,
 				AB2F3C3B15CF9C6000858373 /* AppKit.framework in Frameworks */,
+				AB213EC41710D0A0006DDB0F /* AudioToolbox.framework in Frameworks */,
 				AB2F3C3C15CF9C6000858373 /* AudioUnit.framework in Frameworks */,
+				AB7DDA70173DC3A3004F3D07 /* Carbon.framework in Frameworks */,
 				AB2F3C3D15CF9C6000858373 /* Cocoa.framework in Frameworks */,
 				AB2F3C3E15CF9C6000858373 /* Foundation.framework in Frameworks */,
+				ABEF84841873579400E99ADC /* ForceFeedback.framework in Frameworks */,
 				AB2F3C3F15CF9C6000858373 /* IOKit.framework in Frameworks */,
-				AB2F3C4015CF9C6000858373 /* OpenGL.framework in Frameworks */,
 				AB2F3C4115CF9C6000858373 /* libz.dylib in Frameworks */,
-				AB213EC41710D0A0006DDB0F /* AudioToolbox.framework in Frameworks */,
-				AB7DDA70173DC3A3004F3D07 /* Carbon.framework in Frameworks */,
+				AB2F3C4015CF9C6000858373 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1635,14 +1681,15 @@
 			files = (
 				AB97C554169646D1002AC11B /* Accelerate.framework in Frameworks */,
 				AB711F771481C35F009011C8 /* AppKit.framework in Frameworks */,
+				AB213E991710D074006DDB0F /* AudioToolbox.framework in Frameworks */,
 				AB711F751481C35F009011C8 /* AudioUnit.framework in Frameworks */,
+				AB7DDA6D173DC38F004F3D07 /* Carbon.framework in Frameworks */,
 				AB711F741481C35F009011C8 /* Cocoa.framework in Frameworks */,
+				AB8C6E57186CD07E00E3EC64 /* ForceFeedback.framework in Frameworks */,
 				AB711F781481C35F009011C8 /* Foundation.framework in Frameworks */,
 				AB711F7B1481C35F009011C8 /* IOKit.framework in Frameworks */,
-				AB711F761481C35F009011C8 /* OpenGL.framework in Frameworks */,
 				ABC3AFCF14B8D16700D5B13D /* libz.dylib in Frameworks */,
-				AB213E991710D074006DDB0F /* AudioToolbox.framework in Frameworks */,
-				AB7DDA6D173DC38F004F3D07 /* Carbon.framework in Frameworks */,
+				AB711F761481C35F009011C8 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1652,14 +1699,15 @@
 			files = (
 				AB97D5E516964F3B002AC11B /* Accelerate.framework in Frameworks */,
 				AB73AA291507C9F500A310C8 /* AppKit.framework in Frameworks */,
+				AB213EC61710D0A1006DDB0F /* AudioToolbox.framework in Frameworks */,
 				AB73AA2A1507C9F500A310C8 /* AudioUnit.framework in Frameworks */,
+				AB7DDA6E173DC399004F3D07 /* Carbon.framework in Frameworks */,
 				AB73AA2B1507C9F500A310C8 /* Cocoa.framework in Frameworks */,
+				ABEF84721873576300E99ADC /* ForceFeedback.framework in Frameworks */,
 				AB73AA2C1507C9F500A310C8 /* Foundation.framework in Frameworks */,
 				AB73AA2D1507C9F500A310C8 /* IOKit.framework in Frameworks */,
-				AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */,
 				AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */,
-				AB213EC61710D0A1006DDB0F /* AudioToolbox.framework in Frameworks */,
-				AB7DDA6E173DC399004F3D07 /* Carbon.framework in Frameworks */,
+				AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1669,14 +1717,15 @@
 			files = (
 				AB97D60916964F48002AC11B /* Accelerate.framework in Frameworks */,
 				ABAD103F15ACE7A00000EC47 /* AppKit.framework in Frameworks */,
+				AB213EC51710D0A1006DDB0F /* AudioToolbox.framework in Frameworks */,
 				ABAD104015ACE7A00000EC47 /* AudioUnit.framework in Frameworks */,
+				AB7DDA6F173DC39E004F3D07 /* Carbon.framework in Frameworks */,
 				ABAD104115ACE7A00000EC47 /* Cocoa.framework in Frameworks */,
 				ABAD104215ACE7A00000EC47 /* Foundation.framework in Frameworks */,
+				ABEF84831873578F00E99ADC /* ForceFeedback.framework in Frameworks */,
 				ABAD104315ACE7A00000EC47 /* IOKit.framework in Frameworks */,
-				ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */,
 				ABAD104515ACE7A00000EC47 /* libz.dylib in Frameworks */,
-				AB213EC51710D0A1006DDB0F /* AudioToolbox.framework in Frameworks */,
-				AB7DDA6F173DC39E004F3D07 /* Carbon.framework in Frameworks */,
+				ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1703,6 +1752,7 @@
 				ABD103FF1346652500AF11D1 /* cocoa_input.h */,
 				AB3E34C7134AF4500056477A /* cocoa_output.h */,
 				ABD104001346652500AF11D1 /* cocoa_rom.h */,
+				ABAE2F8218682B8F00C92F4F /* cocoa_slot2.h */,
 				AB80E050142BC4FA00A52038 /* cocoa_util.h */,
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
 				ABD0A5361501AA5A0074A094 /* coreaudiosound.h */,
@@ -1718,6 +1768,7 @@
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
 				ABD104131346652500AF11D1 /* cocoa_rom.mm */,
+				ABAE2F8318682B8F00C92F4F /* cocoa_slot2.mm */,
 				AB80E04C142BC4A800A52038 /* cocoa_util.mm */,
 				ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */,
 			);
@@ -1733,6 +1784,7 @@
 				ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */,
 				ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+				AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
@@ -1827,6 +1879,7 @@
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB213D43170CB141006DDB0F /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */,
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
@@ -1837,6 +1890,7 @@
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */,
 				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
 			);
 			path = userinterface;
@@ -1923,6 +1977,10 @@
 				ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */,
 				ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */,
 				ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */,
+				AB142025186E2CD80015D52F /* Image_MemoryExpansionPak.png */,
+				AB8FFE491872032B00C10085 /* Image_PaddleController.png */,
+				AB8C6CBE186A950C00E3EC64 /* Image_PassME.png */,
+				ABAE30BA1869484F00C92F4F /* Image_Piano.png */,
 				AB0F297914BE70BC009ABC6F /* VideoFilterPreview_64x64.png */,
 			);
 			name = Images;
@@ -2535,6 +2593,10 @@
 				AB2A99EC1725F00F0062C1A1 /* README.MAC in Resources */,
 				AB2A99ED1725F00F0062C1A1 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB2A99EE1725F00F0062C1A1 /* DisplayWindow.xib in Resources */,
+				ABAE30BF1869484F00C92F4F /* Image_Piano.png in Resources */,
+				AB8C6CC3186A950C00E3EC64 /* Image_PassME.png in Resources */,
+				AB14202A186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */,
+				AB8FFE4E1872032B00C10085 /* Image_PaddleController.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2614,6 +2676,10 @@
 				AB2F3BC215CF9C6000858373 /* README.MAC in Resources */,
 				AB2F3BC315CF9C6000858373 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB700DBA16CDDBC400FBD336 /* DisplayWindow.xib in Resources */,
+				ABAE30BB1869484F00C92F4F /* Image_Piano.png in Resources */,
+				AB8C6CBF186A950C00E3EC64 /* Image_PassME.png in Resources */,
+				AB142026186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */,
+				AB8FFE4A1872032B00C10085 /* Image_PaddleController.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2693,6 +2759,10 @@
 				AB3ACC4914C24D5400D7D192 /* README.MAC in Resources */,
 				AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB700DBB16CDDBC400FBD336 /* DisplayWindow.xib in Resources */,
+				ABAE30BC1869484F00C92F4F /* Image_Piano.png in Resources */,
+				AB8C6CC0186A950C00E3EC64 /* Image_PassME.png in Resources */,
+				AB142027186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */,
+				AB8FFE4B1872032B00C10085 /* Image_PaddleController.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2772,6 +2842,10 @@
 				AB73A9B01507C9F500A310C8 /* README.MAC in Resources */,
 				AB73A9B11507C9F500A310C8 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB700DBD16CDDBC400FBD336 /* DisplayWindow.xib in Resources */,
+				ABAE30BE1869484F00C92F4F /* Image_Piano.png in Resources */,
+				AB8C6CC2186A950C00E3EC64 /* Image_PassME.png in Resources */,
+				AB142029186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */,
+				AB8FFE4D1872032B00C10085 /* Image_PaddleController.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2851,6 +2925,10 @@
 				ABAD0FB815ACE7A00000EC47 /* README.MAC in Resources */,
 				ABAD0FB915ACE7A00000EC47 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB700DBC16CDDBC400FBD336 /* DisplayWindow.xib in Resources */,
+				ABAE30BD1869484F00C92F4F /* Image_Piano.png in Resources */,
+				AB8C6CC1186A950C00E3EC64 /* Image_PassME.png in Resources */,
+				AB142028186E2CD80015D52F /* Image_MemoryExpansionPak.png in Resources */,
+				AB8FFE4C1872032B00C10085 /* Image_PaddleController.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3142,6 +3220,8 @@
 				AB126D0B182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 				AB53518318313E3100CCD532 /* slot2_auto.cpp in Sources */,
 				AB53518A18313E4E00CCD532 /* slot2.cpp in Sources */,
+				ABAE2F7F18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
+				ABAE2F8818682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3282,6 +3362,8 @@
 				AB126D08182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 				AB53518018313E3100CCD532 /* slot2_auto.cpp in Sources */,
 				AB53518718313E4E00CCD532 /* slot2.cpp in Sources */,
+				ABAE2F7B18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
+				ABAE2F8418682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3346,7 +3428,6 @@
 				AB711F251481C35F009011C8 /* slot2_expMemory.cpp in Sources */,
 				AB711F261481C35F009011C8 /* slot2_gbagame.cpp in Sources */,
 				AB711F271481C35F009011C8 /* slot2_guitarGrip.cpp in Sources */,
-				AB711F281481C35F009011C8 /* slot2_mpcf.cpp in Sources */,
 				AB711F291481C35F009011C8 /* slot2_none.cpp in Sources */,
 				AB711F2A1481C35F009011C8 /* slot2_paddle.cpp in Sources */,
 				AB711F2B1481C35F009011C8 /* slot2_piano.cpp in Sources */,
@@ -3452,6 +3533,9 @@
 				AB126D07182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 				AB53517F18313E3100CCD532 /* slot2_auto.cpp in Sources */,
 				AB53518618313E4E00CCD532 /* slot2.cpp in Sources */,
+				ABAE2F7C18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
+				ABAE2F8518682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
+				AB8FFCB4186F8E5400C10085 /* slot2_mpcf.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3622,6 +3706,8 @@
 				AB126D0A182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 				AB53518218313E3100CCD532 /* slot2_auto.cpp in Sources */,
 				AB53518918313E4E00CCD532 /* slot2.cpp in Sources */,
+				ABAE2F7E18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
+				ABAE2F8718682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3762,6 +3848,8 @@
 				AB126D09182ECB9500EBCF22 /* slot2_passme.cpp in Sources */,
 				AB53518118313E3100CCD532 /* slot2_auto.cpp in Sources */,
 				AB53518818313E4E00CCD532 /* slot2.cpp in Sources */,
+				ABAE2F7D18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
+				ABAE2F8618682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

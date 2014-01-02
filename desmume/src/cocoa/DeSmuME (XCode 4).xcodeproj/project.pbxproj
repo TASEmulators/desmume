@@ -541,6 +541,21 @@
 		ABC5720D1344346600E7B0B1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		ABC719E2138CB25E002827A9 /* DefaultKeyMappings.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */; };
+		ABC9ED16187501FD001A7D02 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC9ED15187501FD001A7D02 /* Slot2WindowDelegate.mm */; };
+		ABC9ED17187501FD001A7D02 /* Slot2WindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC9ED15187501FD001A7D02 /* Slot2WindowDelegate.mm */; };
+		ABC9ED1C18750221001A7D02 /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1818750221001A7D02 /* Image_MemoryExpansionPak.png */; };
+		ABC9ED1D18750221001A7D02 /* Image_MemoryExpansionPak.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1818750221001A7D02 /* Image_MemoryExpansionPak.png */; };
+		ABC9ED1E18750221001A7D02 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1918750221001A7D02 /* Image_PaddleController.png */; };
+		ABC9ED1F18750221001A7D02 /* Image_PaddleController.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1918750221001A7D02 /* Image_PaddleController.png */; };
+		ABC9ED2018750221001A7D02 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1A18750221001A7D02 /* Image_PassME.png */; };
+		ABC9ED2118750221001A7D02 /* Image_PassME.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1A18750221001A7D02 /* Image_PassME.png */; };
+		ABC9ED2218750221001A7D02 /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1B18750221001A7D02 /* Image_Piano.png */; };
+		ABC9ED2318750221001A7D02 /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC9ED1B18750221001A7D02 /* Image_Piano.png */; };
+		ABC9ED2618750244001A7D02 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC9ED2518750244001A7D02 /* cocoa_slot2.mm */; };
+		ABC9ED2718750244001A7D02 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC9ED2518750244001A7D02 /* cocoa_slot2.mm */; };
+		ABC9ED2818750244001A7D02 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC9ED2518750244001A7D02 /* cocoa_slot2.mm */; };
+		ABC9ED2A1875028E001A7D02 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC9ED291875028E001A7D02 /* ForceFeedback.framework */; };
+		ABC9ED2B187502A2001A7D02 /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC9ED291875028E001A7D02 /* ForceFeedback.framework */; };
 		ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104111346652500AF11D1 /* cocoa_input.mm */; };
 		ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104121346652500AF11D1 /* cocoa_core.mm */; };
 		ABD1041E1346652500AF11D1 /* cocoa_rom.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD104131346652500AF11D1 /* cocoa_rom.mm */; };
@@ -904,6 +919,15 @@
 		ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
+		ABC9ED14187501FD001A7D02 /* Slot2WindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Slot2WindowDelegate.h; sourceTree = "<group>"; };
+		ABC9ED15187501FD001A7D02 /* Slot2WindowDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slot2WindowDelegate.mm; sourceTree = "<group>"; };
+		ABC9ED1818750221001A7D02 /* Image_MemoryExpansionPak.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_MemoryExpansionPak.png; path = images/Image_MemoryExpansionPak.png; sourceTree = "<group>"; };
+		ABC9ED1918750221001A7D02 /* Image_PaddleController.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PaddleController.png; path = images/Image_PaddleController.png; sourceTree = "<group>"; };
+		ABC9ED1A18750221001A7D02 /* Image_PassME.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PassME.png; path = images/Image_PassME.png; sourceTree = "<group>"; };
+		ABC9ED1B18750221001A7D02 /* Image_Piano.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_Piano.png; path = images/Image_Piano.png; sourceTree = "<group>"; };
+		ABC9ED2418750244001A7D02 /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
+		ABC9ED2518750244001A7D02 /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
+		ABC9ED291875028E001A7D02 /* ForceFeedback.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ForceFeedback.framework; path = System/Library/Frameworks/ForceFeedback.framework; sourceTree = SDKROOT; };
 		ABD103FE1346652500AF11D1 /* cocoa_core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_core.h; sourceTree = "<group>"; };
 		ABD103FF1346652500AF11D1 /* cocoa_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		ABD104001346652500AF11D1 /* cocoa_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_rom.h; sourceTree = "<group>"; };
@@ -1135,12 +1159,13 @@
 				ABC5720D1344346600E7B0B1 /* AppKit.framework in Frameworks */,
 				ABACB8DD1710B656003B845D /* AudioToolbox.framework in Frameworks */,
 				ABC570D1134431CE00E7B0B1 /* AudioUnit.framework in Frameworks */,
+				AB3701E5173A3FBF006E573E /* Carbon.framework in Frameworks */,
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
 				ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */,
+				ABC9ED2B187502A2001A7D02 /* ForceFeedback.framework in Frameworks */,
 				AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */,
 				ABC570D5134431DA00E7B0B1 /* OpenGL.framework in Frameworks */,
 				AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */,
-				AB3701E5173A3FBF006E573E /* Carbon.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1154,6 +1179,7 @@
 				AB796D6715CDCBA200C59155 /* AudioUnit.framework in Frameworks */,
 				AB74EC8A1738499C0026C41E /* Carbon.framework in Frameworks */,
 				AB796D6815CDCBA200C59155 /* Cocoa.framework in Frameworks */,
+				ABC9ED2A1875028E001A7D02 /* ForceFeedback.framework in Frameworks */,
 				AB796D6915CDCBA200C59155 /* Foundation.framework in Frameworks */,
 				AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */,
 				AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */,
@@ -1202,6 +1228,7 @@
 				ABD103FF1346652500AF11D1 /* cocoa_input.h */,
 				AB3E34C7134AF4500056477A /* cocoa_output.h */,
 				ABD104001346652500AF11D1 /* cocoa_rom.h */,
+				ABC9ED2418750244001A7D02 /* cocoa_slot2.h */,
 				AB80E050142BC4FA00A52038 /* cocoa_util.h */,
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
 				AB1B9E611501A78000464647 /* coreaudiosound.h */,
@@ -1217,6 +1244,7 @@
 				ABD104111346652500AF11D1 /* cocoa_input.mm */,
 				AB3E34C8134AF4500056477A /* cocoa_output.mm */,
 				ABD104131346652500AF11D1 /* cocoa_rom.mm */,
+				ABC9ED2518750244001A7D02 /* cocoa_slot2.mm */,
 				AB80E04C142BC4A800A52038 /* cocoa_util.mm */,
 				ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */,
 			);
@@ -1232,6 +1260,7 @@
 				ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */,
 				AB74EC891738499C0026C41E /* Carbon.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+				ABC9ED291875028E001A7D02 /* ForceFeedback.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
@@ -1325,6 +1354,7 @@
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				ABC9ED14187501FD001A7D02 /* Slot2WindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
@@ -1335,6 +1365,7 @@
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				ABC9ED15187501FD001A7D02 /* Slot2WindowDelegate.mm */,
 				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
 			);
 			path = userinterface;
@@ -1513,6 +1544,10 @@
 				ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */,
 				ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */,
 				ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */,
+				ABC9ED1818750221001A7D02 /* Image_MemoryExpansionPak.png */,
+				ABC9ED1918750221001A7D02 /* Image_PaddleController.png */,
+				ABC9ED1A18750221001A7D02 /* Image_PassME.png */,
+				ABC9ED1B18750221001A7D02 /* Image_Piano.png */,
 				AB0F297914BE70BC009ABC6F /* VideoFilterPreview_64x64.png */,
 			);
 			name = Images;
@@ -2008,6 +2043,10 @@
 				AB3ACC4314C24D5400D7D192 /* README.MAC in Resources */,
 				AB75226E14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB8967DE16D2ED2700F826F1 /* DisplayWindow.xib in Resources */,
+				ABC9ED1D18750221001A7D02 /* Image_MemoryExpansionPak.png in Resources */,
+				ABC9ED1F18750221001A7D02 /* Image_PaddleController.png in Resources */,
+				ABC9ED2118750221001A7D02 /* Image_PassME.png in Resources */,
+				ABC9ED2318750221001A7D02 /* Image_Piano.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2087,6 +2126,10 @@
 				AB796CEC15CDCBA200C59155 /* README.MAC in Resources */,
 				AB796CED15CDCBA200C59155 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */,
+				ABC9ED1C18750221001A7D02 /* Image_MemoryExpansionPak.png in Resources */,
+				ABC9ED1E18750221001A7D02 /* Image_PaddleController.png in Resources */,
+				ABC9ED2018750221001A7D02 /* Image_PassME.png in Resources */,
+				ABC9ED2218750221001A7D02 /* Image_Piano.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2359,6 +2402,8 @@
 				AB107686182ECB29000D6F67 /* slot2_passme.cpp in Sources */,
 				AB1B702D18313D7700E64141 /* slot2_auto.cpp in Sources */,
 				AB1B703118313D9000E64141 /* slot2.cpp in Sources */,
+				ABC9ED17187501FD001A7D02 /* Slot2WindowDelegate.mm in Sources */,
+				ABC9ED2718750244001A7D02 /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2530,6 +2575,8 @@
 				AB107685182ECB29000D6F67 /* slot2_passme.cpp in Sources */,
 				AB1B702C18313D7700E64141 /* slot2_auto.cpp in Sources */,
 				AB1B703018313D9000E64141 /* slot2.cpp in Sources */,
+				ABC9ED16187501FD001A7D02 /* Slot2WindowDelegate.mm in Sources */,
+				ABC9ED2618750244001A7D02 /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2691,6 +2738,7 @@
 				AB1B702E18313D7700E64141 /* slot2_auto.cpp in Sources */,
 				AB1B703218313D9000E64141 /* slot2.cpp in Sources */,
 				AB4806BC18472EF20085F59B /* cocoa_cheat.mm in Sources */,
+				ABC9ED2818750244001A7D02 /* cocoa_slot2.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -33,6 +33,7 @@
 		<string>Enable/Disable Auto Frame Skip</string>
 		<string>Enable/Disable Cheats</string>
 		<string>Enable/Disable GPU State</string>
+		<string>Paddle</string>
 	</array>
 	<key>DefaultInputProfiles</key>
 	<array>
@@ -409,6 +410,8 @@
 				<key>Enable/Disable Cheats</key>
 				<array/>
 				<key>Enable/Disable GPU State</key>
+				<array/>
+				<key>Paddle</key>
 				<array/>
 			</dict>
 		</dict>

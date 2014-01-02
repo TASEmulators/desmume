@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@
 @synthesize inputSettingsSaveStateSlot;
 @synthesize inputSettingsSetSpeedLimit;
 @synthesize inputSettingsGPUState;
+@synthesize inputSettingsPaddleController;
 @synthesize inputProfileSheet;
 @synthesize inputProfileRenameSheet;
 @synthesize inputManager;
@@ -173,6 +174,7 @@
 							 inputSettingsSaveStateSlot,	@"Save State Slot",
 							 inputSettingsSetSpeedLimit,	@"Set Speed",
 							 inputSettingsGPUState,			@"Enable/Disable GPU State",
+							 inputSettingsPaddleController,	@"Paddle",
 							 nil];
 }
 

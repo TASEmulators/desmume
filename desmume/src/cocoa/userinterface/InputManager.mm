@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -71,6 +71,12 @@ extern "C"
 
 @synthesize hidManager;
 @synthesize hidDeviceRef;
+@dynamic manufacturerName;
+@dynamic productName;
+@dynamic serialNumber;
+@synthesize identifier;
+@dynamic supportsForceFeedback;
+@dynamic isForceFeedbackEnabled;
 @dynamic runLoop;
 
 static NSDictionary *hidUsageTable = nil;
@@ -109,6 +115,104 @@ static NSDictionary *hidUsageTable = nil;
 	
     CFRelease(elementArray);
 	
+	// Set up force feedback.
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
+	ioService = IOHIDDeviceGetService(hidDeviceRef);
+	if (ioService != MACH_PORT_NULL)
+	{
+		IOObjectRetain(ioService);
+	}
+#else
+	ioService = MACH_PORT_NULL;
+	
+	CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOHIDDeviceKey);
+	if (matchingDict)
+	{
+		CFStringRef locationKey = CFSTR(kIOHIDLocationIDKey);
+		CFTypeRef deviceLocation = IOHIDDeviceGetProperty(hidDeviceRef, locationKey);
+		if (deviceLocation != NULL)
+		{
+			CFDictionaryAddValue(matchingDict, locationKey, deviceLocation);
+			
+			//This eats a reference to matchingDict, so we don't need a separate release.
+			//The result, meanwhile, has a reference count of 1 and must be released by the caller.
+			ioService = IOServiceGetMatchingService(kIOMasterPortDefault, matchingDict);
+		}
+		else
+		{
+			CFRelease(matchingDict);
+		}
+	}
+#endif
+	
+	ffDevice = NULL;
+	ffEffect = NULL;
+	if (ioService != MACH_PORT_NULL && [self supportsForceFeedback])
+	{
+		HRESULT ffResult = FFCreateDevice(ioService, &ffDevice);
+		if (ffDevice != NULL && ffResult != FF_OK)
+		{
+			FFReleaseDevice(ffDevice);
+			ffDevice = NULL;
+		}
+		
+		// Generate the force feedback effect.
+		if (ffDevice != NULL)
+		{
+			DWORD rgdwAxes[1] = {FFJOFS_Y};
+			LONG rglDirection[2] = {0};
+			
+			FFCONSTANTFORCE cf;
+			cf.lMagnitude = FF_FFNOMINALMAX;
+			
+			FFEFFECT newEffect;
+			newEffect.dwSize = sizeof(FFEFFECT);
+			newEffect.dwFlags = FFEFF_CARTESIAN | FFEFF_OBJECTOFFSETS;
+			newEffect.dwDuration = 1000000; // Equivalent to 1 second
+			newEffect.dwSamplePeriod = 0;
+			newEffect.dwGain = FF_FFNOMINALMAX;
+			newEffect.dwTriggerButton = FFEB_NOTRIGGER;
+			newEffect.dwTriggerRepeatInterval = 0;
+			newEffect.cAxes = 1;
+			newEffect.rgdwAxes = rgdwAxes;
+			newEffect.rglDirection = rglDirection;
+			newEffect.lpEnvelope = NULL;
+			newEffect.cbTypeSpecificParams = sizeof(FFCONSTANTFORCE);
+			newEffect.lpvTypeSpecificParams = &cf;
+			newEffect.dwStartDelay = 0;
+			
+			FFDeviceCreateEffect(ffDevice, kFFEffectType_ConstantForce_ID, &newEffect, &ffEffect);
+			if (ffEffect == NULL)
+			{
+				FFReleaseDevice(ffDevice);
+				ffDevice = NULL;
+			}
+		}
+	}
+	
+	isForceFeedbackEnabled = (ffDevice != nil);
+	if (isForceFeedbackEnabled)
+	{
+		[self startForceFeedbackAndIterate:RUMBLE_ITERATIONS_ENABLE flags:0];
+	}
+	
+	// Set up the device identifier.
+	CFNumberRef cfVendorIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDVendorIDKey));
+	CFNumberRef cfProductIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductIDKey));
+	CFStringRef cfDeviceSerial = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDSerialNumberKey));
+	
+	if (cfDeviceSerial != nil)
+	{
+		identifier = [NSString stringWithFormat:@"%d/%d/%@", [(NSNumber *)cfVendorIDNumber intValue], [(NSNumber *)cfProductIDNumber intValue], cfDeviceSerial];
+	}
+	else
+	{
+		CFNumberRef cfLocationIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDLocationIDKey));
+		identifier = [NSString stringWithFormat:@"%d/%d/0x%08X", [(NSNumber *)cfVendorIDNumber intValue], [(NSNumber *)cfProductIDNumber intValue], [(NSNumber *)cfLocationIDNumber intValue]];
+	}
+	
+	[identifier retain];
+	
 	spinlockRunLoop = OS_SPINLOCK_INIT;
 	[self setRunLoop:[NSRunLoop currentRunLoop]];
 	
@@ -127,7 +231,74 @@ static NSDictionary *hidUsageTable = nil;
 		hidQueueRef = NULL;
 	}
 	
+	if (ffDevice != NULL)
+	{
+		FFReleaseDevice(ffDevice);
+		FFEffectUnload(ffEffect);
+		ffDevice = NULL;
+	}
+	
+	if (ioService != MACH_PORT_NULL)
+	{
+		IOObjectRelease(ioService);
+		ioService = MACH_PORT_NULL;
+	}
+	
+	[identifier release];
+	
 	[super dealloc];
+}
+
+- (NSString *) manufacturerName
+{
+	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDManufacturerKey));
+}
+
+- (NSString *) productName
+{
+	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDProductKey));
+}
+
+- (NSString *) serialNumber
+{
+	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDSerialNumberKey));
+}
+
+- (BOOL) supportsForceFeedback
+{
+	return (ioService != MACH_PORT_NULL) ? (FFIsForceFeedback(ioService) == FF_OK) : NO;
+}
+
+- (void) setIsForceFeedbackEnabled:(BOOL)theState
+{
+	if (ffDevice != NULL)
+	{
+		// Enable/disable force feedback by maxing/zeroing out the device gain.
+		UInt32 gainValue = (theState) ? FF_FFNOMINALMAX : 0;
+		FFDeviceSetForceFeedbackProperty(ffDevice, FFPROP_FFGAIN, &gainValue);
+		
+		if (theState)
+		{
+			[self startForceFeedbackAndIterate:RUMBLE_ITERATIONS_ENABLE flags:0];
+		}
+		else
+		{
+			[self stopForceFeedback];
+		}
+		
+		isForceFeedbackEnabled = theState;
+	}
+	else
+	{
+		isForceFeedbackEnabled = NO;
+	}
+	
+	[self writeDefaults];
+}
+
+- (BOOL) isForceFeedbackEnabled
+{
+	return isForceFeedbackEnabled;
 }
 
 - (void) setRunLoop:(NSRunLoop *)theRunLoop
@@ -149,7 +320,7 @@ static NSDictionary *hidUsageTable = nil;
 	{
 		[theRunLoop retain];
 		IOHIDQueueScheduleWithRunLoop(hidQueueRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
-		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, HandleQueueValueAvailableCallback, [self hidManager]);
+		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, HandleQueueValueAvailableCallback, self);
 	}
 	
 	[runLoop release];
@@ -167,6 +338,43 @@ static NSDictionary *hidUsageTable = nil;
 	return theRunLoop;
 }
 
+- (void) setPropertiesUsingDictionary:(NSDictionary *)theProperties
+{
+	if (theProperties == nil)
+	{
+		return;
+	}
+	
+	NSNumber *isFFEnabledNumber = (NSNumber *)[theProperties objectForKey:@"isForceFeedbackEnabled"];
+	if (isFFEnabledNumber != nil)
+	{
+		[self setIsForceFeedbackEnabled:[isFFEnabledNumber boolValue]];
+	}
+}
+
+- (NSDictionary *) propertiesDictionary
+{
+	return [NSDictionary dictionaryWithObjectsAndKeys:
+			[NSNumber numberWithBool:[self isForceFeedbackEnabled]], @"isForceFeedbackEnabled",
+			[self manufacturerName], @"manufacturerName",
+			[self productName], @"productName",
+			[self serialNumber], @"serialNumber",
+			nil];
+}
+
+- (void) writeDefaults
+{
+	NSDictionary *savedInputDeviceDict = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_SavedDeviceProperties"];
+	if (savedInputDeviceDict == nil)
+	{
+		return;
+	}
+	
+	NSMutableDictionary *newInputDeviceDict = [NSMutableDictionary dictionaryWithDictionary:savedInputDeviceDict];
+	[newInputDeviceDict setObject:[self propertiesDictionary] forKey:[self identifier]];
+	[[NSUserDefaults standardUserDefaults] setObject:newInputDeviceDict forKey:@"Input_SavedDeviceProperties"];
+}
+
 - (void) start
 {
 	IOHIDQueueStart(hidQueueRef);
@@ -177,19 +385,21 @@ static NSDictionary *hidUsageTable = nil;
 	IOHIDQueueStop(hidQueueRef);
 }
 
-- (NSString *) manufacturerName
+- (void) startForceFeedbackAndIterate:(UInt32)iterations flags:(UInt32)ffFlags
 {
-	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDManufacturerKey));
+	if (ffDevice != NULL)
+	{
+		HRESULT ffResult = FFEffectStart(ffEffect, iterations, ffFlags);
+		ffResult = ffResult;
+	}
 }
 
-- (NSString *) productName
+- (void) stopForceFeedback
 {
-	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDProductKey));
-}
-
-- (NSString *) serialNumber
-{
-	return (NSString *)IOHIDDeviceGetProperty([self hidDeviceRef], CFSTR(kIOHIDSerialNumberKey));
+	if (ffDevice != NULL)
+	{
+		FFEffectStop(ffEffect);
+	}
 }
 
 @end
@@ -211,7 +421,7 @@ static NSDictionary *hidUsageTable = nil;
 	Details:
 		None.
  ********************************************************************************************/
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, bool *altOnState)
+InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, const bool *altOnState)
 {
 	InputAttributes inputAttr;
 	
@@ -267,46 +477,14 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char 
 		strncpy(inputAttr.elementName, altElementName, INPUT_HANDLER_STRING_LENGTH);
 	}
 	
-	IOHIDDeviceRef hidDeviceRef = IOHIDElementGetDevice(hidElementRef);
+	const IOHIDDeviceRef hidDeviceRef = IOHIDElementGetDevice(hidElementRef);
+	InputDeviceCodeFromHIDDevice(hidDeviceRef, inputAttr.deviceCode);
+	InputDeviceNameFromHIDDevice(hidDeviceRef, inputAttr.deviceName, inputAttr.deviceCode);
 	
-	CFNumberRef cfVendorIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDVendorIDKey));
-	SInt32 vendorID = 0;
-	CFNumberGetValue(cfVendorIDNumber, kCFNumberSInt32Type, &vendorID);
-	
-	CFNumberRef cfProductIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductIDKey));
-	SInt32 productID = 0;
-	CFNumberGetValue(cfProductIDNumber, kCFNumberSInt32Type, &productID);
-	
-	CFStringRef cfDeviceCode = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDSerialNumberKey));
-	if (cfDeviceCode == nil)
-	{
-		CFNumberRef cfLocationIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDLocationIDKey));
-		SInt32 locationID = 0;
-		CFNumberGetValue(cfLocationIDNumber, kCFNumberSInt32Type, &locationID);
-		
-		snprintf(inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH, "%d/%d/0x%08X", (int)vendorID, (int)productID, (unsigned int)locationID);
-	}
-	else
-	{
-		char cfDeviceCodeBuf[256] = {0};
-		CFStringGetCString(cfDeviceCode, cfDeviceCodeBuf, 256, kCFStringEncodingUTF8);
-		snprintf(inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH, "%d/%d/%s", (int)vendorID, (int)productID, cfDeviceCodeBuf);
-	}
-	
-	CFStringRef cfDeviceName = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductKey));
-	if (cfDeviceName == nil)
-	{
-		strncpy(inputAttr.deviceName, inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH);
-	}
-	else
-	{
-		CFStringGetCString(cfDeviceName, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH, kCFStringEncodingUTF8);
-	}
-	
-	bool onState = (altOnState == NULL) ? GetOnStateFromHIDValueRef(hidValueRef) : *altOnState;
-	CFIndex logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
-	NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
-	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
+	const bool onState = (altOnState == NULL) ? GetOnStateFromHIDValueRef(hidValueRef) : *altOnState;
+	const NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
+	const NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
+	const NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
 	
 	inputAttr.state			= (onState) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
 	inputAttr.intCoordX		= 0;
@@ -352,10 +530,10 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef)
 	}
 	else
 	{
-		NSInteger lowerThreshold = ((logicalMax - logicalMin) / 3) + logicalMin;
-		NSInteger upperThreshold = (((logicalMax - logicalMin) * 2) / 3) + logicalMin;
-		bool onState = true;
-		bool offState = false;
+		const NSInteger lowerThreshold = ((logicalMax - logicalMin) / 4) + logicalMin;
+		const NSInteger upperThreshold = (((logicalMax - logicalMin) * 3) / 4) + logicalMin;
+		const bool onState = true;
+		const bool offState = false;
 		
 		char elementCodeLowerThresholdBuf[256] = {0};
 		char elementCodeUpperThresholdBuf[256] = {0};
@@ -523,40 +701,31 @@ InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool 
 	return inputList;
 }
 
-BOOL GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef)
+bool GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef)
 {
-	BOOL onState = NO;
+	bool onState = false;
 	
 	if (hidValueRef == nil)
 	{
 		return onState;
 	}
 	
-	IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
-	NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
-	NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
-	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
-	NSInteger lowerThreshold = ((logicalMax - logicalMin) / 4) + logicalMin;
-	NSInteger upperThreshold = (((logicalMax - logicalMin) * 3) / 4) + logicalMin;
+	const IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
+	const NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
+	const NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
+	const NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
+	const NSInteger lowerThreshold = ((logicalMax - logicalMin) / 4) + logicalMin;
+	const NSInteger upperThreshold = (((logicalMax - logicalMin) * 3) / 4) + logicalMin;
+	const NSInteger elementType = IOHIDElementGetType(hidElementRef);
 	
-	NSInteger elementType = IOHIDElementGetType(hidElementRef);
 	switch (elementType)
 	{
 		case kIOHIDElementTypeInput_Misc:
 		{
-			if (logicalMin == 0 && logicalMax == 1)
+			if ( (logicalMin == 0 && logicalMax == 1 && logicalValue == 1) ||
+				 (logicalValue <= lowerThreshold || logicalValue >= upperThreshold) )
 			{
-				if (logicalValue == 1)
-				{
-					onState = YES;
-				}
-			}
-			else
-			{
-				if (logicalValue <= lowerThreshold || logicalValue >= upperThreshold)
-				{
-					onState = YES;
-				}
+				onState = true;
 			}
 			break;
 		}
@@ -565,26 +734,17 @@ BOOL GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef)
 		{
 			if (logicalValue == 1)
 			{
-				onState = YES;
+				onState = true;
 			}
 			break;
 		}
 			
 		case kIOHIDElementTypeInput_Axis:
 		{
-			if (logicalMin == 0 && logicalMax == 1)
+			if ( (logicalMin == 0 && logicalMax == 1 && logicalValue == 1) ||
+				(logicalValue <= lowerThreshold || logicalValue >= upperThreshold) )
 			{
-				if (logicalValue == 1)
-				{
-					onState = YES;
-				}
-			}
-			else
-			{
-				if (logicalValue <= lowerThreshold || logicalValue >= upperThreshold)
-				{
-					onState = YES;
-				}
+				onState = true;
 			}
 			break;
 		}
@@ -594,6 +754,46 @@ BOOL GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef)
 	}
 	
 	return onState;
+}
+
+void InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer)
+{
+	CFNumberRef cfVendorIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDVendorIDKey));
+	SInt32 vendorID = 0;
+	CFNumberGetValue(cfVendorIDNumber, kCFNumberSInt32Type, &vendorID);
+	
+	CFNumberRef cfProductIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductIDKey));
+	SInt32 productID = 0;
+	CFNumberGetValue(cfProductIDNumber, kCFNumberSInt32Type, &productID);
+	
+	CFStringRef cfDeviceCode = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDSerialNumberKey));
+	if (cfDeviceCode == nil)
+	{
+		CFNumberRef cfLocationIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDLocationIDKey));
+		SInt32 locationID = 0;
+		CFNumberGetValue(cfLocationIDNumber, kCFNumberSInt32Type, &locationID);
+		
+		snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "%d/%d/0x%08X", (int)vendorID, (int)productID, (unsigned int)locationID);
+	}
+	else
+	{
+		char cfDeviceCodeBuf[256] = {0};
+		CFStringGetCString(cfDeviceCode, cfDeviceCodeBuf, 256, kCFStringEncodingUTF8);
+		snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "%d/%d/%s", (int)vendorID, (int)productID, cfDeviceCodeBuf);
+	}
+}
+
+void InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer, const char *altName)
+{
+	CFStringRef cfDeviceName = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductKey));
+	if (cfDeviceName == nil)
+	{
+		strncpy(charBuffer, (altName != NULL) ? altName : "Unknown Device", INPUT_HANDLER_STRING_LENGTH);
+	}
+	else
+	{
+		CFStringGetCString(cfDeviceName, charBuffer, INPUT_HANDLER_STRING_LENGTH, kCFStringEncodingUTF8);
+	}
 }
 
 size_t ClearHIDQueue(const IOHIDQueueRef hidQueue)
@@ -629,7 +829,8 @@ size_t ClearHIDQueue(const IOHIDQueueRef hidQueue)
 
 void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void *inSender)
 {
-	InputHIDManager *hidManager = (InputHIDManager *)inContext;
+	InputHIDDevice *hidDevice = (InputHIDDevice *)inContext;
+	InputHIDManager *hidManager = [hidDevice hidManager];
 	IOHIDQueueRef hidQueue = (IOHIDQueueRef)inSender;
 	id<InputHIDManagerTarget> target = [hidManager target];
 	
@@ -651,7 +852,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 
 @synthesize inputManager;
 @synthesize hidManagerRef;
-@synthesize deviceList;
+@synthesize deviceListController;
 @synthesize target;
 @dynamic runLoop;
 
@@ -664,6 +865,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	}
 	
 	target = nil;
+	deviceListController = nil;
 	inputManager = [theInputManager retain];
 	
 	hidManagerRef = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
@@ -672,9 +874,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 		[self release];
 		return nil;
 	}
-	
-	deviceList = [[NSMutableSet alloc] initWithCapacity:32];
-	
+		
 	CFMutableDictionaryRef cfJoystickMatcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 	CFDictionarySetValue(cfJoystickMatcher, CFSTR(kIOHIDDeviceUsagePageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDPage_GenericDesktop]);
 	CFDictionarySetValue(cfJoystickMatcher, CFSTR(kIOHIDDeviceUsageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDUsage_GD_Joystick]);
@@ -683,13 +883,18 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	CFDictionarySetValue(cfGamepadMatcher, CFSTR(kIOHIDDeviceUsagePageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDPage_GenericDesktop]);
 	CFDictionarySetValue(cfGamepadMatcher, CFSTR(kIOHIDDeviceUsageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDUsage_GD_GamePad]);
 	
-	NSArray *matcherArray = [[NSArray alloc] initWithObjects:(NSMutableDictionary *)cfJoystickMatcher, (NSMutableDictionary *)cfGamepadMatcher, nil];
+	CFMutableDictionaryRef cfGenericControllerMatcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	CFDictionarySetValue(cfGenericControllerMatcher, CFSTR(kIOHIDDeviceUsagePageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDPage_GenericDesktop]);
+	CFDictionarySetValue(cfGenericControllerMatcher, CFSTR(kIOHIDDeviceUsageKey), (CFNumberRef)[NSNumber numberWithInteger:kHIDUsage_GD_MultiAxisController]);
+	
+	NSArray *matcherArray = [[NSArray alloc] initWithObjects:(NSMutableDictionary *)cfJoystickMatcher, (NSMutableDictionary *)cfGamepadMatcher, (NSMutableDictionary *)cfGenericControllerMatcher, nil];
 	
 	IOHIDManagerSetDeviceMatchingMultiple(hidManagerRef, (CFArrayRef)matcherArray);
 	
 	[matcherArray release];
 	CFRelease(cfJoystickMatcher);
 	CFRelease(cfGamepadMatcher);
+	CFRelease(cfGenericControllerMatcher);
 	
 	spinlockRunLoop = OS_SPINLOCK_INIT;
 	[self setRunLoop:[NSRunLoop currentRunLoop]];
@@ -709,9 +914,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	[self setRunLoop:nil];
 	[self setInputManager:nil];
 	[self setTarget:nil];
-	
-	[deviceList release];
-	
+		
 	if (hidManagerRef != NULL)
 	{
 		IOHIDManagerClose(hidManagerRef, 0);
@@ -767,19 +970,34 @@ void HandleDeviceMatchingCallback(void *inContext, IOReturn inResult, void *inSe
 {
 	InputHIDManager *hidManager = (InputHIDManager *)inContext;
 	InputHIDDevice *newDevice = [[[InputHIDDevice alloc] initWithDevice:inIOHIDDeviceRef hidManager:hidManager] autorelease];
-	[[hidManager deviceList] addObject:newDevice];
+	[[hidManager deviceListController] addObject:newDevice];
+	
+	NSDictionary *savedInputDeviceDict = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_SavedDeviceProperties"];
+	NSDictionary *devicePropertiesDict = (NSDictionary *)[savedInputDeviceDict objectForKey:[newDevice identifier]];
+	
+	if (devicePropertiesDict != nil)
+	{
+		[newDevice setPropertiesUsingDictionary:devicePropertiesDict];
+	}
+	else
+	{
+		[newDevice writeDefaults];
+	}
+	
 	[newDevice start];
 }
 
 void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSender, IOHIDDeviceRef inIOHIDDeviceRef)
 {
 	InputHIDManager *hidManager = (InputHIDManager *)inContext;
+	NSArray *hidDeviceList = [[hidManager deviceListController] arrangedObjects];
 	
-	for (InputHIDDevice *hidDevice in [hidManager deviceList])
+	for (InputHIDDevice *hidDevice in hidDeviceList)
 	{
 		if ([hidDevice hidDeviceRef] == inIOHIDDeviceRef)
 		{
-			[[hidManager deviceList] removeObject:hidDevice];
+			[hidDevice stopForceFeedback];
+			[[hidManager deviceListController] removeObject:hidDevice];
 			break;
 		}
 	}
@@ -790,6 +1008,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 @synthesize emuControl;
 @dynamic hidInputTarget;
+@synthesize hidManager;
 @synthesize inputMappings;
 @synthesize commandTagList;
 @synthesize commandIcon;
@@ -869,6 +1088,25 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	commandSelector["Debug"]					= @selector(cmdUpdateDSController:);
 	commandSelector["Lid"]						= @selector(cmdUpdateDSController:);
 	
+	commandSelector["Guitar Grip: Green"]		= @selector(cmdUpdateDSController:);
+	commandSelector["Guitar Grip: Red"]			= @selector(cmdUpdateDSController:);
+	commandSelector["Guitar Grip: Yellow"]		= @selector(cmdUpdateDSController:);
+	commandSelector["Guitar Grip: Blue"]		= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: C"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: C#"]				= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: D"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: D#"]				= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: E"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: F"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: F#"]				= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: G"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: G#"]				= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: A"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: A#"]				= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: B"]					= @selector(cmdUpdateDSController:);
+	commandSelector["Piano: High C"]			= @selector(cmdUpdateDSController:);
+	commandSelector["Paddle"]					= @selector(cmdUpdateDSController:);
+	
 	commandSelector["Load State Slot"]			= @selector(cmdLoadEmuSaveStateSlot:);
 	commandSelector["Save State Slot"]			= @selector(cmdSaveEmuSaveStateSlot:);
 	commandSelector["Copy Screen"]				= @selector(cmdCopyScreen:);
@@ -904,6 +1142,29 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	CommandAttributes cmdDSControlMic			= NewCommandAttributesForDSControl("Microphone", DSControllerState_Microphone);
 	cmdDSControlMic.intValue[1] = MICMODE_INTERNAL_NOISE;
 	cmdDSControlMic.floatValue[0] = 250.0f;
+	
+	CommandAttributes cmdGuitarGripGreen		= NewCommandAttributesForDSControl("Guitar Grip: Green", DSControllerState_GuitarGrip_Green);
+	CommandAttributes cmdGuitarGripRed			= NewCommandAttributesForDSControl("Guitar Grip: Red", DSControllerState_GuitarGrip_Red);
+	CommandAttributes cmdGuitarGripYellow		= NewCommandAttributesForDSControl("Guitar Grip: Yellow", DSControllerState_GuitarGrip_Yellow);
+	CommandAttributes cmdGuitarGripBlue			= NewCommandAttributesForDSControl("Guitar Grip: Blue", DSControllerState_GuitarGrip_Blue);
+	CommandAttributes cmdPianoC					= NewCommandAttributesForDSControl("Piano: C", DSControllerState_Piano_C);
+	CommandAttributes cmdPianoCSharp			= NewCommandAttributesForDSControl("Piano: C#", DSControllerState_Piano_CSharp);
+	CommandAttributes cmdPianoD					= NewCommandAttributesForDSControl("Piano: D", DSControllerState_Piano_D);
+	CommandAttributes cmdPianoDSharp			= NewCommandAttributesForDSControl("Piano: DSharp", DSControllerState_Piano_DSharp);
+	CommandAttributes cmdPianoE					= NewCommandAttributesForDSControl("Piano: E", DSControllerState_Piano_E);
+	CommandAttributes cmdPianoF					= NewCommandAttributesForDSControl("Piano: F", DSControllerState_Piano_F);
+	CommandAttributes cmdPianoFSharp			= NewCommandAttributesForDSControl("Piano: FSharp", DSControllerState_Piano_FSharp);
+	CommandAttributes cmdPianoG					= NewCommandAttributesForDSControl("Piano: G", DSControllerState_Piano_G);
+	CommandAttributes cmdPianoGSharp			= NewCommandAttributesForDSControl("Piano: GSharp", DSControllerState_Piano_GSharp);
+	CommandAttributes cmdPianoA					= NewCommandAttributesForDSControl("Piano: A", DSControllerState_Piano_A);
+	CommandAttributes cmdPianoASharp			= NewCommandAttributesForDSControl("Piano: ASharp", DSControllerState_Piano_ASharp);
+	CommandAttributes cmdPianoB					= NewCommandAttributesForDSControl("Piano: B", DSControllerState_Piano_B);
+	CommandAttributes cmdPianoHighC				= NewCommandAttributesForDSControl("Piano: High C", DSControllerState_Piano_HighC);
+	
+	CommandAttributes cmdPaddle					= NewCommandAttributesForDSControl("Paddle", DSControllerState_Paddle);
+	cmdPaddle.useInputForScalar = false;
+	cmdPaddle.intValue[1] = 0;
+	cmdPaddle.floatValue[0] = 0.0f;
 	
 	CommandAttributes cmdLoadEmuSaveStateSlot	= NewCommandAttributesForSelector("Load State Slot", commandSelector["Load State Slot"]);
 	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);	
@@ -945,6 +1206,25 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	defaultCommandAttributes["Microphone"]		= cmdDSControlMic;
 	defaultCommandAttributes["Debug"]			= cmdDSControlDebug;
 	defaultCommandAttributes["Lid"]				= cmdDSControlLid;
+	
+	defaultCommandAttributes["Guitar Grip: Green"]	= cmdGuitarGripGreen;
+	defaultCommandAttributes["Guitar Grip: Red"]	= cmdGuitarGripRed;
+	defaultCommandAttributes["Guitar Grip: Yellow"]	= cmdGuitarGripYellow;
+	defaultCommandAttributes["Guitar Grip: Blue"]	= cmdGuitarGripBlue;
+	defaultCommandAttributes["Piano: C"]		= cmdPianoC;
+	defaultCommandAttributes["Piano: C#"]		= cmdPianoCSharp;
+	defaultCommandAttributes["Piano: D"]		= cmdPianoD;
+	defaultCommandAttributes["Piano: D#"]		= cmdPianoDSharp;
+	defaultCommandAttributes["Piano: E"]		= cmdPianoE;
+	defaultCommandAttributes["Piano: F"]		= cmdPianoF;
+	defaultCommandAttributes["Piano: F#"]		= cmdPianoFSharp;
+	defaultCommandAttributes["Piano: G"]		= cmdPianoG;
+	defaultCommandAttributes["Piano: G#"]		= cmdPianoGSharp;
+	defaultCommandAttributes["Piano: A"]		= cmdPianoA;
+	defaultCommandAttributes["Piano: A#"]		= cmdPianoASharp;
+	defaultCommandAttributes["Piano: B"]		= cmdPianoB;
+	defaultCommandAttributes["Piano: High C"]	= cmdPianoHighC;
+	defaultCommandAttributes["Paddle"]			= cmdPaddle;
 	
 	defaultCommandAttributes["Load State Slot"] = cmdLoadEmuSaveStateSlot;
 	defaultCommandAttributes["Save State Slot"] = cmdSaveEmuSaveStateSlot;
@@ -1458,6 +1738,27 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 				break;
 		}
 	}
+	else if (strncmp(commandTag, "Paddle", INPUT_HANDLER_STRING_LENGTH) == 0)
+	{
+		const BOOL useInputForScalar = [(NSNumber *)[deviceInfo valueForKey:@"useInputForScalar"] boolValue];
+		
+		if (useInputForScalar)
+		{
+			inputSummary = @"Direct Control";
+		}
+		else
+		{
+			const NSInteger paddleRelativeAdjustment = [(NSNumber *)[deviceInfo valueForKey:@"intValue1"] integerValue];
+			if (paddleRelativeAdjustment > 0)
+			{
+				inputSummary = [NSString stringWithFormat:@"Paddle Adjust: +%ld", (long)paddleRelativeAdjustment];
+			}
+			else
+			{
+				inputSummary = [NSString stringWithFormat:@"Paddle Adjust: %ld", (long)paddleRelativeAdjustment];
+			}
+		}
+	}
 	
 	if (inputSummary == nil)
 	{
@@ -1564,7 +1865,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	
 	// Convert the audio buffer to 7-bit unsigned PCM.
 	buffer = theGenerator.getBuffer();
-	for (SInt64 i = 0; i < bufferSize; i++)
+	for (size_t i = 0; i < bufferSize; i++)
 	{
 		*(buffer+i) >>= 1;
 	}
@@ -1673,7 +1974,6 @@ CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const
 {
 	CommandAttributes cmdAttr = NewCommandAttributesForSelector(commandTag, @selector(cmdUpdateDSController:));
 	cmdAttr.intValue[0] = controlID;
-	cmdAttr.floatValue[0] = 250.0f;
 	
 	return cmdAttr;
 }
@@ -1743,6 +2043,7 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 										  deviceName,													@"deviceName",
 										  elementCode,													@"elementCode",
 										  elementName,													@"elementName",
+										  [NSNumber numberWithBool:NO],									@"isElementAnalog",
 										  deviceInfoSummary,											@"deviceInfoSummary",
 										  @"",															@"inputSettingsSummary",
 										  [NSNumber numberWithInt:cmdAttr->intValue[0]],				@"intValue0",

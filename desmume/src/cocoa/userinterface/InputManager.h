@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #import <Cocoa/Cocoa.h>
 #include <libkern/OSAtomic.h>
 #include <IOKit/hid/IOHIDManager.h>
+#include <ForceFeedback/ForceFeedback.h>
 
 #if defined(__ppc__) || defined(__ppc64__)
 #include <map>
@@ -103,27 +104,47 @@ typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFil
 	InputHIDManager *hidManager;
 	IOHIDDeviceRef hidDeviceRef;
 	IOHIDQueueRef hidQueueRef;
+	
+	NSString *identifier;
+	
+	io_service_t ioService;
+	FFDeviceObjectReference ffDevice;
+	FFEffectObjectReference ffEffect;
+	BOOL supportsForceFeedback;
+	BOOL isForceFeedbackEnabled;
+	
 	NSRunLoop *runLoop;
 	OSSpinLock spinlockRunLoop;
 }
 
 @property (retain) InputHIDManager *hidManager;
 @property (readonly) IOHIDDeviceRef hidDeviceRef;
+@property (readonly) NSString *manufacturerName;
+@property (readonly) NSString *productName;
+@property (readonly) NSString *serialNumber;
+@property (readonly) NSString *identifier;
+@property (readonly) BOOL supportsForceFeedback;
+@property (assign) BOOL isForceFeedbackEnabled;
 @property (retain) NSRunLoop *runLoop;
 
 - (id) initWithDevice:(IOHIDDeviceRef)theDevice hidManager:(InputHIDManager *)theHIDManager;
 
+- (void) setPropertiesUsingDictionary:(NSDictionary *)theProperties;
+- (NSDictionary *) propertiesDictionary;
+- (void) writeDefaults;
+
 - (void) start;
 - (void) stop;
 
-- (NSString *) manufacturerName;
-- (NSString *) productName;
-- (NSString *) serialNumber;
+- (void) startForceFeedbackAndIterate:(UInt32)iterations flags:(UInt32)ffFlags;
+- (void) stopForceFeedback;
 
 @end
 
-BOOL GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef);
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, bool *altOnState);
+bool GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef);
+void InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer);
+void InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer, const char *altName);
+InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, const bool *altOnState);
 InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef);
 InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool useEightDirection);
 
@@ -136,15 +157,15 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	InputManager *inputManager;
 	IOHIDManagerRef hidManagerRef;
 	NSRunLoop *runLoop;
-	NSMutableSet *deviceList;
+	NSArrayController *deviceListController;
 	id<InputHIDManagerTarget> target;
 	
 	OSSpinLock spinlockRunLoop;
 }
 
+@property (retain) NSArrayController *deviceListController;
 @property (retain) InputManager *inputManager;
 @property (readonly) IOHIDManagerRef hidManagerRef;
-@property (readonly) NSMutableSet *deviceList;
 @property (assign) id target;
 @property (retain) NSRunLoop *runLoop;
 
@@ -173,6 +194,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 @property (readonly) IBOutlet EmuControllerDelegate *emuControl;
 @property (retain) id<InputHIDManagerTarget> hidInputTarget;
+@property (readonly) InputHIDManager *hidManager;
 @property (readonly) NSMutableDictionary *inputMappings;
 @property (readonly) NSArray *commandTagList;
 @property (readonly) NSDictionary *commandIcon;
