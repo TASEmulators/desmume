@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ class AudioSampleBlockGenerator;
 	NSObjectController *cdsCoreController;
 	NSObjectController *cdsSoundController;
 	NSObjectController *cheatWindowController;
+	NSObjectController *slot2WindowController;
 	NSArrayController *cheatListController;
 	NSArrayController *cheatDatabaseController;
 	
@@ -99,6 +100,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet NSObjectController *cdsSoundController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
+@property (readonly) IBOutlet NSObjectController *slot2WindowController;
 @property (readonly) IBOutlet NSArrayController *cheatListController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
 

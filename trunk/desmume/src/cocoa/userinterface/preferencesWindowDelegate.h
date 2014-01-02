@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 {
 	NSObject *dummyObject;
 	NSWindow *window;
+	NSToolbar *toolbar;
 	NSWindow *firmwareConfigSheet;
 	NSObjectController *cdsCoreController;
 	NSObjectController *emuController;
@@ -42,6 +43,7 @@
 	NSView *viewDisplay;
 	NSView *viewSound;
 	NSView *viewEmulation;
+	NSDictionary *prefViewDict;
 		
 	NSPopUpButton *displayRotationMenu;
 	NSMenuItem *displayRotationMenuCustomItem;
@@ -62,6 +64,7 @@
 
 @property (readonly) IBOutlet NSObject *dummyObject;
 @property (readonly) IBOutlet NSWindow *window;
+@property (readonly) IBOutlet NSToolbar *toolbar;
 @property (readonly) IBOutlet NSWindow *firmwareConfigSheet;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet NSObjectController *emuController;
@@ -83,11 +86,7 @@
 
 @property (readonly) NSMutableDictionary *bindings;
 
-- (IBAction) showGeneralView:(id)sender;
-- (IBAction) showInputView:(id)sender;
-- (IBAction) showDisplayView:(id)sender;
-- (IBAction) showSoundView:(id)sender;
-- (IBAction) showEmulationView:(id)sender;
+- (IBAction) changePrefView:(id)sender;
 
 - (IBAction) chooseAdvansceneDatabase:(id)sender;
 - (void) chooseAdvansceneDatabaseDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;

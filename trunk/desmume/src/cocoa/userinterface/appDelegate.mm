@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
+#import "Slot2WindowDelegate.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
 #import "cheatWindowDelegate.h"
@@ -40,6 +41,7 @@
 @synthesize prefWindow;
 @synthesize troubleshootingWindow;
 @synthesize cheatListWindow;
+@synthesize slot2Window;
 @synthesize prefGeneralView;
 @synthesize mLoadStateSlot;
 @synthesize mSaveStateSlot;
@@ -50,6 +52,7 @@
 @synthesize romInfoPanelController;
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
+@synthesize inputDeviceListController;
 @synthesize cheatWindowController;
 @synthesize migrationDelegate;
 @synthesize inputManager;
@@ -115,6 +118,7 @@
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = (PreferencesWindowDelegate *)[prefWindow delegate];
 	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatListWindow delegate];
+	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2Window delegate];
 	
 	// Create the needed directories in Application Support if they haven't already
 	// been created.
@@ -166,7 +170,8 @@
 	[self setRomInfoPanelBoxTitleColors];
 	
 	// Set the preferences window to the general view by default.
-	[prefWindowDelegate switchContentView:prefGeneralView];
+	[[prefWindowDelegate toolbar] setSelectedItemIdentifier:@"General"];
+	[prefWindowDelegate changePrefView:self];
 	
 	// Setup the slot menu items. We set this up manually instead of through Interface
 	// Builder because we're assuming an arbitrary number of slot items.
@@ -192,6 +197,11 @@
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 	}
+	
+	// Update the SLOT-2 device list after the emulation core is initialized.
+	[slot2WindowDelegate update];
+	[slot2WindowDelegate setHidManager:[inputManager hidManager]];
+	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
 	
 	// Start up the threads for our outputs.
 	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newSpeaker withObject:nil];
@@ -417,6 +427,7 @@
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
+	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2Window delegate];
 	NSMutableDictionary *prefBindings = [prefWindowDelegate bindings];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
@@ -571,7 +582,7 @@
 	}
 	else
 	{
-		[prefBindings setValue:NSSTRING_STATUS_AUTOLOAD_ROM_NAME_NONE forKey:@"AutoloadRomName"];
+		[prefBindings setValue:NSSTRING_STATUS_NO_ROM_CHOSEN forKey:@"AutoloadRomName"];
 	}
 	
 	// Set the menu for the display rotation.
@@ -591,6 +602,15 @@
 	}
 	
 	[inputManager setMappingsWithMappings:userMappings];
+	[[inputManager hidManager] setDeviceListController:inputDeviceListController];
+	
+	// Set up the default SLOT-2 device.
+	[slot2WindowDelegate setMpcfFolderURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_MPCF_DirectoryPath"]]];
+	[slot2WindowDelegate setMpcfDiskImageURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_MPCF_DiskImagePath"]]];
+	[slot2WindowDelegate setGbaCartridgeURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_GBA_CartridgePath"]]];
+	[slot2WindowDelegate setGbaSRamURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_GBA_SRAMPath"]]];
+	[slot2WindowDelegate selectDeviceByType:[[NSUserDefaults standardUserDefaults] integerForKey:@"Slot2_LoadedDevice"]];
+	[slot2WindowDelegate applySettings:nil];
 	
 	// Set up the rest of the emulation-related user defaults.
 	[emuControl setupUserDefaults];

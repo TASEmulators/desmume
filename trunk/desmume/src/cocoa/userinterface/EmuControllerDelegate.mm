@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #import "DisplayWindowController.h"
 #import "InputManager.h"
 #import "cheatWindowDelegate.h"
+#import "Slot2WindowDelegate.h"
 
 #import "cocoa_globals.h"
 #import "cocoa_cheat.h"
@@ -29,6 +30,7 @@
 #import "cocoa_input.h"
 #import "cocoa_output.h"
 #import "cocoa_rom.h"
+#import "cocoa_slot2.h"
 
 
 @implementation EmuControllerDelegate
@@ -48,6 +50,7 @@
 @synthesize cheatWindowController;
 @synthesize cheatListController;
 @synthesize cheatDatabaseController;
+@synthesize slot2WindowController;
 
 @synthesize slot1ManagerWindow;
 @synthesize saveFileMigrationSheet;
@@ -982,6 +985,19 @@
 		NSString *audioFilePath = cmdAttr.object[0];
 		[[cdsCore cdsController] setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 	}
+	else if (controlID == DSControllerState_Paddle)
+	{
+		if (cmdAttr.useInputForScalar)
+		{
+			const float paddleScalar = cmdAttr.floatValue[0];
+			[(Slot2WindowDelegate *)[slot2WindowController content] setPaddleDirectWithScalar:paddleScalar];
+		}
+		else
+		{
+			const NSInteger paddleRelativeAdjustment = cmdAttr.intValue[1];
+			[(Slot2WindowDelegate *)[slot2WindowController content] setPaddleRelativeWithInteger:paddleRelativeAdjustment];
+		}
+	}
 	else
 	{
 		[[cdsCore cdsController] setControllerState:theState controlID:controlID];
@@ -1537,6 +1553,10 @@
 	[self setIsWorking:NO];
 	[self setIsRomLoading:NO];
 	
+	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
+	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
+	[[slot2WindowDelegate deviceManager] updateStatus];
+		
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[[windowController window] displayIfNeeded];
@@ -1608,6 +1628,10 @@
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];
 	[self setIsWorking:NO];
+	
+	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2WindowController content];
+	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
+	[[slot2WindowDelegate deviceManager] updateStatus];
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
