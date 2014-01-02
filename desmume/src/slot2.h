@@ -22,6 +22,8 @@
 #include "types.h"
 #include "debug.h"
 
+#define GBA_SRAM_FILE_EXT "sav"
+
 class Slot2Info
 {
 public:
@@ -134,7 +136,8 @@ bool slot2_read(u32 addr, T &val);
 
 
 // =================================================================================
-extern char GBAgameName[MAX_PATH];					// file name for GBA game (rom)
+extern std::string GBACartridge_RomPath;
+extern std::string GBACartridge_SRAMPath;
 extern void (*FeedbackON)(bool enable);				// feedback on/off
 
 enum ADDON_CFLASH_MODE

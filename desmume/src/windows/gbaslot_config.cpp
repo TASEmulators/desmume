@@ -43,6 +43,7 @@ SPaddle		tmp_Paddle;
 //they are named very verbosely to distinguish them from the currently-configured values in addons.cpp
 std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
 UINT win32_CFlash_cfgMode;
+std::string win32_GBA_cfgRomPath;
 
 INT_PTR CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -560,7 +561,7 @@ void GBAslotDialog(HWND hwnd)
 	last_type = temp_type;
 	strcpy(tmp_cflash_filename, win32_CFlash_cfgFileName.c_str());
 	strcpy(tmp_cflash_path, win32_CFlash_cfgDirectory.c_str());
-	strcpy(tmp_gbagame_filename, GBAgameName);
+	strcpy(tmp_gbagame_filename, win32_GBA_cfgRomPath.c_str());
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	memcpy(&tmp_Piano, &Piano, sizeof(Piano));
 	memcpy(&tmp_Paddle, &Paddle, sizeof(Paddle));
@@ -597,8 +598,9 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileInt("Slot2.Paddle","INC",Paddle.INC,IniName);
 				break;
 			case NDS_SLOT2_GBACART:
-				strcpy(GBAgameName, tmp_gbagame_filename);
-				WritePrivateProfileString("Slot2.GBAgame","filename",GBAgameName,IniName);
+				win32_GBA_cfgRomPath = tmp_gbagame_filename;
+				WritePrivateProfileString("Slot2.GBAgame", "filename", tmp_gbagame_filename, IniName);
+				WIN_InstallGBACartridge();
 				break;
 			case NDS_SLOT2_GUITARGRIP:
 				memcpy(&Guitar, &tmp_Guitar, sizeof(tmp_Guitar));

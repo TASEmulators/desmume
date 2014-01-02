@@ -22,6 +22,7 @@
 
 extern std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
 extern UINT win32_CFlash_cfgMode;
+extern std::string win32_GBA_cfgRomPath;
 
 extern void GBAslotDialog(HWND hwnd);
 

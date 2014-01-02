@@ -84,6 +84,15 @@ static BOOL cflash_init()
 		sFlashPath = CFlash_Path;
 		INFO("Using CFlash directory: %s\n", sFlashPath.c_str());
 	}
+	else if(CFlash_Mode == ADDON_CFLASH_MODE_File)
+	{
+		sFlashPath = CFlash_Path;
+		INFO("Using CFlash disk image file %s\n", sFlashPath.c_str());
+	}
+	else
+	{
+		return FALSE;
+	}
 
 	if (sFlashPath == "") return FALSE;
 
@@ -112,8 +121,6 @@ static BOOL cflash_init()
 	}
 	else
 	{
-		sFlashPath = CFlash_Path;
-		INFO("Using CFlash disk image file %s\n", sFlashPath.c_str());
 		file = new EMUFILE_FILE(sFlashPath.c_str(),"rb+");
 		if(file->fail())
 		{
