@@ -20,6 +20,7 @@
 #import "cocoa_globals.h"
 
 #include "../NDSSystem.h"
+#include "../slot2.h"
 #undef BOOL
 
 
@@ -27,6 +28,7 @@
 
 @synthesize micMode;
 @synthesize selectedAudioFileGenerator;
+@synthesize paddleAdjust;
 
 - (id)init
 {
@@ -45,6 +47,7 @@
 	micMode = MICMODE_NONE;
 	selectedAudioFileGenerator = NULL;
 	touchLocation = NSMakePoint(0.0f, 0.0f);
+	paddleAdjust = 0;
 	
 	return self;
 }
@@ -129,6 +132,13 @@
 	else
 	{
 		NDS_releaseTouch();
+	}
+	
+	// Setup the paddle.
+	if (slot2_GetSelectedType() == NDS_SLOT2_PADDLE)
+	{
+		const u16 newPaddleValue = Paddle_GetValue() + (u16)[self paddleAdjust];
+		Paddle_SetValue(newPaddleValue);
 	}
 	
 	// Setup the DS mic.

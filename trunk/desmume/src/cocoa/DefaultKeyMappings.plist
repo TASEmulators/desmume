@@ -20,6 +20,7 @@
 		<string>Microphone</string>
 		<string>Lid</string>
 		<string>Debug</string>
+		<string>Paddle</string>
 		<string>Execute/Pause</string>
 		<string>Reset</string>
 		<string>Mute/Unmute</string>
@@ -33,7 +34,6 @@
 		<string>Enable/Disable Auto Frame Skip</string>
 		<string>Enable/Disable Cheats</string>
 		<string>Enable/Disable GPU State</string>
-		<string>Paddle</string>
 	</array>
 	<key>DefaultInputProfiles</key>
 	<array>
@@ -281,6 +281,45 @@
 				</array>
 				<key>Debug</key>
 				<array/>
+				<key>Paddle</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: K</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>40</string>
+						<key>elementName</key>
+						<string>K</string>
+						<key>isInputAnalog</key>
+						<false/>
+						<key>inputSettingsSummary</key>
+						<string>Paddle Adjust: -5</string>
+						<key>intValue1</key>
+						<integer>-5</integer>
+					</dict>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: L</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>37</string>
+						<key>elementName</key>
+						<string>L</string>
+						<key>isInputAnalog</key>
+						<false/>
+						<key>inputSettingsSummary</key>
+						<string>Paddle Adjust: +5</string>
+						<key>intValue1</key>
+						<integer>5</integer>
+					</dict>
+				</array>
 				<key>HUD</key>
 				<array>
 					<dict>
@@ -410,8 +449,6 @@
 				<key>Enable/Disable Cheats</key>
 				<array/>
 				<key>Enable/Disable GPU State</key>
-				<array/>
-				<key>Paddle</key>
 				<array/>
 			</dict>
 		</dict>

@@ -416,35 +416,33 @@
 }
 
 #pragma mark InputHIDManagerTarget Protocol
-- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue
+- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
 {
 	BOOL isHandled = NO;
+	NSString *cmdTagTarget = [self configInputTargetID];
 	
-	if ([self configInputTargetID] == nil)
+	if (cmdTagTarget == nil)
 	{
 		ClearHIDQueue(hidQueue);
 		return isHandled;
 	}
 	
-	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue);
+	CommandAttributes cmdAttr = [[hidManager inputManager] defaultCommandAttributesForCommandTag:[cmdTagTarget cStringUsingEncoding:NSUTF8StringEncoding]];
+	bool forceDigitalInput = !cmdAttr.allowAnalogInput;
+	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue, [hidManager inputManager], forceDigitalInput);
 	const size_t inputCount = inputList.size();
 	
 	for (size_t i = 0; i < inputCount; i++)
 	{
 		const InputAttributes &inputAttr = inputList[i];
-		char inputKey[INPUT_HANDLER_STRING_LENGTH*2];
-		strlcpy(inputKey, inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputKey, ":", INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputKey, inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH*2);
-		
-		NSString *inputKeyStr = [NSString stringWithCString:inputKey encoding:NSUTF8StringEncoding];
-		NSDate *inputOnDate = [configInputList valueForKey:inputKeyStr];
+		NSString *inputKey = [NSString stringWithFormat:@"%s:%s", inputAttr.deviceCode, inputAttr.elementCode];
+		NSDate *inputOnDate = [configInputList valueForKey:inputKey];
 		
 		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
 		{
 			if (inputOnDate == nil)
 			{
-				[configInputList setValue:[NSDate date] forKey:inputKeyStr];
+				[configInputList setValue:[NSDate date] forKey:inputKey];
 			}
 		}
 		else
@@ -454,11 +452,11 @@
 				if (([inputOnDate timeIntervalSinceNow] * -1.0) < INPUT_HOLD_TIME)
 				{
 					// If the button isn't held for at least INPUT_HOLD_TIME seconds, then reject the input.
-					[configInputList setValue:nil forKey:inputKeyStr];
+					[configInputList setValue:nil forKey:inputKey];
 				}
 				else
 				{
-					isHandled = [self addMappingUsingInputAttributes:&inputAttr commandTag:[self configInputTargetID]];
+					isHandled = [self addMappingUsingInputAttributes:&inputAttr commandTag:cmdTagTarget];
 					break;
 				}
 			}

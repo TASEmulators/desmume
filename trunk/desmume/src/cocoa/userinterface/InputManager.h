@@ -47,7 +47,7 @@ enum InputAttributeState
 @protocol InputHIDManagerTarget <NSObject>
 
 @required
-- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue;
+- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager;
 
 @end
 
@@ -57,6 +57,7 @@ typedef struct
 	char deviceCode[INPUT_HANDLER_STRING_LENGTH];
 	char elementName[INPUT_HANDLER_STRING_LENGTH];
 	char elementCode[INPUT_HANDLER_STRING_LENGTH];
+	bool isAnalog;					// This is an analog input, as opposed to being a digital input.
 	
 	InputAttributeState state;		// The input state that is sent on command dispatch
 	int32_t intCoordX;				// The X-coordinate as an int for commands that require a location
@@ -81,6 +82,7 @@ typedef struct
 	bool useInputForSender;			// The command will prefer the input device's sender
 	
 	InputAttributes input;			// The input device's attributes
+	bool allowAnalogInput;			// Flag for allowing a command to accept analog inputs
 } CommandAttributes;
 
 typedef std::vector<InputAttributes> InputAttributesList;
@@ -141,12 +143,12 @@ typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFil
 
 @end
 
-bool GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef);
-void InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer);
-void InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer, const char *altName);
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, const bool *altOnState);
-InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef);
-InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool useEightDirection);
+bool InputElementCodeFromHIDElement(const IOHIDElementRef hidElementRef, char *charBuffer);
+bool InputElementNameFromHIDElement(const IOHIDElementRef hidElementRef, char *charBuffer);
+bool InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer);
+bool InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer);
+InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef);
+InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManager *inputManager, bool forceDigitalInput);
 
 size_t ClearHIDQueue(const IOHIDQueueRef hidQueue);
 void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void *inSender);
@@ -238,7 +240,7 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 															   NSString *elementCode,
 															   NSString *elementName);
 
-InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue);
+InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue, InputManager *inputManager, bool forceDigitalInput);
 InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BOOL keyPressed);
 InputAttributes InputManagerEncodeMouseButtonInput(const NSInteger buttonNumber, const NSPoint touchLoc, BOOL buttonPressed);
 InputAttributes InputManagerEncodeIBAction(const SEL theSelector, id sender);

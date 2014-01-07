@@ -130,7 +130,5 @@
 
 #pragma mark -
 #pragma mark Paddle
-- (void) setPaddleDirectWithScalar:(float)scalar;
-- (void) setPaddleRelativeWithInteger:(NSInteger)value;
 
 @end
