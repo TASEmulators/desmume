@@ -69,12 +69,14 @@ enum
 	NSPoint touchLocation;
 	bool controllerState[DSControllerState_StatesCount];
 	AudioSampleBlockGenerator *selectedAudioFileGenerator;
+	NSInteger paddleAdjust;
 	
 	OSSpinLock spinlockControllerState;
 }
 
 @property (assign) NSInteger micMode;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
+@property (assign) NSInteger paddleAdjust;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;

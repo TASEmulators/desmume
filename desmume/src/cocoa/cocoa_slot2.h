@@ -49,7 +49,6 @@
 @property (copy) NSURL *gbaCartridgeURL;
 @property (copy) NSURL *gbaSRamURL;
 @property (readonly) BOOL doesGbaCartridgeSaveExist;
-@property (assign) UInt16 paddleValue;
 
 - (CocoaDSSlot2Device *) autoSelectedDevice;
 - (NSString *) autoSelectedDeviceName;

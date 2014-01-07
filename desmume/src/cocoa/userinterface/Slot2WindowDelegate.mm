@@ -664,29 +664,6 @@
 #pragma mark -
 #pragma mark Paddle
 
-- (void) setPaddleDirectWithScalar:(float)scalar
-{
-	// Clamp the input value.
-	if (scalar < -1.0f)
-	{
-		scalar = -1.0f;
-	}
-	
-	if (scalar > 1.0f)
-	{
-		scalar = 1.0f;
-	}
-	
-	// Normalize the input value for the paddle.
-	const float paddleValue = 256.0f * scalar;
-	[[self deviceManager] setPaddleValue:(UInt16)paddleValue];
-}
-
-- (void) setPaddleRelativeWithInteger:(NSInteger)value
-{
-	NSInteger paddleValue = [[self deviceManager] paddleValue] + value;
-	[[self deviceManager] setPaddleValue:(UInt16)paddleValue];
-}
 
 #pragma mark -
 #pragma mark NSTableViewDelegate Protocol

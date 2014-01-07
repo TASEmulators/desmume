@@ -1792,14 +1792,13 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 }
 
 #pragma mark InputHIDManagerTarget Protocol
-- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue
+- (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
 {
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
-	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue);
-	char inputStr[INPUT_HANDLER_STRING_LENGTH*2];
-	memset(inputStr, '\0', INPUT_HANDLER_STRING_LENGTH*2);
+	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue, [hidManager inputManager], false);
+	NSString *newStatusText = nil;
 	
 	const size_t inputCount = inputList.size();
 	
@@ -1807,18 +1806,21 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	{
 		const InputAttributes &inputAttr = inputList[i];
 		
-		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
+		if (inputAttr.isAnalog)
 		{
-			strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
-			strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
-			strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
+			newStatusText = [NSString stringWithFormat:@"%s:%s (%1.2f)", inputAttr.deviceName, inputAttr.elementName, inputAttr.scalar];
+			break;
+		}
+		else if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
+		{
+			newStatusText = [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName];
 			break;
 		}
 	}
 	
-	if (inputStr[0] != '\0' && inputStr[0] != ':')
+	if (newStatusText != nil)
 	{
-		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
+		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
 	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputList];
@@ -1842,12 +1844,8 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	if (keyPressed && [theEvent window] != nil)
 	{
-		char inputStr[INPUT_HANDLER_STRING_LENGTH*2];
-		strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
-		
-		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
+		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName];
+		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];
@@ -1862,30 +1860,13 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
-	NSPoint touchLoc = NSMakePoint(-2.0, -2.0);
-	
-	if (displayModeID == DS_DISPLAY_TYPE_TOUCH || displayModeID == DS_DISPLAY_TYPE_DUAL)
-	{
-		touchLoc = [self dsPointFromEvent:theEvent];
-	}
-	
+	const NSPoint touchLoc = (displayModeID == DS_DISPLAY_TYPE_MAIN) ? NSMakePoint(0.0, 0.0) : [self dsPointFromEvent:theEvent];
 	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([theEvent buttonNumber], touchLoc, buttonPressed);
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		static char inputStr[INPUT_HANDLER_STRING_LENGTH*2] = {0};
-		strlcpy(inputStr, inputAttr.deviceName, INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputStr, ":", INPUT_HANDLER_STRING_LENGTH*2);
-		strlcat(inputStr, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH*2);
-		
-		if (inputAttr.intCoordX >= 0)
-		{
-			static char inputCoordBuf[64] = {0};
-			snprintf(inputCoordBuf, 64, " X:%i Y:%i", (int)inputAttr.intCoordX, (int)inputAttr.intCoordY);
-			strlcat(inputStr, inputCoordBuf, INPUT_HANDLER_STRING_LENGTH*2);
-		}
-		
-		[[windowController emuControl] setStatusText:[NSString stringWithCString:inputStr encoding:NSUTF8StringEncoding]];
+		NSString *newStatusText = (displayModeID == DS_DISPLAY_TYPE_MAIN) ? [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputAttr.deviceName, inputAttr.elementName, (int)inputAttr.intCoordX, (int)inputAttr.intCoordY];
+		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
 	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];

@@ -47,8 +47,6 @@
 
 - (void) dealloc
 {
-	[self setEnabled:nil];
-	
 	[super dealloc];
 }
 
@@ -91,7 +89,6 @@
 @dynamic gbaCartridgeURL;
 @dynamic gbaSRamURL;
 @dynamic doesGbaCartridgeSaveExist;
-@dynamic paddleValue;
 
 - (id) init
 {
@@ -209,16 +206,6 @@
 - (BOOL) doesGbaCartridgeSaveExist
 {
 	return NO;
-}
-
-- (void) setPaddleValue:(UInt16)value
-{
-	nds.paddle = value;
-}
-
-- (UInt16) paddleValue
-{
-	return nds.paddle;
 }
 
 - (CocoaDSSlot2Device *) autoSelectedDevice

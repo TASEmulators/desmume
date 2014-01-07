@@ -221,6 +221,7 @@ static NSDictionary *hidUsageTable = nil;
 
 - (void)dealloc
 {
+	[self stopForceFeedback];
 	[self stop];
 	[self setRunLoop:nil];
 	[self setHidManager:nil];
@@ -233,8 +234,8 @@ static NSDictionary *hidUsageTable = nil;
 	
 	if (ffDevice != NULL)
 	{
-		FFReleaseDevice(ffDevice);
 		FFEffectUnload(ffEffect);
+		FFReleaseDevice(ffDevice);
 		ffDevice = NULL;
 	}
 	
@@ -411,9 +412,6 @@ static NSDictionary *hidUsageTable = nil;
 
 	Takes:
 		hidValueRef - The IOHIDValueRef to parse.
-		altElementCode - A char buffer that overrides the default element code.
-		altElementName - A char buffer that overrides the default element name.
-		altOnState - A pointer to a bool value that overrides the default on state.
 
 	Returns:
 		An InputAttributes struct with the parsed input attributes.
@@ -421,7 +419,7 @@ static NSDictionary *hidUsageTable = nil;
 	Details:
 		None.
  ********************************************************************************************/
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char *altElementCode, const char *altElementName, const bool *altOnState)
+InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
 {
 	InputAttributes inputAttr;
 	
@@ -430,63 +428,25 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char 
 		return inputAttr;
 	}
 	
-	IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
-	NSInteger elementUsagePage = IOHIDElementGetUsagePage(hidElementRef);
-	NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
-	
-	if (altElementCode == NULL)
-	{
-		snprintf(inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH, "0x%04lX/0x%04lX", (long)elementUsagePage, (long)elementUsage);
-	}
-	else
-	{
-		strncpy(inputAttr.elementCode, altElementCode, INPUT_HANDLER_STRING_LENGTH);
-	}
-	
-	if (altElementName == NULL)
-	{
-		CFStringRef cfElementName = IOHIDElementGetName(hidElementRef);
-		if (cfElementName == nil)
-		{
-			if (elementUsagePage == kHIDPage_Button)
-			{
-				snprintf(inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH, "Button %li", (long)elementUsage);
-			}
-			else if (elementUsagePage == kHIDPage_VendorDefinedStart)
-			{
-				snprintf(inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH, "VendorDefined %li", (long)elementUsage);
-			}
-			else
-			{
-				NSDictionary *elementUsagePageDict = (NSDictionary *)[hidUsageTable valueForKey:[NSString stringWithFormat:@"0x%04lX", (long)elementUsagePage]];
-				
-				NSString *elementNameLookup = (NSString *)[elementUsagePageDict valueForKey:[NSString stringWithFormat:@"0x%04lX", (long)elementUsage]];
-				if (elementNameLookup != nil)
-				{
-					strncpy(inputAttr.elementName, [elementNameLookup cStringUsingEncoding:NSUTF8StringEncoding], 256);
-				}
-			}
-		}
-		else
-		{
-			CFStringGetCString(cfElementName, inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH, kCFStringEncodingUTF8);
-		}
-	}
-	else
-	{
-		strncpy(inputAttr.elementName, altElementName, INPUT_HANDLER_STRING_LENGTH);
-	}
-	
+	const IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
 	const IOHIDDeviceRef hidDeviceRef = IOHIDElementGetDevice(hidElementRef);
-	InputDeviceCodeFromHIDDevice(hidDeviceRef, inputAttr.deviceCode);
-	InputDeviceNameFromHIDDevice(hidDeviceRef, inputAttr.deviceName, inputAttr.deviceCode);
 	
-	const bool onState = (altOnState == NULL) ? GetOnStateFromHIDValueRef(hidValueRef) : *altOnState;
+	InputElementCodeFromHIDElement(hidElementRef, inputAttr.elementCode);
+	InputDeviceCodeFromHIDDevice(hidDeviceRef, inputAttr.deviceCode);
+	
+	strncpy(inputAttr.elementName, inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH);
+	InputElementNameFromHIDElement(hidElementRef, inputAttr.elementName);
+	
+	strncpy(inputAttr.deviceName, inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH);
+	InputDeviceNameFromHIDDevice(hidDeviceRef, inputAttr.deviceName);
+		
 	const NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
 	const NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
 	const NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
+	const NSInteger elementType = IOHIDElementGetType(hidElementRef);
+	const NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
 	
-	inputAttr.state			= (onState) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
+	inputAttr.isAnalog		= (elementType != kIOHIDElementTypeInput_Button) && !(logicalMin == 0 && logicalMax == 1);
 	inputAttr.intCoordX		= 0;
 	inputAttr.intCoordY		= 0;
 	inputAttr.floatCoordX	= 0.0f;
@@ -494,10 +454,61 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef, const char 
 	inputAttr.scalar		= (float)(logicalValue - logicalMin) / (float)(logicalMax - logicalMin);
 	inputAttr.sender		= nil;
 	
+	if (!inputAttr.isAnalog)
+	{
+		inputAttr.state	= (logicalValue == 1) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
+	}
+	else if (elementUsage == kHIDUsage_GD_Hatswitch)
+	{
+		// For hatswitch inputs, use the intCoord fields to store the axis information.
+		inputAttr.state = (logicalValue >= logicalMin && logicalValue <= logicalMax) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
+		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
+		{
+			struct IntCoord
+			{
+				int x;
+				int y;
+			};
+			
+			static const IntCoord coords4Way[4] = {
+				{0, -1},	// Up
+				{1, 0},		// Right
+				{0, 1},		// Down
+				{-1, 0}		// Left
+			};
+			
+			static const IntCoord coords8Way[8] = {
+				{0, -1},	// Up
+				{1, -1},	// Up/Right
+				{1, 0},		// Right
+				{1, 1},		// Down/Right
+				{0, 1},		// Down
+				{-1, 1},	// Down/Left
+				{-1, 0},	// Left
+				{-1, -1}	// Up/Left
+			};
+			
+			if (logicalMax == 3) // For a 4-way hatswitch
+			{
+				inputAttr.intCoordX		= coords4Way[logicalValue].x;
+				inputAttr.intCoordY		= coords4Way[logicalValue].y;
+			}
+			else if (logicalMax == 7) // For an 8-way hatswitch
+			{
+				inputAttr.intCoordX		= coords8Way[logicalValue].x;
+				inputAttr.intCoordY		= coords8Way[logicalValue].y;
+			}
+		}
+	}
+	else // Some generic analog input
+	{
+		inputAttr.state	= (inputAttr.scalar <= 0.30f || inputAttr.scalar >= 0.7f) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
+	}
+	
 	return inputAttr;
 }
 
-InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef)
+InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManager *inputManager, bool forceDigitalInput)
 {
 	InputAttributesList inputList;
 	
@@ -505,10 +516,6 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef)
 	{
 		return inputList;
 	}
-	
-	IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
-	NSInteger elementUsagePage = IOHIDElementGetUsagePage(hidElementRef);
-	NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
 	
 	// IOHIDValueGetIntegerValue() will crash if the value length is too large.
 	// Do a bounds check here to prevent crashing. This workaround makes the PS3
@@ -518,245 +525,199 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef)
 		return inputList;
 	}
 	
-	NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
-	NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
-	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
-	
-	inputList.resize(2);
-	
-	if (logicalMin == 0 && logicalMax == 1)
+	InputAttributes inputAttr = InputAttributesOfHIDValue(hidValueRef);
+	if (inputAttr.deviceCode[0] == '\0' || inputAttr.elementCode[0] == '\0')
 	{
-		inputList.push_back(InputAttributesOfHIDValue(hidValueRef, NULL, NULL, NULL));
+		return inputList;
+	}
+	
+	if (!inputAttr.isAnalog)
+	{
+		inputList.push_back(inputAttr);
 	}
 	else
 	{
-		const NSInteger lowerThreshold = ((logicalMax - logicalMin) / 4) + logicalMin;
-		const NSInteger upperThreshold = (((logicalMax - logicalMin) * 3) / 4) + logicalMin;
-		const bool onState = true;
-		const bool offState = false;
+		const IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
+		const NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
 		
-		char elementCodeLowerThresholdBuf[256] = {0};
-		char elementCodeUpperThresholdBuf[256] = {0};
-		snprintf(elementCodeLowerThresholdBuf, 256, "0x%04lX/0x%04lX/LowerThreshold", (long)elementUsagePage, (long)elementUsage);
-		snprintf(elementCodeUpperThresholdBuf, 256, "0x%04lX/0x%04lX/UpperThreshold", (long)elementUsagePage, (long)elementUsage);
-		
-		if (logicalValue <= lowerThreshold)
+		if (elementUsage == kHIDUsage_GD_Hatswitch)
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, &onState));
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, &offState));
-		}
-		else if (logicalValue >= upperThreshold)
-		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, &offState));
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, &onState));
+			InputAttributes hatUp = inputAttr;
+			hatUp.isAnalog = false;
+			strncat(hatUp.elementName, "/Up", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatUp.elementCode, "/Up", INPUT_HANDLER_STRING_LENGTH);
+			
+			InputAttributes hatRight = inputAttr;
+			hatRight.isAnalog = false;
+			strncat(hatRight.elementName, "/Right", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatRight.elementCode, "/Right", INPUT_HANDLER_STRING_LENGTH);
+			
+			InputAttributes hatDown = inputAttr;
+			hatDown.isAnalog = false;
+			strncat(hatDown.elementName, "/Down", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatDown.elementCode, "/Down", INPUT_HANDLER_STRING_LENGTH);
+			
+			InputAttributes hatLeft = inputAttr;
+			hatLeft.isAnalog = false;
+			strncat(hatLeft.elementName, "/Left", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatLeft.elementCode, "/Left", INPUT_HANDLER_STRING_LENGTH);
+			
+			if (inputAttr.intCoordX == -1)
+			{
+				hatRight.state = INPUT_ATTRIBUTE_STATE_OFF;
+				hatLeft.state = INPUT_ATTRIBUTE_STATE_ON;
+			}
+			else if (inputAttr.intCoordX == 1)
+			{
+				hatRight.state = INPUT_ATTRIBUTE_STATE_ON;
+				hatLeft.state = INPUT_ATTRIBUTE_STATE_OFF;
+			}
+			else
+			{
+				hatRight.state = INPUT_ATTRIBUTE_STATE_OFF;
+				hatLeft.state = INPUT_ATTRIBUTE_STATE_OFF;
+			}
+			
+			if (inputAttr.intCoordY == -1)
+			{
+				hatDown.state = INPUT_ATTRIBUTE_STATE_OFF;
+				hatUp.state = INPUT_ATTRIBUTE_STATE_ON;
+			}
+			else if (inputAttr.intCoordY == 1)
+			{
+				hatDown.state = INPUT_ATTRIBUTE_STATE_ON;
+				hatUp.state = INPUT_ATTRIBUTE_STATE_OFF;
+			}
+			else
+			{
+				hatDown.state = INPUT_ATTRIBUTE_STATE_OFF;
+				hatUp.state = INPUT_ATTRIBUTE_STATE_OFF;
+			}
+			
+			inputList.resize(4);
+			inputList.push_back(hatUp);
+			inputList.push_back(hatRight);
+			inputList.push_back(hatDown);
+			inputList.push_back(hatLeft);
 		}
 		else
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeLowerThresholdBuf, NULL, &offState));
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeUpperThresholdBuf, NULL, &offState));
+			CommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputAttr.deviceCode elementCode:inputAttr.elementCode];
+			if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+			{
+				std::string tempElementCode = std::string(inputAttr.elementCode) + "/LowerThreshold";
+				cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputAttr.deviceCode elementCode:tempElementCode.c_str()];
+				if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+				{
+					tempElementCode = std::string(inputAttr.elementCode) + "/UpperThreshold";
+					cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputAttr.deviceCode elementCode:tempElementCode.c_str()];
+				}
+			}
+			
+			const bool useAnalog = (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil) ? !forceDigitalInput : (!forceDigitalInput && cmdAttr.allowAnalogInput);
+			
+			if (useAnalog)
+			{
+				inputList.push_back(inputAttr);
+			}
+			else
+			{
+				InputAttributes loInputAttr = inputAttr;
+				loInputAttr.isAnalog = false;
+				strncat(loInputAttr.elementName, "-", INPUT_HANDLER_STRING_LENGTH);
+				strncat(loInputAttr.elementCode, "/LowerThreshold", INPUT_HANDLER_STRING_LENGTH);
+				
+				InputAttributes hiInputAttr = inputAttr;
+				hiInputAttr.isAnalog = false;
+				strncat(hiInputAttr.elementName, "+", INPUT_HANDLER_STRING_LENGTH);
+				strncat(hiInputAttr.elementCode, "/UpperThreshold", INPUT_HANDLER_STRING_LENGTH);
+				
+				if (loInputAttr.scalar <= 0.30f)
+				{
+					loInputAttr.state = INPUT_ATTRIBUTE_STATE_ON;
+					hiInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
+				}
+				else if (loInputAttr.scalar >= 0.70f)
+				{
+					loInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
+					hiInputAttr.state = INPUT_ATTRIBUTE_STATE_ON;
+				}
+				else
+				{
+					loInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
+					hiInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
+				}
+				
+				inputList.resize(2);
+				inputList.push_back(loInputAttr);
+				inputList.push_back(hiInputAttr);
+			}
 		}
 	}
 	
 	return inputList;
 }
 
-InputAttributesList InputListFromHatSwitchValue(IOHIDValueRef hidValueRef, bool useEightDirection)
+bool InputElementCodeFromHIDElement(const IOHIDElementRef hidElementRef, char *charBuffer)
 {
-	InputAttributesList inputList;
+	NSInteger elementUsagePage = IOHIDElementGetUsagePage(hidElementRef);
+	NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
+	snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "0x%04lX/0x%04lX", (long)elementUsagePage, (long)elementUsage);
 	
-	if (hidValueRef == NULL)
+	return true;
+}
+
+bool InputElementNameFromHIDElement(const IOHIDElementRef hidElementRef, char *charBuffer)
+{
+	CFStringRef cfElementName = IOHIDElementGetName(hidElementRef);
+	bool propertyExists = (cfElementName != nil);
+	
+	if (propertyExists)
 	{
-		return inputList;
+		CFStringGetCString(cfElementName, charBuffer, INPUT_HANDLER_STRING_LENGTH, kCFStringEncodingUTF8);
+		return propertyExists;
 	}
 	
-	IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
+	// If the name property is not present, then generate a name ourselves.
 	NSInteger elementUsagePage = IOHIDElementGetUsagePage(hidElementRef);
 	NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
 	
-	if (elementUsage != kHIDUsage_GD_Hatswitch)
+	if (elementUsage == kHIDUsage_GD_Hatswitch)
 	{
-		return inputList;
+		strncpy(charBuffer, "Hatswitch", INPUT_HANDLER_STRING_LENGTH);
+		propertyExists = true;
+		return propertyExists;
 	}
-	
-	inputList.resize(8);
-	NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
-	NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
-	bool onState = true;
-	bool offState = false;
-	
-	char elementCodeFourWay[4][256];
-	for (size_t i = 0; i < 4; i++)
+	else if (elementUsagePage == kHIDPage_Button)
 	{
-		snprintf(elementCodeFourWay[i], 256, "0x%04lX/0x%04lX/%d-FourDirection", (long)elementUsagePage, (long)elementUsage, (unsigned int)i);
+		snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "Button %li", (long)elementUsage);
+		propertyExists = true;
+		return propertyExists;
 	}
-	
-	const char *elementNameFourWay[4] = {
-		"Hatswitch - Up",
-		"Hatswitch - Right",
-		"Hatswitch - Down",
-		"Hatswitch - Left" };
-	
-	char elementCodeEightWay[8][256];
-	for (size_t i = 0; i < 8; i++)
+	else if (elementUsagePage == kHIDPage_VendorDefinedStart)
 	{
-		snprintf(elementCodeEightWay[i], 256, "0x%04lX/0x%04lX/%d-EightDirection", (long)elementUsagePage, (long)elementUsage, (unsigned int)i);
+		snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "VendorDefined %li", (long)elementUsage);
+		propertyExists = true;
+		return propertyExists;
 	}
-	
-	const char *elementNameEightWay[8] = {
-		"Hatswitch - Up",
-		"Hatswitch - Up/Right",
-		"Hatswitch - Right",
-		"Hatswitch - Down/Right",
-		"Hatswitch - Down",
-		"Hatswitch - Down/Left",
-		"Hatswitch - Left",
-		"Hatswitch - Up/Left" };
-	
-	if (logicalMax == 3)
+	else
 	{
-		for (size_t i = 0; i <= (size_t)logicalMax; i++)
+		// Only look up the HID Usage Table as a last resort, since this can be relatively slow.
+		NSDictionary *elementUsagePageDict = (NSDictionary *)[hidUsageTable valueForKey:[NSString stringWithFormat:@"0x%04lX", (long)elementUsagePage]];
+		NSString *elementNameLookup = (NSString *)[elementUsagePageDict valueForKey:[NSString stringWithFormat:@"0x%04lX", (long)elementUsage]];
+		propertyExists = (elementNameLookup != nil);
+		
+		if (propertyExists)
 		{
-			inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeFourWay[i], elementNameFourWay[i], (i == (size_t)logicalValue) ? &onState : &offState));
-		}
-	}
-	else if (logicalMax == 7)
-	{
-		if (useEightDirection)
-		{
-			for (size_t i = 0; i <= (size_t)logicalMax; i++)
-			{
-				inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[i], elementNameEightWay[i], (i == (size_t)logicalValue) ? &onState : &offState));
-			}
-		}
-		else
-		{
-			switch (logicalValue)
-			{
-				case 0:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
-					break;
-					
-				case 1:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
-					break;
-					
-				case 2:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
-					break;
-					
-				case 3:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
-					break;
-					
-				case 4:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
-					break;
-					
-				case 5:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &onState));
-					break;
-					
-				case 6:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &onState));
-					break;
-					
-				case 7:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &onState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &onState));
-					break;
-					
-				default:
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[0], elementNameEightWay[0], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[2], elementNameEightWay[2], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[4], elementNameEightWay[4], &offState));
-					inputList.push_back(InputAttributesOfHIDValue(hidValueRef, elementCodeEightWay[6], elementNameEightWay[6], &offState));
-					break;
-			}
+			strncpy(charBuffer, [elementNameLookup cStringUsingEncoding:NSUTF8StringEncoding], INPUT_HANDLER_STRING_LENGTH);
+			return propertyExists;
 		}
 	}
 	
-	return inputList;
+	return propertyExists;
 }
 
-bool GetOnStateFromHIDValueRef(IOHIDValueRef hidValueRef)
-{
-	bool onState = false;
-	
-	if (hidValueRef == nil)
-	{
-		return onState;
-	}
-	
-	const IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
-	const NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
-	const NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
-	const NSInteger logicalMax = IOHIDElementGetLogicalMax(hidElementRef);
-	const NSInteger lowerThreshold = ((logicalMax - logicalMin) / 4) + logicalMin;
-	const NSInteger upperThreshold = (((logicalMax - logicalMin) * 3) / 4) + logicalMin;
-	const NSInteger elementType = IOHIDElementGetType(hidElementRef);
-	
-	switch (elementType)
-	{
-		case kIOHIDElementTypeInput_Misc:
-		{
-			if ( (logicalMin == 0 && logicalMax == 1 && logicalValue == 1) ||
-				 (logicalValue <= lowerThreshold || logicalValue >= upperThreshold) )
-			{
-				onState = true;
-			}
-			break;
-		}
-			
-		case kIOHIDElementTypeInput_Button:
-		{
-			if (logicalValue == 1)
-			{
-				onState = true;
-			}
-			break;
-		}
-			
-		case kIOHIDElementTypeInput_Axis:
-		{
-			if ( (logicalMin == 0 && logicalMax == 1 && logicalValue == 1) ||
-				(logicalValue <= lowerThreshold || logicalValue >= upperThreshold) )
-			{
-				onState = true;
-			}
-			break;
-		}
-			
-		default:
-			break;
-	}
-	
-	return onState;
-}
-
-void InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer)
+bool InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer)
 {
 	CFNumberRef cfVendorIDNumber = (CFNumberRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDVendorIDKey));
 	SInt32 vendorID = 0;
@@ -781,19 +742,25 @@ void InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charB
 		CFStringGetCString(cfDeviceCode, cfDeviceCodeBuf, 256, kCFStringEncodingUTF8);
 		snprintf(charBuffer, INPUT_HANDLER_STRING_LENGTH, "%d/%d/%s", (int)vendorID, (int)productID, cfDeviceCodeBuf);
 	}
+	
+	return true;
 }
 
-void InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer, const char *altName)
+bool InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer)
 {
 	CFStringRef cfDeviceName = (CFStringRef)IOHIDDeviceGetProperty(hidDeviceRef, CFSTR(kIOHIDProductKey));
-	if (cfDeviceName == nil)
-	{
-		strncpy(charBuffer, (altName != NULL) ? altName : "Unknown Device", INPUT_HANDLER_STRING_LENGTH);
-	}
-	else
+	bool propertyExists = (cfDeviceName != nil);
+	
+	if (propertyExists)
 	{
 		CFStringGetCString(cfDeviceName, charBuffer, INPUT_HANDLER_STRING_LENGTH, kCFStringEncodingUTF8);
 	}
+	else
+	{
+		strncpy(charBuffer, "Unknown Device", INPUT_HANDLER_STRING_LENGTH);
+	}
+	
+	return propertyExists;
 }
 
 size_t ClearHIDQueue(const IOHIDQueueRef hidQueue)
@@ -837,7 +804,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	if (target != nil)
 	{
 		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-		[[hidManager target] handleHIDQueue:hidQueue];
+		[[hidManager target] handleHIDQueue:hidQueue hidManager:hidManager];
 		[tempPool release];
 	}
 	else
@@ -1162,9 +1129,9 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	CommandAttributes cmdPianoHighC				= NewCommandAttributesForDSControl("Piano: High C", DSControllerState_Piano_HighC);
 	
 	CommandAttributes cmdPaddle					= NewCommandAttributesForDSControl("Paddle", DSControllerState_Paddle);
-	cmdPaddle.useInputForScalar = false;
+	cmdPaddle.allowAnalogInput = true;
 	cmdPaddle.intValue[1] = 0;
-	cmdPaddle.floatValue[0] = 0.0f;
+	cmdPaddle.floatValue[0] = 10.0f;
 	
 	CommandAttributes cmdLoadEmuSaveStateSlot	= NewCommandAttributesForSelector("Load State Slot", commandSelector["Load State Slot"]);
 	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);	
@@ -1373,6 +1340,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 																				[NSString stringWithCString:inputAttr->elementCode encoding:NSUTF8StringEncoding],
 																				[NSString stringWithCString:inputAttr->elementName encoding:NSUTF8StringEncoding]);
 	
+	[deviceInfo setValue:[NSNumber numberWithBool:(cmdAttr->allowAnalogInput) ? inputAttr->isAnalog : NO] forKey:@"isInputAnalog"];
 	[self addMappingUsingDeviceInfoDictionary:deviceInfo commandAttributes:cmdAttr];
 }
 
@@ -1740,22 +1708,23 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	}
 	else if (strncmp(commandTag, "Paddle", INPUT_HANDLER_STRING_LENGTH) == 0)
 	{
-		const BOOL useInputForScalar = [(NSNumber *)[deviceInfo valueForKey:@"useInputForScalar"] boolValue];
+		const BOOL isInputAnalog = [(NSNumber *)[deviceInfo valueForKey:@"isInputAnalog"] boolValue];
 		
-		if (useInputForScalar)
+		if (isInputAnalog)
 		{
-			inputSummary = @"Direct Control";
+			const float paddleSensitivity = [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue];
+			inputSummary = [NSString stringWithFormat:@"Paddle Sensitivity: %1.1f", paddleSensitivity];
 		}
 		else
 		{
-			const NSInteger paddleRelativeAdjustment = [(NSNumber *)[deviceInfo valueForKey:@"intValue1"] integerValue];
-			if (paddleRelativeAdjustment > 0)
+			const NSInteger paddleAdjust = [(NSNumber *)[deviceInfo valueForKey:@"intValue1"] integerValue];
+			if (paddleAdjust > 0)
 			{
-				inputSummary = [NSString stringWithFormat:@"Paddle Adjust: +%ld", (long)paddleRelativeAdjustment];
+				inputSummary = [NSString stringWithFormat:@"Paddle Adjust: +%ld", (long)paddleAdjust];
 			}
 			else
 			{
-				inputSummary = [NSString stringWithFormat:@"Paddle Adjust: %ld", (long)paddleRelativeAdjustment];
+				inputSummary = [NSString stringWithFormat:@"Paddle Adjust: %ld", (long)paddleAdjust];
 			}
 		}
 	}
@@ -1958,6 +1927,7 @@ CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
 	cmdAttr.useInputForFloatCoord	= false;
 	cmdAttr.useInputForScalar		= false;
 	cmdAttr.useInputForSender		= false;
+	cmdAttr.allowAnalogInput		= false;
 	
 	return cmdAttr;
 }
@@ -2001,6 +1971,7 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	NSNumber *useInputForFloatCoord	= (NSNumber *)[deviceInfo valueForKey:@"useInputForFloatCoord"];
 	NSNumber *useInputForScalar		= (NSNumber *)[deviceInfo valueForKey:@"useInputForScalar"];
 	NSNumber *useInputForSender		= (NSNumber *)[deviceInfo valueForKey:@"useInputForSender"];
+	NSNumber *isInputAnalog			= (NSNumber *)[deviceInfo valueForKey:@"isInputAnalog"];
 	
 	if (intValue0 != nil)				cmdAttr->intValue[0] = [intValue0 intValue];
 	if (intValue1 != nil)				cmdAttr->intValue[1] = [intValue1 intValue];
@@ -2014,6 +1985,7 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	if (useInputForFloatCoord != nil)	cmdAttr->useInputForFloatCoord = [useInputForFloatCoord boolValue];
 	if (useInputForScalar != nil)		cmdAttr->useInputForScalar = [useInputForScalar boolValue];
 	if (useInputForSender != nil)		cmdAttr->useInputForSender = [useInputForSender boolValue];
+	if (isInputAnalog != nil)			cmdAttr->allowAnalogInput = [isInputAnalog boolValue];
 	
 	cmdAttr->object[0] = object0;
 	cmdAttr->object[1] = object1;
@@ -2043,7 +2015,7 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 										  deviceName,													@"deviceName",
 										  elementCode,													@"elementCode",
 										  elementName,													@"elementName",
-										  [NSNumber numberWithBool:NO],									@"isElementAnalog",
+										  [NSNumber numberWithBool:cmdAttr->allowAnalogInput],			@"isInputAnalog",
 										  deviceInfoSummary,											@"deviceInfoSummary",
 										  @"",															@"inputSettingsSummary",
 										  [NSNumber numberWithInt:cmdAttr->intValue[0]],				@"intValue0",
@@ -2069,7 +2041,7 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 	return newDeviceInfo;
 }
 
-InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue)
+InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue, InputManager *inputManager, bool forceDigitalInput)
 {
 	InputAttributesList inputList;
 	if (hidQueue == nil)
@@ -2084,21 +2056,11 @@ InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue)
 		{
 			break;
 		}
-		
-		InputAttributesList hidInputList = InputListFromHatSwitchValue(hidValueRef, false);
-		if (hidInputList.empty())
-		{
-			hidInputList = InputListFromHIDValue(hidValueRef);
-		}
-		
+
+		InputAttributesList hidInputList = InputListFromHIDValue(hidValueRef, inputManager, forceDigitalInput);
 		const size_t hidInputCount = hidInputList.size();
 		for (size_t i = 0; i < hidInputCount; i++)
 		{
-			if (hidInputList[i].deviceCode[0] == '\0' || hidInputList[i].elementCode[0] == '\0')
-			{
-				continue;
-			}
-			
 			inputList.push_back(hidInputList[i]);
 		}
 		
@@ -2125,6 +2087,7 @@ InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BO
 	snprintf(inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH, "%d", keyCode);
 	strncpy(inputAttr.elementName, (elementName.empty()) ? inputAttr.elementCode : elementName.c_str(), INPUT_HANDLER_STRING_LENGTH);
 	
+	inputAttr.isAnalog		= false;
 	inputAttr.state			= (keyPressed) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
 	inputAttr.intCoordX		= 0;
 	inputAttr.intCoordY		= 0;
@@ -2162,6 +2125,7 @@ InputAttributes InputManagerEncodeMouseButtonInput(const NSInteger buttonNumber,
 			break;
 	}
 	
+	inputAttr.isAnalog		= false;
 	inputAttr.state			= (buttonPressed) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
 	inputAttr.intCoordX		= (int32_t)touchLoc.x;
 	inputAttr.intCoordY		= (int32_t)touchLoc.y;
@@ -2181,6 +2145,7 @@ InputAttributes InputManagerEncodeIBAction(const SEL theSelector, id sender)
 	strncpy(inputAttr.elementCode, sel_getName(theSelector), INPUT_HANDLER_STRING_LENGTH);
 	strncpy(inputAttr.elementName, inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH);
 	
+	inputAttr.isAnalog		= false;
 	inputAttr.state			= INPUT_ATTRIBUTE_STATE_ON;
 	inputAttr.intCoordX		= 0;
 	inputAttr.intCoordY		= 0;

@@ -987,15 +987,32 @@
 	}
 	else if (controlID == DSControllerState_Paddle)
 	{
-		if (cmdAttr.useInputForScalar)
+		if (cmdAttr.input.isAnalog)
 		{
-			const float paddleScalar = cmdAttr.floatValue[0];
-			[(Slot2WindowDelegate *)[slot2WindowController content] setPaddleDirectWithScalar:paddleScalar];
+			const NSInteger paddleSensitivity = cmdAttr.floatValue[0];
+			const float paddleScalar = cmdAttr.input.scalar;
+			
+			float paddleAdjust = (paddleScalar * 2.0f) - 1.0f;
+			
+			// Clamp the paddle value.
+			if (paddleAdjust < -1.0f)
+			{
+				paddleAdjust = -1.0f;
+			}
+			
+			if (paddleAdjust > 1.0f)
+			{
+				paddleAdjust = 1.0f;
+			}
+			
+			// Normalize the input value for the paddle.
+			paddleAdjust *= (float)paddleSensitivity;
+			[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
 		}
 		else
 		{
-			const NSInteger paddleRelativeAdjustment = cmdAttr.intValue[1];
-			[(Slot2WindowDelegate *)[slot2WindowController content] setPaddleRelativeWithInteger:paddleRelativeAdjustment];
+			const NSInteger paddleAdjust = (theState) ? cmdAttr.intValue[1] : 0;
+			[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
 		}
 	}
 	else

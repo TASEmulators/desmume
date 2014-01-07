@@ -149,6 +149,9 @@ extern ADDON_CFLASH_MODE CFlash_Mode;
 extern std::string CFlash_Path;
 inline bool CFlash_IsUsingPath() { return CFlash_Mode==ADDON_CFLASH_MODE_Path || CFlash_Mode==ADDON_CFLASH_MODE_RomPath; }
 
+u16 Paddle_GetValue();
+void Paddle_SetValue(u16 theValue);
+
 extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
 extern void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, bool g, bool gs, bool a, bool as, bool b, bool hic); //piano keys
 #endif //__SLOT_H__

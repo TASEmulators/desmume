@@ -129,4 +129,14 @@ public:
 	}
 };
 
+u16 Paddle_GetValue()
+{
+	return nds.paddle;
+}
+
+void Paddle_SetValue(u16 theValue)
+{
+	nds.paddle = theValue;
+}
+
 ISlot2Interface* construct_Slot2_Paddle() { return new Slot2_Paddle(); }
