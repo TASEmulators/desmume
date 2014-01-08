@@ -1026,6 +1026,24 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonStart_420x420" ofType:@"png"]] autorelease],		@"Start",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Select",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Microphone_420x420" ofType:@"png"]] autorelease],			@"Microphone",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Green_512x512" ofType:@"png"]] autorelease],	@"Guitar Grip: Green",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Red_512x512" ofType:@"png"]] autorelease],		@"Guitar Grip: Red",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Yellow_512x512" ofType:@"png"]] autorelease],	@"Guitar Grip: Yellow",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Blue_512x512" ofType:@"png"]] autorelease],		@"Guitar Grip: Blue",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: C",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: C#",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: D",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: D#",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: E",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: F",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: F#",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: G",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: G#",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: A",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: A#",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: B",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: High C",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_PaddleKnob_256x256" ofType:@"png"]] autorelease],			@"Paddle",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_RotateCCW_420x420" ofType:@"png"]] autorelease],			@"Rotate Display Left",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_RotateCW_420x420" ofType:@"png"]] autorelease],			@"Rotate Display Right",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ShowHUD_420x420" ofType:@"png"]] autorelease],			@"HUD",
@@ -1117,14 +1135,14 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	CommandAttributes cmdPianoC					= NewCommandAttributesForDSControl("Piano: C", DSControllerState_Piano_C);
 	CommandAttributes cmdPianoCSharp			= NewCommandAttributesForDSControl("Piano: C#", DSControllerState_Piano_CSharp);
 	CommandAttributes cmdPianoD					= NewCommandAttributesForDSControl("Piano: D", DSControllerState_Piano_D);
-	CommandAttributes cmdPianoDSharp			= NewCommandAttributesForDSControl("Piano: DSharp", DSControllerState_Piano_DSharp);
+	CommandAttributes cmdPianoDSharp			= NewCommandAttributesForDSControl("Piano: D#", DSControllerState_Piano_DSharp);
 	CommandAttributes cmdPianoE					= NewCommandAttributesForDSControl("Piano: E", DSControllerState_Piano_E);
 	CommandAttributes cmdPianoF					= NewCommandAttributesForDSControl("Piano: F", DSControllerState_Piano_F);
-	CommandAttributes cmdPianoFSharp			= NewCommandAttributesForDSControl("Piano: FSharp", DSControllerState_Piano_FSharp);
+	CommandAttributes cmdPianoFSharp			= NewCommandAttributesForDSControl("Piano: F#", DSControllerState_Piano_FSharp);
 	CommandAttributes cmdPianoG					= NewCommandAttributesForDSControl("Piano: G", DSControllerState_Piano_G);
-	CommandAttributes cmdPianoGSharp			= NewCommandAttributesForDSControl("Piano: GSharp", DSControllerState_Piano_GSharp);
+	CommandAttributes cmdPianoGSharp			= NewCommandAttributesForDSControl("Piano: G#", DSControllerState_Piano_GSharp);
 	CommandAttributes cmdPianoA					= NewCommandAttributesForDSControl("Piano: A", DSControllerState_Piano_A);
-	CommandAttributes cmdPianoASharp			= NewCommandAttributesForDSControl("Piano: ASharp", DSControllerState_Piano_ASharp);
+	CommandAttributes cmdPianoASharp			= NewCommandAttributesForDSControl("Piano: A#", DSControllerState_Piano_ASharp);
 	CommandAttributes cmdPianoB					= NewCommandAttributesForDSControl("Piano: B", DSControllerState_Piano_B);
 	CommandAttributes cmdPianoHighC				= NewCommandAttributesForDSControl("Piano: High C", DSControllerState_Piano_HighC);
 	

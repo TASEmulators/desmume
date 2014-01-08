@@ -102,7 +102,8 @@
 
 - (IBAction) applySettings:(id)sender
 {
-	const NDS_SLOT2_TYPE selectedDeviceType = (selectedDevice != nil) ? [selectedDevice type] : NDS_SLOT2_NONE;
+	CocoaDSSlot2Device *theDevice = [self selectedDevice];
+	const NDS_SLOT2_TYPE selectedDeviceType = (theDevice != nil) ? [theDevice type] : NDS_SLOT2_NONE;
 	
 	if (selectedDeviceType == NDS_SLOT2_CFLASH)
 	{
@@ -116,11 +117,11 @@
 				break;
 				
 			case MPCF_OPTION_LOAD_DIRECTORY:
-				theURL = mpcfFolderURL;
+				theURL = [self mpcfFolderURL];
 				break;
 				
 			case MPCF_OPTION_LOAD_DISK_IMAGE:
-				theURL = mpcfDiskImageURL;
+				theURL = [self mpcfDiskImageURL];
 				break;
 				
 			default:
@@ -131,12 +132,12 @@
 	}
 	else if (selectedDeviceType == NDS_SLOT2_GBACART)
 	{
-		[deviceManager setGbaCartridgeURL:gbaCartridgeURL];
-		[deviceManager setGbaSRamURL:gbaSRamURL];
+		[deviceManager setGbaCartridgeURL:[self gbaCartridgeURL]];
+		[deviceManager setGbaSRamURL:[self gbaSRamURL]];
 	}
 	
-	[[self deviceManager] setCurrentDevice:selectedDevice];
-	[[NSUserDefaults standardUserDefaults] setInteger:[selectedDevice type] forKey:@"Slot2_LoadedDevice"];
+	[[self deviceManager] setCurrentDevice:theDevice];
+	[[NSUserDefaults standardUserDefaults] setInteger:[theDevice type] forKey:@"Slot2_LoadedDevice"];
 }
 
 - (IBAction) showInputPreferences:(id)sender

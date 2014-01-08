@@ -531,6 +531,20 @@
 		ABB97877144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */; };
 		ABB97878144E89CC00793FA3 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */; };
 		ABBC0F8D1394B1AA0028B6BD /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
+		ABBCA214187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA20D187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
+		ABBCA215187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA20D187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
+		ABBCA216187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA20E187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png */; };
+		ABBCA217187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA20E187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png */; };
+		ABBCA218187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA20F187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png */; };
+		ABBCA219187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA20F187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png */; };
+		ABBCA21A187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA210187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png */; };
+		ABBCA21B187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA210187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png */; };
+		ABBCA21C187D4BED00383DBE /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA211187D4BED00383DBE /* Icon_PaddleKnob_256x256.png */; };
+		ABBCA21D187D4BED00383DBE /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA211187D4BED00383DBE /* Icon_PaddleKnob_256x256.png */; };
+		ABBCA21E187D4BED00383DBE /* Icon_Piano_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA212187D4BED00383DBE /* Icon_Piano_256x256.png */; };
+		ABBCA21F187D4BED00383DBE /* Icon_Piano_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA212187D4BED00383DBE /* Icon_Piano_256x256.png */; };
+		ABBCA220187D4BED00383DBE /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA213187D4BED00383DBE /* Image_GuitarGrip.png */; };
+		ABBCA221187D4BED00383DBE /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBCA213187D4BED00383DBE /* Image_GuitarGrip.png */; };
 		ABBF04A514B515F300E505A0 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */; };
 		ABC3AF2F14B7F06900D5B13D /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */; };
 		ABC3AF3014B7F06900D5B13D /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */; };
@@ -911,6 +925,13 @@
 		ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DeSmuME_32x32.png; path = Images/Icon_DeSmuME_32x32.png; sourceTree = "<group>"; };
 		ABBB421516B4A5F30012E5AB /* OGLRender_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender_3_2.h; path = ../OGLRender_3_2.h; sourceTree = "<group>"; };
 		ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = DefaultUserPrefs.plist; sourceTree = "<group>"; };
+		ABBCA20D187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Blue_512x512.png; path = images/Icon_GuitarGrip_Button_Blue_512x512.png; sourceTree = "<group>"; };
+		ABBCA20E187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Green_512x512.png; path = images/Icon_GuitarGrip_Button_Green_512x512.png; sourceTree = "<group>"; };
+		ABBCA20F187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Red_512x512.png; path = images/Icon_GuitarGrip_Button_Red_512x512.png; sourceTree = "<group>"; };
+		ABBCA210187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Yellow_512x512.png; path = images/Icon_GuitarGrip_Button_Yellow_512x512.png; sourceTree = "<group>"; };
+		ABBCA211187D4BED00383DBE /* Icon_PaddleKnob_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_PaddleKnob_256x256.png; path = images/Icon_PaddleKnob_256x256.png; sourceTree = "<group>"; };
+		ABBCA212187D4BED00383DBE /* Icon_Piano_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Piano_256x256.png; path = images/Icon_Piano_256x256.png; sourceTree = "<group>"; };
+		ABBCA213187D4BED00383DBE /* Image_GuitarGrip.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_GuitarGrip.png; path = images/Image_GuitarGrip.png; sourceTree = "<group>"; };
 		ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
 		ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeFull_16x16.png; path = images/Icon_VolumeFull_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeMute_16x16.png; path = images/Icon_VolumeMute_16x16.png; sourceTree = "<group>"; };
@@ -1529,10 +1550,16 @@
 				AB0F299C14BE7213009ABC6F /* Icon_DSButtonY_420x420.png */,
 				AB0F299D14BE7213009ABC6F /* Icon_Emulation_420x420.png */,
 				AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */,
+				ABBCA20D187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png */,
+				ABBCA20E187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png */,
+				ABBCA20F187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png */,
+				ABBCA210187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png */,
 				AB0F299E14BE7213009ABC6F /* Icon_Input_420x420.png */,
 				AB0F299F14BE7213009ABC6F /* Icon_Microphone_420x420.png */,
 				AB0F29A014BE7213009ABC6F /* Icon_OpenROM_420x420.png */,
+				ABBCA211187D4BED00383DBE /* Icon_PaddleKnob_256x256.png */,
 				AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */,
+				ABBCA212187D4BED00383DBE /* Icon_Piano_256x256.png */,
 				AB0F29A114BE7213009ABC6F /* Icon_Reset_420x420.png */,
 				AB0F29A214BE7213009ABC6F /* Icon_RotateCCW_420x420.png */,
 				AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */,
@@ -1544,6 +1571,7 @@
 				ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */,
 				ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */,
 				ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */,
+				ABBCA213187D4BED00383DBE /* Image_GuitarGrip.png */,
 				ABC9ED1818750221001A7D02 /* Image_MemoryExpansionPak.png */,
 				ABC9ED1918750221001A7D02 /* Image_PaddleController.png */,
 				ABC9ED1A18750221001A7D02 /* Image_PassME.png */,
@@ -2047,6 +2075,13 @@
 				ABC9ED1F18750221001A7D02 /* Image_PaddleController.png in Resources */,
 				ABC9ED2118750221001A7D02 /* Image_PassME.png in Resources */,
 				ABC9ED2318750221001A7D02 /* Image_Piano.png in Resources */,
+				ABBCA215187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
+				ABBCA217187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
+				ABBCA219187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
+				ABBCA21B187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
+				ABBCA21D187D4BED00383DBE /* Icon_PaddleKnob_256x256.png in Resources */,
+				ABBCA21F187D4BED00383DBE /* Icon_Piano_256x256.png in Resources */,
+				ABBCA221187D4BED00383DBE /* Image_GuitarGrip.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2130,6 +2165,13 @@
 				ABC9ED1E18750221001A7D02 /* Image_PaddleController.png in Resources */,
 				ABC9ED2018750221001A7D02 /* Image_PassME.png in Resources */,
 				ABC9ED2218750221001A7D02 /* Image_Piano.png in Resources */,
+				ABBCA214187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
+				ABBCA216187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
+				ABBCA218187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
+				ABBCA21A187D4BED00383DBE /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
+				ABBCA21C187D4BED00383DBE /* Icon_PaddleKnob_256x256.png in Resources */,
+				ABBCA21E187D4BED00383DBE /* Icon_Piano_256x256.png in Resources */,
+				ABBCA220187D4BED00383DBE /* Image_GuitarGrip.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

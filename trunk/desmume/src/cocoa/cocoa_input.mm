@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -134,11 +134,42 @@
 		NDS_releaseTouch();
 	}
 	
-	// Setup the paddle.
-	if (slot2_GetSelectedType() == NDS_SLOT2_PADDLE)
+	// Setup the inputs from SLOT-2 devices.
+	const NDS_SLOT2_TYPE slot2DeviceType = slot2_GetSelectedType();
+	switch (slot2DeviceType)
 	{
-		const u16 newPaddleValue = Paddle_GetValue() + (u16)[self paddleAdjust];
-		Paddle_SetValue(newPaddleValue);
+		case NDS_SLOT2_GUITARGRIP:
+			guitarGrip_setKey(flushedStates[DSControllerState_GuitarGrip_Green],
+							  flushedStates[DSControllerState_GuitarGrip_Red],
+							  flushedStates[DSControllerState_GuitarGrip_Yellow],
+							  flushedStates[DSControllerState_GuitarGrip_Blue]);
+			break;
+			
+		case NDS_SLOT2_EASYPIANO:
+			piano_setKey(flushedStates[DSControllerState_Piano_C],
+						 flushedStates[DSControllerState_Piano_CSharp],
+						 flushedStates[DSControllerState_Piano_D],
+						 flushedStates[DSControllerState_Piano_DSharp],
+						 flushedStates[DSControllerState_Piano_E],
+						 flushedStates[DSControllerState_Piano_F],
+						 flushedStates[DSControllerState_Piano_FSharp],
+						 flushedStates[DSControllerState_Piano_G],
+						 flushedStates[DSControllerState_Piano_GSharp],
+						 flushedStates[DSControllerState_Piano_A],
+						 flushedStates[DSControllerState_Piano_ASharp],
+						 flushedStates[DSControllerState_Piano_B],
+						 flushedStates[DSControllerState_Piano_HighC]);
+			break;
+			
+		case NDS_SLOT2_PADDLE:
+		{
+			const u16 newPaddleValue = Paddle_GetValue() + (u16)[self paddleAdjust];
+			Paddle_SetValue(newPaddleValue);
+			break;
+		}
+			
+		default:
+			break;
 	}
 	
 	// Setup the DS mic.
