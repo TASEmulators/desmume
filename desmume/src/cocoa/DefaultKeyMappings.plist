@@ -20,6 +20,23 @@
 		<string>Microphone</string>
 		<string>Lid</string>
 		<string>Debug</string>
+		<string>Guitar Grip: Green</string>
+		<string>Guitar Grip: Red</string>
+		<string>Guitar Grip: Yellow</string>
+		<string>Guitar Grip: Blue</string>
+		<string>Piano: C</string>
+		<string>Piano: C#</string>
+		<string>Piano: D</string>
+		<string>Piano: D#</string>
+		<string>Piano: E</string>
+		<string>Piano: F</string>
+		<string>Piano: F#</string>
+		<string>Piano: G</string>
+		<string>Piano: G#</string>
+		<string>Piano: A</string>
+		<string>Piano: A#</string>
+		<string>Piano: B</string>
+		<string>Piano: High C</string>
 		<string>Paddle</string>
 		<string>Execute/Pause</string>
 		<string>Reset</string>
@@ -281,7 +298,187 @@
 				</array>
 				<key>Debug</key>
 				<array/>
-				<key>Paddle</key>
+				<key>Guitar Grip: Green</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: E</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>14</string>
+						<key>elementName</key>
+						<string>E</string>
+					</dict>
+				</array>
+				<key>Guitar Grip: Red</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: R</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>15</string>
+						<key>elementName</key>
+						<string>R</string>
+					</dict>
+				</array>
+				<key>Guitar Grip: Yellow</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: T</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>17</string>
+						<key>elementName</key>
+						<string>T</string>
+					</dict>
+				</array>
+				<key>Guitar Grip: Blue</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Y</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>16</string>
+						<key>elementName</key>
+						<string>Y</string>
+					</dict>
+				</array>
+				<key>Piano: C</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: C</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>8</string>
+						<key>elementName</key>
+						<string>C</string>
+					</dict>
+				</array>
+				<key>Piano: C#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: F</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>3</string>
+						<key>elementName</key>
+						<string>F</string>
+					</dict>
+				</array>
+				<key>Piano: D</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: V</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>9</string>
+						<key>elementName</key>
+						<string>V</string>
+					</dict>
+				</array>
+				<key>Piano: D#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: G</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>5</string>
+						<key>elementName</key>
+						<string>G</string>
+					</dict>
+				</array>
+				<key>Piano: E</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: B</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>11</string>
+						<key>elementName</key>
+						<string>B</string>
+					</dict>
+				</array>
+				<key>Piano: F</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: N</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>45</string>
+						<key>elementName</key>
+						<string>N</string>
+					</dict>
+				</array>
+				<key>Piano: F#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: J</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>38</string>
+						<key>elementName</key>
+						<string>J</string>
+					</dict>
+				</array>
+				<key>Piano: G</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: M</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>46</string>
+						<key>elementName</key>
+						<string>M</string>
+					</dict>
+				</array>
+				<key>Piano: G#</key>
 				<array>
 					<dict>
 						<key>deviceInfoSummary</key>
@@ -294,13 +491,25 @@
 						<string>40</string>
 						<key>elementName</key>
 						<string>K</string>
-						<key>isInputAnalog</key>
-						<false/>
-						<key>inputSettingsSummary</key>
-						<string>Paddle Adjust: -5</string>
-						<key>intValue1</key>
-						<integer>-5</integer>
 					</dict>
+				</array>
+				<key>Piano: A</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: , (Comma)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>43</string>
+						<key>elementName</key>
+						<string>, (Comma)</string>
+					</dict>
+				</array>
+				<key>Piano: A#</key>
+				<array>
 					<dict>
 						<key>deviceInfoSummary</key>
 						<string>Keyboard: L</string>
@@ -312,6 +521,69 @@
 						<string>37</string>
 						<key>elementName</key>
 						<string>L</string>
+					</dict>
+				</array>
+				<key>Piano: B</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: . (Period)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>47</string>
+						<key>elementName</key>
+						<string>. (Period)</string>
+					</dict>
+				</array>
+				<key>Piano: High C</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: /</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>44</string>
+						<key>elementName</key>
+						<string>/</string>
+					</dict>
+				</array>
+				<key>Paddle</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: O</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>31</string>
+						<key>elementName</key>
+						<string>O</string>
+						<key>isInputAnalog</key>
+						<false/>
+						<key>inputSettingsSummary</key>
+						<string>Paddle Adjust: -5</string>
+						<key>intValue1</key>
+						<integer>-5</integer>
+					</dict>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: P</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>35</string>
+						<key>elementName</key>
+						<string>P</string>
 						<key>isInputAnalog</key>
 						<false/>
 						<key>inputSettingsSummary</key>

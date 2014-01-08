@@ -217,6 +217,18 @@
 		AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */; };
 		AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
 		AB64987C13ECC73800EE7DD2 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */; };
+		AB68101B187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
+		AB68101C187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
+		AB68101D187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */; };
+		AB68101E187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */; };
+		AB68101F187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */; };
+		AB681020187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */; };
+		AB681021187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681016187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png */; };
+		AB681022187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681016187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png */; };
+		AB681025187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681018187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png */; };
+		AB681026187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681018187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png */; };
+		AB681027187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681019187D4AEF0049F2C2 /* Icon_Piano_256x256.png */; };
+		AB681028187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681019187D4AEF0049F2C2 /* Icon_Piano_256x256.png */; };
 		AB68A0DD16B139BC00DE0546 /* OGLRender_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */; };
 		AB6FBEF6139B6258007BB045 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
 		AB74EC8A1738499C0026C41E /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB74EC891738499C0026C41E /* Carbon.framework */; };
@@ -442,6 +454,8 @@
 		AB9038BA17C5ED2200F410BD /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */; };
 		AB91D46B13BD013800462471 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
+		ABAB454F187CDB70007BE20C /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAB454E187CDB70007BE20C /* Image_GuitarGrip.png */; };
+		ABAB4550187CDB70007BE20C /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAB454E187CDB70007BE20C /* Image_GuitarGrip.png */; };
 		ABACB8DC1710B621003B845D /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABACB8DB1710B621003B845D /* AudioToolbox.framework */; };
 		ABACB8DD1710B656003B845D /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABACB8DB1710B621003B845D /* AudioToolbox.framework */; };
 		ABACB8DE1710B65F003B845D /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABACB8DB1710B621003B845D /* AudioToolbox.framework */; };
@@ -858,6 +872,12 @@
 		AB58F32B1364F44B0074C376 /* cocoa_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_file.h; sourceTree = "<group>"; };
 		AB58F32C1364F44B0074C376 /* cocoa_file.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_file.mm; sourceTree = "<group>"; };
 		AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = FileTypeInfo.plist; sourceTree = "<group>"; };
+		AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Blue_512x512.png; path = images/Icon_GuitarGrip_Button_Blue_512x512.png; sourceTree = "<group>"; };
+		AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Green_512x512.png; path = images/Icon_GuitarGrip_Button_Green_512x512.png; sourceTree = "<group>"; };
+		AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Red_512x512.png; path = images/Icon_GuitarGrip_Button_Red_512x512.png; sourceTree = "<group>"; };
+		AB681016187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Yellow_512x512.png; path = images/Icon_GuitarGrip_Button_Yellow_512x512.png; sourceTree = "<group>"; };
+		AB681018187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_PaddleKnob_256x256.png; path = images/Icon_PaddleKnob_256x256.png; sourceTree = "<group>"; };
+		AB681019187D4AEF0049F2C2 /* Icon_Piano_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Piano_256x256.png; path = images/Icon_Piano_256x256.png; sourceTree = "<group>"; };
 		AB68A0DA16B139BC00DE0546 /* OGLRender_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OGLRender_3_2.cpp; path = ../OGLRender_3_2.cpp; sourceTree = "<group>"; };
 		AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_nand.cpp; sourceTree = "<group>"; };
 		AB74EC891738499C0026C41E /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -895,6 +915,7 @@
 		AB9971CE134EDA0800531BA7 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
+		ABAB454E187CDB70007BE20C /* Image_GuitarGrip.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_GuitarGrip.png; path = images/Image_GuitarGrip.png; sourceTree = "<group>"; };
 		ABACB8DB1710B621003B845D /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		ABAD3E5913AF1D6D00502E1E /* AAFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AAFilter.h; sourceTree = "<group>"; };
 		ABAD3E5A13AF1D6D00502E1E /* BPMDetect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BPMDetect.h; sourceTree = "<group>"; };
@@ -1529,10 +1550,16 @@
 				AB0F299C14BE7213009ABC6F /* Icon_DSButtonY_420x420.png */,
 				AB0F299D14BE7213009ABC6F /* Icon_Emulation_420x420.png */,
 				AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */,
+				AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */,
+				AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */,
+				AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */,
+				AB681016187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png */,
 				AB0F299E14BE7213009ABC6F /* Icon_Input_420x420.png */,
 				AB0F299F14BE7213009ABC6F /* Icon_Microphone_420x420.png */,
 				AB0F29A014BE7213009ABC6F /* Icon_OpenROM_420x420.png */,
+				AB681018187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png */,
 				AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */,
+				AB681019187D4AEF0049F2C2 /* Icon_Piano_256x256.png */,
 				AB0F29A114BE7213009ABC6F /* Icon_Reset_420x420.png */,
 				AB0F29A214BE7213009ABC6F /* Icon_RotateCCW_420x420.png */,
 				AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */,
@@ -1544,6 +1571,7 @@
 				ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */,
 				ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */,
 				ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */,
+				ABAB454E187CDB70007BE20C /* Image_GuitarGrip.png */,
 				AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */,
 				AB0038A61872A96700B0B055 /* Image_PaddleController.png */,
 				AB56490A186E6F67002740F4 /* Image_PassME.png */,
@@ -2007,7 +2035,9 @@
 				AB0F294014BE6FA7009ABC6F /* ColorSwatch_Magenta_16x16.png in Resources */,
 				AB0F294114BE6FA7009ABC6F /* ColorSwatch_Orange_16x16.png in Resources */,
 				AB0F294214BE6FA7009ABC6F /* ColorSwatch_Pink_16x16.png in Resources */,
+				AB68101E187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
 				AB0F294314BE6FA7009ABC6F /* ColorSwatch_Red_16x16.png in Resources */,
+				AB68101C187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
 				AB0F294414BE6FA7009ABC6F /* ColorSwatch_SeaGreen_16x16.png in Resources */,
 				AB0F294514BE6FA7009ABC6F /* ColorSwatch_Turquoise_16x16.png in Resources */,
 				AB564911186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */,
@@ -2017,6 +2047,7 @@
 				AB0F296E14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png in Resources */,
 				AB0F297A14BE70BC009ABC6F /* VideoFilterPreview_64x64.png in Resources */,
 				AB564913186E6F67002740F4 /* Image_PassME.png in Resources */,
+				AB681026187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */,
 				AB0F298C14BE71E0009ABC6F /* Icon_ArrowDown_420x420.png in Resources */,
 				AB0F298D14BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB0F298E14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png in Resources */,
@@ -2024,6 +2055,7 @@
 				AB0F29A614BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png in Resources */,
 				AB0F29A714BE7213009ABC6F /* Icon_DSButtonA_420x420.png in Resources */,
 				AB0F29A814BE7213009ABC6F /* Icon_DSButtonB_420x420.png in Resources */,
+				AB681028187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */,
 				AB0F29A914BE7213009ABC6F /* Icon_DSButtonL_420x420.png in Resources */,
 				AB0F29AA14BE7213009ABC6F /* Icon_DSButtonR_420x420.png in Resources */,
 				AB0F29AB14BE7213009ABC6F /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -2044,6 +2076,9 @@
 				AB3ACC3F14C24D5400D7D192 /* ChangeLog in Resources */,
 				AB3ACC4014C24D5400D7D192 /* COPYING in Resources */,
 				AB3ACC4114C24D5400D7D192 /* README in Resources */,
+				AB681020187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
+				ABAB4550187CDB70007BE20C /* Image_GuitarGrip.png in Resources */,
+				AB681022187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB3ACC4314C24D5400D7D192 /* README.MAC in Resources */,
 				AB75226E14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB8967DE16D2ED2700F826F1 /* DisplayWindow.xib in Resources */,
@@ -2090,7 +2125,9 @@
 				AB796CC715CDCBA200C59155 /* ColorSwatch_Magenta_16x16.png in Resources */,
 				AB796CC815CDCBA200C59155 /* ColorSwatch_Orange_16x16.png in Resources */,
 				AB796CC915CDCBA200C59155 /* ColorSwatch_Pink_16x16.png in Resources */,
+				AB68101D187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
 				AB796CCA15CDCBA200C59155 /* ColorSwatch_Red_16x16.png in Resources */,
+				AB68101B187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
 				AB796CCB15CDCBA200C59155 /* ColorSwatch_SeaGreen_16x16.png in Resources */,
 				AB796CCC15CDCBA200C59155 /* ColorSwatch_Turquoise_16x16.png in Resources */,
 				AB564910186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */,
@@ -2100,6 +2137,7 @@
 				AB796CD015CDCBA200C59155 /* Icon_CodeBreaker_128x128.png in Resources */,
 				AB796CD115CDCBA200C59155 /* VideoFilterPreview_64x64.png in Resources */,
 				AB564912186E6F67002740F4 /* Image_PassME.png in Resources */,
+				AB681025187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */,
 				AB796CD215CDCBA200C59155 /* Icon_ArrowDown_420x420.png in Resources */,
 				AB796CD315CDCBA200C59155 /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB796CD415CDCBA200C59155 /* Icon_ArrowRight_420x420.png in Resources */,
@@ -2107,6 +2145,7 @@
 				AB796CD615CDCBA200C59155 /* Icon_DoubleSpeed_420x420.png in Resources */,
 				AB796CD715CDCBA200C59155 /* Icon_DSButtonA_420x420.png in Resources */,
 				AB796CD815CDCBA200C59155 /* Icon_DSButtonB_420x420.png in Resources */,
+				AB681027187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */,
 				AB796CD915CDCBA200C59155 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB796CDA15CDCBA200C59155 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB796CDB15CDCBA200C59155 /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -2127,6 +2166,9 @@
 				AB796CE915CDCBA200C59155 /* ChangeLog in Resources */,
 				AB796CEA15CDCBA200C59155 /* COPYING in Resources */,
 				AB796CEB15CDCBA200C59155 /* README in Resources */,
+				AB68101F187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png in Resources */,
+				ABAB454F187CDB70007BE20C /* Image_GuitarGrip.png in Resources */,
+				AB681021187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Yellow_512x512.png in Resources */,
 				AB796CEC15CDCBA200C59155 /* README.MAC in Resources */,
 				AB796CED15CDCBA200C59155 /* AppIcon_FirmwareConfig.icns in Resources */,
 				AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */,

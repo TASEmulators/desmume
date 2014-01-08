@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@
 
 #include <OpenGL/gl.h>
 #include "../../NDSSystem.h"
-#include "../../render3D.h"
 #undef BOOL
 
 @implementation NDSGameCore
@@ -123,7 +122,6 @@
 - (void)dealloc
 {
 	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	NDS_3D_ChangeCore(CORE3DLIST_NULL);
 	[CocoaDSCore shutdownCore];
 	
 	[self setCdsCheats:nil];

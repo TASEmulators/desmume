@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -104,6 +104,7 @@ GPU3DInterface *core3DList[] = {
 
 - (void)dealloc
 {
+	NDS_3D_ChangeCore(CORE3DLIST_NULL);
 	DestroyOpenGLRenderer();
 	
 	[super dealloc];

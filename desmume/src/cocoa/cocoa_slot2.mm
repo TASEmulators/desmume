@@ -276,21 +276,18 @@
 			BOOL isSupported;
 		};
 		
-		static const Slot2DeviceProperties deviceTypesList[] = {
+		static const Slot2DeviceProperties supportedDeviceTypesList[] = {
 			{ NDS_SLOT2_NONE, YES },
 			{ NDS_SLOT2_AUTO, YES },
 			{ NDS_SLOT2_CFLASH, YES },
 			{ NDS_SLOT2_RUMBLEPAK, YES },
 			{ NDS_SLOT2_GBACART, YES },
-			{ NDS_SLOT2_GUITARGRIP, NO },
+			{ NDS_SLOT2_GUITARGRIP, YES },
 			{ NDS_SLOT2_EXPMEMORY, YES }, 
-			{ NDS_SLOT2_EASYPIANO, NO },
+			{ NDS_SLOT2_EASYPIANO, YES },
 			{ NDS_SLOT2_PADDLE, YES },
 			{ NDS_SLOT2_PASSME, YES }
 		};
-		
-		Slot2DeviceProperties *supportedDeviceTypesList = (Slot2DeviceProperties *)calloc(NDS_SLOT2_COUNT, sizeof(Slot2DeviceProperties));
-		memcpy(supportedDeviceTypesList, deviceTypesList, sizeof(deviceTypesList));
 		
 		for (size_t j = 0; j < NDS_SLOT2_COUNT; j++)
 		{
@@ -300,10 +297,7 @@
 				break;
 			}
 		}
-		
-		free(supportedDeviceTypesList);
-		supportedDeviceTypesList = NULL;
-		
+				
 		// If the new device is the current device, select it.
 		if (!didSelectDevice && [newCdsDevice type] == slot2_GetCurrentType())
 		{
