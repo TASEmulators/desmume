@@ -547,7 +547,15 @@ int main(int argc, char ** argv) {
         slot2_device_type = NDS_SLOT2_CFLASH;
 
     if(my_config.gbaslot_rom != "") {
-        strncpy(GBAgameName, my_config.gbaslot_rom.c_str(), MAX_PATH);
+
+        //set the GBA rom and sav paths
+        GBACartridge_RomPath = my_config->gbaslot_rom.c_str();
+        if(toupper(strright(GBACartridge_RomPath,4)) == ".GBA")
+          GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
+        else
+          //what to do? lets just do the same thing for now
+          GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
+
         // Check if the file exists and can be opened
         FILE * test = fopen(GBAgameName, "rb");
         if (test) {
