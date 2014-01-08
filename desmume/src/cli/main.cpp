@@ -57,6 +57,7 @@
 #include "desmume_config.h"
 #include "commandline.h"
 #include "slot2.h"
+#include "utils/xstring.h"
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
@@ -549,7 +550,7 @@ int main(int argc, char ** argv) {
     if(my_config.gbaslot_rom != "") {
 
         //set the GBA rom and sav paths
-        GBACartridge_RomPath = my_config->gbaslot_rom.c_str();
+        GBACartridge_RomPath = my_config.gbaslot_rom.c_str();
         if(toupper(strright(GBACartridge_RomPath,4)) == ".GBA")
           GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
         else
@@ -557,7 +558,7 @@ int main(int argc, char ** argv) {
           GBACartridge_SRAMPath = strright(GBACartridge_RomPath,4) + ".sav";
 
         // Check if the file exists and can be opened
-        FILE * test = fopen(GBAgameName, "rb");
+        FILE * test = fopen(GBACartridge_RomPath.c_str(), "rb");
         if (test) {
             slot2_device_type = NDS_SLOT2_GBACART;
             fclose(test);
