@@ -250,7 +250,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>${MACOSX_DEPLOYMENT_TARGET}</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright ©2012-2013 DeSmuME Team. All rights reserved.</string>
+	<string>Copyright ©2007-2014 DeSmuME Team. All rights reserved.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
