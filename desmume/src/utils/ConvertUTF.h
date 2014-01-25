@@ -87,6 +87,9 @@
     bit mask & shift operations.
 ------------------------------------------------------------------------ */
 
+#ifndef __CONVERTUTF_H__
+#define __CONVERTUTF_H__
+
 #if defined(_MSC_VER)
 	typedef unsigned __int8		uint8_t;
 	typedef unsigned __int16	uint16_t;
@@ -153,5 +156,7 @@ Boolean isLegalUTF8Sequence(const UTF8 *source, const UTF8 *sourceEnd);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // __CONVERTUTF_H__
 
 /* --------------------------------------------------------------------- */

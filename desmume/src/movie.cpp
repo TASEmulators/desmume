@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2011 DeSmuME team
+	Copyright 2008-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "utils/datetime.h"
+#include "utils/ConvertUTF.h"
 #include "movie.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
@@ -87,15 +88,12 @@ void MovieData::insertEmpty(int at, int frames)
 	}
 }
 
-
-
 void MovieRecord::clear()
 { 
 	pad = 0;
 	commands = 0;
 	touch.padding = 0;
 }
-
 
 bool MovieRecord::Compare(MovieRecord& compareRec)
 {
@@ -137,7 +135,6 @@ void MovieRecord::dumpPad(EMUFILE* fp, u16 pad)
 	}
 }
 
-
 void MovieRecord::parsePad(EMUFILE* fp, u16& pad)
 {
 	
@@ -151,8 +148,7 @@ void MovieRecord::parsePad(EMUFILE* fp, u16& pad)
 	}
 }
 
-
-void MovieRecord::parse(MovieData* md, EMUFILE* fp)
+void MovieRecord::parse(EMUFILE* fp)
 {
 	//by the time we get in here, the initial pipe has already been extracted
 
@@ -171,8 +167,7 @@ void MovieRecord::parse(MovieData* md, EMUFILE* fp)
 	//should be left at a newline
 }
 
-
-void MovieRecord::dump(MovieData* md, EMUFILE* fp, int index)
+void MovieRecord::dump(EMUFILE* fp)
 {
 	//dump the misc commands
 	//*os << '|' << setw(1) << (int)commands;
@@ -211,7 +206,6 @@ void MovieData::truncateAt(int frame)
 	if((int)records.size() > frame)
 		records.resize(frame);
 }
-
 
 void MovieData::installValue(std::string& key, std::string& val)
 {
@@ -270,23 +264,11 @@ void MovieData::installValue(std::string& key, std::string& val)
 		installBool(val,binaryFlag);
 	else if(key == "savestate")
 	{
-		int len = Base64StringToBytesLength(val);
-		if(len == -1) len = HexStringToBytesLength(val); // wasn't base64, try hex
-		if(len >= 1)
-		{
-			savestate.resize(len);
-			StringToBytes(val,&savestate[0],len); // decodes either base64 or hex
-		}
+		BinaryDataFromString(val, &this->savestate);
 	}
 	else if(key == "sram")
 	{
-		int len = Base64StringToBytesLength(val);
-		if(len == -1) len = HexStringToBytesLength(val); // wasn't base64, try hex
-		if(len >= 1)
-		{
-			sram.resize(len);
-			StringToBytes(val,&sram[0],len); // decodes either base64 or hex
-		}
+		BinaryDataFromString(val, &this->sram);
 	}
 }
 
@@ -314,23 +296,20 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 		fp->fprintf("bootFromFirmware %d\n", CommonSettings.BootFromFirmware?1:0);
 	}
 	else {
-		char temp_str[27];
-		int i;
-
-		/* FIXME: harshly only use the lower byte of the UTF-16 character.
-		 * This would cause strange behaviour if the user could set UTF-16 but
-		 * they cannot yet.
-		 */
-		for (i = 0; i < CommonSettings.fw_config.nickname_len; i++) {
-			temp_str[i] = CommonSettings.fw_config.nickname[i];
-		}
-		temp_str[i] = '\0';
-		fp->fprintf("firmNickname %s\n", temp_str);
-		for (i = 0; i < CommonSettings.fw_config.message_len; i++) {
-			temp_str[i] = CommonSettings.fw_config.message[i];
-		}
-		temp_str[i] = '\0';
-		fp->fprintf("firmMessage %s\n", temp_str);
+		UTF8 fwNicknameUTF8[MAX_FW_NICKNAME_LENGTH*4];
+		UTF8 *fwNicknameUTF8Start = fwNicknameUTF8;
+		const UTF16 *fwNicknameUTF16 = (const UTF16 *)CommonSettings.fw_config.nickname;
+		memset(fwNicknameUTF8, 0, sizeof(fwNicknameUTF8));
+		ConvertUTF16toUTF8(&fwNicknameUTF16, fwNicknameUTF16 + CommonSettings.fw_config.nickname_len, &fwNicknameUTF8Start, fwNicknameUTF8Start + sizeof(fwNicknameUTF8), strictConversion);
+		
+		UTF8 fwMessageUTF8[MAX_FW_MESSAGE_LENGTH*4];
+		UTF8 *fwMessageUTF8Start = fwMessageUTF8;
+		const UTF16 *fwMessageUTF16 = (const UTF16 *)CommonSettings.fw_config.message;
+		memset(fwMessageUTF8, 0, sizeof(fwMessageUTF8));
+		ConvertUTF16toUTF8(&fwMessageUTF16, fwMessageUTF16 + CommonSettings.fw_config.message_len, &fwMessageUTF8Start, fwMessageUTF8Start + sizeof(fwMessageUTF8), strictConversion);
+		
+		fp->fprintf("firmNickname %s\n", fwNicknameUTF8);
+		fp->fprintf("firmMessage %s\n", fwMessageUTF8);
 		fp->fprintf("firmFavColour %d\n", CommonSettings.fw_config.fav_colour);
 		fp->fprintf("firmBirthMonth %d\n", CommonSettings.fw_config.birth_month);
 		fp->fprintf("firmBirthDay %d\n", CommonSettings.fw_config.birth_day);
@@ -355,11 +334,11 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 		//put one | to start the binary dump
 		fp->fputc('|');
 		for(int i=0;i<(int)records.size();i++)
-			records[i].dumpBinary(this,fp,i);
+			records[i].dumpBinary(fp);
 	}
 	else
 		for(int i=0;i<(int)records.size();i++)
-			records[i].dump(this,fp,i);
+			records[i].dump(fp);
 
 	int end = fp->ftell();
 	return end-start;
@@ -420,7 +399,7 @@ bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader)
 				int currcount = movieData.records.size();
 				movieData.records.resize(currcount+1);
 				int preparse = fp->ftell();
-				movieData.records[currcount].parse(&movieData, fp);
+				movieData.records[currcount].parse(fp);
 				int postparse = fp->ftell();
 				size -= (postparse-preparse);
 				state = NEWLINE;
@@ -749,36 +728,8 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 		 }
 		 else
 		 {
-			 UserInput& input = NDS_getProcessingUserInput();
-
-			 MovieRecord* mr = &currMovieData.records[currFrameCounter];
-
-			 if(mr->command_microphone()) input.mic.micButtonPressed = 1;
-			 else input.mic.micButtonPressed = 0;
-
-			 if(mr->command_reset()) NDS_Reset();
-
-			 if(mr->command_lid()) input.buttons.F = true;
-			 else input.buttons.F = false;
-
-			 u16 pad = mr->pad;
-			 input.buttons.R = (((pad>>12)&1)!=0);
-			 input.buttons.L = (((pad>>11)&1)!=0);
-			 input.buttons.D = (((pad>>10)&1)!=0);
-			 input.buttons.U = (((pad>>9)&1)!=0);
-			 input.buttons.T = (((pad>>8)&1)!=0);
-			 input.buttons.S = (((pad>>7)&1)!=0);
-			 input.buttons.B = (((pad>>6)&1)!=0);
-			 input.buttons.A = (((pad>>5)&1)!=0);
-			 input.buttons.Y = (((pad>>4)&1)!=0);
-			 input.buttons.X = (((pad>>3)&1)!=0);
-			 input.buttons.W = (((pad>>2)&1)!=0);
-			 input.buttons.E = (((pad>>1)&1)!=0);
-			 input.buttons.G = (((pad>>0)&1)!=0);
-
-			 input.touch.touchX = mr->touch.x << 4;
-			 input.touch.touchY = mr->touch.y << 4;
-			 input.touch.isTouch = mr->touch.touch != 0;
+			 UserInput &input = NDS_getProcessingUserInput();
+			 ReplayRecToDesmumeInput(currMovieData.records[currFrameCounter], &input);
 		 }
 
 		 //if we are on the last frame, then pause the emulator if the player requested it
@@ -811,34 +762,15 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
  {
 	 if(movieMode == MOVIEMODE_RECORD)
 	 {
-		 const UserInput& input = NDS_getFinalUserInput();
-
 		 MovieRecord mr;
-
-		 mr.commands = 0;
-
-		 if(input.mic.micButtonPressed == 1)
-			 mr.commands = MOVIECMD_MIC;
-
-		 mr.pad = nds.pad;
-
-		 if(input.buttons.F)
-			 mr.commands = MOVIECMD_LID;
-
-		 if(movie_reset_command) {
-			 mr.commands = MOVIECMD_RESET;
-			 movie_reset_command = false;
-		 }
-
-		 mr.touch.touch = input.touch.isTouch ? 1 : 0;
-		 mr.touch.x = input.touch.isTouch ? input.touch.touchX >> 4 : 0;
-		 mr.touch.y = input.touch.isTouch ? input.touch.touchY >> 4 : 0;
+		 const UserInput &input = NDS_getFinalUserInput();
+		 DesmumeInputToReplayRec(input, &mr);
 
 		 assert(mr.touch.touch || (!mr.touch.x && !mr.touch.y));
 		 //assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
 		 //assert((mr.touch.x << 4) == nds.touchX && (mr.touch.y << 4) == nds.touchY);
 
-		 mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
+		 mr.dump(osRecordingMovie);
 		 currMovieData.records.push_back(mr);
 
 		 // it's apparently un-threadsafe to do this here
@@ -1136,7 +1068,7 @@ bool FCEUI_MovieGetInfo(EMUFILE* fp, MOVIE_INFO& info, bool skipFrameCount)
 	return true;
 }
 
-bool MovieRecord::parseBinary(MovieData* md, EMUFILE* fp)
+bool MovieRecord::parseBinary(EMUFILE* fp)
 {
 	commands=fp->fgetc();
 	fp->fread((char *) &pad, sizeof pad);
@@ -1147,13 +1079,13 @@ bool MovieRecord::parseBinary(MovieData* md, EMUFILE* fp)
 }
 
 
-void MovieRecord::dumpBinary(MovieData* md, EMUFILE* fp, int index)
+void MovieRecord::dumpBinary(EMUFILE* fp)
 {
-	fp->fputc(md->records[index].commands);
-	fp->fwrite((char *) &md->records[index].pad, sizeof md->records[index].pad);
-	fp->fwrite((char *) &md->records[index].touch.x, sizeof md->records[index].touch.x);
-	fp->fwrite((char *) &md->records[index].touch.y, sizeof md->records[index].touch.y);
-	fp->fwrite((char *) &md->records[index].touch.touch, sizeof md->records[index].touch.touch);
+	fp->fputc(this->commands);
+	fp->fwrite((char *) &this->pad, sizeof(this->pad));
+	fp->fwrite((char *) &this->touch.x, sizeof(this->touch.x));
+	fp->fwrite((char *) &this->touch.y, sizeof(this->touch.y));
+	fp->fwrite((char *) &this->touch.touch, sizeof(this->touch.touch));
 }
 
 void LoadFM2_binarychunk(MovieData& movieData, EMUFILE* fp, int size)
@@ -1179,7 +1111,7 @@ void LoadFM2_binarychunk(MovieData& movieData, EMUFILE* fp, int size)
 	movieData.records.resize(numRecords);
 	for(int i=0;i<numRecords;i++)
 	{
-		movieData.records[i].parseBinary(&movieData,fp);
+		movieData.records[i].parseBinary(fp);
 	}
 }
 
@@ -1268,3 +1200,75 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 	}
 }
 
+void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryData)
+{
+	int len = Base64StringToBytesLength(inStringData);
+	if(len == -1) len = HexStringToBytesLength(inStringData); // wasn't base64, try hex
+	if(len >= 1)
+	{
+		outBinaryData->resize(len);
+		StringToBytes(inStringData, &outBinaryData->front(), len); // decodes either base64 or hex
+	}
+}
+
+void ReplayRecToDesmumeInput(const MovieRecord &theRecord, UserInput *theInput)
+{
+	if (theInput == NULL)
+	{
+		return;
+	}
+	
+	if(theRecord.command_reset())
+	{
+		NDS_Reset();
+		return;
+	}
+	else
+	{
+		movie_reset_command = false;
+	}
+	
+	const u16 pad = theRecord.pad;
+	theInput->buttons.R = (((pad>>12)&1)!=0);
+	theInput->buttons.L = (((pad>>11)&1)!=0);
+	theInput->buttons.D = (((pad>>10)&1)!=0);
+	theInput->buttons.U = (((pad>>9)&1)!=0);
+	theInput->buttons.T = (((pad>>8)&1)!=0);
+	theInput->buttons.S = (((pad>>7)&1)!=0);
+	theInput->buttons.B = (((pad>>6)&1)!=0);
+	theInput->buttons.A = (((pad>>5)&1)!=0);
+	theInput->buttons.Y = (((pad>>4)&1)!=0);
+	theInput->buttons.X = (((pad>>3)&1)!=0);
+	theInput->buttons.W = (((pad>>2)&1)!=0);
+	theInput->buttons.E = (((pad>>1)&1)!=0);
+	theInput->buttons.G = (((pad>>0)&1)!=0);
+	theInput->buttons.F = theRecord.command_lid();
+	
+	theInput->touch.touchX = theRecord.touch.x << 4;
+	theInput->touch.touchY = theRecord.touch.y << 4;
+	theInput->touch.isTouch = (theRecord.touch.touch != 0);
+	
+	theInput->mic.micButtonPressed = (theRecord.command_microphone()) ? 1 : 0;
+}
+
+void DesmumeInputToReplayRec(const UserInput &theInput, MovieRecord *theRecord)
+{
+	theRecord->commands = 0;
+	
+	if(theInput.mic.micButtonPressed == 1)
+		theRecord->commands = MOVIECMD_MIC;
+	
+	theRecord->pad = nds.pad;
+	
+	if(theInput.buttons.F)
+		theRecord->commands = MOVIECMD_LID;
+	
+	if(movie_reset_command) {
+		theRecord->commands = MOVIECMD_RESET;
+		movie_reset_command = false;
+	}
+	
+	theRecord->touch.touch = theInput.touch.isTouch ? 1 : 0;
+	theRecord->touch.x = (theInput.touch.isTouch) ? theInput.touch.touchX >> 4 : 0;
+	theRecord->touch.y = (theInput.touch.isTouch) ? theInput.touch.touchY >> 4 : 0;
+}
