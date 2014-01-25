@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2010 DeSmuME team
+	Copyright 2008-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 #include "utils/datetime.h"
 #include "utils/guid.h"
 #include "utils/md5.h"
+
+struct UserInput;
 
 typedef struct
 {
@@ -79,10 +81,10 @@ public:
 	//misc commands like reset, etc.
 	//small now to save space; we might need to support more commands later.
 	//the disk format will support up to 64bit if necessary
-	uint8 commands;
-	bool command_reset() { return (commands&MOVIECMD_RESET)!=0; }
-	bool command_microphone() { return (commands&MOVIECMD_MIC)!=0; }
-	bool command_lid() { return (commands&MOVIECMD_LID)!=0; }
+	u8 commands;
+	bool command_reset() const { return (commands&MOVIECMD_RESET)!=0; }
+	bool command_microphone() const { return (commands&MOVIECMD_MIC)!=0; }
+	bool command_lid() const { return (commands&MOVIECMD_LID)!=0; }
 
 	void toggleBit(int bit)
 	{
@@ -113,10 +115,10 @@ public:
 	bool Compare(MovieRecord& compareRec);
 	void clear();
 	
-	void parse(MovieData* md, EMUFILE* fp);
-	bool parseBinary(MovieData* md, EMUFILE* fp);
-	void dump(MovieData* md, EMUFILE* fp, int index);
-	void dumpBinary(MovieData* md, EMUFILE* fp, int index);
+	void parse(EMUFILE* fp);
+	bool parseBinary(EMUFILE* fp);
+	void dump(EMUFILE* fp);
+	void dumpBinary(EMUFILE* fp);
 	void parsePad(EMUFILE* fp, u16& pad);
 	void dumpPad(EMUFILE* fp, u16 pad);
 	
@@ -228,4 +230,8 @@ extern bool movie_readonly;
 extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
 DateTime FCEUI_MovieGetRTCDefault();
+void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryData);
+void ReplayRecToDesmumeInput(const MovieRecord &theRecord, UserInput *theInput);
+void DesmumeInputToReplayRec(const UserInput &theInput, MovieRecord *theRecord);
+
 #endif
