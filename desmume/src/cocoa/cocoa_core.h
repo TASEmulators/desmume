@@ -35,6 +35,7 @@ typedef struct
 	int state;
 	bool isFrameSkipEnabled;
 	size_t frameCount;
+	NSUInteger frameJumpTarget;
 	int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
 	bool exitThread;
@@ -72,6 +73,8 @@ typedef struct
 	NSInteger cpuEmulationEngine;
 	NSInteger slot1DeviceType;
 	NSString *slot1StatusText;
+	NSString *frameStatus;
+	NSString *executionSpeedStatus;
 	
 	NSURL *slot1R4URL;
 	
@@ -110,6 +113,8 @@ typedef struct
 @property (assign) NSInteger maxJITBlockSize;
 @property (assign) NSInteger slot1DeviceType;
 @property (assign) NSString *slot1StatusText;
+@property (assign) NSString *frameStatus;
+@property (assign) NSString *executionSpeedStatus;
 
 @property (copy) NSURL *arm9ImageURL;
 @property (copy) NSURL *arm7ImageURL;
@@ -133,6 +138,9 @@ typedef struct
 
 - (void) restoreCoreState;
 - (void) reset;
+- (NSUInteger) frameNumber;
+- (void) frameJumpTo:(NSUInteger)targetFrameNum;
+- (void) frameJump:(NSUInteger)relativeFrameNum;
 
 - (void) addOutput:(CocoaDSOutput *)theOutput;
 - (void) removeOutput:(CocoaDSOutput *)theOutput;

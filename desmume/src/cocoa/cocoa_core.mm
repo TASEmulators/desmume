@@ -31,6 +31,7 @@
 #include "../NDSSystem.h"
 #include "../slot1.h"
 #include "../slot2.h"
+#include "../movie.h"
 #undef BOOL
 
 
@@ -65,6 +66,8 @@ volatile bool execute = true;
 @dynamic maxJITBlockSize;
 @synthesize slot1DeviceType;
 @synthesize slot1StatusText;
+@synthesize frameStatus;
+@synthesize executionSpeedStatus;
 
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
@@ -122,6 +125,7 @@ static BOOL isCoreStarted = NO;
 	threadParam.isFrameSkipEnabled = true;
 	threadParam.frameCount = 0;
 	threadParam.framesToSkip = 0;
+	threadParam.frameJumpTarget = 0;
 	
 	uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / speedScalar);
 	AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
@@ -135,6 +139,9 @@ static BOOL isCoreStarted = NO;
 	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
 	[cdsGPU setMutexProducer:self.mutexCoreExecute];
+	
+	frameStatus = @"---";
+	executionSpeedStatus = @"1.00x";
 	
 	return self;
 }
@@ -497,16 +504,33 @@ static BOOL isCoreStarted = NO;
 {
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	
-	if (threadParam.state == CORESTATE_PAUSE)
+	if (threadParam.state == CORESTATE_EXECUTE || threadParam.state == CORESTATE_PAUSE)
 	{
-		prevCoreState = CORESTATE_PAUSE;
-	}
-	else
-	{
-		prevCoreState = CORESTATE_EXECUTE;
+		prevCoreState = threadParam.state;
 	}
 	
 	threadParam.state = coreState;
+	threadParam.framesToSkip = 0;
+	
+	switch (coreState)
+	{
+		case CORESTATE_PAUSE:
+		case CORESTATE_FRAMEADVANCE:
+			[self setFrameStatus:[NSString stringWithFormat:@"%lld", (unsigned long)[self frameNumber]]];
+			break;
+			
+		case CORESTATE_EXECUTE:
+			[self setFrameStatus:@"Executing..."];
+			break;
+			
+		case CORESTATE_FRAMEJUMP:
+			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lld.", (unsigned long)threadParam.frameJumpTarget]];
+			break;
+			
+		default:
+			break;
+	}
+	
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 }
@@ -622,12 +646,16 @@ static BOOL isCoreStarted = NO;
 		pthread_mutex_lock(&threadParam.mutexThreadExecute);
 		threadParam.timeBudgetMachAbsTime = GetFrameAbsoluteTime(1.0/theSpeed);
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		
+		[self setExecutionSpeedStatus:[NSString stringWithFormat:@"%1.2fx", theSpeed]];
 	}
 	else
 	{
 		pthread_mutex_lock(&threadParam.mutexThreadExecute);
 		threadParam.timeBudgetMachAbsTime = 0;
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		
+		[self setExecutionSpeedStatus:@"Unlimited"];
 	}
 }
 
@@ -719,6 +747,36 @@ static BOOL isCoreStarted = NO;
 	
 	[self restoreCoreState];
 	self.masterExecute = YES;
+}
+
+- (NSUInteger) frameNumber
+{
+	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	const NSUInteger currFrameNum = currFrameCounter;
+	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	
+	return currFrameNum;
+}
+
+- (void) frameJumpTo:(NSUInteger)targetFrameNum
+{
+	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	
+	threadParam.frameJumpTarget = targetFrameNum;
+	if (targetFrameNum <= (NSUInteger)currFrameCounter)
+	{
+		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+		return;
+	}
+	
+	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	
+	[self setCoreState:CORESTATE_FRAMEJUMP];
+}
+
+- (void) frameJump:(NSUInteger)relativeFrameNum
+{
+	[self frameJumpTo:[self frameNumber] + relativeFrameNum];
 }
 
 - (void) addOutput:(CocoaDSOutput *)theOutput
@@ -818,6 +876,7 @@ static void* RunCoreThread(void *arg)
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
+	NSUInteger frameNum = 0;
 	uint64_t startTime = 0;
 	uint64_t timeBudget = 0; // Need local variable to ensure that param->timeBudgetMachAbsTime is thread-safe.
 	
@@ -827,7 +886,7 @@ static void* RunCoreThread(void *arg)
 		pthread_mutex_lock(&param->mutexThreadExecute);
 		timeBudget = param->timeBudgetMachAbsTime;
 		
-		while (!(param->state == CORESTATE_EXECUTE && execute && !param->exitThread))
+		while (!(param->state != CORESTATE_PAUSE && execute && !param->exitThread))
 		{
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
 			startTime = mach_absolute_time();
@@ -840,9 +899,14 @@ static void* RunCoreThread(void *arg)
 			break;
 		}
 		
-		// Get the user's input, execute a single emulation frame, and generate
-		// the frame output.
-		[(CocoaDSController *)param->cdsController flush];
+		if (param->state != CORESTATE_FRAMEJUMP)
+		{
+			[(CocoaDSController *)param->cdsController flush];
+		}
+		else
+		{
+			[(CocoaDSController *)param->cdsController flushEmpty];
+		}
 		
 		NDS_beginProcessingInput();
 		// Shouldn't need to do any special processing steps in between.
@@ -852,6 +916,7 @@ static void* RunCoreThread(void *arg)
 		// Execute the frame and increment the frame counter.
 		pthread_mutex_lock(&param->mutexCoreExecute);
 		NDS_exec<false>();
+		frameNum = currFrameCounter;
 		pthread_mutex_unlock(&param->mutexCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
@@ -869,36 +934,107 @@ static void* RunCoreThread(void *arg)
 		}
 		
 		pthread_mutex_lock(&param->mutexOutputList);
-		for(CocoaDSOutput *cdsOutput in cdsOutputList)
+		
+		switch (param->state)
 		{
-			if (param->framesToSkip > 0 && [cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+			case CORESTATE_EXECUTE:
 			{
-				continue;
+				for(CocoaDSOutput *cdsOutput in cdsOutputList)
+				{
+					if (param->framesToSkip > 0 && [cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+					{
+						continue;
+					}
+					
+					[cdsOutput doCoreEmuFrame];
+				}
+				break;
 			}
-			
-			[cdsOutput doCoreEmuFrame];
+				
+			case CORESTATE_FRAMEADVANCE:
+				for(CocoaDSOutput *cdsOutput in cdsOutputList)
+				{
+					[cdsOutput doCoreEmuFrame];
+				}
+				break;
+				
+			case CORESTATE_FRAMEJUMP:
+			{
+				for(CocoaDSOutput *cdsOutput in cdsOutputList)
+				{
+					if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]] && (param->framesToSkip == 0 || frameNum >= param->frameJumpTarget))
+					{
+						[cdsOutput doCoreEmuFrame];
+					}
+				}
+				break;
+			}
+				
+			default:
+				break;
 		}
+		
 		pthread_mutex_unlock(&param->mutexOutputList);
 		
-		// Determine the number of frames to skip based on how much time "debt"
-		// we owe on timeBudget.
-		if (param->isFrameSkipEnabled)
+		switch (param->state)
 		{
-			if (param->framesToSkip > 0)
+			case CORESTATE_EXECUTE:
 			{
-				NDS_SkipNextFrame();
-				param->framesToSkip--;
+				// Determine the number of frames to skip based on how much time "debt"
+				// we owe on timeBudget.
+				if (param->isFrameSkipEnabled)
+				{
+					if (param->framesToSkip > 0)
+					{
+						NDS_SkipNextFrame();
+						param->framesToSkip--;
+					}
+					else
+					{
+						param->framesToSkip = CalculateFrameSkip(timeBudget, startTime);
+					}
+				}
+				break;
 			}
-			else
+			
+			case CORESTATE_FRAMEJUMP:
 			{
-				param->framesToSkip = CalculateFrameSkip(timeBudget, startTime);
+				if (param->framesToSkip > 0)
+				{
+					NDS_SkipNextFrame();
+					param->framesToSkip--;
+				}
+				else
+				{
+					param->framesToSkip = (int)((DS_FRAMES_PER_SECOND * 1.0) + 0.85);
+				}
+				break;
 			}
+				
+			default:
+				break;
 		}
 		
 		pthread_mutex_unlock(&param->mutexThreadExecute);
 		
-		// If there is any time left in the loop, go ahead and pad it.
-		mach_wait_until(startTime + timeBudget);
+		// If we doing a frame advance, switch back to pause state immediately
+		// after we're done with the frame.
+		if (param->state == CORESTATE_FRAMEADVANCE)
+		{
+			[cdsCore setCoreState:CORESTATE_PAUSE];
+		}
+		else if (param->state == CORESTATE_FRAMEJUMP)
+		{
+			if (frameNum >= param->frameJumpTarget)
+			{
+				[cdsCore restoreCoreState];
+			}
+		}
+		else
+		{
+			// If there is any time left in the loop, go ahead and pad it.
+			mach_wait_until(startTime + timeBudget);
+		}
 		
 	} while (!param->exitThread);
 	

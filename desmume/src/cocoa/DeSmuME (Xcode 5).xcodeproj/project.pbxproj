@@ -672,6 +672,12 @@
 		ABD1FF9F1345ACFA00AF11D1 /* metaspu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF771345ACFA00AF11D1 /* metaspu.cpp */; };
 		ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */; };
 		ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */; };
+		ABDDF7C51898F024007583C1 /* Icon_DisplayToggle_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */; };
+		ABDDF7C61898F024007583C1 /* Icon_DisplayToggle_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */; };
+		ABDDF7C91898F032007583C1 /* Icon_FrameAdvance_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */; };
+		ABDDF7CA1898F032007583C1 /* Icon_FrameAdvance_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */; };
+		ABDDF7CB1898F032007583C1 /* Icon_FrameJump_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */; };
+		ABDDF7CC1898F032007583C1 /* Icon_FrameJump_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */; };
 		ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABE5DFE5143FB1DA00835AD8 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
 		ABE6702B1415DE6C00E8E4C9 /* tinystr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670251415DE6C00E8E4C9 /* tinystr.cpp */; };
@@ -703,7 +709,7 @@
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB0038A61872A96700B0B055 /* Image_PaddleController.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PaddleController.png; path = images/Image_PaddleController.png; sourceTree = "<group>"; };
-		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 2483028224; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB00E87D14205EBC00DE561F /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		AB00E89114205ECC00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB01005C170D07AF00D70FBE /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
@@ -1141,6 +1147,9 @@
 		ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timestretcher.cpp; sourceTree = "<group>"; };
 		ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
+		ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = ../../../../../../../Volumes/rogerman/desmume/trunk/desmume/src/cocoa/images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
+		ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = ../../../../../../../Volumes/rogerman/desmume/trunk/desmume/src/cocoa/images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
+		ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = ../../../../../../../Volumes/rogerman/desmume/trunk/desmume/src/cocoa/images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
 		ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_videofilter.h; sourceTree = "<group>"; };
 		ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_videofilter.mm; sourceTree = "<group>"; };
 		ABE670251415DE6C00E8E4C9 /* tinystr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinystr.cpp; sourceTree = "<group>"; };
@@ -1539,6 +1548,7 @@
 				AB0F296C14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png */,
 				ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */,
 				ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */,
+				ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */,
 				AB0F299414BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png */,
 				AB0F299514BE7213009ABC6F /* Icon_DSButtonA_420x420.png */,
 				AB0F299614BE7213009ABC6F /* Icon_DSButtonB_420x420.png */,
@@ -1550,6 +1560,8 @@
 				AB0F299C14BE7213009ABC6F /* Icon_DSButtonY_420x420.png */,
 				AB0F299D14BE7213009ABC6F /* Icon_Emulation_420x420.png */,
 				AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */,
+				ABDDF7C71898F032007583C1 /* Icon_FrameAdvance_420x420.png */,
+				ABDDF7C81898F032007583C1 /* Icon_FrameJump_420x420.png */,
 				AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */,
 				AB681014187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png */,
 				AB681015187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Red_512x512.png */,
@@ -2020,6 +2032,7 @@
 				ABC3AF3014B7F06900D5B13D /* Icon_VolumeMute_16x16.png in Resources */,
 				ABC3AF3114B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png in Resources */,
 				ABC3AF3214B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				ABDDF7CC1898F032007583C1 /* Icon_FrameJump_420x420.png in Resources */,
 				AB0F290214BE6E68009ABC6F /* Icon_Execute_420x420.png in Resources */,
 				AB0F290314BE6E68009ABC6F /* Icon_Pause_420x420.png in Resources */,
 				AB0F290414BE6E68009ABC6F /* Icon_Speed1x_420x420.png in Resources */,
@@ -2051,11 +2064,13 @@
 				AB0F298C14BE71E0009ABC6F /* Icon_ArrowDown_420x420.png in Resources */,
 				AB0F298D14BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB0F298E14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png in Resources */,
+				ABDDF7C61898F024007583C1 /* Icon_DisplayToggle_420x420.png in Resources */,
 				AB0F298F14BE71E0009ABC6F /* Icon_ArrowUp_420x420.png in Resources */,
 				AB0F29A614BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png in Resources */,
 				AB0F29A714BE7213009ABC6F /* Icon_DSButtonA_420x420.png in Resources */,
 				AB0F29A814BE7213009ABC6F /* Icon_DSButtonB_420x420.png in Resources */,
 				AB681028187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */,
+				ABDDF7CA1898F032007583C1 /* Icon_FrameAdvance_420x420.png in Resources */,
 				AB0F29A914BE7213009ABC6F /* Icon_DSButtonL_420x420.png in Resources */,
 				AB0F29AA14BE7213009ABC6F /* Icon_DSButtonR_420x420.png in Resources */,
 				AB0F29AB14BE7213009ABC6F /* Icon_DSButtonSelect_420x420.png in Resources */,
@@ -2110,6 +2125,7 @@
 				AB796CB815CDCBA200C59155 /* Icon_VolumeMute_16x16.png in Resources */,
 				AB796CB915CDCBA200C59155 /* Icon_VolumeOneThird_16x16.png in Resources */,
 				AB796CBA15CDCBA200C59155 /* Icon_VolumeTwoThird_16x16.png in Resources */,
+				ABDDF7CB1898F032007583C1 /* Icon_FrameJump_420x420.png in Resources */,
 				AB796CBB15CDCBA200C59155 /* Icon_Execute_420x420.png in Resources */,
 				AB796CBC15CDCBA200C59155 /* Icon_Pause_420x420.png in Resources */,
 				AB796CBD15CDCBA200C59155 /* Icon_Speed1x_420x420.png in Resources */,
@@ -2141,11 +2157,13 @@
 				AB796CD215CDCBA200C59155 /* Icon_ArrowDown_420x420.png in Resources */,
 				AB796CD315CDCBA200C59155 /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB796CD415CDCBA200C59155 /* Icon_ArrowRight_420x420.png in Resources */,
+				ABDDF7C51898F024007583C1 /* Icon_DisplayToggle_420x420.png in Resources */,
 				AB796CD515CDCBA200C59155 /* Icon_ArrowUp_420x420.png in Resources */,
 				AB796CD615CDCBA200C59155 /* Icon_DoubleSpeed_420x420.png in Resources */,
 				AB796CD715CDCBA200C59155 /* Icon_DSButtonA_420x420.png in Resources */,
 				AB796CD815CDCBA200C59155 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB681027187D4AEF0049F2C2 /* Icon_Piano_256x256.png in Resources */,
+				ABDDF7C91898F032007583C1 /* Icon_FrameAdvance_420x420.png in Resources */,
 				AB796CD915CDCBA200C59155 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB796CDA15CDCBA200C59155 /* Icon_DSButtonR_420x420.png in Resources */,
 				AB796CDB15CDCBA200C59155 /* Icon_DSButtonSelect_420x420.png in Resources */,

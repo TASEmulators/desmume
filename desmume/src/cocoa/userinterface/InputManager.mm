@@ -1044,6 +1044,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: B",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Piano_256x256" ofType:@"png"]] autorelease],				@"Piano: High C",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_PaddleKnob_256x256" ofType:@"png"]] autorelease],			@"Paddle",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DisplayToggle_420x420" ofType:@"png"]] autorelease],		@"Toggle All Displays",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_RotateCCW_420x420" ofType:@"png"]] autorelease],			@"Rotate Display Left",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_RotateCW_420x420" ofType:@"png"]] autorelease],			@"Rotate Display Right",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ShowHUD_420x420" ofType:@"png"]] autorelease],			@"HUD",
@@ -1096,11 +1097,16 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	commandSelector["Save State Slot"]			= @selector(cmdSaveEmuSaveStateSlot:);
 	commandSelector["Copy Screen"]				= @selector(cmdCopyScreen:);
 	commandSelector["Rotate Display Relative"]	= @selector(cmdRotateDisplayRelative:);
+	commandSelector["Toggle All Displays"]		= @selector(cmdToggleAllDisplays:);
 	commandSelector["Set Speed"]				= @selector(cmdHoldToggleSpeedScalar:);
 	commandSelector["Enable/Disable Speed Limiter"] = @selector(cmdToggleSpeedLimiter:);
 	commandSelector["Enable/Disable Auto Frame Skip"] = @selector(cmdToggleAutoFrameSkip:);
 	commandSelector["Enable/Disable Cheats"]	= @selector(cmdToggleCheats:);
+	commandSelector["Execute"]					= @selector(cmdCoreExecute:);
+	commandSelector["Pause"]					= @selector(cmdCorePause:);
 	commandSelector["Execute/Pause"]			= @selector(cmdToggleExecutePause:);
+	commandSelector["Frame Advance"]			= @selector(cmdFrameAdvance:);
+	commandSelector["Frame Jump"]				= @selector(cmdFrameJump:);
 	commandSelector["Reset"]					= @selector(cmdReset:);
 	commandSelector["Mute/Unmute"]				= @selector(cmdToggleMute:);
 	commandSelector["Enable/Disable GPU State"]	= @selector(cmdToggleGPUState:);
@@ -1152,7 +1158,7 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	cmdPaddle.floatValue[0] = 10.0f;
 	
 	CommandAttributes cmdLoadEmuSaveStateSlot	= NewCommandAttributesForSelector("Load State Slot", commandSelector["Load State Slot"]);
-	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);	
+	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);
 	CommandAttributes cmdCopyScreen				= NewCommandAttributesForSelector("Copy Screen", commandSelector["Copy Screen"]);
 	
 	CommandAttributes cmdRotateDisplayRelative	= NewCommandAttributesForSelector("Rotate Display Relative", commandSelector["Rotate Display Relative"]);
@@ -1164,13 +1170,19 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	CommandAttributes cmdRotateDisplayRight		= NewCommandAttributesForSelector("Rotate Display Right", commandSelector["Rotate Display Relative"]);
 	cmdRotateDisplayRight.intValue[0] = 90;
 	
+	CommandAttributes cmdToggleAllDisplays		= NewCommandAttributesForSelector("Toggle All Displays", commandSelector["Toggle All Displays"]);
+	
 	CommandAttributes cmdToggleSpeed			= NewCommandAttributesForSelector("Set Speed", commandSelector["Set Speed"]);
 	cmdToggleSpeed.floatValue[0] = 1.0f;
 	
 	CommandAttributes cmdToggleSpeedLimiter		= NewCommandAttributesForSelector("Enable/Disable Speed Limiter", commandSelector["Enable/Disable Speed Limiter"]);
 	CommandAttributes cmdToggleAutoFrameSkip	= NewCommandAttributesForSelector("Enable/Disable Auto Frame Skip", commandSelector["Enable/Disable Auto Frame Skip"]);
 	CommandAttributes cmdToggleCheats			= NewCommandAttributesForSelector("Enable/Disable Cheats", commandSelector["Enable/Disable Cheats"]);
+	CommandAttributes cmdCoreExecute			= NewCommandAttributesForSelector("Execute", commandSelector["Execute"]);
+	CommandAttributes cmdCorePause				= NewCommandAttributesForSelector("Pause", commandSelector["Pause"]);
 	CommandAttributes cmdToggleExecutePause		= NewCommandAttributesForSelector("Execute/Pause", commandSelector["Execute/Pause"]);
+	CommandAttributes cmdFrameAdvance			= NewCommandAttributesForSelector("Frame Advance", commandSelector["Frame Advance"]);
+	CommandAttributes cmdFrameJump				= NewCommandAttributesForSelector("Frame Jump", commandSelector["Frame Jump"]);
 	CommandAttributes cmdReset					= NewCommandAttributesForSelector("Reset", commandSelector["Reset"]);
 	CommandAttributes cmdToggleMute				= NewCommandAttributesForSelector("Mute/Unmute", commandSelector["Mute/Unmute"]);
 	CommandAttributes cmdToggleGPUState			= NewCommandAttributesForSelector("Enable/Disable GPU State", commandSelector["Enable/Disable GPU State"]);
@@ -1216,11 +1228,16 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	defaultCommandAttributes["Copy Screen"]		= cmdCopyScreen;
 	defaultCommandAttributes["Rotate Display Left"] = cmdRotateDisplayLeft;
 	defaultCommandAttributes["Rotate Display Right"] = cmdRotateDisplayRight;
+	defaultCommandAttributes["Toggle All Displays"]	= cmdToggleAllDisplays;
 	defaultCommandAttributes["Set Speed"]		= cmdToggleSpeed;
 	defaultCommandAttributes["Enable/Disable Speed Limiter"] = cmdToggleSpeedLimiter;
 	defaultCommandAttributes["Enable/Disable Auto Frame Skip"] = cmdToggleAutoFrameSkip;
 	defaultCommandAttributes["Enable/Disable Cheats"] = cmdToggleCheats;
+	defaultCommandAttributes["Execute"]			= cmdCoreExecute;
+	defaultCommandAttributes["Pause"]			= cmdCorePause;
 	defaultCommandAttributes["Execute/Pause"]	= cmdToggleExecutePause;
+	defaultCommandAttributes["Frame Advance"]	= cmdFrameAdvance;
+	defaultCommandAttributes["Frame Jump"]		= cmdFrameJump;
 	defaultCommandAttributes["Reset"]			= cmdReset;
 	defaultCommandAttributes["Mute/Unmute"]		= cmdToggleMute;
 	defaultCommandAttributes["Enable/Disable GPU State"] = cmdToggleGPUState;
@@ -1229,11 +1246,16 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 	[self addMappingForIBAction:@selector(loadEmuSaveStateSlot:) commandAttributes:&cmdLoadEmuSaveStateSlot];
 	[self addMappingForIBAction:@selector(saveEmuSaveStateSlot:) commandAttributes:&cmdSaveEmuSaveStateSlot];
 	[self addMappingForIBAction:@selector(copy:) commandAttributes:&cmdCopyScreen];
+	[self addMappingForIBAction:@selector(toggleAllDisplays:) commandAttributes:&cmdToggleAllDisplays];
 	[self addMappingForIBAction:@selector(changeRotationRelative:) commandAttributes:&cmdRotateDisplayRelative];
 	[self addMappingForIBAction:@selector(toggleSpeedLimiter:) commandAttributes:&cmdToggleSpeedLimiter];
 	[self addMappingForIBAction:@selector(toggleAutoFrameSkip:) commandAttributes:&cmdToggleAutoFrameSkip];
 	[self addMappingForIBAction:@selector(toggleCheats:) commandAttributes:&cmdToggleCheats];
+	[self addMappingForIBAction:@selector(coreExecute:) commandAttributes:&cmdCoreExecute];
+	[self addMappingForIBAction:@selector(corePause:) commandAttributes:&cmdCorePause];
 	[self addMappingForIBAction:@selector(toggleExecutePause:) commandAttributes:&cmdToggleExecutePause];
+	[self addMappingForIBAction:@selector(frameAdvance:) commandAttributes:&cmdFrameAdvance];
+	[self addMappingForIBAction:@selector(frameJump:) commandAttributes:&cmdFrameJump];
 	[self addMappingForIBAction:@selector(reset:) commandAttributes:&cmdReset];
 	[self addMappingForIBAction:@selector(toggleGPUState:) commandAttributes:&cmdToggleGPUState];
 	

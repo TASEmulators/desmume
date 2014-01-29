@@ -48,6 +48,7 @@ class AudioSampleBlockGenerator;
 	NSArrayController *cheatListController;
 	NSArrayController *cheatDatabaseController;
 	
+	NSWindow *executionControlWindow;
 	NSWindow *slot1ManagerWindow;
 	NSWindow *saveFileMigrationSheet;
 	NSWindow *saveStatePrecloseSheet;
@@ -66,6 +67,9 @@ class AudioSampleBlockGenerator;
 	NSURL *currentSaveStateURL;
 	NSInteger selectedExportRomSaveID;
 	NSInteger selectedRomSaveTypeID;
+	NSInteger frameJumpType;
+	NSInteger frameJumpFramesForward;
+	NSInteger frameJumpToFrame;
 	
 	CGFloat lastSetSpeedScalar;
 	BOOL isSoundMuted;
@@ -104,6 +108,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSArrayController *cheatListController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
 
+@property (readonly) IBOutlet NSWindow *executionControlWindow;
 @property (readonly) IBOutlet NSWindow *slot1ManagerWindow;
 @property (readonly) IBOutlet NSWindow *saveFileMigrationSheet;
 @property (readonly) IBOutlet NSWindow *saveStatePrecloseSheet;
@@ -130,6 +135,9 @@ class AudioSampleBlockGenerator;
 @property (retain) NSURL *currentSaveStateURL;
 @property (assign) NSInteger selectedExportRomSaveID;
 @property (assign) NSInteger selectedRomSaveTypeID;
+@property (assign) NSInteger frameJumpType;
+@property (assign) NSInteger frameJumpFramesForward;
+@property (assign) NSInteger frameJumpToFrame;
 
 @property (assign) NSInteger render3DRenderingEngine;
 @property (assign) BOOL render3DHighPrecisionColorInterpolation;
@@ -165,8 +173,15 @@ class AudioSampleBlockGenerator;
 - (IBAction) toggleAutoFrameSkip:(id)sender;
 - (IBAction) toggleCheats:(id)sender;
 - (IBAction) toggleExecutePause:(id)sender;
+- (IBAction) coreExecute:(id)sender;
+- (IBAction) corePause:(id)sender;
+- (IBAction) frameAdvance:(id)sender;
+- (IBAction) frameJump:(id)sender;
 - (IBAction) reset:(id)sender;
 - (IBAction) changeRomSaveType:(id)sender;
+
+// View Menu
+- (IBAction) toggleAllDisplays:(id)sender;
 
 // Tools Menu
 - (IBAction) toggleGPUState:(id)sender;
@@ -199,12 +214,17 @@ class AudioSampleBlockGenerator;
 
 - (void) cmdCopyScreen:(NSValue *)cmdAttrValue;
 - (void) cmdRotateDisplayRelative:(NSValue *)cmdAttrValue;
+- (void) cmdToggleAllDisplays:(NSValue *)cmdAttrValue;
 
 - (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue;
 - (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue;
 - (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue;
 - (void) cmdToggleCheats:(NSValue *)cmdAttrValue;
 - (void) cmdToggleExecutePause:(NSValue *)cmdAttrValue;
+- (void) cmdCoreExecute:(NSValue *)cmdAttrValue;
+- (void) cmdCorePause:(NSValue *)cmdAttrValue;
+- (void) cmdFrameAdvance:(NSValue *)cmdAttrValue;
+- (void) cmdFrameJump:(NSValue *)cmdAttrValue;
 - (void) cmdReset:(NSValue *)cmdAttrValue;
 - (void) cmdToggleGPUState:(NSValue *)cmdAttrValue;
 
