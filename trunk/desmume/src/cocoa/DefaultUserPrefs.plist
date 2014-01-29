@@ -164,6 +164,10 @@
 				<string>Forward Delete</string>
 			</dict>
 		</array>
+		<key>Frame Advance</key>
+		<array/>
+		<key>Frame Jump</key>
+		<array/>
 		<key>Guitar Grip: Blue</key>
 		<array>
 			<dict>
@@ -611,6 +615,8 @@
 				<string>Return</string>
 			</dict>
 		</array>
+		<key>Toggle All Displays</key>
+		<array/>
 		<key>Touch</key>
 		<array>
 			<dict>

@@ -39,6 +39,8 @@
 		<string>Piano: High C</string>
 		<string>Paddle</string>
 		<string>Execute/Pause</string>
+		<string>Frame Advance</string>
+		<string>Frame Jump</string>
 		<string>Reset</string>
 		<string>Mute/Unmute</string>
 		<string>Load State Slot</string>
@@ -46,6 +48,7 @@
 		<string>Copy Screen</string>
 		<string>Rotate Display Left</string>
 		<string>Rotate Display Right</string>
+		<string>Toggle All Displays</string>
 		<string>Set Speed</string>
 		<string>Enable/Disable Speed Limiter</string>
 		<string>Enable/Disable Auto Frame Skip</string>
@@ -622,6 +625,10 @@
 						<string>Forward Delete</string>
 					</dict>
 				</array>
+				<key>Frame Advance</key>
+				<array/>
+				<key>Frame Jump</key>
+				<array/>
 				<key>Reset</key>
 				<array>
 					<dict>
@@ -679,6 +686,8 @@
 						<integer>90</integer>
 					</dict>
 				</array>
+				<key>Toggle All Displays</key>
+				<array/>
 				<key>Set Speed</key>
 				<array>
 					<dict>

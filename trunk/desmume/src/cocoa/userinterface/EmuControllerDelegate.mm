@@ -52,6 +52,7 @@
 @synthesize cheatDatabaseController;
 @synthesize slot2WindowController;
 
+@synthesize executionControlWindow;
 @synthesize slot1ManagerWindow;
 @synthesize saveFileMigrationSheet;
 @synthesize saveStatePrecloseSheet;
@@ -80,6 +81,9 @@
 @synthesize currentSaveStateURL;
 @synthesize selectedExportRomSaveID;
 @synthesize selectedRomSaveTypeID;
+@synthesize frameJumpType;
+@synthesize frameJumpFramesForward;
+@synthesize frameJumpToFrame;
 
 @dynamic render3DRenderingEngine;
 @dynamic render3DHighPrecisionColorInterpolation;
@@ -122,6 +126,9 @@
 	currentSaveStateURL = nil;
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
 	selectedExportRomSaveID = 0;
+	frameJumpType = FRAMEJUMP_TYPE_FORWARD;
+	frameJumpFramesForward = 60;
+	frameJumpToFrame = 0;
 	
 	lastSetSpeedScalar = 1.0f;
 	isSoundMuted = NO;
@@ -736,6 +743,26 @@
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
+- (IBAction) coreExecute:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) corePause:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) frameAdvance:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) frameJump:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
 - (IBAction) reset:(id)sender
 {
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
@@ -847,6 +874,11 @@
 - (IBAction) changeSpuSyncMethod:(id)sender
 {
 	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+- (IBAction) toggleAllDisplays:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
 - (IBAction) chooseSlot1R4Directory:(id)sender
@@ -1124,6 +1156,49 @@
 	[mainWindow setDisplayRotation:angleDegrees];
 }
 
+- (void) cmdToggleAllDisplays:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
+	for (DisplayWindowController *theWindow in windowList)
+	{
+		const NSInteger displayMode = [theWindow displayMode];
+		switch (displayMode)
+		{
+			case DS_DISPLAY_TYPE_MAIN:
+				[theWindow setDisplayMode:DS_DISPLAY_TYPE_TOUCH];
+				break;
+				
+			case DS_DISPLAY_TYPE_TOUCH:
+				[theWindow setDisplayMode:DS_DISPLAY_TYPE_MAIN];
+				break;
+				
+			case DS_DISPLAY_TYPE_DUAL:
+			{
+				const NSInteger displayOrder = [theWindow displayOrder];
+				if (displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
+				{
+					[theWindow setDisplayOrder:DS_DISPLAY_ORDER_TOUCH_FIRST];
+				}
+				else
+				{
+					[theWindow setDisplayOrder:DS_DISPLAY_ORDER_MAIN_FIRST];
+				}
+				break;
+			}
+				
+			default:
+				break;
+		}
+	}
+}
+
 - (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue
 {
 	CommandAttributes cmdAttr;
@@ -1231,6 +1306,82 @@
 	else
 	{
 		[self pauseCore];
+	}
+}
+
+- (void) cmdCoreExecute:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	{
+		return;
+	}
+	
+	[self executeCore];
+}
+
+- (void) cmdCorePause:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	{
+		return;
+	}
+	
+	[self pauseCore];
+}
+
+- (void) cmdFrameAdvance:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [cdsCore coreState] != CORESTATE_PAUSE || [self currentRom] == nil)
+	{
+		return;
+	}
+	
+	[cdsCore setCoreState:CORESTATE_FRAMEADVANCE];
+}
+
+- (void) cmdFrameJump:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	{
+		return;
+	}
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[executionControlWindow makeFirstResponder:nil];
+	NSUInteger jumpFrames = 0;
+	
+	switch ([self frameJumpType])
+	{
+		case FRAMEJUMP_TYPE_FORWARD:
+			jumpFrames = [self frameJumpFramesForward];
+			[cdsCore frameJump:jumpFrames];
+			break;
+			
+		case FRAMEJUMP_TYPE_TOFRAME:
+			jumpFrames = [self frameJumpToFrame];
+			[cdsCore frameJumpTo:jumpFrames];
+			break;
+			
+		case FRAMEJUMP_TYPE_NEXTMARKER:
+			// TODO: Support when replay markers are implemented.
+			break;
+			
+		default:
+			break;
 	}
 }
 
@@ -1917,7 +2068,7 @@
 			{
 				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_EXECUTE_CONTROL];
 			}
-			else
+			else if ([cdsCore coreState] == CORESTATE_EXECUTE)
 			{
 				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_PAUSE_CONTROL];
 			}
@@ -1929,17 +2080,52 @@
 				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_EXECUTE_CONTROL];
 				[(NSToolbarItem*)theItem setImage:iconExecute];
 			}
-			else
+			else if ([cdsCore coreState] == CORESTATE_EXECUTE)
 			{
 				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_PAUSE_CONTROL];
 				[(NSToolbarItem*)theItem setImage:iconPause];
 			}
 		}
     }
-	else if (theAction == @selector(executeCore) ||
-			 theAction == @selector(pauseCore))
-    {
+	else if (theAction == @selector(frameAdvance:))
+	{
+		if ([cdsCore coreState] != CORESTATE_PAUSE)
+		{
+			enable = NO;
+		}
+		
+		if ([cdsCore coreState] != CORESTATE_PAUSE ||
+			![cdsCore masterExecute] ||
+			[self currentRom] == nil ||
+			[self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
+	else if (theAction == @selector(frameJump:))
+	{
 		if (![cdsCore masterExecute] ||
+			[self currentRom] == nil ||
+			[self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
+	else if (theAction == @selector(coreExecute:))
+    {
+		if ([cdsCore coreState] == CORESTATE_EXECUTE ||
+			[cdsCore coreState] == CORESTATE_FRAMEADVANCE ||
+			![cdsCore masterExecute] ||
+			[self currentRom] == nil ||
+			[self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+    }
+	else if (theAction == @selector(corePause:))
+    {
+		if ([cdsCore coreState] == CORESTATE_PAUSE ||
+			![cdsCore masterExecute] ||
 			[self currentRom] == nil ||
 			[self isShowingSaveStateDialog])
 		{

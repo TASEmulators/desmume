@@ -235,4 +235,87 @@
 	}
 }
 
+- (void) flushEmpty
+{
+	// Setup the DS pad.
+	NDS_setPad(false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false,
+			   false);
+	
+	// Setup the DS touch pad.
+	NDS_releaseTouch();
+	
+	// Setup the inputs from SLOT-2 devices.
+	const NDS_SLOT2_TYPE slot2DeviceType = slot2_GetSelectedType();
+	switch (slot2DeviceType)
+	{
+		case NDS_SLOT2_GUITARGRIP:
+			guitarGrip_setKey(false,
+							  false,
+							  false,
+							  false);
+			break;
+			
+		case NDS_SLOT2_EASYPIANO:
+			piano_setKey(false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false,
+						 false);
+			break;
+			
+		case NDS_SLOT2_PADDLE:
+			// Do nothing.
+			break;
+			
+		default:
+			break;
+	}
+	
+	// Setup the DS mic.
+	AudioGenerator *selectedGenerator = &nullSampleGenerator;
+	
+	NDS_setMic(false);
+	
+	static const bool useBufferedSource = false;
+	Mic_SetUseBufferedSource(useBufferedSource);
+	if (useBufferedSource)
+	{
+		static u8 generatedSampleBuffer[(size_t)(MIC_MAX_BUFFER_SAMPLES + 0.5)] = {0};
+		static const size_t requestedSamples = MIC_MAX_BUFFER_SAMPLES;
+		
+		const size_t availableSamples = micInputBuffer.getAvailableElements();
+		if (availableSamples < requestedSamples)
+		{
+			micInputBuffer.drop(requestedSamples - availableSamples);
+		}
+		
+		selectedGenerator->generateSampleBlock(requestedSamples, generatedSampleBuffer);
+		micInputBuffer.write(generatedSampleBuffer, requestedSamples);
+	}
+	else
+	{
+		Mic_SetSelectedDirectSampleGenerator(selectedGenerator);
+	}
+}
+
 @end

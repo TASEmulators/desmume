@@ -103,6 +103,8 @@
 @interface DisplayWindowController : NSWindowController
 #endif
 {
+	NSObject *dummyObject;
+	
 	DisplayView *view;
 	NSView *saveScreenshotPanelAccessoryView;
 	
@@ -139,6 +141,8 @@
 	OSSpinLock spinlockDisplayGap;
 	OSSpinLock spinlockVideoFilterType;
 }
+
+@property (readonly) IBOutlet NSObject *dummyObject;
 
 @property (readonly) IBOutlet DisplayView *view;
 @property (readonly) IBOutlet NSView *saveScreenshotPanelAccessoryView;

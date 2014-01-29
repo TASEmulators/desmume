@@ -408,6 +408,12 @@
 		AB8967DE16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
 		AB901BDE1420706100348EEC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB901BDD1420706100348EEC /* Localizable.strings */; };
 		AB91D46B13BD013800462471 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
+		AB9A1F911898F0E7000DF924 /* Icon_DisplayToggle_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB9A1F901898F0E7000DF924 /* Icon_DisplayToggle_420x420.png */; };
+		AB9A1F921898F0E7000DF924 /* Icon_DisplayToggle_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB9A1F901898F0E7000DF924 /* Icon_DisplayToggle_420x420.png */; };
+		AB9A1F951898F0F7000DF924 /* Icon_FrameAdvance_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB9A1F931898F0F7000DF924 /* Icon_FrameAdvance_420x420.png */; };
+		AB9A1F961898F0F7000DF924 /* Icon_FrameAdvance_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB9A1F931898F0F7000DF924 /* Icon_FrameAdvance_420x420.png */; };
+		AB9A1F971898F0F7000DF924 /* Icon_FrameJump_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB9A1F941898F0F7000DF924 /* Icon_FrameJump_420x420.png */; };
+		AB9A1F981898F0F7000DF924 /* Icon_FrameJump_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB9A1F941898F0F7000DF924 /* Icon_FrameJump_420x420.png */; };
 		ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
 		ABACB8DC1710B621003B845D /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABACB8DB1710B621003B845D /* AudioToolbox.framework */; };
 		ABACB8DD1710B656003B845D /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABACB8DB1710B621003B845D /* AudioToolbox.framework */; };
@@ -888,6 +894,9 @@
 		AB901BE31420707D00348EEC /* Norwegian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB901BE41420708200348EEC /* Romanian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB9971CE134EDA0800531BA7 /* cocoa_globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_globals.h; sourceTree = "<group>"; };
+		AB9A1F901898F0E7000DF924 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
+		AB9A1F931898F0F7000DF924 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
+		AB9A1F941898F0F7000DF924 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
 		ABA6574914511EC90077E5E9 /* cocoa_cheat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_cheat.h; sourceTree = "<group>"; };
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
 		ABACB8DB1710B621003B845D /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -1539,6 +1548,7 @@
 				AB0F296C14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png */,
 				ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */,
 				ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */,
+				AB9A1F901898F0E7000DF924 /* Icon_DisplayToggle_420x420.png */,
 				AB0F299414BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png */,
 				AB0F299514BE7213009ABC6F /* Icon_DSButtonA_420x420.png */,
 				AB0F299614BE7213009ABC6F /* Icon_DSButtonB_420x420.png */,
@@ -1550,6 +1560,8 @@
 				AB0F299C14BE7213009ABC6F /* Icon_DSButtonY_420x420.png */,
 				AB0F299D14BE7213009ABC6F /* Icon_Emulation_420x420.png */,
 				AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */,
+				AB9A1F931898F0F7000DF924 /* Icon_FrameAdvance_420x420.png */,
+				AB9A1F941898F0F7000DF924 /* Icon_FrameJump_420x420.png */,
 				ABBCA20D187D4BED00383DBE /* Icon_GuitarGrip_Button_Blue_512x512.png */,
 				ABBCA20E187D4BED00383DBE /* Icon_GuitarGrip_Button_Green_512x512.png */,
 				ABBCA20F187D4BED00383DBE /* Icon_GuitarGrip_Button_Red_512x512.png */,
@@ -2020,6 +2032,7 @@
 				ABC3AF3114B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png in Resources */,
 				ABC3AF3214B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png in Resources */,
 				AB0F290214BE6E68009ABC6F /* Icon_Execute_420x420.png in Resources */,
+				AB9A1F981898F0F7000DF924 /* Icon_FrameJump_420x420.png in Resources */,
 				AB0F290314BE6E68009ABC6F /* Icon_Pause_420x420.png in Resources */,
 				AB0F290414BE6E68009ABC6F /* Icon_Speed1x_420x420.png in Resources */,
 				AB0F290514BE6E68009ABC6F /* Icon_Speed2x_420x420.png in Resources */,
@@ -2051,11 +2064,13 @@
 				AB0F29A814BE7213009ABC6F /* Icon_DSButtonB_420x420.png in Resources */,
 				AB0F29A914BE7213009ABC6F /* Icon_DSButtonL_420x420.png in Resources */,
 				AB0F29AA14BE7213009ABC6F /* Icon_DSButtonR_420x420.png in Resources */,
+				AB9A1F921898F0E7000DF924 /* Icon_DisplayToggle_420x420.png in Resources */,
 				AB0F29AB14BE7213009ABC6F /* Icon_DSButtonSelect_420x420.png in Resources */,
 				AB0F29AC14BE7213009ABC6F /* Icon_DSButtonStart_420x420.png in Resources */,
 				AB0F29AD14BE7213009ABC6F /* Icon_DSButtonX_420x420.png in Resources */,
 				AB0F29AE14BE7213009ABC6F /* Icon_DSButtonY_420x420.png in Resources */,
 				AB0F29AF14BE7213009ABC6F /* Icon_Emulation_420x420.png in Resources */,
+				AB9A1F961898F0F7000DF924 /* Icon_FrameAdvance_420x420.png in Resources */,
 				AB0F29B014BE7213009ABC6F /* Icon_Input_420x420.png in Resources */,
 				AB0F29B114BE7213009ABC6F /* Icon_Microphone_420x420.png in Resources */,
 				AB0F29B214BE7213009ABC6F /* Icon_OpenROM_420x420.png in Resources */,
@@ -2110,6 +2125,7 @@
 				AB796CB915CDCBA200C59155 /* Icon_VolumeOneThird_16x16.png in Resources */,
 				AB796CBA15CDCBA200C59155 /* Icon_VolumeTwoThird_16x16.png in Resources */,
 				AB796CBB15CDCBA200C59155 /* Icon_Execute_420x420.png in Resources */,
+				AB9A1F971898F0F7000DF924 /* Icon_FrameJump_420x420.png in Resources */,
 				AB796CBC15CDCBA200C59155 /* Icon_Pause_420x420.png in Resources */,
 				AB796CBD15CDCBA200C59155 /* Icon_Speed1x_420x420.png in Resources */,
 				AB796CBE15CDCBA200C59155 /* Icon_Speed2x_420x420.png in Resources */,
@@ -2141,11 +2157,13 @@
 				AB796CD815CDCBA200C59155 /* Icon_DSButtonB_420x420.png in Resources */,
 				AB796CD915CDCBA200C59155 /* Icon_DSButtonL_420x420.png in Resources */,
 				AB796CDA15CDCBA200C59155 /* Icon_DSButtonR_420x420.png in Resources */,
+				AB9A1F911898F0E7000DF924 /* Icon_DisplayToggle_420x420.png in Resources */,
 				AB796CDB15CDCBA200C59155 /* Icon_DSButtonSelect_420x420.png in Resources */,
 				AB796CDC15CDCBA200C59155 /* Icon_DSButtonStart_420x420.png in Resources */,
 				AB796CDD15CDCBA200C59155 /* Icon_DSButtonX_420x420.png in Resources */,
 				AB796CDE15CDCBA200C59155 /* Icon_DSButtonY_420x420.png in Resources */,
 				AB796CDF15CDCBA200C59155 /* Icon_Emulation_420x420.png in Resources */,
+				AB9A1F951898F0F7000DF924 /* Icon_FrameAdvance_420x420.png in Resources */,
 				AB796CE015CDCBA200C59155 /* Icon_Input_420x420.png in Resources */,
 				AB796CE115CDCBA200C59155 /* Icon_Microphone_420x420.png in Resources */,
 				AB796CE215CDCBA200C59155 /* Icon_OpenROM_420x420.png in Resources */,

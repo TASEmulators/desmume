@@ -85,6 +85,7 @@ enum OGLVertexAttributeID
 
 @implementation DisplayWindowController
 
+@synthesize dummyObject;
 @synthesize emuControl;
 @synthesize cdsVideoOutput;
 @synthesize assignedScreen;

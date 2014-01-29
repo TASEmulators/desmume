@@ -83,5 +83,6 @@ enum
 - (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) flush;
+- (void) flushEmpty;
 
 @end
