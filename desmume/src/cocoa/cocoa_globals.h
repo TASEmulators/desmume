@@ -88,6 +88,9 @@
 #define NSSTRING_STATUS_ROM_UNLOADED				NSLocalizedString(@"ROM unloaded.", nil)
 #define NSSTRING_STATUS_EMULATOR_RESETTING			NSLocalizedString(@"Emulator resetting...", nil)
 #define NSSTRING_STATUS_EMULATOR_RESET				NSLocalizedString(@"Emulator reset.", nil)
+#define NSSTRING_STATUS_AUTOHOLD_SET				NSLocalizedString(@"Autohold set...", nil)
+#define NSSTRING_STATUS_AUTOHOLD_SET_RELEASE		NSLocalizedString(@"Autohold set released.", nil)
+#define NSSTRING_STATUS_AUTOHOLD_CLEAR				NSLocalizedString(@"Autohold cleared.", nil)
 #define NSSTRING_STATUS_CANNOT_GENERATE_SAVE_PATH	NSLocalizedString(@"Cannot generate the save file path!", nil)
 #define NSSTRING_STATUS_CANNOT_CREATE_SAVE_DIRECTORY	NSLocalizedString(@"Cannot create the save directory!", nil)
 

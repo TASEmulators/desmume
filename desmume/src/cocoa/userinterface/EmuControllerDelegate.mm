@@ -1101,6 +1101,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setAutohold:theState];
+	[self setStatusText:(theState) ? NSSTRING_STATUS_AUTOHOLD_SET : NSSTRING_STATUS_AUTOHOLD_SET_RELEASE];
 }
 
 - (void) cmdAutoholdClear:(NSValue *)cmdAttrValue
@@ -1115,6 +1116,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] clearAutohold];
+	[self setStatusText:NSSTRING_STATUS_AUTOHOLD_CLEAR];
 	
 }
 
