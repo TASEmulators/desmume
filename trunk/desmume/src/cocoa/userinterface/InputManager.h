@@ -231,7 +231,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 CommandAttributes NewDefaultCommandAttributes(const char *commandTag);
 CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const SEL theSelector);
-CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NSUInteger controlID);
+CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NSUInteger controlID, const bool supportTurbo);
 void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr, NSDictionary *deviceInfo);
 
 NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,

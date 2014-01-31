@@ -26,6 +26,7 @@
 
 @implementation CocoaDSController
 
+@dynamic autohold;
 @synthesize micMode;
 @synthesize selectedAudioFileGenerator;
 @synthesize paddleAdjust;
@@ -40,10 +41,16 @@
 	
 	for (size_t i = 0; i < DSControllerState_StatesCount; i++)
 	{
-		controllerState[i] = false;
+		ndsInput[i].state = false;
+		ndsInput[i].turbo = false;
+		ndsInput[i].turboPattern = false;
+		ndsInput[i].autohold = false;
 	}
 	
 	spinlockControllerState = OS_SPINLOCK_INIT;	
+	autohold = NO;
+	isAutoholdCleared = YES;
+	
 	micMode = MICMODE_NONE;
 	selectedAudioFileGenerator = NULL;
 	touchLocation = NSMakePoint(0.0f, 0.0f);
@@ -57,7 +64,43 @@
 	[super dealloc];
 }
 
-- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID 
+- (void) setAutohold:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockControllerState);
+	
+	autohold = theState;
+	
+	if (autohold && isAutoholdCleared)
+	{
+		memset(ndsInput, 0, sizeof(ndsInput));
+		isAutoholdCleared = NO;
+	}
+	
+	if (!autohold)
+	{
+		for (size_t i = 0; i < DSControllerState_StatesCount; i++)
+		{
+			ndsInput[i].state = ndsInput[i].autohold;
+		}
+	}
+	
+	OSSpinLockUnlock(&spinlockControllerState);
+}
+
+- (BOOL) autohold
+{
+	OSSpinLockLock(&spinlockControllerState);
+	const BOOL theState = autohold;
+	OSSpinLockUnlock(&spinlockControllerState);
+	return theState;
+}
+
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID
+{
+	[self setControllerState:theState controlID:controlID turbo:NO];
+}
+
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled
 {
 	if (controlID >= DSControllerState_StatesCount)
 	{
@@ -65,14 +108,30 @@
 	}
 	
 	OSSpinLockLock(&spinlockControllerState);
-	controllerState[controlID] = (theState) ? true : false;
+	
+	if (autohold)
+	{
+		if (theState)
+		{
+			ndsInput[controlID].turbo = (isTurboEnabled) ? true : false;
+			ndsInput[controlID].turboPattern = (ndsInput[controlID].turbo) ? 0x5555 : 0;
+			ndsInput[controlID].autohold = true;
+		}
+	}
+	else
+	{
+		ndsInput[controlID].state = (theState || ndsInput[controlID].autohold);
+		ndsInput[controlID].turbo = (isTurboEnabled && ndsInput[controlID].state);
+		ndsInput[controlID].turboPattern = (ndsInput[controlID].turbo) ? 0x5555 : 0;
+	}
+	
 	OSSpinLockUnlock(&spinlockControllerState);
 }
 
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation
 {
 	OSSpinLockLock(&spinlockControllerState);
-	controllerState[DSControllerState_Touch] = (theState) ? true : false;
+	ndsInput[DSControllerState_Touch].state = (theState) ? true : false;
 	touchLocation = theLocation;
 	OSSpinLockUnlock(&spinlockControllerState);
 }
@@ -80,7 +139,7 @@
 - (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode
 {
 	OSSpinLockLock(&spinlockControllerState);
-	controllerState[DSControllerState_Microphone] = (theState) ? true : false;
+	ndsInput[DSControllerState_Microphone].state = (theState) ? true : false;
 	micMode = inputMode;
 	OSSpinLockUnlock(&spinlockControllerState);
 }
@@ -88,6 +147,20 @@
 - (void) setSineWaveGeneratorFrequency:(const double)freq
 {
 	sineWaveGenerator.setFrequency(freq);
+}
+
+- (void) clearAutohold
+{
+	[self setAutohold:NO];
+	OSSpinLockLock(&spinlockControllerState);
+	
+	if (!isAutoholdCleared)
+	{
+		memset(ndsInput, 0, sizeof(ndsInput));
+		isAutoholdCleared = YES;
+	}
+	
+	OSSpinLockUnlock(&spinlockControllerState);
 }
 
 - (void) flush
@@ -98,9 +171,24 @@
 	const NSInteger theMicMode = micMode;
 	static bool flushedStates[DSControllerState_StatesCount] = {0};
 	
-	for (size_t i = 0; i < DSControllerState_StatesCount; i++)
+	if (!autohold)
 	{
-		flushedStates[i] = controllerState[i];
+		for (size_t i = 0; i < DSControllerState_StatesCount; i++)
+		{
+			flushedStates[i] = (ndsInput[i].state || ndsInput[i].autohold);
+			
+			if (ndsInput[i].turbo)
+			{
+				const bool turboState = ndsInput[i].turboPattern & 0x0001;
+				flushedStates[i] = (flushedStates[i] && turboState);
+				ndsInput[i].turboPattern >>= 1;
+				ndsInput[i].turboPattern |= (turboState) ? 0x8000 : 0x0000;
+			}
+			else
+			{
+				flushedStates[i] = ndsInput[i].state;
+			}
+		}
 	}
 	
 	OSSpinLockUnlock(&spinlockControllerState);

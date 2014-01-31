@@ -39,6 +39,7 @@
 	
 	NSWindow *inputProfileSheet;
 	NSWindow *inputProfileRenameSheet;
+	NSWindow *inputSettingsNDSInput;
 	NSWindow *inputSettingsMicrophone;
 	NSWindow *inputSettingsTouch;
 	NSWindow *inputSettingsLoadStateSlot;
@@ -70,6 +71,7 @@
 
 @property (readonly) IBOutlet NSWindow *inputProfileSheet;
 @property (readonly) IBOutlet NSWindow *inputProfileRenameSheet;
+@property (readonly) IBOutlet NSWindow *inputSettingsNDSInput;
 @property (readonly) IBOutlet NSWindow *inputSettingsMicrophone;
 @property (readonly) IBOutlet NSWindow *inputSettingsTouch;
 @property (readonly) IBOutlet NSWindow *inputSettingsLoadStateSlot;
