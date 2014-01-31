@@ -38,6 +38,8 @@
 		<string>Piano: B</string>
 		<string>Piano: High C</string>
 		<string>Paddle</string>
+		<string>Autohold - Set</string>
+		<string>Autohold - Clear</string>
 		<string>Execute/Pause</string>
 		<string>Frame Advance</string>
 		<string>Frame Jump</string>
@@ -77,6 +79,8 @@
 						<string>126</string>
 						<key>elementName</key>
 						<string>Up Arrow</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Down</key>
@@ -92,6 +96,8 @@
 						<string>125</string>
 						<key>elementName</key>
 						<string>Down Arrow</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Left</key>
@@ -107,6 +113,8 @@
 						<string>123</string>
 						<key>elementName</key>
 						<string>Left Arrow</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Right</key>
@@ -122,6 +130,8 @@
 						<string>124</string>
 						<key>elementName</key>
 						<string>Right Arrow</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>A</key>
@@ -137,6 +147,8 @@
 						<string>7</string>
 						<key>elementName</key>
 						<string>X</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>B</key>
@@ -152,6 +164,8 @@
 						<string>6</string>
 						<key>elementName</key>
 						<string>Z</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>X</key>
@@ -167,6 +181,8 @@
 						<string>1</string>
 						<key>elementName</key>
 						<string>S</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Y</key>
@@ -182,6 +198,8 @@
 						<string>0</string>
 						<key>elementName</key>
 						<string>A</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>L</key>
@@ -197,6 +215,8 @@
 						<string>12</string>
 						<key>elementName</key>
 						<string>Q</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>R</key>
@@ -212,6 +232,8 @@
 						<string>13</string>
 						<key>elementName</key>
 						<string>W</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Start</key>
@@ -227,6 +249,8 @@
 						<string>36</string>
 						<key>elementName</key>
 						<string>Return</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Select</key>
@@ -242,6 +266,8 @@
 						<string>48</string>
 						<key>elementName</key>
 						<string>Tab</string>
+						<key>intValue1</key>
+						<false/>
 					</dict>
 				</array>
 				<key>Touch</key>
@@ -595,6 +621,10 @@
 						<integer>5</integer>
 					</dict>
 				</array>
+				<key>Autohold - Set</key>
+				<array/>
+				<key>Autohold - Clear</key>
+				<array/>
 				<key>HUD</key>
 				<array>
 					<dict>

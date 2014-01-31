@@ -63,25 +63,39 @@ enum
 	DSControllerState_StatesCount
 };
 
+typedef struct
+{
+	bool state;
+	bool turbo;
+	bool autohold;
+	uint16_t turboPattern;
+} NDSInput;
+
 @interface CocoaDSController : NSObject
 {
+	BOOL autohold;
+	BOOL isAutoholdCleared;
 	NSInteger micMode;
 	NSPoint touchLocation;
-	bool controllerState[DSControllerState_StatesCount];
+	
+	NDSInput ndsInput[DSControllerState_StatesCount];
 	AudioSampleBlockGenerator *selectedAudioFileGenerator;
 	NSInteger paddleAdjust;
 	
 	OSSpinLock spinlockControllerState;
 }
 
+@property (assign) BOOL autohold;
 @property (assign) NSInteger micMode;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
 @property (assign) NSInteger paddleAdjust;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
 - (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
+- (void) clearAutohold;
 - (void) flush;
 - (void) flushEmpty;
 

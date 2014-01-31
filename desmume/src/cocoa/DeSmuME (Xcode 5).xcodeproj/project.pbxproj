@@ -425,6 +425,10 @@
 		AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB796D6C15CDCBA200C59155 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		AB7EC7F4189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */; };
+		AB7EC7F5189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */; };
+		AB7EC7F6189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */; };
+		AB7EC7F7189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */; };
 		AB80E04D142BC4A800A52038 /* cocoa_util.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB80E04C142BC4A800A52038 /* cocoa_util.mm */; };
 		AB82445B1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
 		AB82445C1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
@@ -893,6 +897,8 @@
 		AB796CA215CDCB6B00C59155 /* instruction_attributes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = instruction_attributes.h; path = ../instruction_attributes.h; sourceTree = "<group>"; };
 		AB796CA315CDCB6B00C59155 /* instructions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = instructions.h; path = ../instructions.h; sourceTree = "<group>"; };
 		AB796D7015CDCBA200C59155 /* DeSmuME (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_AutoholdClear_420x420.png; path = images/Icon_AutoholdClear_420x420.png; sourceTree = "<group>"; };
+		AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_AutoholdSet_420x420.png; path = images/Icon_AutoholdSet_420x420.png; sourceTree = "<group>"; };
 		AB80E04C142BC4A800A52038 /* cocoa_util.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_util.mm; sourceTree = "<group>"; };
 		AB80E050142BC4FA00A52038 /* cocoa_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_util.h; sourceTree = "<group>"; };
 		AB817A34143EE2DB00A7DFE9 /* videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = videofilter.h; sourceTree = "<group>"; };
@@ -1545,6 +1551,8 @@
 				AB0F298914BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png */,
 				AB0F298A14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png */,
 				AB0F298B14BE71E0009ABC6F /* Icon_ArrowUp_420x420.png */,
+				AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */,
+				AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */,
 				AB0F296C14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png */,
 				ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */,
 				ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */,
@@ -2064,6 +2072,7 @@
 				AB0F298C14BE71E0009ABC6F /* Icon_ArrowDown_420x420.png in Resources */,
 				AB0F298D14BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB0F298E14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png in Resources */,
+				AB7EC7F5189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */,
 				ABDDF7C61898F024007583C1 /* Icon_DisplayToggle_420x420.png in Resources */,
 				AB0F298F14BE71E0009ABC6F /* Icon_ArrowUp_420x420.png in Resources */,
 				AB0F29A614BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png in Resources */,
@@ -2080,6 +2089,7 @@
 				AB0F29AE14BE7213009ABC6F /* Icon_DSButtonY_420x420.png in Resources */,
 				AB0F29AF14BE7213009ABC6F /* Icon_Emulation_420x420.png in Resources */,
 				AB0F29B014BE7213009ABC6F /* Icon_Input_420x420.png in Resources */,
+				AB7EC7F7189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */,
 				AB0F29B114BE7213009ABC6F /* Icon_Microphone_420x420.png in Resources */,
 				AB0F29B214BE7213009ABC6F /* Icon_OpenROM_420x420.png in Resources */,
 				AB0F29B314BE7213009ABC6F /* Icon_Reset_420x420.png in Resources */,
@@ -2157,6 +2167,7 @@
 				AB796CD215CDCBA200C59155 /* Icon_ArrowDown_420x420.png in Resources */,
 				AB796CD315CDCBA200C59155 /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB796CD415CDCBA200C59155 /* Icon_ArrowRight_420x420.png in Resources */,
+				AB7EC7F4189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */,
 				ABDDF7C51898F024007583C1 /* Icon_DisplayToggle_420x420.png in Resources */,
 				AB796CD515CDCBA200C59155 /* Icon_ArrowUp_420x420.png in Resources */,
 				AB796CD615CDCBA200C59155 /* Icon_DoubleSpeed_420x420.png in Resources */,
@@ -2173,6 +2184,7 @@
 				AB796CDE15CDCBA200C59155 /* Icon_DSButtonY_420x420.png in Resources */,
 				AB796CDF15CDCBA200C59155 /* Icon_Emulation_420x420.png in Resources */,
 				AB796CE015CDCBA200C59155 /* Icon_Input_420x420.png in Resources */,
+				AB7EC7F6189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */,
 				AB796CE115CDCBA200C59155 /* Icon_Microphone_420x420.png in Resources */,
 				AB796CE215CDCBA200C59155 /* Icon_OpenROM_420x420.png in Resources */,
 				AB796CE315CDCBA200C59155 /* Icon_Reset_420x420.png in Resources */,

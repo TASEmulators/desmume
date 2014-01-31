@@ -184,6 +184,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) toggleAllDisplays:(id)sender;
 
 // Tools Menu
+- (IBAction) autoholdSet:(id)sender;
 - (IBAction) toggleGPUState:(id)sender;
 
 - (IBAction) changeCoreSpeed:(id)sender;
@@ -208,6 +209,10 @@ class AudioSampleBlockGenerator;
 - (IBAction) closeSheet:(id)sender;
 
 - (void) cmdUpdateDSController:(NSValue *)cmdAttrValue;
+- (void) cmdUpdateDSControllerWithTurbo:(NSValue *)cmdAttrValue;
+- (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue;
+- (void) cmdUpdateDSMicrophone:(NSValue *)cmdAttrValue;
+- (void) cmdUpdateDSPaddle:(NSValue *)cmdAttrValue;
 
 - (void) cmdLoadEmuSaveStateSlot:(NSValue *)cmdAttrValue;
 - (void) cmdSaveEmuSaveStateSlot:(NSValue *)cmdAttrValue;

@@ -881,6 +881,16 @@
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
+- (IBAction) autoholdSet:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) autoholdClear:(id)sender
+{
+	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
 - (IBAction) chooseSlot1R4Directory:(id)sender
 {
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
@@ -993,64 +1003,115 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
+	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const NSUInteger controlID = cmdAttr.intValue[0];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setControllerState:theState controlID:controlID];
+}
+
+- (void) cmdUpdateDSControllerWithTurbo:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
+	const BOOL isTurboEnabled = (BOOL)cmdAttr.intValue[1];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled];
+}
+
+- (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
 	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
 	
-	if (controlID == DSControllerState_Touch)
+	const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
+	if (touchLoc.x >= 0.0 && touchLoc.y >= 0.0)
 	{
-		const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
-		if (touchLoc.x >= 0.0 && touchLoc.y >= 0.0)
-		{
-			[[cdsCore cdsController] setTouchState:theState location:touchLoc];
-		}
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		[[cdsCore cdsController] setTouchState:theState location:touchLoc];
 	}
-	else if (controlID == DSControllerState_Microphone)
+}
+
+- (void) cmdUpdateDSMicrophone:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	const NSInteger micMode = cmdAttr.intValue[1];
+	[[cdsCore cdsController] setMicrophoneState:theState inputMode:micMode];
+	
+	const float sineWaveFrequency = cmdAttr.floatValue[0];
+	[[cdsCore cdsController] setSineWaveGeneratorFrequency:sineWaveFrequency];
+	
+	NSString *audioFilePath = cmdAttr.object[0];
+	[[cdsCore cdsController] setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
+}
+
+- (void) cmdUpdateDSPaddle:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	if (cmdAttr.input.isAnalog)
 	{
-		const NSInteger micMode = cmdAttr.intValue[1];
-		[[cdsCore cdsController] setMicrophoneState:theState inputMode:micMode];
+		const NSInteger paddleSensitivity = cmdAttr.floatValue[0];
+		const float paddleScalar = cmdAttr.input.scalar;
+		float paddleAdjust = (paddleScalar * 2.0f) - 1.0f;
 		
-		const float sineWaveFrequency = cmdAttr.floatValue[0];
-		[[cdsCore cdsController] setSineWaveGeneratorFrequency:sineWaveFrequency];
+		// Clamp the paddle value.
+		if (paddleAdjust < -1.0f)
+		{
+			paddleAdjust = -1.0f;
+		}
 		
-		NSString *audioFilePath = cmdAttr.object[0];
-		[[cdsCore cdsController] setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
-	}
-	else if (controlID == DSControllerState_Paddle)
-	{
-		if (cmdAttr.input.isAnalog)
+		if (paddleAdjust > 1.0f)
 		{
-			const NSInteger paddleSensitivity = cmdAttr.floatValue[0];
-			const float paddleScalar = cmdAttr.input.scalar;
-			
-			float paddleAdjust = (paddleScalar * 2.0f) - 1.0f;
-			
-			// Clamp the paddle value.
-			if (paddleAdjust < -1.0f)
-			{
-				paddleAdjust = -1.0f;
-			}
-			
-			if (paddleAdjust > 1.0f)
-			{
-				paddleAdjust = 1.0f;
-			}
-			
-			// Normalize the input value for the paddle.
-			paddleAdjust *= (float)paddleSensitivity;
-			[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
+			paddleAdjust = 1.0f;
 		}
-		else
-		{
-			const NSInteger paddleAdjust = (theState) ? cmdAttr.intValue[1] : 0;
-			[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
-		}
+		
+		// Normalize the input value for the paddle.
+		paddleAdjust *= (float)paddleSensitivity;
+		[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
 	}
 	else
 	{
-		[[cdsCore cdsController] setControllerState:theState controlID:controlID];
+		const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+		const NSInteger paddleAdjust = (theState) ? cmdAttr.intValue[1] : 0;
+		[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
 	}
+}
+
+- (void) cmdAutoholdSet:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setAutohold:theState];
+}
+
+- (void) cmdAutoholdClear:(NSValue *)cmdAttrValue
+{
+	CommandAttributes cmdAttr;
+	[cmdAttrValue getValue:&cmdAttr];
+	
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	{
+		return;
+	}
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] clearAutohold];
+	
 }
 
 - (void) cmdLoadEmuSaveStateSlot:(NSValue *)cmdAttrValue

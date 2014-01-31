@@ -36,6 +36,7 @@
 @synthesize inputPrefOutlineView;
 @synthesize inputSettingsController;
 @synthesize inputProfileController;
+@synthesize inputSettingsNDSInput;
 @synthesize inputSettingsMicrophone;
 @synthesize inputSettingsTouch;
 @synthesize inputSettingsLoadStateSlot;
@@ -168,6 +169,18 @@
 - (void) initSettingsSheets
 {
 	inputSettingsMappings = [[NSDictionary alloc] initWithObjectsAndKeys:
+							 inputSettingsNDSInput,			@"Up",
+							 inputSettingsNDSInput,			@"Down",
+							 inputSettingsNDSInput,			@"Right",
+							 inputSettingsNDSInput,			@"Left",
+							 inputSettingsNDSInput,			@"A",
+							 inputSettingsNDSInput,			@"B",
+							 inputSettingsNDSInput,			@"X",
+							 inputSettingsNDSInput,			@"Y",
+							 inputSettingsNDSInput,			@"L",
+							 inputSettingsNDSInput,			@"R",
+							 inputSettingsNDSInput,			@"Start",
+							 inputSettingsNDSInput,			@"Select",
 							 inputSettingsMicrophone,		@"Microphone",
 							 inputSettingsTouch,			@"Touch",
 							 inputSettingsLoadStateSlot,	@"Load State Slot",
