@@ -62,6 +62,7 @@ int SNDOSXInit(int buffer_size)
 	}
 	
 	coreAudioPlaybackManager->start();
+	coreAudioPlaybackManager->pause();
 	
 	return 0;
 }
@@ -124,6 +125,26 @@ void SNDOSXUnMuteAudio()
 	}
 	
 	coreAudioPlaybackManager->unmute();
+}
+
+void SNDOSXPauseAudio()
+{
+	if (coreAudioPlaybackManager == NULL)
+	{
+		return;
+	}
+	
+	coreAudioPlaybackManager->pause();
+}
+
+void SNDOSXUnpauseAudio()
+{
+	if (coreAudioPlaybackManager == NULL)
+	{
+		return;
+	}
+	
+	coreAudioPlaybackManager->unpause();
 }
 
 void SNDOSXSetVolume(int volume)

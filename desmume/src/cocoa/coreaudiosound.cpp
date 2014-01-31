@@ -185,6 +185,20 @@ void CoreAudioOutput::start()
 	OSSpinLockUnlock(this->_spinlockAU);
 }
 
+void CoreAudioOutput::pause()
+{
+	OSSpinLockLock(this->_spinlockAU);
+	AudioOutputUnitStop(this->_au);
+	OSSpinLockUnlock(this->_spinlockAU);
+}
+
+void CoreAudioOutput::unpause()
+{
+	OSSpinLockLock(this->_spinlockAU);
+	AudioOutputUnitStart(this->_au);
+	OSSpinLockUnlock(this->_spinlockAU);
+}
+
 void CoreAudioOutput::stop()
 {
 	OSSpinLockLock(this->_spinlockAU);

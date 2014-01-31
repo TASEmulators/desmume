@@ -134,6 +134,7 @@
 	spinlockSpuSyncMode = OS_SPINLOCK_INIT;
 	spinlockSpuSyncMethod = OS_SPINLOCK_INIT;
 	
+	_idleState = YES;
 	bufferSize = 0;
 	
 	// Set up properties.
@@ -152,6 +153,20 @@
 - (void)dealloc
 {
 	[super dealloc];
+}
+
+- (void) setIdle:(BOOL)theState
+{
+	if (theState)
+	{
+		SNDOSXPauseAudio();
+	}
+	else
+	{
+		SNDOSXUnpauseAudio();
+	}
+	
+	[super setIdle:theState];
 }
 
 - (void) setVolume:(float)vol

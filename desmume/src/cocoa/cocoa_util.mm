@@ -223,6 +223,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 
 @synthesize thread;
 @synthesize threadExit;
+@dynamic idle;
 @synthesize autoreleaseInterval;
 @synthesize sendPort;
 @synthesize receivePort;
@@ -237,7 +238,11 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	// Set up thread info.
 	thread = nil;
 	threadExit = NO;
+	conditionIdle = [[NSCondition alloc] init];
+	_idleState = NO;
 	autoreleaseInterval = interval;
+	
+	spinlockIdle = OS_SPINLOCK_INIT;
 	
 	// Set up thread ports.
 	sendPort = [[NSPort port] retain];
@@ -251,8 +256,31 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 - (void)dealloc
 {
 	[self forceThreadExit];
+	[conditionIdle release];
 	
 	[super dealloc];
+}
+
+- (void) setIdle:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIdle);
+	
+	_idleState = theState;
+	if (!theState)
+	{
+		[conditionIdle signal];
+	}
+	
+	OSSpinLockUnlock(&spinlockIdle);
+}
+
+- (BOOL) idle
+{
+	OSSpinLockLock(&spinlockIdle);
+	const BOOL theState = _idleState;
+	OSSpinLockUnlock(&spinlockIdle);
+	
+	return theState;
 }
 
 - (void) runThread:(id)object
@@ -265,6 +293,14 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	
 	do
 	{
+		
+		[conditionIdle lock];
+		while ([self idle])
+		{
+			[conditionIdle wait];
+		}
+		[conditionIdle unlock];
+		
 		NSAutoreleasePool *runLoopPool = [[NSAutoreleasePool alloc] init];
 		NSDate *runDate = [[NSDate alloc] initWithTimeIntervalSinceNow:[self autoreleaseInterval]];
 		[runLoop runUntilDate:runDate];
@@ -294,6 +330,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	}
 	
 	[self setThreadExit:YES];
+	[self setIdle:NO];
 	
 	// Wait until the thread has shut down.
 	while ([self thread] != nil)

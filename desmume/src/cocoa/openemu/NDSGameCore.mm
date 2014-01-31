@@ -22,14 +22,15 @@
 #import "cocoa_firmware.h"
 #import "cocoa_GPU.h"
 #import "cocoa_input.h"
-#import "cocoa_core.h"
-#import "cocoa_output.h"
 #import "OESoundInterface.h"
 #import "OENDSSystemResponderClient.h"
 
 #include <OpenGL/gl.h>
 #include "../../NDSSystem.h"
 #undef BOOL
+
+
+volatile bool execute = true;
 
 @implementation NDSGameCore
 
@@ -85,7 +86,7 @@
 	CommonSettings.advanced_timing = true;
 	CommonSettings.jit_max_block_size = 12;
 	CommonSettings.use_jit = true;
-	[CocoaDSCore startupCore];
+	NDS_Init();
 	
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
@@ -122,7 +123,7 @@
 - (void)dealloc
 {
 	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
-	[CocoaDSCore shutdownCore];
+	NDS_DeInit();
 	
 	[self setCdsCheats:nil];
 	[self setCdsController:nil];

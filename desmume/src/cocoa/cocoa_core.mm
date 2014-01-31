@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -76,13 +76,19 @@ volatile bool execute = true;
 
 @dynamic mutexCoreExecute;
 
-static BOOL isCoreStarted = NO;
-
 - (id)init
 {
 	self = [super init];
 	if(self == nil)
 	{
+		return self;
+	}
+	
+	int initResult = NDS_Init();
+	if (initResult == -1)
+	{
+		[self release];
+		self = nil;
 		return self;
 	}
 	
@@ -150,18 +156,6 @@ static BOOL isCoreStarted = NO;
 {
 	[self setCoreState:CORESTATE_PAUSE];
 	
-	// Exit the thread.
-	if (self.thread != nil)
-	{
-		self.threadExit = YES;
-		
-		// Wait until the thread has shut down.
-		while (self.thread != nil)
-		{
-			[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-		}
-	}
-	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	threadParam.exitThread = true;
 	pthread_cond_signal(&threadParam.condThreadExecute);
@@ -182,42 +176,9 @@ static BOOL isCoreStarted = NO;
 	pthread_mutex_destroy(&threadParam.mutexOutputList);
 	pthread_mutex_destroy(&threadParam.mutexCoreExecute);
 	
+	NDS_DeInit();
+	
 	[super dealloc];
-}
-
-+ (BOOL) startupCore
-{
-	NSInteger result = -1;
-	
-	if (isCoreStarted)
-	{
-		return isCoreStarted;
-	}
-	
-	result = NDS_Init();
-	if (result == -1)
-	{
-		isCoreStarted = NO;
-		return isCoreStarted;
-	}
-	
-	isCoreStarted = YES;
-	
-	return isCoreStarted;
-}
-
-+ (void) shutdownCore
-{
-	if (isCoreStarted)
-	{
-		NDS_DeInit();
-		isCoreStarted = NO;
-	}
-}
-
-+ (BOOL) isCoreStarted
-{
-	return isCoreStarted;
 }
 
 - (void) setMasterExecute:(BOOL)theState
@@ -515,17 +476,51 @@ static BOOL isCoreStarted = NO;
 	switch (coreState)
 	{
 		case CORESTATE_PAUSE:
-		case CORESTATE_FRAMEADVANCE:
-			[self setFrameStatus:[NSString stringWithFormat:@"%lld", (unsigned long)[self frameNumber]]];
+		{
+			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			{
+				[cdsOutput setIdle:YES];
+			}
+			
+			[self setFrameStatus:[NSString stringWithFormat:@"%lu", (unsigned long)[self frameNumber]]];
 			break;
+		}
+			
+		case CORESTATE_FRAMEADVANCE:
+		{
+			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			{
+				[cdsOutput setIdle:NO];
+			}
+			
+			[self setFrameStatus:[NSString stringWithFormat:@"%lu", (unsigned long)[self frameNumber]]];
+			break;
+		}
 			
 		case CORESTATE_EXECUTE:
+		{
+			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			{
+				[cdsOutput setIdle:NO];
+			}
+			
 			[self setFrameStatus:@"Executing..."];
 			break;
+		}
 			
 		case CORESTATE_FRAMEJUMP:
-			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lld.", (unsigned long)threadParam.frameJumpTarget]];
+		{
+			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			{
+				if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+				{
+					[cdsOutput setIdle:YES];
+				}
+			}
+			
+			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lu.", (unsigned long)threadParam.frameJumpTarget]];
 			break;
+		}
 			
 		default:
 			break;
@@ -799,13 +794,6 @@ static BOOL isCoreStarted = NO;
 	pthread_mutex_lock(&threadParam.mutexOutputList);
 	[self.cdsOutputList removeAllObjects];
 	pthread_mutex_unlock(&threadParam.mutexOutputList);
-}
-
-- (void) runThread:(id)object
-{
-	[CocoaDSCore startupCore];
-	[super runThread:object];
-	[CocoaDSCore shutdownCore];
 }
 
 - (NSString *) cpuEmulationEngineString

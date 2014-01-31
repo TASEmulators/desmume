@@ -189,15 +189,6 @@
 	[newCore addOutput:newSpeaker];
 	[emuControl setCdsSpeaker:newSpeaker];
 	
-	// Start the core thread.
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newCore withObject:nil];
-	
-	// Wait until the emulation core has finished starting up.
-	while (!([CocoaDSCore isCoreStarted] && [newCore thread] != nil))
-	{
-		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-	}
-	
 	// Update the SLOT-2 device list after the emulation core is initialized.
 	[slot2WindowDelegate update];
 	[slot2WindowDelegate setHidManager:[inputManager hidManager]];

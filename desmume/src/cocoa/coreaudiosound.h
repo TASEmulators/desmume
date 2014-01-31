@@ -44,6 +44,8 @@ public:
 	size_t getAvailableSamples() const;
 	void mute();
 	void unmute();
+	void pause();
+	void unpause();
 	float getVolume() const;
 	void setVolume(float vol);
 };
