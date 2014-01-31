@@ -17,6 +17,7 @@
 */
 
 #import <Foundation/Foundation.h>
+#include <libkern/OSAtomic.h>
 #include "utilities.h"
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
@@ -62,13 +63,18 @@
 {
 	NSThread *thread;
 	BOOL threadExit;
+	NSCondition *conditionIdle;
+	BOOL _idleState;
 	NSTimeInterval autoreleaseInterval;
 	NSPort *sendPort;
-	NSPort *receivePort;	
+	NSPort *receivePort;
+	
+	OSSpinLock spinlockIdle;
 }
 
 @property (assign) NSThread *thread;
 @property (assign) BOOL threadExit;
+@property (assign) BOOL idle;
 @property (assign) NSTimeInterval autoreleaseInterval;
 @property (assign) NSPort *sendPort;
 @property (assign) NSPort *receivePort;

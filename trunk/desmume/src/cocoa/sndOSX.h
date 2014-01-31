@@ -36,6 +36,8 @@ void	SNDOSXUpdateAudio(s16 *buffer, u32 num_samples);
 u32		SNDOSXGetAudioSpace();
 void	SNDOSXMuteAudio();
 void	SNDOSXUnMuteAudio();
+void	SNDOSXPauseAudio();
+void	SNDOSXUnpauseAudio();
 void	SNDOSXSetVolume(int volume);
 void	SNDOSXClearBuffer();
 void	SNDOSXFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);

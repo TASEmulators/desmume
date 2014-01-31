@@ -45,7 +45,7 @@ typedef struct
 	pthread_cond_t condThreadExecute;
 } CoreThreadParam;
 
-@interface CocoaDSCore : CocoaDSThread
+@interface CocoaDSCore : NSObject
 {
 	CocoaDSController *cdsController;
 	CocoaDSFirmware *cdsFirmware;
@@ -122,10 +122,6 @@ typedef struct
 @property (retain) NSURL *slot1R4URL;
 
 @property (readonly) pthread_mutex_t *mutexCoreExecute;
-
-+ (BOOL) startupCore;
-+ (void) shutdownCore;
-+ (BOOL) isCoreStarted;
 
 - (BOOL) ejectCardFlag;
 - (void) setEjectCardFlag;
