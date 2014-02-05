@@ -238,7 +238,6 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	// Set up thread info.
 	thread = nil;
 	threadExit = NO;
-	conditionIdle = [[NSCondition alloc] init];
 	_idleState = NO;
 	autoreleaseInterval = interval;
 	
@@ -256,7 +255,6 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 - (void)dealloc
 {
 	[self forceThreadExit];
-	[conditionIdle release];
 	
 	[super dealloc];
 }
@@ -264,13 +262,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 - (void) setIdle:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIdle);
-	
 	_idleState = theState;
-	if (!theState)
-	{
-		[conditionIdle signal];
-	}
-	
 	OSSpinLockUnlock(&spinlockIdle);
 }
 
@@ -293,14 +285,6 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	
 	do
 	{
-		
-		[conditionIdle lock];
-		while ([self idle])
-		{
-			[conditionIdle wait];
-		}
-		[conditionIdle unlock];
-		
 		NSAutoreleasePool *runLoopPool = [[NSAutoreleasePool alloc] init];
 		NSDate *runDate = [[NSDate alloc] initWithTimeIntervalSinceNow:[self autoreleaseInterval]];
 		[runLoop runUntilDate:runDate];
