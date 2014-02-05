@@ -63,7 +63,6 @@
 {
 	NSThread *thread;
 	BOOL threadExit;
-	NSCondition *conditionIdle;
 	BOOL _idleState;
 	NSTimeInterval autoreleaseInterval;
 	NSPort *sendPort;
