@@ -77,15 +77,14 @@
 #undef GPOINTER_TO_UINT
 #define GPOINTER_TO_UINT(p) ((guint)  (glong) (p))
 
-#define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
+#define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20 + 1)
 
 #define SCREENS_PIXEL_SIZE (256*192*2)
 #define SCREEN_BYTES_PER_PIXEL 3
 #define GAP_SIZE 50
 
-#define FPS_LIMITER_FRAME_PERIOD 8
-static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
+static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter video(256, 384, VideoFilterTypeID_HQ2XS, 4);
 
@@ -128,6 +127,8 @@ static void ToggleAudio (GtkToggleAction *action);
 #ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action);
 #endif
+static void ToggleFpsLimiter (GtkToggleAction *action);
+static void ToggleAutoFrameskip (GtkToggleAction *action);
 static void ToggleSwapScreens(GtkToggleAction *action);
 static void ToggleGap (GtkToggleAction *action);
 static void SetRotation(GtkAction *action, GtkRadioAction *current);
@@ -198,11 +199,20 @@ static const char *ui_description =
 #endif
 "      </menu>"
 "      <menu action='FrameskipMenu'>"
+"        <menuitem action='enablefpslimiter'/>"
+"        <separator/>"
 "        <menuitem action='frameskipA'/>"
+"        <separator/>"
 "        <menuitem action='frameskip0'/>"
 "        <menuitem action='frameskip1'/>"
 "        <menuitem action='frameskip2'/>"
 "        <menuitem action='frameskip3'/>"
+"        <menuitem action='frameskip4'/>"
+"        <menuitem action='frameskip5'/>"
+"        <menuitem action='frameskip6'/>"
+"        <menuitem action='frameskip7'/>"
+"        <menuitem action='frameskip8'/>"
+"        <menuitem action='frameskip9'/>"
 "      </menu>"
 "      <menu action='LayersMenu'>"
 "        <menuitem action='layermainbg0'/>"
@@ -349,6 +359,8 @@ static const GtkToggleActionEntry toggle_entries[] = {
 #ifdef FAKE_MIC
     { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(ToggleMicNoise), FALSE},
 #endif
+    { "enablefpslimiter", NULL, "_Limit to 60 fps", NULL, NULL, G_CALLBACK(ToggleFpsLimiter), TRUE},
+    { "frameskipA", NULL, "_Auto-minimize skipping", NULL, NULL, G_CALLBACK(ToggleAutoFrameskip), TRUE},
     { "gap", NULL, "_Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
     { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
     { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
@@ -444,15 +456,25 @@ enum frameskip_enum {
     FRAMESKIP_1 = 1,
     FRAMESKIP_2 = 2,
     FRAMESKIP_3 = 3,
-    FRAMESKIP_AUTO
+    FRAMESKIP_4 = 4,
+    FRAMESKIP_5 = 5,
+    FRAMESKIP_6 = 6,
+    FRAMESKIP_7 = 7,
+    FRAMESKIP_8 = 8,
+    FRAMESKIP_9 = 9,
 };
 
 static const GtkRadioActionEntry frameskip_entries[] = {
-    { "frameskipA", NULL, "_Auto", NULL, NULL, FRAMESKIP_AUTO},
-    { "frameskip0", NULL, "_0", NULL, NULL, FRAMESKIP_0},
+    { "frameskip0", NULL, "_0 (never skip)", NULL, NULL, FRAMESKIP_0},
     { "frameskip1", NULL, "_1", NULL, NULL, FRAMESKIP_1},
     { "frameskip2", NULL, "_2", NULL, NULL, FRAMESKIP_2},
     { "frameskip3", NULL, "_3", NULL, NULL, FRAMESKIP_3},
+    { "frameskip4", NULL, "_4", NULL, NULL, FRAMESKIP_4},
+    { "frameskip5", NULL, "_5", NULL, NULL, FRAMESKIP_5},
+    { "frameskip6", NULL, "_6", NULL, NULL, FRAMESKIP_6},
+    { "frameskip7", NULL, "_7", NULL, NULL, FRAMESKIP_7},
+    { "frameskip8", NULL, "_8", NULL, NULL, FRAMESKIP_8},
+    { "frameskip9", NULL, "_9", NULL, NULL, FRAMESKIP_9},
 };
 
 static const GtkRadioActionEntry savet_entries[] = {
@@ -644,7 +666,8 @@ joinThread_gdb( void *thread_handle) {
 
 uint SPUMode = SPUMODE_DUALASYNC;
 uint Frameskip = 0;
-bool autoframeskip = false;
+uint autoFrameskipMax = 0;
+bool autoframeskip = true;
 GdkInterpType Interpolation = GDK_INTERP_NEAREST;
 
 static GtkWidget *pWindow;
@@ -1338,6 +1361,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 
     cairo_paint(cr);
     cairo_destroy(cr);
+    draw_count++;
 
     return TRUE;
 }
@@ -1882,8 +1906,10 @@ static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
 
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
-    Frameskip = gtk_radio_action_get_current_value(current) ;
-    autoframeskip = Frameskip == FRAMESKIP_AUTO;
+    autoFrameskipMax = gtk_radio_action_get_current_value(current) ;
+    if (!autoframeskip) {
+        Frameskip = autoFrameskipMax;
+    }
 }
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
@@ -1946,12 +1972,17 @@ static void DoQuit()
 
 gboolean EmuLoop(gpointer data)
 {
-    static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames; 
-    static int limiter_frame_counter;
+    static Uint32 fps_SecStart, next_fps_SecStart, fps_FrameCount, skipped_frames;
+    static int last_tick;
+    static unsigned next_frame_time;
+    static int frame_mod3;
     unsigned int i;
-    gchar Title[20];
+    gchar Title[50];
 
     if (!desmume_running()) {
+      // Set the next frame time to 0 so that it will recount
+      next_frame_time = 0;
+      frame_mod3 = 0;
       regMainLoop = FALSE;
       return FALSE;
     }
@@ -1960,28 +1991,20 @@ gboolean EmuLoop(gpointer data)
     if (!fps_SecStart)
       fps_SecStart = SDL_GetTicks();
 
-    /* don't count autoframeskip as real frameskip  */
-    if (Frameskip == FRAMESKIP_AUTO)
-      Frameskip = 0;
-
     fps_FrameCount += Frameskip + 1;
     next_fps_SecStart = SDL_GetTicks();
     if ((next_fps_SecStart - fps_SecStart) >= 1000) {
         fps_SecStart = next_fps_SecStart;
 
-        snprintf(Title, sizeof(Title), "Desmume - %dfps", fps_FrameCount);
+        float emu_ratio = fps_FrameCount / 60.0;
+        LOG("auto: %d fps: %u skipped: %u emu_ratio: %f Frameskip: %u\n", autoframeskip, fps_FrameCount, skipped_frames, emu_ratio, Frameskip);
+
+        snprintf(Title, sizeof(Title), "Desmume - %dfps, %d skipped, draw: %dfps", fps_FrameCount, skipped_frames, draw_count);
         gtk_window_set_title(GTK_WINDOW(pWindow), Title);
 
-        float emu_ratio = fps_FrameCount / 60.0;
-        if (autoframeskip) {
-            if (emu_ratio < 1 && (fps_FrameCount - skipped_frames) > skipped_frames)
-                Frameskip = MIN(Frameskip+1, FRAMESKIP_AUTO-1);
-            if (emu_ratio > 1 || skipped_frames >= fps_FrameCount-Frameskip)
-                Frameskip = Frameskip ? Frameskip-1 : 0;
-        }
-        LOG("auto: %d fps: %u skipped: %u emu_ratio: %f Frameskip: %u\n", autoframeskip, fps_FrameCount, skipped_frames, emu_ratio, Frameskip);
         fps_FrameCount = 0;
         skipped_frames = 0;
+        draw_count = 0;
     }
 
     /* Merge the joystick keys with the keyboard ones */
@@ -1990,48 +2013,68 @@ gboolean EmuLoop(gpointer data)
     update_keypad(keys_latch);
 
     desmume_cycle();    /* Emule ! */
-    for (i = 0; i < Frameskip; i++) {
-        NDS_SkipNextFrame();
-        desmume_cycle();
-        skipped_frames++;
-    }
 
     _updateDTools();
     gtk_widget_queue_draw( pDrawingArea );
     osd->clear();
 
-    if (!gtk_fps_limiter_disabled) {
-        limiter_frame_counter += 1;
-        if (limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
-            limiter_frame_counter = 0;
-            /* wait for the timer to expire */
-            SDL_SemWait( fps_limiter_semaphore);
+    if (gtk_fps_limiter_disabled || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
+        if (autoframeskip) {
+            Frameskip = 0;
+        } else {
+            for (i = 0; i < Frameskip; i++) {
+                NDS_SkipNextFrame();
+                desmume_cycle();
+                skipped_frames++;
+            }
         }
+        next_frame_time = SDL_GetTicks() + 16;
+        frame_mod3 = 0;
+    } else {
+        if (!autoframeskip) {
+            for (i = 0; i < Frameskip; i++) {
+                NDS_SkipNextFrame();
+                desmume_cycle();
+                skipped_frames++;
+                // Update next frame time
+                frame_mod3 = (frame_mod3 + 1) % 3;
+                next_frame_time += (frame_mod3 == 0) ? 16 : 17;
+            }
+        }
+        unsigned this_tick = SDL_GetTicks();
+        if (this_tick < next_frame_time) {
+            unsigned timeleft = next_frame_time - this_tick;
+            usleep((timeleft - 1) * 1000);
+            while (SDL_GetTicks() < next_frame_time);
+            this_tick = SDL_GetTicks();
+        }
+        if (autoframeskip) {
+            // Determine the auto frameskip value, maximum 4
+            for (Frameskip = 0; this_tick > next_frame_time && Frameskip < autoFrameskipMax; Frameskip++, this_tick = SDL_GetTicks()) {
+                // Aggressively skip frames to avoid delay
+                NDS_SkipNextFrame();
+                desmume_cycle();
+                skipped_frames++;
+                // Update next frame time
+                frame_mod3 = (frame_mod3 + 1) % 3;
+                next_frame_time += (frame_mod3 == 0) ? 16 : 17;
+            }
+            if (Frameskip > autoFrameskipMax) {
+                Frameskip = autoFrameskipMax;
+            }
+            //while (SDL_GetTicks() < next_frame_time);
+            //this_tick = SDL_GetTicks();
+        }
+        if (this_tick > next_frame_time && this_tick - next_frame_time >= 17) {
+            // If we fall too much behind, don't try to catch up.
+            next_frame_time = this_tick;
+        }
+        // We want to achieve a total 17 + 17 + 16 = 50 ms for every 3 frames.
+        frame_mod3 = (frame_mod3 + 1) % 3;
+        next_frame_time += (frame_mod3 == 0) ? 16 : 17;
     }
 
     return TRUE;
-}
-
-
-/** 
- * A SDL timer callback function. Signals the supplied SDL semaphore
- * if its value is small.
- * 
- * @param interval The interval since the last call (in ms)
- * @param param The pointer to the semaphore.
- * 
- * @return The interval to the next call (required by SDL)
- */
-static Uint32 fps_limiter_fn(Uint32 interval, void *param)
-{
-  SDL_sem *sdl_semaphore = (SDL_sem *)param;
-
-  /* signal the semaphore if it is getting low */
-  if ( SDL_SemValue( sdl_semaphore) < 4) {
-    SDL_SemPost( sdl_semaphore);
-  }
-
-  return interval;
 }
 
 static void desmume_try_adding_ui(GtkUIManager *self, const char *ui_descr){
@@ -2122,6 +2165,32 @@ static void ToggleMicNoise (GtkToggleAction *action)
        osd->addLine("Fake mic disabled");
 }
 #endif
+
+static void ToggleFpsLimiter (GtkToggleAction *action)
+{
+    BOOL limiterEnable = (BOOL)gtk_toggle_action_get_active(action);
+
+    gtk_fps_limiter_disabled = !limiterEnable;
+    if (limiterEnable)
+       osd->addLine("Fps limiter enabled");
+    else
+       osd->addLine("Fps limiter disabled");
+}
+
+static void ToggleAutoFrameskip (GtkToggleAction *action)
+{
+    BOOL autoSet = (BOOL)gtk_toggle_action_get_active(action);
+
+    if ((BOOL)gtk_toggle_action_get_active(action)) {
+        autoframeskip = true;
+        Frameskip = 0;
+        osd->addLine("Auto frameskip enabled");
+    } else {
+        autoframeskip = false;
+        Frameskip = autoFrameskipMax;
+        osd->addLine("Auto frameskip disabled");
+    }
+}
 
 static void desmume_gtk_menu_tools (GtkActionGroup *ag)
 {
@@ -2410,17 +2479,10 @@ common_gtk_main( class configured_features *my_config)
     gtk_widget_show_all(pWindow);
 
     gtk_fps_limiter_disabled = my_config->disable_limiter;
-    if ( !gtk_fps_limiter_disabled) {
-        /* create the semaphore used for fps limiting */
-        fps_limiter_semaphore = SDL_CreateSemaphore( 1);
-
-        /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
-        limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
-        if ( limiter_timer == NULL) {
-            g_printerr("Error trying to start FPS limiter timer: %s\n",
-                     SDL_GetError());
-            return 1;
-        }
+    if (gtk_fps_limiter_disabled) {
+        GtkAction *action = gtk_action_group_get_action(action_group, "enablefpslimiter");
+        if (action)
+            gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
     }
 
     //Set the 3D emulation to use
@@ -2490,12 +2552,6 @@ common_gtk_main( class configured_features *my_config)
     deinit_glx_3Demu();
 #endif
 
-    if ( !gtk_fps_limiter_disabled) {
-        /* tidy up the FPS limiter timer and semaphore */
-        SDL_RemoveTimer( limiter_timer);
-        SDL_DestroySemaphore( fps_limiter_semaphore);
-    }
-
     /* Unload joystick */
     uninit_joy();
 
@@ -2519,6 +2575,9 @@ common_gtk_main( class configured_features *my_config)
 int main (int argc, char *argv[])
 {
   configured_features my_config;
+
+  // The global menu screws up the window size...
+  unsetenv("UBUNTU_MENUPROXY");
 
   init_configured_features( &my_config);
 
