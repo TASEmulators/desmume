@@ -1869,6 +1869,14 @@
 					RelativePath="..\filter\scanline.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\filter\xbrz.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\filter\xbrz.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -2533,7 +2541,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\glib.tag"
 						/>
@@ -2543,7 +2551,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\glib.tag"
 						/>
@@ -2553,7 +2561,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\glib.tag"
 						/>
@@ -2563,7 +2571,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\glib.tag"
 						/>
@@ -2573,7 +2581,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\glib.tag"
 						/>
@@ -2583,7 +2591,7 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag"
+							CommandLine="un7z_and_touch.bat glib-2.20.1\glib-2.20.1.7z .libs\glib* .libs\glib.tag&#x0D;&#x0A;"
 							AdditionalDependencies="7z.exe;un7z_and_touch.bat"
 							Outputs=".libs\glib.tag"
 						/>

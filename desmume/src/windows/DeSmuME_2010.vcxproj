@@ -409,6 +409,7 @@
     <ClCompile Include="..\filter\hq4x.cpp" />
     <ClCompile Include="..\filter\lq2x.cpp" />
     <ClCompile Include="..\filter\scanline.cpp" />
+    <ClCompile Include="..\filter\xbrz.cpp" />
     <ClCompile Include="..\firmware.cpp" />
     <ClCompile Include="..\fs-windows.cpp" />
     <ClCompile Include="..\gfx3d.cpp" />
@@ -679,6 +680,7 @@
     <ClInclude Include="..\filter\hq4x.h" />
     <ClInclude Include="..\filter\interp.h" />
     <ClInclude Include="..\filter\lq2x.h" />
+    <ClInclude Include="..\filter\xbrz.h" />
     <ClInclude Include="..\firmware.h" />
     <ClInclude Include="..\fs.h" />
     <ClInclude Include="..\gfx3d.h" />

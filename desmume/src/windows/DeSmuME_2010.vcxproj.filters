@@ -807,6 +807,9 @@
     <ClCompile Include="..\addons\slot2_auto.cpp">
       <Filter>Core\addons</Filter>
     </ClCompile>
+    <ClCompile Include="..\filter\xbrz.cpp">
+      <Filter>Core\filter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\armcpu.h">
@@ -1546,6 +1549,9 @@
     </ClInclude>
     <ClInclude Include="..\slot2.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\filter\xbrz.h">
+      <Filter>Core\filter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
