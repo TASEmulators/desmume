@@ -2351,6 +2351,14 @@
 				RelativePath="..\filter\scanline.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\filter\xbrz.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\filter\xbrz.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\agg2d.h"
