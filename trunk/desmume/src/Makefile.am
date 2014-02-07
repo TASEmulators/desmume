@@ -96,6 +96,7 @@ libdesmume_a_SOURCES = \
 	filter/hq2x.cpp filter/hq2x.h filter/hq4x.cpp filter/hq4x.dat filter/hq4x.h \
 	filter/interp.h filter/lq2x.cpp filter/lq2x.h filter/scanline.cpp \
 	filter/videofilter.cpp filter/videofilter.h \
+	filter/xbrz.cpp filter/xbrz.h \
 	version.cpp version.h \
 	desmume_config.cpp desmume_config.h
 

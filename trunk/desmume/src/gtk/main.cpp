@@ -246,23 +246,28 @@ static const char *ui_description =
 "      </menu>"
 "      <menu action='PriInterpolationMenu'>"
 "        <menuitem action='pri_interp_none'/>"
-"        <menuitem action='pri_interp_nearest2x'/>"
 "        <menuitem action='pri_interp_lq2x'/>"
 "        <menuitem action='pri_interp_lq2xs'/>"
 "        <menuitem action='pri_interp_hq2x'/>"
-"        <menuitem action='pri_interp_hq4x'/>"
 "        <menuitem action='pri_interp_hq2xs'/>"
+"        <menuitem action='pri_interp_hq4x'/>"
+"        <menuitem action='pri_interp_hq4xs'/>"
 "        <menuitem action='pri_interp_2xsai'/>"
 "        <menuitem action='pri_interp_super2xsai'/>"
 "        <menuitem action='pri_interp_supereagle'/>"
 "        <menuitem action='pri_interp_scanline'/>"
 "        <menuitem action='pri_interp_bilinear'/>"
+"        <menuitem action='pri_interp_nearest2x'/>"
+"        <menuitem action='pri_interp_nearest_1point5x'/>"
+"        <menuitem action='pri_interp_nearestplus_1point5x'/>"
 "        <menuitem action='pri_interp_epx'/>"
 "        <menuitem action='pri_interp_epxplus'/>"
 "        <menuitem action='pri_interp_epx_1point5x'/>"
 "        <menuitem action='pri_interp_epxplus_1point5x'/>"
-"        <menuitem action='pri_interp_nearest_1point5x'/>"
-"        <menuitem action='pri_interp_nearestplus_1point5x'/>"
+"        <menuitem action='pri_interp_2xbrz'/>"
+"        <menuitem action='pri_interp_3xbrz'/>"
+"        <menuitem action='pri_interp_4xbrz'/>"
+"        <menuitem action='pri_interp_5xbrz'/>"
 "      </menu>"
 "      <menu action='InterpolationMenu'>"
 "        <menuitem action='interp_nearest'/>"
@@ -354,23 +359,28 @@ static const GtkToggleActionEntry toggle_entries[] = {
 
 static const GtkRadioActionEntry pri_interpolation_entries[] = {
     { "pri_interp_none", NULL, VideoFilterAttributesList[VideoFilterTypeID_None].typeString, NULL, NULL, VideoFilterTypeID_None},
-    { "pri_interp_nearest2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest2X].typeString, NULL, NULL, VideoFilterTypeID_Nearest2X},
     { "pri_interp_lq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2X].typeString, NULL, NULL, VideoFilterTypeID_LQ2X},
     { "pri_interp_lq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2XS].typeString, NULL, NULL, VideoFilterTypeID_LQ2XS},
     { "pri_interp_hq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2X].typeString, NULL, NULL, VideoFilterTypeID_HQ2X},
-    { "pri_interp_hq4x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4X].typeString, NULL, NULL, VideoFilterTypeID_HQ4X},
     { "pri_interp_hq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2XS].typeString, NULL, NULL, VideoFilterTypeID_HQ2XS},
+    { "pri_interp_hq4x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4X].typeString, NULL, NULL, VideoFilterTypeID_HQ4X},
+    { "pri_interp_hq4xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4XS].typeString, NULL, NULL, VideoFilterTypeID_HQ4XS},
     { "pri_interp_2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_2xSaI].typeString, NULL, NULL, VideoFilterTypeID_2xSaI},
     { "pri_interp_super2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_Super2xSaI].typeString, NULL, NULL, VideoFilterTypeID_Super2xSaI},
     { "pri_interp_supereagle", NULL, VideoFilterAttributesList[VideoFilterTypeID_SuperEagle].typeString, NULL, NULL, VideoFilterTypeID_SuperEagle},
     { "pri_interp_scanline", NULL, VideoFilterAttributesList[VideoFilterTypeID_Scanline].typeString, NULL, NULL, VideoFilterTypeID_Scanline},
     { "pri_interp_bilinear", NULL, VideoFilterAttributesList[VideoFilterTypeID_Bilinear].typeString, NULL, NULL, VideoFilterTypeID_Bilinear},
+    { "pri_interp_nearest2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest2X].typeString, NULL, NULL, VideoFilterTypeID_Nearest2X},
+    { "pri_interp_nearest_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest1_5X].typeString, NULL, NULL, VideoFilterTypeID_Nearest1_5X},
+    { "pri_interp_nearestplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_NearestPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_NearestPlus1_5X},
     { "pri_interp_epx", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPX].typeString, NULL, NULL, VideoFilterTypeID_EPX},
     { "pri_interp_epxplus", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPXPlus].typeString, NULL, NULL, VideoFilterTypeID_EPXPlus},
     { "pri_interp_epx_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPX1_5X].typeString, NULL, NULL, VideoFilterTypeID_EPX1_5X},
     { "pri_interp_epxplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_EPXPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_EPXPlus1_5X},
-    { "pri_interp_nearest_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_Nearest1_5X].typeString, NULL, NULL, VideoFilterTypeID_Nearest1_5X},
-    { "pri_interp_nearestplus_1point5x", NULL, VideoFilterAttributesList[VideoFilterTypeID_NearestPlus1_5X].typeString, NULL, NULL, VideoFilterTypeID_NearestPlus1_5X},
+    { "pri_interp_2xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_2xBRZ].typeString, NULL, NULL, VideoFilterTypeID_2xBRZ},
+    { "pri_interp_3xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_3xBRZ].typeString, NULL, NULL, VideoFilterTypeID_3xBRZ},
+    { "pri_interp_4xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_4xBRZ].typeString, NULL, NULL, VideoFilterTypeID_4xBRZ},
+    { "pri_interp_5xbrz", NULL, VideoFilterAttributesList[VideoFilterTypeID_5xBRZ].typeString, NULL, NULL, VideoFilterTypeID_5xBRZ},
 };
 
 static const GtkRadioActionEntry interpolation_entries[] = {
