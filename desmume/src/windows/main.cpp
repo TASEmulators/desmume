@@ -4539,6 +4539,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_NEAREST1POINT5, video.currentfilter == video.NEAREST1POINT5 );
 			MainWindow->checkMenu(IDM_RENDER_NEARESTPLUS1POINT5, video.currentfilter == video.NEARESTPLUS1POINT5 );
 
+			MainWindow->checkMenu(IDM_RENDER_2XBRZ, video.currentfilter == video._2XBRZ );
+			MainWindow->checkMenu(IDM_RENDER_3XBRZ, video.currentfilter == video._3XBRZ );
+			MainWindow->checkMenu(IDM_RENDER_4XBRZ, video.currentfilter == video._4XBRZ );
+			MainWindow->checkMenu(IDM_RENDER_5XBRZ, video.currentfilter == video._5XBRZ );
+
 			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_VSYNC, (GetStyle()&DWS_VSYNC)!=0);
@@ -5356,6 +5361,34 @@ DOKEYDOWN:
 			{
 				Lock lock (win_backbuffer_sync);
 				video.setfilter(video.NEARESTPLUS1POINT5);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_2XBRZ:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video._2XBRZ);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_3XBRZ:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video._3XBRZ);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_4XBRZ:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video._4XBRZ);
+				FilterUpdate(hwnd);
+			}
+			break;
+		case IDM_RENDER_5XBRZ:
+			{
+				Lock lock (win_backbuffer_sync);
+				video.setfilter(video._5XBRZ);
 				FilterUpdate(hwnd);
 			}
 			break;

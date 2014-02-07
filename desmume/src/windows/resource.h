@@ -947,6 +947,14 @@
 #define ID_FSNITRO_VIEW                 40112
 #define IDM_FAQ                         40116
 #define IDM_WIKI                        40117
+#define ID_MAGNIFICATIONFILTER_2XBRZ    40118
+#define IDM_RENDER_2XBRZ                40119
+#define ID_MAGNIFICATIONFILTER_3XBRZ    40120
+#define ID_MAGNIFICATIONFILTER_4XBRZ    40121
+#define ID_MAGNIFICATIONFILTER_5XBRZ    40122
+#define IDM_RENDER_3XBRZ                40123
+#define IDM_RENDER_4XBRZ                40124
+#define IDM_RENDER_5XBRZ                40125
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
@@ -1053,7 +1061,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40118
+#define _APS_NEXT_COMMAND_VALUE         40126
 #define _APS_NEXT_CONTROL_VALUE         1059
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
