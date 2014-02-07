@@ -1329,7 +1329,10 @@ static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; /
 			// (In other words, we can't trust an external file with this information since
 			// IDs might desync if the DS Control ID enumeration changes.)
 			if (cmdAttr.selector == @selector(cmdUpdateDSController:) ||
-				cmdAttr.selector == @selector(cmdUpdateDSControllerWithTurbo:))
+				cmdAttr.selector == @selector(cmdUpdateDSControllerWithTurbo:) ||
+				cmdAttr.selector == @selector(cmdUpdateDSTouch:) ||
+				cmdAttr.selector == @selector(cmdUpdateDSMicrophone:) ||
+				cmdAttr.selector == @selector(cmdUpdateDSPaddle:))
 			{
 				cmdAttr.intValue[0] = defaultCommandAttributes[cmdTag].intValue[0];
 			}

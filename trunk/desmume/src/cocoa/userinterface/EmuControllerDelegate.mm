@@ -681,6 +681,90 @@
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
 }
 
+- (IBAction) openReplay:(id)sender
+{
+	NSURL *selectedFile = nil;
+	
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setCanChooseDirectories:NO];
+	[panel setCanChooseFiles:YES];
+	[panel setResolvesAliases:YES];
+	[panel setAllowsMultipleSelection:NO];
+	[panel setTitle:@"Load Replay"];
+	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
+	
+	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
+	// is deprecated in Mac OS X v10.6.
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
+	[panel setAllowedFileTypes:fileTypes];
+	const NSInteger buttonClicked = [panel runModal];
+#else
+	const NSInteger buttonClicked = [panel runModalForDirectory:nil file:nil types:fileTypes];
+#endif
+	
+	if (buttonClicked == NSFileHandlingPanelOKButton)
+	{
+		selectedFile = [[panel URLs] lastObject];
+		if(selectedFile == nil)
+		{
+			return;
+		}
+		
+		[self pauseCore];
+		const BOOL isMovieLoaded = [CocoaDSFile loadReplay:selectedFile];
+		[self setStatusText:(isMovieLoaded) ? @"Replay loaded successfully." : @"Replay loading failed!"];
+		[self restoreCoreState];
+	}
+}
+
+- (IBAction) recordReplay:(id)sender
+{
+	NSSavePanel *panel = [NSSavePanel savePanel];
+	[panel setCanCreateDirectories:YES];
+	[panel setTitle:@"Record Replay"];
+	
+	// The NSSavePanel method -(void)setRequiredFileType:
+	// is deprecated in Mac OS X v10.6.
+#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
+	NSArray *fileTypes = [NSArray arrayWithObjects:@"dsm", nil];
+	[panel setAllowedFileTypes:fileTypes];
+#else
+	[panel setRequiredFileType:@"dsm"];
+#endif
+	
+	const NSInteger buttonClicked = [panel runModal];
+	if (buttonClicked == NSFileHandlingPanelOKButton)
+	{
+		NSURL *fileURL = [panel URL];
+		if(fileURL == nil)
+		{
+			return;
+		}
+		
+		[self pauseCore];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		NSURL *sramURL = [CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"];
+		
+		NSFileManager *fileManager = [[NSFileManager alloc] init];
+		const BOOL exists = [fileManager isReadableFileAtPath:[sramURL path]];
+		[fileManager release];
+		
+		const BOOL isMovieStarted = [cdsCore startReplayRecording:fileURL sramURL:sramURL];
+		[self setStatusText:(isMovieStarted) ? @"Replay recording started." : @"Replay creation failed!"];
+		[self restoreCoreState];
+	}
+}
+
+- (IBAction) stopReplay:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	[self pauseCore];
+	[cdsCore stopReplay];
+	[self setStatusText:@"Replay stopped."];
+	[self restoreCoreState];
+}
+
 - (IBAction) importRomSave:(id)sender
 {
 	NSURL *selectedFile = nil;

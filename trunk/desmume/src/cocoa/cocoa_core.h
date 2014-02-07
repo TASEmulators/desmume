@@ -146,6 +146,9 @@ typedef struct
 - (NSString *) slot1DeviceTypeString;
 - (NSString *) slot2DeviceTypeString;
 
+- (BOOL) startReplayRecording:(NSURL *)fileURL sramURL:(NSURL *)sramURL;
+- (void) stopReplay;
+
 @end
 
 static void* RunCoreThread(void *arg);
