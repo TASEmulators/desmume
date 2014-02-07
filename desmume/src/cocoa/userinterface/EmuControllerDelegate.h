@@ -165,6 +165,9 @@ class AudioSampleBlockGenerator;
 - (IBAction) revertEmuSaveState:(id)sender;
 - (IBAction) loadEmuSaveStateSlot:(id)sender;
 - (IBAction) saveEmuSaveStateSlot:(id)sender;
+- (IBAction) openReplay:(id)sender;
+- (IBAction) recordReplay:(id)sender;
+- (IBAction) stopReplay:(id)sender;
 - (IBAction) importRomSave:(id)sender;
 - (IBAction) exportRomSave:(id)sender;
 

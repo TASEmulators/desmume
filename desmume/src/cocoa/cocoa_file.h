@@ -34,6 +34,7 @@
 + (BOOL) loadState:(NSURL *)saveStateURL;
 + (BOOL) saveState:(NSURL *)saveStateURL;
 + (BOOL) loadRom:(NSURL *)romURL;
++ (BOOL) loadReplay:(NSURL *)replayURL;
 + (BOOL) importRomSave:(NSURL *)romSaveURL;
 + (BOOL) exportRomSaveToURL:(NSURL *)destinationURL romSaveURL:(NSURL *)romSaveURL fileType:(NSInteger)fileTypeID;
 + (NSURL *) romSaveURLFromRomURL:(NSURL *)romURL;

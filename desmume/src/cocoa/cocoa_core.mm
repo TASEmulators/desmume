@@ -28,6 +28,7 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
+#include "../movie.h"
 #include "../NDSSystem.h"
 #include "../slot1.h"
 #include "../slot2.h"
@@ -857,6 +858,49 @@ volatile bool execute = true;
 	return theString;
 }
 
+- (BOOL) startReplayRecording:(NSURL *)fileURL sramURL:(NSURL *)sramURL
+{
+	if (fileURL == nil)
+	{
+		return NO;
+	}
+	
+	std::string sramPath = (sramURL != nil) ? [[sramURL path] cStringUsingEncoding:NSUTF8StringEncoding] : "";
+	const char *fileName = [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	
+	NSDate *currentDate = [NSDate date];
+	NSString *currentDateStr = [currentDate descriptionWithCalendarFormat:@"%Y %m %d %H %M %S %F"
+																 timeZone:nil
+																   locale:[[NSUserDefaults standardUserDefaults] dictionaryRepresentation]];
+	
+	int dateYear = 2009;
+	int dateMonth = 1;
+	int dateDay = 1;
+	int dateHour = 0;
+	int dateMinute = 0;
+	int dateSecond = 0;
+	int dateMillisecond = 0;
+	const char *dateCStr = [currentDateStr cStringUsingEncoding:NSUTF8StringEncoding];
+	sscanf(dateCStr, "%i %i %i %i %i %i %i", &dateYear, &dateMonth, &dateDay, &dateHour, &dateMinute, &dateSecond, &dateMillisecond);
+	
+	DateTime rtcDate = DateTime(dateYear,
+								dateMonth,
+								dateDay,
+								dateHour,
+								dateMinute,
+								dateSecond,
+								dateMillisecond);
+	
+	FCEUI_SaveMovie(fileName, L"Test Author", 0, sramPath, rtcDate);
+	
+	return YES;
+}
+
+- (void) stopReplay
+{
+	FCEUI_StopMovie();
+}
+
 @end
 
 static void* RunCoreThread(void *arg)
@@ -897,9 +941,9 @@ static void* RunCoreThread(void *arg)
 		}
 		
 		NDS_beginProcessingInput();
-		// Shouldn't need to do any special processing steps in between.
-		// We'll just jump directly to ending the input processing.
+		FCEUMOV_HandlePlayback();
 		NDS_endProcessingInput();
+		FCEUMOV_HandleRecording();
 		
 		// Execute the frame and increment the frame counter.
 		pthread_mutex_lock(&param->mutexCoreExecute);

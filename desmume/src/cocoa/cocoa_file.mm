@@ -23,6 +23,7 @@
 
 #include "../NDSSystem.h"
 #include "../MMU.h"
+#include "../movie.h"
 #include "../path.h"
 #include "../saves.h"
 #undef BOOL
@@ -183,6 +184,25 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	const char *romPath = [[romURL path] cStringUsingEncoding:NSUTF8StringEncoding];
 	NSInteger resultCode = NDS_LoadROM(romPath, NULL, NULL);
 	if (resultCode > 0)
+	{
+		result = YES;
+	}
+	
+	return result;
+}
+
++ (BOOL) loadReplay:(NSURL *)replayURL
+{
+	BOOL result = NO;
+	
+	if (replayURL == nil)
+	{
+		return result;
+	}
+	
+	const char *replayPath = [[replayURL path] cStringUsingEncoding:NSUTF8StringEncoding];
+	const char *resultCode = FCEUI_LoadMovie(replayPath, true, false, -1);
+	if (resultCode == NULL)
 	{
 		result = YES;
 	}
