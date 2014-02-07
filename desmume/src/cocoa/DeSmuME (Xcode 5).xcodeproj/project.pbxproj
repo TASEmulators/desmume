@@ -195,6 +195,8 @@
 		AB405694169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB405695169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		AB47B52E18A3F722009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
+		AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
@@ -683,6 +685,8 @@
 		ABE6702C1415DE6C00E8E4C9 /* tinyxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670271415DE6C00E8E4C9 /* tinyxml.cpp */; };
 		ABE6702D1415DE6C00E8E4C9 /* tinyxmlerror.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */; };
 		ABE6702E1415DE6C00E8E4C9 /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */; };
+		ABE6840C189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */; };
+		ABE6840D189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */; };
 		ABE7F53E13EE1C7900FD3A71 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		ABE9EEEA1501C6EB00D3FB19 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
 		ABE9EEEB1501C78700D3FB19 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
@@ -864,6 +868,8 @@
 		AB405675169F5DCC0016AC3E /* x86operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86operand.h; sourceTree = "<group>"; };
 		AB405676169F5DCC0016AC3E /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
 		AB405677169F5DCC0016AC3E /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
+		AB47B52B18A3F722009A42AF /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
+		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		AB5648FD186E6EA8002740F4 /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
 		AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
@@ -1159,6 +1165,8 @@
 		ABE670281415DE6C00E8E4C9 /* tinyxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinyxml.h; sourceTree = "<group>"; };
 		ABE670291415DE6C00E8E4C9 /* tinyxmlerror.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlerror.cpp; sourceTree = "<group>"; };
 		ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
+		ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput.cpp; sourceTree = "<group>"; };
+		ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput.h; sourceTree = "<group>"; };
 		ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_firmware.h; sourceTree = "<group>"; };
 		ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_firmware.mm; sourceTree = "<group>"; };
 		ABEFCF5D141AB82A000CC0CD /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
@@ -1247,6 +1255,7 @@
 				AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */,
 				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
 				ABD10AE61715FCDD00B5729D /* mic_ext.cpp */,
+				ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */,
 				AB1B9E601501A78000464647 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				ABD10AE31715FCDD00B5729D /* audiosamplegenerator.h */,
@@ -1265,6 +1274,7 @@
 				AB1B9E611501A78000464647 /* coreaudiosound.h */,
 				ABD10AE41715FCDD00B5729D /* mic_ext.h */,
 				AB1B9E621501A78000464647 /* ringbuffer.h */,
+				ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB82445E1704AEC400B8EE20 /* utilities.h */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
@@ -1901,12 +1911,14 @@
 				ABFE150414C92FF5005D6699 /* lq2x.cpp */,
 				ABFE150614C92FF5005D6699 /* scanline.cpp */,
 				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
+				AB47B52C18A3F722009A42AF /* xbrz.cpp */,
 				ABFE14FD14C92FF5005D6699 /* filter.h */,
 				ABFE14FF14C92FF5005D6699 /* hq2x.h */,
 				ABFE150214C92FF5005D6699 /* hq4x.h */,
 				ABFE150314C92FF5005D6699 /* interp.h */,
 				ABFE150514C92FF5005D6699 /* lq2x.h */,
 				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
+				AB47B52B18A3F722009A42AF /* xbrz.h */,
 			);
 			name = filter;
 			path = ../filter;
@@ -2371,6 +2383,7 @@
 				ABD1FF0F1345AC9C00AF11D1 /* slot2_gbagame.cpp in Sources */,
 				ABD1FF101345AC9C00AF11D1 /* slot2_guitarGrip.cpp in Sources */,
 				ABD1FF111345AC9C00AF11D1 /* slot2_mpcf.cpp in Sources */,
+				ABE6840D189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */,
 				ABD1FF121345AC9C00AF11D1 /* slot2_none.cpp in Sources */,
 				ABD1FF131345AC9C00AF11D1 /* slot2_paddle.cpp in Sources */,
 				ABD1FF141345AC9C00AF11D1 /* slot2_piano.cpp in Sources */,
@@ -2423,6 +2436,7 @@
 				ABFE150B14C92FF5005D6699 /* hq4x.cpp in Sources */,
 				AB9038A717C5ECFD00F410BD /* advanscene.cpp in Sources */,
 				ABFE150D14C92FF5005D6699 /* lq2x.cpp in Sources */,
+				AB47B52E18A3F722009A42AF /* xbrz.cpp in Sources */,
 				ABFE150E14C92FF5005D6699 /* scanline.cpp in Sources */,
 				AB1B9E631501A78000464647 /* coreaudiosound.cpp in Sources */,
 				AB1B9E661501A78000464647 /* ringbuffer.cpp in Sources */,
@@ -2547,7 +2561,9 @@
 				AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
+				ABE6840C189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */,
 				AB796D2D15CDCBA200C59155 /* slot2_expMemory.cpp in Sources */,
+				AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */,
 				AB796D2E15CDCBA200C59155 /* slot2_gbagame.cpp in Sources */,
 				AB796D2F15CDCBA200C59155 /* slot2_guitarGrip.cpp in Sources */,
 				AB796D3015CDCBA200C59155 /* slot2_mpcf.cpp in Sources */,

@@ -513,7 +513,7 @@
 
 @implementation CocoaDSDisplay
 
-@dynamic delegate;
+@synthesize delegate;
 @dynamic displayMode;
 @dynamic frameSize;
 
@@ -525,8 +525,7 @@
 	{
 		return self;
 	}
-		
-	spinlockDelegate = OS_SPINLOCK_INIT;
+	
 	spinlockDisplayType = OS_SPINLOCK_INIT;
 	
 	delegate = nil;
@@ -541,39 +540,9 @@
 
 - (void)dealloc
 {
-	self.delegate = nil;
+	[self setDelegate:nil];
 			
 	[super dealloc];
-}
-
-- (void) setDelegate:(id <CocoaDSDisplayDelegate>)theDelegate
-{
-	OSSpinLockLock(&spinlockDelegate);
-	
-	if (theDelegate == delegate)
-	{
-		OSSpinLockUnlock(&spinlockDelegate);
-		return;
-	}
-	
-	if (theDelegate != nil)
-	{
-		[theDelegate retain];
-	}
-	
-	[delegate release];
-	delegate = theDelegate;
-	
-	OSSpinLockUnlock(&spinlockDelegate);
-}
-
-- (id <CocoaDSDisplayDelegate>) delegate
-{
-	OSSpinLockLock(&spinlockDelegate);
-	id <CocoaDSDisplayDelegate> theDelegate = delegate;
-	OSSpinLockUnlock(&spinlockDelegate);
-	
-	return theDelegate;
 }
 
 - (void) setDisplayMode:(NSInteger)displayModeID
@@ -712,7 +681,7 @@
 	}
 	
 	const NSInteger displayModeID = *(NSInteger *)[displayModeData bytes];
-	self.displayMode = displayModeID;
+	[self setDisplayMode:displayModeID];
 	[delegate doDisplayModeChanged:displayModeID];
 }
 
@@ -850,29 +819,12 @@
 
 @implementation CocoaDSDisplayVideo
 
-@synthesize vf;
-
 - (id)init
 {
 	self = [super init];
 	if (self == nil)
 	{
 		return self;
-	}
-	
-	videoDelegate = nil;
-	lastDisplayMode = DS_DISPLAY_TYPE_DUAL;
-	
-	spinlockVideoFilterType = OS_SPINLOCK_INIT;
-	spinlockVFBuffers = OS_SPINLOCK_INIT;
-	
-	if ([[NSProcessInfo processInfo] activeProcessorCount] >= 2)
-	{
-		vf = [[CocoaVideoFilter alloc] initWithSize:frameSize typeID:VideoFilterTypeID_None numberThreads:2];
-	}
-	else
-	{
-		vf = [[CocoaVideoFilter alloc] initWithSize:frameSize typeID:VideoFilterTypeID_None numberThreads:0];
 	}
 	
 	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
@@ -883,68 +835,13 @@
 
 - (void)dealloc
 {
-	[vf release];
-	
 	[super dealloc];
-}
-
-- (void) setDelegate:(id <CocoaDSDisplayVideoDelegate>)theDelegate
-{
-	OSSpinLockLock(&spinlockDelegate);
-	
-	if (theDelegate == videoDelegate)
-	{
-		OSSpinLockUnlock(&spinlockDelegate);
-		return;
-	}
-	
-	if (theDelegate != nil)
-	{
-		[theDelegate retain];
-	}
-	
-	[videoDelegate release];
-	videoDelegate = theDelegate;
-	
-	OSSpinLockUnlock(&spinlockDelegate);
-	
-	[super setDelegate:theDelegate];
-}
-
-- (id <CocoaDSDisplayVideoDelegate>) delegate
-{
-	OSSpinLockLock(&spinlockDelegate);
-	id <CocoaDSDisplayVideoDelegate> theDelegate = videoDelegate;
-	OSSpinLockUnlock(&spinlockDelegate);
-	
-	return theDelegate;
-}
-
-- (void) setVfType:(NSInteger)videoFilterTypeID
-{
-	OSSpinLockLock(&spinlockVFBuffers);
-	[vf changeFilter:(VideoFilterTypeID)videoFilterTypeID];
-	OSSpinLockUnlock(&spinlockVFBuffers);
-	
-	OSSpinLockLock(&spinlockVideoFilterType);
-	[property setValue:[NSNumber numberWithInteger:videoFilterTypeID] forKey:@"videoFilterType"];
-	[property setValue:NSLocalizedString([vf typeString], nil) forKey:@"videoFilterTypeString"];
-	OSSpinLockUnlock(&spinlockVideoFilterType);
-}
-
-- (NSInteger) vfType
-{
-	OSSpinLockLock(&spinlockVideoFilterType);
-	NSInteger theType = [(NSNumber *)[property valueForKey:@"videoFilterType"] integerValue];
-	OSSpinLockUnlock(&spinlockVideoFilterType);
-	
-	return theType;
 }
 
 - (void) runThread:(id)object
 {
 	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	[videoDelegate doInitVideoOutput:self.property];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doInitVideoOutput:self.property];
 	[tempPool release];
 	
 	[super runThread:object];
@@ -985,14 +882,6 @@
 			[self handleChangeDisplayGap:[messageComponents objectAtIndex:0]];
 			break;
 			
-		case MESSAGE_CHANGE_BILINEAR_OUTPUT:
-			[self handleChangeBilinearOutput:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_VERTICAL_SYNC:
-			[self handleChangeVerticalSync:[messageComponents objectAtIndex:0]];
-			break;
-			
 		case MESSAGE_CHANGE_VIDEO_FILTER:
 			[self handleChangeVideoFilter:[messageComponents objectAtIndex:0]];
 			break;
@@ -1011,134 +900,110 @@
 	}
 	
 	const DisplaySrcPixelAttributes attr = *(DisplaySrcPixelAttributes *)[attributesData bytes];
-	const NSInteger displayModeID = attr.displayModeID;
+	const NSInteger frameDisplayMode = attr.displayModeID;
+	const NSInteger frameWidth = attr.width;
+	const NSInteger frameHeight = attr.height;
 	
-	// Tell the video delegate to process the video frame with our copied GPU data.
-	OSSpinLockLock(&spinlockVFBuffers);
-	
-	if (lastDisplayMode != displayModeID)
-	{
-		const NSSize newSrcSize = NSMakeSize((CGFloat)attr.width, (CGFloat)attr.height);
-		[vf setSourceSize:newSrcSize];
-		lastDisplayMode = displayModeID;
-	}
-	
-	const NSInteger destWidth = (NSInteger)[vf destSize].width;
-	const NSInteger destHeight = (NSInteger)[vf destSize].height;
-	
-	if ([vf typeID] == VideoFilterTypeID_None)
-	{
-		[videoDelegate doProcessVideoFrame:[mainData bytes] displayMode:displayModeID width:destWidth height:destHeight];
-	}
-	else
-	{
-		RGB555ToRGBA8888Buffer((const uint16_t *)[mainData bytes], (uint32_t *)[vf srcBufferPtr], [mainData length] / sizeof(UInt16));
-		const UInt32 *vfDestBuffer = [vf runFilter];
-		[videoDelegate doProcessVideoFrame:vfDestBuffer displayMode:displayModeID width:destWidth height:destHeight];
-	}
-	
-	OSSpinLockUnlock(&spinlockVFBuffers);
-		
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrame:[mainData bytes] displayMode:frameDisplayMode width:frameWidth height:frameHeight];
 	[super handleEmuFrameProcessed:mainData attributes:attributesData];
 }
 
 - (void) handleResizeView:(NSData *)rectData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doResizeView:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doResizeView:)])
 	{
 		return;
 	}
 	
 	const NSRect resizeRect = *(NSRect *)[rectData bytes];
-	[videoDelegate doResizeView:resizeRect];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doResizeView:resizeRect];
 }
 
 - (void) handleTransformView:(NSData *)transformData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doTransformView:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doTransformView:)])
 	{
 		return;
 	}
 	
-	[videoDelegate doTransformView:(DisplayOutputTransformData *)[transformData bytes]];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doTransformView:(DisplayOutputTransformData *)[transformData bytes]];
 }
 
 - (void) handleRedrawView
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doRedraw)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doRedraw)])
 	{
 		return;
 	}
 	
-	[videoDelegate doRedraw];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doRedraw];
 }
 
 - (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
 	{
 		return;
 	}
 	
 	const NSInteger theOrientation = *(NSInteger *)[displayOrientationIdData bytes];
-	[videoDelegate doDisplayOrientationChanged:theOrientation];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayOrientationChanged:theOrientation];
 }
 
 - (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doDisplayOrderChanged:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrderChanged:)])
 	{
 		return;
 	}
 	
 	const NSInteger theOrder = *(NSInteger *)[displayOrderIdData bytes];
-	[videoDelegate doDisplayOrderChanged:theOrder];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayOrderChanged:theOrder];
 }
 
 - (void) handleChangeDisplayGap:(NSData *)displayGapScalarData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doDisplayGapChanged:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayGapChanged:)])
 	{
 		return;
 	}
 	
 	const float gapScalar = *(float *)[displayGapScalarData bytes];
-	[videoDelegate doDisplayGapChanged:gapScalar];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayGapChanged:gapScalar];
 }
-
+/*
 - (void) handleChangeBilinearOutput:(NSData *)bilinearStateData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doBilinearOutputChanged:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doBilinearOutputChanged:)])
 	{
 		return;
 	}
 	
 	const BOOL theState = *(BOOL *)[bilinearStateData bytes];
-	[videoDelegate doBilinearOutputChanged:theState];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doBilinearOutputChanged:theState];
 	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
 }
 
 - (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doVerticalSyncChanged:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doVerticalSyncChanged:)])
 	{
 		return;
 	}
 	
 	const BOOL theState = *(BOOL *)[verticalSyncStateData bytes];
-	[videoDelegate doVerticalSyncChanged:theState];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doVerticalSyncChanged:theState];
 }
-
+*/
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData
 {
-	if (videoDelegate == nil || ![videoDelegate respondsToSelector:@selector(doVideoFilterChanged:frameSize:)])
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doVideoFilterChanged:)])
 	{
 		return;
 	}
 	
 	const NSInteger theType = *(NSInteger *)[videoFilterTypeIdData bytes];
-	[self setVfType:theType];
-	[videoDelegate doVideoFilterChanged:theType frameSize:[vf destSize]];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doVideoFilterChanged:theType];
 	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
 }
 

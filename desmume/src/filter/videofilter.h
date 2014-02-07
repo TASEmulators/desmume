@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011-2012 Roger Manuel
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -64,6 +64,10 @@ enum VideoFilterTypeID
 	VideoFilterTypeID_EPX1_5X,
 	VideoFilterTypeID_EPXPlus1_5X,
 	VideoFilterTypeID_HQ4XS,
+	VideoFilterTypeID_2xBRZ,
+	VideoFilterTypeID_3xBRZ,
+	VideoFilterTypeID_4xBRZ,
+	VideoFilterTypeID_5xBRZ,
 	
 	VideoFilterTypeIDCount // Make sure this one is always last
 };
@@ -97,7 +101,11 @@ const VideoFilterAttributes VideoFilterAttributesList[] = {
 	{VideoFilterTypeID_EPXPlus,			"EPX+",				&RenderEPXPlus,					2,	1},
 	{VideoFilterTypeID_EPX1_5X,			"EPX 1.5x",			&RenderEPX_1Point5x,			3,	2},
 	{VideoFilterTypeID_EPXPlus1_5X,		"EPX+ 1.5x",		&RenderEPXPlus_1Point5x,		3,	2},
-	{VideoFilterTypeID_HQ4XS,			"HQ4xS",			&RenderHQ4XS,					4,	1} };
+	{VideoFilterTypeID_HQ4XS,			"HQ4xS",			&RenderHQ4XS,					4,	1},
+	{VideoFilterTypeID_2xBRZ,			"2xBRZ",			&Render2xBRZ,					2,	1},
+	{VideoFilterTypeID_3xBRZ,			"3xBRZ",			&Render3xBRZ,					3,	1},
+	{VideoFilterTypeID_4xBRZ,			"4xBRZ",			&Render4xBRZ,					4,	1},
+	{VideoFilterTypeID_5xBRZ,			"5xBRZ",			&Render5xBRZ,					5,	1} };
 
 // VIDEO FILTER PARAMETER DATA TYPES
 enum VideoFilterParamType
