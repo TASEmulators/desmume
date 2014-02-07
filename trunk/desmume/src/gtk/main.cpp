@@ -81,7 +81,8 @@
 
 #define SCREENS_PIXEL_SIZE (256*192*2)
 #define SCREEN_BYTES_PER_PIXEL 3
-#define GAP_SIZE 50
+#define GAP_SIZE 64
+#define GAP_COLOR (0x000000) 
 
 static int gtk_fps_limiter_disabled;
 static int draw_count;
@@ -1171,16 +1172,21 @@ static void UpdateDrawingAreaAspect()
         H = screen_size[nds_screen.orientation].width;
     }
 
+    // The gap is added after filtering
+    video.SetSourceSize(W, H);
+
     if (nds_screen.orientation != ORIENT_SINGLE) {
-        if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) ^
-        (nds_screen.orientation == ORIENT_HORIZONTAL)) {
-            H += nds_screen.gap_size;
+        if (nds_screen.orientation == ORIENT_VERTICAL) {
+            if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180)) {
+                H += nds_screen.gap_size;
+            } else {
+                W += nds_screen.gap_size;
+            }
         } else {
-            W += nds_screen.gap_size;
+            
         }
     }
 
-    video.SetSourceSize(W, H);
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
 }
 
@@ -1278,7 +1284,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         imgW = screen_size[nds_screen.orientation].height;
     }
 
-    if (nds_screen.orientation == ORIENT_SINGLE) {
+    if (nds_screen.orientation != ORIENT_VERTICAL) {
         gapH = 0;
         gapW = 0;
     } else if (gap_vertical) {
@@ -1289,24 +1295,24 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
         gapW = nds_screen.gap_size;
     }
 
-    hratio = (float)(daW - gapW) / (float)imgW;
-    vratio = (float)(daH - gapH) / (float)imgH;
+    hratio = (float)daW / (float)(imgW + gapW);
+    vratio = (float)daH / (float)(imgH + gapH);
     hratio = MIN(hratio, vratio);
     vratio = hratio;
 
-    primaryOffsetX = (daW-(int)(hratio*(float)imgW)-gapW)/2;
-    primaryOffsetY = (daH-(int)(vratio*(float)imgH)-gapH)/2;
+    primaryOffsetX = (daW-(int)(hratio*(float)(imgW+gapW)))/2;
+    primaryOffsetY = (daH-(int)(vratio*(float)(imgH+gapH)))/2;
 
     nscreen_ratio = nds_screen.orientation == ORIENT_SINGLE ? 1 : 0.5;
     if (gap_vertical) {
-        screenW = (int)(hratio*(float)imgW);
-        screenH = (int)(vratio*(float)imgH*nscreen_ratio);
+        screenW = (int)(hratio*(float)(imgW));
+        screenH = (int)(vratio*(float)(imgH)*nscreen_ratio);
         secondaryOffsetX = primaryOffsetX;
-        secondaryOffsetY = primaryOffsetY + screenH + gapH;
+        secondaryOffsetY = primaryOffsetY + screenH + (int)(vratio * (float)gapH);
     } else {
-        screenW = (int)(hratio*(float)imgW*nscreen_ratio);
-        screenH = (int)(vratio*(float)imgH);
-        secondaryOffsetX = primaryOffsetX + screenW + gapW;
+        screenW = (int)(hratio*(float)(imgW)*nscreen_ratio);
+        screenH = (int)(vratio*(float)(imgH));
+        secondaryOffsetX = primaryOffsetX + screenW + (int)(hratio * (float)gapW);
         secondaryOffsetY = primaryOffsetY;
     }
 
@@ -1333,19 +1339,60 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
     u32* fbuf = video.RunFilter();
     int dstW = video.GetDstWidth();
     int dstH = video.GetDstHeight();
+    int dstScale = (dstH / imgH); // Assumed to be integer
+    int dstGapH = gapH * dstScale;
+    int dstGapW = gapW * dstScale;
     //Convert to 24-bit
-    guchar dsurf24[dstW*dstH*SCREEN_BYTES_PER_PIXEL];
-    gint k=0;
-    for (gint i=0; i<dstW*dstH; i++)
-    {
-      *(u32*) &(dsurf24[k]) = fbuf[i];
-      k+=3;
+    guchar dsurf24[(dstW+dstGapW)*(dstH+dstGapH)*SCREEN_BYTES_PER_PIXEL];
+    gint i=0, k=0, x, y;
+    // Top half
+    for (x = 0; x < dstH / 2; x++) {
+        // Left half
+        for (y = 0; y < dstW / 2; y++, i++) {
+            *(u32*) &(dsurf24[k]) = fbuf[i];
+            k += 3;
+        }
+        // Vertical gap
+        for(y = 0; y < dstGapW; y++) {
+            *(u32*) &(dsurf24[k]) = GAP_COLOR;
+            k += 3;
+        }
+        // Right half
+        for (y = 0; y < dstW / 2; y++, i++) {
+            *(u32*) &(dsurf24[k]) = fbuf[i];
+            k += 3;
+        }
+    }
+    // Horizontal gap
+    for (x = 0; x < dstGapH; x++) {
+        for(y = 0; y < dstW + dstGapW; y++) {
+            *(u32*) &(dsurf24[k]) = GAP_COLOR;
+            k += 3;
+        }
+    }
+    // Bottom half
+    for (x = 0; x < dstH / 2; x++) {
+        // Left half
+        for (y = 0; y < dstW / 2; y++, i++) {
+            *(u32*) &(dsurf24[k]) = fbuf[i];
+            k += 3;
+        }
+        // Mid gap
+        for(y = 0; y < dstGapW; y++) {
+            *(u32*) &(dsurf24[k]) = GAP_COLOR;
+            k += 3;
+        }
+        // Right half
+        for (y = 0; y < dstW / 2; y++, i++) {
+            *(u32*) &(dsurf24[k]) = fbuf[i];
+            k += 3;
+        }
     }
     
     drawPixbuf = gdk_pixbuf_new_from_data(dsurf24, GDK_COLORSPACE_RGB, 
-            FALSE, 8, dstW, dstH, dstW*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
+            FALSE, 8, dstW + dstGapW, dstH + dstGapH, (dstW + dstGapW) * SCREEN_BYTES_PER_PIXEL, NULL, NULL);
 
-    resizedPixbuf = gdk_pixbuf_scale_simple(drawPixbuf, hratio*imgW, vratio*imgH,
+    resizedPixbuf = gdk_pixbuf_scale_simple(drawPixbuf, hratio*(imgW+gapW), vratio*(imgH+gapH),
                 Interpolation);
     g_object_unref(drawPixbuf);
     drawPixbuf = resizedPixbuf;
