@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,62 +25,14 @@
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
+#include "OGLDisplayOutput.h"
 #include <Carbon/Carbon.h>
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#include <OpenGL/glu.h>
 
 #if defined(__ppc__) || defined(__ppc64__)
 #include <map>
 #else
 #include <tr1/unordered_map>
 #endif
-
-// VERTEX SHADER FOR DISPLAY OUTPUT
-static const char *vertexProgram_100 = {"\
-	attribute vec2 inPosition; \n\
-	attribute vec2 inTexCoord0; \n\
-	\n\
-	uniform vec2 viewSize; \n\
-	uniform float scalar; \n\
-	uniform float angleDegrees; \n\
-	\n\
-	varying vec2 vtxTexCoord; \n\
-	\n\
-	void main() \n\
-	{ \n\
-		float angleRadians = radians(angleDegrees); \n\
-		\n\
-		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
-								vec2(           0.0, 2.0/viewSize.y)); \n\
-		\n\
-		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
-								vec2(sin(angleRadians),  cos(angleRadians))); \n\
-		\n\
-		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
-								vec2(   0.0, scalar)); \n\
-		\n\
-		vtxTexCoord = inTexCoord0; \n\
-		gl_Position = vec4(projection * rotation * scale * inPosition, 1.0, 1.0); \n\
-	} \n\
-"};
-
-// FRAGMENT SHADER FOR DISPLAY OUTPUT
-static const char *fragmentProgram_100 = {"\
-	varying vec2 vtxTexCoord; \n\
-	uniform sampler2D tex; \n\
-	\n\
-	void main() \n\
-	{ \n\
-		gl_FragColor = texture2D(tex, vtxTexCoord); \n\
-	} \n\
-"};
-
-enum OGLVertexAttributeID
-{
-	OGLVertexAttributeID_Position = 0,
-	OGLVertexAttributeID_TexCoord0 = 8
-};
 
 
 @implementation DisplayWindowController
@@ -278,7 +230,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	_useBilinearOutput = theState;
 	OSSpinLockUnlock(&spinlockUseBilinearOutput);
 	
-	[CocoaDSUtil messageSendOneWayWithBool:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_BILINEAR_OUTPUT boolValue:theState];
+	[[self view] doBilinearOutputChanged:theState];
 }
 
 - (BOOL) useBilinearOutput
@@ -296,7 +248,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	_useVerticalSync = theState;
 	OSSpinLockUnlock(&spinlockUseVerticalSync);
 	
-	[CocoaDSUtil messageSendOneWayWithBool:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_VERTICAL_SYNC boolValue:theState];
+	[[self view] doVerticalSyncChanged:theState];
 }
 
 - (BOOL) useVerticalSync
@@ -1060,13 +1012,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 			[(NSMenuItem *)theItem setState:([self videoFilterType] == [theItem tag]) ? NSOnState : NSOffState];
 		}
 	}
-	else if (theAction == @selector(hudDisable:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem *)theItem setTitle:([[self view] isHudEnabled]) ? NSSTRING_TITLE_DISABLE_HUD : NSSTRING_TITLE_ENABLE_HUD];
-		}
-	}
 	else if (theAction == @selector(toggleStatusBar:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
@@ -1136,8 +1081,8 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// Set the video filter source size now since the proper size is needed on initialization.
 	// If we don't do this, new windows could draw incorrectly.
-	const NSSize vfSrcSize = NSMakeSize(GPU_DISPLAY_WIDTH, ([self displayMode] == DS_DISPLAY_TYPE_DUAL) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT);
-	[[cdsVideoOutput vf] setSourceSize:vfSrcSize];
+	//const NSSize vfSrcSize = NSMakeSize(GPU_DISPLAY_WIDTH, ([self displayMode] == DS_DISPLAY_TYPE_DUAL) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT);
+	//[[cdsVideoOutput vf] setSourceSize:vfSrcSize];
 	[CocoaDSUtil messageSendOneWayWithInteger:[cdsVideoOutput receivePort] msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:[self videoFilterType]];
 	
 	// Add the video thread to the output list.
@@ -1314,8 +1259,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 @implementation DisplayView
 
 @synthesize inputManager;
-@synthesize isHudEnabled;
-@synthesize isHudEditingModeEnabled;
 
 - (id)initWithFrame:(NSRect)frameRect
 {
@@ -1326,6 +1269,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	}
 	
 	inputManager = nil;
+	oglv = new OGLVideoOutput();
 	
 	// Initialize the OpenGL context
 	NSOpenGLPixelFormatAttribute attributes[] = {
@@ -1341,31 +1285,9 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[format release];
 	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
 	
-	_currentDisplayMode = DS_DISPLAY_TYPE_DUAL;
-	_currentDisplayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
-	_currentGapScalar = 0.0f;
-	_currentNormalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*_currentGapScalar));
-	glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	
-	const UInt32 w = GetNearestPositivePOT((UInt32)_currentNormalSize.width);
-	const UInt32 h = GetNearestPositivePOT((UInt32)_currentNormalSize.height);
-	glTexBack = (GLvoid *)calloc(w * h, sizeof(UInt16));
-	glTexBackSize = NSMakeSize(w, h);
-	vtxBufferOffset = 0;
-	
-	[self updateDisplayVerticesUsingDisplayMode:_currentDisplayMode orientation:_currentDisplayOrientation gap:_currentGapScalar];
-	[self updateTexCoordS:1.0f T:2.0f];
-	
-	// Set up initial vertex elements
-	vtxIndexBuffer[0]	= 0;	vtxIndexBuffer[1]	= 1;	vtxIndexBuffer[2]	= 2;
-	vtxIndexBuffer[3]	= 2;	vtxIndexBuffer[4]	= 3;	vtxIndexBuffer[5]	= 0;
-	
-	vtxIndexBuffer[6]	= 4;	vtxIndexBuffer[7]	= 5;	vtxIndexBuffer[8]	= 6;
-	vtxIndexBuffer[9]	= 6;	vtxIndexBuffer[10]	= 7;	vtxIndexBuffer[11]	= 4;
-	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	[self startupOpenGL];
+	oglv->InitializeOGL();
 	CGLSetCurrentContext(prevContext);
 	
 	return self;
@@ -1375,348 +1297,24 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 {
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	[self shutdownOpenGL];
+	oglv->TerminateOGL();
 	CGLSetCurrentContext(prevContext);
-	
-	free(glTexBack);
-	glTexBack = NULL;
 	
 	[self setInputManager:nil];
 	[context clearDrawable];
 	[context release];
+	
+	delete oglv;
 	
 	[super dealloc];
 }
 
 #pragma mark Class Methods
 
-- (void) startupOpenGL
-{
-	// Check the OpenGL capabilities for this renderer
-	const GLubyte *glExtString = glGetString(GL_EXTENSIONS);
-	
-	// Set up textures
-	glGenTextures(1, &displayTexID);
-	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-	// Set up shaders (but disable on PowerPC, since it doesn't seem to work there)
-#if defined(__i386__) || defined(__x86_64__)
-	isShaderSupported	= (gluCheckExtension((const GLubyte *)"GL_ARB_shader_objects", glExtString) &&
-						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_shader", glExtString) &&
-						   gluCheckExtension((const GLubyte *)"GL_ARB_fragment_shader", glExtString) &&
-						   gluCheckExtension((const GLubyte *)"GL_ARB_vertex_program", glExtString) );
-#else
-	isShaderSupported	= false;
-#endif
-	if (isShaderSupported)
-	{
-		BOOL isShaderSetUp = [self setupShadersWithVertexProgram:vertexProgram_100 fragmentProgram:fragmentProgram_100];
-		if (isShaderSetUp)
-		{
-			glUseProgram(shaderProgram);
-			
-			uniformAngleDegrees = glGetUniformLocation(shaderProgram, "angleDegrees");
-			uniformScalar = glGetUniformLocation(shaderProgram, "scalar");
-			uniformViewSize = glGetUniformLocation(shaderProgram, "viewSize");
-			
-			glUniform1f(uniformAngleDegrees, 0.0f);
-			glUniform1f(uniformScalar, 1.0f);
-			glUniform2f(uniformViewSize, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*_currentGapScalar));
-		}
-		else
-		{
-			isShaderSupported = false;
-		}
-	}
-	
-	// Set up VBOs
-	glGenBuffersARB(1, &vboVertexID);
-	glGenBuffersARB(1, &vboTexCoordID);
-	glGenBuffersARB(1, &vboElementID);
-	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), vtxBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), texCoordBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 12, vtxIndexBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-	
-	// Set up VAO
-	glGenVertexArraysAPPLE(1, &vaoMainStatesID);
-	glBindVertexArrayAPPLE(vaoMainStatesID);
-	
-	if (isShaderSupported)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
-		
-		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-	}
-	else
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-		glVertexPointer(2, GL_INT, 0, 0);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-		glTexCoordPointer(2, GL_FLOAT, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vboElementID);
-		
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	}
-	
-	glBindVertexArrayAPPLE(0);
-	
-	// Render State Setup (common to both shaders and fixed-function pipeline)
-	glDisable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_DITHER);
-	glDisable(GL_STENCIL_TEST);
-	
-	// Set up fixed-function pipeline render states.
-	if (!isShaderSupported)
-	{
-		glDisable(GL_ALPHA_TEST);
-		glDisable(GL_LIGHTING);
-		glDisable(GL_FOG);
-		glEnable(GL_TEXTURE_2D);
-	}
-	
-	// Set up clear attributes
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-}
-
-- (void) shutdownOpenGL
-{
-	glDeleteTextures(1, &displayTexID);
-	
-	glDeleteVertexArraysAPPLE(1, &vaoMainStatesID);
-	glDeleteBuffersARB(1, &vboVertexID);
-	glDeleteBuffersARB(1, &vboTexCoordID);
-	glDeleteBuffersARB(1, &vboElementID);
-	
-	if (isShaderSupported)
-	{
-		glUseProgram(0);
-		
-		glDetachShader(shaderProgram, vertexShaderID);
-		glDetachShader(shaderProgram, fragmentShaderID);
-		
-		glDeleteProgram(shaderProgram);
-		glDeleteShader(vertexShaderID);
-		glDeleteShader(fragmentShaderID);
-	}
-}
-
-- (void) setupShaderIO
-{
-	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(shaderProgram, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-}
-
-- (BOOL) setupShadersWithVertexProgram:(const char *)vertShaderProgram fragmentProgram:(const char *)fragShaderProgram
-{
-	BOOL result = NO;
-	GLint shaderStatus = GL_TRUE;
-	
-	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	if (vertexShaderID == 0)
-	{
-		NSLog(@"OpenGL Error - Failed to create vertex shader.");
-		return result;
-	}
-	
-	glShaderSource(vertexShaderID, 1, (const GLchar **)&vertShaderProgram, NULL);
-	glCompileShader(vertexShaderID);
-	glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &shaderStatus);
-	if (shaderStatus == GL_FALSE)
-	{
-		glDeleteShader(vertexShaderID);
-		NSLog(@"OpenGL Error - Failed to compile vertex shader.");
-		return result;
-	}
-	
-	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-	if (fragmentShaderID == 0)
-	{
-		glDeleteShader(vertexShaderID);
-		NSLog(@"OpenGL Error - Failed to create fragment shader.");
-		return result;
-	}
-	
-	glShaderSource(fragmentShaderID, 1, (const GLchar **)&fragShaderProgram, NULL);
-	glCompileShader(fragmentShaderID);
-	glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &shaderStatus);
-	if (shaderStatus == GL_FALSE)
-	{
-		glDeleteShader(vertexShaderID);
-		glDeleteShader(fragmentShaderID);
-		NSLog(@"OpenGL Error - Failed to compile fragment shader.");
-		return result;
-	}
-	
-	shaderProgram = glCreateProgram();
-	if (shaderProgram == 0)
-	{
-		glDeleteShader(vertexShaderID);
-		glDeleteShader(fragmentShaderID);
-		NSLog(@"OpenGL Error - Failed to create shader program.");
-		return result;
-	}
-	
-	glAttachShader(shaderProgram, vertexShaderID);
-	glAttachShader(shaderProgram, fragmentShaderID);
-	
-	[self setupShaderIO];
-	
-	glLinkProgram(shaderProgram);
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &shaderStatus);
-	if (shaderStatus == GL_FALSE)
-	{
-		glDeleteProgram(shaderProgram);
-		glDeleteShader(vertexShaderID);
-		glDeleteShader(fragmentShaderID);
-		NSLog(@"OpenGL Error - Failed to link shader program.");
-		return result;
-	}
-	
-	glValidateProgram(shaderProgram);
-	
-	result = YES;
-	return result;
-}
-
 - (void) drawVideoFrame
 {
+	oglv->RenderOGL();
 	CGLFlushDrawable(cglDisplayContext);
-}
-
-- (void) uploadVertices
-{
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboVertexID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLint) * (2 * 8), vtxBuffer + vtxBufferOffset);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-}
-
-- (void) uploadTexCoords
-{
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, vboTexCoordID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(GLfloat) * (2 * 8), texCoordBuffer);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-}
-
-- (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight
-{
-	if (textureData == NULL)
-	{
-		return;
-	}
-	
-	const GLint lineOffset = (displayModeID == DS_DISPLAY_TYPE_TOUCH) ? texHeight : 0;
-	
-	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, lineOffset, texWidth, texHeight, GL_RGBA, glTexPixelFormat, textureData);
-	glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-- (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID
-{
-	// Enable vertex attributes
-	glBindVertexArrayAPPLE(vaoMainStatesID);
-	
-	// Perform the render
-	if (_currentDisplayMode != displayModeID)
-	{
-		_currentDisplayMode = displayModeID;
-		[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:_currentDisplayOrientation gap:_currentGapScalar];
-		[self uploadVertices];
-	}
-	
-	const GLsizei vtxElementCount = (displayModeID == DS_DISPLAY_TYPE_DUAL) ? 12 : 6;
-	const GLubyte *elementPointer = !(displayModeID == DS_DISPLAY_TYPE_TOUCH) ? 0 : (GLubyte *)(vtxElementCount * sizeof(GLubyte));
-	
-	glClear(GL_COLOR_BUFFER_BIT);
-	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glDrawElements(GL_TRIANGLES, vtxElementCount, GL_UNSIGNED_BYTE, elementPointer);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-	// Disable vertex attributes
-	glBindVertexArrayAPPLE(0);
-}
-
-- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID gap:(const GLfloat)gapScalar
-{
-	const GLfloat w = GPU_DISPLAY_WIDTH;
-	const GLfloat h = GPU_DISPLAY_HEIGHT;
-	const GLfloat gap = DS_DISPLAY_GAP * gapScalar / 2.0;
-	
-	if (displayModeID == DS_DISPLAY_TYPE_DUAL)
-	{
-		// displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST
-		if (displayOrientationID == DS_DISPLAY_ORIENTATION_VERTICAL)
-		{
-			vtxBuffer[0]	= -w/2;			vtxBuffer[1]		= h+gap;	// Top display, top left
-			vtxBuffer[2]	= w/2;			vtxBuffer[3]		= h+gap;	// Top display, top right
-			vtxBuffer[4]	= w/2;			vtxBuffer[5]		= gap;		// Top display, bottom right
-			vtxBuffer[6]	= -w/2;			vtxBuffer[7]		= gap;		// Top display, bottom left
-			
-			vtxBuffer[8]	= -w/2;			vtxBuffer[9]		= -gap;		// Bottom display, top left
-			vtxBuffer[10]	= w/2;			vtxBuffer[11]		= -gap;		// Bottom display, top right
-			vtxBuffer[12]	= w/2;			vtxBuffer[13]		= -(h+gap);	// Bottom display, bottom right
-			vtxBuffer[14]	= -w/2;			vtxBuffer[15]		= -(h+gap);	// Bottom display, bottom left
-		}
-		else // displayOrientationID == DS_DISPLAY_ORIENTATION_HORIZONTAL
-		{
-			vtxBuffer[0]	= -(w+gap);		vtxBuffer[1]		= h/2;		// Left display, top left
-			vtxBuffer[2]	= -gap;			vtxBuffer[3]		= h/2;		// Left display, top right
-			vtxBuffer[4]	= -gap;			vtxBuffer[5]		= -h/2;		// Left display, bottom right
-			vtxBuffer[6]	= -(w+gap);		vtxBuffer[7]		= -h/2;		// Left display, bottom left
-			
-			vtxBuffer[8]	= gap;			vtxBuffer[9]		= h/2;		// Right display, top left
-			vtxBuffer[10]	= w+gap;		vtxBuffer[11]		= h/2;		// Right display, top right
-			vtxBuffer[12]	= w+gap;		vtxBuffer[13]		= -h/2;		// Right display, bottom right
-			vtxBuffer[14]	= gap;			vtxBuffer[15]		= -h/2;		// Right display, bottom left
-		}
-		
-		// displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
-		memcpy(vtxBuffer + (2 * 8), vtxBuffer + (1 * 8), sizeof(GLint) * (1 * 8));
-		memcpy(vtxBuffer + (3 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (1 * 8));
-	}
-	else // displayModeID == DS_DISPLAY_TYPE_MAIN || displayModeID == DS_DISPLAY_TYPE_TOUCH
-	{
-		vtxBuffer[0]	= -w/2;		vtxBuffer[1]		= h/2;		// First display, top left
-		vtxBuffer[2]	= w/2;		vtxBuffer[3]		= h/2;		// First display, top right
-		vtxBuffer[4]	= w/2;		vtxBuffer[5]		= -h/2;		// First display, bottom right
-		vtxBuffer[6]	= -w/2;		vtxBuffer[7]		= -h/2;		// First display, bottom left
-		
-		memcpy(vtxBuffer + (1 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (1 * 8));	// Second display
-		memcpy(vtxBuffer + (2 * 8), vtxBuffer + (0 * 8), sizeof(GLint) * (2 * 8));	// Second display
-	}
-}
-
-- (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t
-{
-	texCoordBuffer[0]	= 0.0f;		texCoordBuffer[1]	=   0.0f;
-	texCoordBuffer[2]	=    s;		texCoordBuffer[3]	=   0.0f;
-	texCoordBuffer[4]	=    s;		texCoordBuffer[5]	= t/2.0f;
-	texCoordBuffer[6]	= 0.0f;		texCoordBuffer[7]	= t/2.0f;
-	
-	texCoordBuffer[8]	= 0.0f;		texCoordBuffer[9]	= t/2.0f;
-	texCoordBuffer[10]	=    s;		texCoordBuffer[11]	= t/2.0f;
-	texCoordBuffer[12]	=    s;		texCoordBuffer[13]	=      t;
-	texCoordBuffer[14]	= 0.0f;		texCoordBuffer[15]	=      t;
 }
 
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent
@@ -1742,7 +1340,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	const NSSize normalBounds = [windowController normalSize];
 	const NSSize viewSize = [self bounds].size;
-	const CGSize transformBounds = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, _currentRotation);
+	const CGSize transformBounds = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, _displayRotation);
 	const double s = GetMaxScalarInBounds(transformBounds.width, transformBounds.height, viewSize.width, viewSize.height);
 	
 	CGPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc.x, clickLoc.y,
@@ -2047,13 +1645,23 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	// No init needed, so do nothing.
 }
 
-- (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
+- (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
+	const bool didDisplayModeChange = (oglv->GetDisplayMode() != frameDisplayMode);
+	if (didDisplayModeChange)
+	{
+		oglv->SetDisplayMode(frameDisplayMode);
+	}
+	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	[self uploadDisplayTextures:videoFrameData displayMode:displayModeID width:frameWidth height:frameHeight];
-	[self renderDisplayUsingDisplayMode:displayModeID];
+	if (didDisplayModeChange)
+	{
+		oglv->UploadVerticesOGL();
+	}
+	
+	oglv->PrerenderOGL(videoFrameData, frameWidth, frameHeight);
 	[self drawVideoFrame];
 	
 	CGLUnlockContext(cglDisplayContext);
@@ -2061,62 +1669,22 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void)doResizeView:(NSRect)rect
 {
-	const NSSize viewSize = [self frame].size;
-	const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
-	const double s = GetMaxScalarInBounds(checkSize.width, checkSize.height, viewSize.width, viewSize.height);
-	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	glViewport(0, 0, rect.size.width, rect.size.height);
-	
-	if (isShaderSupported)
-	{
-		glUniform2f(uniformViewSize, rect.size.width, rect.size.height);
-		glUniform1f(uniformScalar, s);
-	}
-	else
-	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-rect.size.width/2, -rect.size.width/2 + rect.size.width, -rect.size.height/2, -rect.size.height/2 + rect.size.height, -1.0, 1.0);
-		glRotatef(CLOCKWISE_DEGREES(_currentRotation), 0.0f, 0.0f, 1.0f);
-		glScalef(s, s, 1.0f);
-	}
-	
-	[self renderDisplayUsingDisplayMode:_currentDisplayMode];
+	oglv->SetViewportSizeOGL(rect.size.width, rect.size.height);
 	[self drawVideoFrame];
-	
 	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doTransformView:(const DisplayOutputTransformData *)transformData
 {
-	_currentRotation = (GLfloat)transformData->rotation;
-	
-	const NSSize viewSize = [self bounds].size;
-	const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
-	const double s = GetMaxScalarInBounds(checkSize.width, checkSize.height, viewSize.width, viewSize.height);
+	_displayRotation = (GLfloat)transformData->rotation;
+	oglv->SetRotation((GLfloat)transformData->rotation);
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	if (isShaderSupported)
-	{
-		glUniform1f(uniformAngleDegrees, _currentRotation);
-		glUniform1f(uniformScalar, s);
-	}
-	else
-	{
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef(CLOCKWISE_DEGREES(_currentRotation), 0.0f, 0.0f, 1.0f);
-		glScalef(s, s, 1.0f);
-	}
-	
-	[self renderDisplayUsingDisplayMode:_currentDisplayMode];
+	oglv->UpdateDisplayTransformationOGL();
 	[self drawVideoFrame];
-	
 	CGLUnlockContext(cglDisplayContext);
 }
 
@@ -2124,94 +1692,45 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 {
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	[self renderDisplayUsingDisplayMode:_currentDisplayMode];
 	[self drawVideoFrame];
-	
 	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doDisplayModeChanged:(NSInteger)displayModeID
 {
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	_currentNormalSize = [windowController normalSize];
-	
-	const NSSize viewSize = [self bounds].size;
-	const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
-	const double s = GetMaxScalarInBounds(checkSize.width, checkSize.height, viewSize.width, viewSize.height);
-	
-	_currentDisplayMode = displayModeID;
-	[self updateDisplayVerticesUsingDisplayMode:displayModeID orientation:_currentDisplayOrientation gap:_currentGapScalar];
+	oglv->SetDisplayMode(displayModeID);
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	if (isShaderSupported)
-	{
-		glUniform1f(uniformScalar, s);
-	}
-	else
-	{
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef(CLOCKWISE_DEGREES(_currentRotation), 0.0f, 0.0f, 1.0f);
-		glScalef(s, s, 1.0f);
-	}
-	
-	[self uploadVertices];
-	[self renderDisplayUsingDisplayMode:_currentDisplayMode];
+	oglv->UpdateDisplayTransformationOGL();
+	oglv->UploadVerticesOGL();
 	[self drawVideoFrame];
-	
 	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doBilinearOutputChanged:(BOOL)useBilinear
 {
-	const GLint textureFilter = (useBilinear) ? GL_LINEAR : GL_NEAREST;
+	const bool c99_useBilinear = (useBilinear) ? true : false;
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureFilter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureFilter);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
+	oglv->SetDisplayBilinearOGL(c99_useBilinear);
+	[self drawVideoFrame];
 	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doDisplayOrientationChanged:(NSInteger)displayOrientationID
 {
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	_currentNormalSize = [windowController normalSize];
-	
-	_currentDisplayOrientation = displayOrientationID;
-	[self updateDisplayVerticesUsingDisplayMode:_currentDisplayMode orientation:displayOrientationID gap:_currentGapScalar];
+	oglv->SetDisplayOrientation(displayOrientationID);
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	[self uploadVertices];
+	oglv->UploadVerticesOGL();
 	
-	if (_currentDisplayMode == DS_DISPLAY_TYPE_DUAL)
+	if (oglv->GetDisplayMode() == DS_DISPLAY_TYPE_DUAL)
 	{
-		const NSSize viewSize = [self bounds].size;
-		const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
-		const double s = GetMaxScalarInBounds(checkSize.width, checkSize.height, viewSize.width, viewSize.height);
-		
-		if (isShaderSupported)
-		{
-			glUniform1f(uniformScalar, s);
-		}
-		else
-		{
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-			glRotatef(CLOCKWISE_DEGREES(_currentRotation), 0.0f, 0.0f, 1.0f);
-			glScalef(s, s, 1.0f);
-		}
-		
-		[self renderDisplayUsingDisplayMode:_currentDisplayMode];
+		oglv->UpdateDisplayTransformationOGL();
 		[self drawVideoFrame];
 	}
 	
@@ -2220,23 +1739,14 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void)doDisplayOrderChanged:(NSInteger)displayOrderID
 {
-	if (displayOrderID == DS_DISPLAY_ORDER_MAIN_FIRST)
-	{
-		vtxBufferOffset = 0;
-	}
-	else // displayOrder == DS_DISPLAY_ORDER_TOUCH_FIRST
-	{
-		vtxBufferOffset = (2 * 8);
-	}
+	oglv->SetDisplayOrder(displayOrderID);
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	[self uploadVertices];
-	
-	if (_currentDisplayMode == DS_DISPLAY_TYPE_DUAL)
+	oglv->UploadVerticesOGL();
+	if (oglv->GetDisplayMode() == DS_DISPLAY_TYPE_DUAL)
 	{
-		[self renderDisplayUsingDisplayMode:_currentDisplayMode];
 		[self drawVideoFrame];
 	}
 	
@@ -2245,36 +1755,16 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void)doDisplayGapChanged:(float)displayGapScalar
 {
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	_currentNormalSize = [windowController normalSize];
-	
-	_currentGapScalar = (GLfloat)displayGapScalar;
-	[self updateDisplayVerticesUsingDisplayMode:_currentDisplayMode orientation:_currentDisplayOrientation gap:(GLfloat)displayGapScalar];
+	oglv->SetGapScalar((GLfloat)displayGapScalar);
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	
-	[self uploadVertices];
+	oglv->UploadVerticesOGL();
 	
-	if (_currentDisplayMode == DS_DISPLAY_TYPE_DUAL)
+	if (oglv->GetDisplayMode() == DS_DISPLAY_TYPE_DUAL)
 	{
-		const NSSize viewSize = [self bounds].size;
-		const CGSize checkSize = GetTransformedBounds(_currentNormalSize.width, _currentNormalSize.height, 1.0, _currentRotation);
-		const double s = GetMaxScalarInBounds(checkSize.width, checkSize.height, viewSize.width, viewSize.height);
-		
-		if (isShaderSupported)
-		{
-			glUniform1f(uniformScalar, s);
-		}
-		else
-		{
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-			glRotatef(CLOCKWISE_DEGREES(_currentRotation), 0.0f, 0.0f, 1.0f);
-			glScalef(s, s, 1.0f);
-		}
-		
-		[self renderDisplayUsingDisplayMode:_currentDisplayMode];
+		oglv->UpdateDisplayTransformationOGL();
 		[self drawVideoFrame];
 	}
 	
@@ -2283,57 +1773,19 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void)doVerticalSyncChanged:(BOOL)useVerticalSync
 {
-	const GLint swapInt = useVerticalSync ? 1 : 0;
-	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
-}
-
-- (void)doVideoFilterChanged:(NSInteger)videoFilterTypeID frameSize:(NSSize)videoFilterDestSize
-{
-	size_t colorDepth = sizeof(uint32_t);
-	glTexPixelFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-	
-	if (videoFilterTypeID == VideoFilterTypeID_None)
-	{
-		colorDepth = sizeof(uint16_t);
-		glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	}
-	
-	if (_currentDisplayMode != DS_DISPLAY_TYPE_DUAL)
-	{
-		videoFilterDestSize.height = (uint32_t)videoFilterDestSize.height * 2;
-	}
-	
-	// Convert textures to Power-of-Two to support older GPUs
-	// Example: Radeon X1600M on the 2006 MacBook Pro
-	const uint32_t potW = GetNearestPositivePOT((uint32_t)videoFilterDestSize.width);
-	const uint32_t potH = GetNearestPositivePOT((uint32_t)videoFilterDestSize.height);
-	
-	if (glTexBackSize.width != potW || glTexBackSize.height != potH)
-	{
-		glTexBackSize.width = potW;
-		glTexBackSize.height = potH;
-		
-		free(glTexBack);
-		glTexBack = (GLvoid *)calloc((size_t)potW * (size_t)potH, colorDepth);
-		if (glTexBack == NULL)
-		{
-			return;
-		}
-	}
-	
-	const GLfloat s = (GLfloat)videoFilterDestSize.width / (GLfloat)potW;
-	const GLfloat t = (GLfloat)videoFilterDestSize.height / (GLfloat)potH;
-	[self updateTexCoordS:s T:t];
+	const GLint swapInt = (useVerticalSync) ? 1 : 0;
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	glBindTexture(GL_TEXTURE_2D, displayTexID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, glTexPixelFormat, glTexBack);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
-	[self uploadTexCoords];
-	
+	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (void)doVideoFilterChanged:(NSInteger)videoFilterTypeID
+{
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->RespondToVideoFilterChangeOGL((const VideoFilterTypeID)videoFilterTypeID);
 	CGLUnlockContext(cglDisplayContext);
 }
 

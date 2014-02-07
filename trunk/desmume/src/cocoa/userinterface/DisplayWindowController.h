@@ -16,7 +16,7 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#include <OpenGL/OpenGL.h>
+#import <OpenGL/OpenGL.h>
 #include <libkern/OSAtomic.h>
 
 #import "InputManager.h"
@@ -24,6 +24,7 @@
 
 @class CocoaDSController;
 @class EmuControllerDelegate;
+class OGLVideoOutput;
 
 
 // Subclass NSWindow for full screen windows so that we can override some methods.
@@ -34,59 +35,17 @@
 @interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
 {
 	InputManager *inputManager;
-	
-	// Display thread
-	BOOL isHudEnabled;
-	BOOL isHudEditingModeEnabled;
+	OGLVideoOutput *oglv;
+	CGFloat _displayRotation;
 	
 	// OpenGL context
 	NSOpenGLContext *context;
 	CGLContextObj cglDisplayContext;
-	
-	NSSize _currentNormalSize;
-	NSInteger _currentDisplayMode;
-	NSInteger _currentDisplayOrientation;
-	GLfloat _currentGapScalar;
-	GLfloat _currentRotation;
-	GLenum glTexPixelFormat;
-	GLvoid *glTexBack;
-	NSSize glTexBackSize;
-	
-	GLuint displayTexID;
-	GLuint vboVertexID;
-	GLuint vboTexCoordID;
-	GLuint vboElementID;
-	GLuint vaoMainStatesID;
-	GLuint vertexShaderID;
-	GLuint fragmentShaderID;
-	GLuint shaderProgram;
-	
-	GLint uniformAngleDegrees;
-	GLint uniformScalar;
-	GLint uniformViewSize;
-	
-	GLint vtxBuffer[4 * 8];
-	GLfloat texCoordBuffer[2 * 8];
-	GLubyte vtxIndexBuffer[12];
-	
-	BOOL isShaderSupported;
-	size_t vtxBufferOffset;
 }
 
 @property (retain) InputManager *inputManager;
 
-- (void) startupOpenGL;
-- (void) shutdownOpenGL;
-- (void) setupShaderIO;
-- (BOOL) setupShadersWithVertexProgram:(const char *)vertShaderProgram fragmentProgram:(const char *)fragShaderProgram;
 - (void) drawVideoFrame;
-- (void) uploadVertices;
-- (void) uploadTexCoords;
-- (void) uploadDisplayTextures:(const GLvoid *)textureData displayMode:(const NSInteger)displayModeID width:(const GLsizei)texWidth height:(const GLsizei)texHeight;
-- (void) renderDisplayUsingDisplayMode:(const NSInteger)displayModeID;
-- (void) updateDisplayVerticesUsingDisplayMode:(const NSInteger)displayModeID orientation:(const NSInteger)displayOrientationID gap:(const GLfloat)gapScalar;
-- (void) updateTexCoordS:(GLfloat)s T:(GLfloat)t;
-
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
 - (NSPoint) convertPointToDS:(NSPoint)clickLoc;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;

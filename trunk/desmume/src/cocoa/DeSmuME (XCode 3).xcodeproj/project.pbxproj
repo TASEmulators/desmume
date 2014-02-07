@@ -1168,6 +1168,16 @@
 		ABD59849187D4A6C00069403 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD59846187D4A6C00069403 /* Icon_PaddleKnob_256x256.png */; };
 		ABD5984A187D4A6C00069403 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD59846187D4A6C00069403 /* Icon_PaddleKnob_256x256.png */; };
 		ABD5984B187D4A6C00069403 /* Icon_PaddleKnob_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD59846187D4A6C00069403 /* Icon_PaddleKnob_256x256.png */; };
+		ABECB50918A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
+		ABECB50A18A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
+		ABECB50B18A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
+		ABECB50C18A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
+		ABECB50D18A460710052D52A /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB50818A460710052D52A /* xbrz.cpp */; };
+		ABECB51418A460910052D52A /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */; };
+		ABECB51518A460910052D52A /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */; };
+		ABECB51618A460910052D52A /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */; };
+		ABECB51718A460910052D52A /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */; };
+		ABECB51818A460910052D52A /* OGLDisplayOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */; };
 		ABEF84721873576300E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
 		ABEF84831873578F00E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
 		ABEF84841873579400E99ADC /* ForceFeedback.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */; };
@@ -1624,6 +1634,10 @@
 		ABE6702A1415DE6C00E8E4C9 /* tinyxmlparser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tinyxmlparser.cpp; sourceTree = "<group>"; };
 		ABE7F53C13EE1C7900FD3A71 /* cocoa_firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_firmware.h; sourceTree = "<group>"; };
 		ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_firmware.mm; sourceTree = "<group>"; };
+		ABECB50718A460710052D52A /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
+		ABECB50818A460710052D52A /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
+		ABECB51218A460910052D52A /* OGLDisplayOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput.h; sourceTree = "<group>"; };
+		ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput.cpp; sourceTree = "<group>"; };
 		ABEFCF5D141AB82A000CC0CD /* AppIcon_ROMSave.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMSave.icns; sourceTree = "<group>"; };
 		ABEFCF5E141AB82A000CC0CD /* AppIcon_DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_DeSmuME.icns; sourceTree = "<group>"; };
 		ABEFCF5F141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_NintendoDS_ROM.icns; sourceTree = "<group>"; };
@@ -1812,6 +1826,7 @@
 				AB2145221714DFF4006DDB0F /* audiosamplegenerator.cpp */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD9A46413DB99B300777194 /* mic_ext.cpp */,
+				ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
@@ -1829,6 +1844,7 @@
 				ABE5DFE3143FB1DA00835AD8 /* cocoa_videofilter.h */,
 				ABD0A5361501AA5A0074A094 /* coreaudiosound.h */,
 				ABD9A46313DB99B300777194 /* mic_ext.h */,
+				ABECB51218A460910052D52A /* OGLDisplayOutput.h */,
 				ABD0A5371501AA5A0074A094 /* ringbuffer.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB2F56EE1704C86900E28885 /* utilities.h */,
@@ -2451,12 +2467,14 @@
 				ABFE150414C92FF5005D6699 /* lq2x.cpp */,
 				ABFE150614C92FF5005D6699 /* scanline.cpp */,
 				AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */,
+				ABECB50818A460710052D52A /* xbrz.cpp */,
 				ABFE14FD14C92FF5005D6699 /* filter.h */,
 				ABFE14FF14C92FF5005D6699 /* hq2x.h */,
 				ABFE150214C92FF5005D6699 /* hq4x.h */,
 				ABFE150314C92FF5005D6699 /* interp.h */,
 				ABFE150514C92FF5005D6699 /* lq2x.h */,
 				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
+				ABECB50718A460710052D52A /* xbrz.h */,
 			);
 			name = filter;
 			path = ../filter;
@@ -3366,6 +3384,8 @@
 				AB53518A18313E4E00CCD532 /* slot2.cpp in Sources */,
 				ABAE2F7F18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
 				ABAE2F8818682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
+				ABECB50D18A460710052D52A /* xbrz.cpp in Sources */,
+				ABECB51818A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3508,6 +3528,8 @@
 				AB53518718313E4E00CCD532 /* slot2.cpp in Sources */,
 				ABAE2F7B18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
 				ABAE2F8418682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
+				ABECB50A18A460710052D52A /* xbrz.cpp in Sources */,
+				ABECB51518A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3680,6 +3702,8 @@
 				ABAE2F7C18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
 				ABAE2F8518682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 				AB8FFCB4186F8E5400C10085 /* slot2_mpcf.cpp in Sources */,
+				ABECB50918A460710052D52A /* xbrz.cpp in Sources */,
+				ABECB51418A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3852,6 +3876,8 @@
 				AB53518918313E4E00CCD532 /* slot2.cpp in Sources */,
 				ABAE2F7E18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
 				ABAE2F8718682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
+				ABECB50C18A460710052D52A /* xbrz.cpp in Sources */,
+				ABECB51718A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3994,6 +4020,8 @@
 				AB53518818313E4E00CCD532 /* slot2.cpp in Sources */,
 				ABAE2F7D18682B6C00C92F4F /* Slot2WindowDelegate.mm in Sources */,
 				ABAE2F8618682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
+				ABECB50B18A460710052D52A /* xbrz.cpp in Sources */,
+				ABECB51618A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

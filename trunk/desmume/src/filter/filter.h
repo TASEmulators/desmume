@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2012 DeSmuME team
+Copyright (C) 2009-2014 DeSmuME team
 
 This file is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,3 +41,7 @@ void RenderEPX_1Point5x( SSurface Src, SSurface Dst);
 void RenderEPXPlus_1Point5x( SSurface Src, SSurface Dst);
 void RenderNearest_1Point5x( SSurface Src, SSurface Dst);
 void RenderNearestPlus_1Point5x( SSurface Src, SSurface Dst);
+void Render2xBRZ(SSurface Src, SSurface Dst);
+void Render3xBRZ(SSurface Src, SSurface Dst);
+void Render4xBRZ(SSurface Src, SSurface Dst);
+void Render5xBRZ(SSurface Src, SSurface Dst);

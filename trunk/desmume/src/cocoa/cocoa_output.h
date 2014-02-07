@@ -120,16 +120,13 @@ typedef struct
 @required
 - (void) doDisplayModeChanged:(NSInteger)displayModeID;
 
-@property (assign) BOOL isHudEnabled;
-@property (assign) BOOL isHudEditingModeEnabled;
-
 @end
 
 @protocol CocoaDSDisplayVideoDelegate <CocoaDSDisplayDelegate>
 
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)displayModeID width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
+- (void) doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
@@ -140,7 +137,7 @@ typedef struct
 - (void) doDisplayGapChanged:(float)displayGapScalar;
 - (void) doBilinearOutputChanged:(BOOL)useBilinear;
 - (void) doVerticalSyncChanged:(BOOL)useVerticalSync;
-- (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID frameSize:(NSSize)videoFilterDestSize;
+- (void) doVideoFilterChanged:(NSInteger)videoFilterTypeID;
 
 @end
 
@@ -151,7 +148,6 @@ typedef struct
 	NSInteger displayMode;
 	NSSize frameSize;
 	
-	OSSpinLock spinlockDelegate;
 	OSSpinLock spinlockDisplayType;
 }
 
@@ -174,16 +170,8 @@ typedef struct
 
 @interface CocoaDSDisplayVideo : CocoaDSDisplay
 {
-	CocoaVideoFilter *vf;
-	id <CocoaDSDisplayVideoDelegate> videoDelegate;
-	NSInteger lastDisplayMode;
-		
-	OSSpinLock spinlockVideoFilterType;
-	OSSpinLock spinlockVFBuffers;
+	
 }
-
-@property (retain) id <CocoaDSDisplayVideoDelegate> delegate;
-@property (assign) CocoaVideoFilter *vf;
 
 - (void) handleResizeView:(NSData *)rectData;
 - (void) handleTransformView:(NSData *)transformData;
@@ -191,8 +179,6 @@ typedef struct
 - (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
 - (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
 - (void) handleChangeDisplayGap:(NSData *)displayGapScalarData;
-- (void) handleChangeBilinearOutput:(NSData *)bilinearStateData;
-- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData;
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData;
 
 @end
