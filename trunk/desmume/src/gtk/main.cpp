@@ -23,6 +23,8 @@
 #define GTK_UI
 #endif
 
+#include "version.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -585,7 +587,7 @@ fill_configured_features( class configured_features *config,
                                     "\t\t\t\t  4 = Italian\n"
                                     "\t\t\t\t  5 = Spanish\n",
                                     "LANG"},
-    { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit desmume after the specified seconds for testing purpose.", "SECONDS"},
+    { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit DesMuME after the specified seconds for testing purpose.", "SECONDS"},
     { NULL }
   };
 
@@ -705,12 +707,19 @@ static void About()
 {
     GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 
+    static const gchar *authors[] = {
+    	"yopyop (original author)",
+    	"DesMuME team",
+    	NULL
+    };
+
     gtk_show_about_dialog(GTK_WINDOW(pWindow),
-            "name", "DeSmuME",
-            "version", VERSION,
+            "program-name", "DeSmuME",
+            "version", EMU_DESMUME_VERSION_STRING() + 1, // skip space
             "website", "http://desmume.org",
             "logo", pixbuf,
             "comments", "Nintendo DS emulator based on work by Yopyop",
+            "authors", authors,
             NULL);
 
     g_object_unref(pixbuf);
@@ -2030,23 +2039,28 @@ gboolean EmuLoop(gpointer data)
       // Set the next frame time to 0 so that it will recount
       next_frame_time = 0;
       frame_mod3 = 0;
+      gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Paused");
+      fps_SecStart = 0;
       regMainLoop = FALSE;
       return FALSE;
     }
 
-    /* If desmume is currently running */
-    if (!fps_SecStart)
-      fps_SecStart = SDL_GetTicks();
-
     fps_FrameCount += Frameskip + 1;
     next_fps_SecStart = SDL_GetTicks();
+
+    if (fps_SecStart == 0) {
+    	fps_SecStart = next_fps_SecStart;
+        fps_FrameCount = 0;
+        gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Running");
+    }
+
     if ((next_fps_SecStart - fps_SecStart) >= 1000) {
         fps_SecStart = next_fps_SecStart;
 
         float emu_ratio = fps_FrameCount / 60.0;
         LOG("auto: %d fps: %u skipped: %u emu_ratio: %f Frameskip: %u\n", autoframeskip, fps_FrameCount, skipped_frames, emu_ratio, Frameskip);
 
-        snprintf(Title, sizeof(Title), "Desmume - %dfps, %d skipped, draw: %dfps", fps_FrameCount, skipped_frames, draw_count);
+        snprintf(Title, sizeof(Title), "DeSmuME - %dfps, %d skipped, draw: %dfps", fps_FrameCount, skipped_frames, draw_count);
         gtk_window_set_title(GTK_WINDOW(pWindow), Title);
 
         fps_FrameCount = 0;
@@ -2421,7 +2435,7 @@ common_gtk_main( class configured_features *my_config)
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
+    gtk_window_set_title(GTK_WINDOW(pWindow), "DesMuME");
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
@@ -2520,7 +2534,7 @@ common_gtk_main( class configured_features *my_config)
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
-    UpdateStatusBar("Desmume");
+    UpdateStatusBar(EMU_DESMUME_NAME_AND_VERSION());
     gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
 
     gtk_widget_show_all(pWindow);
