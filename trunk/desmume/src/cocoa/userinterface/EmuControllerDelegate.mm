@@ -2344,6 +2344,27 @@
 			}
 		}
 	}
+	else if (theAction == @selector(openReplay:))
+	{
+		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
+	else if (theAction == @selector(recordReplay:))
+	{
+		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
+	else if (theAction == @selector(stopReplay:))
+	{
+		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		{
+			enable = NO;
+		}
+	}
 	else if (theAction == @selector(changeCoreSpeed:))
 	{
 		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
