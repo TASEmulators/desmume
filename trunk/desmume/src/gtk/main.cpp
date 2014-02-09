@@ -2276,7 +2276,7 @@ enum hud_display_enum {
 
 static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
 {
-    guint Layer = GPOINTER_TO_UINT(data);
+    guint hudId = GPOINTER_TO_UINT(data);
     gboolean active;
 
     // FIXME: make it work after resume
@@ -2285,7 +2285,7 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
 
     active = gtk_toggle_action_get_active(action);
 
-    switch (Layer) {
+    switch (hudId) {
     case HUD_DISPLAY_FPS:
         CommonSettings.hud.FpsDisplay = active;
         break;
@@ -2308,6 +2308,7 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
         CommonSettings.hud.ShowMicrophone = active;
         break;
     default:
+        g_printerr("Unknown HUD toggle %u!", hudId);
         break;
     }
 }
