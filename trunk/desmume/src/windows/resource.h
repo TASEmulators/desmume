@@ -1054,6 +1054,8 @@
 #define IDM_RENDER_LQ2XS                60083
 #define IDC_SAVETYPE                    64000
 #define IDC_AUTOLOADLUA                 64001
+#define IDC_TXTHACK                     64002
+#define ID_LABEL_TXTHACK1               64003
 
 // Next default values for new objects
 // 

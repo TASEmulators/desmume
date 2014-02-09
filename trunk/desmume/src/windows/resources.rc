@@ -112,26 +112,28 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,127,94,50,16
 END
 
-IDD_3DSETTINGS DIALOGEX 0, 0, 190, 210
+IDD_3DSETTINGS DIALOGEX 0, 0, 190, 225
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "3D settings"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,67,188,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,121,188,50,14
-    PUSHBUTTON      "Default",IDC_DEFAULT,11,188,50,14
+    DEFPUSHBUTTON   "OK",IDOK,80,203,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,135,203,50,14
+    PUSHBUTTON      "Default",IDC_DEFAULT,8,203,50,14
     GROUPBOX        "Renderer:",IDC_STATIC,7,7,174,39
     COMBOBOX        IDC_3DCORE,15,23,153,138,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Unrealistically High-Precision Color Interpolation",IDC_INTERPOLATECOLOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,64,165,10
-    GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,52,176,97
+    GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,52,176,114
     CONTROL         "Enable Edge Marking",IDC_3DSETTINGS_EDGEMARK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,76,84,10
     CONTROL         "Enable Fog",IDC_3DSETTINGS_FOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,88,52,10
     CONTROL         "Enable Textures",IDC_3DSETTINGS_TEXTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,100,67,10
-    LTEXT           "Depth Comparison Threshold : \n  -0=normal behavior (recommended) \n  -bigger value can help Zelda PH/ST shadow issue\n  -works only in SoftRasterizer mode ",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK,14,112,165,35
-    EDITTEXT        IDC_ZELDA_SHADOW_DEPTH_HACK,109,111,44,12
-    LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,7,164,169,19
-    CONTROL         "Enable Line Hack",IDC_3DSETTINGS_LINEHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,154,73,10
+    LTEXT           "Depth Comparison Threshold : \n  -0=normal behavior (recommended) \n  -bigger value can help Zelda PH/ST shadow issue",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK,15,113,165,35
+    EDITTEXT        IDC_ZELDA_SHADOW_DEPTH_HACK,109,109,44,12
+    LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,17,182,170,19
+    CONTROL         "Enable Line Hack",IDC_3DSETTINGS_LINEHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,170,73,10
+    LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,15,153,165,11
+    CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,141,73,10
 END
 
 IDD_ABOUT_BOX DIALOGEX 0, 0, 268, 198
@@ -1836,7 +1838,7 @@ BEGIN
 
     IDD_3DSETTINGS, DIALOG
     BEGIN
-        BOTTOMMARGIN, 202
+        BOTTOMMARGIN, 217
     END
 
     IDD_CHEAT_ADD, DIALOG

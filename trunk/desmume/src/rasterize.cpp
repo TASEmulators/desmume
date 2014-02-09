@@ -477,13 +477,34 @@ public:
 
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
-		s32 iu = s32floor(u);
-		s32 iv = s32floor(v);
-		sampler.dowrap(iu,iv);
+	
+		//add TXT Hack options - tkd3
+		if(CommonSettings.GFX3D_TXTHack==false)
+		{
+				s32 iu = s32floor(u);
+				s32 iv = s32floor(v);
+				sampler.dowrap(iu,iv);
+				FragmentColor color;
+				color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
+			return color;
+		}else{
+				s32 iu = round_s(u);
+				s32 iv = round_s(v);
+				sampler.dowrap(iu,iv);
+				FragmentColor color;
+				color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
+			return color;
+		}
 
-		FragmentColor color;
-		color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
-		return color;
+	}
+
+	//round function - tkd3
+	float round_s(double val){
+		if (val > 0.0 ){
+			return floorf(val*256.0f+0.5f)/256.0f; //this value(256.0) is good result.(I think)
+		} else {
+			return -1.0*floorf(fabs(val)*256.0f+0.5f)/256.0f;
+		}
 	}
 
 	struct Shader
